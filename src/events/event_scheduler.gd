@@ -45,10 +45,31 @@ static func _place_ambient(day: int, map: CityMap) -> Array[Planned]:
 				for rect in map.playgrounds:
 					planned.append(Planned.new(def, map.tile_rect_to_world(rect).get_center()))
 			EventDef.AmbientSource.MAIN_ROAD:
-				pass  # M5.
+				for at in _arterial_points(map):
+					planned.append(Planned.new(def, at))
 			_:
 				pass
 	return planned
+
+## The two arterial corridors, sampled once per block row/column. Which corridors are
+## arterial is fixed for the run, like everything else about the layout — so "the main road
+## is loud" is a fact the player learns on day 1 and routes around for the rest of the run.
+static func _arterial_points(map: CityMap) -> Array[Vector2]:
+	var points: Array[Vector2] = []
+	var period := CityMap.period()
+	var road_centre := Tuning.STREET_WIDTH / 2
+	var vertical := Tuning.CITY_BLOCKS.x / 2
+	var horizontal := Tuning.CITY_BLOCKS.y / 2
+
+	for row in Tuning.CITY_BLOCKS.y:
+		var lot := CityMap.block_rect(Vector2i(0, row))
+		points.append(map.tile_to_world(Vector2i(
+				vertical * period + road_centre, lot.position.y + lot.size.y / 2)))
+	for column in Tuning.CITY_BLOCKS.x:
+		var lot := CityMap.block_rect(Vector2i(column, 0))
+		points.append(map.tile_to_world(Vector2i(
+				lot.position.x + lot.size.x / 2, horizontal * period + road_centre)))
+	return points
 
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap) -> Array[Planned]:
 	var planned: Array[Planned] = []
@@ -127,7 +148,66 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap) 
 	var at := map.tile_to_world(tile)
 	if not def.mobile:
 		return Planned.new(def, at)
-	return Planned.new(def, at, _cross_street_path(map, tile))
+
+	match def.path_mode:
+		EventDef.PathMode.CROSS_STREET:
+			return Planned.new(def, at, _cross_street_path(map, tile))
+		EventDef.PathMode.ALONG_STREET:
+			var route := _along_street_path(map, tile, def, rng)
+			# Nowhere to go from here; let the caller re-roll rather than placing a
+			# "mobile" event that stands still.
+			return null if route.is_empty() else Planned.new(def, at, route)
+		_:
+			return Planned.new(def, at)
+
+## Distance in tiles from a tile to the edge of the map along a direction, less a
+## one-block margin so a route always ends inside the city rather than against the wall.
+static func _room_along(map: CityMap, tile: Vector2i, direction: Vector2i) -> int:
+	var margin := CityMap.period()
+	var room := 0
+	if direction.x > 0:
+		room = map.size.x - 1 - tile.x
+	elif direction.x < 0:
+		room = tile.x
+	elif direction.y > 0:
+		room = map.size.y - 1 - tile.y
+	else:
+		room = tile.y
+	return maxi(0, room - margin)
+
+## A route down the corridor the tile sits on, for traffic and for anyone walking a dog.
+##
+## Direction is a coin flip *between the directions that have room*, and the length is
+## clamped to what actually fits. Clamping the endpoint to the map bounds instead — the
+## first version — parked every long route hard against the city wall, which put the fire
+## the engine leaves behind out on the boundary every single time.
+static func _along_street_path(map: CityMap, tile: Vector2i, def: EventDef,
+		rng: RandomNumberGenerator) -> PackedVector2Array:
+	var vertical_corridor := CityMap.corridor_offset(tile.x) >= 0
+	var forward := Vector2i.DOWN if vertical_corridor else Vector2i.RIGHT
+	var backward := -forward
+
+	var forward_room := _room_along(map, tile, forward)
+	var backward_room := _room_along(map, tile, backward)
+	var along := forward
+	var room := forward_room
+	# Prefer whichever way fits the whole route; if both do, or neither, flip a coin.
+	if backward_room > forward_room and backward_room >= def.path_length_tiles:
+		along = backward
+		room = backward_room
+	elif forward_room >= def.path_length_tiles and backward_room >= def.path_length_tiles:
+		if rng.randf() < 0.5:
+			along = backward
+			room = backward_room
+	elif backward_room > forward_room:
+		along = backward
+		room = backward_room
+
+	var length := mini(def.path_length_tiles, room)
+	if length <= 0:
+		return PackedVector2Array()
+	return PackedVector2Array([
+		map.tile_to_world(tile), map.tile_to_world(tile + along * length)])
 
 ## A route straight across the street the tile sits on. A cat runs *across* traffic, so the
 ## path is perpendicular to the road it starts from.

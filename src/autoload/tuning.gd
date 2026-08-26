@@ -118,8 +118,8 @@ func day_length(day: int) -> float:
 ##
 ## Returns true if the geometry is fair; pushes an error and returns false if it is not.
 func validate_event(id: String, telegraph_time: float, inner_radius: float,
-		outer_radius: float, hard_fail: bool) -> bool:
-	var required := required_telegraph_time(inner_radius, outer_radius, hard_fail)
+		outer_radius: float, hard_fail: bool, speed: float = 0.0) -> bool:
+	var required := required_telegraph_time(inner_radius, outer_radius, hard_fail, speed)
 	if telegraph_time + 0.001 < required:
 		push_error("Unfair event '%s': telegraph_time %.2fs < required %.2fs "
 				% [id, telegraph_time, required]
@@ -131,10 +131,17 @@ func validate_event(id: String, telegraph_time: float, inner_radius: float,
 ## Shortest telegraph an event with this geometry may have and still be fair.
 ## Kept separate from validate_event() so tests can check the contract without tripping
 ## the error it raises.
+##
+## A stationary event only has to be walked out of, so the escape distance is the falloff
+## band. An event travelling FASTER than the player sweeps its whole outer radius across
+## the street instead — you cannot outwalk it, you can only get off its line — so the
+## escape distance is the full radius. An event slower than walking pace (a dog walker)
+## can simply be walked away from, so it uses the stationary rule.
 func required_telegraph_time(inner_radius: float, outer_radius: float,
-		hard_fail: bool) -> float:
+		hard_fail: bool, speed: float = 0.0) -> float:
 	var margin := TELEGRAPH_HARD_FAIL_MARGIN if hard_fail else 1.0
-	return (outer_radius - inner_radius) * margin / WALK_SPEED
+	var escape := outer_radius if speed > WALK_SPEED else outer_radius - inner_radius
+	return escape * margin / WALK_SPEED
 
 ## Excitement contribution of a source of `intensity` at distance `d`.
 ## Quadratic falloff between the inner and outer radius. See docs/MECHANICS.md.

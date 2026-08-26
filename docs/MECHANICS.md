@@ -128,10 +128,25 @@ The design contract: *from the moment an event becomes visible, the player must 
 time to walk out of its outer radius at normal walking speed.* Event authoring must satisfy
 
 ```
-telegraph_time × walk_speed >= outer_radius − inner_radius
+telegraph_time × walk_speed >= escape_distance × margin
 ```
 
-`Tuning.validate_event()` asserts this in debug builds so unfair events fail loudly.
+where `margin` is 2 for `hard_fail` events, and
+
+```
+escape_distance = outer_radius − inner_radius     for anything at or below walking pace
+                = outer_radius                    for anything FASTER than walking
+```
+
+The split matters. A stationary event, or one slower than the player (a dog walker at
+32 px/s), only has to be walked away from, so clearing the falloff band is enough. Something
+faster than the player — a fire engine at 190 px/s — cannot be outwalked at all; it sweeps
+its entire outer radius along the street, and the only escape is getting off its line. So
+it must give enough warning to clear the *full* radius. That is why the fire engine's
+telegraph is 4 seconds and not the 2.9 the band rule would have allowed.
+
+`Tuning.validate_event()` asserts this on load, and `tests/test_events.gd` checks it over
+the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.
 
 ## Calm zones
 

@@ -63,17 +63,20 @@ Each event costs budget equal to its `intensity` tier, so late days are not just
 
 ### Act I — Normal life (days 1–3)
 
+All implemented.
+
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `playground` | AMBIENT | 1 | Static aura in every park. Loud (kids). The reason parks are not free wins. |
-| `busy_road` | AMBIENT | 1 | Thin, long aura along arterial roads. |
-| `cat_dash` | RECURRING | 1 | A cat sprints across the street in front of the stroller. Short telegraph (it's visible crouching first), sharp impulse, tiny radius. The tutorial obstacle. |
-| `dog_walker` | RECURRING | 1 | Slow mobile NPC, small aura, barks periodically. |
-| `homeless_yeller` | RECURRING | 1 | Stationary. Periodic yell **pulses** — intensity oscillates, so you can time a pass. Large radius. |
-| `delivery_van` | RECURRING | 1 | Parked, reversing beeper. Medium constant. |
-| `busker` | RECURRING | 2 | Park spoiler. Medium aura, pleasant but stimulating. |
-| `construction` | RECURRING | 2 | Blocks a sidewalk **and** emits. Forces a reroute, not just a detour. |
-| `fire_truck` | ONE_SHOT | 3 | Sirens, mobile along roads at high speed, huge radius. Drives to a burning building that then becomes a static high-intensity source for the rest of the day. Long telegraph (you hear it far away). |
+| `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
+| `busy_road` | AMBIENT | 1 | Sampled along the two arterial corridors. Intensity `3.2`, deliberately just **under** the `3.5` walking decay, so it can never raise the meter on its own. What it does is cripple recovery: excitement drains at 3.5/s on a quiet street and 0.3/s on the arterial. Getting away from a cat means getting off the main road too. |
+| `cat_dash` | RECURRING | 1 | Crouches (telegraph), then bolts across the traffic. High intensity, tiny radius, 1.4s duration. The tutorial obstacle. |
+| `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Barks on a 3.5s pulse. |
+| `homeless_yeller` | RECURRING | 1 | Stationary, large radius, 5s yell **pulse**. The counterplay is timing a pass between yells, which is a different skill from routing around a hazard. |
+| `delivery_van` | RECURRING | 1 | Parked, reversing beeper. Constant, medium. The plain obstacle route planning is practised on. |
+| `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. |
+| `construction` | RECURRING | 2 | The only Act I event that is physically in the way (`obstructs_radius` 34px). Blocking a 64px sidewalk forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time and exposure, never the day. |
+| `fire_truck` | ONE_SHOT | 3 | Drives an arterial at 190px/s with a 340px radius and a 4s telegraph (the fast-mover rule — see docs/MECHANICS.md). `spawns_on_finish` leaves a `burning_building` where it stops. |
+| `burning_building` | — | — | Never scheduled: a SCRIPTED def with no day, so only the fire engine can put one in the world. Burns for the rest of the day. |
 
 ### Act II — Something is off (days 4–7)
 
