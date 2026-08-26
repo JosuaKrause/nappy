@@ -1,60 +1,72 @@
 # Handoff
 
-**Last updated:** end of the M15 session.
-**Read this first, then [PLAYTEST-01.md](PLAYTEST-01.md), then [TODO.md](TODO.md).**
+**Last updated:** end of the M16/M18 session.
+**Read this first, then [PLAYTEST-02.md](PLAYTEST-02.md), then [TODO.md](TODO.md).**
 
 ---
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **7187 checks, 0 failures** (~2m20s);
+`main` is green and playable. `./tools/test.sh` → **14918 checks, 0 failures** (~55s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it.
 
 - **M0–M9 complete.** Full 14-day run, four-act escalation, resistance subquest, three
   endings. Documented in `docs/`.
-- **M11 complete.** The four quick wins from the first playtest (home arrow, three graphics
-  glitches, day-start position, spoiler-free README).
-- **M12a complete.** Ground is now authored SVG tiles + a `TileSet` + a `TileMapLayer`.
-- **M12b complete.** Buildings are assembled from `assets/buildings/*.svg`, and their
-  heights are whole tiles.
-- **M12c complete.** The rig, the props and the event bodies are sprites. `Palette` was
-  trimmed to the colours the code still chooses. **M12 is done** — nothing draws its own art
-  out of primitives any more.
-- **M13 complete.** The city has its own traffic: ~530 agents in act I, on a per-corridor
-  and per-act density. The crowd is the noise floor, and the two invisible ambient road
-  bands were deleted rather than left alongside it.
-- **M14 complete.** The day is re-pitched against calm ground. A whole day of undisturbed
-  street walking reaches 79 of 100; a calm stretch clears the meter in 119s.
-- **M15 complete.** Blocks have purposes and arcs. Four kinds of calm, three degraded forms,
-  planned up front, tracked in a run-scoped `CityState`, repainted every morning.
+- **M11–M15 complete.** Playtest 01's first five milestones: the quick wins, the SVG asset
+  pipeline, the crowd as the noise floor, the M14 balance re-pitch, and block purposes with
+  planned arcs.
+- **M18 complete** *(taken out of order — see below)*. A day is 180s instead of 330s, aimed
+  at **a minute of play with a grace of three**. Calm ground fills the meter in 24s instead
+  of 119s: 10x the street rather than 3.5x, so a second in a park is worth ten on the
+  pavement. Street gain went *up* (0.24 → 0.42), because M14's relationships are stated over
+  `day_length()` and a 45% shorter day would otherwise have stopped making "real progress on
+  the way" true.
+- **M16 complete.** Road closures. Five kinds, 1–4 streets a day by act, barriers at both
+  mouths so a shut street is readable from the junction, and the day-level invariant — at
+  least two distinct routes to at least two distinct calm areas — checked by max flow on the
+  junction graph before each closure is accepted.
+
+## A second playtest landed mid-session
+
+Six findings, written up with analysis and sequencing in **[PLAYTEST-02.md](PLAYTEST-02.md)**.
+The short version: **the loop is right and the street is empty of consequence.** Read that
+document before picking anything up; the summary below is not a substitute for it.
+
+Two things about the ordering, because neither is obvious from the numbers:
+
+- **The queue is M17, then M18–M22**, and M18 is already done. The new findings were
+  deliberately queued *behind* the milestones in flight rather than in front of them. M18
+  jumped the queue for one practical reason: closure counts tuned against a day that was
+  about to halve would have been tuned wrong.
+- **M22 wants pulling forward next to M19.** It is filed last because that is where it was
+  asked for, but a lethal car arriving from off-screen is a breach of the telegraph fairness
+  contract rather than a polish item, and M19 is what creates them.
 
 ## What to do next, in order
 
-### M16 — route pressure
+### M17 — the route map
 
-Finding 12. A per-day pruned road network with legible blockers, and the day-level
-invariant: **at least two distinct routes to at least two distinct calm areas.** The
-scheduler already has most of the machinery in `_ensure_the_city_is_still_walkable`; it
-needs to count distinct routes and destinations rather than just find one.
+The planning screen, rendering the block states M15 introduced *and* the closures M16 adds.
+`CityState.changed_on(block)` is already recorded for exactly this — shading "this is new" is
+what makes the screen worth opening twice.
 
-Two things M15 leaves on the table for it:
+M16 raised the value of this: closures are legible at the junction and **not** before it. A
+player two junctions away cannot know a street is shut, and the map is the only thing that
+can tell them. That gap is stated as a gap in `docs/CITY.md` rather than papered over.
 
-- **Canal path** was the one item from finding 7's list deliberately left out. It means
-  impassable water and bridges — a change to *where the player can walk*, which is M16's
-  subject. Every M15 purpose is guaranteed not to move a walkable tile; a canal would be the
-  single exception, so it belongs with the milestone that owns closures.
-- **Legibility before commitment.** Closures have to be visible *before* the player has
-  walked down the street. Nothing in M15 does that; the overview camera is the only place
-  the city's shape is currently readable, and that is a dev flag.
+### Then M18–M22, per PLAYTEST-02.md
 
-### Then M17 — the route map
+M18 done. **M19 bodies on the street** (collision, lethal cars, pavement hazards that force a
+crossing, cars that stop at zebras) — the big one, and the thing that makes M18's generous
+meter honest. **M20 traffic that behaves** (following, overtaking, 8-direction driving,
+crashes as events). **M21 the city overhaul** (four-block calm zones, T-junctions and
+L-bends, main roads as barriers, plus the canal dropped out of M16). **M22 the edge of the
+screen**.
 
-The planning screen, rendering the block states M15 introduced: what the city has become,
-not what it was generated as. `CityState.changed_on(block)` is already recorded for exactly
-this — shading "this is new" is what makes the screen worth opening twice.
-
-See `PLAYTEST-01.md`. Do not reorder them — the sequencing rationale is in that document
-and each depends on the one before.
+M21 rewrites the lattice enumeration in `src/routes/street_network.gd`. The graph half of
+that file — route counting, the invariant, the doorway exemptions — survives untouched and
+matters *more* afterwards: with holes in the lattice, route redundancy stops being true by
+construction and has to be checked by search, which is what that file is.
 
 ---
 
@@ -81,6 +93,40 @@ Taken in the M12a session and still governing everything after it. All four are 
 
 ---
 
+## Gotchas learned in M16
+
+- **Check before accepting, not after placing.** The obvious shape for closures — place N,
+  then drop them until the day is legal — has an order-dependent answer and a window in
+  which the day is illegal. Testing each candidate against the invariant *before* accepting
+  it costs the same and has neither problem. The reason it is affordable is the next point.
+- **Counting distinct routes is a max flow, not a search for routes.** Two edge-disjoint
+  paths is what "two distinct routes" means, and by Menger's theorem the count is also "how
+  many streets it would take to cut this off". Two BFS augmentations over a 64-node junction
+  graph — not a flood fill over ten thousand tiles — which is why it can run on every
+  candidate closure of every day inside a test suite.
+- **A doorway is not a route, and that has to be said out loud.** The first version of the
+  brute-force cross-check closed every street in turn and asserted the area survived. It
+  failed on three courtyards, correctly: a courtyard has one archway onto one street.
+  Two routes has always meant two routes *to the door* — the same exemption the home has
+  had since M3 — and the test now excludes access streets and carries a second test that
+  states the consequence rather than leaving it implicit.
+- **A cross-script enum is not the same type as itself.** `f(side: Side)` called from
+  another script with a `StreetNetwork.Side` value fails to parse. Widen to `int`.
+- **The crowd made the closure legible for free.** Agents divert at the junction rather than
+  driving through a barrier, so the street with nobody on it is the street that is shut —
+  which reads from a block away, further than the barrier does. That was a side effect of
+  making the crowd respect closures, and it is better than the thing it fell out of.
+
+## Gotchas learned in M18
+
+- **Cutting the day tests the tests.** Every M14 balance claim is written as a relationship
+  over `day_length()`, and halving the day is exactly the change those relationships exist
+  to survive. They did: nothing needed its shape changed, and the one that pushed back —
+  "a whole day of street walking still makes real progress" — pushed back correctly, which
+  is why street gain went *up* while the day got shorter.
+- **A shorter day is a faster suite.** `tests/test_balance.gd` steps a real `Baby` through
+  fourteen days at 1/60s; it went from 94s to 27s for free.
+
 ## Gotchas learned in M15
 
 - **A carved interior needs a way in.** Courtyards were sealed rects the first time and the
@@ -102,13 +148,18 @@ Taken in the M12a session and still governing everything after it. All four are 
 - **`var x := SomeEnum.keys()[i]` will not parse.** The value is a Variant, and "inferred
   from a Variant value" is an error, not a warning. Annotate: `var x: String = ...`.
 
-## Known slow: `tests/test_balance.gd` is 94s of the suite's 138s
+## Known slow: `tests/test_generator.gd` is 21s of the suite's 55s
 
-Per-suite timings are printed by `tools/test.sh` now. `test_balance.gd` steps a real `Baby`
-through fourteen full days at 1/60s against a real city, and each step sums over ~530 crowd
-agents — roughly 150 million distance checks. It is doing real work and it is the test that
-justifies M14, so it has not been cut; but if the suite needs to get faster, that is where
-all of the time is. Sampling every third physics step would probably be honest.
+Per-suite timings are printed by `tools/test.sh`. `test_generator.gd` generates 200 cities
+and runs a route-redundancy sweep that closes each street segment in turn on the *tile* grid.
+`test_balance.gd` is next at 27s (down from 94s when M18 shortened the day).
+
+The generator sweep is now the obvious thing to speed up, and M16 has already written the
+tool: `StreetNetwork.route_count()` answers the same question by max flow on the junction
+graph in a fraction of the time. It has deliberately not been swapped in — the tile-level
+sweep checks something the graph cannot, namely that the *tiles* agree with the lattice — but
+if the suite needs to get faster, running the cheap check on all 200 seeds and the expensive
+one on a handful would be honest.
 
 ## Gotchas learned in M14
 
