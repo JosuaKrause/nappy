@@ -8,6 +8,11 @@ extends RefCounted
 
 const OUTLINE := Color("221f28")
 
+## Daylight over the whole city canvas, from midday to dusk. Act tinting multiplies into
+## this in M7.
+const LIGHT_MIDDAY := Color(1.0, 1.0, 1.0)
+const LIGHT_DUSK := Color(0.52, 0.54, 0.74)
+
 # ------------------------------------------------------------------ ground ---
 
 const ASPHALT := Color("46464f")

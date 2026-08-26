@@ -34,7 +34,28 @@ godot --path .
 | Arrow keys / WASD | Walk |
 | Hold Shift | Run (raises excitement) |
 | E | Interact |
-| Esc | Pause |
+| Space | Continue, on the between-days screen |
+| Esc | Quit |
+
+## Dev flags
+
+Everything after `--` is passed to the game:
+
+```sh
+godot --path . -- --seed 12345 --day 9 --overview
+```
+
+| Flag | Effect |
+| --- | --- |
+| `--seed N` | Regenerate a specific city |
+| `--day N` | Start on a later day, to look at a later act |
+| `--day-length N` | Compress the day, for dusk and the timeout loss |
+| `--meters S E` | Seed the two meters, to screenshot a UI state |
+| `--spawn park\|alley\|square\|playground` | Drop the player on a tile type |
+| `--spawn event[:id]` | Drop the player beside a live event |
+| `--follow <event id>` | Park a camera on an event wherever it goes |
+| `--overview` | Frame the whole city at once |
+| `--screenshot out.png --after N` | Render for N **seconds**, save a PNG, quit |
 
 ## Verifying a build
 

@@ -11,6 +11,12 @@ enum BabyState {
 	CRYING, ## Day is lost.
 }
 
+enum DayPhase {
+	WALKING,   ## Getting the baby to sleep.
+	RETURNING, ## Baby asleep; carry her home without waking her.
+	OVER,
+}
+
 enum DayResult {
 	WON,
 	LOST_CRYING,

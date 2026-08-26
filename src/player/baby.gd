@@ -31,6 +31,16 @@ func _ready() -> void:
 	_world = get_tree().get_first_node_in_group("world") as WorldContext
 	sleepiness = starting_sleepiness
 
+## Back to the start of a day. The baby does not carry yesterday's mood.
+func reset() -> void:
+	sleepiness = starting_sleepiness
+	excitement = 0.0
+	last_incoming = 0.0
+	last_decay = 0.0
+	_set_state(GameEnums.BabyState.AWAKE)
+	EventBus.sleepiness_changed.emit(sleepiness)
+	EventBus.excitement_changed.emit(excitement)
+
 func _physics_process(delta: float) -> void:
 	if state == GameEnums.BabyState.CRYING:
 		return

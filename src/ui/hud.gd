@@ -9,6 +9,7 @@ extends CanvasLayer
 @onready var _excitement: MeterBar = $Meters/Excitement
 @onready var _state_label: Label = $Meters/State
 @onready var _header: Label = $Header
+@onready var _clock: Label = $Clock
 
 var _baby: Baby
 
@@ -32,6 +33,8 @@ func _ready() -> void:
 	EventBus.excitement_changed.connect(_on_excitement_changed)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
 	EventBus.nerves_changed.connect(func(_n: int) -> void: _refresh_header())
+	EventBus.day_started.connect(func(_d: int) -> void: _refresh_header())
+	EventBus.day_time_changed.connect(_on_day_time_changed)
 
 	_baby = get_tree().get_first_node_in_group("baby") as Baby
 	if _baby:
@@ -60,6 +63,12 @@ func _refresh_state() -> void:
 	if reason != "":
 		text += "   (not settling: %s)" % reason
 	_state_label.text = text
+
+func _on_day_time_changed(remaining: float, total: float) -> void:
+	_clock.text = "%d:%02d" % [int(remaining) / 60, int(remaining) % 60]
+	# The last minute is the one worth panicking about.
+	var urgent := remaining < 60.0 and total > 0.0
+	_clock.modulate = Color("e5765f") if urgent else Color(1, 1, 1)
 
 func _refresh_header() -> void:
 	_header.text = "day %d / %d      act %d      nerves %s" % [
