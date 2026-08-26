@@ -63,16 +63,37 @@ func _physics_process(_delta: float) -> void:
 
 func _retire_finished() -> void:
 	var survivors: Array[EventInstance] = []
+	var successors: Array[EventInstance] = []
 	for instance in _instances:
 		if instance.is_finished:
+			var successor := _successor_of(instance)
+			if successor:
+				successors.append(successor)
 			instance.queue_free()
 		else:
 			survivors.append(instance)
-	if survivors.size() == _instances.size():
+	if successors.is_empty() and survivors.size() == _instances.size():
 		return
+	survivors.append_array(successors)
 	# The aura layer holds this same array by reference, so it must be updated in place
 	# rather than reassigned.
 	_instances.assign(survivors)
+
+## An event that leaves something behind where it stopped — how a fire engine ends its run
+## at a fire. The successor is placed at the finishing position, not at a planned tile, so
+## the two are always consistent.
+func _successor_of(instance: EventInstance) -> EventInstance:
+	if instance.def.spawns_on_finish == "":
+		return null
+	var def := EventCatalogue.by_id(instance.def.spawns_on_finish)
+	if not def:
+		push_error("event '%s' spawns unknown '%s'"
+				% [instance.def.id, instance.def.spawns_on_finish])
+		return null
+	var successor := EventInstance.new()
+	successor.setup(def, instance.global_position)
+	_city.add_entity(successor)
+	return successor
 
 func _check_hard_fails() -> void:
 	if _hard_failed:

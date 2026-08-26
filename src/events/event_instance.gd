@@ -28,6 +28,19 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 func _ready() -> void:
 	EventBus.event_telegraphed.emit(self)
 	_telegraph_announced = true
+	if def.obstructs_radius > 0.0:
+		_build_obstruction()
+
+## Some events are physically in the way. The body is a child so it travels with a mobile
+## event and disappears with the instance.
+func _build_obstruction() -> void:
+	var body := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = def.obstructs_radius
+	shape.shape = circle
+	body.add_child(shape)
+	add_child(body)
 
 func _process(delta: float) -> void:
 	if is_finished:
@@ -114,6 +127,8 @@ func _draw() -> void:
 
 func _draw_body() -> void:
 	match def.look:
+		EventDef.Look.FIRE:
+			_draw_fire()
 		EventDef.Look.ANIMAL:
 			_draw_animal()
 		EventDef.Look.PERSON:
@@ -152,7 +167,29 @@ func _draw_vehicle() -> void:
 	draw_circle(Vector2(-14.0, -3.0), 4.5, Palette.PRAM_WHEEL)
 	draw_circle(Vector2(14.0, -3.0), 4.5, Palette.PRAM_WHEEL)
 
+## Flames scaled by what the event is currently emitting, so a fire visibly roars.
+func _draw_fire() -> void:
+	var strength := 1.0
+	if def.intensity > 0.0:
+		strength = clampf(current_intensity() / def.intensity, 0.2, 1.0)
+	_draw_shadow(22.0)
+	for i in 5:
+		var offset := (i - 2.0) * 11.0
+		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
+		var height := (34.0 + i % 2 * 14.0) * strength * flicker
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(offset - 9.0, 0.0),
+			Vector2(offset + 9.0, 0.0),
+			Vector2(offset, -height),
+		]), Palette.FIRE_OUTER)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(offset - 4.5, 0.0),
+			Vector2(offset + 4.5, 0.0),
+			Vector2(offset, -height * 0.6),
+		]), Palette.FIRE_INNER)
+
 func _draw_object() -> void:
 	_draw_shadow(10.0)
-	draw_rect(Rect2(-11.0, -20.0, 22.0, 20.0), Palette.NPC_COAT)
-	draw_rect(Rect2(-11.0, -20.0, 22.0, 20.0), Palette.OUTLINE, false, 1.5)
+	var half := maxf(11.0, def.obstructs_radius)
+	draw_rect(Rect2(-half, -20.0, half * 2.0, 20.0), Palette.NPC_COAT)
+	draw_rect(Rect2(-half, -20.0, half * 2.0, 20.0), Palette.OUTLINE, false, 1.5)

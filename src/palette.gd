@@ -38,6 +38,9 @@ const AURA_TELEGRAPH := Color("e8b64a")
 const AURA_ACTIVE := Color("d2543f")
 const AURA_LETHAL := Color("8f2f38")
 
+const FIRE_OUTER := Color("d1622c")
+const FIRE_INNER := Color("f0c04a")
+
 # --------------------------------------------------------------- buildings ---
 
 const _ROOFS: Array[Color] = [

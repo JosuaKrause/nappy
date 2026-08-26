@@ -14,13 +14,21 @@ enum Look {
 	PERSON,
 	VEHICLE,
 	OBJECT,
+	FIRE,
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
 enum AmbientSource {
 	NONE,
 	PLAYGROUND,  ## One per playground.
-	MAIN_ROAD,   ## Spread along arterial roads.
+	MAIN_ROAD,   ## Spread along the two arterial corridors.
+}
+
+## How the scheduler builds a mobile event's route.
+enum PathMode {
+	NONE,
+	CROSS_STREET,  ## Straight across the traffic, like a cat bolting.
+	ALONG_STREET,  ## Down the corridor it starts on.
 }
 
 @export var id := ""
@@ -59,6 +67,17 @@ enum AmbientSource {
 ## Moves along a path at `speed` px/s. The scheduler builds the path.
 @export var mobile := false
 @export var speed := 0.0
+@export var path_mode := PathMode.NONE
+## Route length for ALONG_STREET, in tiles.
+@export var path_length_tiles := 24
+
+## Radius of solid obstruction, in px. 0 for events you can walk through. Scaffolding does
+## not politely step aside, and being *forced* to reroute is a different pressure from
+## choosing to.
+@export var obstructs_radius := 0.0
+
+## Event id to spawn where this one ends. How a fire engine leaves a fire behind it.
+@export var spawns_on_finish := ""
 
 ## Entering the inner radius ends the day immediately.
 @export var hard_fail := false
@@ -82,8 +101,10 @@ func available_on(day: int) -> bool:
 func validate() -> bool:
 	if kind == GameEnums.EventKind.AMBIENT:
 		return true
-	return Tuning.validate_event(id, telegraph_time, inner_radius, outer_radius, hard_fail)
+	return Tuning.validate_event(id, telegraph_time, inner_radius, outer_radius, hard_fail,
+			speed if mobile else 0.0)
 
 ## Shortest telegraph this geometry may fairly have.
 func minimum_telegraph() -> float:
-	return Tuning.required_telegraph_time(inner_radius, outer_radius, hard_fail)
+	return Tuning.required_telegraph_time(inner_radius, outer_radius, hard_fail,
+			speed if mobile else 0.0)

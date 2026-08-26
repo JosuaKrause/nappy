@@ -15,6 +15,12 @@ func run(t) -> void:
 	_test_scheduler_respects_placement_and_caps(t)
 	_test_one_shots_fire_once_per_run(t)
 	_test_one_park_stays_usable(t)
+	_test_successors_resolve(t)
+	_test_burning_building_is_never_scheduled(t)
+	_test_fire_truck_is_a_day_three_one_shot(t)
+	_test_arterial_noise_cannot_raise_the_meter(t)
+	_test_arterial_noise_sits_on_roads(t)
+	_test_along_street_paths_stay_in_bounds(t)
 
 # ------------------------------------------------------------------ fairness ---
 
@@ -221,3 +227,90 @@ func _test_one_park_stays_usable(t) -> void:
 			if not spoiled:
 				clean += 1
 		t.check(clean >= 1, "day %d leaves at least one park unspoiled" % day)
+
+# -------------------------------------------------------------- act I content ---
+
+func _test_successors_resolve(t) -> void:
+	for def in EventCatalogue.all():
+		if def.spawns_on_finish == "":
+			continue
+		t.check(EventCatalogue.by_id(def.spawns_on_finish) != null,
+				"'%s' spawns '%s', which exists in the catalogue"
+				% [def.id, def.spawns_on_finish])
+
+## It has no scheduled day at all, so nothing but the fire engine can put one in the world.
+func _test_burning_building_is_never_scheduled(t) -> void:
+	var fire := EventCatalogue.by_id("burning_building")
+	t.check(fire != null, "the burning building exists")
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		t.check(not fire.available_on(day),
+				"the burning building is not schedulable on day %d" % day)
+
+func _test_fire_truck_is_a_day_three_one_shot(t) -> void:
+	var truck := EventCatalogue.by_id("fire_truck")
+	t.check(truck.kind == GameEnums.EventKind.ONE_SHOT, "the fire engine is a one-shot")
+	t.check(not truck.available_on(2), "the fire engine cannot come on day 2")
+	t.check(truck.available_on(3), "the fire engine can come on day 3")
+	t.check(not truck.available_on(4), "the fire engine never comes again")
+
+	# It outruns a walk, so the fairness rule must demand the full radius of clearance.
+	t.check(truck.speed > Tuning.WALK_SPEED, "the fire engine is faster than walking")
+	t.close_to(truck.minimum_telegraph(), truck.outer_radius / Tuning.WALK_SPEED,
+			"a fast mover must be clearable across its whole radius, not just its band")
+	t.check(truck.telegraph_time >= truck.minimum_telegraph(),
+			"the fire engine gives that much warning")
+
+	# A dog walker is slower than walking, so the ordinary band rule applies to it.
+	var dog := EventCatalogue.by_id("dog_walker")
+	t.check(dog.speed < Tuning.WALK_SPEED, "the dog walker is slower than walking")
+	t.close_to(dog.minimum_telegraph(), (dog.outer_radius - dog.inner_radius) / Tuning.WALK_SPEED,
+			"a slow mover can simply be walked away from")
+
+## The arterial is a recovery penalty, not a hazard. If its intensity ever creeps above the
+## walking decay it silently becomes a slow threat instead, and the whole point is lost.
+func _test_arterial_noise_cannot_raise_the_meter(t) -> void:
+	var road := EventCatalogue.by_id("busy_road")
+	t.check(road.intensity < Tuning.EXCITEMENT_DECAY_WALKING,
+			"traffic noise (%.1f) stays under the walking decay (%.1f)"
+			% [road.intensity, Tuning.EXCITEMENT_DECAY_WALKING])
+	t.check(road.intensity > Tuning.EXCITEMENT_DECAY_WALKING * 0.75,
+			"traffic noise is still close enough to the decay to stall recovery")
+
+func _test_arterial_noise_sits_on_roads(t) -> void:
+	var map := _map()
+	var points := EventScheduler._arterial_points(map)
+	t.check(points.size() == Tuning.CITY_BLOCKS.x + Tuning.CITY_BLOCKS.y,
+			"the arterials are sampled once per block row and column")
+	for at in points:
+		t.check(Tile.is_road(map.tile_at(map.world_to_tile(at))),
+				"arterial traffic noise sits on a road tile")
+
+func _test_along_street_paths_stay_in_bounds(t) -> void:
+	var map := _map()
+	var extent := map.world_size()
+	for day in range(1, 15):
+		var consumed: Array[String] = []
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+			if plan.def.path_mode != EventDef.PathMode.ALONG_STREET:
+				continue
+			t.check(plan.path.size() == 2, "an along-street route has two waypoints")
+			# The route must not finish jammed against the boundary along the axis it
+			# travels: a fire engine that always stops at the wall leaves its fire there
+			# too. The perpendicular axis is wherever it was placed and is not our business.
+			var margin := float(CityMap.period() * Tuning.TILE_SIZE) * 0.5
+			var finish: Vector2 = plan.path[1]
+			var travel: Vector2 = plan.path[1] - plan.path[0]
+			var along_x := absf(travel.x) > absf(travel.y)
+			var at_end := finish.x if along_x else finish.y
+			var limit := extent.x if along_x else extent.y
+			t.check(at_end > margin and at_end < limit - margin,
+					"day %d: '%s' route ends inside the city along its travel axis"
+					% [day, plan.def.id])
+			for point in plan.path:
+				t.check(point.x >= 0.0 and point.y >= 0.0
+						and point.x <= extent.x and point.y <= extent.y,
+						"day %d: '%s' route stays inside the map" % [day, plan.def.id])
+			# The route runs along one axis, never diagonally across blocks.
+			var delta: Vector2 = plan.path[1] - plan.path[0]
+			t.check(is_zero_approx(delta.x) or is_zero_approx(delta.y),
+					"day %d: '%s' route follows a single corridor" % [day, plan.def.id])

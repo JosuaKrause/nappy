@@ -12,6 +12,8 @@ const HUD := preload("res://scenes/ui/hud.tscn")
 var _city: City
 var _player: Stroller
 var _baby: Baby
+var _follow_camera: Camera2D
+var _follow_id := ""
 
 func _ready() -> void:
 	GameState.start_run(_seed_override())
@@ -40,12 +42,14 @@ func _ready() -> void:
 
 	if "--overview" in OS.get_cmdline_user_args():
 		_make_overview_camera()
+	_setup_follow_camera()
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
 		add_child(screenshot)
 
 func _process(_delta: float) -> void:
+	_update_follow_camera()
 	if not _player or not _baby:
 		return
 	var tile := _city.map.world_to_tile(_player.global_position)
@@ -92,6 +96,27 @@ func _nearest_event_text() -> String:
 func _tile_name(type: GameEnums.TileType) -> String:
 	return GameEnums.TileType.keys()[type].to_lower()
 
+## Dev flag: `-- --follow <event id>` parks a camera on an event wherever it is. Needed for
+## anything that does not exist when the day starts — a mobile event mid-route, or the fire
+## a fire engine leaves behind when it stops.
+func _setup_follow_camera() -> void:
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--follow")
+	if index == -1 or index + 1 >= args.size():
+		return
+	_follow_id = args[index + 1]
+	_follow_camera = Camera2D.new()
+	add_child(_follow_camera)
+	_follow_camera.make_current()
+
+func _update_follow_camera() -> void:
+	if not _follow_camera:
+		return
+	for instance in _city.events.instances():
+		if instance.def.id == _follow_id:
+			_follow_camera.position = instance.global_position
+			return
+
 ## Dev flag: `-- --day N` starts on a later day, so an act's events can be looked at
 ## without playing up to them.
 func _day_override() -> int:
@@ -110,8 +135,9 @@ func _spawn_position() -> Vector2:
 	if index == -1 or index + 1 >= args.size():
 		return _city.map.home_world_position()
 
-	if args[index + 1] == "event":
-		return _first_event_position()
+	# `event` takes the first non-ambient event; `event:<id>` targets a specific one.
+	if args[index + 1].begins_with("event"):
+		return _first_event_position(args[index + 1].get_slice(":", 1))
 
 	var wanted: int = {
 		"park": GameEnums.TileType.PARK,
@@ -130,13 +156,29 @@ func _spawn_position() -> Vector2:
 	push_warning("no %s tile in this city" % args[index + 1])
 	return _city.map.home_world_position()
 
-## Just outside the first non-ambient event, facing it.
-func _first_event_position() -> Vector2:
+## Just outside a live event, on the nearest walkable tile — an offset straight down its
+## radius lands inside a block as often as not.
+func _first_event_position(wanted_id: String = "") -> Vector2:
 	for instance in _city.events.instances():
-		if instance.def.kind == GameEnums.EventKind.AMBIENT:
+		if wanted_id != "" and wanted_id != "event":
+			if instance.def.id != wanted_id:
+				continue
+		elif instance.def.kind == GameEnums.EventKind.AMBIENT:
 			continue
-		return instance.global_position + Vector2(0.0, instance.def.outer_radius * 0.6)
+		var wanted := instance.global_position \
+				+ Vector2(0.0, instance.def.outer_radius * 0.6)
+		return _nearest_walkable(wanted)
 	push_warning("no non-ambient events planned today")
+	return _city.map.home_world_position()
+
+func _nearest_walkable(near: Vector2) -> Vector2:
+	var start := _city.map.world_to_tile(near)
+	for radius in 12:
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				var tile := start + Vector2i(dx, dy)
+				if _city.map.is_walkable(tile):
+					return _city.map.tile_to_world(tile)
 	return _city.map.home_world_position()
 
 ## Dev flag: `-- --overview` frames the whole city at once, so a generation bug that only
