@@ -127,13 +127,25 @@ Each milestone is one git branch, merged to `main` when green.
 
 ## M6 — Day loop · `feature/day-loop`
 
-- [ ] Home tile: start, and return-with-sleeping-baby goal
-- [ ] Return phase after sleepiness hits 100
-- [ ] Day timer / dusk light shift
-- [ ] Win, cry-loss, timeout-loss, hard-fail-loss
-- [ ] Nerves, run end at 0
-- [ ] `day_summary.tscn` between days
-- [ ] Persist run state across days
+- [x] Home tile: start, and return-with-sleeping-baby goal
+- [x] Return phase after sleepiness hits 100, and reverting to walking if she is woken
+- [x] Day timer, HUD clock, and dusk as a `CanvasModulate` over the city canvas
+- [x] Win, cry-loss, timeout-loss, hard-fail-loss — each with its own text
+- [x] Nerves, run end at 0, ending selection
+- [x] `day_summary.tscn` between days, and the ending screen
+- [x] Run state persists across days in memory; the city is built once and reused
+- [x] `tests/test_day_loop.gd` (35 checks) — phases, all four outcomes, nerves, endings
+- [x] Dev flag: `--day-length N`
+- [ ] Save/continue a run to disk — M10
+
+### Notes
+
+- The tree is **paused** while the summary is up, so a day restart is just
+  `events.start_day()` + reposition + `baby.reset()`; the city is never rebuilt.
+- A day ends exactly once. `_end()` is a no-op after the first call, so a cry arriving on
+  the same frame as dusk cannot spend two nerves — there is a test for it.
+- The summary is reached from the timeout path in dev by `--day-length 10`. Winning needs
+  the player to actually walk, so it is covered by tests rather than by a screenshot.
 
 ## M7 — Acts II–IV · `feature/acts`
 

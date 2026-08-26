@@ -23,6 +23,7 @@ const TREES_PER_PARK := 10
 
 var map: CityMap
 var events: EventManager
+var _daylight: CanvasModulate
 
 func build(city_map: CityMap) -> void:
 	map = city_map
@@ -33,7 +34,17 @@ func build(city_map: CityMap) -> void:
 	events.name = "Events"
 	add_child(events)
 	events.setup(self, map)
+	_daylight = CanvasModulate.new()
+	_daylight.name = "Daylight"
+	add_child(_daylight)
+	set_daylight(1.0)
 	queue_redraw()
+
+## 1.0 at dawn, 0.0 at dusk. The day timer is shown as the light going, with the clock in
+## the HUD as the precise version for anyone who wants it.
+func set_daylight(fraction: float) -> void:
+	if _daylight:
+		_daylight.color = Palette.LIGHT_MIDDAY.lerp(Palette.LIGHT_DUSK, 1.0 - fraction)
 
 # ------------------------------------------------------------ WorldContext ---
 

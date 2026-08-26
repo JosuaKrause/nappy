@@ -6,16 +6,26 @@ extends Node2D
 const CITY := preload("res://scenes/world/city.tscn")
 const STROLLER := preload("res://scenes/player/stroller.tscn")
 const HUD := preload("res://scenes/ui/hud.tscn")
+const DAY_SUMMARY := preload("res://scenes/ui/day_summary.tscn")
 
 @onready var _status: Label = $CanvasLayer/Status
 
 var _city: City
 var _player: Stroller
 var _baby: Baby
+var _day: DayController
+var _summary: CanvasLayer
 var _follow_camera: Camera2D
 var _follow_id := ""
+## Dev spawn and meter overrides apply to the opening day only; every later day starts on
+## the doorstep with a fresh baby, like the game intends.
+var _first_day := true
+var _run_over := false
+var _ending_shown := false
 
 func _ready() -> void:
+	# Esc has to work even while the summary has the tree paused.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	GameState.start_run(_seed_override())
 	GameState.day = _day_override()
 
@@ -26,19 +36,23 @@ func _ready() -> void:
 	print("[Main] city generated in %d ms (seed %d)" % [
 		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
 
-	# The day is planned before the player exists, so --spawn event has something to find
-	# and so nothing spawns on top of her.
-	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots)
-	print("[Main] day %d planned %d events" % [GameState.day, _city.events.active_count()])
-
 	_player = STROLLER.instantiate()
-	_player.position = _spawn_position()
 	_city.add_entity(_player)
 	_player.set_camera_limits(Rect2(Vector2.ZERO, _city.map.world_size()))
-
 	_baby = _player.get_node("Baby")
-	_apply_meter_override()
+
 	add_child(HUD.instantiate())
+	_summary = DAY_SUMMARY.instantiate()
+	add_child(_summary)
+	_summary.continued.connect(_on_summary_continued)
+
+	_day = DayController.new()
+	_day.name = "Day"
+	add_child(_day)
+	_day.setup(_city.map, _player)
+	_day.day_finished.connect(_on_day_finished)
+
+	_start_day()
 
 	if "--overview" in OS.get_cmdline_user_args():
 		_make_overview_camera()
@@ -48,13 +62,49 @@ func _ready() -> void:
 	if screenshot:
 		add_child(screenshot)
 
+# --------------------------------------------------------------- the day loop ---
+
+func _start_day() -> void:
+	# Events are planned before the player is placed, so --spawn event has something to
+	# find and so nothing spawns on top of her.
+	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots)
+	_player.position = _spawn_position() if _first_day else _city.map.home_world_position()
+	_player.velocity = Vector2.ZERO
+	_baby.reset()
+	if _first_day:
+		_apply_meter_override()
+	_first_day = false
+
+	_day.start(_day_length())
+	EventBus.day_started.emit(GameState.day)
+	print("[Main] day %d (act %d): %d events, %.0fs" % [
+		GameState.day, GameState.current_act(),
+		_city.events.active_count(), _day.time_total])
+
+func _on_day_finished(result: GameEnums.DayResult) -> void:
+	var finished_day := GameState.day
+	_run_over = not GameState.finish_day(result)
+	_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves)
+
+func _on_summary_continued() -> void:
+	if not _run_over:
+		_summary.dismiss()
+		_start_day()
+		return
+	if not _ending_shown:
+		_ending_shown = true
+		_summary.show_ending(GameState.ending)
+
 func _process(_delta: float) -> void:
 	_update_follow_camera()
 	if not _player or not _baby:
 		return
+	_city.set_daylight(_day.fraction_remaining())
 	var tile := _city.map.world_to_tile(_player.global_position)
 	_status.text = "\n".join([
-		"seed  %d" % GameState.run_seed,
+		"seed  %d   day %d" % [GameState.run_seed, GameState.day],
+		"phase %s  %.0fs left" % [
+			GameEnums.DayPhase.keys()[_day.phase].to_lower(), _day.time_remaining],
 		"tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(_city.map.tile_at(tile))],
 		"calm  %s    alley  %s" % [
 			"yes" if _city.is_calm_zone(_player.global_position) else "no",
@@ -116,6 +166,15 @@ func _update_follow_camera() -> void:
 		if instance.def.id == _follow_id:
 			_follow_camera.position = instance.global_position
 			return
+
+## Dev flag: `-- --day-length N` compresses the day, so dusk and the timeout loss can be
+## looked at without sitting through five and a half minutes.
+func _day_length() -> float:
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--day-length")
+	if index == -1 or index + 1 >= args.size():
+		return Tuning.day_length(GameState.day)
+	return maxf(1.0, float(args[index + 1]))
 
 ## Dev flag: `-- --day N` starts on a later day, so an act's events can be looked at
 ## without playing up to them.
