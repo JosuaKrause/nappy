@@ -91,22 +91,57 @@ const STREET_WIDTH := 6
 const SIDEWALK_WIDTH := 2
 const CITY_BLOCKS := Vector2i(7, 7)
 
-const MIN_PARK_DISTRICTS := 3
-const MAX_PARK_DISTRICTS := 6
+const MIN_CALM_BLOCKS := 3
+const MAX_CALM_BLOCKS := 6
 ## Walking distance in tiles, not straight-line: the calm has to be earned.
 const MIN_HOME_TO_PARK_TILES := 30
 const PARK_SPOIL_CHANCE := 0.35
 
-## Per-district chance a block is split by a through-alley.
+## Per-purpose chance a block is split by a through-alley.
 const ALLEY_CHANCE := {
-	GameEnums.District.RESIDENTIAL: 0.25,
+	GameEnums.BlockPurpose.RESIDENTIAL: 0.25,
 	# Commercial blocks already have a plaza carved out; a second hole through the same
 	# lot leaves slivers of building and an alley that opens onto a square.
-	GameEnums.District.COMMERCIAL: 0.0,
-	GameEnums.District.INDUSTRIAL: 0.5,
-	GameEnums.District.CIVIC: 0.0,
-	GameEnums.District.PARK: 0.0,
+	GameEnums.BlockPurpose.COMMERCIAL: 0.0,
+	GameEnums.BlockPurpose.INDUSTRIAL: 0.5,
+	GameEnums.BlockPurpose.CIVIC: 0.0,
+	# A courtyard block has a court cut out of it already, and an alley through that court
+	# would open the one piece of calm that is supposed to be hidden.
+	GameEnums.BlockPurpose.COURTYARD: 0.0,
+	GameEnums.BlockPurpose.PARK: 0.0,
+	GameEnums.BlockPurpose.FOREST: 0.0,
+	GameEnums.BlockPurpose.QUIET_SQUARE: 0.0,
 }
+
+# ---------------------------------------------------- block purposes and arcs ---
+# Finding 7: more variety in areas, and a city that becomes a different city while you walk
+# around in it. Every block is generated with an arc — the ordered purposes it may pass
+# through — so the transitions are always coherent and the whole run can be checked at
+# generation instead of rescued day by day. See docs/CITY.md, "Block purposes".
+
+## Courtyards are cut into residential blocks rather than taking a block of their own.
+const COURTYARD_CHANCE := 0.35
+const MAX_COURTYARD_BLOCKS := 3
+const COURTYARD_SIZE_TILES := 4
+
+## The hard floor: this many blocks must still be calm on the last day. A day can only be
+## won on calm ground, so an arc set that takes all of it makes an unwinnable run rather
+## than a hard one. `CityGenerator.validate()` enforces it.
+const MIN_CALM_BLOCKS_AT_END := 2
+
+## Chance a calm block that *may* be taken is scheduled to be, and the earliest day it can
+## happen. Act III, when the vans start: the parks go at the same time the people do.
+const REQUISITION_CHANCE := 0.55
+const REQUISITION_FIRST_DAY := 8
+
+## A commercial block goes dark before anything else happens to it.
+const BOARDING_CHANCE := 0.5
+const BOARDING_FIRST_DAY := 8
+
+## Chance a built block's arc ends in ashes. Event-caused, so it only happens if something
+## actually burns there — most of these never fire, which is the point.
+const BURN_CHANCE := 0.45
+const BURN_FIRST_DAY := 3
 const ALLEY_WIDTH_TILES := 2
 
 ## Tiles per side of the plaza carved out of a commercial block.

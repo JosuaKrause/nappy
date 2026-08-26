@@ -20,7 +20,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 1986 headless checks, ~60s
+./tools/test.sh               # 10361 headless checks, ~90s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ```
 
@@ -140,8 +140,17 @@ adding a city-wide "background noise" number, that is the thing this rule exists
 questions: `is_calm_zone`, `is_alley`, `total_excitement_at`. Adding an event type must never
 require touching the meters.
 
-**The `CityMap` is immutable for the run.** Per-day closures are *events* with an
-`obstructs_radius`, not tile edits. This is what keeps the map something the player can learn.
+**The lattice is fixed; what a block *is* is not.** *(M15 replaced the old "the `CityMap`
+is immutable for the run" rule with this one.)* The street lattice, the block boundaries,
+the carves and the building footprints are all fixed for the run. What may change is a
+block's **purpose** — a park can be requisitioned, a commercial street can go dark, a
+residential block can burn — and only ever along the arc `CityGenerator` planned for it up
+front. The geometry the player learns stays true; the meaning of it does not.
+
+The hard part of that rule is the half that is still absolute: **no purpose change may move
+a walkable tile.** `tests/test_blocks.gd` pushes every block to the end of its arc across 40
+seeds and asserts the walkable set is identical tile for tile. Per-day *closures* remain
+events with an `obstructs_radius`, not tile edits.
 
 **The telegraph fairness contract.** A player who starts walking away the instant an event
 becomes visible must get clear before it hurts. `Tuning.validate_event()` asserts it on load
@@ -176,7 +185,14 @@ under the walking decay; a fast mover must telegraph across its whole radius). I
 fails, decide whether the relationship or the number is wrong — do not just update the test.
 
 **Add a tile type** — `GameEnums.TileType`, then `src/city/tile.gd` (walkable / calm / alley /
-road / colour), then wherever the generator should emit it.
+road / colour), then an SVG in `assets/tiles/`, then `assets/ground_tileset.tres` **and**
+`src/city/ground_tiles.gd` in the same order (the source ids are positional and mirrored by
+hand), then wherever the generator should emit it.
+
+**Add a block purpose** — `GameEnums.BlockPurpose`, the ground it puts down in
+`CityMap.open_tile_for`, `Tile.is_calm` if it is calm ground, and the arcs that may reach it
+in `CityGenerator._plan_arcs`. If it is calm, check `MIN_CALM_BLOCKS_AT_END` still holds —
+`validate()` will tell you, on every seed, if it does not.
 
 **Add a resistance step** — `src/resistance/resistance_steps.gd`, via the `_step()` factory.
 

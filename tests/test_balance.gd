@@ -126,7 +126,7 @@ func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t) -> void:
 func _quietest_park() -> Vector2:
 	var best := _city.map.home_world_position()
 	var quietest := INF
-	for block in _city.map.park_blocks:
+	for block in _city.map.calm_blocks:
 		var centre := _city.map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
 		var here := _city.total_excitement_at(centre)
 		if here < quietest:

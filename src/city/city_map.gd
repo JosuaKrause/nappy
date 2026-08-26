@@ -13,14 +13,20 @@ extends RefCounted
 
 var size: Vector2i
 var tiles: PackedByteArray
-## Block coordinate -> GameEnums.District.
-var districts := {}
+## Block coordinate -> BlockPlan. The arc each block may travel, fixed at generation.
+var block_plans := {}
+## Block coordinate -> BlockLayout. The carves, also fixed at generation.
+var block_layouts := {}
 var building_rects: Array[Rect2i] = []
-var park_blocks: Array[Vector2i] = []
-## Tile rect of each playground, one per park block.
+## Blocks that are calm ground *right now*. Recomputed by `repaint()`, because which ground
+## is calm is the thing that changes over a run.
+var calm_blocks: Array[Vector2i] = []
+## Tile rect of each playground currently in the city. A requisitioned park has none.
 var playgrounds: Array[Rect2i] = []
+var home_block := Vector2i.ZERO
 var alley_rects: Array[Rect2i] = []
 var square_rects: Array[Rect2i] = []
+var courtyard_rects: Array[Rect2i] = []
 var home_rect := Rect2i()
 var seed_used := 0
 
@@ -109,6 +115,87 @@ func doorstep_world_position() -> Vector2:
 		return (tile_to_world(tile) + tile_to_world(beside)) * 0.5
 	return tile_to_world(tile)
 
+# ------------------------------------------------------------ block purpose ---
+
+## What a block was generated as. Fixed for the run — building heights, alley chances and
+## the resistance's placements all key off this rather than off today's purpose.
+func starting_purpose(block: Vector2i) -> GameEnums.BlockPurpose:
+	var plan: BlockPlan = block_plans.get(block)
+	return plan.starting_purpose() if plan else GameEnums.BlockPurpose.RESIDENTIAL
+
+## The block nearest a world position. Events happen on streets, between blocks, so "which
+## block did this happen to" is nearest-centre rather than containment.
+func block_at(world_position: Vector2) -> Vector2i:
+	var best := Vector2i.ZERO
+	var closest := INF
+	for y in Tuning.CITY_BLOCKS.y:
+		for x in Tuning.CITY_BLOCKS.x:
+			var block := Vector2i(x, y)
+			var centre := tile_rect_to_world(block_rect(block)).get_center()
+			var distance := centre.distance_squared_to(world_position)
+			if distance < closest:
+				closest = distance
+				best = block
+	return best
+
+## Repaints every block interior for the purposes `state` currently holds, and re-derives
+## the things that follow from them.
+##
+## This is the change M15 makes to the old "the CityMap is immutable for the run" rule. The
+## street lattice, the block boundaries, the carves and the building footprints are all
+## still fixed — this only ever swaps the *ground* inside a block's open rect, so no repaint
+## can disconnect the city or make a wall appear where a route used to be. What changes is
+## what a place is worth walking to.
+func repaint(state: CityState) -> void:
+	for block: Vector2i in block_plans:
+		_repaint_block(block, state.purpose_of(block_plans, block))
+	# The home notch is carved out of a block interior, so it has to go back on top.
+	if home_rect.size != Vector2i.ZERO:
+		fill_rect(home_rect, GameEnums.TileType.HOME)
+	_tiles_by_type.clear()
+	_recompute_calm(state)
+
+func _repaint_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
+	var layout: BlockLayout = block_layouts.get(block)
+	if not layout:
+		return
+	fill_rect(block_rect(block), GameEnums.TileType.BUILDING)
+	if BlockLayout.has(layout.open_rect):
+		fill_rect(layout.open_rect, open_tile_for(purpose))
+	if purpose == GameEnums.BlockPurpose.PARK and BlockLayout.has(layout.playground):
+		fill_rect(layout.playground, GameEnums.TileType.PLAYGROUND)
+	if BlockLayout.has(layout.square):
+		fill_rect(layout.square, GameEnums.TileType.SQUARE)
+	if BlockLayout.has(layout.alley):
+		fill_rect(layout.alley, GameEnums.TileType.ALLEY)
+	if BlockLayout.has(layout.passage):
+		fill_rect(layout.passage, GameEnums.TileType.ALLEY)
+
+## The ground a purpose puts in its open rect. Everything degraded lands on `SPOILED`,
+## which is the whole idea: the same ground, no longer worth walking to.
+static func open_tile_for(purpose: GameEnums.BlockPurpose) -> GameEnums.TileType:
+	match purpose:
+		GameEnums.BlockPurpose.PARK:
+			return GameEnums.TileType.PARK
+		GameEnums.BlockPurpose.FOREST:
+			return GameEnums.TileType.FOREST
+		GameEnums.BlockPurpose.QUIET_SQUARE:
+			return GameEnums.TileType.QUIET_SQUARE
+		GameEnums.BlockPurpose.COURTYARD:
+			return GameEnums.TileType.COURTYARD
+		_:
+			return GameEnums.TileType.SPOILED
+
+func _recompute_calm(state: CityState) -> void:
+	calm_blocks = state.calm_blocks(block_plans)
+	playgrounds.clear()
+	for block in calm_blocks:
+		if state.purpose_of(block_plans, block) != GameEnums.BlockPurpose.PARK:
+			continue
+		var layout: BlockLayout = block_layouts.get(block)
+		if layout and BlockLayout.has(layout.playground):
+			playgrounds.append(layout.playground)
+
 # --------------------------------------------------------------- traversal ---
 
 const _NEIGHBOURS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
@@ -151,16 +238,20 @@ func count_walkable() -> int:
 			total += 1
 	return total
 
-## Every tile belonging to any park block.
-func park_tiles() -> Array[Vector2i]:
+## Every calm tile in the city right now. Since M14 this is the only ground a day can be
+## won on, so it is what "how hard is today" actually means.
+func calm_tiles() -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
-	for block in park_blocks:
-		result.append_array(rect_tiles(block_rect(block)))
+	for y in size.y:
+		for x in size.x:
+			var tile := Vector2i(x, y)
+			if Tile.is_calm(tile_at(tile)):
+				result.append(tile)
 	return result
 
-## Shortest walking distance from the home to any park tile, or -1 if unreachable.
-func home_to_nearest_park() -> int:
-	var distances := walk_distances_from(park_tiles())
+## Shortest walking distance from the home to any calm tile, or -1 if unreachable.
+func home_to_nearest_calm() -> int:
+	var distances := walk_distances_from(calm_tiles())
 	var best := -1
 	for tile in rect_tiles(home_rect):
 		if distances.has(tile):
@@ -186,11 +277,13 @@ func perimeter_tiles(block: Vector2i) -> Array[Vector2i]:
 				found.append(tile)
 	return found
 
-## Every walkable tile in or around the blocks of a district.
-func district_tiles(district: GameEnums.District) -> Array[Vector2i]:
+## Every walkable tile in or around the blocks that *started* as this purpose. Generation-
+## time identity, not today's: the resistance's "a civic block" means the one that was built
+## as a ministry, whatever has since happened to it.
+func purpose_tiles(purpose: GameEnums.BlockPurpose) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	for block in districts:
-		if districts[block] != district:
+	for block: Vector2i in block_plans:
+		if starting_purpose(block) != purpose:
 			continue
 		for tile in rect_tiles(block_rect(block)):
 			if is_walkable(tile):

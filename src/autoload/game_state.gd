@@ -21,6 +21,11 @@ var failed_resistance_steps: Array[int] = []
 ## never repaired — the city remembers, which is most of how the escalation is told.
 var scars: Array[Dictionary] = []
 
+## Where each block currently is along its arc. Run-scoped, like everything else here: the
+## arcs themselves belong to the CityMap and never change, this is only how far along them
+## the run has got. See docs/CITY.md, "Block purposes".
+var city_state := CityState.new()
+
 ## Whether the day-14 sabotage actually went through. Reaching RESISTANCE_GOAL earns the
 ## chance at the good ending; this is doing it.
 var sabotage_done := false
@@ -38,6 +43,7 @@ func start_run(seed_value: int = 0) -> void:
 	completed_resistance_steps.clear()
 	failed_resistance_steps.clear()
 	scars.clear()
+	city_state.reset()
 	sabotage_done = false
 	print("[GameState] run started, seed=%d" % run_seed)
 

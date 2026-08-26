@@ -80,6 +80,10 @@ func _start_day() -> void:
 
 	# Events and the contact are placed before the player, so --spawn has something to find
 	# and so nothing spawns on top of her.
+	# The city becomes today's city before anything is placed in it: the scheduler has to
+	# see the parks that are still parks, not yesterday's.
+	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
+	_city.start_day(GameState.city_state)
 	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots)
 	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"))
 	_city.set_act(GameState.current_act())
@@ -95,9 +99,23 @@ func _start_day() -> void:
 		_apply_meter_override()
 	_first_day = false
 
-	print("[Main] day %d (act %d): %d events, %.0fs" % [
-		GameState.day, GameState.current_act(),
-		_city.events.active_count(), _day.time_total])
+	print("[Main] day %d (act %d): %d events, %d crowd, %.0fs%s" % [
+		GameState.day, GameState.current_act(), _city.events.active_count(),
+		_city.crowd.agent_count(), _day.time_total, _calm_summary()])
+
+## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day
+## now that a day can only be won on calm ground.
+func _calm_summary() -> String:
+	var counts := {}
+	for block in _city.map.calm_blocks:
+		var name: String = GameEnums.BlockPurpose.keys()[
+			GameState.city_state.purpose_of(_city.map.block_plans, block)].to_lower()
+		counts[name] = counts.get(name, 0) + 1
+	var parts: Array[String] = []
+	for name: String in counts:
+		parts.append("%d %s" % [counts[name], name])
+	parts.sort()
+	return " | calm: " + (", ".join(parts) if not parts.is_empty() else "none")
 
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var finished_day := GameState.day

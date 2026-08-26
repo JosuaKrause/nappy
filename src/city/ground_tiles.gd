@@ -26,6 +26,10 @@ const SAND := 13
 const ALLEY := 14
 const PLAZA := 15
 const STOOP := 16
+const FOREST := 17
+const QUIET_SQUARE := 18
+const COURTYARD := 19
+const SPOILED := 20
 
 ## Tileset source id for a cell, or -1 where no ground should be drawn at all.
 static func source_for(map: CityMap, tile: Vector2i) -> int:
@@ -48,6 +52,14 @@ static func source_for(map: CityMap, tile: Vector2i) -> int:
 			return PLAZA
 		GameEnums.TileType.HOME:
 			return STOOP
+		GameEnums.TileType.FOREST:
+			return FOREST
+		GameEnums.TileType.QUIET_SQUARE:
+			return QUIET_SQUARE
+		GameEnums.TileType.COURTYARD:
+			return COURTYARD
+		GameEnums.TileType.SPOILED:
+			return SPOILED
 		_:
 			return -1
 

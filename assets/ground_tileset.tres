@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" load_steps=35 format=3]
+[gd_resource type="TileSet" load_steps=43 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/tiles/road.svg" id="0_road"]
 [ext_resource type="Texture2D" path="res://assets/tiles/road_line_e.svg" id="1_road_line_e"]
@@ -17,6 +17,10 @@
 [ext_resource type="Texture2D" path="res://assets/tiles/alley.svg" id="14_alley"]
 [ext_resource type="Texture2D" path="res://assets/tiles/plaza.svg" id="15_plaza"]
 [ext_resource type="Texture2D" path="res://assets/tiles/stoop.svg" id="16_stoop"]
+[ext_resource type="Texture2D" path="res://assets/tiles/forest.svg" id="17_forest"]
+[ext_resource type="Texture2D" path="res://assets/tiles/quiet_square.svg" id="18_quiet_square"]
+[ext_resource type="Texture2D" path="res://assets/tiles/courtyard.svg" id="19_courtyard"]
+[ext_resource type="Texture2D" path="res://assets/tiles/spoiled.svg" id="20_spoiled"]
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road"]
 texture = ExtResource("0_road")
@@ -103,6 +107,26 @@ texture = ExtResource("16_stoop")
 texture_region_size = Vector2i(32, 32)
 0:0/0 = 0
 
+[sub_resource type="TileSetAtlasSource" id="atlas_forest"]
+texture = ExtResource("17_forest")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_quiet_square"]
+texture = ExtResource("18_quiet_square")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_courtyard"]
+texture = ExtResource("19_courtyard")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_spoiled"]
+texture = ExtResource("20_spoiled")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
 [resource]
 tile_size = Vector2i(32, 32)
 sources/0 = SubResource("atlas_road")
@@ -122,3 +146,7 @@ sources/13 = SubResource("atlas_sand")
 sources/14 = SubResource("atlas_alley")
 sources/15 = SubResource("atlas_plaza")
 sources/16 = SubResource("atlas_stoop")
+sources/17 = SubResource("atlas_forest")
+sources/18 = SubResource("atlas_quiet_square")
+sources/19 = SubResource("atlas_courtyard")
+sources/20 = SubResource("atlas_spoiled")

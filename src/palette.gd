@@ -44,6 +44,11 @@ const ALLEY_FLOOR := Color("3c3a42")
 const SQUARE_STONE := Color("9a9184")
 const HOME_STOOP := Color("b8836a")
 const SAND := Color("cbb083")
+const FOREST_FLOOR := Color("4d6b45")
+const QUIET_STONE := Color("7f8a86")
+const COURTYARD_STONE := Color("9b9384")
+## What calm ground looks like once it has been taken or burnt: churned, colourless.
+const SPOILED_GROUND := Color("6b6357")
 
 # ------------------------------------------------------------------ events ---
 
@@ -73,6 +78,11 @@ static func building_roof(variant: int) -> Color:
 ## The visible front face is the roof colour in shade.
 static func building_wall(variant: int) -> Color:
 	return building_roof(variant).darkened(0.42)
+
+## A burnt-out block keeps its own colour underneath, drained and darkened, so the corner is
+## recognisably the corner it was — which is the whole point of a scar.
+static func burnt(colour: Color) -> Color:
+	return colour.lerp(Color("2e2a2c"), 0.72)
 
 # --------------------------------------------------------------- the crowd ---
 # Walkers and cars are drawn as a near-white body plus a full-colour trim overlay, the same
