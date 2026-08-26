@@ -88,8 +88,14 @@ func _process(delta: float) -> void:
 func _on_contact_completed(step_index: int) -> void:
 	GameState.complete_resistance_step(step_index)
 	var step := ResistanceSteps.by_index(step_index)
-	if step and step.needs_goal:
-		GameState.sabotage_done = true
+	if not (step and step.needs_goal):
+		return
+
+	GameState.sabotage_done = true
+	# The reward for the whole subquest is quiet. Whatever is left of the last day is
+	# walked without the floor the masts have been holding under the meter since day 5.
+	if _city and _city.events and _city.events.silence_city_wide() > 0:
+		EventBus.city_went_quiet.emit()
 
 func _clear() -> void:
 	if _contact and is_instance_valid(_contact):

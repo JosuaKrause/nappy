@@ -57,6 +57,18 @@ func spawn_extra(def: EventDef, at: Vector2) -> EventInstance:
 	_instances.append(instance)
 	return instance
 
+## Retires every city-wide source. The loudspeakers cut out mid-sentence, and for the
+## first time since the masts went up on day 5 there is no floor under the meter — the
+## good ending's reward is that the last walk home is the easiest in the game.
+## Returns how many were silenced.
+func silence_city_wide() -> int:
+	var silenced := 0
+	for instance in _instances:
+		if instance.def.city_wide and not instance.is_finished:
+			instance._finish()
+			silenced += 1
+	return silenced
+
 func active_count() -> int:
 	return _instances.size()
 

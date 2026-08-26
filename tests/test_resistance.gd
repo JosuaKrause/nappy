@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_placement_is_deterministic(t)
 	_test_the_alley_roulette_is_seeded(t)
 	_test_a_timed_step_expires(t)
+	_test_the_sabotage_silences_the_city(t)
 
 # ---------------------------------------------------------------- step table ---
 
@@ -266,6 +267,45 @@ func _test_the_alley_roulette_is_seeded(t) -> void:
 		t.check(trapped_days < Tuning.RUN_LENGTH_DAYS - 7,
 				"not every alley is a trap, or there would be no gamble"))
 
+## The whole subquest pays out in quiet. On the last walk home the masts stop, and the
+## floor they have been holding under the meter since day 5 goes with them.
+func _test_the_sabotage_silences_the_city(t) -> void:
+	_with_clean_run(func() -> void:
+		GameState.completed_resistance_steps = [1, 2, 3, 4]
+		GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+		GameState.sabotage_done = false
+		t.check(GameState.sabotage_available(), "the finale is on offer")
+
+		# A live mast, the way day 5 onwards leaves one.
+		var mast := _city.events.spawn_extra(EventCatalogue.by_id("loudspeaker"),
+				Vector2(400.0, 400.0))
+		for i in int(round((mast.def.telegraph_time + 0.2) / STEP)):
+			mast._process(STEP)
+		var somewhere := Vector2(9000.0, 9000.0)
+		t.check(mast.contribution_at(somewhere) > 0.0,
+				"the mast reaches the far side of the city while it is on")
+
+		var quiet: Array[bool] = []
+		var handler := func() -> void: quiet.append(true)
+		EventBus.city_went_quiet.connect(handler)
+
+		var director := _director(t)
+		director.start_day(Tuning.RUN_LENGTH_DAYS,
+				_rng(Tuning.RUN_LENGTH_DAYS, "resistance"), 300.0)
+		t.check(director.current_step() != null, "the last night has a contact")
+		director._on_contact_completed(6)
+
+		t.check(GameState.sabotage_done, "completing it does the sabotage")
+		t.check(quiet.size() == 1, "and the city goes quiet, once")
+		t.close_to(mast.contribution_at(somewhere), 0.0,
+				"the mast contributes nothing afterwards")
+		t.close_to(_city.events.total_excitement_at(somewhere), 0.0,
+				"and there is no floor left anywhere")
+
+		EventBus.city_went_quiet.disconnect(handler)
+		director.free())
+	_city.free()
+
 func _has_robbery_at(where: Vector2) -> bool:
 	if where == Vector2.INF:
 		return false
@@ -295,4 +335,3 @@ func _test_a_timed_step_expires(t) -> void:
 		t.check(director.current_step() == null, "past the deadline it is gone")
 		t.check(4 in GameState.failed_resistance_steps, "and recorded as failed for the run")
 		director.free())
-	_city.free()
