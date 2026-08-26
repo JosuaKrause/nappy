@@ -201,10 +201,10 @@ Each milestone is one git branch, merged to `main` when green.
 - [x] Neutral ending (day 14, sabotage not done)
 - [x] Good ending (goal reached **and** day-14 sabotage completed)
 - [x] Epilogue screens
-- [ ] The good ending's mechanical reward: silence. On the last walk home after the
-      sabotage, the ambient excitement floor should drop to zero for the first time since
-      day 5 — the loudspeakers cut out mid-sentence. Needs the loudspeaker instance to be
-      retired when `sabotage_done` flips.
+- [x] The good ending's mechanical reward: **silence**. Completing the day-14 sabotage
+      retires every city-wide source, so the last walk home is made without the floor the
+      masts have held under the meter since day 5 — the easiest conditions in the game,
+      and the only moment the HUD says anything out loud.
 
 ## M10 — Polish · `feature/polish`
 

@@ -16,6 +16,8 @@ var _baby: Baby
 var _contact_step := 0
 var _hold := 0.0
 var _seen_for := 0.0
+var _announcement := ""
+var _announcement_for := 0.0
 
 const _STATE_TEXT := {
 	GameEnums.BabyState.AWAKE: "awake",
@@ -43,6 +45,7 @@ func _ready() -> void:
 	EventBus.resistance_contact_available.connect(_on_contact_available)
 	EventBus.resistance_hold_changed.connect(_on_hold_changed)
 	EventBus.resistance_seen.connect(_on_seen)
+	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.day_started.connect(func(_d: int) -> void:
 		_contact_step = 0
 		_hold = 0.0
@@ -62,6 +65,8 @@ func _process(delta: float) -> void:
 	if _seen_for > 0.0:
 		_seen_for = maxf(0.0, _seen_for - delta)
 		_refresh_resistance()
+	if _announcement_for > 0.0:
+		_announcement_for = maxf(0.0, _announcement_for - delta)
 
 func _on_sleepiness_changed(value: float) -> void:
 	_sleepiness.value = value
@@ -74,6 +79,9 @@ func _on_baby_state_changed(_state: GameEnums.BabyState) -> void:
 
 func _refresh_state() -> void:
 	if not _baby:
+		return
+	if _announcement_for > 0.0:
+		_state_label.text = _announcement
 		return
 	var text: String = _STATE_TEXT.get(_baby.state, "?")
 	var reason := _baby.stall_reason()
@@ -120,6 +128,12 @@ func _refresh_resistance() -> void:
 		if step:
 			line += "   somewhere out there: %s" % step.title.to_lower()
 	_resistance_label.text = line
+
+## The one moment the game says something out loud.
+func _on_city_went_quiet() -> void:
+	_announcement = "The loudspeakers cut out mid-sentence."
+	_announcement_for = 7.0
+	_refresh_state()
 
 func _refresh_header() -> void:
 	_header.text = "day %d / %d      act %d      nerves %s" % [

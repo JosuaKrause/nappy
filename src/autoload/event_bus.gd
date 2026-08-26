@@ -38,3 +38,5 @@ signal resistance_contact_available(step: int)
 signal resistance_hold_changed(progress: float)
 ## A patrol came past mid-handover.
 signal resistance_seen()
+## The sabotage went through and the masts went quiet.
+signal city_went_quiet()
