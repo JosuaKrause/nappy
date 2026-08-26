@@ -35,14 +35,27 @@ Sources:
 | Standing in an alley | `+3.0` per second (slow, constant dread) |
 | Sudden events (cat dash) | one-shot impulse on trigger |
 
-Decay (applies whenever total incoming stimulus is below the decay rate):
+Excitement moves at the **net** rate, `incoming − decay`:
 
 | Player state | Decay per second |
 | --- | --- |
-| Idle | `−6.0` |
-| Walking | `−3.5` |
-| Running | `−0.5` |
+| Idle | `6.0` |
+| Walking | `3.5` |
+| Running | `0.5` |
 | In a calm zone | decay × `1.6` |
+
+Netting rather than "decay only when nothing is happening" is what makes the decay column
+matter. Two consequences fall out of it, and both are wanted:
+
+- **Standing still actively fights a loud event**, rather than merely not helping. Stopping
+  is a real counterplay, paid for in drained sleepiness.
+- **Sprinting past an event is far worse than walking past it** — running contributes
+  excitement *and* drops decay to almost nothing, so the same event hits roughly three
+  times as hard. Panic is punished twice.
+
+It also sets a floor on what counts as an event: a source weaker than `3.5` cannot move
+the meter on a walking player at all. That is deliberate — it is what lets an empty alley
+apply constant *pressure* (`+3.0`) without ever being a threat on its own.
 
 At `excitement = 100` → **crying** → day lost.
 
