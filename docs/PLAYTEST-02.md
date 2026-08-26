@@ -347,20 +347,54 @@ will be judged against.
 
 **Two consequences worth being explicit about:**
 
-**The resistance stops being optional flavour and becomes the difficulty selector.** That
-sharpens an open question this project has carried since M8 and deliberately left open: *how
-visible should the resistance be to a player ignoring it?* Today it is a chalk mark on an
-alley wall and one terse HUD line, and `CLAUDE.md` records the risk plainly — a player may
-finish a run never knowing the good ending existed. That was an acceptable risk when the
-resistance was a secret. It is a worse one when the resistance is how a player asks for a
-harder game: a player who never finds the dial is locked to the easiest setting without ever
-being told there was one. Not resolved here; flagged as having got more expensive.
+**The resistance stops being optional flavour and becomes the difficulty selector — and that
+is fine.** This project has carried an open question since M8: *how visible should the
+resistance be to a player ignoring it?* It is now **resolved, and resolved by leaving it
+alone.** A player who wants to be challenged explores, and exploring is exactly what finds a
+chalk mark on an alley wall. The dial does not need advertising, because wanting the dial and
+finding the dial are the same behaviour. No quest log, no marker, no HUD nag.
+
+What it *does* need is to not depend on a mechanic nothing else teaches — see below.
 
 **A harder day one meets a nerve economy nobody has tested.** Three nerves, fourteen days, a
 lost day advances the calendar rather than repeating it. If act I genuinely threatens, early
 losses become normal, and the run may be decided before act III arrives. That is a question
 for telemetry rather than for argument — *where do nerves actually go?* — and it is a field
 M23 should carry.
+
+### Teach the controls; do not teach a key that exists once
+
+Two halves of the same principle, and they pull in opposite directions, which is why they are
+worth stating together.
+
+**Delete the interact key.** The resistance contact is held with `E`, and `E` is used in
+**exactly one place in the entire game** — `contact_point.gd`, one line. A key that appears
+once is a key that has to be taught, and teaching it costs more than it is worth. Make the
+hold **automatic on proximity**: standing near the mark is the hold.
+
+Nothing is lost by that, and this is worth checking rather than assuming. The mechanic's cost
+was never the keypress — it was *standing still in an alley while a patrol might come past*,
+with progress decaying the moment you walk away. Proximity carries all of that unchanged. The
+only thing that goes is a control to explain.
+
+It also *helps* the decision above: a player who wanders down an alley and sees a bar start
+filling has discovered the difficulty dial by walking near it. With `E`, the same player walks
+past a chalk mark and learns nothing.
+
+**But the main controls do need teaching**, because there are two and one of them is
+non-obvious:
+
+- **Arrows/WASD to walk** — shown briefly at the start of day 1.
+- **Shift to run** — shown after the first, once moving is understood.
+
+And then a **scripted day-1-only event that requires a short run**, after the first block.
+Being made to use it once, in a safe place, is worth more than any amount of on-screen text.
+
+The dependency is sharp and easy to miss: **that event cannot be built before M25.** Running
+is currently the wrong move against every event in the catalogue (see finding 7), so a
+tutorial that forces a run would be teaching the player a move that is never correct again —
+which is worse than not teaching it. M25 is what makes running the right answer to something;
+the tutorial teaches that answer.
 
 ---
 
@@ -432,34 +466,74 @@ answer "is day one too hard" without anyone having to have an opinion about it.
 
 #### What M23 records
 
-One file per run, written locally, plus a summary a developer reads instead of a transcript.
-Sampled state at a low rate (a few times a second) and discrete entries for things that
-*happen*. The rule this list is built to: **every field answers a question that is open in
-this document.** If a field does not, it does not go in.
+**The shape is a chronological log, not a metrics dump.** One plain-text file per run, read
+top to bottom, in which what happened and *in what order* is reconstructable by a human with
+no tool. A page of aggregates says a day was hard; a log says the closure sent them north,
+the convoy came through at 0:48, they ran, and the park was already spoiled when they got
+there. Only the second one explains anything.
 
-| Recorded | The question it answers |
+Something like:
+
+```
+day 3  act 1  run seed 8812  city seed 8813  length 180.0s
+   0.0  start    doorstep (52,88), facing north
+   0.0  roll     one-shot fire_truck: 0.42 >= 0.33  -> not today
+   0.0  plan     closed: roadworks h(2,5) | events: busker(38,44) dog_walker(41,52) x4
+   0.0  plan     calm: park(3,2) forest(5,6) courtyard(1,4)
+  11.3  closure  saw roadworks h(2,5) from junction (3,5)
+  12.9  turn     doubled back east
+  31.6  near     busker 62px   exc 14.2 rising
+  44.8  calm     entered park (3,2)
+  48.1  freeze   sleep frozen, exc 36.4  (playground 118px)
+  62.0  run      started running, 1.8s, nearest dog_walker 91px, exc 21 -> 34
+  71.2  asleep   sleepiness 100, exc 18, elapsed 71.2s
+  96.4  home     WON, 83.6s to spare
+```
+
+**Record what cannot be recovered from the code**, and nothing else. The run is deterministic
+from a seed, so most of what the game decides is already recomputable and recording it would
+be noise:
+
+| Record | Do not record |
 | --- | --- |
-| **Run header** — run seed, the seed the generator actually used, day reached, ending, nerves left | Lets any trace be replayed. `generate()` retries with `seed + 1`, so the run seed alone does not reproduce a city |
-| **Per day** — day, act, length, result, time taken, failure reason | Where in a run does it go wrong, and in which act |
-| **Time budget** — seconds idle / walking / running; on calm ground; in an alley; on pavement vs in the road | "Did the player idle somewhere." Also whether running ever happens at all — the table under finding 7 predicts it does not |
-| **Meter trace** — sleepiness and excitement sampled through the day; peak excitement; how long sleep was *frozen* above the calm threshold, and how many times | Whether a day was lost to noise or to the clock, which the result code alone does not say. Freezing is the invisible failure |
-| **Route shape** — distinct streets walked, streets revisited, doublings-back, total distance against net displacement | "Did the player walk in circles." The distance-to-displacement ratio is the number that says so |
-| **Crossings** — every time the player crossed a carriageway, where, and whether at a zebra | "Did the player actually have to cross the street." Judges finding 3 directly, and M21's main-roads-are-barriers later |
-| **Proximity** — for each entity that came within its outer radius: what it was (event id, or crowd walker/car), closest approach, seconds inside the outer and inner bands | "How many entities were closeby and which." Turns the cost table under finding 7 from arithmetic into what actually happened to a player |
-| **Run bursts** — when the player ran, for how long, what was within reach when they started, and what excitement did during it | "Did the player have to run to get away." Also whether running *helped*, which today it never should |
-| **Calm zone used** — which block was settled in, how long it took to reach, how long they stayed, and whether it was the same one as yesterday | "Did the player go to the same park every day." Also the field **M24 cannot be built without** |
-| **Closures met** — barriers that came into view, and how many changed the player's direction | Whether M16's closures are a decision or scenery, which is the thing the route bias was aimed at |
-| **Where the nerves went** — for each loss: the day, the act, the failure, and what was nearby at the time | Decisions 9 and 11. Answers "is day one too hard" without anyone needing an opinion. Also the untested nerve economy: three nerves over fourteen days, with a lost day advancing the calendar |
-| **Resistance** — step offered, attempted, completed, failed, and whether the player ever went near a contact | Decision 10 makes the resistance the difficulty dial, so "did the player ever find the dial" stops being a curiosity |
+| **The seed the generator actually used.** `generate()` retries with `seed + 1`, so the run seed alone does not reproduce a city | The city layout, block purposes, building rects — all recomputable from that seed |
+| **Random outcomes that branch the run**: a one-shot that fired or did not, with the roll and the threshold; which block arc advanced and what caused it; the alley trap roll; which calm zone got spoiled | The falloff curve, meter rates, event intensities and radii — they are in `Tuning` and the catalogue |
+| **What the player did, in order**: where they went, when they turned back, when they ran, when they crossed a road, when they stopped | Derived aggregates like the circling ratio or total distance — computable from the trace, and a reading aid at best |
+| **What the world did to them**: what came within range and how close, when sleep froze and what was near when it did, which closure they saw and whether it changed their direction | Which tiles are calm, which streets exist — recomputable |
+| **The outcome and its cause**: result, elapsed, margin, what was nearby at the moment of a loss, which nerve went and on which day | — |
 
-Two constraints on the implementation, both non-negotiable:
+Random outcomes are the important half of that, and the reason is specific to this project:
+rolls that depend on **run history** — a one-shot already consumed, a fire that only burns a
+block because something burned there, a scar that exists because of what the player did — are
+not recomputable from a seed at all without replaying the whole run with identical input. They
+are the story of the run and they have to be written down as they happen.
+
+Each entry still has to earn its place: **every line answers a question that is open in this
+document.** The questions, and the entries that answer them:
+
+| Question | Answered by |
+| --- | --- |
+| Is day one too hard? *(decisions 9, 11)* | `start` / `asleep` / `home` lines with elapsed and margin, and on a loss what was nearby at the moment it happened. Plus which nerve went, on which day — the nerve economy has never been tested against a game that bites early |
+| Did the player idle, or walk in circles? | `turn` entries for doubling back, and the position trace. The circling ratio is computed *when reading*, not stored |
+| How many entities were nearby, and which? | `near` entries: what it was, how close, and what excitement was doing. Turns the cost table under finding 7 from arithmetic into what happened to a person |
+| Did the player have to cross the street? | `cross` entries — where, and whether at a zebra. Judges finding 3, and M21's main-roads-as-barriers later |
+| Did the player have to run — and did it help? | `run` entries: duration, what was in reach when it started, excitement before and after. Today the answer should always be "it made things worse" |
+| Same park every day? | `calm` entries naming the block. Also the one thing **M24 cannot be built without** |
+| Was a day lost to noise or to the clock? | `freeze` entries — when sleep froze and what was near. Freezing is the invisible failure; the result code alone never says which it was |
+| Are M16's closures a decision or scenery? | `closure` entries: seen from where, and whether the player then changed direction |
+| Did the player ever find the difficulty dial? | `contact` entries — offered, approached, held, completed, failed *(decision 10)* |
+
+Three constraints on the implementation, all non-negotiable:
 
 - **It must not touch gameplay.** No global RNG, no `day_rng()` stream, nothing that changes
   a placement or a roll. A trace that perturbs the run it is measuring is worse than no
   trace, and this project's determinism invariant is the thing that makes replaying a bad
   run possible at all.
-- **It must be readable without a tool.** The summary is for a human deciding whether day one
-  is too hard. If reading it needs a script that does not exist yet, it will not get read.
+- **It must be readable without a tool.** It is for a human deciding whether day one is too
+  hard. If reading it needs a script that does not exist yet, it will not get read.
+- **Order is the record.** Timestamps on every line, one line per thing that happened. An
+  aggregate can always be computed from an ordered log; the order can never be recovered from
+  an aggregate.
 
 **M24 — the city remembers where you went.** Finding 11. Record the calm zone the player
 settled in; on the next day bias a spoiling event toward it. The options narrow as the run
@@ -477,6 +551,20 @@ The prerequisite is structural, not numeric: today running is *never* correct, f
 in the catalogue (see the table under finding 7). A patrol therefore needs a mechanic running
 escapes — something that pursues, a lethal radius that grows, a window that shuts — and its
 fairness contract has to be stated over `RUN_SPEED` rather than `WALK_SPEED`.
+
+**M26 — teaching the controls, and one less control to teach.** Two halves, both from the
+section above.
+
+*Delete the interact key.* `E` appears in exactly one line of the game. The resistance hold
+becomes automatic on proximity, which loses nothing — the cost was always standing still in an
+alley, not the keypress — and gains a player who discovers the difficulty dial by walking near
+it rather than by knowing a key.
+
+*Teach the two that remain.* Arrows/WASD at the start of day 1, then shift, then a scripted
+day-1-only event that requires a short run after the first block.
+
+**Comes after M25**, and the dependency is not schedule, it is correctness: forcing a run
+before running is ever the right answer teaches a move that is never correct again.
 
 ### Order rationale
 
@@ -528,6 +616,17 @@ fairness contract has to be stated over `RUN_SPEED` rather than `WALK_SPEED`.
 11. **The act I/II numbers are set from data, not from argument.** Build the mechanisms
    (M19), ship telemetry (M23), read real runs, then pitch. Nobody has to guess how hard day
    one should feel, and this document should stop trying to.
+12. **Telemetry is an ordered log, not a metrics dump.** What happened, in what order,
+   readable top to bottom by a human. An aggregate can be computed from an ordered log; the
+   order can never be recovered from an aggregate.
+13. **Record what the code cannot recompute, and nothing else.** Above all the *random
+   outcomes that branch a run* — a one-shot that fired, a block arc that advanced, an alley
+   trap that was set. Those depend on run history, so no seed reproduces them. Everything
+   derivable from the seed, `Tuning` or the catalogue stays out.
+14. **The resistance stays hidden, and loses its key.** Wanting the difficulty dial and
+   finding it are the same behaviour, so no marker is needed *(this resolves an open question
+   carried since M8)*. But the hold becomes automatic on proximity: `E` appears in one line of
+   the game, and a control that appears once costs more to teach than it is worth.
 
 ### Open questions for the next playtest
 

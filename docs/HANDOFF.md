@@ -44,6 +44,15 @@ code. All three are written up in `PLAYTEST-02.md` (decisions 9–11).
    telemetry (M23), read real runs, then pitch. **This makes M23 a gate**, not a
    recommendation: M19's balance half cannot finish before it, and M24 cannot be built at all
    without one of its fields.
+4. **Telemetry is an ordered log, not a metrics dump** — what happened, in what order,
+   readable top to bottom with no tool. It records what the code *cannot* recompute, above all
+   the **random outcomes that branch a run** (a one-shot that fired, a block arc that
+   advanced, an alley trap that was set): those depend on run history, so no seed reproduces
+   them. Anything derivable from the seed, `Tuning` or the catalogue stays out.
+5. **The resistance stays hidden and loses its key.** *(Closes an open question carried since
+   M8.)* No marker, no quest log — wanting the difficulty dial and finding it are the same
+   behaviour. But `E` appears in exactly one line of the game, so the hold becomes automatic
+   on proximity: the cost was always standing still in an alley, never the keypress. M26.
 
 ## Read this before touching the event or signalling code
 
@@ -111,10 +120,12 @@ traffic that behaves** (following, overtaking, 8-direction driving, crashes as e
 **M21 the city overhaul** (four-block calm zones, T-junctions and L-bends, main roads as
 barriers, plus the canal dropped out of M16). **M22 danger you can read** (the circles go;
 entity, symbol, screen edge, and a symbol over the player when they are too close).
-**M23 telemetry** — field list and what each field is *for* in PLAYTEST-02.md, "What M23
-records"; must not touch gameplay and must be readable without a tool. **M24 the city
-remembers where you went** (spoil the park you relied on yesterday). **M25 patrols, and
-running that matters**.
+**M23 telemetry** — a chronological log; format sketch and rationale in PLAYTEST-02.md, "What
+M23 records". **M24 the city remembers where you went** (spoil the park you relied on
+yesterday). **M25 patrols, and running that matters**. **M26 teaching the controls** — delete
+the interact key, then teach walking and running, ending in a scripted day-1 event that
+requires a short run. M26 must come after M25 for correctness, not scheduling: forcing a run
+before running is ever the right answer teaches a move that is never correct again.
 
 M21 rewrites the lattice enumeration in `src/routes/street_network.gd`. The graph half of
 that file — route counting, the invariant, the doorway exemptions — survives untouched and

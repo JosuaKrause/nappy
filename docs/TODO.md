@@ -4,17 +4,22 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 Each milestone is one git branch, merged to `main` when green.
 
-**Where things stand:** M0–M15 are done and merged, and the game has now been played twice
-by a human. The first playtest produced thirteen findings, planned as M11–M17 in
-**[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced six more, planned as M18–M25
-in **[docs/PLAYTEST-02.md](PLAYTEST-02.md)**. Both are live plans and should be read before
-picking anything up. Execution order is numeric: M16 and M17 finish before M18 starts.
+**Where things stand:** M0–M16 and M18 are done and merged, and the game has now been played
+twice by a human. The first playtest produced thirteen findings, planned as M11–M17 in
+**[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced twelve, planned as M18–M26 in
+**[docs/PLAYTEST-02.md](PLAYTEST-02.md)**. Both are live plans and should be read before
+picking anything up.
+
+Execution order is numeric, with one exception already taken: **M18 was pulled ahead of M16**,
+because closure counts tuned against a day that was about to halve would have been tuned
+wrong. **M17 is next.** Two ordering notes are recorded in PLAYTEST-02 rather than acted on —
+M22 wants to sit with M19, and M23 is a *gate* on M19's balance half.
 
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 7187 checks; `tools/check.sh` boots the project; `tools/run.sh` plays
-it.
+`tools/test.sh` runs 14918 checks (~55s); `tools/check.sh` boots the project; `tools/run.sh`
+plays it.
 
 ---
 
@@ -254,7 +259,7 @@ sequencing. Summary only here:
       accepted. Canal dropped to M21
 - [ ] **M17 Route map** — the planning screen, rendering M15's block states
 
-## M18–M25 — Playtest 02
+## M18–M26 — Playtest 02
 
 See **[docs/PLAYTEST-02.md](PLAYTEST-02.md)** for the findings and the reasoning. Six
 findings from the second human playtest, queued behind M16 and M17. Summary only here:
@@ -286,16 +291,18 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       is a breach of the telegraph fairness contract, not a polish item, and M19 is what
       creates them. Must keep one thing the ring did well — showing an event *swelling*, or
       the pulse envelope stops being playable
-- [ ] **M23 Telemetry** — finding 10. One file per run plus a summary a human reads instead
-      of a transcript. Full field list and what each one is *for* in
-      [PLAYTEST-02.md](PLAYTEST-02.md), "What M23 records": time budget, meter trace and
-      freezes, route shape (circling ratio), road crossings, per-entity proximity, run
-      bursts, the calm zone used, closures met, where the nerves went, resistance contact.
-      Must not touch gameplay — no RNG, nothing that changes a roll — and must be readable
-      without a tool that does not exist yet. **Now a gate, not just a recommendation**: the
-      act I/II difficulty pitch is deferred until real runs can be read, so M19's balance
-      half cannot finish before this lands, and M24 cannot be built at all without one of its
-      fields
+- [ ] **M23 Telemetry** — finding 10. **A chronological plain-text log per run**, not a
+      metrics dump: what happened and in what order, readable top to bottom by a human with
+      no tool. Format sketch and the full rationale in [PLAYTEST-02.md](PLAYTEST-02.md),
+      "What M23 records". Records what the code *cannot* recompute — above all the **random
+      outcomes that branch a run** (a one-shot that fired, a block arc that advanced, an
+      alley trap that was set), since those depend on run history and no seed reproduces
+      them — plus the seed the generator actually used, what the player did, what came near
+      them, and how each day ended. Leaves out anything derivable from the seed, `Tuning` or
+      the catalogue, and any aggregate computable when reading. Must not touch gameplay: no
+      RNG, nothing that changes a roll. **A gate, not a recommendation**: the act I/II
+      difficulty pitch waits on real runs, so M19's balance half cannot finish before this
+      lands, and M24 cannot be built at all without one of its entries
 - [ ] **M24 The city remembers where you went** — finding 11. Record the calm zone the player
       settled in and bias the next day's spoiling event toward it, so the options narrow *at
       the player* rather than at random. Kept from feeling like a punishment for playing well
@@ -308,6 +315,15 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       currently the wrong move against *every* event in the catalogue, so a patrol needs a
       mechanic running escapes (something that pursues, a lethal radius that grows, a window
       that shuts) and a fairness contract stated over `RUN_SPEED` rather than `WALK_SPEED`
+- [ ] **M26 Teaching the controls, and one less control to teach** — two halves.
+      **Delete the interact key:** `E` appears in exactly one line of the game
+      (`contact_point.gd`), so the resistance hold becomes automatic on proximity. Nothing is
+      lost — the cost was always standing still in an alley while a patrol might pass, not
+      the keypress — and a player who wanders down an alley now discovers the difficulty dial
+      by walking near it. **Teach the two that remain:** arrows/WASD at the start of day 1,
+      then shift, then a scripted day-1-only event that requires a short run after the first
+      block. **Comes after M25, for correctness not scheduling**: forcing a run before running
+      is ever the right answer teaches a move that is never correct again
 
 ## M10 — Polish · `feature/polish`
 
@@ -359,12 +375,14 @@ These need a human playing the game, not more code.
       M20 are for, and the next playtest should judge them together.
 - [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little
       time to learn a city before it starts changing.
-- [ ] **How visible should the resistance be to a player ignoring it?** Right now: a chalk
-      mark and one HUD line. Real risk that a player finishes a run never knowing the good
-      ending existed. That might be correct, or it might be a bug. **This got more expensive
-      in playtest 02:** decision 10 makes the resistance the difficulty dial, so a player who
-      never finds it is locked to the easiest setting without ever being told there was one.
-      M23 records whether a player ever went near a contact.
+- [x] **How visible should the resistance be to a player ignoring it?** *Resolved by playtest
+      02, decision 14: as visible as it is now — a chalk mark and one HUD line, no marker, no
+      quest log.* The resistance is the difficulty dial (decision 10), and **wanting the dial
+      and finding the dial are the same behaviour**: a player who wants to be challenged
+      explores, and exploring is what finds a chalk mark on an alley wall. Carried open since
+      M8; closed by leaving it alone. What *does* change is the key — see M26. M23 still
+      records whether a player ever went near a contact, because "nobody ever finds it" would
+      falsify the reasoning.
 - [x] **Should running ever be *required* (a forced chase), or always purely a player
       choice?** *Answered by playtest 02, finding 9: yes, for some entities.* The measurement
       that came with it is the surprising part — running is currently the wrong move against
