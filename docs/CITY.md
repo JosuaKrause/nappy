@@ -144,6 +144,17 @@ Top-down camera with a fake vertical extrusion:
   `Sprite2D` with `centered = false` puts the node at the sprite's *top-left*, which makes
   y-sort compare the wrong edge; use `offset` to draw upward from the ground plane instead.
 
-Art lives in `assets/` as hand-editable SVG — tiles under `assets/tiles/`, building tiles
-under `assets/buildings/`, sprites under `assets/props/` — with a per-act palette
-multiplied over it.
+- The rig, the props and the event bodies are sprites too. The mother has two frames per
+  direction — the stride is a frame swap, because with the legs drawn into the sprite there
+  is nothing left to swing. Three directions plus a mirror covers all eight: side, front,
+  back.
+- Anything whose *size* carries meaning is drawn at that size rather than at the art's own.
+  A fire's flames scale with what it is currently emitting, and a blocking object is drawn
+  by repeating a segment across exactly the width it obstructs — so what is on screen is
+  what is in the way.
+
+Art lives in `assets/` as hand-editable SVG — ground tiles under `assets/tiles/`, building
+tiles under `assets/buildings/`, the player under `assets/rig/`, scenery under
+`assets/props/`, event bodies under `assets/events/` — with a per-act palette multiplied
+over the whole canvas. `Palette` holds only the colours the code still chooses at runtime;
+a tree's green lives in the file that draws the tree.

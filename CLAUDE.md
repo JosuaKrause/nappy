@@ -81,6 +81,11 @@ being inferred from a Variant value") fails the parse outright. Annotate the typ
 **Nodes are not refcounted.** A test double extending a `Node` class (e.g. a fake
 `EventManager`) must be `free()`d by hand or it leaks. `RefCounted` doubles do not.
 
+**A negative-width `Rect2` does not flip `draw_texture_rect`.** It gets normalised on the
+way through, so the sprite lands a full width to one side — which looks like art sliding off
+its own shadow, not like a failed flip. Mirror with `draw_set_transform(at, 0, Vector2(-1,
+1))` around the anchor instead. `Sprites.draw_standing()` is the one place that does it.
+
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw
 (the 10k-tile city ground) is fine, but anything animated must call `queue_redraw()` itself.
 

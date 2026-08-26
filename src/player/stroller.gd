@@ -16,6 +16,23 @@ const FACING_TURN_SPEED := 12.0
 ## How far the camera leads the player, in px.
 const CAMERA_LOOK_AHEAD := 46.0
 
+## Two frames per direction: mid-stride, then feet passing.
+const MOTHER_FRONT: Array[Texture2D] = [
+	preload("res://assets/rig/mother_front_a.svg"),
+	preload("res://assets/rig/mother_front_b.svg"),
+]
+const MOTHER_BACK: Array[Texture2D] = [
+	preload("res://assets/rig/mother_back_a.svg"),
+	preload("res://assets/rig/mother_back_b.svg"),
+]
+const MOTHER_SIDE: Array[Texture2D] = [
+	preload("res://assets/rig/mother_side_a.svg"),
+	preload("res://assets/rig/mother_side_b.svg"),
+]
+const PRAM_SIDE := preload("res://assets/rig/pram_side.svg")
+const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
+const PRAM_BACK := preload("res://assets/rig/pram_back.svg")
+
 @onready var _camera: Camera2D = $Camera2D
 
 var facing := Vector2.DOWN
@@ -89,92 +106,46 @@ func run_excess_ratio() -> float:
 
 func _draw() -> void:
 	var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
-	var bob := sin(_walk_phase * 2.0) * 1.4 * gait
 	var pram_offset := Vector2(facing.x, facing.y * OBLIQUE_Y) * PRAM_DISTANCE
 
 	# Shadows belong to the ground plane, so they always go underneath both figures.
-	_draw_shadow(Vector2.ZERO, 9.0)
-	_draw_shadow(pram_offset, 12.0)
+	Sprites.draw_shadow(self, Vector2.ZERO, 9.0)
+	Sprites.draw_shadow(self, pram_offset, 12.0)
 
 	# Facing away from the viewer puts the pram further up the screen, i.e. behind her.
 	if facing.y < 0.0:
-		_draw_pram(pram_offset, bob)
-		_draw_mother(Vector2.ZERO, bob, gait)
+		_draw_pram(pram_offset)
+		_draw_mother(gait)
 	else:
-		_draw_mother(Vector2.ZERO, bob, gait)
-		_draw_pram(pram_offset, bob)
+		_draw_mother(gait)
+		_draw_pram(pram_offset)
 
-func _draw_shadow(at: Vector2, radius: float) -> void:
-	draw_set_transform(at, 0.0, Vector2(1.0, 0.42))
-	draw_circle(Vector2.ZERO, radius, Palette.SHADOW)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-func _draw_mother(base: Vector2, bob: float, gait: float) -> void:
-	var o := base + Vector2(0.0, bob)
-	var stride := sin(_walk_phase * 2.0) * 4.0 * gait
-
-	# Legs swing in opposition; the feet stay pinned to the ground plane at base.y.
-	draw_line(o + Vector2(-3.0, -14.0), base + Vector2(-3.0 + stride, 0.0), Palette.TROUSERS, 4.5)
-	draw_line(o + Vector2(3.0, -14.0), base + Vector2(3.0 - stride, 0.0), Palette.TROUSERS, 4.5)
-	draw_circle(base + Vector2(-3.0 + stride, 0.0), 2.4, Palette.SHOE)
-	draw_circle(base + Vector2(3.0 - stride, 0.0), 2.4, Palette.SHOE)
-
-	# Coat.
-	draw_rect(Rect2(o + Vector2(-7.0, -32.0), Vector2(14.0, 19.0)), Palette.COAT)
-	draw_rect(Rect2(o + Vector2(-7.0, -19.0), Vector2(14.0, 6.0)), Palette.COAT_SHADE)
-
-	# Arms reach toward the pram handle.
-	var reach := Vector2(facing.x, facing.y * OBLIQUE_Y).normalized() * 9.0
-	draw_line(o + Vector2(-6.0, -28.0), o + Vector2(-4.0, -20.0) + reach, Palette.COAT, 3.5)
-	draw_line(o + Vector2(6.0, -28.0), o + Vector2(4.0, -20.0) + reach, Palette.COAT, 3.5)
-
-	# Head, then hair from whichever side we are looking at.
-	var head := o + Vector2(0.0, -37.0)
-	draw_circle(head, 6.5, Palette.SKIN)
-	if facing.y < 0.0:
-		draw_circle(head, 6.5, Palette.HAIR)
+## The stride is two frames rather than a procedural swing: with the legs drawn into the
+## sprite there is nothing left to swing. The frames carry the body's bob too, which is why
+## nothing here offsets her vertically any more.
+func _draw_mother(gait: float) -> void:
+	var stepping := gait > 0.05 and sin(_walk_phase * 2.0) > 0.0
+	var frame := 1 if stepping else 0
+	var flip := false
+	var texture: Texture2D
+	if absf(facing.x) > absf(facing.y):
+		texture = MOTHER_SIDE[frame]
+		flip = facing.x < 0.0
+	elif facing.y > 0.0:
+		texture = MOTHER_FRONT[frame]
 	else:
-		draw_arc(head, 5.6, PI, TAU, 12, Palette.HAIR, 4.0)
-		var eye := 1.6 * signf(facing.x) if absf(facing.x) > 0.3 else 0.0
-		draw_circle(head + Vector2(-2.2 + eye, -0.5), 0.9, Palette.OUTLINE)
-		draw_circle(head + Vector2(2.2 + eye, -0.5), 0.9, Palette.OUTLINE)
+		texture = MOTHER_BACK[frame]
+	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, flip)
 
-## Two profiles rather than one drawing with the hood nudged sideways. Sliding the hood
+## Three profiles rather than one drawing with the hood nudged sideways. Sliding the hood
 ## along a fixed basket made it overhang the end of the pram whenever she turned, which is
 ## what "the canopy is offset going sideways" was: the hood was drawn at the rear, but the
 ## basket underneath it never changed shape, so the two stopped agreeing.
-func _draw_pram(base: Vector2, bob: float) -> void:
-	var o := base + Vector2(0.0, bob)
+func _draw_pram(at: Vector2) -> void:
 	if absf(facing.x) > absf(facing.y):
-		_draw_pram_side(base, o, signf(facing.x))
+		# Authored travelling east, hood at the rear; mirrored to travel west.
+		Sprites.draw_standing(self, PRAM_SIDE, at, Vector2.ZERO, facing.x < 0.0)
+	elif facing.y > 0.0:
+		Sprites.draw_standing(self, PRAM_FRONT, at)
 	else:
-		_draw_pram_end_on(base, o, facing.y > 0.0)
-
-## Seen from the side: a long profile, wheels fore and aft, hood over the head end, which
-## is the end away from the direction of travel.
-func _draw_pram_side(base: Vector2, o: Vector2, direction: float) -> void:
-	var rear := -direction
-
-	draw_circle(base + Vector2(-9.0, -3.5), 4.0, Palette.PRAM_WHEEL)
-	draw_circle(base + Vector2(9.0, -3.5), 4.0, Palette.PRAM_WHEEL)
-
-	draw_rect(Rect2(o + Vector2(-13.0, -19.0), Vector2(26.0, 11.0)), Palette.PRAM_BODY)
-	draw_rect(Rect2(o + Vector2(-13.0, -11.0), Vector2(26.0, 3.0)), Palette.PRAM_TRIM)
-
-	# Hood radius and centre chosen so the arc stays inside the basket it sits on.
-	draw_arc(o + Vector2(rear * 6.0, -18.0), 7.0, PI, TAU, 14, Palette.PRAM_HOOD, 5.0)
-	# The handle she is pushing, at the rear, above the hood.
-	draw_line(o + Vector2(rear * 12.0, -18.0), o + Vector2(rear * 17.0, -27.0),
-			Palette.PRAM_TRIM, 2.5)
-
-## Seen head-on or from behind: shorter and wider, hood centred.
-func _draw_pram_end_on(base: Vector2, o: Vector2, toward_viewer: bool) -> void:
-	draw_circle(base + Vector2(-7.0, -3.5), 3.8, Palette.PRAM_WHEEL)
-	draw_circle(base + Vector2(7.0, -3.5), 3.8, Palette.PRAM_WHEEL)
-
-	draw_rect(Rect2(o + Vector2(-11.0, -20.0), Vector2(22.0, 12.0)), Palette.PRAM_BODY)
-	draw_rect(Rect2(o + Vector2(-11.0, -11.0), Vector2(22.0, 3.0)), Palette.PRAM_TRIM)
-
-	draw_arc(o + Vector2(0.0, -19.0), 8.0, PI, TAU, 14, Palette.PRAM_HOOD, 5.0)
-	if toward_viewer:
-		draw_circle(o + Vector2(0.0, -18.0), 3.2, Palette.SKIN)
+		Sprites.draw_standing(self, PRAM_BACK, at)

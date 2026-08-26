@@ -1,0 +1,14 @@
+<!-- The same, feet passing. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="46" viewBox="0 0 26 46" shape-rendering="crispEdges">
+  <rect x="8" y="32" width="5" height="12" fill="#3c4560"/>
+  <rect x="10" y="32" width="5" height="12" fill="#46506b"/>
+  <rect x="7" y="44" width="8" height="2" fill="#2f2a2c"/>
+  <rect x="9" y="44" width="8" height="2" fill="#2f2a2c"/>
+  <rect x="5" y="12" width="13" height="20" fill="#b0574f"/>
+  <rect x="5" y="26" width="13" height="6" fill="#8e433d"/>
+  <rect x="16" y="17" width="9" height="4" fill="#b0574f"/>
+  <rect x="23" y="17" width="3" height="4" fill="#d9a878"/>
+  <circle cx="12" cy="7" r="7" fill="#d9a878"/>
+  <path d="M5 7 A7 7 0 0 1 16 2 L16 11 Z" fill="#3a2b26"/>
+  <rect x="15" y="7" width="2" height="2" fill="#221f28"/>
+</svg>

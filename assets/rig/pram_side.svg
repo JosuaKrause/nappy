@@ -1,0 +1,13 @@
+<!-- The pram in profile, travelling east: hood over the head end, which is the end away
+     from the direction of travel, and the handle behind it where she is pushing. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="30" viewBox="0 0 36 30" shape-rendering="crispEdges">
+  <path d="M4 4 L9 4 L4 13 L1 13 Z" fill="#2b3341"/>
+  <path d="M4 3 A9 9 0 0 1 22 3 L22 8 L4 8 Z" fill="#d8ccb4"/>
+  <path d="M6 5 A7 7 0 0 1 20 5 L20 8 L6 8 Z" fill="#c4b79c"/>
+  <rect x="3" y="8" width="27" height="11" fill="#3f4a5c"/>
+  <rect x="3" y="16" width="27" height="3" fill="#2b3341"/>
+  <circle cx="8" cy="24" r="5" fill="#26232a"/>
+  <circle cx="26" cy="24" r="5" fill="#26232a"/>
+  <circle cx="8" cy="24" r="2" fill="#4a464f"/>
+  <circle cx="26" cy="24" r="2" fill="#4a464f"/>
+</svg>

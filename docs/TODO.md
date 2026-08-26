@@ -225,12 +225,13 @@ sequencing. Summary only here:
 
 - [x] **M11 Playtest fixes** — home arrow, three graphics glitches, day-start position,
       spoiler-free README
-- [~] **M12 Asset pipeline** — real asset files and tiles instead of `_draw()`. Gates M13,
+- [x] **M12 Asset pipeline** — real asset files and tiles instead of `_draw()`. Gates M13,
       M15, M16, M17, so it goes first
   - [x] **M12a** ground: `assets/tiles/*.svg` + a `TileSet` + a `TileMapLayer`
   - [x] **M12b** buildings: `assets/buildings/*.svg`, assembled per lot; heights quantised
         to whole tiles
-  - [ ] **M12c** the rig, props and events — still `_draw()`
+  - [x] **M12c** the rig, props and events: `assets/rig/`, `assets/props/`,
+        `assets/events/`, plus `Sprites` for the feet-anchored draw rule
 - [ ] **M13 Density and life** — pedestrians and traffic as real agents; the crowd becomes
       the noise floor
 - [ ] **M14 Balance** — a day cannot be won without reaching calm ground

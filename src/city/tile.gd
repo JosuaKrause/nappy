@@ -17,6 +17,8 @@ static func is_alley(type: GameEnums.TileType) -> bool:
 static func is_road(type: GameEnums.TileType) -> bool:
 	return type == GameEnums.TileType.ROAD or type == GameEnums.TileType.CROSSING
 
+## The flat colour of a surface, for anything that has to represent the ground without
+## drawing it — the route map M17 adds. The world itself is painted from the tileset.
 static func ground_colour(type: GameEnums.TileType) -> Color:
 	match type:
 		GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING:
