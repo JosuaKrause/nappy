@@ -11,6 +11,7 @@ baby to sleep — while the city around her slowly slides into authoritarianism 
 
 | Doc | Contents |
 | --- | --- |
+| [CLAUDE.md](CLAUDE.md) | How to work on this repo: workflow, engine gotchas, invariants |
 | [docs/DESIGN.md](docs/DESIGN.md) | Pillars, core loop, win/lose conditions |
 | [docs/MECHANICS.md](docs/MECHANICS.md) | Meters, movement, tuning constants |
 | [docs/CITY.md](docs/CITY.md) | City generation, tile types, calm zones |
