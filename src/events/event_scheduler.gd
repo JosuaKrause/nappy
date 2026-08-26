@@ -24,15 +24,28 @@ static func budget_for(day: int) -> int:
 ## Plans a day. `consumed_one_shots` is read and appended to, so a one-shot fires once
 ## per run.
 static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
-		consumed_one_shots: Array[String]) -> Array[Planned]:
+		consumed_one_shots: Array[String], scars: Array[Dictionary] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
 
 	planned.append_array(_place_ambient(day, map))
+	planned.append_array(_place_scars(day, scars))
 	planned.append_array(_place_scripted(day, rng, map))
 	planned.append_array(_place_one_shots(day, rng, map, consumed_one_shots))
 	planned.append_array(_fill_with_recurring(day, rng, map))
 
 	_ensure_one_usable_park(map, planned)
+	_ensure_the_city_is_still_walkable(map, planned)
+	return planned
+
+## Permanent marks left by earlier days, placed again exactly where they happened.
+static func _place_scars(day: int, scars: Array[Dictionary]) -> Array[Planned]:
+	var planned: Array[Planned] = []
+	for scar in scars:
+		if int(scar["since_day"]) >= day:
+			continue
+		var def := EventCatalogue.by_id(String(scar["id"]))
+		if def:
+			planned.append(Planned.new(def, scar["position"]))
 	return planned
 
 # ----------------------------------------------------------------- placement ---
@@ -254,6 +267,50 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned]) -> vo
 			least = block
 	for plan in spoilers[least]:
 		planned.erase(plan)
+
+## Checkpoints, barricades and roadblocks physically close streets, and from Act IV several
+## can land on the same day. Any combination that seals the home off from every park makes
+## the day unwinnable in a way the player cannot see coming, so obstructions are dropped —
+## widest first — until a route exists again.
+##
+## Hard-fail events count as walls here too: an abduction in progress is not something you
+## walk through to reach the park behind it.
+static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Planned]) -> void:
+	var blockers: Array[Planned] = []
+	for plan in planned:
+		if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+			blockers.append(plan)
+	if blockers.is_empty():
+		return
+
+	blockers.sort_custom(func(a: Planned, b: Planned) -> bool:
+		return _blocking_radius(a) > _blocking_radius(b))
+
+	while not blockers.is_empty() and not _park_is_reachable(map, blockers):
+		planned.erase(blockers.pop_front())
+
+static func _blocking_radius(plan: Planned) -> float:
+	return maxf(plan.def.obstructs_radius, plan.def.inner_radius if plan.def.hard_fail else 0.0)
+
+static func _park_is_reachable(map: CityMap, blockers: Array[Planned]) -> bool:
+	var blocked := {}
+	for plan in blockers:
+		var radius := _blocking_radius(plan)
+		var reach := ceili(radius / float(Tuning.TILE_SIZE))
+		var centre := map.world_to_tile(plan.position)
+		for dy in range(-reach, reach + 1):
+			for dx in range(-reach, reach + 1):
+				var tile := centre + Vector2i(dx, dy)
+				if map.tile_to_world(tile).distance_to(plan.position) <= radius:
+					blocked[tile] = true
+
+	var reachable := map.walk_distances(map.home_rect.position, blocked)
+	if reachable.is_empty():
+		return false
+	for tile in map.park_tiles():
+		if reachable.has(tile):
+			return true
+	return false
 
 ## Whether an event's outer radius touches a rect at all.
 static func _reaches_rect(plan: Planned, rect: Rect2) -> bool:

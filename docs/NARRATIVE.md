@@ -8,8 +8,17 @@ past it because the baby still will not sleep.
 
 ## Acts
 
-A run is 14 days, split into four acts. The act determines the palette, the ambient audio
-bed, the NPC density, and which events are eligible.
+A run is 14 days, split into four acts. The act determines the colour cast, the ambient
+audio bed, and which events are eligible (every `EventDef` carries an `act_tag`, and a test
+asserts nothing from a later act leaks into an earlier day).
+
+The colour cast is the quietest part of the telling: the same corner, four times, getting
+colder. Warm afternoon → drained → cold and overcast → smoke.
+
+The loudest part is that **the city remembers**. `scar_id` makes a one-off event permanent
+for the rest of the run: the building that burned on day 3 is still a cordoned-off shell on
+day 12, and every barricade an Act IV convoy drops stays dropped. The route you memorised
+on day 2 stops existing, one closure at a time.
 
 ### Act I — "It's a nice neighbourhood" (days 1–3)
 
@@ -33,9 +42,10 @@ beyond a chalk mark on the wall that the player may or may not notice.
 
 ### Act III — "Vans" (days 8–11)
 
-Cold palette, overcast. Streets are emptier — `empty_street` actually *reduces* some
-ambient noise, which is the cruellest joke in the design: the city gets easier to put a
-baby to sleep in, because there is nobody left in it.
+Cold palette, overcast. Streets are emptier — `quiet_road` replaces `busy_road` on the
+arterials and actually *reduces* the ambient noise, from 3.2 to 1.4. This is the cruellest
+joke in the design, and it is a real number rather than a line of text: the city gets
+easier to put a baby to sleep in, because there is nobody left in it.
 
 Abductions begin. Masked men, unmarked vans. Getting close is a hard fail — you and the
 baby are taken, day over, one Nerve gone.

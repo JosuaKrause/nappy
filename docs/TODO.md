@@ -149,12 +149,29 @@ Each milestone is one git branch, merged to `main` when green.
 
 ## M7 — Acts II–IV · `feature/acts`
 
-- [ ] Per-act palette + ambient audio bed
-- [ ] Act II: `police_patrol`, `poster_crew`, `loudspeaker`, `curfew_announce`, `checkpoint`
-- [ ] Act III: `abduction` (hard fail), `empty_street`, `alley_robbery`, `night_raid`
-- [ ] Act IV: `military_convoy` (leaves barricades), `protest`, `firefight`
-- [ ] Persistent world scars (burnt building from day 3 stays)
-- [ ] Checkpoint / barricade map post-processing + connectivity revalidation
+- [x] Per-act colour cast, multiplied into the daylight
+- [x] Act II: `police_patrol`, `poster_crew`, `loudspeaker`, `curfew_announce`, `checkpoint`
+- [x] Act III: `quiet_road`, `abduction` (hard fail), `alley_robbery` (hard fail), `night_raid`
+- [x] Act IV: `military_convoy` (leaves a barricade), `barricade`, `protest`, `firefight`
+- [x] Persistent world scars — `scar_id` + `GameState.scars`; the burnt-out shell from
+      day 3 is on the same corner on day 12
+- [x] Street closures as obstructing events, revalidated so a park stays reachable
+- [x] New mechanics: `city_wide` (no falloff), `intensity_ramp` (a protest swells),
+      `scar_id`
+- [x] `tests/test_acts.gd` (243 checks) — act gating, the arterial handover, city-wide
+      sources, protest growth, scar persistence, walkability under closures
+- [ ] Per-act ambient audio bed — no audio in the project yet (M10)
+
+### Notes
+
+- `busy_road` has `last_day = 7` and `quiet_road` `first_day = 8`, and a test asserts every
+  day has **exactly one** arterial band. Overlapping them would silently double the noise
+  on the main roads.
+- `alley_robbery` is not exempt from the fairness contract — its radius is small enough
+  (22/42px) that half a second satisfies it. The honest framing is that the alley is the
+  warning.
+- Passing an untyped `Array` into a parameter typed `Array[T]` leaks the arguments at
+  shutdown ("N ObjectDB instances were leaked"). `tests/test_acts.gd` carries a note.
 
 ## M8 — Resistance subquest · `feature/resistance`
 
