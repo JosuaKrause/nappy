@@ -50,6 +50,13 @@ func _update_camera(delta: float) -> void:
 	var lead := Vector2(facing.x, facing.y * OBLIQUE_Y) * CAMERA_LOOK_AHEAD
 	_camera.offset = _camera.offset.lerp(lead, clampf(delta * 3.0, 0.0, 1.0))
 
+## Stops the camera from panning past the edge of the city.
+func set_camera_limits(bounds: Rect2) -> void:
+	_camera.limit_left = int(bounds.position.x)
+	_camera.limit_top = int(bounds.position.y)
+	_camera.limit_right = int(bounds.end.x)
+	_camera.limit_bottom = int(bounds.end.y)
+
 # ------------------------------------------------------------------ queries ---
 # Consumed by Baby (M2) to decide how the meters move.
 

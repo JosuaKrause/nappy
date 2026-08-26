@@ -1,22 +1,39 @@
 extends Node2D
-## Boot scene: loads the world, then the HUD (which needs the baby the world spawned).
+## Boot scene: generate the city, drop the player on the doorstep, then the HUD.
+##
 ## The right-hand overlay is a developer readout, not part of the game's UI.
 
-const DEBUG_WORLD := preload("res://scenes/world/debug_world.tscn")
+const CITY := preload("res://scenes/world/city.tscn")
+const STROLLER := preload("res://scenes/player/stroller.tscn")
 const HUD := preload("res://scenes/ui/hud.tscn")
 
 @onready var _status: Label = $CanvasLayer/Status
 
+var _city: City
 var _player: Stroller
 var _baby: Baby
 
 func _ready() -> void:
-	GameState.start_run()
-	add_child(DEBUG_WORLD.instantiate())
-	_player = get_tree().get_first_node_in_group("player") as Stroller
-	_baby = get_tree().get_first_node_in_group("baby") as Baby
+	GameState.start_run(_seed_override())
+
+	_city = CITY.instantiate()
+	add_child(_city)
+	var elapsed := Time.get_ticks_msec()
+	_city.build(CityGenerator.generate(GameState.run_seed))
+	print("[Main] city generated in %d ms (seed %d)" % [
+		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
+
+	_player = STROLLER.instantiate()
+	_player.position = _spawn_position()
+	_city.add_entity(_player)
+	_player.set_camera_limits(Rect2(Vector2.ZERO, _city.map.world_size()))
+
+	_baby = _player.get_node("Baby")
 	_apply_meter_override()
 	add_child(HUD.instantiate())
+
+	if "--overview" in OS.get_cmdline_user_args():
+		_make_overview_camera()
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
@@ -25,12 +42,16 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not _player or not _baby:
 		return
+	var tile := _city.map.world_to_tile(_player.global_position)
 	_status.text = "\n".join([
-		"seed %d" % GameState.run_seed,
+		"seed  %d" % GameState.run_seed,
+		"tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(_city.map.tile_at(tile))],
+		"calm  %s    alley  %s" % [
+			"yes" if _city.is_calm_zone(_player.global_position) else "no",
+			"yes" if _city.is_alley(_player.global_position) else "no"],
 		"",
 		"speed       %6.1f" % _player.current_speed(),
 		"run excess  %6.2f" % _player.run_excess_ratio(),
-		"idle        %6s" % ("yes" if _player.is_idle() else "no"),
 		"",
 		"incoming    %6.2f /s" % _baby.last_incoming,
 		"decay       %6.2f /s" % _baby.last_decay,
@@ -40,6 +61,54 @@ func _process(_delta: float) -> void:
 		"shift       run",
 		"esc         quit",
 	])
+
+func _tile_name(type: GameEnums.TileType) -> String:
+	return GameEnums.TileType.keys()[type].to_lower()
+
+## Dev flag: `-- --spawn park|alley|square` drops the player straight onto a tile type, so
+## the WorldContext answers can be checked without walking across the city to find one.
+func _spawn_position() -> Vector2:
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--spawn")
+	if index == -1 or index + 1 >= args.size():
+		return _city.map.home_world_position()
+
+	var wanted: int = {
+		"park": GameEnums.TileType.PARK,
+		"alley": GameEnums.TileType.ALLEY,
+		"square": GameEnums.TileType.SQUARE,
+		"playground": GameEnums.TileType.PLAYGROUND,
+	}.get(args[index + 1], -1)
+	if wanted == -1:
+		push_warning("unknown --spawn target '%s'" % args[index + 1])
+		return _city.map.home_world_position()
+
+	for y in _city.map.size.y:
+		for x in _city.map.size.x:
+			if _city.map.tile_at(Vector2i(x, y)) == wanted:
+				return _city.map.tile_to_world(Vector2i(x, y))
+	push_warning("no %s tile in this city" % args[index + 1])
+	return _city.map.home_world_position()
+
+## Dev flag: `-- --overview` frames the whole city at once, so a generation bug that only
+## shows up at map scale (a walled-off quarter, parks bunched together) is visible.
+func _make_overview_camera() -> void:
+	var camera := Camera2D.new()
+	var extent := _city.map.world_size()
+	var viewport := get_viewport_rect().size
+	camera.position = extent * 0.5
+	camera.zoom = Vector2.ONE * minf(viewport.x / extent.x, viewport.y / extent.y)
+	add_child(camera)
+	camera.make_current()
+
+## Dev flag: `-- --seed N` regenerates a specific city, so a layout bug can be looked at
+## twice. Without it every run gets a fresh city, which is the game's actual behaviour.
+func _seed_override() -> int:
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--seed")
+	if index == -1 or index + 1 >= args.size():
+		return 0
+	return int(args[index + 1])
 
 ## Dev flag: `-- --meters <sleepiness> <excitement>` seeds the bars, so a UI state can be
 ## screenshotted without having to play all the way to it. Applied before the HUD is

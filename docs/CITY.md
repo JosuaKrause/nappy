@@ -18,9 +18,14 @@ day_index + run_seed ──▶ EventScheduler ──▶ this day's event set
 
 The city is a grid of **blocks** separated by **streets**.
 
-- `BLOCK_SIZE` = 6 × 6 tiles of building interior
-- `STREET_WIDTH` = 3 tiles (1 sidewalk, 1 road, 1 sidewalk conceptually; walkable)
+- `BLOCK_SIZE` = 8 × 8 tiles of block interior
+- `STREET_WIDTH` = 6 tiles: sidewalk (2) | road (2) | sidewalk (2)
 - `CITY_BLOCKS` = 7 × 7 blocks by default
+- Total: 104 × 104 tiles, or 3328 px square at a 32 px tile
+
+A 1-tile sidewalk was the first attempt and had to go: the rig's collision circle is 28 px
+across, so a 32 px sidewalk left 2 px of clearance and walking a street felt like threading
+a needle. Two tiles of sidewalk is the number the whole layout is sized around.
 
 Tile types:
 
@@ -46,19 +51,48 @@ Tile types:
    - `COMMERCIAL` — buildings + a `SQUARE` carved out of the block
    - `INDUSTRIAL` — larger buildings, more alleys, no parks
    - `CIVIC` — one big building; later becomes regime infrastructure
-4. **Carve alleys** — each non-park block has a seeded chance of a through-alley bisecting it.
-5. **Place playgrounds** — every `PARK` district gets 1 playground near its edge.
-6. **Place home** — on a `RESIDENTIAL` block edge, biased toward the map centre so that no
-   direction is strictly better.
-7. **Validate** — flood-fill from home; every walkable tile must be reachable. Regenerate
-   with `seed + 1` if not.
+4. **Carve alleys** — each non-park block has a seeded chance of a through-alley bisecting
+   it. Commercial blocks are exempt: they already have a plaza carved out, and a second
+   hole through the same lot leaves slivers and an alley opening onto a square.
+5. **Place playgrounds** — every `PARK` district gets 1 playground, inset from the edge.
+6. **Place home** — a 2×2 notch in the south edge of a `RESIDENTIAL` block, biased toward
+   the map centre so that no direction is strictly better, and slid sideways if the notch
+   would land in an alley.
+7. **Validate** — see below. On failure, retry with `seed + 1`, up to 64 attempts.
 
-Guarantees the generator must satisfy (asserted in debug):
+### Carving is rect subtraction
 
+Every hole — alley, plaza, home notch — is applied to the block's list of building rects by
+the same `_subtract(outer, hole)` operation, which returns the up-to-four rects that remain.
+Holes compose without special cases, and the building rects are exact by construction.
+
+**Every piece is kept, including one-tile slivers.** An earlier version dropped anything
+narrower than two tiles because slivers look odd; the result was `BUILDING` tiles with no
+building node over them — invisible walls the player walks straight through. A sliver
+renders as a low wall instead, which is what a 32 px-wide building should look like. The
+test asserts that the building rects cover every `BUILDING` tile exactly once.
+
+### Guarantees
+
+Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 200 seeds:
+
+- Every walkable tile is reachable from the home.
 - At least **3 park districts**, no two adjacent (so calm zones are spread out).
-- Home is at least `MIN_HOME_TO_PARK` tiles from the nearest park (you must earn the calm).
-- At least two topologically distinct routes from home to every park (so a spoiled or
-  blocked route always has an alternative).
+- The home is at least `MIN_HOME_TO_PARK_TILES` (30) *walking* tiles from the nearest park.
+- Building rects tile the `BUILDING` tiles exactly, with no overlaps and no gaps.
+
+### Route redundancy
+
+The design wants at least two distinct routes from home to every park, so that a spoiled or
+blocked route always has an alternative. This holds **by construction** rather than by
+search: carving only ever happens *inside* blocks, so the street lattice is never cut, and
+a full lattice cannot be disconnected by removing any single corridor.
+
+`tests/test_generator.gd` checks it directly by closing each street segment in turn and
+confirming a park is still reachable — with one exemption. **The street outside the home is
+a genuine single point of failure**: the home is a notch in a block with one exit, so
+sealing that segment seals the player in, however well connected the rest of the city is.
+That is a constraint on where Act IV may place a barricade, not a flaw in the layout.
 
 ## Spoiling calm zones
 
@@ -87,8 +121,11 @@ one unspoiled calm zone, or the day is unwinnable and the scheduler retries.
 Top-down camera with a fake vertical extrusion:
 
 - Ground tiles are drawn flat.
-- Buildings are drawn as a **roof polygon offset upward by `height`** plus two visible side
-  faces, shaded darker. This is the "2.5D from the top" look.
+- Buildings fill exactly their lot: the front wall takes the southern `height` px and the
+  roof takes the rest. Fitting the mass inside the lot is what keeps extrusions off the
+  street — a roof overhanging northward would hide the player whenever she walked along that
+  sidewalk. A taller building therefore shows more wall and less roof, which is what an
+  oblique view of a taller building should look like.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly.
 - Sprite anchor is the *feet*, not the centre, so y-sorting matches the ground plane.

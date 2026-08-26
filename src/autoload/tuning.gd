@@ -61,13 +61,35 @@ const RESISTANCE_GOAL := 4
 # --------------------------------------------------------------------- city ---
 
 const TILE_SIZE := 32
-const BLOCK_SIZE := 6
-const STREET_WIDTH := 3
+const BLOCK_SIZE := 8
+## Sidewalk(2) | road(2) | sidewalk(2). A 1-tile sidewalk left only 2px of clearance for
+## the rig, which made walking a street feel like threading a needle.
+const STREET_WIDTH := 6
+const SIDEWALK_WIDTH := 2
 const CITY_BLOCKS := Vector2i(7, 7)
 
 const MIN_PARK_DISTRICTS := 3
-const MIN_HOME_TO_PARK_TILES := 18
+const MAX_PARK_DISTRICTS := 6
+## Walking distance in tiles, not straight-line: the calm has to be earned.
+const MIN_HOME_TO_PARK_TILES := 30
 const PARK_SPOIL_CHANCE := 0.35
+
+## Per-district chance a block is split by a through-alley.
+const ALLEY_CHANCE := {
+	GameEnums.District.RESIDENTIAL: 0.25,
+	# Commercial blocks already have a plaza carved out; a second hole through the same
+	# lot leaves slivers of building and an alley that opens onto a square.
+	GameEnums.District.COMMERCIAL: 0.0,
+	GameEnums.District.INDUSTRIAL: 0.5,
+	GameEnums.District.CIVIC: 0.0,
+	GameEnums.District.PARK: 0.0,
+}
+const ALLEY_WIDTH_TILES := 2
+
+## Tiles per side of the plaza carved out of a commercial block.
+const SQUARE_SIZE_TILES := 4
+## The home is a notch in the south edge of a residential block.
+const HOME_SIZE_TILES := Vector2i(2, 2)
 
 # -------------------------------------------------------------------- acts ---
 
