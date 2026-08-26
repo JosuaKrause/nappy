@@ -30,7 +30,7 @@ require reversing decisions that are currently written down as invariants.**
 | 2 | Too easy: circling the starting block fills the sleepiness meter | S | 4 |
 | 4 | Needs a constant/periodic base noise floor so standing in one place cannot work. Reaching a calm area should be a *requirement* for getting through a day | M | 3 |
 | 7 | More variety in areas and events — calm areas could be park, forest, apartment-block courtyard, etc. | M | 13 |
-| 12 | Prune the road network per day with blockers (roadworks, fallen tree, car accident) so the route is a real decision. Avoidable, but clearly "not that way". **Several viable routes, and several quiet destinations to choose between** | M | 7 |
+| 12 | Prune the road network per day with blockers (roadworks, fallen tree, car accident) so the route is a real decision. Avoidable, but clearly "not that way". **Several viable routes, and several quiet destinations to choose between** | M | *(done, M16)* |
 | 11 | Stylised city map at the start of a round for route planning; updates as destructive events change the city | M | 7, 12 |
 
 ---

@@ -68,9 +68,15 @@ func _place(rng: RandomNumberGenerator) -> Vector2:
 	else:
 		for type in _step.placement:
 			candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
-	if candidates.is_empty():
+	# A contact behind a closed street is a step the player cannot take today, and the
+	# resistance has steps that expire — so this would silently cost a run its good ending.
+	var reachable: Array[Vector2i] = []
+	for tile in candidates:
+		if not _map.is_closed(tile):
+			reachable.append(tile)
+	if reachable.is_empty():
 		return Vector2.INF
-	return _map.tile_to_world(candidates[rng.randi_range(0, candidates.size() - 1)])
+	return _map.tile_to_world(reachable[rng.randi_range(0, reachable.size() - 1)])
 
 func _process(delta: float) -> void:
 	if not _step or _expired or not _contact or _contact.is_done:

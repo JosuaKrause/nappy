@@ -36,6 +36,13 @@ const CAR_TRIM: Array[Texture2D] = [
 
 ## How fast an agent closes on its lane centre. Slow enough that a corner reads as a turn.
 const STEER_SPEED := 90.0
+## How far ahead an agent looks for a closed street. Just under a tile: far enough to turn
+## at the junction rather than at the barrier, close enough that it does not turn a block
+## early and leave the street it was on looking mysteriously avoided.
+const CLOSURE_LOOKAHEAD := 26.0
+## How far down a street an agent checks before turning into it. A whole tile past the
+## junction, so it does not turn out of one closed street straight into another.
+const DIVERT_PROBE := 40.0
 
 var kind := Kind.WALKER
 var colour := Color.WHITE
@@ -65,9 +72,15 @@ func setup(agent_kind: Kind, map: CityMap, seed_value: int, axis_roll: float) ->
 	_rng.seed = seed_value
 	_choose_lane(axis_roll)
 	# Start somewhere along the corridor rather than at its mouth, or the whole crowd
-	# arrives at the map edge in one wave on the first morning.
-	_set_along(_rng.randf() * _map.world_size()[1 if _vertical else 0])
-	_set_cross(_lane_centre)
+	# arrives at the map edge in one wave on the first morning. Re-rolled if it lands inside
+	# a street that is closed today: an agent that starts behind a barrier would walk out
+	# through it once, which reads as the barrier being fake.
+	var limit: float = _map.world_size()[1 if _vertical else 0]
+	for _attempt in 8:
+		_set_along(_rng.randf() * limit)
+		_set_cross(_lane_centre)
+		if not _map.is_closed(_map.world_to_tile(position)):
+			break
 	colour = _colour()
 
 func _process(delta: float) -> void:
@@ -75,6 +88,8 @@ func _process(delta: float) -> void:
 	_set_cross(move_toward(_cross(), _lane_centre, STEER_SPEED * delta))
 	if kind == Kind.WALKER:
 		_consider_turning()
+	if _closed_ahead(_vertical, _direction, CLOSURE_LOOKAHEAD):
+		_divert()
 	if _has_left_the_map():
 		_recycle()
 	# Moving a Node2D does not invalidate its draw list — the transform is applied when it
@@ -158,6 +173,45 @@ func _consider_turning() -> void:
 	_direction = 1.0 if _rng.randf() < 0.5 else -1.0
 	# It is now travelling through the corridor it just came down, so that is the junction
 	# it is in — otherwise it would roll a second turn before clearing the first.
+	_junction = kept
+
+## Whether the street `distance` ahead along an axis is closed today.
+func _closed_ahead(vertical: bool, direction: float, distance: float) -> bool:
+	var offset := Vector2(0.0, direction * distance) if vertical \
+			else Vector2(direction * distance, 0.0)
+	return _map.is_closed(_map.world_to_tile(position + offset))
+
+## Traffic goes round a closure, and that is half of what makes one legible: the street with
+## nobody on it is the street that is shut, which reads from a block away — further than the
+## barrier itself does.
+##
+## Turning here rather than only in `_consider_turning` is why cars divert too. A car that
+## carried on would drive through the barrier, and a car that vanished at the junction would
+## be worse: at this population something popping out of existence is very visible.
+func _divert() -> void:
+	var crossing := CrowdLanes.corridor_at(_along())
+	if crossing < 0:
+		# Caught mid-street, which only happens on the first frame of a day. Turn round.
+		_direction = -_direction
+		return
+
+	var turning := 1.0 if _rng.randf() < 0.5 else -1.0
+	if _closed_ahead(not _vertical, turning, DIVERT_PROBE):
+		turning = -turning
+	if _closed_ahead(not _vertical, turning, DIVERT_PROBE):
+		_direction = -_direction   # boxed in on three sides; go back the way it came
+		return
+
+	var kept := _corridor
+	_vertical = not _vertical
+	_corridor = crossing
+	_direction = turning
+	if kind == Kind.CAR:
+		# Back onto the correct side of the road for the way it is now pointing.
+		_lane = CrowdLanes.ROAD_OFFSETS[1] if turning > 0.0 else CrowdLanes.ROAD_OFFSETS[0]
+	else:
+		_lane = CrowdLanes.nearest_sidewalk(_corridor, _cross())
+	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
 	_junction = kept
 
 func _has_left_the_map() -> bool:

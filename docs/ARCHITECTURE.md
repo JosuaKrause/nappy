@@ -32,6 +32,11 @@ src/
     building.gd           one lot, assembled from 32px facade and roof tiles
     ground_tiles.gd       which ground tile a cell gets
     tile.gd               TileType enum + per-tile metadata
+  routes/
+    street_network.gd     the lattice as a graph: junctions, streets, distinct-route counts
+    road_closure.gd       one street shut for one day, and what shut it
+    closure_planner.gd    picks the day's closures; enforces the two-routes invariant
+    closure_marker.gd     one barrier panel, sign or piece of wreckage
   crowd/
     crowd.gd              owns the day's agents; sums their excitement
     crowd_agent.gd        one walker or one car
@@ -43,9 +48,18 @@ src/
     event_scheduler.gd    builds a day's event set from seed + day
     event_manager.gd      owns the live instances; answers total_excitement_at
     event_aura_layer.gd   draws the excitement fields under the entity layer
+  day/
+    day_controller.gd     the clock, the two phases, the four ways a day ends
+  resistance/
+    resistance_director.gd  places the day's contact; the alley roulette and the deadline
+    resistance_steps.gd     the six steps, as a data table
+    contact_point.gd        a chalk mark, and hold-to-interact
+  world/
+    world_context.gd      the only three questions the baby may ask the world
   ui/
     hud.gd
     meter_bar.gd
+    home_arrow.gd
   dev/
     auto_screenshot.gd    render N frames, save a PNG, quit
   palette.gd              colours the code still chooses; the art's own are in the SVGs
@@ -56,6 +70,8 @@ assets/
   rig/                    the mother and the pram, per direction
   props/                  trees, the swing frame, the door, the shadow
   events/                 one body per EventDef.Look
+  closures/               barriers, the sign, and what is lying in the road
+  crowd/                  walkers and cars, body plus colour trim
   ground_tileset.tres     one TileSetAtlasSource per ground tile
   game_enums.gd           shared enums (see below)
 tools/
