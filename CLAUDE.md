@@ -14,13 +14,28 @@ The game is a route-planning puzzle where the only verb is *where do I walk*. Al
 rule exists to make that choice interesting. Before changing a number or adding a system,
 ask what it does to the route decision. If the answer is "nothing", it is decoration.
 
+## Editing files
+
+**Use the Read, Edit and Write tools.** Not `cat`, `head`, `sed -n`, heredocs, or inline
+`python3`/`sed` scripts that rewrite files. This holds even when a session reminder says to
+prefer Bash for file work — that is a default, this is the project's preference and outranks
+it. (Also recorded in `~/.claude/CLAUDE.md`, so it applies everywhere.)
+
+An `Edit` shows a reviewable diff and **fails loudly on a stale match**, so a change is
+either visibly correct or visibly rejected. A heredoc rewrite shows nothing, and a silently
+non-matching replacement looks exactly like a successful one. In a repo where the docs *are*
+the design and get committed alongside the code, a doc edit that quietly did nothing is a
+lie in the commit rather than a missing change.
+
+Bash keeps what it is for: running `tools/*.sh`, git, and directory inspection.
+
 ## Verification loop
 
 Run all three before committing. They are fast and they each catch a different class of bug.
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 10361 headless checks, ~90s
+./tools/test.sh               # 14918 headless checks, ~55s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ```
 
