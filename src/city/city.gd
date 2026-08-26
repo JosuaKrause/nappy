@@ -42,6 +42,9 @@ var _daylight: CanvasModulate
 var _act := 1
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
+## Today's closed streets, and the barriers and wreckage that say so. Also rebuilt daily.
+var _closures: Array[RoadClosure] = []
+var _closure_nodes: Array[Node] = []
 ## Fixed for the run — only their condition changes.
 var _buildings: Array[Building] = []
 
@@ -160,10 +163,73 @@ func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## once and reused, and the between-days screen only had to restart the events. Rebuilding
 ## the block interiors is cheap (the buildings and the lattice are untouched) and it is the
 ## only way a requisitioned park can stop having swings in it.
-func start_day(state: CityState) -> void:
+func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	map.repaint(state)
 	_paint_ground()
 	_dress_blocks(state)
+	# Last, and after the repaint: which blocks are calm is what the closure invariant is
+	# stated over, and a requisitioned park is not one of them.
+	_close_streets(day, rng)
+
+## Today's closed streets. The whole street comes out of the network; the barriers stand at
+## its two mouths, where they can be seen from the junction rather than found half way down.
+func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
+	for node in _closure_nodes:
+		node.queue_free()
+	_closure_nodes.clear()
+	_closures = ClosurePlanner.plan_day(map, day, rng)
+	map.close_streets(_closures)
+	for closure in _closures:
+		_spawn_closure(closure)
+
+func closures() -> Array[RoadClosure]:
+	return _closures
+
+func _spawn_closure(closure: RoadClosure) -> void:
+	for mouth in closure.mouth_centres(map):
+		_spawn_barrier(closure, mouth)
+	if ClosureMarker.CAUSES.has(closure.kind):
+		var cause := ClosureMarker.new()
+		cause.piece = ClosureMarker.Piece.CAUSE
+		cause.kind = closure.kind
+		cause.position = closure.cause_centre(map)
+		_add_closure_node(cause, true)
+
+## A line of barrier panels across the mouth, with the sign on the middle one, and one static
+## body behind the whole line. The panels are separate nodes so that a barrier running away
+## from the camera y-sorts panel by panel against the player; the collision is one box,
+## because collision does not care what order things are drawn in.
+func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
+	var across := closure.barrier_runs_across()
+	var width := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
+	var panels := maxi(1, roundi(width / ClosureMarker.FENCE_ACROSS.get_width()))
+	var span := width / panels
+	for i in panels:
+		var panel := ClosureMarker.new()
+		panel.piece = ClosureMarker.Piece.SIGN if i == panels / 2 else ClosureMarker.Piece.FENCE
+		panel.kind = closure.kind
+		panel.across = across
+		panel.span = span
+		var offset := -width * 0.5 + span * (i + 0.5)
+		panel.position = at + (Vector2(offset, 0.0) if across else Vector2(0.0, offset))
+		_add_closure_node(panel, true)
+
+	var body := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var box := RectangleShape2D.new()
+	box.size = Vector2(width, Tuning.CLOSURE_BARRIER_DEPTH) if across \
+			else Vector2(Tuning.CLOSURE_BARRIER_DEPTH, width)
+	shape.shape = box
+	body.position = at
+	body.add_child(shape)
+	_add_closure_node(body, false)
+
+func _add_closure_node(node: Node, y_sorted: bool) -> void:
+	_closure_nodes.append(node)
+	if y_sorted:
+		_entities.add_child(node)
+	else:
+		add_child(node)
 
 func _dress_blocks(state: CityState) -> void:
 	for prop in _props:

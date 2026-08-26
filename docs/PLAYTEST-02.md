@@ -192,6 +192,21 @@ driving, and the crash as a catalogue event.
 Four-block calm zones, a generated lattice with T-junctions and L-bends, main roads with
 lights against side roads with zebras.
 
+**M22 — the edge of the screen.** Anything too fast to react to once it is on screen
+flashes a symbol at the edge it is coming from, so the player can start moving before it
+arrives.
+
+This is the missing half of a promise the game already makes. The **telegraph fairness
+contract** says a player who starts walking away the instant an event becomes visible gets
+clear before it hurts — and `Tuning.validate_event()` checks the *geometry* of that, not
+whether the player could actually see it. A `fire_truck` at 190 px/s spends most of its 3.5 s
+warning outside the viewport, so the contract passes and the promise is broken. M19's lethal
+cars make that worse rather than better, which is why this belongs next to M19 and not in
+the polish milestone it was originally filed under.
+
+The symbol has to say *what* is coming, not merely that something is: "get off this street"
+and "do not step off the kerb" are different moves.
+
 ### Order rationale
 
 - M16 and M17 first because they are in flight and because a route map makes the playtest

@@ -29,6 +29,12 @@ var square_rects: Array[Rect2i] = []
 var courtyard_rects: Array[Rect2i] = []
 var home_rect := Rect2i()
 var seed_used := 0
+## The streets closed today, as a set of tiles. The only per-day thing on this class, and
+## deliberately so: everything else here is fixed for the run or derived from a block's
+## purpose, and neither of those may move a walkable tile. A closure is the one thing that
+## changes where the player may walk, which is why it is a set that is cleared every morning
+## rather than an edit to `tiles`. See `RoadClosure` and docs/CITY.md, "Road closures".
+var closed_tiles := {}
 
 # ------------------------------------------------------------------ layout ---
 
@@ -82,6 +88,24 @@ func fill_rect(rect: Rect2i, type: GameEnums.TileType) -> void:
 
 func is_walkable(tile: Vector2i) -> bool:
 	return Tile.is_walkable(tile_at(tile))
+
+func is_closed(tile: Vector2i) -> bool:
+	return closed_tiles.has(tile)
+
+## Walkable *and* open: what the player can actually use today. Anything choosing a place to
+## put something — an event, a crowd agent, a resistance contact — wants this rather than
+## `is_walkable`, or it will put it somewhere nobody can reach.
+func is_open(tile: Vector2i) -> bool:
+	return not closed_tiles.has(tile) and Tile.is_walkable(tile_at(tile))
+
+## Takes today's closed streets out of the network. The whole street goes in the set, not
+## just the two barriers: the ground between them is not somewhere anyone can get to, so
+## nothing should be placed there and nobody should be routed through it.
+func close_streets(closures: Array[RoadClosure]) -> void:
+	closed_tiles.clear()
+	for closure in closures:
+		for tile in closure.tiles(self):
+			closed_tiles[tile] = true
 
 # --------------------------------------------------------------- conversion ---
 
@@ -153,6 +177,9 @@ func repaint(state: CityState) -> void:
 	if home_rect.size != Vector2i.ZERO:
 		fill_rect(home_rect, GameEnums.TileType.HOME)
 	_tiles_by_type.clear()
+	# Yesterday's closures are gone before today's are planned; the planner needs to see the
+	# whole lattice to decide what it can afford to take out of it.
+	closed_tiles.clear()
 	_recompute_calm(state)
 
 func _repaint_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:

@@ -1,0 +1,18 @@
+<!-- Two cars that met. Slewed across the carriageway, one wing off, glass on the road. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="38" viewBox="0 0 80 38" shape-rendering="crispEdges">
+  <rect x="4" y="14" width="40" height="17" fill="#8a6f60"/>
+  <rect x="4" y="14" width="40" height="4" fill="#a08475"/>
+  <rect x="10" y="18" width="12" height="7" fill="#4d5a63"/>
+  <rect x="26" y="18" width="12" height="7" fill="#4d5a63"/>
+  <rect x="40" y="16" width="7" height="13" fill="#5c4c44"/>
+  <rect x="44" y="10" width="32" height="16" fill="#57606b"/>
+  <rect x="44" y="10" width="32" height="4" fill="#6c7683"/>
+  <rect x="50" y="14" width="10" height="6" fill="#4d5a63"/>
+  <rect x="62" y="14" width="10" height="6" fill="#4d5a63"/>
+  <rect x="42" y="30" width="5" height="2" fill="#9aa4ac"/>
+  <rect x="52" y="32" width="4" height="2" fill="#9aa4ac"/>
+  <rect x="34" y="33" width="4" height="2" fill="#9aa4ac"/>
+  <circle cx="14" cy="31" r="4" fill="#221f28"/>
+  <circle cx="36" cy="31" r="4" fill="#221f28"/>
+  <circle cx="68" cy="27" r="4" fill="#221f28"/>
+</svg>

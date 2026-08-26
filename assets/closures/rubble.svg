@@ -1,0 +1,10 @@
+<!-- A facade in the road. Act IV: the street is closed because it fell down. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="86" height="34" viewBox="0 0 86 34" shape-rendering="crispEdges">
+  <path d="M2 34 L14 12 L40 6 L64 14 L84 34 Z" fill="#6b6357"/>
+  <path d="M8 34 L18 18 L38 14 L56 20 L70 34 Z" fill="#847a6b"/>
+  <rect x="24" y="16" width="14" height="8" fill="#4e4a44"/>
+  <rect x="46" y="22" width="11" height="7" fill="#4e4a44"/>
+  <rect x="12" y="26" width="9" height="6" fill="#5c564d"/>
+  <rect x="60" y="27" width="12" height="5" fill="#5c564d"/>
+  <rect x="36" y="28" width="8" height="4" fill="#3a3630"/>
+</svg>

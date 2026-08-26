@@ -6,7 +6,7 @@ Each milestone is one git branch, merged to `main` when green.
 
 **Where things stand:** M0–M15 are done and merged, and the game has now been played twice
 by a human. The first playtest produced thirteen findings, planned as M11–M17 in
-**[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced six more, planned as M18–M21
+**[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced six more, planned as M18–M22
 in **[docs/PLAYTEST-02.md](PLAYTEST-02.md)**. Both are live plans and should be read before
 picking anything up. Execution order is numeric: M16 and M17 finish before M18 starts.
 
@@ -251,7 +251,7 @@ sequencing. Summary only here:
       least two distinct routes to at least two distinct calm areas. Canal dropped to M21
 - [ ] **M17 Route map** — the planning screen, rendering M15's block states
 
-## M18–M21 — Playtest 02
+## M18–M22 — Playtest 02
 
 See **[docs/PLAYTEST-02.md](PLAYTEST-02.md)** for the findings and the reasoning. Six
 findings from the second human playtest, queued behind M16 and M17. Summary only here:
@@ -272,6 +272,13 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       Calm zones of four blocks, so the lattice grows T-junctions and L-bends and can no
       longer be derived from a coordinate; main roads with traffic lights against side roads
       with zebras, where a main road is crossed rather than walked
+- [ ] **M22 The edge of the screen** — anything too fast to react to once it is visible
+      flashes a symbol at the screen edge it is coming from, so the player can start moving
+      *before* it enters view. Absorbs the "screen-edge indicator for fast movers" item from
+      M10 below, and is the first real fix for the two events that are currently
+      unsignalled. **Worth pulling forward to sit with M19**: a lethal car arriving from
+      off-screen is a breach of the telegraph fairness contract, not a polish item, and M19
+      is what creates them
 
 ## M10 — Polish · `feature/polish`
 

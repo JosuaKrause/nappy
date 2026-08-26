@@ -1,0 +1,15 @@
+<!-- One panel of a road closure barrier, seen face on. Repeated across the mouth of a
+     north-south street. Amber and white on purpose: a closure is civil, and must not read
+     as the grey military barricade an event leaves behind. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="24" viewBox="0 0 22 24" shape-rendering="crispEdges">
+  <rect x="3" y="14" width="3" height="10" fill="#6b6357"/>
+  <rect x="16" y="14" width="3" height="10" fill="#6b6357"/>
+  <rect x="0" y="2" width="22" height="7" fill="#e8e2d4"/>
+  <rect x="0" y="2" width="7" height="7" fill="#e0932f"/>
+  <rect x="14" y="2" width="8" height="7" fill="#e0932f"/>
+  <rect x="0" y="11" width="22" height="4" fill="#e8e2d4"/>
+  <rect x="4" y="11" width="7" height="4" fill="#e0932f"/>
+  <rect x="18" y="11" width="4" height="4" fill="#e0932f"/>
+  <rect x="0" y="9" width="22" height="2" fill="#221f28"/>
+  <rect x="0" y="15" width="22" height="2" fill="#221f28"/>
+</svg>

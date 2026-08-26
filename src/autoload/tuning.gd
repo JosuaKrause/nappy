@@ -164,6 +164,41 @@ const SQUARE_SIZE_TILES := 4
 ## The home is a notch in the south edge of a residential block.
 const HOME_SIZE_TILES := Vector2i(2, 2)
 
+# ----------------------------------------------------------- road closures ---
+# Playtest 01, finding 12: prune the road network per day so the route is a real decision —
+# avoidable, but clearly "not that way". See docs/CITY.md, "Road closures".
+
+## Streets closed per day, by act. Deliberately light. M16 was drafted as though closures
+## would be the only thing making a route interesting; playtest 02's findings 2 and 3 put
+## route pressure at the scale of a *block* instead — which side of the road to walk down,
+## forty times a day — and closures tuned as the sole source of pressure would be far too
+## heavy underneath that. Four closed streets out of 112 is a city that has had a bad
+## morning, not a city under siege.
+const CLOSURES_PER_ACT: Array[int] = [1, 2, 3, 4]
+
+## How much likelier a closure is to land on a street the player would actually have used
+## than on one they would not. A closure in the far corner of the map is not a decision, it
+## is scenery; this is what aims the mechanic at the route.
+const CLOSURE_ROUTE_BIAS := 5.0
+## How many blocks longer than the best route a street may be and still count as "on the
+## way". At 0 only the single shortest line counts, which aims every closure at the same few
+## streets; at 1 it is roughly the set of routes a player would consider.
+const CLOSURE_ROUTE_SLACK := 1
+
+## The day-level invariant, and the whole reason the planner is allowed to close anything:
+## **at least this many calm areas keep at least two distinct routes to them.** Two routes,
+## because one route is a corridor and a corridor is not a decision; two areas, because a
+## choice of destination is what makes a choice of route mean anything.
+const MIN_CALM_AREAS_WITH_TWO_ROUTES := 2
+
+## How deep the barrier across a closed street's mouth is, in pixels. Thin enough to read as
+## a line drawn across the road, thick enough that nothing walks through it in one frame.
+const CLOSURE_BARRIER_DEPTH := 24.0
+
+## Streets closed on a given day.
+func closures_for_day(day: int) -> int:
+	return CLOSURES_PER_ACT[clampi(act_for_day(day) - 1, 0, CLOSURES_PER_ACT.size() - 1)]
+
 # --------------------------------------------------------------- the crowd ---
 # Findings 3, 8 and 9 from the first playtest: there was nobody about, and passing the one
 # person who was barely moved the meter. The crowd is also the answer to finding 4 — the

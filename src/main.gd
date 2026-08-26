@@ -83,7 +83,8 @@ func _start_day() -> void:
 	# The city becomes today's city before anything is placed in it: the scheduler has to
 	# see the parks that are still parks, not yesterday's.
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
-	_city.start_day(GameState.city_state)
+	_city.start_day(GameState.city_state, GameState.day,
+			GameState.day_rng(GameState.day, "closures"))
 	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots)
 	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"))
 	_city.set_act(GameState.current_act())
