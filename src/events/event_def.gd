@@ -82,6 +82,18 @@ enum PathMode {
 ## Entering the inner radius ends the day immediately.
 @export var hard_fail := false
 
+## Applies everywhere at once, ignoring distance — a floor under the whole city rather
+## than a place to avoid. Loudspeaker masts, not a man shouting.
+@export var city_wide := false
+
+## Intensity multiplier reached at the end of `duration`. 1.0 holds steady; above 1.0
+## swells (a protest gathering), below 1.0 fades.
+@export var intensity_ramp := 1.0
+
+## Event id to leave permanently at this event's position for the rest of the RUN. A fire
+## leaves a burnt-out shell; the shell is still there on day 12.
+@export var scar_id := ""
+
 ## Narrative act, for palette and audio in M7.
 @export var act_tag := 1
 
@@ -100,6 +112,10 @@ func available_on(day: int) -> bool:
 ## whole point of a city that does not change.
 func validate() -> bool:
 	if kind == GameEnums.EventKind.AMBIENT:
+		return true
+	# A city-wide event has no edge to walk out of, so the escape-distance rule is
+	# meaningless for it. It is never a hazard on its own — see the loudspeaker.
+	if city_wide:
 		return true
 	return Tuning.validate_event(id, telegraph_time, inner_radius, outer_radius, hard_fail,
 			speed if mobile else 0.0)

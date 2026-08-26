@@ -75,6 +75,7 @@ func _start_day() -> void:
 		_apply_meter_override()
 	_first_day = false
 
+	_city.set_act(GameState.current_act())
 	_day.start(_day_length())
 	EventBus.day_started.emit(GameState.day)
 	print("[Main] day %d (act %d): %d events, %.0fs" % [

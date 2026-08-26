@@ -96,6 +96,9 @@ func current_intensity() -> float:
 	if is_finished:
 		return 0.0
 	var value := def.intensity
+	if not is_equal_approx(def.intensity_ramp, 1.0) and def.duration > 0.0:
+		var through := clampf((age - def.telegraph_time) / def.duration, 0.0, 1.0)
+		value *= lerpf(1.0, def.intensity_ramp, through)
 	if def.pulse_period > 0.0:
 		# 0.25..1.0, so a pulsing event is never entirely silent between beats.
 		var phase := TAU * age / def.pulse_period
@@ -108,6 +111,9 @@ func current_intensity() -> float:
 func contribution_at(world_position: Vector2) -> float:
 	if is_finished:
 		return 0.0
+	# A city-wide source has no falloff: there is nowhere in the city it does not reach.
+	if def.city_wide:
+		return current_intensity()
 	return Tuning.falloff(global_position.distance_to(world_position),
 			current_intensity(), def.inner_radius, def.outer_radius)
 

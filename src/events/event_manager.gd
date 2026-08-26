@@ -27,7 +27,7 @@ func setup(city: City, map: CityMap) -> void:
 func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[String]) -> void:
 	clear()
 	_hard_failed = false
-	for plan in EventScheduler.build_day(day, rng, _map, consumed_one_shots):
+	for plan in EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars):
 		_spawn(plan)
 
 func clear() -> void:
@@ -36,10 +36,19 @@ func clear() -> void:
 	_instances.clear()
 
 func _spawn(plan: EventScheduler.Planned) -> void:
+	_instances.append(_create(plan.def, plan.position, plan.path))
+
+## Builds an instance, puts it in the world, and records any permanent mark it leaves.
+## Everything that puts an event on the map goes through here, so a scar can never be
+## missed by whichever path created the event.
+func _create(def: EventDef, at: Vector2,
+		path := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(plan.def, plan.position, plan.path)
-	_instances.append(instance)
+	instance.setup(def, at, path)
 	_city.add_entity(instance)
+	if def.scar_id != "":
+		GameState.add_scar(def.scar_id, instance.global_position)
+	return instance
 
 func active_count() -> int:
 	return _instances.size()
@@ -90,10 +99,7 @@ func _successor_of(instance: EventInstance) -> EventInstance:
 		push_error("event '%s' spawns unknown '%s'"
 				% [instance.def.id, instance.def.spawns_on_finish])
 		return null
-	var successor := EventInstance.new()
-	successor.setup(def, instance.global_position)
-	_city.add_entity(successor)
-	return successor
+	return _create(def, instance.global_position)
 
 func _check_hard_fails() -> void:
 	if _hard_failed:

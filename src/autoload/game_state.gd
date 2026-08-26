@@ -16,6 +16,11 @@ var consumed_one_shots: Array[String] = []
 var completed_resistance_steps: Array[int] = []
 var failed_resistance_steps: Array[int] = []
 
+## Permanent marks a one-off event left on the city: `{ id, position, since_day }`.
+## The burnt-out building from day 3 is still on that corner on day 12, cordoned off and
+## never repaired — the city remembers, which is most of how the escalation is told.
+var scars: Array[Dictionary] = []
+
 # ------------------------------------------------------------------ lifecycle ---
 
 ## Begin a fresh run. Pass a seed to reproduce a previous city, or omit for a new one.
@@ -28,6 +33,7 @@ func start_run(seed_value: int = 0) -> void:
 	consumed_one_shots.clear()
 	completed_resistance_steps.clear()
 	failed_resistance_steps.clear()
+	scars.clear()
 	print("[GameState] run started, seed=%d" % run_seed)
 
 ## Record the outcome of the day and advance the calendar. Returns true if the run continues.
@@ -49,6 +55,13 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 func _end_run(which: GameEnums.Ending) -> void:
 	ending = which
 	EventBus.run_ended.emit(which)
+
+## Records a permanent mark, ignoring duplicates from the same spot.
+func add_scar(id: String, position: Vector2) -> void:
+	for scar in scars:
+		if scar["id"] == id and scar["position"].distance_to(position) < 1.0:
+			return
+	scars.append({"id": id, "position": position, "since_day": day})
 
 # ------------------------------------------------------------------ queries ---
 

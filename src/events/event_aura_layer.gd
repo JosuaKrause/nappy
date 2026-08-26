@@ -27,7 +27,8 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	for instance in _instances:
-		if instance.is_finished:
+		if instance.is_finished or instance.def.city_wide:
+			# A city-wide source has no edge to draw. Its presence is the HUD's problem.
 			continue
 		_draw_field(instance)
 

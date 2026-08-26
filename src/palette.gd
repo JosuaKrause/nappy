@@ -13,6 +13,19 @@ const OUTLINE := Color("221f28")
 const LIGHT_MIDDAY := Color(1.0, 1.0, 1.0)
 const LIGHT_DUSK := Color(0.52, 0.54, 0.74)
 
+## Per-act cast over the whole city, multiplied into the daylight. The escalation in
+## docs/NARRATIVE.md is told by the streets, and this is the quietest part of that telling:
+## the same corner, four times, getting colder.
+const _ACT_TINT: Array[Color] = [
+	Color(1.02, 0.99, 0.93),  ## I   - warm afternoon
+	Color(0.96, 0.95, 0.93),  ## II  - drained, a notch off
+	Color(0.82, 0.86, 0.95),  ## III - cold and overcast; the streets are empty
+	Color(0.88, 0.79, 0.75),  ## IV  - smoke
+]
+
+static func act_tint(act: int) -> Color:
+	return _ACT_TINT[clampi(act - 1, 0, _ACT_TINT.size() - 1)]
+
 # ------------------------------------------------------------------ ground ---
 
 const ASPHALT := Color("46464f")

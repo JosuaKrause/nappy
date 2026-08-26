@@ -82,30 +82,47 @@ All implemented.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `police_patrol` | RECURRING | 4 | Mobile, slow, medium aura. Occasionally stops and idles. |
-| `poster_crew` | RECURRING | 4 | Static. Low intensity. Cosmetic dread — regime posters going up. |
-| `loudspeaker` | SCRIPTED | 5 | Public address masts activate. City-wide low-level excitement floor while active. |
-| `resistance_contact` | SCRIPTED | 5 | Alley meeting. See below. |
-| `curfew_announce` | SCRIPTED | 6 | Shortens the day timer by 20%. |
-| `checkpoint` | RECURRING | 7 | Blocks a street. Passing near it is high excitement. |
+| `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. |
+| `poster_crew` | RECURRING | 4 | Static, weak. Cosmetic dread; it is here so the walls change. |
+| `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like the arterial it does not raise the meter — it stops you clearing it. |
+| `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
+| `checkpoint` | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60). The first event that takes a route away rather than making it expensive. |
 
 ### Act III — Disappearances (days 8–11)
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `abduction` | RECURRING | 8 | Masked men, an unmarked van, a person taken. Very high intensity, long telegraph (the van idles first). **Entering the inner radius is a `hard_fail`** — you are taken too. |
-| `empty_street` | AMBIENT | 8 | Inverts an ambient: some streets become *quieter* as people stop going out. |
-| `alley_robbery` | RECURRING | 8 | Only in alleys. No telegraph beyond the alley's own dread. `hard_fail` on contact. This is the risk that makes the resistance route cost something. |
-| `night_raid` | SCRIPTED | 10 | A building is raided. Static, enormous, and it *moves the crowd* — bystander NPCs flee outward. |
+| `quiet_road` | AMBIENT | 8 | Takes over the arterials from `busy_road` (whose `last_day` is 7, so the two can never stack). Intensity drops 3.2 → 1.4: the city becomes an **easier** place to put a baby to sleep, because there is nobody left going out on the main roads. The cruellest number in the game. |
+| `abduction` | RECURRING | 8 | An unmarked van idles first — that idling *is* the telegraph, and it runs 4.6s because the inner radius is a `hard_fail`. Getting close does not excite the baby; it takes you. |
+| `alley_robbery` | RECURRING | 8 | Alleys only, and deliberately tiny (22/42px) so the fairness rule is satisfied by half a second. That is as close to "no warning" as the contract allows, and it is honest: **the alley is the warning**. You knew what an alley was when you turned into it. |
+| `night_raid` | SCRIPTED | 10 | Enormous, static, pulsing, and it closes the block (`obstructs_radius` 44). |
 
 ### Act IV — Open conflict (days 12–14)
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `military_convoy` | RECURRING | 12 | Like `fire_truck` but slower, larger, and it leaves `BARRICADE` tiles behind it. |
-| `protest` | RECURRING | 12 | Large, mobile, grows over time. Spoils squares. |
-| `firefight` | SCRIPTED | 13 | Static, extreme, `hard_fail` inner radius. Closes a district. |
-| `sabotage_run` | SCRIPTED | 14 | The good-ending finale route. |
+| `military_convoy` | RECURRING | 12 | Like the fire engine, but what it leaves behind is a `barricade`. |
+| `barricade` | — | — | Never scheduled directly. Left where a convoy stopped, and — via `scar_id` — left there for the rest of the **run**. |
+| `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. |
+| `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. |
+| `sabotage_run` | SCRIPTED | 14 | The good-ending finale route. *(M8/M9)* |
+
+## Permanent marks
+
+`scar_id` records an event's position in `GameState.scars`, and the scheduler places that
+event again on every **later day of the run**. The burnt-out shell from the day-3 fire is
+still on that corner on day 12, cordoned off and never repaired; barricades from Act IV
+convoys accumulate. This is most of how the escalation is told — the city remembers, and
+the route you memorised on day 2 stops existing.
+
+## Keeping a late day walkable
+
+From Act II several events physically close streets, and from Act IV a run accumulates
+permanent barricades. Any combination that seals the home off from every park makes the day
+unwinnable in a way the player cannot see coming, so after planning, obstructions are
+dropped — widest first — until a route exists again. Hard-fail events count as walls for
+this check: an abduction in progress is not something you walk through to reach the park
+behind it.
 
 ## The emission model
 
@@ -159,6 +176,7 @@ Two rules run after a day is planned:
 - **At least one park is left unspoiled.** Whichever park has the fewest events reaching it
   has them removed. Ambient events do not count as spoiling — a playground makes a park
   *contested*, which is the design, and stripping one out every day would be absurd.
+- **A park stays reachable on foot.** See "Keeping a late day walkable" below.
 
 ## Pulsing events
 
