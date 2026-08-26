@@ -4,22 +4,25 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 Each milestone is one git branch, merged to `main` when green.
 
-**Where things stand:** M0–M16 and M18 are done and merged, and the game has now been played
-twice by a human. The first playtest produced thirteen findings, planned as M11–M17 in
+**Where things stand:** M0–M16, M18 and M23 are done and merged, and the game has now been
+played twice by a human. The first playtest produced thirteen findings, planned as M11–M17 in
 **[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced twelve, planned as M18–M26 in
 **[docs/PLAYTEST-02.md](PLAYTEST-02.md)**. Both are live plans and should be read before
 picking anything up.
 
-Execution order is numeric, with one exception already taken: **M18 was pulled ahead of M16**,
-because closure counts tuned against a day that was about to halve would have been tuned
-wrong. **M17 is next.** Two ordering notes are recorded in PLAYTEST-02 rather than acted on —
-M22 wants to sit with M19, and M23 is a *gate* on M19's balance half.
+Execution order is numeric, with two exceptions already taken. **M18 was pulled ahead of
+M16**, because closure counts tuned against a day that was about to halve would have been
+tuned wrong. **M23 was pulled ahead of M17**, because it is the gate on M19's balance half and
+on M24, and because it makes judging every other item cheaper — which it should now be doing:
+anything picked up from here on can be read back with `./tools/telemetry.sh` instead of
+argued about. **M17 is next**, unless a playtest run says otherwise. One ordering note is
+still recorded in PLAYTEST-02 rather than acted on: M22 wants to sit with M19.
 
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 14918 checks (~55s); `tools/check.sh` boots the project; `tools/run.sh`
-plays it.
+`tools/test.sh` runs 14963 checks (~55s); `tools/check.sh` boots the project; `tools/run.sh`
+plays it; `tools/telemetry.sh` reads back what the last run did.
 
 ---
 
@@ -291,18 +294,13 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       is a breach of the telegraph fairness contract, not a polish item, and M19 is what
       creates them. Must keep one thing the ring did well — showing an event *swelling*, or
       the pulse envelope stops being playable
-- [ ] **M23 Telemetry** — finding 10. **A chronological plain-text log per run**, not a
-      metrics dump: what happened and in what order, readable top to bottom by a human with
-      no tool. Format sketch and the full rationale in [PLAYTEST-02.md](PLAYTEST-02.md),
-      "What M23 records". Records what the code *cannot* recompute — above all the **random
-      outcomes that branch a run** (a one-shot that fired, a block arc that advanced, an
-      alley trap that was set), since those depend on run history and no seed reproduces
-      them — plus the seed the generator actually used, what the player did, what came near
-      them, and how each day ended. Leaves out anything derivable from the seed, `Tuning` or
-      the catalogue, and any aggregate computable when reading. Must not touch gameplay: no
-      RNG, nothing that changes a roll. **A gate, not a recommendation**: the act I/II
-      difficulty pitch waits on real runs, so M19's balance half cannot finish before this
-      lands, and M24 cannot be built at all without one of its entries
+- [x] **M23 Telemetry** — finding 10. A chronological plain-text log per run, in
+      `user://telemetry/` and readable with `./tools/telemetry.sh`. Records what the code
+      cannot recompute — the random outcomes that branch a run, the seed the generator
+      actually settled on, the commit it ran on, what the player did, what came near them,
+      and how each day ended. Full format and the entry table in
+      [docs/TELEMETRY.md](TELEMETRY.md). **The gate is now open**: M19's balance half and M24
+      both have their data source. On by default; `--no-telemetry` turns it off
 - [ ] **M24 The city remembers where you went** — finding 11. Record the calm zone the player
       settled in and bias the next day's spoiling event toward it, so the options narrow *at
       the player* rather than at random. Kept from feeling like a punishment for playing well
@@ -365,7 +363,8 @@ These need a human playing the game, not more code.
 - [ ] **Is the nerve economy right?** Three nerves, fourteen days, and a lost day advances
       the calendar. Never tested against a game that threatens from day one, which decision 9
       now says it should. If act I genuinely bites, early losses become normal and a run may
-      be decided before act III arrives. M23 records where the nerves went.
+      be decided before act III arrives. The run log's `nerve` entries say where they went —
+      which day, which act — so this is waiting on runs now rather than on code.
 - [~] **Is the balance right?** *(M14 pitched it against the day rather than against itself;
       M18 then re-pitched it against a **minute of play**: day 330s → 180s,
       `SLEEPINESS_GAIN_WALKING` 0.24 → 0.42, calm 3.5x → 10x, idle drain 0.6 → 1.0. A whole
@@ -380,9 +379,9 @@ These need a human playing the game, not more code.
       quest log.* The resistance is the difficulty dial (decision 10), and **wanting the dial
       and finding the dial are the same behaviour**: a player who wants to be challenged
       explores, and exploring is what finds a chalk mark on an alley wall. Carried open since
-      M8; closed by leaving it alone. What *does* change is the key — see M26. M23 still
-      records whether a player ever went near a contact, because "nobody ever finds it" would
-      falsify the reasoning.
+      M8; closed by leaving it alone. What *does* change is the key — see M26. The run log's
+      `contact` entries record whether a player ever went near one, because "nobody ever finds
+      it" would falsify the reasoning.
 - [x] **Should running ever be *required* (a forced chase), or always purely a player
       choice?** *Answered by playtest 02, finding 9: yes, for some entities.* The measurement
       that came with it is the surprising part — running is currently the wrong move against

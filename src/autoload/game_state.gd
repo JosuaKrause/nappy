@@ -53,6 +53,10 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 	if result != GameEnums.DayResult.WON:
 		nerves -= 1
 		EventBus.nerves_changed.emit(nerves)
+		# Which nerve went, and on which day. The nerve economy has never been tested against
+		# a game that bites early, and this is the entry that will say whether it survives it.
+		Telemetry.note("nerve", "spent a nerve on day %d (act %d); %d left"
+				% [day, current_act(), nerves])
 		if nerves <= 0:
 			_end_run(GameEnums.Ending.BAD)
 			return false
@@ -64,6 +68,10 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 
 func _end_run(which: GameEnums.Ending) -> void:
 	ending = which
+	Telemetry.note("ending", "%s on day %d — resistance %d/%d, sabotage %s" % [
+		GameEnums.Ending.keys()[which].to_lower(), day,
+		resistance_progress, Tuning.RESISTANCE_GOAL,
+		"done" if sabotage_done else "not done"])
 	EventBus.run_ended.emit(which)
 
 ## Records a permanent mark, ignoring duplicates from the same spot.

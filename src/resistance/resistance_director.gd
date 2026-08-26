@@ -46,6 +46,8 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_contact.completed.connect(_on_contact_completed)
 	_city.add_entity(_contact)
 	EventBus.resistance_contact_available.emit(_step.index)
+	Telemetry.note("contact", "step %d on offer at %s" % [
+		_step.index, TelemetryLog.tile(_map.world_to_tile(at))])
 
 	_maybe_set_a_trap(day, rng, at)
 
@@ -55,10 +57,18 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2) -> void:
 	if day < TRAP_FIRST_DAY or _step.district >= 0:
 		return
-	if rng.randf() >= TRAP_CHANCE:
+	# Hoisted so the roll can be written down. Which alleys were a trap is the third of the
+	# random outcomes that branch a run, and the only one whose consequence — the day the
+	# player lost to a robbery — otherwise looks like bad luck with the event scheduler.
+	var roll := rng.randf()
+	if roll >= TRAP_CHANCE:
+		Telemetry.note("roll", "alley trap: %.2f >= %.2f — the contact is a friend"
+				% [roll, TRAP_CHANCE])
 		return
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	if robbery:
+		Telemetry.note("roll", "alley trap: %.2f < %.2f — a robbery is waiting at the contact"
+				% [roll, TRAP_CHANCE])
 		_city.events.spawn_extra(robbery, at)
 
 func _place(rng: RandomNumberGenerator) -> Vector2:
@@ -88,10 +98,13 @@ func _process(delta: float) -> void:
 		return
 	# A warning delivered late is not a warning. The contact is gone for the rest of the run.
 	_expired = true
+	Telemetry.note("contact", "step %d expired at %.0f%% of the day; the contact is gone"
+			% [_step.index, _step.deadline_fraction * 100.0])
 	GameState.fail_resistance_step(_step.index)
 	_clear()
 
 func _on_contact_completed(step_index: int) -> void:
+	Telemetry.note("contact", "step %d completed" % step_index)
 	GameState.complete_resistance_step(step_index)
 	var step := ResistanceSteps.by_index(step_index)
 	if not (step and step.needs_goal):

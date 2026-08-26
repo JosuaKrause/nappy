@@ -1,14 +1,21 @@
 # Handoff
 
-**Last updated:** end of the M16/M18 session.
+**Last updated:** end of the M23 session.
 **Read this first, then [PLAYTEST-02.md](PLAYTEST-02.md), then [TODO.md](TODO.md).**
 
 ---
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **14918 checks, 0 failures** (~55s);
-`./tools/check.sh` → OK; `./tools/run.sh` plays it.
+`main` is green and playable. `./tools/test.sh` → **14963 checks, 0 failures** (~55s);
+`./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
+run actually did.
+
+**The most important change since the last handoff is that arguments about the game can now
+be settled by reading one.** Every run writes an ordered plain-text trace — see
+[TELEMETRY.md](TELEMETRY.md). Before picking up anything below, play a day and read the log:
+it is faster than any of the reasoning in this document, and several of the open questions
+here are one run away from being answered rather than argued.
 
 - **M0–M9 complete.** Full 14-day run, four-act escalation, resistance subquest, three
   endings. Documented in `docs/`.
@@ -25,11 +32,17 @@
   mouths so a shut street is readable from the junction, and the day-level invariant — at
   least two distinct routes to at least two distinct calm areas — checked by max flow on the
   junction graph before each closure is accepted.
+- **M23 complete** *(taken out of order — it was the gate)*. A chronological run log in
+  `user://telemetry/`, on by default, read with `./tools/telemetry.sh`. It records what the
+  code cannot recompute: the random outcomes that branch a run, the seed the generator
+  actually settled on, **the commit it ran on**, what the player did, what came near them,
+  and how each day ended. **The gate is now open** — M19's balance half and M24 both have
+  their data source.
 
-## The three decisions that govern the next milestones
+## The decisions that govern the next milestones
 
-Taken at the end of this session and easy to miss, because they are decisions rather than
-code. All three are written up in `PLAYTEST-02.md` (decisions 9–11).
+Taken at the end of the M16/M18 session and easy to miss, because they are decisions rather
+than code. All of them are written up in `PLAYTEST-02.md` (decisions 9–14).
 
 1. **The beginning is challenging too.** Not extremely difficult, but a player who never
    meets danger never learns to deal with it. The measurement below says act I and act II
@@ -41,14 +54,15 @@ code. All three are written up in `PLAYTEST-02.md` (decisions 9–11).
    A player who never finds the dial is locked to the easiest setting and never told there
    was one.
 3. **The act I/II numbers are set from data, not argument.** Build the mechanisms (M19), ship
-   telemetry (M23), read real runs, then pitch. **This makes M23 a gate**, not a
-   recommendation: M19's balance half cannot finish before it, and M24 cannot be built at all
-   without one of its fields.
+   telemetry (M23), read real runs, then pitch. This made M23 a gate rather than a
+   recommendation, which is why it went first. **The gate is open** — M19's balance half is
+   now waiting on runs, not on code.
 4. **Telemetry is an ordered log, not a metrics dump** — what happened, in what order,
    readable top to bottom with no tool. It records what the code *cannot* recompute, above all
    the **random outcomes that branch a run** (a one-shot that fired, a block arc that
    advanced, an alley trap that was set): those depend on run history, so no seed reproduces
-   them. Anything derivable from the seed, `Tuning` or the catalogue stays out.
+   them. Anything derivable from the seed, `Tuning` or the catalogue stays out. *(Shipped in
+   M23; [TELEMETRY.md](TELEMETRY.md) is the version to work from now.)*
 5. **The resistance stays hidden and loses its key.** *(Closes an open question carried since
    M8.)* No marker, no quest log — wanting the difficulty dial and finding it are the same
    behaviour. But `E` appears in exactly one line of the game, so the hold becomes automatic
@@ -86,20 +100,25 @@ document before picking anything up; the summary below is not a substitute for i
 
 Two things about the ordering, because neither is obvious from the numbers:
 
-- **The queue is M17, then M18–M25**, and M18 is already done. Findings 7–12 arrived as a
-  follow-up read of the same playtest and are written up in the same document. The new findings were
-  deliberately queued *behind* the milestones in flight rather than in front of them. M18
-  jumped the queue for one practical reason: closure counts tuned against a day that was
-  about to halve would have been tuned wrong.
+- **The queue is M17, then M18–M26**, and M18 and M23 are already done. Findings 7–12 arrived
+  as a follow-up read of the same playtest and are written up in the same document. The new
+  findings were deliberately queued *behind* the milestones in flight rather than in front of
+  them. Two have jumped the queue since, each for one practical reason: **M18**, because
+  closure counts tuned against a day that was about to halve would have been tuned wrong, and
+  **M23**, because it was the gate on M19's balance half and on M24 and it makes judging
+  everything else cheaper.
 - **M22 wants pulling forward next to M19.** It is filed later because that is where it was
   asked for, but a lethal car arriving from off-screen is a breach of the telegraph fairness
   contract rather than a polish item, and M19 is what creates them.
-- **M23 (telemetry) is the recommended next one**, against the same default. It is the only
-  item that makes judging every *other* item cheaper, and M24 cannot be built without one of
-  its fields. Filed in numeric order all the same — the call is the owner's, and it is
-  recorded here rather than taken.
 
 ## What to do next, in order
+
+### First: play a day and read the log
+
+Not a milestone, and it costs three minutes. Several of the open questions in `TODO.md` — is
+the nerve economy right, does anybody ever find the resistance, is anything standing between
+the player and a won day — are now questions about a file rather than about a design. Do this
+before picking up M17, because the answer may reorder what follows it.
 
 ### M17 — the route map
 
@@ -111,21 +130,28 @@ M16 raised the value of this: closures are legible at the junction and **not** b
 player two junctions away cannot know a street is shut, and the map is the only thing that
 can tell them. That gap is stated as a gap in `docs/CITY.md` rather than papered over.
 
-### Then M18–M25, per PLAYTEST-02.md
+M23 raised it again, and gave it a test: the log's `closure` entries say where a barrier was
+seen from, and a `turn` following one says whether it changed the plan. If closures read as
+scenery in the traces, that is the argument for the map screen — and afterwards, the same two
+entries are how to tell whether the map fixed it.
 
-M18 done. **M19 bodies on the street** (collision, lethal cars, pavement hazards that force a
-crossing, cars that stop at zebras) — the big one, and the thing that makes M18's generous
-meter honest, and the thing the cost table above says the early acts badly need. **M20
-traffic that behaves** (following, overtaking, 8-direction driving, crashes as events).
+### Then M18–M26, per PLAYTEST-02.md
+
+M18 and M23 done. **M19 bodies on the street** (collision, lethal cars, pavement hazards that
+force a crossing, cars that stop at zebras) — the big one, and the thing that makes M18's
+generous meter honest, and the thing the cost table above says the early acts badly need. Its
+balance half is no longer blocked: set the numbers from what the traces say, per decision 11.
+**M20 traffic that behaves** (following, overtaking, 8-direction driving, crashes as events).
 **M21 the city overhaul** (four-block calm zones, T-junctions and L-bends, main roads as
 barriers, plus the canal dropped out of M16). **M22 danger you can read** (the circles go;
 entity, symbol, screen edge, and a symbol over the player when they are too close).
-**M23 telemetry** — a chronological log; format sketch and rationale in PLAYTEST-02.md, "What
-M23 records". **M24 the city remembers where you went** (spoil the park you relied on
-yesterday). **M25 patrols, and running that matters**. **M26 teaching the controls** — delete
-the interact key, then teach walking and running, ending in a scripted day-1 event that
-requires a short run. M26 must come after M25 for correctness, not scheduling: forcing a run
-before running is ever the right answer teaches a move that is never correct again.
+**M24 the city remembers where you went** (spoil the park you relied on yesterday) — the
+`calm` entries it needs are being written now. **M25 patrols, and running that matters** — the
+`run` entries are the measurement it will be judged by, and today they all say the same thing.
+**M26 teaching the controls** — delete the interact key, then teach walking and running,
+ending in a scripted day-1 event that requires a short run. M26 must come after M25 for
+correctness, not scheduling: forcing a run before running is ever the right answer teaches a
+move that is never correct again.
 
 M21 rewrites the lattice enumeration in `src/routes/street_network.gd`. The graph half of
 that file — route counting, the invariant, the doorway exemptions — survives untouched and
@@ -156,6 +182,37 @@ Taken in the M12a session and still governing everything after it. All four are 
    repaints the ground and re-dresses the blocks every morning.
 
 ---
+
+## Gotchas learned in M23
+
+- **A green suite says nothing about whether a log is any good.** The observer passed every
+  test and its first trace of a minute's actual walking had four defects in it: a `run` entry
+  claiming a six-hundred-pixel event was "in reach", two instances of the same event that the
+  log could not tell apart, a duplicated field, and — the bad one — a meter breakdown reading
+  `crowd 0.0, events 0.0` while excitement climbed, because the player was doing it to
+  themselves with the run button and nothing said so. This is the screenshot rule with a
+  different output format, and it is now in `CLAUDE.md` next to it.
+- **The breakdown has to add up or it lies by omission.** Printing the two spatial sources was
+  true and useless. It prints the baby's whole incoming rate alongside them now, so whatever
+  the remainder is — running, an alley — is visible as a remainder.
+- **Hoisting a roll to print it is the dangerous edit.** `if rng.randf() > threshold` becoming
+  `var roll := rng.randf()` is identical, and *nearly* the same edit that consumes an extra
+  value and moves every event placed afterwards. `tests/test_telemetry.gd` plans all fourteen
+  days twice, with the log off and on, and compares event ids and positions to the pixel.
+- **Telemetry must be inert by default, not disabled by a flag.** The suite creates schedulers
+  and city states directly; if the log were on by default it would write a file per check.
+  `Telemetry` is dormant until `begin_run()`, which only `main.gd` calls — so the suite pays a
+  boolean and the game gets a trace with no flag to remember. The observer is not even added
+  to the tree when telemetry is off.
+- **A roll that passes and then fails to place is invisible.** `_place_one_shots` can roll a
+  one-shot in and then find nowhere to put it, in which case it is *not* consumed and gets
+  rolled again tomorrow. From outside that is indistinguishable from a roll that failed, so it
+  gets its own line.
+- **`user://` is somewhere nobody can find.** On macOS it is inside `~/Library`, which Finder
+  hides. The path is printed at the start of every run *and* `tools/telemetry.sh` exists, and
+  it still took someone asking where the logs were. Neither was sufficient alone.
+- **macOS ships bash 3.2, so no `mapfile`.** `tools/telemetry.sh` reads `ls -t` in a `while`
+  loop instead, like the rest of `tools/`.
 
 ## Gotchas learned in M16
 

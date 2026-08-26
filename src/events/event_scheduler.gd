@@ -78,12 +78,28 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		# Spread a one-shot over the days it is eligible for rather than always firing it
 		# on the first: 1/n chance per remaining day makes it feel like an accident.
 		var remaining := maxi(1, (def.last_day if def.last_day > 0 else def.first_day + 2) - day + 1)
-		if rng.randf() > 1.0 / float(remaining):
+		# Hoisted out of the comparison purely so it can be written down. A one-shot depends
+		# on which days the run has already spent, so no seed reproduces it from the outside:
+		# this roll is part of the story of the run and nothing else records it.
+		var roll := rng.randf()
+		var threshold := 1.0 / float(remaining)
+		if roll > threshold:
+			Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today"
+					% [def.id, roll, threshold])
 			continue
 		var placement := _place_one(def, rng, map)
-		if placement:
-			planned.append(placement)
-			consumed.append(def.id)
+		if not placement:
+			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
+			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
+			# the outside this looks identical to a roll that failed.
+			Telemetry.note("roll", "one-shot %s: %.2f <= %.2f but nowhere to place it"
+					% [def.id, roll, threshold])
+			continue
+		planned.append(placement)
+		consumed.append(def.id)
+		Telemetry.note("roll", "one-shot %s: %.2f <= %.2f — fires at %s"
+				% [def.id, roll, threshold,
+				TelemetryLog.tile(map.world_to_tile(placement.position))])
 	return planned
 
 static func _fill_with_recurring(day: int, rng: RandomNumberGenerator,

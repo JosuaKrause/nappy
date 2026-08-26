@@ -24,9 +24,11 @@ it is not.
 | [docs/EVENTS.md](docs/EVENTS.md) | Event catalogue, telegraphing, scheduling |
 | [docs/NARRATIVE.md](docs/NARRATIVE.md) | Act structure, side content, endings — **spoilers** |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Code layout, autoloads, signals |
+| [docs/TELEMETRY.md](docs/TELEMETRY.md) | What a run writes down, and how to read it |
 | [docs/TODO.md](docs/TODO.md) | Milestones and task tracking |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | **Start here** — current state and what to do next |
 | [docs/PLAYTEST-01.md](docs/PLAYTEST-01.md) | First playtest: findings, analysis, current plan |
+| [docs/PLAYTEST-02.md](docs/PLAYTEST-02.md) | Second playtest: twelve findings, planned as M18–M26 |
 
 ## Running
 
@@ -69,6 +71,14 @@ godot --path . -- --seed 12345 --day 9 --overview
 | `--follow <event id>` | Park a camera on an event wherever it goes |
 | `--overview` | Frame the whole city at once |
 | `--screenshot out.png --after N` | Render for N **seconds**, save a PNG, quit |
+| `--no-telemetry` | Do not write a run log |
+
+## Run logs
+
+Every run writes a plain-text trace of what happened, in order — what was shut, where the
+player went, what came near, how the day ended. `./tools/telemetry.sh` prints the newest one
+(`-f` follows a run in progress, `-l` lists them). [docs/TELEMETRY.md](docs/TELEMETRY.md)
+says what the entries mean.
 
 ## Verifying a build
 
