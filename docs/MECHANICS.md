@@ -11,16 +11,34 @@ The win meter. Fills only under the right conditions.
 
 | Condition | Rate (per second) |
 | --- | --- |
-| Walking, excitement below calm threshold | `+2.2` |
-| Walking, in a **calm zone** | `+2.2 × 1.75` |
+| Walking, excitement below calm threshold | `+0.24` |
+| Walking, in a **calm zone** | `+0.24 × 3.5` = `+0.84` |
 | Running | `0` (never fills while running) |
-| Idle / near-idle | `-1.6` (drains) |
+| Idle / near-idle | `-0.6` (drains) |
 | Excitement at or above `CALM_THRESHOLD` | `0` (frozen, never drains) |
 
 **Key rule:** while `excitement >= CALM_THRESHOLD` (default `35`), sleepiness does not rise
 at all. It does not drain either — the baby is just too interested in the world.
 
 At `sleepiness = 100` the baby falls asleep and the day enters its **return phase**.
+
+**Where a day is won.** These three numbers are pitched against the *day*, not against each
+other, and they are what makes the walk the game:
+
+- A whole day of undisturbed street walking reaches about **79** of 100. The street is real
+  progress and can never be enough — so circling the starting block, which used to win a
+  day outright, now cannot win one at all.
+- A calm stretch clears the meter in about **119s**, and the walk out has already
+  contributed. On the short 264s curfew day that leaves comfortably over a minute for
+  getting there and getting home.
+- Standing still drains faster than walking fills, so waiting is never a strategy — but it
+  drains *slower* than a calm zone fills, so stopping to let something pass stays a move
+  worth making.
+
+The first two are asserted in terms of `day_length()` rather than as numbers
+(`tests/test_meters.gd`), so lengthening the day cannot quietly make the street sufficient
+again. `tests/test_balance.gd` then checks the same claim against a real city with that
+day's crowd and events standing in it.
 
 ### Excitement (0 → 100)
 

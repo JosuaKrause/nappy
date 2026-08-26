@@ -12,7 +12,7 @@ should be read before picking anything up.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 1934 checks; `tools/check.sh` boots the project; `tools/run.sh` plays
+`tools/test.sh` runs 1986 checks; `tools/check.sh` boots the project; `tools/run.sh` plays
 it.
 
 ---
@@ -237,7 +237,10 @@ sequencing. Summary only here:
       the noise floor. `busy_road` / `quiet_road` retired: the arterial is loud because
       there are cars on it, and act III's empty city is empty pavement rather than a
       smaller number
-- [ ] **M14 Balance** — a day cannot be won without reaching calm ground
+- [x] **M14 Balance** — a day cannot be won without reaching calm ground. Street gain
+      0.24/s (79 of 100 over a whole day), calm 3.5x, idle drain 0.6/s. Asserted against
+      `day_length()` in `tests/test_meters.gd` and against a real city in
+      `tests/test_balance.gd`
 - [ ] **M15 Block purposes** — the vocabulary of block purposes and the per-block arcs the
       generator plans up front, plus the run-scoped `CityState` that tracks where each block
       currently is. Supersedes the "CityMap is immutable" invariant
@@ -281,10 +284,12 @@ Not started. The game is complete without it; this is what would make it shippab
 
 These need a human playing the game, not more code.
 
-- [ ] **Is the balance right?** Every number is asserted to be self-consistent, but none of
-      them has been felt. The suspects: `SLEEPINESS_GAIN_WALKING` 2.2 (45s of clean walking
-      to fill the meter — probably too fast), the event budget `3 + day * 1.4`, and whether
-      330s is long enough for a day now that the city is 3328px across.
+- [~] **Is the balance right?** *(M14 re-pitched it against the day rather than against
+      itself: `SLEEPINESS_GAIN_WALKING` 2.2 → 0.24, calm 1.75x → 3.5x, idle drain 1.6 →
+      0.6. A whole day of street walking now reaches 79 of 100 and a calm stretch takes
+      119s.)* Still unfelt by a human, and still suspect: the event budget `3 + day * 1.4`,
+      and whether 330s is long enough now that reaching a park is compulsory rather than
+      optional. This is the first thing the next playtest should look at.
 - [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little
       time to learn a city before it starts changing.
 - [ ] **How visible should the resistance be to a player ignoring it?** Right now: a chalk

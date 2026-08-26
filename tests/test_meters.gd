@@ -29,6 +29,10 @@ func run(t) -> void:
 	_test_falloff(t)
 	_test_telegraph_contract(t)
 	_test_walking_fills_sleepiness(t)
+	_test_a_day_cannot_be_won_on_street_gain_alone(t)
+	_test_one_calm_stretch_wins_a_day(t)
+	_test_standing_still_is_worse_than_walking_but_affordable(t)
+	_test_a_street_day_never_settles_and_a_park_day_does(t)
 	_test_calm_zone_speeds_sleep(t)
 	_test_idle_drains_sleepiness(t)
 	_test_running_blocks_sleep_and_excites(t)
@@ -109,6 +113,62 @@ func _test_walking_fills_sleepiness(t) -> void:
 			"walking fills sleepiness at the base rate", 0.1)
 	_teardown()
 
+## Finding 2: circling the starting block filled the meter, so the city was decoration.
+## The guarantee has to be arithmetic rather than a hope about how loud the streets are — a
+## quiet back street never freezes the meter, so nothing else stops a player walking in
+## circles all day.
+func _test_a_day_cannot_be_won_on_street_gain_alone(t) -> void:
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		var whole_day := Tuning.SLEEPINESS_GAIN_WALKING * Tuning.day_length(day)
+		t.check(whole_day < Tuning.METER_MAX,
+				"day %d cannot be won on street walking alone (%.0f of %.0f)"
+				% [day, whole_day, Tuning.METER_MAX])
+		t.check(whole_day > Tuning.METER_MAX * 0.5,
+				"day %d still makes real progress on the way (%.0f of %.0f)"
+				% [day, whole_day, Tuning.METER_MAX])
+
+## The other half of the pitch: calm ground has to finish a day comfortably, not barely.
+## Measured against the *short* day, because the curfew one is the strict case.
+func _test_one_calm_stretch_wins_a_day(t) -> void:
+	var stretch := Tuning.METER_MAX / Tuning.sleepiness_gain_calm()
+	var short_day := Tuning.day_length(Tuning.RUN_LENGTH_DAYS)
+	t.check(stretch < short_day * 0.6,
+			"a calm stretch fills the meter in %.0fs, well inside the %.0fs day"
+			% [stretch, short_day])
+
+func _test_standing_still_is_worse_than_walking_but_affordable(t) -> void:
+	t.check(Tuning.SLEEPINESS_DRAIN_IDLE > Tuning.SLEEPINESS_GAIN_WALKING,
+			"standing still loses ground rather than merely failing to gain it")
+	t.check(Tuning.SLEEPINESS_DRAIN_IDLE < Tuning.sleepiness_gain_calm(),
+			"a pause in a park costs less than the park gives, so stopping stays a move")
+
+## The claim end to end, on a fake world where nothing is happening at all. Even with no
+## events and no crowd — the friendliest possible day — the street cannot finish it and one
+## calm stretch can, with time left over to walk home.
+func _test_a_street_day_never_settles_and_a_park_day_does(t) -> void:
+	_build(t)
+	_walk()
+	_simulate(Tuning.day_length(1))
+	t.check(_baby.state == GameEnums.BabyState.AWAKE,
+			"a whole day of undisturbed street walking still does not settle her")
+	_teardown()
+
+	_build(t)
+	_walk()
+	_simulate(45.0)          # the walk out to the park
+	_world.calm = true
+	var elapsed := 45.0
+	var short_day := Tuning.day_length(Tuning.RUN_LENGTH_DAYS)
+	while _baby.state != GameEnums.BabyState.ASLEEP and elapsed < short_day:
+		_simulate(1.0)
+		elapsed += 1.0
+	t.check(_baby.state == GameEnums.BabyState.ASLEEP,
+			"a walk out plus one calm stretch does settle her")
+	t.check(elapsed < short_day * 0.75,
+			"and settles her by %.0fs, leaving the walk home inside the %.0fs day"
+			% [elapsed, short_day])
+	_teardown()
+
 func _test_calm_zone_speeds_sleep(t) -> void:
 	_build(t)
 	_world.calm = true
@@ -183,7 +243,9 @@ func _test_falls_asleep(t) -> void:
 	var announced := [false]
 	var handler := func() -> void: announced[0] = true
 	EventBus.return_phase_started.connect(handler)
-	_baby.sleepiness = Tuning.METER_MAX - 1.0
+	# Half a second of walking away from asleep, expressed as a rate rather than a number,
+	# so re-pitching the fill cannot silently stop this test reaching the threshold.
+	_baby.sleepiness = Tuning.METER_MAX - Tuning.SLEEPINESS_GAIN_WALKING * 0.5
 	_walk()
 	_simulate(1.0)
 	EventBus.return_phase_started.disconnect(handler)
