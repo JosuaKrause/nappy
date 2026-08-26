@@ -1,0 +1,17 @@
+# Godot 4
+.godot/
+/android/
+/build/
+/export/
+
+# Godot export presets often carry credentials
+export_presets.cfg
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+.idea/
+.vscode/
