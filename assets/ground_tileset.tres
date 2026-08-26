@@ -1,0 +1,124 @@
+[gd_resource type="TileSet" load_steps=35 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/tiles/road.svg" id="0_road"]
+[ext_resource type="Texture2D" path="res://assets/tiles/road_line_e.svg" id="1_road_line_e"]
+[ext_resource type="Texture2D" path="res://assets/tiles/road_line_w.svg" id="2_road_line_w"]
+[ext_resource type="Texture2D" path="res://assets/tiles/road_line_n.svg" id="3_road_line_n"]
+[ext_resource type="Texture2D" path="res://assets/tiles/road_line_s.svg" id="4_road_line_s"]
+[ext_resource type="Texture2D" path="res://assets/tiles/crossing_v.svg" id="5_crossing_v"]
+[ext_resource type="Texture2D" path="res://assets/tiles/crossing_h.svg" id="6_crossing_h"]
+[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk.svg" id="7_sidewalk"]
+[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_n.svg" id="8_sidewalk_kerb_n"]
+[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_s.svg" id="9_sidewalk_kerb_s"]
+[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_e.svg" id="10_sidewalk_kerb_e"]
+[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_w.svg" id="11_sidewalk_kerb_w"]
+[ext_resource type="Texture2D" path="res://assets/tiles/grass.svg" id="12_grass"]
+[ext_resource type="Texture2D" path="res://assets/tiles/sand.svg" id="13_sand"]
+[ext_resource type="Texture2D" path="res://assets/tiles/alley.svg" id="14_alley"]
+[ext_resource type="Texture2D" path="res://assets/tiles/plaza.svg" id="15_plaza"]
+[ext_resource type="Texture2D" path="res://assets/tiles/stoop.svg" id="16_stoop"]
+
+[sub_resource type="TileSetAtlasSource" id="atlas_road"]
+texture = ExtResource("0_road")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_road_line_e"]
+texture = ExtResource("1_road_line_e")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_road_line_w"]
+texture = ExtResource("2_road_line_w")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_road_line_n"]
+texture = ExtResource("3_road_line_n")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_road_line_s"]
+texture = ExtResource("4_road_line_s")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_crossing_v"]
+texture = ExtResource("5_crossing_v")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_crossing_h"]
+texture = ExtResource("6_crossing_h")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_sidewalk"]
+texture = ExtResource("7_sidewalk")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_n"]
+texture = ExtResource("8_sidewalk_kerb_n")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_s"]
+texture = ExtResource("9_sidewalk_kerb_s")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_e"]
+texture = ExtResource("10_sidewalk_kerb_e")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_w"]
+texture = ExtResource("11_sidewalk_kerb_w")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_grass"]
+texture = ExtResource("12_grass")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_sand"]
+texture = ExtResource("13_sand")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_alley"]
+texture = ExtResource("14_alley")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_plaza"]
+texture = ExtResource("15_plaza")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_stoop"]
+texture = ExtResource("16_stoop")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[resource]
+tile_size = Vector2i(32, 32)
+sources/0 = SubResource("atlas_road")
+sources/1 = SubResource("atlas_road_line_e")
+sources/2 = SubResource("atlas_road_line_w")
+sources/3 = SubResource("atlas_road_line_n")
+sources/4 = SubResource("atlas_road_line_s")
+sources/5 = SubResource("atlas_crossing_v")
+sources/6 = SubResource("atlas_crossing_h")
+sources/7 = SubResource("atlas_sidewalk")
+sources/8 = SubResource("atlas_sidewalk_kerb_n")
+sources/9 = SubResource("atlas_sidewalk_kerb_s")
+sources/10 = SubResource("atlas_sidewalk_kerb_e")
+sources/11 = SubResource("atlas_sidewalk_kerb_w")
+sources/12 = SubResource("atlas_grass")
+sources/13 = SubResource("atlas_sand")
+sources/14 = SubResource("atlas_alley")
+sources/15 = SubResource("atlas_plaza")
+sources/16 = SubResource("atlas_stoop")

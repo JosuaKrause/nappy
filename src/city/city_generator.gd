@@ -61,8 +61,8 @@ static func _lay_streets(map: CityMap) -> void:
 ## corridor's sidewalk band you get a pedestrian crossing, which is exactly where a
 ## crossing belongs.
 static func _street_tile(x_offset: int, y_offset: int) -> GameEnums.TileType:
-	var x_road := x_offset >= 0 and _is_road_offset(x_offset)
-	var y_road := y_offset >= 0 and _is_road_offset(y_offset)
+	var x_road := x_offset >= 0 and CityMap.is_road_offset(x_offset)
+	var y_road := y_offset >= 0 and CityMap.is_road_offset(y_offset)
 
 	if x_offset >= 0 and y_offset >= 0:
 		if x_road and y_road:
@@ -72,9 +72,6 @@ static func _street_tile(x_offset: int, y_offset: int) -> GameEnums.TileType:
 		return GameEnums.TileType.SIDEWALK
 
 	return GameEnums.TileType.ROAD if (x_road or y_road) else GameEnums.TileType.SIDEWALK
-
-static func _is_road_offset(offset: int) -> bool:
-	return offset >= Tuning.SIDEWALK_WIDTH and offset < Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
 
 # ---------------------------------------------------------------- districts ---
 

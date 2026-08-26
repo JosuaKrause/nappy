@@ -20,15 +20,23 @@ const BOUNDARY_THICKNESS := 64.0
 const TREES_PER_PARK := 10
 
 @onready var _entities: Node2D = $Entities
+@onready var _ground: TileMapLayer = $Ground
 
 var map: CityMap
 var events: EventManager
 var _daylight: CanvasModulate
 var _act := 1
 
+const DOOR_TEXTURE := preload("res://assets/props/door.svg")
+
 func build(city_map: CityMap) -> void:
 	map = city_map
+	_paint_ground()
+	# Buildings first: the door sits in the wall of the building above the notch, at exactly
+	# the same y. A y-sort tie is broken by tree order, so the door has to be added second
+	# or the wall draws over it.
 	_spawn_buildings()
+	_spawn_home()
 	_spawn_park_props()
 	_spawn_boundary()
 	events = EventManager.new()
@@ -66,6 +74,21 @@ func total_excitement_at(world_position: Vector2) -> float:
 	return events.total_excitement_at(world_position) if events else 0.0
 
 # ------------------------------------------------------------------ spawning ---
+
+## The front door. A sprite in the y-sorted layer rather than part of the ground, so she
+## passes in front of it the way she passes in front of any other wall.
+func _spawn_home() -> void:
+	var stoop := map.tile_rect_to_world(map.home_rect)
+	var door := Sprite2D.new()
+	door.texture = DOOR_TEXTURE
+	# Feet-anchored like everything else: the NODE sits on the ground plane at the back of
+	# the notch and the art is offset upward from there. Putting the node at the sprite's
+	# top instead makes y-sort compare the wrong edge, and the building above the doorway
+	# wins and hides it.
+	door.centered = false
+	door.offset = Vector2(-DOOR_TEXTURE.get_width() * 0.5, -DOOR_TEXTURE.get_height())
+	door.position = Vector2(stoop.get_center().x, stoop.position.y)
+	_entities.add_child(door)
 
 func _spawn_buildings() -> void:
 	for rect in map.building_rects:
@@ -155,124 +178,19 @@ func add_aura_layer(node: Node2D) -> void:
 	node.z_index = 1
 	add_child(node)
 
-# ------------------------------------------------------------------ drawing ---
+# ------------------------------------------------------------------ ground ---
 
-func _draw() -> void:
-	if not map:
-		return
-	_draw_ground()
-	_draw_kerbs()
-	_draw_road_markings()
-	_draw_crossings()
-	_draw_home()
-
-## Merges runs of identical tiles along each row into single rects. A 104x104 map is
-## ~10k tiles; run-merging cuts that to a few hundred draw calls. `_draw` is only re-run
-## on queue_redraw(), so this cost is paid once.
-func _draw_ground() -> void:
-	var tile_px := float(Tuning.TILE_SIZE)
-	for y in map.size.y:
-		var run_start := 0
-		var run_type := map.tile_at(Vector2i(0, y))
-		for x in range(1, map.size.x + 1):
-			var same := x < map.size.x and map.tile_at(Vector2i(x, y)) == run_type
-			if same:
-				continue
-			draw_rect(Rect2(run_start * tile_px, y * tile_px, (x - run_start) * tile_px, tile_px),
-					Tile.ground_colour(run_type))
-			if x < map.size.x:
-				run_start = x
-				run_type = map.tile_at(Vector2i(x, y))
-
-func _draw_road_markings() -> void:
-	var dash := 16.0
-	var gap := 14.0
-	var period := CityMap.period()
-	# The centre line runs along the seam between the two road tiles of each corridor.
-	var centre_offset := float(Tuning.STREET_WIDTH) * 0.5 * Tuning.TILE_SIZE
-
-	# Only alongside blocks. A centre line does not run through a junction, and testing
-	# the tile type was not enough to stop it — an intersection tile is ROAD too.
-	for corridor in Tuning.CITY_BLOCKS.x + 1:
-		var x := corridor * period * Tuning.TILE_SIZE + centre_offset
-		for row in Tuning.CITY_BLOCKS.y:
-			var span := map.tile_rect_to_world(CityMap.block_rect(Vector2i(0, row)))
-			_dashed_line(Vector2(x, span.position.y), Vector2(x, span.end.y), dash, gap)
-	for corridor in Tuning.CITY_BLOCKS.y + 1:
-		var y := corridor * period * Tuning.TILE_SIZE + centre_offset
-		for column in Tuning.CITY_BLOCKS.x:
-			var span := map.tile_rect_to_world(CityMap.block_rect(Vector2i(column, 0)))
-			_dashed_line(Vector2(span.position.x, y), Vector2(span.end.x, y), dash, gap)
-
-func _dashed_line(from: Vector2, to: Vector2, dash: float, gap: float) -> void:
-	var direction := (to - from).normalized()
-	var length := from.distance_to(to)
-	var travelled := 0.0
-	while travelled < length:
-		var end := minf(travelled + dash, length)
-		draw_line(from + direction * travelled, from + direction * end,
-				Palette.ROAD_MARKING, 2.0)
-		travelled += dash + gap
-
-## The seam between the sidewalk and the road, drawn only alongside blocks — a kerb line
-## through an intersection would be a kerb across the mouth of the junction.
-func _draw_kerbs() -> void:
-	var tile_px := float(Tuning.TILE_SIZE)
-	var period := CityMap.period()
-	var near := Tuning.SIDEWALK_WIDTH * tile_px
-	var far := (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH) * tile_px
-
-	for corridor in Tuning.CITY_BLOCKS.x + 1:
-		var base_x := corridor * period * tile_px
-		for row in Tuning.CITY_BLOCKS.y:
-			var span := map.tile_rect_to_world(CityMap.block_rect(Vector2i(0, row)))
-			for offset in [near, far]:
-				draw_line(Vector2(base_x + offset, span.position.y),
-						Vector2(base_x + offset, span.end.y), Palette.KERB, 2.0)
-
-	for corridor in Tuning.CITY_BLOCKS.y + 1:
-		var base_y := corridor * period * tile_px
-		for column in Tuning.CITY_BLOCKS.x:
-			var span := map.tile_rect_to_world(CityMap.block_rect(Vector2i(column, 0)))
-			for offset in [near, far]:
-				draw_line(Vector2(span.position.x, base_y + offset),
-						Vector2(span.end.x, base_y + offset), Palette.KERB, 2.0)
-
-## Zebra stripes, spaced across the whole 2-tile crossing patch rather than repeated within
-## every tile — per-tile stripes turned every junction into visual static.
-const _STRIPE_SPACING := 16.0
-const _STRIPE_WIDTH := 7.0
-
-func _draw_crossings() -> void:
-	var tile_px := float(Tuning.TILE_SIZE)
+## Paints the ground once from `assets/ground_tileset.tres`.
+##
+## This used to be ~120 lines of draw_rect and computed dashes. Kerbs, centre lines and
+## zebra crossings are authored art now, chosen per cell by GroundTiles — which means they
+## can be edited in a drawing program instead of by changing arithmetic, and it is one
+## place rather than four.
+func _paint_ground() -> void:
+	_ground.clear()
 	for y in map.size.y:
 		for x in map.size.x:
-			if map.tile_at(Vector2i(x, y)) != GameEnums.TileType.CROSSING:
-				continue
-			# Zebra stripes run PARALLEL to the traffic and repeat across the road's
-			# width — that is what a driver approaching sees. The first version had them
-			# the other way round, which read as a ladder laid across the street.
-			var vertical_road := Tile.is_road(map.tile_at(Vector2i(x, y - 1))) \
-					or Tile.is_road(map.tile_at(Vector2i(x, y + 1)))
-			var origin := Vector2(x, y) * tile_px
-			var count := int(tile_px / _STRIPE_SPACING)
-			for i in count:
-				# Phase from the absolute tile position, so stripes line up across the
-				# tiles of one patch instead of restarting in each.
-				var along := fposmod(float(i) * _STRIPE_SPACING
-						+ (origin.x if vertical_road else origin.y), tile_px)
-				# Full tile length along the road, with no inset: a crossing patch is two
-				# tiles wide, and insetting each split every stripe down the middle.
-				if vertical_road:
-					draw_rect(Rect2(origin + Vector2(along, 0.0),
-							Vector2(_STRIPE_WIDTH, tile_px)), Palette.CROSSING_STRIPE)
-				else:
-					draw_rect(Rect2(origin + Vector2(0.0, along),
-							Vector2(tile_px, _STRIPE_WIDTH)), Palette.CROSSING_STRIPE)
-
-func _draw_home() -> void:
-	var home := map.tile_rect_to_world(map.home_rect)
-	draw_rect(home, Palette.HOME_STOOP)
-	var door := Rect2(home.get_center().x - 11.0, home.end.y - 26.0, 22.0, 26.0)
-	draw_rect(door, Palette.HOME_DOOR)
-	draw_rect(door, Palette.OUTLINE, false, 1.5)
+			var tile := Vector2i(x, y)
+			var source := GroundTiles.source_for(map, tile)
+			if source >= 0:
+				_ground.set_cell(tile, source, Vector2i.ZERO)

@@ -44,6 +44,12 @@ static func corridor_offset(coordinate: int) -> int:
 	var offset := posmod(coordinate, period())
 	return offset if offset < Tuning.STREET_WIDTH else -1
 
+## Whether a corridor offset lands on the carriageway rather than the pavement.
+## Layout across a corridor is sidewalk | road | sidewalk.
+static func is_road_offset(offset: int) -> bool:
+	return offset >= Tuning.SIDEWALK_WIDTH \
+			and offset < Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
+
 # ------------------------------------------------------------------- tiles ---
 
 func _init(map_size: Vector2i = map_tiles()) -> void:
