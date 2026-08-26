@@ -256,9 +256,10 @@ sequencing. Summary only here:
 See **[docs/PLAYTEST-02.md](PLAYTEST-02.md)** for the findings and the reasoning. Six
 findings from the second human playtest, queued behind M16 and M17. Summary only here:
 
-- [ ] **M18 The park has to be worth it** — finding 1. Calm ground fills the meter in under
-      a minute instead of two, and reads as obviously different from the street. The
-      difficulty moves out of the meter and into the walk, which is what M19 is for
+- [x] **M18 The park has to be worth it** — finding 1. Calm ground fills the meter in 24s
+      instead of 119s (10x the street, not 3.5x), and the day itself is 180s instead of 330s
+      — aimed at a minute of play with a grace of three. Pulled ahead of M16, because
+      closures tuned against a day that was about to halve would have been tuned wrong
 - [ ] **M19 Bodies on the street** — findings 2 and 3. Pedestrians and the player collide
       and displace each other, a car strike is a hard fail, pavement hazards (a café
       spilling out, a dog on a long lead) make one side of the street the wrong side, and
@@ -308,12 +309,13 @@ Not started. The game is complete without it; this is what would make it shippab
 
 These need a human playing the game, not more code.
 
-- [~] **Is the balance right?** *(M14 re-pitched it against the day rather than against
-      itself: `SLEEPINESS_GAIN_WALKING` 2.2 → 0.24, calm 1.75x → 3.5x, idle drain 1.6 →
-      0.6. A whole day of street walking now reaches 79 of 100 and a calm stretch takes
-      119s.)* Still unfelt by a human, and still suspect: the event budget `3 + day * 1.4`,
-      and whether 330s is long enough now that reaching a park is compulsory rather than
-      optional. This is the first thing the next playtest should look at.
+- [~] **Is the balance right?** *(M14 pitched it against the day rather than against itself;
+      M18 then re-pitched it against a **minute of play**: day 330s → 180s,
+      `SLEEPINESS_GAIN_WALKING` 0.24 → 0.42, calm 3.5x → 10x, idle drain 0.6 → 1.0. A whole
+      day of street walking reaches 76 of 100 and a calm stretch takes 24s.)* The open
+      question is now the opposite one: with the meter this generous once calm ground is
+      reached, is anything standing between the player and a won day? That is what M19 and
+      M20 are for, and the next playtest should judge them together.
 - [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little
       time to learn a city before it starts changing.
 - [ ] **How visible should the resistance be to a player ignoring it?** Right now: a chalk
