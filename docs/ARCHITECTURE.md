@@ -37,7 +37,26 @@ src/
   ui/
     hud.gd
     meter_bar.gd
+  dev/
+    auto_screenshot.gd    render N frames, save a PNG, quit
+  palette.gd              colours for the procedural rendering
+  game_enums.gd           shared enums (see below)
+tools/
+  check.sh                import + headless boot, fails on any script error
+  shot.sh                 render the game to a PNG
 ```
+
+### `GameEnums`
+
+An autoload's name cannot also be a `class_name`, so the enums that signals and exports
+need to annotate (`BabyState`, `DayResult`, `Ending`, `EventKind`, `TileType`, `District`)
+live in `src/game_enums.gd` rather than on `GameState`.
+
+### Verifying visuals
+
+A headless run never calls `_draw()`, so `tools/check.sh` passing says nothing about
+whether the game renders correctly. `tools/shot.sh out.png [frames]` runs the game
+windowed, saves the viewport after N frames and quits.
 
 ## Autoloads
 
@@ -101,8 +120,12 @@ kept strictly out of anything that touches the meters.
 ## Rendering / 2.5D
 
 - `city.tscn` root has `y_sort_enabled = true`; so do the prop containers.
-- Buildings: `StaticBody2D` (collision on the footprint) + a `_draw()` that renders a roof
-  polygon offset by `-height` on Y, plus the two visible walls.
+- Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that fills
+  that same lot with a front wall (the southern `height` px) and a roof (the remainder).
+  Fitting the mass inside the lot is what keeps extrusions off the street — a roof drawn
+  *overhanging* northward would hide the player whenever she walked along that sidewalk.
+  A taller building therefore shows more wall and less roof, which is what an oblique view
+  of a taller building should look like.
 - The player's `position` is the *feet*, and drawing is offset upward from there. This
   keeps y-sort and collision consistent.
 - A single `Camera2D` on the player, with `position_smoothing_enabled` and a small
