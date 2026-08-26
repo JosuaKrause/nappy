@@ -15,6 +15,7 @@ var _player: Stroller
 var _baby: Baby
 var _day: DayController
 var _resistance: ResistanceDirector
+var _hud: CanvasLayer
 var _summary: CanvasLayer
 var _follow_camera: Camera2D
 var _follow_id := ""
@@ -42,7 +43,8 @@ func _ready() -> void:
 	_player.set_camera_limits(Rect2(Vector2.ZERO, _city.map.world_size()))
 	_baby = _player.get_node("Baby")
 
-	add_child(HUD.instantiate())
+	_hud = HUD.instantiate()
+	add_child(_hud)
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 	_summary.continued.connect(_on_summary_continued)
@@ -82,14 +84,16 @@ func _start_day() -> void:
 	_city.set_act(GameState.current_act())
 	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
 			_day_length())
-	_player.position = _spawn_position() if _first_day else _city.map.home_world_position()
-	_player.velocity = Vector2.ZERO
+	_player.reset_at(_spawn_position() if _first_day else _city.map.doorstep_world_position())
 	_baby.reset()
+	_day.start(_day_length())
+
+	# After the day is running, not before: the override can put the baby straight to
+	# sleep, and start() would have reset the phase that announcement just set.
 	if _first_day:
 		_apply_meter_override()
 	_first_day = false
 
-	_day.start(_day_length())
 	print("[Main] day %d (act %d): %d events, %.0fs" % [
 		GameState.day, GameState.current_act(),
 		_city.events.active_count(), _day.time_total])
@@ -113,6 +117,8 @@ func _process(_delta: float) -> void:
 	if not _player or not _baby:
 		return
 	_city.set_daylight(_day.fraction_remaining())
+	_hud.set_home_guidance(_day.phase == GameEnums.DayPhase.RETURNING,
+			_city.map.home_world_position())
 	var tile := _city.map.world_to_tile(_player.global_position)
 	_status.text = "\n".join([
 		"seed  %d   day %d" % [GameState.run_seed, GameState.day],
@@ -205,7 +211,7 @@ func _spawn_position() -> Vector2:
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--spawn")
 	if index == -1 or index + 1 >= args.size():
-		return _city.map.home_world_position()
+		return _city.map.doorstep_world_position()
 
 	# `event` takes the first non-ambient event; `event:<id>` targets a specific one.
 	if args[index + 1].begins_with("event"):
@@ -292,6 +298,10 @@ func _apply_meter_override() -> void:
 		return
 	_baby.sleepiness = clampf(float(args[index + 1]), 0.0, Tuning.METER_MAX)
 	_baby.excitement = clampf(float(args[index + 2]), 0.0, Tuning.METER_MAX)
+	# A full meter means "show me the walk home". Left to settle on its own it never would:
+	# a stationary player drains sleepiness faster than the state check can fire.
+	if _baby.sleepiness >= Tuning.METER_MAX:
+		_baby.force_sleep()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):

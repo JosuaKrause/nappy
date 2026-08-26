@@ -94,6 +94,15 @@ func tile_type_at_world(world_position: Vector2) -> GameEnums.TileType:
 func home_world_position() -> Vector2:
 	return tile_rect_to_world(home_rect).get_center()
 
+## Where a day starts and ends: the pavement outside the front door, not the doorway
+## itself. Spawning in the doorway drew her standing on top of the door.
+func doorstep_world_position() -> Vector2:
+	var tile := Vector2i(home_rect.position.x, home_rect.end.y)
+	var beside := tile + Vector2i.RIGHT
+	if is_walkable(beside):
+		return (tile_to_world(tile) + tile_to_world(beside)) * 0.5
+	return tile_to_world(tile)
+
 # --------------------------------------------------------------- traversal ---
 
 const _NEIGHBOURS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]

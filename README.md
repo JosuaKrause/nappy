@@ -1,11 +1,17 @@
 # Nappy
 
 A 2.5D top-down game about a mother pushing a stroller through a city, trying to get her
-baby to sleep — while the city around her slowly slides into authoritarianism and civil war.
+baby to sleep.
 
 - **Engine:** Godot 4.7
-- **Genre:** Roguelike / route-planning / stealth-of-noise
+- **Genre:** Roguelike / route-planning
 - **Core loop:** Walk a route → keep the baby calm → fill the sleepiness meter → return home.
+
+The city is fixed for a whole run, so the map is knowledge you earn and keep. The noise in
+it is not.
+
+> **Spoilers:** everything under `docs/` describes the game's full arc, including things a
+> player should meet for the first time in play. This README deliberately does not.
 
 ## Documentation
 
@@ -16,7 +22,7 @@ baby to sleep — while the city around her slowly slides into authoritarianism 
 | [docs/MECHANICS.md](docs/MECHANICS.md) | Meters, movement, tuning constants |
 | [docs/CITY.md](docs/CITY.md) | City generation, tile types, calm zones |
 | [docs/EVENTS.md](docs/EVENTS.md) | Event catalogue, telegraphing, scheduling |
-| [docs/NARRATIVE.md](docs/NARRATIVE.md) | Act structure, resistance subquest, endings |
+| [docs/NARRATIVE.md](docs/NARRATIVE.md) | Act structure, side content, endings — **spoilers** |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Code layout, autoloads, signals |
 | [docs/TODO.md](docs/TODO.md) | Milestones and task tracking |
 

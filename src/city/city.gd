@@ -188,16 +188,21 @@ func _draw_road_markings() -> void:
 	var dash := 16.0
 	var gap := 14.0
 	var period := CityMap.period()
-	var extent := map.world_size()
 	# The centre line runs along the seam between the two road tiles of each corridor.
 	var centre_offset := float(Tuning.STREET_WIDTH) * 0.5 * Tuning.TILE_SIZE
 
+	# Only alongside blocks. A centre line does not run through a junction, and testing
+	# the tile type was not enough to stop it — an intersection tile is ROAD too.
 	for corridor in Tuning.CITY_BLOCKS.x + 1:
 		var x := corridor * period * Tuning.TILE_SIZE + centre_offset
-		_dashed_line(Vector2(x, 0.0), Vector2(x, extent.y), dash, gap)
+		for row in Tuning.CITY_BLOCKS.y:
+			var span := map.tile_rect_to_world(CityMap.block_rect(Vector2i(0, row)))
+			_dashed_line(Vector2(x, span.position.y), Vector2(x, span.end.y), dash, gap)
 	for corridor in Tuning.CITY_BLOCKS.y + 1:
 		var y := corridor * period * Tuning.TILE_SIZE + centre_offset
-		_dashed_line(Vector2(0.0, y), Vector2(extent.x, y), dash, gap)
+		for column in Tuning.CITY_BLOCKS.x:
+			var span := map.tile_rect_to_world(CityMap.block_rect(Vector2i(column, 0)))
+			_dashed_line(Vector2(span.position.x, y), Vector2(span.end.x, y), dash, gap)
 
 func _dashed_line(from: Vector2, to: Vector2, dash: float, gap: float) -> void:
 	var direction := (to - from).normalized()
@@ -205,11 +210,8 @@ func _dashed_line(from: Vector2, to: Vector2, dash: float, gap: float) -> void:
 	var travelled := 0.0
 	while travelled < length:
 		var end := minf(travelled + dash, length)
-		var a := from + direction * travelled
-		var b := from + direction * end
-		# Skip the stretch inside an intersection, where a centre line makes no sense.
-		if map.tile_type_at_world((a + b) * 0.5) == GameEnums.TileType.ROAD:
-			draw_line(a, b, Palette.ROAD_MARKING, 2.0)
+		draw_line(from + direction * travelled, from + direction * end,
+				Palette.ROAD_MARKING, 2.0)
 		travelled += dash + gap
 
 ## The seam between the sidewalk and the road, drawn only alongside blocks — a kerb line
@@ -247,8 +249,9 @@ func _draw_crossings() -> void:
 		for x in map.size.x:
 			if map.tile_at(Vector2i(x, y)) != GameEnums.TileType.CROSSING:
 				continue
-			# Stripes lie across the direction of traffic, so the road axis decides them:
-			# a crossing over a north-south road gets stripes running east-west.
+			# Zebra stripes run PARALLEL to the traffic and repeat across the road's
+			# width — that is what a driver approaching sees. The first version had them
+			# the other way round, which read as a ladder laid across the street.
 			var vertical_road := Tile.is_road(map.tile_at(Vector2i(x, y - 1))) \
 					or Tile.is_road(map.tile_at(Vector2i(x, y + 1)))
 			var origin := Vector2(x, y) * tile_px
@@ -257,15 +260,15 @@ func _draw_crossings() -> void:
 				# Phase from the absolute tile position, so stripes line up across the
 				# tiles of one patch instead of restarting in each.
 				var along := fposmod(float(i) * _STRIPE_SPACING
-						+ (origin.y if vertical_road else origin.x), tile_px)
-				# Full tile width across, with no inset: a crossing patch is two tiles
-				# wide, and insetting each one split every stripe down the middle.
+						+ (origin.x if vertical_road else origin.y), tile_px)
+				# Full tile length along the road, with no inset: a crossing patch is two
+				# tiles wide, and insetting each split every stripe down the middle.
 				if vertical_road:
-					draw_rect(Rect2(origin + Vector2(0.0, along),
-							Vector2(tile_px, _STRIPE_WIDTH)), Palette.CROSSING_STRIPE)
-				else:
 					draw_rect(Rect2(origin + Vector2(along, 0.0),
 							Vector2(_STRIPE_WIDTH, tile_px)), Palette.CROSSING_STRIPE)
+				else:
+					draw_rect(Rect2(origin + Vector2(0.0, along),
+							Vector2(tile_px, _STRIPE_WIDTH)), Palette.CROSSING_STRIPE)
 
 func _draw_home() -> void:
 	var home := map.tile_rect_to_world(map.home_rect)

@@ -41,6 +41,15 @@ func reset() -> void:
 	EventBus.sleepiness_changed.emit(sleepiness)
 	EventBus.excitement_changed.emit(excitement)
 
+## Dev affordance: straight to sleep, so the return phase and the way home can be
+## inspected without walking the whole meter up first.
+func force_sleep() -> void:
+	sleepiness = Tuning.METER_MAX
+	EventBus.sleepiness_changed.emit(sleepiness)
+	_set_state(GameEnums.BabyState.ASLEEP)
+	fell_asleep.emit()
+	EventBus.return_phase_started.emit()
+
 func _physics_process(delta: float) -> void:
 	if state == GameEnums.BabyState.CRYING:
 		return
