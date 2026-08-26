@@ -1,13 +1,13 @@
 # Handoff
 
-**Last updated:** end of the M12c session — M12 is complete.
+**Last updated:** end of the M13 session.
 **Read this first, then [PLAYTEST-01.md](PLAYTEST-01.md), then [TODO.md](TODO.md).**
 
 ---
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **2649 checks, 0 failures**;
+`main` is green and playable. `./tools/test.sh` → **1934 checks, 0 failures**;
 `./tools/check.sh` → OK; `./tools/run.sh` plays it.
 
 - **M0–M9 complete.** Full 14-day run, four-act escalation, resistance subquest, three
@@ -18,13 +18,34 @@
 - **M12b complete.** Buildings are assembled from `assets/buildings/*.svg`, and their
   heights are whole tiles.
 - **M12c complete.** The rig, the props and the event bodies are sprites. `Palette` was
-  trimmed to the colours the code still chooses.
-
-**M12 (the asset pipeline) is done.** Nothing draws its own art out of primitives any more.
+  trimmed to the colours the code still chooses. **M12 is done** — nothing draws its own art
+  out of primitives any more.
+- **M13 complete.** The city has its own traffic: ~530 agents in act I, on a per-corridor
+  and per-act density. The crowd is the noise floor, and the two invisible ambient road
+  bands were deleted rather than left alongside it.
 
 ## What to do next, in order
 
-### M13 → M17
+### M14 — balance
+
+The next one, and the first that can be done honestly, because the floor now exists. The
+target from `PLAYTEST-01.md`: a day (330s, or 264s after the curfew) must be **unwinnable
+on street gain alone** and **comfortably winnable with one good calm stretch**. Today an
+ordinary street still gains sleepiness at the full `SLEEPINESS_GAIN_WALKING` 2.2/s, so
+circling the block is still a strategy — the crowd made the street *noisier*, which stalls
+recovery, but it did not make it a worse place to fill the meter.
+
+Measured starting points, day 1, seed 4242 (`--spawn arterial`, `--spawn park`, and the
+`incoming` line in the dev readout):
+
+| where | crowd incoming | idle decay | net |
+| --- | --- | --- | --- |
+| arterial pavement, act I | 9–14 /s | 6.0 | **+3 to +8** |
+| ordinary side street, act I | ~3.8 /s | 6.0 | −2.2 |
+| arterial pavement, act III | ~0.8 /s | 6.0 | −5.2 |
+| park | ~0.9 /s | 9.6 | −8.7 |
+
+### Then M15 → M17
 
 See `PLAYTEST-01.md`. Do not reorder them — the sequencing rationale is in that document
 and each depends on the one before.
@@ -53,6 +74,23 @@ Taken in the M12a session and still governing everything after it. All four are 
    per-day rather than once per run.
 
 ---
+
+## Gotchas learned in M13
+
+- **A runtime error in a test suite hangs the runner; it does not fail it.** `run_tests.gd`
+  calls each suite synchronously and quits at the end, so an error aborts `_ready()` before
+  the quit and the headless process sits there printing nothing. Deleting `busy_road` left
+  three suites calling `by_id("busy_road").intensity`, and the symptom was a test run that
+  produced *no output at all* for six minutes. No output means an error, not a slow suite.
+- **A negative-width `Rect2` normalises** — already in `CLAUDE.md` from M12c, and it bit
+  again here: it is the same helper the whole crowd draws through.
+- **Moving a `Node2D` does not invalidate its draw list.** The transform is applied when the
+  retained list is replayed, so 530 agents only need `queue_redraw()` when their *picture*
+  changes — a turn, a flip — not when they move. That is the difference between 530 redraws
+  a frame and a handful.
+- **Give each agent its own RNG.** Seeded per agent from the day, not shared, so a turn
+  taken at a junction cannot depend on the order agents happen to reach junctions in — which
+  frame timing would otherwise decide, and determinism would be a lie.
 
 ## Gotchas learned in M12c
 

@@ -81,6 +81,7 @@ func _start_day() -> void:
 	# Events and the contact are placed before the player, so --spawn has something to find
 	# and so nothing spawns on top of her.
 	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots)
+	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"))
 	_city.set_act(GameState.current_act())
 	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
 			_day_length())
@@ -133,6 +134,8 @@ func _process(_delta: float) -> void:
 		"run excess  %6.2f" % _player.run_excess_ratio(),
 		"",
 		"events      %6d" % _city.events.active_count(),
+		"crowd       %6d" % _city.crowd.agent_count(),
+		"fps         %6d" % Engine.get_frames_per_second(),
 		"nearest     %s" % _nearest_event_text(),
 		"",
 		"incoming    %6.2f /s" % _baby.last_incoming,
@@ -204,7 +207,7 @@ func _day_override() -> int:
 		return 1
 	return clampi(int(args[index + 1]), 1, Tuning.RUN_LENGTH_DAYS)
 
-## Dev flag: `-- --spawn park|alley|square|event` drops the player straight onto a tile type
+## Dev flag: `-- --spawn park|alley|square|arterial|event` drops the player onto a tile type
 ## or next to a live event, so the WorldContext answers can be checked without walking
 ## across the city to find one.
 func _spawn_position() -> Vector2:
@@ -216,6 +219,11 @@ func _spawn_position() -> Vector2:
 	# `event` takes the first non-ambient event; `event:<id>` targets a specific one.
 	if args[index + 1].begins_with("event"):
 		return _first_event_position(args[index + 1].get_slice(":", 1))
+	# The busiest pavement in the city, for looking at the crowd's noise floor without
+	# walking there. The arterial is where the floor is highest, so it is where the
+	# question "can a day be won on an ordinary street" is actually answered.
+	if args[index + 1] == "arterial":
+		return _nearest_walkable(CrowdLanes.arterial_pavement(_city.map))
 	if args[index + 1] == "contact":
 		var contact := _resistance.contact_position()
 		if contact == Vector2.INF:

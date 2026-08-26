@@ -21,7 +21,6 @@ enum Look {
 enum AmbientSource {
 	NONE,
 	PLAYGROUND,  ## One per playground.
-	MAIN_ROAD,   ## Spread along the two arterial corridors.
 }
 
 ## How the scheduler builds a mobile event's route.

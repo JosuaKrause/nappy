@@ -12,7 +12,7 @@ should be read before picking anything up.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 2649 checks; `tools/check.sh` boots the project; `tools/run.sh` plays
+`tools/test.sh` runs 1934 checks; `tools/check.sh` boots the project; `tools/run.sh` plays
 it.
 
 ---
@@ -133,8 +133,9 @@ it.
 - [ ] The `burning_building` spawns exactly where the engine stopped, which is in the road
       rather than in a building. Nudging it to the nearest `BUILDING` tile would read much
       better and is a few lines.
-- [ ] `busy_road` is 14 separate instances. Fine for a linear scan, but a single
-      polyline-shaped source would be tidier and cheaper.
+- [x] `busy_road` is 14 separate instances. Fine for a linear scan, but a single
+      polyline-shaped source would be tidier and cheaper. *(M13: retired entirely — the
+      crowd is the arterial noise now.)*
 - [ ] No audio, so every "you hear it coming" telegraph is currently visual only (M10).
 
 ## M6 — Day loop · `feature/day-loop`
@@ -170,15 +171,15 @@ it.
 - [x] Street closures as obstructing events, revalidated so a park stays reachable
 - [x] New mechanics: `city_wide` (no falloff), `intensity_ramp` (a protest swells),
       `scar_id`
-- [x] `tests/test_acts.gd` (243 checks) — act gating, the arterial handover, city-wide
+- [x] `tests/test_acts.gd` — act gating, city-wide
       sources, protest growth, scar persistence, walkability under closures
 - [ ] Per-act ambient audio bed — no audio in the project yet (M10)
 
 ### Notes
 
-- `busy_road` has `last_day = 7` and `quiet_road` `first_day = 8`, and a test asserts every
-  day has **exactly one** arterial band. Overlapping them would silently double the noise
-  on the main roads.
+- ~~`busy_road` has `last_day = 7` and `quiet_road` `first_day = 8`~~ — both retired in
+  M13. The handover they encoded is now `Tuning.CROWD_*_PER_ACT`, and the thing that would
+  have silently doubled the noise on the main roads was keeping them *alongside* the crowd.
 - `alley_robbery` is not exempt from the fairness contract — its radius is small enough
   (22/42px) that half a second satisfies it. The honest framing is that the alley is the
   warning.
@@ -232,8 +233,10 @@ sequencing. Summary only here:
         to whole tiles
   - [x] **M12c** the rig, props and events: `assets/rig/`, `assets/props/`,
         `assets/events/`, plus `Sprites` for the feet-anchored draw rule
-- [ ] **M13 Density and life** — pedestrians and traffic as real agents; the crowd becomes
-      the noise floor
+- [x] **M13 Density and life** — pedestrians and traffic as real agents; the crowd becomes
+      the noise floor. `busy_road` / `quiet_road` retired: the arterial is loud because
+      there are cars on it, and act III's empty city is empty pavement rather than a
+      smaller number
 - [ ] **M14 Balance** — a day cannot be won without reaching calm ground
 - [ ] **M15 Block purposes** — the vocabulary of block purposes and the per-block arcs the
       generator plans up front, plus the run-scoped `CityState` that tracks where each block

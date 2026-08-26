@@ -31,9 +31,16 @@ Sources:
 | Source | Contribution |
 | --- | --- |
 | Proximity to an active event | `intensity × falloff(distance)` per second |
+| Proximity to a passer-by | `4.2 × falloff(distance)`, inner `22`, outer `88` |
+| Proximity to a passing car | `5.4 × falloff(distance)`, inner `38`, outer `170` |
 | Running | `+ (speed − walk_speed) / (run_speed − walk_speed) × 9.0` per second |
 | Standing in an alley | `+3.0` per second (slow, constant dread) |
 | Sudden events (cat dash) | one-shot impulse on trigger |
+
+The crowd is the same kind of quantity as an event and is summed the same way, which is
+what makes the **noise floor emergent**. There is no city-wide "background noise" number
+anywhere; a street is loud in proportion to how busy it is, and a park is quiet because
+nobody is in it. Both facts are visible on screen, which a constant never could be.
 
 Excitement moves at the **net** rate, `incoming − decay`:
 
@@ -56,6 +63,15 @@ matter. Two consequences fall out of it, and both are wanted:
 It also sets a floor on what counts as an event: a source weaker than `3.5` cannot move
 the meter on a walking player at all. That is deliberate — it is what lets an empty alley
 apply constant *pressure* (`+3.0`) without ever being a threat on its own.
+
+The crowd is pitched deliberately across that line. One person at arm's length is `4.2`,
+just over the walking decay, so brushing past somebody costs — and the pavement is two
+tiles wide, so *how close to pass* is a choice the player makes rather than a toll they
+pay. One car is `5.4`, under the idle decay: no single car is dangerous. The danger is that
+on a main road there is always another one, and the arterial's mean load sits between one
+and three times the idle decay. Above three it fills the meter faster than the street can
+be crossed, which is a street nobody can use rather than a route decision;
+`tests/test_crowd.gd` holds both ends of that.
 
 At `excitement = 100` → **crying** → day lost.
 

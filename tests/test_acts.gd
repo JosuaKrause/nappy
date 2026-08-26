@@ -10,7 +10,6 @@ var _map: CityMap
 func run(t) -> void:
 	_map = CityGenerator.generate(SEED)
 	_test_acts_are_gated_by_day(t)
-	_test_the_arterial_hands_over_cleanly(t)
 	_test_city_wide_sources_have_no_edge(t)
 	_test_a_protest_grows(t)
 	_test_scars_outlive_the_day_that_made_them(t)
@@ -50,19 +49,6 @@ func _test_acts_are_gated_by_day(t) -> void:
 	for id in ["military_convoy", "protest"]:
 		t.check(not EventCatalogue.by_id(id).available_on(11),
 				"'%s' does not appear before act IV" % id)
-
-## Two ambient defs share the arterial corridors, one loud and one quiet. If their day
-## ranges ever overlapped the main roads would silently carry both bands at once.
-func _test_the_arterial_hands_over_cleanly(t) -> void:
-	var loud := EventCatalogue.by_id("busy_road")
-	var quiet := EventCatalogue.by_id("quiet_road")
-	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		t.check(not (loud.available_on(day) and quiet.available_on(day)),
-				"day %d has exactly one arterial noise band" % day)
-		t.check(loud.available_on(day) or quiet.available_on(day),
-				"day %d has an arterial noise band at all" % day)
-	t.check(quiet.intensity < loud.intensity,
-			"the streets get quieter in act III, not louder - that is the point")
 
 # ------------------------------------------------------------------ mechanics ---
 

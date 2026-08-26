@@ -42,7 +42,6 @@ func _play_a_run(t, seed_value: int) -> void:
 
 		t.check(city.events.active_count() > 0, "seed %d day %d has events" % [seed_value, day])
 
-		var arterial_bands := 0
 		for instance in city.events.instances():
 			t.check(is_instance_valid(instance),
 					"seed %d day %d: every event is a live node" % [seed_value, day])
@@ -51,9 +50,6 @@ func _play_a_run(t, seed_value: int) -> void:
 						"seed %d: one-shot '%s' fires once in a run"
 						% [seed_value, instance.def.id])
 				one_shots_seen[instance.def.id] = day
-			if instance.def.ambient_source == EventDef.AmbientSource.MAIN_ROAD:
-				arterial_bands += 1
-		t.check(arterial_bands > 0, "seed %d day %d has arterial noise" % [seed_value, day])
 
 		# The excitement field must be finite and sane wherever the player could stand.
 		var at_home := city.map.home_world_position()

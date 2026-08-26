@@ -29,6 +29,10 @@ src/
     building.gd           one lot, assembled from 32px facade and roof tiles
     ground_tiles.gd       which ground tile a cell gets
     tile.gd               TileType enum + per-tile metadata
+  crowd/
+    crowd.gd              owns the day's agents; sums their excitement
+    crowd_agent.gd        one walker or one car
+    crowd_lanes.gd        the lane geometry of the street grid
   events/
     event_def.gd          authored event data
     event_instance.gd     runtime node: position, lifetime, telegraph, emission
@@ -178,7 +182,10 @@ non-zero on any failure.
   one-shot consumption and the usable-park rule.
 - `test_event_manager.gd` — the manager against a real generated city: retirement,
   successors, summed excitement. Wiring bugs live here and are invisible to data tests.
-- `test_acts.gd` — act gating, the arterial handover, city-wide sources, protest growth,
+- `test_crowd.gd` — the crowd against a real city: population per act, determinism, agents
+  staying on the right surface through a corner, and the emergent noise floor (a busy street
+  never lets the meter fall; a back street does; a park is out of earshot).
+- `test_acts.gd` — act gating, city-wide sources, protest growth,
   scar persistence, and walkability under accumulated street closures.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
 - `test_resistance.gd` — the step table, the hold (driven through simulated input), the

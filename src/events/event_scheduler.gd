@@ -57,32 +57,9 @@ static func _place_ambient(day: int, map: CityMap) -> Array[Planned]:
 			EventDef.AmbientSource.PLAYGROUND:
 				for rect in map.playgrounds:
 					planned.append(Planned.new(def, map.tile_rect_to_world(rect).get_center()))
-			EventDef.AmbientSource.MAIN_ROAD:
-				for at in _arterial_points(map):
-					planned.append(Planned.new(def, at))
 			_:
 				pass
 	return planned
-
-## The two arterial corridors, sampled once per block row/column. Which corridors are
-## arterial is fixed for the run, like everything else about the layout — so "the main road
-## is loud" is a fact the player learns on day 1 and routes around for the rest of the run.
-static func _arterial_points(map: CityMap) -> Array[Vector2]:
-	var points: Array[Vector2] = []
-	var period := CityMap.period()
-	var road_centre := Tuning.STREET_WIDTH / 2
-	var vertical := Tuning.CITY_BLOCKS.x / 2
-	var horizontal := Tuning.CITY_BLOCKS.y / 2
-
-	for row in Tuning.CITY_BLOCKS.y:
-		var lot := CityMap.block_rect(Vector2i(0, row))
-		points.append(map.tile_to_world(Vector2i(
-				vertical * period + road_centre, lot.position.y + lot.size.y / 2)))
-	for column in Tuning.CITY_BLOCKS.x:
-		var lot := CityMap.block_rect(Vector2i(column, 0))
-		points.append(map.tile_to_world(Vector2i(
-				lot.position.x + lot.size.x / 2, horizontal * period + road_centre)))
-	return points
 
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap) -> Array[Planned]:
 	var planned: Array[Planned] = []

@@ -91,6 +91,62 @@ const SQUARE_SIZE_TILES := 4
 ## The home is a notch in the south edge of a residential block.
 const HOME_SIZE_TILES := Vector2i(2, 2)
 
+# --------------------------------------------------------------- the crowd ---
+# Findings 3, 8 and 9 from the first playtest: there was nobody about, and passing the one
+# person who was barely moved the meter. The crowd is also the answer to finding 4 — the
+# base noise floor a day needs so that standing in one place cannot work. It is emergent
+# rather than a city-wide constant, because a number nobody can see means nothing.
+
+## People, then cars, on the streets in each act. The city empties as the acts turn, and
+## this is the cruellest number in the game: from act III the streets are *quieter*, because
+## there is nobody left going out on them. The city becomes an easier place to put a baby to
+## sleep, and that is the horror. Act IV puts a little back, but it is not the same traffic.
+##
+## This used to be an invisible ambient band on the arterials (`busy_road` / `quiet_road`),
+## which meant the player felt the city empty out without ever being able to see it. Now the
+## emptiness is the empty pavement.
+## These are whole-city populations, and the city is 104 tiles across, so they read far
+## smaller on screen than they look here: act I puts roughly one person every 100px of
+## pavement, which is a busy street rather than a crowd scene.
+const CROWD_PEDESTRIANS_PER_ACT: Array[int] = [420, 320, 90, 150]
+const CROWD_CARS_PER_ACT: Array[int] = [110, 84, 22, 44]
+
+## Speed range, min..max. Walkers are slower than the player on purpose: passing someone is
+## something *she* does, at a distance she chooses.
+const PEDESTRIAN_SPEED := Vector2(46.0, 74.0)
+## Ordinary traffic outpaces a walk but never quite matches the fire engine: an emergency
+## vehicle has to stay the fastest thing on the road, or its long telegraph stops reading as
+## urgency and starts reading as ordinary traffic.
+const CAR_SPEED := Vector2(130.0, 185.0)
+
+## One person, close enough to brush past. Deliberately above the walking decay: a close
+## pass has to cost something or the crowd is scenery again. Walking wide of them does not
+## — the pavement is two tiles, so how close to pass is a real choice.
+const PEDESTRIAN_INTENSITY := 4.2
+const PEDESTRIAN_INNER_RADIUS := 22.0
+const PEDESTRIAN_OUTER_RADIUS := 88.0
+
+## A car is louder than a person and passes much faster. No single car outruns the idle
+## decay — the point is not that one car is dangerous, it is that on a main road there is
+## always another one. The floor is the *street*, and it is emergent; the first pass at these
+## numbers put the arterial at +15/s, which filled the meter in seven seconds and made the
+## main road not expensive but impassable.
+const CAR_INTENSITY := 5.4
+const CAR_INNER_RADIUS := 38.0
+const CAR_OUTER_RADIUS := 170.0
+
+## Chance a walker turns a corner rather than carrying straight on, rolled once per
+## junction. High enough that the crowd churns, low enough that streets still have flow.
+const PEDESTRIAN_TURN_CHANCE := 0.35
+
+## People on the streets in a given act.
+func crowd_pedestrians(act: int) -> int:
+	return CROWD_PEDESTRIANS_PER_ACT[clampi(act - 1, 0, CROWD_PEDESTRIANS_PER_ACT.size() - 1)]
+
+## Cars on the roads in a given act.
+func crowd_cars(act: int) -> int:
+	return CROWD_CARS_PER_ACT[clampi(act - 1, 0, CROWD_CARS_PER_ACT.size() - 1)]
+
 # -------------------------------------------------------------------- acts ---
 
 ## Day index (1-based, inclusive) at which each act begins.

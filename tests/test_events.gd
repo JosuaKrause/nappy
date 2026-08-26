@@ -18,8 +18,6 @@ func run(t) -> void:
 	_test_successors_resolve(t)
 	_test_burning_building_is_never_scheduled(t)
 	_test_fire_truck_is_a_day_three_one_shot(t)
-	_test_arterial_noise_cannot_raise_the_meter(t)
-	_test_arterial_noise_sits_on_roads(t)
 	_test_along_street_paths_stay_in_bounds(t)
 
 # ------------------------------------------------------------------ fairness ---
@@ -265,25 +263,6 @@ func _test_fire_truck_is_a_day_three_one_shot(t) -> void:
 	t.check(dog.speed < Tuning.WALK_SPEED, "the dog walker is slower than walking")
 	t.close_to(dog.minimum_telegraph(), (dog.outer_radius - dog.inner_radius) / Tuning.WALK_SPEED,
 			"a slow mover can simply be walked away from")
-
-## The arterial is a recovery penalty, not a hazard. If its intensity ever creeps above the
-## walking decay it silently becomes a slow threat instead, and the whole point is lost.
-func _test_arterial_noise_cannot_raise_the_meter(t) -> void:
-	var road := EventCatalogue.by_id("busy_road")
-	t.check(road.intensity < Tuning.EXCITEMENT_DECAY_WALKING,
-			"traffic noise (%.1f) stays under the walking decay (%.1f)"
-			% [road.intensity, Tuning.EXCITEMENT_DECAY_WALKING])
-	t.check(road.intensity > Tuning.EXCITEMENT_DECAY_WALKING * 0.75,
-			"traffic noise is still close enough to the decay to stall recovery")
-
-func _test_arterial_noise_sits_on_roads(t) -> void:
-	var map := _map()
-	var points := EventScheduler._arterial_points(map)
-	t.check(points.size() == Tuning.CITY_BLOCKS.x + Tuning.CITY_BLOCKS.y,
-			"the arterials are sampled once per block row and column")
-	for at in points:
-		t.check(Tile.is_road(map.tile_at(map.world_to_tile(at))),
-				"arterial traffic noise sits on a road tile")
 
 func _test_along_street_paths_stay_in_bounds(t) -> void:
 	var map := _map()
