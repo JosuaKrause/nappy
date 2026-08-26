@@ -29,6 +29,15 @@ const TREE_HIGHLIGHT := Color("649256")
 const PLAYGROUND_FRAME := Color("c05f4a")
 const CROSSING_STRIPE := Color("cfc7ae")
 
+# ------------------------------------------------------------------ events ---
+
+const CAT_FUR := Color("58524d")
+const NPC_COAT := Color("6b7a8c")
+## Excitement fields: amber while telegraphing, red once the event is at full strength.
+const AURA_TELEGRAPH := Color("e8b64a")
+const AURA_ACTIVE := Color("d2543f")
+const AURA_LETHAL := Color("8f2f38")
+
 # --------------------------------------------------------------- buildings ---
 
 const _ROOFS: Array[Color] = [

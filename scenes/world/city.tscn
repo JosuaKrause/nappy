@@ -6,4 +6,5 @@
 script = ExtResource("1_city")
 
 [node name="Entities" type="Node2D" parent="."]
+z_index = 2
 y_sort_enabled = true

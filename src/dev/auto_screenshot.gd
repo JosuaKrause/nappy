@@ -1,17 +1,21 @@
 class_name AutoScreenshot
 extends Node
-## Dev tool: render a few frames, save the viewport to a PNG, quit.
+## Dev tool: let the game run for a while, save the viewport to a PNG, quit.
 ##
 ## Headless runs never call `_draw()`, so a clean headless boot says nothing about whether
 ## the game looks right. This gives a windowed run a way to produce a checkable image.
 ##
-##     godot --path . -- --screenshot out.png [--after 60]
+##     godot --path . -- --screenshot out.png [--after 4.0]
+##
+## `--after` is in SECONDS, not frames. It counted frames at first, which was quietly
+## useless for checking anything time-based: a windowed run here draws ~110fps, so waiting
+## "240 frames" for a 2.6s telegraph to end still caught it mid-telegraph.
 
-const DEFAULT_FRAMES := 60
+const DEFAULT_SECONDS := 1.5
 
 var _path := ""
-var _frames_to_wait := DEFAULT_FRAMES
-var _frames := 0
+var _seconds_to_wait := DEFAULT_SECONDS
+var _elapsed := 0.0
 
 ## Returns a configured instance, or null if the command line did not ask for a screenshot.
 static func from_command_line() -> AutoScreenshot:
@@ -23,12 +27,12 @@ static func from_command_line() -> AutoScreenshot:
 	node._path = args[index + 1]
 	var after := args.find("--after")
 	if after != -1 and after + 1 < args.size():
-		node._frames_to_wait = int(args[after + 1])
+		node._seconds_to_wait = float(args[after + 1])
 	return node
 
-func _process(_delta: float) -> void:
-	_frames += 1
-	if _frames < _frames_to_wait:
+func _process(delta: float) -> void:
+	_elapsed += delta
+	if _elapsed < _seconds_to_wait:
 		return
 	set_process(false)
 	_capture()
@@ -41,5 +45,6 @@ func _capture() -> void:
 	if error != OK:
 		printerr("[AutoScreenshot] could not write %s (error %d)" % [_path, error])
 	else:
-		print("[AutoScreenshot] wrote %s (%dx%d)" % [_path, image.get_width(), image.get_height()])
+		print("[AutoScreenshot] wrote %s (%dx%d) after %.1fs"
+				% [_path, image.get_width(), image.get_height(), _elapsed])
 	get_tree().quit()

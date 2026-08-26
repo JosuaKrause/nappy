@@ -15,6 +15,7 @@ var _baby: Baby
 
 func _ready() -> void:
 	GameState.start_run(_seed_override())
+	GameState.day = _day_override()
 
 	_city = CITY.instantiate()
 	add_child(_city)
@@ -22,6 +23,11 @@ func _ready() -> void:
 	_city.build(CityGenerator.generate(GameState.run_seed))
 	print("[Main] city generated in %d ms (seed %d)" % [
 		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
+
+	# The day is planned before the player exists, so --spawn event has something to find
+	# and so nothing spawns on top of her.
+	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots)
+	print("[Main] day %d planned %d events" % [GameState.day, _city.events.active_count()])
 
 	_player = STROLLER.instantiate()
 	_player.position = _spawn_position()
@@ -53,6 +59,9 @@ func _process(_delta: float) -> void:
 		"speed       %6.1f" % _player.current_speed(),
 		"run excess  %6.2f" % _player.run_excess_ratio(),
 		"",
+		"events      %6d" % _city.events.active_count(),
+		"nearest     %s" % _nearest_event_text(),
+		"",
 		"incoming    %6.2f /s" % _baby.last_incoming,
 		"decay       %6.2f /s" % _baby.last_decay,
 		"net         %6.2f /s" % (_baby.last_incoming - _baby.last_decay),
@@ -62,16 +71,47 @@ func _process(_delta: float) -> void:
 		"esc         quit",
 	])
 
+## The closest live event and what it is currently doing — the readout that says whether a
+## telegraph actually ended when it should have.
+func _nearest_event_text() -> String:
+	var nearest: EventInstance = null
+	var best := INF
+	for instance in _city.events.instances():
+		var distance := instance.global_position.distance_to(_player.global_position)
+		if distance < best:
+			best = distance
+			nearest = instance
+	if not nearest:
+		return "none"
+	return "%s %s age=%.1f/%.1f %.0fpx i=%.1f" % [
+		nearest.def.id,
+		"telegraph" if nearest.is_telegraphing() else "active",
+		nearest.age, nearest.def.telegraph_time,
+		best, nearest.current_intensity()]
+
 func _tile_name(type: GameEnums.TileType) -> String:
 	return GameEnums.TileType.keys()[type].to_lower()
 
-## Dev flag: `-- --spawn park|alley|square` drops the player straight onto a tile type, so
-## the WorldContext answers can be checked without walking across the city to find one.
+## Dev flag: `-- --day N` starts on a later day, so an act's events can be looked at
+## without playing up to them.
+func _day_override() -> int:
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--day")
+	if index == -1 or index + 1 >= args.size():
+		return 1
+	return clampi(int(args[index + 1]), 1, Tuning.RUN_LENGTH_DAYS)
+
+## Dev flag: `-- --spawn park|alley|square|event` drops the player straight onto a tile type
+## or next to a live event, so the WorldContext answers can be checked without walking
+## across the city to find one.
 func _spawn_position() -> Vector2:
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--spawn")
 	if index == -1 or index + 1 >= args.size():
 		return _city.map.home_world_position()
+
+	if args[index + 1] == "event":
+		return _first_event_position()
 
 	var wanted: int = {
 		"park": GameEnums.TileType.PARK,
@@ -88,6 +128,15 @@ func _spawn_position() -> Vector2:
 			if _city.map.tile_at(Vector2i(x, y)) == wanted:
 				return _city.map.tile_to_world(Vector2i(x, y))
 	push_warning("no %s tile in this city" % args[index + 1])
+	return _city.map.home_world_position()
+
+## Just outside the first non-ambient event, facing it.
+func _first_event_position() -> Vector2:
+	for instance in _city.events.instances():
+		if instance.def.kind == GameEnums.EventKind.AMBIENT:
+			continue
+		return instance.global_position + Vector2(0.0, instance.def.outer_radius * 0.6)
+	push_warning("no non-ambient events planned today")
 	return _city.map.home_world_position()
 
 ## Dev flag: `-- --overview` frames the whole city at once, so a generation bug that only

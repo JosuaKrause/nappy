@@ -154,6 +154,20 @@ func home_to_nearest_park() -> int:
 				best = distance
 	return best
 
+## Every tile of a given type. Cached, since the scheduler samples these every day.
+func tiles_of_type(type: GameEnums.TileType) -> Array[Vector2i]:
+	if _tiles_by_type.has(type):
+		return _tiles_by_type[type]
+	var found: Array[Vector2i] = []
+	for y in size.y:
+		for x in size.x:
+			if tile_at(Vector2i(x, y)) == type:
+				found.append(Vector2i(x, y))
+	_tiles_by_type[type] = found
+	return found
+
+var _tiles_by_type := {}
+
 func rect_tiles(rect: Rect2i) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	for y in range(rect.position.y, rect.end.y):
