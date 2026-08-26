@@ -61,6 +61,7 @@ const FIRE_INNER := Color("f0c04a")
 
 const CHALK := Color(0.92, 0.92, 0.88, 0.62)
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
+const HOME_ARROW := Color("8fb4d9")
 
 # --------------------------------------------------------------- buildings ---
 

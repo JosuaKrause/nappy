@@ -50,6 +50,17 @@ func _update_camera(delta: float) -> void:
 	var lead := Vector2(facing.x, facing.y * OBLIQUE_Y) * CAMERA_LOOK_AHEAD
 	_camera.offset = _camera.offset.lerp(lead, clampf(delta * 3.0, 0.0, 1.0))
 
+## Puts the rig back on the doorstep at the start of a day, stopped and facing the street.
+func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
+	global_position = where
+	velocity = Vector2.ZERO
+	facing = look.normalized()
+	_walk_phase = 0.0
+	if _camera:
+		_camera.offset = Vector2.ZERO
+		_camera.reset_smoothing()
+	queue_redraw()
+
 ## Stops the camera from panning past the edge of the city.
 func set_camera_limits(bounds: Rect2) -> void:
 	_camera.limit_left = int(bounds.position.x)
@@ -128,20 +139,42 @@ func _draw_mother(base: Vector2, bob: float, gait: float) -> void:
 		draw_circle(head + Vector2(-2.2 + eye, -0.5), 0.9, Palette.OUTLINE)
 		draw_circle(head + Vector2(2.2 + eye, -0.5), 0.9, Palette.OUTLINE)
 
+## Two profiles rather than one drawing with the hood nudged sideways. Sliding the hood
+## along a fixed basket made it overhang the end of the pram whenever she turned, which is
+## what "the canopy is offset going sideways" was: the hood was drawn at the rear, but the
+## basket underneath it never changed shape, so the two stopped agreeing.
 func _draw_pram(base: Vector2, bob: float) -> void:
 	var o := base + Vector2(0.0, bob)
+	if absf(facing.x) > absf(facing.y):
+		_draw_pram_side(base, o, signf(facing.x))
+	else:
+		_draw_pram_end_on(base, o, facing.y > 0.0)
 
+## Seen from the side: a long profile, wheels fore and aft, hood over the head end, which
+## is the end away from the direction of travel.
+func _draw_pram_side(base: Vector2, o: Vector2, direction: float) -> void:
+	var rear := -direction
+
+	draw_circle(base + Vector2(-9.0, -3.5), 4.0, Palette.PRAM_WHEEL)
+	draw_circle(base + Vector2(9.0, -3.5), 4.0, Palette.PRAM_WHEEL)
+
+	draw_rect(Rect2(o + Vector2(-13.0, -19.0), Vector2(26.0, 11.0)), Palette.PRAM_BODY)
+	draw_rect(Rect2(o + Vector2(-13.0, -11.0), Vector2(26.0, 3.0)), Palette.PRAM_TRIM)
+
+	# Hood radius and centre chosen so the arc stays inside the basket it sits on.
+	draw_arc(o + Vector2(rear * 6.0, -18.0), 7.0, PI, TAU, 14, Palette.PRAM_HOOD, 5.0)
+	# The handle she is pushing, at the rear, above the hood.
+	draw_line(o + Vector2(rear * 12.0, -18.0), o + Vector2(rear * 17.0, -27.0),
+			Palette.PRAM_TRIM, 2.5)
+
+## Seen head-on or from behind: shorter and wider, hood centred.
+func _draw_pram_end_on(base: Vector2, o: Vector2, toward_viewer: bool) -> void:
 	draw_circle(base + Vector2(-7.0, -3.5), 3.8, Palette.PRAM_WHEEL)
 	draw_circle(base + Vector2(7.0, -3.5), 3.8, Palette.PRAM_WHEEL)
 
-	# Basket.
 	draw_rect(Rect2(o + Vector2(-11.0, -20.0), Vector2(22.0, 12.0)), Palette.PRAM_BODY)
 	draw_rect(Rect2(o + Vector2(-11.0, -11.0), Vector2(22.0, 3.0)), Palette.PRAM_TRIM)
 
-	# The hood sits at the head end, which is the end away from the direction of travel.
-	var hood_x := -6.0 * signf(facing.x) if absf(facing.x) > 0.25 else 0.0
-	draw_arc(o + Vector2(hood_x, -19.0), 8.0, PI, TAU, 14, Palette.PRAM_HOOD, 5.0)
-
-	# Facing the viewer, you can see into the pram.
-	if facing.y > 0.2:
-		draw_circle(o + Vector2(hood_x, -18.0), 3.2, Palette.SKIN)
+	draw_arc(o + Vector2(0.0, -19.0), 8.0, PI, TAU, 14, Palette.PRAM_HOOD, 5.0)
+	if toward_viewer:
+		draw_circle(o + Vector2(0.0, -18.0), 3.2, Palette.SKIN)

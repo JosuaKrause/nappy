@@ -11,6 +11,7 @@ extends CanvasLayer
 @onready var _resistance_label: Label = $Meters/Resistance
 @onready var _header: Label = $Header
 @onready var _clock: Label = $Clock
+@onready var _home_arrow: HomeArrow = $HomeArrow
 
 var _baby: Baby
 var _contact_step := 0
@@ -130,6 +131,13 @@ func _refresh_resistance() -> void:
 	_resistance_label.text = line
 
 ## The one moment the game says something out loud.
+## Shown only while she is carrying a sleeping baby home.
+func set_home_guidance(showing: bool, home: Vector2) -> void:
+	if showing:
+		_home_arrow.show_toward(home)
+	else:
+		_home_arrow.hide_arrow()
+
 func _on_city_went_quiet() -> void:
 	_announcement = "The loudspeakers cut out mid-sentence."
 	_announcement_for = 7.0
