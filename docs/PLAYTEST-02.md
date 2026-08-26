@@ -8,8 +8,9 @@ six findings say the same thing from different angles — the walk has to be the
 part, and right now the only thing that costs you anything is the clock. One finding (1)
 says the reward at the end of the walk is not legible either.
 
-Two of them change the city lattice, which is why the M16 closure work is parked rather
-than finished. See "What this does to M16 and M17" below.
+Two of them change the city lattice, which M16 and M17 are built on. **They are queued
+behind the milestones already in flight** — see "What this does to M16 and M17" below for
+what that costs and the two things it is worth changing about M16 now rather than later.
 
 ---
 
@@ -131,59 +132,77 @@ Consequences worth writing down before starting:
 
 ### What this does to M16 and M17
 
-**M16 (route pressure — per-day street closures) is parked, not cancelled.** Its first half
-is committed on `feature/route-pressure` as a WIP: `src/routes/street_network.gd`, which
-turns the lattice into a graph of junctions and streets and counts *segment-disjoint* routes
-from the doorstep to each calm area by unit-capacity max flow.
+**Both are finished first, ahead of everything in this document.** M16's first half is
+already committed on `feature/route-pressure`: `src/routes/street_network.gd`, which turns
+the lattice into a graph of junctions and streets and counts *segment-disjoint* routes from
+the doorstep to each calm area by unit-capacity max flow.
 
-The split, and why parking it costs little:
+What that ordering costs, stated honestly so it is a decision and not an accident:
 
-- The **lattice enumeration** in that file assumes a full grid. Findings 5 and 6 delete that
-  assumption, so it gets rewritten.
+- The **lattice enumeration** in `street_network.gd` assumes a full grid. M21 deletes that
+  assumption, so that half gets rewritten once.
 - The **graph half** — route counting, the two-routes-to-two-areas invariant, the doorstep
-  and doorway exemptions — is exactly what a lattice with T-junctions and L-bends needs, and
-  it needs it *more*, because redundancy is no longer true by construction.
+  and doorway exemptions — survives the change untouched, and matters *more* afterwards:
+  with holes in the lattice, route redundancy stops being true by construction and has to be
+  checked by search. This file is that search.
+- **Closure placement will need re-tuning** after M21, because a main road nobody walks
+  along is a pointless thing to close. The mechanism survives; the weights do not.
+- **M17's map screen gets drawn twice** — once against today's grid, once against M21's
+  lattice. Accepted deliberately: a planning map makes the *next* playtest sharper, and the
+  next playtest is what decides whether M19–M21 are aimed correctly.
 
-So M16 is better built after M21 than before it. **M17 (the route map) stays last**, for the
-reason PLAYTEST-01 gave: a planning map is only worth drawing once there is something to
-plan around, and after M21 there will be much more of it.
+Two pivots inside M16 worth making now rather than after:
+
+1. **Drop the canal.** It was the one item on M16's list that moves a walkable tile — an
+   exception to the rule every other purpose obeys. M21 generates a lattice with holes in it
+   as its whole subject, so water and bridges belong there, where "the lattice is not a full
+   grid" is already true and paid for. Building it now means building it twice.
+2. **Keep the closure count modest.** M16 was going to be the thing that made the route a
+   decision. Findings 2 and 3 do that at block scale, forty times a day; closures do it at
+   city scale, a few times a day. Tuned as though closures were the only source of route
+   pressure, they will be far too heavy once M19 lands.
 
 ---
 
 ## The plan
 
 Numbered after the existing milestones rather than renumbering them, so that "M16" means the
-same thing in this document as it does in the commit log. Execution order is the order
-below, which is **not** numeric.
+same thing in this document as it does in the commit log. **Execution order is the order
+below, which is also numeric**: the two milestones already planned finish first, and this
+playtest's work queues behind them.
+
+**M16 — route pressure.** Finding 12 from playtest 01. A per-day pruned network with legible
+blockers, and the day-level invariant: at least two distinct routes to at least two distinct
+calm areas. In flight. Canal dropped to M21; closure counts kept modest.
+
+**M17 — the route map.** The planning screen, rendering the block states M15 introduced.
 
 **M18 — the park has to be worth it.** Finding 1. Re-pitch the sleepiness rates so calm
 ground fills the meter in under a minute and reads as obviously different from the street.
-Small, and everything after it is judged against it, so it goes first.
+Small, and the first thing this playtest's findings ask for, so it leads the new work.
 
 **M19 — bodies on the street.** Findings 2 and 3. Collision for pedestrians and the player,
-lethal cars, pavement hazards that force a crossing, cars that stop at zebras. The
-collision bump stays a *source*, not a write.
+lethal cars, pavement hazards that force a crossing, cars that stop at zebras. The collision
+bump stays a *source*, not a write.
 
 **M20 — traffic that behaves.** Finding 4. Car following and overtaking, 8-direction
 driving, and the crash as a catalogue event.
 
-**M21 — the city overhaul.** Findings 5 and 6. Four-block calm zones, a generated lattice
-with T-junctions and L-bends, main roads with lights against side roads with zebras.
-
-**M16 — route pressure.** Unparked here, on the new lattice, with the graph half of the WIP
-reused and the enumeration half rewritten.
-
-**M17 — the route map.** Last, as before.
+**M21 — the city overhaul.** Findings 5 and 6, plus the canal dropped out of M16.
+Four-block calm zones, a generated lattice with T-junctions and L-bends, main roads with
+lights against side roads with zebras.
 
 ### Order rationale
 
-- 1 first because it is one afternoon and it changes how every later playtest feels.
+- M16 and M17 first because they are in flight and because a route map makes the playtest
+  that judges M18–M21 a much better playtest.
+- Within the new work: 1 first, because it is one afternoon and it changes how every later
+  playtest feels.
 - 2 and 3 before 4, because a car that cannot be hit does not need to avoid other cars yet,
   and because 3 is what makes the pavement a decision.
 - 4 before 5 and 6, because a T-junction is a turn and today a car cannot turn.
 - 5 and 6 together, because a four-block calm zone and a main-road barrier are the same
   change to the same generator.
-- The two parked milestones last, because both read the lattice and the lattice is moving.
 
 ### Decisions
 
@@ -193,8 +212,11 @@ reused and the enumeration half rewritten.
 2. **The collision bump is a source, not a write.** Excitement stays a pure query.
 3. **A main road is crossed, not walked** — enforced by making walking it hostile, reusing
    finding 3's hazard mechanism, rather than by deleting its pavement.
-4. **M16's closures stay planned.** They narrow the choice at city scale; findings 2 and 3
-   narrow it at block scale. Both are wanted, in that order.
+4. **M16's closures stay planned, and go first.** They narrow the choice at city scale;
+   findings 2 and 3 narrow it at block scale. Both are wanted. Closures are tuned light on
+   the understanding that block-scale pressure is coming.
+5. **The canal moves from M16 to M21**, where a lattice that is not a full grid is already
+   the subject.
 
 ### Open questions for the next playtest
 

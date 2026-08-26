@@ -4,10 +4,11 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 Each milestone is one git branch, merged to `main` when green.
 
-**Where things stand:** M0–M9 are done and merged, and the game has now been played once
-by a human. That playtest produced thirteen findings; four are fixed (M11) and the rest are
-planned as M12–M17 in **[docs/PLAYTEST-01.md](PLAYTEST-01.md)**, which is the live plan and
-should be read before picking anything up.
+**Where things stand:** M0–M15 are done and merged, and the game has now been played twice
+by a human. The first playtest produced thirteen findings, planned as M11–M17 in
+**[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced six more, planned as M18–M21
+in **[docs/PLAYTEST-02.md](PLAYTEST-02.md)**. Both are live plans and should be read before
+picking anything up. Execution order is numeric: M16 and M17 finish before M18 starts.
 
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
@@ -246,9 +247,30 @@ sequencing. Summary only here:
       generation, and the run-scoped `CityState`. Supersedes the "CityMap is immutable"
       invariant with "the lattice is fixed; what a block *is* is not", and keeps the half
       that is absolute: no purpose change moves a walkable tile
-- [ ] **M16 Route pressure** — a per-day pruned network with legible blockers, leaving at
-      least two distinct routes to at least two distinct calm areas
+- [~] **M16 Route pressure** — a per-day pruned network with legible blockers, leaving at
+      least two distinct routes to at least two distinct calm areas. Canal dropped to M21
 - [ ] **M17 Route map** — the planning screen, rendering M15's block states
+
+## M18–M21 — Playtest 02
+
+See **[docs/PLAYTEST-02.md](PLAYTEST-02.md)** for the findings and the reasoning. Six
+findings from the second human playtest, queued behind M16 and M17. Summary only here:
+
+- [ ] **M18 The park has to be worth it** — finding 1. Calm ground fills the meter in under
+      a minute instead of two, and reads as obviously different from the street. The
+      difficulty moves out of the meter and into the walk, which is what M19 is for
+- [ ] **M19 Bodies on the street** — findings 2 and 3. Pedestrians and the player collide
+      and displace each other, a car strike is a hard fail, pavement hazards (a café
+      spilling out, a dog on a long lead) make one side of the street the wrong side, and
+      cars stop for you at a zebra. The collision bump is a short-lived *source*, never a
+      write to `Baby.excitement`
+- [ ] **M20 Traffic that behaves** — finding 4. Cars follow, slow and overtake instead of
+      driving through each other; 8-direction driving so they can turn; an overtake into
+      oncoming traffic crashes, and the crash is a catalogue event with a real telegraph
+- [ ] **M21 The city overhaul** — findings 5 and 6, plus the canal dropped out of M16.
+      Calm zones of four blocks, so the lattice grows T-junctions and L-bends and can no
+      longer be derived from a coordinate; main roads with traffic lights against side roads
+      with zebras, where a main road is crossed rather than walked
 
 ## M10 — Polish · `feature/polish`
 
