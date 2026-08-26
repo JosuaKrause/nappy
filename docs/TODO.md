@@ -16,12 +16,21 @@ Each milestone is one git branch, merged to `main` when green.
 
 ## M1 — Movement & camera · `feature/core-movement`
 
-- [ ] `stroller.tscn` CharacterBody2D, walk/run, acceleration & friction
-- [ ] Procedural 2.5D drawing of mother + stroller, feet-anchored
-- [ ] Facing direction, stroller trails behind the mother
-- [ ] `Camera2D` follow with smoothing + movement look-ahead
-- [ ] Debug scene: flat ground + a few boxes to walk around
-- [ ] Y-sorting verified (walk behind and in front of a building)
+- [x] `stroller.tscn` CharacterBody2D, walk/run, acceleration & friction
+- [x] Procedural 2.5D drawing of mother + stroller, feet-anchored
+- [x] Facing direction, stroller leads in the direction of travel
+- [x] `Camera2D` follow with smoothing + movement look-ahead
+- [x] Debug scene: 3x3 street grid matching the constants M3's generator will use
+- [x] Y-sorting verified (player draws over a wall she is standing in front of)
+- [x] `tools/shot.sh` — render a frame to PNG, since a headless boot never calls `_draw()`
+
+### Deferred out of M1
+
+- [ ] The pram has no collision of its own — only the mother's feet do, so the pram clips
+      into walls when she hugs a corner. Options: a second body that trails her, or a
+      capsule that rotates with `facing`. Not worth solving before the city exists.
+- [ ] Buildings taller than their lot depth would have no roof left to draw; `roof_depth()`
+      clamps rather than warns. Make the generator enforce it instead (M3).
 
 ## M2 — Baby meters · `feature/baby-meters`
 
