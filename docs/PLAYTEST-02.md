@@ -221,9 +221,21 @@ What replaces it, in the order the information is needed:
    that has started, an event about to reach full strength.
 3. **A symbol at the screen edge**, always, when the entity is off-screen and closing. This
    is M22 as already filed, and finding 8 makes it non-optional rather than a polish item.
-4. **A symbol above the player** when they are too close — the "you have to be somewhere
-   else" cue. This is new and it is the piece that makes the other three safe to shrink: the
-   player is never left guessing whether they are inside something.
+4. **A symbol above the player**, in two distinct states, and this is the piece that makes
+   the other three safe to shrink — the player is never left guessing whether *they* are the
+   one in trouble:
+   - **A flashing exclamation mark when the player is standing in a soon-to-be danger zone.**
+     Not "there is something dangerous nearby" but "this spot is about to be bad, move." It
+     fires on a telegraph whose radius already covers the player, on the path of something
+     fast that is still off-screen, on the road when a car is coming through.
+   - **A "too close" cue** for danger that is already live and already on them.
+
+   The first of those is the most valuable cue in the whole vocabulary, and it is worth
+   saying why. The telegraph fairness contract promises that a player who starts walking away
+   the instant an event becomes visible gets clear in time. Every other cue tells the player
+   *that a thing exists*; only this one tells them **the promise is now about you, and the
+   clock has started**. It is the difference between information and instruction, and it is
+   what makes a fast mover survivable without needing the player to have done the geometry.
 
 The invariant that survives all of this unchanged is the one that matters most:
 **audio is never the only channel** (docs/EVENTS.md). The symbol vocabulary is the visual
@@ -315,6 +327,41 @@ Two pivots inside M16 worth making now rather than after:
    city scale, a few times a day. Tuned as though closures were the only source of route
    pressure, they will be far too heavy once M19 lands.
 
+### 9, 10 and 11 together: where the difficulty actually comes from
+
+Three decisions in this document now point at the same place, and they only make sense read
+together:
+
+- **M18 took the difficulty out of the meter.** Once calm ground is reached a day is a
+  formality. That was deliberate (decision 1) and it means the meter can no longer be the
+  thing that makes a day hard.
+- **Decision 9 says the walk has to be hard from day one.** Not just from act III, which is
+  where all of it currently is.
+- **Decision 10 says the *extra* difficulty is opt-in**, through the resistance.
+
+So the load-bearing difficulty is the walk, in every act, and the resistance sits on top of
+it for players who want more. That is a coherent shape, and it puts the weight on M19 —
+bodies, lethal cars, hazards that force a crossing — because that is the milestone that has
+to make an act I street cost something. The cost table under finding 7 is the measurement it
+will be judged against.
+
+**Two consequences worth being explicit about:**
+
+**The resistance stops being optional flavour and becomes the difficulty selector.** That
+sharpens an open question this project has carried since M8 and deliberately left open: *how
+visible should the resistance be to a player ignoring it?* Today it is a chalk mark on an
+alley wall and one terse HUD line, and `CLAUDE.md` records the risk plainly — a player may
+finish a run never knowing the good ending existed. That was an acceptable risk when the
+resistance was a secret. It is a worse one when the resistance is how a player asks for a
+harder game: a player who never finds the dial is locked to the easiest setting without ever
+being told there was one. Not resolved here; flagged as having got more expensive.
+
+**A harder day one meets a nerve economy nobody has tested.** Three nerves, fourteen days, a
+lost day advances the calendar rather than repeating it. If act I genuinely threatens, early
+losses become normal, and the run may be decided before act III arrives. That is a question
+for telemetry rather than for argument — *where do nerves actually go?* — and it is a field
+M23 should carry.
+
 ---
 
 ## The plan
@@ -339,6 +386,10 @@ Small, and the first thing this playtest's findings ask for, so it leads the new
 lethal cars, pavement hazards that force a crossing, cars that stop at zebras. The collision
 bump stays a *source*, not a write.
 
+This is the milestone decision 9 lands on: it has to make an **act I** street cost something,
+not just an act IV one. Build the mechanisms here; set the numbers after M23, per decision
+11. The cost table under finding 7 is the before-picture.
+
 **M20 — traffic that behaves.** Finding 4. Car following and overtaking, 8-direction
 driving, and the crash as a catalogue event.
 
@@ -349,7 +400,8 @@ lights against side roads with zebras.
 **M22 — danger you can read.** Findings 7 and 8. **Delete the aura circles.** How dangerous
 something is becomes visible from the thing itself, and the rest is a small symbol
 vocabulary: above an entity when it needs one, at the screen edge when it is off-screen and
-closing, above the *player* when they are too close to something and have to be elsewhere.
+closing, and above the *player* — a flashing exclamation mark when they are standing in a
+soon-to-be danger zone, plus a "too close" cue for danger already on them.
 
 This absorbs the "screen-edge indicator for fast movers" item that was sitting in M10, and
 finding 8 makes it non-optional rather than polish. The **telegraph fairness contract** says
@@ -367,10 +419,47 @@ developer can read: where the time went, whether the route was a route, what was
 near, whether running ever happened, which calm zone was used. Every field answers a question
 that is currently open in this document.
 
-**Recommended first of the remaining set**, against the "queue it at the end" default. It is
-the only item here that makes every *other* item cheaper to judge, and finding 11 cannot be
-built without one of its fields. Filed in numeric order all the same; the call is the
-project owner's.
+**Now a gate, not just a recommendation.** Decision 11 defers the act I/II difficulty pitch
+until real runs can be read, so the balance half of M19 cannot be finished before this lands.
+It is also the only item here that makes every *other* item cheaper to judge, and M24 cannot
+be built without one of its fields. Filed in numeric order all the same, but M19's mechanisms
+and M23 want building close together, with the numbers set afterwards from what the traces
+say.
+
+Two fields exist because of decisions 9 and 11 specifically: **where the nerves went** — which
+day, which failure, which act — and **what was nearby when a day was lost**. Those are what
+answer "is day one too hard" without anyone having to have an opinion about it.
+
+#### What M23 records
+
+One file per run, written locally, plus a summary a developer reads instead of a transcript.
+Sampled state at a low rate (a few times a second) and discrete entries for things that
+*happen*. The rule this list is built to: **every field answers a question that is open in
+this document.** If a field does not, it does not go in.
+
+| Recorded | The question it answers |
+| --- | --- |
+| **Run header** — run seed, the seed the generator actually used, day reached, ending, nerves left | Lets any trace be replayed. `generate()` retries with `seed + 1`, so the run seed alone does not reproduce a city |
+| **Per day** — day, act, length, result, time taken, failure reason | Where in a run does it go wrong, and in which act |
+| **Time budget** — seconds idle / walking / running; on calm ground; in an alley; on pavement vs in the road | "Did the player idle somewhere." Also whether running ever happens at all — the table under finding 7 predicts it does not |
+| **Meter trace** — sleepiness and excitement sampled through the day; peak excitement; how long sleep was *frozen* above the calm threshold, and how many times | Whether a day was lost to noise or to the clock, which the result code alone does not say. Freezing is the invisible failure |
+| **Route shape** — distinct streets walked, streets revisited, doublings-back, total distance against net displacement | "Did the player walk in circles." The distance-to-displacement ratio is the number that says so |
+| **Crossings** — every time the player crossed a carriageway, where, and whether at a zebra | "Did the player actually have to cross the street." Judges finding 3 directly, and M21's main-roads-are-barriers later |
+| **Proximity** — for each entity that came within its outer radius: what it was (event id, or crowd walker/car), closest approach, seconds inside the outer and inner bands | "How many entities were closeby and which." Turns the cost table under finding 7 from arithmetic into what actually happened to a player |
+| **Run bursts** — when the player ran, for how long, what was within reach when they started, and what excitement did during it | "Did the player have to run to get away." Also whether running *helped*, which today it never should |
+| **Calm zone used** — which block was settled in, how long it took to reach, how long they stayed, and whether it was the same one as yesterday | "Did the player go to the same park every day." Also the field **M24 cannot be built without** |
+| **Closures met** — barriers that came into view, and how many changed the player's direction | Whether M16's closures are a decision or scenery, which is the thing the route bias was aimed at |
+| **Where the nerves went** — for each loss: the day, the act, the failure, and what was nearby at the time | Decisions 9 and 11. Answers "is day one too hard" without anyone needing an opinion. Also the untested nerve economy: three nerves over fourteen days, with a lost day advancing the calendar |
+| **Resistance** — step offered, attempted, completed, failed, and whether the player ever went near a contact | Decision 10 makes the resistance the difficulty dial, so "did the player ever find the dial" stops being a curiosity |
+
+Two constraints on the implementation, both non-negotiable:
+
+- **It must not touch gameplay.** No global RNG, no `day_rng()` stream, nothing that changes
+  a placement or a roll. A trace that perturbs the run it is measuring is worse than no
+  trace, and this project's determinism invariant is the thing that makes replaying a bad
+  run possible at all.
+- **It must be readable without a tool.** The summary is for a human deciding whether day one
+  is too hard. If reading it needs a script that does not exist yet, it will not get read.
 
 **M24 — the city remembers where you went.** Finding 11. Record the calm zone the player
 settled in; on the next day bias a spoiling event toward it. The options narrow as the run
@@ -428,6 +517,17 @@ fairness contract has to be stated over `RUN_SPEED` rather than `WALK_SPEED`.
    a constant to change.
 8. **Telemetry is a local file per run, not a service**, and every field it records answers a
    question that is open in this document. If a field does not, it does not go in.
+9. **The beginning is challenging too.** Not extremely difficult — but a player who never
+   meets danger never learns to deal with it, and the measurement under finding 7 says act I
+   and act II currently cost almost nothing. The early game teaching "events are safe" and
+   act III then killing you is the worst of both.
+10. **Difficulty is self-selected through the extra quests.** The resistance is the dial: a
+   player who wants a harder run takes the detours, holds the contacts, and spends time in
+   alleys they would otherwise avoid. That is why the base game has to be challenging on its
+   own — the dial adds difficulty, it does not supply it.
+11. **The act I/II numbers are set from data, not from argument.** Build the mechanisms
+   (M19), ship telemetry (M23), read real runs, then pitch. Nobody has to guess how hard day
+   one should feel, and this document should stop trying to.
 
 ### Open questions for the next playtest
 
@@ -437,11 +537,9 @@ fairness contract has to be stated over `RUN_SPEED` rather than `WALK_SPEED`.
 - Is an instant loss the right weight for a dog? It is the same punishment as an abduction,
   which is act III's worst thing.
 - With main roads as barriers, is 7x7 blocks still the right city size?
-- **How much of act I and II should have teeth?** The table under finding 7 says almost
-  nothing before act III costs anything at all. Raising the small events risks making the
-  early game the hard part; leaving them risks teaching the player that events are safe. The
-  third option is that act I is *supposed* to be safe and the failure is that nothing tells
-  the player when that stops being true.
+- ~~How much of act I and II should have teeth?~~ **Decided: the beginning is challenging
+  too.** See decision 9. What is still open is *how* challenging, and that is deliberately
+  not being argued — it is being measured once M23 is in.
 - **What replaces "the field is breathing"?** The ring tracks current emission, so a pulsing
   event can be timed and walked past between beats. A discrete symbol cannot do that. If
   nothing replaces it, the pulse envelope becomes noise rather than a thing to play against.

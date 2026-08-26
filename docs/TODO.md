@@ -278,19 +278,24 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
 - [ ] **M22 Danger you can read** — findings 7 and 8. **Delete the aura circles.** How
       dangerous a thing is becomes visible from the thing itself; the rest is a small symbol
       vocabulary — above an entity when it needs one, at the screen edge when it is
-      off-screen and closing, and above the *player* when they are too close and have to be
-      somewhere else. Absorbs the "screen-edge indicator for fast movers" item from M10
+      off-screen and closing, and above the *player*: **a flashing exclamation mark when they
+      are standing in a soon-to-be danger zone** ("this spot is about to be bad, move"), plus
+      a "too close" cue for danger already on them. The exclamation mark is the cue that
+      turns the telegraph contract from information into instruction. Absorbs the "screen-edge indicator for fast movers" item from M10
       below. **Worth pulling forward to sit with M19**: a lethal car arriving from off-screen
       is a breach of the telegraph fairness contract, not a polish item, and M19 is what
       creates them. Must keep one thing the ring did well — showing an event *swelling*, or
       the pulse envelope stops being playable
-- [ ] **M23 Telemetry** — finding 10. A per-day trace to a local file plus a readable
-      summary: where the time went (idle / walking / running / on calm ground), whether the
-      route was a route (distinct streets, doubling back, road crossings), what was nearby
-      and how near, whether running ever happened and what was around when it did, and which
-      calm zone was used. **Recommended first of the remaining set** — it is the only item
-      that makes judging every other item cheaper, and M24 cannot be built without one of its
-      fields. Filed in numeric order anyway; the call is the owner's
+- [ ] **M23 Telemetry** — finding 10. One file per run plus a summary a human reads instead
+      of a transcript. Full field list and what each one is *for* in
+      [PLAYTEST-02.md](PLAYTEST-02.md), "What M23 records": time budget, meter trace and
+      freezes, route shape (circling ratio), road crossings, per-entity proximity, run
+      bursts, the calm zone used, closures met, where the nerves went, resistance contact.
+      Must not touch gameplay — no RNG, nothing that changes a roll — and must be readable
+      without a tool that does not exist yet. **Now a gate, not just a recommendation**: the
+      act I/II difficulty pitch is deferred until real runs can be read, so M19's balance
+      half cannot finish before this lands, and M24 cannot be built at all without one of its
+      fields
 - [ ] **M24 The city remembers where you went** — finding 11. Record the calm zone the player
       settled in and bias the next day's spoiling event toward it, so the options narrow *at
       the player* rather than at random. Kept from feeling like a punishment for playing well
@@ -341,6 +346,10 @@ Not started. The game is complete without it; this is what would make it shippab
 
 These need a human playing the game, not more code.
 
+- [ ] **Is the nerve economy right?** Three nerves, fourteen days, and a lost day advances
+      the calendar. Never tested against a game that threatens from day one, which decision 9
+      now says it should. If act I genuinely bites, early losses become normal and a run may
+      be decided before act III arrives. M23 records where the nerves went.
 - [~] **Is the balance right?** *(M14 pitched it against the day rather than against itself;
       M18 then re-pitched it against a **minute of play**: day 330s → 180s,
       `SLEEPINESS_GAIN_WALKING` 0.24 → 0.42, calm 3.5x → 10x, idle drain 0.6 → 1.0. A whole
@@ -352,7 +361,10 @@ These need a human playing the game, not more code.
       time to learn a city before it starts changing.
 - [ ] **How visible should the resistance be to a player ignoring it?** Right now: a chalk
       mark and one HUD line. Real risk that a player finishes a run never knowing the good
-      ending existed. That might be correct, or it might be a bug.
+      ending existed. That might be correct, or it might be a bug. **This got more expensive
+      in playtest 02:** decision 10 makes the resistance the difficulty dial, so a player who
+      never finds it is locked to the easiest setting without ever being told there was one.
+      M23 records whether a player ever went near a contact.
 - [x] **Should running ever be *required* (a forced chase), or always purely a player
       choice?** *Answered by playtest 02, finding 9: yes, for some entities.* The measurement
       that came with it is the surprising part — running is currently the wrong move against

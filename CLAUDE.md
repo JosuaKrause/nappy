@@ -191,8 +191,13 @@ reach for a ring when something new needs signalling.)*
 A ring communicates a falloff radius, which is a number. A silhouette communicates a threat.
 Where the entity cannot carry it alone, the vocabulary is: a symbol flashing **above the
 entity**; a symbol at the **screen edge** whenever it is off-screen and closing, saying what
-is coming and not merely that something is; and a symbol above the **player** when they are
-too close and have to be somewhere else. Nothing draws a field.
+is coming and not merely that something is; and a symbol above the **player** — a flashing
+exclamation mark when they are standing in a soon-to-be danger zone, plus a "too close" cue
+for danger already on them. Nothing draws a field.
+
+The exclamation mark is the load-bearing one. Every other cue says *a thing exists*; that one
+says **the fairness contract is now about you and the clock has started**, which is the
+difference between information and instruction.
 
 The one property the ring had that must survive: it *breathes* with the pulse envelope, so a
 pulsing event can be timed and slipped past between beats. See docs/EVENTS.md, "The visual

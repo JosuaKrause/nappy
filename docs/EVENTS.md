@@ -240,7 +240,8 @@ few things are ringed, and nothing explains the difference.
 | **Legible entity** | The thing itself reads as dangerous: posture, size, what it is doing | **M22** |
 | **Symbol over the entity** | Flashing, and only when the entity cannot carry the warning alone | **M22** |
 | **Edge indicator** | A symbol at the screen edge for anything closing from off-screen. Says *what* is coming, not merely that something is | **M22** |
-| **Symbol over the player** | "You are too close, be somewhere else" — the cue that lets the others be quieter | **M22** |
+| **Exclamation over the player** | Flashing: *you are standing in a soon-to-be danger zone, move.* A telegraph whose radius already covers you, the path of something fast still off-screen, the road with a car coming through | **M22** |
+| **"Too close" over the player** | Danger already live and already on you — the cue that lets the others be quieter | **M22** |
 | **Sound lines** | Concentric arcs thrown off a source on the rising edge of a pulse — the visual form of a discrete noise (a yell, a bark, a beep, a siren whoop) | todo |
 | **HUD band** | For a `city_wide` source, which has no position and therefore nothing to stand under | todo |
 

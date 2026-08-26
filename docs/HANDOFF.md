@@ -26,6 +26,25 @@
   least two distinct routes to at least two distinct calm areas — checked by max flow on the
   junction graph before each closure is accepted.
 
+## The three decisions that govern the next milestones
+
+Taken at the end of this session and easy to miss, because they are decisions rather than
+code. All three are written up in `PLAYTEST-02.md` (decisions 9–11).
+
+1. **The beginning is challenging too.** Not extremely difficult, but a player who never
+   meets danger never learns to deal with it. The measurement below says act I and act II
+   currently cost nothing at all, and "the early game teaches events are safe, then act III
+   kills you" is the worst of both. **M19 has to make an act I street cost something.**
+2. **Difficulty is self-selected through the extra quests.** The resistance is the dial. That
+   is why the base game has to be hard on its own — the dial *adds* difficulty, it does not
+   supply it. Consequence: "how visible should the resistance be" stopped being a curiosity.
+   A player who never finds the dial is locked to the easiest setting and never told there
+   was one.
+3. **The act I/II numbers are set from data, not argument.** Build the mechanisms (M19), ship
+   telemetry (M23), read real runs, then pitch. **This makes M23 a gate**, not a
+   recommendation: M19's balance half cannot finish before it, and M24 cannot be built at all
+   without one of its fields.
+
 ## Read this before touching the event or signalling code
 
 Two measured facts came out of the end of this session. Neither is a bug; both change what
@@ -43,7 +62,8 @@ moves.
 case. The run button is currently a trap. This is why M25 is written as a mechanic to build
 rather than a constant to tune.
 
-**The aura circles are being deleted, not restyled** (M22). They only ever covered events —
+**No circles.** The aura rings are being deleted, not restyled (M22), and `CLAUDE.md` carries
+that as a standing rule next to the invariants. They only ever covered events —
 the ~530 crowd agents have no ring, and two `city_wide` sources have none either — so on a
 normal street most of what you can see is unmarked and nothing explains the difference. The
 replacement lives in the entity plus a small symbol vocabulary. The one thing to preserve:
@@ -91,8 +111,10 @@ traffic that behaves** (following, overtaking, 8-direction driving, crashes as e
 **M21 the city overhaul** (four-block calm zones, T-junctions and L-bends, main roads as
 barriers, plus the canal dropped out of M16). **M22 danger you can read** (the circles go;
 entity, symbol, screen edge, and a symbol over the player when they are too close).
-**M23 telemetry**. **M24 the city remembers where you went** (spoil the park you relied on
-yesterday). **M25 patrols, and running that matters**.
+**M23 telemetry** — field list and what each field is *for* in PLAYTEST-02.md, "What M23
+records"; must not touch gameplay and must be readable without a tool. **M24 the city
+remembers where you went** (spoil the park you relied on yesterday). **M25 patrols, and
+running that matters**.
 
 M21 rewrites the lattice enumeration in `src/routes/street_network.gd`. The graph half of
 that file — route counting, the invariant, the doorway exemptions — survives untouched and
