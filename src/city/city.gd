@@ -6,13 +6,15 @@ extends WorldContext
 ## Ground is drawn by this node itself, so it lands behind the y-sorted `Entities` child
 ## without needing a z_index fight.
 
-## Height range per district, in px. Clamped against the lot depth so a roof always shows.
-const _HEIGHTS := {
-	GameEnums.District.RESIDENTIAL: Vector2(48.0, 80.0),
-	GameEnums.District.COMMERCIAL: Vector2(58.0, 96.0),
-	GameEnums.District.INDUSTRIAL: Vector2(34.0, 54.0),
-	GameEnums.District.CIVIC: Vector2(88.0, 124.0),
-	GameEnums.District.PARK: Vector2(40.0, 40.0),
+## Wall height per district, in whole tiles. Heights are quantised because the facade is
+## assembled from 32px tiles now; a float height would mean a stretched tile. Clamped
+## against the lot depth so a roof always shows.
+const _HEIGHT_TILES := {
+	GameEnums.District.RESIDENTIAL: Vector2i(2, 3),
+	GameEnums.District.COMMERCIAL: Vector2i(2, 3),
+	GameEnums.District.INDUSTRIAL: Vector2i(1, 2),
+	GameEnums.District.CIVIC: Vector2i(3, 4),
+	GameEnums.District.PARK: Vector2i(1, 1),
 }
 ## A building never takes more than this share of its lot depth, so a roof remains.
 const MAX_HEIGHT_FRACTION := 0.55
@@ -98,7 +100,7 @@ func _spawn_buildings() -> void:
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.footprint = world.size
 		building.variant = _variant_for(rect)
-		building.height = _height_for(rect, world.size.y)
+		building.height = _height_for(rect, rect.size.y)
 		_entities.add_child(building)
 
 func _district_of(rect: Rect2i) -> GameEnums.District:
@@ -108,14 +110,17 @@ func _district_of(rect: Rect2i) -> GameEnums.District:
 func _variant_for(rect: Rect2i) -> int:
 	return absi(hash("%d:%d:%d" % [map.seed_used, rect.position.x, rect.position.y]))
 
-func _height_for(rect: Rect2i, lot_depth: float) -> float:
-	var range_px: Vector2 = _HEIGHTS[_district_of(rect)]
+func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
+	var range_tiles: Vector2i = _HEIGHT_TILES[_district_of(rect)]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("h:%d:%d:%d" % [map.seed_used, rect.position.x, rect.position.y])
-	var height := rng.randf_range(range_px.x, range_px.y)
+	var tiles := rng.randi_range(range_tiles.x, range_tiles.y)
 	# Slivers left beside an alley or a plaza are shallow lots; cap them to a low wall
-	# rather than letting the extrusion swallow the whole roof.
-	return minf(height, lot_depth * MAX_HEIGHT_FRACTION)
+	# rather than letting the extrusion swallow the whole roof. A one-tile sliver is all
+	# wall, which is the one case where there is no roof to protect.
+	var cap := maxi(1, mini(lot_depth_tiles - 1,
+			floori(lot_depth_tiles * MAX_HEIGHT_FRACTION)))
+	return mini(tiles, cap) * float(Tuning.TILE_SIZE)
 
 func _spawn_park_props() -> void:
 	var rng := RandomNumberGenerator.new()

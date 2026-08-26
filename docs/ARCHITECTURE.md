@@ -25,7 +25,9 @@ src/
   city/
     city_map.gd           tile data, queries (is_calm, is_alley, walkable)
     city_generator.gd     seeded generation
-    city_renderer.gd      procedural 2.5D drawing
+    city.gd               the scene: ground, buildings, props, boundary
+    building.gd           one lot, assembled from 32px facade and roof tiles
+    ground_tiles.gd       which ground tile a cell gets
     tile.gd               TileType enum + per-tile metadata
   events/
     event_def.gd          authored event data
@@ -39,7 +41,12 @@ src/
     meter_bar.gd
   dev/
     auto_screenshot.gd    render N frames, save a PNG, quit
-  palette.gd              colours for the procedural rendering
+  palette.gd              colours, multiplied over the near-white art
+assets/
+  tiles/                  ground tiles, 32x32 SVG
+  buildings/              facade and roof tiles, 32x32 SVG
+  props/                  feet-anchored sprites
+  ground_tileset.tres     one TileSetAtlasSource per ground tile
   game_enums.gd           shared enums (see below)
 tools/
   check.sh                import + headless boot, fails on any script error
@@ -130,12 +137,21 @@ kept strictly out of anything that touches the meters.
 ## Rendering / 2.5D
 
 - `city.tscn` root has `y_sort_enabled = true`; so do the prop containers.
-- Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that fills
-  that same lot with a front wall (the southern `height` px) and a roof (the remainder).
-  Fitting the mass inside the lot is what keeps extrusions off the street — a roof drawn
-  *overhanging* northward would hide the player whenever she walked along that sidewalk.
-  A taller building therefore shows more wall and less roof, which is what an oblique view
-  of a taller building should look like.
+- Ground: a `TileMapLayer` fed by `GroundTiles`, which is the only place that decides which
+  tile a cell gets. Source ids in `assets/ground_tileset.tres` are positional and
+  `ground_tiles.gd` mirrors them by hand — adding a tile means appending to both, in order.
+- Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that
+  assembles that same lot out of 32px tiles — a front wall (the southern `height` px) and a
+  roof (the remainder). Fitting the mass inside the lot is what keeps extrusions off the
+  street — a roof drawn *overhanging* northward would hide the player whenever she walked
+  along that sidewalk. A taller building therefore shows more wall and less roof, which is
+  what an oblique view of a taller building should look like.
+- Building heights are quantised to whole tiles, because a tiled facade cannot honour a
+  float height without stretching a tile. `Building` clamps the requested height itself, so
+  a caller cannot ask for a wall that eats the roof.
+- Fills are authored near-white and drawn with the variant colour as `draw_texture`'s
+  modulate; windows, plinth and parapets are overlays drawn at full colour on top. One set
+  of assets therefore covers every building colour.
 - The player's `position` is the *feet*, and drawing is offset upward from there. This
   keeps y-sort and collision consistent.
 - A single `Camera2D` on the player, with `position_smoothing_enabled` and a small

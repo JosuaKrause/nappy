@@ -1,0 +1,10 @@
+<!-- Facade fill. Authored near-white so the per-variant wall colour can be multiplied
+     over it; the detail here is only the courses that break up a flat face. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#ffffff"/>
+  <rect x="0" y="7" width="32" height="1" fill="#f0eeeb"/>
+  <rect x="0" y="15" width="32" height="1" fill="#f0eeeb"/>
+  <rect x="0" y="23" width="32" height="1" fill="#f0eeeb"/>
+  <rect x="0" y="31" width="32" height="1" fill="#f0eeeb"/>
+  <rect x="0" y="24" width="32" height="8" fill="#f8f6f4"/>
+</svg>

@@ -120,15 +120,30 @@ one unspoiled calm zone, or the day is unwinnable and the scheduler retries.
 
 Top-down camera with a fake vertical extrusion:
 
-- Ground tiles are drawn flat.
+- Ground is a `TileMapLayer` over `assets/ground_tileset.tres`. Kerbs, centre lines and
+  zebra crossings are authored tiles chosen per cell by `GroundTiles`, not geometry
+  recomputed on every redraw.
 - Buildings fill exactly their lot: the front wall takes the southern `height` px and the
   roof takes the rest. Fitting the mass inside the lot is what keeps extrusions off the
   street — a roof overhanging northward would hide the player whenever she walked along that
   sidewalk. A taller building therefore shows more wall and less roof, which is what an
   oblique view of a taller building should look like.
+- **Building heights are whole tiles.** They used to be continuous floats, which a tiled
+  facade cannot honour without stretching a tile. Quantising also makes the "a roof always
+  shows" rule exact instead of approximate: the wall takes at most `floor(depth * 0.55)`
+  rows and never the last one. A one-tile sliver is the single exception — it is all wall,
+  capped by a parapet, because a roof there would have to overhang the lot behind it.
+- Buildings are assembled from 32px tiles: a wall fill, a roof fill, edge overlays and
+  windows. The fills are authored near-white and multiplied by the variant's colour, so the
+  six roof colours still cost one asset each rather than six. Edges are overlays drawn on
+  top, which is why a corner needs no dedicated corner tile — it takes two edge overlays
+  and the parapet turns.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly.
-- Sprite anchor is the *feet*, not the centre, so y-sorting matches the ground plane.
+- Sprite anchor is the *feet*, not the centre, so y-sorting matches the ground plane. A
+  `Sprite2D` with `centered = false` puts the node at the sprite's *top-left*, which makes
+  y-sort compare the wrong edge; use `offset` to draw upward from the ground plane instead.
 
-No external art assets are required for the prototype — buildings, props and characters are
-drawn procedurally in `_draw()` with a per-act palette.
+Art lives in `assets/` as hand-editable SVG — tiles under `assets/tiles/`, building tiles
+under `assets/buildings/`, sprites under `assets/props/` — with a per-act palette
+multiplied over it.
