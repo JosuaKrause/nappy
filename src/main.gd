@@ -208,7 +208,7 @@ func _update_follow_camera() -> void:
 			return
 
 ## Dev flag: `-- --day-length N` compresses the day, so dusk and the timeout loss can be
-## looked at without sitting through five and a half minutes.
+## looked at without sitting through the whole three minutes.
 func _day_length() -> float:
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--day-length")

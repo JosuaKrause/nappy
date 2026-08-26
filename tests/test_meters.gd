@@ -31,6 +31,7 @@ func run(t) -> void:
 	_test_walking_fills_sleepiness(t)
 	_test_a_day_cannot_be_won_on_street_gain_alone(t)
 	_test_one_calm_stretch_wins_a_day(t)
+	_test_a_day_is_a_minute_of_play_with_a_grace_of_three(t)
 	_test_standing_still_is_worse_than_walking_but_affordable(t)
 	_test_a_street_day_never_settles_and_a_park_day_does(t)
 	_test_calm_zone_speeds_sleep(t)
@@ -135,6 +136,30 @@ func _test_one_calm_stretch_wins_a_day(t) -> void:
 	t.check(stretch < short_day * 0.6,
 			"a calm stretch fills the meter in %.0fs, well inside the %.0fs day"
 			% [stretch, short_day])
+
+## M18's target, as arithmetic: **a day walked well is about a minute, and dusk is a grace
+## of three.** Measured on the friendliest day the generator can produce — the nearest legal
+## calm ground, walked to in a straight line with nothing in the way — so this is the floor
+## a real day is measured up from, not a prediction of one.
+##
+## It is a relationship and not a stopwatch on purpose. What has to stay true is that the
+## clock is *slack* for a well-walked day and the meter is not the thing standing in the way;
+## the difficulty is supposed to be the walk. Both halves matter: a floor under 30s would
+## mean the day is over before it starts, and a floor over the grace would mean dusk is the
+## real opponent again, which is what M18 was undoing.
+func _test_a_day_is_a_minute_of_play_with_a_grace_of_three(t) -> void:
+	var leg := Tuning.MIN_HOME_TO_PARK_TILES * float(Tuning.TILE_SIZE) / Tuning.WALK_SPEED
+	var banked := Tuning.SLEEPINESS_GAIN_WALKING * leg
+	var stretch := (Tuning.METER_MAX - banked) / Tuning.sleepiness_gain_calm()
+	var shortest := leg + stretch + leg
+	t.check(shortest > 30.0,
+			"the shortest possible day is %.0fs, which is still a walk" % shortest)
+	t.check(shortest < 90.0,
+			"the shortest possible day is %.0fs, near the minute it is aimed at" % shortest)
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		t.check(shortest < Tuning.day_length(day) * 0.6,
+				"day %d's %.0fs of dusk is a grace, not the target (floor %.0fs)"
+				% [day, Tuning.day_length(day), shortest])
 
 func _test_standing_still_is_worse_than_walking_but_affordable(t) -> void:
 	t.check(Tuning.SLEEPINESS_DRAIN_IDLE > Tuning.SLEEPINESS_GAIN_WALKING,

@@ -25,15 +25,22 @@ At `sleepiness = 100` the baby falls asleep and the day enters its **return phas
 **Where a day is won.** These three numbers are pitched against the *day*, not against each
 other, and they are what makes the walk the game:
 
-- A whole day of undisturbed street walking reaches about **79** of 100. The street is real
+- A whole day of undisturbed street walking reaches about **76** of 100. The street is real
   progress and can never be enough — so circling the starting block, which used to win a
   day outright, now cannot win one at all.
-- A calm stretch clears the meter in about **119s**, and the walk out has already
-  contributed. On the short 264s curfew day that leaves comfortably over a minute for
-  getting there and getting home.
+- A calm stretch clears the meter in about **24s**, and the walk out has already
+  contributed. A second in a park is worth ten on the pavement, which is the whole of what
+  playtest 02's finding 1 asked for: the park has to be *obviously* the answer.
 - Standing still drains faster than walking fills, so waiting is never a strategy — but it
   drains *slower* than a calm zone fills, so stopping to let something pass stays a move
   worth making.
+
+**A day is aimed at a minute of play, with a grace of three.** Dusk at 180s is the outer
+bound, not the target. That is deliberate after M18: a day walked well is over in about a
+minute, and the rest of the clock is there for a day that goes wrong. It also means the day
+is not lost to the *meter* — once calm ground is reached the meter is a formality — so the
+difficulty has to live in the walk. Making it live there is what playtest 02's findings 2
+and 3 are for.
 
 The first two are asserted in terms of `day_length()` rather than as numbers
 (`tests/test_meters.gd`), so lengthening the day cannot quietly make the street sufficient
@@ -204,7 +211,8 @@ are the ones that cost you the baby's calm.
 
 ## Day timer
 
-Each day runs for `DAY_LENGTH_SECONDS` (default `330 s`, ~5.5 minutes) of in-game dusk.
+Each day runs for `DAY_LENGTH_SECONDS` (default `180 s`, 3 minutes) of in-game dusk, and is
+aimed at being won in about a third of that.
 Running out is a day loss. The timer is shown as a light-level shift rather than a number,
 with an explicit clock in the HUD corner.
 

@@ -21,23 +21,28 @@ const METER_MAX := 100.0
 ## which made the city decoration.
 ##
 ## An ordinary street makes real progress and never enough. A whole day of clean street
-## walking reaches about four fifths of the meter, so the walk out is worth something and
+## walking reaches about three quarters of the meter, so the walk out is worth something and
 ## the walk out alone can never finish; only calm ground can. `tests/test_meters.gd` holds
 ## both halves of that, in terms of `day_length()` rather than in numbers, so a change to
-## the day cannot quietly make the street sufficient again.
-const SLEEPINESS_GAIN_WALKING := 0.24
+## the day cannot quietly make the street sufficient again — which is what kept them honest
+## when M18 cut the day from 330s to 180s.
+const SLEEPINESS_GAIN_WALKING := 0.42
 ## Standing still has to be strictly worse than walking, or waiting is a strategy. It also
 ## has to stay cheaper than a calm zone gives, because stopping is the counterplay to a loud
 ## event and pricing it above the park's own rate would take that move away.
-const SLEEPINESS_DRAIN_IDLE := 0.6
-## Sized against the *short* day, not the long one. At 3.0 a park stretch ran 139s, which on
-## a 264s curfew day left barely thirty seconds for the walk out and the walk home together
-## — winnable on paper and a stopwatch race in practice. At 3.5 it is 119s, and the walk out
-## has already contributed, so the typical day finishes with a minute to spare.
-const SLEEPINESS_CALM_ZONE_MULTIPLIER := 3.5
-## Sleepiness the baby keeps after being woken up. Deliberately not softened when the fill
-## slowed down: waking her now costs about seventy seconds of park, roughly a fifth of the
-## day, and it should hurt that much.
+const SLEEPINESS_DRAIN_IDLE := 1.0
+## Playtest 02, finding 1: *"the difference of a park is barely noticeable... I don't want to
+## circle in a park for two minutes just to fill up the bar."* At M14's 3.5x a calm stretch
+## ran 119s, which is not a reward, it is a wait — and at three and a half times a rate you
+## cannot see, it did not even read as faster than the pavement.
+##
+## At 10x it is 24s from empty, and a second in a park is worth ten on the street. That makes
+## a day comfortably winnable *once calm ground is reached*, which is the point: the day is
+## meant to be lost on the way there, not in it. See docs/PLAYTEST-02.md, decision 1.
+const SLEEPINESS_CALM_ZONE_MULTIPLIER := 10.0
+## Sleepiness the baby keeps after being woken up. Half the bar, which is now about twelve
+## seconds of park — a fifth of a well-played day, which is what it was before and should
+## stay whatever the rates are.
 const WAKE_SLEEPINESS_PENALTY := 50.0
 
 ## Sleepiness per second on calm ground.
@@ -56,7 +61,9 @@ const SLEEPING_SENSITIVITY := 0.55
 const EXCITEMENT_DECAY_IDLE := 6.0
 const EXCITEMENT_DECAY_WALKING := 3.5
 const EXCITEMENT_DECAY_RUNNING := 0.5
-const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 1.6
+## The park has to read on *both* bars, not just the sleepiness one — half of "this is
+## working" is the excitement visibly falling away as she walks in under the trees.
+const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.2
 
 ## Excitement per second at full sprint, scaled by how far above walk speed we are.
 const EXCITEMENT_FROM_RUNNING := 9.0
@@ -75,7 +82,15 @@ const TELEGRAPH_HARD_FAIL_MARGIN := 2.0
 
 const RUN_LENGTH_DAYS := 14
 const STARTING_NERVES := 3
-const DAY_LENGTH_SECONDS := 330.0
+## A day is aimed at **about a minute of play, with a grace of three**. Dusk is the grace,
+## not the target: a day walked well is over in a minute, and the three minutes are there for
+## a day that goes wrong — a bad route, a park that turned out to be spoiled, a baby woken on
+## the way home.
+##
+## It was 330s until M18, which made the outer bound the *typical* length and the meter the
+## thing standing between you and it. Cutting it was the other half of finding 1: two minutes
+## of standing in a park inside a five and a half minute day is a game about waiting.
+const DAY_LENGTH_SECONDS := 180.0
 ## Curfew (day 6+) shortens the day by this fraction.
 const CURFEW_DAY_LENGTH_MULTIPLIER := 0.8
 
