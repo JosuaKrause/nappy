@@ -14,9 +14,20 @@ const ASPHALT := Color("46464f")
 const ROAD_MARKING := Color("b9b087")
 const SIDEWALK := Color("8b8478")
 const SIDEWALK_SEAM := Color("7a7469")
+## The sidewalk/road kerb has to read against both surfaces, so it is lighter than either.
+const KERB := Color("a49b8c")
 const GRASS := Color("6d9159")
 const ALLEY_FLOOR := Color("3c3a42")
 const SQUARE_STONE := Color("9a9184")
+const HOME_STOOP := Color("b8836a")
+const HOME_DOOR := Color("5c3a30")
+const SAND := Color("cbb083")
+
+const TREE_TRUNK := Color("5b4433")
+const TREE_CANOPY := Color("4f7a44")
+const TREE_HIGHLIGHT := Color("649256")
+const PLAYGROUND_FRAME := Color("c05f4a")
+const CROSSING_STRIPE := Color("cfc7ae")
 
 # --------------------------------------------------------------- buildings ---
 
