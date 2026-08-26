@@ -154,7 +154,17 @@ non-zero on any failure.
   exact building coverage, and route redundancy under street closures. *(done)*
 - `test_events.gd` — catalogue fairness, the emission model (telegraph damping, pulse
   envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
-  one-shot consumption and the usable-park rule. *(done)*
+  one-shot consumption and the usable-park rule.
+- `test_event_manager.gd` — the manager against a real generated city: retirement,
+  successors, summed excitement. Wiring bugs live here and are invisible to data tests.
+- `test_acts.gd` — act gating, the arterial handover, city-wide sources, protest growth,
+  scar persistence, and walkability under accumulated street closures.
+- `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
+- `test_resistance.gd` — the step table, the hold (driven through simulated input), the
+  seeded alley roulette, the expiring step, and the sabotage silencing the city.
+- `test_full_run.gd` — three seeds played through all 14 days with the real City,
+  EventManager and ResistanceDirector, with time actually advancing. This is the check
+  that catches "day 12 throws", which no amount of unit coverage does.
 
 These are the places a bug is invisible until it ruins a run, so they are the places with
 tests. Anything a screenshot would catch is checked with `tools/shot.sh` instead.

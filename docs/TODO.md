@@ -4,6 +4,10 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 Each milestone is one git branch, merged to `main` when green.
 
+**Where things stand:** M0–M9 are done and merged. The game is playable end to end — a
+14-day run, four act escalation, the resistance subquest, three endings. M10 (polish) is
+what remains. `tools/test.sh` runs 2649 checks; `tools/check.sh` boots the project.
+
 ---
 
 ## M0 — Project setup · `feature/project-setup`
@@ -208,21 +212,37 @@ Each milestone is one git branch, merged to `main` when green.
 
 ## M10 — Polish · `feature/polish`
 
-- [ ] Audio: ambient beds, event cues, baby breathing/fussing
-- [ ] Main menu, pause menu, settings
-- [ ] Save/continue a run
-- [ ] Accessibility: meter colourblind mode, telegraph time multiplier, reduced motion
+Not started. The game is complete without it; this is what would make it shippable.
+
+- [ ] **Audio.** The biggest gap by far. Every "you hear it coming" telegraph is currently
+      visual only, which the fire engine and the loudspeakers are both designed around.
+      Needs: per-act ambient beds, per-event cues, the baby's breathing and fussing as the
+      diegetic version of the meters.
+- [ ] Main menu, pause menu (Esc quits outright today), settings
+- [ ] Save/continue a run — `GameState` is already shaped for it (seed + day + a few
+      arrays), so this is serialisation, not design
+- [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
 - [ ] Controller support
+- [ ] The `--spawn`/`--follow`/`--day` dev flags should be gated behind a debug build
+- [ ] `_first_event_position` and friends live in `main.gd`; a `DevFlags` helper would keep
+      the boot scene about booting
 
 ---
 
 ## Open design questions
 
-- [ ] Does a lost day advance the calendar, or repeat the same day? *(Current: advances —
-      keeps the narrative moving and makes Nerves the real resource.)*
-- [ ] Should the player see numeric meters, or only a stylised baby-face indicator?
-      *(Current: bars, with a stretch goal of a diegetic-only mode.)*
-- [ ] Is 14 days the right run length? Needs playtesting once M6 lands.
+These need a human playing the game, not more code.
+
+- [ ] **Is the balance right?** Every number is asserted to be self-consistent, but none of
+      them has been felt. The suspects: `SLEEPINESS_GAIN_WALKING` 2.2 (45s of clean walking
+      to fill the meter — probably too fast), the event budget `3 + day * 1.4`, and whether
+      330s is long enough for a day now that the city is 3328px across.
+- [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little
+      time to learn a city before it starts changing.
+- [ ] **How visible should the resistance be to a player ignoring it?** Right now: a chalk
+      mark and one HUD line. Real risk that a player finishes a run never knowing the good
+      ending existed. That might be correct, or it might be a bug.
 - [ ] Should running ever be *required* (a forced chase), or always purely a player choice?
-- [ ] How visible should the resistance be to a player ignoring it? Risk: they finish a run
-      never knowing the good ending existed.
+- [ ] Should there be a diegetic-only mode — a baby's face instead of two bars?
+- [ ] Does a lost day advancing the calendar feel right, or should it repeat the day?
+      *(Current: advances, which makes Nerves the real resource.)*
