@@ -84,6 +84,14 @@ signal resistance_progress_changed(value: int)
 The run. Owns `run_seed`, `day`, `nerves`, `resistance_progress`, `consumed_one_shots`.
 Handles day transitions and ending selection. Serialisable for save/continue.
 
+## WorldContext
+
+`Baby` never learns what a tile or an event is. It asks a `WorldContext` three questions —
+`is_calm_zone()`, `is_alley()`, `total_excitement_at()` — and that is the entire surface
+between the meters and the world. The debug world answers with hand-placed test data; M3's
+generated city and M4's event manager answer for real. Adding an event type therefore never
+touches the meter code, and the meters can be unit-tested against a fake world.
+
 ## Excitement aggregation
 
 `Baby` does not know about event types. Each frame it asks the world for total stimulus:
@@ -133,11 +141,15 @@ kept strictly out of anything that touches the meters.
 
 ## Testing
 
-`tests/` uses plain GDScript scenes run headless via `godot --headless --script`:
+`tools/test.sh` runs `tests/tests.tscn` headless. It is run as a *scene*, not via
+`--script`: `--script` replaces the main loop, which skips the autoloads, and every test
+needs `Tuning`. The runner loads every `tests/test_*.gd`, calls its `run(t)`, and exits
+non-zero on any failure.
 
-- `test_falloff.gd` — falloff math and the telegraph fairness contract for every EventDef.
+- `test_meters.gd` — falloff shape, the telegraph fairness contract, and every meter rule
+  in docs/MECHANICS.md, driven at a fixed timestep against a fake world. *(done)*
 - `test_generator.gd` — 500 seeds: connectivity, park count/spread, home-to-park distance.
 - `test_scheduler.gd` — determinism, budget bounds, at-least-one-usable-calm-zone.
 
-These are the three places a bug is invisible until it ruins a run, so they are the three
-places with tests.
+These are the places a bug is invisible until it ruins a run, so they are the places with
+tests. Anything a screenshot would catch is checked with `tools/shot.sh` instead.

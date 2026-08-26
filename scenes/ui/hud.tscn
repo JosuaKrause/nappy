@@ -1,0 +1,43 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://src/ui/meter_bar.gd" id="2_meter"]
+
+[node name="Hud" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="Header" type="Label" parent="."]
+offset_left = 18.0
+offset_top = 14.0
+offset_right = 420.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 13
+text = "day"
+
+[node name="Meters" type="VBoxContainer" parent="."]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = -110.0
+offset_right = 298.0
+offset_bottom = -18.0
+grow_vertical = 0
+theme_override_constants/separation = 6
+
+[node name="Sleepiness" type="Control" parent="Meters"]
+custom_minimum_size = Vector2(280, 33)
+script = ExtResource("2_meter")
+
+[node name="Excitement" type="Control" parent="Meters"]
+custom_minimum_size = Vector2(280, 33)
+script = ExtResource("2_meter")
+
+[node name="State" type="Label" parent="Meters"]
+theme_override_colors/font_color = Color(1, 1, 1, 0.8)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 12
+text = "awake"

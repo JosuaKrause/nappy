@@ -97,9 +97,7 @@ func day_length(day: int) -> float:
 ## Returns true if the geometry is fair; pushes an error and returns false if it is not.
 func validate_event(id: String, telegraph_time: float, inner_radius: float,
 		outer_radius: float, hard_fail: bool) -> bool:
-	var margin := TELEGRAPH_HARD_FAIL_MARGIN if hard_fail else 1.0
-	var escape_distance := outer_radius - inner_radius
-	var required := escape_distance * margin / WALK_SPEED
+	var required := required_telegraph_time(inner_radius, outer_radius, hard_fail)
 	if telegraph_time + 0.001 < required:
 		push_error("Unfair event '%s': telegraph_time %.2fs < required %.2fs "
 				% [id, telegraph_time, required]
@@ -107,6 +105,14 @@ func validate_event(id: String, telegraph_time: float, inner_radius: float,
 				% [inner_radius, outer_radius, hard_fail])
 		return false
 	return true
+
+## Shortest telegraph an event with this geometry may have and still be fair.
+## Kept separate from validate_event() so tests can check the contract without tripping
+## the error it raises.
+func required_telegraph_time(inner_radius: float, outer_radius: float,
+		hard_fail: bool) -> float:
+	var margin := TELEGRAPH_HARD_FAIL_MARGIN if hard_fail else 1.0
+	return (outer_radius - inner_radius) * margin / WALK_SPEED
 
 ## Excitement contribution of a source of `intensity` at distance `d`.
 ## Quadratic falloff between the inner and outer radius. See docs/MECHANICS.md.
