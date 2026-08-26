@@ -26,6 +26,7 @@ const TREES_PER_PARK := 10
 
 var map: CityMap
 var events: EventManager
+var crowd: Crowd
 var _daylight: CanvasModulate
 var _act := 1
 
@@ -45,6 +46,10 @@ func build(city_map: CityMap) -> void:
 	events.name = "Events"
 	add_child(events)
 	events.setup(self, map)
+	crowd = Crowd.new()
+	crowd.name = "Crowd"
+	add_child(crowd)
+	crowd.setup(self, map)
 	_daylight = CanvasModulate.new()
 	_daylight.name = "Daylight"
 	add_child(_daylight)
@@ -72,8 +77,15 @@ func is_calm_zone(world_position: Vector2) -> bool:
 func is_alley(world_position: Vector2) -> bool:
 	return Tile.is_alley(map.tile_type_at_world(world_position)) if map else false
 
+## Events and the crowd are the same kind of quantity to the baby, so they simply add. The
+## crowd is the floor an ordinary street sits at; the events are what happens on top of it.
 func total_excitement_at(world_position: Vector2) -> float:
-	return events.total_excitement_at(world_position) if events else 0.0
+	var total := 0.0
+	if events:
+		total += events.total_excitement_at(world_position)
+	if crowd:
+		total += crowd.total_excitement_at(world_position)
+	return total
 
 # ------------------------------------------------------------------ spawning ---
 

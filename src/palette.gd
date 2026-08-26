@@ -74,6 +74,20 @@ static func building_roof(variant: int) -> Color:
 static func building_wall(variant: int) -> Color:
 	return building_roof(variant).darkened(0.42)
 
+# --------------------------------------------------------------- the crowd ---
+# Walkers and cars are drawn as a near-white body plus a full-colour trim overlay, the same
+# split the buildings use, so ninety people are not one silhouette in one colour.
+
+const COATS: Array[Color] = [
+	Color("6b7a8c"), Color("7d6a5b"), Color("59636e"), Color("8a7d6b"),
+	Color("6e5f6b"), Color("4f5b52"), Color("94806a"), Color("5c6a76"),
+]
+
+const CAR_PAINT: Array[Color] = [
+	Color("8d9299"), Color("6d7a86"), Color("8a6f60"), Color("5f6b5c"),
+	Color("9a9384"), Color("57606b"),
+]
+
 # ---------------------------------------------------------------- entities ---
 # The rig, the props and the event bodies are sprites; their colours are in the SVGs. The
 # shadow is not, because everything that stands on the ground draws the same one at its own

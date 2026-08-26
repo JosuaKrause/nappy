@@ -1,0 +1,8 @@
+<!-- Walking away: the same coat with a centre seam. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="crispEdges">
+  <rect x="2" y="11" width="14" height="17" fill="#ffffff"/>
+  <rect x="2" y="23" width="14" height="5" fill="#e0e0e0"/>
+  <rect x="8" y="11" width="2" height="17" fill="#ededed"/>
+  <rect x="0" y="13" width="3" height="12" fill="#f2f2f2"/>
+  <rect x="15" y="13" width="3" height="12" fill="#f2f2f2"/>
+</svg>

@@ -1,0 +1,11 @@
+<!-- Head, hands, legs and shoes: never tinted, because a coat colour is not a skin colour. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="crispEdges">
+  <rect x="4" y="27" width="4" height="9" fill="#46506b"/>
+  <rect x="10" y="27" width="4" height="9" fill="#3c4560"/>
+  <rect x="3" y="36" width="6" height="2" fill="#2f2a2c"/>
+  <rect x="10" y="36" width="6" height="2" fill="#2f2a2c"/>
+  <rect x="0" y="23" width="3" height="3" fill="#d9a878"/>
+  <rect x="15" y="23" width="3" height="3" fill="#d9a878"/>
+  <circle cx="9" cy="6" r="5.5" fill="#d9a878"/>
+  <path d="M3.5 6 A5.5 5.5 0 0 1 14.5 6 Z" fill="#3a2b26"/>
+</svg>

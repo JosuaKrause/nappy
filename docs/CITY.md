@@ -116,6 +116,30 @@ From Act III the generator's output is post-processed per day:
 Closures are validated the same way as generation: home must remain connected to at least
 one unspoiled calm zone, or the day is unwinnable and the scheduler retries.
 
+## Life on the streets
+
+The city carries its own traffic: several hundred people on the pavements and several dozen
+cars on the roads, as real agents rather than a noise number. They are the reason a street
+is loud, and the reason a park is quiet.
+
+- **Lane-following, not pathfinding.** An agent belongs to one lane of one corridor,
+  advances along it and steers toward the lane's centre. Walkers turn at junctions and keep
+  to the pavement they are already on; cars drive straight and are recycled at the map edge.
+  The population is fixed for the day, so the streets never quietly empty out over
+  five minutes.
+- **Density is per corridor, not uniform.** Each corridor has a busyness seeded from the
+  *city*, so the busy streets are the same streets every morning and learning the quiet ones
+  is worth something. The arterial is much the busiest, and it is the same arterial the
+  event scheduler uses.
+- **Density is per act.** The crowd thins as the occupation settles in: act III's streets
+  are close to deserted, which makes the city *easier*. See docs/NARRATIVE.md.
+- **Nobody walks through a park.** The crowd lives on the street lattice only, which is the
+  structural half of "a park is quiet because nobody is in it". `tests/test_crowd.gd`
+  asserts the middle of every park is out of earshot.
+
+Agents have no collision: the player walks through them. They are a noise field with a
+picture attached, and stopping her dead in a crowd would fight the one verb the game has.
+
 ## Rendering (2.5D)
 
 Top-down camera with a fake vertical extrusion:

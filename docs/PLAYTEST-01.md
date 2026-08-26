@@ -149,14 +149,16 @@ Each is a branch, merged when green, as before.
 
 **M11 — Playtest fixes** *(done)* — findings 1, 5, 6, 10.
 
-**M12 — Asset pipeline** — finding 13. Authored SVG assets, a `TileSet` for ground, modular
+**M12 — Asset pipeline** *(done)* — finding 13. Authored SVG assets, a `TileSet` for ground, modular
 building tiles, sprites for the rig and props. No new content: this milestone should end
 looking near-identical to today, which is what makes it reviewable. Everything after it
 gets cheaper.
 
-**M13 — Density and life** — findings 3, 8, 9. Ambient pedestrians and traffic as real
-moving agents, at a density the streets can carry. Retune the per-person excitement so
-passing someone reads. The crowd becomes the noise floor.
+**M13 — Density and life** *(done)* — findings 3, 8, 9. Pedestrians and traffic as real
+moving agents on a per-corridor, per-act density. Passing someone reads because a close
+pass is pitched just over the walking decay while the width of the pavement is not. The
+crowd is the noise floor, and the two invisible ambient road bands it replaced were
+deleted rather than kept alongside it.
 
 **M14 — Balance** — findings 2, 4. Re-pitch street vs calm-area sleepiness so a day cannot
 be won without reaching calm ground. Depends on M13, because the floor is the crowd.

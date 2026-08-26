@@ -41,7 +41,6 @@ static func _build() -> Array[EventDef]:
 	return [
 		# Act I - a nice neighbourhood.
 		_playground(),
-		_busy_road(),
 		_cat_dash(),
 		_dog_walker(),
 		_delivery_van(),
@@ -60,7 +59,6 @@ static func _build() -> Array[EventDef]:
 		_checkpoint(),
 
 		# Act III - vans.
-		_quiet_road(),
 		_abduction(),
 		_alley_robbery(),
 		_night_raid(),
@@ -132,24 +130,7 @@ static func _homeless_yeller() -> EventDef:
 ## Pitched deliberately just BELOW the 3.5/s walking decay, so a main road can never raise
 ## the meter on its own — it is not a hazard. What it does is cripple *recovery*: on a
 ## quiet street excitement drains at 3.5/s, on the arterial at 0.3/s. So the cost of the
-## main road is not that it excites the baby, it is that you cannot calm her down while
-## you are on it. Getting away from a cat means getting off the arterial too.
-static func _busy_road() -> EventDef:
-	var def := EventDef.new()
-	def.id = "busy_road"
-	def.display_name = "Traffic"
-	def.kind = GameEnums.EventKind.AMBIENT
-	def.ambient_source = EventDef.AmbientSource.MAIN_ROAD
-	def.look = EventDef.Look.NONE
-	# Hands over to `quiet_road` on day 8; the two must never overlap, or the arterials
-	# would carry both bands at once.
-	def.last_day = 7
-	def.intensity = 3.2
-	def.inner_radius = 34.0
-	def.outer_radius = 130.0
-	def.telegraph_time = 0.0
-	return def
-
+#
 ## Slow, small, and it barks. Easy to walk around; annoying when it wanders into the
 ## quiet street you had picked.
 static func _dog_walker() -> EventDef:
@@ -384,23 +365,6 @@ static func _checkpoint() -> EventDef:
 
 # --------------------------------------------------------- Act III: vans (8-11) ---
 
-## The cruellest number in the game. From Act III the arterials are *quieter*, because
-## there is nobody left going out on them. The city becomes an easier place to put a baby
-## to sleep, and that is the horror.
-static func _quiet_road() -> EventDef:
-	var def := EventDef.new()
-	def.id = "quiet_road"
-	def.display_name = "Traffic"
-	def.kind = GameEnums.EventKind.AMBIENT
-	def.ambient_source = EventDef.AmbientSource.MAIN_ROAD
-	def.look = EventDef.Look.NONE
-	def.first_day = 8
-	def.act_tag = 3
-	def.intensity = 1.4
-	def.inner_radius = 30.0
-	def.outer_radius = 100.0
-	def.telegraph_time = 0.0
-	return def
 
 ## An unmarked van idles first — that idling IS the telegraph, and it runs long because
 ## the inner radius ends the day. Getting close does not excite the baby; it takes you.

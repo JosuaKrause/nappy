@@ -20,7 +20,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 2649 headless checks, ~21s
+./tools/test.sh               # 1934 headless checks, ~40s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ```
 
@@ -67,6 +67,12 @@ exit". Declare the real element type at the call site. `tests/test_acts.gd` carr
 being inferred from a Variant value") fails the parse outright. Annotate the type instead:
 `var x: int = ...`. This does not show up until the project actually boots, which is why
 `check.sh` exists.
+
+**A runtime error inside a test suite hangs the runner instead of failing it.**
+`run_tests.gd` calls each suite's `run()` synchronously and then `get_tree().quit()`. An
+error — a null `by_id()` result, say — aborts `_ready()` before the quit, so the headless
+process sits there forever printing nothing. A test run with *no output at all* means an
+error in a suite, not a slow suite.
 
 **`--script` skips autoloads.** The test suite runs as a *scene*
 (`godot --headless --path . res://tests/tests.tscn`) because every test needs `Tuning`.
@@ -122,7 +128,13 @@ global RNG and must stay away from anything touching the meters.
 `WorldContext` for the total at its position, and the world sums `contribution_at()` over
 live instances. This is why events compose by simple addition, there is no ordering to get
 wrong, and an event can be tested without a scene. Do not add a code path that writes to
-`Baby.excitement` from outside.
+`Baby.excitement` from outside. The crowd (M13) is summed the same way and for the same
+reason — `City.total_excitement_at` adds the two and nothing else.
+
+**The noise floor is emergent, never a constant.** A street is loud because there are
+people and cars on it, which the player can see. There used to be an invisible ambient band
+on the arterials doing that job; it was replaced, not supplemented. If you find yourself
+adding a city-wide "background noise" number, that is the thing this rule exists to stop.
 
 **`Baby` knows nothing about tiles or events.** Its entire interface to the world is three
 questions: `is_calm_zone`, `is_alley`, `total_excitement_at`. Adding an event type must never

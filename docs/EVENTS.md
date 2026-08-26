@@ -68,7 +68,6 @@ All implemented.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
-| `busy_road` | AMBIENT | 1 | Sampled along the two arterial corridors. Intensity `3.2`, deliberately just **under** the `3.5` walking decay, so it can never raise the meter on its own. What it does is cripple recovery: excitement drains at 3.5/s on a quiet street and 0.3/s on the arterial. Getting away from a cat means getting off the main road too. |
 | `cat_dash` | RECURRING | 1 | Crouches (telegraph), then bolts across the traffic. High intensity, tiny radius, 1.4s duration. The tutorial obstacle. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Barks on a 3.5s pulse. |
 | `homeless_yeller` | RECURRING | 1 | Stationary, large radius, 5s yell **pulse**. The counterplay is timing a pass between yells, which is a different skill from routing around a hazard. |
@@ -84,7 +83,7 @@ All implemented.
 | --- | --- | --- | --- |
 | `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. |
 | `poster_crew` | RECURRING | 4 | Static, weak. Cosmetic dread; it is here so the walls change. |
-| `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like the arterial it does not raise the meter — it stops you clearing it. |
+| `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
 | `checkpoint` | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60). The first event that takes a route away rather than making it expensive. |
 
@@ -92,7 +91,6 @@ All implemented.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `quiet_road` | AMBIENT | 8 | Takes over the arterials from `busy_road` (whose `last_day` is 7, so the two can never stack). Intensity drops 3.2 → 1.4: the city becomes an **easier** place to put a baby to sleep, because there is nobody left going out on the main roads. The cruellest number in the game. |
 | `abduction` | RECURRING | 8 | An unmarked van idles first — that idling *is* the telegraph, and it runs 4.6s because the inner radius is a `hard_fail`. Getting close does not excite the baby; it takes you. |
 | `alley_robbery` | RECURRING | 8 | Alleys only, and deliberately tiny (22/42px) so the fairness rule is satisfied by half a second. That is as close to "no warning" as the contract allows, and it is honest: **the alley is the warning**. You knew what an alley was when you turned into it. |
 | `night_raid` | SCRIPTED | 10 | Enormous, static, pulsing, and it closes the block (`obstructs_radius` 44). |
