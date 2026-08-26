@@ -22,11 +22,15 @@ baby to sleep — while the city around her slowly slides into authoritarianism 
 
 ## Running
 
-Open the project folder in Godot 4.7, or:
-
 ```sh
-godot --path . 
+./tools/run.sh                     # play
+./tools/run.sh --seed 12345        # a specific city
+./tools/run.sh --day 9 --overview  # look at a later act from above
 ```
+
+`godot` is not on `PATH` on macOS — the binary lives inside the app bundle, so
+`tools/run.sh` finds it for you. Override with `GODOT=/path/to/Godot tools/run.sh`.
+Or open the project folder in Godot 4.7 directly.
 
 ## Controls
 

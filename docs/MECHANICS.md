@@ -124,6 +124,11 @@ Every event has a `telegraph_time` (default `2.5 s`, longer for big events) duri
 - The event is **visible** (sprite, warning ring, audio cue).
 - It emits at most `TELEGRAPH_INTENSITY_FRACTION` (default `0.15`) of its full intensity.
 
+A telegraph the player cannot perceive is not a telegraph. **Every cue must be legible with
+the sound off** — audio reinforces the warning, it never carries it (see docs/EVENTS.md,
+"Audio is never the only channel"). `Tuning.validate_event()` checks the geometry and cannot
+tell whether the player was actually warned, so that part is on the author.
+
 The design contract: *from the moment an event becomes visible, the player must have enough
 time to walk out of its outer radius at normal walking speed.* Event authoring must satisfy
 
