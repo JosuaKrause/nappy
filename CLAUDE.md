@@ -136,6 +136,14 @@ ones (no edge to walk out of).
 walkable route from home to a park. If you add anything that closes streets, it must go
 through those checks.
 
+**Audio is never the only channel.** Every cue that will eventually be audio must also exist
+visually, and the visual must be sufficient on its own — the game has to play identically
+with the sound off. Build the visual first and judge it alone; audio is added afterwards as
+redundancy. An event whose telegraph only works "because you hear it coming" is unfinished,
+and the fairness contract cannot catch it: `validate_event()` checks the geometry, not
+whether the player was actually warned. See docs/EVENTS.md, "Showing the danger", for the
+visual vocabulary and the two places it is currently incomplete.
+
 ---
 
 ## Recipes
@@ -206,8 +214,14 @@ Do not "fix" these without a reason; each was a decision.
 
 - **No balance number has been felt by a human.** They are all asserted self-consistent and
   none is playtested. Prime suspects are in `docs/TODO.md` under "Open design questions".
-- **There is no audio at all.** The fire engine and the loudspeakers are both designed around
-  "you hear it coming"; today every telegraph is visual only. This is the largest gap.
+- **Two events are effectively unsignalled.** `city_wide` sources (the loudspeaker masts
+  from day 5, the curfew announcement) have *no* on-screen presence whatsoever — the aura
+  layer skips them and nothing took over, so the player sees excitement refusing to drain
+  with nothing explaining why. Fast movers closing from off-screen (`fire_truck`,
+  `military_convoy`) spend most of their telegraph outside the viewport. Both need visuals
+  before audio, not after. See docs/EVENTS.md.
+- **There is no audio at all.** Less urgent than it sounds, given the rule above: audio is
+  redundancy, so the game must already be fully playable without it.
 - **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters` and
   `--day-length` ship in the build and live in `main.gd`. They should be gated behind a debug
   build before release.

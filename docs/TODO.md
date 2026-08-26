@@ -214,10 +214,23 @@ what remains. `tools/test.sh` runs 2649 checks; `tools/check.sh` boots the proje
 
 Not started. The game is complete without it; this is what would make it shippable.
 
-- [ ] **Audio.** The biggest gap by far. Every "you hear it coming" telegraph is currently
-      visual only, which the fire engine and the loudspeakers are both designed around.
-      Needs: per-act ambient beds, per-event cues, the baby's breathing and fussing as the
-      diegetic version of the meters.
+- [ ] **Finish the visual channel — before audio, not after.** House rule: audio is never
+      the only channel, so every cue that will become a sound must already work silently
+      (docs/EVENTS.md, "Showing the danger"). Two gaps, in priority order:
+  - [ ] **HUD band for `city_wide` sources.** The loudspeaker masts from day 5 and the
+        curfew announcement have *no* on-screen presence at all — `EventAuraLayer` skips
+        them (a field with no edge cannot be a ring) and nothing took over. The player
+        sees excitement refusing to drain and nothing says why. Most misleading thing in
+        the game right now.
+  - [ ] **Screen-edge indicator for fast movers.** `fire_truck` and `military_convoy` are
+        built around a long telegraph spent getting off that street, but at 190px/s most
+        of that warning happens off-screen where the ring cannot be seen.
+  - [ ] **Sound lines.** Concentric arcs thrown off a source on a pulse's rising edge —
+        the visual form of a discrete noise. Would give the yeller, the dog and the
+        reversing van a readable "that just happened" beat rather than only a swell.
+- [ ] **Audio**, once the above is done and judged on its own: per-act ambient beds,
+      per-event cues, the baby's breathing and fussing as the diegetic version of the
+      meters. Additive by design — the game must already be fully playable muted.
 - [ ] Main menu, pause menu (Esc quits outright today), settings
 - [ ] Save/continue a run — `GameState` is already shaped for it (seed + day + a few
       arrays), so this is serialisation, not design

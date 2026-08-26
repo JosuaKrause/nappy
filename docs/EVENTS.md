@@ -163,11 +163,52 @@ is the point of a city that does not change.
 
 ## Showing the danger
 
+### Audio is never the only channel
+
+**Every cue that will eventually be audio must also exist visually, and the visual must be
+sufficient on its own.** Audio reinforces; it never carries. A player with the sound off, or
+who cannot hear it, must be able to play the game exactly as well.
+
+This is not an accessibility afterthought bolted onto a sound design — it is the order the
+work happens in. The visual channel is built first and judged on its own; audio is added
+afterwards as redundancy. Any event whose telegraph only works "because you hear it coming"
+is an unfinished event.
+
+The rule has teeth because of the fairness contract: a telegraph the player cannot perceive
+is not a telegraph, and `Tuning.validate_event()` cannot tell the difference.
+
+### The visual vocabulary
+
+| Cue | Means | Status |
+| --- | --- | --- |
+| **Ring + fill** | The danger geometry: outer radius, inner radius | done |
+| **Flashing amber ring** | Telegraphing — visible, not yet at full strength | done |
+| **Red ring** | Active; darker red for `hard_fail` | done |
+| **Breathing** | Fill and ring track *current* emission, so a pulsing event visibly swells and fades and can be timed | done |
+| **Sound lines** | Concentric arcs thrown off a source on the rising edge of a pulse — the visual form of a discrete noise (a yell, a bark, a beep, a siren whoop) | **todo** |
+| **Edge indicator** | A flash or arrow at the screen edge for something loud and fast closing on you from off-screen | **todo** |
+| **HUD band** | For a `city_wide` source, which has no position and therefore no ring | **todo** |
+
 Each live event's field is drawn on an aura layer between the ground and the y-sorted
 entities — so a field never paints over a roof, and a building genuinely hides the field
-behind it. The fill and ring track what the event is *currently* emitting, so a pulsing
-event visibly breathes and the player can time a pass through it. Telegraphing events are
-amber and flash; active ones are red; hard-fail ones are darker red.
+behind it.
+
+### Where the visual channel is currently incomplete
+
+Two real gaps, both of which would today be papered over by audio if audio existed:
+
+- **`city_wide` sources have no visual at all.** `EventAuraLayer` explicitly skips them —
+  correctly, since a field with no edge cannot be drawn as a ring — and nothing else picked
+  up the job. So from day 5 the loudspeaker masts hold a floor under the meter with *nothing
+  on screen to say so*, and the player just sees excitement refusing to drain. This is the
+  most misleading thing in the game right now. Needs the HUD band.
+- **Fast movers approaching from off-screen.** `fire_truck` (190px/s, 340px radius) and
+  `military_convoy` are both designed around a long telegraph that you spend getting off
+  that street — but the ring is only useful once it is on screen, and at 190px/s that is
+  most of the warning gone. Needs the edge indicator.
+
+Everything else already has a sufficient visual: the cat's crouch before it bolts, the
+abduction van idling, the pulse breathing on the yeller and the protest.
 
 ## Keeping a day winnable
 
