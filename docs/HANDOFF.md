@@ -1,13 +1,13 @@
 # Handoff
 
-**Last updated:** end of the M14 session.
+**Last updated:** end of the M15 session.
 **Read this first, then [PLAYTEST-01.md](PLAYTEST-01.md), then [TODO.md](TODO.md).**
 
 ---
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **1986 checks, 0 failures**;
+`main` is green and playable. `./tools/test.sh` → **7187 checks, 0 failures** (~2m20s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it.
 
 - **M0–M9 complete.** Full 14-day run, four-act escalation, resistance subquest, three
@@ -25,25 +25,33 @@
   bands were deleted rather than left alongside it.
 - **M14 complete.** The day is re-pitched against calm ground. A whole day of undisturbed
   street walking reaches 79 of 100; a calm stretch clears the meter in 119s.
+- **M15 complete.** Blocks have purposes and arcs. Four kinds of calm, three degraded forms,
+  planned up front, tracked in a run-scoped `CityState`, repainted every morning.
 
 ## What to do next, in order
 
-### M15 — block purposes
+### M16 — route pressure
 
-The vocabulary of block purposes (park, forest, courtyard, quiet square, canal path, and
-their degraded forms), the per-block *arcs* the generator plans up front, and the run-scoped
-`CityState` that tracks where each block currently is. Rendering starts reading block state
-rather than layout, which means `City._paint_ground()` has to become per-day rather than
-once per run.
+Finding 12. A per-day pruned road network with legible blockers, and the day-level
+invariant: **at least two distinct routes to at least two distinct calm areas.** The
+scheduler already has most of the machinery in `_ensure_the_city_is_still_walkable`; it
+needs to count distinct routes and destinations rather than just find one.
 
-This is the one that **supersedes the "`CityMap` is immutable for the run" invariant** —
-see the standing decisions below. The replacement: the street lattice and block boundaries
-are fixed; what a block *is* may change, and only ever along the arc the generator planned.
+Two things M15 leaves on the table for it:
 
-M14 makes it load-bearing rather than decorative: a day can now only be won on calm ground,
-so *how much calm ground there is and what happens to it* is the run's difficulty curve.
+- **Canal path** was the one item from finding 7's list deliberately left out. It means
+  impassable water and bridges — a change to *where the player can walk*, which is M16's
+  subject. Every M15 purpose is guaranteed not to move a walkable tile; a canal would be the
+  single exception, so it belongs with the milestone that owns closures.
+- **Legibility before commitment.** Closures have to be visible *before* the player has
+  walked down the street. Nothing in M15 does that; the overview camera is the only place
+  the city's shape is currently readable, and that is a dev flag.
 
-### Then M16 → M17
+### Then M17 — the route map
+
+The planning screen, rendering the block states M15 introduced: what the city has become,
+not what it was generated as. `CityState.changed_on(block)` is already recorded for exactly
+this — shading "this is new" is what makes the screen worth opening twice.
 
 See `PLAYTEST-01.md`. Do not reorder them — the sequencing rationale is in that document
 and each depends on the one before.
@@ -64,14 +72,43 @@ Taken in the M12a session and still governing everything after it. All four are 
    — several viable routes and *several quiet destinations to choose between*. The day-level
    invariant to enforce in M16: at least two distinct routes to at least two distinct calm
    areas.
-4. **The city is mutable day to day, by recontextualising areas.** The generator plans each
-   block's *purpose arc* up front so blocks transition coherently. This **supersedes the
-   "`CityMap` is immutable for the run" invariant in `CLAUDE.md`** — replaced by: the street
-   lattice and block boundaries are fixed; what a block *is* may change, only along its
-   planned arc. Rendering must read block state, so `City._paint_ground()` has to become
-   per-day rather than once per run.
+4. **The city is mutable day to day, by recontextualising areas.** *(Implemented in M15.)*
+   The generator plans each block's *purpose arc* up front so blocks transition coherently.
+   This **superseded the "`CityMap` is immutable for the run" invariant in `CLAUDE.md`** —
+   replaced by: the street lattice and block boundaries are fixed; what a block *is* may
+   change, only along its planned arc. Rendering reads block state, so `City.start_day()`
+   repaints the ground and re-dresses the blocks every morning.
 
 ---
+
+## Gotchas learned in M15
+
+- **A carved interior needs a way in.** Courtyards were sealed rects the first time and the
+  connectivity check failed on *every seed*. The archway is now part of `BlockLayout`, and
+  it is paved as an alley on purpose: reaching hidden calm costs a few seconds of somewhere
+  you would rather not be.
+- **Put arc invariants in the arc, not in the callers.** A commercial block could be planned
+  to go dark on day 10 and then burn on day 3, because two independent rolls wrote their own
+  `from_day`. `BlockPlan.then()` now clamps each step to at least the previous step's day.
+  `tests/test_blocks.gd` found it on 13 of 24 seeds.
+- **Protect the calm ground, not the block.** `_ensure_one_usable_park` matched events
+  against the whole block lot. For a courtyard — four tiles inside a residential block —
+  that stripped every event off streets the player was never going to settle on. It matches
+  `BlockLayout.open_rect` now.
+- **Calm ground must not read as a rooftop.** From above, the first quiet-square paving was
+  the same warm beige as the building roofs. Since M14 finding calm ground is the whole
+  game, so the tile is deliberately cooler than anything else in the palette. This will
+  matter more in M17, where the map screen *is* the view.
+- **`var x := SomeEnum.keys()[i]` will not parse.** The value is a Variant, and "inferred
+  from a Variant value" is an error, not a warning. Annotate: `var x: String = ...`.
+
+## Known slow: `tests/test_balance.gd` is 94s of the suite's 138s
+
+Per-suite timings are printed by `tools/test.sh` now. `test_balance.gd` steps a real `Baby`
+through fourteen full days at 1/60s against a real city, and each step sums over ~530 crowd
+agents — roughly 150 million distance checks. It is doing real work and it is the test that
+justifies M14, so it has not been cut; but if the suite needs to get faster, that is where
+all of the time is. Sampling every third physics step would probably be honest.
 
 ## Gotchas learned in M14
 

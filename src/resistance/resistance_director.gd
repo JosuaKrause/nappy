@@ -64,7 +64,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2) -> voi
 func _place(rng: RandomNumberGenerator) -> Vector2:
 	var candidates: Array[Vector2i] = []
 	if _step.district >= 0:
-		candidates = _map.district_tiles(_step.district as GameEnums.District)
+		candidates = _map.purpose_tiles(_step.district as GameEnums.BlockPurpose)
 	else:
 		for type in _step.placement:
 			candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))

@@ -118,7 +118,7 @@ func _test_walkers_stay_on_foot_and_cars_stay_on_the_road(t) -> void:
 func _test_a_park_is_out_of_earshot_of_the_traffic(t) -> void:
 	_city.crowd.start_day(1, _rng(1))
 	_advance(45.0)
-	for block in _city.map.park_blocks:
+	for block in _city.map.calm_blocks:
 		var centre := _city.map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
 		t.check(_city.crowd.total_excitement_at(centre) < Tuning.EXCITEMENT_DECAY_IDLE,
 				"the middle of park %s recovers faster than the traffic loads it"

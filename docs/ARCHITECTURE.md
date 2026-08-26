@@ -26,6 +26,9 @@ src/
     city_map.gd           tile data, queries (is_calm, is_alley, walkable)
     city_generator.gd     seeded generation
     city.gd               the scene: ground, buildings, props, boundary
+    block_plan.gd         one block's arc, planned at generation
+    block_layout.gd       one block's carves, also fixed at generation
+    city_state.gd         run-scoped: how far along each arc the run has got
     building.gd           one lot, assembled from 32px facade and roof tiles
     ground_tiles.gd       which ground tile a cell gets
     tile.gd               TileType enum + per-tile metadata
@@ -182,6 +185,9 @@ non-zero on any failure.
   one-shot consumption and the usable-park rule.
 - `test_event_manager.gd` — the manager against a real generated city: retirement,
   successors, summed excitement. Wiring bugs live here and are invisible to data tests.
+- `test_blocks.gd` — block purposes and arcs: arcs only move forward, enough calm survives
+  the whole run, a cause only fires where its arc expects it, and — the one that matters —
+  pushing every block to the end of its arc moves no walkable tile.
 - `test_crowd.gd` — the crowd against a real city: population per act, determinism, agents
   staying on the right surface through a corner, and the emergent noise floor (a busy street
   never lets the meter fall; a back street does; a park is out of earshot).

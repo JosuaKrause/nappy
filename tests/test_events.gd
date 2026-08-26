@@ -213,7 +213,7 @@ func _test_one_park_stays_usable(t) -> void:
 		var consumed: Array[String] = []
 		var planned := EventScheduler.build_day(day, _rng(day), map, consumed)
 		var clean := 0
-		for block in map.park_blocks:
+		for block in map.calm_blocks:
 			var lot := map.tile_rect_to_world(CityMap.block_rect(block))
 			var spoiled := false
 			for plan in planned:

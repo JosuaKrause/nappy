@@ -86,7 +86,7 @@ func _test_determinism(t) -> void:
 		var second := CityGenerator.generate(_seed(i))
 		t.check(first.tiles == second.tiles, "seed %d regenerates the identical map" % _seed(i))
 		t.check(first.home_rect == second.home_rect, "seed %d puts the home back" % _seed(i))
-		t.check(first.park_blocks == second.park_blocks, "seed %d keeps its parks" % _seed(i))
+		t.check(first.calm_blocks == second.calm_blocks, "seed %d keeps its parks" % _seed(i))
 
 	var a := CityGenerator.generate(_seed(1))
 	var b := CityGenerator.generate(_seed(2))
@@ -128,7 +128,7 @@ func _test_home_opens_onto_the_street(t) -> void:
 func _test_no_single_street_closure_isolates_the_parks(t) -> void:
 	for i in SEEDS_TO_STRESS:
 		var map := CityGenerator.generate(_seed(i))
-		var parks := map.park_tiles()
+		var parks := map.calm_tiles()
 		var doorstep := Vector2i(map.home_rect.position.x, map.home_rect.end.y)
 		var worst := ""
 		for segment in _street_segments(map):

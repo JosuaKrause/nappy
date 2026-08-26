@@ -15,9 +15,12 @@ var failures: Array[String] = []
 
 func _ready() -> void:
 	for path in _discover():
-		print("-- %s" % path.get_file())
+		var started := Time.get_ticks_msec()
 		var suite: Object = (load(path) as GDScript).new()
 		suite.run(self)
+		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
+		# the integration suites can be three orders of magnitude heavier than the rest.
+		print("-- %-24s %5d ms" % [path.get_file(), Time.get_ticks_msec() - started])
 
 	print("")
 	for failure in failures:

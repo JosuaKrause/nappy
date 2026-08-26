@@ -48,6 +48,10 @@ enum TileType {
 	ALLEY,
 	PLAYGROUND,
 	HOME,
+	FOREST,        ## Denser, darker, no playground. Calm.
+	QUIET_SQUARE,  ## A paved square nobody trades in. Calm, unlike SQUARE.
+	COURTYARD,     ## The court inside a residential block. Calm.
+	SPOILED,       ## Calm ground that has been taken or burnt. Walkable, not calm.
 }
 
 enum District {
@@ -56,4 +60,36 @@ enum District {
 	COMMERCIAL,
 	INDUSTRIAL,
 	CIVIC,
+}
+
+## What a block *is* on a given day, as opposed to how it is laid out.
+##
+## The street lattice and the block boundaries are fixed for the run; this is not. Each
+## block is generated with an arc — an ordered list of the purposes it may pass through —
+## and presents whichever one the run's history has brought it to. See docs/CITY.md,
+## "Block purposes", and `CityState`.
+##
+## The four calm purposes are the reason the route is a choice: a day can only be won on
+## calm ground (M14), so which kinds of calm are left, and where, is the run's real
+## difficulty curve.
+enum BlockPurpose {
+	PARK,          ## Grass, trees, a playground. Contested calm.
+	FOREST,        ## Denser trees, no playground. The quietest ground in the city.
+	QUIET_SQUARE,  ## Paved, benched, empty. Calm without being green.
+	COURTYARD,     ## A calm court inside a residential block. Hidden calm.
+	RESIDENTIAL,
+	COMMERCIAL,
+	INDUSTRIAL,
+	CIVIC,
+	REQUISITIONED, ## Calm ground taken by the regime. Same ground, no longer calm.
+	BOARDED_UP,    ## A commercial block gone dark. Still built, still not calm.
+	BURNT_OUT,     ## A built block that burned and stayed burnt.
+}
+
+## Why a block moved to the next purpose in its arc. A step is only taken when its cause
+## actually happens, so a block never invents a plausible next state at runtime.
+enum BlockCause {
+	SCHEDULED, ## The day arrived. Requisitions and boardings work this way.
+	FIRE,      ## Something burned here.
+	MILITARY,  ## The army came down this street.
 }

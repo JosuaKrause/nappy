@@ -5,9 +5,22 @@ extends RefCounted
 static func is_walkable(type: GameEnums.TileType) -> bool:
 	return type != GameEnums.TileType.BUILDING
 
-## Parks calm the baby: sleepiness fills faster, excitement fades faster.
+## Calm ground: sleepiness fills faster, excitement fades faster. Since M14 this is the
+## only ground a day can be won on, so what is on this list is the whole difficulty curve.
+##
+## `SQUARE` is deliberately absent and `QUIET_SQUARE` deliberately present: a market plaza
+## and an empty one are the same paving and not the same place. `SPOILED` is what calm
+## ground becomes when it is taken or burnt — the same ground, no longer calm.
+const _CALM: Array[GameEnums.TileType] = [
+	GameEnums.TileType.PARK,
+	GameEnums.TileType.PLAYGROUND,
+	GameEnums.TileType.FOREST,
+	GameEnums.TileType.QUIET_SQUARE,
+	GameEnums.TileType.COURTYARD,
+]
+
 static func is_calm(type: GameEnums.TileType) -> bool:
-	return type == GameEnums.TileType.PARK or type == GameEnums.TileType.PLAYGROUND
+	return _CALM.has(type)
 
 ## Alleys apply a constant excitement trickle.
 static func is_alley(type: GameEnums.TileType) -> bool:
@@ -35,6 +48,14 @@ static func ground_colour(type: GameEnums.TileType) -> Color:
 			return Palette.ALLEY_FLOOR
 		GameEnums.TileType.HOME:
 			return Palette.HOME_STOOP
+		GameEnums.TileType.FOREST:
+			return Palette.FOREST_FLOOR
+		GameEnums.TileType.QUIET_SQUARE:
+			return Palette.QUIET_STONE
+		GameEnums.TileType.COURTYARD:
+			return Palette.COURTYARD_STONE
+		GameEnums.TileType.SPOILED:
+			return Palette.SPOILED_GROUND
 		_:
 			# BUILDING tiles are covered by a Building node; this only shows through bugs.
 			return Palette.OUTLINE

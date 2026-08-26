@@ -75,12 +75,12 @@ static func _build() -> Array[Step]:
 		_step(2, "The contact", 7, 6.0, [GameEnums.TileType.ALLEY]),
 		# A delivery into the civic district, which by Act III is the most watched ground
 		# in the city. The quiet routes there are the ones being watched.
-		_step(3, "A package", 9, 4.0, [], GameEnums.District.CIVIC),
+		_step(3, "A package", 9, 4.0, [], GameEnums.BlockPurpose.CIVIC),
 		# Timed: a warning that is worthless late. Miss the window and the contact is gone
 		# for the rest of the run.
 		_step(4, "A warning", 11, 3.0, [GameEnums.TileType.ALLEY], -1, 0.55),
-		_step(5, "The device", 13, 5.0, [], GameEnums.District.INDUSTRIAL),
+		_step(5, "The device", 13, 5.0, [], GameEnums.BlockPurpose.INDUSTRIAL),
 		# The finale, offered only to a player who already did the work.
 		_step(6, "The last night", Tuning.RUN_LENGTH_DAYS, 8.0, [],
-				GameEnums.District.CIVIC, 0.0, true),
+				GameEnums.BlockPurpose.CIVIC, 0.0, true),
 	]

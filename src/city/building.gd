@@ -60,6 +60,25 @@ const LIT_WINDOW_CHANCE := 0.28
 		variant = value
 		_rebuild()
 
+## What has happened to this building's block. The footprint never changes — the street
+## lattice and the block boundaries are fixed for the run — so a block that goes dark or
+## burns says so here rather than by moving walls around.
+enum Condition {
+	LIVED_IN, ## Lights on after dark, as generated.
+	BOARDED,  ## Nobody home. Every window dark.
+	BURNT,    ## Blackened, roofless, windows gone.
+}
+
+@export var condition := Condition.LIVED_IN:
+	set(value):
+		if condition == value:
+			return
+		condition = value
+		queue_redraw()
+
+## The tile rect this building stands on, so the city can find its block again.
+var lot := Rect2i()
+
 var _collision: CollisionShape2D
 ## One entry per wall cell, row-major from the ground up: true where the light is on.
 var _windows: Array[bool] = []
@@ -103,6 +122,14 @@ func roof_tiles() -> int:
 func roof_depth() -> float:
 	return roof_tiles() * TILE
 
+## Whether a window is showing a light. Only a lived-in block ever does: a boarded street is
+## the same street with nobody in it, and that reads at a glance where a colour shift alone
+## would not.
+func _lit(index: int) -> bool:
+	if condition != Condition.LIVED_IN:
+		return false
+	return _windows[index] if index < _windows.size() else false
+
 ## Window lighting is fixed at build time, not rolled per frame, or the city would flicker.
 func _build_windows() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -119,13 +146,16 @@ func _draw() -> void:
 	var roof_rows := roof_tiles()
 	var wall_colour := Palette.building_wall(variant)
 	var roof_colour := Palette.building_roof(variant)
+	if condition == Condition.BURNT:
+		wall_colour = Palette.burnt(wall_colour)
+		roof_colour = Palette.burnt(roof_colour)
 
 	for row in wall_rows:
 		for col in cols:
 			var at := _cell(col, row)
 			draw_texture(WALL, at, wall_colour)
 			var index := row * cols + col
-			draw_texture(WINDOW_LIT if _windows[index] else WINDOW_DARK, at)
+			draw_texture(WINDOW_LIT if _lit(index) else WINDOW_DARK, at)
 			if col == 0:
 				draw_texture(WALL_EDGE_W, at)
 			if col == cols - 1:

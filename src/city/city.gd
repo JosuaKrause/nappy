@@ -10,16 +10,27 @@ extends WorldContext
 ## assembled from 32px tiles now; a float height would mean a stretched tile. Clamped
 ## against the lot depth so a roof always shows.
 const _HEIGHT_TILES := {
-	GameEnums.District.RESIDENTIAL: Vector2i(2, 3),
-	GameEnums.District.COMMERCIAL: Vector2i(2, 3),
-	GameEnums.District.INDUSTRIAL: Vector2i(1, 2),
-	GameEnums.District.CIVIC: Vector2i(3, 4),
-	GameEnums.District.PARK: Vector2i(1, 1),
+	GameEnums.BlockPurpose.RESIDENTIAL: Vector2i(2, 3),
+	GameEnums.BlockPurpose.COURTYARD: Vector2i(2, 3),
+	GameEnums.BlockPurpose.COMMERCIAL: Vector2i(2, 3),
+	GameEnums.BlockPurpose.INDUSTRIAL: Vector2i(1, 2),
+	GameEnums.BlockPurpose.CIVIC: Vector2i(3, 4),
+	GameEnums.BlockPurpose.PARK: Vector2i(1, 1),
+	GameEnums.BlockPurpose.FOREST: Vector2i(1, 1),
+	GameEnums.BlockPurpose.QUIET_SQUARE: Vector2i(1, 1),
 }
 ## A building never takes more than this share of its lot depth, so a roof remains.
 const MAX_HEIGHT_FRACTION := 0.55
 const BOUNDARY_THICKNESS := 64.0
-const TREES_PER_PARK := 10
+
+## Trees per block, by what the block currently is. A forest is a park with more trees in it
+## and no swings, which is most of what the difference between them is on the ground.
+const _TREES := {
+	GameEnums.BlockPurpose.PARK: 10,
+	GameEnums.BlockPurpose.FOREST: 22,
+	GameEnums.BlockPurpose.QUIET_SQUARE: 4,
+	GameEnums.BlockPurpose.COURTYARD: 3,
+}
 
 @onready var _entities: Node2D = $Entities
 @onready var _ground: TileMapLayer = $Ground
@@ -29,9 +40,15 @@ var events: EventManager
 var crowd: Crowd
 var _daylight: CanvasModulate
 var _act := 1
+## Rebuilt every day from the block purposes; freed and replaced wholesale.
+var _props: Array[Node2D] = []
+## Fixed for the run — only their condition changes.
+var _buildings: Array[Building] = []
 
 const DOOR_TEXTURE := preload("res://assets/props/door.svg")
 
+## Everything that is fixed for the whole run. What a block *is* changes day to day, and
+## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
 	map = city_map
 	_paint_ground()
@@ -40,7 +57,6 @@ func build(city_map: CityMap) -> void:
 	# or the wall draws over it.
 	_spawn_buildings()
 	_spawn_home()
-	_spawn_park_props()
 	_spawn_boundary()
 	events = EventManager.new()
 	events.name = "Events"
@@ -113,17 +129,19 @@ func _spawn_buildings() -> void:
 		building.footprint = world.size
 		building.variant = _variant_for(rect)
 		building.height = _height_for(rect, rect.size.y)
+		building.lot = rect
 		_entities.add_child(building)
+		_buildings.append(building)
 
-func _district_of(rect: Rect2i) -> GameEnums.District:
-	var block := (rect.position - Vector2i.ONE * Tuning.STREET_WIDTH) / CityMap.period()
-	return map.districts.get(block, GameEnums.District.RESIDENTIAL)
+## The block a lot belongs to.
+func _block_of(rect: Rect2i) -> Vector2i:
+	return (rect.position - Vector2i.ONE * Tuning.STREET_WIDTH) / CityMap.period()
 
 func _variant_for(rect: Rect2i) -> int:
 	return absi(hash("%d:%d:%d" % [map.seed_used, rect.position.x, rect.position.y]))
 
 func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
-	var range_tiles: Vector2i = _HEIGHT_TILES[_district_of(rect)]
+	var range_tiles: Vector2i = _HEIGHT_TILES[map.starting_purpose(_block_of(rect))]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("h:%d:%d:%d" % [map.seed_used, rect.position.x, rect.position.y])
 	var tiles := rng.randi_range(range_tiles.x, range_tiles.y)
@@ -134,36 +152,83 @@ func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
 			floori(lot_depth_tiles * MAX_HEIGHT_FRACTION)))
 	return mini(tiles, cap) * float(Tuning.TILE_SIZE)
 
-func _spawn_park_props() -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("props:%d" % map.seed_used)
+## The city today. Repaints the ground from the block purposes `state` currently holds,
+## then re-dresses it: the props a block has and the condition its buildings are in both
+## follow from what the block now is.
+##
+## This is the per-day half that the old design did not have — the city used to be built
+## once and reused, and the between-days screen only had to restart the events. Rebuilding
+## the block interiors is cheap (the buildings and the lattice are untouched) and it is the
+## only way a requisitioned park can stop having swings in it.
+func start_day(state: CityState) -> void:
+	map.repaint(state)
+	_paint_ground()
+	_dress_blocks(state)
 
-	for i in map.playgrounds.size():
-		var playground := map.tile_rect_to_world(map.playgrounds[i])
+func _dress_blocks(state: CityState) -> void:
+	for prop in _props:
+		prop.queue_free()
+	_props.clear()
+	for block: Vector2i in map.block_plans:
+		var purpose := state.purpose_of(map.block_plans, block)
+		_dress_block(block, purpose)
+	for building in _buildings:
+		building.condition = _condition_for(
+				state.purpose_of(map.block_plans, _block_of(building.lot)))
+
+## What a block's buildings look like now. A boarded-up street and a burnt-out one are the
+## same footprints and very different places.
+func _condition_for(purpose: GameEnums.BlockPurpose) -> Building.Condition:
+	match purpose:
+		GameEnums.BlockPurpose.BOARDED_UP:
+			return Building.Condition.BOARDED
+		GameEnums.BlockPurpose.BURNT_OUT:
+			return Building.Condition.BURNT
+		_:
+			return Building.Condition.LIVED_IN
+
+## Trees and swings, placed from the *city* seed rather than the day's, so a park looks the
+## same every morning. A fixed city the player can learn has to include its trees.
+func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
+	var layout: BlockLayout = map.block_layouts.get(block)
+	if not layout or not BlockLayout.has(layout.open_rect):
+		return
+	if purpose == GameEnums.BlockPurpose.PARK and BlockLayout.has(layout.playground):
+		var playground := map.tile_rect_to_world(layout.playground)
 		var frame := Prop.new()
 		frame.kind = Prop.Kind.PLAYGROUND_FRAME
 		frame.position = Vector2(playground.get_center().x, playground.end.y - 8.0)
-		frame.variant = i
-		_entities.add_child(frame)
+		frame.variant = block.x * 31 + block.y
+		_add_prop(frame)
 
-	for block in map.park_blocks:
-		var lot := map.tile_rect_to_world(CityMap.block_rect(block))
-		var placed := 0
-		var attempts := 0
-		while placed < TREES_PER_PARK and attempts < TREES_PER_PARK * 8:
-			attempts += 1
-			var at := Vector2(rng.randf_range(lot.position.x + 16.0, lot.end.x - 16.0),
-					rng.randf_range(lot.position.y + 16.0, lot.end.y - 16.0))
-			# Keep the playground clear so the swing frame reads.
-			if map.tile_type_at_world(at) != GameEnums.TileType.PARK:
-				continue
-			var tree := Prop.new()
-			tree.kind = Prop.Kind.TREE
-			tree.position = at
-			tree.variant = rng.randi()
-			tree.scale_factor = rng.randf_range(0.75, 1.25)
-			_entities.add_child(tree)
-			placed += 1
+	var wanted: int = _TREES.get(purpose, 0)
+	if wanted == 0:
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("props:%d:%d:%d" % [map.seed_used, block.x, block.y])
+	var lot := map.tile_rect_to_world(layout.open_rect)
+	var placed := 0
+	var attempts := 0
+	while placed < wanted and attempts < wanted * 8:
+		attempts += 1
+		var at := Vector2(rng.randf_range(lot.position.x + 16.0, lot.end.x - 16.0),
+				rng.randf_range(lot.position.y + 16.0, lot.end.y - 16.0))
+		# Keep the playground clear so the swing frame reads.
+		if not Tile.is_calm(map.tile_type_at_world(at)):
+			continue
+		if map.tile_type_at_world(at) == GameEnums.TileType.PLAYGROUND:
+			continue
+		var tree := Prop.new()
+		tree.kind = Prop.Kind.TREE
+		tree.position = at
+		tree.variant = rng.randi()
+		tree.scale_factor = rng.randf_range(0.75, 1.25)
+		_add_prop(tree)
+		placed += 1
+
+func _add_prop(prop: Node2D) -> void:
+	_props.append(prop)
+	_entities.add_child(prop)
 
 ## Walls just outside the map, so the player cannot walk off the edge of the world.
 func _spawn_boundary() -> void:

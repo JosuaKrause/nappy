@@ -48,7 +48,28 @@ func _create(def: EventDef, at: Vector2,
 	_city.add_entity(instance)
 	if def.scar_id != "":
 		GameState.add_scar(def.scar_id, instance.global_position)
+		_mark_the_block(def.scar_id, instance.global_position)
 	return instance
+
+## An event that leaves a scar may also move the block it happened to along its arc — if the
+## arc was waiting for exactly that cause. A fire in a block whose plan has no fire in it
+## leaves the shell and changes nothing else, which is what keeps the city coherent.
+##
+## The block presents its new purpose *the next morning*, not immediately: `CityMap.repaint`
+## runs at the start of a day, so the fire burns today and the street is ashes tomorrow.
+func _mark_the_block(scar_id: String, at: Vector2) -> void:
+	var cause: int = _CAUSES.get(scar_id, -1)
+	if cause < 0:
+		return
+	GameState.city_state.apply_cause(_map.block_plans, _map.block_at(at),
+			cause as GameEnums.BlockCause, GameState.day)
+
+## Which scars move a block along its arc. Keyed by scar id rather than by event id, because
+## what matters to a block is what was left behind, not which siren left it.
+const _CAUSES := {
+	"burnt_shell": GameEnums.BlockCause.FIRE,
+	"barricade": GameEnums.BlockCause.MILITARY,
+}
 
 ## Adds an event outside the day's plan. Used by the resistance director to plant the
 ## robbery that may be waiting where a contact is.

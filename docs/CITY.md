@@ -116,6 +116,66 @@ From Act III the generator's output is post-processed per day:
 Closures are validated the same way as generation: home must remain connected to at least
 one unspoiled calm zone, or the day is unwinnable and the scheduler retries.
 
+## Block purposes
+
+The street lattice is fixed for the run. What a block *is* is not.
+
+Every block is generated with an **arc**: the ordered list of purposes it may pass through,
+and for each one the earliest day it may be reached and what has to happen first. Planning
+the arc up front is what makes the transitions coherent — a block never has to invent a
+plausible next state at runtime — and it is what lets the generator check the *whole run*
+in one place instead of leaving the scheduler to rescue each day.
+
+| Purpose | Calm? | What it is |
+| --- | --- | --- |
+| `PARK` | yes | Grass, trees, a playground. Contested calm: the swings are ambient noise. |
+| `FOREST` | yes | Denser trees, darker floor, no playground. The quietest ground there is. |
+| `QUIET_SQUARE` | yes | Paved and empty. Calm without being green. |
+| `COURTYARD` | yes | A court cut inside a residential block, reached by an archway. Hidden calm. |
+| `RESIDENTIAL` `COMMERCIAL` `INDUSTRIAL` `CIVIC` | no | Built over, as before. |
+| `REQUISITIONED` | **no** | Calm ground taken by the regime. The same ground, churned; no longer calm. |
+| `BOARDED_UP` | no | A commercial block gone dark. Every window unlit. |
+| `BURNT_OUT` | no | A built block that burned and stayed burnt. |
+
+A step is taken when its **cause** fires: `SCHEDULED` (the day arrived — requisitions and
+boardings), `FIRE` (something burned there), or `MILITARY` (the army came down this street).
+The event causes come from scars: `EventManager` funnels every scar through one place, so a
+fire cannot leave a shell without the block being given the chance to move. A cause that
+arrives at a block whose arc is not waiting for it does nothing at all, which is what keeps
+the city coherent — a fire in a park leaves a burnt shell and does not turn the park into a
+burnt-out block.
+
+Causes fire during the day; the city presents the result the **next morning**.
+`CityMap.repaint()` runs at the start of a day, so the fire burns today and the street is
+ashes tomorrow.
+
+### What this replaces, and what is still absolute
+
+This supersedes the old "the `CityMap` is immutable for the run" rule. The replacement:
+
+> The street lattice, the block boundaries, the carves and the building footprints are fixed
+> for the run. What a block *is* may change, and only ever along the arc the generator
+> planned for it.
+
+The half that is still absolute is that **no purpose change may move a walkable tile**.
+`tests/test_blocks.gd` pushes every block to the end of its arc across two dozen seeds and
+asserts the walkable set is identical tile for tile. Nothing here can seal a street, open a
+shortcut or invalidate a route the player learned on day 1 — per-day *closures* are still
+events with an `obstructs_radius`.
+
+`CityGenerator.validate()` also guarantees that at least `MIN_CALM_BLOCKS_AT_END` blocks
+stay calm for the whole run. Since M14 a day can only be won on calm ground, so an arc set
+that requisitions everything makes an unwinnable run rather than a hard one.
+
+### Where the state lives
+
+- `BlockPlan` — one block's arc. Fixed at generation, never mutated.
+- `BlockLayout` — the carves (open rect, playground, square, alley, courtyard passage).
+  Also fixed, which is why repainting a block on day 12 re-rolls nothing: the same court is
+  a court on day 1 and churned mud on day 12, in the same place and the same size.
+- `CityState` — run-scoped, on `GameState`. Only records how far along each arc the run has
+  got. A day is therefore reconstructible from a seed, a day number and the causes fired.
+
 ## Life on the streets
 
 The city carries its own traffic: several hundred people on the pavements and several dozen

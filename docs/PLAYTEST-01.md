@@ -166,10 +166,17 @@ and can never finish on its own, and a calm stretch clears the rest in about two
 Standing still drains faster than walking fills but slower than a calm zone fills, so
 waiting is never a strategy and stopping to let something pass still is.
 
-**M15 — Block purposes** — findings 7 and the structural half of 11. The vocabulary of block
-purposes (park, forest, courtyard, quiet square, canal path, and their degraded forms), the
-per-block arcs the generator plans, and the `CityState` that tracks where each block
-currently is. Rendering starts reading block state rather than layout.
+**M15 — Block purposes** *(done)* — findings 7 and the structural half of 11. Four calm
+purposes (park, forest, quiet square, courtyard) and three degraded ones (requisitioned,
+boarded up, burnt out), per-block arcs planned at generation, and the run-scoped
+`CityState`. Rendering reads block state rather than layout: `City.start_day()` repaints the
+ground and re-dresses every block, so a requisitioned park stops having swings in it.
+
+**Canal path is not in.** It is the one item from the finding's list that was left out, and
+deliberately: a canal means impassable water and bridges, which is a change to *where the
+player can walk* rather than to what a place is worth walking to. That belongs with M16's
+route work, not here — every other purpose in M15 is guaranteed not to move a walkable tile,
+and a canal would be the single exception.
 
 **M16 — Route pressure** — finding 12. A per-day pruned network with legible blockers, and
 the day-level invariant: at least two distinct routes to at least two distinct calm areas.

@@ -1,0 +1,10 @@
+<!-- A paved square nobody trades in. Bigger slabs than a pavement, and no kerb.
+     Deliberately cooler than every roof in the city: from above, calm ground had to stop
+     reading as somebody's rooftop, and since M14 finding calm ground is the whole game. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#7f8a86"/>
+  <rect x="0" y="15" width="32" height="1" fill="#6f7a76"/>
+  <rect x="15" y="0" width="1" height="32" fill="#6f7a76"/>
+  <rect x="1" y="1" width="6" height="1" fill="#8b9691"/>
+  <rect x="17" y="17" width="6" height="1" fill="#8b9691"/>
+</svg>

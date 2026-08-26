@@ -1,0 +1,12 @@
+<!-- Forest floor: darker than park grass, with leaf litter. The quietest ground there is. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#4d6b45"/>
+  <rect x="4" y="6" width="3" height="1" fill="#5e7a52"/>
+  <rect x="19" y="3" width="4" height="1" fill="#5e7a52"/>
+  <rect x="11" y="14" width="3" height="1" fill="#3f5a3a"/>
+  <rect x="25" y="18" width="3" height="1" fill="#5e7a52"/>
+  <rect x="7" y="24" width="4" height="1" fill="#3f5a3a"/>
+  <rect x="20" y="27" width="3" height="1" fill="#5e7a52"/>
+  <rect x="15" y="9" width="2" height="1" fill="#6a5b3e"/>
+  <rect x="2" y="19" width="2" height="1" fill="#6a5b3e"/>
+</svg>

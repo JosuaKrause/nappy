@@ -212,20 +212,27 @@ static func _cross_street_path(map: CityMap, tile: Vector2i) -> PackedVector2Arr
 # ---------------------------------------------------------------- park rules ---
 
 ## docs/CITY.md: at least one calm zone stays usable every day, or the day has no safe
-## ground and the player has no move. Whichever park is least disturbed keeps its quiet.
+## ground and the player has no move. Whichever one is least disturbed keeps its quiet.
+##
+## Since M14 this is the difference between a hard day and an impossible one, and since M15
+## the set of calm zones is whatever the arcs have left — a requisitioned park is not a
+## candidate, because it is not calm any more.
 ##
 ## Ambient events do not count as spoiling. A playground is a permanent feature of the map,
 ## not something that went wrong today — it makes a park *contested*, which is the point,
 ## and it leaves the far side of the block calm. Counting it here would mean stripping a
 ## playground out of one park every single day.
 static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned]) -> void:
-	if map.park_blocks.is_empty():
+	if map.calm_blocks.is_empty():
 		return
 
-	var spoilers := {}   # park block -> Array[Planned]
+	var spoilers := {}   # calm block -> Array[Planned]
 	var clean := false
-	for block in map.park_blocks:
-		var lot := map.tile_rect_to_world(CityMap.block_rect(block))
+	for block in map.calm_blocks:
+		# The calm *ground*, not the whole block. A courtyard's calm is a four-tile court
+		# inside a residential block; protecting the block would strip every event off a
+		# street the player was never going to settle on anyway.
+		var lot := map.tile_rect_to_world(_calm_rect(map, block))
 		var found: Array[Planned] = []
 		for plan in planned:
 			if plan.def.kind == GameEnums.EventKind.AMBIENT:
@@ -238,12 +245,19 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned]) -> vo
 	if clean:
 		return
 
-	var least: Vector2i = map.park_blocks[0]
-	for block in map.park_blocks:
+	var least: Vector2i = map.calm_blocks[0]
+	for block in map.calm_blocks:
 		if spoilers[block].size() < spoilers[least].size():
 			least = block
 	for plan in spoilers[least]:
 		planned.erase(plan)
+
+## The rect of a calm block's actual calm ground, falling back to the whole lot.
+static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
+	var layout: BlockLayout = map.block_layouts.get(block)
+	if layout and BlockLayout.has(layout.open_rect):
+		return layout.open_rect
+	return CityMap.block_rect(block)
 
 ## Checkpoints, barricades and roadblocks physically close streets, and from Act IV several
 ## can land on the same day. Any combination that seals the home off from every park makes
@@ -284,7 +298,7 @@ static func _park_is_reachable(map: CityMap, blockers: Array[Planned]) -> bool:
 	var reachable := map.walk_distances(map.home_rect.position, blocked)
 	if reachable.is_empty():
 		return false
-	for tile in map.park_tiles():
+	for tile in map.calm_tiles():
 		if reachable.has(tile):
 			return true
 	return false

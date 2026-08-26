@@ -12,7 +12,7 @@ should be read before picking anything up.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 1986 checks; `tools/check.sh` boots the project; `tools/run.sh` plays
+`tools/test.sh` runs 7187 checks; `tools/check.sh` boots the project; `tools/run.sh` plays
 it.
 
 ---
@@ -241,9 +241,11 @@ sequencing. Summary only here:
       0.24/s (79 of 100 over a whole day), calm 3.5x, idle drain 0.6/s. Asserted against
       `day_length()` in `tests/test_meters.gd` and against a real city in
       `tests/test_balance.gd`
-- [ ] **M15 Block purposes** — the vocabulary of block purposes and the per-block arcs the
-      generator plans up front, plus the run-scoped `CityState` that tracks where each block
-      currently is. Supersedes the "CityMap is immutable" invariant
+- [x] **M15 Block purposes** — four calm purposes (park, forest, quiet square, courtyard),
+      three degraded ones (requisitioned, boarded up, burnt out), per-block arcs planned at
+      generation, and the run-scoped `CityState`. Supersedes the "CityMap is immutable"
+      invariant with "the lattice is fixed; what a block *is* is not", and keeps the half
+      that is absolute: no purpose change moves a walkable tile
 - [ ] **M16 Route pressure** — a per-day pruned network with legible blockers, leaving at
       least two distinct routes to at least two distinct calm areas
 - [ ] **M17 Route map** — the planning screen, rendering M15's block states
