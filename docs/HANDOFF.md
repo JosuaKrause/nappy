@@ -1,13 +1,13 @@
 # Handoff
 
-**Last updated:** end of the M13 session.
+**Last updated:** end of the M14 session.
 **Read this first, then [PLAYTEST-01.md](PLAYTEST-01.md), then [TODO.md](TODO.md).**
 
 ---
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **1934 checks, 0 failures**;
+`main` is green and playable. `./tools/test.sh` → **1986 checks, 0 failures**;
 `./tools/check.sh` → OK; `./tools/run.sh` plays it.
 
 - **M0–M9 complete.** Full 14-day run, four-act escalation, resistance subquest, three
@@ -23,29 +23,27 @@
 - **M13 complete.** The city has its own traffic: ~530 agents in act I, on a per-corridor
   and per-act density. The crowd is the noise floor, and the two invisible ambient road
   bands were deleted rather than left alongside it.
+- **M14 complete.** The day is re-pitched against calm ground. A whole day of undisturbed
+  street walking reaches 79 of 100; a calm stretch clears the meter in 119s.
 
 ## What to do next, in order
 
-### M14 — balance
+### M15 — block purposes
 
-The next one, and the first that can be done honestly, because the floor now exists. The
-target from `PLAYTEST-01.md`: a day (330s, or 264s after the curfew) must be **unwinnable
-on street gain alone** and **comfortably winnable with one good calm stretch**. Today an
-ordinary street still gains sleepiness at the full `SLEEPINESS_GAIN_WALKING` 2.2/s, so
-circling the block is still a strategy — the crowd made the street *noisier*, which stalls
-recovery, but it did not make it a worse place to fill the meter.
+The vocabulary of block purposes (park, forest, courtyard, quiet square, canal path, and
+their degraded forms), the per-block *arcs* the generator plans up front, and the run-scoped
+`CityState` that tracks where each block currently is. Rendering starts reading block state
+rather than layout, which means `City._paint_ground()` has to become per-day rather than
+once per run.
 
-Measured starting points, day 1, seed 4242 (`--spawn arterial`, `--spawn park`, and the
-`incoming` line in the dev readout):
+This is the one that **supersedes the "`CityMap` is immutable for the run" invariant** —
+see the standing decisions below. The replacement: the street lattice and block boundaries
+are fixed; what a block *is* may change, and only ever along the arc the generator planned.
 
-| where | crowd incoming | idle decay | net |
-| --- | --- | --- | --- |
-| arterial pavement, act I | 9–14 /s | 6.0 | **+3 to +8** |
-| ordinary side street, act I | ~3.8 /s | 6.0 | −2.2 |
-| arterial pavement, act III | ~0.8 /s | 6.0 | −5.2 |
-| park | ~0.9 /s | 9.6 | −8.7 |
+M14 makes it load-bearing rather than decorative: a day can now only be won on calm ground,
+so *how much calm ground there is and what happens to it* is the run's difficulty curve.
 
-### Then M15 → M17
+### Then M16 → M17
 
 See `PLAYTEST-01.md`. Do not reorder them — the sequencing rationale is in that document
 and each depends on the one before.
@@ -74,6 +72,21 @@ Taken in the M12a session and still governing everything after it. All four are 
    per-day rather than once per run.
 
 ---
+
+## Gotchas learned in M14
+
+- **Pitch balance numbers against the day, not against each other.** The old numbers were
+  all mutually consistent and the day was still winnable by circling the block, because
+  nothing tied the fill rate to `day_length()`. The two tests that matter now are written
+  as `GAIN * day_length(day) < METER_MAX` and `METER_MAX / calm_gain < day_length * 0.6`,
+  so lengthening the day cannot quietly make the street sufficient again.
+- **Arithmetic is necessary and not sufficient.** Whether a park fills the meter depends on
+  whether the crowd pushes it over the freeze threshold, which no data-level test can see.
+  `tests/test_balance.gd` stands a real `Baby` in a real city with that day's crowd and
+  events. It is what caught that the claim needed checking on all fourteen days, not one.
+- **Check the short day.** A calm stretch of 139s looked fine against the 330s day and was a
+  stopwatch race against the 264s curfew one. Every balance claim here is measured against
+  `day_length(RUN_LENGTH_DAYS)`.
 
 ## Gotchas learned in M13
 

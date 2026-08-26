@@ -20,7 +20,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 1934 headless checks, ~40s
+./tools/test.sh               # 1986 headless checks, ~60s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ```
 
@@ -229,8 +229,10 @@ Do not "fix" these without a reason; each was a decision.
 
 ## Known-shaky ground
 
-- **No balance number has been felt by a human.** They are all asserted self-consistent and
-  none is playtested. Prime suspects are in `docs/TODO.md` under "Open design questions".
+- **No balance number has been felt by a human.** M14 re-pitched the sleepiness numbers
+  against the *day* rather than against each other, and `tests/test_balance.gd` checks the
+  claim against a real city — but nobody has played it. Prime suspects are in
+  `docs/TODO.md` under "Open design questions".
 - **Two events are effectively unsignalled.** `city_wide` sources (the loudspeaker masts
   from day 5, the curfew announcement) have *no* on-screen presence whatsoever — the aura
   layer skips them and nothing took over, so the player sees excitement refusing to drain

@@ -15,11 +15,34 @@ const IDLE_SPEED_THRESHOLD := 12.0
 # ------------------------------------------------------------- sleepiness ---
 
 const METER_MAX := 100.0
-const SLEEPINESS_GAIN_WALKING := 2.2
-const SLEEPINESS_DRAIN_IDLE := 1.6
-const SLEEPINESS_CALM_ZONE_MULTIPLIER := 1.75
-## Sleepiness the baby keeps after being woken up.
+
+## The pitch these three make together is the whole loop, and it is the answer to findings
+## 2 and 4 from the first playtest: a day used to be winnable by circling the starting block,
+## which made the city decoration.
+##
+## An ordinary street makes real progress and never enough. A whole day of clean street
+## walking reaches about four fifths of the meter, so the walk out is worth something and
+## the walk out alone can never finish; only calm ground can. `tests/test_meters.gd` holds
+## both halves of that, in terms of `day_length()` rather than in numbers, so a change to
+## the day cannot quietly make the street sufficient again.
+const SLEEPINESS_GAIN_WALKING := 0.24
+## Standing still has to be strictly worse than walking, or waiting is a strategy. It also
+## has to stay cheaper than a calm zone gives, because stopping is the counterplay to a loud
+## event and pricing it above the park's own rate would take that move away.
+const SLEEPINESS_DRAIN_IDLE := 0.6
+## Sized against the *short* day, not the long one. At 3.0 a park stretch ran 139s, which on
+## a 264s curfew day left barely thirty seconds for the walk out and the walk home together
+## — winnable on paper and a stopwatch race in practice. At 3.5 it is 119s, and the walk out
+## has already contributed, so the typical day finishes with a minute to spare.
+const SLEEPINESS_CALM_ZONE_MULTIPLIER := 3.5
+## Sleepiness the baby keeps after being woken up. Deliberately not softened when the fill
+## slowed down: waking her now costs about seventy seconds of park, roughly a fifth of the
+## day, and it should hurt that much.
 const WAKE_SLEEPINESS_PENALTY := 50.0
+
+## Sleepiness per second on calm ground.
+func sleepiness_gain_calm() -> float:
+	return SLEEPINESS_GAIN_WALKING * SLEEPINESS_CALM_ZONE_MULTIPLIER
 
 # ------------------------------------------------------------- excitement ---
 

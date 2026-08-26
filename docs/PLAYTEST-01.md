@@ -160,8 +160,11 @@ pass is pitched just over the walking decay while the width of the pavement is n
 crowd is the noise floor, and the two invisible ambient road bands it replaced were
 deleted rather than kept alongside it.
 
-**M14 — Balance** — findings 2, 4. Re-pitch street vs calm-area sleepiness so a day cannot
-be won without reaching calm ground. Depends on M13, because the floor is the crowd.
+**M14 — Balance** *(done)* — findings 2, 4. Street gain re-pitched against the *day*: a
+whole day of undisturbed street walking reaches 79 of 100, so the walk out is real progress
+and can never finish on its own, and a calm stretch clears the rest in about two minutes.
+Standing still drains faster than walking fills but slower than a calm zone fills, so
+waiting is never a strategy and stopping to let something pass still is.
 
 **M15 — Block purposes** — findings 7 and the structural half of 11. The vocabulary of block
 purposes (park, forest, courtyard, quiet square, canal path, and their degraded forms), the
