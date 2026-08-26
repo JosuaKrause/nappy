@@ -1,0 +1,5 @@
+<!-- The one shadow in the game. Authored white so it can be tinted and squashed to any
+     size; everything that stands on the ground draws it first. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32" viewBox="0 0 64 32">
+  <ellipse cx="32" cy="16" rx="31" ry="15" fill="#ffffff"/>
+</svg>

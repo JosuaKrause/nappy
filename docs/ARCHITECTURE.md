@@ -41,11 +41,14 @@ src/
     meter_bar.gd
   dev/
     auto_screenshot.gd    render N frames, save a PNG, quit
-  palette.gd              colours, multiplied over the near-white art
+  palette.gd              colours the code still chooses; the art's own are in the SVGs
+  sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
 assets/
   tiles/                  ground tiles, 32x32 SVG
   buildings/              facade and roof tiles, 32x32 SVG
-  props/                  feet-anchored sprites
+  rig/                    the mother and the pram, per direction
+  props/                  trees, the swing frame, the door, the shadow
+  events/                 one body per EventDef.Look
   ground_tileset.tres     one TileSetAtlasSource per ground tile
   game_enums.gd           shared enums (see below)
 tools/
@@ -153,7 +156,9 @@ kept strictly out of anything that touches the meters.
   modulate; windows, plinth and parapets are overlays drawn at full colour on top. One set
   of assets therefore covers every building colour.
 - The player's `position` is the *feet*, and drawing is offset upward from there. This
-  keeps y-sort and collision consistent.
+  keeps y-sort and collision consistent. `Sprites.draw_standing()` is the single place that
+  rule is written down; everything that stands on the ground goes through it, along with
+  `Sprites.draw_shadow()` for the contact shadow.
 - A single `Camera2D` on the player, with `position_smoothing_enabled` and a small
   look-ahead in the movement direction.
 

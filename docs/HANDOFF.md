@@ -1,6 +1,6 @@
 # Handoff
 
-**Last updated:** end of the M12b session.
+**Last updated:** end of the M12c session — M12 is complete.
 **Read this first, then [PLAYTEST-01.md](PLAYTEST-01.md), then [TODO.md](TODO.md).**
 
 ---
@@ -17,18 +17,14 @@
 - **M12a complete.** Ground is now authored SVG tiles + a `TileSet` + a `TileMapLayer`.
 - **M12b complete.** Buildings are assembled from `assets/buildings/*.svg`, and their
   heights are whole tiles.
+- **M12c complete.** The rig, the props and the event bodies are sprites. `Palette` was
+  trimmed to the colours the code still chooses.
 
-**In progress: M12 (the asset pipeline).** M12a and M12b landed. M12c has not started.
+**M12 (the asset pipeline) is done.** Nothing draws its own art out of primitives any more.
 
 ## What to do next, in order
 
-### M12c — the rig, props and events
-
-`stroller.gd`, `prop.gd` and `event_instance.gd` are still `_draw()`. The rig needs
-direction variants; it already has side and end-on profiles, so three SVGs (side, front,
-back) plus a horizontal flip covers eight directions.
-
-### Then M13 → M17
+### M13 → M17
 
 See `PLAYTEST-01.md`. Do not reorder them — the sequencing rationale is in that document
 and each depends on the one before.
@@ -57,6 +53,20 @@ Taken in the M12a session and still governing everything after it. All four are 
    per-day rather than once per run.
 
 ---
+
+## Gotchas learned in M12c
+
+- **A negative-width `Rect2` does not flip `draw_texture_rect`** — it is normalised, so the
+  sprite lands a full width sideways. It reads as art sliding off its own shadow rather than
+  as a failed flip, which is how it was found. `Sprites.draw_standing()` mirrors the
+  transform around the anchor instead, and is the only place that does.
+- **A sprite cannot swing its own legs.** The mother's gait was a procedural stride and a
+  bob; with the legs drawn into the art, both had to become a two-frame swap. The bob is
+  baked into the second frame rather than added on top, or the two would compound.
+- **Deleting the colours was part of the job.** Two thirds of `Palette` no longer painted
+  anything once the art moved into SVG, and a constant that looks authoritative but controls
+  nothing is a trap for whoever tries to retint the game next. What stayed is what the code
+  still picks at runtime: light, act cast, aura, chalk, shadow, building variant.
 
 ## Gotchas learned in M12b
 
@@ -94,7 +104,10 @@ Beyond the ones already in `CLAUDE.md`:
   `wall_edge_*`, `wall_base`, `roof_edge_*`, `window_*` are alpha overlays drawn on top at
   full colour. No `TileSet` here: `Building._draw()` assembles them per lot, which keeps one
   node per building and lets a lot pick its own colour.
-- `assets/props/door.svg` — the first sprite asset; the pattern for M12c.
+- `assets/rig/`, `assets/props/`, `assets/events/` — feet-anchored sprites, drawn through
+  `Sprites.draw_standing()`: the node sits on the ground plane, the art rises from it.
+  Anything whose size carries meaning (a fire's flames, a barrier's width) passes an
+  explicit size rather than using the texture's own.
 
 Run `./tools/check.sh` after touching assets; it does the import pass that generates
 `.import` files.

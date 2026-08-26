@@ -1,10 +1,16 @@
 class_name Palette
 extends RefCounted
-## Colours for the procedural 2.5D rendering.
+## The colours the *code* still decides.
 ##
-## Act I is the warm, pleasant baseline. Later acts desaturate and cool this down; that
-## transformation lands in M7 (see docs/NARRATIVE.md) and will be applied as a per-act
-## tint function rather than a second set of constants.
+## Since M12 the art is authored SVG under `assets/`, and a tree's green or a pram's navy
+## lives in the file that draws it. What is left here is everything chosen at runtime: the
+## light, the act cast, the excitement fields, the chalk, and the per-variant building
+## colour that one asset set is multiplied by. A colour that no longer paints anything does
+## not belong in this file — a constant that looks authoritative and controls nothing is
+## worse than no constant at all.
+##
+## Act I is the warm, pleasant baseline. Later acts desaturate and cool this down, applied
+## as a per-act tint function rather than a second set of constants.
 
 const OUTLINE := Color("221f28")
 
@@ -27,51 +33,38 @@ static func act_tint(act: int) -> Color:
 	return _ACT_TINT[clampi(act - 1, 0, _ACT_TINT.size() - 1)]
 
 # ------------------------------------------------------------------ ground ---
+# The ground itself is tiles now (assets/ground_tileset.tres). These are the *flat* colour
+# of each surface, which is what a map has to draw when it cannot draw the art — see
+# `Tile.ground_colour` and M17's route map.
 
 const ASPHALT := Color("46464f")
-const ROAD_MARKING := Color("b9b087")
 const SIDEWALK := Color("8b8478")
-const SIDEWALK_SEAM := Color("7a7469")
-## The sidewalk/road kerb has to read against both surfaces, so it is lighter than either.
-const KERB := Color("a49b8c")
 const GRASS := Color("6d9159")
 const ALLEY_FLOOR := Color("3c3a42")
 const SQUARE_STONE := Color("9a9184")
 const HOME_STOOP := Color("b8836a")
-const HOME_DOOR := Color("5c3a30")
 const SAND := Color("cbb083")
-
-const TREE_TRUNK := Color("5b4433")
-const TREE_CANOPY := Color("4f7a44")
-const TREE_HIGHLIGHT := Color("649256")
-const PLAYGROUND_FRAME := Color("c05f4a")
-const CROSSING_STRIPE := Color("cfc7ae")
 
 # ------------------------------------------------------------------ events ---
 
-const CAT_FUR := Color("58524d")
-const NPC_COAT := Color("6b7a8c")
 ## Excitement fields: amber while telegraphing, red once the event is at full strength.
+## Chosen per frame from the event's phase, so these stay code.
 const AURA_TELEGRAPH := Color("e8b64a")
 const AURA_ACTIVE := Color("d2543f")
 const AURA_LETHAL := Color("8f2f38")
-
-const FIRE_OUTER := Color("d1622c")
-const FIRE_INNER := Color("f0c04a")
 
 const CHALK := Color(0.92, 0.92, 0.88, 0.62)
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")
 
 # --------------------------------------------------------------- buildings ---
+# One asset set covers every building: the near-white wall and roof tiles are multiplied by
+# the variant's colour. These therefore still decide what a building looks like.
 
 const _ROOFS: Array[Color] = [
 	Color("c2a179"), Color("b08968"), Color("a8907a"),
 	Color("cbb391"), Color("9d7f68"), Color("bda386"),
 ]
-
-const WINDOW_DARK := Color("3b3a46")
-const WINDOW_LIT := Color("e8c887")
 
 ## Roof colour for a building variant index.
 static func building_roof(variant: int) -> Color:
@@ -81,18 +74,9 @@ static func building_roof(variant: int) -> Color:
 static func building_wall(variant: int) -> Color:
 	return building_roof(variant).darkened(0.42)
 
-# ---------------------------------------------------------------- the rig ---
-
-const COAT := Color("b0574f")
-const COAT_SHADE := Color("8e433d")
-const TROUSERS := Color("46506b")
-const SKIN := Color("d9a878")
-const HAIR := Color("3a2b26")
-const SHOE := Color("2f2a2c")
-
-const PRAM_BODY := Color("3f4a5c")
-const PRAM_HOOD := Color("d8ccb4")
-const PRAM_TRIM := Color("2b3341")
-const PRAM_WHEEL := Color("26232a")
+# ---------------------------------------------------------------- entities ---
+# The rig, the props and the event bodies are sprites; their colours are in the SVGs. The
+# shadow is not, because everything that stands on the ground draws the same one at its own
+# size, tinted from here.
 
 const SHADOW := Color(0.0, 0.0, 0.0, 0.22)

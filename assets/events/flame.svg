@@ -1,0 +1,6 @@
+<!-- One tongue of flame, drawn stretched to whatever height the fire is currently at:
+     a fire that is emitting harder is visibly taller. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="48" viewBox="0 0 20 48">
+  <path d="M10 0 L19 48 L1 48 Z" fill="#d1622c"/>
+  <path d="M10 19 L14.5 48 L5.5 48 Z" fill="#f0c04a"/>
+</svg>

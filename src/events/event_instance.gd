@@ -9,6 +9,14 @@ extends Node2D
 
 signal finished(instance: EventInstance)
 
+const CAT_CROUCHED := preload("res://assets/events/cat_crouched.svg")
+const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
+const PERSON := preload("res://assets/events/person.svg")
+const VEHICLE := preload("res://assets/events/vehicle.svg")
+const FLAME := preload("res://assets/events/flame.svg")
+const BARRIER_SEGMENT := preload("res://assets/events/barrier_segment.svg")
+const BARRIER_END := preload("res://assets/events/barrier_end.svg")
+
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
 var path: PackedVector2Array = PackedVector2Array()
@@ -16,6 +24,8 @@ var path: PackedVector2Array = PackedVector2Array()
 var age := 0.0
 var is_finished := false
 
+## Facing, for art with a front and a back. Only a mobile event ever changes it.
+var _heading := Vector2.RIGHT
 var _path_travelled := 0.0
 var _telegraph_announced := false
 var _activation_announced := false
@@ -67,7 +77,8 @@ func _advance_along_path(delta: float) -> void:
 		var segment := path[i] - path[i - 1]
 		var length := segment.length()
 		if remaining <= length:
-			position = path[i - 1] + segment.normalized() * remaining
+			_heading = segment.normalized()
+			position = path[i - 1] + _heading * remaining
 			return
 		remaining -= length
 	position = path[path.size() - 1]
@@ -146,56 +157,48 @@ func _draw_body() -> void:
 		EventDef.Look.NONE:
 			pass
 
-func _draw_shadow(radius: float) -> void:
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, 0.4))
-	draw_circle(Vector2.ZERO, radius, Palette.SHADOW)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
 func _draw_animal() -> void:
-	_draw_shadow(7.0)
-	# Crouched while telegraphing, stretched out once it bolts.
-	var stretch := 1.0 if is_telegraphing() else 1.6
-	draw_rect(Rect2(-8.0 * stretch, -9.0, 16.0 * stretch, 7.0), Palette.CAT_FUR)
-	draw_circle(Vector2(-8.0 * stretch, -11.0), 4.5, Palette.CAT_FUR)
-	draw_line(Vector2(8.0 * stretch, -9.0), Vector2(12.0 * stretch, -16.0), Palette.CAT_FUR, 2.5)
+	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
+	# telegraph, so the two silhouettes have to differ at a glance, not by a scale factor.
+	var texture := CAT_CROUCHED if is_telegraphing() else CAT_RUNNING
+	Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
+	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 func _draw_person() -> void:
-	_draw_shadow(8.0)
-	draw_line(Vector2(-3.0, -13.0), Vector2(-3.0, 0.0), Palette.TROUSERS, 4.0)
-	draw_line(Vector2(3.0, -13.0), Vector2(3.0, 0.0), Palette.TROUSERS, 4.0)
-	draw_rect(Rect2(-7.0, -30.0, 14.0, 18.0), Palette.NPC_COAT)
-	draw_circle(Vector2(0.0, -35.0), 6.0, Palette.SKIN)
+	Sprites.draw_shadow(self, Vector2.ZERO, 8.0)
+	Sprites.draw_standing(self, PERSON, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 func _draw_vehicle() -> void:
-	_draw_shadow(20.0)
-	draw_rect(Rect2(-22.0, -26.0, 44.0, 24.0), Palette.NPC_COAT)
-	draw_rect(Rect2(-22.0, -12.0, 44.0, 4.0), Palette.OUTLINE)
-	draw_circle(Vector2(-14.0, -3.0), 4.5, Palette.PRAM_WHEEL)
-	draw_circle(Vector2(14.0, -3.0), 4.5, Palette.PRAM_WHEEL)
+	Sprites.draw_shadow(self, Vector2.ZERO, 20.0)
+	Sprites.draw_standing(self, VEHICLE, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars.
 func _draw_fire() -> void:
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.2, 1.0)
-	_draw_shadow(22.0)
+	Sprites.draw_shadow(self, Vector2.ZERO, 22.0)
 	for i in 5:
 		var offset := (i - 2.0) * 11.0
 		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
 		var height := (34.0 + i % 2 * 14.0) * strength * flicker
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(offset - 9.0, 0.0),
-			Vector2(offset + 9.0, 0.0),
-			Vector2(offset, -height),
-		]), Palette.FIRE_OUTER)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(offset - 4.5, 0.0),
-			Vector2(offset + 4.5, 0.0),
-			Vector2(offset, -height * 0.6),
-		]), Palette.FIRE_INNER)
+		Sprites.draw_standing(self, FLAME, Vector2(offset, 0.0), Vector2(18.0, height))
 
+## A blocking object is drawn at exactly the width it obstructs, by repeating a segment
+## across it. Anything else would be a lie about where the player can walk.
 func _draw_object() -> void:
-	_draw_shadow(10.0)
 	var half := maxf(11.0, def.obstructs_radius)
-	draw_rect(Rect2(-half, -20.0, half * 2.0, 20.0), Palette.NPC_COAT)
-	draw_rect(Rect2(-half, -20.0, half * 2.0, 20.0), Palette.OUTLINE, false, 1.5)
+	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.9)
+	var segment := BARRIER_SEGMENT.get_size()
+	var segments := maxi(1, ceili(half * 2.0 / segment.x))
+	var width := half * 2.0 / segments
+	for i in segments:
+		Sprites.draw_standing(self, BARRIER_SEGMENT,
+				Vector2(-half + width * (i + 0.5), 0.0), Vector2(width, segment.y))
+	for side in [-1.0, 1.0]:
+		Sprites.draw_standing(self, BARRIER_END, Vector2(side * half, 0.0))
+
+## Which way a mobile event is travelling, for art that has a front and a back. A
+## stationary event never flips.
+func _heading_is_west() -> bool:
+	return _heading.x < 0.0

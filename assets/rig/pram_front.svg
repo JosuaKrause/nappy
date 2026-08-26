@@ -1,0 +1,13 @@
+<!-- Coming toward the viewer: shorter and wider, hood centred, the baby's face showing. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" shape-rendering="crispEdges">
+  <path d="M4 6 A11 11 0 0 1 26 6 L26 10 L4 10 Z" fill="#d8ccb4"/>
+  <circle cx="15" cy="8" r="4" fill="#d9a878"/>
+  <rect x="13" y="7" width="1" height="1" fill="#221f28"/>
+  <rect x="16" y="7" width="1" height="1" fill="#221f28"/>
+  <rect x="3" y="9" width="24" height="12" fill="#3f4a5c"/>
+  <rect x="3" y="17" width="24" height="3" fill="#2b3341"/>
+  <circle cx="7" cy="25" r="5" fill="#26232a"/>
+  <circle cx="23" cy="25" r="5" fill="#26232a"/>
+  <circle cx="7" cy="25" r="2" fill="#4a464f"/>
+  <circle cx="23" cy="25" r="2" fill="#4a464f"/>
+</svg>

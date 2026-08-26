@@ -1,0 +1,6 @@
+<!-- The post that caps each end of a blocking object. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="6" height="26" viewBox="0 0 6 26" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="6" height="26" fill="#6b7a8c"/>
+  <rect x="0" y="0" width="6" height="3" fill="#4e5a68"/>
+  <rect x="4" y="0" width="2" height="26" fill="#5c697a"/>
+</svg>

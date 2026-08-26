@@ -1,0 +1,11 @@
+<!-- A generic passer-by: whoever the event needs to be a person. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="42" viewBox="0 0 18 42" shape-rendering="crispEdges">
+  <rect x="5" y="29" width="4" height="13" fill="#46506b"/>
+  <rect x="10" y="29" width="4" height="13" fill="#46506b"/>
+  <rect x="4" y="40" width="5" height="2" fill="#221f28"/>
+  <rect x="10" y="40" width="5" height="2" fill="#221f28"/>
+  <rect x="2" y="12" width="14" height="18" fill="#6b7a8c"/>
+  <rect x="2" y="24" width="14" height="6" fill="#5c697a"/>
+  <circle cx="9" cy="7" r="6" fill="#d9a878"/>
+  <path d="M3 7 A6 6 0 0 1 15 7 Z" fill="#3a2b26"/>
+</svg>
