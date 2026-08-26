@@ -30,7 +30,7 @@ require reversing decisions that are currently written down as invariants.**
 | 2 | Too easy: circling the starting block fills the sleepiness meter | S | 4 |
 | 4 | Needs a constant/periodic base noise floor so standing in one place cannot work. Reaching a calm area should be a *requirement* for getting through a day | M | 3 |
 | 7 | More variety in areas and events — calm areas could be park, forest, apartment-block courtyard, etc. | M | 13 |
-| 12 | Force limited paths: build a tree of allowed routes and block the rest with excitement-overload events (roadworks, fallen tree, car accident). Avoidable, but clearly "not that way" | M | 7 |
+| 12 | Prune the road network per day with blockers (roadworks, fallen tree, car accident) so the route is a real decision. Avoidable, but clearly "not that way". **Several viable routes, and several quiet destinations to choose between** | M | 7 |
 | 11 | Stylised city map at the start of a round for route planning; updates as destructive events change the city | M | 7, 12 |
 
 ---
@@ -60,29 +60,70 @@ work mechanically and mean nothing. The crowd from 3/8 *is* the floor: a busy st
 loud because it is busy, a park is quiet because nobody is in it, and the player can see
 exactly why in both cases. That makes 4 depend on 3 rather than standing alone.
 
-### 12 reverses an existing guarantee
+### 12 narrows the choice; it does not remove it
 
-`docs/CITY.md` currently guarantees **at least two topologically distinct routes** from home
-to every park, and `tests/test_generator.gd` enforces it by closing each street segment in
-turn. Finding 12 asks for the opposite: deliberately prune the network to a tree so the
-route is forced.
+*Clarified after the first draft of this plan.* The pruned network is **not** a tree with a
+single forced route. It is a subgraph: pruned hard enough that the route is a real decision
+rather than an open field, but leaving **several viable paths and several quiet destinations
+to choose between**.
 
-Both can be true if the guarantee is restated as being about the **layout**, not the day:
-the lattice is always fully connected, and a *day* may close it down to a tree. What has to
-be preserved is weaker and more important — every day must leave at least one walkable
-route to a usable calm area, and the closures must be legible before you have committed to
-a street. The scheduler already has the machinery (`_ensure_the_city_is_still_walkable`).
+That distinction is the whole value of the mechanic. A single forced path is not a decision,
+it is a corridor — and it would make the fixed city pointless, since there would be nothing
+to know. What makes it interesting is being able to see three ways to two different parks
+and having to work out which one today's blockers have made expensive.
 
-### 11 needs a mutable city, which is currently forbidden on purpose
+It also mostly dissolves the apparent conflict with `docs/CITY.md`, which guarantees at
+least two topologically distinct routes from home to every park and enforces it in
+`tests/test_generator.gd` by closing each street segment in turn. Restated:
 
-`CLAUDE.md` lists "the `CityMap` is immutable for the run" as an invariant, and per-day
-closures are events rather than tile edits — that is what keeps the map learnable. But 11
-wants the burnt-out house to *be* burnt out on the map the next morning.
+- The **layout** stays fully redundant. That guarantee is unchanged.
+- A **day** may prune it, but must leave at least two distinct routes to at least two
+  distinct calm areas. That is a new and stronger day-level invariant than the current
+  "one walkable route to a park", and it is what the M16 validator has to enforce.
+- Closures must be legible *before* the player has committed to a street.
 
-The way through is a second layer rather than a change to the first: keep `CityMap` as the
-immutable layout, and add a run-scoped `CityState` overlay holding what has happened to it
-(scars, permanent closures). The map screen renders layout + overlay. `GameState.scars`
-already holds most of this and is the seed of that overlay.
+The scheduler already has most of the machinery (`_ensure_the_city_is_still_walkable`); it
+needs to count distinct routes and destinations rather than just find one.
+
+### 11 makes the city mutable — by design, and further than a scar overlay
+
+*Revised after the first draft.* The first version of this plan proposed keeping `CityMap`
+immutable and bolting a thin overlay of scars onto it. That is too weak. The actual
+requirement:
+
+> The city is mutable day to day by **recontextualising areas**. The generator should plan
+> the purpose of each city block in advance, so every block can transition smoothly from
+> day to day depending on what happened.
+
+So a block is not a fixed thing with damage painted on it. A block has a **planned arc** — a
+set of purposes it may take — and each day it presents whichever one the run's history has
+brought it to. A park can be requisitioned as a staging ground. A residential block can burn
+and stay burnt. A commercial street can be boarded up, then barricaded.
+
+This is much stronger than a scar list, and it is what makes the map screen worth having:
+you are not looking at damage markers, you are looking at a city that has become a different
+city while you walked around in it.
+
+**Structure it as:**
+
+- `CityGenerator` produces, per block, its **purpose plan**: the role it starts in and the
+  states it can transition into. Planned up front so the transitions are always coherent —
+  a block never has to invent a plausible next state at runtime.
+- A run-scoped `CityState` holds each block's **current** purpose and the day it changed.
+- Day transitions apply consequences: a fire burns a block out, a convoy barricades one, the
+  regime requisitions another. Events cause transitions rather than leaving markers.
+- **Rendering reads block state, not the layout**, so ground tiles and buildings both change
+  with it. `City._paint_ground()` therefore has to be re-run per day, not once per run.
+- The route map renders the same block states, which is why it comes last.
+
+**This supersedes the "`CityMap` is immutable for the run" invariant in `CLAUDE.md`.** The
+replacement invariant is weaker but still load-bearing: *the street lattice and block
+boundaries are fixed for the run; what a block **is** may change, and only ever along the
+arc the generator planned for it.* The geometry you learn stays true; the meaning of it does
+not.
+
+It also folds finding 7 in: an "area type" and a "block purpose" are the same concept, so
+M15 becomes the block-purpose vocabulary and M17 renders it.
 
 ### 13 has to come first
 
@@ -120,28 +161,36 @@ passing someone reads. The crowd becomes the noise floor.
 **M14 — Balance** — findings 2, 4. Re-pitch street vs calm-area sleepiness so a day cannot
 be won without reaching calm ground. Depends on M13, because the floor is the crowd.
 
-**M15 — Area variety** — finding 7. More calm-area types (park, forest, courtyard, quiet
-square, canal path) and matching district and event variety.
+**M15 — Block purposes** — findings 7 and the structural half of 11. The vocabulary of block
+purposes (park, forest, courtyard, quiet square, canal path, and their degraded forms), the
+per-block arcs the generator plans, and the `CityState` that tracks where each block
+currently is. Rendering starts reading block state rather than layout.
 
-**M16 — Forced routes** — finding 12. A per-day allowed network with legible blockers, plus
-the restated connectivity guarantee.
+**M16 — Route pressure** — finding 12. A per-day pruned network with legible blockers, and
+the day-level invariant: at least two distinct routes to at least two distinct calm areas.
 
-**M17 — Route map** — finding 11. The `CityState` overlay and the planning screen at the
-start of a day, showing what the city has become.
+**M17 — Route map** — the presentation half of finding 11. The planning screen at the start
+of a day, rendering the block states M15 introduced — what the city has become, not what it
+was generated as.
 
 ### Order rationale
 
 - 13 first, because it is the gate on five others.
 - 3 before 4, because the crowd *is* the noise floor.
 - 7 before 12, because forced routes are only interesting across varied ground.
-- 11 last, because a planning map is only worth drawing once there is something to plan
-  around — varied areas, closures, and a city that visibly changes.
+- 11 splits: its *structure* (block purposes and transitions) is M15, because everything
+  else needs it; its *presentation* (the map screen) is M17, because a planning map is only
+  worth drawing once there is something to plan around.
 
-### Decisions wanted before M14 and M16
+### Decisions
 
-1. **Should an ordinary street make any sleep progress at all?** Recommendation: yes, but
-   never enough to finish a day alone.
-2. **Confirm 12 supersedes the two-routes guarantee** as described above — the layout stays
-   redundant, the day may be a tree.
-3. **SVG for assets**, on the strength of "the vector assets look okay". Pixel art would be
-   the other credible answer and would change the whole look.
+Taken as the recommended defaults unless stated otherwise.
+
+1. ~~Should an ordinary street make any sleep progress at all?~~ **Decided: yes, but never
+   enough to finish a day alone.** A day must be unwinnable on street gain alone and
+   comfortably winnable with one good calm stretch.
+2. ~~Confirm 12 supersedes the two-routes guarantee.~~ **Superseded by the clarification
+   above:** the layout guarantee is unchanged, and the day gets a *stronger* one — at
+   least two distinct routes to at least two distinct calm areas.
+3. **SVG for assets**, on the strength of "the vector assets look okay". Taken as default;
+   pixel art was the other credible answer and would have changed the whole look.

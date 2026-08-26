@@ -229,9 +229,12 @@ sequencing. Summary only here:
 - [ ] **M13 Density and life** — pedestrians and traffic as real agents; the crowd becomes
       the noise floor
 - [ ] **M14 Balance** — a day cannot be won without reaching calm ground
-- [ ] **M15 Area variety** — more calm-area and district types
-- [ ] **M16 Forced routes** — a per-day allowed network with legible blockers
-- [ ] **M17 Route map** — the planning screen, over a city that visibly changes
+- [ ] **M15 Block purposes** — the vocabulary of block purposes and the per-block arcs the
+      generator plans up front, plus the run-scoped `CityState` that tracks where each block
+      currently is. Supersedes the "CityMap is immutable" invariant
+- [ ] **M16 Route pressure** — a per-day pruned network with legible blockers, leaving at
+      least two distinct routes to at least two distinct calm areas
+- [ ] **M17 Route map** — the planning screen, rendering M15's block states
 
 ## M10 — Polish · `feature/polish`
 
