@@ -175,20 +175,36 @@ Each milestone is one git branch, merged to `main` when green.
 
 ## M8 — Resistance subquest · `feature/resistance`
 
-- [ ] Chalk mark markers on alley walls
-- [ ] Hold-to-interact
-- [ ] The 6 subquest steps
-- [ ] Robbery-vs-contact seeded alley roulette
-- [ ] Seen-by-patrol penalty
-- [ ] Timed step failure (contact lost permanently)
-- [ ] Codex panel in the day summary
+- [x] Chalk marks, drawn under everything that stands on them. No marker, no quest log.
+- [x] Hold-to-interact with decay when you let go or walk away
+- [x] All 6 steps, as a data table
+- [x] Robbery-vs-contact alley roulette, seeded from run seed + day
+- [x] Seen-by-patrol resets the hold *(changed from the planned progress penalty — see
+      docs/NARRATIVE.md for why)*
+- [x] Timed step failure (contact lost permanently for the run)
+- [x] Resistance tally in the day summary; one terse HUD line otherwise
+- [x] The good ending needs the goal **and** the day-14 sabotage
+- [x] `tests/test_resistance.gd` (66 checks)
+- [x] Dev flag: `--spawn contact`
+
+### Notes
+
+- `GameState.day_rng()` takes a `stream` now. Without it the events and the resistance
+  would both start from the same day seed and their first rolls would move together.
+- Building the step table with `set(key, value)` from a Dictionary silently DROPPED every
+  `Array[int]` placement list — `set()` does not report a type mismatch — so three of the
+  six steps had nowhere to go, with no error anywhere. It is an explicit factory now.
 
 ## M9 — Endings · `feature/endings`
 
-- [ ] Bad ending (nerves 0)
-- [ ] Neutral ending (day 14, resistance incomplete)
-- [ ] Good ending (sabotage; zero ambient excitement floor on the last walk home)
-- [ ] Epilogue screens
+- [x] Bad ending (nerves 0)
+- [x] Neutral ending (day 14, sabotage not done)
+- [x] Good ending (goal reached **and** day-14 sabotage completed)
+- [x] Epilogue screens
+- [ ] The good ending's mechanical reward: silence. On the last walk home after the
+      sabotage, the ambient excitement floor should drop to zero for the first time since
+      day 5 — the loudspeakers cut out mid-sentence. Needs the loudspeaker instance to be
+      retired when `sabotage_done` flips.
 
 ## M10 — Polish · `feature/polish`
 

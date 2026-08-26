@@ -21,6 +21,10 @@ var failed_resistance_steps: Array[int] = []
 ## never repaired — the city remembers, which is most of how the escalation is told.
 var scars: Array[Dictionary] = []
 
+## Whether the day-14 sabotage actually went through. Reaching RESISTANCE_GOAL earns the
+## chance at the good ending; this is doing it.
+var sabotage_done := false
+
 # ------------------------------------------------------------------ lifecycle ---
 
 ## Begin a fresh run. Pass a seed to reproduce a previous city, or omit for a new one.
@@ -34,6 +38,7 @@ func start_run(seed_value: int = 0) -> void:
 	completed_resistance_steps.clear()
 	failed_resistance_steps.clear()
 	scars.clear()
+	sabotage_done = false
 	print("[GameState] run started, seed=%d" % run_seed)
 
 ## Record the outcome of the day and advance the calendar. Returns true if the run continues.
@@ -46,8 +51,7 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 			_end_run(GameEnums.Ending.BAD)
 			return false
 	if day >= Tuning.RUN_LENGTH_DAYS:
-		var reached_goal := resistance_progress >= Tuning.RESISTANCE_GOAL
-		_end_run(GameEnums.Ending.GOOD if reached_goal else GameEnums.Ending.NEUTRAL)
+		_end_run(GameEnums.Ending.GOOD if earned_good_ending() else GameEnums.Ending.NEUTRAL)
 		return false
 	day += 1
 	return true
@@ -73,6 +77,15 @@ func is_final_day() -> bool:
 
 func has_joined_resistance() -> bool:
 	return resistance_progress > 0
+
+## Reaching the goal is the qualification; the sabotage is the act. Both are required, so
+## a player who does the legwork and then skips the last night gets the neutral ending.
+func earned_good_ending() -> bool:
+	return resistance_progress >= Tuning.RESISTANCE_GOAL and sabotage_done
+
+## Whether the final sabotage is on offer at all.
+func sabotage_available() -> bool:
+	return resistance_progress >= Tuning.RESISTANCE_GOAL
 
 # --------------------------------------------------------------- resistance ---
 
@@ -104,11 +117,13 @@ func city_rng() -> RandomNumberGenerator:
 	rng.seed = run_seed
 	return rng
 
-## Deterministic RNG for one day's event selection.
-func day_rng(day_index: int = -1) -> RandomNumberGenerator:
+## Deterministic RNG for one day. `stream` separates independent consumers: without it,
+## two systems asking for "the day's RNG" would both start from the same seed and their
+## first rolls would move together, which is a correlation nobody asked for.
+func day_rng(day_index: int = -1, stream: String = "events") -> RandomNumberGenerator:
 	var d := day if day_index < 0 else day_index
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d" % [run_seed, d])
+	rng.seed = hash("%d:%d:%s" % [run_seed, d, stream])
 	return rng
 
 func _new_seed() -> int:

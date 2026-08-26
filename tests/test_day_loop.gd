@@ -164,6 +164,7 @@ func _test_nerves_and_endings(t) -> void:
 	var saved_day := GameState.day
 	var saved_nerves := GameState.nerves
 	var saved_progress := GameState.resistance_progress
+	var saved_sabotage := GameState.sabotage_done
 
 	GameState.start_run(SEED)
 	t.check(GameState.nerves == Tuning.STARTING_NERVES, "a run starts with full nerves")
@@ -188,15 +189,36 @@ func _test_nerves_and_endings(t) -> void:
 	t.check(GameState.ending == GameEnums.Ending.NEUTRAL,
 			"finishing without the resistance is the neutral ending")
 
-	# With the resistance, the good one.
+	# Doing the legwork and then skipping the last night is still the neutral ending:
+	# reaching the goal earns the CHANCE at the good one, the sabotage is the act.
 	GameState.start_run(SEED)
 	GameState.day = Tuning.RUN_LENGTH_DAYS
 	for step in Tuning.RESISTANCE_GOAL:
 		GameState.complete_resistance_step(step + 1)
 	t.check(GameState.resistance_progress >= Tuning.RESISTANCE_GOAL, "the goal is reached")
+	t.check(GameState.sabotage_available(), "which puts the sabotage on offer")
+	t.check(not GameState.earned_good_ending(), "but the goal alone does not earn the ending")
+	GameState.finish_day(GameEnums.DayResult.WON)
+	t.check(GameState.ending == GameEnums.Ending.NEUTRAL,
+			"reaching the goal without doing the sabotage is still the neutral ending")
+
+	# Both, and it is the good one.
+	GameState.start_run(SEED)
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	for step in Tuning.RESISTANCE_GOAL:
+		GameState.complete_resistance_step(step + 1)
+	GameState.sabotage_done = true
 	GameState.finish_day(GameEnums.DayResult.WON)
 	t.check(GameState.ending == GameEnums.Ending.GOOD,
-			"finishing with the resistance is the good ending")
+			"the goal plus the sabotage is the good ending")
+
+	# And the sabotage without the legwork is not enough either.
+	GameState.start_run(SEED)
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.sabotage_done = true
+	GameState.finish_day(GameEnums.DayResult.WON)
+	t.check(GameState.ending == GameEnums.Ending.NEUTRAL,
+			"the sabotage without the progress is not the good ending")
 
 	# A completed step never counts twice.
 	GameState.start_run(SEED)
@@ -211,3 +233,4 @@ func _test_nerves_and_endings(t) -> void:
 	GameState.day = saved_day
 	GameState.nerves = saved_nerves
 	GameState.resistance_progress = saved_progress
+	GameState.sabotage_done = saved_sabotage

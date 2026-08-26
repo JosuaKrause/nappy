@@ -8,10 +8,14 @@ extends CanvasLayer
 @onready var _sleepiness: MeterBar = $Meters/Sleepiness
 @onready var _excitement: MeterBar = $Meters/Excitement
 @onready var _state_label: Label = $Meters/State
+@onready var _resistance_label: Label = $Meters/Resistance
 @onready var _header: Label = $Header
 @onready var _clock: Label = $Clock
 
 var _baby: Baby
+var _contact_step := 0
+var _hold := 0.0
+var _seen_for := 0.0
 
 const _STATE_TEXT := {
 	GameEnums.BabyState.AWAKE: "awake",
@@ -35,6 +39,15 @@ func _ready() -> void:
 	EventBus.nerves_changed.connect(func(_n: int) -> void: _refresh_header())
 	EventBus.day_started.connect(func(_d: int) -> void: _refresh_header())
 	EventBus.day_time_changed.connect(_on_day_time_changed)
+	EventBus.resistance_progress_changed.connect(func(_v: int) -> void: _refresh_resistance())
+	EventBus.resistance_contact_available.connect(_on_contact_available)
+	EventBus.resistance_hold_changed.connect(_on_hold_changed)
+	EventBus.resistance_seen.connect(_on_seen)
+	EventBus.day_started.connect(func(_d: int) -> void:
+		_contact_step = 0
+		_hold = 0.0
+		_seen_for = 0.0
+		_refresh_resistance())
 
 	_baby = get_tree().get_first_node_in_group("baby") as Baby
 	if _baby:
@@ -42,9 +55,13 @@ func _ready() -> void:
 		_excitement.value = _baby.excitement
 	_refresh_header()
 	_refresh_state()
+	_refresh_resistance()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	_refresh_state()
+	if _seen_for > 0.0:
+		_seen_for = maxf(0.0, _seen_for - delta)
+		_refresh_resistance()
 
 func _on_sleepiness_changed(value: float) -> void:
 	_sleepiness.value = value
@@ -69,6 +86,40 @@ func _on_day_time_changed(remaining: float, total: float) -> void:
 	# The last minute is the one worth panicking about.
 	var urgent := remaining < 60.0 and total > 0.0
 	_clock.modulate = Color("e5765f") if urgent else Color(1, 1, 1)
+
+func _on_contact_available(step: int) -> void:
+	_contact_step = step
+	_refresh_resistance()
+
+func _on_hold_changed(progress: float) -> void:
+	if is_equal_approx(progress, _hold):
+		return
+	_hold = progress
+	_refresh_resistance()
+
+func _on_seen() -> void:
+	_seen_for = 2.5
+	_refresh_resistance()
+
+## Deliberately terse. There is no quest log — the subquest is chalk on a wall, and the HUD
+## says only how far in you are and, while you are actually holding, how much is left.
+func _refresh_resistance() -> void:
+	if not GameState.has_joined_resistance() and _contact_step == 0:
+		_resistance_label.text = ""
+		return
+
+	var marks := "*".repeat(GameState.resistance_progress) \
+			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - GameState.resistance_progress))
+	var line := "resistance %s" % marks
+	if _seen_for > 0.0:
+		line += "   seen - wait for it to pass"
+	elif _hold > 0.0:
+		line += "   holding %d%%" % roundi(_hold * 100.0)
+	elif _contact_step > 0:
+		var step := ResistanceSteps.by_index(_contact_step)
+		if step:
+			line += "   somewhere out there: %s" % step.title.to_lower()
+	_resistance_label.text = line
 
 func _refresh_header() -> void:
 	_header.text = "day %d / %d      act %d      nerves %s" % [

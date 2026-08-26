@@ -154,6 +154,35 @@ func home_to_nearest_park() -> int:
 				best = distance
 	return best
 
+## Walkable tiles immediately outside a block — its pavement, effectively. Used to place
+## things "at" a district when the district itself is solid building.
+func perimeter_tiles(block: Vector2i) -> Array[Vector2i]:
+	var lot := block_rect(block)
+	var found: Array[Vector2i] = []
+	for x in range(lot.position.x - 1, lot.end.x + 1):
+		for y in [lot.position.y - 1, lot.end.y]:
+			var tile := Vector2i(x, y)
+			if is_walkable(tile):
+				found.append(tile)
+	for y in range(lot.position.y, lot.end.y):
+		for x in [lot.position.x - 1, lot.end.x]:
+			var tile := Vector2i(x, y)
+			if is_walkable(tile):
+				found.append(tile)
+	return found
+
+## Every walkable tile in or around the blocks of a district.
+func district_tiles(district: GameEnums.District) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for block in districts:
+		if districts[block] != district:
+			continue
+		for tile in rect_tiles(block_rect(block)):
+			if is_walkable(tile):
+				found.append(tile)
+		found.append_array(perimeter_tiles(block))
+	return found
+
 ## Every tile of a given type. Cached, since the scheduler samples these every day.
 func tiles_of_type(type: GameEnums.TileType) -> Array[Vector2i]:
 	if _tiles_by_type.has(type):

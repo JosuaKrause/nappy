@@ -85,16 +85,32 @@ Each completed step grants **1 resistance progress**. `RESISTANCE_GOAL` is 4 of 
 
 ### Risk
 
-- Alleys used for contacts have a per-day chance of being a robbery instead. Seeded, so
-  the same alley is not always the trap — but the run's pattern is learnable.
-- From Act III, being seen near a contact by a `police_patrol` costs a resistance point.
-- Failing a timed step (step 4) removes it permanently — the contact is gone.
+- **The alley roulette.** From Act III (`TRAP_FIRST_DAY` 8), an alley contact has a
+  `TRAP_CHANCE` of 0.3 that an `alley_robbery` is waiting *at* it. The contact is still
+  there; going for it is the gamble. Seeded from the run seed and the day, so the alley
+  that was safe on day 9 of this run is safe on day 9 every time you replay it — the
+  pattern is learnable, which is the difference between risk and a coin flip.
+- **Being seen.** A `police_patrol` within `SEEN_RADIUS` of a contact while you are holding
+  resets the hold to zero. *This is a change from the original plan, which docked a
+  resistance point.* Taking away progress the player has already banked reads as a bug more
+  than a consequence, and it is invisible at the moment it happens. A reset costs the thing
+  the subquest is actually about: more seconds standing still in an alley, with the meter
+  you care about doing the wrong thing. The cost is legible while you are paying it.
+- **The deadline.** Step 4 expires at `deadline_fraction` (0.55) of the day. A warning
+  delivered late is not a warning, and the contact is gone for the rest of the run.
+
+### The finale
+
+Reaching `RESISTANCE_GOAL` earns the *chance* at the good ending; the day-14 sabotage is
+the act. `GameState.earned_good_ending()` requires both, so a player who does all the
+legwork and then walks straight home on the last night gets the neutral ending.
 
 ### Feedback
 
-There is no quest log in the HUD. The state is expressed as chalk marks on walls, which
-change between days. `docs/TODO.md` tracks a codex screen in the day summary as the
-concession to legibility.
+There is no quest log and no marker. In the world the subquest is a chalk mark on an alley
+wall, drawn *under* everything that stands on it, found by walking past it. The HUD carries
+one terse line — how far in you are, and, while you are actually holding, how much is left
+— and the day summary spells out the tally once. That is the whole of it.
 
 ## Endings
 

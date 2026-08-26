@@ -32,3 +32,9 @@ signal hard_fail_triggered(reason: String)
 signal resistance_progress_changed(value: int)
 signal resistance_step_completed(step: int)
 signal resistance_step_failed(step: int)
+## A contact is on offer somewhere in the city today.
+signal resistance_contact_available(step: int)
+## Hold progress at a contact, 0..1.
+signal resistance_hold_changed(progress: float)
+## A patrol came past mid-handover.
+signal resistance_seen()

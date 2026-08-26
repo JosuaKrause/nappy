@@ -50,6 +50,13 @@ func _create(def: EventDef, at: Vector2,
 		GameState.add_scar(def.scar_id, instance.global_position)
 	return instance
 
+## Adds an event outside the day's plan. Used by the resistance director to plant the
+## robbery that may be waiting where a contact is.
+func spawn_extra(def: EventDef, at: Vector2) -> EventInstance:
+	var instance := _create(def, at)
+	_instances.append(instance)
+	return instance
+
 func active_count() -> int:
 	return _instances.size()
 
