@@ -1,0 +1,4 @@
+<!-- The building's west corner: the old outline, as art. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="2" height="32" fill="#221f28" fill-opacity="0.45"/>
+</svg>

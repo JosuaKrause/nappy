@@ -40,8 +40,9 @@ it.
 - [ ] The pram has no collision of its own — only the mother's feet do, so the pram clips
       into walls when she hugs a corner. Options: a second body that trails her, or a
       capsule that rotates with `facing`. Not worth solving before the city exists.
-- [ ] Buildings taller than their lot depth would have no roof left to draw; `roof_depth()`
-      clamps rather than warns. Make the generator enforce it instead (M3).
+- [x] Buildings taller than their lot depth would have no roof left to draw; `roof_depth()`
+      clamps rather than warns. *(M12b: heights are whole tiles now, and the clamp is exact
+      — the wall never takes the last row.)*
 
 ## M2 — Baby meters · `feature/baby-meters`
 
@@ -224,8 +225,12 @@ sequencing. Summary only here:
 
 - [x] **M11 Playtest fixes** — home arrow, three graphics glitches, day-start position,
       spoiler-free README
-- [ ] **M12 Asset pipeline** — real asset files and tiles instead of `_draw()`. Gates M13,
+- [~] **M12 Asset pipeline** — real asset files and tiles instead of `_draw()`. Gates M13,
       M15, M16, M17, so it goes first
+  - [x] **M12a** ground: `assets/tiles/*.svg` + a `TileSet` + a `TileMapLayer`
+  - [x] **M12b** buildings: `assets/buildings/*.svg`, assembled per lot; heights quantised
+        to whole tiles
+  - [ ] **M12c** the rig, props and events — still `_draw()`
 - [ ] **M13 Density and life** — pedestrians and traffic as real agents; the crowd becomes
       the noise floor
 - [ ] **M14 Balance** — a day cannot be won without reaching calm ground

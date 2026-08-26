@@ -1,6 +1,6 @@
 # Handoff
 
-**Last updated:** end of the M12a session.
+**Last updated:** end of the M12b session.
 **Read this first, then [PLAYTEST-01.md](PLAYTEST-01.md), then [TODO.md](TODO.md).**
 
 ---
@@ -15,24 +15,12 @@
 - **M11 complete.** The four quick wins from the first playtest (home arrow, three graphics
   glitches, day-start position, spoiler-free README).
 - **M12a complete.** Ground is now authored SVG tiles + a `TileSet` + a `TileMapLayer`.
+- **M12b complete.** Buildings are assembled from `assets/buildings/*.svg`, and their
+  heights are whole tiles.
 
-**In progress: M12 (the asset pipeline).** M12a landed. M12b and M12c have not started.
+**In progress: M12 (the asset pipeline).** M12a and M12b landed. M12c has not started.
 
 ## What to do next, in order
-
-### M12b — buildings as tiles
-
-`src/city/building.gd` still draws its wall, roof, outline and windows with `draw_rect`.
-Replace with tile/sprite assets.
-
-The one design decision this forces: **building heights are currently continuous floats**
-(`_height_for()` returns `randf_range` clamped to 55% of lot depth). Tiles want them
-quantised — snap to whole tiles (2, 3 or 4 tiles of wall). That is a small change in
-`City._height_for` and it will look better, not worse.
-
-Suggested asset shape: a facade tile with windows, a roof fill tile, and roof edge/corner
-tiles, assembled across each `building_rect`. Windows are currently randomised per building
-from a seeded RNG — keep that by choosing between two or three facade variants.
 
 ### M12c — the rig, props and events
 
@@ -47,9 +35,10 @@ and each depends on the one before.
 
 ---
 
-## Decisions taken this session
+## Standing decisions
 
-All four are recorded in `PLAYTEST-01.md`; repeated here because they change the design.
+Taken in the M12a session and still governing everything after it. All four are recorded in
+`PLAYTEST-01.md`; repeated here because they change the design.
 
 1. **Assets are SVG.** Confirmed. Graphics get refined later — *"for now we need something
    workable"*, so do not gold-plate the art. Generating images or using freely-licensed
@@ -68,6 +57,17 @@ All four are recorded in `PLAYTEST-01.md`; repeated here because they change the
    per-day rather than once per run.
 
 ---
+
+## Gotchas learned in M12b
+
+- **Edge overlays beat corner tiles.** The roof parapet is four edge tiles drawn on top of
+  the roof fill, each transparent apart from its own band. A corner cell takes two of them
+  and the parapet turns by itself — no corner tiles, and no combinatorial explosion when a
+  roof is only one tile deep and a row has to be both its north and its south edge.
+- **Multiply the colour, not the art.** Wall and roof fills are authored near-white and
+  passed the variant colour as `draw_texture`'s modulate, so six roof colours cost one
+  asset. Windows are drawn *after*, unmodulated: a lit window is the same warm colour
+  whatever the building is painted.
 
 ## Gotchas learned in M12a
 
@@ -90,6 +90,10 @@ Beyond the ones already in `CLAUDE.md`:
   positional and `src/city/ground_tiles.gd` mirrors them by hand.** Adding a tile means
   appending to both, in the same order.
 - `src/city/ground_tiles.gd` — the only place that decides which tile a cell gets.
+- `assets/buildings/*.svg` — 11 building tiles, 32×32. `wall`/`roof` are fills (modulated);
+  `wall_edge_*`, `wall_base`, `roof_edge_*`, `window_*` are alpha overlays drawn on top at
+  full colour. No `TileSet` here: `Building._draw()` assembles them per lot, which keeps one
+  node per building and lets a lot pick its own colour.
 - `assets/props/door.svg` — the first sprite asset; the pattern for M12c.
 
 Run `./tools/check.sh` after touching assets; it does the import pass that generates
