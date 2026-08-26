@@ -25,6 +25,7 @@ it is not.
 | [docs/NARRATIVE.md](docs/NARRATIVE.md) | Act structure, side content, endings — **spoilers** |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Code layout, autoloads, signals |
 | [docs/TODO.md](docs/TODO.md) | Milestones and task tracking |
+| [docs/PLAYTEST-01.md](docs/PLAYTEST-01.md) | First playtest: findings, analysis, current plan |
 
 ## Running
 

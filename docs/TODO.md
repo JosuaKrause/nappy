@@ -4,9 +4,16 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 Each milestone is one git branch, merged to `main` when green.
 
-**Where things stand:** M0–M9 are done and merged. The game is playable end to end — a
-14-day run, four act escalation, the resistance subquest, three endings. M10 (polish) is
-what remains. `tools/test.sh` runs 2649 checks; `tools/check.sh` boots the project.
+**Where things stand:** M0–M9 are done and merged, and the game has now been played once
+by a human. That playtest produced thirteen findings; four are fixed (M11) and the rest are
+planned as M12–M17 in **[docs/PLAYTEST-01.md](PLAYTEST-01.md)**, which is the live plan and
+should be read before picking anything up.
+
+M10 (polish) still stands but now sits *after* the playtest work — there is no point
+polishing a loop that is about to be re-pitched.
+
+`tools/test.sh` runs 2649 checks; `tools/check.sh` boots the project; `tools/run.sh` plays
+it.
 
 ---
 
@@ -209,6 +216,22 @@ what remains. `tools/test.sh` runs 2649 checks; `tools/check.sh` boots the proje
       retires every city-wide source, so the last walk home is made without the floor the
       masts have held under the meter since day 5 — the easiest conditions in the game,
       and the only moment the HUD says anything out loud.
+
+## M11–M17 — Playtest 01
+
+See **[docs/PLAYTEST-01.md](PLAYTEST-01.md)** for the findings, the analysis and the
+sequencing. Summary only here:
+
+- [x] **M11 Playtest fixes** — home arrow, three graphics glitches, day-start position,
+      spoiler-free README
+- [ ] **M12 Asset pipeline** — real asset files and tiles instead of `_draw()`. Gates M13,
+      M15, M16, M17, so it goes first
+- [ ] **M13 Density and life** — pedestrians and traffic as real agents; the crowd becomes
+      the noise floor
+- [ ] **M14 Balance** — a day cannot be won without reaching calm ground
+- [ ] **M15 Area variety** — more calm-area and district types
+- [ ] **M16 Forced routes** — a per-day allowed network with legible blockers
+- [ ] **M17 Route map** — the planning screen, over a city that visibly changes
 
 ## M10 — Polish · `feature/polish`
 
