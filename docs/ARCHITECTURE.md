@@ -18,6 +18,7 @@ src/
   autoload/
     tuning.gd             all balance constants           (autoload: Tuning)
     event_bus.gd          global signals                  (autoload: EventBus)
+    telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
     game_state.gd         run/day/nerves/resistance       (autoload: GameState)
   player/
     stroller.gd           movement, input, speed state
@@ -54,6 +55,9 @@ src/
     resistance_director.gd  places the day's contact; the alley roulette and the deadline
     resistance_steps.gd     the six steps, as a data table
     contact_point.gd        a chalk mark, and hold-to-interact
+  telemetry/
+    telemetry_log.gd      one run's ordered lines, and the file they go to
+    telemetry_observer.gd watches the player: turns, runs, crossings, encounters
   world/
     world_context.gd      the only three questions the baby may ask the world
   ui/
@@ -112,6 +116,18 @@ signal event_finished(instance: EventInstance)
 signal hard_fail_triggered(reason: String)
 signal resistance_progress_changed(value: int)
 ```
+
+### `Telemetry`
+The run log: one plain-text file per run, written as it happens. **Inert until
+`begin_run()`**, which only `main.gd` calls — so the test suite, which never calls it, writes
+no files and pays nothing. See `docs/TELEMETRY.md` for the format and what belongs in it.
+
+The rule that governs it is one line long: **telemetry must not touch gameplay.** No RNG, no
+`day_rng()` stream, nothing that changes a placement or a roll. Where a system logs a random
+outcome it hoists the existing roll into a variable to print it; it never adds one.
+`tests/test_telemetry.gd` plans all fourteen days with the log off and again with it on and
+requires the two plans to be identical, because that hoist is exactly the edit that could
+quietly consume one extra value and break determinism for every other guarantee here.
 
 ### `GameState`
 The run. Owns `run_seed`, `day`, `nerves`, `resistance_progress`, `consumed_one_shots`.

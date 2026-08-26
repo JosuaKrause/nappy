@@ -35,9 +35,17 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 14918 headless checks, ~55s
+./tools/test.sh               # 14963 headless checks, ~55s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
+./tools/telemetry.sh          # what the last run actually did, in order
 ```
+
+**A green `test.sh` says nothing about whether a *run* behaves.** Since M23 every run writes
+an ordered trace; if you changed anything the player experiences, play a minute of it and read
+the log back. Four real defects in M23's own observer were found that way and by no other
+means — a `run` entry claiming a six-hundred-pixel event was "in reach", and a meter breakdown
+that read `crowd 0.0, events 0.0` while the meter climbed, because the player was doing it to
+themselves with the run button and nothing said so.
 
 **A green `check.sh` says nothing about whether the game looks right** — headless runs never
 call `_draw()`. Several real bugs in this project were found only by opening a screenshot:
@@ -218,6 +226,18 @@ The one property the ring had that must survive: it *breathes* with the pulse en
 pulsing event can be timed and slipped past between beats. See docs/EVENTS.md, "The visual
 vocabulary".
 
+**Telemetry never touches gameplay.** *(M23.)* No RNG, no `day_rng()` stream, nothing that
+changes a placement or a roll. Where a system logs a random outcome it hoists the **existing**
+roll into a variable to print it; it never adds one. That hoist is a one-line edit with a way
+to be catastrophically wrong — consume one extra value from a day's RNG and every event placed
+after it moves, and the determinism invariant above takes every other guarantee down with it.
+`tests/test_telemetry.gd` plans all fourteen days with the log off and again with it on and
+requires the plans to be identical event for event.
+
+The corollary: anything needing a per-frame check goes in `TelemetryObserver`, not in the
+gameplay class. The telemetry stays out of the files that decide things, which is what makes
+the rule easy to keep. See docs/TELEMETRY.md.
+
 **Audio is never the only channel.** Every cue that will eventually be audio must also exist
 visually, and the visual must be sufficient on its own — the game has to play identically
 with the sound off. Build the visual first and judge it alone; audio is added afterwards as
@@ -260,6 +280,12 @@ is a street you cannot walk down.
 
 **Add a HUD element** — `scenes/ui/hud.tscn` plus `src/ui/hud.gd`. The HUD listens to
 `EventBus` and holds no reference to the world.
+
+**Add a telemetry entry** — `Telemetry.note("kind", "sentence")` where the thing happens, a
+row in the table in `docs/TELEMETRY.md`, and a kind reused from that table rather than a
+synonym for one. It has to answer a question that is open in `docs/TODO.md` or a playtest doc;
+if it does not, it is a metric and does not belong. Anything per-frame goes in
+`TelemetryObserver`. Read a run back with `./tools/telemetry.sh`.
 
 ---
 

@@ -15,6 +15,8 @@ var _player: Stroller
 var _baby: Baby
 var _day: DayController
 var _resistance: ResistanceDirector
+## Null unless the run is being traced. See src/autoload/telemetry.gd.
+var _observer: TelemetryObserver
 var _hud: CanvasLayer
 var _summary: CanvasLayer
 var _follow_camera: Camera2D
@@ -29,6 +31,11 @@ func _ready() -> void:
 	# Esc has to work even while the summary has the tree paused.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	GameState.start_run(_seed_override())
+	# After the run seed is settled and before anything is generated, so the log opens on the
+	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
+	# behind a flag is a trace the person playtesting has to remember to turn on.
+	if not "--no-telemetry" in OS.get_cmdline_user_args():
+		Telemetry.begin_run(GameState.run_seed)
 	GameState.day = _day_override()
 
 	_city = CITY.instantiate()
@@ -60,6 +67,14 @@ func _ready() -> void:
 	_day.setup(_city.map, _player)
 	_day.day_finished.connect(_on_day_finished)
 
+	# Only when a run is actually being traced: with telemetry off there is no observer in the
+	# tree at all, rather than one checking a flag sixty times a second.
+	if Telemetry.is_active():
+		_observer = TelemetryObserver.new()
+		_observer.name = "Telemetry"
+		add_child(_observer)
+		_observer.setup(_city, _player, _baby, _day, _resistance)
+
 	_start_day()
 
 	if "--overview" in OS.get_cmdline_user_args():
@@ -77,6 +92,11 @@ func _start_day() -> void:
 	# placed in today — announcing it afterwards wiped the contact the director had just
 	# reported, and the HUD showed nothing.
 	EventBus.day_started.emit(GameState.day)
+
+	# Before anything is placed, because placing it is what writes the day's `arc`, `roll` and
+	# `contact` entries and they belong under today's header rather than yesterday's.
+	Telemetry.begin_day(GameState.day, GameState.current_act(), GameState.run_seed,
+			_city.map.seed_used, _day_length())
 
 	# Events and the contact are placed before the player, so --spawn has something to find
 	# and so nothing spawns on top of her.
@@ -100,10 +120,19 @@ func _start_day() -> void:
 		_apply_meter_override()
 	_first_day = false
 
-	print("[Main] day %d (act %d): %d events, %d crowd, %.0fs%s%s" % [
+	print("[Main] day %d (act %d): %d events, %d crowd, %.0fs | calm: %s | closed: %s" % [
 		GameState.day, GameState.current_act(), _city.events.active_count(),
 		_city.crowd.agent_count(), _day.time_total,
 		_calm_summary(), _closure_summary()])
+
+	# The shape of the day, written down last because it is only true once everything has been
+	# placed. Three lines rather than one: what is shut, where the calm is, and what is out —
+	# the three things a reader needs before any of the entries below them mean anything.
+	Telemetry.note("plan", "closed: %s" % _closure_summary())
+	Telemetry.note("plan", "calm: %s" % _calm_summary())
+	Telemetry.note("plan", "events: %s" % _event_summary())
+	if _observer:
+		_observer.start_day()
 
 ## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day
 ## now that a day can only be won on calm ground.
@@ -117,24 +146,40 @@ func _calm_summary() -> String:
 	for name: String in counts:
 		parts.append("%d %s" % [counts[name], name])
 	parts.sort()
-	return " | calm: " + (", ".join(parts) if not parts.is_empty() else "none")
+	return ", ".join(parts) if not parts.is_empty() else "none"
 
 ## Which streets are shut today and what shut them. Worth printing rather than counting,
 ## because "the route was awful today" and "the closure landed on the one street that
 ## mattered" look identical from a count.
 func _closure_summary() -> String:
-	var closures := _city.closures()
-	if closures.is_empty():
-		return " | closed: none"
 	var parts: Array[String] = []
-	for closure in closures:
+	for closure in _city.closures():
 		parts.append("%s %s%s" % [
 			RoadClosure.display_name(closure.kind).to_lower(),
-			"h" if closure.segment.horizontal else "v", closure.segment.a])
-	return " | closed: " + ", ".join(parts)
+			"h" if closure.segment.horizontal else "v",
+			TelemetryLog.tile(closure.segment.a)])
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
+## Today's events by id. Counted rather than listed one per line: which of eighteen kinds are
+## out is what makes a day, and where each instance stands is only interesting for the ones
+## the player actually walked into — which the `near` entries cover, at the moment it matters.
+func _event_summary() -> String:
+	var counts := {}
+	for instance in _city.events.instances():
+		counts[instance.def.id] = int(counts.get(instance.def.id, 0)) + 1
+	var parts: Array[String] = []
+	for id: String in counts:
+		parts.append("%s x%d" % [id, counts[id]] if counts[id] > 1 else id)
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
 
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var finished_day := GameState.day
+	# Before the calendar moves, so the outcome is written above the nerve it cost — and
+	# before `end_day()` stops the clock, so it is timestamped where it happened.
+	if _observer:
+		_observer.day_finished(result)
+	Telemetry.end_day()
 	_run_over = not GameState.finish_day(result)
 	_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves)
 
@@ -360,4 +405,11 @@ func _apply_meter_override() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
+		Telemetry.end_run()
 		get_tree().quit()
+
+## Closing the window is the other way a run ends, and an abandoned run is worth reading —
+## every line is already on disk, so this only closes the handle tidily.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		Telemetry.end_run()

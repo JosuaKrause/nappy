@@ -47,6 +47,11 @@ func _create(def: EventDef, at: Vector2,
 	instance.setup(def, at, path)
 	_city.add_entity(instance)
 	if def.scar_id != "":
+		# A scar is where the city stopped being recomputable: it exists because of what
+		# happened on an earlier day, so from day 4 onwards the map depends on run history.
+		Telemetry.note("scar", "%s left at %s by %s" % [
+			def.scar_id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
+			def.id])
 		GameState.add_scar(def.scar_id, instance.global_position)
 		_mark_the_block(def.scar_id, instance.global_position)
 	return instance

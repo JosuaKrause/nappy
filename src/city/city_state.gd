@@ -43,7 +43,7 @@ func begin_day(plans: Dictionary, day: int) -> void:
 	for block: Vector2i in plans:
 		var plan: BlockPlan = plans[block]
 		while _can_advance(plan, block, day, GameEnums.BlockCause.SCHEDULED):
-			_advance(block, day)
+			_advance(plans, block, day, GameEnums.BlockCause.SCHEDULED)
 
 ## A cause fired at a block. Advances its arc if the next step was waiting for exactly that
 ## cause and the day has come; otherwise nothing happens, which is the point — a fire in a
@@ -55,7 +55,7 @@ func apply_cause(plans: Dictionary, block: Vector2i, cause: GameEnums.BlockCause
 	var plan: BlockPlan = plans.get(block)
 	if not plan or not _can_advance(plan, block, day, cause):
 		return false
-	_advance(block, day)
+	_advance(plans, block, day, cause)
 	return true
 
 ## Blocks that are calm ground right now. Since M14 a day can only be won on calm ground, so
@@ -79,6 +79,18 @@ func _can_advance(plan: BlockPlan, block: Vector2i, day: int,
 	var step: BlockPlan.Step = plan.steps[next]
 	return step.cause == cause and day >= step.from_day
 
-func _advance(block: Vector2i, day: int) -> void:
+## Takes the step, and writes down that it was taken.
+##
+## An arc step depends on run history — a fire only advances a block if something burned
+## there, which depends on where the player was — so the day a block turned is not
+## recomputable from the seed. It is one of the three random outcomes that branch a run, and
+## it is the one that changes where the day can be won.
+func _advance(plans: Dictionary, block: Vector2i, day: int,
+		cause: GameEnums.BlockCause) -> void:
+	var was := purpose_of(plans, block)
 	_stage[block] = _index(block) + 1
 	_changed_on[block] = day
+	Telemetry.note("arc", "block %s %s -> %s (%s)" % [
+		TelemetryLog.tile(block), TelemetryLog.purpose(was),
+		TelemetryLog.purpose(purpose_of(plans, block)),
+		GameEnums.BlockCause.keys()[cause].to_lower()])

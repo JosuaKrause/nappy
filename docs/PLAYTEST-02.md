@@ -448,17 +448,33 @@ The symbol has to say *what* is coming, not merely that something is: "get off t
 and "do not step off the kerb" are different moves. And it has to keep one thing the ring did
 well — showing an event *swelling*, so a pulse can still be timed.
 
-**M23 — telemetry.** Finding 10. A per-day trace written to a local file, and a summary a
-developer can read: where the time went, whether the route was a route, what was near and how
-near, whether running ever happened, which calm zone was used. Every field answers a question
-that is currently open in this document.
+**M23 — telemetry.** Finding 10. **Done**, and pulled ahead of M17 for the reason below.
+A per-day trace written to a local file: where the time went, whether the route was a route,
+what was near and how near, whether running ever happened, which calm zone was used. Every
+field answers a question that is currently open in this document.
 
-**Now a gate, not just a recommendation.** Decision 11 defers the act I/II difficulty pitch
-until real runs can be read, so the balance half of M19 cannot be finished before this lands.
-It is also the only item here that makes every *other* item cheaper to judge, and M24 cannot
-be built without one of its fields. Filed in numeric order all the same, but M19's mechanisms
-and M23 want building close together, with the numbers set afterwards from what the traces
-say.
+The implementation and the full entry table are in [docs/TELEMETRY.md](TELEMETRY.md); read a
+run back with `./tools/telemetry.sh`. Three things came out of building it that the sketch
+below did not have:
+
+- **The commit goes on the first line, with a `*` when the tree was dirty.** Without it a
+  trace cannot be checked against anything — "day one was brutal" is only a finding if the
+  code that produced it can be got back.
+- **The meter breakdown has to include the player's own contribution.** The first version
+  printed the two spatial sources, and a meter climbing on an empty street read as
+  `crowd 0.0, events 0.0` — true, and it hid that the player was doing it to themselves with
+  the run button. It prints the baby's whole incoming rate alongside the two, so the numbers
+  always add up and the remainder is visibly the player's.
+- **A trace of a run that walks is the only way to judge a trace.** Four defects in the
+  observer survived a green suite and were obvious in the first log of a minute's actual
+  walking. That is now a line in `CLAUDE.md` next to the screenshot rule, and it is the same
+  rule: a green headless check says nothing about the thing a human will look at.
+
+**A gate, not just a recommendation** — which is why it went first. Decision 11 defers the
+act I/II difficulty pitch until real runs can be read, so the balance half of M19 could not
+have been finished before this landed. It is also the only item here that makes every *other*
+item cheaper to judge, and M24 cannot be built without one of its fields. Everything from here
+on can be read back instead of argued about.
 
 Two fields exist because of decisions 9 and 11 specifically: **where the nerves went** — which
 day, which failure, which act — and **what was nearby when a day was lost**. Those are what
