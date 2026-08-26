@@ -106,15 +106,110 @@ the scheduler may **spoil** calm zones:
 - **At most `MAX_SPOILED_PARKS` (default: all but one) parks are spoiled on a given day.**
   There is always at least one usable calm zone. The player just has to find out which.
 
-## Barricades and closures (later acts)
+## Road closures
 
-From Act III the generator's output is post-processed per day:
+*Playtest 01, finding 12, implemented in M16.* Every morning a few streets are shut. This is
+the one thing in the game that changes **where the player may walk** from one day to the
+next — block purposes change what a place is *worth* walking to and never move a walkable
+tile, and that difference is the whole design.
 
-- `CHECKPOINT` tiles can appear on streets, converting them to blocked-or-costly.
-- `BARRICADE` tiles fully block a street segment from Act IV.
+### The unit is a street, not a tile
 
-Closures are validated the same way as generation: home must remain connected to at least
-one unspoiled calm zone, or the day is unwinnable and the scheduler retries.
+The lattice is a graph: 8x8 **junctions** and the 112 **streets** between them, one block
+long and one corridor wide. `StreetNetwork` owns that view of the city, and a closure takes
+out one whole street.
+
+Half a street would be a closure the player cannot see the shape of, and a whole corridor
+would delete a route rather than narrow the choice. A street is the unit the player already
+thinks in, because it is the thing between two decisions.
+
+### Legible before it costs anything
+
+The barriers stand at the **two mouths** of the closed street, where it meets the junctions
+at either end — never half way down. That is the legibility promise, and it is precise:
+
+> You never commit to a street without having already seen that it is shut.
+
+Standing at a junction, the barrier across the mouth is right there, and the sign on its
+middle panel faces you. It cannot be discovered half way down, because there is nothing to
+discover half way down — you were stopped at the entrance.
+
+Traffic is the second channel and it carries further: crowd agents divert at the junction
+rather than driving into a barrier, so **the street with nobody on it is the street that is
+shut**, readable from a block away. That was not designed, it fell out of making the crowd
+respect closures, and it is better than the thing it fell out of.
+
+What this does *not* give is planning-time legibility — knowing a street is shut before you
+are standing next to it. That is M17's route map, and the sequencing is deliberate.
+
+### The invariant
+
+> **At least two distinct routes to at least two distinct calm areas.**
+
+Distinct means **sharing no street**. Two routes may cross at a junction; if they run down
+the same street they are one route with a detour in it.
+
+`ClosurePlanner` checks it *before* accepting each closure rather than repairing the day
+afterwards, so the set it produces always satisfies it and there is no order-dependent
+unwinding to reason about. Counting routes is a unit-capacity max flow on the junction
+graph — by Menger's theorem the count is also "how many streets it would take to cut this
+area off", which is the honest reading of the guarantee.
+
+Both ends of the journey are exempt from being charged for their own doorway:
+
+- The **home street** is never closed. The home is a notch in a block with one exit, so
+  sealing that street seals the player in however well connected the rest of the city is.
+  This exemption predates closures — see "Route redundancy" above.
+- An area is reached by arriving at **either end** of a street it opens onto. So a courtyard
+  with a single archway can still have two routes to it; the routes differ everywhere except
+  the doorway. Shutting that one street does put the courtyard out of reach for the day, and
+  the invariant is what keeps that safe: two *other* areas still have two ways in.
+
+### What closes a street
+
+| Kind | From | What it is |
+| --- | --- | --- |
+| `ROADWORKS` | day 1 | A trench, a spoil heap and a length of pipe. |
+| `FALLEN_TREE` | day 1 | A tree down across the road, roots and all. |
+| `CRASH` | day 1 | Two cars that met. |
+| `CORDON` | day 4 | Barriers and an order. Act II closes streets on purpose. |
+| `RUBBLE` | day 12 | A facade in the road. |
+
+The escalation is the point: act I closes a street by accident, act II by order, act IV by
+bringing the building down. Mechanically they are identical — a street you cannot walk down
+is a street you cannot walk down — and that is deliberate, because a closure that also had
+rules would be an event.
+
+**A closure is silent.** It contributes nothing to the excitement meter. The noise of a
+street is the crowd on it and the danger of a street is the events on it; a closure is the
+*shape* of the route and nothing else. A noisy roadworks already exists as the `construction`
+event, which emits and obstructs; keeping the two apart is what stops `City` growing a third
+thing to sum, and keeps "excitement is a pure query" true.
+
+### How heavy
+
+`CLOSURES_PER_ACT` is `[1, 2, 3, 4]` — four streets out of 112 on the worst day. That is a
+city that has had a bad morning, not a city under siege, and it is deliberately light: M16
+was drafted as though closures would be the only thing making a route interesting, and
+playtest 02's findings 2 and 3 put route pressure at the scale of a *block* instead.
+
+Closures are aimed rather than scattered. A street is *useful* if it lies on a shortest way
+from the door to some calm ground give or take a block, and a useful street is
+`CLOSURE_ROUTE_BIAS` times likelier to be the one that is shut — because a closure in the far
+corner of the map is not a decision, it is scenery.
+
+### Everything else has to know
+
+A closed street is not somewhere anyone can get to, so the whole street goes into
+`CityMap.closed_tiles` and not just the two barriers:
+
+- The **event scheduler** places nothing there, shortens a mobile event's route so it stops
+  before a barrier, and counts closures as part of what is in the way when it checks that a
+  park is still reachable.
+- The **crowd** diverts at the junction. Cars turn as well as walkers, which they otherwise
+  never do.
+- The **resistance** never puts a contact behind one. Steps expire, so that would silently
+  cost a run its good ending.
 
 ## Block purposes
 
@@ -160,8 +255,9 @@ This supersedes the old "the `CityMap` is immutable for the run" rule. The repla
 The half that is still absolute is that **no purpose change may move a walkable tile**.
 `tests/test_blocks.gd` pushes every block to the end of its arc across two dozen seeds and
 asserts the walkable set is identical tile for tile. Nothing here can seal a street, open a
-shortcut or invalidate a route the player learned on day 1 — per-day *closures* are still
-events with an `obstructs_radius`.
+shortcut or invalidate a route the player learned on day 1. Per-day **closures** are the
+one deliberate exception, and they are per-day, sealed at both ends and validated against
+the route invariant before they are accepted — see "Road closures" above.
 
 `CityGenerator.validate()` also guarantees that at least `MIN_CALM_BLOCKS_AT_END` blocks
 stay calm for the whole run. Since M14 a day can only be won on calm ground, so an arc set

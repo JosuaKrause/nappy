@@ -247,8 +247,11 @@ sequencing. Summary only here:
       generation, and the run-scoped `CityState`. Supersedes the "CityMap is immutable"
       invariant with "the lattice is fixed; what a block *is* is not", and keeps the half
       that is absolute: no purpose change moves a walkable tile
-- [~] **M16 Route pressure** — a per-day pruned network with legible blockers, leaving at
-      least two distinct routes to at least two distinct calm areas. Canal dropped to M21
+- [x] **M16 Route pressure** — a per-day pruned network with legible blockers, leaving at
+      least two distinct routes to at least two distinct calm areas. Five kinds of closure,
+      sealed at both mouths so a shut street is readable from the junction; the invariant
+      checked by unit-capacity max flow on the junction graph before each closure is
+      accepted. Canal dropped to M21
 - [ ] **M17 Route map** — the planning screen, rendering M15's block states
 
 ## M18–M22 — Playtest 02

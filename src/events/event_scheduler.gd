@@ -134,7 +134,17 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap) 
 	if candidates.is_empty():
 		return null
 
-	var tile: Vector2i = candidates[rng.randi_range(0, candidates.size() - 1)]
+	# A closed street is not somewhere anyone can get to, so it is not somewhere an event
+	# can usefully happen: the player would never see it and the scheduler would have spent
+	# budget on nothing.
+	var open_candidates: Array[Vector2i] = []
+	for candidate in candidates:
+		if not map.is_closed(candidate):
+			open_candidates.append(candidate)
+	if open_candidates.is_empty():
+		return null
+
+	var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 	var at := map.tile_to_world(tile)
 	if not def.mobile:
 		return Planned.new(def, at)
@@ -194,6 +204,11 @@ static func _along_street_path(map: CityMap, tile: Vector2i, def: EventDef,
 		room = backward_room
 
 	var length := mini(def.path_length_tiles, room)
+	# Stop short of a closed street rather than driving through the barrier at the end of it.
+	for step in range(1, length + 1):
+		if map.is_closed(tile + along * step):
+			length = step - 1
+			break
 	if length <= 0:
 		return PackedVector2Array()
 	return PackedVector2Array([
@@ -284,7 +299,11 @@ static func _blocking_radius(plan: Planned) -> float:
 	return maxf(plan.def.obstructs_radius, plan.def.inner_radius if plan.def.hard_fail else 0.0)
 
 static func _park_is_reachable(map: CityMap, blockers: Array[Planned]) -> bool:
-	var blocked := {}
+	# Today's closures are part of what is in the way. The closure planner has already left
+	# two routes to two calm areas standing, so this can only ever be tightened by the
+	# events on top of them — but it has to count both or it will happily approve a
+	# checkpoint on the one street the closures left open.
+	var blocked := map.closed_tiles.duplicate()
 	for plan in blockers:
 		var radius := _blocking_radius(plan)
 		var reach := ceili(radius / float(Tuning.TILE_SIZE))

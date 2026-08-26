@@ -97,7 +97,11 @@ static func at_junction(junction: Vector2i) -> Array[Segment]:
 	return found
 
 ## The street running along one side of a block.
-static func beside_block(block: Vector2i, side: Side) -> Segment:
+##
+## `side` is an `int` and not a `Side`: an enum declared in one script and named from another
+## does not compare equal to itself as a parameter type ("argument should be Side but is
+## StreetNetwork.Side"), so a cross-script enum parameter has to be widened by hand.
+static func beside_block(block: Vector2i, side: int) -> Segment:
 	match side:
 		Side.NORTH:
 			return by_key(Vector3i(block.x, block.y, 0))

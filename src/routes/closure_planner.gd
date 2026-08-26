@@ -86,16 +86,16 @@ static func _access_streets(map: CityMap, block: Vector2i) -> Array[StreetNetwor
 		if segment:
 			found.append(segment)
 		return found
-	for side in [StreetNetwork.Side.NORTH, StreetNetwork.Side.SOUTH,
+	for side: int in [StreetNetwork.Side.NORTH, StreetNetwork.Side.SOUTH,
 			StreetNetwork.Side.WEST, StreetNetwork.Side.EAST]:
-		var segment := StreetNetwork.beside_block(block, side as StreetNetwork.Side)
+		var segment := StreetNetwork.beside_block(block, side)
 		if segment:
 			found.append(segment)
 	return found
 
 ## Which edge of the lot an archway comes out on. The passage is generated as a one-tile
 ## channel from the court to one lot edge, so the edge it touches is the answer.
-static func _passage_side(lot: Rect2i, passage: Rect2i) -> StreetNetwork.Side:
+static func _passage_side(lot: Rect2i, passage: Rect2i) -> int:
 	if passage.size.x == 1:
 		return StreetNetwork.Side.NORTH if passage.position.y == lot.position.y \
 				else StreetNetwork.Side.SOUTH

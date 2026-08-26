@@ -84,6 +84,11 @@ error in a suite, not a slow suite.
 `@Camera2D@41`, so a `@onready var _camera := $Camera2D` in a test rig silently fails. Set
 `.name` explicitly when a node is looked up by path.
 
+**A cross-script enum is not the same type as itself.** `static func f(side: Side)` in one
+script, called from another as `f(x)` where `x` came from `OtherScript.Side`, fails to parse:
+*"argument 2 should be Side but is StreetNetwork.Side"*. Widen the parameter to `int` and say
+why in a comment. `StreetNetwork.beside_block()` is the one place that does.
+
 **Nodes are not refcounted.** A test double extending a `Node` class (e.g. a fake
 `EventManager`) must be `free()`d by hand or it leaks. `RefCounted` doubles do not.
 
@@ -158,9 +163,24 @@ and `tests/test_events.gd` checks the whole catalogue. A violation is a bug, not
 setting. Two documented exemptions: `AMBIENT` events (they never "appear") and `city_wide`
 ones (no edge to walk out of).
 
-**Every day stays winnable.** The scheduler guarantees at least one unspoiled park and a
-walkable route from home to a park. If you add anything that closes streets, it must go
-through those checks.
+**Every day stays winnable, and winnable more than one way.** The scheduler guarantees at
+least one unspoiled park and a walkable route from home to a park. Since M16 the day carries
+a stronger guarantee on top of it: **at least two distinct routes to at least two distinct
+calm areas**, where distinct means sharing no street. `ClosurePlanner` checks it before
+accepting each closure rather than repairing the day afterwards, so a bad set never exists
+even briefly. Anything new that closes a street must go through it — `tests/test_routes.gd`
+will fail the build if it does not.
+
+Two exemptions, and they are the same exemption at both ends of the journey: **a doorway is
+not a route.** The street outside the home is never closed (the home is a notch with one
+exit), and an area is reached by arriving at *either end* of a street it opens onto, so a
+courtyard with one archway can still have two routes to it.
+
+**A closure is silent, and it is the only thing that moves where the player may walk.**
+Closures change the shape of the route and contribute nothing to the meter — the noise of a
+street is the crowd, the danger is the events, the shape is the closures. A noisy roadworks
+already exists as the `construction` event. Do not let a closure emit; it would be a third
+thing for `City.total_excitement_at` to sum, and that list is exactly two long on purpose.
 
 **Audio is never the only channel.** Every cue that will eventually be audio must also exist
 visually, and the visual must be sufficient on its own — the game has to play identically
@@ -193,6 +213,12 @@ hand), then wherever the generator should emit it.
 `CityMap.open_tile_for`, `Tile.is_calm` if it is calm ground, and the arcs that may reach it
 in `CityGenerator._plan_arcs`. If it is calm, check `MIN_CALM_BLOCKS_AT_END` still holds —
 `validate()` will tell you, on every seed, if it does not.
+
+**Add a closure kind** — `RoadClosure.Kind`, a row in `RoadClosure.KINDS` (name, first day,
+weight), an SVG in `assets/closures/`, and a line in `ClosureMarker.CAUSES` — unless it has
+nothing to leave in the road, like `CORDON`, in which case the barriers are the whole of it.
+Nothing else: the kinds differ in look and timing only, because a street you cannot walk down
+is a street you cannot walk down.
 
 **Add a resistance step** — `src/resistance/resistance_steps.gd`, via the `_step()` factory.
 
@@ -228,6 +254,14 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
 
 Do not "fix" these without a reason; each was a decision.
 
+- **Closures are checked before they are accepted, not repaired afterwards.** The obvious
+  shape — place N closures, then drop them until the day is legal — has an order-dependent
+  answer and a window where the day is illegal. Testing each candidate against the invariant
+  before accepting it is the same cost and has neither problem.
+- **Counting distinct routes is a max flow, not a search for routes.** Two edge-disjoint
+  paths is what "two distinct routes" means, and by Menger's theorem it is also "no single
+  street cuts this off". Two BFS augmentations on a 64-node graph, not a flood fill over ten
+  thousand tiles — which is why it can run on every candidate closure, every day.
 - **No spatial hash for events.** The budget tops out near 22 concurrent events. A linear
   scan is free and a hash is more code with more ways to be subtly wrong.
 - **No `impulse` field on events.** A sharp spike is a short `duration` at high `intensity`,

@@ -100,9 +100,10 @@ func _start_day() -> void:
 		_apply_meter_override()
 	_first_day = false
 
-	print("[Main] day %d (act %d): %d events, %d crowd, %.0fs%s" % [
+	print("[Main] day %d (act %d): %d events, %d crowd, %.0fs%s%s" % [
 		GameState.day, GameState.current_act(), _city.events.active_count(),
-		_city.crowd.agent_count(), _day.time_total, _calm_summary()])
+		_city.crowd.agent_count(), _day.time_total,
+		_calm_summary(), _closure_summary()])
 
 ## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day
 ## now that a day can only be won on calm ground.
@@ -117,6 +118,20 @@ func _calm_summary() -> String:
 		parts.append("%d %s" % [counts[name], name])
 	parts.sort()
 	return " | calm: " + (", ".join(parts) if not parts.is_empty() else "none")
+
+## Which streets are shut today and what shut them. Worth printing rather than counting,
+## because "the route was awful today" and "the closure landed on the one street that
+## mattered" look identical from a count.
+func _closure_summary() -> String:
+	var closures := _city.closures()
+	if closures.is_empty():
+		return " | closed: none"
+	var parts: Array[String] = []
+	for closure in closures:
+		parts.append("%s %s%s" % [
+			RoadClosure.display_name(closure.kind).to_lower(),
+			"h" if closure.segment.horizontal else "v", closure.segment.a])
+	return " | closed: " + ", ".join(parts)
 
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var finished_day := GameState.day
@@ -226,9 +241,9 @@ func _day_override() -> int:
 		return 1
 	return clampi(int(args[index + 1]), 1, Tuning.RUN_LENGTH_DAYS)
 
-## Dev flag: `-- --spawn park|alley|square|arterial|event` drops the player onto a tile type
-## or next to a live event, so the WorldContext answers can be checked without walking
-## across the city to find one.
+## Dev flag: `-- --spawn park|alley|square|arterial|closure|event` drops the player onto a
+## tile type or next to something live, so the WorldContext answers can be checked without
+## walking across the city to find one.
 func _spawn_position() -> Vector2:
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--spawn")
@@ -243,6 +258,19 @@ func _spawn_position() -> Vector2:
 	# question "can a day be won on an ordinary street" is actually answered.
 	if args[index + 1] == "arterial":
 		return _nearest_walkable(CrowdLanes.arterial_pavement(_city.map))
+	# A closed street, from the junction outside its barrier — the place the closure is
+	# supposed to be readable from, which is the thing worth looking at.
+	# `closure:<n>` picks one of the day's closures, since only one of them is a street
+	# running the way you wanted to look at.
+	if args[index + 1].begins_with("closure"):
+		var closures := _city.closures()
+		if closures.is_empty():
+			push_warning("no streets are closed on day %d" % GameState.day)
+			return _city.map.home_world_position()
+		var which := clampi(int(args[index + 1].get_slice(":", 1)), 0, closures.size() - 1)
+		var mouth: Vector2 = closures[which].mouth_centres(_city.map)[0]
+		var junction := closures[which].cause_centre(_city.map)
+		return _nearest_walkable(mouth + (mouth - junction).normalized() * 64.0)
 	if args[index + 1] == "contact":
 		var contact := _resistance.contact_position()
 		if contact == Vector2.INF:
