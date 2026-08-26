@@ -25,6 +25,17 @@ what that costs and the two things it is worth changing about M16 now rather tha
 | 5 | The calm zones are too small — they should be four blocks combined. Needs T-junctions and L-bends, and cars that can turn | **L** | 4 |
 | 6 | Main roads with higher traffic and traffic lights instead of crossings; side roads with the current volume and zebras. A main road is a natural excitement source and it should not be possible to walk along a full block of one — it should be crossed, and crossing it should be a challenge | **L** | 4, 5 |
 
+### Follow-up notes, same playtest
+
+| # | Finding | Size | Blocked by |
+| --- | --- | --- | --- |
+| 7 | I walked through each zone without any repercussion, and I don't see a circle on every entity | **S to see, L to fix** | — |
+| 8 | **No circles around entities.** How dangerous a thing is should be visible from *looking at the thing*. If more is needed: a symbol flashing above the entity; always a symbol flashing at the screen edge if it is off-screen; a symbol above the *player* when they are too close, so they know they have to be somewhere else | **L** | — |
+| 9 | Include running in the fairness equation — for some entities it should be *necessary* to run | M | 8 |
+| 10 | **Telemetry**, so a playtest can be read rather than described: did the player idle or walk in circles, how many entities were nearby and which, did they have to cross the street, did they have to run to get away, did they go to the same park every day | M | — |
+| 11 | Track which calm zone the player used, and block off at least one of yesterday's with an event. Calm options should shrink as the run goes on | M | 10 |
+| 12 | Later acts have fewer people on the street; put patrols back in to compensate — a harder cost to encounter, and possibly requiring a run | M | 9 |
+
 ---
 
 ## What the findings actually mean
@@ -130,6 +141,148 @@ Consequences worth writing down before starting:
   not just a hostile number. Either the main road has no pavement to walk on, or walking it
   is a hazard the way finding 3's café is. The second reads better and reuses 3's work.
 
+### 7 is two separate things, and one of them is a real hole
+
+**"I don't see it on every entity"** is working as designed, and the design is the problem.
+The circles are `EventAuraLayer`, and it only draws **events**. The ~530 crowd agents draw
+nothing, because the crowd is the emergent noise floor rather than a set of authored
+dangers. So on a typical street the great majority of the people you can see have no ring,
+a handful do, and there is nothing on screen explaining the difference. Two `city_wide`
+sources (the loudspeaker masts, the curfew announcement) have no ring either, and that is a
+documented hole rather than a design.
+
+**"No repercussion"** is not a bug. It is arithmetic, and it is worse than it looks.
+
+What it costs to walk in a straight line through the *middle* of each event, against a
+100-point meter that freezes sleep at 35 and cries at 100. Measured against the M18 rates,
+integrating the real falloff along the path and subtracting the walking decay:
+
+| Event | walk through | run through | verdict |
+| --- | ---: | ---: | --- |
+| `poster_crew` | **−2.2** | +14.5 | free |
+| `dog_walker` | **−0.1** | +18.5 | free |
+| `barricade` | **−0.4** | +16.9 | free |
+| `playground` | +0.3 | +21.6 | free |
+| `delivery_van` | +1.9 | +22.5 | free |
+| `busker` | +3.8 | +29.2 | free |
+| `police_patrol` | +5.7 | +29.6 | mild |
+| `homeless_yeller` | +5.8 | +33.2 | mild |
+| `construction` | +8.1 | +33.0 | mild |
+| `cat_dash` | +10.4 | +22.9 | mild |
+| `checkpoint` | +13.7 | +38.2 | mild |
+| `protest` | +25.0 | +56.5 | real |
+| `burning_building` | +29.8 | +53.5 | real |
+| `abduction` | +32.9 | +53.7 | real |
+| `military_convoy` | +49.2 | +69.8 | severe |
+| `night_raid` | +56.6 | +78.2 | severe |
+| `fire_truck` | +64.6 | +83.9 | severe |
+| `firefight` | +92.8 | +105.1 | severe |
+
+Two things fall out of that table, and the second is the more important one.
+
+**Eleven of eighteen cost under fifteen points, and three are negative.** Walking straight
+through a `dog_walker`, a `poster_crew` or a `barricade` is *better than walking around it*,
+because at 3.5/s the walking decay outruns what they emit. Act I and act II have no teeth at
+all; the entire escalation is back-loaded into acts III and IV, where it is genuinely
+dangerous. So the player learns, correctly, in the days where the game is teaching them,
+that the rings do not matter — and then act III kills them.
+
+**Running is never the right answer to anything.** Not once, in the whole catalogue. Running
+costs `EXCITEMENT_FROM_RUNNING` (9/s at full sprint) *and* drops the decay from 3.5/s to
+0.5/s, and those two together outweigh the shorter exposure for every event in the game,
+including the ones you would obviously sprint away from. The run button is a trap in the
+literal sense: pressing it is always wrong.
+
+That matters for finding 9. **Making running necessary is not a tuning change.** No
+adjustment to `required_telegraph_time` can make running correct, because running's cost
+structure is built to punish it and the excitement model has no term that running can beat.
+It needs a *mechanic* running escapes — something that pursues, or a lethal radius that
+grows, or a window that closes — and then the fairness equation has to be stated over
+`RUN_SPEED` for those events rather than `WALK_SPEED`. Finding 12's patrols are the obvious
+first customer.
+
+### 8 replaces the aura layer, and it is a better answer
+
+The rule this changes is not "how do we draw a field", it is **where danger information
+lives**. Today it lives in an overlay that describes geometry the player cannot otherwise
+see. The direction in finding 8 is that it should live in the *thing*:
+
+> How dangerous something is should be visible from looking at it.
+
+That is strictly better, and for a reason the current design cannot fix: a ring tells you
+where the falloff band ends, which is a number, not a threat. A silhouette that reads as
+dangerous tells you what to do about it.
+
+What replaces it, in the order the information is needed:
+
+1. **The entity itself.** Posture, size, colour, what it is doing. A patrol should look like
+   a patrol from across a street.
+2. **A symbol above the entity**, flashing, only when one is genuinely needed — a telegraph
+   that has started, an event about to reach full strength.
+3. **A symbol at the screen edge**, always, when the entity is off-screen and closing. This
+   is M22 as already filed, and finding 8 makes it non-optional rather than a polish item.
+4. **A symbol above the player** when they are too close — the "you have to be somewhere
+   else" cue. This is new and it is the piece that makes the other three safe to shrink: the
+   player is never left guessing whether they are inside something.
+
+The invariant that survives all of this unchanged is the one that matters most:
+**audio is never the only channel** (docs/EVENTS.md). The symbol vocabulary is the visual
+channel, built and judged first; audio is redundancy on top of it.
+
+The thing to be careful about: the aura, for all its faults, is *continuous* — it shows the
+field breathing with the pulse, so a pulsing event can be timed. A symbol is discrete. Any
+replacement has to keep some way of reading "this is swelling right now", or the pulse
+envelope stops being playable and becomes random.
+
+### 10 is the highest-leverage item in this document
+
+Everything else here is a guess until somebody plays it, and every playtest so far has cost
+a human sitting down and then describing what happened in prose. Telemetry turns that into
+data that can be read directly:
+
+- **Where the time went.** Idle, walking, running, on calm ground, per day.
+- **Whether the route was a route.** Distinct streets used, revisits, whether the player
+  doubled back, whether they crossed the road and where.
+- **What was near.** Entity ids and how close, sampled — which turns "passing a person barely
+  moves the meter" from an impression into a distribution.
+- **Whether running ever happened**, and what was nearby when it did. Given the table above,
+  the expected answer today is "no", and that is worth confirming.
+- **Which calm zone**, every day, which is also exactly what finding 11 needs to *function*.
+
+It is deliberately not analytics-for-its-own-sake: every field above answers a question that
+is currently open in this document. It should be a local file per run, not a service.
+
+### 11 needs 10 to exist first
+
+"Block off one of yesterday's calm zones" is a rule that needs a record of yesterday, and
+that record is one of telemetry's fields. Once it exists the rule is small: on day N, the
+scheduler biases a spoiling event toward a calm area the player settled in on day N−1.
+
+The design intent underneath it — **the options shrink as the run goes on** — is already
+half-built. M15's arcs requisition calm blocks on a schedule, and
+`MIN_CALM_BLOCKS_AT_END` (2) is the floor. What finding 11 adds is that the shrinking should
+be *responsive*: the city takes away the park you have come to rely on, rather than a park.
+That is a much sharper version of the same story, and it is the difference between a
+difficulty curve and a regime that is paying attention.
+
+One risk to hold onto: this can slide into feeling unfair — punished for playing well. The
+protection is that it spoils a zone with an *event*, which is avoidable and visible, rather
+than removing it. And M16's route invariant still guarantees two calm areas with two routes
+each, so there is always somewhere else.
+
+### 12 fixes something act III broke on purpose
+
+Act III empties the streets, and `CROWD_PEDESTRIANS_PER_ACT` drops from 420 to 90. That was
+deliberate and it is one of the best things in the game — the city becomes *easier* to put a
+baby to sleep in, and that is the horror. But it also means the noise floor collapses exactly
+when the game is supposed to be at its worst, so acts III and IV lean entirely on a handful
+of large authored events.
+
+Patrols are the right answer because they are the same fiction: the people are gone and the
+state is still out there. Mechanically they want to be the first events built around
+**encounter cost** rather than ambient emission — expensive to be near, cheap to avoid, and
+the first thing in the game running is the correct answer to.
+
 ### What this does to M16 and M17
 
 **Both are finished first, ahead of everything in this document.** M16's first half is
@@ -169,7 +322,8 @@ Two pivots inside M16 worth making now rather than after:
 Numbered after the existing milestones rather than renumbering them, so that "M16" means the
 same thing in this document as it does in the commit log. **Execution order is the order
 below, which is also numeric**: the two milestones already planned finish first, and this
-playtest's work queues behind them.
+playtest's work queues behind them. M16 and M18 are done; the one place the numeric order is
+worth arguing with is M23, and the argument is made under it.
 
 **M16 — route pressure.** Finding 12 from playtest 01. A per-day pruned network with legible
 blockers, and the day-level invariant: at least two distinct routes to at least two distinct
@@ -192,20 +346,48 @@ driving, and the crash as a catalogue event.
 Four-block calm zones, a generated lattice with T-junctions and L-bends, main roads with
 lights against side roads with zebras.
 
-**M22 — the edge of the screen.** Anything too fast to react to once it is on screen
-flashes a symbol at the edge it is coming from, so the player can start moving before it
-arrives.
+**M22 — danger you can read.** Findings 7 and 8. **Delete the aura circles.** How dangerous
+something is becomes visible from the thing itself, and the rest is a small symbol
+vocabulary: above an entity when it needs one, at the screen edge when it is off-screen and
+closing, above the *player* when they are too close to something and have to be elsewhere.
 
-This is the missing half of a promise the game already makes. The **telegraph fairness
-contract** says a player who starts walking away the instant an event becomes visible gets
-clear before it hurts — and `Tuning.validate_event()` checks the *geometry* of that, not
-whether the player could actually see it. A `fire_truck` at 190 px/s spends most of its 3.5 s
-warning outside the viewport, so the contract passes and the promise is broken. M19's lethal
-cars make that worse rather than better, which is why this belongs next to M19 and not in
-the polish milestone it was originally filed under.
+This absorbs the "screen-edge indicator for fast movers" item that was sitting in M10, and
+finding 8 makes it non-optional rather than polish. The **telegraph fairness contract** says
+a player who starts walking away the instant an event becomes visible gets clear before it
+hurts — and `Tuning.validate_event()` checks the *geometry* of that, not whether the player
+could see it. A `fire_truck` at 190 px/s spends most of its 3.5 s warning outside the
+viewport, so the contract passes while the promise breaks. M19's lethal cars make that worse.
 
 The symbol has to say *what* is coming, not merely that something is: "get off this street"
-and "do not step off the kerb" are different moves.
+and "do not step off the kerb" are different moves. And it has to keep one thing the ring did
+well — showing an event *swelling*, so a pulse can still be timed.
+
+**M23 — telemetry.** Finding 10. A per-day trace written to a local file, and a summary a
+developer can read: where the time went, whether the route was a route, what was near and how
+near, whether running ever happened, which calm zone was used. Every field answers a question
+that is currently open in this document.
+
+**Recommended first of the remaining set**, against the "queue it at the end" default. It is
+the only item here that makes every *other* item cheaper to judge, and finding 11 cannot be
+built without one of its fields. Filed in numeric order all the same; the call is the
+project owner's.
+
+**M24 — the city remembers where you went.** Finding 11. Record the calm zone the player
+settled in; on the next day bias a spoiling event toward it. The options narrow as the run
+goes on, and they narrow *at the player* rather than at random.
+
+Protected against feeling like a punishment for playing well by two things already in place:
+it spoils with an avoidable, visible **event** rather than removing the ground, and M16's
+route invariant still guarantees two calm areas with two routes each.
+
+**M25 — patrols, and running that matters.** Findings 9 and 12. Patrols to put pressure back
+into the emptied streets of acts III and IV, built around **encounter cost** rather than
+ambient emission — and the first thing in the game that running is the correct answer to.
+
+The prerequisite is structural, not numeric: today running is *never* correct, for any event
+in the catalogue (see the table under finding 7). A patrol therefore needs a mechanic running
+escapes — something that pursues, a lethal radius that grows, a window that shuts — and its
+fairness contract has to be stated over `RUN_SPEED` rather than `WALK_SPEED`.
 
 ### Order rationale
 
@@ -218,6 +400,12 @@ and "do not step off the kerb" are different moves.
 - 4 before 5 and 6, because a T-junction is a turn and today a car cannot turn.
 - 5 and 6 together, because a four-block calm zone and a main-road barrier are the same
   change to the same generator.
+- 7 and 8 are one milestone (M22) because they are one decision: the circles go, and what
+  replaces them has to cover every case the circles were covering, including the ones they
+  were covering badly.
+- 9 and 12 are one milestone (M25) because "running should sometimes be necessary" and
+  "later acts need patrols" are the same feature seen from two ends.
+- 10 before 11, because 11 needs a record of yesterday and that record is one of 10's fields.
 
 ### Decisions
 
@@ -232,12 +420,31 @@ and "do not step off the kerb" are different moves.
    the understanding that block-scale pressure is coming.
 5. **The canal moves from M16 to M21**, where a lattice that is not a full grid is already
    the subject.
+6. **The aura circles are deleted, not restyled.** Danger belongs in the entity, with a small
+   symbol vocabulary for the cases the entity cannot carry on its own. A ring communicates a
+   falloff radius, which is a number; a silhouette communicates a threat.
+7. **Running has to be made correct before it can be made necessary.** It is currently the
+   wrong move against every event in the catalogue, so finding 9 is a mechanic to build, not
+   a constant to change.
+8. **Telemetry is a local file per run, not a service**, and every field it records answers a
+   question that is open in this document. If a field does not, it does not go in.
 
 ### Open questions for the next playtest
 
 - Does a day that is winnable in forty seconds of park still feel like a day, or does the
   clock stop mattering? If it does, the answer is a *longer walk* — a calm zone further out
-  — rather than a slower meter.
+  — rather than a slower meter. *(M18 shipped; this is the first thing to look at.)*
 - Is an instant loss the right weight for a dog? It is the same punishment as an abduction,
   which is act III's worst thing.
 - With main roads as barriers, is 7x7 blocks still the right city size?
+- **How much of act I and II should have teeth?** The table under finding 7 says almost
+  nothing before act III costs anything at all. Raising the small events risks making the
+  early game the hard part; leaving them risks teaching the player that events are safe. The
+  third option is that act I is *supposed* to be safe and the failure is that nothing tells
+  the player when that stops being true.
+- **What replaces "the field is breathing"?** The ring tracks current emission, so a pulsing
+  event can be timed and walked past between beats. A discrete symbol cannot do that. If
+  nothing replaces it, the pulse envelope becomes noise rather than a thing to play against.
+- **Does the player ever find out why they lost?** With no aura and no numbers, "the meter
+  filled" needs a legible cause. This is the same question telemetry answers for the
+  developer, asked on behalf of the player.

@@ -182,6 +182,22 @@ street is the crowd, the danger is the events, the shape is the closures. A nois
 already exists as the `construction` event. Do not let a closure emit; it would be a third
 thing for `City.total_excitement_at` to sum, and that list is exactly two long on purpose.
 
+**No circles around entities.** *(Standing decision, playtest 02 finding 8. The aura rings
+still ship today; M22 deletes them. Do not restyle them, do not add another one, and do not
+reach for a ring when something new needs signalling.)*
+
+> How dangerous a thing is has to be visible from looking at **the thing**.
+
+A ring communicates a falloff radius, which is a number. A silhouette communicates a threat.
+Where the entity cannot carry it alone, the vocabulary is: a symbol flashing **above the
+entity**; a symbol at the **screen edge** whenever it is off-screen and closing, saying what
+is coming and not merely that something is; and a symbol above the **player** when they are
+too close and have to be somewhere else. Nothing draws a field.
+
+The one property the ring had that must survive: it *breathes* with the pulse envelope, so a
+pulsing event can be timed and slipped past between beats. See docs/EVENTS.md, "The visual
+vocabulary".
+
 **Audio is never the only channel.** Every cue that will eventually be audio must also exist
 visually, and the visual must be sufficient on its own — the game has to play identically
 with the sound off. Build the visual first and judge it alone; audio is added afterwards as
@@ -277,18 +293,36 @@ Do not "fix" these without a reason; each was a decision.
 
 ---
 
+## Two measured facts about the catalogue
+
+Both came out of playtest 02 and neither is a bug. The full table is in `docs/EVENTS.md`,
+"What an event actually costs" — regenerate it whenever a rate in `Tuning` moves, because it
+is the fastest way to see what a balance change did to the whole catalogue.
+
+- **Walking through an event is nearly free before act III.** Eleven of eighteen cost under
+  fifteen points of a hundred-point meter to walk straight through the centre of, and three
+  are *negative*: walking through a `dog_walker` beats walking around it, because the 3.5/s
+  walking decay outruns what it emits. The escalation is entirely back-loaded into acts III
+  and IV, so the days that teach the player teach them that events are safe.
+- **Running is the wrong move against every event in the game.** `EXCITEMENT_FROM_RUNNING`
+  plus the collapsed decay (3.5/s → 0.5/s) beats the shorter exposure every time. The run
+  button is a trap. Making running *necessary* (M25) is therefore a mechanic to build —
+  something that pursues, a lethal radius that grows, a window that shuts — not a constant to
+  tune, and its fairness contract has to be stated over `RUN_SPEED`.
+
 ## Known-shaky ground
 
 - **No balance number has been felt by a human.** M14 re-pitched the sleepiness numbers
   against the *day* rather than against each other, and `tests/test_balance.gd` checks the
   claim against a real city — but nobody has played it. Prime suspects are in
   `docs/TODO.md` under "Open design questions".
-- **Two events are effectively unsignalled.** `city_wide` sources (the loudspeaker masts
-  from day 5, the curfew announcement) have *no* on-screen presence whatsoever — the aura
-  layer skips them and nothing took over, so the player sees excitement refusing to drain
-  with nothing explaining why. Fast movers closing from off-screen (`fire_truck`,
-  `military_convoy`) spend most of their telegraph outside the viewport. Both need visuals
-  before audio, not after. See docs/EVENTS.md.
+- **Most of what is on screen is unsignalled.** The aura rings only ever covered *events*:
+  the ~530 crowd agents have none, and the two `city_wide` sources (the loudspeaker masts
+  from day 5, the curfew announcement) have none either, because a field with no edge cannot
+  be a ring. So on a normal street a few things are ringed, most are not, and nothing
+  explains the difference. Fast movers closing from off-screen (`fire_truck`,
+  `military_convoy`) spend most of their telegraph outside the viewport, where no ring can
+  help. M22 replaces the whole vocabulary; see the standing decision above.
 - **There is no audio at all.** Less urgent than it sounds, given the rule above: audio is
   redundancy, so the game must already be fully playable without it.
 - **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters` and

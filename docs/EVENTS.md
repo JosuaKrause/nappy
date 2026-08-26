@@ -159,6 +159,47 @@ map, so there is no moment at which they appear and nothing to warn about. The p
 learns where the playgrounds are on day 1 and that knowledge holds for the whole run, which
 is the point of a city that does not change.
 
+## What an event actually costs
+
+Measured against the M18 rates, integrating the real falloff along a straight line through
+the centre of the field and subtracting the walking decay. The meter is 100, sleep freezes at
+35, and the baby cries at 100.
+
+| Event | walk through | run through |
+| --- | ---: | ---: |
+| `poster_crew` | −2.2 | +14.5 |
+| `dog_walker` | −0.1 | +18.5 |
+| `barricade` | −0.4 | +16.9 |
+| `playground` | +0.3 | +21.6 |
+| `delivery_van` | +1.9 | +22.5 |
+| `busker` | +3.8 | +29.2 |
+| `police_patrol` | +5.7 | +29.6 |
+| `homeless_yeller` | +5.8 | +33.2 |
+| `construction` | +8.1 | +33.0 |
+| `cat_dash` | +10.4 | +22.9 |
+| `checkpoint` | +13.7 | +38.2 |
+| `protest` | +25.0 | +56.5 |
+| `burning_building` | +29.8 | +53.5 |
+| `abduction` | +32.9 | +53.7 |
+| `military_convoy` | +49.2 | +69.8 |
+| `night_raid` | +56.6 | +78.2 |
+| `fire_truck` | +64.6 | +83.9 |
+| `firefight` | +92.8 | +105.1 |
+
+Two facts the table makes hard to argue with, both open as of playtest 02:
+
+- **Act I and act II have no teeth.** Eleven of eighteen cost under fifteen points and three
+  are *negative* — walking through a `dog_walker` is better than walking around it, because
+  the walking decay outruns what it emits. The whole escalation is back-loaded into acts III
+  and IV, so the days that teach the player teach them that events are safe.
+- **Running is never correct.** Not against one event in the catalogue. It costs
+  `EXCITEMENT_FROM_RUNNING` *and* collapses the decay from 3.5/s to 0.5/s, and together those
+  beat the shorter exposure every time. Making running necessary (finding 9, M25) is
+  therefore a mechanic to build, not a number to tune: it needs something running escapes.
+
+Regenerate this table whenever the rates in `Tuning` move; it is the fastest way to see what
+a balance change did to the catalogue as a whole.
+
 ## Showing the danger
 
 ### Audio is never the only channel
@@ -177,19 +218,40 @@ is not a telegraph, and `Tuning.validate_event()` cannot tell the difference.
 
 ### The visual vocabulary
 
+**This is being replaced. See M22 in [PLAYTEST-02.md](PLAYTEST-02.md).** The rings below are
+what ships today; playtest 02's finding 8 rejects them, and the reason is worth keeping
+rather than merely acting on:
+
+> A ring communicates a falloff radius, which is a number. A silhouette communicates a
+> threat. How dangerous a thing is should be visible from looking at *the thing*.
+
+The second half of the same finding is that the rings do not even cover the field they are
+drawn for: the ~530 crowd agents have none, because the crowd is an emergent noise floor
+rather than a set of authored dangers, and two `city_wide` sources have none because a field
+with no edge cannot be a ring. So on a normal street most of what you can see is unmarked, a
+few things are ringed, and nothing explains the difference.
+
 | Cue | Means | Status |
 | --- | --- | --- |
-| **Ring + fill** | The danger geometry: outer radius, inner radius | done |
-| **Flashing amber ring** | Telegraphing — visible, not yet at full strength | done |
-| **Red ring** | Active; darker red for `hard_fail` | done |
-| **Breathing** | Fill and ring track *current* emission, so a pulsing event visibly swells and fades and can be timed | done |
-| **Sound lines** | Concentric arcs thrown off a source on the rising edge of a pulse — the visual form of a discrete noise (a yell, a bark, a beep, a siren whoop) | **todo** |
-| **Edge indicator** | A flash or arrow at the screen edge for something loud and fast closing on you from off-screen | **todo** |
-| **HUD band** | For a `city_wide` source, which has no position and therefore no ring | **todo** |
+| **Ring + fill** | The danger geometry: outer radius, inner radius | ships today, **removed in M22** |
+| **Flashing amber ring** | Telegraphing — visible, not yet at full strength | ships today, **removed in M22** |
+| **Red ring** | Active; darker red for `hard_fail` | ships today, **removed in M22** |
+| **Breathing** | Fill and ring track *current* emission, so a pulsing event visibly swells and fades and can be timed | ships today — **M22 must keep this somehow** |
+| **Legible entity** | The thing itself reads as dangerous: posture, size, what it is doing | **M22** |
+| **Symbol over the entity** | Flashing, and only when the entity cannot carry the warning alone | **M22** |
+| **Edge indicator** | A symbol at the screen edge for anything closing from off-screen. Says *what* is coming, not merely that something is | **M22** |
+| **Symbol over the player** | "You are too close, be somewhere else" — the cue that lets the others be quieter | **M22** |
+| **Sound lines** | Concentric arcs thrown off a source on the rising edge of a pulse — the visual form of a discrete noise (a yell, a bark, a beep, a siren whoop) | todo |
+| **HUD band** | For a `city_wide` source, which has no position and therefore nothing to stand under | todo |
 
-Each live event's field is drawn on an aura layer between the ground and the y-sorted
-entities — so a field never paints over a roof, and a building genuinely hides the field
-behind it.
+The one thing the ring does well and a discrete symbol cannot is **breathing** — it tracks
+current emission, so a pulsing event can be timed and slipped past between beats. Whatever
+M22 puts in its place has to keep some form of that, or the pulse envelope stops being
+something to play against and becomes random.
+
+Each live event's field is currently drawn on an aura layer between the ground and the
+y-sorted entities — so a field never paints over a roof, and a building genuinely hides the
+field behind it. Whatever replaces it inherits that constraint.
 
 ### Where the visual channel is currently incomplete
 

@@ -6,7 +6,7 @@ Each milestone is one git branch, merged to `main` when green.
 
 **Where things stand:** M0–M15 are done and merged, and the game has now been played twice
 by a human. The first playtest produced thirteen findings, planned as M11–M17 in
-**[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced six more, planned as M18–M22
+**[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced six more, planned as M18–M25
 in **[docs/PLAYTEST-02.md](PLAYTEST-02.md)**. Both are live plans and should be read before
 picking anything up. Execution order is numeric: M16 and M17 finish before M18 starts.
 
@@ -254,7 +254,7 @@ sequencing. Summary only here:
       accepted. Canal dropped to M21
 - [ ] **M17 Route map** — the planning screen, rendering M15's block states
 
-## M18–M22 — Playtest 02
+## M18–M25 — Playtest 02
 
 See **[docs/PLAYTEST-02.md](PLAYTEST-02.md)** for the findings and the reasoning. Six
 findings from the second human playtest, queued behind M16 and M17. Summary only here:
@@ -275,13 +275,34 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       Calm zones of four blocks, so the lattice grows T-junctions and L-bends and can no
       longer be derived from a coordinate; main roads with traffic lights against side roads
       with zebras, where a main road is crossed rather than walked
-- [ ] **M22 The edge of the screen** — anything too fast to react to once it is visible
-      flashes a symbol at the screen edge it is coming from, so the player can start moving
-      *before* it enters view. Absorbs the "screen-edge indicator for fast movers" item from
-      M10 below, and is the first real fix for the two events that are currently
-      unsignalled. **Worth pulling forward to sit with M19**: a lethal car arriving from
-      off-screen is a breach of the telegraph fairness contract, not a polish item, and M19
-      is what creates them
+- [ ] **M22 Danger you can read** — findings 7 and 8. **Delete the aura circles.** How
+      dangerous a thing is becomes visible from the thing itself; the rest is a small symbol
+      vocabulary — above an entity when it needs one, at the screen edge when it is
+      off-screen and closing, and above the *player* when they are too close and have to be
+      somewhere else. Absorbs the "screen-edge indicator for fast movers" item from M10
+      below. **Worth pulling forward to sit with M19**: a lethal car arriving from off-screen
+      is a breach of the telegraph fairness contract, not a polish item, and M19 is what
+      creates them. Must keep one thing the ring did well — showing an event *swelling*, or
+      the pulse envelope stops being playable
+- [ ] **M23 Telemetry** — finding 10. A per-day trace to a local file plus a readable
+      summary: where the time went (idle / walking / running / on calm ground), whether the
+      route was a route (distinct streets, doubling back, road crossings), what was nearby
+      and how near, whether running ever happened and what was around when it did, and which
+      calm zone was used. **Recommended first of the remaining set** — it is the only item
+      that makes judging every other item cheaper, and M24 cannot be built without one of its
+      fields. Filed in numeric order anyway; the call is the owner's
+- [ ] **M24 The city remembers where you went** — finding 11. Record the calm zone the player
+      settled in and bias the next day's spoiling event toward it, so the options narrow *at
+      the player* rather than at random. Kept from feeling like a punishment for playing well
+      by two things already in place: it spoils with an avoidable, visible event rather than
+      removing the ground, and M16's route invariant still guarantees two calm areas with two
+      routes each
+- [ ] **M25 Patrols, and running that matters** — findings 9 and 12. Patrols to put pressure
+      back into the streets acts III and IV deliberately emptied, built around **encounter
+      cost** rather than ambient emission. The prerequisite is structural: running is
+      currently the wrong move against *every* event in the catalogue, so a patrol needs a
+      mechanic running escapes (something that pursues, a lethal radius that grows, a window
+      that shuts) and a fairness contract stated over `RUN_SPEED` rather than `WALK_SPEED`
 
 ## M10 — Polish · `feature/polish`
 
@@ -295,9 +316,10 @@ Not started. The game is complete without it; this is what would make it shippab
         them (a field with no edge cannot be a ring) and nothing took over. The player
         sees excitement refusing to drain and nothing says why. Most misleading thing in
         the game right now.
-  - [ ] **Screen-edge indicator for fast movers.** `fire_truck` and `military_convoy` are
+  - [~] **Screen-edge indicator for fast movers.** `fire_truck` and `military_convoy` are
         built around a long telegraph spent getting off that street, but at 190px/s most
-        of that warning happens off-screen where the ring cannot be seen.
+        of that warning happens off-screen where the ring cannot be seen. *(Absorbed into
+        M22, which also deletes the ring.)*
   - [ ] **Sound lines.** Concentric arcs thrown off a source on a pulse's rising edge —
         the visual form of a discrete noise. Would give the yeller, the dog and the
         reversing van a readable "that just happened" beat rather than only a swell.
@@ -331,7 +353,13 @@ These need a human playing the game, not more code.
 - [ ] **How visible should the resistance be to a player ignoring it?** Right now: a chalk
       mark and one HUD line. Real risk that a player finishes a run never knowing the good
       ending existed. That might be correct, or it might be a bug.
-- [ ] Should running ever be *required* (a forced chase), or always purely a player choice?
+- [x] **Should running ever be *required* (a forced chase), or always purely a player
+      choice?** *Answered by playtest 02, finding 9: yes, for some entities.* The measurement
+      that came with it is the surprising part — running is currently the wrong move against
+      **every** event in the catalogue, because `EXCITEMENT_FROM_RUNNING` plus the collapsed
+      decay (3.5/s → 0.5/s) outweighs the shorter exposure every time. The run button is a
+      trap. Making running necessary is therefore a mechanic to build (M25), not a number to
+      change.
 - [ ] Should there be a diegetic-only mode — a baby's face instead of two bars?
 - [ ] Does a lost day advancing the calendar feel right, or should it repeat the day?
       *(Current: advances, which makes Nerves the real resource.)*

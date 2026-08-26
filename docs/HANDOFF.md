@@ -26,6 +26,29 @@
   least two distinct routes to at least two distinct calm areas — checked by max flow on the
   junction graph before each closure is accepted.
 
+## Read this before touching the event or signalling code
+
+Two measured facts came out of the end of this session. Neither is a bug; both change what
+the next milestones are for, and both are easy to rediscover the hard way.
+
+**Walking through an event is nearly free before act III.** Eleven of eighteen events cost
+under fifteen points of a hundred-point meter to walk straight through the middle of, and
+three are *negative* — walking through a `dog_walker` is better than walking around it,
+because the 3.5/s walking decay outruns what it emits. The full table is in
+`docs/EVENTS.md`, "What an event actually costs". Regenerate it whenever a rate in `Tuning`
+moves.
+
+**Running is the wrong move against every event in the game.** `EXCITEMENT_FROM_RUNNING`
+(9/s) plus the collapsed decay (3.5/s → 0.5/s) beats the shorter exposure in every single
+case. The run button is currently a trap. This is why M25 is written as a mechanic to build
+rather than a constant to tune.
+
+**The aura circles are being deleted, not restyled** (M22). They only ever covered events —
+the ~530 crowd agents have no ring, and two `city_wide` sources have none either — so on a
+normal street most of what you can see is unmarked and nothing explains the difference. The
+replacement lives in the entity plus a small symbol vocabulary. The one thing to preserve:
+the ring *breathes* with the pulse envelope, which is what makes a pulsing event timeable.
+
 ## A second playtest landed mid-session
 
 Six findings, written up with analysis and sequencing in **[PLAYTEST-02.md](PLAYTEST-02.md)**.
@@ -34,13 +57,18 @@ document before picking anything up; the summary below is not a substitute for i
 
 Two things about the ordering, because neither is obvious from the numbers:
 
-- **The queue is M17, then M18–M22**, and M18 is already done. The new findings were
+- **The queue is M17, then M18–M25**, and M18 is already done. Findings 7–12 arrived as a
+  follow-up read of the same playtest and are written up in the same document. The new findings were
   deliberately queued *behind* the milestones in flight rather than in front of them. M18
   jumped the queue for one practical reason: closure counts tuned against a day that was
   about to halve would have been tuned wrong.
-- **M22 wants pulling forward next to M19.** It is filed last because that is where it was
+- **M22 wants pulling forward next to M19.** It is filed later because that is where it was
   asked for, but a lethal car arriving from off-screen is a breach of the telegraph fairness
   contract rather than a polish item, and M19 is what creates them.
+- **M23 (telemetry) is the recommended next one**, against the same default. It is the only
+  item that makes judging every *other* item cheaper, and M24 cannot be built without one of
+  its fields. Filed in numeric order all the same — the call is the owner's, and it is
+  recorded here rather than taken.
 
 ## What to do next, in order
 
@@ -54,14 +82,17 @@ M16 raised the value of this: closures are legible at the junction and **not** b
 player two junctions away cannot know a street is shut, and the map is the only thing that
 can tell them. That gap is stated as a gap in `docs/CITY.md` rather than papered over.
 
-### Then M18–M22, per PLAYTEST-02.md
+### Then M18–M25, per PLAYTEST-02.md
 
 M18 done. **M19 bodies on the street** (collision, lethal cars, pavement hazards that force a
 crossing, cars that stop at zebras) — the big one, and the thing that makes M18's generous
-meter honest. **M20 traffic that behaves** (following, overtaking, 8-direction driving,
-crashes as events). **M21 the city overhaul** (four-block calm zones, T-junctions and
-L-bends, main roads as barriers, plus the canal dropped out of M16). **M22 the edge of the
-screen**.
+meter honest, and the thing the cost table above says the early acts badly need. **M20
+traffic that behaves** (following, overtaking, 8-direction driving, crashes as events).
+**M21 the city overhaul** (four-block calm zones, T-junctions and L-bends, main roads as
+barriers, plus the canal dropped out of M16). **M22 danger you can read** (the circles go;
+entity, symbol, screen edge, and a symbol over the player when they are too close).
+**M23 telemetry**. **M24 the city remembers where you went** (spoil the park you relied on
+yesterday). **M25 patrols, and running that matters**.
 
 M21 rewrites the lattice enumeration in `src/routes/street_network.gd`. The graph half of
 that file — route counting, the invariant, the doorway exemptions — survives untouched and
