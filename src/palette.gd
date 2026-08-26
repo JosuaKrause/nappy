@@ -59,6 +59,9 @@ const AURA_LETHAL := Color("8f2f38")
 const FIRE_OUTER := Color("d1622c")
 const FIRE_INNER := Color("f0c04a")
 
+const CHALK := Color(0.92, 0.92, 0.88, 0.62)
+const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
+
 # --------------------------------------------------------------- buildings ---
 
 const _ROOFS: Array[Color] = [

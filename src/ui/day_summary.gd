@@ -53,9 +53,23 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 		lines.append("You got her home.")
 	else:
 		lines.append("Nerves left: %s" % ("*".repeat(nerves) if nerves > 0 else "none"))
+	# The only place the subquest is ever spelled out. In the world it is chalk on a wall.
+	if GameState.has_joined_resistance():
+		lines.append("")
+		lines.append(_resistance_line())
 	_body.text = "\n".join(lines)
 	_hint.text = "space to go on"
 	_present()
+
+func _resistance_line() -> String:
+	var done := GameState.resistance_progress
+	if GameState.sabotage_available():
+		return "You have done enough. There is one more night."
+	var lost := GameState.failed_resistance_steps.size()
+	var line := "Errands run: %d of %d" % [done, Tuning.RESISTANCE_GOAL]
+	if lost > 0:
+		line += "   (%d contact%s lost)" % [lost, "" if lost == 1 else "s"]
+	return line
 
 func show_ending(ending: GameEnums.Ending) -> void:
 	_title.text = _ENDING_TITLE.get(ending, "The end.")

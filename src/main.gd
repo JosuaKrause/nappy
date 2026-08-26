@@ -14,6 +14,7 @@ var _city: City
 var _player: Stroller
 var _baby: Baby
 var _day: DayController
+var _resistance: ResistanceDirector
 var _summary: CanvasLayer
 var _follow_camera: Camera2D
 var _follow_id := ""
@@ -46,6 +47,11 @@ func _ready() -> void:
 	add_child(_summary)
 	_summary.continued.connect(_on_summary_continued)
 
+	_resistance = ResistanceDirector.new()
+	_resistance.name = "Resistance"
+	add_child(_resistance)
+	_resistance.setup(_city, _city.map)
+
 	_day = DayController.new()
 	_day.name = "Day"
 	add_child(_day)
@@ -65,9 +71,17 @@ func _ready() -> void:
 # --------------------------------------------------------------- the day loop ---
 
 func _start_day() -> void:
-	# Events are planned before the player is placed, so --spawn event has something to
-	# find and so nothing spawns on top of her.
+	# The day is announced first, so listeners clear yesterday's state before anything is
+	# placed in today — announcing it afterwards wiped the contact the director had just
+	# reported, and the HUD showed nothing.
+	EventBus.day_started.emit(GameState.day)
+
+	# Events and the contact are placed before the player, so --spawn has something to find
+	# and so nothing spawns on top of her.
 	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots)
+	_city.set_act(GameState.current_act())
+	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
+			_day_length())
 	_player.position = _spawn_position() if _first_day else _city.map.home_world_position()
 	_player.velocity = Vector2.ZERO
 	_baby.reset()
@@ -75,9 +89,7 @@ func _start_day() -> void:
 		_apply_meter_override()
 	_first_day = false
 
-	_city.set_act(GameState.current_act())
 	_day.start(_day_length())
-	EventBus.day_started.emit(GameState.day)
 	print("[Main] day %d (act %d): %d events, %.0fs" % [
 		GameState.day, GameState.current_act(),
 		_city.events.active_count(), _day.time_total])
@@ -198,6 +210,13 @@ func _spawn_position() -> Vector2:
 	# `event` takes the first non-ambient event; `event:<id>` targets a specific one.
 	if args[index + 1].begins_with("event"):
 		return _first_event_position(args[index + 1].get_slice(":", 1))
+	if args[index + 1] == "contact":
+		var contact := _resistance.contact_position()
+		if contact == Vector2.INF:
+			push_warning("no resistance contact on day %d" % GameState.day)
+			return _city.map.home_world_position()
+		# Off to one side, so the chalk mark is not hidden under the pram.
+		return contact + Vector2(70.0, 30.0)
 
 	var wanted: int = {
 		"park": GameEnums.TileType.PARK,
