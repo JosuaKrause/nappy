@@ -28,12 +28,12 @@ src/
     city_renderer.gd      procedural 2.5D drawing
     tile.gd               TileType enum + per-tile metadata
   events/
-    event_def.gd          Resource: authored event data
+    event_def.gd          authored event data
     event_instance.gd     runtime node: position, lifetime, telegraph, emission
-    event_behaviour.gd    base class for scripted behaviour
-    event_catalogue.gd    registry of all EventDefs
+    event_catalogue.gd    every event, defined in code
     event_scheduler.gd    builds a day's event set from seed + day
-    behaviours/           per-event scripts
+    event_manager.gd      owns the live instances; answers total_excitement_at
+    event_aura_layer.gd   draws the excitement fields under the entity layer
   ui/
     hud.gd
     meter_bar.gd
@@ -109,8 +109,10 @@ func total_excitement_at(pos: Vector2) -> float:
 applies the telegraph fraction if the instance is still in its telegraph phase. Adding an
 event type never requires touching `Baby`.
 
-Broad-phase: instances register in a simple uniform spatial hash keyed by
-`outer_radius`-sized cells, so the per-frame cost stays flat as event counts grow in Act IV.
+The scan is linear. An earlier draft of this document called for a uniform spatial hash;
+the budget formula tops out near 22 concurrent events, so that would have been more code
+and more ways to be wrong in exchange for nothing measurable. Revisit if an act ever wants
+hundreds of sources.
 
 ## Determinism
 
@@ -148,8 +150,11 @@ non-zero on any failure.
 
 - `test_meters.gd` — falloff shape, the telegraph fairness contract, and every meter rule
   in docs/MECHANICS.md, driven at a fixed timestep against a fake world. *(done)*
-- `test_generator.gd` — 500 seeds: connectivity, park count/spread, home-to-park distance.
-- `test_scheduler.gd` — determinism, budget bounds, at-least-one-usable-calm-zone.
+- `test_generator.gd` — 200 seeds: connectivity, park count/spread, home-to-park distance,
+  exact building coverage, and route redundancy under street closures. *(done)*
+- `test_events.gd` — catalogue fairness, the emission model (telegraph damping, pulse
+  envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
+  one-shot consumption and the usable-park rule. *(done)*
 
 These are the places a bug is invisible until it ruins a run, so they are the places with
 tests. Anything a screenshot would catch is checked with `tools/shot.sh` instead.

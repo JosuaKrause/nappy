@@ -22,12 +22,17 @@ const TREES_PER_PARK := 10
 @onready var _entities: Node2D = $Entities
 
 var map: CityMap
+var events: EventManager
 
 func build(city_map: CityMap) -> void:
 	map = city_map
 	_spawn_buildings()
 	_spawn_park_props()
 	_spawn_boundary()
+	events = EventManager.new()
+	events.name = "Events"
+	add_child(events)
+	events.setup(self, map)
 	queue_redraw()
 
 # ------------------------------------------------------------ WorldContext ---
@@ -38,9 +43,8 @@ func is_calm_zone(world_position: Vector2) -> bool:
 func is_alley(world_position: Vector2) -> bool:
 	return Tile.is_alley(map.tile_type_at_world(world_position)) if map else false
 
-func total_excitement_at(_world_position: Vector2) -> float:
-	# M4 replaces this with the sum over active EventInstances.
-	return 0.0
+func total_excitement_at(world_position: Vector2) -> float:
+	return events.total_excitement_at(world_position) if events else 0.0
 
 # ------------------------------------------------------------------ spawning ---
 
@@ -125,6 +129,12 @@ func _spawn_boundary() -> void:
 ## Adds a node to the y-sorted layer, where it will sort against buildings and props.
 func add_entity(node: Node) -> void:
 	_entities.add_child(node)
+
+## Excitement fields go above the ground but below everything that stands on it, so an
+## aura never paints over a roof.
+func add_aura_layer(node: Node2D) -> void:
+	node.z_index = 1
+	add_child(node)
 
 # ------------------------------------------------------------------ drawing ---
 
