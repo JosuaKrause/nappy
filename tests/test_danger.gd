@@ -77,16 +77,43 @@ func _test_the_dangerous_things_do(t) -> void:
 		t.check(instance.wants_a_mark(), "and still marked once it is live")
 		instance.free()
 
-	# Loud, so it is marked; and marked in the telegraph colour first, which is the difference
-	# between "this is about to happen" and "this is happening".
-	var loud := EventCatalogue.by_id("homeless_yeller")
-	if loud:
-		var instance := _instance(loud)
+	# A beat fast enough to slip a pass between, so it keeps its mark after the telegraph; and
+	# marked in the telegraph colour first, which is the difference between "this is about to
+	# happen" and "this is happening".
+	var timeable := EventCatalogue.by_id("leaf_blower")
+	if timeable:
+		var instance := _instance(timeable)
 		t.check(instance.wants_a_mark() and instance.mark_colour() == Palette.MARK_TELEGRAPH,
 				"a loud event telegraphs in amber")
-		_advance(instance, loud.telegraph_time + 0.5)
+		_advance(instance, timeable.telegraph_time + 0.5)
 		t.check(instance.wants_a_mark() and instance.mark_colour() == Palette.MARK_ACTIVE,
 				"and turns red when it arrives")
+		instance.free()
+
+	# **A pulse is not automatically something to time.** *(Playtest 07, finding 2: "there was a
+	# person right on the home block but walking up to them didn't do anything — not sure what
+	# that person was supposed to be — it had a red triangle.")* Six of the ten rows available on
+	# day 1 have a pulse, so `pulse_period > 0` put a caret over most of an ordinary street. The
+	# rule is now whether the beat is shorter than the walk across the field, which is exactly
+	# when a pass can be slipped between two of them; below, that.
+	for id in ["homeless_yeller", "cafe_tables", "busker", "ice_cream_van", "market_stall"]:
+		var def := EventCatalogue.by_id(id)
+		if not def:
+			continue
+		t.check(def.pulse_period > 0.0, "'%s' pulses" % id)
+		var instance := _instance(def)
+		_advance(instance, def.telegraph_time + 0.5)
+		t.check(not instance.wants_a_mark(),
+				"but '%s' beats slower than a walk across it, so there is nothing to time" % id)
+		instance.free()
+	for id in ["leaf_blower", "loose_dog", "reversing_lorry", "burning_building"]:
+		var def := EventCatalogue.by_id(id)
+		if not def:
+			continue
+		var instance := _instance(def)
+		_advance(instance, def.telegraph_time + 0.5)
+		t.check(instance.wants_a_mark(),
+				"'%s' beats fast enough to play against, so it keeps its mark" % id)
 		instance.free()
 
 	# The line between the two groups, stated rather than assumed. Anything the mark shows once
@@ -100,7 +127,7 @@ func _test_the_dangerous_things_do(t) -> void:
 		if not instance.wants_a_mark():
 			instance.free()
 			continue
-		var changes := def.hard_fail or def.pulse_period > 0.0 \
+		var changes := def.hard_fail or instance.can_be_timed() \
 				or not is_equal_approx(def.intensity_ramp, 1.0)
 		t.check(changes,
 				"'%s' is only marked after its telegraph because it changes over time" % def.id)

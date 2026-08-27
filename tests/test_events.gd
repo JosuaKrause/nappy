@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_fire_truck_is_a_day_three_one_shot(t)
 	_test_along_street_paths_stay_in_bounds(t)
 	_test_nothing_is_cheaper_to_walk_through_than_around(t)
+	_test_running_is_never_the_answer(t)
 	_test_the_pavement_can_be_blocked_from_day_one(t)
 	_test_a_day_has_enough_in_it_to_meet(t)
 	_test_danger_arrives_before_act_three(t)
@@ -432,8 +433,14 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 ## Events that are deliberately scenery: they are there so the street *looks* different, not
 ## so it costs something. Everything else has to cost something to walk through — an obstacle
 ## that is cheaper to walk into than to walk around is a bribe, and the player learns to take
-## it. Naming the three explicitly is the point: a fourth one has to be a decision.
-const _SCENERY := ["poster_crew", "barricade", "burnt_shell"]
+## it. Naming them explicitly is the point: one more has to be a decision.
+##
+## **Down to one row in playtest 07.** `falloff`'s new shoulder lifted `poster_crew` to +0.7 and
+## `barricade` to +3.0, so neither needs the exemption any more — both are still nearly free to
+## walk through, which is all the design ever asked of them. A burnt-out shell is the last row
+## that is genuinely cheaper to walk through than around, and it is a reminder rather than an
+## obstacle. (`loudspeaker` is `city_wide` and has no line to walk through at all.)
+const _SCENERY := ["burnt_shell"]
 
 ## Net excitement from walking straight through the centre of an event at walking pace, in
 ## points of a hundred-point meter: the falloff integrated along the line, minus the walking
@@ -448,6 +455,36 @@ func _cost_to_walk_through(def: EventDef) -> float:
 		var d := absf(-def.outer_radius + span * (i + 0.5) / steps)
 		total += Tuning.falloff(d, def.intensity, def.inner_radius, def.outer_radius)
 	return (total / steps - Tuning.EXCITEMENT_DECAY_WALKING) * seconds
+
+## The same integral at running pace, with the running penalty in place of the walking decay.
+func _cost_to_run_through(def: EventDef) -> float:
+	var span := def.outer_radius * 2.0
+	var seconds := span / Tuning.RUN_SPEED
+	var steps := 2000
+	var total := 0.0
+	for i in steps:
+		var d := absf(-def.outer_radius + span * (i + 0.5) / steps)
+		total += Tuning.falloff(d, def.intensity, def.inner_radius, def.outer_radius)
+	return (total / steps - Tuning.EXCITEMENT_DECAY_RUNNING
+			+ Tuning.EXCITEMENT_FROM_RUNNING) * seconds
+
+## **The run button is a trap, and it is a trap on purpose.** `CLAUDE.md` states it as a measured
+## fact about the catalogue — running is the wrong move against *every* event in it — and
+## `docs/TODO.md` states the consequence: making running correct is M25's job, a mechanic with a
+## fairness contract stated over `RUN_SPEED`, not a constant somebody moves.
+##
+## It had never been asserted, only measured and written down, and playtest 07 is what that cost:
+## `falloff`'s new shoulder makes time-in-field matter more, and running quietly became a point or
+## two *cheaper* than walking through the four widest fields in the game. Not "running works" but
+## "running is a coin flip", which is nobody's design. Asserted here now so the next rate change
+## has to argue with a failing build rather than with a paragraph in a document.
+func _test_running_is_never_the_answer(t) -> void:
+	for def in EventCatalogue.all():
+		if def.city_wide:
+			continue   # No line through it, so no crossing to compare.
+		t.check(_cost_to_run_through(def) > _cost_to_walk_through(def),
+				"running through '%s' (%.1f) costs more than walking (%.1f)"
+				% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
 
 ## The measured failure playtest 02 found and M19 fixes: at intensity 7 the dog walker cost
 ## −0.1 points to walk straight through, so the correct play was to plough into it.

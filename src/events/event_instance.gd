@@ -228,7 +228,40 @@ func wants_a_mark() -> bool:
 		return false
 	if def.hard_fail or is_telegraphing():
 		return true
-	return def.pulse_period > 0.0 or not is_equal_approx(def.intensity_ramp, 1.0)
+	if not is_equal_approx(def.intensity_ramp, 1.0):
+		return true
+	return can_be_timed()
+
+## Whether this event's pulse is something a player can actually **play against**.
+##
+## *(Playtest 07, finding 2: "there was a person right on the home block but walking up to them
+## didn't do anything — not sure what that person was supposed to be — it had a red triangle.")*
+##
+## The rule used to be `pulse_period > 0`, and six of the ten rows available on day 1 have a pulse.
+## So the caret was over most of an ordinary street, on things that were not going anywhere and
+## were not about to do anything, and a player walked up to one to find out what it meant and
+## found out that it meant nothing. That is the deleted aura ring's own mistake — *a cue that
+## marks everything says nothing* — arriving in the shape M22 invented to replace it.
+##
+## What M22 got right is the reason to keep any of it: *"a pulsing event has to be **timed**, and
+## timing is the one thing the ring genuinely did well."* The mistake was reading "has a pulse" as
+## "can be timed". A beat of eleven seconds cannot be timed — you cannot stand and wait out an ice
+## cream van — and from inside its field the intensity only ever moves one way, so what the mark
+## breathes with is not a rhythm, it is a drift.
+##
+## So it is a **relationship**, and the relationship is the definition: a pulse can be timed when
+## its period is shorter than the time it takes to walk across the field it is pulsing in. Under
+## that, the beat changes while she is inside it and a pass can be slipped between two of them.
+## Over it, the pulse is slower than the whole encounter and there is nothing to time.
+##
+## It leaves the caret on exactly the two steady act I rows it should be on — the loose dog and
+## the leaf blower, which are the two whose whole counterplay is *go now* — and takes it off the
+## café, the market stall, the busker, the ice cream van, the dog walker and the man shouting,
+## every one of which is a place you route around rather than a beat you wait out.
+func can_be_timed() -> bool:
+	if def.pulse_period <= 0.0:
+		return false
+	return def.pulse_period < 2.0 * def.outer_radius / Tuning.WALK_SPEED
 
 ## How hard the mark is breathing, 0..1, from what the event is emitting right now.
 ##

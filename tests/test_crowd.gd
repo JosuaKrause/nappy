@@ -132,7 +132,7 @@ func _test_a_park_is_out_of_earshot_of_the_traffic(t) -> void:
 	_advance(45.0)
 	for block in _city.map.calm_blocks:
 		var centre := _city.map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
-		t.check(_city.crowd.total_excitement_at(centre) < Tuning.EXCITEMENT_DECAY_IDLE,
+		t.check(_city.crowd.total_excitement_at(centre) < Tuning.EXCITEMENT_DECAY_WALKING,
 				"the middle of park %s recovers faster than the traffic loads it"
 				% [block])
 
@@ -165,29 +165,34 @@ func _test_a_car_is_louder_and_carries_further_than_a_person(t) -> void:
 	t.check(Tuning.CAR_SPEED.y <= EventCatalogue.by_id("fire_truck").speed,
 			"an emergency vehicle is still the fastest thing on the road")
 
-## Finding 4, and the reason the crowd exists at all: a day must not be winnable by standing
-## still on a street. The floor that stops it is emergent — no single car outruns the idle
-## decay, but on the arterial there is always another one — so this measures the street
-## rather than asserting anything about one agent. The back streets must fail the same test,
-## or there is nowhere to recover and no route worth choosing.
+## Finding 4, and the reason the crowd exists at all: a day must not be winnable by walking any
+## old street. The floor that stops it is emergent — no single car outruns the walking decay, but
+## on the arterial there is always another one — so this measures the street rather than asserting
+## anything about one agent. The back streets must fail the same test, or there is nowhere to
+## recover and no route worth choosing.
+##
+## Stated against the **walking** decay since playtest 07 made standing still settle nothing at
+## all. It was the idle rate, which was the fastest of the three and was therefore the right
+## reference for "she stops here and waits"; now that waiting is never a plan, the only question a
+## street has to answer is what it costs to *walk down*, which is what a route is made of.
 func _test_a_busy_street_never_lets_the_meter_fall(t) -> void:
 	_city.crowd.start_day(1, _rng(1))
 	var arterial := _mean_excitement(CrowdLanes.arterial_pavement(_city.map), 60.0)
 	_city.crowd.start_day(1, _rng(1))
 	var quiet := _mean_excitement(CrowdLanes.quietest_pavement(_city.map), 60.0)
 
-	t.check(arterial > Tuning.EXCITEMENT_DECAY_IDLE,
-			"standing on the arterial loses ground on average (%.1f vs %.1f decay)"
-			% [arterial, Tuning.EXCITEMENT_DECAY_IDLE])
+	t.check(arterial > Tuning.EXCITEMENT_DECAY_WALKING,
+			"walking the arterial loses ground on average (%.1f vs %.1f decay)"
+			% [arterial, Tuning.EXCITEMENT_DECAY_WALKING])
 	# The other half of the same rule, and the mistake made first: the arterial has to be
-	# expensive, not impassable. At three times the idle decay it fills the meter faster
+	# expensive, not impassable. At three times the walking decay it fills the meter faster
 	# than a player can cross it, and a street nobody can use is not a route decision.
-	t.check(arterial < Tuning.EXCITEMENT_DECAY_IDLE * 3.0,
+	t.check(arterial < Tuning.EXCITEMENT_DECAY_WALKING * 3.0,
 			"the arterial is expensive to cross, not impossible (%.1f vs %.1f decay)"
-			% [arterial, Tuning.EXCITEMENT_DECAY_IDLE])
-	t.check(quiet < Tuning.EXCITEMENT_DECAY_IDLE,
+			% [arterial, Tuning.EXCITEMENT_DECAY_WALKING])
+	t.check(quiet < Tuning.EXCITEMENT_DECAY_WALKING,
 			"a back street is somewhere she can recover (%.1f vs %.1f decay)"
-			% [quiet, Tuning.EXCITEMENT_DECAY_IDLE])
+			% [quiet, Tuning.EXCITEMENT_DECAY_WALKING])
 	t.check(arterial > quiet * 2.0,
 			"the main road is not merely busier than a back street, it is a different place")
 
@@ -321,8 +326,17 @@ func _test_a_bump_costs_and_one_of_them_is_survivable(t) -> void:
 	t.check(one < Tuning.EXCITEMENT_CALM_THRESHOLD,
 			"one bump (%.0f) does not on its own freeze the meter (%.0f)"
 			% [one, Tuning.EXCITEMENT_CALM_THRESHOLD])
-	t.check(one * 3.0 > Tuning.EXCITEMENT_CALM_THRESHOLD,
-			"but walking through three people in a row does")
+	# Four rather than three since playtest 07, and the reason is the *mix* rather than the
+	# difficulty: `falloff` grew a shoulder that milestone and roughly doubled what every event
+	# is worth from a distance, so the crowd handed some of the day back to the authored content.
+	# What has to stay true is the shape — one is survivable, a few in a row are not.
+	t.check(one * 4.0 > Tuning.EXCITEMENT_CALM_THRESHOLD,
+			"but walking through four people in a row does")
+	# Ten, which a probe says is about what a forty-second walk straight down a busy pavement
+	# collects. So the careless walk still ends the day and the careful one does not, which is
+	# the ratio the crowd exists to create.
+	t.check(one * 10.0 > Tuning.METER_MAX,
+			"and a careless walk through a crowd still loses the day on its own")
 	# The relationship that decides whether the crowd is a decision or a toll, and the one a
 	# walking probe found the hard way. Pedestrian lanes are a tile apart, so the line to walk
 	# is the midline between two of them — and at a contact radius of 18 there was no such
@@ -352,8 +366,28 @@ func _test_walking_into_somebody_displaces_and_startles_them(t) -> void:
 	# them both — finding 2 asked for exactly that, and it is why a crowd is somewhere you get
 	# pushed around rather than a wall you bounce off.
 	t.close_to(walker.global_position.distance_to(here),
-			4.0 + (Tuning.BUMP_RADIUS - 4.0) * (1.0 - Tuning.BUMP_PLAYER_SHARE),
+			4.0 + (Tuning.BUMP_CLEAR_RADIUS - 4.0) * (1.0 - Tuning.BUMP_PLAYER_SHARE),
 			"the person she walked into takes most of the separation", 0.01)
+	# *(Playtest 07, finding 5.)* Resolved **past** the radius that releases the contact, not to
+	# it. Resolving to it leaves the pair sitting on their own threshold, flickering across it and
+	# firing a fresh jolt every other frame, which is the "instant death" the player reported.
+	t.check(Tuning.BUMP_CLEAR_RADIUS > Tuning.BUMP_RADIUS,
+			"a resolved contact is pushed past the radius that counts as touching")
+	# Held against her — she is not moving in this rig, so only the walker's share of each
+	# separation lands — the pair still converge on the clear radius and let go, and the
+	# startle fires exactly **once** across the whole contact. The old code resolved to
+	# `BUMP_RADIUS` itself, which is the release threshold, so the pair sat on it and re-fired
+	# a fresh 26/s jolt every other frame for as long as she stayed there.
+	var startles := 1
+	for frame in 30:
+		if _city.crowd._bump(walker, here) == Vector2.ZERO:
+			break
+		if not walker.touching:
+			startles += 1
+	t.check(not walker.touching,
+			"a contact she stands in ends by itself (%.1fpx apart)"
+			% walker.global_position.distance_to(here))
+	t.check(startles == 1, "and it startles them once, not once per frame (%d)" % startles)
 	t.check(share.length() > 0.0 and share.dot(walker.global_position - here) < 0.0,
 			"and she is pushed the other way")
 	t.check(walker.is_startled(), "the person is startled")
