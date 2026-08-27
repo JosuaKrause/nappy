@@ -271,6 +271,16 @@ sited far enough ahead that she is outside its outer radius for the whole telegr
 `EventDef.validate()` refuses one that obstructs, because nothing checks a route around a thing
 with no tile.
 
+M28 added a fourth thing, and it is not an exemption either: **the contract is stated per event
+and the player experiences the sum.** At one event per block the outer radii overlap, so walking
+out of one field can mean walking into another — which is the density working, right up until
+the field she walks into is one of the three that end the day. So **nothing else happens inside
+a lethal event's field**: a `hard_fail` event keeps its whole `outer_radius` clear of every
+other event at placement, and it is the one spacing rule with no fallback — an abduction that
+cannot find room is not placed. `EventScheduler._room_around()` enforces it, `tests/test_events.gd`
+asserts it over a whole run. If a new event ever becomes lethal, it inherits this, not just the
+telegraph.
+
 **The traffic fairness contract.** *(M19.)* A car is lethal and is **not** an event, so
 `validate_event()` never sees it. `Tuning.validate_traffic()` is its equivalent and runs on
 boot. Two things stand in for the telegraph: the painted carriageway, which is permanent and
@@ -355,13 +365,16 @@ visual vocabulary and the two places it is currently incomplete.
 
 ## Recipes
 
-**Change the event density** — `EventScheduler.budget_for()` *and* a pass over `cost` and
-`max_per_day` in the catalogue, because a budget the catalogue cannot spend is not density.
-Then **measure what a day places**, over several seeds: about a third of the budget is spent
-on events the day then throws away, since `_ensure_one_usable_park` strips whatever reaches
-the calmest block and `_ensure_the_city_is_still_walkable` drops obstructions that would seal
-the city. Do not derive the number; a temporary probe suite that prints per-day counts takes
-two minutes and is the only honest way to set it.
+**Change the event density** — `max_per_day` in the catalogue **first**, then
+`EventScheduler.budget_for()`, because a budget the catalogue cannot spend is not density. M28
+is the case that proves it: the day-1 pool's caps summed to 18, so raising the budget to a
+hundred placed the same thirteen events. Then **measure what a day places**, over several
+seeds, since `_ensure_one_usable_park` strips whatever reaches the calmest block and
+`_ensure_the_city_is_still_walkable` drops obstructions that would seal the city. Do not derive
+the number; a temporary probe suite that prints per-day counts takes two minutes and is the
+only honest way to set it. Measure four things and not one: **placed per day**, **live inside
+`EVENT_STREAM_RADIUS`**, **on screen at once**, and **met on a route** — they moved by
+different multiples in M28, and only the last one is what the player is complaining about.
 
 **Add an event** — `src/events/event_catalogue.gd` only, in the act's section, plus a line in
 the `docs/EVENTS.md` table. Everything else is data-driven. If it needs behaviour no field

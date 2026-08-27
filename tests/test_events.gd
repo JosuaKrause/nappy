@@ -24,6 +24,10 @@ func run(t) -> void:
 	_test_nothing_is_cheaper_to_walk_through_than_around(t)
 	_test_the_pavement_can_be_blocked_from_day_one(t)
 	_test_a_day_has_enough_in_it_to_meet(t)
+	_test_the_caps_can_spend_the_budget(t)
+	_test_the_named_decisions_arrive(t)
+	_test_two_of_a_kind_are_not_the_same_incident(t)
+	_test_nothing_happens_inside_a_lethal_field(t)
 
 # ------------------------------------------------------------------ fairness ---
 
@@ -311,6 +315,14 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 			seen[plan.def.id] = day
 
 ## The rule that keeps a day winnable: however bad it gets, one calm zone stays usable.
+##
+## "Usable" is the calm **ground**, not the whole block lot, and the distinction is M15's:
+## a courtyard's calm is a four-tile court inside a residential block, so an event on the
+## street outside spoils the lot and not the court. This test used to measure the lot, which
+## asserted more than `_ensure_one_usable_park` has ever promised — invisible at thirteen
+## events a day and false on nine days out of fourteen at M28's density, where every block
+## has something on the street beside it. The guarantee it exists to protect is unchanged:
+## somewhere in the city there is calm ground with nothing emitting into it.
 func _test_one_park_stays_usable(t) -> void:
 	var map := _map()
 	for day in range(1, 15):
@@ -318,17 +330,32 @@ func _test_one_park_stays_usable(t) -> void:
 		var planned := EventScheduler.build_day(day, _rng(day), map, consumed)
 		var clean := 0
 		for block in map.calm_blocks:
-			var lot := map.tile_rect_to_world(CityMap.block_rect(block))
+			var lot := map.tile_rect_to_world(_calm_rect(map, block))
 			var spoiled := false
 			for plan in planned:
-				if plan.def.kind == GameEnums.EventKind.AMBIENT:
+				if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
 					continue
-				if lot.grow(plan.def.outer_radius).has_point(plan.position):
+				var grown := lot.grow(plan.def.outer_radius)
+				if grown.has_point(plan.position):
 					spoiled = true
+					break
+				for point in plan.path:
+					if grown.has_point(point):
+						spoiled = true
+						break
+				if spoiled:
 					break
 			if not spoiled:
 				clean += 1
 		t.check(clean >= 1, "day %d leaves at least one park unspoiled" % day)
+
+## The calm ground of a calm block — mirrors `EventScheduler._calm_rect`, which is the
+## definition the guarantee is actually written over.
+func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
+	var layout: BlockLayout = map.block_layouts.get(block)
+	if layout and BlockLayout.has(layout.open_rect):
+		return layout.open_rect
+	return CityMap.block_rect(block)
 
 # -------------------------------------------------------------- act I content ---
 
@@ -455,8 +482,12 @@ func _test_the_pavement_can_be_blocked_from_day_one(t) -> void:
 				% def.id)
 
 ## Playtest 03, finding 1: day 1 placed four events across a 7x7-block city and the traced
-## player met none of them. The budget is checked against what a day actually *places*, not
-## against the formula, because a budget the catalogue cannot spend is not density.
+## player met none of them. Playtest 05, finding 6, made it a number: **one event per block**.
+##
+## The budget is checked against what a day actually *places*, not against the formula, because
+## a budget the catalogue cannot spend is not density — which is exactly what M28 found: the
+## day-1 pool's `max_per_day` values summed to 18, so the budget could be anything at all and
+## the day still held thirteen events.
 func _test_a_day_has_enough_in_it_to_meet(t) -> void:
 	var map := _map()
 	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
@@ -467,8 +498,104 @@ func _test_a_day_has_enough_in_it_to_meet(t) -> void:
 		for plan in planned:
 			if plan.def.kind != GameEnums.EventKind.AMBIENT:
 				real += 1
-		t.check(real * 5 >= blocks,
-				"day %d puts %d events across %d blocks — one per five or better"
+		# Stated as a fraction of a block each way rather than as a count, so it survives the
+		# city changing size — which M21 is about to do.
+		t.check(real >= blocks * 4 / 5,
+				"day %d puts %d events across %d blocks — about one each"
 				% [day, real, blocks])
-	t.check(EventScheduler.budget_for(14) > EventScheduler.budget_for(1) * 2,
+	t.check(EventScheduler.budget_for(14) > EventScheduler.budget_for(1) * 3 / 2,
 			"and a late day is still markedly denser than an early one")
+
+## The caps have to leave room for the density, or the budget is decoration. Stated over the
+## day-1 pool because that is where it was actually wrong: three dog walkers and three cafés
+## on a forty-nine-block city, of which only the ~23% near her is ever instantiated.
+func _test_the_caps_can_spend_the_budget(t) -> void:
+	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
+	var ceiling := 0
+	for def in EventCatalogue.available_on(1):
+		if def.kind == GameEnums.EventKind.RECURRING:
+			ceiling += def.max_per_day
+	t.check(ceiling >= blocks,
+			"day 1's caps allow at least one event per block (%d against %d)" % [ceiling, blocks])
+
+## The two events playtest 05 named, and the reason it named them: the dog-walker decision
+## has to arrive more than once, and the café that exists to force a crossing has to be
+## findable at all. Both are counted over the whole map, since what she meets on a route is
+## a fraction of it.
+func _test_the_named_decisions_arrive(t) -> void:
+	var map := _map()
+	var counts := {}
+	for city_seed in [4242, 77, 1301]:
+		var seeded := CityGenerator.generate(city_seed)
+		var consumed: Array[String] = []
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:1" % city_seed)
+		for plan in EventScheduler.build_day(1, rng, seeded, consumed):
+			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
+		t.check(int(counts.get("dog_walker", 0)) > 0, "seed %d: day 1 has dog walkers" % city_seed)
+	t.check(counts.get("dog_walker", 0) >= 3 * 8,
+			"day 1 carries enough dog walkers to meet two on a route (%s over three seeds)"
+			% counts.get("dog_walker", 0))
+	t.check(counts.get("cafe_tables", 0) >= 3 * 6,
+			"day 1 carries enough cafés to find one (%s over three seeds)"
+			% counts.get("cafe_tables", 0))
+	t.check(map.calm_blocks.size() > 0, "and the map still has calm ground on it")
+
+## What `max_per_day` was quietly doing before M28, now doing it on purpose. The fallback in
+## `_roomiest_of_several` can still put two of a kind closer than `EVENT_SPACING_SAME` on a
+## full map, so this is stated as "almost never" plus a hard floor that nothing may cross.
+func _test_two_of_a_kind_are_not_the_same_incident(t) -> void:
+	var map := _map()
+	for day in [1, 8, 14]:
+		var consumed: Array[String] = []
+		var planned := EventScheduler.build_day(day, _rng(day), map, consumed)
+		var same_pairs := 0
+		var crowded := 0
+		for i in planned.size():
+			for j in range(i + 1, planned.size()):
+				var a: EventScheduler.Planned = planned[i]
+				var b: EventScheduler.Planned = planned[j]
+				if not a.is_placed() or not b.is_placed():
+					continue
+				if a.def.kind == GameEnums.EventKind.AMBIENT:
+					continue
+				if b.def.kind == GameEnums.EventKind.AMBIENT:
+					continue
+				var gap := a.position.distance_to(b.position)
+				t.check(gap >= Tuning.EVENT_SPACING_ANY - 0.5,
+						"day %d: '%s' and '%s' are not drawn inside each other (%.0fpx)"
+						% [day, a.def.id, b.def.id, gap])
+				if a.def.id != b.def.id:
+					continue
+				same_pairs += 1
+				if gap < Tuning.EVENT_SPACING_SAME:
+					crowded += 1
+		t.check(crowded * 20 <= same_pairs,
+				"day %d: %d of %d same-kind pairs share a stretch of pavement"
+				% [day, crowded, same_pairs])
+
+## Playtest 05's first named risk: the fairness contract is stated per event and the player
+## experiences the sum, so at one event per block walking out of one field can mean walking
+## into another. Survivable for everything that only costs points, and a death for the three
+## rows that end the day — so a lethal field has nothing else in it. Unlike the other spacing
+## rules this one has no fallback, which is why it is asserted absolutely.
+func _test_nothing_happens_inside_a_lethal_field(t) -> void:
+	var map := _map()
+	var lethal_days := 0
+	for day in range(1, 15):
+		var consumed: Array[String] = []
+		var planned := EventScheduler.build_day(day, _rng(day), map, consumed)
+		for plan in planned:
+			if not plan.def.hard_fail or not plan.is_placed():
+				continue
+			lethal_days += 1
+			for other in planned:
+				if other == plan or not other.is_placed():
+					continue
+				if other.def.kind == GameEnums.EventKind.AMBIENT:
+					continue
+				t.check(other.distance_from(plan.position) >= plan.def.outer_radius,
+						"day %d: nothing shares '%s'’s lethal field ('%s' at %.0fpx of %.0f)"
+						% [day, plan.def.id, other.def.id,
+						other.distance_from(plan.position), plan.def.outer_radius])
+	t.check(lethal_days > 0, "and a run actually contains lethal events to check")

@@ -21,18 +21,18 @@ on M24. **M27 was taken out of order and immediately**, because playtest 04's em
 finding — *"don't load everything upfront"* — turned out to be what was underneath three of the
 other six, and because M21 and M22 both get judged against a street that now has traffic on it.
 
-**Playtest 05 has landed and is what the next session starts from.** Six findings in
-**[docs/PLAYTEST-05.md](PLAYTEST-05.md)**, written down and deliberately not acted on: two
+**Playtest 05 has landed and M28 has taken the first of it.** Six findings in
+**[docs/PLAYTEST-05.md](PLAYTEST-05.md)**, of which **finding 6 (the density) is done**: two
 traffic defects (cars stop at arbitrary points for a zebra; the two axes drive on opposite
 sides of the road), M22's exclamation mark firing unattributably and without consequence, the
 same park being usable on day 1 and day 2 (M24), **"day two doesn't feel more difficult than
 day one… there is never *any* danger"** — which the catalogue confirms: day 2 places about one
 more event than day 1, and every `hard_fail` event starts on day 8 or later — and a stated
 density target: **one event per block**, with the dog-walker decision forced at least twice on
-day 1 and a café that can actually be found. That last one is ~4× today's plan and is blocked
-by the **per-type caps, not the budget**: the day-1 pool's `max_per_day` values sum to 18, so no
-budget alone reaches 49. Repeats are fine — *"it's fine if the same event happens multiple
-times"* — so it is caps and budget, and no new catalogue rows are required to get there. **Read it before picking up anything below**; it reorders what follows.
+day 1 and a café that can actually be found. That last one **shipped as M28** — day 1 places 50
+events across 49 blocks and 3.3 are on screen at any moment — and the thing it confirmed is that
+the binding constraint was the **per-type caps, not the budget**. The other five are open.
+**Read it before picking up anything below**; it reorders what follows.
 
 **Playtest 04 set the order that stands now.** M27 and M22 are done. **M21 is next**
 (four-block calm zones), then M17 behind it. M20 is **absorbed into M27**: cars follow and queue
@@ -423,6 +423,37 @@ was the summary of the rest. The other four are one milestone:
         positional rather than a brake, because a brake cannot open a gap that does not exist.
         Takes the useful half of M20 with it
   - [ ] **Nobody has played it.** The whole thing is measured off a probe
+
+## M28+ — Playtest 05
+
+See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
+
+- [x] **M28 One event per block** — finding 6, taken first because the handoff named it and
+      because it is a number rather than an argument: *"I want one event per block. The dog
+      walker decision should happen meaningfully — I want to have to make that decision at least
+      twice on day one. Also the same with a restaurant — I never saw one."* Day 1 goes from 13
+      placed to **50 across 49 blocks**, from 1.8 live around her to ~11, and from ~1 on screen
+      to **3.3**. **The caps moved first and the budget followed**: the day-1 pool's `max_per_day`
+      values summed to 18, so no budget alone could ever have reached 49 — three dog walkers
+      became twenty and three cafés eighteen. Repeats being fine meant no new catalogue rows.
+      Two rules had to be invented to replace what the caps were quietly doing: a **spacing rule**
+      at placement (`EVENT_SPACING_SAME` between two of a kind, `EVENT_SPACING_ANY` between any
+      two), and **nothing else happens inside a lethal event's field**, which is playtest 05's
+      "the contract composes badly when fields overlap" turned into something enforceable.
+      It also caught a test that had been asserting more than the design promised since M15
+- [ ] **Findings 1 and 2 — the traffic** — cars stop at arbitrary points for a zebra, and the
+      two axes drive on opposite sides of the road. Both `src/crowd/`, both cheap, neither
+      touches the meter. Finding 2 undermines every later judgement about traffic: a player who
+      cannot predict which side a car comes from cannot learn a street
+- [ ] **Finding 3 — the mark over her head** — it fires for things that are neither lethal nor
+      attributable to anything she can see, and it is the one cue in the game that says *the
+      contract is now about you*. Lands on M22's own work and should be settled before anything
+      is added to the vocabulary
+- [ ] **Finding 4 — the same park twice** — this is **M24**, and the player asking for it is
+      what moves it
+- [ ] **Finding 5 — nothing is dangerous before day 8** — the emphasised one, and true by
+      construction: every `hard_fail` event starts on day 8 or later. Closest to **M25**. M28 is
+      the *density* half of it; this is the other half and no amount of café tables fixes it
 
 ## M10 — Polish · `feature/polish`
 

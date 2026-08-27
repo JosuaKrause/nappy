@@ -298,6 +298,26 @@ budgeted by the day and sited by `EventDirector`, which puts them across her lin
 `AHEAD_LEAD_DISTANCE` in front of her while she is walking. See docs/EVENTS.md, "Where an event
 happens", for which events earn that and what the contract on them is.
 
+## One event per block *(M28)*
+
+Playtest 05, finding 6, and it is the number M27 left open. Streaming made the density
+*computable* — a 900px radius is about 23% of the map, so what she is standing in is a knowable
+fraction of what the day planned — and the answer came back embarrassing: **1.8 events live
+around her, one met on a whole day's walking.** The player asked for one event per block, the
+dog-walker decision to arrive at least twice on day 1, and to be able to find a café at all.
+
+Day 1 now plans **50 events across 49 blocks**, of which about eleven are instantiated at any
+moment and **3.3 are on screen**. Day 14 plans 97. The full before-and-after table, and the
+reason the caps had to move before the budget, are in docs/EVENTS.md, "The density, and why it
+is caps before budget".
+
+What this does to the game is a change of kind, not of degree. A street with one event every
+four blocks is a street with an event *on* it — you see it, you route around it, and the rest of
+the walk is empty. A street with one event per block has no empty stretch to route into, so the
+question stops being *"can I avoid this"* and becomes **"which of these is cheapest to walk
+through"**. That is the route decision the whole game is about, and until M28 the city was too
+sparse to ask it.
+
 ## Excitement falloff
 
 Each active event has an `intensity`, an `inner_radius` and an `outer_radius`.

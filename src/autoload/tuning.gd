@@ -368,6 +368,30 @@ const AHEAD_MIN_SPEED := 40.0
 ## than spent in the first ten seconds. The director rolls within this band.
 const AHEAD_INTERVAL := Vector2(11.0, 26.0)
 
+# ------------------------------------------------ one event per block (M28) ---
+# Playtest 05, finding 6: *"I want one event per block. The dog walker decision should happen
+# meaningfully — I want to have to make that decision at least twice on day one."*
+#
+# The density lives in `EventScheduler.budget_for()` and the catalogue's `max_per_day`, both
+# **measured** rather than derived. What lives here is the thing that had to be invented to
+# make the density legible: until M28 the per-type caps were the only reason two of the same
+# event never landed on one pavement, because placement is a uniform random tile. Raising the
+# caps takes that away, so the separation becomes a rule of its own.
+
+## Two events of the same kind never land closer than this. A block is 256px across, so this
+## is "not on the same stretch of pavement" — the objection was never to seeing a second dog
+## walker, it is to seeing it thirty pixels from the first, which reads as a duplicate rather
+## than as a second incident.
+const EVENT_SPACING_SAME := 256.0
+## And nothing of any kind lands inside this of anything else, which is about two tiles: close
+## enough that a café and a shouting man can share a corner, far enough that neither is drawn
+## inside the other.
+const EVENT_SPACING_ANY := 64.0
+## Candidate tiles tried per placement before taking the roomiest one that was offered. A
+## fallback rather than a failure: a scripted event has to happen, and on a full map the honest
+## answer is the best spot left, not no event.
+const EVENT_PLACEMENT_TRIES := 24
+
 ## The carriageway, in px — the width the player has to clear when a horn goes.
 func carriageway_width() -> float:
 	return (STREET_WIDTH - SIDEWALK_WIDTH * 2) * float(TILE_SIZE)
