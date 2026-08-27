@@ -28,6 +28,7 @@ enum Look {
 	BIRDS,        ## A flock going up all at once.
 	ICE_CREAM_VAN,
 	LORRY,        ## A box lorry: the biggest silhouette in act I, and a wall.
+	CHARGING_DOG, ## Stretched out flat and coming at you. The one thing running is for.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
@@ -109,6 +110,22 @@ enum SpawnMode {
 ## telegraph ended — it never reached full intensity, and the running sprite never drew once.
 @export var still_while_telegraphing := false
 
+## Comes after **her**, rather than along a path. *(Playtest 07: "the run button is a trap
+## shouldn't be an invariant — there should be legitimate cases where running is required.")*
+##
+## This is the mechanic M25 said had to exist before running could ever be correct, and the reason
+## it is a mechanic rather than a number: running is worse than walking against everything that
+## merely *emits*, because `EXCITEMENT_FROM_RUNNING` outweighs the shorter exposure every time.
+## The only way it can be right is if the alternative is losing the day — so a pursuer is lethal,
+## it is faster than a walk, and it is slower than a run. Those three together mean walking away
+## does not work and running away does, which is the whole lesson.
+##
+## Its fairness contract is `Tuning.validate_pursuit()` and is stated over `RUN_SPEED`, exactly as
+## `docs/TODO.md` said it would have to be.
+@export var pursues := false
+## How fast it comes. Must sit strictly between `WALK_SPEED` and `RUN_SPEED`.
+@export var pursue_speed := 0.0
+
 ## Radius of solid obstruction, in px. 0 for events you can walk through. Scaffolding does
 ## not politely step aside, and being *forced* to reroute is a different pressure from
 ## choosing to.
@@ -164,10 +181,24 @@ func validate() -> bool:
 		push_error("event '%s' spawns ahead of the player and obstructs %.0fpx: nothing checks "
 				% [id, obstructs_radius] + "that it leaves a route to a park")
 		return false
+	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, inner_radius,
+			telegraph_time):
+		return false
+	if pursues:
+		# A pursuer has no line to be walked out of — it follows — so the ordinary escape-distance
+		# rule says nothing about it and `validate_pursuit` is the contract instead. What its
+		# telegraph has to buy is the moment of *noticing*, which is checked there.
+		return true
 	return Tuning.validate_event(id, telegraph_time, inner_radius, outer_radius, hard_fail,
 			speed if mobile else 0.0)
 
 ## Shortest telegraph this geometry may fairly have.
+##
+## A pursuer's is a different quantity and is stated in `Tuning.PURSUIT_MIN_NOTICE`: the ordinary
+## rule buys the time to walk out of a *field*, and there is no walking out of something that
+## follows. What its telegraph buys is the time to see it coming and change what you are doing.
 func minimum_telegraph() -> float:
+	if pursues:
+		return Tuning.PURSUIT_MIN_NOTICE
 	return Tuning.required_telegraph_time(inner_radius, outer_radius, hard_fail,
 			speed if mobile else 0.0)

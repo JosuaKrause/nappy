@@ -458,8 +458,21 @@ static func _along_street_path(map: CityMap, tile: Vector2i, def: EventDef,
 			break
 	if length <= 0:
 		return PackedVector2Array()
-	return PackedVector2Array([
-		map.tile_to_world(tile), map.tile_to_world(tile + along * length)])
+
+	# And never *finish* jammed against the city wall. `_room_along` keeps a period's margin from
+	# the boundary, which is enough on its own — but the truncation above can cut a route down to
+	# almost nothing, and a route that starts near the edge and is cut short finishes there. What
+	# that costs is stated on the loop below: a fire engine leaves its fire wherever it stops, and
+	# a fire on the boundary was the bug that put this margin here in the first place. Refusing is
+	# a re-roll; `tests/test_events.gd` checks it over all fourteen days.
+	var finish := tile + along * length
+	var edge := CityMap.period()
+	var at_end: int = finish.x if along.x != 0 else finish.y
+	var limit: int = map.size.x if along.x != 0 else map.size.y
+	if at_end < edge or at_end > limit - edge:
+		return PackedVector2Array()
+
+	return PackedVector2Array([map.tile_to_world(tile), map.tile_to_world(finish)])
 
 ## A route straight across the street the tile sits on. A cat runs *across* traffic, so the
 ## path is perpendicular to the road it starts from.

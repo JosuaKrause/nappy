@@ -1,0 +1,44 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/pause_screen.gd" id="1_pause"]
+
+[node name="PauseScreen" type="CanvasLayer"]
+layer = 90
+script = ExtResource("1_pause")
+
+[node name="Root" type="Control" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="Root"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.04, 0.04, 0.06, 0.78)
+
+[node name="Center" type="CenterContainer" parent="Root"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Lines" type="VBoxContainer" parent="Root/Center"]
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="Root/Center/Lines"]
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.94, 0.9, 0.83, 1)
+theme_override_font_sizes/font_size = 36
+text = "Stopped on the pavement."
+
+[node name="Body" type="Label" parent="Root/Center/Lines"]
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
+theme_override_font_sizes/font_size = 16
+text = "Arrows or WASD to walk.
+Hold Shift to run — it wakes her, so it is rarely worth it.
+Walk to calm ground and stay moving; standing still settles nothing."
+
+[node name="Hint" type="Label" parent="Root/Center/Lines"]
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.62, 0.6, 0.58, 1)
+theme_override_font_sizes/font_size = 13
+text = "esc to carry on     ·     q to quit"

@@ -62,9 +62,9 @@ Sources:
 | Source | Contribution |
 | --- | --- |
 | Proximity to an active event | `intensity × falloff(distance)` per second |
-| Proximity to a passer-by | `4.2 × falloff(distance)`, inner `22`, outer `88` |
-| Proximity to a passing car | `5.4 × falloff(distance)`, inner `38`, outer `170` |
-| Running | `+ (speed − walk_speed) / (run_speed − walk_speed) × 9.0` per second |
+| Proximity to a passer-by | `4.2 × falloff(distance)`, inner `22`, outer `55` |
+| Proximity to a passing car | `5.4 × falloff(distance)`, inner `38`, outer `104` |
+| Running | `+ (speed − walk_speed) / (run_speed − walk_speed) × 14.0` per second |
 | Standing in an alley | `+3.0` per second (slow, constant dread) |
 | Sudden events (cat dash) | one-shot impulse on trigger |
 
@@ -77,19 +77,33 @@ Excitement moves at the **net** rate, `incoming − decay`:
 
 | Player state | Decay per second |
 | --- | --- |
-| Idle | `6.0` |
 | Walking | `3.5` |
 | Running | `0.5` |
-| In a calm zone | decay × `1.6` |
+| Idle | `0.0` |
+| In a calm zone | decay × `2.2` |
+
+**The ordering is motion-shaped, and that is the model.** The pram is a rocking chair with wheels
+on: what settles a baby is being pushed. Walking settles her most, running is still motion and
+settles a little, and standing still settles nothing at all.
+
+*(Idle was `6.0` — the **fastest** of the three — until M33. That made standing still the
+strongest move in the game: a full meter cleared in seventeen seconds for seventeen points of
+sleepiness, anywhere, including the middle of a street she had no business being on. Playtest 07,
+finding 3: "not walking at all shouldn't reduce excitement either — otherwise I can just stop in
+the middle of the street and wait until everything is good." Two runs in that playtest's traces
+have a seventy-four-second gap in them with no entry at all.)*
 
 Netting rather than "decay only when nothing is happening" is what makes the decay column
 matter. Two consequences fall out of it, and both are wanted:
 
-- **Standing still actively fights a loud event**, rather than merely not helping. Stopping
-  is a real counterplay, paid for in drained sleepiness.
+- **Standing still freezes the meter** rather than clearing it: the day stops moving in both
+  directions at once. Waiting is not a plan, and the counterplay it replaces was always the better
+  one — walk somewhere quiet, which is what the calm-zone multiplier is for and what the whole
+  route is about.
 - **Sprinting past an event is far worse than walking past it** — running contributes
   excitement *and* drops decay to almost nothing, so the same event hits roughly three
-  times as hard. Panic is punished twice.
+  times as hard. Panic is punished twice, everywhere except against the one thing that
+  chases (see "Running that matters" below).
 
 It also sets a floor on what counts as an event: a source weaker than `3.5` cannot move
 the meter on a walking player at all. That is deliberate — it is what lets an empty alley
@@ -98,11 +112,16 @@ apply constant *pressure* (`+3.0`) without ever being a threat on its own.
 The crowd is pitched deliberately across that line. One person at arm's length is `4.2`,
 just over the walking decay, so brushing past somebody costs — and the pavement is two
 tiles wide, so *how close to pass* is a choice the player makes rather than a toll they
-pay. One car is `5.4`, under the idle decay: no single car is dangerous. The danger is that
-on a main road there is always another one, and the arterial's mean load sits between one
-and three times the idle decay. Above three it fills the meter faster than the street can
-be crossed, which is a street nobody can use rather than a route decision;
-`tests/test_crowd.gd` holds both ends of that.
+pay. One car is `5.4`, over the walking decay but nowhere near enough to matter alone: no single car
+is dangerous. The danger is that on a main road there is always another one, and the arterial's
+mean load sits between one and three times the **walking** decay. Above three it fills the meter
+faster than the street can be crossed, which is a street nobody can use rather than a route
+decision; `tests/test_crowd.gd` holds both ends of that.
+
+*(Stated against the walking decay since M33. It was the idle decay, which was the fastest of the
+three rates and was therefore the right reference for "she stops here and waits". Standing still
+settles nothing now, so the only question a street has to answer is what it costs to walk down —
+which is what a route is made of.)*
 
 At `excitement = 100` → **crying** → day lost.
 
@@ -377,13 +396,66 @@ Each active event has an `intensity`, an `inner_radius` and an `outer_radius`.
 
 ```
 contribution(d) = intensity                              , d <= inner_radius
-                = intensity × (1 − t)²                   , inner < d < outer
+                = intensity × (1 − t²)                   , inner < d < outer
                 = 0                                      , d >= outer_radius
    where t = (d − inner_radius) / (outer_radius − inner_radius)
 ```
 
-The quadratic falloff means the "danger zone" is felt well before it becomes severe, which
-is what makes crossing the street a meaningful counterplay.
+**The shape has a shoulder on it, and that is a design decision rather than an implementation
+detail.** *(M33, playtest 07 finding 18: "the excitement should go substantially up from
+relatively far away — I shouldn't have to get actual contact to get penalized.")*
+
+It was `(1 − t)²` for thirty-two milestones, which puts a **quarter** of the intensity at the
+midpoint of the falloff band and six percent three quarters of the way out. A café at 12/s was
+therefore under the 3.5/s walking decay across the whole outer 60% of its own field, and the run
+logs said so in as many words: every `near` entry written at an event's own outer radius read
+`events 0.0`. An event you are not charged for until you touch it is not something to route
+around, it is something to bump into — which inverts the whole game.
+
+`1 − t²` holds **three quarters** of the intensity at the midpoint and reaches zero only at the
+outer edge. Two consequences worth knowing before touching it again:
+
+- **The telegraph contract is unaffected.** It is stated over *distance* — how far she has to walk
+  to be outside the radius — and no radius moved.
+- **It applies to the crowd too, and the crowd compensates in radius.** A field that bites from
+  a distance is right for an authored event and wrong for one of two hundred and forty bodies. The
+  pedestrian and car outer radii came in (88 → 55, 170 → 104) so that a close pass costs exactly
+  what it did and the summed street floor lands where it was.
+
+## Running that matters
+
+*(M33, playtest 07: "the run button is a trap shouldn't be an invariant — there should be
+legitimate cases where running is required.")*
+
+Running is deliberately the wrong move against every event you route **around**. The numbers above
+are why: `EXCITEMENT_FROM_RUNNING` (14/s) plus the collapsed decay outweighs the shorter exposure
+for every row in the catalogue, and `tests/test_events.gd` asserts it row by row. That is not an
+accident to be tuned away — an event that merely emits is a *place*, and the answer to a place is
+a route.
+
+The exception is the one kind of thing a route cannot answer: something that **follows**.
+`EventDef.pursues` marks it, and three properties make walking and running give *opposite
+outcomes* rather than the same outcome at two prices:
+
+| | |
+| --- | --- |
+| Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
+| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
+| Bounded | gives up after `PURSUIT_TIME`, because a run is priced per second and an unbounded chase is a loss however well it is played |
+
+Its telegraph is the **approach**, the way a fire engine's is. A pursuer that stands still while it
+telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
+owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
+whole contract and it runs on load.
+
+Measured on a rig: a player who walks directly away from the first frame is still caught, and one
+who runs escapes with 240px to spare.
+
+**Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 teaches the arrow keys and says nothing
+about running; day 3 is when something comes after the pram, and the HUD says *Hold SHIFT to run*
+on the frame it telegraphs rather than at dawn — a line of text at dawn is a control list, and the
+same line over a dog at the pram is an instruction. `EventDirector` moves the first pursuit of that
+day to the head of its queue, so the lesson is not left to a weight of 1.4.
 
 ## Telegraphing
 

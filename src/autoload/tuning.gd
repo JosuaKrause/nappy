@@ -618,6 +618,88 @@ const EVENT_SPACING_ANY := 64.0
 ## answer is the best spot left, not no event.
 const EVENT_PLACEMENT_TRIES := 24
 
+# ------------------------------------------------------ running that matters ---
+# Playtest 07: *"the run button is a trap shouldn't be an invariant — there should be legitimate
+# cases where running is required."* And, in the same breath, when: *"can we make it so those
+# cases only start appearing on day 3"*, with *"an incident at the start to force running"*.
+#
+# So the run is **taught** rather than merely permitted, and it is taught the day it starts to
+# matter. Day 1 is arrow keys and nothing else; day 3 is the day something comes after the pram.
+
+## The day running stops being a bad idea and starts being the answer.
+##
+## Day 3 is act I's last day and already the day it grows teeth — `reversing_lorry` arrives then,
+## and `cyclist` on day 2 — so this is the third of three escalations rather than a fourth kind of
+## thing. It is also late enough that a player has had two days of the meter to learn that running
+## is expensive, which is what makes being *made* to run land as a change of rules rather than as
+## the rules finally being explained.
+const RUN_TAUGHT_DAY := 3
+
+## How long a pursuer keeps coming once it turns lethal, before it gives up.
+##
+## Bounded by the cost of the answer, not by the fiction: at `EXCITEMENT_FROM_RUNNING` a sprint is
+## fourteen points a second, so a six-second chase is most of the meter and being *made* to run
+## would be being made to lose. Three seconds is about forty points — the most expensive moment in
+## act I by a distance, and much cheaper than the day it buys.
+const PURSUIT_TIME := 3.0
+
+## And the least a pursuer's speed may differ from either of hers.
+##
+## The contract in one line: **walking must lose and running must win.** So its speed sits
+## strictly between the two, far enough into the band that the difference is worth acting on
+## inside `PURSUIT_TIME`. The margin is small at the top end on purpose — a run that only just
+## outpaces it is a run she has to actually commit to.
+const PURSUIT_MIN_MARGIN := 20.0
+
+## And the least notice one has to give: its telegraph, during which it is visibly coming and
+## emitting `TELEGRAPH_INTENSITY_FRACTION`, but cannot yet end the day.
+##
+## A pursuer's telegraph is the **approach**, the way a fire engine's is — a dog that has to bark
+## for two seconds before it is allowed to start running is not a dog. So the notice is the sight
+## of it closing, and this is how much of that she is owed before it can touch her.
+const PURSUIT_MIN_NOTICE := 1.5
+
+## The pursuit fairness contract, and the one place it is stated.
+##
+## `validate_event`'s escape-distance rule is about walking out of a *field*, and a pursuer has no
+## field to walk out of — it follows. So it needs its own contract, and `docs/TODO.md` said what it
+## would have to be stated over before there was anything to state it about: `RUN_SPEED`.
+##
+## Three conditions, and each of them is one of the three ways this could be unfair:
+##
+## - **Walking must lose.** Faster than `WALK_SPEED` by a real margin, or the mechanic teaches
+##   nothing — she strolls away and the run key stays a trap.
+## - **Running must win.** Slower than `RUN_SPEED` by the same margin, or it is not a lesson, it
+##   is a death sentence with a keypress attached.
+## - **It must let go.** A chase with no end is a chase she cannot afford: running is priced per
+##   second, so an unbounded one is a loss however well it is played.
+func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
+		telegraph: float) -> bool:
+	if speed < WALK_SPEED + PURSUIT_MIN_MARGIN:
+		push_error("Unfair pursuit '%s': %.0fpx/s is not enough faster than a walk (%.0f)"
+				% [id, speed, WALK_SPEED])
+		return false
+	if speed > RUN_SPEED - PURSUIT_MIN_MARGIN:
+		push_error("Unfair pursuit '%s': %.0fpx/s cannot be outrun (%.0f)"
+				% [id, speed, RUN_SPEED])
+		return false
+	if chase_time <= 0.0 or chase_time > PURSUIT_TIME * 2.0:
+		push_error("Unfair pursuit '%s': a %.1fs chase is not something a run can end"
+				% [id, chase_time])
+		return false
+	# And the gap a run opens over the whole chase has to actually clear the lethal radius, or
+	# running is correct and still not enough.
+	var opened := (RUN_SPEED - speed) * chase_time
+	if opened < inner:
+		push_error("Unfair pursuit '%s': running opens %.0fpx over %.1fs, less than the %.0fpx "
+				% [id, opened, chase_time, inner] + "that ends the day")
+		return false
+	if telegraph < PURSUIT_MIN_NOTICE:
+		push_error("Unfair pursuit '%s': %.1fs of it coming is not enough notice (%.1fs)"
+				% [id, telegraph, PURSUIT_MIN_NOTICE])
+		return false
+	return true
+
 ## The carriageway, in px — the width the player has to clear when a horn goes.
 func carriageway_width() -> float:
 	return (STREET_WIDTH - SIDEWALK_WIDTH * 2) * float(TILE_SIZE)

@@ -7,6 +7,7 @@ const CITY := preload("res://scenes/world/city.tscn")
 const STROLLER := preload("res://scenes/player/stroller.tscn")
 const HUD := preload("res://scenes/ui/hud.tscn")
 const DAY_SUMMARY := preload("res://scenes/ui/day_summary.tscn")
+const PAUSE_SCREEN := preload("res://scenes/ui/pause_screen.tscn")
 
 @onready var _status: Label = $CanvasLayer/Status
 
@@ -22,6 +23,7 @@ var _hud: CanvasLayer
 ## it is fire-and-forget.
 var _edge: DangerEdge
 var _summary: CanvasLayer
+var _pause: PauseScreen
 var _follow_camera: Camera2D
 var _follow_id := ""
 ## Dev spawn and meter overrides apply to the opening day only; every later day starts on
@@ -65,6 +67,12 @@ func _ready() -> void:
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 	_summary.continued.connect(_on_summary_continued)
+
+	# Deliberately not `_pauses_with_the_game`: a pause screen that pauses with the game cannot
+	# unpause it. It inherits ALWAYS from this node, which is what it wants.
+	_pause = PAUSE_SCREEN.instantiate()
+	add_child(_pause)
+	_pause.quit_requested.connect(_quit)
 
 	_resistance = ResistanceDirector.new()
 	_resistance.name = "Resistance"
@@ -469,10 +477,24 @@ func _apply_meter_override() -> void:
 	if _baby.sleepiness >= Tuning.METER_MAX:
 		_baby.force_sleep()
 
+## `Esc` opens the pause. *(Playtest 07: "how can I pause the game?")*
+##
+## It quit outright until then, which is the entry `CLAUDE.md` has carried under known-shaky
+## ground since M6. Quitting keeps a key, one step further in: the pause screen owns `Q`.
+##
+## Not while the summary is up. That screen already has the tree paused and its own key to leave
+## with, and two things fighting over `get_tree().paused` is how a pause stops meaning anything.
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("pause"):
-		Telemetry.end_run()
-		get_tree().quit()
+	if not event.is_action_pressed("pause"):
+		return
+	if _pause.is_open() or (_summary and _summary.visible):
+		return
+	get_viewport().set_input_as_handled()
+	_pause.open()
+
+func _quit() -> void:
+	Telemetry.end_run()
+	get_tree().quit()
 
 ## Closing the window is the other way a run ends, and an abandoned run is worth reading —
 ## every line is already on disk, so this only closes the handle tidily.

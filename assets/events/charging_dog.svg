@@ -1,0 +1,27 @@
+<!-- The one thing in the game you cannot walk away from, so the silhouette has to say *coming
+     at you* rather than *dog*. Read against dog.svg, which is the same animal braced on a lead:
+     that one is upright, short and held. This one is stretched out flat, head down and level
+     with the shoulders, legs thrown front and back, and it is half again as long. The open jaw
+     is the only red on it — the one detail that says the difference between a dog running past
+     and a dog running at. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="22" viewBox="0 0 40 22" shape-rendering="crispEdges">
+  <!-- Back legs thrown behind, front legs thrown ahead: mid-bound, not mid-trot. -->
+  <rect x="2" y="15" width="7" height="3" fill="#4a3a2c"/>
+  <rect x="1" y="17" width="4" height="3" fill="#4a3a2c"/>
+  <rect x="22" y="16" width="8" height="3" fill="#4a3a2c"/>
+  <rect x="28" y="18" width="4" height="3" fill="#4a3a2c"/>
+  <!-- Tail out straight behind, level with the spine. -->
+  <rect x="0" y="8" width="6" height="2" fill="#4a3a2c"/>
+  <!-- Long low body. -->
+  <rect x="4" y="8" width="21" height="8" fill="#5c4632"/>
+  <rect x="4" y="8" width="21" height="2" fill="#6b543f"/>
+  <!-- Head carried low and forward, in line with the body rather than above it. -->
+  <rect x="24" y="9" width="10" height="7" fill="#5c4632"/>
+  <rect x="24" y="6" width="4" height="4" fill="#3b2f26"/>
+  <rect x="33" y="10" width="4" height="3" fill="#3b2f26"/>
+  <!-- Open jaw. -->
+  <rect x="33" y="13" width="6" height="3" fill="#c4503c"/>
+  <rect x="35" y="12" width="2" height="2" fill="#f2ece2"/>
+  <rect x="38" y="14" width="2" height="2" fill="#f2ece2"/>
+  <rect x="30" y="10" width="2" height="2" fill="#f2ece2"/>
+</svg>

@@ -24,6 +24,7 @@ const LEAF_BLOWER := preload("res://assets/events/leaf_blower.svg")
 const PIGEON := preload("res://assets/events/pigeon.svg")
 const ICE_CREAM_VAN := preload("res://assets/events/ice_cream_van.svg")
 const LORRY := preload("res://assets/events/lorry.svg")
+const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
 
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
@@ -31,6 +32,14 @@ var path: PackedVector2Array = PackedVector2Array()
 
 var age := 0.0
 var is_finished := false
+
+## Where the thing it is chasing is, in world space, or `INF` for nothing.
+##
+## Written once per frame by `EventManager`, which is the one place that already knows where the
+## player is. An instance looking her up itself would be thirty lookups a frame for one answer,
+## and — more to the point — `EventInstance` has never had to know the player exists, and this
+## keeps that true: it is handed a point and it walks toward it.
+var chase_target := Vector2.INF
 
 ## Facing, for art with a front and a back. Only a mobile event ever changes it.
 var _heading := Vector2.RIGHT
@@ -69,12 +78,36 @@ func _process(delta: float) -> void:
 		_activation_announced = true
 		EventBus.event_activated.emit(self)
 
-	if def.mobile and path.size() > 1 and not is_telegraphing_still():
+	if def.pursues:
+		_chase(delta)
+	elif def.mobile and path.size() > 1 and not is_telegraphing_still():
 		_advance_along_path(delta)
 
 	if _has_expired():
 		_finish()
 	queue_redraw()
+
+## Comes after her. *(Playtest 07: running has to be right sometimes, and this is the shape of
+## "sometimes".)* See `EventDef.pursues` and `Tuning.validate_pursuit`.
+##
+## **It comes through its own telegraph**, the way a fire engine does, and that is the whole of
+## why a pursuer can force a run at all. A telegraph it spends standing still is a head start she
+## can simply walk away with: at `pursue_speed` against `WALK_SPEED` it closes about 56px a
+## second, so two seconds of politeness hands her more ground than the entire chase can take
+## back. The notice is *the sight of it coming*, and `Tuning.PURSUIT_MIN_NOTICE` is how much of
+## that she is owed before it is allowed to end her day.
+func _chase(delta: float) -> void:
+	if chase_target == Vector2.INF or is_telegraphing_still():
+		return
+	var toward := chase_target - global_position
+	if toward.length() < 1.0:
+		return
+	_heading = toward.normalized()
+	# Straight at her, and no faster than its own speed: the contract is the speed, so nothing
+	# here may quietly exceed it.
+	var step := minf(def.pursue_speed * delta, toward.length())
+	position += _heading * step
+	_path_travelled += step
 
 ## How far along its route this instance has got, so streaming it out and back in can resume it
 ## instead of rewinding it. See `EventManager._stream_in`.
@@ -174,7 +207,9 @@ func _draw() -> void:
 	# its own (the M12c note). Driven by **distance covered**, not by time, so it is the movement
 	# itself that shows: something stopped is still, and something fast bobs faster.
 	var bob := 0.0
-	if def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
+	if def.pursues:
+		bob = -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
+	elif def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
 		bob = -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
 	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2.ONE)
 	_draw_body()
@@ -333,6 +368,8 @@ func _draw_body() -> void:
 			_draw_simple(ICE_CREAM_VAN, 20.0)
 		EventDef.Look.LORRY:
 			_draw_simple(LORRY, 26.0)
+		EventDef.Look.CHARGING_DOG:
+			_draw_simple(CHARGING_DOG, 13.0)
 		EventDef.Look.NONE:
 			pass
 

@@ -127,7 +127,8 @@ kind has to be able to name the question it answers, or it is a metric and does 
 | `near` | observer | How many entities were nearby, which, and how close — the cost table under finding 7 as what happened to a person |
 | `closure` | observer | Are M16's closures a decision or scenery? |
 | `turn` | observer | Did the player double back — and was it because of a barrier they had just seen? |
-| `run` | observer | Did running help? Today the answer should always be "it made things worse" |
+| `run` | observer | Did running help? Against everything you route around the answer is still "it made things worse", by design — but since M33 there is one kind of thing running is the *only* answer to, so a `run` immediately after a `charging_dog` telegraph is the lesson landing rather than a mistake |
+| `idle` | observer | **Standing still, and what it bought** — how long, on what ground, and what the two meters did across it. Written when the stand ends, like `cue`, because the duration is the point. It exists because the strongest move in the game used to show up in a trace as a *gap between two lines*: standing still emits nothing, and one playtest 07 run has a seventy-four-second one *(playtest 07, finding 3)* |
 | `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. Playtest 06's two cue findings were both invisible to a trace: a cue is a claim about a moment, and nothing wrote the moment down *(playtest 06, findings 1 and 3)* |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |

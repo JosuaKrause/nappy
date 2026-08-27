@@ -1,7 +1,76 @@
 # Handoff
 
-**Last updated:** end of the M32 session — playtest 06's five things, all closed.
-**Read this first, then [PLAYTEST-06.md](PLAYTEST-06.md), then [TODO.md](TODO.md).**
+**Last updated:** end of the M33 session — playtest 07's first half. Nine of nineteen closed.
+**Read this first, then [PLAYTEST-07.md](PLAYTEST-07.md), then [TODO.md](TODO.md).**
+
+> **M33 is playtest 07, and it is one sentence: every cost in the game was paid on contact, and
+> almost nothing else in it was real.** Sixteen of the nineteen findings are that sentence from
+> one side or another, and two of them can be read straight off the traces the player left
+> behind: a run that loses day 2 three times inside half a minute with the crowd supplying 82–100%
+> of the excitement each time, and every `near` entry written at an event's own outer radius
+> reading `events 0.0`.
+>
+> **The falloff had a shoulder missing.** `Tuning.falloff` was `(1−t)²`, which is a quarter of the
+> intensity at the midpoint of the band and six percent three quarters of the way out — so a café
+> at 12/s sat under the 3.5/s walking decay across the outer 60% of its own field. That is the
+> whole of finding 18, *"I shouldn't have to get actual contact to get penalized"*, and fixing the
+> **shape** fixed thirty rows at once where thirty hand-widened radii would have been thirty
+> chances to break the fairness contract. It is `1−t²` now. The contract is stated over *distance*
+> and no distance moved.
+>
+> **Three things had to move with it, and each is a trap for the next person.** The crowd took the
+> same shoulder and did not want it — a field that bites from a distance is right for an authored
+> event and wrong for one of 240 bodies — so it pays it back in *radius* (88 → 55, 170 → 104) and
+> the close pass costs exactly what it did. Running stopped being a trap **by accident**, because
+> a fatter field makes time-in-field matter more; `EXCITEMENT_FROM_RUNNING` 9 → 14 restores it and
+> a test asserts it row by row now. And a contact costs 18 rather than 26, because the authored
+> content finally carries the share the crowd was carrying alone.
+>
+> **A contact can end, and people get out of the way.** Two defects, either enough to trap her:
+> the separation resolved to exactly `BUMP_RADIUS`, which is the radius that *releases* the
+> contact, so a resolved pair sat on its own threshold; and a walker steers back to its lane
+> centre, which is where she is standing. Longest single contact: 1.0s → **0.1s**. Then the
+> larger thing — M19 and M27 built the crowd on *eleven contacts down a lane centre against one
+> on the midline*, and a probe re-run on `main` says that ratio is **gone**: thirteen against
+> fifteen. It cannot be tuned back, because a midline is 16px from two lane centres and
+> `BUMP_RADIUS` is 14; that line was two pixels wide when M19 measured it. So the careful line is
+> a **behaviour** now — somebody who sees a pram coming steps aside, hurries across, or waits.
+>
+> **Standing still settles nothing.** `EXCITEMENT_DECAY_IDLE` was 6.0, the *fastest* of the three.
+> What settles a baby is being pushed. And the player asked whether the telemetry could see it: it
+> could not, because standing still emits no entry of any kind, so the strongest move in the game
+> appeared in a trace as a **seventy-four-second gap between two lines**. There is an `idle` span
+> now.
+>
+> **And running started to matter.** *"The run button is a trap shouldn't be an invariant — there
+> should be legitimate cases where running is required."* So there is one, and it had to be a
+> mechanic rather than a number, which is what `TODO.md` has said about M25 since playtest 02.
+> `EventDef.pursues`: faster than a walk, slower than a run, lethal, and it gives up. Walking and
+> running give **opposite outcomes** rather than the same outcome at two prices.
+> `Tuning.validate_pursuit()` is the contract and it is stated over `RUN_SPEED`. Verified on a
+> rig: a player who walks directly away from the first frame is still caught (1.6px), one who runs
+> escapes with 240px to spare.
+>
+> **The run is taught the day it starts to matter, and not before.** Day 1 says how to walk and
+> nothing else. `charging_dog` is gated to `Tuning.RUN_TAUGHT_DAY` (3), `EventDirector` moves the
+> first one to the head of the queue on that day so the lesson is not left to a weight of 1.4, and
+> the HUD says *Hold SHIFT to run* on the frame the dog telegraphs rather than at dawn. That is
+> half of **M26 arriving before M25**, and it satisfies rather than breaks the ordering constraint
+> M26 was written with: the forced run sits behind the thing that makes running right.
+>
+> **And there is a pause.** `Esc` opens it, `Esc` closes it, `Q` quits. It quit outright for
+> thirty-three milestones. The game mentions it once per run, the first time she stops of her own
+> accord — not on the doorstep at dawn, which is somebody who has not started rather than somebody
+> who has stopped, and not over the walking lesson, because the `Teach` label is one label.
+>
+> **Ten of the nineteen are open** and they are listed at the bottom of
+> [PLAYTEST-07.md](PLAYTEST-07.md). The two worth knowing before touching anything: **solid
+> objects are not solid** — `obstructs_radius` is set on five rows of thirty, so a delivery van, an
+> ice cream van, a reversing lorry and a burnt-out shell can all be walked through — and **finding
+> 4 is not diagnosed**. The warning indicators render below roofs and the geometry says they
+> should not: a building's drawn mass fills exactly its own lot and `Entities` is y-sorted on the
+> ground plane. Reading the code did not find it and two screenshots did not catch it. It needs
+> the case reproduced, most likely in a carve or a courtyard passage.
 
 > **M32 is playtest 06, and it is one sentence: a cue is a claim about a *moment*.** M30 spent a
 > milestone deciding *which* things raise the mark over her head and never looked at **when** —
@@ -46,11 +115,17 @@
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **47085 checks, 0 failures** (~105s);
+`main` is green and playable. `./tools/test.sh` → **46607 checks, 0 failures** (~105s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
-**The check count went 47062 → 47085**, which is M32's twenty-three: the whole milestone is
+**The check count went 47085 → 46607, and a drop wants explaining.** M33 added ~50 checks —
+the pursuit contract, the caret's timeable rule, the motion-shaped decay ordering, the running
+ordering row by row — and removed ~530, all from one place: `_along_street_path` now refuses a
+route that would *finish* jammed against the city wall, so fewer along-street routes are placed
+and the per-route assertions run fewer times. That is a suite asserting the same things about a
+smaller set, not a suite that stopped running. Before that it went 47062 → 47085 on M32, which is
+the milestone where the whole point is
 about *when* a cue fires, and almost none of that is assertable. What is assertable was made so
 on purpose — the badge's two questions are **static functions** (`approach_speed`, `announces`)
 so a test can ask them without a viewport, and the rest is a rig walked at a parked fire engine
@@ -235,20 +310,30 @@ than code. All of them are written up in `PLAYTEST-02.md` (decisions 9–14).
 ## Read this before touching the event or signalling code
 
 **The cost table has been regenerated and is now asserted by a test.** `docs/EVENTS.md`, "What
-an event actually costs". Three rows are negative — `poster_crew`, `barricade`, `burnt_shell` —
-and all three are deliberate scenery; `tests/test_events.gd` names exactly those three as
-exemptions and requires everything else to cost more to walk through than to walk around. A
-*fourth* negative event therefore has to be a decision rather than an oversight. The table is
-only about events, and since M19 that is no longer the whole cost of a street: a contact with a
-pedestrian is ~15.6 points and a car's horn ~8, and neither is in the catalogue. **M27 widened
-that gap again**, and the street is now most of the day — a balance argument that reaches for
-the cost table alone is answering a narrower question than it thinks.
+an event actually costs". **Every row moved in M33**, because what changed was the *shape* of
+`Tuning.falloff` rather than any one event. One row is now negative — `burnt_shell`, a reminder
+rather than an obstacle — where three used to be; `tests/test_events.gd` names exactly that one
+as the exemption and requires everything else to cost more to walk through than to walk around,
+so a *second* negative event has to be a decision rather than an oversight. The table is only
+about events, and since M19 that is no longer the whole cost of a street: a contact with a
+pedestrian is ~10.8 points and a car's horn ~8, and neither is in the catalogue. **M27 widened
+that gap and M33 narrowed it deliberately** — a balance argument that reaches for the cost table
+alone is answering a narrower question than it thinks, but it is a much less narrow one than it
+was.
 
-**Running is still the wrong move against every event in the game.** `EXCITEMENT_FROM_RUNNING`
-(9/s) plus the collapsed decay (3.5/s → 0.5/s) beats the shorter exposure in every single
-case. The run button is a trap, and M19 did not change it — the lethal car is escaped by
-stepping over a kerb, not by outrunning anything. This is why M25 is written as a mechanic to
-build rather than a constant to tune.
+**Running is the wrong move against every event you route *around*, and the right move against
+the one kind of thing that follows you.** *(M33.)* `EXCITEMENT_FROM_RUNNING` (14/s) plus the
+collapsed decay (3.5/s → 0.5/s) beats the shorter exposure for every row that merely emits, and
+`tests/test_events.gd` asserts it **row by row** now. It had only ever been measured and written
+into a document, and that is exactly how it broke: M33's change to the falloff shape made running
+a point or two cheaper than walking through the four widest fields, silently, in four rows.
+
+The exception is `EventDef.pursues`, and the shape of it is the point. Running cannot be made
+correct by moving a constant, because against something that merely emits the two options are the
+same outcome at two prices. Against something that **follows** they are opposite outcomes: walking
+away loses the day and running away does not. That is why M25's half of this had to be built
+rather than tuned, and `Tuning.validate_pursuit()` is the contract — stated over `RUN_SPEED`,
+exactly as `TODO.md` said it would have to be.
 
 **No circles, and the replacement has shipped.** *(M22 — this section used to say "has
 started".)* The rings are deleted rather than restyled, `EventAuraLayer` is gone, and
@@ -444,9 +529,75 @@ it.
   produced one cue and a column of `crowd` bumps at the same tile. A walking probe is not a
   player; check the tiles in the trace before concluding anything about the density.
 
+## Gotchas learned in M33
+
+- **A falloff shape is a design decision wearing an implementation's clothes.** Thirty rows of
+  hand-tuned radii and intensities, and the thing making three quarters of every radius free was
+  one exponent nobody had looked at since M2. When a whole class of content "does not land", check
+  the curve before checking the constants.
+- **One shape change moves every consumer of it, including the ones that did not want it.** The
+  crowd sums the same `falloff` the events do, and doubling what a body is worth at mid-range put
+  the arterial floor at 18.4/s against a 3.5 decay — a main road that fills the meter in six
+  seconds. It pays the shape back in **radius**, so the close pass is untouched and only the wide
+  cheap middle went.
+- **A measured fact written only in a document breaks silently.** *"Running is the wrong move
+  against every event"* had been in `CLAUDE.md` since M19 and was false in four rows the moment
+  the falloff moved. It is a test now. Anything the docs state as measured and load-bearing should
+  be.
+- **A ratio the design rests on can decay out from under it with nobody touching the numbers.**
+  M19 measured eleven contacts down a lane centre against one on the midline and M27 re-measured
+  it; by M33 it was thirteen against fifteen on `main`, because a midline is 16px from two lane
+  centres, `BUMP_RADIUS` is 14, and every milestone since has given walkers more reason to be off
+  their exact centre. Two pixels of clearance was never a mechanic. Re-measure the ratios a design
+  claims, not just the numbers it sets.
+- **A hysteresis that is one number wide is not a hysteresis.** The bump resolved to exactly
+  `BUMP_RADIUS`, which is the value that releases the contact, so a resolved pair sat on its own
+  threshold and re-fired. Resolve *past* the release, always.
+- **Positional separation can be undone by steering.** The invariant says separation is positional
+  and never a force, and it is — but a walker steers back to its lane centre at 90px/s, so the
+  separation was being un-made every frame. The fix is not more separation, it is giving the other
+  body somewhere else to want to be.
+- **The obvious avoidance test is the wrong one for anything crossing your path.** "Is it within a
+  lane's width of my line right now" is right for somebody sharing the pavement and useless for
+  somebody crossing it — at 60px/s they enter that window a third of a second before the contact.
+  Predict the **closest approach**. A probe said nine of every twelve contacts were exactly that
+  walker, which is how the first version got caught doing nothing.
+- **Measure the thing you are changing, not the thing next to it.** The probe first counted "is
+  anybody touching", which chains one contact into the next on a busy pavement and reported a 3.8s
+  contact that was really nine. Per-agent, or the number is a different number.
+- **A rig that drives the player must turn the player'''s own `_physics_process` off.** The
+  pursuit probe moved her twice a frame — once by the rig and once by `Stroller` — so she fled at
+  157px/s instead of 92 and the chase looked unfair in the player'''s favour. `CLAUDE.md` already
+  says a probe that disagrees with the game is wrong about the game; this is the cheapest way to
+  make one disagree.
+- **A rig cannot hold a reference to an event past the frame it finishes.** `EventManager` frees
+  a finished instance, and `if not _dog: return` then silently swallows the whole measurement.
+  Twelve minutes of a probe printing nothing.
+- **A new catalogue row reshuffles every day'''s rolls.** Adding `charging_dog` changed which tile
+  every later event landed on, which surfaced a latent bug in `_along_street_path`: a route
+  truncated by a closure can *finish* jammed against the city wall even though the length check
+  keeps a margin from it. That check had been passing by luck since M5.
+- **The first cue rule you write about "changes over time" will mark everything again.** M22
+  learned it with "louder than the walking decay"; M33 learned the same lesson with
+  `pulse_period > 0`, which is six of the ten rows available on day 1. The question is never
+  *does it change* — it is **can the player play against the change**.
+
 ## What to do next, in order
 
-### First: play it, and read the `cue` entries
+### First: the ten open findings from playtest 07
+
+They are listed at the bottom of [PLAYTEST-07.md](PLAYTEST-07.md) in the order they are worth
+doing. The first group is cheap and is a correctness bug rather than a polish item: **five
+stationary, visibly solid objects have no collision at all**, and `alley_robbery`'s lethal radius
+is smaller than the player'''s own collision circle, so *"I can walk over the robber and he doesn'''t
+do anything"* is literally true.
+
+The one that needs investigation rather than typing is **finding 4**, the warning indicators
+rendering below roofs. The geometry says it cannot happen; it does. Reproduce the case before
+theorising — the likely shape is an entity standing *inside* a block'''s y-range, which means a
+carve: an alley, a courtyard passage, or a commercial square.
+
+### Then: play it, and read the `idle` and `cue` entries
 
 Nothing is queued ahead of a person playing. Six of playtest 06's own findings and playtest 05's
 before them came out of somebody walking around for a few minutes, and M32 in particular is five

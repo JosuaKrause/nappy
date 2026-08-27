@@ -185,6 +185,99 @@ invented to replace it. The player walked up to one to find out what it meant an
 
 ---
 
-## What was done
+## What was done, and what is not
 
-See **M33** in [TODO.md](TODO.md).
+**M33 is the first half.** Nine of the nineteen are closed and the rest are queued behind them,
+because the nine that went first are the ones everything else is judged against: there is no point
+looking at whether a delivery van reads as parked while the meter is being decided by pedestrians.
+
+### Closed
+
+- **3, 5, 17, 18** — the cost model, above. `falloff` grew a shoulder, the crowd paid it back in
+  radius, standing still settles nothing, a contact resolves and costs less, and people get out of
+  the way.
+- **The run stopped being a trap by accident, and then stopped being one on purpose.** Two
+  separate things, and the order matters. The shoulder made running a point or two *cheaper* than
+  walking through the four widest fields — not "running works" but "running is a coin flip", which
+  was nobody's design — so `EXCITEMENT_FROM_RUNNING` went 9 → 14 and `tests/test_events.gd` now
+  asserts the ordering row by row. It had only ever been measured and written into a document,
+  which is exactly how it broke silently.
+  Then the player asked for the opposite and was right: *"the run button is a trap shouldn't be an
+  invariant — there should be legitimate cases where running is required."* So there is one, and
+  it is a **mechanic** rather than a number, which is what `docs/TODO.md` has said M25 would have
+  to be since playtest 02. `EventDef.pursues`: something that comes after **her**, faster than a
+  walk and slower than a run, lethal, and it gives up. Walking away and running away give opposite
+  outcomes rather than the same outcome at two prices, so running is not cheaper — it is the only
+  thing that works.
+- **12** — there is a pause. `Esc` opens it, `Esc` closes it, `Q` quits. It quit outright for
+  thirty-three milestones. And the game says so, once, at the first moment it is useful:
+  *"bring up the pause tutorial if the user idles — only after the walking tutorial has been
+  finished, and only the first time the user idles in a session, after the initial idle when
+  starting the game before starting to walk for the first time in a day."* Standing on the
+  doorstep at dawn is somebody who has not started rather than somebody who has stopped, so it
+  does not count; the prompt waits for a stop she chose.
+- **And the run is taught the day it starts to matter.** *"On day 1 we only introduce arrow keys.
+  On day 3 we introduce the running key (it is possible to run before but not required), and have
+  an incident at the start to force running."* Day 1 says how to walk and nothing else. `charging_dog`
+  is gated to `Tuning.RUN_TAUGHT_DAY`, `EventDirector` moves the first one to the head of the
+  queue on that day so the lesson cannot be left to a weight of 1.4, and the HUD says *Hold SHIFT
+  to run* on the frame the dog telegraphs rather than at dawn — a line of text at dawn is a control
+  list, and the same line over a dog coming at the pram is an instruction.
+  This is half of **M26**, arriving before M25 rather than after it, and the ordering constraint
+  M26 was written with is satisfied rather than broken: *forcing a run before running is ever the
+  right answer teaches a move that is never correct again* — so the forced run is on day 3, behind
+  the thing that makes it right, and not on day 1.
+
+### Measured
+
+| | before | after |
+|---|---:|---:|
+| arterial noise floor | 10.4/s | 10.6/s |
+| back street noise floor | ~1.9/s | 1.9/s |
+| a café at half its outer radius | 3.0/s | 10.6/s |
+| a dog walker at half its outer radius | 6.5/s | 23.1/s |
+| longest single contact, walking a pavement | 1.0s | **0.1s** |
+| longest single contact, backed against a wall | 1.0s | **0.1s** |
+| same-axis contacts in a 40s walk | 11 | **0–4** |
+| crossing contacts in a 40s walk | 9–11 | 8–10 |
+| one contact, in points | 15.6 | 10.8 |
+
+The two rows that did not move are the finding this milestone did not close: **contacts with
+somebody crossing her corridor at a junction**. A sidestep cannot help them — the direction she
+needs them to move is their own line of travel — so they hurry or wait instead, and it barely
+shows. Junctions are where four pavement bands overlap and people go in every direction, and
+avoiding that properly is pathfinding rather than a rule. What pays for it in the meantime is the
+cheaper contact.
+
+### Not done
+
+Everything else, in the order it is worth doing:
+
+- **16, 13, 7, 15** — solid things are not solid. `obstructs_radius` is set on five rows of
+  thirty; a delivery van, an ice cream van, a reversing lorry, a burnt-out shell and an abduction
+  van are all large, visibly solid, stationary objects you can walk through. And `alley_robbery`'s
+  lethal radius is 22px, which is smaller than the player's own collision circle, so "walk over the
+  robber" is a thing that can happen without ever entering it.
+- **2** — the caret is fixed (a pulse only counts if it can be *timed*, which takes day 1 from six
+  marked rows to two) but the other half of that finding is not: *"not sure what that person was
+  supposed to be"* is `homeless_yeller`, `busker` and `poster_crew` all drawing the same
+  `person.svg`, which is the known-shaky-ground entry `CLAUDE.md` has carried since M22.
+- **11** — a café with no people at it.
+- **10** — the spoiler has to cover the calm area rather than stand in it: *"blocking a park etc
+  should have multiple robbers so the entire area is dangerous or a full block party or other
+  things that completely block out the space."*
+- **1** — the cat crosses perpendicular to her heading, so it runs down the middle of the
+  carriageway when she is crossing a road, and it ends its run in the open.
+- **9** — pigeons expire as she arrives and then blink out.
+- **8** — a four-block calm zone can roll `QUIET_SQUARE`, which is a 22-tile-square concrete plaza
+  with thirty trees on it.
+- **6** — a car turning swaps axes in one frame and the sprite snaps from side-on to end-on. Wants
+  a diagonal frame and a transition.
+- **4** — the warning indicators render below roofs. **Not diagnosed.** The geometry says it
+  should not happen: a building's drawn mass fills exactly its own lot and `Entities` is y-sorted
+  on the ground plane, so nothing should ever be over an entity standing outside that lot. Reading
+  the code has not found it and two screenshots did not catch it. It needs the case reproduced —
+  most likely a carve, an alley or a courtyard passage, where an entity stands *inside* a block's y
+  range with building rects either side of it.
+- **14** — the zzz is stepped aside from the pram when she walks north, which is M32 avoiding the
+  exclamation mark's column and reading, correctly, as *not above the stroller*.

@@ -339,6 +339,7 @@ numbers here and the assertion there cannot drift apart.
 | `ice_cream_van` | +31.5 | +65.8 |
 | `reversing_lorry` * | +32.6 | +53.3 |
 | `dog_walker` | +36.5 | +41.2 |
+| `charging_dog` * | see below | — |
 | `loose_dog` | +43.3 | +52.0 |
 | `leaf_blower` | +48.6 | +67.1 |
 | `protest` | +50.0 | +88.1 |
@@ -348,6 +349,11 @@ numbers here and the assertion there cannot drift apart.
 | `night_raid` | +101.8 | +122.6 |
 | `fire_truck` | +115.4 | +132.0 |
 | `firefight` * | +155.9 | +162.3 |
+
+`charging_dog` has no meaningful row, and that is the point: it is the only event in the game
+that **follows**, so there is no line to walk through it and no crossing to price. Walking away
+from it loses the day and running away from it costs about forty points. See
+`docs/MECHANICS.md`, "Running that matters".
 
 `*` is a `hard_fail`: the figure is notional, because nobody finishes the walk. Two rows the
 playtest-02 version of this table was missing entirely (`burnt_shell`, `alley_robbery`) are
@@ -439,8 +445,9 @@ becoming that.
 | Cue | Means | Where |
 | --- | --- | --- |
 | **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** | the art |
-| **Caret over the entity** | *Danger that changes over time*, and only that: it is about to start, it ends the day, or it comes and goes. Amber telegraphing, red active, doubled and darker for `hard_fail`. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_horn_mark()` |
+| **Caret over the entity** | *Danger that changes over time*, and only that: it is about to start, it ends the day, or it comes and goes **on a beat you can play against**. Amber telegraphing, red active, doubled and darker for `hard_fail`. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_horn_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
+| **"Comes and goes" means *timeable*** | A pulse only earns a caret when its period is shorter than the walk across its own field — that is exactly when a pass can be slipped between two beats. Slower than that and the intensity only ever moves one way while she is inside it, which is a drift rather than a rhythm. *(M33. The rule was `pulse_period > 0`, and six of the ten rows available on day 1 have a pulse, so the caret was over most of an ordinary street: the deleted ring's own mistake in a new shape. A player walked up to one to find out what it meant and found out that it meant nothing.)* | `EventInstance.can_be_timed()` |
 | **Edge badge** | Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
 | **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live and she is inside its reach with one step left to make. | `Stroller._draw_alert()` |
