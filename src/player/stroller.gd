@@ -34,6 +34,10 @@ const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
 const PRAM_BACK := preload("res://assets/rig/pram_back.svg")
 const ALERT := preload("res://assets/props/alert.svg")
 const ALERT_CLOSE := preload("res://assets/props/alert_close.svg")
+## The baby's own three, which ride over the pram rather than over her. See `Baby.Cue`.
+const BABY_ZZZ := preload("res://assets/props/baby_zzz.svg")
+const BABY_FUSS := preload("res://assets/props/baby_fuss.svg")
+const BABY_CRY := preload("res://assets/props/baby_cry.svg")
 
 ## How far above her head the warning mark floats, and how fast it flashes. She is 46px tall,
 ## so this clears her head by a few pixels and no more: at 68 the mark drifted far enough up
@@ -43,6 +47,22 @@ const ALERT_HEIGHT := 54.0
 const ALERT_FLASHES_PER_SECOND := 4.0
 ## The "too close" mark flashes faster, because it is the one that means *now*.
 const CLOSE_FLASHES_PER_SECOND := 7.0
+
+## How far above the pram the baby's own cue floats, and how far to one side when the pram is on
+## her own axis — walking towards or away from the viewer, where "above the pram" is also over
+## her legs or over her head. The second of those is where the exclamation mark lives, and two
+## cues in one column is the collision playtest 06's finding 5 names by name: the mark means
+## *this will end your day*, and a cue about the meter that can be read as part of it undoes M30.
+##
+## The lift clears the pram's own art, which is 30px tall from its ground point. Both numbers
+## were set by looking: at 18 the cue was inside the hood and read as clutter on the pram, and
+## with no lateral step it was over her chest walking south and over her head walking north.
+const BABY_CUE_LIFT := 36.0
+const BABY_CUE_ASIDE := 34.0
+## Slow, because it is a state rather than an alarm; the two urgent ones flash and the two
+## calm ones do not. The zzz breathes instead, which is a sleeping baby and not a warning.
+const BABY_CUE_FLASHES_PER_SECOND := 2.0
+const BABY_CUE_BREATH := 2.0
 
 ## The two things that can be true about the ground she is standing on. M22's vocabulary has
 ## exactly these and no more — a third level would be a number again.
@@ -57,6 +77,9 @@ enum Alert {
 }
 
 @onready var _camera: Camera2D = $Camera2D
+## The baby rides in the pram and the rig draws itself, so the rig asks her what to draw. Null
+## in a test rig built without one, which is why every use is guarded.
+@onready var _baby: Baby = get_node_or_null("Baby")
 
 var facing := Vector2.DOWN
 var _walk_phase := 0.0
@@ -70,6 +93,9 @@ var _shove := Vector2.ZERO
 var _alert := Alert.NONE
 var _alert_left := 0.0
 var _alert_phase := 0.0
+## Who raised what is currently up, so that a system can take *its own* warning down early
+## without being able to touch anybody else's. See `stand_down()`.
+var _alert_source := &""
 
 func _ready() -> void:
 	add_to_group("player")
@@ -110,18 +136,42 @@ func shove(impulse: Vector2) -> void:
 	if impulse.length() > _shove.length():
 		_shove = impulse
 
-## Raises a warning over her head for `seconds`.
+## Raises a warning over her head for `seconds`, on behalf of `source`.
 ##
 ## Additive rather than a setter, and that is the whole reason it is shaped this way: the crowd
 ## and the events both watch the ground she is standing on, and a setter would let whichever ran
 ## second clear what the first had just said. The louder level wins while both are live, and a
 ## `NOW` never gets quietly downgraded to a `SOON` by a system that cannot see the lethal thing.
-func warn(level: Alert, seconds: float) -> void:
+##
+## An *upgrade* takes the new caller's hold rather than keeping the old one's remainder: a
+## `SOON` with a second left becoming a `NOW` that is re-raised every frame is the same mark for
+## as long as the `NOW` is true, and a second of leftover `SOON` underneath it is a second of
+## the mark meaning nothing.
+func warn(level: Alert, seconds: float, source: StringName = &"") -> void:
 	if level == Alert.NONE:
 		return
-	if level >= _alert or _alert_left <= 0.0:
-		_alert = level
-		_alert_left = maxf(_alert_left if level == _alert else 0.0, seconds)
+	var live := _alert_left > 0.0
+	if live and level < _alert:
+		return
+	var extending := live and level == _alert
+	_alert = level
+	_alert_left = maxf(_alert_left if extending else 0.0, seconds)
+	_alert_source = source
+
+## Takes down a warning `source` raised, and only that one.
+##
+## The hold on a warning exists to bridge a gap in the thing it warns about — the space between
+## two cars in one lane — and it cannot tell that apart from the danger being over. Only the
+## system that raised it can, so only that system may lower it: the check on the source is what
+## keeps this from being the setter the rule above exists to prevent, because a caller that has
+## been outbid by something louder finds nothing of its own to take down.
+##
+## *(Playtest 06, finding 3: "I get the flashing exclamation marks after the fact, at which point
+## they're not useful.")*
+func stand_down(source: StringName) -> void:
+	if _alert_left > 0.0 and _alert_source == source:
+		_alert = Alert.NONE
+		_alert_left = 0.0
 
 ## What is currently over her head. For the telemetry observer, which has to be able to say
 ## whether she was warned before she was killed.
@@ -146,6 +196,7 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	_shove = Vector2.ZERO
 	_alert = Alert.NONE
 	_alert_left = 0.0
+	_alert_source = &""
 	if _camera:
 		_camera.offset = Vector2.ZERO
 		_camera.reset_smoothing()
@@ -193,7 +244,46 @@ func _draw() -> void:
 		_draw_mother(gait)
 		_draw_pram(pram_offset)
 
+	_draw_baby_cue(pram_offset)
 	_draw_alert()
+
+## How the baby is, drawn where the player is already looking. *(Playtest 06, finding 5:
+## "having something above the player might be better — like a zzz above the stroller when the
+## baby is fully asleep — and warnings when the excitement is about to be full.")*
+##
+## Four states, no gauge, and the reasoning for both is on `Baby.Cue`. What is decided *here* is
+## only where it goes: over the pram, and stepped aside when the pram is behind her, so that the
+## one cue in the game that means "this will end your day" never has to share a column with a
+## cue about a meter.
+func _draw_baby_cue(pram_offset: Vector2) -> void:
+	if not _baby:
+		return
+	var cue := _baby.cue()
+	if cue == Baby.Cue.NONE:
+		return
+	var texture := BABY_ZZZ
+	var flashing := false
+	match cue:
+		Baby.Cue.UNSETTLED:
+			texture = BABY_FUSS
+		Baby.Cue.NEARLY_CRYING:
+			texture = BABY_CRY
+			flashing = true
+		Baby.Cue.STIRRING:
+			flashing = true
+	if flashing and fmod(_alert_phase * BABY_CUE_FLASHES_PER_SECOND, 1.0) > 0.6:
+		return
+
+	# Only when the pram is on her own axis. Walking sideways it is already a body's width out
+	# in front of her and there is nothing to step around.
+	var aside := 0.0
+	if absf(facing.x) <= absf(facing.y):
+		aside = BABY_CUE_ASIDE if facing.x >= 0.0 else -BABY_CUE_ASIDE
+	# The steady ones breathe rather than sit still, or a mark that is up for the whole walk
+	# home stops being read. The urgent two flash instead.
+	var breath := 0.0 if flashing else sin(_alert_phase * TAU) * BABY_CUE_BREATH
+	Sprites.draw_standing(self, texture,
+			pram_offset + Vector2(aside, -BABY_CUE_LIFT + breath))
 
 ## *This spot is about to be bad; move* — or, doubled and red, *it is bad now.* Drawn over the
 ## player rather than over the thing that is coming, because "there is a car on this road" is

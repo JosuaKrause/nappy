@@ -1,0 +1,15 @@
+<!-- She is too interested in the street to settle: excitement is over the calm threshold and
+     sleepiness has stopped rising. Two waves rather than a bar, because this is a *state* and
+     not a gauge — a second excitement meter drawn over the pram would be the HUD moved, not a
+     cue. Amber, the vocabulary's "about to be a problem" colour; the shape is what keeps it
+     from being confused with the exclamation mark, which is amber for the same reason. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="20" viewBox="0 0 22 20">
+  <g fill="none" stroke="#221f28" stroke-width="7" stroke-linecap="round">
+    <path d="M4 6 q3.5 -5 7 0 t7 0"/>
+    <path d="M4 15 q3.5 -5 7 0 t7 0"/>
+  </g>
+  <g fill="none" stroke="#f2c14a" stroke-width="3.5" stroke-linecap="round">
+    <path d="M4 6 q3.5 -5 7 0 t7 0"/>
+    <path d="M4 15 q3.5 -5 7 0 t7 0"/>
+  </g>
+</svg>

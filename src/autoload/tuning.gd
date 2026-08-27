@@ -60,6 +60,24 @@ func sleepiness_gain_calm() -> float:
 const EXCITEMENT_CALM_THRESHOLD := 35.0
 ## A sleeping baby woken above this goes back to AWAKE.
 const EXCITEMENT_WAKE_THRESHOLD := 60.0
+
+## The two the *pram* says out loud. *(Playtest 06, finding 5: "can you add a visual for when
+## the excitement bar is almost full, and the same for when the sleep bar is fully full.")*
+##
+## Both are stated as **states with an instruction attached** rather than as points on a gauge,
+## which is the whole difference between a cue and the HUD moved over the player's head. The
+## other two the pram shows need no constant at all, because the game already has them: the calm
+## threshold, where the day stops progressing, and asleep, which is a state.
+##
+## Nearly crying is the last band before `METER_MAX` ends the day. Far enough up that it is not
+## a second name for "loud street" — a pavement sits under the calm threshold and a bad moment
+## reaches the fifties — and far enough from 100 to be worth acting on: at the walking decay it
+## is about six seconds of quiet ground back to safety.
+const EXCITEMENT_NEARLY_CRYING := 80.0
+## And how far below the wake threshold a sleeping baby starts to stir. Waking costs
+## `WAKE_SLEEPINESS_PENALTY` — half the bar — so this is the most expensive thing in the return
+## phase and the only warning of it was the excitement bar climbing in the corner of the screen.
+const EXCITEMENT_STIR_MARGIN := 12.0
 ## Incoming excitement multiplier while the baby is asleep.
 const SLEEPING_SENSITIVITY := 0.55
 

@@ -18,6 +18,9 @@ var _resistance: ResistanceDirector
 ## Null unless the run is being traced. See src/autoload/telemetry.gd.
 var _observer: TelemetryObserver
 var _hud: CanvasLayer
+## Kept because the telemetry observer asks it what she is being warned about; the layer around
+## it is fire-and-forget.
+var _edge: DangerEdge
 var _summary: CanvasLayer
 var _follow_camera: Camera2D
 var _follow_id := ""
@@ -83,7 +86,7 @@ func _ready() -> void:
 		_observer.name = "Telemetry"
 		add_child(_observer)
 		_pauses_with_the_game(_observer)
-		_observer.setup(_city, _player, _baby, _day, _resistance)
+		_observer.setup(_city, _player, _baby, _day, _resistance, _edge)
 
 	_start_day()
 
@@ -103,12 +106,12 @@ func _ready() -> void:
 func _add_danger_edge() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "DangerEdge"
-	var edge := DangerEdge.new()
-	edge.name = "Edge"
-	edge.set_anchors_preset(Control.PRESET_FULL_RECT)
-	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	edge.setup(_city.events, _player)
-	layer.add_child(edge)
+	_edge = DangerEdge.new()
+	_edge.name = "Edge"
+	_edge.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_edge.setup(_city.events, _player)
+	layer.add_child(_edge)
 	add_child(layer)
 
 ## Marks a node as part of the game rather than part of the frame around it, so the summary

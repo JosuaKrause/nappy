@@ -35,7 +35,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 15744 headless checks, ~80s
+./tools/test.sh               # 47085 headless checks, ~100s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
@@ -360,11 +360,13 @@ A ring communicates a falloff radius, which is a number. A silhouette communicat
 The vocabulary that replaced it, in `docs/EVENTS.md`, "The visual vocabulary": the **entity
 itself** carries most of it; a **caret above the entity** for danger that *changes over time*
 and nothing else; a **badge at the screen edge** whenever something lethal or faster than a
-walk is off-screen and closing, carrying its own silhouette so it says what is coming rather
-than that something is; and above the **player** a flashing exclamation mark for a
-soon-to-be-bad spot, doubled and red for danger already on her. Nothing draws a field.
+walk is off-screen and closing **under its own steam**, carrying its own silhouette so it says
+what is coming rather than that something is; above the **player** a flashing exclamation mark
+for a soon-to-be-bad spot, doubled and red for danger already on her; and over the **pram**, the
+only cue that is not about the world — four states of the baby herself, added in M32. Nothing
+draws a field.
 
-Two rules that are easy to lose and are the whole reason it is better than the rings:
+Three rules that are easy to lose and are the whole reason it is better than the rings:
 
 - **A cue that marks everything says nothing.** The rings marked a notice board exactly as hard
   as an abduction, which is most of why they explained nothing. The caret is for *lethal,
@@ -375,6 +377,18 @@ Two rules that are easy to lose and are the whole reason it is better than the r
 - **The mark breathes**, tracking current emission, which is the one thing the ring did that a
   discrete symbol does not get for free. Without it a pulsing event stops being something to
   time a pass through and becomes something that hurts at random.
+- **A cue is a claim about a *moment*.** *(M32, playtest 06 findings 1 and 3.)* The two rules
+  above are both about *which* things a cue is raised for. Both were right, and the next two
+  complaints were about **when**: the mark stayed up on the pavement after the car had gone, and
+  the badge announced anything lethal she happened to walk towards. Two halves, and both are
+  worth copying rather than merely fixing. **A cue is lowered by the system that can see its
+  condition**: `Stroller.warn()` takes a source and `stand_down()` lowers only that source's own
+  mark, so a hold that bridges a gap in the danger (the space between two cars in one lane) does
+  not also bridge the danger being over. And **measure the thing, not the gap**: the badge's
+  closing speed is now the event's own approach with the player held still, because a rate that
+  includes her 92px/s is a cue for walking. Nothing in `tests/test_danger.gd` can see a moment,
+  which is why both defects reached a player; the `cue` telemetry entry exists so the next one
+  does not.
 
 The exclamation mark is the load-bearing one. Every other cue says *a thing exists*; that one
 says **the fairness contract is now about you and the clock has started**, which is the
@@ -391,7 +405,10 @@ private method on `EventInstance`, so "the entity carries its own cue" quietly m
 cue from the table, it draws the same shape from the same place; a second hand-drawn chevron is
 how a deliberately short vocabulary gets long. `Stroller.warn()` is additive rather than a
 setter for a reason: the crowd and the events both watch the ground she is standing on in the
-same frame, and a setter lets whichever runs second clear what the first just said.
+same frame, and a setter lets whichever runs second clear what the first just said. *(M32 added
+`stand_down(source)`, which is the smallest thing that is not a setter: a caller may lower the
+mark **it** raised and nothing else, so a system that has been outbid by something louder finds
+nothing of its own to take down.)*
 
 **Telemetry never touches gameplay.** *(M23.)* No RNG, no `day_rng()` stream, nothing that
 changes a placement or a roll. Where a system logs a random outcome it hoists the **existing**
@@ -588,7 +605,15 @@ not either number, is what makes it a decision.
   act I teeth and nothing else. The sleepiness numbers M14 pitched against the *day*, the nerve
   economy, and whether the arterial is crossable are all still arithmetic checked by
   `tests/test_balance.gd` and unfelt. Prime suspects are in `docs/TODO.md` under "Open design
-  questions".
+  questions". *(M32 moved the nerve economy rather than settling it: a lost day is retried now,
+  so three nerves are three attempts rather than three days off the calendar, and nobody has
+  played that either.)*
+- **The two new cues have been read by a rig and not by a person.** *(M32.)* The mark now comes
+  down at the kerb and the badge measures the thing's own approach — both confirmed off a trace,
+  which is exactly the evidence playtest 06 said was missing and exactly not a person saying the
+  cue helped. The `cue` entries are what to read next: a `turn` or a `run` after one is the only
+  evidence a cue was acted on. And the pram's four states have been screenshotted in every
+  facing and never seen in motion by anybody.
 - **The entities do not yet read as what they are.** *(M22 closed the signalling gaps; this
   is the one it exposed.)* The vocabulary's first row is *the thing itself carries most of
   it* — and `homeless_yeller`, `busker` and `poster_crew` all draw the same `person.svg`, as

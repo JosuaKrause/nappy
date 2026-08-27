@@ -268,11 +268,15 @@ func _warn_about_the_ground_she_is_on() -> void:
 		if instance.global_position.distance_to(here) > instance.def.outer_radius:
 			continue
 		body.warn(Stroller.Alert.SOON if instance.is_telegraphing() else Stroller.Alert.NOW,
-				WARNING_HOLD)
+				WARNING_HOLD, WARNING_SOURCE)
 
 ## How long a raised warning stays up. A shade longer than a physics frame, so the mark does not
-## strobe on the boundary of a radius she is walking along.
+## strobe on the boundary of a radius she is walking along — which is short enough that this
+## side of the vocabulary never needs `stand_down()`: it is re-raised every frame it is true and
+## gone a frame after it stops being.
 const WARNING_HOLD := 0.35
+## Named so the traffic's hold and this one cannot take each other down. See `Stroller.warn`.
+const WARNING_SOURCE := &"events"
 
 ## The director's half of the day: something that happens *to* her, in front of her, while she
 ## is walking. See `EventDirector` for why a cat is authored as a moment rather than a place.

@@ -128,6 +128,7 @@ kind has to be able to name the question it answers, or it is a metric and does 
 | `closure` | observer | Are M16's closures a decision or scenery? |
 | `turn` | observer | Did the player double back — and was it because of a barrier they had just seen? |
 | `run` | observer | Did running help? Today the answer should always be "it made things worse" |
+| `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. Playtest 06's two cue findings were both invisible to a trace: a cue is a claim about a moment, and nothing wrote the moment down *(playtest 06, findings 1 and 3)* |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |

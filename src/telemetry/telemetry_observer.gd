@@ -71,6 +71,9 @@ var _player: Stroller
 var _baby: Baby
 var _day: DayController
 var _resistance: ResistanceDirector
+## The screen-edge badges. Optional: everything else here is reachable from the world, and this
+## one lives in a `CanvasLayer` that `main` owns.
+var _edge: DangerEdge
 
 # Tile and ground state, so a transition can be spotted.
 var _was_calm := false
@@ -110,14 +113,23 @@ var _last_closure_at := -1000.0
 var _contact_seen := false
 var _hold_started := false
 
+# The cues. What was up over her head, since when, and how much of that she spent on the road;
+# and which edge badges are up, each with the clock reading it went up at.
+var _mark := Stroller.Alert.NONE
+var _mark_since := 0.0
+var _mark_on_road := 0.0
+var _mark_why := ""
+var _badges := {}
+
 func setup(city: City, player: Stroller, baby: Baby, day: DayController,
-		resistance: ResistanceDirector) -> void:
+		resistance: ResistanceDirector, edge: DangerEdge = null) -> void:
 	_city = city
 	_map = city.map
 	_player = player
 	_baby = baby
 	_day = day
 	_resistance = resistance
+	_edge = edge
 	EventBus.return_phase_started.connect(_on_asleep)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
 	EventBus.resistance_seen.connect(_on_resistance_seen)
@@ -147,6 +159,11 @@ func start_day() -> void:
 	_last_closure_at = -1000.0
 	_contact_seen = false
 	_hold_started = false
+	_mark = Stroller.Alert.NONE
+	_mark_since = 0.0
+	_mark_on_road = 0.0
+	_mark_why = ""
+	_badges.clear()
 	Telemetry.note("start", "doorstep %s, facing %s" % [
 		TelemetryLog.tile(_map.world_to_tile(_player.global_position)),
 		TelemetryLog.compass(_player.facing)])
@@ -172,6 +189,7 @@ func _process(delta: float) -> void:
 	Telemetry.set_clock(_day.time_total - _day.time_remaining)
 	var here := _player.global_position
 	_watch_the_ground(here, delta)
+	_watch_the_cues(delta)
 	_watch_the_meters()
 	_watch_running()
 	_watch_direction(delta)
@@ -231,6 +249,86 @@ func _flush_road(here: Vector2) -> void:
 			"entered" if calm else "left", what, TelemetryLog.tile(block),
 			_baby.sleepiness])
 	_was_calm = calm
+
+## What she was warned about, and for how long. *(Playtest 06.)*
+##
+## The gap playtest 05 named and 06 walked straight into: every other entry says what the world
+## did, and nothing said what the **game told her about it** — so *"the offscreen indicators show
+## events far away"* and *"I get the exclamation marks after the fact"* were both invisible to a
+## trace and could only be found by a person looking at a screen. A cue is a claim about a
+## moment, and until now nothing wrote the moment down.
+##
+## Two spans, and both are written when they **end**, carrying how long they lasted: a cue that
+## is up too long is the whole complaint, and a duration is the only form of it that can be read.
+## The `turn` or `run` entry between the two lines is the other half — whether she did anything
+## about it.
+func _watch_the_cues(delta: float) -> void:
+	var level := _player.alert_level()
+	if level != Stroller.Alert.NONE and Tile.is_road(
+			_map.tile_type_at_world(_player.global_position)):
+		_mark_on_road += delta
+	if level != _mark:
+		if _mark != Stroller.Alert.NONE:
+			# How much of it she spent somewhere the danger could actually reach her. A mark that
+			# is up on the pavement after a car has gone past is finding 3, with a number on it.
+			Telemetry.note("cue", "the mark over her head: %s for %.1fs (%.1fs of it on the "
+					% [Stroller.Alert.keys()[_mark].to_lower(),
+					Telemetry.clock() - _mark_since, _mark_on_road]
+					+ "road)%s" % _mark_why)
+		if level != Stroller.Alert.NONE:
+			_mark_since = Telemetry.clock()
+			_mark_on_road = 0.0
+			_mark_why = " | %s" % _what_raised_the_mark()
+		_mark = level
+
+	if not _edge:
+		return
+	var up := {}
+	for badge in _edge.announcing():
+		var id: String = badge["id"]
+		up[id] = true
+		if _badges.has(id):
+			continue
+		_badges[id] = Telemetry.clock()
+		Telemetry.note("cue", "edge badge: %s at %.0fpx, closing %.0fpx/s"
+				% [id, badge["distance"], badge["approach"]])
+	for id: String in _badges.keys():
+		if up.has(id):
+			continue
+		# Where the thing is *now* is the whole of *"if you walk towards them they sometimes
+		# disappear"*: a badge that ends with the thing closer than it was either came into view
+		# — which is the badge's job being done — or was dropped while it was still coming, and
+		# only the distance tells the two apart.
+		Telemetry.note("cue", "edge badge gone: %s after %.1fs, %s"
+				% [id, Telemetry.clock() - _badges[id], _where_is(id)])
+		_badges.erase(id)
+
+## How far the nearest live instance of `id` is now, or that there is none left.
+func _where_is(id: String) -> String:
+	var best := INF
+	for instance in _city.events.instances():
+		if instance.def.id == id and not instance.is_finished:
+			best = minf(best, instance.global_position.distance_to(_player.global_position))
+	return "now %.0fpx away" % best if best < INF else "no longer in the world"
+
+## What put the mark over her head, rather than what merely happened to be nearest.
+##
+## Since M30 exactly two things can: a `hard_fail` event whose radius covers her, and a car
+## closing on the lane she is standing in. `_nearest()` answers a different question and answers
+## it misleadingly here — the first version of this entry blamed an ice cream van 513px away for
+## a car's horn, which is precisely the *"unattributable"* complaint playtest 05 made about the
+## mark itself, reproduced in the log that was meant to settle it.
+func _what_raised_the_mark() -> String:
+	var here := _player.global_position
+	for instance in _city.events.instances():
+		if instance.is_finished or instance.def.city_wide or not instance.def.hard_fail:
+			continue
+		var distance := instance.global_position.distance_to(here)
+		if distance <= instance.def.outer_radius:
+			return "%s %.0fpx" % [instance.def.id, distance]
+	if Tile.is_road(_map.tile_type_at_world(here)):
+		return "a car, and she is in the road"
+	return "nothing in reach"
 
 ## Freezing is the invisible failure: the meter simply stops and nothing on screen says why.
 ## A result code alone never distinguishes a day lost to noise from a day lost to the clock,

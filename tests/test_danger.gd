@@ -20,6 +20,9 @@ func run(t) -> void:
 	_test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
 	_test_only_what_she_cannot_outwalk_earns_an_arrow(t)
+	_test_the_badge_measures_the_things_own_speed(t)
+	_test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
+	_test_the_pram_says_how_the_baby_is(t)
 
 const STEP := 1.0 / 60.0
 
@@ -267,6 +270,141 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 	t.check(DangerEdge.MOST_AT_ONCE <= 3,
 			"and at most a handful at once, or the edge of the screen becomes wallpaper")
 	edge.free()
+
+## **The badge measures the event's speed, not the gap's.** *(Playtest 06, finding 1: "they show
+## events far away, and if you walk towards them they sometimes disappear; also they flicker a
+## lot.")* All three symptoms are one line: the rate the gap was shrinking is her speed plus its
+## speed, and she walks at 92 against a threshold of 20, so walking towards anything lethal
+## raised its badge whether or not it was coming.
+##
+## Testable because the two questions are static functions with no viewport in them, which is
+## most of why they are static functions.
+func _test_the_badge_measures_the_things_own_speed(t) -> void:
+	var step := 1.0 / 60.0
+	var walk := Tuning.WALK_SPEED * step
+
+	# A parked van and a player walking straight at it. The gap is closing at 92px/s and the van
+	# is not coming at anybody: nothing to announce.
+	var van := Vector2(600.0, 0.0)
+	var her := Vector2(walk, 0.0)
+	t.check(is_zero_approx(DangerEdge.approach_speed(van, van, her, step)),
+			"a stationary event has no approach speed, however fast she walks towards it")
+
+	# The same van, now driving at her while she walks the other way. Her own retreat does not
+	# subtract from what it is doing either.
+	var was := Vector2(600.0, 0.0)
+	var now := was - Vector2(Tuning.WALK_SPEED * 2.0 * step, 0.0)
+	var approach := DangerEdge.approach_speed(was, now, Vector2.ZERO, step)
+	t.check(absf(approach - Tuning.WALK_SPEED * 2.0) < 1.0,
+			"and a mover is measured at its own speed (%.0f px/s)" % approach)
+
+	# The range cap, which is a window rather than a distance: the same 900px of clear ground is
+	# a fire engine worth announcing and a dawdler that is somebody else's problem for now.
+	t.check(DangerEdge.announces(190.0, 800.0),
+			"something doing 190px/s at 800px is four seconds away and is announced")
+	t.check(not DangerEdge.announces(40.0, 800.0),
+			"the same distance at 40px/s is twenty seconds away and is not")
+	t.check(not DangerEdge.announces(DangerEdge.CLOSING_SPEED - 1.0, 0.0),
+			"and nothing slower than a stroll is announced at any distance")
+	t.check(DangerEdge.HOLD > 0.0,
+			"a raised badge is held, so a rate hovering on the threshold cannot strobe")
+
+	# And the same thing through the real measurement, because the defect was in the plumbing
+	# rather than in the arithmetic: what the two static functions above are *given*.
+	var manager := EventManager.new()
+	t.add_child(manager)
+	var standing := Node2D.new()
+	t.add_child(standing)
+	var edge := DangerEdge.new()
+	t.add_child(edge)
+	edge.setup(manager, standing)
+
+	var def := EventCatalogue.by_id("fire_truck")
+	var engine := _instance(def)
+	engine.global_position = Vector2(700.0, 0.0)
+	manager.add_child(engine)
+	manager._instances.append(engine)
+
+	# A second of her walking straight at a stopped fire engine.
+	for i in 60:
+		standing.global_position += Vector2(walk, 0.0)
+		edge._process(step)
+	t.check(edge._coming.is_empty(),
+			"walking towards something lethal does not announce it at the edge of the screen")
+
+	# And a second of it driving at her while she stands still.
+	for i in 60:
+		engine.global_position -= Vector2(def.speed * step, 0.0)
+		edge._process(step)
+	t.check(edge._coming.size() == 1, "a fire engine actually coming down the street does")
+
+	edge.free()
+	standing.free()
+	manager.free()
+
+## The other half of the same shape, and the reason `warn()` is additive. *(Playtest 06, finding
+## 3: "I get the flashing exclamation marks **after** the fact, at which point they're not
+## useful.")* The hold on the traffic's warning is 1.4s and has a real job — surviving the gap
+## between two cars in one lane — so the fix is a second condition rather than a shorter hold,
+## and the condition belongs to the system that can see it.
+func _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t) -> void:
+	var rig := _rig(t)
+
+	rig.warn(Stroller.Alert.SOON, 1.4, Crowd.WARNING_SOURCE)
+	rig.stand_down(EventManager.WARNING_SOURCE)
+	t.check(rig.alert_level() == Stroller.Alert.SOON,
+			"an event cannot take down a warning the traffic raised")
+	rig.stand_down(Crowd.WARNING_SOURCE)
+	t.check(rig.alert_level() == Stroller.Alert.NONE,
+			"and the traffic can, the instant she is over the kerb")
+
+	# And a source that has been outbid finds nothing of its own to lower, which is what keeps
+	# this from being the setter the additive rule exists to prevent.
+	rig.warn(Stroller.Alert.SOON, 1.4, Crowd.WARNING_SOURCE)
+	rig.warn(Stroller.Alert.NOW, 0.35, EventManager.WARNING_SOURCE)
+	rig.stand_down(Crowd.WARNING_SOURCE)
+	t.check(rig.alert_level() == Stroller.Alert.NOW,
+			"the traffic cannot clear a lethal event's mark by driving away")
+
+	# An upgrade takes the new caller's hold rather than inheriting the old one's remainder,
+	# or a second of leftover `SOON` outlives the `NOW` that replaced it.
+	rig._physics_process(0.4)
+	t.check(rig.alert_level() == Stroller.Alert.NONE,
+			"and the doubled mark expires on its own hold, not on the one underneath it")
+	rig.free()
+
+## The baby's own cue. *(Playtest 06, finding 5.)* Four states, each a different instruction, and
+## the test is that they are *states* — a mark that is up whenever a meter is moving is the HUD
+## drawn over the pram, which is the rings' mistake arriving from the other direction.
+func _test_the_pram_says_how_the_baby_is(t) -> void:
+	var baby := Baby.new()
+
+	baby.state = GameEnums.BabyState.AWAKE
+	baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD - 1.0
+	t.check(baby.cue() == Baby.Cue.NONE,
+			"an ordinary street says nothing over the pram")
+	baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD
+	t.check(baby.cue() == Baby.Cue.UNSETTLED,
+			"the moment the day stops progressing, it says so")
+	baby.excitement = Tuning.EXCITEMENT_NEARLY_CRYING
+	t.check(baby.cue() == Baby.Cue.NEARLY_CRYING,
+			"and escalates before the day is lost rather than as it is lost")
+
+	baby.state = GameEnums.BabyState.ASLEEP
+	baby.excitement = 0.0
+	t.check(baby.cue() == Baby.Cue.ASLEEP, "asleep is a state with a mark of its own")
+	baby.excitement = Tuning.EXCITEMENT_WAKE_THRESHOLD - Tuning.EXCITEMENT_STIR_MARGIN
+	t.check(baby.cue() == Baby.Cue.STIRRING,
+			"and stirring is warned about before it costs half the bar")
+
+	# The relationships, which are what a rebalance must not quietly break.
+	t.check(Tuning.EXCITEMENT_NEARLY_CRYING > Tuning.EXCITEMENT_CALM_THRESHOLD
+			and Tuning.EXCITEMENT_NEARLY_CRYING < Tuning.METER_MAX,
+			"the last warning band sits between the freeze and the lost day")
+	t.check(Tuning.EXCITEMENT_STIR_MARGIN > 0.0
+			and Tuning.EXCITEMENT_STIR_MARGIN < Tuning.EXCITEMENT_WAKE_THRESHOLD,
+			"and stirring starts before waking, not with it")
+	baby.free()
 
 # ------------------------------------------------------------------- helpers ---
 

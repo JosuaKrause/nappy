@@ -32,56 +32,154 @@ const ICON := 34.0
 ## edge of the screen becomes wallpaper is the day it stops being read.
 const MOST_AT_ONCE := 3
 
-## How fast something has to be closing before it is worth an arrow, in px/s. Anything slower
-## she can simply walk away from, which is the same line `required_telegraph_time()` draws.
+## How fast something has to be closing before it is worth an arrow, in px/s — **its own
+## approach, with the player held still.** Anything slower she can simply walk away from, which
+## is the same line `required_telegraph_time()` draws.
+##
+## *(Playtest 06, finding 1.)* Until then this was measured as the rate the *gap* was shrinking,
+## which is her speed plus its speed, and she walks at 92 against a threshold of 20. So walking
+## towards anything lethal raised its badge, whether or not the thing was coming — and all three
+## halves of *"they show events far away, they disappear when you walk towards them, they
+## flicker"* fall out of that one line. Her own velocity is hers to control and does not need
+## announcing at the edge of the screen.
 const CLOSING_SPEED := 20.0
+## The range cap, stated as time rather than as pixels: something is announced once it would
+## reach her within this many seconds at its current approach.
+##
+## A distance would have to be wrong for something — a badge at 900px is scenery with a number
+## on it for a dog, and is exactly what the cue exists for when it is a fire engine. Stated as a
+## window it scales itself: at `fire_truck`'s 190px/s this is most of the stream radius, at a
+## cyclist's pace about half of it, and a 60px/s mover has to be within 300px. It is the same
+## quantity the fairness contract is written in — how long she has to get out of the way.
+const LEAD_TIME := 5.0
+## Once raised, a badge stays up this long after its condition lapses. The hysteresis playtest 06
+## asked for: the test is a derivative against a threshold, and anything hovering near the
+## threshold toggles every frame without it.
+const HOLD := 0.8
+## How fast the measured approach follows the raw frame-to-frame one, per second. A single
+## frame's difference is mostly noise at these distances; this is the same smoothing the badge
+## would otherwise need three of.
+const SMOOTHING := 6.0
+## How far outside the view something has to be before it is worth a badge, in screen px. A
+## thing sitting on the boundary would otherwise trade places with its own badge every frame:
+## off screen, badge up, badge draws it back into mind, on screen, badge gone. Once one is up it
+## is kept until the thing is properly in view, which is the same hysteresis `HOLD` gives the
+## closing test and for the same reason.
+const SCREEN_MARGIN := 130.0
 
 var _events: EventManager
 var _player: Node2D
-## Distance to each instance last frame, so "closing" is measured rather than guessed at from a
-## heading. An event on a path that curves away is not closing, whatever it is pointing at.
-var _was := {}
+## Per live instance: where it was last frame, its smoothed approach speed, and how long its
+## badge is still owed. Keyed by instance id and rebuilt every frame, so an event that streams
+## out takes its state with it.
+var _watch := {}
+## What `_draw` should put on the edge this frame, soonest arrival first:
+## `[time_to_reach, distance, instance, approach]`.
+var _coming: Array = []
 
 func setup(events: EventManager, player: Node2D) -> void:
 	_events = events
 	_player = player
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_measure(delta)
 	# The camera moves under it every frame, so it redraws every frame — a handful of chevrons.
 	queue_redraw()
+
+## Works out what is actually coming at her, once per frame.
+##
+## Deliberately not in `_draw()`, where it used to be: this is a measurement over time and
+## `_draw` is a function that may be called for reasons that have nothing to do with a frame
+## elapsing. Everything below the line is drawing.
+func _measure(delta: float) -> void:
+	_coming.clear()
+	if not _events or not _player or delta <= 0.0:
+		return
+	var here := _player.global_position
+	var next := {}
+
+	for instance in _events.instances():
+		if instance.is_finished or instance.def.city_wide:
+			continue
+		var id := instance.get_instance_id()
+		var at := instance.global_position
+		var state: Dictionary = _watch.get(id, {"was": at, "approach": 0.0, "hold": 0.0})
+		# The event's own approach: how much closer *it* got to where she is standing now. Both
+		# distances are measured to the same point, so her own walking cancels out of it.
+		var raw := approach_speed(state["was"], at, here, delta)
+		var approach: float = lerpf(state["approach"], raw, clampf(delta * SMOOTHING, 0.0, 1.0))
+		var distance := at.distance_to(here)
+		# The gap to its *field*, not to its centre: an event reaches her when its outer radius
+		# does, and for a fire engine that is a third of a block earlier.
+		var gap := maxf(0.0, distance - instance.def.outer_radius)
+		var hold: float = state["hold"]
+		# The margin is hysteresis on the *screen edge*, and it is the other half of the flicker:
+		# without it a thing hovering on the boundary trades places with its own badge every
+		# frame. It has to be well outside the view to raise one, and keeps it until it is
+		# properly in view.
+		if _is_worth_an_arrow(instance) and announces(approach, gap) \
+				and not _is_on_screen(at, SCREEN_MARGIN):
+			hold = HOLD
+		else:
+			hold = maxf(0.0, hold - delta)
+		next[id] = {"was": at, "approach": approach, "hold": hold}
+		# Coming on screen is not a lapse in the condition to be held through — it is the badge's
+		# job being done by the thing itself — so it is filtered here, after the hold and not
+		# inside it.
+		if hold > 0.0 and not _is_on_screen(at, 0.0):
+			# Sorted by *when it arrives* rather than by how near it is, because that is what
+			# `MOST_AT_ONCE` is choosing between: three badges is a warning and the one worth
+			# keeping is the one that gets here first, which a slow thing standing closer is not.
+			_coming.append([gap / maxf(approach, 1.0), distance, instance, approach])
+	# Only the instances alive this frame carry state forward, which is also what keeps a freshly
+	# streamed event from flashing an arrow on the frame it appears: it has no `was` but its own.
+	_watch = next
+	_coming.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+
+## How fast something at `was`, now at `now`, is closing on a player standing at `player`.
+##
+## Static and takes one player position on purpose: passing the same point for both distances is
+## what "with the player held still" *means*, and it is the whole of playtest 06's finding 1.
+static func approach_speed(was: Vector2, now: Vector2, player: Vector2, delta: float) -> float:
+	if delta <= 0.0:
+		return 0.0
+	return (was.distance_to(player) - now.distance_to(player)) / delta
+
+## Whether something closing at `approach` px/s with `gap` px of clear ground left is worth
+## announcing. Pulled out so a test can ask the question without a viewport.
+static func announces(approach: float, gap: float) -> bool:
+	return approach >= CLOSING_SPEED and gap <= approach * LEAD_TIME
+
+## Whether something is in view, optionally counting a band `margin` px beyond the edge as in
+## view as well. In screen pixels, because that is the question — the world is drawn scaled.
+func _is_on_screen(world_position: Vector2, margin: float) -> bool:
+	return Rect2(Vector2.ZERO, size).grow(margin).has_point(
+			get_viewport().get_canvas_transform() * world_position)
+
+## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
+## arrival first. For the telemetry observer, which has to be able to say what she was warned
+## about and whether she then did anything about it — the one question playtest 05 asked of the
+## log and it could not answer.
+func announcing() -> Array[Dictionary]:
+	var badges: Array[Dictionary] = []
+	for i in mini(MOST_AT_ONCE, _coming.size()):
+		if not is_instance_valid(_coming[i][2]):
+			continue
+		badges.append({
+			"id": (_coming[i][2] as EventInstance).def.id,
+			"distance": float(_coming[i][1]),
+			"approach": float(_coming[i][3]),
+		})
+	return badges
 
 func _draw() -> void:
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()
-	var on_screen := Rect2(Vector2.ZERO, size)
-	var here := _player.global_position
-
-	var coming: Array = []
-	var seen := {}
-	for instance in _events.instances():
-		if instance.is_finished or instance.def.city_wide:
+	for i in mini(MOST_AT_ONCE, _coming.size()):
+		if not is_instance_valid(_coming[i][2]):
 			continue
-		var distance := instance.global_position.distance_to(here)
-		var previous: float = _was.get(instance.get_instance_id(), distance)
-		seen[instance.get_instance_id()] = distance
-		if not _is_worth_an_arrow(instance):
-			continue
-		if on_screen.has_point(transform * instance.global_position):
-			continue
-		# Closing, measured. A siren going the other way is not this cue's business.
-		var delta_frame := get_process_delta_time()
-		if delta_frame <= 0.0 or (previous - distance) / delta_frame < CLOSING_SPEED:
-			continue
-		coming.append([distance, instance])
-	# Only the ones that have been alive long enough to have a previous distance survive the
-	# check above, which is what keeps a freshly streamed event from flashing an arrow on the
-	# frame it appears.
-	_was = seen
-
-	coming.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
-	for i in mini(MOST_AT_ONCE, coming.size()):
-		_draw_arrow(coming[i][1] as EventInstance, float(coming[i][0]), transform)
+		_draw_arrow(_coming[i][2] as EventInstance, float(_coming[i][1]), transform)
 
 ## Whether something off-screen deserves an arrow.
 ##
@@ -94,6 +192,13 @@ func _is_worth_an_arrow(instance: EventInstance) -> bool:
 	# only says "something" is an anxiety rather than a warning. Nothing lethal or fast is
 	# currently in that position, and this is here so that adding one is a decision.
 	if _icon_for(instance.def.look) == null:
+		return false
+	# An `AHEAD_OF_PLAYER` event is sited across her line by the director, a fixed lead ahead of
+	# her, and its entire content is *the moment it happens to you* — three seconds of cat is not
+	# a place. Announcing it from the edge of the screen before it arrives is the same mistake
+	# M27 fixed from the other end, and in practice it was a badge that appeared and vanished in
+	# the same second as the thing walked into view. Its fairness is paid in geometry.
+	if instance.def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 		return false
 	if instance.def.hard_fail:
 		return true

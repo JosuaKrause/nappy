@@ -38,17 +38,18 @@ redundancy stopped being true by construction, and a stretch of calm is a route 
 lap. The other two halves of M21 (main roads with lights; the canal) are deliberately still
 open; see the entry below.
 
-**Playtest 06 has arrived and is open.** Three observations and a decision, in
-**[docs/PLAYTEST-06.md](PLAYTEST-06.md)**, the first ever taken on M28–M31: the screen-edge
-badges are triggered by the player's own footsteps rather than by anything closing, the
-exclamation mark over her head outlives the car that raised it, **the difficulty is now right**
-— the first balance number in this game ever confirmed by a human — and a lost day should be
-**retried rather than skipped**.
+**Playtest 06 has landed and all five of its things are done (M32).** In
+**[docs/PLAYTEST-06.md](PLAYTEST-06.md)**, the first playtest ever taken on M28–M31: **the
+difficulty is now right** — the first balance number in this game ever confirmed by a human —
+plus two cues whose *condition was not the thing they claimed to mean*, a lost day that should be
+**retried rather than skipped**, and the vocabulary asked for in the other direction: something
+at the pram that says how the **baby** is. The one sentence to carry out of it is that M30
+narrowed *which* things a cue is raised for and never looked at **when**: a cue is a claim about
+a moment, and nothing in `tests/test_danger.gd` can see a moment.
 
-**What that leaves.** Playtest 06's two cue fixes and the retry change, then M25 (patrols, and
-running that matters), which is unaffected by M31 and is now specifically the answer for **acts
-III and IV**, where the streets are deliberately empty and the threat should follow rather than
-sit.
+**What that leaves.** M25 (patrols, and running that matters), which is unaffected by M31 and is
+now specifically the answer for **acts III and IV**, where the streets are deliberately empty and
+the threat should follow rather than sit.
 
 **Playtest 04 set the order that stands now.** M27 and M22 are done. **M21 is next**
 (four-block calm zones). M20 is **absorbed into M27**: cars follow and queue now, and what is
@@ -66,7 +67,7 @@ was around when a day ended.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 47062 checks (~100s); `tools/check.sh` boots the project; `tools/run.sh`
+`tools/test.sh` runs 47085 checks (~100s); `tools/check.sh` boots the project; `tools/run.sh`
 plays it; `tools/telemetry.sh` reads back what the last run did.
 
 ---
@@ -529,30 +530,55 @@ See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
       all, so a thing moving at 32px/s read as parked. Both were reported as *"dog walkers are
       not moving?"* and neither was the movement
 
-## Playtest 06 — the difficulty landed, the cues did not
+## M32 — Playtest 06: the cues mean now
 
 See **[docs/PLAYTEST-06.md](PLAYTEST-06.md)**. The first playtest taken on M28–M31, reported
 part-way through M21 with the instruction to *"take note of those but continue implementing the
-next item on the handoff first"*. All four are open. None is a milestone on its own — three are
-small fixes in code M22, M30 and M6 already own.
+next item on the handoff first"*. **All five are done.** Three were small fixes in code M22, M30
+and M6 already owned; one added a row to the vocabulary; and the four of them together are one
+sentence — *a cue is a claim about a moment*, which is the axis M30 had not looked along.
 
 - [x] **The difficulty is right.** *"I like the difficulty now — it actually became harder."*
       Not a task; recorded because it is the **first balance number in this game ever confirmed
       by a human**, and `CLAUDE.md`'s "no balance number has been felt by a human" has been true
       since M14
-- [ ] **The screen-edge badge measures the wrong speed** — *"they show events far away, and if
-      you walk towards them they sometimes disappear; also they flicker a lot."* One defect
-      behind all three symptoms: `DangerEdge` tests the *relative* closing rate against a 20px/s
-      threshold, and she walks at 92, so **walking towards anything lethal raises its badge**.
-      Wants the event's own approach speed with the player held still, a range cap, and
-      hysteresis — plus a look at whether `MOST_AT_ONCE` is evicting badges mid-approach
-- [ ] **The exclamation mark outlives the car** — *"I get the flashing exclamation marks after
+- [x] **The screen-edge badge measures the wrong speed** — *"they show events far away, and if
+      you walk towards them they sometimes disappear; also they flicker a lot."* Two of the three
+      symptoms were one defect: `DangerEdge` tested the *relative* closing rate against a 20px/s
+      threshold and she walks at 92, so **walking towards anything lethal raised its badge**. It
+      measures the event's own approach with the player held still now; the range cap is a
+      *window* (`LEAD_TIME` seconds of its own approach, so the same 800px is a fire engine and
+      not a dawdler); a raised badge is held; and the list is sorted by **arrival** rather than
+      by distance, which is what `MOST_AT_ONCE` should be choosing between.
+      **The flicker had a second cause the analysis did not predict**: a thing on the screen
+      boundary trades places with its own badge every frame, which needed hysteresis on the
+      *edge* — a margin outside the view before one may be raised — and no amount of it on the
+      closing rate would have helped. Also caught by a trace: the director's `AHEAD_OF_PLAYER`
+      events were eligible, so a cat whose entire content is that it is *not* announced was
+      raising and dropping a badge inside a tenth of a second
+- [x] **The exclamation mark outlives the car** — *"I get the flashing exclamation marks after
       the fact, at which point they're not useful."* `CAR_WARNING_HOLD` is 1.4s and nothing
-      lowers the mark when she steps off the carriageway, where a car cannot reach her at all.
-      `Crowd` already computes `on_the_road` every frame. The hold has a real job — surviving
-      the gap between two cars in one lane — so it is a second condition, not a shorter hold
-- [ ] **A lost day is retried, not skipped** — finding 4, and it closes an open design question
-      carried since M6. `GameState.finish_day()` stops advancing the calendar on a loss
+      lowered the mark when she stepped off the carriageway, where a car cannot reach her at all.
+      The hold has a real job — surviving the gap between two cars in one lane — so it is a
+      second condition rather than a shorter hold: `Stroller.warn()` takes a **source** and
+      `stand_down()` lets that source, and only that source, lower its own mark. A trace of a
+      minute of day 3 now shows every span at 0.3–0.7s and **all of it on the road**
+- [x] **A lost day is retried, not skipped** — finding 4, and it closes an open design question
+      carried since M6. `GameState.finish_day()` no longer advances the calendar on a loss, the
+      summary says *"You try day 3 again"*, and the attempt's `settled_in` record is forgotten
+      with it — otherwise M24 would spoil a park the winning attempt never went to, and the
+      record is written once a day. The run can no longer end by running out of days while
+      nerves remain
+- [x] **The meters are in the corner and the game is played at the pram** — finding 5, and the
+      only one that adds to the vocabulary rather than fixing something in it. Four states over
+      the pram — asleep, stirring, not settling, nearly crying — as *states with an instruction*
+      rather than a gauge, in the vocabulary's own colours and its own motifs, anchored to the
+      pram and stepped aside when the pram is on her own axis so it can never share a column
+      with the exclamation mark. `Baby.Cue`, `Stroller._draw_baby_cue()`, three new sprites
+- [x] **And the log can see a cue at last.** Not a finding: the gap playtest 05 named and
+      playtest 06 walked straight into. Both cue defects were invisible to a trace, because
+      every entry said what the *world* did and none said what the game **told her about it**.
+      A `cue` entry per span, written when the span ends so the duration is on the line
 
 ## M10 — Polish · `feature/polish`
 
@@ -594,11 +620,13 @@ Not started. The game is complete without it; this is what would make it shippab
 
 These need a human playing the game, not more code.
 
-- [ ] **Is the nerve economy right?** Three nerves, fourteen days, and a lost day advances
-      the calendar. Never tested against a game that threatens from day one, which decision 9
-      now says it should. If act I genuinely bites, early losses become normal and a run may
-      be decided before act III arrives. The run log's `nerve` entries say where they went —
-      which day, which act — so this is waiting on runs now rather than on code.
+- [ ] **Is the nerve economy right?** Three nerves and fourteen days. **M32 changed the shape of
+      this question rather than answering it**: a lost day no longer advances the calendar, so
+      three nerves are three *attempts* spent wherever they are needed and a run can no longer be
+      decided by an early loss shortening it. What is now open is the opposite worry — with act I
+      biting (M31) and a retry costing only time, is three too few to see day 14, or is a retry
+      enough of a punishment at all? The run log's `nerve` entries say where they went, and now
+      also say which day is being played again.
 - [~] **Is the balance right?** *(M14 pitched it against the day rather than against itself;
       M18 then re-pitched it against a **minute of play**: day 330s → 180s,
       `SLEEPINESS_GAIN_WALKING` 0.24 → 0.42, calm 3.5x → 10x, idle drain 0.6 → 1.0. A whole
@@ -630,10 +658,14 @@ These need a human playing the game, not more code.
       decay (3.5/s → 0.5/s) outweighs the shorter exposure every time. The run button is a
       trap. Making running necessary is therefore a mechanic to build (M25), not a number to
       change.
-- [ ] Should there be a diegetic-only mode — a baby's face instead of two bars?
-- [~] Does a lost day advancing the calendar feel right, or should it repeat the day?
-      **Answered by playtest 06, finding 4: it should repeat the day.** *"We shouldn't advance
-      the day, that's for sure."* So a nerve buys a **retry of the same day** — the same city,
+- [~] Should there be a diegetic-only mode — a baby's face instead of two bars? **Half answered
+      by playtest 06, finding 5, and built in M32**: not instead of the bars and not a face, but
+      *at the pram* — four states with an instruction each. What is still open is whether the
+      bars could now be turned off entirely, which is a question for somebody playing with them
+      hidden rather than for more code.
+- [x] Does a lost day advancing the calendar feel right, or should it repeat the day?
+      **Answered by playtest 06, finding 4, and built in M32: it repeats the day.** *"We
+      shouldn't advance the day, that's for sure."* So a nerve buys a **retry of the same day** — the same city,
       the same closures, the same event plan, because all of those are deterministic from the
       seed and the day number — and the calendar only moves when a day is won. Nerves stop being
       a second currency and become three failed attempts spread over the run. Carried open since
