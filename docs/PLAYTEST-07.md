@@ -191,6 +191,9 @@ invented to replace it. The player walked up to one to find out what it meant an
 because the nine that went first are the ones everything else is judged against: there is no point
 looking at whether a delivery van reads as parked while the meter is being decided by pedestrians.
 
+**M34 is the second, and it is four findings that are one sentence: solid things are not solid.**
+Thirteen of nineteen closed. See "Solid things are solid" below.
+
 ### Closed
 
 - **3, 5, 17, 18** — the cost model, above. `falloff` grew a shoulder, the crowd paid it back in
@@ -249,15 +252,69 @@ shows. Junctions are where four pavement bands overlap and people go in every di
 avoiding that properly is pathfinding rather than a rule. What pays for it in the meantime is the
 cheaper contact.
 
+### Solid things are solid — M34 (16, 13, 7, 15)
+
+`obstructs_radius` was set on five rows out of thirty, and the reason is worth writing down
+because it is how a rule turns into a list: the field had only ever been *reached for*, when one
+particular event wanted to block a pavement. Nothing derived it, so a delivery van, an ice cream
+van and a burnt-out building were large, visibly solid, stationary objects with no body, and
+`homeless_yeller` — the man on the pavement outside the home block, nineteen `near` entries in the
+traces — could be walked over. The rule now: **anything that stands still is solid at the width it
+is drawn**, half the silhouette, checked over the whole catalogue by a test. Mobile events are
+exempt (a moving wall pins her — the M19 `dog_walker` decision), and so is anything sited ahead of
+the player or drawn as nothing at all.
+
+**Three things the analysis above got wrong, and each was found by doing it.**
+
+- **Finding 13's robber is not `alley_robbery`.** It is `homeless_yeller` or a `busker` — the
+  traces never reach day 4, and a robbery is day 8 and alleys only. "The robber on the courtyard"
+  is finding 2 in different words: three act I events draw the same `person.svg`. So the finding
+  is *a person you can stand on*, which is finding 16 with a person in it, and it is closed by the
+  same rule.
+- **And `alley_robbery` was not broken — until it was given a body.** The claim above that a 22px
+  lethal radius is "smaller than the player's own collision circle" is wrong as stated: nothing
+  stopped her, so her centre reached his and the day ended. What *is* true, and only became true
+  in M34, is that **a lethal radius and a solid body are the same mechanism**: she is stopped
+  `obstructs_radius + PLAYER_BODY_RADIUS` out, so a man 11px wide plus a pram 14px wide would have
+  held her three pixels outside a 22px kill. The radius is 30 now and `EventDef.validate()`
+  refuses the arrangement on load. An event that can never fire is worse than one that fires
+  unfairly, because nothing reports it.
+- **Finding 7 is two complaints in one sentence.** *"A still car standing on the road doing
+  nothing"* — it did nothing because it had no body, **and** because it was placed on a `ROAD`
+  tile, standing in a traffic lane the crowd knows nothing about and drives straight through,
+  blocking a route nobody walks anyway. Both halves are the same fix: `pavement_side =
+  AT_THE_KERB`. The same for the ice cream van, which was in a lane for the same reason.
+
+**15 is the same field from the other side.** *"The backing out lorry does not connect to the
+building."* The whole event is that the danger is **behind** a wall of metal, which needs a wall:
+`AGAINST_THE_BUILDING` sites it on the frontage lane of a pavement with a real building behind it,
+and turns it to face out of that wall, so the box end is buried in the frontage and the cab is on
+the pavement. It asks for a frontage east or west, because the silhouette is drawn side-on and a
+sprite cannot face north.
+
+### Measured
+
+Five seeds, per day, against `main`:
+
+| | before | after |
+|---|---:|---:|
+| events placed, day 1 | 38.8 | 39.6 |
+| events placed, day 14 | 75.4 | 75.2 |
+| live within `EVENT_STREAM_RADIUS`, day 1 | 7.8 | 8.0 |
+| on screen at once, day 1 | 1.9 | 2.0 |
+| events with a body, day 1 | 12.2 | **25.0** |
+| **pavement-blocking** obstacles, day 1 | 12.2 | **17.2** |
+
+The density M28 set and M21 re-measured is untouched, which is the number that had to not move.
+What moved is what a body means: half the day's events have one now, and the count of things that
+actually take a 64px footway is up 41%, because a parked van is on the footway instead of in a
+traffic lane. One row of the cost table moved with the robbery's radius (+9.1 → +10.0) and no
+other.
+
 ### Not done
 
 Everything else, in the order it is worth doing:
 
-- **16, 13, 7, 15** — solid things are not solid. `obstructs_radius` is set on five rows of
-  thirty; a delivery van, an ice cream van, a reversing lorry, a burnt-out shell and an abduction
-  van are all large, visibly solid, stationary objects you can walk through. And `alley_robbery`'s
-  lethal radius is 22px, which is smaller than the player's own collision circle, so "walk over the
-  robber" is a thing that can happen without ever entering it.
 - **2** — the caret is fixed (a pulse only counts if it can be *timed*, which takes day 1 from six
   marked rows to two) but the other half of that finding is not: *"not sure what that person was
   supposed to be"* is `homeless_yeller`, `busker` and `poster_crew` all drawing the same
@@ -273,11 +330,28 @@ Everything else, in the order it is worth doing:
   with thirty trees on it.
 - **6** — a car turning swaps axes in one frame and the sprite snaps from side-on to end-on. Wants
   a diagonal frame and a transition.
-- **4** — the warning indicators render below roofs. **Not diagnosed.** The geometry says it
-  should not happen: a building's drawn mass fills exactly its own lot and `Entities` is y-sorted
-  on the ground plane, so nothing should ever be over an entity standing outside that lot. Reading
-  the code has not found it and two screenshots did not catch it. It needs the case reproduced —
-  most likely a carve, an alley or a courtyard passage, where an entity stands *inside* a block's y
-  range with building rects either side of it.
+- **4** — the warning indicators render below roofs. **Diagnosed in M34, not fixed.** The
+  reproduction fell out of siting the lorry against a frontage: a `z_index = 100` on
+  `EventInstance` for one screenshot puts thirty pixels of lorry back on screen that the wall had
+  been eating. The mechanism, which the earlier note above had backwards:
+
+  A `Building`'s origin is the **south edge** of its lot and its drawn mass extends *north* from
+  there, up to a whole block deep. Y-sorting compares origins, so a building is drawn in front of
+  everything whose y is north of its south edge — which on a **north-south street is every entity
+  on the pavement beside it**, because that pavement runs the length of the block. It only shows
+  where the two also overlap in **x**, and that is why it looks like an occasional glitch rather
+  than a rule: a tile centre is 16px from the lot edge, so a person (18px) never overlaps and a
+  lorry (62px) always does. The things in between are the ones that move — the player and the
+  crowd walk continuously, so hugging a frontage puts her within 14px of it — and **anything drawn
+  above an entity's head**, which is where the warning indicators are.
+
+  `building.gd` claims the opposite in a comment — *"it keeps every extrusion off the street, so
+  the player is never hidden under a roof while walking past one"* — and that is true of the
+  building's **ground footprint** and false of every sprite that overhangs it.
+
+  The fix is probably one line and the argument for it is worth checking rather than assuming:
+  **buildings fill their lots exactly and no lot tile is walkable, so nothing can ever legitimately
+  be behind a building.** If that holds, an entity should never be occluded by one, and the two
+  should not be sorting against each other at all.
 - **14** — the zzz is stepped aside from the pram when she walks north, which is M32 avoiding the
   exclamation mark's column and reading, correctly, as *not above the stroller*.

@@ -412,7 +412,9 @@ Top-down camera with a fake vertical extrusion:
 - Anything whose *size* carries meaning is drawn at that size rather than at the art's own.
   A fire's flames scale with what it is currently emitting, and a blocking object is drawn
   by repeating a segment across exactly the width it obstructs — so what is on screen is
-  what is in the way.
+  what is in the way. **M34 turned that round and made it a rule for the whole catalogue**: an
+  event that stands still is *solid at the width it is drawn*, which is the same statement read
+  from the other end. See `docs/EVENTS.md`, "Solid things are solid".
 
 Art lives in `assets/` as hand-editable SVG — ground tiles under `assets/tiles/`, building
 tiles under `assets/buildings/`, the player under `assets/rig/`, scenery under

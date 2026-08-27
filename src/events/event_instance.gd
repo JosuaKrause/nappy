@@ -47,10 +47,14 @@ var _path_travelled := 0.0
 var _telegraph_announced := false
 var _activation_announced := false
 
-func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array()) -> void:
+## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
+## direction it is travelling on its first step, which is why the default is harmless.
+func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
+		face := Vector2.RIGHT) -> void:
 	def = definition
 	path = route
 	position = route[0] if route.size() > 0 else at
+	_heading = face
 
 func _ready() -> void:
 	EventBus.event_telegraphed.emit(self)

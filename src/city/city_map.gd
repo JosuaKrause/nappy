@@ -134,6 +134,33 @@ func is_street(tile: Vector2i) -> bool:
 func is_closed(tile: Vector2i) -> bool:
 	return closed_tiles.has(tile)
 
+## Which way is *away from the carriageway* from a pavement tile, as a unit tile step. Zero
+## where the question has no single answer. *(M34, playtest 07 findings 7 and 15.)*
+##
+## A corridor is sidewalk | road | sidewalk across its own axis, so a pavement tile has a kerb on
+## one side and a frontage on the other, and which is which follows from the offset. Two cases
+## deliberately answer zero rather than guessing:
+##
+## - **A junction**, where the tile is in both corridors at once and has a kerb on two sides. A
+##   van parked in one is wrong whichever way it faces.
+## - **Anything that is not pavement** — the carriageway itself, a park a calm zone painted over
+##   the street, a closed tile. `is_street()` is not enough here: since M21 a corridor may not be
+##   there at all, and a tile at a pavement offset can be grass.
+func pavement_inward(tile: Vector2i) -> Vector2i:
+	if tile_at(tile) != GameEnums.TileType.SIDEWALK:
+		return Vector2i.ZERO
+	var x_offset := corridor_offset(tile.x)
+	var y_offset := corridor_offset(tile.y)
+	if x_offset >= 0 and y_offset >= 0:
+		return Vector2i.ZERO
+	var offset := x_offset if x_offset >= 0 else y_offset
+	var axis := Vector2i.RIGHT if x_offset >= 0 else Vector2i.DOWN
+	if offset < Tuning.SIDEWALK_WIDTH:
+		return -axis
+	if offset >= Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH:
+		return axis
+	return Vector2i.ZERO
+
 ## Walkable *and* open: what the player can actually use today. Anything choosing a place to
 ## put something — an event, a crowd agent, a resistance contact — wants this rather than
 ## `is_walkable`, or it will put it somewhere nobody can reach.

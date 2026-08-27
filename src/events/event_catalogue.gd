@@ -7,6 +7,18 @@ extends RefCounted
 ## day: a permanent ambient field, a short mobile burst, and a stationary pulsing source.
 ## M5 fills in the rest of Act I.
 
+# ------------------------------------------------------------------- bodies ---
+# *(M34.)* A body is **half the silhouette**, never a number chosen for how it plays: the rule
+# in `EventDef.obstructs_radius` is that a thing that stands still is solid at the width it is
+# drawn, and a body that disagrees with the art is a lie about where she can walk in one
+# direction or the other. Two of them repeat often enough to be worth a name; the rest are
+# written at the row that uses them, with the sprite they came from.
+
+## `person.svg` is 18px across. A man you edge past on a pavement rather than walk through.
+const PERSON_BODY := 11.0
+## `vehicle.svg` is 48px across.
+const VEHICLE_BODY := 22.0
+
 static var _all: Array[EventDef] = []
 
 static func all() -> Array[EventDef]:
@@ -144,6 +156,13 @@ static func _cat_dash() -> EventDef:
 
 ## Stationary, loud, and *pulsing* — the intensity envelope means the counterplay is timing
 ## a pass between yells, which is a different skill from routing around a hazard.
+##
+## He is also the man playtest 07 walked up to and walked *through*: *"there was a person right
+## on the home block but walking up to them didn't do anything"*, and *"I can walk over the
+## robber and he doesn't do anything"*. Both are this row — the traces have nineteen `near
+## homeless_yeller` entries and never reach the day an actual robber exists. He is solid at
+## `PERSON_BODY` now, which is the whole of the second complaint; the first one is that he draws
+## the same `person.svg` as a busker, and that is still open.
 static func _homeless_yeller() -> EventDef:
 	var def := EventDef.new()
 	def.id = "homeless_yeller"
@@ -155,6 +174,7 @@ static func _homeless_yeller() -> EventDef:
 	def.outer_radius = 210.0
 	def.telegraph_time = 2.6
 	def.pulse_period = 5.0
+	def.obstructs_radius = PERSON_BODY
 	def.weight = 2.0
 	def.max_per_day = 14
 	return def
@@ -232,18 +252,30 @@ static func _cafe_tables() -> EventDef:
 	def.cost = 2
 	return def
 
-## Parked, reversing, beeping. Constant and stationary — the plain obstacle the route
-## planning is practised on.
+## Parked at the kerb, hazards going, half unloaded. Constant and stationary — the plain
+## obstacle the route planning is practised on.
+##
+## **It was the thing playtest 07 called scenery**: *"there is also a car obstacle on the road
+## that is basically a still car standing on the road doing nothing"*, and it was doing nothing
+## for two reasons at once. It had no body, so she walked through it; and it was placed on a
+## `ROAD` tile, where it stood in a traffic lane that the crowd knows nothing about and drove
+## straight through, blocking a route nobody takes on foot anyway.
+##
+## Both halves are the same fix: a parked van belongs **at the kerb**. There it is on the
+## pavement she is actually walking down, it takes that pavement — 48px of van across a 64px
+## footway, so the answer is the other side of the street — and no car drives through it.
 static func _delivery_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "delivery_van"
 	def.display_name = "Delivery van"
 	def.look = EventDef.Look.VEHICLE
-	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
+	def.placement = [GameEnums.TileType.SIDEWALK]
+	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.intensity = 8.0
 	def.inner_radius = 40.0
 	def.outer_radius = 150.0
 	def.telegraph_time = 1.3
+	def.obstructs_radius = VEHICLE_BODY
 	def.weight = 2.0
 	def.max_per_day = 14
 	return def
@@ -262,6 +294,7 @@ static func _busker() -> EventDef:
 	def.outer_radius = 190.0
 	def.telegraph_time = 1.7
 	def.pulse_period = 7.0
+	def.obstructs_radius = PERSON_BODY
 	def.weight = 2.0
 	# Kept the lowest of the raised act I caps on purpose: a busker is placed on PARK or SQUARE,
 	# which is the only calm ground there is, and `_ensure_one_usable_park` pays for every one
@@ -329,12 +362,22 @@ static func _burning_building() -> EventDef:
 	def.outer_radius = 260.0
 	def.telegraph_time = 2.2
 	def.pulse_period = 3.0
+	# Five flames spanning ±31px, and you do not walk through a burning building. Not lethal by
+	# decision — what ends a day is in act III — so the body is simply the fire.
+	def.obstructs_radius = 30.0
 	def.scar_id = "burnt_shell"
 	return def
 
 ## What is left the next morning, and every morning after. Cordoned off, never repaired.
-## Almost silent — it is not an obstacle, it is a reminder, and it is on the same corner on
+## Almost silent — it is a reminder rather than a hazard, and it is on the same corner on
 ## day 12 as it was on day 4.
+##
+## *(M34.)* "Not an obstacle" used to mean it had no body either, which is how a burnt-out
+## building came to be a thing you could stand inside — playtest 07 named it in the list of
+## things it could walk over. It is silent **and** solid now, and the two were never the same
+## claim: what it costs the meter is 2.5/s and what it costs the route is a corner.
+## `_draw_spread` draws the cordon at exactly the width of the body, so this number is also how
+## wide it looks; at 36 it is a shell rather than the two-barrier sliver 11px was drawing.
 static func _burnt_shell() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burnt_shell"
@@ -346,6 +389,7 @@ static func _burnt_shell() -> EventDef:
 	def.inner_radius = 30.0
 	def.outer_radius = 90.0
 	def.telegraph_time = 0.7
+	def.obstructs_radius = 36.0
 	return def
 
 # ------------------------------------------- Act I, M31: variety, and two with teeth ---
@@ -438,6 +482,7 @@ static func _leaf_blower() -> EventDef:
 	# Swept in bursts rather than held, so there is a rhythm to time a pass through — the same
 	# counterplay `homeless_yeller` has, at a scale that makes a whole corner of a park unusable.
 	def.pulse_period = 4.0
+	def.obstructs_radius = PERSON_BODY
 	def.weight = 1.2
 	def.max_per_day = 8
 	def.cost = 2
@@ -511,21 +556,28 @@ static func _cyclist() -> EventDef:
 ## A jingle you can hear three streets away, and children arriving from everywhere.
 ##
 ## The `busker` argument, one size up and on day 2: nothing about it is threatening, it is
-## simply interesting. Stationary, on the road, with the widest ordinary radius in act I — it is
-## the act I answer to *"what makes a whole area unusable without anything being wrong"*.
+## simply interesting. Stationary, with the widest ordinary radius in act I — it is the act I
+## answer to *"what makes a whole area unusable without anything being wrong"*.
+##
+## At the kerb since M34, for the same reason as the delivery van: a van parked in a traffic lane
+## is a van the crowd drives through, and an ice cream van is a thing children cross a road to
+## reach rather than a thing standing in one.
 static func _ice_cream_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "ice_cream_van"
 	def.display_name = "Ice cream van"
 	def.look = EventDef.Look.ICE_CREAM_VAN
 	def.first_day = 2
-	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
+	def.placement = [GameEnums.TileType.SIDEWALK]
+	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.intensity = 13.0
 	def.inner_radius = 48.0
 	def.outer_radius = 240.0
 	def.telegraph_time = 2.2
 	# The jingle is a loop, so the meter cost comes and goes on the same period it does.
 	def.pulse_period = 11.0
+	# `ice_cream_van.svg` is 50px across.
+	def.obstructs_radius = 24.0
 	def.weight = 1.5
 	def.max_per_day = 5
 	def.cost = 2
@@ -540,6 +592,15 @@ static func _ice_cream_van() -> EventDef:
 ## never chase anybody, and the beeper runs long because a hard fail owes double.
 ##
 ## Day 3, which puts one new lethal thing on each of the first act's last two days.
+##
+## **The yard it is backing into has to be there.** *(M34, playtest 07 finding 15: "the backing
+## out lorry does not connect to the building making it hard to visually read".)* It was sited on
+## any pavement tile at all and drawn facing east, so most of them were a lorry parked in the
+## middle of a footway pointing along it — which is a parked lorry, and a parked lorry is not a
+## thing whose danger is *behind* it. `AGAINST_THE_BUILDING` gives it a wall to reverse into and
+## turns it to face out of that wall, so the 62px silhouette has its box end buried in the
+## frontage and its cab on the pavement. The lesson the event teaches is the shape of the
+## picture: what you must not walk into is the gap between the metal and the wall.
 static func _reversing_lorry() -> EventDef:
 	var def := EventDef.new()
 	def.id = "reversing_lorry"
@@ -547,6 +608,7 @@ static func _reversing_lorry() -> EventDef:
 	def.look = EventDef.Look.LORRY
 	def.first_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
+	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
 	def.intensity = 16.0
 	def.inner_radius = 46.0
 	def.outer_radius = 175.0
@@ -554,6 +616,10 @@ static func _reversing_lorry() -> EventDef:
 	def.telegraph_time = 3.0
 	# The beeper. Steady enough to locate, slow enough to be a countdown rather than a wall.
 	def.pulse_period = 1.6
+	# `lorry.svg` is 62px across, and 28 + her own 14 is inside the 46 that ends the day — so the
+	# metal is solid and touching it is still fatal. See `EventDef.validate()`, which is where
+	# that arithmetic is a rule rather than a coincidence.
+	def.obstructs_radius = 28.0
 	def.hard_fail = true
 	def.weight = 1.2
 	def.max_per_day = 4
@@ -651,6 +717,7 @@ static func _poster_crew() -> EventDef:
 	def.inner_radius = 30.0
 	def.outer_radius = 110.0
 	def.telegraph_time = 1.0
+	def.obstructs_radius = PERSON_BODY
 	def.weight = 2.5
 	def.max_per_day = 12
 	return def
@@ -731,6 +798,9 @@ static func _abduction() -> EventDef:
 	def.duration = 34.0
 	# hard_fail doubles the required margin: (250-54)/92 * 2 = 4.26s.
 	def.telegraph_time = 4.6
+	# A van is a van: 22 + her own 14 leaves the 54 that takes her comfortably reachable, so the
+	# body only ever stops her during the idling, which is the phase where it has not happened yet.
+	def.obstructs_radius = VEHICLE_BODY
 	def.hard_fail = true
 	def.weight = 2.0
 	# The `hard_fail` caps rise with the rest, but by half as much: at one event per block the
@@ -743,6 +813,14 @@ static func _abduction() -> EventDef:
 ## Alleys only, and deliberately tiny: the alley itself is the warning. You knew what an
 ## alley was when you turned into it. The radius is small enough that the fairness rule is
 ## satisfied by half a second, which is as close to "no warning" as the contract allows.
+##
+## **The inner radius moved 22 → 30 in M34 and it had to.** He is a man, so he is solid at
+## `PERSON_BODY` like every other man in the catalogue, and 11 plus her own 14 is 25: at 22 the
+## pram would have been stopped a clear three pixels *outside* the radius that ends the day, and
+## an event that can never fire is worse than one that fires unfairly. `EventDef.validate()`
+## refuses that arrangement now rather than leaving it to be found by somebody walking into a
+## robbery and strolling away. The telegraph is unchanged and still legal — (42−30)/92 x 2 =
+## 0.26s against the 0.6 it has.
 static func _alley_robbery() -> EventDef:
 	var def := EventDef.new()
 	def.id = "alley_robbery"
@@ -752,9 +830,10 @@ static func _alley_robbery() -> EventDef:
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.ALLEY]
 	def.intensity = 16.0
-	def.inner_radius = 22.0
+	def.inner_radius = 30.0
 	def.outer_radius = 42.0
 	def.telegraph_time = 0.6
+	def.obstructs_radius = PERSON_BODY
 	def.hard_fail = true
 	def.weight = 1.5
 	def.max_per_day = 4
@@ -839,6 +918,10 @@ static func _protest() -> EventDef:
 	def.telegraph_time = 2.6
 	def.intensity_ramp = 1.9
 	def.pulse_period = 8.0
+	# One person's worth, because one person is what it draws. A crowd that swells to fill a
+	# square is what the row is *about*, and the body may not claim ground the picture does not —
+	# that is the same rule `_draw_spread` follows in the other direction. The art is the fix.
+	def.obstructs_radius = PERSON_BODY
 	def.weight = 2.5
 	def.max_per_day = 3
 	def.cost = 3
@@ -861,6 +944,8 @@ static func _firefight() -> EventDef:
 	# hard_fail: (380-90)/92 * 2 = 6.3s.
 	def.telegraph_time = 6.5
 	def.pulse_period = 2.5
+	# The same five flames as a burning building, and far inside the 90 that ends the day.
+	def.obstructs_radius = 30.0
 	def.hard_fail = true
 	def.cost = 5
 	return def

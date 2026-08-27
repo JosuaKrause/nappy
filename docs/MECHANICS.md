@@ -186,10 +186,13 @@ is why they live there rather than in `CrowdAgent`, which has no business knowin
 
 | | |
 | --- | --- |
-| Contact radius | `14 px`, centre to centre |
+| Contact radius | `14 px`, centre to centre, released past `19 px` |
 | Separation | positional, `70%` to them and `30%` to her |
 | Deflection | `55 px/s`, decayed by `FRICTION` |
-| Cost | one jolt: `26/s` fading over `1.2 s`, so **~15.6 points** |
+| Cost | one jolt: `18/s` fading over `1.2 s`, so **~10.8 points** |
+
+The cost row is playtest 07's: it was `26/s` and ~15.6 points until M33, when the authored
+content finally started carrying the share the crowd had been carrying alone.
 
 **The radius is set by the lane spacing, not by a body's width.** Pedestrian lanes are one
 tile apart, so the only line with no contact on it is the midline between two of them. At

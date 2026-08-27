@@ -35,7 +35,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 46607 headless checks, ~100s
+./tools/test.sh               # 46522 headless checks, ~110s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
@@ -111,7 +111,10 @@ exit". Declare the real element type at the call site. `tests/test_acts.gd` carr
 **Some warnings are errors by default.** `var x := some_variant` ("the variable type is
 being inferred from a Variant value") fails the parse outright. Annotate the type instead:
 `var x: int = ...`. This does not show up until the project actually boots, which is why
-`check.sh` exists.
+`check.sh` exists. The form that catches people is `var x := load(path).instantiate()`, because it
+reads as obviously typed and is not — and in a *test* it fails at load time, so the suite prints
+nothing at all and looks like it hung. Write `var scene: PackedScene = load(path)` and
+`var node: Node = scene.instantiate()`.
 
 **A runtime error inside a test suite hangs the runner instead of failing it.**
 `run_tests.gd` calls each suite's `run()` synchronously and then `get_tree().quit()`. An
@@ -339,6 +342,32 @@ cannot find room is not placed. `EventScheduler._room_around()` enforces it, `te
 asserts it over a whole run. If a new event ever becomes lethal, it inherits this, not just the
 telegraph.
 
+M34 added a fifth, and it is the same shape as M28's: **a lethal radius and a solid body are the
+same mechanism.** The player is stopped with her centre `obstructs_radius + PLAYER_BODY_RADIUS`
+from the centre of a thing, so a `hard_fail` event whose body reaches its own inner radius can
+never fire at all — which is not an unfair event, it is an event that has quietly been switched
+off, and that is worse. `EventDef.validate()` refuses the arrangement on load. It is why giving
+`alley_robbery` a body meant moving its inner radius from 22 to 30: the pram would otherwise have
+been held three pixels outside the thing that takes the baby.
+
+**Anything that stands still is solid at the width it is drawn.** *(M34, playtest 07 findings 16
+and 13: "none of the non-moving obstacles do anything — I can freely walk over them", and "I can
+walk over the robber and he doesn't do anything".)* `obstructs_radius` was set on five rows of
+thirty because it had only ever been reached for when one event wanted to block a pavement, so a
+delivery van was scenery and a man on the pavement could be stood on. The number is **half the
+silhouette** and not a balance value — `EventInstance._draw_spread` already draws a blocking object
+at exactly the width it obstructs for the same reason in the other direction. Three exemptions,
+each written down in `docs/EVENTS.md`, "Solid things are solid": anything **mobile** (a moving
+wall pins her — the M19 `dog_walker` decision), anything `AHEAD_OF_PLAYER` (`validate()` refuses
+it), and anything with no silhouette. `tests/test_events.gd` walks the catalogue and requires
+everything else to have one, so this stays a rule rather than going back to being a list.
+
+The knock-on to watch: a body is a **route** cost, and several rules were written when only
+scaffolding had one. `EventScheduler._something_to_put_in_a_park` refused *anything* that
+obstructs, which meant "nothing that closes the ground" right up until a busker became solid;
+`Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` is that rule restated as what it always meant. If a rule
+tests `obstructs_radius > 0`, ask whether it means *has a body* or *closes ground*.
+
 **The traffic fairness contract.** *(M19.)* A car is lethal and is **not** an event, so
 `validate_event()` never sees it. `Tuning.validate_traffic()` is its equivalent and runs on
 boot. Two things stand in for the telegraph: the painted carriageway, which is permanent and
@@ -479,6 +508,11 @@ could plan around: it is a place, and finding out it is there is what walking a 
 `AHEAD_OF_PLAYER` is for the small number whose entire content is *the moment it happens to
 you* — three seconds of cat is not a place — and it may not obstruct.
 
+`obstructs_radius` is **not** a decision: if it stands still and it is drawn, it is solid at half
+its silhouette (see the invariant above). `pavement_side` usually is not one either — `ANY` is
+right for almost everything, and the two rows that use it do so because a parked vehicle belongs
+at a kerb and a thing that reverses into a yard needs a wall.
+
 **Change the crowd density** — `Tuning.CROWD_PEDESTRIANS_PER_ACT` / `CROWD_CARS_PER_ACT`, which
 since M27 are populations of the **field** rather than of the city, and
 `CrowdLanes.ARTERIAL_BUSYNESS`, which is one street's share of the three or four corridors in
@@ -614,6 +648,13 @@ events on it: a contact with a pedestrian is ~10.8 points and a car's horn ~8, a
 in the catalogue. A balance argument that reaches for the cost table alone is now answering a
 narrower question than it thinks.
 
+**M34 made most of the table unwalkable, which does not change a number in it.** Every stationary
+row is solid now, so "walk straight through the centre" is a line the player cannot take against
+about two thirds of the catalogue. The integral is still the right price for *being close*, and
+being stopped by a body is a route cost the table has never counted — day 1 goes from 12.2
+pavement-blocking obstacles to 17.2, measured over five seeds, with the count of events placed
+unchanged at ~39.
+
 **M27 widened that gap again, and this time the street is most of the day.** The measured
 numbers are in `docs/PLAYTEST-04.md`. The two worth carrying around: at act I density the
 arterial has a safe gap in the traffic about **one time in twenty** — it is crossed at a zebra,
@@ -638,8 +679,17 @@ not either number, is what makes it a decision.
   cue helped. The `cue` entries are what to read next: a `turn` or a `run` after one is the only
   evidence a cue was acted on. And the pram's four states have been screenshotted in every
   facing and never seen in motion by anybody.
-- **The entities do not yet read as what they are.** *(M22 closed the signalling gaps; this
-  is the one it exposed.)* The vocabulary's first row is *the thing itself carries most of
+- **A street that is solid has been walked by a rig and by nobody.** *(M34.)* About two thirds of
+  the catalogue has a body now where five rows did, and day 1 went from 12.2 things that take a
+  64px footway to 17.2 — with the count of events placed unchanged, so the open question is not
+  density but whether being stopped reads as *cross the street* or as an obstacle course. The gap
+  between a kerbed van and the frontage is smaller than the pram, which is intended and is also the
+  exact shape of M19's *"no line to walk"*, a mistake a green suite and a screenshot both passed.
+- **The entities do not yet read as what they are, and it has now cost a finding.** *(M22 closed
+  the signalling gaps; this is the one it exposed.)* **M34 is where it stopped being cosmetic:**
+  playtest 07's *"I can walk over the robber"* is about `homeless_yeller`, and it was written up,
+  queued and nearly fixed as a bug in `alley_robbery` — an event that is day 8, alleys only, and
+  which neither trace ever reached. The vocabulary's first row is *the thing itself carries most of
   it* — and `homeless_yeller`, `busker` and `poster_crew` all draw the same `person.svg`, as
   does an ordinary crowd walker. Two of them are currently covered for by the caret above
   them, which is exactly the wrong way round: the symbol is meant to add what a silhouette

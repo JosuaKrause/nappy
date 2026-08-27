@@ -1,7 +1,52 @@
 # Handoff
 
-**Last updated:** end of the M33 session — playtest 07's first half. Nine of nineteen closed.
+**Last updated:** end of the M34 session — playtest 07's second half. Thirteen of nineteen closed.
 **Read this first, then [PLAYTEST-07.md](PLAYTEST-07.md), then [TODO.md](TODO.md).**
+
+> **M34 is four of playtest 07's findings and one sentence: a thing that stands still is solid at
+> the width it is drawn.** *"None of the non-moving obstacles do anything — I can freely walk over
+> them"* (16), *"I can walk over the robber and he doesn't do anything"* (13), *"a still car
+> standing on the road doing nothing"* (7), *"the backing out lorry does not connect to the
+> building"* (15).
+>
+> **`obstructs_radius` was a list, not a rule, and that is the whole finding.** It had only ever
+> been *reached for* — when one particular event wanted to block a pavement — so it was set on five
+> rows out of thirty and a delivery van was scenery. Making it a rule sets a body on two thirds of
+> the catalogue, and the number is not a balance value in any of them: it is **half the
+> silhouette**, because `_draw_spread` has always drawn a blocking object at exactly the width it
+> obstructs, and a body that disagrees with the picture is a lie about where she can walk whichever
+> way it lies. Three exemptions, all written down: mobile (a moving wall pins her — M19's
+> `dog_walker` decision), `AHEAD_OF_PLAYER` (`validate()` refuses it), and anything with no
+> silhouette.
+>
+> **A lethal radius and a solid body are the same mechanism, and this is the trap in it.** She is
+> stopped with her centre `obstructs_radius + PLAYER_BODY_RADIUS` from his, so a `hard_fail` event
+> whose body reaches its own inner radius can **never fire**. That is not an unfair event, it is an
+> event silently switched off, which is worse and reports nothing. `alley_robbery` is the case:
+> giving a man a man's body meant moving the inner radius 22 → 30, or the pram would have been held
+> three pixels outside the thing that takes the baby. `EventDef.validate()` refuses the arrangement
+> on load now.
+>
+> **And the analysis in `PLAYTEST-07.md` was wrong about which robber.** The player never reached
+> day 4 in either trace and `alley_robbery` is day 8 and alleys only. The man walked over is
+> `homeless_yeller` — nineteen `near` entries — so finding 13 is finding 16 with a person in it,
+> and finding 2's *"not sure what that person was supposed to be"* is the same man again. Check
+> which event a complaint is actually about before fixing the one it names.
+>
+> **Findings 7 and 15 are both "it is standing somewhere that makes no sense of it".** A parked van
+> was on a `ROAD` tile — a traffic lane the crowd knows nothing about and drives straight through,
+> blocking a route nobody walks. A lorry whose entire content is *the danger is behind it* was
+> sited on any pavement tile at all and drawn facing east. `EventDef.pavement_side` is the field
+> both wanted: `AT_THE_KERB` puts a van on the footway she is using, `AGAINST_THE_BUILDING` gives
+> the lorry a wall and turns it to face out of it.
+>
+> **Measured, five seeds:** events placed per day is **unchanged** (day 1: 38.8 → 39.6, day 14:
+> 75.4 → 75.2), which is the number that had to not move, and pavement-blocking obstacles on day 1
+> went **12.2 → 17.2**. One row of the cost table moved and it is the robbery's.
+>
+> **Finding 4 is diagnosed and deliberately not fixed** — see below, and
+> [PLAYTEST-07.md](PLAYTEST-07.md). It is a `Building` sorting by its **south edge** while its mass
+> extends a block north of it.
 
 > **M33 is playtest 07, and it is one sentence: every cost in the game was paid on contact, and
 > almost nothing else in it was real.** Sixteen of the nineteen findings are that sentence from
@@ -115,11 +160,19 @@
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **46607 checks, 0 failures** (~105s);
+`main` is green and playable. `./tools/test.sh` → **46522 checks, 0 failures** (~110s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
-**The check count went 47085 → 46607, and a drop wants explaining.** M33 added ~50 checks —
+**The check count went 46607 → 46522, and the drop is the same shape as the last one.** M34 added
+about 250 checks — the solidity rule over the whole catalogue, the lethal-body constraint, the two
+placement rules asserted over fourteen days, and the pram's own radius against the scene it is
+authored in — and removed about 330, all from one place: `delivery_van` and `ice_cream_van` want
+the kerb lane now, so they are offered half as many candidate tiles and land slightly less often,
+and several suites assert per placed plan. Events placed per day is unchanged over five seeds, so
+this is the same suite asserting the same things about the same days.
+
+**The count before that went 47085 → 46607, and that drop wants its own explanation.** M33 added ~50 checks —
 the pursuit contract, the caret's timeable rule, the motion-shaped decay ordering, the running
 ordering row by row — and removed ~530, all from one place: `_along_street_path` now refuses a
 route that would *finish* jammed against the city wall, so fewer along-street routes are placed
@@ -134,8 +187,12 @@ tests, which loop over every street of every zone of every seed. A count that mo
 being asserted is doing that; a count that drops after anything but a deletion is a suite that
 stopped running.
 
-**M32 landed in this session and playtest 06 is closed.** The five things it fixed are the
-entry above; what is worth carrying forward is in "Gotchas learned in M32" below.
+**M34 landed in this session and playtest 07 is down to six open findings.** The four it closed
+are the entry above; what is worth carrying forward is in "Gotchas learned in M34" below. **M33
+landed in the session before it**, and it is the other half of the same playtest.
+
+**M32 closed playtest 06.** The five things it fixed are the entry further up; what is worth
+carrying forward is in "Gotchas learned in M32" below.
 
 **M21 landed in the session before it, and playtest 06 opened in the middle of it.**
 
@@ -274,6 +331,14 @@ should now be a great deal more than playtest 03's zero — `road` for time in t
   beside other calm. The lattice grew holes and route redundancy stopped being true by
   construction. **The other two halves — main roads with lights, and the canal — are open by
   decision**, not forgotten; see `TODO.md`.
+- **M33 complete.** Playtest 07's first nine: the falloff grew a shoulder, the crowd paid it back
+  in radius, standing still settles nothing, a contact resolves and costs less, running started to
+  matter, the run is taught on the day it does, and there is a pause.
+- **M34 complete.** Playtest 07's next four, and one rule: anything that stands still is solid at
+  half its silhouette. Two thirds of the catalogue has a body now where five rows did; a parked van
+  is at the kerb rather than in a traffic lane; a reversing lorry has a building to reverse into;
+  and a lethal event's body has to fit inside its own kill radius, which moved `alley_robbery`'s.
+  Density unchanged, pavement-blocking obstacles up 41% on day 1.
 
 ## The decisions that govern the next milestones
 
@@ -353,18 +418,19 @@ The badge announces only what she cannot outwalk, and it **must carry a silhouet
 that can only say "something" is an anxiety rather than a warning. Adding to this vocabulary is
 a design decision, not a drawing one; read `docs/EVENTS.md`, "The visual vocabulary", first.
 
-## Six playtests, and the order they left behind
+## Seven playtests, and the order they left behind
 
-All six are live plans: **[PLAYTEST-01.md](PLAYTEST-01.md)** (thirteen findings → M11–M17),
+All seven are live plans: **[PLAYTEST-01.md](PLAYTEST-01.md)** (thirteen findings → M11–M17),
 **[PLAYTEST-02.md](PLAYTEST-02.md)** (twelve → M18–M26), **[PLAYTEST-03.md](PLAYTEST-03.md)**
 (the first read off a run log; it reorders rather than adds),
 **[PLAYTEST-04.md](PLAYTEST-04.md)** (seven findings; adds M27 and moved M22 and M21 to the
 front), **[PLAYTEST-05.md](PLAYTEST-05.md)** (six findings → M28, M29, M30, M24 and M31,
-**all closed**), and **[PLAYTEST-06.md](PLAYTEST-06.md)** (five things, **all closed** as M32).
-Read 06 and then 05 before picking anything up; the summaries here are not a substitute for them,
-and both carry what each analysis got wrong as well as what it got right — 06's is at the bottom
-of the file, under "What the analysis missed", and two of its three entries are things a trace
-found that no amount of reading the code would have.
+**all closed**), **[PLAYTEST-06.md](PLAYTEST-06.md)** (five things, **all closed** as M32), and
+**[PLAYTEST-07.md](PLAYTEST-07.md)** (nineteen, thirteen closed as M33 and M34).
+Read 07 and then 06 before picking anything up; the summaries here are not a substitute for them,
+and each carries what its analysis got wrong as well as what it got right — 06's is at the bottom
+of the file under "What the analysis missed", and 07's is inside the M34 section, where the finding
+about a robber turned out to be about a different man entirely.
 
 The queue is numeric except where something jumped it, and each jump had one practical reason:
 **M18** because closure counts tuned against a day that was about to halve would have been
@@ -565,15 +631,15 @@ it.
 - **Measure the thing you are changing, not the thing next to it.** The probe first counted "is
   anybody touching", which chains one contact into the next on a busy pavement and reported a 3.8s
   contact that was really nine. Per-agent, or the number is a different number.
-- **A rig that drives the player must turn the player'''s own `_physics_process` off.** The
+- **A rig that drives the player must turn the player's own `_physics_process` off.** The
   pursuit probe moved her twice a frame — once by the rig and once by `Stroller` — so she fled at
-  157px/s instead of 92 and the chase looked unfair in the player'''s favour. `CLAUDE.md` already
+  157px/s instead of 92 and the chase looked unfair in the player's favour. `CLAUDE.md` already
   says a probe that disagrees with the game is wrong about the game; this is the cheapest way to
   make one disagree.
 - **A rig cannot hold a reference to an event past the frame it finishes.** `EventManager` frees
   a finished instance, and `if not _dog: return` then silently swallows the whole measurement.
   Twelve minutes of a probe printing nothing.
-- **A new catalogue row reshuffles every day'''s rolls.** Adding `charging_dog` changed which tile
+- **A new catalogue row reshuffles every day's rolls.** Adding `charging_dog` changed which tile
   every later event landed on, which surfaced a latent bug in `_along_street_path`: a route
   truncated by a closure can *finish* jammed against the city wall even though the length check
   keeps a margin from it. That check had been passing by luck since M5.
@@ -582,20 +648,81 @@ it.
   `pulse_period > 0`, which is six of the ten rows available on day 1. The question is never
   *does it change* — it is **can the player play against the change**.
 
+## Gotchas learned in M34
+
+- **A field that is only ever *reached for* is a list wearing a rule's clothes.**
+  `obstructs_radius` existed from M5 and was set five times in thirty rows, every time because
+  somebody wanted that particular event to block a pavement. Nothing was wrong with any of the five
+  and the whole thing was wrong. When a field's value looks like a series of local decisions, ask
+  what would decide it for a row nobody has thought about — here it was already decided, in
+  `_draw_spread`'s own comment, and had been for four milestones.
+- **A lethal radius and a solid body are the same mechanism.** She is stopped
+  `obstructs_radius + PLAYER_BODY_RADIUS` from the centre, so on a `hard_fail` event a body that
+  reaches the inner radius does not make it unfair, it makes it **never fire** — and nothing
+  reports an event that quietly stopped working. It is `validate()`'s job now. The general shape:
+  when two systems both measure a distance to the same point, check what happens when one of them
+  wins.
+- **Check which event a complaint is actually about.** *"I can walk over the robber"* was written
+  up as an `alley_robbery` bug, and `alley_robbery` is day 8, alleys only, and both traces end on
+  day 4. The man is `homeless_yeller`, with nineteen `near` entries. The write-up's arithmetic was
+  wrong as well — nothing stopped her, so her centre reached his and the day ended — and the
+  arithmetic only *became* true when he was given a body. A finding named after the wrong row sends
+  the next person to the wrong file.
+- **A rule that reads `obstructs_radius > 0` may mean two different things.**
+  `_something_to_put_in_a_park` refused anything with a body, which meant "nothing that closes the
+  ground" while only scaffolding had one and meant "no buskers" the moment everything did — which
+  would have emptied the spoiler pool and retired M24 without a test failing on anything but the
+  spoil rate. `OBSTRUCTION_A_PARK_CAN_HOLD` is the same rule stated as what it always meant.
+- **"It does nothing" can be two complaints in one sentence.** The delivery van did nothing because
+  it had no body **and** because it was in a traffic lane the crowd drives straight through,
+  blocking a route nobody walks. Fixing either alone leaves *"a still car standing on the road
+  doing nothing"* true.
+- **A probe that divides inside the loop it accumulates in is off by a factor per seed.** The first
+  density run said 1.68 events live around her against a documented 4.79, which reads exactly like
+  a regression worth a milestone. It was five seeds' worth of dividing seed one's contribution five
+  times. Before believing a number that disagrees with a document, run the same probe against
+  `main` — which is the comparison that has to be made anyway.
+- **`var x := load(...).instantiate()` does not parse**, and the failure is the quiet one: the
+  suite dies at *load* time, prints nothing at all, and `tools/test.sh` sits there. `CLAUDE.md`
+  already says a run with no output is an error rather than a slow suite; this is the cheapest way
+  to cause one.
+
 ## What to do next, in order
 
-### First: the ten open findings from playtest 07
+### First: play it, and look at a street that is solid
+
+**M34 has been walked by a rig and by nobody's eyes**, and it is the first milestone since M28 to
+change what an ordinary pavement *is*: about two thirds of the catalogue has a body now, and day 1
+went from 12.2 things that take a 64px footway to 17.2. The count of events placed did not move, so
+the question is not density — it is whether a street that stops you reads as a route decision or as
+an obstacle course. Three specific things to watch, because a rig cannot:
+
+- **Does a blocked pavement read as a decision?** A van at the kerb takes the footway and the
+  answer is meant to be *the other side of the street*, the same answer `construction` has asked
+  for since M19. If it reads as "walk into the road", that is the density of blockers, not the
+  bodies.
+- **Does anything trap her?** She is 14px and a van is 22, so the gap between a van and the
+  frontage is smaller than she is: she stops. That is intended and it is also exactly the shape of
+  M19's *"no line to walk"* mistake, which took a rig walking a real pavement to see.
+- **Does the lorry read as backing into the yard?** It is turned to face out of the frontage it is
+  against, and about half its box end is behind the building's front wall — which is finding 4
+  happening, and which happens to read *correctly* here. It is worth a second opinion.
+
+### Then: the six open findings from playtest 07
 
 They are listed at the bottom of [PLAYTEST-07.md](PLAYTEST-07.md) in the order they are worth
-doing. The first group is cheap and is a correctness bug rather than a polish item: **five
-stationary, visibly solid objects have no collision at all**, and `alley_robbery`'s lethal radius
-is smaller than the player'''s own collision circle, so *"I can walk over the robber and he doesn'''t
-do anything"* is literally true.
+doing. The largest is **10**, the spoiler that has to cover a calm area rather than stand in it,
+and the one with the most leverage on everything else is **2's other half**: `homeless_yeller`,
+`busker` and `poster_crew` all drawing the same `person.svg` is now demonstrably costing findings —
+it is what made *"I can walk over the robber"* about a man who is not a robber.
 
-The one that needs investigation rather than typing is **finding 4**, the warning indicators
-rendering below roofs. The geometry says it cannot happen; it does. Reproduce the case before
-theorising — the likely shape is an entity standing *inside* a block'''s y-range, which means a
-carve: an alley, a courtyard passage, or a commercial square.
+**Finding 4 is diagnosed and ready to type.** A `Building`'s origin is the **south edge** of its
+lot and its mass extends up to a block north of it, so y-sorting draws it in front of everything on
+the pavement beside it, and it occludes whatever also overlaps in x: any sprite wider than the 16px
+from a tile centre to the lot edge, anything drawn above an entity's head, and anybody who walks
+close to a frontage. Reproduced by putting `z_index = 100` on `EventInstance` for one screenshot —
+thirty pixels of lorry came back. The proposed fix and the argument for it are in
+[PLAYTEST-07.md](PLAYTEST-07.md); the argument is the part to check, not the line.
 
 ### Then: play it, and read the `idle` and `cue` entries
 
