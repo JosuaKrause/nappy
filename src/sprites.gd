@@ -29,6 +29,24 @@ static func draw_standing(canvas: CanvasItem, texture: Texture2D, at: Vector2,
 			Rect2(-extent.x * 0.5, -extent.y, extent.x, extent.y), false, modulate)
 	canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
+## The caret from the danger vocabulary — a downward chevron over an entity that is dangerous
+## *right now and changingly so*. See docs/EVENTS.md, "The visual vocabulary".
+##
+## Deliberately not an exclamation mark: that shape is spoken for, it means *this is about you*,
+## and it lives over the player's head and nowhere else.
+##
+## Lives here rather than in `EventInstance` since M30, because a car needed one and a car is
+## not an event. Two hand-drawn chevrons that slowly stop being the same chevron is exactly how
+## a short vocabulary turns into a long one.
+static func draw_caret(canvas: CanvasItem, at: Vector2, width: float, colour: Color) -> void:
+	var points := PackedVector2Array([
+		at + Vector2(-width, -width * 0.8),
+		at + Vector2(width, -width * 0.8),
+		at + Vector2(0.0, width * 0.5),
+	])
+	canvas.draw_colored_polygon(points, colour)
+	canvas.draw_polyline(points + PackedVector2Array([points[0]]), Palette.OUTLINE, 2.0)
+
 ## The contact shadow every standing thing draws first. Squashed on Y by the same amount
 ## the rest of the oblique view is, so it reads as lying on the pavement.
 static func draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:

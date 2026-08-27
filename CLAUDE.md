@@ -346,7 +346,18 @@ Two rules that are easy to lose and are the whole reason it is better than the r
 
 The exclamation mark is the load-bearing one. Every other cue says *a thing exists*; that one
 says **the fairness contract is now about you and the clock has started**, which is the
-difference between information and instruction. `Stroller.warn()` is additive rather than a
+difference between information and instruction. *(M30 narrowed it to what that sentence actually
+promises: only a `hard_fail` event and a closing car raise it. Raised for every telegraph, as
+M22 had it, it meant "a number is about to move faster" for fifteen of the eighteen rows — which
+the meter already says — and the player's verdict was "I can just keep doing what I was doing".
+That is the marks-everything mistake arriving at the one cue that cannot afford it.)*
+
+**A cue that belongs to the vocabulary does not belong to a class.** *(M30.)* The caret was a
+private method on `EventInstance`, so "the entity carries its own cue" quietly meant "the
+*event* entity does", and the one lethal thing in the game that is not in the catalogue — a car
+— had nothing at all. It lives in `Sprites.draw_caret()` now. If a new kind of thing needs a
+cue from the table, it draws the same shape from the same place; a second hand-drawn chevron is
+how a deliberately short vocabulary gets long. `Stroller.warn()` is additive rather than a
 setter for a reason: the crowd and the events both watch the ground she is standing on in the
 same frame, and a setter lets whichever runs second clear what the first just said.
 

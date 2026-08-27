@@ -365,10 +365,10 @@ becoming that.
 | Cue | Means | Where |
 | --- | --- | --- |
 | **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** | the art |
-| **Caret over the entity** | *Danger that changes over time*, and only that: it is about to start, it ends the day, or it comes and goes. Amber telegraphing, red active, doubled and darker for `hard_fail`. | `EventInstance._draw_mark()` |
+| **Caret over the entity** | *Danger that changes over time*, and only that: it is about to start, it ends the day, or it comes and goes. Amber telegraphing, red active, doubled and darker for `hard_fail`. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_horn_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
 | **Edge badge** | Off-screen and closing: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
-| **Exclamation over the player** | *This spot is about to be bad; move.* A telegraph whose radius already covers her, or a car closing on the lane she is standing in. | `Stroller._draw_alert()` |
+| **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live and she is inside its reach with one step left to make. | `Stroller._draw_alert()` |
 | **HUD line** | For a `city_wide` source, which has no position and therefore nothing to stand under. | `hud.gd` |
 | **Sound lines** | Concentric arcs thrown off a source on the rising edge of a pulse — the visual form of a discrete noise (a yell, a bark, a beep, a siren whoop) | todo, M10 |
@@ -393,6 +393,30 @@ Three rules underneath the table, in the order they matter:
    car has no telegraph phase to ring and a ring round a car doing 185px/s is off the edge of
    the screen for most of the warning. M22 only had to add its second level and let the events
    raise it too.
+4. **And the mark means one thing: *this will end your day*.** *(M30, playtest 05 finding 3.)*
+   M22 raised it for **any** telegraphing event whose radius reached her, and the player's
+   verdict was *"it doesn't actually have an effect on gameplay — I can just keep doing what I
+   was doing."* That reading was correct for fifteen of the eighteen rows: for anything that is
+   not a `hard_fail`, the mark meant *a number is about to move faster*, and the meter already
+   says that continuously and proportionally. It is rule 1 in a second shape — a cue that marks
+   everything says nothing — arriving at the one cue that cannot afford it. Only a `hard_fail`
+   event and a car closing on her raise it now.
+
+   The cost is real and is the right cost: acts I and II contain nothing lethal, so the mark is
+   nearly silent before day 8. That is not the cue being broken; it is the cue being honest
+   about a game where nothing is dangerous yet, which is playtest 05's finding 5 and a
+   different milestone.
+
+**The traffic pays for its own warning now.** *(M30.)* The table's first row is *the entity
+itself carries most of it*, and the traffic was the one place nothing did: the caret was drawn
+by `EventInstance`, and a car is not an event. So a lethal thing bearing down on the player
+produced a mark over **her** head and nothing anywhere else — the load-bearing cue paying for a
+warning it should only have been adding to. The horn was supposed to carry it, and the horn is
+silent in a game with no audio, which is *"audio is never the only channel"* failing in the one
+place the traffic fairness contract depends on it. A car sounding its horn now carries the same
+doubled lethal caret a `hard_fail` event does, breathing with the horn's own decay. The shape
+lives in `Sprites.draw_caret()` so there is one chevron rather than two that slowly stop being
+the same chevron.
 
 ### What the edge badge is for, and what it is not
 
@@ -419,6 +443,12 @@ because the day the edge of the screen becomes wallpaper is the day it stops bei
   caret over two of them. That is the vocabulary covering for the art, which is the wrong way
   round. Not urgent — the standing decision on assets is "something workable for now" — but it
   is the first thing to fix when the art gets a pass.
+- **~~The traffic carries no entity-side cue.~~** *(Closed in M30: a car sounding its horn
+  draws the doubled lethal caret.)* Worth keeping the shape of the gap, because it is the one
+  that hid longest: the caret was a method **on `EventInstance`**, so "an entity carries its own
+  cue" silently meant "an *event* entity carries its own cue", and the one lethal thing in the
+  game that is not in the catalogue had nothing. A vocabulary written as one class's private
+  method is a vocabulary with an invisible edge.
 
 ## Keeping a day winnable
 

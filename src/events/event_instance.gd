@@ -219,22 +219,11 @@ func _draw_mark() -> void:
 	# pulsing event would read as flickering in and out of existence.
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, -(MARK_HEIGHT + 10.0 * swell))
-	_draw_caret(at, MARK_WIDTH * scale, mark_colour())
+	Sprites.draw_caret(self, at, MARK_WIDTH * scale, mark_colour())
 	if def.hard_fail:
 		# Doubled, so lethal reads at a glance and never has to be told apart by hue.
-		_draw_caret(at - Vector2(0.0, MARK_WIDTH * scale * 0.85), MARK_WIDTH * scale,
-				mark_colour())
-
-## A downward chevron. Deliberately not an exclamation mark — that shape is spoken for, it
-## means *this is about you*, and it lives over the player's head and nowhere else.
-func _draw_caret(at: Vector2, width: float, colour: Color) -> void:
-	var points := PackedVector2Array([
-		at + Vector2(-width, -width * 0.8),
-		at + Vector2(width, -width * 0.8),
-		at + Vector2(0.0, width * 0.5),
-	])
-	draw_colored_polygon(points, colour)
-	draw_polyline(points + PackedVector2Array([points[0]]), Palette.OUTLINE, 2.0)
+		Sprites.draw_caret(self, at - Vector2(0.0, MARK_WIDTH * scale * 0.85),
+				MARK_WIDTH * scale, mark_colour())
 
 func _draw_body() -> void:
 	match def.look:
