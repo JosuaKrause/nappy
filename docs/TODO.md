@@ -74,7 +74,7 @@ was around when a day ended.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 47085 checks (~100s); `tools/check.sh` boots the project; `tools/run.sh`
+`tools/test.sh` runs 46522 checks (~110s); `tools/check.sh` boots the project; `tools/run.sh`
 plays it; `tools/telemetry.sh` reads back what the last run did.
 
 ---
@@ -651,12 +651,24 @@ three of them, and the ten that are still open. Nine are done.
       marked rows to two, and both are the ones whose counterplay is *go now*
 - [x] **There is a pause** — finding 12. `Esc` opens it, `Esc` closes it, `Q` quits. It quit
       outright for thirty-three milestones and has been under known-shaky ground since M6
-- [ ] **The other ten.** Solid things are not solid (16, 13, 7, 15); three act I events still share
-      one `person.svg` (2's other half); a café with no people at it (11); the spoiler has to cover
-      the calm area rather than stand in it (10); the cat crosses the wrong axis (1); the pigeons
-      blink out (9); a four-block concrete plaza (8); a car turning has no diagonal (6); the
-      warning indicators render below roofs (4, **not diagnosed**); the zzz is stepped aside from
-      the pram (14)
+- [x] **Solid things are solid** — findings 16, 13, 7 and 15, done as **M34**. `obstructs_radius`
+      was a list of five rows out of thirty and is a rule now: anything that stands still is solid
+      at half its silhouette. A parked van moved off the carriageway to the kerb, where it takes a
+      pavement instead of standing in a lane the crowd drives through; a reversing lorry got the
+      building it reverses into, and is turned to face out of it; `alley_robbery`'s inner radius
+      moved 22 → 30, because a lethal radius and a solid body are the same mechanism and a body
+      that reaches the kill radius switches the kill off. Day 1: events placed unchanged at ~39,
+      pavement-blocking obstacles 12.2 → 17.2
+- [ ] **The other six.** Three act I events still share one `person.svg` (2's other half); a café
+      with no people at it (11); the spoiler has to cover the calm area rather than stand in it
+      (10); the cat crosses the wrong axis (1); the pigeons blink out (9); a four-block concrete
+      plaza (8); a car turning has no diagonal (6); the zzz is stepped aside from the pram (14)
+- [ ] **The warning indicators render below roofs** (4). **Diagnosed in M34, not fixed**, and the
+      diagnosis is in `docs/PLAYTEST-07.md`: a building sorts by its south edge and its mass
+      extends a block north of it, so it is drawn in front of everything on the pavement beside it
+      and occludes whatever also overlaps in x — which is any sprite wider than the 16px from a
+      tile centre to the lot edge, anything drawn above an entity's head, and anybody who walks
+      close to a frontage. Reproduced with a one-line `z_index` on `EventInstance`
 
 ## M10 — Polish · `feature/polish`
 

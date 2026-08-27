@@ -30,6 +30,8 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `mobile` / `speed` | Whether it moves along a path, and how fast |
 | `still_while_telegraphing` | Holds position until the telegraph is over, then goes. Default off, which is right when the telegraph *is* the approach; on when it is a posture — see the cat, below |
 | `spawn_mode` | `MAP` (sited when the day is planned) or `AHEAD_OF_PLAYER` (sited in front of her, while she walks) — see "Where an event happens" |
+| `obstructs_radius` | Radius of solid body (px). **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
+| `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
 | `look` | How the instance draws itself |
 | `act_tag` | Narrative act it belongs to, for palette/audio |
@@ -82,6 +84,60 @@ Three rules on it, in the order they matter:
    leaves a route to a park. `EventDef.validate()` refuses one that does. Emitting is fine, and
    so is being lethal — it is in front of her and gone in three seconds, so it can never seal a
    street.
+
+## Solid things are solid *(M34)*
+
+> *"None of the non-moving obstacles do anything — I can freely walk over them."*
+> *"I can walk over the robber and he doesn't do anything."* — playtest 07, findings 16 and 13.
+
+`obstructs_radius` was set on five rows out of thirty, because it had always been reached for
+when a particular event wanted to block a pavement rather than derived from anything. So a
+delivery van, an ice cream van and a burnt-out building were large, visibly solid, stationary
+objects with no body at all, and the man shouting on the pavement outside the home block could be
+stood on. The rule that replaced the list is one line:
+
+> **Anything that stands still is solid at the width it is drawn.**
+
+The width it is drawn is the whole of it — the number is half the silhouette, not a balance
+value. `EventInstance._draw_spread` already drew a blocking object at exactly its
+`obstructs_radius` for the same reason in the other direction: a body that disagrees with the
+picture is a lie about where she can walk, whichever way it lies.
+
+**Three exemptions, each for its own reason.**
+
+- **Anything mobile.** A moving wall on a two-tile pavement pins her against a building, which is
+  a different game from being priced out of a street. This is the `dog_walker` decision from M19
+  and it is unchanged.
+- **`AHEAD_OF_PLAYER`**, refused outright by `validate()` — see rule 3 above.
+- **Anything with no silhouette**: a city-wide announcement, a playground the park itself draws.
+
+**And one constraint that is not an exemption: a lethal radius and a solid body are the same
+mechanism.** She is stopped with her centre `obstructs_radius + PLAYER_BODY_RADIUS` from the
+centre of the thing, so on a `hard_fail` event a body that reaches the inner radius means the
+kill can *never fire*, however carelessly she walks into it — a difficulty setting nobody chose,
+arriving silently, in the one place the game cannot afford one. `EventDef.validate()` refuses that
+arrangement on load. It is why `alley_robbery`'s inner radius moved 22 → 30 in M34: a man is 11px
+wide and she is 14, so at 22 the pram would have been held three pixels *outside* the radius that
+takes the baby.
+
+### Which lane of the pavement *(M34)*
+
+Two rows were reported as standing somewhere that made no sense of them, and `pavement_side` is
+the answer to both. A corridor is sidewalk | road | sidewalk, so a pavement tile has a kerb on
+one side and a frontage on the other, and `CityMap.pavement_inward()` says which.
+
+- **`AT_THE_KERB`** — `delivery_van` and `ice_cream_van`. *"There is also a car obstacle on the
+  road that is basically a still car standing on the road doing nothing."* It was on a `ROAD`
+  tile, standing in a traffic lane that the crowd knows nothing about and drives straight
+  through, blocking a route nobody walks. At the kerb it is on the pavement she is actually using
+  and it takes it: 48px of van across a 64px footway means the answer is the other side of the
+  street.
+- **`AGAINST_THE_BUILDING`** — `reversing_lorry`. *"The backing out lorry does not connect to the
+  building making it hard to visually read."* The whole event is that the danger is **behind** a
+  wall of metal, which needs a wall. The placement also turns it to face out of that wall, so the
+  box end is buried in the frontage and the cab is on the pavement. It asks for a frontage **east
+  or west** of it, because the silhouettes that back into things are drawn side-on and a sprite
+  cannot face north — half the pavements in the city are still eligible.
 
 ## Scheduling
 
@@ -179,12 +235,12 @@ All implemented.
 | `cat_dash` | RECURRING | 1 | Crouches (telegraph), then bolts across the traffic. High intensity, tiny radius, 1.4s duration. The tutorial obstacle. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Barks on a 3.5s pulse. **Re-pitched in M19** from intensity 7 to 26 with a tighter radius: it used to cost −0.1 points to walk straight through, so the correct play was to plough into it. It now owns the pavement it is on, which is what finding 3 asked for. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | **M19.** A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the answer to *"there should be things that force me to cross the street"*. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. |
-| `homeless_yeller` | RECURRING | 1 | Stationary, large radius, 5s yell **pulse**. The counterplay is timing a pass between yells, which is a different skill from routing around a hazard. |
-| `delivery_van` | RECURRING | 1 | Parked, reversing beeper. Constant, medium. The plain obstacle route planning is practised on. |
-| `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. |
+| `homeless_yeller` | RECURRING | 1 | Stationary, large radius, 5s yell **pulse**. The counterplay is timing a pass between yells, which is a different skill from routing around a hazard. He is the man playtest 07 walked up to and walked *through*; solid at 11px since M34, and still drawing the same `person.svg` as a busker, which is the half of that finding still open. |
+| `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Constant, medium. The plain obstacle route planning is practised on. **M34** moved it off the carriageway and gave it a body: it was *"a still car standing on the road doing nothing"*, standing in a traffic lane the crowd drove through. 48px of van across a 64px footway. |
+| `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The only Act I event that is physically in the way (`obstructs_radius` 34px). Blocking a 64px sidewalk forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time and exposure, never the day. |
 | `fire_truck` | ONE_SHOT | 3 | Drives an arterial at 190px/s with a 340px radius and a 4s telegraph (the fast-mover rule — see docs/MECHANICS.md). `spawns_on_finish` leaves a `burning_building` where it stops. |
-| `burning_building` | — | — | Never scheduled: a SCRIPTED def with no day, so only the fire engine can put one in the world. Burns for the rest of the day. |
+| `burning_building` | — | — | Never scheduled: a SCRIPTED def with no day, so only the fire engine can put one in the world. Burns for the rest of the day, and since M34 you cannot walk through the fire. |
 
 **M31 added seven more**, five of them on day 1. Playtest 05 asked for two things in the same
 breath — *"there is never any danger"* and *"try to come up with more variety, we need more
@@ -198,15 +254,15 @@ act I."* Act I is a nice neighbourhood, so its danger is a neighbourhood's own.
 | `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use, which is what M24 wants more of. Swept in bursts, so there is a rhythm to time a pass through. |
 | `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that the director had a single trick: every moment was a cat. Three seconds of noise and gone. |
 | `cyclist` **`hard_fail`** | RECURRING | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement, bell going. Everything about it is ordinary, which is the point — the answer to *"there is never any danger"* is not that act I becomes sinister, it is that act I becomes a real street. The bell rings for 3.3s, which is what the doubled margin costs at 165px/s. |
-| `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. |
-| `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. |
+| `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb since M34, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
+| `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. **M34** gave it the yard: `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
 
 ### Act II — Something is off (days 4–7)
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. |
-| `poster_crew` | RECURRING | 4 | Static, weak. Cosmetic dread; it is here so the walls change. |
+| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. |
 | `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
 | `checkpoint` | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60). The first event that takes a route away rather than making it expensive. |
@@ -215,8 +271,8 @@ act I."* Act I is a nice neighbourhood, so its danger is a neighbourhood's own.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `abduction` | RECURRING | 8 | An unmarked van idles first — that idling *is* the telegraph, and it runs 4.6s because the inner radius is a `hard_fail`. Getting close does not excite the baby; it takes you. |
-| `alley_robbery` | RECURRING | 8 | Alleys only, and deliberately tiny (22/42px) so the fairness rule is satisfied by half a second. That is as close to "no warning" as the contract allows, and it is honest: **the alley is the warning**. You knew what an alley was when you turned into it. |
+| `abduction` | RECURRING | 8 | An unmarked van idles first — that idling *is* the telegraph, and it runs 4.6s because the inner radius is a `hard_fail`. Getting close does not excite the baby; it takes you. Solid at 22px, comfortably inside the 54 that takes her, so the metal is metal and touching it is still fatal. |
+| `alley_robbery` | RECURRING | 8 | Alleys only, and deliberately tiny (30/42px) so the fairness rule is satisfied by a quarter of a second. That is as close to "no warning" as the contract allows, and it is honest: **the alley is the warning**. You knew what an alley was when you turned into it. The inner radius was 22 until M34, which is *inside* his own body plus hers — see "Solid things are solid". |
 | `night_raid` | SCRIPTED | 10 | Enormous, static, pulsing, and it closes the block (`obstructs_radius` 44). |
 
 ### Act IV — Open conflict (days 12–14)
@@ -225,8 +281,8 @@ act I."* Act I is a nice neighbourhood, so its danger is a neighbourhood's own.
 | --- | --- | --- | --- |
 | `military_convoy` | RECURRING | 12 | Like the fire engine, but what it leaves behind is a `barricade`. |
 | `barricade` | — | — | Never scheduled directly. Left where a convoy stopped, and — via `scar_id` — left there for the rest of the **run**. |
-| `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. |
-| `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. |
+| `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. Solid at one person's width, because one person is what it draws — the body may not claim ground the picture does not, and the art is the fix. |
+| `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. Solid at the width of its flames. |
 | `sabotage_run` | SCRIPTED | 14 | The good-ending finale route. *(M8/M9)* |
 
 ## Permanent marks
@@ -316,6 +372,12 @@ penalized."* The meter is 100, sleep freezes at
 35, and the baby cries at 100. `tests/test_events.gd` computes the same integral, so the
 numbers here and the assertion there cannot drift apart.
 
+**M34 moved exactly one row** — `alley_robbery`, 9.1 → 10.0, because its inner radius grew to fit
+a man's body plus a pram's — and made most of the others **impossible to actually walk**, which is
+the point of it and does not change what they are worth. The integral is still the right way to
+price a field: it is what it costs to be close, and being stopped by a body is a *route* cost that
+this table has never counted. See "Solid things are solid".
+
 | Event | walk through | run through |
 | --- | ---: | ---: |
 | `loudspeaker` | −5.5 | +27.3 |
@@ -325,7 +387,7 @@ numbers here and the assertion there cannot drift apart.
 | `curfew_announce` | +3.4 | +32.2 |
 | `playground` | +5.8 | +33.6 |
 | `delivery_van` | +8.3 | +34.9 |
-| `alley_robbery` * | +9.1 | +13.5 |
+| `alley_robbery` * | +10.0 | +14.0 |
 | `busker` | +13.3 | +45.7 |
 | `police_patrol` | +15.9 | +46.2 |
 | `homeless_yeller` | +17.7 | +52.2 |
@@ -647,7 +709,19 @@ watching* rather than just avoiding — a different skill from pure pathing.
 
 ## Adding a new event
 
-1. Create `src/events/defs/<id>.tres` (an `EventDef`).
-2. If it needs behaviour, add `src/events/behaviours/<id>.gd` extending `EventBehaviour`.
-3. Register it in `src/events/event_catalogue.gd`.
-4. Run the project — `Tuning.validate_event()` will reject unfair geometry on load.
+Defs live in code, not in `.tres` files — see "Where events are defined". This list said
+otherwise for thirty-odd milestones; it was describing a plan that was abandoned in M4.
+
+1. Add a `static func _<id>() -> EventDef` in `src/events/event_catalogue.gd`, in its act's
+   section, and list it in `_build()`.
+2. Add a row to the catalogue table above. The docs are the design; a def with no row is an
+   event nobody decided on.
+3. Decide `spawn_mode` deliberately — `MAP` unless the entire content of the thing is *the
+   moment it happens to you*.
+4. If it stands still and is drawn, give it an `obstructs_radius` of half its silhouette. That
+   is a rule rather than a choice; see "Solid things are solid".
+5. Run the project. `EventDef.validate()` rejects unfair geometry, a body on something sited
+   ahead of the player, and a lethal radius its own body would hide, all on load.
+6. If it needs behaviour no field covers, add the **field** to `EventDef` and handle it in
+   `EventInstance`. Resist a script per event: `pursues`, `still_while_telegraphing` and
+   `pavement_side` are all one field each, and each one is now shared or checkable.

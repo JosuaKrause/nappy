@@ -32,6 +32,11 @@ func run(t) -> void:
 	_test_two_of_a_kind_are_not_the_same_incident(t)
 	_test_nothing_happens_inside_a_lethal_field(t)
 	_test_the_city_remembers_where_she_went(t)
+	_test_everything_that_stands_still_is_solid(t)
+	_test_a_lethal_thing_can_still_be_reached(t)
+	_test_the_pram_is_the_size_the_rules_think_it_is(t)
+	_test_a_parked_van_is_at_the_kerb(t)
+	_test_a_lorry_has_a_wall_to_back_into(t)
 
 # ------------------------------------------------------------------ fairness ---
 
@@ -784,10 +789,16 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 		# Nothing sitting in yesterday's park may end the day or close the ground: she has to be
 		# able to see it from the street and walk away, which is what keeps it from being a
 		# punishment for having played well.
+		#
+		# "Close the ground" is the test, not "have a body at all" — the two were the same thing
+		# until M34 made everything that stands still solid, and reading it as the stricter one
+		# would have emptied the pool of loud harmless things and retired this rule by accident.
+		# A busker is 22px of a 704px lot. See `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD`.
 		for plan in planned:
 			if not plan.is_placed() or not lot.has_point(plan.position):
 				continue
-			t.check(not plan.def.hard_fail and plan.def.obstructs_radius <= 0.0,
+			t.check(not plan.def.hard_fail
+					and plan.def.obstructs_radius <= Tuning.OBSTRUCTION_A_PARK_CAN_HOLD,
 					"day %d puts '%s' in her park, which is loud rather than lethal"
 					% [day, plan.def.id])
 
@@ -830,3 +841,110 @@ func _quietest_calm_block(map: CityMap, planned: Array) -> Vector2i:
 			fewest = spoilers
 			best = block
 	return best
+
+# ------------------------------------------------- solid things are solid (M34) ---
+# Playtest 07, findings 16 and 13: *"none of the non-moving obstacles do anything — I can freely
+# walk over them"*, and *"I can walk over the robber and he doesn't do anything"*. The answer is
+# a rule rather than a list of rows, and these are the three ways it can quietly stop being one.
+
+## **Anything that stands still is solid.** Every exemption is named here rather than left to be
+## inferred from a zero, because the failure this catches is the one that happened: a field that
+## is only set where somebody remembered to set it, on five rows out of thirty, for six
+## milestones.
+func _test_everything_that_stands_still_is_solid(t) -> void:
+	var checked := 0
+	for def in EventCatalogue.all():
+		# A moving wall pins her against a building on a two-tile pavement, which is a different
+		# game from being priced out of a street. See `dog_walker`.
+		if def.mobile or def.pursues:
+			continue
+		# Nothing checks that a thing sited out of where she happens to be walking leaves a route
+		# to a park, so `EventDef.validate()` refuses a body on one outright.
+		if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
+			continue
+		# Nothing drawn, nothing to bump into: a city-wide announcement, a playground the park
+		# itself draws.
+		if def.city_wide or def.look == EventDef.Look.NONE:
+			continue
+		checked += 1
+		t.check(def.obstructs_radius > 0.0,
+				"'%s' stands still, so it is solid" % def.id)
+	t.check(checked >= 15,
+			"and the rule covers most of the catalogue (%d rows)" % checked)
+
+## **A lethal radius and a solid body are the same mechanism**, so an event carrying both can
+## turn its own kill off. She is stopped `obstructs_radius + PLAYER_BODY_RADIUS` from the centre;
+## if that reaches the inner radius, no amount of carelessness ever ends the day there.
+##
+## This is `alley_robbery`'s bug in the abstract: at an inner radius of 22 against a man 11 wide,
+## the pram would have been held three pixels outside the thing that takes the baby.
+func _test_a_lethal_thing_can_still_be_reached(t) -> void:
+	var lethal := 0
+	for def in EventCatalogue.all():
+		if not def.hard_fail or def.obstructs_radius <= 0.0:
+			continue
+		lethal += 1
+		t.check(def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS < def.inner_radius,
+				"'%s' is solid to %.0f and lethal inside %.0f, so touching it still ends the day"
+				% [def.id, def.obstructs_radius, def.inner_radius])
+	t.check(lethal > 0, "and there are lethal solid things to check")
+
+## `Tuning.PLAYER_BODY_RADIUS` is a copy of a number authored in the player's scene, and the rule
+## above is arithmetic on it. A copy nothing checks is a lie waiting to happen.
+func _test_the_pram_is_the_size_the_rules_think_it_is(t) -> void:
+	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var stroller: Node = scene.instantiate()
+	var shape := (stroller.get_node("CollisionShape2D") as CollisionShape2D).shape as CircleShape2D
+	t.check(shape != null and is_equal_approx(shape.radius, Tuning.PLAYER_BODY_RADIUS),
+			"the pram's own body is PLAYER_BODY_RADIUS (%.1f in the scene, %.1f in Tuning)"
+			% [shape.radius if shape else -1.0, Tuning.PLAYER_BODY_RADIUS])
+	stroller.free()
+
+## Playtest 07, finding 7: *"there is also a car obstacle on the road that is basically a still
+## car standing on the road doing nothing."* A parked van belongs against a kerb — on the
+## pavement she is walking down, and out of a traffic lane the crowd drives straight through.
+func _test_a_parked_van_is_at_the_kerb(t) -> void:
+	var map := _map()
+	var parked := 0
+	for day in range(1, 15):
+		var consumed: Array[String] = []
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+			if plan.def.pavement_side != EventDef.Pavement.AT_THE_KERB:
+				continue
+			parked += 1
+			var tile := map.world_to_tile(plan.position)
+			var inward := map.pavement_inward(tile)
+			t.check(inward != Vector2i.ZERO,
+					"day %d: '%s' is on a pavement with a kerb on one side" % [day, plan.def.id])
+			if inward == Vector2i.ZERO:
+				continue
+			var beside := map.tile_at(tile - inward)
+			t.check(beside == GameEnums.TileType.ROAD or beside == GameEnums.TileType.CROSSING,
+					"day %d: '%s' has the carriageway on the other side of it (%d)"
+					% [day, plan.def.id, beside])
+	t.check(parked > 0, "and a run parks something (%d over 14 days)" % parked)
+
+## Playtest 07, finding 15: *"the backing out lorry does not connect to the building making it
+## hard to visually read."* The danger is the gap behind a wall of metal, so there has to be a
+## wall — and it has to be east or west of it, because the silhouette is drawn side-on.
+func _test_a_lorry_has_a_wall_to_back_into(t) -> void:
+	var map := _map()
+	var backing := 0
+	for day in range(3, 15):
+		var consumed: Array[String] = []
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+			if plan.def.pavement_side != EventDef.Pavement.AGAINST_THE_BUILDING:
+				continue
+			backing += 1
+			var tile := map.world_to_tile(plan.position)
+			var inward := map.pavement_inward(tile)
+			t.check(inward != Vector2i.ZERO and inward.y == 0,
+					"day %d: '%s' backs into a frontage it can be drawn facing" % [day, plan.def.id])
+			if inward == Vector2i.ZERO:
+				continue
+			t.check(map.tile_at(tile + inward) == GameEnums.TileType.BUILDING,
+					"day %d: '%s' has a real building behind it" % [day, plan.def.id])
+			# Facing *out* of the wall, so the box end is the end that is in the yard.
+			t.check(plan.facing == -Vector2(inward),
+					"day %d: '%s' is turned to reverse into it" % [day, plan.def.id])
+	t.check(backing > 0, "and a run sites one (%d over days 3-14)" % backing)

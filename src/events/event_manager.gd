@@ -82,7 +82,7 @@ func stream_around(at: Vector2) -> void:
 func _stream_in(plan: EventScheduler.Planned) -> void:
 	# The scar is recorded the first time the event is put in the world and never again: walking
 	# back past a burnt-out shell must not re-report the fire that made it.
-	plan.live = _create(plan.def, plan.position, plan.path, not plan.was_live)
+	plan.live = _create(plan.def, plan.position, plan.path, not plan.was_live, plan.facing)
 	# **An event that has already run picks up where it left off.** *(M31.)* Without this a
 	# streamed-out event is rebuilt from `plan.position`, which is the tile the *day* chose at
 	# dawn — so a dog walker that had covered three hundred pixels teleported back to the top of
@@ -116,10 +116,10 @@ func _spawn_unplanned(def: EventDef, at: Vector2,
 ## Builds an instance, puts it in the world, and records any permanent mark it leaves.
 ## Everything that puts an event on the map goes through here, so a scar can never be
 ## missed by whichever path created the event.
-func _create(def: EventDef, at: Vector2,
-		path := PackedVector2Array(), record_scar := true) -> EventInstance:
+func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_scar := true,
+		facing := Vector2.RIGHT) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path)
+	instance.setup(def, at, path, facing)
 	_city.add_entity(instance)
 	if def.scar_id != "" and record_scar:
 		# A scar is where the city stopped being recomputable: it exists because of what

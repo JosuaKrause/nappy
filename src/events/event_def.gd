@@ -129,7 +129,44 @@ enum SpawnMode {
 ## Radius of solid obstruction, in px. 0 for events you can walk through. Scaffolding does
 ## not politely step aside, and being *forced* to reroute is a different pressure from
 ## choosing to.
+##
+## **Anything that stands still is solid at the width it is drawn.** *(M34, playtest 07 finding
+## 16: "none of the non-moving obstacles do anything — I can freely walk over them", and finding
+## 13: "I can walk over the robber and he doesn't do anything".)* This was a list of five rows
+## out of thirty for six milestones, which is why a delivery van was scenery and a man standing
+## in a courtyard could be occupied rather than walked around. It is a rule now, and the number
+## is not a balance value: it is half of the silhouette, because `_draw_spread` draws a blocking
+## object at exactly the width it obstructs and anything else is a lie about where she can walk.
+##
+## Three things are exempt and each for its own reason:
+##
+## - **Anything mobile.** A moving wall on a two-tile pavement pins her against a building, which
+##   is a different game from being priced out of a street. See `dog_walker`, where the decision
+##   is written up at length.
+## - **`AHEAD_OF_PLAYER`**, which `validate()` refuses outright: nothing checks that a thing sited
+##   out of where she happens to be walking leaves a route to a park.
+## - **Anything with no silhouette** — a city-wide source, a playground the park already draws.
+##
+## And one constraint rather than an exemption, which is `validate()`'s job below: a `hard_fail`
+## event's body has to fit *inside* its lethal radius with her own body to spare.
 @export var obstructs_radius := 0.0
+
+## Which lane of a two-tile pavement an event wants. *(M34, playtest 07 findings 7 and 15.)*
+##
+## Almost nothing cares, and `ANY` is the honest default: a café spills out of whichever frontage
+## it has and a shouting man stands where he likes. Two things do care, and in both cases the
+## complaint was that the thing was standing somewhere that made no sense of it — a parked van
+## *in a traffic lane* ("a still car standing on the road doing nothing"), and a lorry reversing
+## into a yard that "does not connect to the building".
+enum Pavement {
+	ANY,
+	## Against the kerb, with the carriageway on the other side of it. Where a vehicle parks.
+	AT_THE_KERB,
+	## Against the frontage, with a building wall behind it. Where a lorry backs in.
+	AGAINST_THE_BUILDING,
+}
+
+@export var pavement_side := Pavement.ANY
 
 ## Event id to spawn where this one ends. How a fire engine leaves a fire behind it.
 @export var spawns_on_finish := ""
@@ -180,6 +217,19 @@ func validate() -> bool:
 	if spawn_mode == SpawnMode.AHEAD_OF_PLAYER and obstructs_radius > 0.0:
 		push_error("event '%s' spawns ahead of the player and obstructs %.0fpx: nothing checks "
 				% [id, obstructs_radius] + "that it leaves a route to a park")
+		return false
+	# **A lethal radius and a solid body are the same mechanism**, and putting both on one event
+	# is a way of turning the first one off. She is stopped with her centre `obstructs_radius +
+	# PLAYER_BODY_RADIUS` from his, so if that reaches the inner radius the kill can never fire
+	# however carelessly she walks into it — a silent difficulty setting, and exactly the shape of
+	# the "walk over the robber" complaint rather than a fix for it. Under it, the body is only
+	# ever felt during the telegraph, which is the phase where the event is not lethal yet and
+	# walking through a wall of metal would be the visible lie.
+	if hard_fail and obstructs_radius > 0.0 \
+			and obstructs_radius + Tuning.PLAYER_BODY_RADIUS >= inner_radius:
+		push_error("event '%s' is lethal inside %.0fpx and solid to %.0fpx: with her own %.0fpx "
+				% [id, inner_radius, obstructs_radius, Tuning.PLAYER_BODY_RADIUS]
+				+ "she is stopped before she can ever reach it")
 		return false
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, inner_radius,
 			telegraph_time):

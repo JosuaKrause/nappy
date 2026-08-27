@@ -370,6 +370,15 @@ const PEDESTRIAN_TURN_CHANCE := 0.35
 # every pavement was identical and none of them could hurt you, which is why the route was
 # never a decision. See docs/MECHANICS.md, "The street has physics".
 
+## The pram's own collision circle, in px. Authored in `scenes/player/stroller.tscn`; this is
+## the copy the rules that reason *about* it can read, and `tests/test_events.gd` asserts the two
+## agree, because a duplicated number that nothing checks is a lie waiting to happen.
+##
+## It is the same 14 as `BUMP_RADIUS` and they are not the same quantity: that one is a tuning of
+## when a *crowd contact* fires and is stated against the lane spacing, this one is how much room
+## she physically takes up. Either may move without the other.
+const PLAYER_BODY_RADIUS := 14.0
+
 ## Centre-to-centre distance at which the player and a pedestrian are touching.
 ##
 ## It has to be **under half a lane spacing**, and that is the whole of why it is 14 rather
@@ -617,6 +626,27 @@ const EVENT_SPACING_ANY := 64.0
 ## fallback rather than a failure: a scripted event has to happen, and on a full map the honest
 ## answer is the best spot left, not no event.
 const EVENT_PLACEMENT_TRIES := 24
+
+# ------------------------------------------------ solid things are solid (M34) ---
+# Playtest 07, finding 16: *"none of the non-moving obstacles do anything — I can freely walk
+# over them."* `obstructs_radius` was set on five rows of thirty, so a delivery van, an ice cream
+# van and a burnt-out shell were all large, visibly solid, stationary objects with no body at all.
+#
+# The rule that replaced the list is in `EventDef.obstructs_radius`: **anything that stands still
+# is solid at the width it is drawn**. What lives here is the one number that rule needs from
+# outside itself.
+
+## The widest body an event may have and still be allowed to stand on calm ground.
+##
+## `EventScheduler._something_to_put_in_a_park` used to refuse *anything* with a body, which was
+## the right rule while the only things that had one were scaffolding and barricades: a spoiler
+## has to make the park loud rather than take the ground away. Once a busker is solid — a person
+## is 18px across — that reading would have emptied the pool and quietly retired M24 altogether.
+##
+## So the rule is stated as what it always meant. A body you can walk around does not close a
+## 704px lot; one you have to route around does. Sized to sit above a person and well under
+## `construction`, which is exactly the thing it is there to keep out.
+const OBSTRUCTION_A_PARK_CAN_HOLD := 16.0
 
 # ------------------------------------------------------ running that matters ---
 # Playtest 07: *"the run button is a trap shouldn't be an invariant — there should be legitimate

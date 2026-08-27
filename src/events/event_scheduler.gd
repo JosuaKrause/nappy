@@ -14,6 +14,11 @@ class Planned extends RefCounted:
 	var def: EventDef
 	var position: Vector2
 	var path := PackedVector2Array()
+	## Which way it is drawn facing, for a stationary event whose siting decided that. A mobile
+	## one gets its facing from the direction it is travelling and ignores this. *(M34: a lorry
+	## backing into a yard has to have its back to the yard, and only the placement knows which
+	## side of the street the yard is on.)*
+	var facing := Vector2.RIGHT
 
 	func _init(definition: EventDef, at: Vector2,
 			route := PackedVector2Array()) -> void:
@@ -164,15 +169,22 @@ static func _spoil_the_park_she_used(day: int, rng: RandomNumberGenerator, map: 
 
 ## Something loud, harmless and visible from the street, for the park she used yesterday.
 ##
-## Deliberately narrow: nothing lethal, nothing that obstructs, nothing mobile. A spoiled park
-## has to be a park she can *see* is spoiled and walk away from — an abduction sitting in it
+## Deliberately narrow: nothing lethal, nothing that closes the ground, nothing mobile. A spoiled
+## park has to be a park she can *see* is spoiled and walk away from — an abduction sitting in it
 ## would be a punishment for having settled there, and a barricade would be the ground taken
 ## away rather than made noisy, which is the thing this rule promises not to do.
+##
+## *(M34.)* The middle test used to be `obstructs_radius > 0`, which meant the same thing right up
+## until everything that stands still acquired a body. A busker is 18px across and a lot is 704px:
+## he is loud and he is walked around, which is the whole job. `OBSTRUCTION_A_PARK_CAN_HOLD` is
+## where that stops being true, and it is the rule this always was rather than a relaxation of it.
 static func _something_to_put_in_a_park(day: int,
 		rng: RandomNumberGenerator) -> EventDef:
 	var suitable: Array[EventDef] = []
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day):
-		if def.hard_fail or def.obstructs_radius > 0.0 or def.mobile:
+		if def.hard_fail or def.mobile:
+			continue
+		if def.obstructs_radius > Tuning.OBSTRUCTION_A_PARK_CAN_HOLD:
 			continue
 		if def.spawn_mode != EventDef.SpawnMode.MAP:
 			continue
@@ -311,8 +323,9 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# budget on nothing.
 	var open_candidates: Array[Vector2i] = []
 	for candidate in candidates:
-		if not map.is_closed(candidate):
-			open_candidates.append(candidate)
+		if map.is_closed(candidate) or not _wants_this_side(def, map, candidate):
+			continue
+		open_candidates.append(candidate)
 	if open_candidates.is_empty():
 		return null
 
@@ -334,12 +347,45 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# cannot be placed simply does not happen, which is the right failure direction.
 	return best
 
+## Whether a tile is the lane of the pavement this event wants. *(M34, playtest 07 findings 7
+## and 15.)*
+##
+## Almost everything says `ANY` and this is a free `true`. The two rows that do not were both
+## reported as standing somewhere that made no sense of them, and neither is a balance question:
+## a parked van belongs at the kerb rather than in a traffic lane the crowd will drive straight
+## through, and a lorry reversing into a yard belongs with its back to a wall.
+##
+## `AGAINST_THE_BUILDING` asks for two things and the second is about the *art*: there has to be
+## a real building on the far side, and it has to be **east or west**, because the silhouettes
+## that back into things are drawn side-on and a sprite cannot face north. A frontage the lorry
+## would have to reverse into sideways is not one it can be drawn reversing into, and half the
+## pavements in the city are still eligible.
+static func _wants_this_side(def: EventDef, map: CityMap, tile: Vector2i) -> bool:
+	if def.pavement_side == EventDef.Pavement.ANY:
+		return true
+	var inward := map.pavement_inward(tile)
+	if inward == Vector2i.ZERO:
+		return false
+	if def.pavement_side == EventDef.Pavement.AT_THE_KERB:
+		# The kerb lane is the one whose *road* side is actually road: on a two-tile pavement
+		# that is the inner of the two, and asking the tiles rather than the offset keeps it true
+		# of a crossing, a closed carriageway, or whatever a later milestone paints there.
+		return map.is_street(tile - inward) \
+				and map.tile_at(tile - inward) != GameEnums.TileType.SIDEWALK
+	return inward.y == 0 \
+			and map.tile_at(tile + inward) == GameEnums.TileType.BUILDING
+
 ## One candidate placement on a given tile, with its route built if it moves.
 static func _build_placement(def: EventDef, map: CityMap, tile: Vector2i,
 		rng: RandomNumberGenerator) -> Planned:
 	var at := map.tile_to_world(tile)
 	if not def.mobile:
-		return Planned.new(def, at)
+		var placed := Planned.new(def, at)
+		if def.pavement_side == EventDef.Pavement.AGAINST_THE_BUILDING:
+			# Backing in, so it faces *out* of the wall it is against: the box is the end that is
+			# coming towards you and it has to be the end that is in the yard.
+			placed.facing = -Vector2(map.pavement_inward(tile))
+		return placed
 	match def.path_mode:
 		EventDef.PathMode.CROSS_STREET:
 			return Planned.new(def, at, _cross_street_path(map, tile))
