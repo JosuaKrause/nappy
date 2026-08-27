@@ -233,7 +233,7 @@ func _choose_lane(roll: float) -> void:
 			field.corridor_range(_vertical))
 	if kind == Kind.CAR:
 		_lane = CrowdLanes.ROAD_OFFSETS[_rng.randi_range(0, 1)]
-		_direction = CrowdLanes.road_direction(_lane)
+		_direction = CrowdLanes.road_direction(_vertical, _lane)
 		_speed = _rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
 	else:
 		_lane = CrowdLanes.SIDEWALK_OFFSETS[_rng.randi_range(
@@ -257,10 +257,39 @@ func _choose_lane(roll: float) -> void:
 ## queue at a zebra is the car in front stopping and everybody behind it honouring the headway,
 ## rather than a special case for queues.
 func _give_way(delta: float) -> void:
-	var wanted := 0.0 if _somebody_is_waiting_to_cross() else _cruise
+	var wanted := _cruise
+	var to_line := _distance_to_stop_line()
+	if to_line < INF:
+		# The speed that runs out exactly at the line at the *approach* rate. Braking toward a
+		# **point** rather than toward zero is the whole of playtest 05's finding 1: aiming at
+		# zero stops the car wherever the curve happens to end, which is most of a block early.
+		# The gentle rate is what makes the easing start in sight of the kerb — see
+		# `CAR_ZEBRA_APPROACH_BRAKE` for what shaping it with `CAR_BRAKE` does instead.
+		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * to_line))
 	wanted = minf(wanted, _following_speed())
 	var rate := Tuning.CAR_BRAKE if wanted < _speed else Tuning.CAR_ACCELERATE
 	_speed = move_toward(_speed, wanted, rate * delta)
+
+## How far this car has to the stop line of a crossing it should give way at, or `INF` when
+## there is nothing to give way to — nobody waiting, or **it is already too late to stop**.
+##
+## The second half is the commit rule, and it is the other half of finding 1. A car that arrives
+## at the paint as the player reaches the kerb used to brake anyway and park on the zebra. There
+## is only one safe thing it can do that late, and it is to clear the crossing: `CAR_ZEBRA_SIGHT`
+## is nearly four times the distance a car needs to stop, so this only ever fires for somebody
+## who stepped up *after* the car had committed, and never for a player who was waiting there.
+func _distance_to_stop_line() -> float:
+	var crossing := _crossing_ahead_somebody_is_waiting_at()
+	if crossing == INF:
+		return INF
+	# Measured against the **paint**, not against the line. The setback is a comfort margin, so
+	# ending up inside it is a car stopped a little close; ending up on the zebra is the thing
+	# the rule exists to prevent. Written the other way round — commit when it cannot stop at
+	# the *line* — a car that has come to rest exactly there has a braking distance of nothing,
+	# decides it is too late, and drives off over the crossing it just stopped for.
+	if crossing < Tuning.braking_distance(_speed):
+		return INF
+	return maxf(0.0, crossing - Tuning.CAR_STOP_LINE_SETBACK)
 
 ## The fastest this car may go and still keep `CAR_HEADWAY_TIME` of clear road in front of it.
 ##
@@ -273,30 +302,44 @@ func _following_speed() -> float:
 		return _cruise
 	return maxf(0.0, (gap_ahead - Tuning.CAR_GAP_MIN) / Tuning.CAR_HEADWAY_TIME)
 
-## Whether there is a crossing ahead within sight with somebody standing at it.
+## Distance along the street to the **near edge** of the first crossing ahead that somebody is
+## standing at, or `INF` for none.
+##
+## The near edge rather than the tile centre, because a zebra is several tiles deep and a car
+## that stops a setback short of the middle of one is standing on the first half of it.
 ##
 ## `pedestrian_ahead` is only ever set for the handful of cars near the player, so this probe
 ## does not run for the other hundred.
-func _somebody_is_waiting_to_cross() -> bool:
+func _crossing_ahead_somebody_is_waiting_at() -> float:
 	if pedestrian_ahead == Vector2.INF:
-		return false
+		return INF
 	# Somebody in the next street over is not this street's problem.
 	var lateral := absf((pedestrian_ahead.x if _vertical else pedestrian_ahead.y) - _cross())
 	if lateral > Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5:
-		return false
+		return INF
 
-	var forward := heading()
+	# Stepped **tile by tile from the car's own tile**, not by sampling world points every 32px.
+	# The sampled version aliases, and the way it fails is the worst possible one: a car stopped
+	# at the line is a few pixels from the paint, so both samples miss the crossing, it decides
+	# there is nothing to give way to and pulls away with somebody on the zebra. Starting at
+	# zero also means a car already on the paint sees it, which is what makes the commit rule
+	# below able to tell "not yet there" from "already across".
 	var waiting_along := pedestrian_ahead.y if _vertical else pedestrian_ahead.x
-	for step in range(1, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
-		var at := global_position + forward * float(step * Tuning.TILE_SIZE)
-		if _map.tile_type_at_world(at) != GameEnums.TileType.CROSSING:
+	var step_tile := Vector2i(0, signi(int(_direction))) if _vertical \
+			else Vector2i(signi(int(_direction)), 0)
+	var here := _map.world_to_tile(global_position)
+	for step in range(0, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
+		var tile := here + step_tile * step
+		if _map.tile_at(tile) != GameEnums.TileType.CROSSING:
 			continue
 		# Distance along the street, not straight-line: somebody waiting at the far kerb of a
 		# six-tile corridor is beside the crossing, not two tiles from it.
-		var crossing_along := at.y if _vertical else at.x
-		if absf(waiting_along - crossing_along) <= Tuning.CAR_ZEBRA_WAIT_RADIUS:
-			return true
-	return false
+		var crossing_along := float((tile.y if _vertical else tile.x) * Tuning.TILE_SIZE)
+		if absf(waiting_along - crossing_along) > Tuning.CAR_ZEBRA_WAIT_RADIUS:
+			continue
+		var edge_tile: int = (tile.y if _vertical else tile.x) + (0 if _direction > 0.0 else 1)
+		return (float(edge_tile * Tuning.TILE_SIZE) - _along()) * _direction
+	return INF
 
 ## A walker rounds a corner. Rolled once per junction, and the new lane is whichever
 ## pavement is nearest: someone turning a corner keeps to the side they are already on
@@ -358,8 +401,9 @@ func _divert() -> void:
 	_corridor = crossing
 	_direction = turning
 	if kind == Kind.CAR:
-		# Back onto the correct side of the road for the way it is now pointing.
-		_lane = CrowdLanes.ROAD_OFFSETS[1] if turning > 0.0 else CrowdLanes.ROAD_OFFSETS[0]
+		# Back onto the correct side of the road for the way it is now pointing — and it is the
+		# *new* axis that decides which side that is, which is what M29 fixed.
+		_lane = CrowdLanes.road_lane(_vertical, turning)
 	else:
 		_lane = CrowdLanes.nearest_sidewalk(_corridor, _cross())
 	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)

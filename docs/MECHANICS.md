@@ -226,15 +226,62 @@ pavement would kill people who never stepped off it and would look exactly like 
 
 ### The zebra is a negotiation
 
-Traffic **gives way** at a crossing somebody is waiting at: a car looks `200 px` ahead and
-brakes at `320 px/s²`, which is nearly four times the `53 px` it needs to stop from top
-speed. The margin is the point — the slowing has to be *visible from the kerb*, because a
-player deciding whether to step off needs to see the car slowing rather than discover
-afterwards that it would have.
+Traffic **gives way** at a crossing somebody is waiting at: a car looks `CAR_ZEBRA_SIGHT`
+(200 px) ahead, which is nearly four times the 53 px it needs to stop from top speed. The
+margin is the point — the slowing has to be *visible from the kerb*, because a player deciding
+whether to step off needs to see the car slowing rather than discover afterwards that it would
+have.
 
 So the crossing is the safe way over and jaywalking is the fast way over, which is the choice
-finding 3 asked for. A car closer than its braking distance legitimately cannot stop, and
-there the horn is the contract rather than the brake.
+finding 3 asked for.
+
+**A car gives way *at a place*** *(M29, playtest 05 finding 1: "the cars stop at weird positions
+for the zebra crossing. Sometimes half a block away, sometimes **on** the crosswalk.")*. Both
+halves of that are the same missing thing. Until M29 a car braked toward **zero speed** from
+wherever it noticed, so it came to rest wherever the curve ran out — and with four times the
+room it needed, that was most of a block short. Nothing said *do not stop on the paint* either.
+
+Three rules now, and they are separable:
+
+- **The target is the stop line**, `CAR_STOP_LINE_SETBACK` before the near edge of the zebra.
+  Measured to the car's centre, so its nose ends up a few pixels clear of the paint.
+- **The approach is shaped by `CAR_ZEBRA_APPROACH_BRAKE`, not by `CAR_BRAKE`.** The gentle rate
+  is what makes the easing begin as the crossing comes into sight; `CAR_BRAKE` stays in reserve
+  for the emergency. Shaping it with the hard brake makes the onset of braking and the commit
+  point the same instant, and then no car ever stops at all.
+- **A car too close to stop commits and clears the crossing.** Measured against the *paint*
+  rather than the line: overrunning into the setback is a car stopped a little close, and
+  overrunning onto the zebra is the thing being prevented. Since sight is four times the
+  braking distance, this only ever fires for somebody who stepped up after the car had
+  committed, never for a player already waiting — and there the horn is the contract rather
+  than the brake.
+
+Why it matters more than tidiness: the painted carriageway is one of the two things standing in
+for a telegraph in the traffic fairness contract. A car halted on the zebra cannot hurt anybody
+— it is under `CAR_STRIKE_MIN_SPEED` — but it is *unreadable* scenery parked on the one place
+the game has told the player is the safe way across.
+
+### Which side of the road *(M29)*
+
+**The city drives on the right**, and that is a rule about the side of the road relative to
+travel — so it flips with the axis, and until M29 it did not. `CrowdLanes` stated the
+convention over the lane *offset*: offset 3 runs the positive way along the axis. On an
+east-west street that is eastbound in the southern lane, which is right-hand traffic. On a
+north-south street it is southbound in the eastern lane, which is left-hand traffic.
+
+Playtest 05, finding 2: *"the cars are not consistently driving on the right side."* It was
+invisible to the whole suite, because separation, headway, capacity and noise are all true
+whichever side anybody drives on, and invisible in a screenshot, because a stopped frame does
+not say which way a car is pointing. It shows up the moment a human watches a junction.
+`road_direction()` and `road_lane()` are now a pair that both take the axis, and
+`tests/test_crowd.gd` asserts the thing that was never asserted: for both axes and both
+directions, the lane a car is in is the one on its own right.
+
+**Walkers have no side convention**, which was checked at the same time and is deliberately
+left alone. They are not mirrored — they are unordered, which is a different thing. Giving them
+one is a design change with a measured cost attached: M19's contact numbers, eleven bumps down
+a lane centre against one on the midline, are what the pavement is balanced on and they assume
+somebody may be coming the other way in any lane.
 
 ### Traffic queues *(M27)*
 

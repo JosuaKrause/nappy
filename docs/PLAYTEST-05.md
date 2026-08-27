@@ -31,6 +31,15 @@ Finding 6 is the number that finding 5 was missing, given afterwards and deliber
 
 ## Finding 1 — a car stops where it noticed, not where the line is
 
+> **Done — M29.** A car now brakes toward the **stop line** — `CAR_STOP_LINE_SETBACK` before the
+> paint, measured to its centre so its nose ends up clear — on a gentle approach rate that keeps
+> the easing visible from the kerb, with `CAR_BRAKE` held in reserve. A car too close to stop
+> commits and clears the crossing instead. Two things the fix turned up that the analysis below
+> did not predict: shaping the approach with `CAR_BRAKE` makes the onset of braking and the
+> commit point the *same instant*, so no car ever stops; and the crossing scan sampled world
+> points every 32px, which aliases exactly when a car is stopped at the line, so it lost sight
+> of the zebra and pulled away with somebody on it.
+
 > The cars stop at weird positions for the zebra crossing. Sometimes half a block away,
 > sometimes *on* the crosswalk.
 
@@ -70,6 +79,12 @@ zero speed, plus a commit rule for a car already too close to stop cleanly. Both
 
 ## Finding 2 — the two axes drive on different sides
 
+> **Done — M29, and the derivation below was exactly right.** `road_direction()` takes the axis
+> now and has an inverse, `road_lane()`, so the two can never drift; the city drives on the
+> right on both axes. The test nobody had written exists: for both axes and both directions,
+> the lane a car is in is the one on its own right, checked against the rule *and* against every
+> live car in a real day. The pedestrians were checked too — see the note at the end.
+
 > The cars are not consistently driving on the right side.
 
 **This one falls out of reading `CrowdLanes`, and it is the strongest lead in this document.**
@@ -104,6 +119,13 @@ should exist is the one nobody wrote: *for both axes, the lane a car is in is on
 **Check the pedestrians too, while in there.** The same mirroring logic covers
 `SIDEWALK_OFFSETS` and `nearest_sidewalk()`, and walkers have no side convention at all — if
 they are also mirrored, it will read as the same wrongness at half the speed.
+
+*(**Checked in M29: they are not mirrored, they are unordered**, which is a different thing and
+not this bug. A walker picks any of the four pavement lanes and either direction, so there is no
+convention to be inconsistent about. Giving them one was deliberately not done in the same
+milestone: it is a design change with a measured cost, since M19's contact numbers — eleven
+bumps down a lane centre against one on the midline — are what the pavement is balanced on and
+they assume somebody may be coming the other way in any lane.)*
 
 ---
 

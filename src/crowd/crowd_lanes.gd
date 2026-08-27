@@ -9,9 +9,17 @@ extends RefCounted
 
 ## Sidewalk offsets across a corridor, outermost first on each side. Four lanes of pavement
 ## per corridor is what makes a busy street look busy rather than look like a queue.
+##
+## Walkers have **no side convention**: a pedestrian picks any of the four and either direction.
+## That was checked in M29 while the road was being fixed, because playtest 05 asked whether the
+## pavements were mirrored the same way the carriageway was. They are not mirrored — they are
+## simply unordered, which is a different thing and not a bug. Giving them one would be a design
+## change with a measured cost: M19's contact numbers (eleven bumps down a lane centre against
+## one on the midline) are what the pavement is balanced on, and they assume a walker may be
+## coming the other way in any lane.
 const SIDEWALK_OFFSETS: Array[int] = [0, 1, 4, 5]
-## The two carriageway lanes. Traffic on 3 runs the positive way along the axis and traffic
-## on 2 runs the negative way, which is the convention the whole crowd drives on.
+## The two carriageway lanes, across the corridor: `ROAD_OFFSETS[0]` is the one with the smaller
+## cross-axis coordinate. Which way each runs depends on the **axis** — see `road_direction()`.
 const ROAD_OFFSETS: Array[int] = [2, 3]
 
 ## How much busier the arterial is than an ordinary street. This file is now the only place
@@ -63,8 +71,29 @@ static func nearest_sidewalk(index: int, world_coordinate: float) -> int:
 	return best
 
 ## Which way traffic runs in a carriageway lane: +1 along the axis, -1 against it.
-static func road_direction(offset: int) -> float:
-	return 1.0 if offset == ROAD_OFFSETS[1] else -1.0
+##
+## **The city drives on the right, and that is a rule about the side of the road relative to
+## travel, not about the offset.** It flips with the axis, and until M29 it did not: the whole
+## crowd used `offset == 3 means positive`, which is right-hand traffic on the east-west streets
+## and left-hand traffic on the north-south ones. Playtest 05, finding 2 — *"the cars are not
+## consistently driving on the right side"* — and it is invisible to every other test in the
+## suite, because separation, headway, capacity and noise are all true either way, and invisible
+## in a still, because a stopped frame does not say which way a car is pointing. It shows up the
+## moment a human watches a junction.
+##
+## Screen coordinates have Y pointing down, so along a **vertical** corridor +1 is south and the
+## driver's right is west — the *smaller* cross coordinate. Along a **horizontal** one +1 is east
+## and their right is south — the larger. Hence the flip.
+static func road_direction(vertical: bool, offset: int) -> float:
+	var positive_lane := ROAD_OFFSETS[0] if vertical else ROAD_OFFSETS[1]
+	return 1.0 if offset == positive_lane else -1.0
+
+## The inverse: which lane a car travelling `direction` along this axis belongs in. Written as
+## the pair of one function so the two can never drift — a car that turns a corner picks its
+## lane from its new direction, and a car that spawns picks its direction from its lane.
+static func road_lane(vertical: bool, direction: float) -> int:
+	var positive_lane := ROAD_OFFSETS[0] if vertical else ROAD_OFFSETS[1]
+	return positive_lane if direction > 0.0 else (ROAD_OFFSETS[0] + ROAD_OFFSETS[1] - positive_lane)
 
 ## The corridor the arterial runs down, for one axis.
 static func arterial_index(axis_blocks: int) -> int:

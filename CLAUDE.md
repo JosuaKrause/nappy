@@ -206,6 +206,15 @@ by addition like everything else. Anything else that wants to "add excitement" s
 body to put it on rather than a third summand — and if there genuinely is no body, that is a
 design conversation, not a plumbing one.
 
+**Sampling a tile grid by stepping world points aliases, and it aliases where it matters.**
+*(M29.)* `CrowdAgent`'s crossing scan probed `position + forward * step * TILE_SIZE`, which is
+correct almost everywhere and wrong at exactly one place: a car stopped at the stop line is a
+few pixels from the paint, so both neighbouring samples miss the zebra, the car decides there is
+nothing to give way to, and pulls away with somebody standing on it. Walk the **tiles** —
+`world_to_tile` once, then integer steps — whenever the question is about tile types rather than
+about distance. Start at step zero, too: the car's own tile is the difference between "not there
+yet" and "already across".
+
 **Separation between bodies is positional, never a force.** *(M19 for the player, M27 for the
 traffic.)* A brake, a repulsion, a steering weight — all of them keep a gap that already exists
 and none of them can open one that does not, so two bodies that start inside each other stay
