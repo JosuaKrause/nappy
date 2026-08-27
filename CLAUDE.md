@@ -566,7 +566,9 @@ not either number, is what makes it a decision.
   does an ordinary crowd walker. Two of them are currently covered for by the caret above
   them, which is exactly the wrong way round: the symbol is meant to add what a silhouette
   cannot say, not to stand in for a silhouette nobody drew. First thing to fix when the art
-  gets a pass.
+  gets a pass. *(M31 did not fix those three, but it did refuse to make it worse: seven new
+  events arrived and every one got its own silhouette. Adding them as `PERSON` and `VEHICLE`
+  would have turned the exception into the rule.)*
 - **There is no audio at all.** Less urgent than it sounds, given the rule above: audio is
   redundancy, so the game must already be fully playable without it.
 - **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,

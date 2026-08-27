@@ -1,41 +1,44 @@
 # Handoff
 
-**Last updated:** end of the M28/M29/M30/M24 session — playtest 05's session.
+**Last updated:** end of the M28/M29/M30/M24/M31 session — playtest 05's session.
 **Read this first, then [PLAYTEST-05.md](PLAYTEST-05.md), then [TODO.md](TODO.md).**
 
-> **Five of playtest 05's six findings are done.** M28 the density, M29 the traffic, M30 the
-> mark over her head, M24 the same park twice. Each is written up under its own finding in
-> [PLAYTEST-05.md](PLAYTEST-05.md) with what the analysis got right and what it got wrong.
+> **All six of playtest 05's findings are done.** M28 the density, M29 the traffic, M30 the mark
+> over her head, M24 the same park twice, M31 the danger and the variety. Each is written up
+> under its own finding in [PLAYTEST-05.md](PLAYTEST-05.md) with what the analysis got right and
+> what it got wrong — that second half is the part not recoverable from the diffs.
 >
-> **What is left is the emphasised one, finding 5: *"day two doesn't feel more difficult than
-> day one… there is never any danger."*** It is true by construction and the catalogue says so:
-> every `hard_fail` event starts on **day 8 or later**, so for half a run the only lethal thing
-> in the game is a car the player never has to step in front of. M28 made the street *busy* and
-> M29 made it *legible*; neither makes it dangerous, and the write-up is explicit that those are
-> different axes — **expensive** is the meter moving, **dangerous** is something that can take
-> the day away that you can see coming and act on.
+> **The next thing is M21**, four-block calm zones, which is the oldest thing still outstanding:
+> playtest 03 found the traced player walking in a circle inside a courtyard for twenty seconds,
+> playtest 04 asked for it again, and playtest 05's finding 4 turned out to be the same
+> complaint one scale up. M24 answered *which* calm area is a choice; M21 is what makes being in
+> one a route rather than a lap.
 >
-> Playtest 05 offers three shapes for it and says it is a milestone rather than a tuning pass:
-> move something lethal earlier with its telegraph intact; build the M25 thing that *comes to
-> her* (patrols, and running that finally matters); or escalate **within** an act, since
-> four-day acts and a linear budget make day 1 → day 2 invisible. The first is a narrative
-> decision as much as a difficulty one, which is why it was left for a person.
+> **Two decisions were taken in this session rather than derived, and both are load-bearing.**
+> **M17, the route map, is backlogged** — *"let's not do that for now, we might revisit later"* —
+> so it is no longer the thing behind M21. And **a patrol is wrong for act I** — *"patrol
+> shouldn't be there for act I"* — which is what sent M31 to a cyclist and a reversing lorry
+> instead. M25 keeps the patrol and is now specifically the answer for acts III and IV, where
+> the streets are deliberately empty and the threat should follow rather than sit.
 >
-> **M17, the route map, is backlogged by decision** taken during this session — *"let's not do
-> that for now, we might revisit later."* It is no longer the thing behind M21.
+> **Nobody has played any of M28–M31.** The street changed shape four times in one session.
 
 ---
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **32735 checks, 0 failures** (~85s);
+`main` is green and playable. `./tools/test.sh` → **31768 checks, 0 failures** (~90s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
 **The check count roughly doubled and that is the density**, not new suites: several tests loop
-over every event a day places, and a day now places fifty instead of thirteen.
+over every event a day places, and a day now places fifty instead of thirteen. It moved *down*
+again in M31 — 32735 → 31768 — because two of those loops are per-event-pair and the seven new
+rows spread the same fifty events over more types, which shortens the pairs. A count that moves
+with the catalogue is doing that; a count that drops after anything else is a suite that stopped
+running.
 
-**Four milestones landed in this session, all of them playtest 05's.**
+**Five milestones landed in this session, all of them playtest 05's.**
 
 **M28 put one event on every block.** Day 1 goes from 13 placed to **50 across 49 blocks**, from
 1.8 live around her to ~11, and from about one on screen to **3.3**. The finding that matters
@@ -60,6 +63,14 @@ does".
 **M24 ended the same park twice.** The calm block she settled in is remembered and tomorrow puts
 something loud in it; measured over a whole run, the repeat rate goes from **28% of days to
 zero**.
+
+**M31 gave act I teeth and six new things to look at.** Lethal events per day now run **0, 3, 4**
+over days 1–3 — a **cyclist** from day 2 and a **reversing lorry** from day 3, both with the
+doubled telegraph — so the escalation is a change of *kind* rather than of count. Plus
+`loose_dog`, `market_stall`, `leaf_blower`, `pigeon_flock` and `ice_cream_van`, each with its own
+silhouette. It also fixed the two things underneath *"dog walkers are not moving?"*: a
+re-streamed event was **rewound to where the day put it at dawn**, and an `EventInstance` had no
+gait at all.
 
 **Two milestones before that, both playtest 04's.**
 
@@ -138,6 +149,10 @@ should now be a great deal more than playtest 03's zero — `road` for time in t
 - **M24 complete** *(playtest 05 asked for it by name)*. The park she settled in yesterday gets
   something loud in it today; the repeat rate goes from 28% of days to zero. It keeps its own
   record rather than reading the telemetry.
+- **M31 complete.** Act I has two lethal things — a cyclist from day 2, a reversing lorry from
+  day 3 — so lethal-per-day runs 0, 3, 4 over days 1–3 and the escalation is a change of kind.
+  Plus five more act I rows for variety, each with its own silhouette. Fixed the streaming
+  rewind and gave mobile events a gait.
 
 ## The decisions that govern the next milestones
 
@@ -213,9 +228,10 @@ All five are live plans: **[PLAYTEST-01.md](PLAYTEST-01.md)** (thirteen findings
 **[PLAYTEST-02.md](PLAYTEST-02.md)** (twelve → M18–M26), **[PLAYTEST-03.md](PLAYTEST-03.md)**
 (the first read off a run log; it reorders rather than adds),
 **[PLAYTEST-04.md](PLAYTEST-04.md)** (seven findings; adds M27 and moved M22 and M21 to the
-front), and **[PLAYTEST-05.md](PLAYTEST-05.md)** (six findings → M28, M29, M30, M24, and
-finding 5 still open). Read 05 and then 04 before picking anything up; the summaries here are
-not a substitute for them.
+front), and **[PLAYTEST-05.md](PLAYTEST-05.md)** (six findings → M28, M29, M30, M24 and M31,
+**all closed**). Read 05 and then 04 before picking anything up; the summaries here are not a
+substitute for them, and 05's write-ups now carry what each analysis got wrong as well as what
+it got right.
 
 The queue is numeric except where something jumped it, and each jump had one practical reason:
 **M18** because closure counts tuned against a day that was about to halve would have been
@@ -226,8 +242,8 @@ because the player asked for the circles a second time; **M28–M30 and M24** be
 playtest arrived with six findings and four of them were cheap, self-contained and blocking
 judgement of everything else — a player who cannot predict which side a car comes from cannot
 learn a street, and a mark that fires for nothing teaches that marks mean nothing; and **M21**,
-next after finding 5, because four-block calm zones are the structural fix for twenty seconds of
-walking in a circle and traffic that overtakes is not.
+next, because four-block calm zones are the structural fix for twenty seconds of walking in a
+circle and traffic that overtakes is not.
 
 **M17 left the queue rather than moving in it** — backlogged by decision, not deferred by
 priority.
@@ -285,30 +301,48 @@ it.
   player and the rig has no player, so two of the three cars it picked were recycled on the
   first frame and every measurement after that was of a different road. Any rig that steps
   crowd agents by hand has to `set_focus()` first.
+- **A probe that disagrees with the game is wrong about the game.** M31's walk probe said a
+  7,500px round trip peaked at 13 excitement while a real run of the same day died in fifteen
+  seconds. It was stepping the agents but never `Crowd._physics_process`, so no contact and no
+  horn ever fired — and the crowd is most of what a street costs. The instinct to trust the
+  measurement over the observation is the one to resist.
+- **Adding rows to a fixed density takes a share from every existing row.** M31 put seven new
+  events into act I and the two playtest 05 had named by name immediately thinned out. Their
+  weights had to go *up* to stay where the previous milestone had put them. Whenever the
+  catalogue grows, re-measure the things an earlier milestone promised.
+- **A single total over three seeds fails on noise.** The named-decision assertion broke at 17
+  against a bar of 18 while the five-seed mean was comfortably over. A per-seed floor plus an
+  average says the same thing and does not.
+- **Only half of "a spent plan stays spent" was implemented.** Streaming may take a running
+  event away and give it back — and it was giving it back *at the tile the day chose at dawn*.
+  A dog walker at 32px/s against her 92 crossed the stream boundary constantly, so it teleported
+  home over and over and read as never moving. The invariant now says *and a running one
+  resumes*.
+- **A thing that moves has to look like it moves.** The same complaint had a second cause with
+  no bug in it: every crowd agent has a two-frame stride and an `EventInstance` had none, so a
+  tile a second read as parked. A bob driven by distance covered, not by time.
 
 ## What to do next, in order
 
-### First: finding 5 — the danger act I does not have
+### First: play it
 
-The one thing left from playtest 05, the emphasised one, and the only finding this session did
-not close: *"day two doesn't feel more difficult than day one. Having day one relatively easy is
-okay if the difficulty increases. But right now there is never any danger."*
+Five milestones changed what a street is in one session and **none of them has been played**.
+The density quadrupled, the traffic changed sides and learned to stop at a line, the mark over
+her head narrowed to one meaning, the park stopped repeating, and act I acquired two things that
+can end the day. Every number in this file came off a probe or a trace of a scripted walk.
 
-Two facts in the code say it outright and both survive M28. **Day 2 is day 1 plus a couple of
-events** — the budget is linear and acts are four days long, so the step from day 1 to day 2 is
-invisible. And **every `hard_fail` event in the catalogue starts on day 8 or later**, so for the
-first half of a run the only lethal thing in the game is a car, which lives on the carriageway,
-which she is never obliged to step onto.
+The questions are sharp enough to be answered off a log, and the entries already exist:
 
-M28 sharpened rather than solved this. The street is now *busy* and it is still not *dangerous*,
-and those are different axes: **expensive** is the meter moving and re-planning; **dangerous** is
-something that can take the day away that you can see coming and act on. Note that M30 is
-waiting on this too — the exclamation mark now means *this will end your day*, so before day 8
-it is nearly silent, which is honest and is not a good permanent state.
-
-The three candidate shapes are in [PLAYTEST-05.md](PLAYTEST-05.md), finding 5. One of them —
-*"act I has an abduction in it"* — is a narrative decision as much as a difficulty one, which is
-why it wants a person rather than a next session picking for itself.
+- **Is day 2 harder than day 1 now, and does it read as danger rather than noise?** That is
+  finding 5's whole claim and M31's whole answer. `lost` lines with `cyclist` or
+  `reversing_lorry` in them, and whether the trace shows a `turn` after the bell.
+- **Is one event per block right, too many, or still not enough?** It was a stated number rather
+  than a feeling, so the check is whether the feeling now matches it. `near` entries per day.
+- **Does the exclamation mark mean something again?** It only fires for lethal things now, so it
+  is nearly silent in act I before day 2 and then it is not. If it still reads as noise, the
+  narrowing was not the fix.
+- **Do the seven new entities read as what they are** without the caret telling you? That is the
+  one thing no test can see and the reason each got its own silhouette.
 
 ### And the questions a fifth playtest did not answer
 
@@ -367,13 +401,16 @@ M18, M19, M22, M23, M24 and M27 done; M21 pulled to the front above; M17 backlog
 **M20 traffic that behaves** is **parked, not queued**: M27 shipped the half that mattered
 (cars follow and queue; zero overlapping pairs a frame, down from 5.2), and what is left —
 overtaking, eight-way driving, a crash as a catalogue event — is unasked-for by any playtest.
-**M25 patrols, and running that matters** is now the **main candidate for finding 5** and the
-biggest thing outstanding. The `run` entries are the measurement it will be judged by and today
-they all say the same thing: running is the wrong move against every event in the game, so a
-patrol needs a mechanic running *escapes* — something that pursues, a lethal radius that grows,
-a window that shuts — and a fairness contract stated over `RUN_SPEED` rather than `WALK_SPEED`.
-It also picks up playtest 03 finding 3, the walk home being a formality: patrols that were not
-there on the way out are the return phase's own pressure.
+**M25 patrols, and running that matters** is the biggest thing outstanding and its scope
+**narrowed** in M31: a patrol was ruled out for act I by decision — *"patrol shouldn't be there
+for act I"* — so this is now specifically the answer for **acts III and IV**, where the streets
+are deliberately empty and the threat should follow rather than sit. The `run` entries are the
+measurement it will be judged by and today they all say the same thing: running is the wrong
+move against every event in the game, so a patrol needs a mechanic running *escapes* — something
+that pursues, a lethal radius that grows, a window that shuts — and a fairness contract stated
+over `RUN_SPEED` rather than `WALK_SPEED`. It also picks up playtest 03 finding 3, the walk home
+being a formality: patrols that were not there on the way out are the return phase's own
+pressure.
 **M26 teaching the controls** — delete the interact key, then teach walking and running,
 ending in a scripted day-1 event that requires a short run. M26 must come after M25 for
 correctness, not scheduling: forcing a run before running is ever the right answer teaches a
