@@ -27,6 +27,15 @@ signal event_activated(instance)
 signal event_finished(instance)
 signal hard_fail_triggered(reason: String)
 
+# ------------------------------------------------------------------- bodies ---
+# M19. Reported rather than logged where they happen: the crowd is a gameplay file and the
+# telemetry stays out of the files that decide things.
+
+## The player walked into somebody and shoved them aside.
+signal crowd_bumped(at: Vector2)
+## A car had to sound its horn at her standing in its lane.
+signal car_near_miss(at: Vector2)
+
 # --------------------------------------------------------------- resistance ---
 
 signal resistance_progress_changed(value: int)

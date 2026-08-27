@@ -4,8 +4,8 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 Each milestone is one git branch, merged to `main` when green.
 
-**Where things stand:** M0–M16, M18 and M23 are done and merged, and the game has now been
-played three times by a human. The first playtest produced thirteen findings, planned as
+**Where things stand:** M0–M16, M18, M19 and M23 are done and merged, and the game has now
+been played three times by a human. The first playtest produced thirteen findings, planned as
 M11–M17 in **[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced twelve, planned as
 M18–M26 in **[docs/PLAYTEST-02.md](PLAYTEST-02.md)**; the third, in
 **[docs/PLAYTEST-03.md](PLAYTEST-03.md)**, is the first read off a run log and reorders some
@@ -18,18 +18,23 @@ tuned wrong. **M23 was pulled ahead of M17**, because it is the gate on M19's ba
 on M24, and because it makes judging every other item cheaper — which it is now doing:
 playtest 03 was read off a log rather than argued about.
 
-**Playtest 03 changed the order.** **M19 is next, with the event budget folded into it** — the
-traced day placed four events across forty-nine blocks and the player encountered none of
-them, and more events without M19's consequences would be four times as much scenery. **M21
-rises above M20**, because four-block calm zones are the structural fix for twenty seconds of
-walking in a circle and traffic that overtakes is not. M17 slips behind both. Two ordering
-notes are recorded rather than acted on: M22 wants to sit with M19, and the return phase wants
-its own pressure from M25.
+**Playtest 03 changed the order.** M19 went next with the event budget folded into it, and is
+done. **M21 rises above M20**, because four-block calm zones are the structural fix for twenty
+seconds of walking in a circle and traffic that overtakes is not, so **M21 is next**. M17 slips
+behind both. Of the two ordering notes recorded with that reorder, one is discharged — M22's
+exclamation mark shipped with M19, because a lethal car needed it — and the other still stands:
+the return phase wants its own pressure from M25.
+
+**What M19 leaves open, and it is the important one.** The mechanisms are built and the
+numbers are not settled: nobody has played a day with a solid crowd and a lethal road. That is
+what a fourth playtest is for, and the entries to read it off already exist — `crowd` for
+contacts and horns, `near` for what came within reach, `road` for time in the carriageway,
+`lost` for what was around when a day ended. Read a run before touching a constant.
 
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 14963 checks (~55s); `tools/check.sh` boots the project; `tools/run.sh`
+`tools/test.sh` runs 15890 checks (~80s); `tools/check.sh` boots the project; `tools/run.sh`
 plays it; `tools/telemetry.sh` reads back what the last run did.
 
 ---
@@ -123,8 +128,10 @@ plays it; `tools/telemetry.sh` reads back what the last run did.
 
 ### Decisions taken during M4
 
-- **No spatial hash.** The budget tops out near 22 concurrent events; a linear scan is
-  free and a hash would be more code with more ways to be wrong.
+- **No spatial hash.** The budget topped out near 22 concurrent events; a linear scan is
+  free and a hash would be more code with more ways to be wrong. *(M19's density pass took
+  that to ~25, and the decision is unchanged — the crowd has been doing 530 linear distance
+  checks a frame since M13 and is not the bottleneck either.)*
 - **No `impulse` field.** A sharp spike is a short `duration` at high `intensity`, which
   keeps the whole excitement model a pure query with nothing pushed at the baby.
 - **Ambient events are exempt from the telegraph contract.** They never "appear", so there
@@ -279,15 +286,23 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       instead of 119s (10x the street, not 3.5x), and the day itself is 180s instead of 330s
       — aimed at a minute of play with a grace of three. Pulled ahead of M16, because
       closures tuned against a day that was about to halve would have been tuned wrong
-- [ ] **M19 Bodies on the street** — findings 2 and 3, **plus playtest 03 finding 1**.
-      Pedestrians and the player collide and displace each other, a car strike is a hard fail,
-      pavement hazards (a café spilling out, a dog on a long lead) make one side of the street
-      the wrong side, and cars stop for you at a zebra. The collision bump is a short-lived
-      *source*, never a write to `Baby.excitement`. **Now carries the event-density pass**:
-      `budget_for()` gives day 1 four events across forty-nine blocks and the traced day met
-      none of them, but density before consequence is only more scenery — so the budget moves
-      here and the numbers get set from traces afterwards, per decision 11. The telemetry for
-      judging it is already in: `near`, `crowd` and `road` entries
+- [x] **M19 Bodies on the street** — findings 2 and 3, **plus playtest 03 finding 1**.
+      Pedestrians and the player collide and displace each other; a car strike is a hard fail
+      with its own stated fairness contract (`Tuning.validate_traffic`); traffic gives way at a
+      zebra somebody is waiting at; `cafe_tables` blocks a pavement from day 1 and `dog_walker`
+      was re-pitched from −0.1 points to +21.6, so it owns the pavement instead of rewarding a
+      player for ploughing into it. The collision bump is a short-lived *source on the person
+      she walked into*, never a write to `Baby.excitement`.
+      **Carried the event-density pass**: day 1 goes from 4 non-ambient events across
+      forty-nine blocks to 13, day 14 from 22 to 25, with the number **measured** from what a
+      day places rather than derived from the budget — a third of the budget is spent on events
+      the day then throws away. See docs/MECHANICS.md, "The street has physics".
+      **Two things were pulled in and one was left out**, all three deliberately:
+      the exclamation mark over the player came forward from M22, because a lethal car has no
+      telegraph phase to ring and it is the cue that makes the contract an instruction; the
+      cost table in docs/EVENTS.md was regenerated and is now asserted by a test; and the
+      *balance* half is still open, because setting it needs a human playing, which is what
+      decision 11 says and what M23 exists for
 - [ ] **M20 Traffic that behaves** — finding 4. Cars follow, slow and overtake instead of
       driving through each other; 8-direction driving so they can turn; an overtake into
       oncoming traffic crashes, and the crash is a catalogue event with a real telegraph
@@ -306,10 +321,13 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       are standing in a soon-to-be danger zone** ("this spot is about to be bad, move"), plus
       a "too close" cue for danger already on them. The exclamation mark is the cue that
       turns the telegraph contract from information into instruction. Absorbs the "screen-edge indicator for fast movers" item from M10
-      below. **Worth pulling forward to sit with M19**: a lethal car arriving from off-screen
-      is a breach of the telegraph fairness contract, not a polish item, and M19 is what
-      creates them. Must keep one thing the ring did well — showing an event *swelling*, or
-      the pulse envelope stops being playable
+      below. **The exclamation mark shipped early, in M19**, for the reason this entry gave:
+      a lethal car arriving from off-screen is a breach of the telegraph fairness contract, not
+      a polish item, and it has no telegraph phase to ring. It flashes over the player when she
+      is on the carriageway with a car closing; what is left here is generalising it to events,
+      the screen-edge indicator, the legible entity, and deleting the rings. Must keep one
+      thing the ring did well — showing an event *swelling*, or the pulse envelope stops being
+      playable
 - [x] **M23 Telemetry** — finding 10. A chronological plain-text log per run, in
       `user://telemetry/` and readable with `./tools/telemetry.sh`. Records what the code
       cannot recompute — the random outcomes that branch a run, the seed the generator
@@ -392,8 +410,13 @@ These need a human playing the game, not more code.
       question is now the opposite one: with the meter this generous once calm ground is
       reached, is anything standing between the player and a won day? **Playtest 03 answered
       that with a trace: no.** Day 1 was won in 103.9s of 180 with zero `near` entries — the
-      player crossed the city and came back without encountering a single event. That is what
-      M19 is for, and it now carries the event-density pass as well.
+      player crossed the city and came back without encountering a single event.
+      **M19 put things there and the question is now whether it put too many.** A day-1 map
+      carries 13 non-ambient events instead of 4, walking into somebody costs ~15.6 points, and
+      the carriageway ends the day. A scripted walking probe says a quiet pavement is close to
+      break-even on excitement and the arterial is not survivable to walk the length of — which
+      is the intent, but "the arterial is for crossing" is a claim about a player, not about a
+      probe. Needs a run and a trace, not more arithmetic.
 - [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little
       time to learn a city before it starts changing.
 - [x] **How visible should the resistance be to a player ignoring it?** *Resolved by playtest

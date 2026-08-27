@@ -16,6 +16,8 @@ const VEHICLE := preload("res://assets/events/vehicle.svg")
 const FLAME := preload("res://assets/events/flame.svg")
 const BARRIER_SEGMENT := preload("res://assets/events/barrier_segment.svg")
 const BARRIER_END := preload("res://assets/events/barrier_end.svg")
+const CAFE_TABLE := preload("res://assets/events/cafe_table.svg")
+const DOG := preload("res://assets/events/dog.svg")
 
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
@@ -153,7 +155,11 @@ func _draw_body() -> void:
 		EventDef.Look.VEHICLE:
 			_draw_vehicle()
 		EventDef.Look.OBJECT:
-			_draw_object()
+			_draw_spread(BARRIER_SEGMENT, BARRIER_END)
+		EventDef.Look.TABLES:
+			_draw_spread(CAFE_TABLE)
+		EventDef.Look.DOG_WALKER:
+			_draw_dog_walker()
 		EventDef.Look.NONE:
 			pass
 
@@ -186,17 +192,34 @@ func _draw_fire() -> void:
 
 ## A blocking object is drawn at exactly the width it obstructs, by repeating a segment
 ## across it. Anything else would be a lie about where the player can walk.
-func _draw_object() -> void:
+func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.9)
-	var segment := BARRIER_SEGMENT.get_size()
+	var segment := segment_texture.get_size()
 	var segments := maxi(1, ceili(half * 2.0 / segment.x))
 	var width := half * 2.0 / segments
 	for i in segments:
-		Sprites.draw_standing(self, BARRIER_SEGMENT,
+		Sprites.draw_standing(self, segment_texture,
 				Vector2(-half + width * (i + 0.5), 0.0), Vector2(width, segment.y))
+	if not cap:
+		return
 	for side in [-1.0, 1.0]:
-		Sprites.draw_standing(self, BARRIER_END, Vector2(side * half, 0.0))
+		Sprites.draw_standing(self, cap, Vector2(side * half, 0.0))
+
+## The person, the dog, and the lead between them.
+##
+## The lead is drawn because it is the mechanic: what makes a dog walker worth crossing the
+## street for is the span it owns, and a span you cannot see is a span you walk into. The dog
+## leads on the side the walker is heading, so the pair reads as being dragged along.
+func _draw_dog_walker() -> void:
+	var reach := def.inner_radius * 0.8
+	var to_the_dog := Vector2(-reach if _heading_is_west() else reach, 0.0)
+	Sprites.draw_shadow(self, Vector2.ZERO, 8.0)
+	Sprites.draw_shadow(self, to_the_dog, 9.0)
+	# Slack in the middle, so it reads as a lead rather than as a bar.
+	draw_line(Vector2(0.0, -26.0), to_the_dog + Vector2(0.0, -6.0), Palette.OUTLINE, 2.0)
+	Sprites.draw_standing(self, PERSON, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	Sprites.draw_standing(self, DOG, to_the_dog, Vector2.ZERO, _heading_is_west())
 
 ## Which way a mobile event is travelling, for art that has a front and a back. A
 ## stationary event never flips.

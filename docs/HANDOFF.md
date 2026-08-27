@@ -1,27 +1,30 @@
 # Handoff
 
-**Last updated:** end of the M23 session, after playtest 03.
+**Last updated:** end of the M19 session.
 **Read this first, then [PLAYTEST-03.md](PLAYTEST-03.md), then [TODO.md](TODO.md).**
 
 ---
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **14963 checks, 0 failures** (~55s);
+`main` is green and playable. `./tools/test.sh` → **15890 checks, 0 failures** (~80s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
-**The most important change since the last handoff is that arguments about the game can now
-be settled by reading one.** Every run writes an ordered plain-text trace — see
-[TELEMETRY.md](TELEMETRY.md). It has already paid for itself:
-**[playtest 03](PLAYTEST-03.md)** is the first one read off a log rather than a recollection,
-and it landed one day after M23 shipped.
+**The street is no longer safe, and that is the whole of M19.** Until this session the crowd
+was a field with a picture attached: you could walk through a person, through a car, through a
+queue at a bus stop, and the only thing that happened was that a number moved. Now a body is
+solid, the carriageway ends the day, a café or a dog owns the pavement it is on, and traffic
+gives way at a zebra. Day 1 carries **13** non-ambient events instead of four. The full
+mechanism is in [MECHANICS.md](MECHANICS.md), "The street has physics".
 
-**The one number to carry into the next session.** Day 1 of the traced run was won in 103.9
-seconds of a 180-second day, and the log contains **zero `near` entries** — the player crossed
-the city, sat in a courtyard and came home without ever being within reach of an event.
-`budget_for(1)` is four events for forty-nine blocks. That is what M19 is now for, and it
-carries the event-density pass with it, because density before consequence is only scenery.
+**The one thing to carry into the next session: nobody has played it.** The mechanisms are
+built and the numbers are not settled. A scripted walking probe says a quiet pavement is close
+to break-even on excitement and the arterial is not survivable to walk the length of — which is
+the intent, but *"the arterial is for crossing"* is a claim about a player, not about a probe.
+The entries to settle it already exist: `crowd` for contacts and horns, `near` for what came
+within reach, `road` for time in the carriageway, `lost` for what was around when a day ended.
+**Read a run before touching a constant.**
 
 - **M0–M9 complete.** Full 14-day run, four-act escalation, resistance subquest, three
   endings. Documented in `docs/`.
@@ -44,6 +47,11 @@ carries the event-density pass with it, because density before consequence is on
   actually settled on, **the commit it ran on**, what the player did, what came near them,
   and how each day ended. **The gate is now open** — M19's balance half and M24 both have
   their data source.
+- **M19 complete.** Bodies on the street, plus the event-density pass. Collision that
+  displaces both parties, a lethal carriageway with its own stated fairness contract, traffic
+  that gives way at a zebra, `cafe_tables` blocking a pavement from day 1, `dog_walker`
+  re-pitched from −0.1 points to +21.6, and `budget_for()` measured rather than derived. The
+  exclamation mark over the player came forward from M22 with it.
 
 ## The decisions that govern the next milestones
 
@@ -76,27 +84,30 @@ than code. All of them are written up in `PLAYTEST-02.md` (decisions 9–14).
 
 ## Read this before touching the event or signalling code
 
-Two measured facts came out of the end of this session. Neither is a bug; both change what
-the next milestones are for, and both are easy to rediscover the hard way.
+**The cost table has been regenerated and is now asserted by a test.** `docs/EVENTS.md`, "What
+an event actually costs". Three rows are negative — `poster_crew`, `barricade`, `burnt_shell` —
+and all three are deliberate scenery; `tests/test_events.gd` names exactly those three as
+exemptions and requires everything else to cost more to walk through than to walk around. A
+*fourth* negative event therefore has to be a decision rather than an oversight. The table is
+only about events, and since M19 that is no longer the whole cost of a street: a contact with a
+pedestrian is ~15.6 points and a car's horn ~8, and neither is in the catalogue.
 
-**Walking through an event is nearly free before act III.** Eleven of eighteen events cost
-under fifteen points of a hundred-point meter to walk straight through the middle of, and
-three are *negative* — walking through a `dog_walker` is better than walking around it,
-because the 3.5/s walking decay outruns what it emits. The full table is in
-`docs/EVENTS.md`, "What an event actually costs". Regenerate it whenever a rate in `Tuning`
-moves.
-
-**Running is the wrong move against every event in the game.** `EXCITEMENT_FROM_RUNNING`
+**Running is still the wrong move against every event in the game.** `EXCITEMENT_FROM_RUNNING`
 (9/s) plus the collapsed decay (3.5/s → 0.5/s) beats the shorter exposure in every single
-case. The run button is currently a trap. This is why M25 is written as a mechanic to build
-rather than a constant to tune.
+case. The run button is a trap, and M19 did not change it — the lethal car is escaped by
+stepping over a kerb, not by outrunning anything. This is why M25 is written as a mechanic to
+build rather than a constant to tune.
 
-**No circles.** The aura rings are being deleted, not restyled (M22), and `CLAUDE.md` carries
-that as a standing rule next to the invariants. They only ever covered events —
-the ~530 crowd agents have no ring, and two `city_wide` sources have none either — so on a
-normal street most of what you can see is unmarked and nothing explains the difference. The
-replacement lives in the entity plus a small symbol vocabulary. The one thing to preserve:
-the ring *breathes* with the pulse envelope, which is what makes a pulsing event timeable.
+**No circles, and the replacement has started.** The aura rings are being deleted, not
+restyled (M22), and `CLAUDE.md` carries that as a standing rule next to the invariants. They
+only ever covered events — the ~530 crowd agents have no ring, and two `city_wide` sources have
+none either — so on a normal street most of what you can see is unmarked and nothing explains
+the difference. **M19 shipped the first piece of the replacement**: the flashing exclamation
+mark over the player, raised whenever she is standing on the carriageway with a car closing.
+It came forward because a lethal car has no telegraph phase to ring and a ring on something
+doing 185px/s is off-screen for most of the warning. It is not provisional; M22 generalises it
+to events and adds the screen-edge half. The one thing still to preserve: the ring *breathes*
+with the pulse envelope, which is what makes a pulsing event timeable.
 
 ## A second playtest landed mid-session
 
@@ -106,34 +117,38 @@ document before picking anything up; the summary below is not a substitute for i
 
 Two things about the ordering, because neither is obvious from the numbers:
 
-- **The queue is M17, then M18–M26**, and M18 and M23 are already done. Findings 7–12 arrived
-  as a follow-up read of the same playtest and are written up in the same document. The new
-  findings were deliberately queued *behind* the milestones in flight rather than in front of
-  them. Two have jumped the queue since, each for one practical reason: **M18**, because
-  closure counts tuned against a day that was about to halve would have been tuned wrong, and
-  **M23**, because it was the gate on M19's balance half and on M24 and it makes judging
-  everything else cheaper.
-- **M22 wants pulling forward next to M19.** It is filed later because that is where it was
-  asked for, but a lethal car arriving from off-screen is a breach of the telegraph fairness
-  contract rather than a polish item, and M19 is what creates them.
+- **The queue was M17, then M18–M26**; M18, M19 and M23 are done and M21 is next. Findings
+  7–12 arrived as a follow-up read of the same playtest and are written up in the same
+  document. The new findings were deliberately queued *behind* the milestones in flight rather
+  than in front of them. Three have jumped the queue since, each for one practical reason:
+  **M18**, because closure counts tuned against a day that was about to halve would have been
+  tuned wrong; **M23**, because it was the gate on M19's balance half and on M24 and it makes
+  judging everything else cheaper; and **M21**, because four-block calm zones are the
+  structural fix for twenty seconds of walking in a circle and traffic that overtakes is not.
+- **M22's exclamation mark was pulled forward into M19 and the rest of M22 was not.** The cue
+  came forward because a lethal car has no telegraph phase to ring; deleting the rings and
+  building the entity-and-edge half is still its own milestone, and doing it here would have
+  meant redesigning the signalling of eighteen events in a session about physics.
 
 ## What to do next, in order
 
-### M19 — bodies on the street, now carrying the event budget
+### First: play it, and read the trace
 
-**Playtest 03 reordered the queue and this is what came to the front.** Collision, lethal
-cars, pavement hazards that make one side of the street the wrong side, cars that stop at
-zebras — plus the density pass, because four events across forty-nine blocks is why the traced
-day had nothing in it.
+Not a milestone, and it comes before one. M19 changed what a street costs in four different
+ways at once, and **decision 11 says those numbers get set from traces rather than argued
+about**. A fourth playtest is the highest-value thing available, and the questions are already
+sharp enough to be answered off a log:
 
-Do the two together and in that order. The cost table under playtest 02's finding 7 is the
-reason: eleven of eighteen events cost under fifteen points to walk straight through and three
-are *negative*, so more of them today buys four times as much scenery. Consequence first, then
-density, then set the numbers from traces — decision 11, and the traces exist now.
-
-M22 wants pulling in alongside it, unchanged from the last handoff: a lethal car arriving from
-off-screen is a breach of the telegraph fairness contract, not a polish item, and M19 is what
-creates them.
+- **Is the arterial crossable?** The probe says walking its length is fatal; that is intended.
+  Crossing it should not be. `road` and `crowd` entries say which happened.
+- **Do bumps read as the player's fault?** The contact radius is under half a lane spacing, so
+  a line exists to walk. Whether a person finds it is a different question. Watch the gap
+  between `crowd` bump lines and their dropped counts.
+- **Does anybody get run over, and does it feel fair when they do?** A `lost` line preceded by
+  a `crowd` horn line is a fair death; one with no horn before it is a bug in this session's
+  work.
+- **Is 13 events on day 1 a city or a gauntlet?** `near` entries per day, against playtest
+  03's zero.
 
 ### Then M21 — the city overhaul, which has jumped M20
 
@@ -162,11 +177,12 @@ entries are how to tell whether the map fixed it.
 
 ### Then the rest, per PLAYTEST-02.md
 
-M18 and M23 done; M19 and M21 pulled to the front above.
+M18, M19 and M23 done; M21 pulled to the front above.
 **M20 traffic that behaves** (following, overtaking, 8-direction driving, crashes as events) —
-now *behind* M21, because nothing in playtest 03 asked for it.
-**M22 danger you can read** (the circles go;
-entity, symbol, screen edge, and a symbol over the player when they are too close).
+now *behind* M21, because nothing in playtest 03 asked for it. M19 gave cars a target speed
+and a brake (`_give_way`), which is the hook the following behaviour hangs off.
+**M22 danger you can read** (the circles go; entity, symbol, screen edge) — the symbol over
+the player already ships, for traffic.
 **M24 the city remembers where you went** (spoil the park you relied on yesterday) — the
 `calm` entries it needs are being written now. **M25 patrols, and running that matters** — the
 `run` entries are the measurement it will be judged by, and today they all say the same thing.
@@ -206,6 +222,45 @@ Taken in the M12a session and still governing everything after it. All four are 
    repaints the ground and re-dresses the blocks every morning.
 
 ---
+
+## Gotchas learned in M19
+
+- **A green suite and a screenshot both passed a collision that was catastrophically wrong.**
+  A pedestrian slower than the player was pushed *further along their own line of travel*,
+  which separates nobody at 92 against 60 — so she accumulated a wedge of pedestrians in front
+  of her, all permanently in contact, all permanently startled, at 150 excitement per second.
+  Nothing in the test suite could see it and the screenshot showed a normal street. Forty
+  seconds of a scripted walk down a real pavement showed it immediately. A bumped body **steps
+  aside** now.
+- **The contact radius is set by the lane spacing, not by a body's width.** Pedestrian lanes
+  are one tile apart, so the only line with no contact on it is the midline between two of
+  them. At 18px there was no such line anywhere on a two-tile pavement: the same forty-second
+  walk cost eleven bumps however carefully it was done, which is a toll rather than a decision.
+  At 14px it costs two. That relationship is the assertion in `tests/test_crowd.gd`, not the
+  number.
+- **A contact has to startle once, not once per frame.** She walks faster than a pedestrian, so
+  a person bumped from behind stays inside the radius for the better part of a second.
+  `CrowdAgent.touching` is the hysteresis; without it one person cost what a crowd should.
+- **The throwaway probe is the headless stand-in for playing a minute.** A
+  `tests/test_zz_*.gd` that prints numbers and is deleted before committing found both of the
+  above and set `budget_for()`. `CLAUDE.md` carries it next to the screenshot rule.
+- **A budget is not a count, and the gap is about a third.** `_ensure_one_usable_park` strips
+  whatever reaches the calmest block and `_ensure_the_city_is_still_walkable` drops
+  obstructions that would seal the city, so a budget of 18 places 13 or 14 events. Density has
+  to be measured from what a day *places*, over several seeds. Deriving it from the formula
+  gets you a number that is a third too small and looks right.
+- **`move_and_slide()` owns `velocity`.** Folding the collision deflection into it made
+  `is_idle()` and `run_excess_ratio()` answer for the crowd rather than for the player;
+  restoring `velocity` afterwards was worse, because it discards the slide's own correction
+  and walking into a wall stops reading as idle. The deflection goes through its own
+  `move_and_collide()`.
+- **A cue over the player's head has to stay near the player's head.** At 68px the exclamation
+  mark drifted far enough up the screen to read as belonging to whatever was standing behind
+  her — which, for the one cue in the vocabulary that means *this is about you*, is the single
+  thing it must not do. She is 46px tall; the mark sits at 54.
+- **A dead comment survives a deleted feature and then lies about its neighbour.**
+  `busy_road`'s doc comment outlived it by six milestones in `event_catalogue.gd`, ending up
+  attached to `_dog_walker()` and describing arterial traffic noise. Deleted here.
 
 ## Gotchas learned in M23
 

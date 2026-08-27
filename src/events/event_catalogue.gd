@@ -43,6 +43,7 @@ static func _build() -> Array[EventDef]:
 		_playground(),
 		_cat_dash(),
 		_dog_walker(),
+		_cafe_tables(),
 		_delivery_van(),
 		_homeless_yeller(),
 		_busker(),
@@ -105,7 +106,7 @@ static func _cat_dash() -> EventDef:
 	def.mobile = true
 	def.speed = 240.0
 	def.weight = 3.0
-	def.max_per_day = 3
+	def.max_per_day = 5
 	return def
 
 ## Stationary, loud, and *pulsing* — the intensity envelope means the counterplay is timing
@@ -122,26 +123,32 @@ static func _homeless_yeller() -> EventDef:
 	def.telegraph_time = 2.6
 	def.pulse_period = 5.0
 	def.weight = 2.0
-	def.max_per_day = 2
+	def.max_per_day = 3
 	return def
 
-## Traffic noise along the two arterial corridors.
+## Slow, and it owns the pavement it is on.
 ##
-## Pitched deliberately just BELOW the 3.5/s walking decay, so a main road can never raise
-## the meter on its own — it is not a hazard. What it does is cripple *recovery*: on a
-## quiet street excitement drains at 3.5/s, on the arterial at 0.3/s. So the cost of the
-#
-## Slow, small, and it barks. Easy to walk around; annoying when it wanders into the
-## quiet street you had picked.
+## This was the clearest measured failure in the whole catalogue: at intensity 7 walking
+## *through* a dog walker beat walking around it by 0.1 of a point, because the 3.5/s walking
+## decay outran what it emitted. An obstacle that is cheaper to walk into than to avoid is not
+## an obstacle. Playtest 02, finding 3, asked for the opposite — *"dog walkers that are a fast
+## loss if I get too close; if I see one ahead I might have to turn around and cross at the
+## zebra"* — so the intensity is now the wall.
+##
+## Deliberately **not** given an `obstructs_radius`: a mobile static body wide enough to matter
+## on a two-tile pavement can pin the player against a building, and being pinned by something
+## that walks toward you is a different game from being priced out of a street. The lead is
+## drawn (see `EventInstance._draw_dog_walker`) so the span it owns is visible; what stops you
+## walking through it is the meter, and it is slower than walking, so it can always be left.
 static func _dog_walker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "dog_walker"
 	def.display_name = "Dog walker"
-	def.look = EventDef.Look.PERSON
+	def.look = EventDef.Look.DOG_WALKER
 	def.placement = [GameEnums.TileType.SIDEWALK]
-	def.intensity = 7.0
-	def.inner_radius = 32.0
-	def.outer_radius = 130.0
+	def.intensity = 26.0
+	def.inner_radius = 26.0
+	def.outer_radius = 105.0
 	def.telegraph_time = 1.4
 	def.pulse_period = 3.5
 	def.mobile = true
@@ -150,6 +157,33 @@ static func _dog_walker() -> EventDef:
 	def.path_length_tiles = 30
 	def.weight = 3.0
 	def.max_per_day = 3
+	def.cost = 2
+	return def
+
+## The pavement, taken. A café spilling out of its frontage: chairs, tables, conversation, and
+## no way past on this side.
+##
+## The act I half of playtest 02's finding 3 — *"there should be things that force me to cross
+## the street"* — and the first event in the game that is available on **day one** and cannot
+## be walked through. `construction` does the same job from day 2 and is the loud version of
+## it; this one is pleasant, which is worse: nothing about it looks like a hazard and it still
+## costs the street. Stationary, so it can never pin the player the way a moving obstruction
+## could.
+static func _cafe_tables() -> EventDef:
+	var def := EventDef.new()
+	def.id = "cafe_tables"
+	def.display_name = "Café tables"
+	def.look = EventDef.Look.TABLES
+	def.placement = [GameEnums.TileType.SIDEWALK]
+	def.intensity = 12.0
+	def.inner_radius = 40.0
+	def.outer_radius = 170.0
+	def.telegraph_time = 1.6
+	def.pulse_period = 6.0
+	def.obstructs_radius = 24.0
+	def.weight = 2.5
+	def.max_per_day = 3
+	def.cost = 2
 	return def
 
 ## Parked, reversing, beeping. Constant and stationary — the plain obstacle the route
@@ -165,7 +199,7 @@ static func _delivery_van() -> EventDef:
 	def.outer_radius = 150.0
 	def.telegraph_time = 1.3
 	def.weight = 2.0
-	def.max_per_day = 2
+	def.max_per_day = 3
 	return def
 
 ## A park spoiler, and a pleasant one. Nothing about it is threatening; it is simply
@@ -183,7 +217,7 @@ static func _busker() -> EventDef:
 	def.telegraph_time = 1.7
 	def.pulse_period = 7.0
 	def.weight = 2.0
-	def.max_per_day = 2
+	def.max_per_day = 3
 	return def
 
 ## The only Act I event that is physically in the way. Blocking the sidewalk forces a
@@ -202,7 +236,7 @@ static func _construction() -> EventDef:
 	def.telegraph_time = 1.8
 	def.obstructs_radius = 34.0
 	def.weight = 1.5
-	def.max_per_day = 2
+	def.max_per_day = 3
 	def.cost = 2
 	return def
 
@@ -286,7 +320,7 @@ static func _police_patrol() -> EventDef:
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 40
 	def.weight = 3.0
-	def.max_per_day = 3
+	def.max_per_day = 4
 	return def
 
 ## Cosmetic dread. Barely moves the meter; it is here so the walls change.
@@ -303,7 +337,7 @@ static func _poster_crew() -> EventDef:
 	def.outer_radius = 110.0
 	def.telegraph_time = 1.0
 	def.weight = 2.5
-	def.max_per_day = 3
+	def.max_per_day = 4
 	return def
 
 ## The masts switch on and there is nowhere in the city they do not reach. City-wide, so

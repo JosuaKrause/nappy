@@ -96,6 +96,8 @@ const _HARD_FAIL_TEXT := {
 	"abduction": "The van door opened. Nobody saw where you went.",
 	"alley_robbery": "They were waiting in the alley.",
 	"firefight": "You walked into the middle of it.",
+	# Not an event, and the only hard fail the player can walk into rather than be caught by.
+	"car_strike": "It never slowed down. You were in the road.",
 }
 
 func _end(result: GameEnums.DayResult) -> void:

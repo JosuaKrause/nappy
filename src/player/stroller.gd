@@ -32,11 +32,25 @@ const MOTHER_SIDE: Array[Texture2D] = [
 const PRAM_SIDE := preload("res://assets/rig/pram_side.svg")
 const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
 const PRAM_BACK := preload("res://assets/rig/pram_back.svg")
+const ALERT := preload("res://assets/props/alert.svg")
+
+## How far above her head the warning mark floats, and how fast it flashes. She is 46px tall,
+## so this clears her head by a few pixels and no more: at 68 the mark drifted far enough up
+## the screen to read as belonging to whatever was standing behind her, which for a cue that
+## means "this is about *you*" is the one thing it must not do.
+const ALERT_HEIGHT := 54.0
+const ALERT_FLASHES_PER_SECOND := 4.0
 
 @onready var _camera: Camera2D = $Camera2D
 
 var facing := Vector2.DOWN
 var _walk_phase := 0.0
+## Deflection from being walked into, decaying like any other velocity. Kept apart from
+## `velocity` so an input frame cannot quietly erase it.
+var _shove := Vector2.ZERO
+## Set by `Crowd` while something lethal is closing on where she is standing.
+var _alert := false
+var _alert_phase := 0.0
 
 func _ready() -> void:
 	add_to_group("player")
@@ -53,10 +67,30 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+	# The deflection is moved separately rather than added to `velocity`, which stays what she
+	# is steering. Folding it in would have made `is_idle()` and `run_excess_ratio()` — the two
+	# questions the baby asks the rig — answer for the crowd rather than for the player.
+	if _shove != Vector2.ZERO:
+		move_and_collide(_shove * delta)
+		_shove = _shove.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
+
 	# Stride cadence is driven by distance covered, so it stays in step at any speed.
 	_walk_phase = wrapf(_walk_phase + velocity.length() * delta * 0.09, 0.0, TAU)
+	_alert_phase = wrapf(_alert_phase + delta, 0.0, 1.0)
 	_update_camera(delta)
 	queue_redraw()
+
+## Knocks her off her line. Called by `Crowd` when she walks into somebody: the contact
+## displaces them both, which is finding 2 of playtest 02.
+func shove(impulse: Vector2) -> void:
+	# The strongest contact of the frame wins rather than the sum of them, or being caught
+	# between two people would fire her out of the crowd.
+	if impulse.length() > _shove.length():
+		_shove = impulse
+
+## Whether she is standing somewhere that is about to be dangerous.
+func set_alert(on: bool) -> void:
+	_alert = on
 
 func _turn_toward(target: Vector2, delta: float) -> void:
 	var step := FACING_TURN_SPEED * delta
@@ -73,6 +107,8 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	velocity = Vector2.ZERO
 	facing = look.normalized()
 	_walk_phase = 0.0
+	_shove = Vector2.ZERO
+	_alert = false
 	if _camera:
 		_camera.offset = Vector2.ZERO
 		_camera.reset_smoothing()
@@ -119,6 +155,22 @@ func _draw() -> void:
 	else:
 		_draw_mother(gait)
 		_draw_pram(pram_offset)
+
+	_draw_alert()
+
+## *This spot is about to be bad; move.* Drawn over the player rather than over the thing
+## that is coming, because "there is a car on this road" is information and "you are standing
+## in front of it" is an instruction — and only the second one is a move.
+##
+## Flashing rather than steady: a mark that is always there stops being read, and the flash is
+## also what distinguishes it from the props she walks past. M22 generalises this to events
+## and adds the screen-edge half; the cue itself is built here because M19 is what makes a
+## street lethal. See docs/EVENTS.md, "The visual vocabulary".
+func _draw_alert() -> void:
+	if not _alert or _alert_phase * ALERT_FLASHES_PER_SECOND - floorf(
+			_alert_phase * ALERT_FLASHES_PER_SECOND) > 0.55:
+		return
+	Sprites.draw_standing(self, ALERT, Vector2(0.0, -ALERT_HEIGHT))
 
 ## The stride is two frames rather than a procedural swing: with the legs drawn into the
 ## sprite there is nothing left to swing. The frames carry the body's bob too, which is why

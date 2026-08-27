@@ -69,7 +69,8 @@ All implemented.
 | --- | --- | --- | --- |
 | `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
 | `cat_dash` | RECURRING | 1 | Crouches (telegraph), then bolts across the traffic. High intensity, tiny radius, 1.4s duration. The tutorial obstacle. |
-| `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Barks on a 3.5s pulse. |
+| `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Barks on a 3.5s pulse. **Re-pitched in M19** from intensity 7 to 26 with a tighter radius: it used to cost −0.1 points to walk straight through, so the correct play was to plough into it. It now owns the pavement it is on, which is what finding 3 asked for. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
+| `cafe_tables` | RECURRING | 1 | **M19.** A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the answer to *"there should be things that force me to cross the street"*. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. |
 | `homeless_yeller` | RECURRING | 1 | Stationary, large radius, 5s yell **pulse**. The counterplay is timing a pass between yells, which is a different skill from routing around a hazard. |
 | `delivery_van` | RECURRING | 1 | Parked, reversing beeper. Constant, medium. The plain obstacle route planning is practised on. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. |
@@ -161,41 +162,62 @@ is the point of a city that does not change.
 
 ## What an event actually costs
 
-Measured against the M18 rates, integrating the real falloff along a straight line through
+Measured against the M19 rates, integrating the real falloff along a straight line through
 the centre of the field and subtracting the walking decay. The meter is 100, sleep freezes at
-35, and the baby cries at 100.
+35, and the baby cries at 100. `tests/test_events.gd` computes the same integral, so the
+numbers here and the assertion there cannot drift apart.
 
 | Event | walk through | run through |
 | --- | ---: | ---: |
+| `burnt_shell` | −4.1 | +10.6 |
 | `poster_crew` | −2.2 | +14.5 |
-| `dog_walker` | −0.1 | +18.5 |
 | `barricade` | −0.4 | +16.9 |
 | `playground` | +0.3 | +21.6 |
 | `delivery_van` | +1.9 | +22.5 |
 | `busker` | +3.8 | +29.2 |
 | `police_patrol` | +5.7 | +29.6 |
 | `homeless_yeller` | +5.8 | +33.2 |
+| `alley_robbery` * | +6.8 | +9.7 |
 | `construction` | +8.1 | +33.0 |
+| `cafe_tables` | +8.8 | +29.1 |
 | `cat_dash` | +10.4 | +22.9 |
 | `checkpoint` | +13.7 | +38.2 |
+| `dog_walker` | +21.6 | +26.8 |
 | `protest` | +25.0 | +56.5 |
 | `burning_building` | +29.8 | +53.5 |
-| `abduction` | +32.9 | +53.7 |
+| `abduction` * | +32.9 | +53.7 |
 | `military_convoy` | +49.2 | +69.8 |
 | `night_raid` | +56.6 | +78.2 |
 | `fire_truck` | +64.6 | +83.9 |
-| `firefight` | +92.8 | +105.1 |
+| `firefight` * | +92.8 | +105.1 |
 
-Two facts the table makes hard to argue with, both open as of playtest 02:
+`*` is a `hard_fail`: the figure is notional, because nobody finishes the walk. Two rows the
+playtest-02 version of this table was missing entirely (`burnt_shell`, `alley_robbery`) are
+included now — the old one listed eighteen of what was then twenty.
 
-- **Act I and act II have no teeth.** Eleven of eighteen cost under fifteen points and three
-  are *negative* — walking through a `dog_walker` is better than walking around it, because
-  the walking decay outruns what it emits. The whole escalation is back-loaded into acts III
-  and IV, so the days that teach the player teach them that events are safe.
-- **Running is never correct.** Not against one event in the catalogue. It costs
+**Three of these are negative, and all three are deliberate.** `poster_crew` is cosmetic
+dread, `barricade` is a scar and `burnt_shell` is a reminder; none of them is an obstacle, so
+none of them has to cost anything. Everything else must be more expensive to walk through than
+to walk around, and `tests/test_events.gd` asserts exactly that with those three named as the
+exemptions — so a **fourth** negative event has to be a decision somebody takes on purpose
+rather than a number nobody checked.
+
+What the table said before M19, and what changed:
+
+- **Act I and act II had no teeth.** Eleven of eighteen cost under fifteen points, and
+  `dog_walker` was −0.1 — walking through it beat walking around it. The whole escalation was
+  back-loaded into acts III and IV, so the days that teach the player taught them that events
+  are safe. `dog_walker` is +21.6 now, `cafe_tables` blocks a pavement from day 1, and the
+  street itself costs something whatever is on it (see MECHANICS.md, "The street has
+  physics"). The rest of act II is still gentle and is still open.
+- **Running is never correct.** Unchanged, and still true of every row. It costs
   `EXCITEMENT_FROM_RUNNING` *and* collapses the decay from 3.5/s to 0.5/s, and together those
   beat the shorter exposure every time. Making running necessary (finding 9, M25) is
   therefore a mechanic to build, not a number to tune: it needs something running escapes.
+
+The table is only about *events*, and since M19 it is no longer the whole cost of a street.
+A contact with a pedestrian is ~15.6 points and a car's horn ~8, and neither is in the
+catalogue. See MECHANICS.md.
 
 Regenerate this table whenever the rates in `Tuning` move; it is the fastest way to see what
 a balance change did to the catalogue as a whole.
@@ -240,7 +262,7 @@ few things are ringed, and nothing explains the difference.
 | **Legible entity** | The thing itself reads as dangerous: posture, size, what it is doing | **M22** |
 | **Symbol over the entity** | Flashing, and only when the entity cannot carry the warning alone | **M22** |
 | **Edge indicator** | A symbol at the screen edge for anything closing from off-screen. Says *what* is coming, not merely that something is | **M22** |
-| **Exclamation over the player** | Flashing: *you are standing in a soon-to-be danger zone, move.* A telegraph whose radius already covers you, the path of something fast still off-screen, the road with a car coming through | **M22** |
+| **Exclamation over the player** | Flashing: *you are standing in a soon-to-be danger zone, move.* A telegraph whose radius already covers you, the path of something fast still off-screen, the road with a car coming through | **ships for traffic (M19)**; events in M22 |
 | **"Too close" over the player** | Danger already live and already on you — the cue that lets the others be quieter | **M22** |
 | **Sound lines** | Concentric arcs thrown off a source on the rising edge of a pulse — the visual form of a discrete noise (a yell, a bark, a beep, a siren whoop) | todo |
 | **HUD band** | For a `city_wide` source, which has no position and therefore nothing to stand under | todo |
@@ -249,6 +271,14 @@ The one thing the ring does well and a discrete symbol cannot is **breathing** �
 current emission, so a pulsing event can be timed and slipped past between beats. Whatever
 M22 puts in its place has to keep some form of that, or the pulse envelope stops being
 something to play against and becomes random.
+
+**M19 built the exclamation mark early, and on purpose.** It is the load-bearing cue of the
+vocabulary — every other one says *a thing exists*, that one says *the contract is now about
+you and the clock has started* — and M19 is what creates the danger it warns about: a lethal
+car has no telegraph phase to ring, and a ring drawn round a car doing 185px/s would be off
+the edge of the screen for most of the warning anyway. It flashes over the player whenever
+she is standing on the carriageway with a car closing (`Stroller._draw_alert`). M22 inherits
+it and generalises it to events; nothing about it is provisional.
 
 Each live event's field is currently drawn on an aura layer between the ground and the
 y-sorted entities — so a field never paints over a roof, and a building genuinely hides the

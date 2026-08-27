@@ -293,8 +293,14 @@ is loud, and the reason a park is quiet.
   structural half of "a park is quiet because nobody is in it". `tests/test_crowd.gd`
   asserts the middle of every park is out of earshot.
 
-Agents have no collision: the player walks through them. They are a noise field with a
-picture attached, and stopping her dead in a crowd would fight the one verb the game has.
+- **Bodies are solid, and cars are lethal.** *(M19, replacing "agents have no collision: the
+  player walks through them".)* Walking into somebody displaces you both and startles them;
+  stepping into the carriageway in front of a moving car ends the day; traffic gives way at a
+  zebra somebody is waiting at. The old rule was right about the risk it was avoiding —
+  stopping her dead in a crowd would fight the one verb the game has — and the answer is that
+  a contact **deflects** rather than blocking: the separation is resolved positionally so
+  nothing can ever be walked into and stuck on. See docs/MECHANICS.md, "The street has
+  physics", for the geometry and the traffic fairness contract.
 
 ## Rendering (2.5D)
 

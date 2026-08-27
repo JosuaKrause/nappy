@@ -144,6 +144,98 @@ Controls: arrow keys or WASD to walk, hold **Shift** to run, **E** to interact,
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.
 
+## The street has physics
+
+*(M19. Playtest 02, findings 2 and 3; playtest 03, finding 1.)*
+
+Until M19 the crowd was a **field with a picture attached**. You could walk through a person,
+through a car, through a queue at a bus stop, and the only thing that happened was that a
+number moved. That is why the route was never a decision: every pavement was identical and
+none of them could hurt you, and the traced day of playtest 03 crossed the whole city without
+meeting anything.
+
+Four mechanisms, all of them in `src/crowd/crowd.gd`, all of them about the *player* — which
+is why they live there rather than in `CrowdAgent`, which has no business knowing she exists.
+
+### A body is solid
+
+| | |
+| --- | --- |
+| Contact radius | `14 px`, centre to centre |
+| Separation | positional, `70%` to them and `30%` to her |
+| Deflection | `55 px/s`, decayed by `FRICTION` |
+| Cost | one jolt: `26/s` fading over `1.2 s`, so **~15.6 points** |
+
+**The radius is set by the lane spacing, not by a body's width.** Pedestrian lanes are one
+tile apart, so the only line with no contact on it is the midline between two of them. At
+18px there was no such line anywhere on a two-tile pavement, and walking the arterial cost
+eleven bumps in forty seconds however carefully it was done — a toll, not a decision. At 14px
+holding that line takes the same walk down to two.
+
+Three things about it that were found by walking a rig down a real pavement and reading the
+meter, none of which a data-level test can see:
+
+- **Somebody bumped along their own line of travel steps aside**, rather than being pushed
+  further along it. She walks at 92 and they walk at 60, so pushing them straight ahead
+  separates nobody: the first version ploughed a wedge of pedestrians down the pavement in
+  front of her, all of them permanently in contact and permanently loud.
+- **A contact startles once, not once per frame.** `CrowdAgent.touching` is the hysteresis.
+- **The separation is positional and the deflection is not.** Resolving position means two
+  bodies can never end up inside each other however fast she is going; the velocity kick on
+  top is what makes a crowd somewhere you get pushed around. It is applied with
+  `move_and_collide` rather than folded into `velocity`, because `velocity` is what
+  `is_idle()` and `run_excess_ratio()` answer from and those two questions are about the
+  *player*, not about the crowd.
+
+### The bump is a source, not a write
+
+**Excitement stays a pure query.** A contact does not touch `Baby.excitement`; it *startles
+the person she walked into*, and `Crowd` sums that agent like it sums every other one. So
+contacts still compose by plain addition, there is still no ordering to get wrong, and
+`City.total_excitement_at` still adds exactly two things. See the invariant in `CLAUDE.md`.
+
+### A car is lethal
+
+Stepping into the carriageway in front of a moving car ends the day (`hard_fail`
+`car_strike`). The strike volume is a **box** — 26px along the car, 14px across — because a
+car is two tiles long and one wide, and a radius that covered its length would kill people
+standing beside it. It only counts while she is standing on a road tile, and a car below
+`20 px/s` cannot run anybody over, so a car halted at a zebra is scenery.
+
+### The traffic fairness contract
+
+A car is not an event: it has no telegraph, it is not in the catalogue, and
+`validate_event()` never sees it. Two things stand in for the telegraph, and
+`Tuning.validate_traffic()` checks the second on boot.
+
+1. **The road itself.** The carriageway is painted, permanent and learnable, and the kerb is
+   an edge she chooses to step over. Same shape of contract as `alley_robbery`, where the
+   alley is the warning.
+2. **The horn.** A car sounds it `1.6 s` out at anybody standing in its lane, which must
+   exceed the time to walk the whole width of the carriageway with the doubled margin every
+   hard fail is owed: `64px × 2 / 92 = 1.39 s`. The horn is itself a jolt (~8 points), so a
+   near miss costs something even when it stays a near miss.
+
+The horn also raises the **exclamation mark over the player** — the load-bearing cue of the
+M22 vocabulary, built here because M19 is what creates the danger. See docs/EVENTS.md.
+
+Belt and braces: the strike box is geometrically incapable of reaching over the kerb. A car
+sits half a tile off the middle of the carriageway, so its far edge is `16 + 14 = 30 px` out
+and the kerb is at `32`. `tests/test_crowd.gd` asserts it, because a box that reached the
+pavement would kill people who never stepped off it and would look exactly like a fair death.
+
+### The zebra is a negotiation
+
+Traffic **gives way** at a crossing somebody is waiting at: a car looks `200 px` ahead and
+brakes at `320 px/s²`, which is nearly four times the `53 px` it needs to stop from top
+speed. The margin is the point — the slowing has to be *visible from the kerb*, because a
+player deciding whether to step off needs to see the car slowing rather than discover
+afterwards that it would have.
+
+So the crossing is the safe way over and jaywalking is the fast way over, which is the choice
+finding 3 asked for. A car closer than its braking distance legitimately cannot stop, and
+there the horn is the contract rather than the brake.
+
 ## Excitement falloff
 
 Each active event has an `intensity`, an `inner_radius` and an `outer_radius`.
@@ -198,8 +290,8 @@ the whole catalogue, so an unfair event fails loudly rather than quietly ruining
 
 Parks, quiet squares and courtyards are `CALM` tiles. Inside them:
 
-- Sleepiness gain ×`1.75`
-- Excitement decay ×`1.6`
+- Sleepiness gain ×`10` — a second in a park is worth ten on the street *(M18)*
+- Excitement decay ×`2.2`, so the park reads on **both** bars
 
 But calm zones are contested — see `docs/CITY.md` (spoiling) and `docs/EVENTS.md`.
 

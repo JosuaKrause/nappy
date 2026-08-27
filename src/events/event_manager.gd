@@ -4,7 +4,7 @@ extends Node
 ## excitement, retires them when they finish, and fires hard fails.
 ##
 ## Lookup is a linear scan. The architecture sketch called for a spatial hash, but the
-## budget formula tops out around 22 concurrent events on the last day — 22 distance
+## budget formula tops out around 32 concurrent events on the last day — 32 distance
 ## checks per physics frame is nothing, and a hash would be more code with more ways to be
 ## subtly wrong. Revisit if an act ever wants hundreds of sources at once.
 
