@@ -286,66 +286,76 @@ is not a telegraph, and `Tuning.validate_event()` cannot tell the difference.
 
 ### The visual vocabulary
 
-**This is being replaced. See M22 in [PLAYTEST-02.md](PLAYTEST-02.md).** The rings below are
-what ships today; playtest 02's finding 8 rejects them, and the reason is worth keeping
-rather than merely acting on:
+**The rings are gone.** M22 deleted them rather than restyling them, and the reason is worth
+keeping rather than merely acting on — playtest 02's finding 8, restated by playtest 04:
 
-> A ring communicates a falloff radius, which is a number. A silhouette communicates a
-> threat. How dangerous a thing is should be visible from looking at *the thing*.
+> A ring communicates a falloff radius, which is a number. A silhouette communicates a threat.
+> How dangerous a thing is should be visible from looking at *the thing*.
 
-The second half of the same finding is that the rings do not even cover the field they are
-drawn for: the ~530 crowd agents have none, because the crowd is an emergent noise floor
-rather than a set of authored dangers, and two `city_wide` sources have none because a field
-with no edge cannot be a ring. So on a normal street most of what you can see is unmarked, a
-few things are ringed, and nothing explains the difference.
+The second half of that finding is the one that decided the shape of what replaced them. The
+rings did not even cover the field they were drawn for: the crowd agents had none, and two
+`city_wide` sources had none because a field with no edge cannot be a ring. So on a normal
+street a few things were ringed, most were not, and nothing explained the difference. **A cue
+that marks everything says nothing**, and every rule below exists to keep the replacement from
+becoming that.
 
-| Cue | Means | Status |
+| Cue | Means | Where |
 | --- | --- | --- |
-| **Ring + fill** | The danger geometry: outer radius, inner radius | ships today, **removed in M22** |
-| **Flashing amber ring** | Telegraphing — visible, not yet at full strength | ships today, **removed in M22** |
-| **Red ring** | Active; darker red for `hard_fail` | ships today, **removed in M22** |
-| **Breathing** | Fill and ring track *current* emission, so a pulsing event visibly swells and fades and can be timed | ships today — **M22 must keep this somehow** |
-| **Legible entity** | The thing itself reads as dangerous: posture, size, what it is doing | **M22** |
-| **Symbol over the entity** | Flashing, and only when the entity cannot carry the warning alone | **M22** |
-| **Edge indicator** | A symbol at the screen edge for anything closing from off-screen. Says *what* is coming, not merely that something is | **M22** |
-| **Exclamation over the player** | Flashing: *you are standing in a soon-to-be danger zone, move.* A telegraph whose radius already covers you, the path of something fast still off-screen, the road with a car coming through | **ships for traffic (M19)**; events in M22 |
-| **"Too close" over the player** | Danger already live and already on you — the cue that lets the others be quieter | **M22** |
-| **Sound lines** | Concentric arcs thrown off a source on the rising edge of a pulse — the visual form of a discrete noise (a yell, a bark, a beep, a siren whoop) | todo |
-| **HUD band** | For a `city_wide` source, which has no position and therefore nothing to stand under | todo |
+| **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** | the art |
+| **Caret over the entity** | *Danger that changes over time*, and only that: it is about to start, it ends the day, or it comes and goes. Amber telegraphing, red active, doubled and darker for `hard_fail`. | `EventInstance._draw_mark()` |
+| **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
+| **Edge badge** | Off-screen and closing: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
+| **Exclamation over the player** | *This spot is about to be bad; move.* A telegraph whose radius already covers her, or a car closing on the lane she is standing in. | `Stroller._draw_alert()` |
+| **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live and she is inside its reach with one step left to make. | `Stroller._draw_alert()` |
+| **HUD line** | For a `city_wide` source, which has no position and therefore nothing to stand under. | `hud.gd` |
+| **Sound lines** | Concentric arcs thrown off a source on the rising edge of a pulse — the visual form of a discrete noise (a yell, a bark, a beep, a siren whoop) | todo, M10 |
 
-The one thing the ring does well and a discrete symbol cannot is **breathing** — it tracks
-current emission, so a pulsing event can be timed and slipped past between beats. Whatever
-M22 puts in its place has to keep some form of that, or the pulse envelope stops being
-something to play against and becomes random.
+**Nothing draws a field.** That is the rule, and it is a standing decision rather than a
+preference. If something new needs signalling, reach for one of the rows above; if none of them
+fits, that is a design conversation and not a licence to draw a radius.
 
-**M19 built the exclamation mark early, and on purpose.** It is the load-bearing cue of the
-vocabulary — every other one says *a thing exists*, that one says *the contract is now about
-you and the clock has started* — and M19 is what creates the danger it warns about: a lethal
-car has no telegraph phase to ring, and a ring drawn round a car doing 185px/s would be off
-the edge of the screen for most of the warning anyway. It flashes over the player whenever
-she is standing on the carriageway with a car closing (`Stroller._draw_alert`). M22 inherits
-it and generalises it to events; nothing about it is provisional.
+Three rules underneath the table, in the order they matter:
 
-Each live event's field is currently drawn on an aura layer between the ground and the
-y-sorted entities — so a field never paints over a roof, and a building genuinely hides the
-field behind it. Whatever replaces it inherits that constraint.
+1. **The caret is for danger that *changes*.** Lethal, telegraphing, pulsing or swelling —
+   nothing else. A barricade, a boarded shopfront and a burnt-out shell are large, distinct and
+   visibly what they are, and pointing at them adds noise and no information. A first pass used
+   "louder than the walking decay" instead and marked all three, which is the ring's own
+   mistake in a new shape. `tests/test_danger.gd` holds the line.
+2. **Breathing had to survive.** It is the one thing the ring did that a discrete symbol does
+   not get for free, and without it a pulsing event stops being something to time a pass
+   through and becomes something that hurts at random.
+3. **The exclamation mark is the load-bearing one.** Every other cue says *a thing exists*;
+   that one says the fairness contract is now about you and the clock has started, which is the
+   difference between information and instruction. It shipped early, in M19, because a lethal
+   car has no telegraph phase to ring and a ring round a car doing 185px/s is off the edge of
+   the screen for most of the warning. M22 only had to add its second level and let the events
+   raise it too.
+
+### What the edge badge is for, and what it is not
+
+`fire_truck` does 190px/s with a 340px radius and `military_convoy` is the same shape. Both are
+*designed* around a long telegraph that the player spends getting off that street — and a ring
+is only useful once it is on screen, which at that speed is most of the warning gone. The
+fairness contract was being met by the geometry and missed by the player.
+
+So it announces two things and no others: anything **lethal**, and anything **faster than a
+walk**. Everything else she can turn round and leave, which is the same line
+`required_telegraph_time()` draws when it decides whether the escape distance is the falloff
+band or the whole radius. It also requires a silhouette to put in the badge — an arrow that can
+only say "something" is an anxiety rather than a warning — and it caps at three at once,
+because the day the edge of the screen becomes wallpaper is the day it stops being read.
 
 ### Where the visual channel is currently incomplete
 
-Two real gaps, both of which would today be papered over by audio if audio existed:
-
-- **`city_wide` sources have no visual at all.** `EventAuraLayer` explicitly skips them —
-  correctly, since a field with no edge cannot be drawn as a ring — and nothing else picked
-  up the job. So from day 5 the loudspeaker masts hold a floor under the meter with *nothing
-  on screen to say so*, and the player just sees excitement refusing to drain. This is the
-  most misleading thing in the game right now. Needs the HUD band.
-- **Fast movers approaching from off-screen.** `fire_truck` (190px/s, 340px radius) and
-  `military_convoy` are both designed around a long telegraph that you spend getting off
-  that street — but the ring is only useful once it is on screen, and at 190px/s that is
-  most of the warning gone. Needs the edge indicator.
-
-Everything else already has a sufficient visual: the cat's crouch before it bolts, the
-abduction van idling, the pulse breathing on the yeller and the protest.
+- **Sound lines.** A discrete noise — a yell, a bark, a beep — currently reads only as the
+  caret swelling. Concentric arcs thrown off on a pulse's rising edge would give it a "that
+  just happened" beat. M10.
+- **The entities themselves.** Row one of the table is doing most of the work and some of the
+  art is not yet up to it: `homeless_yeller`, `busker` and `poster_crew` all draw the same
+  `person.svg` as each other and as a crowd walker, so what tells them apart today is the
+  caret over two of them. That is the vocabulary covering for the art, which is the wrong way
+  round. Not urgent — the standing decision on assets is "something workable for now" — but it
+  is the first thing to fix when the art gets a pass.
 
 ## Keeping a day winnable
 

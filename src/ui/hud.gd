@@ -19,6 +19,10 @@ var _hold := 0.0
 var _seen_for := 0.0
 var _announcement := ""
 var _announcement_for := 0.0
+## What is holding a floor under the whole city, or "" for nothing. M22: this is the only cue
+## for a source with no position, and until it existed the loudspeaker masts held the meter up
+## from day 5 with nothing on screen to say why.
+var _city_wide := ""
 
 const _STATE_TEXT := {
 	GameEnums.BabyState.AWAKE: "awake",
@@ -47,6 +51,7 @@ func _ready() -> void:
 	EventBus.resistance_hold_changed.connect(_on_hold_changed)
 	EventBus.resistance_seen.connect(_on_seen)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
+	EventBus.city_wide_changed.connect(_on_city_wide_changed)
 	EventBus.day_started.connect(func(_d: int) -> void:
 		_contact_step = 0
 		_hold = 0.0
@@ -88,6 +93,10 @@ func _refresh_state() -> void:
 	var reason := _baby.stall_reason()
 	if reason != "":
 		text += "   (not settling: %s)" % reason
+	# Last, and phrased as a place rather than as a source: a player cannot walk away from this
+	# one, and the useful thing to tell them is that walking away is not the move.
+	if _city_wide != "":
+		text += "   [%s - nowhere is quiet]" % _city_wide.to_lower()
 	_state_label.text = text
 
 func _on_day_time_changed(remaining: float, total: float) -> void:
@@ -137,6 +146,10 @@ func set_home_guidance(showing: bool, home: Vector2) -> void:
 		_home_arrow.show_toward(home)
 	else:
 		_home_arrow.hide_arrow()
+
+func _on_city_wide_changed(what: String) -> void:
+	_city_wide = what
+	_refresh_state()
 
 func _on_city_went_quiet() -> void:
 	_announcement = "The loudspeakers cut out mid-sentence."

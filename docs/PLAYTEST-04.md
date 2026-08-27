@@ -24,9 +24,9 @@ In the order they were said, with what each one turned out to be underneath.
 | 6 | *"Cars still bump into each other."* | M20, not started |
 | 7 | *"The game still doesn't feel like it has any hazards."* | The summary of the other six |
 
-Findings 1, 4, 5 and 6 are **M27**, below, and are done. Findings 2 and 3 are M22 and M21 and
-were already queued; nothing here changes what they are, only that they are now the top of the
-queue rather than somewhere in it.
+Findings 1, 4, 5 and 6 are **M27**, below, and are done. Finding 2 is **M22**, which was
+already queued and is now done — the player asking for the circles a second time is what moved
+it to the front. Finding 3 is **M21** and is next.
 
 ---
 
@@ -159,10 +159,66 @@ arriving from the other direction: **an event that waits is an event she meets.*
 
 ---
 
+## M22 — danger you can read
+
+Finding 2 was one sentence — *"I still see circles"* — and it had been a standing decision since
+playtest 02, so there was nothing to work out, only to build. The rings are **deleted**; there
+is a test that asserts `EventAuraLayer` cannot come back, because the failure mode this decision
+exists to stop is somebody reaching for a ring again when something new needs signalling.
+
+What replaced them is in `docs/EVENTS.md`, "The visual vocabulary". The part worth repeating
+here is the rule that decides what gets marked, because a first pass got it wrong in an
+instructive way.
+
+**A cue that marks everything says nothing.** That is what the rings were: a notice board was
+ringed exactly as hard as an abduction. The first replacement used "louder than the walking
+decay" as the threshold, which is a defensible-sounding number — and it marked `poster_crew`,
+`barricade` and `burnt_shell`, the three rows the cost table already calls scenery. It was the
+ring's own mistake in a new shape.
+
+The rule that works is not about loudness at all: **the caret is for danger that changes over
+time.** It is about to start (telegraphing), it ends the day (lethal), or it comes and goes
+(pulsing, swelling). Everything steady is left to its own silhouette, which is what the standing
+decision said in the first place. And the caret **breathes** with current emission, which is the
+one thing the ring genuinely did well — without it a pulsing event stops being something to time
+a pass through and becomes something that hurts at random.
+
+Two gaps the rings could never have covered went with it. The **screen-edge badge**: a fire
+engine does 190px/s with a 340px radius and is designed around a long telegraph spent getting
+off that street, and a ring is only useful once it is on screen, which at that speed is most of
+the warning gone — the contract was being met by the geometry and missed by the player. And the
+**HUD line** for `city_wide` sources, which had no on-screen presence at all: from day 5 the
+loudspeaker masts held a floor under the meter with nothing anywhere saying so.
+
+Three things about the badge were found by forcing it on for one screenshot and none of them by
+a test: it collided with the excitement meter, the icon was squashed by a square box, and some
+badges had no silhouette in them at all. It requires one now — an arrow that can only say
+"something" is an anxiety rather than a warning.
+
+---
+
+## One measurement M22 turned up by accident
+
+`tools/shot.sh` gained a `--walk` flag in M22, because since M27 a screenshot of a standing
+player is a screenshot of almost nothing. The first thing it was pointed at was the arterial:
+
+> **Walking north up the arterial from a standing start loses day 1 in fourteen seconds.**
+> Excitement 0 to 100, baby crying, a nerve gone.
+
+Standing perfectly still on that same pavement takes about twenty-five seconds to the same
+place, so most of it is the ambient floor and the rest is walking blindly into people. Walking
+**east from the doorstep** for the same thirty seconds — an ordinary route on ordinary streets —
+reaches 22 of 100 and is completely survivable.
+
+That is the intended shape, sharpened: the arterial is a street to *cross* and not to walk, and
+`tests/test_crowd.gd` requires it to stay above the idle decay for exactly that reason. Whether
+fourteen seconds is the right price for not knowing that yet, on day 1, is a question for a
+player and not for a probe — it is written down here so the next playtest has the number.
+
+---
+
 ## What is still open
 
-- **Finding 2, the circles.** M22. Standing decision since playtest 02: they are deleted, not
-  restyled. The player has now asked twice.
 - **Finding 3, the calm areas.** M21, unchanged and unstarted. Four-block calm zones. Playtest
   03 measured the lap at twenty seconds and explained why no balance pass removes it: progress
   requires motion and a calm block is a few tiles across, which is jointly sufficient for a

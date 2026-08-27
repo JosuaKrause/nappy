@@ -1,0 +1,14 @@
+<!-- The "too close" mark. Same silhouette as alert.svg so the two read as one vocabulary, but
+     doubled and red: the amber single mark means "this spot is about to be bad, move", and this
+     one means "it is bad now and you are in it". Doubling rather than only recolouring, so the
+     difference survives being read at a glance and does not depend on hue. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="26" viewBox="0 0 30 26" shape-rendering="crispEdges">
+  <rect x="2" y="0" width="10" height="26" fill="#221f28"/>
+  <rect x="0" y="2" width="14" height="22" fill="#221f28"/>
+  <rect x="4" y="2" width="6" height="15" fill="#e5765f"/>
+  <rect x="4" y="19" width="6" height="5" fill="#e5765f"/>
+  <rect x="18" y="0" width="10" height="26" fill="#221f28"/>
+  <rect x="16" y="2" width="14" height="22" fill="#221f28"/>
+  <rect x="20" y="2" width="6" height="15" fill="#e5765f"/>
+  <rect x="20" y="19" width="6" height="5" fill="#e5765f"/>
+</svg>

@@ -25,9 +25,6 @@ var _player: Stroller
 var _field: CrowdField
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
-## When the last horn went, so the exclamation mark over the player survives the gap between
-## two cars in the same lane instead of strobing.
-var _warned_at := -1000.0
 
 func setup(city: City, map: CityMap) -> void:
 	_city = city
@@ -47,7 +44,6 @@ func setup(city: City, map: CityMap) -> void:
 func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> void:
 	clear()
 	_struck = false
-	_warned_at = -1000.0
 	_field.centre = focus if focus != Vector2.INF else _map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, _map.size)).get_center()
 	var act := Tuning.act_for_day(day)
@@ -167,12 +163,16 @@ func _physics_process(_delta: float) -> void:
 
 	if shove != Vector2.ZERO:
 		_player.shove(shove.normalized() * Tuning.BUMP_SHOVE_SPEED)
-	if closing:
-		_warned_at = _now()
 	# The exclamation mark says *the fairness contract is now about you and the clock has
 	# started* — the load-bearing cue of M22's vocabulary, built here because M19 is what
 	# creates the danger it warns about. See docs/EVENTS.md, "The visual vocabulary".
-	_player.set_alert(_now() - _warned_at < Tuning.CAR_WARNING_HOLD)
+	#
+	# `SOON` rather than `NOW`: standing in the carriageway with a car coming is a spot that is
+	# about to be bad, and the whole contract is that there is time to walk off it. The mark is
+	# raised for the rest of the hold rather than for this frame, so it survives the gap between
+	# two cars in the same lane instead of strobing.
+	if closing:
+		_player.warn(Stroller.Alert.SOON, Tuning.CAR_WARNING_HOLD)
 
 ## Displaces a pedestrian the player has walked into, startles them, and returns the share of
 ## the separation she takes herself.
@@ -248,12 +248,6 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 	agent.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	return true
-
-## Seconds since the scene started. Only ever used for differences, so the origin does not
-## matter — and taking it from the engine rather than the day clock keeps the crowd working in
-## a test rig that has no day.
-func _now() -> float:
-	return float(Time.get_ticks_msec()) / 1000.0
 
 # ------------------------------------------------------------ WorldContext ---
 

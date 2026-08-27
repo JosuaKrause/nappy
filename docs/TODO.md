@@ -4,7 +4,7 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 Each milestone is one git branch, merged to `main` when green.
 
-**Where things stand:** M0–M16, M18, M19, M23 and M27 are done and merged, and the game has
+**Where things stand:** M0–M16, M18, M19, M22, M23 and M27 are done and merged, and the game has
 now been played four times by a human. The first playtest produced thirteen findings, planned
 as M11–M17 in **[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced twelve, planned as
 M18–M26 in **[docs/PLAYTEST-02.md](PLAYTEST-02.md)**; the third, in
@@ -21,10 +21,10 @@ on M24. **M27 was taken out of order and immediately**, because playtest 04's em
 finding — *"don't load everything upfront"* — turned out to be what was underneath three of the
 other six, and because M21 and M22 both get judged against a street that now has traffic on it.
 
-**Playtest 04 set the order that stands now.** M27 is done. **M22 is next** (the player has
-asked for the circles to go twice), then **M21** (four-block calm zones), then M17 behind both.
-M20 is **absorbed into M27**: cars follow and queue now, and what is left of it — eight-way
-driving, overtaking, a crash as a catalogue event — is unasked-for and no longer urgent.
+**Playtest 04 set the order that stands now.** M27 and M22 are done. **M21 is next**
+(four-block calm zones), then M17 behind it. M20 is **absorbed into M27**: cars follow and queue
+now, and what is left of it — eight-way driving, overtaking, a crash as a catalogue event — is
+unasked-for and no longer urgent.
 
 **What M27 leaves open.** Nobody has played it. The densities in `docs/PLAYTEST-04.md` came off
 a probe, and *"the arterial is for crossing"* is still a claim about a player rather than about
@@ -36,7 +36,7 @@ was around when a day ended.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 15890 checks (~80s); `tools/check.sh` boots the project; `tools/run.sh`
+`tools/test.sh` runs 15744 checks (~80s); `tools/check.sh` boots the project; `tools/run.sh`
 plays it; `tools/telemetry.sh` reads back what the last run did.
 
 ---
@@ -321,7 +321,7 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       of walking in a circle. That circling is not a length problem — progress requires motion
       and a calm block is a few tiles across, which is jointly sufficient for a lap, which is
       why M18's shorter stretch did not remove it and no further balance pass will
-- [ ] **M22 Danger you can read** — findings 7 and 8. **Delete the aura circles.** How
+- [x] **M22 Danger you can read** — findings 7 and 8. **Delete the aura circles.** How
       dangerous a thing is becomes visible from the thing itself; the rest is a small symbol
       vocabulary — above an entity when it needs one, at the screen edge when it is
       off-screen and closing, and above the *player*: **a flashing exclamation mark when they
@@ -330,11 +330,19 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       turns the telegraph contract from information into instruction. Absorbs the "screen-edge indicator for fast movers" item from M10
       below. **The exclamation mark shipped early, in M19**, for the reason this entry gave:
       a lethal car arriving from off-screen is a breach of the telegraph fairness contract, not
-      a polish item, and it has no telegraph phase to ring. It flashes over the player when she
-      is on the carriageway with a car closing; what is left here is generalising it to events,
-      the screen-edge indicator, the legible entity, and deleting the rings. Must keep one
-      thing the ring did well — showing an event *swelling*, or the pulse envelope stops being
-      playable
+      a polish item, and it has no telegraph phase to ring.
+      **Done, after playtest 04 asked for it a second time** (*"I still see circles"*). The
+      rings are deleted; `EventAuraLayer` no longer exists and a test asserts it cannot come
+      back. What replaced it: a **caret over the entity**, shown for danger that *changes over
+      time* and nothing else — lethal, telegraphing, pulsing, swelling — because a cue that
+      marks a notice board as hard as an abduction is what the rings were; a **badge at the
+      screen edge** carrying the thing's own silhouette, for anything lethal or faster than a
+      walk that is off-screen and closing, which closes the `fire_truck` gap the ring could
+      never cover; the exclamation mark over the player generalised to events and given its
+      **second level** for danger already on her; and a **HUD line** for `city_wide` sources,
+      which had no on-screen presence at all and were the most misleading thing in the game.
+      The one thing the ring did well survives: the caret *breathes* with current emission, so
+      a pulsing event is still something to time a pass through
 - [x] **M23 Telemetry** — finding 10. A chronological plain-text log per run, in
       `user://telemetry/` and readable with `./tools/telemetry.sh`. Records what the code
       cannot recompute — the random outcomes that branch a run, the seed the generator
@@ -407,21 +415,24 @@ was the summary of the rest. The other four are one milestone:
 
 Not started. The game is complete without it; this is what would make it shippable.
 
-- [ ] **Finish the visual channel — before audio, not after.** House rule: audio is never
+- [~] **Finish the visual channel — before audio, not after.** House rule: audio is never
       the only channel, so every cue that will become a sound must already work silently
-      (docs/EVENTS.md, "Showing the danger"). Two gaps, in priority order:
-  - [ ] **HUD band for `city_wide` sources.** The loudspeaker masts from day 5 and the
-        curfew announcement have *no* on-screen presence at all — `EventAuraLayer` skips
-        them (a field with no edge cannot be a ring) and nothing took over. The player
-        sees excitement refusing to drain and nothing says why. Most misleading thing in
-        the game right now.
-  - [~] **Screen-edge indicator for fast movers.** `fire_truck` and `military_convoy` are
-        built around a long telegraph spent getting off that street, but at 190px/s most
-        of that warning happens off-screen where the ring cannot be seen. *(Absorbed into
-        M22, which also deletes the ring.)*
+      (docs/EVENTS.md, "Showing the danger"). Two of the three gaps closed in M22:
+  - [x] **HUD line for `city_wide` sources.** *(M22.)* The loudspeaker masts from day 5 and
+        the curfew announcement had *no* on-screen presence at all — the aura layer skipped
+        them, correctly, since a field with no edge cannot be a ring, and nothing took over.
+        The player saw excitement refusing to drain and nothing said why. `EventBus` now
+        announces what is holding the floor and the HUD says so.
+  - [x] **Screen-edge indicator for fast movers.** *(M22.)* `fire_truck` and `military_convoy`
+        are built around a long telegraph spent getting off that street, and at 190px/s most
+        of that warning happened off-screen where the ring could not be seen. `DangerEdge`.
   - [ ] **Sound lines.** Concentric arcs thrown off a source on a pulse's rising edge —
         the visual form of a discrete noise. Would give the yeller, the dog and the
         reversing van a readable "that just happened" beat rather than only a swell.
+  - [ ] **The entities themselves.** `homeless_yeller`, `busker` and `poster_crew` all draw
+        the same `person.svg`, as does a crowd walker. The vocabulary's first row — *the thing
+        itself reads as what it is* — is currently being covered for by the caret over two of
+        them, which is the wrong way round. First thing to fix when the art gets a pass.
 - [ ] **Audio**, once the above is done and judged on its own: per-act ambient beds,
       per-event cues, the baby's breathing and fussing as the diegetic version of the
       meters. Additive by design — the game must already be fully playable muted.

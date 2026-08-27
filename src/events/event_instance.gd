@@ -143,6 +143,98 @@ func _draw() -> void:
 	if is_finished:
 		return
 	_draw_body()
+	_draw_mark()
+
+# ------------------------------------------------------------------ the mark ---
+# M22, playtest 02 finding 8 and playtest 04 finding 2. The aura rings are gone: a ring
+# communicates a falloff radius, which is a number, and a number is not a threat. What replaces
+# it over an entity is a small mark, and it earns its place by three rules.
+
+## How far above the entity the mark floats, and how big it is at full strength.
+const MARK_HEIGHT := 44.0
+const MARK_WIDTH := 15.0
+const MARK_FLASHES_PER_SECOND := 3.0
+
+## Whether this event is worth a mark at all.
+##
+## **The mark is for danger that changes over time, and for nothing else.** That is the whole
+## rule, and it is the answer to the half of finding 8 that says a ring marked a notice board
+## exactly as hard as it marked an abduction and therefore explained nothing:
+##
+## - **It is about to start.** The telegraph is the promise the fairness contract makes, and a
+##   promise nobody can see is not one.
+## - **It ends the day.** Nothing else in the game is a different kind of thing from everything
+##   else in the game, and that deserves its own mark whether or not the silhouette carries it.
+## - **It comes and goes.** A pulsing or swelling event has to be *timed*, and timing is the one
+##   thing the ring genuinely did well. See `mark_swell()`.
+##
+## Everything steady is left to its own silhouette, which is the standing decision in
+## `CLAUDE.md` — a barricade, a boarded shopfront and a burnt-out shell are large, distinct and
+## visibly what they are, and pointing at them adds nothing but noise. A first pass used
+## "louder than the walking decay" instead and marked all three of those, which is the ring's
+## own mistake in a new shape.
+func wants_a_mark() -> bool:
+	if is_finished or def.city_wide:
+		# A floor under the whole city has nothing to stand over. That is the HUD's job.
+		return false
+	if def.kind == GameEnums.EventKind.AMBIENT:
+		# A permanent feature of a fixed map never appears, so there is no moment to mark and
+		# nothing to time. The same reason the fairness contract exempts it.
+		return false
+	if def.hard_fail or is_telegraphing():
+		return true
+	return def.pulse_period > 0.0 or not is_equal_approx(def.intensity_ramp, 1.0)
+
+## How hard the mark is breathing, 0..1, from what the event is emitting right now.
+##
+## **This is the one thing the ring did that a symbol does not get for free**, and it is
+## load-bearing: a pulsing event can be timed and slipped past between beats, and a mark that
+## sat there at a constant size would turn the pulse envelope from something to play against
+## into something random.
+func mark_swell() -> float:
+	if def.intensity <= 0.0:
+		return 1.0
+	return clampf(current_intensity() / def.intensity, 0.0, 1.0)
+
+func mark_colour() -> Color:
+	if def.hard_fail:
+		return Palette.MARK_LETHAL
+	return Palette.MARK_TELEGRAPH if is_telegraphing() else Palette.MARK_ACTIVE
+
+## A caret over anything worth looking at, breathing with what it is currently emitting.
+##
+## What is deliberately *not* here: any drawing of where the danger reaches. That is the ring,
+## and its absence is the milestone.
+func _draw_mark() -> void:
+	if not wants_a_mark():
+		return
+	# Flashing while telegraphing, which is the phase that means *this has not happened yet*.
+	# A steady mark for something already happening: it has stopped being a warning.
+	var telegraphing := is_telegraphing()
+	if telegraphing and fmod(age * MARK_FLASHES_PER_SECOND, 1.0) > 0.55:
+		return
+
+	var swell := mark_swell()
+	# Never all the way to nothing: between beats the mark shrinks, it does not vanish, or a
+	# pulsing event would read as flickering in and out of existence.
+	var scale := 0.55 + 0.45 * swell
+	var at := Vector2(0.0, -(MARK_HEIGHT + 10.0 * swell))
+	_draw_caret(at, MARK_WIDTH * scale, mark_colour())
+	if def.hard_fail:
+		# Doubled, so lethal reads at a glance and never has to be told apart by hue.
+		_draw_caret(at - Vector2(0.0, MARK_WIDTH * scale * 0.85), MARK_WIDTH * scale,
+				mark_colour())
+
+## A downward chevron. Deliberately not an exclamation mark — that shape is spoken for, it
+## means *this is about you*, and it lives over the player's head and nowhere else.
+func _draw_caret(at: Vector2, width: float, colour: Color) -> void:
+	var points := PackedVector2Array([
+		at + Vector2(-width, -width * 0.8),
+		at + Vector2(width, -width * 0.8),
+		at + Vector2(0.0, width * 0.5),
+	])
+	draw_colored_polygon(points, colour)
+	draw_polyline(points + PackedVector2Array([points[0]]), Palette.OUTLINE, 2.0)
 
 func _draw_body() -> void:
 	match def.look:
