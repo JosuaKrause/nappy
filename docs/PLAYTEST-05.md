@@ -20,7 +20,7 @@ In the order they were said.
 | 3 | *"Sometimes I get yellow exclamation marks on top of my head without any indication where from, and it doesn't actually have an effect on gameplay — I can just keep doing what I was doing."* | The cue fires for things that are neither lethal nor attributable to a visible entity |
 | 4 | *"I was able to go to the same park on day one and two — this shouldn't be possible."* | M24, queued and unstarted. The player has now asked for it, which is what moves a milestone |
 | 5 | ***"Day two doesn't feel more difficult than day one. Having day one relatively easy is okay *if* the difficulty increases. But right now there is never *any* danger."*** | Correct by construction, and measurable: day 2 is day 1 plus one event, and **nothing lethal exists before day 8** |
-| 6 | ***"I want one event *per* block. The dog walker decision should happen meaningfully — I want to have to make that decision at least twice on day one. Also the same with a restaurant — I never saw one."*** | A stated density target, and it is **~4× the current plan and more than the catalogue can currently spend** |
+| 6 | ***"I want one event *per* block. The dog walker decision should happen meaningfully — I want to have to make that decision at least twice on day one. Also the same with a restaurant — I never saw one."*** *(and, asked about repetition: "it's fine if the same event happens multiple times")* | A stated density target: **~4× the current plan**, blocked by the per-type caps rather than by the budget |
 
 Findings 3 and 5 are the same complaint arriving from two directions, and 5 is the emphasised
 one: the mark over her head means nothing partly because there is nothing for it to mean yet.
@@ -302,17 +302,32 @@ this is the case it was written about. The day-1 recurring pool and its `max_per
 
 **Sum of `max_per_day` = 18.** That is a hard ceiling on how many events day 1 can contain no
 matter what `budget_for()` returns — and 18 is a third of 49. Raising the budget to 100 places
-the same 18 events. So the change is three things and the first two are not optional:
+the same 18 events.
 
-1. **`max_per_day` across the day-1 pool**, several times over.
-2. **More entries in the day-1 pool.** 49 events drawn from six kinds is eight of each, which
-   is wallpaper rather than density. This is the argument for new catalogue rows that has been
-   missing: the game does not need more *event types* for variety's sake, it needs them because
-   the target density cannot be reached with variety otherwise.
-3. **`budget_for()`**, measured against what a day actually *places* over several seeds, per
+**Repeats are explicitly fine.** Asked directly, the player's answer was *"it's fine if the same
+event (e.g. dogwalker) happens multiple times"* — so eight dog walkers in a day is not a problem
+to design around, and **new catalogue rows are not a prerequisite for the density.** That
+settles what would otherwise have been the expensive half of this milestone. It leaves two
+things to change and one to watch:
+
+1. **`max_per_day` across the day-1 pool**, several times over. This is the binding constraint
+   and it is the first thing to move.
+2. **`budget_for()`**, measured against what a day actually *places* over several seeds, per
    the recipe — roughly 70–100 for day 1 depending on the cost mix, against 18 today. Do not
    derive it; the attrition from `_ensure_one_usable_park` and
    `_ensure_the_city_is_still_walkable` is about a third and is what makes derivation wrong.
+3. **Watch the clustering, because `max_per_day` was quietly doing that job too.**
+   `_place_one()` picks a uniformly random tile of an allowed type and there is **no minimum
+   separation between events anywhere in the scheduler** — the cap of 3 is the only reason two
+   dog walkers have never landed on the same stretch of pavement. At four times the density
+   that becomes likely rather than possible, and two of the same thing thirty pixels apart
+   reads as a bug even when repetition itself is fine. If it shows up in a probe, the fix is a
+   spacing rule at placement, not a cap on the type: the player's objection was never to
+   seeing a dog walker twice, it is to the *decision* not arriving.
+
+New event types remain worth having on their own merits — the vocabulary of act I is thin, and
+finding 5 wants something in it that is actually dangerous — but that is a separate argument
+from this one, and it no longer blocks the density.
 
 ### Why she never saw a café, and it is the same arithmetic
 
@@ -378,7 +393,8 @@ Nothing is reordered here — that is a decision for whoever picks it up — but
   is never any danger"* is a statement about acts I and II, which is where a new player spends
   half the run. It is closest to **M25** (patrols, and running that matters), which was already
   the milestone written to make a threat that follows rather than a place that hurts.
-- **Finding 6 is the next session's work and it is a milestone-sized change.** Caps, catalogue
-  rows and budget together, measured with a probe rather than derived — and the three checks
-  above are how it stays legal. It is the density half of finding 5; the danger half (nothing
+- **Finding 6 is the next session's work.** Caps and budget together, measured with a probe
+  rather than derived — and the three checks above are how it stays legal. Repeats being
+  acceptable makes it a smaller change than it first looked: no new catalogue rows are required
+  to reach the target. It is the density half of finding 5; the danger half (nothing
   lethal before day 8) is separate and is not fixed by placing more café tables.

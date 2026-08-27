@@ -29,9 +29,10 @@ same park being usable on day 1 and day 2 (M24), **"day two doesn't feel more di
 day one… there is never *any* danger"** — which the catalogue confirms: day 2 places about one
 more event than day 1, and every `hard_fail` event starts on day 8 or later — and a stated
 density target: **one event per block**, with the dog-walker decision forced at least twice on
-day 1 and a café that can actually be found. That last one is ~4× today's plan and **more than
-the catalogue can currently spend**: the day-1 pool's `max_per_day` values sum to 18, so no
-budget alone reaches 49. **Read it before picking up anything below**; it reorders what follows.
+day 1 and a café that can actually be found. That last one is ~4× today's plan and is blocked
+by the **per-type caps, not the budget**: the day-1 pool's `max_per_day` values sum to 18, so no
+budget alone reaches 49. Repeats are fine — *"it's fine if the same event happens multiple
+times"* — so it is caps and budget, and no new catalogue rows are required to get there. **Read it before picking up anything below**; it reorders what follows.
 
 **Playtest 04 set the order that stands now.** M27 and M22 are done. **M21 is next**
 (four-block calm zones), then M17 behind it. M20 is **absorbed into M27**: cars follow and queue
