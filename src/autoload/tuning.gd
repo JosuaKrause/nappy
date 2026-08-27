@@ -330,11 +330,44 @@ const CAR_HEADWAY_TIME := 0.85
 const CAR_GAP_MIN := 66.0
 
 ## Deceleration when a car gives way at a crossing, and how far ahead it looks for one. The
-## relationship that matters is `CAR_ZEBRA_SIGHT > CAR_SPEED.y^2 / (2 * CAR_BRAKE)`: a car
-## always has room to stop for a zebra it can see, so giving way is never a screech.
+## relationship that matters is `CAR_ZEBRA_SIGHT > braking_distance(CAR_SPEED.y) +
+## CAR_STOP_LINE_SETBACK`: a car always has room to stop **at the line** for a zebra it can see,
+## so giving way is never a screech.
 const CAR_BRAKE := 320.0
 const CAR_ACCELERATE := 150.0
 const CAR_ZEBRA_SIGHT := 200.0
+## How far before the paint a car giving way comes to rest, measured to the car's centre. Its
+## nose is `CAR_STRIKE_HALF_LENGTH` in front of that, so it stops a few pixels short of the
+## zebra rather than over it.
+##
+## Playtest 05, finding 1: *"the cars stop at weird positions for the zebra crossing. Sometimes
+## half a block away, sometimes **on** the crosswalk."* Both are the same missing thing. Until
+## M29 a car braked toward **zero speed** from wherever it happened to notice, so where it ended
+## up was wherever the braking curve ran out — and `CAR_ZEBRA_SIGHT` is nearly four times the
+## distance it needs, so that was usually most of a block short. Nothing said *do not stop on the
+## paint* either. Giving way is now aimed at a place, and the place is this one.
+##
+## Why it matters more than it sounds: the painted carriageway is one of the two things standing
+## in for a telegraph in the traffic fairness contract. A car halted on the zebra is scenery by
+## `CAR_STRIKE_MIN_SPEED` and cannot hurt anybody — but it is *unreadable* scenery sitting on the
+## one place the game has told the player is the safe way across.
+const CAR_STOP_LINE_SETBACK := 34.0
+## The deceleration a car *aims* at when it eases up to a stop line, as opposed to `CAR_BRAKE`,
+## which is the hardest it can push. Giving way has to be **visible from the kerb** — that is why
+## the looking starts at `CAR_ZEBRA_SIGHT` and not at the line, and that reason survives M29 — so
+## the approach is shaped by a gentle rate and only the emergency uses the hard one.
+##
+## The relationship, and the one `tests/test_crowd.gd` states:
+## `sqrt(2 · CAR_ZEBRA_APPROACH_BRAKE · CAR_ZEBRA_SIGHT) >= CAR_SPEED.y` — the fastest car in the
+## city begins easing at the moment the zebra comes into sight, rather than holding speed and
+## then grabbing the brake at the last legal instant.
+##
+## Getting this wrong in the obvious way is instructive: shaping the approach with `CAR_BRAKE`
+## itself makes the onset of braking and the commit point the *same* moment, so a car glides up
+## to the line at full speed, decides it can no longer stop, and drives through. Every car in the
+## first M29 build did exactly that, and the test that caught it is the one that says where a
+## car stops rather than whether.
+const CAR_ZEBRA_APPROACH_BRAKE := 90.0
 ## How close to the crossing the player has to be for the traffic to yield. Roughly "standing
 ## at the kerb waiting", which is the gesture the crossing is for.
 const CAR_ZEBRA_WAIT_RADIUS := 56.0

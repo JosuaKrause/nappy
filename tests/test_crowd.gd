@@ -31,6 +31,7 @@ func run(t) -> void:
 	_test_the_arterial_is_the_busiest_street(t)
 	_test_the_traffic_contract_is_fair(t)
 	_test_a_car_can_always_stop_for_a_zebra_it_can_see(t)
+	_test_every_car_drives_on_its_own_right(t)
 	_test_the_strike_box_never_crosses_the_kerb(t)
 	_test_a_bump_costs_and_one_of_them_is_survivable(t)
 	_test_walking_into_somebody_displaces_and_startles_them(t)
@@ -225,12 +226,79 @@ func _test_the_traffic_contract_is_fair(t) -> void:
 ## the crossing rather than at it. Stated as a relationship so a faster car or a softer brake
 ## cannot quietly turn a courtesy into a screech.
 func _test_a_car_can_always_stop_for_a_zebra_it_can_see(t) -> void:
-	var worst := Tuning.braking_distance(Tuning.CAR_SPEED.y)
+	# Since M29 the target is the stop line, not the paint, so the setback is part of the room
+	# a car needs. Without it the guarantee is about a place no car is aiming for any more.
+	var worst := Tuning.braking_distance(Tuning.CAR_SPEED.y) + Tuning.CAR_STOP_LINE_SETBACK
 	t.check(Tuning.CAR_ZEBRA_SIGHT > worst,
-			"a car sees a zebra %.0fpx out and needs %.0fpx to stop"
+			"a car sees a zebra %.0fpx out and needs %.0fpx to stop at the line"
 			% [Tuning.CAR_ZEBRA_SIGHT, worst])
 	t.check(Tuning.CAR_ZEBRA_SIGHT > worst * 2.0,
 			"and with enough room left over that the slowing reads as giving way")
+	# The car's nose ends up short of the paint rather than over it, which is the half of
+	# finding 1 that made the zebra unreadable.
+	t.check(Tuning.CAR_STOP_LINE_SETBACK > Tuning.CAR_STRIKE_HALF_LENGTH,
+			"a car giving way stops with its nose %.0fpx clear of the zebra"
+			% (Tuning.CAR_STOP_LINE_SETBACK - Tuning.CAR_STRIKE_HALF_LENGTH))
+	# The approach has to *start* in sight of the kerb, or giving way is invisible until it has
+	# already happened. Shaped by the gentle rate, not by `CAR_BRAKE` — with the hard rate the
+	# onset of braking and the commit point are the same instant and no car ever stops.
+	var eases_from := sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * Tuning.CAR_ZEBRA_SIGHT)
+	t.check(eases_from >= Tuning.CAR_SPEED.y,
+			"the fastest car eases off as the zebra comes into sight (%.0f against %.0f)"
+			% [eases_from, Tuning.CAR_SPEED.y])
+	t.check(Tuning.CAR_ZEBRA_APPROACH_BRAKE < Tuning.CAR_BRAKE,
+			"and the approach is gentler than the brake it keeps in reserve")
+
+## Playtest 05, finding 2: *"the cars are not consistently driving on the right side."* True, and
+## derivable — the convention was stated over the lane *offset*, and the side of the road that
+## offset lands on flips with the axis. Nothing in the suite could see it: separation, headway,
+## capacity and noise are all true whichever side anybody drives on.
+##
+## So this is the test nobody wrote. For both axes and both directions, the lane a car is in
+## has to be on that car's own right.
+func _test_every_car_drives_on_its_own_right(t) -> void:
+	for vertical in [true, false]:
+		for direction in [1.0, -1.0]:
+			var lane := CrowdLanes.road_lane(vertical, direction)
+			t.check(CrowdLanes.road_direction(vertical, lane) == direction,
+					"lane and direction are inverses (%s, %.0f)"
+					% ["vertical" if vertical else "horizontal", direction])
+
+			# Which way the car points, in screen coordinates, where Y is down.
+			var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
+			# A driver's right, from that heading. Facing east (1,0) it is south (0,1).
+			var right := Vector2(-heading.y, heading.x)
+			# Which way the lane lies from the middle of the carriageway. A larger offset is a
+			# larger cross-axis coordinate: further east on a vertical street, further south on
+			# a horizontal one.
+			var middle := (CrowdLanes.ROAD_OFFSETS[0] + CrowdLanes.ROAD_OFFSETS[1]) * 0.5
+			var cross_axis := Vector2(1.0, 0.0) if vertical else Vector2(0.0, 1.0)
+			var lane_lies := cross_axis * signf(float(lane) - middle)
+			t.check(lane_lies == right,
+					"a %s car heading %.0f drives in the lane on its right"
+					% ["vertical" if vertical else "horizontal", direction])
+
+	# And the real crowd agrees with the rule, rather than the rule being true on its own.
+	_city.crowd.start_day(1, _rng(1))
+	var checked := 0
+	for agent in _city.crowd.agents():
+		if agent.kind != CrowdAgent.Kind.CAR:
+			continue
+		checked += 1
+		var heading := agent.heading()
+		var right := Vector2(-heading.y, heading.x)
+		var vertical := absf(heading.y) > absf(heading.x)
+		var cross := agent.global_position.x if vertical else agent.global_position.y
+		# The middle of the carriageway is the seam between the two road lanes, half a tile
+		# past the centre of the lower one.
+		var corridor := CrowdLanes.corridor_at(cross)
+		var middle := CrowdLanes.lane_centre(corridor, CrowdLanes.ROAD_OFFSETS[0]) \
+				+ Tuning.TILE_SIZE * 0.5
+		var cross_axis := Vector2(1.0, 0.0) if vertical else Vector2(0.0, 1.0)
+		t.check(corridor >= 0 and cross_axis.dot(right) * (cross - middle) > 0.0,
+				"a live car at %s is on the right of its own carriageway"
+				% agent.global_position)
+	t.check(checked > 0, "and the day actually had cars on it")
 
 ## The one geometric mistake that would make the lethal car unfair: a box wide enough to
 ## reach over the kerb kills people who never stepped off it, and from the outside that is
@@ -351,13 +419,24 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		if crossing == Vector2.INF:
 			continue
 		tested += 1
+		# The crowd is a field around the player, and this rig has no player: without moving the
+		# focus onto the car it is outside the box, recycles on the first frame, and every
+		# measurement afterwards is of a different stretch of road. Two of the three cars this
+		# test picks were doing exactly that, silently, since M27.
+		_city.crowd.set_focus(agent.global_position)
 		var cruising := agent.speed()
 		agent.pedestrian_ahead = crossing
 		_step(agent, 4.0)
 		t.check(agent.speed() < 1.0,
 				"a car doing %.0f stops for somebody waiting at the zebra ahead" % cruising)
-		t.check(agent.global_position.distance_to(crossing) > 1.0,
-				"and stops short of the crossing rather than on it")
+		# Playtest 05, finding 1: *where* it stops is the complaint, not whether. Aiming at zero
+		# speed instead of at a place put it most of a block short — `CAR_ZEBRA_SIGHT` is nearly
+		# four times the distance a car needs — or, if it noticed late, on the paint.
+		var gap := _distance_along(agent, crossing)
+		t.check(gap > 0.0, "and stops short of the crossing rather than on it (%.0fpx)" % gap)
+		t.check(gap < Tuning.CAR_STOP_LINE_SETBACK + Tuning.TILE_SIZE,
+				"and stops *at* the line rather than wherever the braking ran out (%.0fpx)"
+				% gap)
 
 		agent.pedestrian_ahead = Vector2.INF
 		_step(agent, 3.0)
@@ -515,15 +594,26 @@ func _step(agent: CrowdAgent, seconds: float) -> void:
 		agent._process(STEP)
 
 ## The first zebra far enough ahead of a car that it has room to stop for it. Anything closer
-## than the braking distance it legitimately cannot stop for, and the horn is the contract
-## there rather than the brake.
+## than the braking distance it legitimately cannot stop for — since M29 it *commits* and clears
+## the crossing instead — and the horn is the contract there rather than the brake.
+##
+## The floor is written out of the constants rather than as a tile count, because it moved when
+## the stop line arrived: a car now needs its braking distance **plus the setback**, and a
+## hard-coded "three tiles" was silently a tile short of that.
 func _crossing_ahead_of(agent: CrowdAgent) -> Vector2:
 	var forward := agent.heading()
-	for step in range(3, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
+	var floor_px := Tuning.braking_distance(Tuning.CAR_SPEED.y) + Tuning.CAR_STOP_LINE_SETBACK
+	var first := ceili((floor_px + Tuning.TILE_SIZE) / float(Tuning.TILE_SIZE))
+	for step in range(first, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
 		var at := agent.global_position + forward * float(step * Tuning.TILE_SIZE)
 		if _city.map.tile_type_at_world(at) == GameEnums.TileType.CROSSING:
 			return at
 	return Vector2.INF
+
+## How far a point is in front of an agent, along the street it is on. Negative once the agent
+## has gone past it.
+func _distance_along(agent: CrowdAgent, point: Vector2) -> float:
+	return agent.heading().dot(point - agent.global_position)
 
 ## A grid where every street is equally loud is a grid with nothing to choose between. The
 ## arterial has to be the loud one, and it has to be the *same* one every morning.

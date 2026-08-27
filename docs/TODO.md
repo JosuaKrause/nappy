@@ -35,9 +35,10 @@ the binding constraint was the **per-type caps, not the budget**. The other five
 **Read it before picking up anything below**; it reorders what follows.
 
 **Playtest 04 set the order that stands now.** M27 and M22 are done. **M21 is next**
-(four-block calm zones), then M17 behind it. M20 is **absorbed into M27**: cars follow and queue
-now, and what is left of it — eight-way driving, overtaking, a crash as a catalogue event — is
-unasked-for and no longer urgent.
+(four-block calm zones). M20 is **absorbed into M27**: cars follow and queue now, and what is
+left of it — eight-way driving, overtaking, a crash as a catalogue event — is unasked-for and no
+longer urgent. **M17, the route map, is backlogged by decision** — *"let's not do that for now,
+we might revisit later"* — so it is no longer the thing behind M21.
 
 **What M27 leaves open.** Nobody has played it. The densities in `docs/PLAYTEST-04.md` came off
 a probe, and *"the arterial is for crossing"* is still a claim about a player rather than about
@@ -290,7 +291,13 @@ sequencing. Summary only here:
       sealed at both mouths so a shut street is readable from the junction; the invariant
       checked by unit-capacity max flow on the junction graph before each closure is
       accepted. Canal dropped to M21
-- [ ] **M17 Route map** — the planning screen, rendering M15's block states
+- [~] **M17 Route map** — the planning screen, rendering M15's block states. **Backlogged, by
+      decision, at the end of the M29 session**: *"in case you have it still in your notes about
+      showing a brief map at the start let's not do that for now — we might revisit later but
+      for now let's put it in the backlog."* Nothing about the analysis below is withdrawn and
+      the gap it closes is real — a player two junctions away still cannot know a street is
+      shut, and `docs/CITY.md` states that as a gap rather than papering over it. It is simply
+      not what the game needs next. M21 and the playtest-05 findings come first
 
 ## M18–M26 — Playtest 02
 
@@ -441,10 +448,23 @@ See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
       two), and **nothing else happens inside a lethal event's field**, which is playtest 05's
       "the contract composes badly when fields overlap" turned into something enforceable.
       It also caught a test that had been asserting more than the design promised since M15
-- [ ] **Findings 1 and 2 — the traffic** — cars stop at arbitrary points for a zebra, and the
-      two axes drive on opposite sides of the road. Both `src/crowd/`, both cheap, neither
-      touches the meter. Finding 2 undermines every later judgement about traffic: a player who
-      cannot predict which side a car comes from cannot learn a street
+- [x] **M29 Which side of the road** — findings 1 and 2, taken together because they are both
+      `src/crowd/` and neither touches the meter. **Finding 2 was exactly as derived**: the
+      driving convention was stated over the lane *offset*, and the side of the road that lands
+      on flips with the axis, so the city drove on the right east-west and on the left
+      north-south. `road_direction()` takes the axis now and has an inverse, `road_lane()`, and
+      the test nobody had written asserts the real rule — for both axes and both directions,
+      the lane a car is in is the one on its own right, checked against every live car in a real
+      day. **Finding 1** is a car giving way *at a place*: it brakes toward a stop line a
+      setback before the paint, on a gentle approach rate that keeps the easing visible from the
+      kerb, and commits to clearing the crossing if it is already too close to stop. Two bugs
+      turned up on the way that no analysis predicted — shaping the approach with `CAR_BRAKE`
+      makes the onset of braking and the commit point the same instant so no car ever stops, and
+      the crossing scan sampled world points every 32px, which aliases exactly when a car is
+      stopped at the line, so it lost sight of the zebra and pulled away with somebody on it.
+      Also fixed a rig bug that had been silently spoiling the give-way test since M27: the
+      crowd is a field around the player and the rig has no player, so two of the three cars it
+      measured were recycled on the first frame
 - [ ] **Finding 3 — the mark over her head** — it fires for things that are neither lethal nor
       attributable to anything she can see, and it is the one cue in the game that says *the
       contract is now about you*. Lands on M22's own work and should be settled before anything
