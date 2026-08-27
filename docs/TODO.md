@@ -465,10 +465,18 @@ See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
       Also fixed a rig bug that had been silently spoiling the give-way test since M27: the
       crowd is a field around the player and the rig has no player, so two of the three cars it
       measured were recycled on the first frame
-- [ ] **Finding 3 — the mark over her head** — it fires for things that are neither lethal nor
-      attributable to anything she can see, and it is the one cue in the game that says *the
-      contract is now about you*. Lands on M22's own work and should be settled before anything
-      is added to the vocabulary
+- [x] **M30 The mark means one thing** — finding 3, settled the way the write-up said it had to
+      be settled: as a **design decision**, not a threshold. The mark means *this will end your
+      day*, so only a `hard_fail` event and a closing car raise it; everything else is left to
+      the meter, which already says it continuously and proportionally. And the traffic carries
+      its own cue at last — a car sounding its horn draws the same doubled lethal caret a
+      `hard_fail` event does, breathing with the horn's decay, because the vocabulary's first
+      row is *the entity itself carries most of it* and a car was carrying nothing. The accepted
+      cost is stated rather than hidden: acts I and II have nothing lethal in them, so the mark
+      is nearly silent before day 8 — which is the cue being honest about finding 5 rather than
+      covering for it. The thing nobody had noticed: the caret was a **private method on
+      `EventInstance`**, so "the entity carries its own cue" silently meant "the *event* entity
+      does", and the one lethal thing outside the catalogue fell off that edge
 - [ ] **Finding 4 — the same park twice** — this is **M24**, and the player asking for it is
       what moves it
 - [ ] **Finding 5 — nothing is dangerous before day 8** — the emphasised one, and true by

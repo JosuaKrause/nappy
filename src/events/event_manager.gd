@@ -223,29 +223,37 @@ var _announced_city_wide := ""
 
 ## Raises the exclamation mark when the ground she is standing on is the problem.
 ##
-## Two cases, and the distinction is the whole vocabulary. A telegraph whose radius **already
-## covers her** is `SOON`: the thing has not happened yet and walking out is the answer, which
-## is exactly what the fairness contract promises her time to do. Something lethal that is
-## **live and she is inside its reach** is `NOW`: there is one step left between her and the end
-## of the day.
+## **The mark means: this will end your day.** Two levels, and nothing else raises either.
+## `SOON` is a lethal event still telegraphing whose radius already covers her — the thing has
+## not happened yet and walking out is the answer, which is exactly what the fairness contract
+## promises her time to do. `NOW` is one of them live with her inside its reach: one step left
+## between her and the end of the day.
 ##
-## What is deliberately not warned about: a loud event she is merely near. The meter says that,
-## it says it continuously and proportionally, and a mark that fires for ordinary noise is a
-## mark nobody reads by day three.
+## *(M30, playtest 05 finding 3.)* It used to be raised for **any** telegraphing event whose
+## radius reached her, and the player's verdict was *"it doesn't actually have an effect on
+## gameplay — I can just keep doing what I was doing."* That reading was correct for fifteen of
+## the eighteen rows in the catalogue: for anything that is not a `hard_fail` the mark meant *a
+## number is about to move faster*, which the meter already says continuously and
+## proportionally. The caret over an entity got this right first time and the rule is the same
+## one — **a cue that marks everything says nothing** — except that this is the one cue in the
+## game that cannot afford it, because it is the only one that gives an *instruction*.
+##
+## The cost of the narrowing is real and is the right cost: in acts I and II the catalogue has
+## no lethal events at all, so the mark almost never appears before day 8. That is not the cue
+## being broken, it is the cue being honest about a game where nothing is dangerous yet — which
+## is finding 5, and a different milestone.
 func _warn_about_the_ground_she_is_on() -> void:
 	var here := _player.global_position
 	var body := _player as Stroller
 	if not body:
 		return
 	for instance in _instances:
-		if instance.is_finished or instance.def.city_wide:
+		if instance.is_finished or instance.def.city_wide or not instance.def.hard_fail:
 			continue
-		var distance := instance.global_position.distance_to(here)
-		if instance.def.hard_fail and not instance.is_telegraphing():
-			if distance <= instance.def.outer_radius:
-				body.warn(Stroller.Alert.NOW, WARNING_HOLD)
-		elif instance.is_telegraphing() and distance <= instance.def.outer_radius:
-			body.warn(Stroller.Alert.SOON, WARNING_HOLD)
+		if instance.global_position.distance_to(here) > instance.def.outer_radius:
+			continue
+		body.warn(Stroller.Alert.SOON if instance.is_telegraphing() else Stroller.Alert.NOW,
+				WARNING_HOLD)
 
 ## How long a raised warning stays up. A shade longer than a physics frame, so the mark does not
 ## strobe on the boundary of a radius she is walking along.

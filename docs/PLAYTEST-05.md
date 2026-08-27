@@ -131,6 +131,21 @@ they assume somebody may be coming the other way in any lane.)*
 
 ## Finding 3 — a mark over her head that points at nothing and costs nothing
 
+> **Done — M30, and the design question below was answered "this will end your day".** The mark
+> is raised only by a `hard_fail` event and by a car closing on her; everything else is left to
+> the meter, which already says it continuously and proportionally. And the traffic pays for its
+> own warning now: a car sounding its horn draws the same doubled lethal caret a `hard_fail`
+> event does, breathing with the horn's decay. The shape moved to `Sprites.draw_caret()`.
+>
+> The accepted cost is stated rather than hidden: acts I and II contain nothing lethal, so the
+> mark is nearly silent before day 8. That is the cue being honest about finding 5 rather than
+> covering for it.
+>
+> One thing the analysis missed and the fix exposed: the caret was a **private method on
+> `EventInstance`**, so "the entity carries its own cue" silently meant "the *event* entity
+> does". A vocabulary written as one class's private method has an invisible edge, and the one
+> lethal thing that is not in the catalogue fell off it.
+
 > Sometimes I get yellow exclamation marks on top of my head without any indication where
 > from — remember the main indicator should be the entity itself — and it doesn't actually
 > have an effect on gameplay, I can just keep doing what I was doing.

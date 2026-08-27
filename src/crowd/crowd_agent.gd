@@ -43,6 +43,11 @@ const CLOSURE_LOOKAHEAD := 26.0
 ## How far down a street an agent checks before turning into it. A whole tile past the
 ## junction, so it does not turn out of one closed street straight into another.
 const DIVERT_PROBE := 40.0
+## Where the horn's caret sits over a car, and how big it is. Matched to `EventInstance`'s so
+## the two carets are the same cue rather than two similar ones, but lower, because a car is
+## 26px of sprite against a standing figure's 46.
+const HORN_MARK_HEIGHT := 30.0
+const HORN_MARK_WIDTH := 15.0
 
 var kind := Kind.WALKER
 var colour := Color.WHITE
@@ -85,6 +90,8 @@ var _lane_centre := 0.0
 var _junction := -1
 ## The frame and flip currently drawn, so a redraw only happens when they change.
 var _picture := Vector2i(-1, -1)
+## Whether the horn caret was up last frame, so it gets one redraw to come off with.
+var _was_horning := false
 
 ## The speed this agent wants to be doing. A car brakes toward 0 for a crossing somebody is
 ## waiting at and accelerates back to `_cruise` afterwards; walkers never use it.
@@ -136,6 +143,11 @@ func _process(delta: float) -> void:
 	var picture := Vector2i(_frame(), 1 if _flipped() else 0)
 	if picture != _picture:
 		_picture = picture
+		queue_redraw()
+	# A car sounding its horn draws a caret that breathes, and breathing is per-frame by
+	# definition. The one frame after it stops is what takes the caret off again.
+	elif kind == Kind.CAR and (_jolt > 0.0 or _was_horning):
+		_was_horning = _jolt > 0.0
 		queue_redraw()
 
 ## Excitement per second this agent contributes at a point. Same falloff as an event, so
@@ -506,10 +518,35 @@ func _draw() -> void:
 		Sprites.draw_shadow(self, Vector2.ZERO, 18.0)
 		Sprites.draw_standing(self, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
 		Sprites.draw_standing(self, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
+		_draw_horn_mark()
 		return
 	Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
 	Sprites.draw_standing(self, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
 	Sprites.draw_standing(self, WALKER_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
+
+## The doubled lethal caret over a car that is sounding its horn. *(M30, playtest 05 finding 3.)*
+##
+## The vocabulary's first row is *the entity itself carries most of it*, and until M30 the
+## traffic was the one place nothing did: the caret is drawn by `EventInstance` and a car is not
+## an event, so a lethal thing bearing down on the player produced a mark over **her** head and
+## nothing anywhere else. That is the load-bearing cue paying for a warning it should only be
+## adding to, and the horn that was supposed to carry it is silent in a game with no audio —
+## which is *"audio is never the only channel"* failing in the one place the traffic fairness
+## contract depends on it.
+##
+## Doubled and in `MARK_LETHAL`, exactly as a `hard_fail` event's caret is, because a car is
+## exactly as lethal and being told apart by hue is what the doubling exists to avoid. It
+## **breathes** with the horn's own decay, which is the one thing the deleted rings did that a
+## discrete symbol does not get for free.
+func _draw_horn_mark() -> void:
+	if _jolt <= 0.0:
+		return
+	var swell := _jolt / _jolt_for
+	var scale := 0.55 + 0.45 * swell
+	var at := Vector2(0.0, -(HORN_MARK_HEIGHT + 10.0 * swell))
+	Sprites.draw_caret(self, at, HORN_MARK_WIDTH * scale, Palette.MARK_LETHAL)
+	Sprites.draw_caret(self, at - Vector2(0.0, HORN_MARK_WIDTH * scale * 0.85),
+			HORN_MARK_WIDTH * scale, Palette.MARK_LETHAL)
 
 ## The coat, or the paintwork. Authored near-white and multiplied, the same trick the
 ## buildings use, so a crowd is not one silhouette in one colour ninety times over.

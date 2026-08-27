@@ -17,6 +17,8 @@ func run(t) -> void:
 	_test_the_dangerous_things_do(t)
 	_test_the_mark_still_breathes(t)
 	_test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
+	_test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
+	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
 	_test_only_what_she_cannot_outwalk_earns_an_arrow(t)
 
 const STEP := 1.0 / 60.0
@@ -163,6 +165,77 @@ func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t) -> void:
 			"and a quieter one can be raised once the loud one has gone")
 	rig.free()
 
+## **The mark over her head means: this will end your day.** *(M30, playtest 05 finding 3.)*
+##
+## It used to be raised for any telegraphing event whose radius reached her, and the player's
+## verdict was *"it doesn't actually have an effect on gameplay — I can just keep doing what I
+## was doing."* That was accurate for fifteen of the eighteen rows: for anything that is not a
+## `hard_fail`, the mark meant *a number is about to move faster*, which the meter already says
+## continuously and proportionally. This is the same rule the caret over an entity got right
+## first time — a cue that marks everything says nothing — applied to the one cue that gives an
+## instruction rather than information.
+##
+## Run through `EventManager` rather than through `Stroller.warn()`, because the thing that was
+## wrong was *which events call it*, and no test in this suite could see that.
+func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
+	var manager := EventManager.new()
+	t.add_child(manager)
+	var rig := _rig(t)
+	rig.add_to_group("player")
+	rig.global_position = Vector2(1000.0, 1000.0)
+
+	# An ordinary telegraphing event, right on top of her. It costs her the meter and says so
+	# through the meter; it is not an instruction.
+	var ordinary := _instance(EventCatalogue.by_id("dog_walker"))
+	ordinary.global_position = rig.global_position
+	manager.add_child(ordinary)
+	manager._instances.append(ordinary)
+	_warn_through(manager)
+	t.check(rig.alert_level() == Stroller.Alert.NONE,
+			"a dog walker whose radius covers her raises nothing over her head")
+
+	# A lethal one, still telegraphing: the contract is now about her and the clock has started.
+	var lethal := _instance(EventCatalogue.by_id("abduction"))
+	lethal.global_position = rig.global_position
+	manager.add_child(lethal)
+	manager._instances.append(lethal)
+	_warn_through(manager)
+	t.check(rig.alert_level() == Stroller.Alert.SOON,
+			"an unmarked van telegraphing over her is the flashing mark")
+
+	# And once it is live, the second level: one step left.
+	_advance(lethal, lethal.def.telegraph_time + 0.2)
+	_warn_through(manager)
+	t.check(rig.alert_level() == Stroller.Alert.NOW,
+			"and the same van live around her is the doubled one")
+
+	# Far enough away and it is somebody else's problem again.
+	rig.global_position = lethal.global_position + Vector2(lethal.def.outer_radius + 50.0, 0.0)
+	rig._physics_process(1.0)
+	_warn_through(manager)
+	t.check(rig.alert_level() == Stroller.Alert.NONE,
+			"outside its outer radius there is nothing over her head")
+
+	rig.free()
+	manager.free()
+
+## The traffic half of the same finding, and the one the vocabulary's first row was not paying
+## for: *the entity itself carries most of it* — except a car, which carried nothing at all,
+## because the caret is drawn by `EventInstance` and a car is not an event. A lethal thing bore
+## down on the player and produced a mark over **her** head and nothing anywhere else.
+func _test_a_car_sounding_its_horn_carries_its_own_mark(t) -> void:
+	var methods: Array[String] = []
+	for entry in (load("res://src/crowd/crowd_agent.gd") as GDScript).get_script_method_list():
+		methods.append(String(entry["name"]))
+	t.check("_draw_horn_mark" in methods, "a car draws a mark of its own")
+	# The caret is one shape in one place, not two similar ones: a short vocabulary stays short
+	# only if nobody hand-draws a second chevron.
+	var shared: Array[String] = []
+	for entry in (load("res://src/sprites.gd") as GDScript).get_script_method_list():
+		shared.append(String(entry["name"]))
+	t.check("draw_caret" in shared,
+			"and it is the same caret the events draw, from one place")
+
 # ------------------------------------------------------------- the screen edge ---
 
 ## The gap the ring never covered and could not: `fire_truck` does 190px/s with a 340px radius,
@@ -201,6 +274,17 @@ func _instance(def: EventDef) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	return instance
+
+## Runs the one thing under test, rather than a whole `_physics_process`. A bare `EventManager`
+## has no `EventDirector` — that is built when a day starts — and stepping the whole frame
+## raises a script error inside `_place_what_is_owed_ahead` before ever reaching the mark.
+##
+## Worth the note: the error did not fail the suite. GDScript aborts the erroring *function* and
+## carries on in the caller, so the assertions afterwards ran, passed, and the only sign was
+## four stack traces in the middle of a green run.
+func _warn_through(manager: EventManager) -> void:
+	manager._find_player()
+	manager._warn_about_the_ground_she_is_on()
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
