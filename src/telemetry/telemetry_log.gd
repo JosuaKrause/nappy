@@ -75,3 +75,9 @@ static func compass(direction: Vector2) -> String:
 
 static func purpose(which: GameEnums.BlockPurpose) -> String:
 	return GameEnums.BlockPurpose.keys()[which].to_lower()
+
+## The ground somebody is standing on. Where she chose to stop is most of what a stand means:
+## a kerb is somebody waiting for a gap in the traffic, a pavement in the middle of a block is
+## somebody waiting for a meter.
+static func tile_type(which: GameEnums.TileType) -> String:
+	return GameEnums.TileType.keys()[which].to_lower()

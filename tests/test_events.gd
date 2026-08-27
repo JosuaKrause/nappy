@@ -22,6 +22,8 @@ func run(t) -> void:
 	_test_fire_truck_is_a_day_three_one_shot(t)
 	_test_along_street_paths_stay_in_bounds(t)
 	_test_nothing_is_cheaper_to_walk_through_than_around(t)
+	_test_running_is_the_answer_to_exactly_one_kind_of_thing(t)
+	_test_nothing_chases_her_before_the_run_is_taught(t)
 	_test_the_pavement_can_be_blocked_from_day_one(t)
 	_test_a_day_has_enough_in_it_to_meet(t)
 	_test_danger_arrives_before_act_three(t)
@@ -175,7 +177,7 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 		EventScheduler.Planned.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
 		EventScheduler.Planned.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
 	]
-	director.start_day(plans, rng)
+	director.start_day(1, plans, rng)
 	t.check(director.owed() == 2, "the day's budget is what the director gets to spend")
 
 	# Somewhere on a street, walking north. `arterial_pavement` is a pavement lane by
@@ -432,8 +434,14 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 ## Events that are deliberately scenery: they are there so the street *looks* different, not
 ## so it costs something. Everything else has to cost something to walk through — an obstacle
 ## that is cheaper to walk into than to walk around is a bribe, and the player learns to take
-## it. Naming the three explicitly is the point: a fourth one has to be a decision.
-const _SCENERY := ["poster_crew", "barricade", "burnt_shell"]
+## it. Naming them explicitly is the point: one more has to be a decision.
+##
+## **Down to one row in playtest 07.** `falloff`'s new shoulder lifted `poster_crew` to +0.7 and
+## `barricade` to +3.0, so neither needs the exemption any more — both are still nearly free to
+## walk through, which is all the design ever asked of them. A burnt-out shell is the last row
+## that is genuinely cheaper to walk through than around, and it is a reminder rather than an
+## obstacle. (`loudspeaker` is `city_wide` and has no line to walk through at all.)
+const _SCENERY := ["burnt_shell"]
 
 ## Net excitement from walking straight through the centre of an event at walking pace, in
 ## points of a hundred-point meter: the falloff integrated along the line, minus the walking
@@ -448,6 +456,76 @@ func _cost_to_walk_through(def: EventDef) -> float:
 		var d := absf(-def.outer_radius + span * (i + 0.5) / steps)
 		total += Tuning.falloff(d, def.intensity, def.inner_radius, def.outer_radius)
 	return (total / steps - Tuning.EXCITEMENT_DECAY_WALKING) * seconds
+
+## The same integral at running pace, with the running penalty in place of the walking decay.
+func _cost_to_run_through(def: EventDef) -> float:
+	var span := def.outer_radius * 2.0
+	var seconds := span / Tuning.RUN_SPEED
+	var steps := 2000
+	var total := 0.0
+	for i in steps:
+		var d := absf(-def.outer_radius + span * (i + 0.5) / steps)
+		total += Tuning.falloff(d, def.intensity, def.inner_radius, def.outer_radius)
+	return (total / steps - Tuning.EXCITEMENT_DECAY_RUNNING
+			+ Tuning.EXCITEMENT_FROM_RUNNING) * seconds
+
+## **Running is wrong against everything you route around, and right against the thing that
+## follows.** Two halves of one rule, and playtest 07 is where the second half arrived: *"the run
+## button is a trap shouldn't be an invariant — there should be legitimate cases where running is
+## required."*
+##
+## The first half is the older decision and it still holds for every row but one. An event that
+## merely emits is a *place*; the answer to a place is a route, and `EXCITEMENT_FROM_RUNNING`
+## outweighs the shorter exposure every time, so sprinting through one is strictly worse than
+## walking through it. That had never been asserted — only measured and written into a document —
+## and playtest 07 is what that cost: `falloff`'s new shoulder makes time-in-field matter more, and
+## running quietly became a point or two *cheaper* than walking through the four widest fields in
+## the game. Not "running works" but "running is a coin flip", which was nobody's design.
+##
+## The second half is why an exception has to be a **mechanic** rather than a number. A pursuer
+## cannot be routed around, because it goes where she goes, so the only question it asks is how
+## fast — and the two answers give opposite outcomes rather than the same outcome at two prices.
+## `Tuning.validate_pursuit` is the contract and it runs on load; this is the part of it that is
+## about the *catalogue* rather than about one row.
+func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
+	var pursuers := 0
+	for def in EventCatalogue.all():
+		if def.city_wide:
+			continue   # No line through it, so no crossing to compare.
+		if def.pursues:
+			pursuers += 1
+			# Walking loses ground and running gains it. Everything else about a pursuit follows
+			# from this one line, including why it is the only place running can be correct.
+			t.check(def.pursue_speed > Tuning.WALK_SPEED,
+					"'%s' catches somebody who walks away from it" % def.id)
+			t.check(def.pursue_speed < Tuning.RUN_SPEED,
+					"'%s' does not catch somebody who runs" % def.id)
+			t.check(def.hard_fail,
+					"'%s' has to be lethal, or running from it is just an expensive walk" % def.id)
+			t.check((Tuning.RUN_SPEED - def.pursue_speed) * def.duration >= def.inner_radius,
+					"'%s' can be outrun by more than the radius that ends the day" % def.id)
+			t.check(def.duration <= Tuning.PURSUIT_TIME,
+					"'%s' gives up before the run costs more than the day it saves" % def.id)
+			continue
+		t.check(_cost_to_run_through(def) > _cost_to_walk_through(def),
+				"running through '%s' (%.1f) costs more than walking (%.1f)"
+				% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
+	t.check(pursuers > 0, "and there is something in the game that running is the answer to")
+
+## *(Playtest 07: "on day 3 we introduce the running key (it is possible to run before but not
+## required)" and "so on day 1 we only introduce arrow keys".)*
+##
+## The two halves of that are a gate and a promise, and both are properties of the catalogue
+## rather than of any one day's rolls, so they are checked here rather than left to a playtest.
+func _test_nothing_chases_her_before_the_run_is_taught(t) -> void:
+	for day in range(1, Tuning.RUN_TAUGHT_DAY):
+		for def in EventCatalogue.available_on(day):
+			t.check(not def.pursues,
+					"day %d has nothing that has to be outrun ('%s')" % [day, def.id])
+	var chasers := 0
+	for def in EventCatalogue.available_on(Tuning.RUN_TAUGHT_DAY):
+		chasers += 1 if def.pursues else 0
+	t.check(chasers > 0, "and the day the run is taught has something to teach it with")
 
 ## The measured failure playtest 02 found and M19 fixes: at intensity 7 the dog walker cost
 ## −0.1 points to walk straight through, so the correct play was to plough into it.

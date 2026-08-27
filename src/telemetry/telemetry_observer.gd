@@ -47,6 +47,12 @@ const NEAR_FLOOR := 26.0
 ## Ignore a run shorter than this: it is a fumbled key, not a decision.
 const RUN_MIN_TIME := 0.25
 
+## And how long standing still stops being a pause at a kerb and starts being a plan.
+##
+## Two seconds is roughly what waiting for one car to pass costs, so anything past it was waiting
+## for something slower than the traffic — which since playtest 07 can only be the clock.
+const IDLE_MIN_TIME := 2.0
+
 ## How long on the road stops being a crossing and starts being a walk down it.
 ##
 ## The carriageway is two tiles of a six-tile corridor, so crossing one costs about 0.7s at
@@ -99,6 +105,12 @@ var _running := false
 var _run_started := 0.0
 var _run_excitement := 0.0
 var _run_nearest := ""
+
+# Standing still, and what the meters did while she did.
+var _idling := false
+var _idle_since := 0.0
+var _idle_excitement := 0.0
+var _idle_sleepiness := 0.0
 
 # Encounters: instance id -> the distance at which it was last written down. Ids rather than
 # references, so this can never keep a freed event alive.
@@ -192,6 +204,7 @@ func _process(delta: float) -> void:
 	_watch_the_cues(delta)
 	_watch_the_meters()
 	_watch_running()
+	_watch_idling(delta)
 	_watch_direction(delta)
 	_watch_what_is_near(here)
 	_watch_closures(here)
@@ -344,6 +357,37 @@ func _watch_the_meters() -> void:
 				% [_meters(), _nearest()])
 	else:
 		Telemetry.note("thaw", "settling again | %s" % _meters())
+
+## Standing still, and what it bought. *(Playtest 07, finding 3: "not walking at all shouldn't
+## reduce excitement either — otherwise I can just stop in the middle of the street and wait until
+## everything is good. Is that info captured in the telemetry as well?")*
+##
+## It was not, and that is the whole reason the entry exists. Standing still emits nothing: no
+## crossing, no turn, no contact, no event coming near. So the strongest move in the game showed
+## up in a trace as a **gap between two lines** — a day-2 run in the playtest 07 logs has a
+## seventy-four-second one — and a gap is exactly what a reader skips over. Two runs were being
+## won by waiting and the log said nothing at all.
+##
+## Written when the stand *ends*, like the `cue` spans and for the same reason: the duration is
+## the complaint. It carries what the meters did across it, because that is the question — a stand
+## that clears thirty points of excitement is an exploit and a stand at a kerb waiting for a gap
+## in the traffic is play, and only the numbers on either end tell them apart.
+func _watch_idling(_delta: float) -> void:
+	var idle := _player.is_idle()
+	if idle == _idling:
+		return
+	_idling = idle
+	if idle:
+		_idle_since = Telemetry.clock()
+		_idle_excitement = _baby.excitement
+		_idle_sleepiness = _baby.sleepiness
+		return
+	var duration := Telemetry.clock() - _idle_since
+	if duration < IDLE_MIN_TIME:
+		return
+	Telemetry.note("idle", "stood still %.1fs on %s, exc %.0f -> %.0f, sleep %.0f -> %.0f" % [
+		duration, TelemetryLog.tile_type(_map.tile_type_at_world(_player.global_position)),
+		_idle_excitement, _baby.excitement, _idle_sleepiness, _baby.sleepiness])
 
 ## Today the answer should always be "it made things worse". When that stops being true, M25
 ## has landed and this entry is how it will be judged.

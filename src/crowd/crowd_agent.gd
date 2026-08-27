@@ -111,6 +111,15 @@ var _jolt_intensity := 0.0
 var _jolt_inner := 0.0
 var _jolt_outer := 0.0
 
+## A sidestep held for a moment after being walked into: how far across its own corridor, and how
+## long is left on it. See `step_aside()`.
+var _detour := 0.0
+var _detour_left := 0.0
+## And the same for somebody *crossing* her path rather than sharing it, who has no sidestep to
+## make: whether it is hurrying across or waiting, and how long is left on it.
+var _yield_hurry := false
+var _yield_left := 0.0
+
 func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		axis_roll: float) -> void:
 	kind = agent_kind
@@ -154,10 +163,15 @@ func _stands_on_a_street() -> bool:
 
 func _process(delta: float) -> void:
 	_jolt = maxf(0.0, _jolt - delta)
+	if _detour_left > 0.0:
+		_detour_left = maxf(0.0, _detour_left - delta)
+		if _detour_left <= 0.0:
+			_detour = 0.0
+	_yield_left = maxf(0.0, _yield_left - delta)
 	if kind == Kind.CAR:
 		_give_way(delta)
-	_set_along(_along() + _speed * _direction * delta)
-	_set_cross(move_toward(_cross(), _lane_centre, STEER_SPEED * delta))
+	_set_along(_along() + _speed * _yield_factor() * _direction * delta)
+	_set_cross(move_toward(_cross(), _lane_centre + _detour, STEER_SPEED * delta))
 	if kind == Kind.WALKER:
 		_consider_turning()
 	if _blocked_ahead(_vertical, _direction, LOOKAHEAD):
@@ -219,6 +233,10 @@ func is_startled() -> bool:
 func speed() -> float:
 	return _speed
 
+## How fast and which way it is actually travelling, for anything predicting where it will be.
+func velocity() -> Vector2:
+	return heading() * _speed * _yield_factor()
+
 ## Which way it is pointing, in world space.
 func heading() -> Vector2:
 	return (Vector2(0.0, _direction) if _vertical else Vector2(_direction, 0.0)).normalized()
@@ -240,6 +258,86 @@ func queue_position() -> float:
 ## from inside there is no speed either of them can choose that separates them.
 func nudge_back(distance: float) -> void:
 	_set_along(_along() - distance * _direction)
+
+## Somebody she walked into gets out of her way. *(Playtest 07, finding 5.)*
+##
+## The separation `Crowd._bump` applies is positional and it works — and it is undone on the very
+## next frame by this agent steering back to `_lane_centre`, which is where she is standing. So a
+## bump resolved and re-formed for as long as she stayed there, which is the sticking the player
+## reported and, with a fresh jolt each time, most of the "instant death".
+##
+## What moves is the agent's own **steering target**, not the player: it aims a lane over for a
+## couple of seconds and then comes back. That keeps the invariant intact — separation between
+## bodies is positional, never a force — and it is also just what a person does when you walk into
+## them.
+##
+## `away` is in world space; only the component across this agent's own corridor means anything to
+## it, and the result is clamped inside the pavement band, because a walker that yields into the
+## carriageway is a walker under a car.
+func step_aside(away: Vector2, distance: float, seconds: float) -> void:
+	if kind == Kind.CAR:
+		# A car does not get out of anybody's way. The carriageway is hers to stay off.
+		return
+	var across := away.x if _vertical else away.y
+	var along := away.y if _vertical else away.x
+	if absf(across) >= absf(along):
+		var band := _pavement_band()
+		_detour = clampf(_lane_centre + _detour + signf(across) * distance, band.x, band.y) \
+				- _lane_centre
+		_detour_left = maxf(_detour_left, seconds)
+		return
+
+	# **The direction she needs is this walker's own line of travel**, so there is nothing to
+	# steer: it is crossing her path rather than sharing it. *(Playtest 07, finding 17. A probe
+	# says nine to eleven of every twelve contacts on a forty-second walk are with somebody
+	# crossing, which is the whole reason this branch exists — a sidestep alone left the number
+	# exactly where it found it.)*
+	#
+	# What a person does at a corner is hurry across or wait, and which one depends only on
+	# whether carrying on takes them further from her line. Both are a speed for a moment; neither
+	# touches the lane, the corridor or the path, so a walker that yields is still going exactly
+	# where it was going.
+	_yield_hurry = signf(along) == signf(_direction)
+	_yield_left = maxf(_yield_left, seconds)
+
+## The stretch of cross-axis coordinate this walker's own pavement covers, as `(low, high)`.
+##
+## Clamped against the **band**, not against a symmetric distance from the lane centre, because
+## the pavement is not symmetric about a lane: offsets 0 and 1 are one footway and 4 and 5 are the
+## other, with the carriageway in between. A walker on the kerbside lane that is asked to move
+## kerbwards must stop at the kerb — the first version clamped by distance and would happily have
+## put somebody 48px into the road to get out of her way, which is a pedestrian under a car.
+func _pavement_band() -> Vector2:
+	var offsets := CrowdLanes.SIDEWALK_OFFSETS
+	var near_side: bool = _lane <= offsets[1]
+	var low := CrowdLanes.lane_centre(_corridor, offsets[0] if near_side else offsets[2])
+	var high := CrowdLanes.lane_centre(_corridor, offsets[1] if near_side else offsets[3])
+	# Half a tile of slack at each end: a lane centre is the middle of a tile, and the footway
+	# reaches to that tile's edge.
+	var slack := float(Tuning.TILE_SIZE) * 0.5
+	return Vector2(low - slack, high + slack)
+
+## How fast this walker is going right now as a fraction of its own pace: hurrying across in front
+## of her, waiting for her to pass, or simply walking. See `step_aside()`.
+##
+## A factor rather than a write to `_speed`, so nothing has to remember what the speed used to be
+## — and so a walker that is being asked to yield every frame while she approaches does not ratchet
+## itself to a standstill it never recovers from.
+func _yield_factor() -> float:
+	if _yield_left <= 0.0:
+		return 1.0
+	return YIELD_HURRY if _yield_hurry else 0.0
+
+## How much faster somebody crossing in front of her walks to get out of the way. Enough to clear
+## her line inside the notice distance and not so much that a pavement breaks into a jog.
+const YIELD_HURRY := 1.7
+
+## Drops any sidestep. A detour is a distance across *this* corridor, so it means nothing once the
+## agent has changed corridor, changed lane, or swapped its axes at a junction.
+func _forget_the_detour() -> void:
+	_detour = 0.0
+	_detour_left = 0.0
+	_yield_left = 0.0
 
 # ------------------------------------------------------------------ lanes ---
 
@@ -282,6 +380,7 @@ func _choose_lane(roll: float) -> void:
 	_cruise = _speed
 	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
 	_junction = -1
+	_forget_the_detour()
 
 ## Playtest 02, finding 3: *"cars should stop at crossings when I am close."* A zebra is only
 ## the safe way over if the traffic actually honours it — otherwise it is paint, and the
@@ -416,6 +515,7 @@ func _consider_turning() -> void:
 	_lane = CrowdLanes.nearest_sidewalk(_corridor, _cross())
 	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
 	_direction = turning
+	_forget_the_detour()
 	# It is now travelling through the corridor it just came down, so that is the junction
 	# it is in — otherwise it would roll a second turn before clearing the first.
 	_junction = kept
@@ -477,6 +577,7 @@ func _divert() -> void:
 	else:
 		_lane = CrowdLanes.nearest_sidewalk(_corridor, _cross())
 	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
+	_forget_the_detour()
 	_junction = kept
 
 ## Whether the agent is far enough into a junction to turn without landing on the wrong surface.

@@ -50,7 +50,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	_hard_failed = false
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
 			GameState.settled_yesterday())
-	_director.start_day(_plans, GameState.day_rng(day, "ahead"))
+	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
 	stream_around(focus)
 
 func clear() -> void:
@@ -210,6 +210,7 @@ func _physics_process(delta: float) -> void:
 	if _find_player():
 		stream_around(_player.global_position)
 		_place_what_is_owed_ahead(delta)
+		_tell_the_pursuers_where_she_is()
 		_warn_about_the_ground_she_is_on()
 	_check_hard_fails()
 	_announce_the_city_wide_sources()
@@ -341,6 +342,16 @@ func _successor_of(instance: EventInstance) -> EventInstance:
 				% [instance.def.id, instance.def.spawns_on_finish])
 		return null
 	return _create(def, instance.global_position)
+
+## Hands every pursuer her position. *(Playtest 07: running has to be right sometimes.)*
+##
+## Here rather than in the instance for the same reason `Crowd` writes `pedestrian_ahead` rather
+## than letting each car look: the player is found once a frame in one place, and an
+## `EventInstance` has never had to know she exists. It is handed a point and it walks toward it.
+func _tell_the_pursuers_where_she_is() -> void:
+	for instance in _instances:
+		if instance.def.pursues:
+			instance.chase_target = _player.global_position
 
 func _check_hard_fails() -> void:
 	if _hard_failed or not _find_player():

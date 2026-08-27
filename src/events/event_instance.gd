@@ -24,6 +24,7 @@ const LEAF_BLOWER := preload("res://assets/events/leaf_blower.svg")
 const PIGEON := preload("res://assets/events/pigeon.svg")
 const ICE_CREAM_VAN := preload("res://assets/events/ice_cream_van.svg")
 const LORRY := preload("res://assets/events/lorry.svg")
+const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
 
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
@@ -31,6 +32,14 @@ var path: PackedVector2Array = PackedVector2Array()
 
 var age := 0.0
 var is_finished := false
+
+## Where the thing it is chasing is, in world space, or `INF` for nothing.
+##
+## Written once per frame by `EventManager`, which is the one place that already knows where the
+## player is. An instance looking her up itself would be thirty lookups a frame for one answer,
+## and — more to the point — `EventInstance` has never had to know the player exists, and this
+## keeps that true: it is handed a point and it walks toward it.
+var chase_target := Vector2.INF
 
 ## Facing, for art with a front and a back. Only a mobile event ever changes it.
 var _heading := Vector2.RIGHT
@@ -69,12 +78,36 @@ func _process(delta: float) -> void:
 		_activation_announced = true
 		EventBus.event_activated.emit(self)
 
-	if def.mobile and path.size() > 1 and not is_telegraphing_still():
+	if def.pursues:
+		_chase(delta)
+	elif def.mobile and path.size() > 1 and not is_telegraphing_still():
 		_advance_along_path(delta)
 
 	if _has_expired():
 		_finish()
 	queue_redraw()
+
+## Comes after her. *(Playtest 07: running has to be right sometimes, and this is the shape of
+## "sometimes".)* See `EventDef.pursues` and `Tuning.validate_pursuit`.
+##
+## **It comes through its own telegraph**, the way a fire engine does, and that is the whole of
+## why a pursuer can force a run at all. A telegraph it spends standing still is a head start she
+## can simply walk away with: at `pursue_speed` against `WALK_SPEED` it closes about 56px a
+## second, so two seconds of politeness hands her more ground than the entire chase can take
+## back. The notice is *the sight of it coming*, and `Tuning.PURSUIT_MIN_NOTICE` is how much of
+## that she is owed before it is allowed to end her day.
+func _chase(delta: float) -> void:
+	if chase_target == Vector2.INF or is_telegraphing_still():
+		return
+	var toward := chase_target - global_position
+	if toward.length() < 1.0:
+		return
+	_heading = toward.normalized()
+	# Straight at her, and no faster than its own speed: the contract is the speed, so nothing
+	# here may quietly exceed it.
+	var step := minf(def.pursue_speed * delta, toward.length())
+	position += _heading * step
+	_path_travelled += step
 
 ## How far along its route this instance has got, so streaming it out and back in can resume it
 ## instead of rewinding it. See `EventManager._stream_in`.
@@ -174,7 +207,9 @@ func _draw() -> void:
 	# its own (the M12c note). Driven by **distance covered**, not by time, so it is the movement
 	# itself that shows: something stopped is still, and something fast bobs faster.
 	var bob := 0.0
-	if def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
+	if def.pursues:
+		bob = -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
+	elif def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
 		bob = -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
 	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2.ONE)
 	_draw_body()
@@ -228,7 +263,40 @@ func wants_a_mark() -> bool:
 		return false
 	if def.hard_fail or is_telegraphing():
 		return true
-	return def.pulse_period > 0.0 or not is_equal_approx(def.intensity_ramp, 1.0)
+	if not is_equal_approx(def.intensity_ramp, 1.0):
+		return true
+	return can_be_timed()
+
+## Whether this event's pulse is something a player can actually **play against**.
+##
+## *(Playtest 07, finding 2: "there was a person right on the home block but walking up to them
+## didn't do anything — not sure what that person was supposed to be — it had a red triangle.")*
+##
+## The rule used to be `pulse_period > 0`, and six of the ten rows available on day 1 have a pulse.
+## So the caret was over most of an ordinary street, on things that were not going anywhere and
+## were not about to do anything, and a player walked up to one to find out what it meant and
+## found out that it meant nothing. That is the deleted aura ring's own mistake — *a cue that
+## marks everything says nothing* — arriving in the shape M22 invented to replace it.
+##
+## What M22 got right is the reason to keep any of it: *"a pulsing event has to be **timed**, and
+## timing is the one thing the ring genuinely did well."* The mistake was reading "has a pulse" as
+## "can be timed". A beat of eleven seconds cannot be timed — you cannot stand and wait out an ice
+## cream van — and from inside its field the intensity only ever moves one way, so what the mark
+## breathes with is not a rhythm, it is a drift.
+##
+## So it is a **relationship**, and the relationship is the definition: a pulse can be timed when
+## its period is shorter than the time it takes to walk across the field it is pulsing in. Under
+## that, the beat changes while she is inside it and a pass can be slipped between two of them.
+## Over it, the pulse is slower than the whole encounter and there is nothing to time.
+##
+## It leaves the caret on exactly the two steady act I rows it should be on — the loose dog and
+## the leaf blower, which are the two whose whole counterplay is *go now* — and takes it off the
+## café, the market stall, the busker, the ice cream van, the dog walker and the man shouting,
+## every one of which is a place you route around rather than a beat you wait out.
+func can_be_timed() -> bool:
+	if def.pulse_period <= 0.0:
+		return false
+	return def.pulse_period < 2.0 * def.outer_radius / Tuning.WALK_SPEED
 
 ## How hard the mark is breathing, 0..1, from what the event is emitting right now.
 ##
@@ -300,6 +368,8 @@ func _draw_body() -> void:
 			_draw_simple(ICE_CREAM_VAN, 20.0)
 		EventDef.Look.LORRY:
 			_draw_simple(LORRY, 26.0)
+		EventDef.Look.CHARGING_DOG:
+			_draw_simple(CHARGING_DOG, 13.0)
 		EventDef.Look.NONE:
 			pass
 

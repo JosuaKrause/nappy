@@ -305,49 +305,65 @@ not placed. `tests/test_events.gd` asserts it across a whole run.
 
 ## What an event actually costs
 
-Measured against the M19 rates, integrating the real falloff along a straight line through
-the centre of the field and subtracting the walking decay. The meter is 100, sleep freezes at
+Measured against the **playtest 07** rates, integrating the real falloff along a straight line
+through the centre of the field and subtracting the walking decay. Every row moved that
+milestone, because what changed was the *shape* of `Tuning.falloff` rather than any one event:
+`(1−t)²` became `1−t²`, so a field now holds three quarters of its intensity at the midpoint of
+its band instead of a quarter. Nothing is louder at its centre and nothing reaches further; what
+changed is that the middle distances cost something, which is finding 18 — *"the excitement should
+go substantially up from relatively far away. I shouldn't have to get actual contact to get
+penalized."* The meter is 100, sleep freezes at
 35, and the baby cries at 100. `tests/test_events.gd` computes the same integral, so the
 numbers here and the assertion there cannot drift apart.
 
 | Event | walk through | run through |
 | --- | ---: | ---: |
-| `burnt_shell` | −4.1 | +10.6 |
-| `poster_crew` | −2.2 | +14.5 |
-| `barricade` | −0.4 | +16.9 |
-| `playground` | +0.3 | +21.6 |
-| `delivery_van` | +1.9 | +22.5 |
-| `busker` | +3.8 | +29.2 |
-| `police_patrol` | +5.7 | +29.6 |
-| `homeless_yeller` | +5.8 | +33.2 |
-| `alley_robbery` * | +6.8 | +9.7 |
-| `construction` | +8.1 | +33.0 |
-| `cafe_tables` | +8.8 | +29.1 |
-| `cat_dash` | +10.4 | +22.9 |
-| `ice_cream_van` | +13.4 | +41.6 |
-| `pigeon_flock` | +13.6 | +23.1 |
-| `market_stall` | +13.6 | +33.9 |
-| `checkpoint` | +13.7 | +38.2 |
-| `cyclist` * | +14.7 | +28.7 |
-| `reversing_lorry` * | +17.6 | +34.7 |
-| `dog_walker` | +21.6 | +26.8 |
-| `loose_dog` | +24.1 | +33.2 |
-| `protest` | +25.0 | +56.5 |
-| `leaf_blower` | +25.4 | +42.5 |
-| `burning_building` | +29.8 | +53.5 |
-| `abduction` * | +32.9 | +53.7 |
-| `military_convoy` | +49.2 | +69.8 |
-| `night_raid` | +56.6 | +78.2 |
-| `fire_truck` | +64.6 | +83.9 |
-| `firefight` * | +92.8 | +105.1 |
+| `loudspeaker` | −5.5 | +27.3 |
+| `burnt_shell` | −3.0 | +16.5 |
+| `poster_crew` | +0.7 | +22.6 |
+| `barricade` | +3.0 | +26.0 |
+| `curfew_announce` | +3.4 | +32.2 |
+| `playground` | +5.8 | +33.6 |
+| `delivery_van` | +8.3 | +34.9 |
+| `alley_robbery` * | +9.1 | +13.5 |
+| `busker` | +13.3 | +45.7 |
+| `police_patrol` | +15.9 | +46.2 |
+| `homeless_yeller` | +17.7 | +52.2 |
+| `cafe_tables` | +20.1 | +45.4 |
+| `cat_dash` | +20.2 | +35.4 |
+| `construction` | +20.3 | +51.6 |
+| `pigeon_flock` | +22.9 | +34.8 |
+| `market_stall` | +27.9 | +52.7 |
+| `checkpoint` | +29.0 | +59.4 |
+| `cyclist` * | +30.2 | +45.9 |
+| `ice_cream_van` | +31.5 | +65.8 |
+| `reversing_lorry` * | +32.6 | +53.3 |
+| `dog_walker` | +36.5 | +41.2 |
+| `charging_dog` * | see below | — |
+| `loose_dog` | +43.3 | +52.0 |
+| `leaf_blower` | +48.6 | +67.1 |
+| `protest` | +50.0 | +88.1 |
+| `burning_building` | +55.9 | +83.2 |
+| `abduction` * | +61.3 | +84.1 |
+| `military_convoy` | +84.9 | +107.2 |
+| `night_raid` | +101.8 | +122.6 |
+| `fire_truck` | +115.4 | +132.0 |
+| `firefight` * | +155.9 | +162.3 |
+
+`charging_dog` has no meaningful row, and that is the point: it is the only event in the game
+that **follows**, so there is no line to walk through it and no crossing to price. Walking away
+from it loses the day and running away from it costs about forty points. See
+`docs/MECHANICS.md`, "Running that matters".
 
 `*` is a `hard_fail`: the figure is notional, because nobody finishes the walk. Two rows the
 playtest-02 version of this table was missing entirely (`burnt_shell`, `alley_robbery`) are
 included now — the old one listed eighteen of what was then twenty.
 
-**Three of these are negative, and all three are deliberate.** `poster_crew` is cosmetic
-dread, `barricade` is a scar and `burnt_shell` is a reminder; none of them is an obstacle, so
-none of them has to cost anything. Everything else must be more expensive to walk through than
+**One of these is negative, and it is deliberate.** `burnt_shell` is a reminder rather than an
+obstacle, so it does not have to cost anything. (`loudspeaker` is `city_wide` and has no line to
+walk through at all, so its figure is meaningless.) It was three rows until playtest 07 —
+`poster_crew` and `barricade` are now marginally positive, which costs their design nothing: both
+are still very nearly free to walk through, which is all "scenery" ever asked for. Everything else must be more expensive to walk through than
 to walk around, and `tests/test_events.gd` asserts exactly that with those three named as the
 exemptions — so a **fourth** negative event has to be a decision somebody takes on purpose
 rather than a number nobody checked.
@@ -429,8 +445,9 @@ becoming that.
 | Cue | Means | Where |
 | --- | --- | --- |
 | **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** | the art |
-| **Caret over the entity** | *Danger that changes over time*, and only that: it is about to start, it ends the day, or it comes and goes. Amber telegraphing, red active, doubled and darker for `hard_fail`. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_horn_mark()` |
+| **Caret over the entity** | *Danger that changes over time*, and only that: it is about to start, it ends the day, or it comes and goes **on a beat you can play against**. Amber telegraphing, red active, doubled and darker for `hard_fail`. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_horn_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
+| **"Comes and goes" means *timeable*** | A pulse only earns a caret when its period is shorter than the walk across its own field — that is exactly when a pass can be slipped between two beats. Slower than that and the intensity only ever moves one way while she is inside it, which is a drift rather than a rhythm. *(M33. The rule was `pulse_period > 0`, and six of the ten rows available on day 1 have a pulse, so the caret was over most of an ordinary street: the deleted ring's own mistake in a new shape. A player walked up to one to find out what it meant and found out that it meant nothing.)* | `EventInstance.can_be_timed()` |
 | **Edge badge** | Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
 | **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live and she is inside its reach with one step left to make. | `Stroller._draw_alert()` |

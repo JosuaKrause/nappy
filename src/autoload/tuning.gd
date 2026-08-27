@@ -81,7 +81,26 @@ const EXCITEMENT_STIR_MARGIN := 12.0
 ## Incoming excitement multiplier while the baby is asleep.
 const SLEEPING_SENSITIVITY := 0.55
 
-const EXCITEMENT_DECAY_IDLE := 6.0
+## **What settles a baby is being pushed.** *(Playtest 07, finding 3: "not walking at all
+## shouldn't reduce excitement either — otherwise I can just stop in the middle of the street and
+## wait until everything is good.")*
+##
+## It was 6.0, which was the **fastest** of the three, and that made standing still the strongest
+## move in the game: a full meter cleared in seventeen seconds for seventeen points of sleepiness,
+## anywhere, including the middle of a street she had no business being on. Two runs in the
+## playtest 07 traces have a seventy-four-second gap with no entry in them at all.
+##
+## Zero rather than merely lower, because the model it states is worth stating exactly: the pram
+## is a rocking chair with wheels on, and rocking it is the only thing that calms her. Standing
+## still now *freezes* the excitement instead of clearing it — the day stops moving in both
+## directions at once, which is the honest version of "waiting is not a plan". The counterplay it
+## takes away has a replacement that was always the better one: **walk somewhere quiet**, which is
+## what `EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` is for and what the whole route is about.
+##
+## Running still decays, barely — it is motion, and `EXCITEMENT_FROM_RUNNING` is what makes it a
+## bad idea. The ordering is now motion-shaped rather than arbitrary: walking calms most, running
+## calms a little, standing calms nothing.
+const EXCITEMENT_DECAY_IDLE := 0.0
 const EXCITEMENT_DECAY_WALKING := 3.5
 const EXCITEMENT_DECAY_RUNNING := 0.5
 ## The park has to read on *both* bars, not just the sleepiness one — half of "this is
@@ -89,7 +108,19 @@ const EXCITEMENT_DECAY_RUNNING := 0.5
 const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.2
 
 ## Excitement per second at full sprint, scaled by how far above walk speed we are.
-const EXCITEMENT_FROM_RUNNING := 9.0
+##
+## **9.0 → 14.0 in playtest 07, to keep a standing decision standing.** The run button is a trap
+## by design — `CLAUDE.md`'s second measured fact about the catalogue is that running is the wrong
+## move against *every* event in the game, and M25 is where that is supposed to change, by
+## building a mechanic and a fairness contract rather than by moving a constant.
+##
+## `falloff`'s new shoulder broke it as a side effect. A fatter field makes time-in-field matter
+## more, so running out of the four widest ones — `dog_walker`, `fire_truck`, `night_raid`,
+## `firefight` — became a point or two cheaper than walking. Not "running works" but "running is a
+## coin flip", which is the worst of the two and was nobody's decision. This is the number that
+## restores the ordering across the whole catalogue, and `tests/test_events.gd` now asserts it
+## rather than leaving it in a document, which is how it broke silently in the first place.
+const EXCITEMENT_FROM_RUNNING := 14.0
 ## Constant dread while standing in an alley.
 const EXCITEMENT_FROM_ALLEY := 3.0
 
@@ -298,18 +329,36 @@ const CAR_SPEED := Vector2(130.0, 185.0)
 ## One person, close enough to brush past. Deliberately above the walking decay: a close
 ## pass has to cost something or the crowd is scenery again. Walking wide of them does not
 ## — the pavement is two tiles, so how close to pass is a real choice.
+##
+## **The outer radius was 88 and came in to 55 in playtest 07, and the number did not change so
+## much as the shape under it did.** `falloff` grew a shoulder that milestone (see the note there):
+## every source in the game now holds three quarters of its intensity at the midpoint of its band
+## instead of a quarter. That is what finding 18 asked for and it is right for an **event**, which
+## is a thing on the map to route around — and wrong for a **body**, which is one of two hundred
+## and forty and is supposed to be inaudible from across the pavement. Left alone it put the
+## arterial floor at 18.4/s against a walking decay of 3.5, which is a main road that fills the
+## meter in six seconds.
+##
+## So the crowd pays the shape back in radius, and the character it is defending is M27's measured
+## one: **careless is expensive and careful is free.** A close pass still costs 4.2/s, because the
+## intensity and the inner radius did not move; two tiles away is 0/s again, as it was. What is
+## gone is the wide, cheap middle that used to be worth almost nothing and is now worth a lot.
 const PEDESTRIAN_INTENSITY := 4.2
 const PEDESTRIAN_INNER_RADIUS := 22.0
-const PEDESTRIAN_OUTER_RADIUS := 88.0
+const PEDESTRIAN_OUTER_RADIUS := 55.0
 
-## A car is louder than a person and passes much faster. No single car outruns the idle
+## A car is louder than a person and passes much faster. No single car outruns the walking
 ## decay — the point is not that one car is dangerous, it is that on a main road there is
 ## always another one. The floor is the *street*, and it is emergent; the first pass at these
 ## numbers put the arterial at +15/s, which filled the meter in seven seconds and made the
 ## main road not expensive but impassable.
+##
+## 170 → 104 for the same reason the pedestrian's radius came in, and measured the same way: the
+## arterial has to stay between the walking decay and three times it, which is `tests/test_crowd.gd`
+## and is the one place the noise floor is pinned to anything.
 const CAR_INTENSITY := 5.4
 const CAR_INNER_RADIUS := 38.0
-const CAR_OUTER_RADIUS := 170.0
+const CAR_OUTER_RADIUS := 104.0
 
 ## Chance a walker turns a corner rather than carrying straight on, rolled once per
 ## junction. High enough that the crowd churns, low enough that streets still have flow.
@@ -330,19 +379,112 @@ const PEDESTRIAN_TURN_CHANCE := 0.35
 ## carefully it was done. At 14, holding that line takes the same walk down to two — which
 ## turns the crowd from a toll into the thing playtest 02 finding 3 asked for.
 const BUMP_RADIUS := 14.0
+
+## How far apart a contact is pushed, and how far apart it has to get before it counts as over.
+##
+## **The two numbers that make a bump end.** *(Playtest 07, finding 5: "bumping into a person
+## should resolve more — right now you can get trapped and stick to the other person which
+## basically leads to instant death.")*
+##
+## The separation used to resolve to exactly `BUMP_RADIUS`, which is the distance at which
+## `touching` flips back to false — so a resolved contact sits precisely on its own release
+## threshold and flickers across it, firing a fresh `BUMP_INTENSITY` jolt every couple of frames
+## for as long as the pair are near each other. A contact that costs 26/s once is a decision; one
+## that costs it ten times in two seconds is the "instant death", and three of those in half a
+## minute is how the playtest 07 traces lose a day.
+##
+## So it is a hysteresis band rather than one number: pushed apart to `BUMP_CLEAR_RADIUS`, and
+## `touching` is only released past it. A bump therefore ends the frame it is resolved, and it can
+## never re-fire without a genuine second approach.
+##
+## Deliberately a small band. Widening it would widen the corridor she has to thread down a
+## pavement, and the note on `BUMP_RADIUS` is what happens when that number grows.
+const BUMP_CLEAR_RADIUS := 19.0
+
 ## How much of the separation the player takes; the pedestrian takes the rest. She is pushing
 ## a pram and they are not, and being shoved by strangers must never take the verb away.
 const BUMP_PLAYER_SHARE := 0.3
+
+## How far across their own pavement somebody she walked into steps, and for how long.
+##
+## The other half of finding 5, and the half the hysteresis alone cannot fix. A walker steers to
+## its lane centre at `CrowdAgent.STEER_SPEED`; if she is standing on that centre, the walker
+## resolves out of the contact and then immediately steers back into her, forever. The separation
+## being positional is what stops them being *inside* each other and cannot stop them being
+## *against* each other.
+##
+## So the person she walked into gets out of the way, which is what a person does. Positional
+## still — it is a target the walker steers to, not a force on the player — and clamped inside its
+## own pavement band by `CrowdAgent.step_aside`, because a walker that yields into the carriageway
+## is a walker under a car.
+##
+## A tile is the width of one pedestrian lane, so this is exactly "they move over one".
+const BUMP_STEP_ASIDE := float(TILE_SIZE)
+const BUMP_STEP_ASIDE_TIME := 2.5
+
+## How far ahead somebody notices a pram coming and moves over, and how near her line they have
+## to be to bother.
+##
+## **This is the fix for "the only thing that really kills my runs are just pedestrians".**
+## *(Playtest 07, finding 17.)*
+##
+## The design M19 and M27 wrote down is that the crowd is *expensive to be careless in and free to
+## be careful in*, and that the **ratio** is what makes a pavement a decision. It measured eleven
+## contacts in forty seconds down a lane centre against one holding the midline between two lanes.
+## A probe re-run on `main` for this playtest says that ratio is gone: thirteen against fifteen on
+## the arterial, eleven against nine on a back street. There is no careful line any more, so the
+## crowd stopped being a decision and became a toll — and at ~30 points a contact, a toll that
+## ends the day.
+##
+## The reason it went is arithmetic and cannot be tuned back: pedestrian lanes are one tile apart,
+## so a midline is 16px from two lane centres and `BUMP_RADIUS` is 14. That line was two pixels
+## wide when M19 measured it, and every milestone since has given walkers more reason to be off
+## their exact centre — M21's T-junctions, M27's recycling, and this milestone's own sidestep.
+##
+## So the careful line is not a *line* any more, it is a **behaviour**: somebody who sees a pram
+## coming moves over. That restores the ratio the design is built on without needing two pixels of
+## pavement to be found, and it prices the right thing — a contact is now what carelessness costs,
+## not what walking costs. It stays honest three ways: they only move a lane, they cannot move
+## into the carriageway (`CrowdAgent._pavement_band`), and at `RUN_SPEED` she covers the notice
+## distance in 0.57s against the 0.36s they need to clear a lane, so **running still hits people**.
+const CROWD_YIELD_DISTANCE := 96.0
+## How near they have to come to her — at their **closest approach**, not right now — to bother
+## getting out of the way. A little over `BUMP_RADIUS`, so it is "we are going to touch" rather
+## than "we will be near each other", and a pavement does not part like the Red Sea in front of
+## her.
+const CROWD_YIELD_LATERAL := 22.0
+## How far ahead that approach is predicted. Long enough to be worth acting on — a walker needs
+## 0.36s to clear a lane — and short enough that somebody two seconds away carries on as normal.
+const CROWD_YIELD_LEAD := 1.4
 ## Speed of the deflection a contact gives the player. Well under `WALK_SPEED`, so a bump
 ## knocks her off her line without steering her.
 const BUMP_SHOVE_SPEED := 55.0
 
 ## A contact is not a write to `Baby.excitement` — it agitates the *person* she walked into,
 ## and the crowd sums them like it always did. See the invariant in CLAUDE.md.
-const BUMP_INTENSITY := 26.0
+##
+## **26 → 18 in playtest 07, and it is the mix that moved rather than the difficulty.**
+## *(Finding 17: "currently the only thing that really kills my runs are just pedestrians" /
+## "the actual dangers are not really dangerous since they don't have an effect at all.")*
+##
+## A bump was about sixteen points of a hundred-point meter, so four of them lost a day — and the
+## traces have three day-2 attempts lost inside half a minute with the crowd supplying between 82%
+## and 100% of the excitement in each. Meanwhile `falloff`'s new shoulder roughly doubled what
+## every **event** is worth from a distance. Left alone, that would have made an already lethal
+## street lethal sooner; what it should do instead is hand the day back to the authored content.
+##
+## So a contact is about eleven points now. Still the single most expensive instant on a pavement,
+## still four or five of them to lose a day on the crowd alone, and no longer the only thing in
+## the game with an opinion. The two halves of the fix are meant to be read together: people get
+## out of her way (`CROWD_YIELD_DISTANCE`) so a contact is carelessness rather than a toll, and it
+## costs less when it happens because it is no longer the whole game.
+const BUMP_INTENSITY := 18.0
 const BUMP_DURATION := 1.2
 const BUMP_INNER_RADIUS := 30.0
-const BUMP_OUTER_RADIUS := 90.0
+## 90 until playtest 07. The jolt is a body's own source, so it took the same shoulder every
+## other source took, and a bump she is walking away from was being charged for most of its
+## tail rather than a sixth of it. The cost at the moment of contact is unchanged.
+const BUMP_OUTER_RADIUS := 62.0
 
 ## The car's body, as a box rather than a circle: a car is two tiles long and one wide, and a
 ## radius that covered its length would kill people standing beside it.
@@ -362,7 +504,9 @@ const CAR_HORN_TIME := 1.6
 const CAR_HORN_INTENSITY := 18.0
 const CAR_HORN_DURATION := 0.9
 const CAR_HORN_INNER_RADIUS := 45.0
-const CAR_HORN_OUTER_RADIUS := 190.0
+## 190 until playtest 07, brought in with the rest of the crowd's radii when `falloff` grew its
+## shoulder. A horn is still heard from a good deal further than a car is.
+const CAR_HORN_OUTER_RADIUS := 132.0
 ## How long the exclamation mark stays up over the player after the last horn. Long enough to
 ## survive the gap between two cars in the same lane.
 const CAR_WARNING_HOLD := 1.4
@@ -474,6 +618,88 @@ const EVENT_SPACING_ANY := 64.0
 ## answer is the best spot left, not no event.
 const EVENT_PLACEMENT_TRIES := 24
 
+# ------------------------------------------------------ running that matters ---
+# Playtest 07: *"the run button is a trap shouldn't be an invariant — there should be legitimate
+# cases where running is required."* And, in the same breath, when: *"can we make it so those
+# cases only start appearing on day 3"*, with *"an incident at the start to force running"*.
+#
+# So the run is **taught** rather than merely permitted, and it is taught the day it starts to
+# matter. Day 1 is arrow keys and nothing else; day 3 is the day something comes after the pram.
+
+## The day running stops being a bad idea and starts being the answer.
+##
+## Day 3 is act I's last day and already the day it grows teeth — `reversing_lorry` arrives then,
+## and `cyclist` on day 2 — so this is the third of three escalations rather than a fourth kind of
+## thing. It is also late enough that a player has had two days of the meter to learn that running
+## is expensive, which is what makes being *made* to run land as a change of rules rather than as
+## the rules finally being explained.
+const RUN_TAUGHT_DAY := 3
+
+## How long a pursuer keeps coming once it turns lethal, before it gives up.
+##
+## Bounded by the cost of the answer, not by the fiction: at `EXCITEMENT_FROM_RUNNING` a sprint is
+## fourteen points a second, so a six-second chase is most of the meter and being *made* to run
+## would be being made to lose. Three seconds is about forty points — the most expensive moment in
+## act I by a distance, and much cheaper than the day it buys.
+const PURSUIT_TIME := 3.0
+
+## And the least a pursuer's speed may differ from either of hers.
+##
+## The contract in one line: **walking must lose and running must win.** So its speed sits
+## strictly between the two, far enough into the band that the difference is worth acting on
+## inside `PURSUIT_TIME`. The margin is small at the top end on purpose — a run that only just
+## outpaces it is a run she has to actually commit to.
+const PURSUIT_MIN_MARGIN := 20.0
+
+## And the least notice one has to give: its telegraph, during which it is visibly coming and
+## emitting `TELEGRAPH_INTENSITY_FRACTION`, but cannot yet end the day.
+##
+## A pursuer's telegraph is the **approach**, the way a fire engine's is — a dog that has to bark
+## for two seconds before it is allowed to start running is not a dog. So the notice is the sight
+## of it closing, and this is how much of that she is owed before it can touch her.
+const PURSUIT_MIN_NOTICE := 1.5
+
+## The pursuit fairness contract, and the one place it is stated.
+##
+## `validate_event`'s escape-distance rule is about walking out of a *field*, and a pursuer has no
+## field to walk out of — it follows. So it needs its own contract, and `docs/TODO.md` said what it
+## would have to be stated over before there was anything to state it about: `RUN_SPEED`.
+##
+## Three conditions, and each of them is one of the three ways this could be unfair:
+##
+## - **Walking must lose.** Faster than `WALK_SPEED` by a real margin, or the mechanic teaches
+##   nothing — she strolls away and the run key stays a trap.
+## - **Running must win.** Slower than `RUN_SPEED` by the same margin, or it is not a lesson, it
+##   is a death sentence with a keypress attached.
+## - **It must let go.** A chase with no end is a chase she cannot afford: running is priced per
+##   second, so an unbounded one is a loss however well it is played.
+func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
+		telegraph: float) -> bool:
+	if speed < WALK_SPEED + PURSUIT_MIN_MARGIN:
+		push_error("Unfair pursuit '%s': %.0fpx/s is not enough faster than a walk (%.0f)"
+				% [id, speed, WALK_SPEED])
+		return false
+	if speed > RUN_SPEED - PURSUIT_MIN_MARGIN:
+		push_error("Unfair pursuit '%s': %.0fpx/s cannot be outrun (%.0f)"
+				% [id, speed, RUN_SPEED])
+		return false
+	if chase_time <= 0.0 or chase_time > PURSUIT_TIME * 2.0:
+		push_error("Unfair pursuit '%s': a %.1fs chase is not something a run can end"
+				% [id, chase_time])
+		return false
+	# And the gap a run opens over the whole chase has to actually clear the lethal radius, or
+	# running is correct and still not enough.
+	var opened := (RUN_SPEED - speed) * chase_time
+	if opened < inner:
+		push_error("Unfair pursuit '%s': running opens %.0fpx over %.1fs, less than the %.0fpx "
+				% [id, opened, chase_time, inner] + "that ends the day")
+		return false
+	if telegraph < PURSUIT_MIN_NOTICE:
+		push_error("Unfair pursuit '%s': %.1fs of it coming is not enough notice (%.1fs)"
+				% [id, telegraph, PURSUIT_MIN_NOTICE])
+		return false
+	return true
+
 ## The carriageway, in px — the width the player has to clear when a horn goes.
 func carriageway_width() -> float:
 	return (STREET_WIDTH - SIDEWALK_WIDTH * 2) * float(TILE_SIZE)
@@ -567,12 +793,34 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 	return escape * margin / WALK_SPEED
 
 ## Excitement contribution of a source of `intensity` at distance `d`.
-## Quadratic falloff between the inner and outer radius. See docs/MECHANICS.md.
+##
+## **The shape has a shoulder on it.** *(Playtest 07, finding 18: "the radius of excitement for
+## obstacles needs to be bigger — with most obstacles, dogs, robbers, etc, the excitement should
+## go substantially up from relatively far away. I shouldn't have to get actual contact to get
+## penalized.")*
+##
+## It was `(1−t)²`, which put a quarter of the intensity at the midpoint of the falloff band and
+## six percent three quarters of the way out. A café at 12/s was therefore under the 3.5/s walking
+## decay across the whole outer 60% of its own field, and the trace says so in as many words —
+## every `near` entry written at an event's outer radius reads `events 0.0`. An event you are not
+## charged for until you touch it is not a thing to route around, it is a thing to bump into, and
+## that is playtest 07's headline finding arriving from the other side.
+##
+## `1 − t²` instead: full strength at the inner edge, three quarters of it at the midpoint, and
+## zero only at the outer edge, where the contract says it must be. The whole catalogue got wider
+## teeth without a single radius moving, which is the point of fixing it here — thirty rows of
+## hand-widened radii would have been thirty chances to break the fairness contract.
+##
+## **The contract is untouched and this is why.** `required_telegraph_time` is stated over
+## *distance* — how far she has to walk to be outside the radius — and neither radius moved. What
+## changed is what she pays while she is inside one, which the contract has never had an opinion
+## about. `tests/test_events.gd` re-checks the whole catalogue either way.
+##
+## See docs/MECHANICS.md.
 func falloff(d: float, intensity: float, inner_radius: float, outer_radius: float) -> float:
 	if d <= inner_radius:
 		return intensity
 	if d >= outer_radius:
 		return 0.0
 	var t := (d - inner_radius) / (outer_radius - inner_radius)
-	var inv := 1.0 - t
-	return intensity * inv * inv
+	return intensity * (1.0 - t * t)

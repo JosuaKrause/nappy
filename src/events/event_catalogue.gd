@@ -60,6 +60,7 @@ static func _build() -> Array[EventDef]:
 		_cyclist(),
 		_ice_cream_van(),
 		_reversing_lorry(),
+		_charging_dog(),
 
 		# Act II - notices.
 		_police_patrol(),
@@ -556,6 +557,60 @@ static func _reversing_lorry() -> EventDef:
 	def.hard_fail = true
 	def.weight = 1.2
 	def.max_per_day = 4
+	def.cost = 3
+	return def
+
+## **The one thing in the game you have to run from, and it arrives on day 3.**
+##
+## *(Playtest 07: "the run button is a trap shouldn't be an invariant — there should be legitimate
+## cases where running is required." And, in the same breath, when: "can we make it so those cases
+## only start appearing on day 3", with "an incident at the start to force running".)*
+##
+## Everything in the catalogue until now is something you route **around**, and against all of it
+## running is strictly worse than walking — `EXCITEMENT_FROM_RUNNING` outweighs the shorter
+## exposure every time, which `tests/test_events.gd` asserts row by row. That was a deliberate trap
+## and it is still the rule; this is the exception the rule was waiting for. A pursuer cannot be
+## routed around, because it goes where she goes, so the only question it asks is *how fast*.
+##
+## The arithmetic is the design, and every number in it is doing one job:
+##
+## - **148px/s** sits between a walk (92) and a run (168). Walking loses 56px a second and running
+##   gains 20, so the two answers give opposite outcomes rather than the same outcome at different
+##   costs.
+## - **It comes through its own telegraph.** A pursuer that waits politely hands her more ground in
+##   two seconds than the whole chase can take back. The notice is the sight of it closing.
+## - **Three seconds and it gives up.** A run is fourteen points a second; a chase long enough to
+##   be dramatic would be a loss whatever she did. Forty points is the most expensive moment in
+##   act I and much cheaper than the day.
+##
+## Day 3 because that is the day act I stops being a nice neighbourhood — `cyclist` lands on day 2
+## and `reversing_lorry` on day 3 — and because two days of paying for the run button is what makes
+## being made to press it read as the rules changing rather than as the rules finally arriving.
+## `EventDirector` puts the first one in front of her early on that day; see `Tuning.RUN_TAUGHT_DAY`.
+static func _charging_dog() -> EventDef:
+	var def := EventDef.new()
+	def.id = "charging_dog"
+	def.display_name = "Charging dog"
+	def.look = EventDef.Look.CHARGING_DOG
+	def.first_day = Tuning.RUN_TAUGHT_DAY
+	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
+	def.intensity = 22.0
+	def.inner_radius = 26.0
+	def.outer_radius = 150.0
+	# The chase proper, once it can end the day. `Tuning.PURSUIT_TIME` is the cap and the reason
+	# for it is the price of running, not the fiction.
+	def.duration = Tuning.PURSUIT_TIME
+	# Its whole notice, spent visibly closing. Comfortably over `PURSUIT_MIN_NOTICE`, because this
+	# is the first time the game asks for a key it has spent two days punishing.
+	def.telegraph_time = 2.4
+	def.pursues = true
+	def.pursue_speed = 148.0
+	def.hard_fail = true
+	def.weight = 1.4
+	# Rare on purpose. It is the one thing running answers, and a street with three of them on it
+	# would turn the run button from an answer into a second walk speed.
+	def.max_per_day = 3
 	def.cost = 3
 	return def
 

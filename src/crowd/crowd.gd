@@ -151,8 +151,15 @@ func _physics_process(_delta: float) -> void:
 	var shove := Vector2.ZERO
 	var closing := false
 
+	# Where she is actually going, for the people about to be in the way of it. Zero while she is
+	# standing still, which is right: nobody steps around somebody who is not coming.
+	var going := _player.velocity
+	if going.length() <= Tuning.IDLE_SPEED_THRESHOLD:
+		going = Vector2.ZERO
+
 	for agent in _agents:
 		if agent.kind == CrowdAgent.Kind.WALKER:
+			_make_way(agent, here, going)
 			shove += _bump(agent, here)
 			continue
 		agent.pedestrian_ahead = Vector2.INF
@@ -187,6 +194,57 @@ func _physics_process(_delta: float) -> void:
 	elif not on_the_road:
 		_player.stand_down(WARNING_SOURCE)
 
+## Somebody standing in the way of where she is going moves over. *(Playtest 07, finding 17.)*
+##
+## The counterpart to `_bump`, and the reason the pair of them is the whole answer: a bump is what
+## happens when this fails. See `Tuning.CROWD_YIELD_DISTANCE` for why a *behaviour* replaced the
+## two-pixel line the crowd's "careful is free" half used to rest on.
+##
+## Three things keep it from being a crowd that simply evaporates in front of her:
+##
+## - **Only people actually in the way.** Ahead of her, within a lane's width of her line, and
+##   inside a second of walking. Somebody on the far side of the pavement carries on.
+## - **Only a lane, and never into the road.** `CrowdAgent.step_aside` clamps to the footway.
+## - **Only if she gives them time.** The notice distance is fixed and their steering is not, so a
+##   run arrives before they have cleared — which is one more thing running is bad at, and it did
+##   not need a new rule to say so.
+func _make_way(agent: CrowdAgent, here: Vector2, velocity: Vector2) -> void:
+	if velocity == Vector2.ZERO:
+		return
+	var offset := agent.global_position - here
+	var going := velocity.normalized()
+	if offset.dot(going) <= 0.0 or offset.length() > Tuning.CROWD_YIELD_DISTANCE:
+		return
+
+	# **Closest approach, not current distance from her line.** The first version asked whether a
+	# walker was already within a lane's width of her path, which is the right question for
+	# somebody walking the same pavement and a useless one for somebody crossing it: at 60px/s
+	# they enter that window a third of a second before the contact, and a probe said nine of
+	# every twelve contacts are exactly that walker. Predicting where the two of them will be is
+	# the only notice that arrives in time to be acted on.
+	var relative := agent.velocity() - velocity
+	var speed_squared := relative.length_squared()
+	if speed_squared < 1.0:
+		return
+	var closest := clampf(-offset.dot(relative) / speed_squared, 0.0, Tuning.CROWD_YIELD_LEAD)
+	if (offset + relative * closest).length() > Tuning.CROWD_YIELD_LATERAL:
+		return
+
+	# Whichever side of her line they are on **now**, so nobody crosses in front of her to get out
+	# of the way — and so somebody already most of the way across carries on rather than reversing
+	# into her. `CrowdAgent.step_aside` reads that as a sidestep or as hurrying-or-waiting
+	# depending on which of its own axes the direction lands on.
+	var side := Vector2(-going.y, going.x)
+	var lateral := offset.dot(side)
+	# **Except for somebody already standing on her line**, who has no side to be on. Told to
+	# get out of the way sideways, half of them read it as "wait" and stop dead in front of her —
+	# which is the one outcome worse than carrying on. Pointed along their own travel instead,
+	# they always read it as "hurry", which is the only move that clears her.
+	var away := side if lateral >= 0.0 else -side
+	if absf(lateral) < Tuning.BUMP_CLEAR_RADIUS:
+		away = agent.heading()
+	agent.step_aside(away, Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
+
 ## Displaces a pedestrian the player has walked into, startles them, and returns the share of
 ## the separation she takes herself.
 ##
@@ -204,11 +262,30 @@ func _physics_process(_delta: float) -> void:
 ##   taking 150 excitement per second.
 ## - **A contact startles once, not once per frame.** `touching` is the hysteresis. Otherwise
 ##   one person held in contact for half a second costs what walking through a crowd should.
+## - **And a contact has to be able to end.** *(Playtest 07, finding 5.)* Both halves of that
+##   sentence were broken and each on its own is enough to trap her:
+##
+##   The separation resolved to exactly `BUMP_RADIUS`, which is the same number `touching` is
+##   released at — so a resolved pair sits on its own threshold, crosses it every other frame, and
+##   fires a fresh jolt each time. The hysteresis existed and was one number wide. It is a band
+##   now: pushed apart to `BUMP_CLEAR_RADIUS`, released past it.
+##
+##   And a walker steers back to its lane centre. If she is *standing on* that centre it comes
+##   straight back into her, so the contact resolves and re-forms for as long as she is there. The
+##   fix is the thing a person actually does: `step_aside`, which moves the walker's steering
+##   target a lane over for a couple of seconds. Still positional, still nothing pushed at the
+##   player — only what the walker is aiming for changed.
 func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	var away := agent.global_position - here
 	var distance := away.length()
-	if distance >= Tuning.BUMP_RADIUS:
+	# Released at the wider radius, so a pair that has just been pushed apart is unambiguously
+	# apart rather than sitting on the boundary.
+	if distance >= Tuning.BUMP_CLEAR_RADIUS:
 		agent.touching = false
+		return Vector2.ZERO
+	if distance >= Tuning.BUMP_RADIUS and not agent.touching:
+		# Inside the release band but never actually touched: this is somebody she is walking
+		# alongside, not somebody she walked into.
 		return Vector2.ZERO
 
 	# Exactly on top of each other: pick a side rather than dividing by zero.
@@ -218,13 +295,18 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 		var side := Vector2(-forward.y, forward.x)
 		direction = side if side.dot(away) >= 0.0 else -side
 
-	var overlap := Tuning.BUMP_RADIUS - distance
+	# To the clear radius rather than to the contact radius. The difference is the whole of
+	# whether the contact is over on the next frame.
+	var overlap := Tuning.BUMP_CLEAR_RADIUS - distance
 	agent.global_position += direction * overlap * (1.0 - Tuning.BUMP_PLAYER_SHARE)
 	if not agent.touching:
 		agent.touching = true
 		agent.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
 				Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
 		EventBus.crowd_bumped.emit(here)
+	# Whichever way they were pushed, keep going that way: the walker's own steering is what
+	# would otherwise undo the separation the instant it is made.
+	agent.step_aside(direction, Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
 	return -direction * overlap
 
 ## A car strike, which ends the day.

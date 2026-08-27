@@ -38,7 +38,7 @@ func run(t) -> void:
 	_test_idle_drains_sleepiness(t)
 	_test_running_blocks_sleep_and_excites(t)
 	_test_calm_threshold_freezes_sleepiness(t)
-	_test_excitement_decays(t)
+	_test_only_motion_settles_her(t)
 	_test_alley_trickle(t)
 	_test_falls_asleep(t)
 	_test_sleeping_baby_is_less_sensitive(t)
@@ -52,8 +52,13 @@ func _test_falloff(t) -> void:
 	t.close_to(Tuning.falloff(40.0, 10.0, 40.0, 150.0), 10.0, "falloff at inner edge is full")
 	t.close_to(Tuning.falloff(150.0, 10.0, 40.0, 150.0), 0.0, "falloff at outer edge is zero")
 	t.close_to(Tuning.falloff(200.0, 10.0, 40.0, 150.0), 0.0, "falloff beyond outer is zero")
-	# Quadratic, so the midpoint sits at a quarter, not a half.
-	t.close_to(Tuning.falloff(95.0, 10.0, 40.0, 150.0), 2.5, "falloff midpoint is quarter")
+	# `1 - t^2`, so the midpoint sits at three quarters rather than at the quarter the old
+	# quadratic gave. *(Playtest 07, finding 18.)* The shape is the design — an obstacle has to
+	# cost something from a distance or it is a thing to bump into rather than to route around —
+	# so this is asserted as the number it is, and the note on `Tuning.falloff` says why.
+	t.close_to(Tuning.falloff(95.0, 10.0, 40.0, 150.0), 7.5, "falloff midpoint is three quarters")
+	t.check(Tuning.falloff(130.0, 10.0, 40.0, 150.0) > 2.0,
+			"and three quarters of the way out it is still worth more than the walking decay")
 
 	var previous := 11.0
 	for d in range(0, 160, 5):
@@ -240,13 +245,35 @@ func _test_calm_threshold_freezes_sleepiness(t) -> void:
 
 # ------------------------------------------------------------- excitement ---
 
-func _test_excitement_decays(t) -> void:
+## *(Playtest 07, finding 3.)* Standing still used to be the fastest recovery in the game, which
+## made "stop in the middle of the street and wait until everything is good" the strongest move
+## there was. What settles a baby is being pushed, so the ordering is motion-shaped now: walking
+## calms most, running calms a little, standing calms nothing at all.
+##
+## Asserted as a **relationship** rather than as the three numbers, because the ordering is the
+## design and the values are not.
+func _test_only_motion_settles_her(t) -> void:
+	t.check(Tuning.EXCITEMENT_DECAY_IDLE <= 0.0,
+			"standing still does not settle her at all")
+	t.check(Tuning.EXCITEMENT_DECAY_WALKING > Tuning.EXCITEMENT_DECAY_RUNNING,
+			"walking settles her faster than running does")
+	t.check(Tuning.EXCITEMENT_DECAY_RUNNING > Tuning.EXCITEMENT_DECAY_IDLE,
+			"even running is motion, so it settles her more than standing does")
+
 	_build(t)
 	_baby.excitement = 50.0
 	_stand()
 	_simulate(5.0)
-	t.close_to(_baby.excitement, 50.0 - Tuning.EXCITEMENT_DECAY_IDLE * 5.0,
-			"excitement decays fastest while standing still", 0.1)
+	t.close_to(_baby.excitement, 50.0,
+			"a quiet spot with nobody moving holds the meter where it is", 0.1)
+	_teardown()
+
+	_build(t)
+	_baby.excitement = 50.0
+	_walk()
+	_simulate(5.0)
+	t.close_to(_baby.excitement, 50.0 - Tuning.EXCITEMENT_DECAY_WALKING * 5.0,
+			"walking the same quiet spot is what brings it down", 0.1)
 	_teardown()
 
 func _test_alley_trickle(t) -> void:

@@ -35,7 +35,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 47085 headless checks, ~100s
+./tools/test.sh               # 46607 headless checks, ~100s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
@@ -190,6 +190,23 @@ Match what is already there rather than importing habits from elsewhere.
 Pass a distinct `stream` per consumer or two systems asking for "the day's RNG" start from
 the same seed and their first rolls move together. Purely cosmetic randomness may use the
 global RNG and must stay away from anything touching the meters.
+
+**The falloff has a shoulder, and the shape is a design decision.** *(M33, playtest 07 finding
+18: "the excitement should go substantially up from relatively far away — I shouldn't have to get
+actual contact to get penalized.")* `Tuning.falloff` is `1−t²` between the inner and outer radius,
+not the `(1−t)²` it was for thirty-two milestones. The old one put a quarter of the intensity at
+the midpoint of the band and six percent three quarters of the way out, so three quarters of every
+radius in the game was free and an event was a thing to bump into rather than a thing to route
+around. Two things follow and both are easy to get wrong:
+
+- **The telegraph fairness contract does not care.** It is stated over *distance* — how far she
+  has to walk to be outside the radius — so changing what she pays while she is inside one is not
+  its business, and no radius moved. Do not "fix" the contract when the shape changes.
+- **It moves the crowd too, and the crowd does not want it.** A field that bites from a distance
+  is right for an authored event and wrong for one of two hundred and forty bodies, which is
+  supposed to be inaudible from across the pavement. The crowd pays it back in *radius* rather
+  than in intensity, so a close pass costs what it always did: `PEDESTRIAN_OUTER_RADIUS` 88 → 55,
+  `CAR_OUTER_RADIUS` 170 → 104, measured against `tests/test_crowd.gd`'s arterial band.
 
 **Excitement is a pure query.** Events never push a value at the baby. `Baby` asks the
 `WorldContext` for the total at its position, and the world sums `contribution_at()` over
@@ -571,22 +588,29 @@ Both came out of playtest 02. The full table is in `docs/EVENTS.md`, "What an ev
 costs" — regenerate it whenever a rate in `Tuning` moves, because it is the fastest way to see
 what a balance change did to the whole catalogue.
 
-- **Walking through an event used to be nearly free before act III**, and M19 fixed the worst
-  of it rather than all of it. `dog_walker` cost −0.1 points to walk straight through the
-  centre of, so ploughing into it beat going round; it is +21.6 now, `cafe_tables` blocks a
-  pavement from day 1, and the street costs something on its own. Act II is still gentle and
-  still open. Three rows stay negative on purpose — `poster_crew`, `barricade` and
-  `burnt_shell` are scenery, not obstacles — and `tests/test_events.gd` names exactly those
-  three as the exemptions, so a **fourth** negative event has to be a decision somebody takes
-  rather than a number nobody checked.
-- **Running is the wrong move against every event in the game.** Unchanged by M19.
-  `EXCITEMENT_FROM_RUNNING` plus the collapsed decay (3.5/s → 0.5/s) beats the shorter
-  exposure every time. The run button is a trap. Making running *necessary* (M25) is therefore
-  a mechanic to build — something that pursues, a lethal radius that grows, a window that
-  shuts — not a constant to tune, and its fairness contract has to be stated over `RUN_SPEED`.
+- **Walking through an event used to be nearly free before act III**, and it took three
+  milestones to fix. M19 dealt with the worst rows — `dog_walker` cost −0.1 points to walk
+  straight through the centre of, so ploughing into it beat going round — and **M33 dealt with
+  the shape underneath all of them**: `Tuning.falloff` was `(1−t)²`, which is six percent of
+  intensity three quarters of the way out, so an event only charged for itself on contact. It is
+  `1−t²` now, three quarters at the midpoint. `dog_walker` is +36.5, `cafe_tables` +20.1, and one
+  row stays negative on purpose — `burnt_shell` is a reminder rather than an obstacle.
+  `tests/test_events.gd` names exactly that one as the exemption, so a **second** negative event
+  has to be a decision somebody takes rather than a number nobody checked.
+- **Running is the wrong move against every event you route *around*, and the right move
+  against the one kind of thing that follows you.** *(M33 built the exception; the rule is
+  otherwise unchanged.)* `EXCITEMENT_FROM_RUNNING` plus the collapsed decay (3.5/s → 0.5/s)
+  beats the shorter exposure for every row that merely emits, and `tests/test_events.gd` asserts
+  it row by row now — it had only ever been *measured* and written down here, and M33's change to
+  the falloff shape broke it silently in four rows before anyone noticed. The exception is
+  `EventDef.pursues`: faster than a walk, slower than a run, lethal, and it gives up. Walking and
+  running give **opposite outcomes** rather than the same outcome at two prices, which is exactly
+  why it had to be a mechanic rather than a constant. `Tuning.validate_pursuit()` is its fairness
+  contract and it is stated over `RUN_SPEED`, and nothing pursues before `Tuning.RUN_TAUGHT_DAY`
+  — day 1 teaches the arrow keys and day 3 teaches the run, with the thing that requires it.
 
 **And one fact the table does not cover.** Since M19 the cost of a route is no longer only the
-events on it: a contact with a pedestrian is ~15.6 points and a car's horn ~8, and neither is
+events on it: a contact with a pedestrian is ~10.8 points and a car's horn ~8, and neither is
 in the catalogue. A balance argument that reaches for the cost table alone is now answering a
 narrower question than it thinks.
 
@@ -629,4 +653,5 @@ not either number, is what makes it a decision.
   `--overview`, `--day-length` and (in `auto_screenshot.gd`) `--screenshot`, `--after`,
   `--walk` ship in the build and live in `main.gd`. They should be gated behind a debug
   build before release.
-- **Esc quits outright.** There is no pause menu; the only pause is the between-days screen.
+- **There is no main menu.** `Esc` opens a pause screen (M33) and `Q` inside it quits; the
+  between-days summary is still its own kind of pause.

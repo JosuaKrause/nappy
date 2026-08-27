@@ -41,7 +41,8 @@ func _init(map: CityMap) -> void:
 
 ## Takes over the day's `AHEAD_OF_PLAYER` plans. Called with the same plan list the manager
 ## streams the sited events from, so the two halves of a day cannot disagree about what is owed.
-func start_day(plans: Array[EventScheduler.Planned], rng: RandomNumberGenerator) -> void:
+func start_day(day: int, plans: Array[EventScheduler.Planned],
+		rng: RandomNumberGenerator) -> void:
 	_owed.clear()
 	_rng = rng
 	for plan in plans:
@@ -50,6 +51,38 @@ func start_day(plans: Array[EventScheduler.Planned], rng: RandomNumberGenerator)
 	# The first one is not free: a cat on the doorstep before she has taken a step reads as the
 	# game starting badly rather than as something happening.
 	_next_in = _roll_interval()
+	_teach_the_run(day)
+
+## Puts the day-3 lesson at the front of the queue. *(Playtest 07: "on day 3 we introduce the
+## running key (it is possible to run before but not required)" and "have an incident at the start
+## to force running".)*
+##
+## Running is a trap against every other row in the catalogue and is meant to be — so the day the
+## exception arrives, the game cannot leave finding it to chance. `charging_dog` is `weight 1.4`
+## of a day-3 pool and it would otherwise land whenever it landed, which for the one event that
+## teaches a control is not good enough.
+##
+## Two things, and only on that day: the pursuit is moved to the head of the owed list, and the
+## first interval is cut to a lesson rather than an ambush. `LESSON_DELAY` is far enough in that
+## she is walking and off the doorstep — the director will not site anything while she is standing
+## still — and early enough that it is the first thing that happens to her.
+##
+## It is *not* a scripted event, and that is deliberate: it is one of the day's own budgeted
+## `AHEAD_OF_PLAYER` plans, so teaching the run cannot quietly make day 3 denser than the budget
+## says. If the day happened not to buy one, there is nothing to teach and nothing happens.
+func _teach_the_run(day: int) -> void:
+	if day != Tuning.RUN_TAUGHT_DAY:
+		return
+	for i in _owed.size():
+		if not _owed[i].pursues:
+			continue
+		_owed.push_front(_owed.pop_at(i))
+		_next_in = LESSON_DELAY
+		return
+
+## How far into day 3 the lesson lands. A few seconds of ordinary walking first, so that what
+## happens reads as the day changing rather than as the day starting.
+const LESSON_DELAY := 6.0
 
 func owed() -> int:
 	return _owed.size()

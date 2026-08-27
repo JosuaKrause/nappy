@@ -12,6 +12,7 @@ extends CanvasLayer
 @onready var _header: Label = $Header
 @onready var _clock: Label = $Clock
 @onready var _home_arrow: HomeArrow = $HomeArrow
+@onready var _teach: Label = $Teach
 
 var _baby: Baby
 var _contact_step := 0
@@ -52,6 +53,8 @@ func _ready() -> void:
 	EventBus.resistance_seen.connect(_on_seen)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.city_wide_changed.connect(_on_city_wide_changed)
+	EventBus.event_telegraphed.connect(_on_event_telegraphed)
+	EventBus.day_started.connect(_teach_the_day)
 	EventBus.day_started.connect(func(_d: int) -> void:
 		_contact_step = 0
 		_hold = 0.0
@@ -66,7 +69,107 @@ func _ready() -> void:
 	_refresh_state()
 	_refresh_resistance()
 
+# ---------------------------------------------------------------- teaching ---
+# Playtest 07: *"so on day 1 we only introduce arrow keys"*, and *"on day 3 we introduce the
+# running key (it is possible to run before but not required)"*.
+#
+# Two lines of text and no tutorial, for the reason `docs/TODO.md` gives under M26: teaching a
+# move before it is ever correct teaches a move that is never correct again. Running has been
+# available and wrong since M1, so the game says nothing about it for two days — and then says it
+# on the frame it becomes the answer.
+
+## How long the day-1 line stays up. Long enough to be read while walking off the doorstep.
+const TEACH_SECONDS := 7.0
+## How long she has to stand still, having already walked today, before the game mentions that a
+## pause exists. Long enough that it is a person stopping rather than a person turning round.
+const TEACH_PAUSE_AFTER := 3.0
+## And how long the run prompt holds once a pursuit has raised it. A little past the chase, so it
+## is still there while she is getting her breath back and can connect the key to the outcome.
+const TEACH_RUN_SECONDS := 5.0
+
+var _teach_left := 0.0
+## The rig, for the one question the pause hint needs: is she standing still. Found the same way
+## `_baby` is, and for the same reason — it is a *state* of the player, and no signal carries it.
+var _rig: Stroller
+## Whether she has moved at all today. The stand on the doorstep at dawn is not a person who has
+## stopped, it is a person who has not started, so it does not count.
+var _walked_today := false
+var _stood_for := 0.0
+## Once per **run**, not once per day. See `_teach_the_pause()`.
+var _taught_pause := false
+
+## Day 1 says how to walk, and nothing else. Every later day says nothing at all until something
+## on the street asks for a key she has not needed yet.
+func _teach_the_day(day: int) -> void:
+	_teach_left = 0.0
+	_teach.text = ""
+	_walked_today = false
+	_stood_for = 0.0
+	if day == 1:
+		_say("Arrow keys or WASD to walk", TEACH_SECONDS)
+
+
+## The pause exists, and the moment to say so is the first time she stops of her own accord.
+##
+## *(Playtest 07: "bring up the pause tutorial if the user idles — only after the walking tutorial
+## has been finished, and only the first time the user idles in a session, after the initial idle
+## when starting the game before starting to walk for the first time in a day.")*
+##
+## Three conditions, and each one is a way this would otherwise be noise:
+##
+## - **Not before she has walked today.** Standing on the doorstep at dawn is not somebody who has
+##   stopped, it is somebody who has not started, and every single day would open with it.
+## - **Not over the walking lesson.** One line at a time; the `Teach` label is one label, and a
+##   prompt that replaces the instruction she is still following teaches neither.
+## - **Once per run.** It is a keybinding, not a warning. A cue that comes back is a cue that gets
+##   read once and then ignored — which is the rings' mistake in the smallest possible shape.
+##
+## It is also, incidentally, the moment the answer is most useful: since playtest 07 standing still
+## settles nothing, so somebody who has stopped either wants the game to stop with them, or is
+## about to find out that waiting is not a plan.
+func _teach_the_pause(delta: float) -> void:
+	if _taught_pause:
+		return
+	if not _rig:
+		_rig = get_tree().get_first_node_in_group("player") as Stroller
+		if not _rig:
+			return
+	if not _rig.is_idle():
+		_walked_today = true
+		_stood_for = 0.0
+		return
+	if not _walked_today or _teach_left > 0.0:
+		return
+	_stood_for += delta
+	if _stood_for < TEACH_PAUSE_AFTER:
+		return
+	_taught_pause = true
+	_say("Esc to pause", TEACH_SECONDS)
+
+## The run is taught by the thing that requires it, at the moment it requires it.
+##
+## Hung off the telegraph rather than off the day, so the prompt and the dog arrive together: a
+## line of text at dawn saying "you can run" is a control list, and a line of text over a dog
+## coming at the pram is an instruction. It fires for every pursuit rather than only the first,
+## because there is no state worth keeping to make it fire once and the second one is just as
+## much the answer as the first.
+func _on_event_telegraphed(instance: EventInstance) -> void:
+	if instance.def.pursues:
+		_say("Hold SHIFT to run", instance.def.telegraph_time + TEACH_RUN_SECONDS)
+
+func _say(line: String, seconds: float) -> void:
+	_teach.text = line
+	_teach_left = seconds
+
 func _process(delta: float) -> void:
+	_teach_the_pause(delta)
+	if _teach_left > 0.0:
+		_teach_left = maxf(0.0, _teach_left - delta)
+		# Fades out over its last second rather than blinking off, so it leaves the way a
+		# subtitle does and not the way an alarm does.
+		_teach.modulate.a = clampf(_teach_left, 0.0, 1.0)
+		if _teach_left <= 0.0:
+			_teach.text = ""
 	_refresh_state()
 	if _seen_for > 0.0:
 		_seen_for = maxf(0.0, _seen_for - delta)
