@@ -124,7 +124,10 @@ static func _cat_dash() -> EventDef:
 	def.still_while_telegraphing = true
 	def.speed = 240.0
 	def.weight = 3.0
-	def.max_per_day = 5
+	# The one cap M28 did *not* multiply. A cat is sited by the director while she walks, and
+	# `AHEAD_INTERVAL` spreads them 11-26s apart over a 180s day, so a seventh has nowhere to
+	# happen: raising it would spend budget on cats the day cannot fit.
+	def.max_per_day = 6
 	return def
 
 ## Stationary, loud, and *pulsing* — the intensity envelope means the counterplay is timing
@@ -141,7 +144,7 @@ static func _homeless_yeller() -> EventDef:
 	def.telegraph_time = 2.6
 	def.pulse_period = 5.0
 	def.weight = 2.0
-	def.max_per_day = 3
+	def.max_per_day = 14
 	return def
 
 ## Slow, and it owns the pavement it is on.
@@ -174,7 +177,10 @@ static func _dog_walker() -> EventDef:
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 30
 	def.weight = 3.0
-	def.max_per_day = 3
+	# Playtest 05, finding 6, in the player's own words: *"the dog walker decision should happen
+	# meaningfully — I want to have to make that decision at least twice on day one."* Three on a
+	# forty-nine-block city made that a coin flip she lost. Repeats are explicitly fine.
+	def.max_per_day = 20
 	def.cost = 2
 	return def
 
@@ -200,7 +206,11 @@ static func _cafe_tables() -> EventDef:
 	def.pulse_period = 6.0
 	def.obstructs_radius = 24.0
 	def.weight = 2.5
-	def.max_per_day = 3
+	# *"Also the same with a restaurant — I never saw one."* At three on a forty-nine-block city,
+	# with only the ~23% of the map near her ever instantiated, the expected number of cafés she
+	# could see in a day was under one — so the day-1 event built to force a crossing was in
+	# practice absent from most day ones.
+	def.max_per_day = 18
 	def.cost = 2
 	return def
 
@@ -217,7 +227,7 @@ static func _delivery_van() -> EventDef:
 	def.outer_radius = 150.0
 	def.telegraph_time = 1.3
 	def.weight = 2.0
-	def.max_per_day = 3
+	def.max_per_day = 14
 	return def
 
 ## A park spoiler, and a pleasant one. Nothing about it is threatening; it is simply
@@ -235,7 +245,10 @@ static func _busker() -> EventDef:
 	def.telegraph_time = 1.7
 	def.pulse_period = 7.0
 	def.weight = 2.0
-	def.max_per_day = 3
+	# Kept the lowest of the raised act I caps on purpose: a busker is placed on PARK or SQUARE,
+	# which is the only calm ground there is, and `_ensure_one_usable_park` pays for every one
+	# that lands on the block it ends up protecting.
+	def.max_per_day = 8
 	return def
 
 ## The only Act I event that is physically in the way. Blocking the sidewalk forces a
@@ -254,7 +267,7 @@ static func _construction() -> EventDef:
 	def.telegraph_time = 1.8
 	def.obstructs_radius = 34.0
 	def.weight = 1.5
-	def.max_per_day = 3
+	def.max_per_day = 12
 	def.cost = 2
 	return def
 
@@ -338,7 +351,7 @@ static func _police_patrol() -> EventDef:
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 40
 	def.weight = 3.0
-	def.max_per_day = 4
+	def.max_per_day = 12
 	return def
 
 ## Cosmetic dread. Barely moves the meter; it is here so the walls change.
@@ -355,7 +368,7 @@ static func _poster_crew() -> EventDef:
 	def.outer_radius = 110.0
 	def.telegraph_time = 1.0
 	def.weight = 2.5
-	def.max_per_day = 4
+	def.max_per_day = 12
 	return def
 
 ## The masts switch on and there is nowhere in the city they do not reach. City-wide, so
@@ -411,7 +424,7 @@ static func _checkpoint() -> EventDef:
 	def.telegraph_time = 1.8
 	def.obstructs_radius = 60.0
 	def.weight = 2.0
-	def.max_per_day = 3
+	def.max_per_day = 6
 	def.cost = 2
 	return def
 
@@ -436,7 +449,10 @@ static func _abduction() -> EventDef:
 	def.telegraph_time = 4.6
 	def.hard_fail = true
 	def.weight = 2.0
-	def.max_per_day = 2
+	# The `hard_fail` caps rise with the rest, but by half as much: at one event per block the
+	# late city should feel *occupied*, not landmined. Four unmarked vans across forty-nine
+	# blocks is one every twelve; twelve of them would be a difficulty setting nobody asked for.
+	def.max_per_day = 4
 	def.cost = 3
 	return def
 
@@ -457,7 +473,7 @@ static func _alley_robbery() -> EventDef:
 	def.telegraph_time = 0.6
 	def.hard_fail = true
 	def.weight = 1.5
-	def.max_per_day = 2
+	def.max_per_day = 4
 	def.cost = 2
 	return def
 
@@ -540,7 +556,7 @@ static func _protest() -> EventDef:
 	def.intensity_ramp = 1.9
 	def.pulse_period = 8.0
 	def.weight = 2.5
-	def.max_per_day = 2
+	def.max_per_day = 3
 	def.cost = 3
 	return def
 

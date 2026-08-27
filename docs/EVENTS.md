@@ -96,14 +96,46 @@ EventScheduler.build_day(day_index, run_seed):
     6. validate: a path from home to at least one usable calm zone must exist
 ```
 
-The **event budget** grows with the day index: `budget = 17 + floor(day_index × 1.9)`.
+The **event budget** grows with the day index: `budget = 69 + floor(day_index × 6.2)`.
 Each event costs budget equal to its `intensity` tier, so late days are not just "more cats".
 
-The budget is **not** the count, and the gap is about a third: `_ensure_one_usable_park` strips
-whatever reaches the calmest block and `_ensure_the_city_is_still_walkable` drops obstructions
-that would seal the city. Measure what a day *places*, over several seeds; deriving it from the
-formula gets a number a third too small that looks right. Since M27 an `AHEAD_OF_PLAYER` event
-costs the same budget and takes no tile, so a day's `plan` line reads as *n sited, m ahead*.
+The budget is **not** the count: `_ensure_one_usable_park` strips whatever reaches the calmest
+block and `_ensure_the_city_is_still_walkable` drops obstructions that would seal the city.
+Measure what a day *places*, over several seeds; deriving it from the formula gets a number that
+is too small and looks right. Since M27 an `AHEAD_OF_PLAYER` event costs the same budget and
+takes no tile, so a day's `plan` line reads as *n sited, m ahead*.
+
+### The density, and why it is caps before budget *(M28)*
+
+Playtest 05, finding 6, stated it as a number: **one event per block**. The city is 7×7 blocks,
+so day 1 places **49** rather than the 13 it used to. Measured over five seeds:
+
+| | before M28 | after |
+| --- | --- | --- |
+| Placed on day 1 (non-ambient) | 13 | **50** — 1.03 per block |
+| Placed on day 14 | 25 | **97** |
+| Live inside `EVENT_STREAM_RADIUS` | 1.8 | **10.9** |
+| On screen at once, walking | ~1 | **3.3** (6.9 on day 14) |
+| Met on a short errand and back | 1.0 | **2.0**, of which 0.8 dog walkers |
+| Café tables seen on that errand | ~0.2 | **3.2** |
+
+**The budget was never the binding constraint, and raising it alone does nothing.** The day-1
+pool's `max_per_day` values summed to 18, so a budget of 100 placed the same 13 events — which
+is what `CLAUDE.md`'s *"a budget the catalogue cannot spend is not density"* is about. The caps
+moved first, several times over, and the budget followed. Repeats are explicitly fine
+(*"it's fine if the same event happens multiple times"*), so **no new catalogue rows were
+needed**: three dog walkers became twenty, three cafés eighteen.
+
+Two things the caps were quietly doing that had to be replaced when they moved:
+
+- **Separation.** `_place_one` picks a uniformly random tile, so the cap of three was the only
+  reason two dog walkers never landed on the same pavement. It is a rule of its own now:
+  `EVENT_SPACING_SAME` (256px, a block) between two of a kind, `EVENT_SPACING_ANY` (64px) between
+  any two at all. The first bends on a full map, the second never does.
+- **Keeping a lethal field uncluttered.** See the telegraph contract below.
+
+The one cap that did *not* rise is `cat_dash`. A cat is sited by the director while she walks and
+`AHEAD_INTERVAL` spreads them over the day, so a seventh has nowhere to happen.
 
 ## Catalogue
 
@@ -183,10 +215,11 @@ func contribution_at(world_position: Vector2) -> float:
 Because it is a pure query there is no ordering to get wrong, events compose by simple
 addition, and an instance can be tested without a scene.
 
-The lookup is a **linear scan**, not a spatial hash. The budget formula tops out around 22
-concurrent events on the last day; 22 distance checks per physics frame is nothing, and a
-hash would be more code with more ways to be subtly wrong. Revisit if an act ever wants
-hundreds of sources at once.
+The lookup is a **linear scan**, not a spatial hash. Since M28 a late day has around 26 events
+instantiated at once — the whole day is four times that, but only what is inside
+`EVENT_STREAM_RADIUS` exists as a node — and 26 distance checks per physics frame is nothing,
+while a hash would be more code with more ways to be subtly wrong. Revisit if an act ever wants
+hundreds of live sources at once; the streaming radius is what decides that, not the budget.
 
 ## Telegraph contract
 
@@ -205,6 +238,25 @@ difficulty setting, and `tests/test_events.gd` checks the whole catalogue.
 map, so there is no moment at which they appear and nothing to warn about. The player
 learns where the playgrounds are on day 1 and that knowledge holds for the whole run, which
 is the point of a city that does not change.
+
+### The contract is per event, and the player experiences the sum *(M28)*
+
+`validate_event()` checks each row in isolation. At one event per block the outer radii routinely
+overlap — `cafe_tables` alone is 170px against a 448px block period — so **walking out of one
+field can mean walking into another**, and nothing in the catalogue can see that. Playtest 05
+named this as the way the density breaks quietly, and it is worth being exact about which half
+of it is a problem:
+
+- For the fifteen rows that only cost points, it is **not** a violation. She got clear of the
+  thing she was told to get clear of; the next field costs her the meter, which is exactly what
+  a dense street is supposed to do. This is the density working.
+- For the three rows that **end the day** it is a real breach, because the escape she was
+  offered would have walked her into a death she never had a telegraph for.
+
+So the rule the scheduler enforces at placement is: **nothing else happens inside a lethal
+event's field.** A `hard_fail` event keeps its whole `outer_radius` clear of every other event,
+and it is the one spacing rule with no fallback — an abduction that cannot find room is simply
+not placed. `tests/test_events.gd` asserts it across a whole run.
 
 ## What an event actually costs
 
@@ -247,6 +299,17 @@ none of them has to cost anything. Everything else must be more expensive to wal
 to walk around, and `tests/test_events.gd` asserts exactly that with those three named as the
 exemptions — so a **fourth** negative event has to be a decision somebody takes on purpose
 rather than a number nobody checked.
+
+**What the table stopped being able to answer, in M28.** Every row prices *walking through one
+event against walking around it*, and that was the player's actual question while a street
+carried one event every four blocks. At one per block, going around one is often going through
+the next, so the table now measures a move the player rarely has in front of her. It is still
+the right way to price a **row** — it is how `dog_walker` was caught costing −0.1 points, and
+the test that keeps every row above zero is written over it — but it is no longer a description
+of what a street costs. The two numbers that are: **3.3 events on screen at once** on day 1, and
+a contact with a pedestrian at ~15.6 points and a car's horn at ~8, neither of which is in the
+catalogue at all. A balance argument that reaches for this table alone is answering a much
+narrower question than it thinks, and since M28 it is narrower again.
 
 What the table said before M19, and what changed:
 

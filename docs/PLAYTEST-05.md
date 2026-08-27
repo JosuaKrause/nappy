@@ -5,7 +5,8 @@ two playtests actually asked for**. The player said so up front: *"I played agai
 the main requested changes haven't landed yet)"* — so this is not a verdict on the calm areas
 (M21) or on the map (M17), neither of which exists yet.
 
-**Nothing here is fixed.** This document is the write-up only.
+**Status.** Finding 6 is **done — M28**, and it is the only one that is. The rest are unchanged
+and unstarted; see the status line under each heading.
 
 ---
 
@@ -260,6 +261,16 @@ already exists: `near` entries per day and `lost` lines, read against these two 
 
 ## Finding 6 — the density target, stated as a number
 
+> **Done — M28.** Day 1 places **50 events across 49 blocks** (against 13), about eleven live
+> around her at once (against 1.8) and **3.3 on screen** while she walks (against ~1). A café is
+> seen three times on a short errand where it used to be seen not at all. The caps moved first
+> and the budget followed: `budget_for` is `69 + day × 6.2`, and the day-1 pool's caps went from
+> summing to 18 to summing to 76. Everything below is the analysis it was built from, and all of
+> it held up except one number — the attrition on day 1 turned out to be near zero rather than a
+> third, because the caps were binding and the budget was not. The measured table is now in
+> docs/EVENTS.md. Two things it needed that this document predicted: a **spacing rule** at
+> placement, and a rule keeping **lethal fields uncluttered**.
+
 > I want one event **per block**. The dog walker decision should happen meaningfully — I want
 > to have to make that decision at least twice on day one. That's the density I'm talking
 > about. Also the same with a restaurant — I never saw one.
@@ -398,3 +409,9 @@ Nothing is reordered here — that is a decision for whoever picks it up — but
   acceptable makes it a smaller change than it first looked: no new catalogue rows are required
   to reach the target. It is the density half of finding 5; the danger half (nothing
   lethal before day 8) is separate and is not fixed by placing more café tables.
+  *(**Done — M28.** All three checks were real. The park guarantee held, but the **test** of it
+  did not: it measured the whole block lot where the scheduler has protected only the calm
+  ground since M15, which was invisible at thirteen events a day and false on nine days out of
+  fourteen at fifty. The cost table survived as a way to price a row and stopped being a
+  description of a street. And the overlap check turned into a placement rule. The danger half
+  is still open and is still not fixed by café tables.)*

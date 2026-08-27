@@ -36,6 +36,10 @@ class Planned extends RefCounted:
 	func is_placed() -> bool:
 		return position != Vector2.INF
 
+	## The points that bound this event — the corners of its route, or the one place it stands.
+	func ends() -> PackedVector2Array:
+		return path if path.size() >= 2 else PackedVector2Array([position])
+
 	## Distance from a point to the nearest part of this event — the point it stands at, or the
 	## nearest point of the route it will travel. A fire engine two streets away that is going
 	## to come down *this* one has to be in the world before it sets off, or its whole telegraph
@@ -66,15 +70,25 @@ class Planned extends RefCounted:
 ## The shape is kept — the escalation is still roughly linear in the day — and the floor is
 ## raised, which is what "the beginning is challenging too" (playtest 02, decision 9) asks for.
 ##
-## The budget is not the count and the difference is not small: about a third of it is spent on
-## events the day then throws away, because `_ensure_one_usable_park` strips whatever reaches
-## the calmest block and `_ensure_the_city_is_still_walkable` drops obstructions that would seal
-## the city. So the number was set by *measuring what a day places* over four seeds rather than
-## by arithmetic — 18 puts 13 or 14 non-ambient events on a day-1 map of 49 blocks, one per
-## four rather than one per twelve, and 43 puts 25 on day 14. Re-measure it, do not re-derive
-## it, if the catalogue's costs move.
+## The budget is not the count and the difference is not small: a part of it is spent on events
+## the day then throws away, because `_ensure_one_usable_park` strips whatever reaches the
+## calmest block and `_ensure_the_city_is_still_walkable` drops obstructions that would seal the
+## city. So the number is set by *measuring what a day places* over several seeds rather than by
+## arithmetic. Re-measure it, do not re-derive it, if the catalogue's costs move.
+##
+## **M28 moved it to playtest 05's stated target: one event per block.** *"I want one event per
+## block. The dog walker decision should happen meaningfully — I want to have to make that
+## decision at least twice on day one."* The city is 7x7 blocks, so that is **49 placed on day
+## 1**, against the 13 the old 18 bought. The budget alone could never have got there — the
+## day-1 pool's `max_per_day` values summed to 18, so a budget of 100 placed the same 13 events
+## — which is what `CLAUDE.md`'s *"a budget the catalogue cannot spend is not density"* is
+## about. The caps moved first; this followed, measured.
+##
+## The escalation is still linear in the day and is now steep enough to be felt as one: day 14
+## carries about half again as many events as day 1, and a larger share of them are act III and
+## IV rows rather than more dog walkers, because those caps rose too.
 static func budget_for(day: int) -> int:
-	return 17 + floori(day * 1.9)
+	return 69 + floori(day * 6.2)
 
 ## Plans a day. `consumed_one_shots` is read and appended to, so a one-shot fires once
 ## per run.
@@ -84,9 +98,9 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 
 	planned.append_array(_place_ambient(day, map))
 	planned.append_array(_place_scars(day, scars))
-	planned.append_array(_place_scripted(day, rng, map))
-	planned.append_array(_place_one_shots(day, rng, map, consumed_one_shots))
-	planned.append_array(_fill_with_recurring(day, rng, map))
+	_place_scripted(day, rng, map, planned)
+	_place_one_shots(day, rng, map, consumed_one_shots, planned)
+	_fill_with_recurring(day, rng, map, planned)
 
 	_ensure_one_usable_park(map, planned)
 	_ensure_the_city_is_still_walkable(map, planned)
@@ -116,17 +130,15 @@ static func _place_ambient(day: int, map: CityMap) -> Array[Planned]:
 				pass
 	return planned
 
-static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap) -> Array[Planned]:
-	var planned: Array[Planned] = []
+static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
+		planned: Array[Planned]) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day):
-		var placement := _place_one(def, rng, map)
+		var placement := _place_one(def, rng, map, planned)
 		if placement:
 			planned.append(placement)
-	return planned
 
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
-		consumed: Array[String]) -> Array[Planned]:
-	var planned: Array[Planned] = []
+		consumed: Array[String], planned: Array[Planned]) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day):
 		if def.id in consumed:
 			continue
@@ -142,7 +154,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today"
 					% [def.id, roll, threshold])
 			continue
-		var placement := _place_one(def, rng, map)
+		var placement := _place_one(def, rng, map, planned)
 		if not placement:
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
@@ -155,14 +167,12 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		Telemetry.note("roll", "one-shot %s: %.2f <= %.2f — fires at %s"
 				% [def.id, roll, threshold,
 				TelemetryLog.tile(map.world_to_tile(placement.position))])
-	return planned
 
-static func _fill_with_recurring(day: int, rng: RandomNumberGenerator,
-		map: CityMap) -> Array[Planned]:
-	var planned: Array[Planned] = []
+static func _fill_with_recurring(day: int, rng: RandomNumberGenerator, map: CityMap,
+		planned: Array[Planned]) -> void:
 	var eligible := EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day)
 	if eligible.is_empty():
-		return planned
+		return
 
 	var budget := budget_for(day)
 	var counts := {}
@@ -178,13 +188,12 @@ static func _fill_with_recurring(day: int, rng: RandomNumberGenerator,
 		if affordable.is_empty():
 			break
 		var def := _pick_weighted(affordable, rng)
-		var placement := _place_one(def, rng, map)
+		var placement := _place_one(def, rng, map, planned)
 		if not placement:
 			continue
 		planned.append(placement)
 		counts[def.id] = int(counts.get(def.id, 0)) + 1
 		budget -= def.cost
-	return planned
 
 static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) -> EventDef:
 	var total := 0.0
@@ -198,7 +207,17 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 	return defs[defs.size() - 1]
 
 ## Picks a tile of an allowed type and builds the path, if the event moves.
-static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap) -> Planned:
+##
+## `already` is what the day has planned so far, and since M28 it is what keeps the density
+## legible. Placement is a uniform random tile, and until the caps were raised the cap of three
+## was the only reason two dog walkers never landed on the same stretch of pavement. It is a
+## rule of its own now: several candidates are offered and the first that clears
+## `EVENT_SPACING_SAME` from its own kind and `EVENT_SPACING_ANY` from everything else wins.
+##
+## The fallback is the roomiest candidate offered rather than nothing, because a scripted event
+## has to happen: on a map with fifty events on it the honest answer is the best spot left.
+static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
+		already: Array[Planned] = []) -> Planned:
 	# An `AHEAD_OF_PLAYER` event is budgeted here and sited by `EventDirector` while the player
 	# walks. Costing it here rather than giving the director its own allowance is deliberate:
 	# the cat competes with the café tables and the roadworks for the same day, so making the
@@ -222,21 +241,91 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap) 
 	if open_candidates.is_empty():
 		return null
 
-	var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
+	var best: Planned = null
+	var best_room := -INF
+	for _try in Tuning.EVENT_PLACEMENT_TRIES:
+		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
+		var candidate := _build_placement(def, map, tile, rng)
+		if not candidate:
+			continue
+		var room := _room_around(candidate, already)
+		if room == INF:
+			return candidate
+		if room > best_room:
+			best_room = room
+			best = candidate
+	# Nothing comes back when every candidate broke a rule that does not bend — a lethal event
+	# with no clear ground, or a full pavement. The caller re-rolls; a scripted event that
+	# cannot be placed simply does not happen, which is the right failure direction.
+	return best
+
+## One candidate placement on a given tile, with its route built if it moves.
+static func _build_placement(def: EventDef, map: CityMap, tile: Vector2i,
+		rng: RandomNumberGenerator) -> Planned:
 	var at := map.tile_to_world(tile)
 	if not def.mobile:
 		return Planned.new(def, at)
-
 	match def.path_mode:
 		EventDef.PathMode.CROSS_STREET:
 			return Planned.new(def, at, _cross_street_path(map, tile))
 		EventDef.PathMode.ALONG_STREET:
 			var route := _along_street_path(map, tile, def, rng)
-			# Nowhere to go from here; let the caller re-roll rather than placing a
-			# "mobile" event that stands still.
+			# Nowhere to go from here; a "mobile" event that stands still is worse than
+			# another roll of the dice.
 			return null if route.is_empty() else Planned.new(def, at, route)
 		_:
 			return Planned.new(def, at)
+
+## How much room a candidate has. `INF` means it satisfies every rule and can be taken at once;
+## `-INF` means it is illegal at any price; anything between is how far it got towards
+## `EVENT_SPACING_SAME`, which is the only rule that bends.
+##
+## "Room" is measured against the whole of an event rather than the tile it starts on: a dog
+## walker's route is thirty tiles long, and a start point with room around it can still walk the
+## length of somebody else's field.
+##
+## **Two of the rules are absolute and one is a preference**, and the split is what each one is
+## protecting:
+##
+## - `EVENT_SPACING_ANY` — nothing is ever drawn inside anything else. Two tiles, thousands of
+##   candidates, so refusing costs a re-roll and nothing else.
+## - **Nothing else happens inside a lethal event's field.** This is playtest 05's first named
+##   risk: `Tuning.validate_event()` states the telegraph contract *per event* and the player
+##   experiences the sum, so at one event per block "walk out of this radius" can quietly mean
+##   "walk into the next one". For fifteen of the eighteen rows that is a cost and it is what
+##   the density is *for*; for the three that end the day it is a death arriving out of a field
+##   she was already reading. A `hard_fail` event that cannot find room is not placed at all.
+## - `EVENT_SPACING_SAME` — a second dog walker a few pixels from the first reads as a
+##   duplicated sprite rather than a second incident. This one bends, because on a full map the
+##   honest answer is the roomiest spot left rather than no event.
+static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
+	var room_same := INF
+	for plan in already:
+		if not plan.is_placed():
+			continue
+		var gap := _gap_between(candidate, plan)
+		if gap < Tuning.EVENT_SPACING_ANY:
+			return -INF
+		if candidate.def.hard_fail and gap < candidate.def.outer_radius:
+			return -INF
+		if plan.def.hard_fail and gap < plan.def.outer_radius:
+			return -INF
+		if plan.def.id == candidate.def.id:
+			room_same = minf(room_same, gap)
+	return INF if room_same >= Tuning.EVENT_SPACING_SAME else room_same
+
+## The closest two events come to each other, counting the whole of a route at both ends.
+##
+## Measured from both sides on purpose: the closest point of two segments is an endpoint of at
+## least one of them, so checking one event's ends against the other's route and not the other
+## way round misses the case where it is the *other* one's end that is close.
+static func _gap_between(a: Planned, b: Planned) -> float:
+	var gap := INF
+	for point in a.ends():
+		gap = minf(gap, b.distance_from(point))
+	for point in b.ends():
+		gap = minf(gap, a.distance_from(point))
+	return gap
 
 ## Distance in tiles from a tile to the edge of the map along a direction, less a
 ## one-block margin so a route always ends inside the city rather than against the wall.
