@@ -13,6 +13,35 @@ signal started_crying()
 ## Debug affordance: lets the debug world start a session mid-way for UI checks.
 @export_range(0.0, 100.0) var starting_sleepiness := 0.0
 
+## What the pram is saying about her. *(Playtest 06, finding 5.)*
+##
+## Four states and no gauge. Every cue in `docs/EVENTS.md` says something about the *world* —
+## a thing is dangerous, something is coming, this spot is about to be bad — and none of them
+## said anything about the baby, who is the only thing the player is trying to change. Two bars
+## in the corner of a game whose camera is on the pram asks a person to read a number about the
+## thing they are looking at from somewhere else on the screen.
+##
+## The two rules it is built to, both from the standing decision in `CLAUDE.md`:
+##
+## - **Stages, not a gauge.** A meter drawn over her head is the HUD moved. What earns a place
+##   in the vocabulary is a small number of states, each of which is a different instruction:
+##   *the day has stopped progressing*, *the day is about to end*, *you are on the way home*,
+##   *she is about to wake and it will cost you half the bar*.
+## - **It is not the exclamation mark.** That one means "this will end your day" and M30 spent a
+##   milestone making it mean only that. Different shape, different anchor — the pram, not her
+##   head — and `Stroller` keeps them out of each other's way when the pram is behind her.
+enum Cue {
+	NONE,
+	## Over the calm threshold and awake: sleepiness is frozen, so the day is not progressing.
+	UNSETTLED,
+	## Close enough to `METER_MAX` that the next loud thing ends the day.
+	NEARLY_CRYING,
+	## Asleep. The one state with the most consequence attached and the least on-screen presence.
+	ASLEEP,
+	## Asleep and nearly awake again, which costs `WAKE_SLEEPINESS_PENALTY`.
+	STIRRING,
+}
+
 var sleepiness := 0.0
 var excitement := 0.0
 var state := GameEnums.BabyState.AWAKE
@@ -147,6 +176,25 @@ func _set_state(next: GameEnums.BabyState) -> void:
 	EventBus.baby_state_changed.emit(state)
 
 # ------------------------------------------------------------------ queries ---
+
+## Which of the four states the pram is showing, or `NONE` while there is nothing to say.
+##
+## A pure query, like everything else the rig asks of the baby: the drawing lives in `Stroller`
+## because the rig draws itself, and the decision lives here because this is where the meters
+## are. Nothing about it is a threshold `_update_state()` does not already turn the day on.
+func cue() -> Cue:
+	match state:
+		GameEnums.BabyState.CRYING:
+			return Cue.NEARLY_CRYING
+		GameEnums.BabyState.ASLEEP:
+			if excitement >= Tuning.EXCITEMENT_WAKE_THRESHOLD - Tuning.EXCITEMENT_STIR_MARGIN:
+				return Cue.STIRRING
+			return Cue.ASLEEP
+	if excitement >= Tuning.EXCITEMENT_NEARLY_CRYING:
+		return Cue.NEARLY_CRYING
+	if excitement >= Tuning.EXCITEMENT_CALM_THRESHOLD:
+		return Cue.UNSETTLED
+	return Cue.NONE
 
 ## Why sleepiness is not currently rising, or "" if it is. Drives the HUD hint.
 func stall_reason() -> String:

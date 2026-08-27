@@ -49,16 +49,21 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 		lines.append("")
 		lines.append(reason)
 	lines.append("")
+	var retrying := result != GameEnums.DayResult.WON and nerves > 0
 	if result == GameEnums.DayResult.WON:
 		lines.append("You got her home.")
 	else:
 		lines.append("Nerves left: %s" % ("*".repeat(nerves) if nerves > 0 else "none"))
+	# The calendar does not move on a loss, so the screen says so rather than leaving the player
+	# to notice tomorrow that it is still today. *(Playtest 06, finding 4.)*
+	if retrying:
+		lines.append("You try day %d again." % day)
 	# The only place the subquest is ever spelled out. In the world it is chalk on a wall.
 	if GameState.has_joined_resistance():
 		lines.append("")
 		lines.append(_resistance_line())
 	_body.text = "\n".join(lines)
-	_hint.text = "space to go on"
+	_hint.text = "space to try again" if retrying else "space to go on"
 	_present()
 
 func _resistance_line() -> String:

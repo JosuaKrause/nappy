@@ -4,11 +4,11 @@ The sixth human playtest, and **the first one taken on M28–M31** — the densi
 sides, the narrowed exclamation mark and act I's teeth. The handoff's one instruction to the
 next session was *"play it"*, and this is that.
 
-**Status. Open.** Nothing here is done. It was reported mid-session with the instruction to
+**Status. Closed** — all five, in M32. It was reported mid-session with the instruction to
 *"take note of those but continue implementing the next item on the handoff first"*, so M21
-(four-block calm zones) went first and these are queued behind it. The analysis below is a
-first read off the code, not a measured one — where it says "probably", it has not been
-checked against a run.
+(four-block calm zones) went first and these came next. The analysis below was a first read off
+the code rather than a measured one; **what it got right and what it got wrong is recorded at
+the bottom**, under "What the analysis missed", which is the half that is not in the diff.
 
 ---
 
@@ -272,3 +272,49 @@ signalling code M22 and M30 already own:
 
 Neither has a test that could have caught it, and that is the pattern by now: `tests/test_danger.gd`
 asserts *which* things are marked and cannot see *when*. A cue is a claim about a moment.
+
+---
+
+## What was built (M32)
+
+All five, on `feature/cues-that-mean-now`.
+
+- **The badge measures the event's own approach**, with the player held still — the arithmetic is
+  two static functions so a test can ask them without a viewport. Plus the range cap as a
+  *window* (`LEAD_TIME` seconds of its approach rather than a distance), a `HOLD` on a raised
+  badge, a **margin outside the screen edge** before one may be raised, and sorting by *arrival*
+  rather than distance so `MOST_AT_ONCE` evicts the thing that gets here last.
+- **The mark comes down at the kerb.** `Stroller.warn()` takes a source and
+  `Stroller.stand_down()` lets that source — and only that source — lower its own. The 1.4s hold
+  is unchanged, because bridging the gap between two cars in one lane is a real job.
+- **A lost day is retried.** `GameState.finish_day()` stops advancing the calendar, the summary
+  says *"You try day 3 again"*, and the attempt's `settled_in` record is forgotten with it.
+- **The pram says how the baby is.** `Baby.Cue` (four states, no gauge) and
+  `Stroller._draw_baby_cue()`, with three new sprites in `assets/props/`.
+- **And the log can finally see a cue.** A `cue` entry per span, written when the span *ends* so
+  the duration is on the line, with what raised the mark and where the badged thing was when the
+  badge went. That is the gap playtest 05 flagged and 06 fell straight into.
+
+## What the analysis missed
+
+Kept because the write-up above was a read of the code, and three of its claims did not survive
+contact with a run.
+
+- **"All three symptoms are one bug" was two thirds right.** The relative-speed test is the
+  whole of *"they show events far away"* and *"they disappear when you walk towards them"*.
+  *"They flicker a lot"* had a **second cause the write-up did not predict**: a thing sitting on
+  the screen boundary trades places with its own badge every frame — off screen, badge up, on
+  screen, badge gone — and no amount of hysteresis on the *closing rate* touches it. It needed
+  hysteresis on the screen edge, which is a different quantity in different units.
+- **`MOST_AT_ONCE` was the wrong suspect, and the sort was the right one.** The write-up flagged
+  eviction as a possible fourth cause. At the density measured it never evicted anything; what
+  *was* wrong is that the list was sorted by distance, so the badge a cap would drop is the one
+  arriving first.
+- **The cat was announcing itself.** Nothing in the write-up predicted that the director's own
+  `AHEAD_OF_PLAYER` events were eligible for a badge. A trace of 70 seconds of day 3 had
+  `cat_dash` raising and dropping a badge inside the same tenth of a second, twice — a cue for
+  the one kind of event whose entire content is that it is not announced.
+- **Finding 3's "second half" was left alone on purpose.** The write-up suspected the meter
+  climbing after a near miss might be the larger half. It is not a cue: the horn's jolt is what
+  a near miss *costs*, and the complaint was about being *told* about the past, not about paying
+  for it. The mark was the thing telling her, and the mark is fixed.

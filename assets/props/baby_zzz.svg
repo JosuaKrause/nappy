@@ -1,0 +1,11 @@
+<!-- The baby is asleep. Floats over the pram rather than over the mother, because the pram is
+     what the player is looking at and because the mark over her head is spoken for: that one
+     means "this will end your day" and must never be read as part of anything about the meters.
+     Three z's climbing away, outlined in the same near-black as the rest of the vocabulary. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="24" viewBox="0 0 28 24" shape-rendering="crispEdges">
+  <g fill="#e8f1fb" stroke="#221f28" stroke-width="2" stroke-linejoin="round">
+    <polygon points="1,17 7,17 7,19 4,21 7,21 7,23 1,23 1,21 4,19 1,19"/>
+    <polygon points="8,9 16,9 16,12 11,14 16,14 16,17 8,17 8,14 13,12 8,12"/>
+    <polygon points="17,0 27,0 27,3 21,7 27,7 27,10 17,10 17,7 23,3 17,3"/>
+  </g>
+</svg>

@@ -16,6 +16,10 @@ extends Node
 ## across the whole map — see `CrowdField` for why, and `Tuning.CROWD_PEDESTRIANS_PER_ACT` for
 ## what it did to the numbers.
 
+## The traffic's name on the mark over the player's head, so it can take its own down again and
+## nobody else's. See `Stroller.stand_down()`.
+const WARNING_SOURCE := &"traffic"
+
 var _agents: Array[CrowdAgent] = []
 var _city: City
 var _map: CityMap
@@ -171,8 +175,17 @@ func _physics_process(_delta: float) -> void:
 	# about to be bad, and the whole contract is that there is time to walk off it. The mark is
 	# raised for the rest of the hold rather than for this frame, so it survives the gap between
 	# two cars in the same lane instead of strobing.
+	#
+	# And it comes down the instant she is off the carriageway. *(Playtest 06, finding 3: "when I
+	# cross and they honk at me, I get the flashing exclamation marks **after** the fact, at which
+	# point they're not useful.")* The hold is doing a real job and is not the bug — a car cannot
+	# strike her on the pavement at all, so the two cases the hold could not tell apart are
+	# *between two cars* and *over the kerb*, and the kerb is a fact this loop already has in
+	# hand. Only the warning the traffic itself raised is taken down; see `Stroller.stand_down`.
 	if closing:
-		_player.warn(Stroller.Alert.SOON, Tuning.CAR_WARNING_HOLD)
+		_player.warn(Stroller.Alert.SOON, Tuning.CAR_WARNING_HOLD, WARNING_SOURCE)
+	elif not on_the_road:
+		_player.stand_down(WARNING_SOURCE)
 
 ## Displaces a pedestrian the player has walked into, startles them, and returns the share of
 ## the separation she takes herself.

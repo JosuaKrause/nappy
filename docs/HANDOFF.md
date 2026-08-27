@@ -1,54 +1,68 @@
 # Handoff
 
-**Last updated:** end of the M21 session — the first one after a human played M28–M31.
+**Last updated:** end of the M32 session — playtest 06's five things, all closed.
 **Read this first, then [PLAYTEST-06.md](PLAYTEST-06.md), then [TODO.md](TODO.md).**
 
-> **M21's calm-zone half is done.** One or two **four-block calm zones** per city: 2×2 blocks
-> with the streets between them absorbed, 22 tiles square, crossed corner to corner in 10.8s
-> against the 23.8s a full meter of calm takes. That is the structural answer to playtest 03's
-> traced player walking in a circle in a courtyard for twenty seconds — a complaint no balance
-> pass could have fixed, because progress-requires-motion plus small-calm-area is jointly
-> sufficient for a lap.
+> **M32 is playtest 06, and it is one sentence: a cue is a claim about a *moment*.** M30 spent a
+> milestone deciding *which* things raise the mark over her head and never looked at **when** —
+> and the next player's two complaints were both about when. The mark stayed up for 1.4s after
+> she was over the kerb, where a car cannot reach her; the badge tested how fast the *gap* was
+> shrinking, which is her 92px/s plus the thing's, so **walking towards anything lethal announced
+> it**. Membership was right in both cases and neither could be seen by a test:
+> `tests/test_danger.gd` asserts what is marked and cannot see a moment.
 >
-> **The lattice has holes in it now**, which is the part that cost something: four T-junctions
-> round each zone, a junction in the middle that nothing reaches, and **route redundancy is no
-> longer true by construction**. It is checked by search — `StreetNetwork.route_count()`, which
-> M16 built for the closures and which needed no change at all, because a street that is not
-> there is a street that is permanently shut as far as a search is concerned.
+> **What that took, and the two things the write-up did not predict.** The badge measures the
+> event's own approach with the player held still, caps its range as a *window* rather than a
+> distance, holds a raised badge, and sorts by **arrival** rather than distance. Then a trace
+> found the rest: *"they flicker a lot"* had a **second cause** — a thing on the screen boundary
+> trades places with its own badge every frame, which needs hysteresis on the *edge*, in screen
+> pixels, and no amount on the closing rate touches it. And the director's `AHEAD_OF_PLAYER`
+> events were eligible, so `cat_dash` — the one kind of event whose entire content is that it is
+> *not* announced — was raising and dropping a badge inside a tenth of a second.
 >
-> **The other two halves of M21 are deliberately not done** and are written up as such in
-> [TODO.md](TODO.md): main roads with traffic lights (largely answered another way — M19's lethal
-> carriageway and M27's density already make the arterial a thing you cross), and the canal.
+> **The mark comes down at the kerb.** `Stroller.warn()` takes a source and `stand_down()` lowers
+> only that source's own mark, which is the smallest thing that is not the setter the additive
+> rule exists to prevent. The 1.4s hold is unchanged: bridging the gap between two cars in one
+> lane is a real job, and the fix is a second condition rather than a shorter hold.
 >
-> **Playtest 06 arrived mid-session and is open.** Four things in
-> [PLAYTEST-06.md](PLAYTEST-06.md), and the one to carry around is finding 2: ***"I like the
-> difficulty now — it actually became harder."*** That is the **first balance number in this
-> project ever confirmed by a human**, and it retires the loudest line in "Known-shaky ground".
-> The other three are small, and one of them closes a design question open since M6: **a lost day
-> is retried, not skipped.**
+> **A lost day is retried, not skipped**, which closes a design question carried since M6. The
+> calendar moves only on a win, so three nerves are three attempts wherever they are needed.
 >
-> **Two decisions from the previous session still govern things and are easy to miss.**
+> **And the pram says how the baby is** — the vocabulary asked for in the other direction for the
+> first time: four states, not a gauge, over the pram and never in the exclamation mark's column.
+>
+> **The log can see a cue at last.** Both defects were invisible to a trace, because every entry
+> said what the *world* did and none said what the game **told her about it**. That was playtest
+> 05's own suspicion about the gap in the format, and playtest 06 walked straight into it.
+>
+> **Three decisions from earlier sessions still govern things and are easy to miss.**
 > **M17, the route map, is backlogged** — *"let's not do that for now, we might revisit later"*.
-> And **a patrol is wrong for act I** — *"patrol shouldn't be there for act I"* — which narrowed
+> **A patrol is wrong for act I** — *"patrol shouldn't be there for act I"* — which narrowed
 > M25 to acts III and IV, where the streets are deliberately empty and the threat should follow
-> rather than sit.
+> rather than sit. And **two halves of M21 are open by decision**: main roads with lights, and
+> the canal.
 
 ---
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **47062 checks, 0 failures** (~105s);
+`main` is green and playable. `./tools/test.sh` → **47085 checks, 0 failures** (~105s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
-**The check count went 31768 → 47062 and that is M21's own tests**, not a change of scale: the
-new ones loop over every street of every zone of every seed, which is a great many cheap
-assertions. Before that it roughly doubled with M28's density and moved *down* again in M31 —
-32735 → 31768 — because two of those loops are per-event-pair and seven new rows spread the same
-fifty events over more types. A count that moves with what is being asserted is doing that; a
-count that drops after anything but a deletion is a suite that stopped running.
+**The check count went 47062 → 47085**, which is M32's twenty-three: the whole milestone is
+about *when* a cue fires, and almost none of that is assertable. What is assertable was made so
+on purpose — the badge's two questions are **static functions** (`approach_speed`, `announces`)
+so a test can ask them without a viewport, and the rest is a rig walked at a parked fire engine
+and then a fire engine driven at a parked rig. Before that it went 31768 → 47062 on M21's own
+tests, which loop over every street of every zone of every seed. A count that moves with what is
+being asserted is doing that; a count that drops after anything but a deletion is a suite that
+stopped running.
 
-**M21 landed in this session, and playtest 06 opened.**
+**M32 landed in this session and playtest 06 is closed.** The five things it fixed are the
+entry above; what is worth carrying forward is in "Gotchas learned in M32" below.
+
+**M21 landed in the session before it, and playtest 06 opened in the middle of it.**
 
 **M21 made the calm big enough to walk in.** A calm **area** is now either one block or a
 four-block **zone**, and every city has one or two zones. What that meant in practice was less
@@ -175,6 +189,11 @@ should now be a great deal more than playtest 03's zero — `road` for time in t
   day 3 — so lethal-per-day runs 0, 3, 4 over days 1–3 and the escalation is a change of kind.
   Plus five more act I rows for variety, each with its own silhouette. Fixed the streaming
   rewind and gave mobile events a gait.
+- **M32 complete.** Playtest 06's five: the badge measures the thing's own approach (plus a
+  window, a hold, a screen-edge margin and a sort by arrival); the mark over her head comes down
+  at the kerb, via a source rather than a setter; a lost day is **retried** and the calendar only
+  moves on a win; the pram carries the baby's four states; and the log has a `cue` entry, so the
+  next cue defect is visible to a trace rather than only to a person.
 - **M21 half complete.** Four-block calm zones: 22 tiles square, 10.8s corner to corner against
   a full meter's 23.8, one or two per city, never taking a stretch of the arterial and never
   beside other calm. The lattice grew holes and route redundancy stopped being true by
@@ -256,10 +275,11 @@ All six are live plans: **[PLAYTEST-01.md](PLAYTEST-01.md)** (thirteen findings 
 (the first read off a run log; it reorders rather than adds),
 **[PLAYTEST-04.md](PLAYTEST-04.md)** (seven findings; adds M27 and moved M22 and M21 to the
 front), **[PLAYTEST-05.md](PLAYTEST-05.md)** (six findings → M28, M29, M30, M24 and M31,
-**all closed**), and **[PLAYTEST-06.md](PLAYTEST-06.md)** (four things, **all open**, none of
-them a milestone). Read 06 and then 05 before picking anything up; the summaries here are not a
-substitute for them, and 05's write-ups carry what each analysis got wrong as well as what it
-got right.
+**all closed**), and **[PLAYTEST-06.md](PLAYTEST-06.md)** (five things, **all closed** as M32).
+Read 06 and then 05 before picking anything up; the summaries here are not a substitute for them,
+and both carry what each analysis got wrong as well as what it got right — 06's is at the bottom
+of the file, under "What the analysis missed", and two of its three entries are things a trace
+found that no amount of reading the code would have.
 
 The queue is numeric except where something jumped it, and each jump had one practical reason:
 **M18** because closure counts tuned against a day that was about to halve would have been
@@ -275,7 +295,7 @@ and traffic that overtakes is not.
 
 **Playtest 06 did not jump anything**, which is worth saying: it arrived part-way through M21
 with the instruction *"take note of those but continue implementing the next item on the handoff
-first"*, so M21 finished and its four things are queued behind it.
+first"*, so M21 finished and its five things were done immediately afterwards, as **M32**.
 
 **M17 left the queue rather than moving in it** — backlogged by decision, not deferred by
 priority.
@@ -387,30 +407,68 @@ it.
   adjacent to itself. Every seed failed validation and the generator quietly fell through 64
   attempts and returned the last one.
 
+## Gotchas learned in M32
+
+- **A cue whose condition is not the thing it claims to mean is invisible to every test in the
+  suite.** `tests/test_danger.gd` asserts *which* things are marked, over the whole catalogue,
+  and both of playtest 06's defects were about **when**. Two milestones' worth of careful rules
+  about membership, and the next complaint came from the other axis entirely.
+- **A hold cannot tell "the danger is between two cars" from "the danger is over".** Only the
+  system that raised it can, which is why the fix is a source and a `stand_down()` rather than a
+  shorter hold — and why the source check matters: a caller that has been outbid finds nothing
+  of its own to lower, so this is not the setter the additive rule exists to prevent.
+- **Two hysteresis problems in one cue, in different units.** The closing test needed a hold, in
+  seconds. The screen boundary needed a margin, in *screen* pixels — a thing on the edge trades
+  places with its own badge every frame, and the world is drawn scaled, so the same question in
+  world pixels has no fixed answer. The write-up predicted the first and not the second.
+- **A range cap wants to be a window, not a distance.** The same 800px is a fire engine four
+  seconds away and a dawdler twenty seconds away. Stated as `LEAD_TIME` seconds of the thing's
+  own approach, the cap scales itself and is in the units the fairness contract is already
+  written in.
+- **A cap on how many cues show is a choice, and distance is the wrong basis for it.** Sorting by
+  distance means `MOST_AT_ONCE` drops the thing arriving first in favour of a slow thing standing
+  closer. Sort by arrival.
+- **The thing whose whole content is that it is not announced was being announced.** The
+  director's `AHEAD_OF_PLAYER` events were eligible for a badge, so the cat M27 rebuilt to
+  *happen to her* got a pre-announcement — which flashed for a tenth of a second and vanished,
+  because it walked into view immediately. Found in a trace, not in a test.
+- **The observer must name the cause, not the nearest thing.** The first `cue` entry reused
+  `_nearest()` and blamed an ice cream van 513px away for a car's horn — reproducing, inside the
+  log written to settle it, the exact *"unattributable"* complaint playtest 05 made about the
+  mark. Two things raise that mark and the observer can check both.
+- **A cue span is written when it *ends*.** The complaint is a duration — "it is still up and
+  the car has gone" — and a duration cannot be read off a line saying a cue went up. Every `cue`
+  entry carries how long it lasted, and the mark's carries how much of that she spent on the
+  road: **0.3–0.7s, all of it on the road**, is what the fix looks like in a trace.
+- **`--walk south` can walk into a wall and stay there for seventy seconds.** A day-12 probe run
+  produced one cue and a column of `crowd` bumps at the same tile. A walking probe is not a
+  player; check the tiles in the trace before concluding anything about the density.
+
 ## What to do next, in order
 
-### First: playtest 06's five things
+### First: play it, and read the `cue` entries
 
-None is a milestone, and three of them are in code M22, M30 and M6 already own.
-[PLAYTEST-06.md](PLAYTEST-06.md) has the analysis; the short version:
+Nothing is queued ahead of a person playing. Six of playtest 06's own findings and playtest 05's
+before them came out of somebody walking around for a few minutes, and M32 in particular is five
+changes to *when things appear on screen*, judged by a rig and a trace and by nobody's eyes.
+What to look for, in the order it would show up:
 
-- **The screen-edge badge measures the wrong speed.** `DangerEdge` tests the *relative* closing
-  rate against 20px/s and she walks at 92, so walking towards anything lethal raises its badge —
-  which is all three of *"shows events far away"*, *"disappears when you walk towards them"* and
-  *"flickers a lot"* from one defect. Wants the event's own approach with the player held still,
-  a range cap, and hysteresis.
-- **The exclamation mark outlives the car.** `CAR_WARNING_HOLD` is 1.4s and nothing lowers it
-  when she steps off the carriageway, where a car cannot reach her. The hold has a real job —
-  surviving the gap between two cars in one lane — so this is a second condition, not a shorter
-  hold.
-- **A lost day is retried, not skipped**, which closes a design question open since M6.
-- **The meters want to be readable off the player**, not only off two bars in the corner. Asked
-  for by name: a `zzz` over the stroller when the baby is asleep, and stages of warning as
-  excitement approaches the calm threshold. This is the biggest of the five and the only one
-  that adds to the vocabulary in `docs/EVENTS.md` rather than fixing something in it — so read
-  the standing decision in `CLAUDE.md` first. Two traps are named in the write-up: a gauge over
-  her head is the HUD moved rather than a cue, and it must never share a spot with the
-  exclamation mark, which M30 spent a milestone making mean exactly one thing.
+- **Does the mark still turn up after the fact?** Every `cue` line for the mark says how long it
+  was up and how much of that she spent on the road. In a probe run they are 0.3–0.7s and *all*
+  of it on the road. A span with a road figure well under its duration is this bug coming back.
+- **Do the badges still flicker?** A `cue` pair with a fraction of a second between them is a
+  flicker with a name on it now. The "gone" line says where the thing was when the badge went,
+  which is the difference between the badge doing its job and the badge giving up mid-approach.
+- **Does the pram read?** The four states have been screenshotted in every facing and never
+  watched. The one to distrust is *not settling* (amber waves): it is the only one that can be
+  up for a long stretch, and a cue that is up for a long stretch is how the rings started.
+- **Is a retry the right length of punishment?** Three nerves are now three attempts. Whether
+  that is too soft is a question only a run can answer.
+
+### Then: M25, patrols and running that matters
+
+The biggest thing outstanding, narrowed in M31 to **acts III and IV** by decision — *"patrol
+shouldn't be there for act I"*. See the section below and `docs/TODO.md`.
 
 ### And the questions the fifth and sixth playtests still have not answered
 
@@ -434,9 +492,9 @@ before anything is tuned:
   line is a fair death; one with no horn before it is a bug in M19's work. M30 gives the horn a
   picture now, so the trace and the screen should agree.
 - **Do the cues get read?** A `run` or `turn` following a badge is the evidence, and nothing in
-  a test can see it. Note that the telemetry still has **no entry for a cue being raised**,
-  which playtest 05 flagged as possibly the real gap: there is no way to ask a log *"what was
-  she warned about, and did she change what she was doing"*.
+  a test can see it. *(M32 closed the half of this that was a missing instrument: there is a
+  `cue` entry now, so the log finally answers "what was she warned about". Whether she then did
+  anything about it is still a question for a person's trace.)*
 
 ### What is left of M21
 

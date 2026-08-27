@@ -431,9 +431,11 @@ becoming that.
 | **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** | the art |
 | **Caret over the entity** | *Danger that changes over time*, and only that: it is about to start, it ends the day, or it comes and goes. Amber telegraphing, red active, doubled and darker for `hard_fail`. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_horn_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
-| **Edge badge** | Off-screen and closing: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
-| **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. | `Stroller._draw_alert()` |
+| **Edge badge** | Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
+| **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live and she is inside its reach with one step left to make. | `Stroller._draw_alert()` |
+| **zzz over the pram** | *The baby is asleep* — the return phase, and the state with the most consequence and the least presence on screen. Flashing instead of breathing: *she is stirring*, and waking costs half the sleepiness bar. | `Stroller._draw_baby_cue()` |
+| **Waves over the pram** | *She is not settling* (amber, at the calm threshold, where the day stops progressing) and *she is nearly crying* (red, three of them, flashing). | `Stroller._draw_baby_cue()` |
 | **HUD line** | For a `city_wide` source, which has no position and therefore nothing to stand under. | `hud.gd` |
 | **Sound lines** | Concentric arcs thrown off a source on the rising edge of a pulse — the visual form of a discrete noise (a yell, a bark, a beep, a siren whoop) | todo, M10 |
 
@@ -470,6 +472,27 @@ Three rules underneath the table, in the order they matter:
    nearly silent before day 8. That is not the cue being broken; it is the cue being honest
    about a game where nothing is dangerous yet, which is playtest 05's finding 5 and a
    different milestone.
+5. **And a cue is a claim about a *moment*.** *(Playtest 06, findings 1 and 3.)* Rules 1 and 4
+   are both about *which* things a cue is raised for, and both were kept — and the player's next
+   two complaints were about **when**: *"I get the flashing exclamation marks after the fact"*
+   and *"the offscreen indicators show events far away, and if you walk towards them they
+   sometimes disappear"*. Membership was right in both cases and the timing was wrong, which no
+   test in `tests/test_danger.gd` could see, because it asserts what is marked and not when.
+
+   Two rules fall out, and they are the same rule at two ends:
+
+   - **A cue is lowered when its condition stops being true, by the system that can see the
+     condition.** The traffic's mark has a 1.4s hold that survives the gap between two cars in
+     one lane, and nothing lowered it when she stepped over the kerb — where a car cannot reach
+     her at all. `Stroller.stand_down()` lets the raiser take *its own* mark down without
+     handing anybody a setter for everyone else's.
+   - **Measure the thing, not the gap.** The badge tested how fast the *distance* was shrinking,
+     which is her 92px/s plus its speed against a threshold of 20, so walking towards anything
+     lethal announced it. It measures the event's own approach with the player held still now,
+     caps the range as a *window* (announce what would reach her within `LEAD_TIME`), and holds
+     a raised badge — plus a margin outside the screen edge, without which a thing on the
+     boundary trades places with its own badge every frame. That last one is most of *"they
+     flicker a lot"*.
 
 **The traffic pays for its own warning now.** *(M30.)* The table's first row is *the entity
 itself carries most of it*, and the traffic was the one place nothing did: the caret was drawn
@@ -495,6 +518,46 @@ walk**. Everything else she can turn round and leave, which is the same line
 band or the whole radius. It also requires a silhouette to put in the badge — an arrow that can
 only say "something" is an anxiety rather than a warning — and it caps at three at once,
 because the day the edge of the screen becomes wallpaper is the day it stops being read.
+
+Three things it does **not** announce, each for its own reason:
+
+- **Anything that is not coming at her.** The speed it measures is the event's own approach with
+  the player held still. A stationary abduction two streets away is a place, and finding out it
+  is there is what walking a street is for; her own footsteps are not news.
+- **Anything further off than its own arrival window.** The cap is `LEAD_TIME` seconds of its
+  approach, not a distance — the same 800px is a fire engine four seconds away and a dawdler
+  twenty seconds away, and only one of those is a route decision.
+- **An `AHEAD_OF_PLAYER` event.** The director sites it across her line a fixed lead in front of
+  her and its entire content is the moment it happens to her. Announcing it from the edge of the
+  screen is M27's complaint from the other end — and in practice it was a badge that appeared
+  and vanished within the same second as the cat walked into view.
+
+Three at once is also chosen *by arrival* rather than by distance: what the cap is choosing
+between is warnings, and the one worth keeping is the one that gets here first.
+
+### The cue that is not about the world *(playtest 06, finding 5)*
+
+Every cue above says something about the **world**. Nothing said anything about the **baby**,
+who is the only thing the player is trying to change — and the two meters live in the corner of
+a screen whose camera is on the pram. *"Can you add a visual for when the excitement bar is
+almost full, and the same for when the sleep bar is fully full — like a zzz above the stroller."*
+
+Four states, over the pram, and the two rules that keep it from becoming the rings again:
+
+- **Stages, not a gauge.** A meter drawn over her head is the HUD moved, and a mark that is up
+  whenever a number is moving is the thing rule 1 exists to stop. What earns a place is a small
+  number of states, each a different instruction: *the day has stopped progressing* (excitement
+  at the calm threshold, where sleepiness freezes), *the day is about to end*
+  (`EXCITEMENT_NEARLY_CRYING`), *you are on the way home*, and *she is about to wake and it will
+  cost you half the bar*.
+- **It must not collide with the exclamation mark**, which means one thing and had a milestone
+  spent on making it mean only that. Different motif — waves and a zzz, never a chevron or a
+  bar — and a different anchor: the pram, stepped aside when the pram is on her own axis, since
+  walking away from the viewer puts it exactly where the mark lives.
+
+The colours are the vocabulary's own — amber for *about to be a problem*, red for *about to end
+the day* — because a crying baby **is** a lost day. The escalation is more of the motif as well
+as a colour change, the same rule `alert_close.svg` is drawn to.
 
 ### Where the visual channel is currently incomplete
 

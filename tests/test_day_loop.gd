@@ -173,15 +173,32 @@ func _test_nerves_and_endings(t) -> void:
 	t.check(GameState.day == 2, "winning advances the calendar")
 	t.check(GameState.nerves == Tuning.STARTING_NERVES, "winning costs no nerves")
 
+	# Playtest 06, finding 4: *"we shouldn't advance the day, that's for sure."* A nerve buys
+	# another attempt at the same day rather than a day off the calendar.
+	GameState.remember_where_she_settled(Vector2i(4, 4))
 	t.check(GameState.finish_day(GameEnums.DayResult.LOST_CRYING), "losing a day continues")
-	t.check(GameState.day == 3, "a lost day still advances the calendar")
+	t.check(GameState.day == 2, "and the calendar stays where it is, so the day is retried")
 	t.check(GameState.nerves == Tuning.STARTING_NERVES - 1, "losing costs a nerve")
+	# Where she settled belongs to the attempt, not to the run: left behind, tomorrow would
+	# spoil a park the winning attempt never went to, and the record is written once a day.
+	t.check(GameState.settled_in.get(2, Vector2i(-1, -1)) == Vector2i(-1, -1),
+			"and a lost attempt's calm block is forgotten with it")
 
 	# Burn the rest.
 	for i in Tuning.STARTING_NERVES - 1:
 		GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
 	t.check(GameState.nerves <= 0, "nerves run out")
 	t.check(GameState.ending == GameEnums.Ending.BAD, "running out of nerves is the bad ending")
+	t.check(GameState.day == 2, "having spent all three on the same day, which is now allowed")
+
+	# The run length is a promise rather than a budget: with nerves left, the final day is
+	# played until it is won, and the only way to lose a run is to run out of nerves.
+	GameState.start_run(SEED)
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	t.check(GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT),
+			"losing the last day with nerves left does not end the run")
+	t.check(GameState.day == Tuning.RUN_LENGTH_DAYS and GameState.ending == GameEnums.Ending.NONE,
+			"it is still day %d, with the run undecided" % Tuning.RUN_LENGTH_DAYS)
 
 	# Surviving to the end without the resistance is the neutral ending.
 	GameState.start_run(SEED)

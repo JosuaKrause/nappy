@@ -447,3 +447,21 @@ with an explicit clock in the HUD corner.
 
 The run-level health bar. Starts at 3. Every lost day costs one. At 0 the run ends with the
 bad ending. Nerves never regenerate — this is what makes an early bad day matter.
+
+**A nerve buys a retry of the same day.** *(Playtest 06, finding 4, closing a design question
+open since M6: "what happens if we fail — do we repeat the same day? We shouldn't advance the
+day, that's for sure.")* The calendar moves only when a day is **won**, so three nerves are
+three failed attempts spread wherever they are needed and the fourteen days are fourteen days
+the player actually plays. Before this, a lost day cost a nerve *and* a day — which punished
+twice for one mistake and hid act I from the player who needed act I most.
+
+Three consequences, all of them chosen:
+
+- **A retry is the same day.** The city, the closures and the whole event plan are deterministic
+  from the seed and the day number, which is what makes a retry worth having in a game about
+  learning a route.
+- **What the run spent stays spent.** Consumed one-shots and advanced block arcs are run
+  history, not day content: a fire that burnt a block down did happen. The one exception is
+  **where she settled**, which belongs to the attempt — see `GameState.finish_day()`.
+- **The run cannot end by running out of days while nerves remain.** The bad ending is the only
+  way to lose, and the run length becomes a promise rather than a budget.

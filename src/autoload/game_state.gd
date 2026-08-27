@@ -69,19 +69,44 @@ func start_run(seed_value: int = 0) -> void:
 	sabotage_done = false
 	print("[GameState] run started, seed=%d" % run_seed)
 
-## Record the outcome of the day and advance the calendar. Returns true if the run continues.
+## Record the outcome of the day. Returns true if the run continues.
+##
+## **A lost day is retried, not skipped.** *(Playtest 06, finding 4, which closes an open
+## question carried since M6: "what happens if we fail — do we repeat the same day? We shouldn't
+## advance the day, that's for sure.")* A nerve buys another attempt at the same day, and the
+## calendar moves only when a day is won.
+##
+## Three things follow, and all three are chosen rather than fallen into:
+##
+## - **The retry is the same day.** Everything about one is deterministic from the seed and the
+##   day number — the city, the closures, the whole event plan — which is exactly what makes a
+##   retry worth having in a game about learning a route.
+## - **What the run has spent stays spent.** The one-shots it consumed and the block arcs it
+##   advanced are run history, not day content: a fire that burnt a block down did happen.
+## - **Except where she settled.** That is a fact about the attempt rather than about the run,
+##   and M24 reads it to decide what tomorrow spoils. Left in place, an attempt that reached a
+##   park and then lost the day would send tomorrow's loud event to a park she never actually
+##   used — and the winning attempt could not overwrite it, because the record is written once.
+##
+## The run can no longer end by running out of days while nerves remain, so the bad ending is
+## the only way to lose and the fourteen days become a promise rather than a budget.
 func finish_day(result: GameEnums.DayResult) -> bool:
 	EventBus.day_ended.emit(result)
 	if result != GameEnums.DayResult.WON:
 		nerves -= 1
 		EventBus.nerves_changed.emit(nerves)
 		# Which nerve went, and on which day. The nerve economy has never been tested against
-		# a game that bites early, and this is the entry that will say whether it survives it.
-		Telemetry.note("nerve", "spent a nerve on day %d (act %d); %d left"
-				% [day, current_act(), nerves])
+		# a game that bites early, and this is the entry that will say whether it survives it —
+		# a question a retry sharpens rather than settles, since three nerves now buy three
+		# attempts wherever they are needed instead of three days off the calendar.
+		Telemetry.note("nerve", "spent a nerve on day %d (act %d); %d left%s"
+				% [day, current_act(), nerves,
+				"" if nerves <= 0 else " — day %d again" % day])
 		if nerves <= 0:
 			_end_run(GameEnums.Ending.BAD)
 			return false
+		settled_in.erase(day)
+		return true
 	if day >= Tuning.RUN_LENGTH_DAYS:
 		_end_run(GameEnums.Ending.GOOD if earned_good_ending() else GameEnums.Ending.NEUTRAL)
 		return false
