@@ -11,11 +11,18 @@ extends Node
 ## Lookup is a linear scan, as it is for events. The population is an order of magnitude
 ## larger (around 120 rather than 22) and it is still one distance check each, once per
 ## physics frame, for the single query the baby makes.
+##
+## **Since M27 the crowd lives in a box that travels with the player** rather than being spread
+## across the whole map — see `CrowdField` for why, and `Tuning.CROWD_PEDESTRIANS_PER_ACT` for
+## what it did to the numbers.
 
 var _agents: Array[CrowdAgent] = []
 var _city: City
 var _map: CityMap
 var _player: Stroller
+## The patch of city being simulated. Held here, moved onto the player every physics frame, and
+## read by every agent when it recycles.
+var _field: CrowdField
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
 ## When the last horn went, so the exclamation mark over the player survives the gap between
@@ -25,17 +32,35 @@ var _warned_at := -1000.0
 func setup(city: City, map: CityMap) -> void:
 	_city = city
 	_map = map
+	_field = CrowdField.new(map, map.tile_rect_to_world(
+			Rect2i(Vector2i.ZERO, map.size)).get_center())
 
 ## Clears yesterday's crowd and populates today's. The population is fixed for the day and
 ## comes from the act, not the day: the streets thin out as the occupation settles in, and
 ## act III's empty city is told here rather than announced anywhere.
-func start_day(day: int, rng: RandomNumberGenerator) -> void:
+##
+## `focus` is where the day's crowd is built around — the doorstep, in a real run. It defaults
+## to the middle of the map, which is what a rig with no player wants and, more to the point, is
+## somewhere: leaving the field wherever the last caller put it makes a day's crowd depend on
+## the order the tests before it ran in, and a field parked off the map builds the whole
+## population on one pixel.
+func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> void:
 	clear()
 	_struck = false
 	_warned_at = -1000.0
+	_field.centre = focus if focus != Vector2.INF else _map.tile_rect_to_world(
+			Rect2i(Vector2i.ZERO, _map.size)).get_center()
 	var act := Tuning.act_for_day(day)
 	_populate(CrowdAgent.Kind.WALKER, Tuning.crowd_pedestrians(act), rng)
 	_populate(CrowdAgent.Kind.CAR, Tuning.crowd_cars(act), rng)
+
+## Where the simulated patch of city is centred. `Crowd` moves it onto the player itself; this
+## exists so `main` can put it on the doorstep before the player is standing there.
+func set_focus(at: Vector2) -> void:
+	_field.centre = at
+
+func field() -> CrowdField:
+	return _field
 
 func clear() -> void:
 	for agent in _agents:
@@ -47,9 +72,59 @@ func clear() -> void:
 func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) -> void:
 	for i in count:
 		var agent := CrowdAgent.new()
-		agent.setup(kind, _map, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
+		agent.setup(kind, _map, _field, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
 		_city.add_entity(agent)
 		_agents.append(agent)
+
+# ----------------------------------------------------------------- traffic ---
+# Playtest 04: *"cars still bump into each other."* Until M27 a car knew about the player and
+# about zebras and about nothing else on the road, so two cars in the same lane at different
+# speeds simply passed through one another — which, at M27's density, stops being an
+# occasional glitch and becomes what the road looks like.
+#
+# The decision is one pass over the crowd here rather than a probe per car, for the same reason
+# `pedestrian_ahead` is written here: the agents are already being walked once a frame, and a
+# per-car search would be the same work done fifty times over.
+
+## Tells every car how much clear road it has in front of it, and pulls apart any two that have
+## ended up in the same piece of it.
+##
+## Cars are bucketed by the lane they are in, and a lane is sorted by how far along it each car
+## is. That makes the whole thing one sort per lane rather than a comparison of every car
+## against every other — which matters less for the frames than for the shape: "the car in
+## front" is a property of a queue, and a queue is what a lane is.
+##
+## **The separation is positional, like the player's bump and for the same reason.** A brake is
+## a *tendency*: it keeps a gap that already exists and it cannot open one that does not, so two
+## cars that start inside each other both choose zero and stay there forever. Recycling puts a
+## car into a lane at a point it cannot see, so that case is not hypothetical — it was most of
+## the overlap the M27 probe measured. Resolving the queue from the front backwards fixes a
+## whole chain in one pass, and the correction is a few pixels except in the case it exists for.
+func space_out_the_traffic() -> void:
+	var lanes := {}
+	for agent in _agents:
+		if agent.kind != CrowdAgent.Kind.CAR:
+			continue
+		agent.gap_ahead = INF
+		var key := agent.lane_key()
+		if not lanes.has(key):
+			lanes[key] = [] as Array[CrowdAgent]
+		lanes[key].append(agent)
+
+	for key: String in lanes:
+		var queue: Array[CrowdAgent] = lanes[key]
+		if queue.size() < 2:
+			continue
+		queue.sort_custom(func(a: CrowdAgent, b: CrowdAgent) -> bool:
+			return a.queue_position() < b.queue_position())
+		# Front to back, so a car pushed back is pushed against a neighbour that has not been
+		# placed yet rather than one that has.
+		for i in range(queue.size() - 2, -1, -1):
+			var gap := queue[i + 1].queue_position() - queue[i].queue_position()
+			if gap < Tuning.CAR_GAP_MIN:
+				queue[i].nudge_back(Tuning.CAR_GAP_MIN - gap)
+				gap = Tuning.CAR_GAP_MIN
+			queue[i].gap_ahead = gap
 
 # ----------------------------------------------------------------- contact ---
 # Playtest 02, findings 2 and 3. Until M19 the crowd was a field with a picture attached: you
@@ -62,11 +137,16 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 # shape and cost as the `total_excitement_at` the baby already runs every physics frame.
 
 func _physics_process(_delta: float) -> void:
+	# Before the player check, because traffic has to queue whether or not anybody is watching:
+	# a car driving through another one at the far end of the street is still the thing playtest
+	# 04 saw, and a test rig has no player in it.
+	space_out_the_traffic()
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 		if not _player:
 			return
 	var here := _player.global_position
+	_field.centre = here
 	var on_the_road := Tile.is_road(_map.tile_type_at_world(here))
 	var shove := Vector2.ZERO
 	var closing := false

@@ -218,11 +218,25 @@ func closures_for_day(day: int) -> int:
 ## This used to be an invisible ambient band on the arterials (`busy_road` / `quiet_road`),
 ## which meant the player felt the city empty out without ever being able to see it. Now the
 ## emptiness is the empty pavement.
-## These are whole-city populations, and the city is 104 tiles across, so they read far
-## smaller on screen than they look here: act I puts roughly one person every 100px of
-## pavement, which is a busy street rather than a crowd scene.
-const CROWD_PEDESTRIANS_PER_ACT: Array[int] = [420, 320, 90, 150]
-const CROWD_CARS_PER_ACT: Array[int] = [110, 84, 22, 44]
+##
+## **Since M27 these are populations of the *field*, not of the city.** The crowd lives in a
+## `CROWD_FIELD_RADIUS` box that travels with the player, so the number here is what is on the
+## streets *around her* rather than what is scattered over ten thousand tiles. The old numbers
+## were whole-city and read a third as dense as they looked: 110 cars over sixteen corridors is
+## one every six seconds in your lane, which is playtest 04's *"I can just ignore it and cross
+## the street whenever"*. These are measured — see `tests/test_crowd.gd`, "the road has to be
+## waited for" — rather than converted from the old ones by area.
+const CROWD_PEDESTRIANS_PER_ACT: Array[int] = [200, 150, 42, 70]
+const CROWD_CARS_PER_ACT: Array[int] = [46, 35, 9, 18]
+
+## Half-extent of the box the crowd lives in, in px. Everything inside it is simulated;
+## anything that leaves it is recycled to the far edge and walks back in.
+##
+## The floor is the screen: the viewport is 1280x720, so an agent recycled at 800px from the
+## camera is always off-screen when it appears, whichever way the player is facing. The ceiling
+## is honesty — a box much larger than this is spending frames on pavement nobody can see, which
+## is the thing M27 exists to stop.
+const CROWD_FIELD_RADIUS := 800.0
 
 ## Speed range, min..max. Walkers are slower than the player on purpose: passing someone is
 ## something *she* does, at a distance she chooses.
@@ -304,6 +318,17 @@ const CAR_HORN_OUTER_RADIUS := 190.0
 ## survive the gap between two cars in the same lane.
 const CAR_WARNING_HOLD := 1.4
 
+## Traffic that queues instead of driving through itself. *(M27, playtest 04: "cars still bump
+## into each other".)* A car keeps `CAR_HEADWAY_TIME` seconds of clear road in front of it and
+## never closes to less than `CAR_GAP_MIN`, which is a car's own length plus a nose.
+##
+## The relationship that matters, and the one `tests/test_crowd.gd` states: the headway has to
+## be longer than the *braking* time from cruise, or a car physically cannot honour it and the
+## queue resolves by interpenetration again. `CAR_BRAKE` is shared with the zebra, so this is
+## free to check and cheap to get wrong.
+const CAR_HEADWAY_TIME := 0.85
+const CAR_GAP_MIN := 66.0
+
 ## Deceleration when a car gives way at a crossing, and how far ahead it looks for one. The
 ## relationship that matters is `CAR_ZEBRA_SIGHT > CAR_SPEED.y^2 / (2 * CAR_BRAKE)`: a car
 ## always has room to stop for a zebra it can see, so giving way is never a screech.
@@ -313,6 +338,35 @@ const CAR_ZEBRA_SIGHT := 200.0
 ## How close to the crossing the player has to be for the traffic to yield. Roughly "standing
 ## at the kerb waiting", which is the gesture the crossing is for.
 const CAR_ZEBRA_WAIT_RADIUS := 56.0
+
+# ------------------------------------------------- the world near you (M27) ---
+# Playtest 04: *"the cat is ineffective since it happens when it spawns — the cat should get
+# spawned in in front of the player while they walk"*, and *"don't load everything upfront"*.
+# Both are the same change: the world is populated around the player instead of authored across
+# a map she mostly never visits. See docs/MECHANICS.md, "The world near you".
+
+## How close the player has to get before a planned event is actually put in the world.
+##
+## Two floors, and the larger wins. The **screen**: half the viewport diagonal is 735px, so at
+## 900 an event always appears off-camera and never pops into an empty pavement. The **fairness
+## contract**: the widest field in the catalogue is 380px, so an event that streams in is
+## already outside its own outer radius when it becomes visible — which is what makes streaming
+## an event legal at all. `tests/test_events.gd` checks the second against the catalogue.
+const EVENT_STREAM_RADIUS := 900.0
+## And how far past it an event has to get before it is taken away again, so an event on the
+## boundary does not flicker in and out as the player paces.
+const EVENT_STREAM_HYSTERESIS := 260.0
+
+## How far ahead of the player an `AHEAD` event crosses her line, in px. This is a *reaction
+## window* stated as a distance: at `WALK_SPEED` it is the two seconds she gets between seeing
+## the cat crouch and reaching the place it bolts through.
+const AHEAD_LEAD_DISTANCE := 184.0
+## She has to actually be going somewhere for something to happen in front of her. Below this
+## there is no "in front".
+const AHEAD_MIN_SPEED := 40.0
+## Seconds between two `AHEAD` events, so the day's allowance is spread over the walk rather
+## than spent in the first ten seconds. The director rolls within this band.
+const AHEAD_INTERVAL := Vector2(11.0, 26.0)
 
 ## The carriageway, in px — the width the player has to clear when a horn goes.
 func carriageway_width() -> float:

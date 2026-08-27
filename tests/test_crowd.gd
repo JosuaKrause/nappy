@@ -36,6 +36,10 @@ func run(t) -> void:
 	_test_walking_into_somebody_displaces_and_startles_them(t)
 	_test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t)
 	_test_traffic_gives_way_at_a_crossing(t)
+	_test_the_crowd_stays_in_the_field(t)
+	_test_the_field_is_wider_than_the_screen(t)
+	_test_cars_do_not_drive_through_each_other(t)
+	_test_a_car_can_honour_the_headway_it_keeps(t)
 
 	_city.free()
 
@@ -360,6 +364,137 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		t.check(agent.speed() > Tuning.CAR_SPEED.x * 0.5,
 				"and pulls away again once the crossing is clear")
 	t.check(tested > 0, "at least one car had a zebra ahead of it to give way at")
+
+# --------------------------------------------- the world near you (M27) ---
+# Playtest 04: *"traffic feels too light — I can just ignore it and cross the street whenever"*,
+# *"cars still bump into each other"*, and the emphasised one, *"don't load everything upfront —
+# only spawn things in the surrounding few blocks of the player."* All three are one change:
+# the crowd lives in a box that travels with the player, so the population buys density where
+# somebody is looking instead of pavement nobody will ever walk down.
+
+## Everybody stays in the patch being simulated, and keeps staying there while it moves. The
+## second half is the one that can quietly fail: the player walks faster than a pedestrian, so
+## anybody going her way is steadily left behind, and a field that only recycles at the *far*
+## edge would drain the pavement in front of her into a crowd standing two streets back.
+func _test_the_crowd_stays_in_the_field(t) -> void:
+	# A quarter of the way down the arterial, so fifteen seconds of running stays in the city:
+	# a field dragged over the boundary is a different bug and has its own test.
+	var start := CrowdLanes.arterial_pavement(_city.map)
+	start.y = _city.map.world_size().y * 0.2
+	_city.crowd.start_day(1, _rng(1), start)
+	var field := _city.crowd.field()
+
+	# Walk the field down the city at running pace, the way a player who has decided the park
+	# is that way does.
+	# The furthest anybody may legitimately be: the far edge of the field, plus the depth of the
+	# band agents enter through, plus the tile of slack the boundary test allows.
+	var reach := field.radius + CrowdAgent.ENTRY_SPREAD + Tuning.TILE_SIZE
+	var stragglers := 0
+	var worst := 0.0
+	var ahead := 0
+	for step in 15:
+		field.centre = start + Vector2(0.0, Tuning.RUN_SPEED * step)
+		_advance(1.0)
+		for agent in _city.crowd.agents():
+			var offset := agent.global_position - field.centre
+			worst = maxf(worst, maxf(absf(offset.x), absf(offset.y)))
+			if absf(offset.x) > reach or absf(offset.y) > reach:
+				stragglers += 1
+		if step > 5 and _agents_in_front_of(field) < 8:
+			ahead += 1
+	t.check(stragglers == 0,
+			"nobody is left behind when the field moves (%d were, worst %.0fpx of %.0f)"
+			% [stragglers, worst, reach])
+	t.check(ahead == 0,
+			"and the street in front of her is never empty (%d seconds it was)" % ahead)
+
+	# And the population is the field's, not the city's: the whole point of the change.
+	var act := Tuning.act_for_day(1)
+	t.check(_city.crowd.agent_count()
+			== Tuning.crowd_pedestrians(act) + Tuning.crowd_cars(act),
+			"the act's population is what is around her, not what is scattered over the map")
+
+## How many agents are in the half of the field she is walking into.
+func _agents_in_front_of(field: CrowdField) -> int:
+	var found := 0
+	for agent in _city.crowd.agents():
+		if agent.global_position.y > field.centre.y:
+			found += 1
+	return found
+
+## The floor under `CROWD_FIELD_RADIUS`, and the only one that matters: nothing may appear on
+## screen. Half the viewport diagonal is the furthest anything visible can be from the camera,
+## so an agent recycled outside that is always off-camera whichever way she is facing.
+func _test_the_field_is_wider_than_the_screen(t) -> void:
+	var viewport := Vector2(
+		ProjectSettings.get_setting("display/window/size/viewport_width", 1280),
+		ProjectSettings.get_setting("display/window/size/viewport_height", 720))
+	t.check(Tuning.CROWD_FIELD_RADIUS > viewport.length() * 0.5,
+			"the field (%.0f) reaches past the corner of the screen (%.0f), so nothing is "
+			% [Tuning.CROWD_FIELD_RADIUS, viewport.length() * 0.5]
+			+ "ever seen to appear")
+	t.check(Tuning.EVENT_STREAM_RADIUS > viewport.length() * 0.5,
+			"and so does the event streaming radius")
+
+## Playtest 04: *"cars still bump into each other."* Two cars in a lane at different speeds used
+## to pass straight through one another, which at M27's density stops being an occasional glitch
+## and becomes what the road looks like.
+##
+## The check is over a real minute of a real day rather than over a contrived pair, because the
+## interesting case is the one a contrived pair cannot produce: a car recycled *into* a lane
+## materialises inside one already there, and no speed either of them can choose separates them.
+## That is why the separation is positional and not a brake.
+func _test_cars_do_not_drive_through_each_other(t) -> void:
+	_city.crowd.start_day(1, _rng(1))
+	var worst := INF
+	var overlapping := 0
+	for i in int(round(60.0 / STEP)):
+		# Movement first and the separation after it, which is the order the world settles in:
+		# a car recycles into a lane during its own `_process`, and the pass that pulls it clear
+		# of whatever it landed on is the next one. That single frame is off-screen by
+		# construction — recycling only ever happens at the edge of the field, which is further
+		# out than the corner of the screen.
+		for agent in _city.crowd.agents():
+			agent._process(STEP)
+		_city.crowd.space_out_the_traffic()
+		var closest := _closest_two_cars_in_a_lane()
+		worst = minf(worst, closest)
+		if closest < Tuning.CAR_STRIKE_HALF_LENGTH * 2.0:
+			overlapping += 1
+	# A car is two tiles long. Anything closer than that is one car inside another.
+	t.check(overlapping == 0,
+			"no frame of a minute's traffic has one car inside another (%d did, worst %.0fpx)"
+			% [overlapping, worst])
+
+## The tightest two cars sharing a lane got, in px.
+func _closest_two_cars_in_a_lane() -> float:
+	var lanes := {}
+	for agent in _city.crowd.agents():
+		if agent.kind != CrowdAgent.Kind.CAR:
+			continue
+		var key := agent.lane_key()
+		if not lanes.has(key):
+			lanes[key] = [] as Array[float]
+		lanes[key].append(agent.queue_position())
+	var closest := INF
+	for key: String in lanes:
+		var queue: Array[float] = lanes[key]
+		queue.sort()
+		for i in queue.size() - 1:
+			closest = minf(closest, queue[i + 1] - queue[i])
+	return closest
+
+## The relationship the headway rests on, stated rather than measured: a car has to be able to
+## *reach* the speed its gap allows. If the headway were shorter than the time it takes to brake
+## from cruise, the queue would resolve by interpenetration again however good the controller is.
+func _test_a_car_can_honour_the_headway_it_keeps(t) -> void:
+	var braking := Tuning.CAR_SPEED.y / Tuning.CAR_BRAKE
+	t.check(Tuning.CAR_HEADWAY_TIME > braking,
+			"the headway (%.2fs) outlasts the time to stop from full speed (%.2fs)"
+			% [Tuning.CAR_HEADWAY_TIME, braking])
+	t.check(Tuning.CAR_GAP_MIN > Tuning.CAR_STRIKE_HALF_LENGTH * 2.0,
+			"and a stopped queue leaves a car's length between bumpers (%.0f > %.0f)"
+			% [Tuning.CAR_GAP_MIN, Tuning.CAR_STRIKE_HALF_LENGTH * 2.0])
 
 # ------------------------------------------------------------------- helpers ---
 

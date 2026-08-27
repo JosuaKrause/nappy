@@ -63,7 +63,7 @@ func _process(delta: float) -> void:
 		_activation_announced = true
 		EventBus.event_activated.emit(self)
 
-	if def.mobile and path.size() > 1:
+	if def.mobile and path.size() > 1 and not (def.still_while_telegraphing and is_telegraphing()):
 		_advance_along_path(delta)
 
 	if _has_expired():

@@ -10,6 +10,8 @@ func run(t) -> void:
 	_test_pulse_envelope(t)
 	_test_duration_and_finish(t)
 	_test_mobile_follows_its_path(t)
+	_test_a_crouching_event_holds_still_until_it_bolts(t)
+	_test_the_director_puts_it_in_front_of_her(t)
 	_test_hard_fail_only_when_active(t)
 	_test_scheduler_is_deterministic(t)
 	_test_scheduler_respects_placement_and_caps(t)
@@ -106,7 +108,7 @@ func _test_duration_and_finish(t) -> void:
 	instance.free()
 
 func _test_mobile_follows_its_path(t) -> void:
-	var def := EventCatalogue.by_id("cat_dash")
+	var def := EventCatalogue.by_id("fire_truck")
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(300.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 	t.check(instance.position == Vector2.ZERO, "a mobile event starts at its first waypoint")
@@ -119,6 +121,102 @@ func _test_mobile_follows_its_path(t) -> void:
 	_advance(instance, 3.0)
 	t.check(instance.is_finished, "a mobile event finishes at the end of its path")
 	instance.free()
+
+## The other kind of mobile event, and the reason the field exists. A telegraph that is an
+## *approach* has to travel — a fire engine warns you by being audible three streets away. A
+## telegraph that is a *posture* must not: the cat crouches, then bolts.
+##
+## Playtest 04 found the cat doing nothing, and this is half of why. Its route is one street
+## wide, so at 240px/s it finished the whole crossing inside its own 1.6s telegraph — it never
+## reached full intensity, and the running sprite never drew once in six milestones.
+func _test_a_crouching_event_holds_still_until_it_bolts(t) -> void:
+	var def := EventCatalogue.by_id("cat_dash")
+	t.check(def.still_while_telegraphing, "the cat crouches rather than creeping")
+	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(400.0, 0.0)])
+	var instance := _instance(t, def, Vector2.ZERO, path)
+
+	_advance(instance, def.telegraph_time - 0.1)
+	t.check(instance.position == Vector2.ZERO, "it has not moved while telegraphing")
+	t.check(instance.is_telegraphing(), "and it is still telegraphing")
+
+	_advance(instance, 0.5)
+	t.check(not instance.is_telegraphing(), "then the telegraph ends")
+	t.close_to(instance.position.x, def.speed * 0.4,
+			"and it bolts at its full speed from where it was crouched", 20.0)
+
+	# The duration has to outlast the crossing, or it expires in the middle of the road.
+	var crossing := float(EventDirector.CROSSING_REACH_TILES * Tuning.TILE_SIZE) * 2.0
+	t.check(def.duration >= crossing / def.speed,
+			"it lives long enough (%.2fs) to cross the whole street (%.2fs)"
+			% [def.duration, crossing / def.speed])
+	instance.free()
+
+## Playtest 04: *"the cat is ineffective since it happens when it spawns — the cat should get
+## spawned in in front of the player while they walk, so it happens directly in front of them
+## every time."*
+##
+## The three properties that make an interruption legal, in the order they matter. It has to be
+## *in front of her*, or it is not the thing that was asked for. It has to start *outside its
+## own outer radius*, or an event with no telegraph phase is being dropped on top of her. And
+## the clock has to run on walking, not on wall time, or a player who stops in a park to let the
+## meter recover comes back to the pavement owing four cats.
+func _test_the_director_puts_it_in_front_of_her(t) -> void:
+	var map := _map()
+	var director := EventDirector.new(map)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 99
+	var plans: Array[EventScheduler.Planned] = [
+		EventScheduler.Planned.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
+		EventScheduler.Planned.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
+	]
+	director.start_day(plans, rng)
+	t.check(director.owed() == 2, "the day's budget is what the director gets to spend")
+
+	# Somewhere on a street, walking north. `arterial_pavement` is a pavement lane by
+	# construction, so the lead lands on walkable ground.
+	var at := CrowdLanes.arterial_pavement(map)
+	at.y = map.world_size().y * 0.5
+	var north := Vector2(0.0, -Tuning.WALK_SPEED)
+
+	# Standing still owes nothing, however long she stands there.
+	var fired := false
+	for i in int(round(60.0 / STEP)):
+		fired = fired or not director.due(STEP, at, Vector2.ZERO).is_empty()
+	t.check(not fired, "nothing crosses in front of somebody who is not going anywhere")
+	t.check(director.owed() == 2, "so a minute of standing still spends none of the day")
+
+	# Walking does.
+	var due: Array = []
+	for i in int(round(Tuning.AHEAD_INTERVAL.y * 2.0 / STEP)):
+		due = director.due(STEP, at, north)
+		if not due.is_empty():
+			break
+	t.check(not due.is_empty(), "walking for the length of the interval brings one out")
+	if due.is_empty():
+		return
+
+	var path := due[1] as PackedVector2Array
+	t.check(path.size() == 2, "it is given a route across her line")
+	var crossing := (path[0] + path[1]) * 0.5
+	t.close_to(crossing.distance_to(at), Tuning.AHEAD_LEAD_DISTANCE,
+			"it crosses where she is about to be, not where she is", 1.0)
+	t.check((crossing - at).normalized().dot(north.normalized()) > 0.99,
+			"and that is in front of her rather than beside or behind her")
+	t.close_to((path[1] - path[0]).normalized().dot(north.normalized()), 0.0,
+			"the run is square across her line", 0.01)
+
+	# The fairness half. It starts at one end of that run, and both ends are further from her
+	# than the field it will emit — so she is outside it the whole time it is telegraphing, and
+	# the reaction window is real rather than nominal.
+	var def := due[0] as EventDef
+	for end in [path[0], path[1]]:
+		t.check(at.distance_to(end) > def.outer_radius,
+				"she is outside its reach (%.0fpx) when it appears (%.0fpx away)"
+				% [def.outer_radius, at.distance_to(end)])
+	t.check(Tuning.AHEAD_LEAD_DISTANCE / Tuning.WALK_SPEED >= 1.5,
+			"and the lead is %.1fs of walking, which is time to do something about it"
+			% (Tuning.AHEAD_LEAD_DISTANCE / Tuning.WALK_SPEED))
+	t.check(director.owed() == 1, "and the day is one cat poorer")
 
 func _test_hard_fail_only_when_active(t) -> void:
 	var def := EventDef.new()
@@ -186,7 +284,10 @@ func _test_scheduler_respects_placement_and_caps(t) -> void:
 		var counts := {}
 		for plan in planned:
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
-			if plan.def.placement.is_empty():
+			# An `AHEAD_OF_PLAYER` event has no tile: the day budgets it and the director sites
+			# it in front of the player later. The cap above still applies to it, which is the
+			# point of costing it here rather than giving the director its own allowance.
+			if plan.def.placement.is_empty() or not plan.is_placed():
 				continue
 			var tile := map.world_to_tile(plan.position)
 			t.check(map.tile_at(tile) in plan.def.placement,

@@ -47,10 +47,19 @@ const DIVERT_PROBE := 40.0
 var kind := Kind.WALKER
 var colour := Color.WHITE
 
+## The box this agent lives in, held by reference and moved by `Crowd`. Leaving it is what
+## recycles an agent now; leaving the *map* was what did it before M27. See `CrowdField`.
+var field: CrowdField
+
 ## Somebody standing in front of this car, or `Vector2.INF` for nobody. Written once per
 ## physics frame by `Crowd` for the cars near the player and read here: an agent has no
 ## business knowing who the player is, but it does have to decide whether to stop.
 var pedestrian_ahead := Vector2.INF
+
+## Clear road to the back of the car in front, in px, or INF when there is nobody ahead.
+## Written once per physics frame by `Crowd`, for the same reason `pedestrian_ahead` is: the
+## neighbour search is one pass over the whole crowd, not one per agent.
+var gap_ahead := INF
 
 ## True while the player is touching this agent. Owned by `Crowd`, and the reason it exists is
 ## that a contact is not instantaneous: she walks faster than a pedestrian does, so a person
@@ -90,18 +99,20 @@ var _jolt_intensity := 0.0
 var _jolt_inner := 0.0
 var _jolt_outer := 0.0
 
-func setup(agent_kind: Kind, map: CityMap, seed_value: int, axis_roll: float) -> void:
+func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: int,
+		axis_roll: float) -> void:
 	kind = agent_kind
 	_map = map
+	field = crowd_field
 	_rng.seed = seed_value
 	_choose_lane(axis_roll)
-	# Start somewhere along the corridor rather than at its mouth, or the whole crowd
-	# arrives at the map edge in one wave on the first morning. Re-rolled if it lands inside
-	# a street that is closed today: an agent that starts behind a barrier would walk out
-	# through it once, which reads as the barrier being fake.
-	var limit: float = _map.world_size()[1 if _vertical else 0]
+	# Start somewhere along the field rather than at its edge, or the whole crowd arrives from
+	# one side in a wave on the first morning. Re-rolled if it lands inside a street that is
+	# closed today: an agent that starts behind a barrier would walk out through it once, which
+	# reads as the barrier being fake.
+	var bounds := field.along_bounds(_vertical)
 	for _attempt in 8:
-		_set_along(_rng.randf() * limit)
+		_set_along(_rng.randf_range(bounds.x, bounds.y))
 		_set_cross(_lane_centre)
 		if not _map.is_closed(_map.world_to_tile(position)):
 			break
@@ -117,7 +128,7 @@ func _process(delta: float) -> void:
 		_consider_turning()
 	if _closed_ahead(_vertical, _direction, CLOSURE_LOOKAHEAD):
 		_divert()
-	if _has_left_the_map():
+	if _has_left_the_field():
 		_recycle()
 	# Moving a Node2D does not invalidate its draw list — the transform is applied when it
 	# is replayed — so an agent only redraws when its picture actually changes. At this
@@ -173,6 +184,24 @@ func speed() -> float:
 func heading() -> Vector2:
 	return (Vector2(0.0, _direction) if _vertical else Vector2(_direction, 0.0)).normalized()
 
+## Everything about where this agent is travelling that decides whether another agent is *in
+## front of it* — the axis, the corridor, the lane and the way it is pointing. Two agents share
+## a queue exactly when they share this. `Crowd` buckets on it once per frame rather than
+## comparing every car against every other one.
+func lane_key() -> String:
+	return "%s:%d:%d:%d" % ["v" if _vertical else "h", _corridor, _lane, signi(int(_direction))]
+
+## How far along its own corridor it is, signed so that "ahead" is always *larger*. Only ever
+## compared between two agents with the same `lane_key()`, where the direction is shared.
+func queue_position() -> float:
+	return _along() * _direction
+
+## Slides this agent back down its own lane. `Crowd` uses it to open a gap that the brake could
+## not: a car that is recycled into a lane can materialise inside one that is already there, and
+## from inside there is no speed either of them can choose that separates them.
+func nudge_back(distance: float) -> void:
+	_set_along(_along() - distance * _direction)
+
 # ------------------------------------------------------------------ lanes ---
 
 func _along() -> float:
@@ -197,7 +226,11 @@ func _set_cross(value: float) -> void:
 ## spread a crowd evenly across both instead of letting one axis win by chance.
 func _choose_lane(roll: float) -> void:
 	_vertical = roll < 0.5
-	_corridor = CrowdLanes.pick_corridor(_rng, _map.seed_used, _vertical)
+	# Only the corridors the field actually reaches. Picking from the whole city and then
+	# discarding what is out of view is the same crowd spread over ten thousand tiles, which
+	# is the thing M27 stops doing.
+	_corridor = CrowdLanes.pick_corridor_in_range(_rng, _map.seed_used, _vertical,
+			field.corridor_range(_vertical))
 	if kind == Kind.CAR:
 		_lane = CrowdLanes.ROAD_OFFSETS[_rng.randi_range(0, 1)]
 		_direction = CrowdLanes.road_direction(_lane)
@@ -218,10 +251,27 @@ func _choose_lane(roll: float) -> void:
 ## Braking rather than stopping dead, and from `CAR_ZEBRA_SIGHT` out, because the giving way
 ## has to be *visible* from the kerb: a player deciding whether to step off needs to see the
 ## car slowing, not discover afterwards that it would have.
+##
+## Since M27 it is also where a car decides not to drive through the one in front — playtest
+## 04, *"cars still bump into each other"*. The two wants compose by taking the lower, so a
+## queue at a zebra is the car in front stopping and everybody behind it honouring the headway,
+## rather than a special case for queues.
 func _give_way(delta: float) -> void:
 	var wanted := 0.0 if _somebody_is_waiting_to_cross() else _cruise
+	wanted = minf(wanted, _following_speed())
 	var rate := Tuning.CAR_BRAKE if wanted < _speed else Tuning.CAR_ACCELERATE
 	_speed = move_toward(_speed, wanted, rate * delta)
+
+## The fastest this car may go and still keep `CAR_HEADWAY_TIME` of clear road in front of it.
+##
+## A time headway rather than a fixed distance, because a fixed one either tailgates at speed
+## or leaves a bus-length gap in a jam. `CAR_GAP_MIN` is the standstill distance underneath it:
+## without it the arithmetic asks for zero speed at zero gap, which is a car parked inside
+## another car rather than behind it.
+func _following_speed() -> float:
+	if gap_ahead == INF:
+		return _cruise
+	return maxf(0.0, (gap_ahead - Tuning.CAR_GAP_MIN) / Tuning.CAR_HEADWAY_TIME)
 
 ## Whether there is a crossing ahead within sight with somebody standing at it.
 ##
@@ -315,20 +365,80 @@ func _divert() -> void:
 	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
 	_junction = kept
 
-func _has_left_the_map() -> bool:
+## Whether this agent has walked out of the patch of city that is being simulated — either off
+## the map entirely, or out of the box that travels with the player.
+##
+## Deliberately asymmetric along the axis of travel: an agent is done as soon as it passes the
+## edge it is *heading for*, and gets the depth of the entry band behind the edge it came in at.
+## The obvious symmetric version — "outside the box" — makes the approach lane uninhabitable,
+## because anything recycled just outside it qualifies again on the very next frame.
+func _has_left_the_field() -> bool:
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
 	var at := _along()
-	return at < -Tuning.TILE_SIZE or at > limit + Tuning.TILE_SIZE
+	if at < -Tuning.TILE_SIZE or at > limit + Tuning.TILE_SIZE:
+		return true
 
-## Off the edge of the world and back on again somewhere else. The population is fixed for
-## the day, so the streets never quietly empty out over five minutes.
+	# Across the axis first: a street the box has stopped reaching at all. This is not the rare
+	# case it looks like — a player walking north leaves behind everybody on every east-west
+	# street she has passed, and they are travelling *along* those streets perfectly happily.
+	# Checking it after the along-axis test means never checking it, because an agent always has
+	# a direction and the along-axis test always answers.
+	var lateral: float = field.centre.x if _vertical else field.centre.y
+	# A street's width of tolerance, so a corridor half in view keeps the people on it rather
+	# than emptying the pavement the player is about to turn onto.
+	if absf(_cross() - lateral) > field.radius + Tuning.STREET_WIDTH * Tuning.TILE_SIZE:
+		return true
+
+	# Then along it: past the edge it is heading for, or further behind the edge it came in at
+	# than the entry band is deep. The second half is not symmetry for its own sake — the player
+	# walks faster than a pedestrian, so anybody going her way is steadily left behind, and
+	# without it the pavement in front of her drains into a crowd standing two streets back.
+	var bounds := field.along_bounds(_vertical)
+	if _direction > 0.0:
+		return at > bounds.y or at < bounds.x - ENTRY_SPREAD
+	return at < bounds.x or at > bounds.y + ENTRY_SPREAD
+
+## How far outside the box an agent may enter, in px.
+##
+## It has to be a band and not a point, and this is the second thing the M27 probe found by
+## printing numbers. Recycling everybody onto the exact edge coordinate puts every car that
+## re-enters a lane on the same pixel — and once cars keep a headway, a pile that used to sort
+## itself out by driving through each other becomes a permanent stationary queue against the
+## boundary. Eight overlapping pairs a frame, on a road nobody could see.
+const ENTRY_SPREAD := 420.0
+
+## Out of the field at one edge and back in at the other. The population is fixed for the day,
+## so the streets around the player never quietly empty out over five minutes.
+##
+## It enters somewhere in the band outside whichever edge its new direction carries it inward
+## from, which is the whole trick: the field is bigger than the screen, so an agent is always
+## off-camera when it appears and has walked a few hundred pixels of pavement by the time it
+## is visible.
+##
+## The lane is re-rolled until the band it would enter through is off the map rather than over
+## it. Near the city wall the box hangs into nothing, and an agent placed in that overhang walks
+## visibly through the boundary before it reaches the street; a lane running the other way, or
+## on the other axis, almost always has room, so a handful of rolls settles it.
 func _recycle() -> void:
-	_choose_lane(_rng.randf())
+	for _attempt in 6:
+		_choose_lane(_rng.randf())
+		if _entry_band_fits():
+			break
+	var bounds := field.along_bounds(_vertical)
+	var back := _rng.randf() * ENTRY_SPREAD
+	_set_along(bounds.x - back if _direction > 0.0 else bounds.y + back)
+	_set_cross(_lane_centre)
+	gap_ahead = INF
+
+## Whether the whole entry band lies outside the map rather than straddling its edge.
+func _entry_band_fits() -> bool:
+	var bounds := field.along_bounds(_vertical)
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
-	_set_along(-Tuning.TILE_SIZE if _direction > 0.0 else limit + Tuning.TILE_SIZE)
-	_set_cross(_lane_centre)
+	if _direction > 0.0:
+		return bounds.x - ENTRY_SPREAD >= -Tuning.TILE_SIZE
+	return bounds.y + ENTRY_SPREAD <= limit + Tuning.TILE_SIZE
 
 # ---------------------------------------------------------------- drawing ---
 
