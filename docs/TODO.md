@@ -21,18 +21,22 @@ on M24. **M27 was taken out of order and immediately**, because playtest 04's em
 finding — *"don't load everything upfront"* — turned out to be what was underneath three of the
 other six, and because M21 and M22 both get judged against a street that now has traffic on it.
 
-**Playtest 05 has landed and M28 has taken the first of it.** Six findings in
-**[docs/PLAYTEST-05.md](PLAYTEST-05.md)**, of which **finding 6 (the density) is done**: two
+**Playtest 05 has landed and all six of its findings are done** — M28, M29, M30, M24 and M31.
+Six findings in **[docs/PLAYTEST-05.md](PLAYTEST-05.md)**: two
 traffic defects (cars stop at arbitrary points for a zebra; the two axes drive on opposite
 sides of the road), M22's exclamation mark firing unattributably and without consequence, the
 same park being usable on day 1 and day 2 (M24), **"day two doesn't feel more difficult than
-day one… there is never *any* danger"** — which the catalogue confirms: day 2 places about one
-more event than day 1, and every `hard_fail` event starts on day 8 or later — and a stated
-density target: **one event per block**, with the dog-walker decision forced at least twice on
-day 1 and a café that can actually be found. That last one **shipped as M28** — day 1 places 50
-events across 49 blocks and 3.3 are on screen at any moment — and the thing it confirmed is that
-the binding constraint was the **per-type caps, not the budget**. The other five are open.
-**Read it before picking up anything below**; it reorders what follows.
+day one… there is never *any* danger"** (M31), and a stated density target: **one event per
+block** (M28) — day 1 now places ~49 events across 49 blocks and 3.3 are on screen at any
+moment, and the thing it confirmed is that the binding constraint was the **per-type caps, not
+the budget**. **Read it before picking up anything below**: the write-ups carry what each
+analysis got right and what it got wrong, which is the half that is not in the diffs.
+
+**What that leaves.** M21 (four-block calm zones) is the next milestone and is the oldest thing
+still outstanding — playtest 03 and 04 both asked for it. M25 (patrols, and running that
+matters) is unaffected by M31 and is now specifically the answer for **acts III and IV**, where
+the streets are deliberately empty and the threat should follow rather than sit. And nobody has
+played any of M28–M31.
 
 **Playtest 04 set the order that stands now.** M27 and M22 are done. **M21 is next**
 (four-block calm zones). M20 is **absorbed into M27**: cars follow and queue now, and what is
@@ -483,9 +487,21 @@ See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
       mobile is ever chosen for it, and it is one ordinary event from the same day's pool.
       **It does not read the telemetry**, which is what the write-up assumed it would: a rule
       that reads a trace would make the game play differently with `--no-telemetry`
-- [ ] **Finding 5 — nothing is dangerous before day 8** — the emphasised one, and true by
-      construction: every `hard_fail` event starts on day 8 or later. Closest to **M25**. M28 is
-      the *density* half of it; this is the other half and no amount of café tables fixes it
+- [x] **M31 Act I has teeth, and more to look at** — finding 5, the emphasised one, plus the
+      request that came with it: *"try to come up with more variety, we need more
+      events/entities in general."* Seven new rows, five of them on day 1, each with its own
+      silhouette rather than another `person.svg`. **The shape was chosen against the obvious
+      one**: a patrol was ruled out by the player — *"patrol shouldn't be there for act I"* —
+      so the danger is the neighbourhood's own, a **cyclist** from day 2 and a **reversing
+      lorry** from day 3, both `hard_fail` with the doubled telegraph the contract demands and
+      teaching opposite lessons (one comes at you, one is static with the danger behind it).
+      Lethal events per day now run **0, 3, 4** over days 1–3, so the escalation is a change of
+      *kind* rather than of count and a person can feel it on day 2.
+      Two bugs came out of it that no test could see: a re-streamed event was rebuilt from the
+      tile the day chose at dawn, so a **dog walker teleported back to the top of its street**
+      every time the player left its radius and returned; and an `EventInstance` had no gait at
+      all, so a thing moving at 32px/s read as parked. Both were reported as *"dog walkers are
+      not moving?"* and neither was the movement
 
 ## M10 — Polish · `feature/polish`
 

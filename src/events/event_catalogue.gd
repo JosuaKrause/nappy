@@ -52,6 +52,15 @@ static func _build() -> Array[EventDef]:
 		_burning_building(),
 		_burnt_shell(),
 
+		# Act I, M31 - the neighbourhood with things in it, and two that can end the day.
+		_loose_dog(),
+		_market_stall(),
+		_leaf_blower(),
+		_pigeon_flock(),
+		_cyclist(),
+		_ice_cream_van(),
+		_reversing_lorry(),
+
 		# Act II - notices.
 		_police_patrol(),
 		_poster_crew(),
@@ -123,7 +132,9 @@ static func _cat_dash() -> EventDef:
 	def.mobile = true
 	def.still_while_telegraphing = true
 	def.speed = 240.0
-	def.weight = 3.0
+	# Lowered in M31, because the cat stopped being the only thing that happens *to* her: the
+	# director now has pigeons too, and two tricks at 3.0 each would have doubled what it spends.
+	def.weight = 2.5
 	# The one cap M28 did *not* multiply. A cat is sited by the director while she walks, and
 	# `AHEAD_INTERVAL` spreads them 11-26s apart over a 180s day, so a seventh has nowhere to
 	# happen: raising it would spend budget on cats the day cannot fit.
@@ -176,7 +187,12 @@ static func _dog_walker() -> EventDef:
 	def.speed = 32.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 30
-	def.weight = 3.0
+	# The heaviest weight in act I, and M31 *raised* it while adding seven rows around it. The
+	# density is a fixed number of events, so every new type takes a share of it — and the two
+	# rows playtest 05 named by name are the two that cannot be allowed to thin out. Dog walkers
+	# and café frontages are what an ordinary street is mostly made of; a loose dog and an ice
+	# cream van are punctuation.
+	def.weight = 4.5
 	# Playtest 05, finding 6, in the player's own words: *"the dog walker decision should happen
 	# meaningfully — I want to have to make that decision at least twice on day one."* Three on a
 	# forty-nine-block city made that a coin flip she lost. Repeats are explicitly fine.
@@ -205,7 +221,8 @@ static func _cafe_tables() -> EventDef:
 	def.telegraph_time = 1.6
 	def.pulse_period = 6.0
 	def.obstructs_radius = 24.0
-	def.weight = 2.5
+	# Raised with `dog_walker` and for the same reason — see the note there.
+	def.weight = 4.0
 	# *"Also the same with a restaurant — I never saw one."* At three on a forty-nine-block city,
 	# with only the ~23% of the map near her ever instantiated, the expected number of cafés she
 	# could see in a day was under one — so the day-1 event built to force a crossing was in
@@ -328,6 +345,218 @@ static func _burnt_shell() -> EventDef:
 	def.inner_radius = 30.0
 	def.outer_radius = 90.0
 	def.telegraph_time = 0.7
+	return def
+
+# ------------------------------------------- Act I, M31: variety, and two with teeth ---
+# Playtest 05, finding 5: *"day two doesn't feel more difficult than day one. Having day one
+# relatively easy is okay if the difficulty increases. But right now there is never any
+# danger."* True by construction — every `hard_fail` event started on day 8 or later, so for
+# half a run the only lethal thing in the game was a car the player is never obliged to step in
+# front of.
+#
+# The shape of the fix was a decision rather than a derivation, and it was taken against a
+# patrol: *"patrol shouldn't be there for act I"*. Act I is a nice neighbourhood, and a police
+# patrol in it on day 2 tells a story the game tells in act II. So the danger comes from the
+# neighbourhood itself — **a kid on a bike and a lorry reversing across a pavement**, which are
+# what a person pushing a pram is actually frightened of, and which arrive on days 2 and 3.
+#
+# The rest is variety, asked for in the same breath: *"try to come up with more variety. we
+# need more events/entities in general."* Seven rows, five of them on day 1, each with its own
+# silhouette — see the note on `EventDef.Look`.
+
+## The leash slipped. *(The player's own idea: "a dog where the owner drops the leash and it
+## starts running".)*
+##
+## The counterpart to `dog_walker` and the reason both exist: that one is a *span* you decide
+## whether to cross the street to avoid, this one is a *thing coming down the pavement* that you
+## cannot out-walk. Faster than `WALK_SPEED`, so it earns a badge at the screen edge and the
+## fairness contract makes it pay for the whole radius rather than the falloff band.
+##
+## Not lethal, deliberately. Act I gets exactly two things that end the day and this is not one
+## of them: a loose dog is loud and it is chaos, and the day it ruins is ruined through the
+## meter, which is where most of the game lives.
+static func _loose_dog() -> EventDef:
+	var def := EventDef.new()
+	def.id = "loose_dog"
+	def.display_name = "Loose dog"
+	def.look = EventDef.Look.LOOSE_DOG
+	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	def.intensity = 24.0
+	def.inner_radius = 30.0
+	def.outer_radius = 140.0
+	# Faster than a walk, so the escape distance is the whole radius: 140/92 = 1.52s.
+	def.telegraph_time = 1.7
+	def.pulse_period = 2.2
+	def.mobile = true
+	def.speed = 132.0
+	def.path_mode = EventDef.PathMode.ALONG_STREET
+	def.path_length_tiles = 24
+	def.weight = 1.2
+	def.max_per_day = 8
+	def.cost = 2
+	return def
+
+## A market trestle taking the pavement, and the second thing on day 1 that forces a crossing.
+##
+## `cafe_tables` has been the only one since M19, and M28 made it common — but one obstacle
+## repeated eighteen times is a rule, not a decision. This one is louder and wider and it is on
+## the other side of pleasant: a café you squeeze past is a nuisance, a market is a crowd.
+static func _market_stall() -> EventDef:
+	var def := EventDef.new()
+	def.id = "market_stall"
+	def.display_name = "Market stall"
+	def.look = EventDef.Look.STALL
+	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	def.intensity = 14.0
+	def.inner_radius = 44.0
+	def.outer_radius = 185.0
+	def.telegraph_time = 1.7
+	def.pulse_period = 8.0
+	def.obstructs_radius = 28.0
+	def.weight = 1.6
+	def.max_per_day = 10
+	def.cost = 2
+	return def
+
+## The loudest thing in act I, and it is a man tidying a park.
+##
+## Deliberately allowed on `PARK`: a calm block with a leaf blower in it is calm ground she
+## cannot use, which is the shape M24 needs more of — somewhere to walk to that turns out to be
+## occupied. Pitched above `busker` because a two-stroke engine is not a violin.
+static func _leaf_blower() -> EventDef:
+	var def := EventDef.new()
+	def.id = "leaf_blower"
+	def.display_name = "Leaf blower"
+	def.look = EventDef.Look.LEAF_BLOWER
+	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.PARK,
+			GameEnums.TileType.SQUARE]
+	def.intensity = 20.0
+	def.inner_radius = 40.0
+	def.outer_radius = 200.0
+	def.telegraph_time = 1.8
+	# Swept in bursts rather than held, so there is a rhythm to time a pass through — the same
+	# counterplay `homeless_yeller` has, at a scale that makes a whole corner of a park unusable.
+	def.pulse_period = 4.0
+	def.weight = 1.2
+	def.max_per_day = 8
+	def.cost = 2
+	return def
+
+## Pigeons off the pavement all at once. Three seconds of noise and then nothing.
+##
+## The second `AHEAD_OF_PLAYER` event, and the reason to have a second one is that the director
+## had a single trick: every moment that happened *to* her was a cat. A flock is the cheapest
+## possible version of the same idea and it is the one that makes the director read as a
+## director rather than as a cat dispenser.
+static func _pigeon_flock() -> EventDef:
+	var def := EventDef.new()
+	def.id = "pigeon_flock"
+	def.display_name = "Pigeons"
+	def.look = EventDef.Look.BIRDS
+	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE,
+			GameEnums.TileType.PARK]
+	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
+	def.intensity = 17.0
+	def.inner_radius = 34.0
+	def.outer_radius = 110.0
+	def.duration = 2.4
+	def.telegraph_time = 0.9
+	def.weight = 1.5
+	def.max_per_day = 5
+	return def
+
+## **The first thing in the game that can end your day, and it arrives on day 2.**
+##
+## A kid on a bike on the pavement, bell going. Everything about it is ordinary, which is the
+## point: the answer to *"there is never any danger"* should not be that act I becomes sinister,
+## it should be that act I is a real street. A pram and a bicycle at speed is what a person
+## pushing one is actually frightened of.
+##
+## The fairness contract does the work and it is expensive here — `hard_fail` doubles the margin
+## and the speed means the whole radius counts, so the bell has to ring for (145/92) x 2 = 3.15s
+## before it arrives. That is right: it is audible from down the street, she has three seconds
+## and one step to make, and stepping off a pavement is a step. It is also why the radius is
+## small — a wider one would need a bell you could hear across the district.
+##
+## Day 2 rather than day 1 on purpose. *"Having day one relatively easy is okay if the
+## difficulty increases"* — so the escalation the player could not feel is now the plainest
+## possible thing: the day the streets acquire something that can take the day off you.
+static func _cyclist() -> EventDef:
+	var def := EventDef.new()
+	def.id = "cyclist"
+	def.display_name = "Cyclist"
+	def.look = EventDef.Look.CYCLIST
+	def.first_day = 2
+	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	def.intensity = 18.0
+	def.inner_radius = 26.0
+	def.outer_radius = 145.0
+	# hard_fail and faster than a walk: 145/92 * 2 = 3.15s.
+	def.telegraph_time = 3.3
+	def.mobile = true
+	def.speed = 165.0
+	def.path_mode = EventDef.PathMode.ALONG_STREET
+	def.path_length_tiles = 26
+	def.hard_fail = true
+	def.weight = 1.5
+	# Half the cap of the ordinary act I rows, and a third of `dog_walker`'s. At one event per
+	# block a lethal thing at full density would be a minefield rather than a street — and M28's
+	# rule that nothing else shares a lethal field means each one also quietly empties 145px of
+	# pavement around it.
+	def.max_per_day = 5
+	def.cost = 3
+	return def
+
+## A jingle you can hear three streets away, and children arriving from everywhere.
+##
+## The `busker` argument, one size up and on day 2: nothing about it is threatening, it is
+## simply interesting. Stationary, on the road, with the widest ordinary radius in act I — it is
+## the act I answer to *"what makes a whole area unusable without anything being wrong"*.
+static func _ice_cream_van() -> EventDef:
+	var def := EventDef.new()
+	def.id = "ice_cream_van"
+	def.display_name = "Ice cream van"
+	def.look = EventDef.Look.ICE_CREAM_VAN
+	def.first_day = 2
+	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
+	def.intensity = 13.0
+	def.inner_radius = 48.0
+	def.outer_radius = 240.0
+	def.telegraph_time = 2.2
+	# The jingle is a loop, so the meter cost comes and goes on the same period it does.
+	def.pulse_period = 11.0
+	def.weight = 1.5
+	def.max_per_day = 5
+	def.cost = 2
+	return def
+
+## A box lorry reversing across the pavement into a yard, beeper going. Act I's second lethal
+## thing, and the one that teaches a different lesson from the cyclist.
+##
+## The cyclist is *coming down the street at you* and the answer is to get off the pavement. The
+## lorry is **stationary and the danger is behind it** — the answer is not to walk into the gap
+## it is backing into, which is a thing you have to look at the world to know. Static, so it can
+## never chase anybody, and the beeper runs long because a hard fail owes double.
+##
+## Day 3, which puts one new lethal thing on each of the first act's last two days.
+static func _reversing_lorry() -> EventDef:
+	var def := EventDef.new()
+	def.id = "reversing_lorry"
+	def.display_name = "Reversing lorry"
+	def.look = EventDef.Look.LORRY
+	def.first_day = 3
+	def.placement = [GameEnums.TileType.SIDEWALK]
+	def.intensity = 16.0
+	def.inner_radius = 46.0
+	def.outer_radius = 175.0
+	# hard_fail, stationary: (175-46)/92 * 2 = 2.80s.
+	def.telegraph_time = 3.0
+	# The beeper. Steady enough to locate, slow enough to be a countdown rather than a wall.
+	def.pulse_period = 1.6
+	def.hard_fail = true
+	def.weight = 1.2
+	def.max_per_day = 4
+	def.cost = 3
 	return def
 
 # ------------------------------------------------------- Act II: notices (4-7) ---

@@ -17,6 +17,17 @@ enum Look {
 	FIRE,
 	DOG_WALKER, ## A person, a dog, and the taut lead between them.
 	TABLES,     ## A café spilling across the pavement.
+	# M31. Each of these earned its own row rather than reusing `PERSON` or `VEHICLE`, and the
+	# reason is the known-shaky-ground note in `CLAUDE.md`: three act I events already draw the
+	# same `person.svg`, so what tells them apart is a caret, which is the vocabulary covering
+	# for art nobody drew. Adding seven more events on that footing would have made it the rule.
+	CYCLIST,      ## A kid on a bike, leaning into it. Act I's first lethal thing.
+	LOOSE_DOG,    ## A dog running with the lead still trailing behind it.
+	STALL,        ## A market trestle, repeated across the pavement it takes.
+	LEAF_BLOWER,  ## A groundskeeper and the nozzle that makes the noise.
+	BIRDS,        ## A flock going up all at once.
+	ICE_CREAM_VAN,
+	LORRY,        ## A box lorry: the biggest silhouette in act I, and a wall.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.

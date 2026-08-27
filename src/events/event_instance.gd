@@ -18,6 +18,12 @@ const BARRIER_SEGMENT := preload("res://assets/events/barrier_segment.svg")
 const BARRIER_END := preload("res://assets/events/barrier_end.svg")
 const CAFE_TABLE := preload("res://assets/events/cafe_table.svg")
 const DOG := preload("res://assets/events/dog.svg")
+const CYCLIST := preload("res://assets/events/cyclist.svg")
+const STALL := preload("res://assets/events/stall.svg")
+const LEAF_BLOWER := preload("res://assets/events/leaf_blower.svg")
+const PIGEON := preload("res://assets/events/pigeon.svg")
+const ICE_CREAM_VAN := preload("res://assets/events/ice_cream_van.svg")
+const LORRY := preload("res://assets/events/lorry.svg")
 
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
@@ -63,12 +69,29 @@ func _process(delta: float) -> void:
 		_activation_announced = true
 		EventBus.event_activated.emit(self)
 
-	if def.mobile and path.size() > 1 and not (def.still_while_telegraphing and is_telegraphing()):
+	if def.mobile and path.size() > 1 and not is_telegraphing_still():
 		_advance_along_path(delta)
 
 	if _has_expired():
 		_finish()
 	queue_redraw()
+
+## How far along its route this instance has got, so streaming it out and back in can resume it
+## instead of rewinding it. See `EventManager._stream_in`.
+func path_travelled() -> float:
+	return _path_travelled
+
+## Puts an instance back where a previous incarnation of the same plan had got to. Restores the
+## age as well as the distance, so the telegraph, the pulse phase and the duration all continue
+## rather than starting again — an event that streams in and out must not become immortal by
+## being visited twice.
+func resume(from_age: float, from_travelled: float) -> void:
+	if from_age <= 0.0:
+		return
+	age = from_age
+	_path_travelled = from_travelled
+	if def.mobile and path.size() > 1:
+		_advance_along_path(0.0)
 
 func _advance_along_path(delta: float) -> void:
 	# Movement starts when the telegraph does, so an approaching siren is audible and
@@ -142,8 +165,30 @@ func is_lethal_at(world_position: Vector2) -> bool:
 func _draw() -> void:
 	if is_finished:
 		return
+	# **A moving event has to look like it is moving.** *(M31.)* Every crowd agent has a
+	# two-frame stride; an `EventInstance` has never had one, so a dog walker at 32px/s — a tile
+	# a second, against the player's three — slid along without a leg moving and read as parked.
+	# It was reported as *"dog walkers are not moving?"*, and it was not the movement.
+	#
+	# A bob rather than a gait, because the art has legs drawn into it and a sprite cannot swing
+	# its own (the M12c note). Driven by **distance covered**, not by time, so it is the movement
+	# itself that shows: something stopped is still, and something fast bobs faster.
+	var bob := 0.0
+	if def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
+		bob = -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
+	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2.ONE)
 	_draw_body()
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_mark()
+
+## Whether it is holding still through its telegraph — a crouching cat is not walking.
+func is_telegraphing_still() -> bool:
+	return def.still_while_telegraphing and is_telegraphing()
+
+## The bob a moving event rides on: a stride's worth of lift, once per stride's worth of ground.
+## Sized against a walking pace rather than a running one — 34px is roughly a step.
+const BOB_PER_PX := PI / 34.0
+const BOB_HEIGHT := 2.5
 
 # ------------------------------------------------------------------ the mark ---
 # M22, playtest 02 finding 8 and playtest 04 finding 2. The aura rings are gone: a ring
@@ -241,8 +286,54 @@ func _draw_body() -> void:
 			_draw_spread(CAFE_TABLE)
 		EventDef.Look.DOG_WALKER:
 			_draw_dog_walker()
+		EventDef.Look.CYCLIST:
+			_draw_simple(CYCLIST, 12.0)
+		EventDef.Look.LOOSE_DOG:
+			_draw_loose_dog()
+		EventDef.Look.STALL:
+			_draw_spread(STALL)
+		EventDef.Look.LEAF_BLOWER:
+			_draw_simple(LEAF_BLOWER, 8.0)
+		EventDef.Look.BIRDS:
+			_draw_birds()
+		EventDef.Look.ICE_CREAM_VAN:
+			_draw_simple(ICE_CREAM_VAN, 20.0)
+		EventDef.Look.LORRY:
+			_draw_simple(LORRY, 26.0)
 		EventDef.Look.NONE:
 			pass
+
+## A shadow and a sprite, facing the way it is going. What most of M31's new looks are, and
+## having it once is what stopped seven near-identical three-line functions.
+func _draw_simple(texture: Texture2D, shadow: float) -> void:
+	Sprites.draw_shadow(self, Vector2.ZERO, shadow)
+	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+
+## The dog, and the lead it is no longer on.
+##
+## Read against `_draw_dog_walker()`, which draws the lead *taut between two bodies*: that is
+## the span it owns and the reason to cross the street. Here the same lead trails on the ground
+## behind one body, and the difference between the two pictures is the whole event.
+func _draw_loose_dog() -> void:
+	var behind := Vector2(26.0 if _heading_is_west() else -26.0, 0.0)
+	Sprites.draw_shadow(self, Vector2.ZERO, 9.0)
+	# On the ground and slack, not held up at hip height. Nobody is holding it.
+	draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
+	Sprites.draw_standing(self, DOG, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+
+## A flock going up. Scattered by the instance's own position rather than randomly, so the
+## same flock is the same shape every frame instead of boiling.
+##
+## They rise with the telegraph and hang once it is over: the burst *is* the event, and a bird
+## that is already up is a bird she has walked past.
+func _draw_birds() -> void:
+	var rise := clampf(age / maxf(def.telegraph_time, 0.01), 0.0, 1.0)
+	var seed_value := int(global_position.x) * 31 + int(global_position.y)
+	for i in 7:
+		var spread := float((seed_value + i * 37) % 11 - 5) * 7.0
+		var lift := 6.0 + float((seed_value + i * 53) % 7) * 5.0
+		Sprites.draw_standing(self, PIGEON,
+				Vector2(spread, -lift * rise - 4.0 * float(i % 3)))
 
 func _draw_animal() -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
