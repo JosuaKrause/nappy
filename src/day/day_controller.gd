@@ -69,10 +69,31 @@ func _is_home() -> bool:
 
 func _on_baby_asleep() -> void:
 	if phase == GameEnums.DayPhase.WALKING:
+		_remember_the_calm_she_found()
 		phase = GameEnums.DayPhase.RETURNING
 		# Falling asleep on the doorstep should not need a lap of the block to register.
 		if _is_home():
 			_end(GameEnums.DayResult.WON)
+
+## *(M24, playtest 05 finding 4: "I was able to go to the same park on day one and two — this
+## shouldn't be possible.")* The one thing the city learns about how the player actually played,
+## recorded at the only moment that means anything: where she was standing when the baby went
+## under.
+##
+## It lives here rather than in `Baby`, and that is the invariant rather than a preference —
+## the baby's entire interface to the world is three questions and none of them is about
+## blocks. `DayController` is the class that already turns "she is asleep" into what it means
+## for the day, so it is where "and this is the park she used" belongs too.
+##
+## Only calm ground counts. Falling asleep on a pavement is a different day and does not spend
+## a park.
+func _remember_the_calm_she_found() -> void:
+	if not _map or not _player:
+		return
+	var here := _player.global_position
+	if not Tile.is_calm(_map.tile_type_at_world(here)):
+		return
+	GameState.remember_where_she_settled(_map.block_at(here))
 
 func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 	if not is_running():

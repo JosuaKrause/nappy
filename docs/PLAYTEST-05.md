@@ -203,6 +203,18 @@ because *how dangerous a thing is has to be visible from looking at the thing.*
 
 ## Finding 4 — the same park twice
 
+> **Done — M24**, and the shape of the fix is the one predicted below: the day reads where she
+> settled and spoils *that* block, and the usable-park rule then guarantees a different one.
+> Measured over five seeds and a whole run, the chance that the quietest calm block today is the
+> same as yesterday's goes from **28% of days to zero**.
+>
+> One thing the analysis got wrong, and it matters: *"the telemetry already records the raw
+> material… M24 was always going to read those."* It must not, and it does not. A gameplay rule
+> that reads a trace is the telemetry invariant broken in the loudest possible way — the game
+> would play differently with `--no-telemetry`. `GameState.settled_in` is its own record,
+> written by `DayController` when the baby goes under. Where a trace and a rule want the same
+> fact, the rule keeps its own copy.
+
 > I was able to go to the same park on day one and two — this shouldn't be possible.
 
 **This is M24, and it is queued and unstarted**: *"the city remembers where you went — spoil

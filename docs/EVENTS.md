@@ -457,7 +457,38 @@ Two rules run after a day is planned:
 - **At least one park is left unspoiled.** Whichever park has the fewest events reaching it
   has them removed. Ambient events do not count as spoiling — a playground makes a park
   *contested*, which is the design, and stripping one out every day would be absurd.
+  *(M24: where there is a choice, the park it protects is **not** the one she used yesterday.)*
 - **A park stays reachable on foot.** See "Keeping a late day walkable" below.
+
+### The city remembers where she went *(M24)*
+
+Playtest 05, finding 4: *"I was able to go to the same park on day one and two — this shouldn't
+be possible."* The complaint is not about repetition. It is that **the game's only verb stopped
+being a decision on day two**: a player who finds a good park on day 1 has no question left to
+answer, and answering that question is the whole game.
+
+So the calm block the baby actually fell asleep in is remembered — by `GameState`, not by
+reading the telemetry; see docs/TELEMETRY.md — and the next day plans one loud thing into it.
+Measured over five seeds and a whole run, the chance that the quietest calm block today is the
+same one as yesterday goes from **28% of days to zero**.
+
+Three things keep it from being a punishment for playing well, and all three are load-bearing:
+
+- **It spoils with an event, not by taking the ground away.** The park is still calm ground and
+  still walkable; something loud is standing in it, visible from the street, and she decides.
+  Nothing lethal, obstructing or mobile is ever chosen for this.
+- **The usable-park rule is told to protect a different one**, or the two halves fight — the day
+  puts one event in her park, and the rule, looking for the least disturbed calm ground, finds
+  the block with exactly one spoiler on it and strips the very event that was the point.
+- **It is one ordinary event from the same day's pool.** Day 2 is not day 1 plus a punishment,
+  it is a day whose noise happens to be somewhere she was counting on.
+
+Two exemptions, both the same one: if the city has only one calm block, or every other calm
+block is already spoiled, a **winnable day outranks a fresh decision** and she gets her park
+back.
+
+This is playtest 03's finding 2 one scale up. That one found the calm area was a lap rather than
+a route (M21); this one finds that *which* calm area was not a choice either.
 
 ## Pulsing events
 

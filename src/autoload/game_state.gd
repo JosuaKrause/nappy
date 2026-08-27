@@ -30,6 +30,27 @@ var city_state := CityState.new()
 ## chance at the good ending; this is doing it.
 var sabotage_done := false
 
+## The calm block the baby actually went to sleep in, per day: `day -> Vector2i`. *(M24.)*
+##
+## Run-scoped and gameplay-owned, deliberately *not* read out of the telemetry log even though
+## the `calm` entries say the same thing. Telemetry never touches gameplay, and a rule that
+## reads a trace to decide tomorrow's events would be that rule broken in the loudest possible
+## way — the game would play differently with `--no-telemetry`.
+var settled_in: Dictionary = {}
+
+## Where she settled yesterday, or `Vector2i(-1, -1)` if she did not settle at all.
+func settled_yesterday() -> Vector2i:
+	return settled_in.get(day - 1, Vector2i(-1, -1))
+
+## Called when the baby falls asleep, with the calm block she is standing in. The one place
+## the city learns anything about how the player actually played.
+func remember_where_she_settled(block: Vector2i) -> void:
+	if settled_in.has(day):
+		return
+	settled_in[day] = block
+	Telemetry.note("calm", "settled in the calm block %s; tomorrow will know"
+			% TelemetryLog.tile(block))
+
 # ------------------------------------------------------------------ lifecycle ---
 
 ## Begin a fresh run. Pass a seed to reproduce a previous city, or omit for a new one.
@@ -44,6 +65,7 @@ func start_run(seed_value: int = 0) -> void:
 	failed_resistance_steps.clear()
 	scars.clear()
 	city_state.reset()
+	settled_in.clear()
 	sabotage_done = false
 	print("[GameState] run started, seed=%d" % run_seed)
 

@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_the_named_decisions_arrive(t)
 	_test_two_of_a_kind_are_not_the_same_incident(t)
 	_test_nothing_happens_inside_a_lethal_field(t)
+	_test_the_city_remembers_where_she_went(t)
 
 # ------------------------------------------------------------------ fairness ---
 
@@ -599,3 +600,91 @@ func _test_nothing_happens_inside_a_lethal_field(t) -> void:
 						% [day, plan.def.id, other.def.id,
 						other.distance_from(plan.position), plan.def.outer_radius])
 	t.check(lethal_days > 0, "and a run actually contains lethal events to check")
+
+## Playtest 05, finding 4: *"I was able to go to the same park on day one and two — this
+## shouldn't be possible."* The complaint is not about repetition, it is that the game's only
+## verb stopped being a decision on day two.
+##
+## Three things are checked, and the third is the one that makes it fair rather than punishing:
+## the park she used gets something in it, the day still guarantees a *different* usable one,
+## and what gets put there can never take the day or the ground away.
+func _test_the_city_remembers_where_she_went(t) -> void:
+	var map := _map()
+	t.check(map.calm_blocks.size() >= 2,
+			"the map has calm ground to choose between (%d blocks)" % map.calm_blocks.size())
+
+	var used: Vector2i = map.calm_blocks[0]
+	var lot := map.tile_rect_to_world(_calm_rect(map, used))
+	var spoiled_days := 0
+	for day in range(2, 15):
+		var consumed: Array[String] = []
+		var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [], used)
+
+		var on_her_park := 0
+		var clean_elsewhere := 0
+		for block in map.calm_blocks:
+			var here := map.tile_rect_to_world(_calm_rect(map, block))
+			var spoilers := 0
+			for plan in planned:
+				if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
+					continue
+				if here.grow(plan.def.outer_radius).has_point(plan.position):
+					spoilers += 1
+			if block == used:
+				on_her_park = spoilers
+			elif spoilers == 0:
+				clean_elsewhere += 1
+		if on_her_park > 0:
+			spoiled_days += 1
+		t.check(clean_elsewhere >= 1,
+				"day %d still leaves a *different* calm block clean" % day)
+
+		# Nothing sitting in yesterday's park may end the day or close the ground: she has to be
+		# able to see it from the street and walk away, which is what keeps it from being a
+		# punishment for having played well.
+		for plan in planned:
+			if not plan.is_placed() or not lot.has_point(plan.position):
+				continue
+			t.check(not plan.def.hard_fail and plan.def.obstructs_radius <= 0.0,
+					"day %d puts '%s' in her park, which is loud rather than lethal"
+					% [day, plan.def.id])
+
+	t.check(spoiled_days >= 10,
+			"the park she used yesterday is reliably spoiled (%d of 13 days)" % spoiled_days)
+
+	# And a day that knows nothing about yesterday plans exactly as it always did.
+	var forgetful: Array[String] = []
+	var remembering: Array[String] = []
+	var a := EventScheduler.build_day(3, _rng(3), map, forgetful)
+	var b := EventScheduler.build_day(3, _rng(3), map, remembering, [], Vector2i(-1, -1))
+	t.check(_signature(a) == _signature(b),
+			"and a day with nothing to remember is unchanged by the rule")
+
+	# The whole run, played the way a player plays it: settle in the quietest calm block, and
+	# the next day is planned knowing that. Measured over five seeds while this was built, the
+	# repeat rate goes from 28% of days to 0 — this asserts the claim rather than the number.
+	var yesterday := Vector2i(-1, -1)
+	for day in range(1, 15):
+		var consumed: Array[String] = []
+		var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [], yesterday)
+		var quietest := _quietest_calm_block(map, planned)
+		t.check(day == 1 or quietest != yesterday,
+				"day %d sends her somewhere other than yesterday's park" % day)
+		yesterday = quietest
+
+## The calm block with the least reaching it — the one a player would find and settle in.
+func _quietest_calm_block(map: CityMap, planned: Array) -> Vector2i:
+	var best := Vector2i(-1, -1)
+	var fewest := 1 << 30
+	for block in map.calm_blocks:
+		var lot := map.tile_rect_to_world(_calm_rect(map, block))
+		var spoilers := 0
+		for plan in planned:
+			if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
+				continue
+			if lot.grow(plan.def.outer_radius).has_point(plan.position):
+				spoilers += 1
+		if spoilers < fewest:
+			fewest = spoilers
+			best = block
+	return best

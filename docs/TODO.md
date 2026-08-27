@@ -370,12 +370,8 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       and how each day ended. Full format and the entry table in
       [docs/TELEMETRY.md](TELEMETRY.md). **The gate is now open**: M19's balance half and M24
       both have their data source. On by default; `--no-telemetry` turns it off
-- [ ] **M24 The city remembers where you went** — finding 11. Record the calm zone the player
-      settled in and bias the next day's spoiling event toward it, so the options narrow *at
-      the player* rather than at random. Kept from feeling like a punishment for playing well
-      by two things already in place: it spoils with an avoidable, visible event rather than
-      removing the ground, and M16's route invariant still guarantees two calm areas with two
-      routes each
+- [x] **M24 The city remembers where you went** — finding 11, and playtest 05 asked for it
+      again by name. Done: see the M28+ section below
 - [ ] **M25 Patrols, and running that matters** — findings 9 and 12, **plus playtest 03
       finding 3**: the walk home is a formality — 26s, five crossings, zero encounters, 42% of
       the day left over. Patrols that were not there on the way out are the shape of the
@@ -477,8 +473,16 @@ See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
       covering for it. The thing nobody had noticed: the caret was a **private method on
       `EventInstance`**, so "the entity carries its own cue" silently meant "the *event* entity
       does", and the one lethal thing outside the catalogue fell off that edge
-- [ ] **Finding 4 — the same park twice** — this is **M24**, and the player asking for it is
-      what moves it
+- [x] **M24 The city remembers where you went** — finding 4, and playtest 02's finding 11. The
+      calm block the baby actually fell asleep in is remembered and the next day plans one loud
+      thing into it; the usable-park rule is told to protect a different one, or the two halves
+      fight and it strips the very event that was the point. Measured over five seeds and a whole
+      run: the chance the quietest calm block today is yesterday's goes from **28% of days to
+      zero**. Kept from being a punishment for playing well by three things — it spoils with an
+      avoidable, visible event rather than removing the ground, nothing lethal, obstructing or
+      mobile is ever chosen for it, and it is one ordinary event from the same day's pool.
+      **It does not read the telemetry**, which is what the write-up assumed it would: a rule
+      that reads a trace would make the game play differently with `--no-telemetry`
 - [ ] **Finding 5 — nothing is dangerous before day 8** — the emphasised one, and true by
       construction: every `hard_fail` event starts on day 8 or later. Closest to **M25**. M28 is
       the *density* half of it; this is the other half and no amount of café tables fixes it
