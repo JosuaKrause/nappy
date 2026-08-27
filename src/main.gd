@@ -28,7 +28,12 @@ var _run_over := false
 var _ending_shown := false
 
 func _ready() -> void:
-	# Esc has to work even while the summary has the tree paused.
+	# Esc has to work even while the summary has the tree paused, so this node keeps running
+	# through a pause. Everything under it that *is* the game is put back to pausable as it is
+	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT would
+	# inherit ALWAYS from here, which is exactly how the pause stopped working: the summary set
+	# `get_tree().paused`, and the player kept walking, the crowd kept driving and the
+	# resistance deadline kept running out behind the screen saying the day was over.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	GameState.start_run(_seed_override())
 	# After the run seed is settled and before anything is generated, so the log opens on the
@@ -40,6 +45,7 @@ func _ready() -> void:
 
 	_city = CITY.instantiate()
 	add_child(_city)
+	_pauses_with_the_game(_city)
 	var elapsed := Time.get_ticks_msec()
 	_city.build(CityGenerator.generate(GameState.run_seed))
 	print("[Main] city generated in %d ms (seed %d)" % [
@@ -59,11 +65,13 @@ func _ready() -> void:
 	_resistance = ResistanceDirector.new()
 	_resistance.name = "Resistance"
 	add_child(_resistance)
+	_pauses_with_the_game(_resistance)
 	_resistance.setup(_city, _city.map)
 
 	_day = DayController.new()
 	_day.name = "Day"
 	add_child(_day)
+	_pauses_with_the_game(_day)
 	_day.setup(_city.map, _player)
 	_day.day_finished.connect(_on_day_finished)
 
@@ -73,6 +81,7 @@ func _ready() -> void:
 		_observer = TelemetryObserver.new()
 		_observer.name = "Telemetry"
 		add_child(_observer)
+		_pauses_with_the_game(_observer)
 		_observer.setup(_city, _player, _baby, _day, _resistance)
 
 	_start_day()
@@ -84,6 +93,15 @@ func _ready() -> void:
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
 		add_child(screenshot)
+
+## Marks a node as part of the game rather than part of the frame around it, so the summary
+## screen actually stops it.
+##
+## Needed only because `main` itself has to keep running through a pause for Esc, and process
+## mode is inherited: without this every child of a node that must survive a pause survives it
+## too. The frame — the HUD, the summary, the screenshot helper — is what is left on ALWAYS.
+func _pauses_with_the_game(node: Node) -> void:
+	node.process_mode = Node.PROCESS_MODE_PAUSABLE
 
 # --------------------------------------------------------------- the day loop ---
 

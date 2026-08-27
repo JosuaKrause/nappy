@@ -47,6 +47,25 @@ const NEAR_FLOOR := 26.0
 ## Ignore a run shorter than this: it is a fumbled key, not a decision.
 const RUN_MIN_TIME := 0.25
 
+## How long on the road stops being a crossing and starts being a walk down it.
+##
+## The carriageway is two tiles of a six-tile corridor, so crossing one costs about 0.7s at
+## walking pace and a whole junction about two. Anything past this was not on its way to the
+## other side — which means **the presence of a `road` entry is itself the finding**, and the
+## reader does not have to judge a duration to see it.
+const ROAD_LINGER := 2.5
+
+## How close a crowd agent has to be to be standing where the player is. Half a tile: with no
+## collision between the two (M19), an agent at this range has walked *through* her.
+const CROWD_TOUCH := 16.0
+## And how far it must get before the same agent can be written down again.
+const CROWD_CLEAR := 40.0
+## A packed pavement is four hundred walkers and would fill the log by itself. This is the
+## floor on how often the crowd may say anything at all; cars are exempt, because a car
+## driving through a pram is the thing M19 exists to make impossible and it must never be
+## dropped for being one of several.
+const CROWD_QUIET_TIME := 1.5
+
 ## How close to the chalk mark counts as having found it. Generous on purpose — the question
 ## being answered is "did the player ever go near a contact", not "did they use it".
 const CONTACT_SIGHT := 130.0
@@ -62,6 +81,15 @@ var _resistance: ResistanceDirector
 var _was_calm := false
 var _was_road := false
 var _was_frozen := false
+
+# Time spent on the road surface without leaving it, and where that stretch began.
+var _road_since := 0.0
+var _road_from := Vector2i.ZERO
+var _carriageway := 0.0
+
+# Crowd agents currently overlapping the player, and when one was last written down.
+var _touching := {}
+var _last_touch := -1000.0
 
 # Doubling back.
 var _committed := Vector2.ZERO
@@ -107,6 +135,11 @@ func start_day() -> void:
 	_was_calm = _city.is_calm_zone(_player.global_position)
 	_was_road = Tile.is_road(_map.tile_type_at_world(_player.global_position))
 	_was_frozen = false
+	_road_since = 0.0
+	_road_from = _map.world_to_tile(_player.global_position)
+	_carriageway = 0.0
+	_touching.clear()
+	_last_touch = -1000.0
 	_committed = Vector2.ZERO
 	_committed_for = 0.0
 	_against = 0.0
@@ -124,6 +157,8 @@ func start_day() -> void:
 ## The end of the day, with what was around at the moment it ended. Called by `main.gd`
 ## before the calendar advances, so the outcome is written above the nerve it cost.
 func day_finished(result: GameEnums.DayResult) -> void:
+	# Above the outcome, because it is part of how the day got there.
+	_flush_road(_player.global_position)
 	var name: String = GameEnums.DayResult.keys()[result]
 	if result == GameEnums.DayResult.WON:
 		Telemetry.note("home", "WON, %.1fs to spare" % _day.time_remaining)
@@ -139,25 +174,57 @@ func _process(delta: float) -> void:
 		return
 	Telemetry.set_clock(_day.time_total - _day.time_remaining)
 	var here := _player.global_position
-	_watch_the_ground(here)
+	_watch_the_ground(here, delta)
 	_watch_the_meters()
 	_watch_running()
 	_watch_direction(delta)
 	_watch_what_is_near(here)
+	_watch_the_crowd(here)
 	_watch_closures(here)
 	_watch_the_contact(here)
 
 ## Crossing into the road, and arriving on or leaving calm ground. Both are transitions, so
 ## both are one line each rather than a state the reader has to infer from a gap.
-func _watch_the_ground(here: Vector2) -> void:
+##
+## The road half is a transition *and* a duration. The first version logged only the step onto
+## the road, and a player walking a mile down the middle of the carriageway produced exactly
+## the same entries as one crossing at every junction — five `cross` lines either way. The
+## question "did they walk down the road" could only be answered by comparing coordinates by
+## hand, which is the sort of inference this format exists to make unnecessary.
+func _watch_the_ground(here: Vector2, delta: float) -> void:
 	var type := _map.tile_type_at_world(here)
 
 	var road := Tile.is_road(type)
-	if road and not _was_road:
-		Telemetry.note("cross", "stepped into the road at %s, %s" % [
-			TelemetryLog.tile(_map.world_to_tile(here)),
-			"at a zebra" if type == GameEnums.TileType.CROSSING else "mid-block"])
+	if road:
+		if not _was_road:
+			_road_since = Telemetry.clock()
+			_road_from = _map.world_to_tile(here)
+			_carriageway = 0.0
+			Telemetry.note("cross", "stepped into the road at %s, %s" % [
+				TelemetryLog.tile(_road_from),
+				"at a zebra" if type == GameEnums.TileType.CROSSING else "mid-block"])
+		if type == GameEnums.TileType.ROAD:
+			_carriageway += delta
+	elif _was_road:
+		_flush_road(here)
 	_was_road = road
+
+## Writes down a stretch on the road, if it lasted longer than crossing one takes.
+##
+## Called when the player steps off — and again when the day ends, because a day that ends
+## *while* she is in the carriageway is the most interesting case there is and the first
+## version silently dropped it: a player killed by the traffic they were walking among got no
+## `road` entry at all, having never left it.
+func _flush_road(here: Vector2) -> void:
+	if not _was_road:
+		return
+	var stayed := Telemetry.clock() - _road_since
+	if stayed < ROAD_LINGER:
+		return
+	Telemetry.note("road", "%.1fs on the road (%.1fs of it carriageway), %s -> %s" % [
+		stayed, _carriageway, TelemetryLog.tile(_road_from),
+		TelemetryLog.tile(_map.world_to_tile(here))])
+	_was_road = false
 
 	var calm := _city.is_calm_zone(here)
 	if calm != _was_calm:
@@ -269,6 +336,45 @@ func _watch_what_is_near(here: Vector2) -> void:
 	for id: int in _near.keys():
 		if not live.has(id):
 			_near.erase(id)
+
+## Somebody standing exactly where the player is.
+##
+## Nothing in the game stops this: the crowd has no collision with the player until M19, so a
+## pedestrian walks through the pram and a car drives through it, and the only trace either
+## leaves is a bump in the meter that looks identical to passing close by. The crowd is
+## otherwise deliberately absent from the log — five hundred and thirty agents would bury
+## everything else — and this is the one thing about it worth a line each: it is finding 2 of
+## playtest 02 as an event with a timestamp rather than as a recollection.
+##
+## The scan is linear over the whole crowd, which is the same shape and cost as the
+## `total_excitement_at` the baby already runs every physics frame.
+func _watch_the_crowd(here: Vector2) -> void:
+	if not _city.crowd:
+		return
+	var still_touching := {}
+	for agent in _city.crowd.agents():
+		var distance := agent.global_position.distance_to(here)
+		var id := agent.get_instance_id()
+		if distance > CROWD_CLEAR:
+			continue
+		# Hysteresis on the wider radius: an agent keeping pace alongside must not re-log
+		# every time it wobbles across the inner one.
+		if _touching.has(id):
+			still_touching[id] = true
+			continue
+		if distance > CROWD_TOUCH:
+			continue
+		still_touching[id] = true
+		var is_car := agent.kind == CrowdAgent.Kind.CAR
+		# A car is never dropped for being one of several. A crowded pavement is, or the log
+		# becomes four hundred lines of people being walked through.
+		if not is_car and Telemetry.clock() - _last_touch < CROWD_QUIET_TIME:
+			continue
+		_last_touch = Telemetry.clock()
+		Telemetry.note("crowd", "%s at %s | %s" % [
+			"a car drove through her" if is_car else "walked through a pedestrian",
+			TelemetryLog.tile(_map.world_to_tile(here)), _meters()])
+	_touching = still_touching
 
 ## A barrier coming into view. Recorded from where it was seen, because "the player found out
 ## two junctions later" and "the player could see it from the corner" are different days and

@@ -1,7 +1,7 @@
 # Handoff
 
-**Last updated:** end of the M23 session.
-**Read this first, then [PLAYTEST-02.md](PLAYTEST-02.md), then [TODO.md](TODO.md).**
+**Last updated:** end of the M23 session, after playtest 03.
+**Read this first, then [PLAYTEST-03.md](PLAYTEST-03.md), then [TODO.md](TODO.md).**
 
 ---
 
@@ -13,9 +13,15 @@ run actually did.
 
 **The most important change since the last handoff is that arguments about the game can now
 be settled by reading one.** Every run writes an ordered plain-text trace — see
-[TELEMETRY.md](TELEMETRY.md). Before picking up anything below, play a day and read the log:
-it is faster than any of the reasoning in this document, and several of the open questions
-here are one run away from being answered rather than argued.
+[TELEMETRY.md](TELEMETRY.md). It has already paid for itself:
+**[playtest 03](PLAYTEST-03.md)** is the first one read off a log rather than a recollection,
+and it landed one day after M23 shipped.
+
+**The one number to carry into the next session.** Day 1 of the traced run was won in 103.9
+seconds of a 180-second day, and the log contains **zero `near` entries** — the player crossed
+the city, sat in a courtyard and came home without ever being within reach of an event.
+`budget_for(1)` is four events for forty-nine blocks. That is what M19 is now for, and it
+carries the event-density pass with it, because density before consequence is only scenery.
 
 - **M0–M9 complete.** Full 14-day run, four-act escalation, resistance subquest, three
   endings. Documented in `docs/`.
@@ -113,12 +119,31 @@ Two things about the ordering, because neither is obvious from the numbers:
 
 ## What to do next, in order
 
-### First: play a day and read the log
+### M19 — bodies on the street, now carrying the event budget
 
-Not a milestone, and it costs three minutes. Several of the open questions in `TODO.md` — is
-the nerve economy right, does anybody ever find the resistance, is anything standing between
-the player and a won day — are now questions about a file rather than about a design. Do this
-before picking up M17, because the answer may reorder what follows it.
+**Playtest 03 reordered the queue and this is what came to the front.** Collision, lethal
+cars, pavement hazards that make one side of the street the wrong side, cars that stop at
+zebras — plus the density pass, because four events across forty-nine blocks is why the traced
+day had nothing in it.
+
+Do the two together and in that order. The cost table under playtest 02's finding 7 is the
+reason: eleven of eighteen events cost under fifteen points to walk straight through and three
+are *negative*, so more of them today buys four times as much scenery. Consequence first, then
+density, then set the numbers from traces — decision 11, and the traces exist now.
+
+M22 wants pulling in alongside it, unchanged from the last handoff: a lethal car arriving from
+off-screen is a breach of the telegraph fairness contract, not a polish item, and M19 is what
+creates them.
+
+### Then M21 — the city overhaul, which has jumped M20
+
+Four-block calm zones. Playtest 03 finding 2 is why it moved: the traced player spent twenty
+seconds walking in a circle inside a courtyard, and **that is what the rules ask for** —
+standing still drains sleepiness at 1.0/s, walking on calm ground fills it at 4.2/s, and a
+calm block is a few tiles across. Progress-requires-motion plus small-calm-area is jointly
+sufficient for a lap. M18's shorter stretch cut the number of laps and could not remove the
+lap; no further balance pass will either. A four-block zone turns the lap into a route, which
+is the game's actual verb.
 
 ### M17 — the route map
 
@@ -135,19 +160,18 @@ seen from, and a `turn` following one says whether it changed the plan. If closu
 scenery in the traces, that is the argument for the map screen — and afterwards, the same two
 entries are how to tell whether the map fixed it.
 
-### Then M18–M26, per PLAYTEST-02.md
+### Then the rest, per PLAYTEST-02.md
 
-M18 and M23 done. **M19 bodies on the street** (collision, lethal cars, pavement hazards that
-force a crossing, cars that stop at zebras) — the big one, and the thing that makes M18's
-generous meter honest, and the thing the cost table above says the early acts badly need. Its
-balance half is no longer blocked: set the numbers from what the traces say, per decision 11.
-**M20 traffic that behaves** (following, overtaking, 8-direction driving, crashes as events).
-**M21 the city overhaul** (four-block calm zones, T-junctions and L-bends, main roads as
-barriers, plus the canal dropped out of M16). **M22 danger you can read** (the circles go;
+M18 and M23 done; M19 and M21 pulled to the front above.
+**M20 traffic that behaves** (following, overtaking, 8-direction driving, crashes as events) —
+now *behind* M21, because nothing in playtest 03 asked for it.
+**M22 danger you can read** (the circles go;
 entity, symbol, screen edge, and a symbol over the player when they are too close).
 **M24 the city remembers where you went** (spoil the park you relied on yesterday) — the
 `calm` entries it needs are being written now. **M25 patrols, and running that matters** — the
 `run` entries are the measurement it will be judged by, and today they all say the same thing.
+It also picks up playtest 03 finding 3, the walk home being a formality: patrols that were not
+there on the way out are the return phase's own pressure.
 **M26 teaching the controls** — delete the interact key, then teach walking and running,
 ending in a scripted day-1 event that requires a short run. M26 must come after M25 for
 correctness, not scheduling: forcing a run before running is ever the right answer teaches a
@@ -185,6 +209,24 @@ Taken in the M12a session and still governing everything after it. All four are 
 
 ## Gotchas learned in M23
 
+- **`process_mode` is inherited, so one `PROCESS_MODE_ALWAYS` exempts a whole subtree.** Found
+  by playtest 03, present since M6. `main.gd` sets it on itself so Esc quits while the summary
+  has the tree paused; every descendant defaults to INHERIT, so the city, the player, the
+  crowd, the events and the resistance director all inherited the exemption and
+  `get_tree().paused = true` paused nothing for six milestones. The player kept walking behind
+  the screen saying the day was over — and the **resistance deadline kept running out**, which
+  could lose a run its good ending while somebody read a summary. Fixed with
+  `main._pauses_with_the_game()`; a new node under `Main` needs that call and nothing warns
+  you. Also in `CLAUDE.md`.
+- **The format only gets tested by the first real question asked of it.** M23 shipped, and the
+  first question put to it the next day — *did I walk down the road, and did a car go through
+  me* — it could not answer. Road time was not recorded (only road entry, so walking a mile
+  down the carriageway looked identical to crossing at each junction), and the crowd was
+  invisible by design. Both are entries now. Reasoning about which fields would be useful is
+  not a substitute for being asked something.
+- **A stretch in progress when the day ends is never written down.** The `road` entry fired on
+  *leaving* the road, so a player killed by the traffic they were walking among got no entry
+  at all, having never left it. Anything accumulated over a span needs flushing at day end.
 - **A green suite says nothing about whether a log is any good.** The observer passed every
   test and its first trace of a minute's actual walking had four defects in it: a `run` entry
   claiming a six-hundred-pixel event was "in reach", two instances of the same event that the

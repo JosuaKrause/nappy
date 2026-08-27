@@ -29,6 +29,7 @@ it is not.
 | [docs/HANDOFF.md](docs/HANDOFF.md) | **Start here** — current state and what to do next |
 | [docs/PLAYTEST-01.md](docs/PLAYTEST-01.md) | First playtest: findings, analysis, current plan |
 | [docs/PLAYTEST-02.md](docs/PLAYTEST-02.md) | Second playtest: twelve findings, planned as M18–M26 |
+| [docs/PLAYTEST-03.md](docs/PLAYTEST-03.md) | Third playtest: the first one read off a run log |
 
 ## Running
 
