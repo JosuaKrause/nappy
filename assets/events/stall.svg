@@ -1,0 +1,16 @@
+<!-- One trestle of a market stall: crates of fruit under a striped awning. Repeated across the
+     width the event obstructs, like the café tables, so what is drawn is exactly what is in
+     the way. Read against `cafe_table.svg`: taller, with a canopy, so the two things that take
+     a pavement in act I are not the same silhouette twice. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="36" viewBox="0 0 26 36" shape-rendering="crispEdges">
+  <rect x="2" y="8" width="22" height="4" fill="#c4503c"/>
+  <rect x="6" y="8" width="4" height="4" fill="#e8ddc8"/>
+  <rect x="14" y="8" width="4" height="4" fill="#e8ddc8"/>
+  <rect x="3" y="12" width="2" height="10" fill="#6b543f"/>
+  <rect x="21" y="12" width="2" height="10" fill="#6b543f"/>
+  <rect x="3" y="22" width="20" height="4" fill="#8a6f52"/>
+  <rect x="5" y="18" width="7" height="4" fill="#c4503c"/>
+  <rect x="14" y="18" width="7" height="4" fill="#4f8f6b"/>
+  <rect x="5" y="26" width="6" height="8" fill="#6b543f"/>
+  <rect x="14" y="26" width="6" height="8" fill="#6b543f"/>
+</svg>

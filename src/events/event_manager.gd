@@ -83,10 +83,24 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# The scar is recorded the first time the event is put in the world and never again: walking
 	# back past a burnt-out shell must not re-report the fire that made it.
 	plan.live = _create(plan.def, plan.position, plan.path, not plan.was_live)
+	# **An event that has already run picks up where it left off.** *(M31.)* Without this a
+	# streamed-out event is rebuilt from `plan.position`, which is the tile the *day* chose at
+	# dawn — so a dog walker that had covered three hundred pixels teleported back to the top of
+	# its street every time the player left its radius and returned, and at 32px/s against her
+	# 92 that is most times. From outside it reads as an event that never goes anywhere, which
+	# is what it had become.
+	#
+	# It resumes rather than catching up on lost time, and that is M27's own design: the day is
+	# planned across the whole city but an event **waits** for her. Ageing it in absentia would
+	# put back exactly the thing streaming was built to fix — a twenty-second event that is over
+	# before anybody could reach it.
+	plan.live.resume(plan.age, plan.travelled)
 	plan.was_live = true
 	_instances.append(plan.live)
 
 func _stream_out(plan: EventScheduler.Planned) -> void:
+	plan.age = plan.live.age
+	plan.travelled = plan.live.path_travelled()
 	_instances.erase(plan.live)
 	plan.live.queue_free()
 	plan.live = null

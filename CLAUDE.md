@@ -261,9 +261,16 @@ Three things that keep it honest, and each is a way it could quietly stop being 
   is outside its own outer radius the instant it becomes visible. Otherwise streaming is a way
   of dropping events on people, and the telegraph contract below is a lie.
   `tests/test_event_manager.gd` asserts it against the catalogue.
-- **A spent plan stays spent.** Streaming may take a *running* event away and give it back; it
-  may never rewind one that has finished, and the bookkeeping an event does once — a scar, a
-  block arc — happens on its first instantiation and never again.
+- **A spent plan stays spent, and a running one resumes.** Streaming may take a *running* event
+  away and give it back; it may never rewind one that has finished, and the bookkeeping an event
+  does once — a scar, a block arc — happens on its first instantiation and never again. *(M31
+  added the second half, because only the first was implemented: a re-streamed event was rebuilt
+  from the tile the day chose at dawn, so a dog walker at 32px/s teleported back to the top of
+  its street every time the player left its radius and returned — which at a third of her
+  walking speed is most times. It was reported as "dog walkers are not moving?", and the
+  movement was fine. `Planned.age` and `Planned.travelled` carry it over.)* It **resumes** rather
+  than catching up on lost time: ageing an event in absentia would put back the thing streaming
+  was built to fix, a twenty-second event that is over before anybody could reach it.
 
 Do not move a guarantee out of `build_day` and into the streaming. If something has to be true
 of a day, it has to be decided where the day is.
@@ -395,6 +402,13 @@ the number; a temporary probe suite that prints per-day counts takes two minutes
 only honest way to set it. Measure four things and not one: **placed per day**, **live inside
 `EVENT_STREAM_RADIUS`**, **on screen at once**, and **met on a route** — they moved by
 different multiples in M28, and only the last one is what the player is complaining about.
+
+**A moving thing has to look like it is moving.** *(M31.)* Every crowd agent has a two-frame
+stride and an `EventInstance` had none, so a dog walker at 32px/s — a tile a second against the
+player's three — slid along with nothing on it changing and read as parked. The fix is a bob
+driven by **distance covered** rather than by time, so what shows is the movement itself: a
+stopped thing is still and a fast thing bobs faster. A sprite cannot swing its own legs (M12c),
+so a bob is what there is.
 
 **Add an event** — `src/events/event_catalogue.gd` only, in the act's section, plus a line in
 the `docs/EVENTS.md` table. Everything else is data-driven. If it needs behaviour no field

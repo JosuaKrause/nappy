@@ -5,8 +5,9 @@ two playtests actually asked for**. The player said so up front: *"I played agai
 the main requested changes haven't landed yet)"* — so this is not a verdict on the calm areas
 (M21) or on the map (M17), neither of which exists yet.
 
-**Status.** Finding 6 is **done — M28**, and it is the only one that is. The rest are unchanged
-and unstarted; see the status line under each heading.
+**Status. All six are done** — M28 the density, M29 the traffic, M30 the mark over her head, M24
+the same park twice, M31 the danger and the variety. Each heading below carries what the
+analysis got right and what it got wrong, which is the more useful half.
 
 ---
 
@@ -243,6 +244,24 @@ be checked at the same time is the M16 one — **two distinct routes to two dist
 ---
 
 ## Finding 5 — nothing is dangerous, and the numbers say so
+
+> **Done — M31**, and the shape was a decision taken against the write-up's own favourite. Of
+> the three candidates below, **shape 1** was chosen — move something lethal earlier, with its
+> telegraph intact — and shape 2, the M25 patrol, was ruled out by the player in those terms:
+> *"patrol shouldn't be there for act I."* Act I is a nice neighbourhood; a police patrol on day
+> 2 tells act II's story three days early. So the danger is the neighbourhood's own: a **kid on
+> a bike** from day 2 and a **lorry reversing across a pavement** from day 3.
+>
+> That also answers shape 3 without doing shape 3. Day 2 places about one more event than day 1
+> and no player could feel that — but day 2 is *the day the streets acquire something that can
+> take the day off you*, which is legible immediately. Lethal events per day now run **0, 3, 4**
+> across days 1–3, and a test asserts the pair rather than the numbers.
+>
+> The same milestone did the other half of what was asked in the same breath — *"try to come up
+> with more variety, we need more events/entities in general"* — with seven new rows, five of
+> them on day 1, each with its own silhouette. M25 is unaffected and still queued: it is the
+> answer for acts III and IV, where the streets are deliberately empty and the threat should
+> follow.
 
 > Day two doesn't feel more difficult than day one. Having day one relatively easy is okay
 > *if* the difficulty increases. But right now there is never *any* danger.

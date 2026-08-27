@@ -119,6 +119,10 @@ const _HARD_FAIL_TEXT := {
 	"firefight": "You walked into the middle of it.",
 	# Not an event, and the only hard fail the player can walk into rather than be caught by.
 	"car_strike": "It never slowed down. You were in the road.",
+	# M31. Act I's two, and they are deliberately the most ordinary sentences in this table:
+	# the danger act I was missing is not sinister, it is a street.
+	"cyclist": "The bell, and then the bike. She is screaming.",
+	"reversing_lorry": "It never saw you. Nobody was looking behind it.",
 }
 
 func _end(result: GameEnums.DayResult) -> void:

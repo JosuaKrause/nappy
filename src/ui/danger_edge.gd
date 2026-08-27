@@ -149,6 +149,18 @@ func _icon_for(look: EventDef.Look) -> Texture2D:
 			return EventInstance.FLAME
 		EventDef.Look.PERSON, EventDef.Look.DOG_WALKER:
 			return EventInstance.PERSON
+		# M31. Every one of these is here because it is lethal or faster than a walk, which is
+		# the only reason a look ever needs a badge — and without an entry the badge silently
+		# refuses to draw, which is the rule two lines up working as intended and would have
+		# left act I's first lethal event announcing nothing.
+		EventDef.Look.CYCLIST:
+			return EventInstance.CYCLIST
+		EventDef.Look.LOOSE_DOG:
+			return EventInstance.DOG
+		EventDef.Look.LORRY:
+			return EventInstance.LORRY
+		EventDef.Look.ICE_CREAM_VAN:
+			return EventInstance.ICE_CREAM_VAN
 		_:
 			return null
 

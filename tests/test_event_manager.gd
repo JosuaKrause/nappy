@@ -19,6 +19,7 @@ func run(t) -> void:
 	_test_excitement_sums_over_instances(t)
 	_test_an_event_waits_until_she_is_near_it(t)
 	_test_an_event_that_has_run_does_not_run_again(t)
+	_test_a_running_event_comes_back_where_it_got_to(t)
 	_teardown()
 
 func _build_city(t) -> void:
@@ -193,4 +194,51 @@ func _test_an_event_that_has_run_does_not_run_again(t) -> void:
 	_city.events.stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
 	_city.events.stream_around(plan.position)
 	t.check(plan.live == null, "and coming back does not start it over")
+	_city.events.stream_radius = INF
+
+## The third case, and the one that was actually wrong. *(M31.)* An event that is still
+## **running** may be taken away and given back — but it has to come back where it got to, not
+## where the day put it at dawn.
+##
+## Reported as *"dog walkers are not moving?"*, which they were: at 32px/s a dog walker covers a
+## tile a second, and every time the player left its radius and came back it was rebuilt from
+## `plan.position` and teleported to the top of its street. At a third of her walking speed that
+## is most times, so from outside it was an event that never went anywhere.
+func _test_a_running_event_comes_back_where_it_got_to(t) -> void:
+	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	_start(1)
+	var plan: EventScheduler.Planned = null
+	for candidate in _city.events.plans():
+		if candidate.is_placed() and candidate.def.mobile and candidate.path.size() > 1 \
+				and not candidate.def.still_while_telegraphing:
+			plan = candidate
+			break
+	t.check(plan != null, "day 1 has something walking down a street")
+	if not plan:
+		_city.events.stream_radius = INF
+		return
+
+	_city.events.stream_around(plan.position)
+	t.check(plan.live != null, "she comes near it and it is there")
+	var started := plan.live.global_position
+	for i in 120:
+		plan.live._process(1.0 / 60.0)
+	var walked := plan.live.global_position
+	t.check(started.distance_to(walked) > 1.0,
+			"it covers ground while she is watching (%.0fpx in 2s)"
+			% started.distance_to(walked))
+	var aged := plan.live.age
+
+	_city.events.stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
+	t.check(plan.live == null, "she walks away and it leaves the world")
+	_city.events.stream_around(walked)
+	t.check(plan.live != null, "she comes back and it is there again")
+	if plan.live:
+		t.check(plan.live.global_position.distance_to(walked) < 1.0,
+				"and it is where it had got to, not back at the top of its street (%.0fpx off)"
+				% plan.live.global_position.distance_to(walked))
+		# The age comes back with it, so an event cannot be made immortal by being visited
+		# twice — its telegraph, its pulse and its duration all carry on rather than restart.
+		t.check(absf(plan.live.age - aged) < 0.01,
+				"and it is as old as it was, so revisiting cannot restart its clock")
 	_city.events.stream_radius = INF

@@ -24,6 +24,7 @@ func run(t) -> void:
 	_test_nothing_is_cheaper_to_walk_through_than_around(t)
 	_test_the_pavement_can_be_blocked_from_day_one(t)
 	_test_a_day_has_enough_in_it_to_meet(t)
+	_test_danger_arrives_before_act_three(t)
 	_test_the_caps_can_spend_the_budget(t)
 	_test_the_named_decisions_arrive(t)
 	_test_two_of_a_kind_are_not_the_same_incident(t)
@@ -507,6 +508,53 @@ func _test_a_day_has_enough_in_it_to_meet(t) -> void:
 	t.check(EventScheduler.budget_for(14) > EventScheduler.budget_for(1) * 3 / 2,
 			"and a late day is still markedly denser than an early one")
 
+## Playtest 05, finding 5: *"day two doesn't feel more difficult than day one. Having day one
+## relatively easy is okay if the difficulty increases. But right now there is never any
+## danger."* It was true by construction and this is the construction, asserted.
+##
+## Two claims, and they are the two halves of the finding. **Danger exists before day 8** — it
+## used to start there and nothing lethal was reachable before it. And **the escalation is a
+## change of kind rather than of count**: day 1 has nothing that can end the day, day 2 does.
+## A budget that goes up by two events is not something a person can feel; the first day the
+## streets acquire something lethal is.
+##
+## Deliberately not asserted: that day 1 is safe *forever*. If a later milestone wants a lethal
+## thing on day 1 that is a decision somebody takes, and this test is where they will find out
+## they are taking it.
+func _test_danger_arrives_before_act_three(t) -> void:
+	var map := _map()
+	var lethal_on := {}
+	for day in range(1, 15):
+		var consumed: Array[String] = []
+		var count := 0
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+			if plan.def.hard_fail:
+				count += 1
+		lethal_on[day] = count
+
+	t.check(int(lethal_on[1]) == 0,
+			"day 1 has nothing that can end the day (%s)" % lethal_on[1])
+	t.check(int(lethal_on[2]) > 0,
+			"and day 2 does, which is an escalation a person can feel (%s)" % lethal_on[2])
+	for day in range(3, 15):
+		t.check(int(lethal_on[day]) > 0, "day %d keeps something lethal on the map" % day)
+
+	# The catalogue half of the same claim, stated over the rows rather than over one seed's
+	# plan: something lethal has to be *available* in act I at all, which is what was wrong.
+	var early: Array[String] = []
+	for def in EventCatalogue.available_on(2):
+		if def.hard_fail:
+			early.append(def.id)
+	t.check(not early.is_empty(),
+			"act I has lethal events in its pool by day 2 (%s)" % ", ".join(early))
+	# And they are fair, which for a lethal thing is the doubled margin. `validate()` covers the
+	# whole catalogue; this names the new ones so a rebalance cannot quietly break act I only.
+	for id in early:
+		var def := EventCatalogue.by_id(id)
+		t.check(def.telegraph_time >= def.minimum_telegraph(),
+				"'%s' telegraphs for %.2fs against a required %.2fs"
+				% [id, def.telegraph_time, def.minimum_telegraph()])
+
 ## The caps have to leave room for the density, or the budget is decoration. Stated over the
 ## day-1 pool because that is where it was actually wrong: three dog walkers and three cafés
 ## on a forty-nine-block city, of which only the ~23% near her is ever instantiated.
@@ -523,23 +571,39 @@ func _test_the_caps_can_spend_the_budget(t) -> void:
 ## has to arrive more than once, and the café that exists to force a crossing has to be
 ## findable at all. Both are counted over the whole map, since what she meets on a route is
 ## a fraction of it.
+##
+## Stated as a **per-seed floor plus an average** since M31, and the reason is worth keeping:
+## the density is a fixed number of events, so every row added to the day-1 pool takes a share
+## of it. Seven new rows arrived at once and these two thinned out immediately. Their weights
+## went *up* to compensate — dog walkers and café frontages are what an ordinary street is
+## mostly made of — but a single total across three seeds is a tight enough sample to fail on
+## noise, which it did, at 17 against a bar of 18.
 func _test_the_named_decisions_arrive(t) -> void:
 	var map := _map()
-	var counts := {}
-	for city_seed in [4242, 77, 1301]:
+	var totals := {}
+	var seeds := [4242, 77, 1301]
+	for city_seed in seeds:
 		var seeded := CityGenerator.generate(city_seed)
 		var consumed: Array[String] = []
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:1" % city_seed)
+		var counts := {}
 		for plan in EventScheduler.build_day(1, rng, seeded, consumed):
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
-		t.check(int(counts.get("dog_walker", 0)) > 0, "seed %d: day 1 has dog walkers" % city_seed)
-	t.check(counts.get("dog_walker", 0) >= 3 * 8,
-			"day 1 carries enough dog walkers to meet two on a route (%s over three seeds)"
-			% counts.get("dog_walker", 0))
-	t.check(counts.get("cafe_tables", 0) >= 3 * 6,
-			"day 1 carries enough cafés to find one (%s over three seeds)"
-			% counts.get("cafe_tables", 0))
+			totals[plan.def.id] = int(totals.get(plan.def.id, 0)) + 1
+		# No day-1 map may be without either of them at all, which is the failure the player
+		# actually reported: *"a restaurant — I never saw one."*
+		t.check(int(counts.get("dog_walker", 0)) >= 4,
+				"seed %d: day 1 carries %s dog walkers"
+				% [city_seed, counts.get("dog_walker", 0)])
+		t.check(int(counts.get("cafe_tables", 0)) >= 2,
+				"seed %d: day 1 carries %s cafés" % [city_seed, counts.get("cafe_tables", 0)])
+	t.check(totals.get("dog_walker", 0) >= seeds.size() * 7,
+			"day 1 averages enough dog walkers to meet two on a route (%s over three seeds)"
+			% totals.get("dog_walker", 0))
+	t.check(totals.get("cafe_tables", 0) >= seeds.size() * 5,
+			"day 1 averages enough cafés to find one (%s over three seeds)"
+			% totals.get("cafe_tables", 0))
 	t.check(map.calm_blocks.size() > 0, "and the map still has calm ground on it")
 
 ## What `max_per_day` was quietly doing before M28, now doing it on purpose. The fallback in

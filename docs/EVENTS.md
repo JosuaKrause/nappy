@@ -105,6 +105,36 @@ Measure what a day *places*, over several seeds; deriving it from the formula ge
 is too small and looks right. Since M27 an `AHEAD_OF_PLAYER` event costs the same budget and
 takes no tile, so a day's `plan` line reads as *n sited, m ahead*.
 
+### Danger, and when it arrives *(M31)*
+
+Playtest 05, finding 5: *"day two doesn't feel more difficult than day one. Having day one
+relatively easy is okay **if** the difficulty increases. But right now there is never **any**
+danger."* True by construction — every `hard_fail` event started on day 8 or later, so for half
+a run the only lethal thing in the game was a car the player is never obliged to step in front
+of. M28 made the street busy and M29 made it legible; neither made it dangerous, and those are
+different axes: **expensive** is the meter moving, **dangerous** is something that can take the
+day away that you can see coming and act on.
+
+| | day 1 | day 2 | day 3 | day 8 | day 14 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Events placed | 48 | 49 | 52 | 69 | 88 |
+| Of them lethal | **0** | **3** | **4** | 11 | 11 |
+
+**The escalation is a change of kind, not of count.** Day 2 places about one more event than day
+1 and no player could feel that; day 2 is *the day the streets acquire something that can take
+the day off you*, and that is legible immediately. `tests/test_events.gd` asserts exactly this
+pair — day 1 has nothing lethal on it, day 2 does — so a rebalance cannot quietly flatten it.
+
+**A patrol was the obvious answer and it was rejected**, by the player, in those terms:
+*"patrol shouldn't be there for act I."* Act I is a nice neighbourhood and a police patrol on
+day 2 tells act II's story three days early. So the danger is the neighbourhood's own — a kid on
+a bike and a lorry reversing across a pavement, which are what somebody pushing a pram is
+actually frightened of. The two teach opposite lessons on purpose: the cyclist comes *at* you
+and the answer is to get off the pavement; the lorry is static and the danger is *behind* it.
+
+M25 — patrols, and running that matters — is unaffected and still queued. It is the answer for
+acts III and IV, where the streets are deliberately empty and the threat should follow.
+
 ### The density, and why it is caps before budget *(M28)*
 
 Playtest 05, finding 6, stated it as a number: **one event per block**. The city is 7×7 blocks,
@@ -155,6 +185,21 @@ All implemented.
 | `construction` | RECURRING | 2 | The only Act I event that is physically in the way (`obstructs_radius` 34px). Blocking a 64px sidewalk forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time and exposure, never the day. |
 | `fire_truck` | ONE_SHOT | 3 | Drives an arterial at 190px/s with a 340px radius and a 4s telegraph (the fast-mover rule — see docs/MECHANICS.md). `spawns_on_finish` leaves a `burning_building` where it stops. |
 | `burning_building` | — | — | Never scheduled: a SCRIPTED def with no day, so only the fire engine can put one in the world. Burns for the rest of the day. |
+
+**M31 added seven more**, five of them on day 1. Playtest 05 asked for two things in the same
+breath — *"there is never any danger"* and *"try to come up with more variety, we need more
+events/entities in general"* — and ruled out the obvious answer: *"patrol shouldn't be there for
+act I."* Act I is a nice neighbourhood, so its danger is a neighbourhood's own.
+
+| id | kind | from | Behaviour |
+| --- | --- | --- | --- |
+| `loose_dog` | RECURRING | 1 | *The player's idea: "a dog where the owner drops the leash and it starts running."* The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal: act I gets exactly two of those and this is not one. |
+| `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing. `cafe_tables` has been the only one since M19 and M28 made it common, but one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant: a café you squeeze past is a nuisance, a market is a crowd. |
+| `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use, which is what M24 wants more of. Swept in bursts, so there is a rhythm to time a pass through. |
+| `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that the director had a single trick: every moment was a cat. Three seconds of noise and gone. |
+| `cyclist` **`hard_fail`** | RECURRING | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement, bell going. Everything about it is ordinary, which is the point — the answer to *"there is never any danger"* is not that act I becomes sinister, it is that act I becomes a real street. The bell rings for 3.3s, which is what the doubled margin costs at 165px/s. |
+| `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. |
+| `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. |
 
 ### Act II — Something is off (days 4–7)
 
@@ -279,9 +324,16 @@ numbers here and the assertion there cannot drift apart.
 | `construction` | +8.1 | +33.0 |
 | `cafe_tables` | +8.8 | +29.1 |
 | `cat_dash` | +10.4 | +22.9 |
+| `ice_cream_van` | +13.4 | +41.6 |
+| `pigeon_flock` | +13.6 | +23.1 |
+| `market_stall` | +13.6 | +33.9 |
 | `checkpoint` | +13.7 | +38.2 |
+| `cyclist` * | +14.7 | +28.7 |
+| `reversing_lorry` * | +17.6 | +34.7 |
 | `dog_walker` | +21.6 | +26.8 |
+| `loose_dog` | +24.1 | +33.2 |
 | `protest` | +25.0 | +56.5 |
+| `leaf_blower` | +25.4 | +42.5 |
 | `burning_building` | +29.8 | +53.5 |
 | `abduction` * | +32.9 | +53.7 |
 | `military_convoy` | +49.2 | +69.8 |
@@ -299,6 +351,18 @@ none of them has to cost anything. Everything else must be more expensive to wal
 to walk around, and `tests/test_events.gd` asserts exactly that with those three named as the
 exemptions — so a **fourth** negative event has to be a decision somebody takes on purpose
 rather than a number nobody checked.
+
+**And what a *street* costs, measured after M31.** A rig walked home to the furthest calm block
+and back — 7,500px, a real errand — through a real day with the crowd and the events both
+running. Peak excitement **25 to 57** of a hundred across three seeds, and the meter frozen for
+0–14% of it. Nobody cried. The same day, holding one arrow key east from the doorstep for
+fifteen seconds, loses: the trace names four pedestrian contacts and a car's horn, and the
+breakdown at the moment of each is `crowd 30–44/s` against `events 10–14/s`.
+
+**So the crowd is still most of what a street costs, and the events are what make it a
+decision.** That ratio is the design working: careless is fatal in seconds and careful is nearly
+free, and the gap between them is where the game lives. It is also a warning about this table —
+none of the numbers above are in it.
 
 **What the table stopped being able to answer, in M28.** Every row prices *walking through one
 event against walking around it*, and that was the player's actual question while a street

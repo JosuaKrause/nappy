@@ -1,0 +1,22 @@
+<!-- A box lorry reversing across the pavement into a yard. Deliberately the biggest thing in
+     act I and deliberately *rectangular*: the danger is the blind side of a wall of metal, so
+     the silhouette is a wall. The reversing lights are on the tail, which is the end that is
+     coming towards you. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="46" viewBox="0 0 62 46" shape-rendering="crispEdges">
+  <rect x="2" y="6" width="40" height="28" fill="#8a97a8"/>
+  <rect x="2" y="6" width="40" height="4" fill="#a8b4c2"/>
+  <rect x="4" y="12" width="36" height="18" fill="#6b7a8c"/>
+  <rect x="2" y="30" width="40" height="4" fill="#3b3f4a"/>
+  <rect x="3" y="14" width="6" height="6" fill="#e8ddc8"/>
+  <rect x="3" y="24" width="6" height="6" fill="#e8ddc8"/>
+  <rect x="42" y="14" width="18" height="20" fill="#c4503c"/>
+  <rect x="46" y="16" width="12" height="8" fill="#221f28"/>
+  <rect x="48" y="18" width="9" height="5" fill="#8a97a8"/>
+  <rect x="42" y="30" width="18" height="4" fill="#3b3f4a"/>
+  <circle cx="14" cy="38" r="7" fill="#221f28"/>
+  <circle cx="34" cy="38" r="7" fill="#221f28"/>
+  <circle cx="51" cy="38" r="7" fill="#221f28"/>
+  <circle cx="14" cy="38" r="2" fill="#58524d"/>
+  <circle cx="34" cy="38" r="2" fill="#58524d"/>
+  <circle cx="51" cy="38" r="2" fill="#58524d"/>
+</svg>

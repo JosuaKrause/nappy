@@ -31,6 +31,10 @@ class Planned extends RefCounted:
 	## that must happen exactly once however many times an event is streamed in and out: a
 	## burnt-out shell records the fire that made it the first time it is seen and never again.
 	var was_live := false
+	## How far the instance had got when it was last streamed out, so streaming it back in
+	## **resumes** it rather than rewinding it. See `EventManager._stream_in`.
+	var age := 0.0
+	var travelled := 0.0
 
 	## False for an event the day has budgeted but not sited.
 	func is_placed() -> bool:
