@@ -12,11 +12,14 @@
 > **it has now been played.**
 >
 > **Start the next session on finding 6, the density target: one event per block.** 49 a day
-> against ~13 today, ~12 live around her against 3–4. It is not a `budget_for()` change — the
-> day-1 pool's `max_per_day` values sum to **18**, so the caps and the catalogue have to move
-> first, and a budget the catalogue cannot spend is not density. The arithmetic, the three
-> things that get harder at that density, and the reason she never saw a café are all in
-> PLAYTEST-05.
+> against ~13 today, ~12 live around her against 3–4. It is not a `budget_for()` change alone —
+> the day-1 pool's `max_per_day` values sum to **18**, so the caps have to move first, and a
+> budget the catalogue cannot spend is not density. **Repeats are fine** (*"it's fine if the
+> same event happens multiple times"*), so no new catalogue rows are needed to reach it — but
+> note that those caps were also the only thing preventing two of the same event landing on one
+> pavement, since placement is a uniform random tile with no minimum separation. The
+> arithmetic, the three things that get harder at that density, and the reason she never saw a
+> café are all in PLAYTEST-05.
 
 ---
 
