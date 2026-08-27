@@ -5,18 +5,26 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 Each milestone is one git branch, merged to `main` when green.
 
 **Where things stand:** M0–M16, M18 and M23 are done and merged, and the game has now been
-played twice by a human. The first playtest produced thirteen findings, planned as M11–M17 in
-**[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced twelve, planned as M18–M26 in
-**[docs/PLAYTEST-02.md](PLAYTEST-02.md)**. Both are live plans and should be read before
-picking anything up.
+played three times by a human. The first playtest produced thirteen findings, planned as
+M11–M17 in **[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced twelve, planned as
+M18–M26 in **[docs/PLAYTEST-02.md](PLAYTEST-02.md)**; the third, in
+**[docs/PLAYTEST-03.md](PLAYTEST-03.md)**, is the first read off a run log and reorders some
+of what the second one planned rather than adding milestones. All three are live plans and
+should be read before picking anything up.
 
 Execution order is numeric, with two exceptions already taken. **M18 was pulled ahead of
 M16**, because closure counts tuned against a day that was about to halve would have been
 tuned wrong. **M23 was pulled ahead of M17**, because it is the gate on M19's balance half and
-on M24, and because it makes judging every other item cheaper — which it should now be doing:
-anything picked up from here on can be read back with `./tools/telemetry.sh` instead of
-argued about. **M17 is next**, unless a playtest run says otherwise. One ordering note is
-still recorded in PLAYTEST-02 rather than acted on: M22 wants to sit with M19.
+on M24, and because it makes judging every other item cheaper — which it is now doing:
+playtest 03 was read off a log rather than argued about.
+
+**Playtest 03 changed the order.** **M19 is next, with the event budget folded into it** — the
+traced day placed four events across forty-nine blocks and the player encountered none of
+them, and more events without M19's consequences would be four times as much scenery. **M21
+rises above M20**, because four-block calm zones are the structural fix for twenty seconds of
+walking in a circle and traffic that overtakes is not. M17 slips behind both. Two ordering
+notes are recorded rather than acted on: M22 wants to sit with M19, and the return phase wants
+its own pressure from M25.
 
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
@@ -271,18 +279,26 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       instead of 119s (10x the street, not 3.5x), and the day itself is 180s instead of 330s
       — aimed at a minute of play with a grace of three. Pulled ahead of M16, because
       closures tuned against a day that was about to halve would have been tuned wrong
-- [ ] **M19 Bodies on the street** — findings 2 and 3. Pedestrians and the player collide
-      and displace each other, a car strike is a hard fail, pavement hazards (a café
-      spilling out, a dog on a long lead) make one side of the street the wrong side, and
-      cars stop for you at a zebra. The collision bump is a short-lived *source*, never a
-      write to `Baby.excitement`
+- [ ] **M19 Bodies on the street** — findings 2 and 3, **plus playtest 03 finding 1**.
+      Pedestrians and the player collide and displace each other, a car strike is a hard fail,
+      pavement hazards (a café spilling out, a dog on a long lead) make one side of the street
+      the wrong side, and cars stop for you at a zebra. The collision bump is a short-lived
+      *source*, never a write to `Baby.excitement`. **Now carries the event-density pass**:
+      `budget_for()` gives day 1 four events across forty-nine blocks and the traced day met
+      none of them, but density before consequence is only more scenery — so the budget moves
+      here and the numbers get set from traces afterwards, per decision 11. The telemetry for
+      judging it is already in: `near`, `crowd` and `road` entries
 - [ ] **M20 Traffic that behaves** — finding 4. Cars follow, slow and overtake instead of
       driving through each other; 8-direction driving so they can turn; an overtake into
       oncoming traffic crashes, and the crash is a catalogue event with a real telegraph
-- [ ] **M21 The city overhaul** — findings 5 and 6, plus the canal dropped out of M16.
-      Calm zones of four blocks, so the lattice grows T-junctions and L-bends and can no
-      longer be derived from a coordinate; main roads with traffic lights against side roads
-      with zebras, where a main road is crossed rather than walked
+- [ ] **M21 The city overhaul** — findings 5 and 6, plus the canal dropped out of M16, **plus
+      playtest 03 finding 2**. Calm zones of four blocks, so the lattice grows T-junctions and
+      L-bends and can no longer be derived from a coordinate; main roads with traffic lights
+      against side roads with zebras, where a main road is crossed rather than walked.
+      **Raised above M20**: the four-block calm zone is the structural answer to twenty seconds
+      of walking in a circle. That circling is not a length problem — progress requires motion
+      and a calm block is a few tiles across, which is jointly sufficient for a lap, which is
+      why M18's shorter stretch did not remove it and no further balance pass will
 - [ ] **M22 Danger you can read** — findings 7 and 8. **Delete the aura circles.** How
       dangerous a thing is becomes visible from the thing itself; the rest is a small symbol
       vocabulary — above an entity when it needs one, at the screen edge when it is
@@ -307,7 +323,11 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       by two things already in place: it spoils with an avoidable, visible event rather than
       removing the ground, and M16's route invariant still guarantees two calm areas with two
       routes each
-- [ ] **M25 Patrols, and running that matters** — findings 9 and 12. Patrols to put pressure
+- [ ] **M25 Patrols, and running that matters** — findings 9 and 12, **plus playtest 03
+      finding 3**: the walk home is a formality — 26s, five crossings, zero encounters, 42% of
+      the day left over. Patrols that were not there on the way out are the shape of the
+      return phase's own pressure, which is why it is filed here rather than as a milestone.
+      Patrols to put pressure
       back into the streets acts III and IV deliberately emptied, built around **encounter
       cost** rather than ambient emission. The prerequisite is structural: running is
       currently the wrong move against *every* event in the catalogue, so a patrol needs a
@@ -370,8 +390,10 @@ These need a human playing the game, not more code.
       `SLEEPINESS_GAIN_WALKING` 0.24 → 0.42, calm 3.5x → 10x, idle drain 0.6 → 1.0. A whole
       day of street walking reaches 76 of 100 and a calm stretch takes 24s.)* The open
       question is now the opposite one: with the meter this generous once calm ground is
-      reached, is anything standing between the player and a won day? That is what M19 and
-      M20 are for, and the next playtest should judge them together.
+      reached, is anything standing between the player and a won day? **Playtest 03 answered
+      that with a trace: no.** Day 1 was won in 103.9s of 180 with zero `near` entries — the
+      player crossed the city and came back without encountering a single event. That is what
+      M19 is for, and it now carries the event-density pass as well.
 - [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little
       time to learn a city before it starts changing.
 - [x] **How visible should the resistance be to a player ignoring it?** *Resolved by playtest

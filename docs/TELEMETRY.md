@@ -112,6 +112,8 @@ kind has to be able to name the question it answers, or it is a metric and does 
 | `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial *(decision 10)* |
 | `start` | observer | Where the day began |
 | `cross` | observer | Did the player have to cross the street, and at a zebra? *(finding 3, and M21 later)* |
+| `road` | observer | Did they *walk down* the road rather than across it? Only written when a stretch outlasts a crossing, so the entry existing is the answer |
+| `crowd` | observer | A pedestrian or a car occupying the same space as the pram — finding 2 of playtest 02 with a timestamp on it |
 | `calm` / `left` | observer | Same park every day? **M24 cannot be built without this one** |
 | `near` | observer | How many entities were nearby, which, and how close — the cost table under finding 7 as what happened to a person |
 | `closure` | observer | Are M16's closures a decision or scenery? |
@@ -191,8 +193,13 @@ second.
 
 - **No aggregates, no summary at the end of a run.** Both are computable from the log when
   reading it, and neither can be un-computed back into an order.
-- **No per-agent crowd entries.** Five hundred and thirty agents would bury everything else.
-  The crowd appears as its share of the meter, which is the thing being asked about it.
+- **No per-agent crowd entries, except when one is standing on the player.** Five hundred and
+  thirty agents would bury everything else, so the crowd is otherwise only its share of the
+  meter. The exception is the one thing about it worth a line each: with no collision until
+  M19, a pedestrian walks through the pram and a car drives through it, and both look
+  identical to passing close by from the meter alone. Pedestrian entries are rate-limited so a
+  packed pavement cannot flood the log; **cars are not**, because a car driving through a pram
+  is what M19 exists to make impossible and must never be dropped for being one of several.
 - **No `near` entries for `city_wide` sources.** A field with no edge cannot be approached.
   What the loudspeaker masts are doing shows up in every meter breakdown instead — which is
   also the most misleading gap in the game today, and `docs/TODO.md` has it under M10.

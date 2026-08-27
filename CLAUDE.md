@@ -120,6 +120,15 @@ way through, so the sprite lands a full width to one side — which looks like a
 its own shadow, not like a failed flip. Mirror with `draw_set_transform(at, 0, Vector2(-1,
 1))` around the anchor instead. `Sprites.draw_standing()` is the one place that does it.
 
+**`process_mode` is inherited, so one `PROCESS_MODE_ALWAYS` exempts a whole subtree.**
+`main.gd` sets it on itself so Esc still quits while the summary has the tree paused — and
+every descendant defaults to `PROCESS_MODE_INHERIT`, so the city, the player, the crowd, the
+events and the resistance deadline all inherited the exemption. `get_tree().paused = true` ran
+for six milestones and paused nothing: the player kept walking behind the screen that said the
+day was over. The fix is `main._pauses_with_the_game()`, called on every node that is the game
+rather than the frame around it. **If you add a node under `Main`, it needs that call**, and
+nothing warns you.
+
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw
 (the 10k-tile city ground) is fine, but anything animated must call `queue_redraw()` itself.
 
