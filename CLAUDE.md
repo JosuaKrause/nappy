@@ -35,7 +35,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 15890 headless checks, ~80s
+./tools/test.sh               # 15744 headless checks, ~80s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
@@ -513,16 +513,17 @@ not either number, is what makes it a decision.
   against the *day* rather than against each other, and `tests/test_balance.gd` checks the
   claim against a real city — but nobody has played it. Prime suspects are in
   `docs/TODO.md` under "Open design questions".
-- **Most of what is on screen is unsignalled.** The aura rings only ever covered *events*:
-  the ~530 crowd agents have none, and the two `city_wide` sources (the loudspeaker masts
-  from day 5, the curfew announcement) have none either, because a field with no edge cannot
-  be a ring. So on a normal street a few things are ringed, most are not, and nothing
-  explains the difference. Fast movers closing from off-screen (`fire_truck`,
-  `military_convoy`) spend most of their telegraph outside the viewport, where no ring can
-  help. M22 replaces the whole vocabulary; see the standing decision above.
+- **The entities do not yet read as what they are.** *(M22 closed the signalling gaps; this
+  is the one it exposed.)* The vocabulary's first row is *the thing itself carries most of
+  it* — and `homeless_yeller`, `busker` and `poster_crew` all draw the same `person.svg`, as
+  does an ordinary crowd walker. Two of them are currently covered for by the caret above
+  them, which is exactly the wrong way round: the symbol is meant to add what a silhouette
+  cannot say, not to stand in for a silhouette nobody drew. First thing to fix when the art
+  gets a pass.
 - **There is no audio at all.** Less urgent than it sounds, given the rule above: audio is
   redundancy, so the game must already be fully playable without it.
-- **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters` and
-  `--day-length` ship in the build and live in `main.gd`. They should be gated behind a debug
+- **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
+  `--overview`, `--day-length` and (in `auto_screenshot.gd`) `--screenshot`, `--after`,
+  `--walk` ship in the build and live in `main.gd`. They should be gated behind a debug
   build before release.
 - **Esc quits outright.** There is no pause menu; the only pause is the between-days screen.

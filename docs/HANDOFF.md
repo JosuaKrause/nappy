@@ -1,29 +1,43 @@
 # Handoff
 
-**Last updated:** end of the M19 session.
-**Read this first, then [PLAYTEST-03.md](PLAYTEST-03.md), then [TODO.md](TODO.md).**
+**Last updated:** end of the M22 session.
+**Read this first, then [PLAYTEST-04.md](PLAYTEST-04.md), then [TODO.md](TODO.md).**
 
 ---
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **15890 checks, 0 failures** (~80s);
+`main` is green and playable. `./tools/test.sh` → **15744 checks, 0 failures** (~80s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
-**The street is no longer safe, and that is the whole of M19.** Until this session the crowd
-was a field with a picture attached: you could walk through a person, through a car, through a
-queue at a bus stop, and the only thing that happened was that a number moved. Now a body is
-solid, the carriageway ends the day, a café or a dog owns the pavement it is on, and traffic
-gives way at a zebra. Day 1 carries **13** non-ambient events instead of four. The full
-mechanism is in [MECHANICS.md](MECHANICS.md), "The street has physics".
+**Two milestones landed since this file last said anything, and they are both playtest 04's.**
 
-**The one thing to carry into the next session: nobody has played it.** The mechanisms are
-built and the numbers are not settled. A scripted walking probe says a quiet pavement is close
-to break-even on excitement and the arterial is not survivable to walk the length of — which is
-the intent, but *"the arterial is for crossing"* is a claim about a player, not about a probe.
-The entries to settle it already exist: `crowd` for contacts and horns, `near` for what came
-within reach, `road` for time in the carriageway, `lost` for what was around when a day ended.
+**M27 moved the world to where the player is.** The emphasised finding — *"don't load
+everything upfront"* — reads as a performance note and is not one: the game was already at
+120fps with 530 agents, and what it actually said is that every population number was being
+divided by the 99.2% of the city nobody is looking at. The crowd is a **field** that travels
+with her, events are **planned across the whole city at dawn and instantiated near her**, the
+cat is the first `AHEAD_OF_PLAYER` event, and traffic keeps a headway. Day 1 is 11–13 events
+of which 3–4 are live at any moment. [PLAYTEST-04.md](PLAYTEST-04.md) has the measured table.
+
+**M22 deleted the circles.** `EventAuraLayer` no longer exists and a test asserts it cannot
+come back. What replaced it: a **caret over the entity** for danger that *changes over time*
+and nothing else, breathing with current emission; a **badge at the screen edge** carrying the
+thing's own silhouette for anything lethal or faster than a walk that is off-screen and
+closing; the exclamation mark over the player generalised from traffic to events and given a
+**second level** for danger already on her; and a **HUD line** for the `city_wide` sources that
+had no on-screen presence at all. The vocabulary is in [EVENTS.md](EVENTS.md), "The visual
+vocabulary", and the standing decision is in `CLAUDE.md` next to the invariants.
+
+**The one thing to carry into the next session is unchanged and is now louder: nobody has
+played any of it.** M19's street, M27's densities and M22's cues are all measured off probes
+and screenshots. *"The arterial is for crossing"* is still a claim about a player rather than
+about a rig — and M22 sharpened it into a number that wants a human verdict: **walking north up
+the arterial from a standing start loses day 1 in fourteen seconds.** The entries that settle
+these already exist: `crowd` for contacts and horns, `near` for what came within reach — which
+should now be a great deal more than playtest 03's zero — `road` for time in the carriageway,
+`ahead` for what the director put in front of her, `lost` for what was around when a day ended.
 **Read a run before touching a constant.**
 
 - **M0–M9 complete.** Full 14-day run, four-act escalation, resistance subquest, three
@@ -52,6 +66,18 @@ within reach, `road` for time in the carriageway, `lost` for what was around whe
   that gives way at a zebra, `cafe_tables` blocking a pavement from day 1, `dog_walker`
   re-pitched from −0.1 points to +21.6, and `budget_for()` measured rather than derived. The
   exclamation mark over the player came forward from M22 with it.
+- **M27 complete** *(taken out of order and immediately)*. The crowd is a field around the
+  player, events stream in and out of a radius around her, the cat became the first
+  `AHEAD_OF_PLAYER` event, and cars queue instead of driving through each other. It took the
+  half of **M20** that was worth having; the rest of M20 is **parked**, not queued. The three
+  new invariants it left in `CLAUDE.md` — the day is planned whole and only instantiated near
+  her, separation between bodies is positional, and `EVENT_STREAM_RADIUS` stays wider than the
+  widest field in the catalogue — are the ones a later milestone is most likely to break.
+- **M22 complete.** The rings are gone and the symbol vocabulary replaced them: caret, screen-
+  edge badge, the player's exclamation mark at two levels, a HUD line for `city_wide`. Also
+  fixed a silent tooling failure — `tools/shot.sh` never forwarded its dev flags, so a shot
+  taken to look at one event was of the doorstep and nothing said so — and added `--walk`,
+  without which a screenshot of a post-M27 world is a screenshot of almost nothing.
 
 ## The decisions that govern the next milestones
 
@@ -62,6 +88,9 @@ than code. All of them are written up in `PLAYTEST-02.md` (decisions 9–14).
    meets danger never learns to deal with it. The measurement below says act I and act II
    currently cost nothing at all, and "the early game teaches events are safe, then act III
    kills you" is the worst of both. **M19 has to make an act I street cost something.**
+   *(Done, and then some: M19 gave the street bodies and M27 put three or four times as many
+   of them where she is looking. Whether act I now costs too much is the open question, and it
+   is the one a human has to answer — see the fourteen seconds above.)*
 2. **Difficulty is self-selected through the extra quests.** The resistance is the dial. That
    is why the base game has to be hard on its own — the dial *adds* difficulty, it does not
    supply it. Consequence: "how visible should the resistance be" stopped being a curiosity.
@@ -90,7 +119,9 @@ and all three are deliberate scenery; `tests/test_events.gd` names exactly those
 exemptions and requires everything else to cost more to walk through than to walk around. A
 *fourth* negative event therefore has to be a decision rather than an oversight. The table is
 only about events, and since M19 that is no longer the whole cost of a street: a contact with a
-pedestrian is ~15.6 points and a car's horn ~8, and neither is in the catalogue.
+pedestrian is ~15.6 points and a car's horn ~8, and neither is in the catalogue. **M27 widened
+that gap again**, and the street is now most of the day — a balance argument that reaches for
+the cost table alone is answering a narrower question than it thinks.
 
 **Running is still the wrong move against every event in the game.** `EXCITEMENT_FROM_RUNNING`
 (9/s) plus the collapsed decay (3.5/s → 0.5/s) beats the shorter exposure in every single
@@ -98,57 +129,70 @@ case. The run button is a trap, and M19 did not change it — the lethal car is 
 stepping over a kerb, not by outrunning anything. This is why M25 is written as a mechanic to
 build rather than a constant to tune.
 
-**No circles, and the replacement has started.** The aura rings are being deleted, not
-restyled (M22), and `CLAUDE.md` carries that as a standing rule next to the invariants. They
-only ever covered events — the ~530 crowd agents have no ring, and two `city_wide` sources have
-none either — so on a normal street most of what you can see is unmarked and nothing explains
-the difference. **M19 shipped the first piece of the replacement**: the flashing exclamation
-mark over the player, raised whenever she is standing on the carriageway with a car closing.
-It came forward because a lethal car has no telegraph phase to ring and a ring on something
-doing 185px/s is off-screen for most of the warning. It is not provisional; M22 generalises it
-to events and adds the screen-edge half. The one thing still to preserve: the ring *breathes*
-with the pulse envelope, which is what makes a pulsing event timeable.
+**No circles, and the replacement has shipped.** *(M22 — this section used to say "has
+started".)* The rings are deleted rather than restyled, `EventAuraLayer` is gone, and
+`tests/test_danger.gd` asserts it cannot come back, because a comment in a deleted file cannot
+stop the next person reaching for a ring when something new needs signalling. Two rules in the
+replacement are the whole reason it is better, and both are easy to lose:
 
-## A second playtest landed mid-session
+- **A cue that marks everything says nothing.** The caret is for danger that *changes over
+  time* — telegraphing, lethal, pulsing, swelling — and **not** for whatever is loudest. A
+  first pass used "louder than the walking decay", which sounds defensible and marked
+  `poster_crew`, `barricade` and `burnt_shell`: the exact three rows the cost table calls
+  scenery. That is the ring's own mistake in a new shape, and the test caught it.
+- **The mark breathes** with current emission. Without it a pulsing event stops being something
+  to time a pass through and becomes something that hurts at random.
 
-Six findings, written up with analysis and sequencing in **[PLAYTEST-02.md](PLAYTEST-02.md)**.
-The short version: **the loop is right and the street is empty of consequence.** Read that
-document before picking anything up; the summary below is not a substitute for it.
+The badge announces only what she cannot outwalk, and it **must carry a silhouette** — an arrow
+that can only say "something" is an anxiety rather than a warning. Adding to this vocabulary is
+a design decision, not a drawing one; read `docs/EVENTS.md`, "The visual vocabulary", first.
 
-Two things about the ordering, because neither is obvious from the numbers:
+## Four playtests, and the order they left behind
 
-- **The queue was M17, then M18–M26**; M18, M19 and M23 are done and M21 is next. Findings
-  7–12 arrived as a follow-up read of the same playtest and are written up in the same
-  document. The new findings were deliberately queued *behind* the milestones in flight rather
-  than in front of them. Three have jumped the queue since, each for one practical reason:
-  **M18**, because closure counts tuned against a day that was about to halve would have been
-  tuned wrong; **M23**, because it was the gate on M19's balance half and on M24 and it makes
-  judging everything else cheaper; and **M21**, because four-block calm zones are the
-  structural fix for twenty seconds of walking in a circle and traffic that overtakes is not.
-- **M22's exclamation mark was pulled forward into M19 and the rest of M22 was not.** The cue
-  came forward because a lethal car has no telegraph phase to ring; deleting the rings and
-  building the entity-and-edge half is still its own milestone, and doing it here would have
-  meant redesigning the signalling of eighteen events in a session about physics.
+All four are live plans: **[PLAYTEST-01.md](PLAYTEST-01.md)** (thirteen findings → M11–M17),
+**[PLAYTEST-02.md](PLAYTEST-02.md)** (twelve → M18–M26), **[PLAYTEST-03.md](PLAYTEST-03.md)**
+(the first read off a run log; it reorders rather than adds), and
+**[PLAYTEST-04.md](PLAYTEST-04.md)** (seven findings; adds M27 and moved M22 and M21 to the
+front). Read 04 before picking anything up; the summary here is not a substitute for it.
+
+The queue is numeric except where something jumped it, and each jump had one practical reason:
+**M18** because closure counts tuned against a day that was about to halve would have been
+tuned wrong; **M23** because it was the gate on M19's balance half and on M24; **M27** because
+playtest 04's emphasised finding turned out to be underneath three of the other six, and
+because M21 and M22 are both judged against a street that now has traffic on it; **M22**
+because the player asked for the circles a second time; and **M21**, next, because four-block
+calm zones are the structural fix for twenty seconds of walking in a circle and traffic that
+overtakes is not.
+
+One piece of history worth keeping, because the file is now the only place it is legible:
+**M22's exclamation mark was pulled forward into M19 and the rest of M22 was not** — a lethal
+car has no telegraph phase to ring, and redesigning the signalling of eighteen events in a
+session about physics was the wrong shape. M22 then generalised the cue rather than replacing
+it.
 
 ## What to do next, in order
 
 ### First: play it, and read the trace
 
-Not a milestone, and it comes before one. M19 changed what a street costs in four different
-ways at once, and **decision 11 says those numbers get set from traces rather than argued
-about**. A fourth playtest is the highest-value thing available, and the questions are already
-sharp enough to be answered off a log:
+Not a milestone, and it comes before one. Three sessions in a row have changed what a street
+costs — M19 gave it bodies, M27 put three or four times as many of them where she is looking,
+M22 changed what she can see coming — and **decision 11 says those numbers get set from traces
+rather than argued about**. A fifth playtest is the highest-value thing available, and the
+questions are sharp enough to be answered off a log:
 
-- **Is the arterial crossable?** The probe says walking its length is fatal; that is intended.
-  Crossing it should not be. `road` and `crowd` entries say which happened.
+- **Is the arterial crossable?** Walking its length now loses day 1 in fourteen seconds, which
+  is intended; crossing it at a zebra should be routine. `road` and `crowd` entries say which
+  happened. If a player never works out that the arterial is for crossing, that is the finding.
 - **Do bumps read as the player's fault?** The contact radius is under half a lane spacing, so
-  a line exists to walk. Whether a person finds it is a different question. Watch the gap
-  between `crowd` bump lines and their dropped counts.
+  a line exists to walk — eleven contacts down a lane centre against one on the midline. Whether
+  a person finds it is a different question. Watch `crowd` bump lines against their counts.
 - **Does anybody get run over, and does it feel fair when they do?** A `lost` line preceded by
-  a `crowd` horn line is a fair death; one with no horn before it is a bug in this session's
-  work.
-- **Is 13 events on day 1 a city or a gauntlet?** `near` entries per day, against playtest
-  03's zero.
+  a `crowd` horn line is a fair death; one with no horn before it is a bug in M19's work.
+- **Is a day a city or a gauntlet?** `near` entries per day, against playtest 03's zero — and
+  `ahead` for what the director sited across her line.
+- **Do the new cues get read?** M22's whole case is that a caret, a badge and an exclamation
+  mark say more than a ring did. A `run` or `turn` following a badge is the evidence; nothing in
+  a test can see it.
 
 ### Then M21 — the city overhaul, which has jumped M20
 
@@ -177,12 +221,10 @@ entries are how to tell whether the map fixed it.
 
 ### Then the rest, per PLAYTEST-02.md
 
-M18, M19 and M23 done; M21 pulled to the front above.
-**M20 traffic that behaves** (following, overtaking, 8-direction driving, crashes as events) —
-now *behind* M21, because nothing in playtest 03 asked for it. M19 gave cars a target speed
-and a brake (`_give_way`), which is the hook the following behaviour hangs off.
-**M22 danger you can read** (the circles go; entity, symbol, screen edge) — the symbol over
-the player already ships, for traffic.
+M18, M19, M22, M23 and M27 done; M21 pulled to the front above.
+**M20 traffic that behaves** is **parked, not queued**: M27 shipped the half that mattered
+(cars follow and queue; zero overlapping pairs a frame, down from 5.2), and what is left —
+overtaking, eight-way driving, a crash as a catalogue event — is unasked-for by any playtest.
 **M24 the city remembers where you went** (spoil the park you relied on yesterday) — the
 `calm` entries it needs are being written now. **M25 patrols, and running that matters** — the
 `run` entries are the measurement it will be judged by, and today they all say the same thing.
@@ -222,6 +264,67 @@ Taken in the M12a session and still governing everything after it. All four are 
    repaints the ground and re-dresses the blocks every morning.
 
 ---
+
+## Gotchas learned in M22
+
+- **A threshold that sounds defensible can be the old mistake in a new shape.** "Mark anything
+  louder than the walking decay" marked `poster_crew`, `barricade` and `burnt_shell` — the three
+  rows the cost table already calls scenery, and a set the rings would have marked too. The rule
+  that works is not about magnitude: mark danger that **changes over time**.
+- **Deleting a thing does not delete the habit.** `tests/test_danger.gd` asserts `EventAuraLayer`
+  cannot come back and that the whole catalogue is never marked at once, because the failure this
+  standing decision exists to stop is somebody reaching for a ring the *next* time something
+  needs signalling, and a comment in a deleted file cannot stop that.
+- **An additive `warn()` beats a setter, and the reason is ordering.** The crowd and the events
+  both look at the ground she is standing on in the same frame. With a setter, whichever ran
+  second cleared what the first said — silently downgrading a lethal event to nothing because no
+  car happened to be coming. `Stroller.warn()` raises the level and never lowers it.
+- **Force a cue's condition on, look at it, and put it back.** The screen-edge badge needs
+  something lethal off-screen and closing, which a six-second screenshot cannot be asked for.
+  Forcing it found three defects no test could see: it collided with the excitement meter, the
+  icon was squashed by a square box, and some badges had no silhouette at all. That last one is
+  the point of the badge — an arrow that can only say "something" is an anxiety, not a warning.
+- **`tools/shot.sh` was silently eating its own flags.** Every dev flag passed to it was dropped,
+  so a screenshot taken to look at one specific event was of the doorstep, and nothing said so.
+  It forwards them now and has `--walk`, which holds a direction down for the whole run —
+  necessary since M27, because a screenshot of a standing player is a screenshot of almost
+  nothing.
+- **The suite count went down, and that is correct.** 15890 → **15744**: the aura-layer checks
+  went with the layer. A drop in check count after a deletion is fine; a drop after anything else
+  is a suite that stopped running.
+
+## Gotchas learned in M27
+
+- **A brake cannot open a gap that does not exist.** Two cars that start inside each other both
+  choose zero speed and stay there. Separation between bodies is **positional** — now an
+  invariant in `CLAUDE.md`, and the same shape as M19's player bump.
+- **Recycling everybody onto the same pixel is a pile-up generator.** Re-entering agents placed
+  on the exact edge coordinate produced eight overlapping pairs a frame on a road nobody could
+  see, and once cars keep a headway the pile never sorts itself out. They enter in a band.
+- **A lane has a capacity.** At the first density the arterial wanted 194px of spacing per car
+  and had 118px of lane per car: it jammed solid and no controller helped. Car counts come from
+  what a lane can carry.
+- **A weight whose denominator changed is a trap.** `ARTERIAL_BUSYNESS` used to mean one
+  street's share of sixteen corridors and now means its share of the three or four inside the
+  field box, so the *same number* put half again as much traffic on the arterial — 0.6%
+  crossable, 22s at the kerb. That is a wall, not a hazard. It went 5.5 → 5.0.
+- **Code after an unconditional `return` never runs, and the tests are what find it.**
+  `CrowdAgent`'s lateral recycle check was written after the along-axis one, so a player walking
+  north left everybody on every east-west street she crossed behind forever, and the pavement in
+  front of her would have drained over a minute of play.
+- **A mobile event starts moving when its telegraph starts**, which is right for a fire engine —
+  its telegraph *is* the approach — and was catastrophic for the cat: a one-street crossing at
+  240px/s finished during its own 1.6s telegraph, so it never reached full intensity and
+  `CAT_RUNNING` had never drawn a single frame in six milestones. A green suite, a passing
+  fairness contract and a screenshot all had nothing to say about it.
+- **Streaming has two floors on its radius and the larger wins.** Half the viewport diagonal, so
+  nothing is seen to appear; and wider than the widest field in the catalogue, so an event is
+  outside its own outer radius the moment it becomes visible. Without the second, streaming is a
+  way of dropping events on people and the telegraph contract is a lie.
+- **Rejected: making the arterial quieter to make it crossable.** It has to stay above the idle
+  decay or standing still on the busiest street in the city becomes a strategy, which is the one
+  thing the crowd exists to stop. The resolution is the zebra, which the generator puts at every
+  junction.
 
 ## Gotchas learned in M19
 
@@ -366,11 +469,13 @@ Taken in the M12a session and still governing everything after it. All four are 
 - **`var x := SomeEnum.keys()[i]` will not parse.** The value is a Variant, and "inferred
   from a Variant value" is an error, not a warning. Annotate: `var x: String = ...`.
 
-## Known slow: `tests/test_generator.gd` is 21s of the suite's 55s
+## Known slow: three suites are 70% of the ~80s
 
-Per-suite timings are printed by `tools/test.sh`. `test_generator.gd` generates 200 cities
-and runs a route-redundancy sweep that closes each street segment in turn on the *tile* grid.
-`test_balance.gd` is next at 27s (down from 94s when M18 shortened the day).
+Per-suite timings are printed by `tools/test.sh`. As of M22: `test_generator.gd` 21.6s,
+`test_balance.gd` 19.3s, `test_crowd.gd` 15.0s, everything else under 5s. `test_generator.gd`
+generates 200 cities and runs a route-redundancy sweep that closes each street segment in turn
+on the *tile* grid; `test_crowd.gd` is new weight from M19 and M27, and it walks real rigs down
+real pavements, which is exactly the cost that buys the bugs a data-level test cannot see.
 
 The generator sweep is now the obvious thing to speed up, and M16 has already written the
 tool: `StreetNetwork.route_count()` answers the same question by max flow on the junction

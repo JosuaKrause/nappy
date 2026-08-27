@@ -36,7 +36,7 @@ was around when a day ended.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 15890 checks (~80s); `tools/check.sh` boots the project; `tools/run.sh`
+`tools/test.sh` runs 15744 checks (~80s); `tools/check.sh` boots the project; `tools/run.sh`
 plays it; `tools/telemetry.sh` reads back what the last run did.
 
 ---
