@@ -389,10 +389,10 @@ it.
 
 ## What to do next, in order
 
-### First: playtest 06's four things
+### First: playtest 06's five things
 
-All four are small, none is a milestone, and three of them are in code M22, M30 and M6 already
-own. [PLAYTEST-06.md](PLAYTEST-06.md) has the analysis; the short version:
+None is a milestone, and three of them are in code M22, M30 and M6 already own.
+[PLAYTEST-06.md](PLAYTEST-06.md) has the analysis; the short version:
 
 - **The screen-edge badge measures the wrong speed.** `DangerEdge` tests the *relative* closing
   rate against 20px/s and she walks at 92, so walking towards anything lethal raises its badge —
@@ -406,7 +406,11 @@ own. [PLAYTEST-06.md](PLAYTEST-06.md) has the analysis; the short version:
 - **A lost day is retried, not skipped**, which closes a design question open since M6.
 - **The meters want to be readable off the player**, not only off two bars in the corner. Asked
   for by name: a `zzz` over the stroller when the baby is asleep, and stages of warning as
-  excitement approaches the calm threshold.
+  excitement approaches the calm threshold. This is the biggest of the five and the only one
+  that adds to the vocabulary in `docs/EVENTS.md` rather than fixing something in it — so read
+  the standing decision in `CLAUDE.md` first. Two traps are named in the write-up: a gauge over
+  her head is the HUD moved rather than a cue, and it must never share a spot with the
+  exclamation mark, which M30 spent a milestone making mean exactly one thing.
 
 ### And the questions the fifth and sixth playtests still have not answered
 
