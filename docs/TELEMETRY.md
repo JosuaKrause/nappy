@@ -92,6 +92,14 @@ back.
 | What the world did to them: what came within range and how close, when sleep froze and what was near, which closure they saw | Which tiles are calm, which streets exist — recomputable |
 | The outcome and its cause: result, elapsed, margin, what was nearby at the moment of a loss, which nerve went and on which day | — |
 
+**M24 is the one place a rule was tempted to read this file, and it does not.** The city
+remembers which calm block the baby actually went to sleep in and spoils it the next day —
+which is exactly what the `calm` entries already say. Reading them back would have been a
+smaller change and it would have broken the invariant in the loudest possible way: the game
+would play differently with `--no-telemetry`. So `GameState.settled_in` is its own run-scoped
+record, written by `DayController` at the moment she settles, and the log merely *also* mentions
+it. Where a trace and a rule want the same fact, the rule keeps its own copy.
+
 Random outcomes are the important half, and the reason is specific to this project: rolls
 that depend on **run history** — a one-shot already consumed, a fire that only burns a block
 because something burned there, a scar that exists because of what the player did — are not
@@ -115,7 +123,7 @@ kind has to be able to name the question it answers, or it is a metric and does 
 | `cross` | observer | Did the player have to cross the street, and at a zebra? *(finding 3, and M21 later)* |
 | `road` | observer | Did they *walk down* the road rather than across it? Only written when a stretch outlasts a crossing, so the entry existing is the answer |
 | `crowd` | `Crowd` → observer | Contact with the street: somebody she walked into, or a car that had to sound its horn at her standing in the road — findings 2 and 3 of playtest 02 with a timestamp on them |
-| `calm` / `left` | observer | Same park every day? **M24 cannot be built without this one** |
+| `calm` / `left` | observer, `GameState` | Same park every day? *(M24 is built and the answer is "no longer"; the entry now also says which block she settled in, so the log can show what tomorrow's plan was reacting to)* |
 | `near` | observer | How many entities were nearby, which, and how close — the cost table under finding 7 as what happened to a person |
 | `closure` | observer | Are M16's closures a decision or scenery? |
 | `turn` | observer | Did the player double back — and was it because of a barrier they had just seen? |

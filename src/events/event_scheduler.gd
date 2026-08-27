@@ -92,19 +92,90 @@ static func budget_for(day: int) -> int:
 
 ## Plans a day. `consumed_one_shots` is read and appended to, so a one-shot fires once
 ## per run.
+##
+## `settled_yesterday` is the calm block the baby actually went to sleep in on the previous day,
+## or `(-1, -1)` for none. See `_spoil_the_park_she_used`.
 static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
-		consumed_one_shots: Array[String], scars: Array[Dictionary] = []) -> Array[Planned]:
+		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
+		settled_yesterday := Vector2i(-1, -1)) -> Array[Planned]:
 	var planned: Array[Planned] = []
 
 	planned.append_array(_place_ambient(day, map))
 	planned.append_array(_place_scars(day, scars))
 	_place_scripted(day, rng, map, planned)
 	_place_one_shots(day, rng, map, consumed_one_shots, planned)
+	_spoil_the_park_she_used(day, rng, map, planned, settled_yesterday)
 	_fill_with_recurring(day, rng, map, planned)
 
-	_ensure_one_usable_park(map, planned)
+	_ensure_one_usable_park(map, planned, settled_yesterday)
 	_ensure_the_city_is_still_walkable(map, planned)
 	return planned
+
+# ------------------------------------------------------- the city remembers ---
+
+## Puts something on the calm block she settled in yesterday. *(M24, playtest 05 finding 4:
+## "I was able to go to the same park on day one and two — this shouldn't be possible.")*
+##
+## The finding is not that repetition is boring. It is that **the game's only verb stopped
+## being a decision on day two**: a player who found a good park on day 1 has no question left
+## to answer, and route planning is the whole game. Playtest 03 found the calm area was a lap
+## rather than a route (M21); this is the same complaint one scale up, about *which* calm area.
+##
+## Three things keep it from being a punishment for playing well, and all three are load-bearing:
+##
+## - **It spoils with an event, not by taking the ground away.** The park is still there, still
+##   calm ground, still walkable. Something loud is standing in it, and she can see that from
+##   the street and decide. An event that could seal or end the day is never chosen for this.
+## - **`_ensure_one_usable_park` is told to protect a different one**, so the day it creates is
+##   still winnable and the alternative is still real rather than nominal.
+## - **It is one event, placed like any other.** It competes for no budget of its own and it is
+##   drawn from the same day's pool, so day 2 is not "day 1 plus a punishment", it is a day
+##   whose noise happens to be somewhere she was counting on.
+##
+## Silent if she did not settle anywhere yesterday, or settled somewhere that is no longer calm.
+static func _spoil_the_park_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
+		planned: Array[Planned], block: Vector2i) -> void:
+	if block.x < 0 or not (block in map.calm_blocks):
+		return
+	# One calm area cannot be spoiled: it is the only one there is, and the guarantee that a day
+	# is winnable outranks the guarantee that it is a fresh decision.
+	if map.calm_blocks.size() < 2:
+		return
+
+	var lot := _calm_rect(map, block)
+	var candidates: Array[Vector2i] = []
+	for tile in map.rect_tiles(lot):
+		if not map.is_closed(tile):
+			candidates.append(tile)
+	if candidates.is_empty():
+		return
+
+	var def := _something_to_put_in_a_park(day, rng)
+	if not def:
+		return
+	var at := map.tile_to_world(candidates[rng.randi_range(0, candidates.size() - 1)])
+	planned.append(Planned.new(def, at))
+	Telemetry.note("roll", "%s in the park she used yesterday, %s"
+			% [def.id, TelemetryLog.tile(block)])
+
+## Something loud, harmless and visible from the street, for the park she used yesterday.
+##
+## Deliberately narrow: nothing lethal, nothing that obstructs, nothing mobile. A spoiled park
+## has to be a park she can *see* is spoiled and walk away from — an abduction sitting in it
+## would be a punishment for having settled there, and a barricade would be the ground taken
+## away rather than made noisy, which is the thing this rule promises not to do.
+static func _something_to_put_in_a_park(day: int,
+		rng: RandomNumberGenerator) -> EventDef:
+	var suitable: Array[EventDef] = []
+	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day):
+		if def.hard_fail or def.obstructs_radius > 0.0 or def.mobile:
+			continue
+		if def.spawn_mode != EventDef.SpawnMode.MAP:
+			continue
+		suitable.append(def)
+	if suitable.is_empty():
+		return null
+	return _pick_weighted(suitable, rng)
 
 ## Permanent marks left by earlier days, placed again exactly where they happened.
 static func _place_scars(day: int, scars: Array[Dictionary]) -> Array[Planned]:
@@ -404,7 +475,12 @@ static func _cross_street_path(map: CityMap, tile: Vector2i) -> PackedVector2Arr
 ## not something that went wrong today — it makes a park *contested*, which is the point,
 ## and it leaves the far side of the block calm. Counting it here would mean stripping a
 ## playground out of one park every single day.
-static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned]) -> void:
+## Since M24 it also takes the block she settled in yesterday, and protects a **different** one
+## where it can. Without that the two halves fight: the day deliberately puts something in her
+## park, and then this rule, looking for the least disturbed calm ground, finds the block with
+## exactly one spoiler on it and strips the very event that was the point.
+static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
+		settled_yesterday := Vector2i(-1, -1)) -> void:
 	if map.calm_blocks.is_empty():
 		return
 
@@ -427,8 +503,17 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned]) -> vo
 	if clean:
 		return
 
-	var least: Vector2i = map.calm_blocks[0]
+	# Yesterday's park is the last one considered, not an excluded one: if it is the only calm
+	# block left standing, a winnable day still outranks a fresh decision.
+	var choosable: Array[Vector2i] = []
 	for block in map.calm_blocks:
+		if block != settled_yesterday:
+			choosable.append(block)
+	if choosable.is_empty():
+		choosable = map.calm_blocks
+
+	var least: Vector2i = choosable[0]
+	for block in choosable:
 		if spoilers[block].size() < spoilers[least].size():
 			least = block
 	for plan in spoilers[least]:

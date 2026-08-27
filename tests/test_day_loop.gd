@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_hard_fail_loses_with_a_reason(t)
 	_test_a_day_ends_only_once(t)
 	_test_nerves_and_endings(t)
+	_test_the_city_learns_where_she_settled(t)
 
 # --------------------------------------------------------------------- rig ---
 
@@ -234,3 +235,46 @@ func _test_nerves_and_endings(t) -> void:
 	GameState.nerves = saved_nerves
 	GameState.resistance_progress = saved_progress
 	GameState.sabotage_done = saved_sabotage
+
+## The recording half of M24. The scheduler's half is tested in `test_events.gd`; this is the
+## half that decides *what* it gets told, and it is easy to get subtly wrong in two ways —
+## recording a pavement she happened to fall asleep on, or recording nothing because the rule
+## was put somewhere that does not know where she is standing.
+##
+## It lives in `DayController` rather than in `Baby` because of the invariant: the baby's whole
+## interface to the world is three questions and none of them is about blocks.
+func _test_the_city_learns_where_she_settled(t) -> void:
+	var saved_seed := GameState.run_seed
+	var saved_day := GameState.day
+	var saved_settled := GameState.settled_in.duplicate()
+
+	GameState.start_run(SEED)
+	_build(t)
+	_day.start(300.0)
+
+	# Asleep on an ordinary pavement is not a park and does not spend one.
+	_away_from_home()
+	EventBus.return_phase_started.emit()
+	t.check(GameState.settled_yesterday() == Vector2i(-1, -1),
+			"nothing is remembered yet on day 1")
+	t.check(not GameState.settled_in.has(1),
+			"falling asleep on a pavement does not spend a park")
+	_teardown()
+
+	# Asleep on calm ground records the block she is standing in.
+	_build(t)
+	_day.start(300.0)
+	var calm: Vector2i = _map.calm_blocks[0]
+	_player.global_position = _map.tile_rect_to_world(CityMap.block_rect(calm)).get_center()
+	EventBus.return_phase_started.emit()
+	t.check(GameState.settled_in.get(1, Vector2i(-1, -1)) == calm,
+			"the calm block she settled in is remembered")
+
+	GameState.day = 2
+	t.check(GameState.settled_yesterday() == calm,
+			"and tomorrow is the day that reads it")
+	_teardown()
+
+	GameState.settled_in = saved_settled
+	GameState.run_seed = saved_seed
+	GameState.day = saved_day
