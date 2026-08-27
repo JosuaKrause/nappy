@@ -320,12 +320,6 @@ func _spawn_boundary() -> void:
 func add_entity(node: Node) -> void:
 	_entities.add_child(node)
 
-## Excitement fields go above the ground but below everything that stands on it, so an
-## aura never paints over a roof.
-func add_aura_layer(node: Node2D) -> void:
-	node.z_index = 1
-	add_child(node)
-
 # ------------------------------------------------------------------ ground ---
 
 ## Paints the ground once from `assets/ground_tileset.tres`.

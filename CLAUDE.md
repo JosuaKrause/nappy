@@ -63,6 +63,18 @@ building extrusions overhanging every sidewalk, zebra crossings rendering as vis
 a fire always spawning against the map wall. If you touched anything visual, take a shot and
 actually look at it.
 
+**Since M27 a screenshot of a standing player is a screenshot of almost nothing.** The crowd
+and the events are built around her, and the director only puts something in front of her while
+she is going somewhere — so use `--walk north|south|east|west`, which holds a direction down for
+the whole run. `tools/shot.sh` forwards every dev flag now; it silently dropped them until M22,
+and a shot taken to look at one specific event was of the doorstep instead.
+
+**Where a cue cannot be triggered on demand, relax its condition, look, and put it back.** The
+screen-edge badge needs something lethal off-screen and closing, which is not something a
+six-second screenshot can be asked for. Forcing it on for one shot found three things no test
+could: the badge collided with the excitement meter, the icon was squashed by a square box, and
+two of the three had no silhouette in them at all.
+
 `--after` on the screenshot tools is in **seconds**, not frames. It counted frames once,
 which was quietly useless: the windowed build draws ~110fps, so "wait 240 frames" for a 2.6s
 telegraph still caught it mid-telegraph and looked like a broken telegraph.
@@ -287,28 +299,37 @@ street is the crowd, the danger is the events, the shape is the closures. A nois
 already exists as the `construction` event. Do not let a closure emit; it would be a third
 thing for `City.total_excitement_at` to sum, and that list is exactly two long on purpose.
 
-**No circles around entities.** *(Standing decision, playtest 02 finding 8. The aura rings
-still ship today; M22 deletes them. Do not restyle them, do not add another one, and do not
-reach for a ring when something new needs signalling. M19 needed to signal a lethal car and
-built the exclamation mark over the player instead — the vocabulary's load-bearing cue,
-shipped early and not provisionally. Reach for that one first.)*
+**No circles around entities.** *(Standing decision, playtest 02 finding 8, restated by
+playtest 04 finding 2. The aura rings were **deleted** in M22, not restyled. Do not add another
+one, and do not reach for a ring when something new needs signalling.)*
 
 > How dangerous a thing is has to be visible from looking at **the thing**.
 
 A ring communicates a falloff radius, which is a number. A silhouette communicates a threat.
-Where the entity cannot carry it alone, the vocabulary is: a symbol flashing **above the
-entity**; a symbol at the **screen edge** whenever it is off-screen and closing, saying what
-is coming and not merely that something is; and a symbol above the **player** — a flashing
-exclamation mark when they are standing in a soon-to-be danger zone, plus a "too close" cue
-for danger already on them. Nothing draws a field.
+The vocabulary that replaced it, in `docs/EVENTS.md`, "The visual vocabulary": the **entity
+itself** carries most of it; a **caret above the entity** for danger that *changes over time*
+and nothing else; a **badge at the screen edge** whenever something lethal or faster than a
+walk is off-screen and closing, carrying its own silhouette so it says what is coming rather
+than that something is; and above the **player** a flashing exclamation mark for a
+soon-to-be-bad spot, doubled and red for danger already on her. Nothing draws a field.
+
+Two rules that are easy to lose and are the whole reason it is better than the rings:
+
+- **A cue that marks everything says nothing.** The rings marked a notice board exactly as hard
+  as an abduction, which is most of why they explained nothing. The caret is for *lethal,
+  telegraphing, pulsing or swelling* — a barricade and a burnt-out shell are visibly what they
+  are and get none. A first pass used "louder than the walking decay" and marked all of them,
+  which is the ring's own mistake in a new shape. `tests/test_danger.gd` holds the line, and it
+  also asserts that the whole catalogue is never marked at once.
+- **The mark breathes**, tracking current emission, which is the one thing the ring did that a
+  discrete symbol does not get for free. Without it a pulsing event stops being something to
+  time a pass through and becomes something that hurts at random.
 
 The exclamation mark is the load-bearing one. Every other cue says *a thing exists*; that one
 says **the fairness contract is now about you and the clock has started**, which is the
-difference between information and instruction.
-
-The one property the ring had that must survive: it *breathes* with the pulse envelope, so a
-pulsing event can be timed and slipped past between beats. See docs/EVENTS.md, "The visual
-vocabulary".
+difference between information and instruction. `Stroller.warn()` is additive rather than a
+setter for a reason: the crowd and the events both watch the ground she is standing on in the
+same frame, and a setter lets whichever runs second clear what the first just said.
 
 **Telemetry never touches gameplay.** *(M23.)* No RNG, no `day_rng()` stream, nothing that
 changes a placement or a roll. Where a system logs a random outcome it hoists the **existing**
@@ -387,7 +408,13 @@ is a street you cannot walk down.
 **Add a resistance step** — `src/resistance/resistance_steps.gd`, via the `_step()` factory.
 
 **Add a HUD element** — `scenes/ui/hud.tscn` plus `src/ui/hud.gd`. The HUD listens to
-`EventBus` and holds no reference to the world.
+`EventBus` and holds no reference to the world. Anything that has to *ask the world* where
+things are every frame does not belong in it: `DangerEdge` is its own layer, created by `main`,
+for exactly that reason.
+
+**Add a danger cue** — first read `docs/EVENTS.md`, "The visual vocabulary", and pick a row
+that already exists. The vocabulary is deliberately short and adding to it is a design
+decision, not a drawing one. Never a ring; see the standing decision above.
 
 **Add a telemetry entry** — `Telemetry.note("kind", "sentence")` where the thing happens, a
 row in the table in `docs/TELEMETRY.md`, and a kind reused from that table rather than a

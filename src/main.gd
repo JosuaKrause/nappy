@@ -58,6 +58,7 @@ func _ready() -> void:
 
 	_hud = HUD.instantiate()
 	add_child(_hud)
+	_add_danger_edge()
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 	_summary.continued.connect(_on_summary_continued)
@@ -93,6 +94,22 @@ func _ready() -> void:
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
 		add_child(screenshot)
+
+## The screen-edge half of M22's danger vocabulary, in its own layer.
+##
+## Built here rather than inside the HUD scene because it has to ask the world where things are
+## every frame, and the HUD's rule is that it listens to `EventBus` and holds no reference to
+## the world. Bending that for one indicator would cost more than the node does.
+func _add_danger_edge() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "DangerEdge"
+	var edge := DangerEdge.new()
+	edge.name = "Edge"
+	edge.set_anchors_preset(Control.PRESET_FULL_RECT)
+	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	edge.setup(_city.events, _player)
+	layer.add_child(edge)
+	add_child(layer)
 
 ## Marks a node as part of the game rather than part of the frame around it, so the summary
 ## screen actually stops it.

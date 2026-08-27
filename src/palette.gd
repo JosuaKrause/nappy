@@ -52,11 +52,15 @@ const SPOILED_GROUND := Color("6b6357")
 
 # ------------------------------------------------------------------ events ---
 
-## Excitement fields: amber while telegraphing, red once the event is at full strength.
-## Chosen per frame from the event's phase, so these stay code.
-const AURA_TELEGRAPH := Color("e8b64a")
-const AURA_ACTIVE := Color("d2543f")
-const AURA_LETHAL := Color("8f2f38")
+## The danger marks. Amber while something is about to happen, red once it is happening, and a
+## deeper red for the things that end the day.
+##
+## These used to paint the aura rings, which M22 deleted: a ring communicates a falloff radius,
+## which is a number, where a mark over the thing communicates a threat. Same three phases, and
+## nothing draws a field any more. See docs/EVENTS.md, "The visual vocabulary".
+const MARK_TELEGRAPH := Color("e8b64a")
+const MARK_ACTIVE := Color("d2543f")
+const MARK_LETHAL := Color("8f2f38")
 
 const CHALK := Color(0.92, 0.92, 0.88, 0.62)
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)

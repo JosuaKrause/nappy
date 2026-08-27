@@ -24,7 +24,6 @@ var _instances: Array[EventInstance] = []
 ## Today's whole plan, sited and unsited, spent and unspent. See `EventScheduler.Planned`.
 var _plans: Array[EventScheduler.Planned] = []
 var _director: EventDirector
-var _aura: EventAuraLayer
 var _city: City
 var _map: CityMap
 var _player: Node2D
@@ -40,10 +39,6 @@ func setup(city: City, map: CityMap) -> void:
 	_city = city
 	_map = map
 	_director = EventDirector.new(map)
-	_aura = EventAuraLayer.new()
-	_aura.name = "Auras"
-	_aura.track(_instances)
-	city.add_aura_layer(_aura)
 
 ## Clears yesterday and plans today. `consumed_one_shots` is appended to in place.
 ##
@@ -200,7 +195,61 @@ func _physics_process(delta: float) -> void:
 	if _find_player():
 		stream_around(_player.global_position)
 		_place_what_is_owed_ahead(delta)
+		_warn_about_the_ground_she_is_on()
 	_check_hard_fails()
+	_announce_the_city_wide_sources()
+
+## The one kind of source that cannot be drawn over, told to the HUD instead.
+##
+## Announced only when it *changes*, so the HUD is not re-rendering a string sixty times a
+## second for something that is true for nine days running.
+func _announce_the_city_wide_sources() -> void:
+	var what := ""
+	for instance in _instances:
+		if instance.def.city_wide and not instance.is_finished and not instance.is_telegraphing():
+			what = instance.def.display_name
+			break
+	if what == _announced_city_wide:
+		return
+	_announced_city_wide = what
+	EventBus.city_wide_changed.emit(what)
+
+var _announced_city_wide := ""
+
+# ------------------------------------------------------- the mark over her head ---
+# M22. The rings are gone, and this is the half of what replaces them that is about the player
+# rather than about the thing. `Crowd` has done the same for traffic since M19; the two compose
+# because `Stroller.warn()` keeps the loudest level rather than the last caller's opinion.
+
+## Raises the exclamation mark when the ground she is standing on is the problem.
+##
+## Two cases, and the distinction is the whole vocabulary. A telegraph whose radius **already
+## covers her** is `SOON`: the thing has not happened yet and walking out is the answer, which
+## is exactly what the fairness contract promises her time to do. Something lethal that is
+## **live and she is inside its reach** is `NOW`: there is one step left between her and the end
+## of the day.
+##
+## What is deliberately not warned about: a loud event she is merely near. The meter says that,
+## it says it continuously and proportionally, and a mark that fires for ordinary noise is a
+## mark nobody reads by day three.
+func _warn_about_the_ground_she_is_on() -> void:
+	var here := _player.global_position
+	var body := _player as Stroller
+	if not body:
+		return
+	for instance in _instances:
+		if instance.is_finished or instance.def.city_wide:
+			continue
+		var distance := instance.global_position.distance_to(here)
+		if instance.def.hard_fail and not instance.is_telegraphing():
+			if distance <= instance.def.outer_radius:
+				body.warn(Stroller.Alert.NOW, WARNING_HOLD)
+		elif instance.is_telegraphing() and distance <= instance.def.outer_radius:
+			body.warn(Stroller.Alert.SOON, WARNING_HOLD)
+
+## How long a raised warning stays up. A shade longer than a physics frame, so the mark does not
+## strobe on the boundary of a radius she is walking along.
+const WARNING_HOLD := 0.35
 
 ## The director's half of the day: something that happens *to* her, in front of her, while she
 ## is walking. See `EventDirector` for why a cat is authored as a moment rather than a place.
@@ -238,8 +287,8 @@ func _retire_finished() -> void:
 	if successors.is_empty() and survivors.size() == _instances.size():
 		return
 	survivors.append_array(successors)
-	# The aura layer holds this same array by reference, so it must be updated in place
-	# rather than reassigned.
+	# Assigned in place rather than reassigned: `instances()` hands this array out by reference,
+	# and the danger-edge indicator holds it across frames.
 	_instances.assign(survivors)
 
 ## An event that has finished has finished for the day: its plan is spent, so walking back past

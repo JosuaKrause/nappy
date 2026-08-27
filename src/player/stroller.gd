@@ -33,6 +33,7 @@ const PRAM_SIDE := preload("res://assets/rig/pram_side.svg")
 const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
 const PRAM_BACK := preload("res://assets/rig/pram_back.svg")
 const ALERT := preload("res://assets/props/alert.svg")
+const ALERT_CLOSE := preload("res://assets/props/alert_close.svg")
 
 ## How far above her head the warning mark floats, and how fast it flashes. She is 46px tall,
 ## so this clears her head by a few pixels and no more: at 68 the mark drifted far enough up
@@ -40,6 +41,20 @@ const ALERT := preload("res://assets/props/alert.svg")
 ## means "this is about *you*" is the one thing it must not do.
 const ALERT_HEIGHT := 54.0
 const ALERT_FLASHES_PER_SECOND := 4.0
+## The "too close" mark flashes faster, because it is the one that means *now*.
+const CLOSE_FLASHES_PER_SECOND := 7.0
+
+## The two things that can be true about the ground she is standing on. M22's vocabulary has
+## exactly these and no more — a third level would be a number again.
+enum Alert {
+	NONE,
+	## *This spot is about to be bad; move.* A telegraph whose radius already covers her, or a
+	## car closing on the lane she is standing in.
+	SOON,
+	## *It is bad now and you are in it.* Something lethal is live and she is inside its reach
+	## with one step left to make. This is the cue that lets every other one be quieter.
+	NOW,
+}
 
 @onready var _camera: Camera2D = $Camera2D
 
@@ -48,8 +63,12 @@ var _walk_phase := 0.0
 ## Deflection from being walked into, decaying like any other velocity. Kept apart from
 ## `velocity` so an input frame cannot quietly erase it.
 var _shove := Vector2.ZERO
-## Set by `Crowd` while something lethal is closing on where she is standing.
-var _alert := false
+## The loudest warning raised this frame, and how long is left on it. Several systems can warn
+## her at once — the traffic, an event telegraphing on top of her — so it is a *level with a
+## hold* rather than a boolean somebody owns: the last caller to say "no" must not be able to
+## clear a warning another one has just raised.
+var _alert := Alert.NONE
+var _alert_left := 0.0
 var _alert_phase := 0.0
 
 func _ready() -> void:
@@ -77,6 +96,9 @@ func _physics_process(delta: float) -> void:
 	# Stride cadence is driven by distance covered, so it stays in step at any speed.
 	_walk_phase = wrapf(_walk_phase + velocity.length() * delta * 0.09, 0.0, TAU)
 	_alert_phase = wrapf(_alert_phase + delta, 0.0, 1.0)
+	_alert_left = maxf(0.0, _alert_left - delta)
+	if _alert_left <= 0.0:
+		_alert = Alert.NONE
 	_update_camera(delta)
 	queue_redraw()
 
@@ -88,9 +110,23 @@ func shove(impulse: Vector2) -> void:
 	if impulse.length() > _shove.length():
 		_shove = impulse
 
-## Whether she is standing somewhere that is about to be dangerous.
-func set_alert(on: bool) -> void:
-	_alert = on
+## Raises a warning over her head for `seconds`.
+##
+## Additive rather than a setter, and that is the whole reason it is shaped this way: the crowd
+## and the events both watch the ground she is standing on, and a setter would let whichever ran
+## second clear what the first had just said. The louder level wins while both are live, and a
+## `NOW` never gets quietly downgraded to a `SOON` by a system that cannot see the lethal thing.
+func warn(level: Alert, seconds: float) -> void:
+	if level == Alert.NONE:
+		return
+	if level >= _alert or _alert_left <= 0.0:
+		_alert = level
+		_alert_left = maxf(_alert_left if level == _alert else 0.0, seconds)
+
+## What is currently over her head. For the telemetry observer, which has to be able to say
+## whether she was warned before she was killed.
+func alert_level() -> Alert:
+	return _alert if _alert_left > 0.0 else Alert.NONE
 
 func _turn_toward(target: Vector2, delta: float) -> void:
 	var step := FACING_TURN_SPEED * delta
@@ -108,7 +144,8 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	facing = look.normalized()
 	_walk_phase = 0.0
 	_shove = Vector2.ZERO
-	_alert = false
+	_alert = Alert.NONE
+	_alert_left = 0.0
 	if _camera:
 		_camera.offset = Vector2.ZERO
 		_camera.reset_smoothing()
@@ -158,19 +195,27 @@ func _draw() -> void:
 
 	_draw_alert()
 
-## *This spot is about to be bad; move.* Drawn over the player rather than over the thing
-## that is coming, because "there is a car on this road" is information and "you are standing
-## in front of it" is an instruction — and only the second one is a move.
+## *This spot is about to be bad; move* — or, doubled and red, *it is bad now.* Drawn over the
+## player rather than over the thing that is coming, because "there is a car on this road" is
+## information and "you are standing in front of it" is an instruction, and only the second one
+## is a move.
+##
+## This is the load-bearing cue of M22's vocabulary. Every other mark says *a thing exists*;
+## this one says the fairness contract is now about you and the clock has started. It shipped
+## early, in M19, because a lethal car has no telegraph phase to ring — M22 only had to give it
+## a second level and let the events raise it too.
 ##
 ## Flashing rather than steady: a mark that is always there stops being read, and the flash is
-## also what distinguishes it from the props she walks past. M22 generalises this to events
-## and adds the screen-edge half; the cue itself is built here because M19 is what makes a
-## street lethal. See docs/EVENTS.md, "The visual vocabulary".
+## also what distinguishes it from the props she walks past. See docs/EVENTS.md, "The visual
+## vocabulary".
 func _draw_alert() -> void:
-	if not _alert or _alert_phase * ALERT_FLASHES_PER_SECOND - floorf(
-			_alert_phase * ALERT_FLASHES_PER_SECOND) > 0.55:
+	if _alert == Alert.NONE or _alert_left <= 0.0:
 		return
-	Sprites.draw_standing(self, ALERT, Vector2(0.0, -ALERT_HEIGHT))
+	var rate := CLOSE_FLASHES_PER_SECOND if _alert == Alert.NOW else ALERT_FLASHES_PER_SECOND
+	if fmod(_alert_phase * rate, 1.0) > 0.55:
+		return
+	var mark := ALERT_CLOSE if _alert == Alert.NOW else ALERT
+	Sprites.draw_standing(self, mark, Vector2(0.0, -ALERT_HEIGHT))
 
 ## The stride is two frames rather than a procedural swing: with the legs drawn into the
 ## sprite there is nothing left to swing. The frames carry the body's bob too, which is why

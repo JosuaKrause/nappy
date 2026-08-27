@@ -27,6 +27,15 @@ signal event_activated(instance)
 signal event_finished(instance)
 signal hard_fail_triggered(reason: String)
 
+## What is currently holding a floor under the whole city, by display name, or "" for nothing.
+##
+## M22. A `city_wide` source has no position, so it is the one thing in the game that cannot be
+## drawn *over* — the aura layer skipped it, correctly, because a field with no edge cannot be a
+## ring, and nothing took over. From day 5 the loudspeaker masts held a floor under the meter
+## with nothing on screen to say so, and the player saw excitement refusing to drain and no
+## reason why. That was the most misleading thing in the game.
+signal city_wide_changed(what: String)
+
 # ------------------------------------------------------------------- bodies ---
 # M19. Reported rather than logged where they happen: the crowd is a gameplay file and the
 # telemetry stays out of the files that decide things.
