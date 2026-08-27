@@ -1,7 +1,22 @@
 # Handoff
 
 **Last updated:** end of the M22 session.
-**Read this first, then [PLAYTEST-04.md](PLAYTEST-04.md), then [TODO.md](TODO.md).**
+**Read this first, then [PLAYTEST-05.md](PLAYTEST-05.md), then [TODO.md](TODO.md).**
+
+> **A fifth playtest landed immediately after M22 was merged and nothing in it has been acted
+> on.** Six findings, written up in **[PLAYTEST-05.md](PLAYTEST-05.md)** and not planned into
+> milestones yet. The emphasised one is *"day two doesn't feel more difficult than day one…
+> there is never **any** danger"* — and the catalogue agrees: every `hard_fail` event starts on
+> day 8 or later, so for half the run the only lethal thing in the game is a car the player
+> never has to step in front of. That reframes the "play it and read the trace" section below:
+> **it has now been played.**
+>
+> **Start the next session on finding 6, the density target: one event per block.** 49 a day
+> against ~13 today, ~12 live around her against 3–4. It is not a `budget_for()` change — the
+> day-1 pool's `max_per_day` values sum to **18**, so the caps and the catalogue have to move
+> first, and a budget the catalogue cannot spend is not density. The arithmetic, the three
+> things that get harder at that density, and the reason she never saw a café are all in
+> PLAYTEST-05.
 
 ---
 

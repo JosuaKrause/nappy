@@ -21,6 +21,18 @@ on M24. **M27 was taken out of order and immediately**, because playtest 04's em
 finding — *"don't load everything upfront"* — turned out to be what was underneath three of the
 other six, and because M21 and M22 both get judged against a street that now has traffic on it.
 
+**Playtest 05 has landed and is what the next session starts from.** Six findings in
+**[docs/PLAYTEST-05.md](PLAYTEST-05.md)**, written down and deliberately not acted on: two
+traffic defects (cars stop at arbitrary points for a zebra; the two axes drive on opposite
+sides of the road), M22's exclamation mark firing unattributably and without consequence, the
+same park being usable on day 1 and day 2 (M24), **"day two doesn't feel more difficult than
+day one… there is never *any* danger"** — which the catalogue confirms: day 2 places about one
+more event than day 1, and every `hard_fail` event starts on day 8 or later — and a stated
+density target: **one event per block**, with the dog-walker decision forced at least twice on
+day 1 and a café that can actually be found. That last one is ~4× today's plan and **more than
+the catalogue can currently spend**: the day-1 pool's `max_per_day` values sum to 18, so no
+budget alone reaches 49. **Read it before picking up anything below**; it reorders what follows.
+
 **Playtest 04 set the order that stands now.** M27 and M22 are done. **M21 is next**
 (four-block calm zones), then M17 behind it. M20 is **absorbed into M27**: cars follow and queue
 now, and what is left of it — eight-way driving, overtaking, a crash as a catalogue event — is
