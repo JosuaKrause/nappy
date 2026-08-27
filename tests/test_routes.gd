@@ -24,6 +24,7 @@ func run(t) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 13))
 	_test_the_lattice_is_the_lattice(t)
+	_test_a_calm_zone_takes_its_streets_out_of_the_lattice(t)
 	_test_a_tile_knows_which_street_it_is_on(t)
 	_test_an_open_city_has_two_routes_to_everywhere_calm(t)
 	_test_one_closure_is_never_enough_to_cut_a_calm_area_off(t)
@@ -54,6 +55,8 @@ func _test_the_lattice_is_the_lattice(t) -> void:
 		t.check(rect.size == (Vector2i(Tuning.BLOCK_SIZE, Tuning.STREET_WIDTH)
 				if segment.horizontal else Vector2i(Tuning.STREET_WIDTH, Tuning.BLOCK_SIZE)),
 				"street %s is one block long and one corridor wide" % segment.key())
+		if not map.has_street(segment.key()):
+			continue   # absorbed into a calm zone; it is grass, and the next test says so
 		# A street the player cannot walk down is not a street, and closing one would be a
 		# closure nobody could see.
 		var walkable := 0
@@ -62,6 +65,58 @@ func _test_the_lattice_is_the_lattice(t) -> void:
 				walkable += 1
 		t.check(walkable == rect.size.x * rect.size.y,
 				"every tile of street %s is walkable" % segment.key())
+
+## M21. A four-block calm zone is painted over the corridors between its own blocks, so the
+## lattice has holes in it and route redundancy stops being true by construction.
+##
+## Four things have to hold together for that to be a hole rather than a bug, and each is a
+## different way it could quietly not be one: the streets have to be **gone from the graph**,
+## their ground has to be **calm rather than closed** (the player walks over it — that is the
+## whole point), the junction in the middle of the zone has to have **nothing reaching it**, and
+## the four around it have to still be reachable, because they are the ways in.
+func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
+	var zones := 0
+	for map in _maps:
+		t.check(map.zone_rects.size() >= Tuning.MIN_CALM_ZONES,
+				"seed %d has at least one four-block calm zone" % map.seed_used)
+		for anchor: Vector2i in map.zone_rects:
+			zones += 1
+			var footprint: Rect2i = map.zone_rects[anchor]
+			var absorbed := 2 * Tuning.CALM_ZONE_BLOCKS * (Tuning.CALM_ZONE_BLOCKS - 1)
+			var found := 0
+			for segment in StreetNetwork.segments():
+				if map.has_street(segment.key()):
+					continue
+				var rect := segment.tile_rect()
+				if not CityMap.blocks_tile_rect(footprint).encloses(rect):
+					continue
+				found += 1
+				for tile in map.rect_tiles(rect):
+					t.check(Tile.is_calm(map.tile_at(tile)),
+							"seed %d: the street %s the zone took is calm ground at %s"
+							% [map.seed_used, segment.key(), tile])
+					t.check(not map.is_closed(tile),
+							"seed %d: and is open — a zone is walked through, not walked round"
+							% map.seed_used)
+			t.check(found == absorbed,
+					"seed %d zone %s absorbed its %d inside streets (found %d)"
+					% [map.seed_used, anchor, absorbed, found])
+
+			# The junction in the middle has nothing left reaching it; the four on the edges are
+			# T-junctions, which is what the milestone is for.
+			var middle := footprint.position + Vector2i.ONE
+			t.check(StreetNetwork.junction_distances([middle],
+					map.blocked_segments()).size() == 1,
+					"seed %d: junction %s inside zone %s is cut off from the whole city"
+					% [map.seed_used, middle, anchor])
+			var ways_in := StreetNetwork.around_blocks(footprint)
+			t.check(ways_in.size() == 4 * Tuning.CALM_ZONE_BLOCKS,
+					"seed %d zone %s has %d streets round it, two to a side"
+					% [map.seed_used, anchor, ways_in.size()])
+			for segment in ways_in:
+				t.check(map.has_street(segment.key()),
+						"seed %d: the way in %s is a real street" % [map.seed_used, segment.key()])
+	t.check(zones >= SEEDS, "every seed made a zone (%d over %d seeds)" % [zones, SEEDS])
 
 ## A junction belongs to no street on purpose: it is where the choice is made, so closing a
 ## street may never seal the corner it starts from.
@@ -87,8 +142,8 @@ func _test_an_open_city_has_two_routes_to_everywhere_calm(t) -> void:
 		var home := ClosurePlanner.home_street(map)
 		t.check(home != null, "seed %d: the front door opens onto a street" % map.seed_used)
 		for area in ClosurePlanner.calm_areas(map):
-			t.check(StreetNetwork.route_count(home, area.access, {}, 2) >= 2,
-					"seed %d: calm block %s has two ways in before anything closes"
+			t.check(StreetNetwork.route_count(home, area.access, map.blocked_segments(), 2) >= 2,
+					"seed %d: calm area %s has two ways in before anything closes"
 					% [map.seed_used, area.block])
 
 ## Menger, the other way round: two distinct routes means no *single* street is a cut. This
@@ -113,7 +168,9 @@ func _test_one_closure_is_never_enough_to_cut_a_calm_area_off(t) -> void:
 		for segment in StreetNetwork.segments():
 			if segment.key() == home.key() or doors.has(segment.key()):
 				continue
-			var closed := {}
+			if not map.has_street(segment.key()):
+				continue   # already not there; shutting it is not a thing that can happen
+			var closed := map.blocked_segments()
 			closed[segment.key()] = true
 			if StreetNetwork.route_count(home, area.access, closed, 1) < 1:
 				reachable_everywhere = false
@@ -135,10 +192,10 @@ func _test_a_doorway_is_not_a_route(t) -> void:
 			if area.access.size() != 1:
 				continue
 			checked += 1
-			t.check(StreetNetwork.route_count(home, area.access, {}, 2) >= 2,
+			t.check(StreetNetwork.route_count(home, area.access, map.blocked_segments(), 2) >= 2,
 					"seed %d: the one archway into %s still has two routes to it"
 					% [map.seed_used, area.block])
-			var closed := {}
+			var closed := map.blocked_segments()
 			closed[area.access[0].key()] = true
 			t.check(StreetNetwork.route_count(home, area.access, closed, 1) == 0,
 					"seed %d: and shutting that archway's street puts %s out of reach today"
@@ -154,8 +211,9 @@ func _test_every_planned_day_keeps_the_invariant(t) -> void:
 			var closures := _plan(map, day)
 			var home := ClosurePlanner.home_street(map)
 			var with_a_choice := 0
+			var closed := map.blocked_segments(_closed_set(closures))
 			for area in ClosurePlanner.calm_areas(map):
-				if StreetNetwork.route_count(home, area.access, _closed_set(closures), 2) >= 2:
+				if StreetNetwork.route_count(home, area.access, closed, 2) >= 2:
 					with_a_choice += 1
 			t.check(with_a_choice >= Tuning.MIN_CALM_AREAS_WITH_TWO_ROUTES,
 					"seed %d day %d: %d calm areas still have a choice of route, need %d"
@@ -245,7 +303,7 @@ func _test_closures_land_on_streets_that_matter(t) -> void:
 		var home := ClosurePlanner.home_street(map)
 		var areas := ClosurePlanner.calm_areas(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			var useful := _useful_streets(home, areas)
+			var useful := _useful_streets(map, home, areas)
 			for closure in _plan(map, day):
 				total += 1
 				if useful.has(closure.segment.key()):
@@ -278,22 +336,25 @@ func _closed_set(closures: Array[RoadClosure]) -> Dictionary:
 ## The same "is this street on the way" question the planner asks, asked again here rather
 ## than exposed from the planner: a test that calls the code under test to decide what the
 ## right answer is has not checked anything.
-func _useful_streets(home: StreetNetwork.Segment,
+func _useful_streets(map: CityMap, home: StreetNetwork.Segment,
 		areas: Array[ClosurePlanner.CalmArea]) -> Dictionary:
 	var useful := {}
-	var from_home := StreetNetwork.junction_distances([home.a, home.b], {})
+	var absent := map.blocked_segments()
+	var from_home := StreetNetwork.junction_distances([home.a, home.b], absent)
 	for area in areas:
 		var doorsteps: Array[Vector2i] = []
 		for segment in area.access:
 			doorsteps.append(segment.a)
 			doorsteps.append(segment.b)
-		var to_calm := StreetNetwork.junction_distances(doorsteps, {})
+		var to_calm := StreetNetwork.junction_distances(doorsteps, absent)
 		var best := INF
 		for junction in doorsteps:
 			var node := StreetNetwork.node_of(junction)
 			if from_home.has(node):
 				best = minf(best, float(from_home[node]))
 		for segment in StreetNetwork.segments():
+			if absent.has(segment.key()):
+				continue
 			var u := StreetNetwork.node_of(segment.a)
 			var v := StreetNetwork.node_of(segment.b)
 			for pair in [[u, v], [v, u]]:

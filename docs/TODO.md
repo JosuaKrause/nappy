@@ -32,11 +32,23 @@ moment, and the thing it confirmed is that the binding constraint was the **per-
 the budget**. **Read it before picking up anything below**: the write-ups carry what each
 analysis got right and what it got wrong, which is the half that is not in the diffs.
 
-**What that leaves.** M21 (four-block calm zones) is the next milestone and is the oldest thing
-still outstanding — playtest 03 and 04 both asked for it. M25 (patrols, and running that
-matters) is unaffected by M31 and is now specifically the answer for **acts III and IV**, where
-the streets are deliberately empty and the threat should follow rather than sit. And nobody has
-played any of M28–M31.
+**M21's calm-zone half has landed.** One or two four-block calm zones per city, 22 tiles square,
+with the streets between their blocks absorbed — so the lattice has holes in it, route
+redundancy stopped being true by construction, and a stretch of calm is a route rather than a
+lap. The other two halves of M21 (main roads with lights; the canal) are deliberately still
+open; see the entry below.
+
+**Playtest 06 has arrived and is open.** Three observations and a decision, in
+**[docs/PLAYTEST-06.md](PLAYTEST-06.md)**, the first ever taken on M28–M31: the screen-edge
+badges are triggered by the player's own footsteps rather than by anything closing, the
+exclamation mark over her head outlives the car that raised it, **the difficulty is now right**
+— the first balance number in this game ever confirmed by a human — and a lost day should be
+**retried rather than skipped**.
+
+**What that leaves.** Playtest 06's two cue fixes and the retry change, then M25 (patrols, and
+running that matters), which is unaffected by M31 and is now specifically the answer for **acts
+III and IV**, where the streets are deliberately empty and the threat should follow rather than
+sit.
 
 **Playtest 04 set the order that stands now.** M27 and M22 are done. **M21 is next**
 (four-block calm zones). M20 is **absorbed into M27**: cars follow and queue now, and what is
@@ -54,7 +66,7 @@ was around when a day ended.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 15744 checks (~80s); `tools/check.sh` boots the project; `tools/run.sh`
+`tools/test.sh` runs 47062 checks (~100s); `tools/check.sh` boots the project; `tools/run.sh`
 plays it; `tools/telemetry.sh` reads back what the last run did.
 
 ---
@@ -337,14 +349,28 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       one car inside another, down from 5.2 overlapping pairs per frame. What remains is
       overtaking, eight-way driving and the crash event, none of which any playtest has asked
       for, so this is **parked** rather than queued
-- [ ] **M21 The city overhaul** — findings 5 and 6, plus the canal dropped out of M16, **plus
+- [~] **M21 The city overhaul** — findings 5 and 6, plus the canal dropped out of M16, **plus
       playtest 03 finding 2**. Calm zones of four blocks, so the lattice grows T-junctions and
-      L-bends and can no longer be derived from a coordinate; main roads with traffic lights
-      against side roads with zebras, where a main road is crossed rather than walked.
+      can no longer be derived from a coordinate; main roads with traffic lights against side
+      roads with zebras, where a main road is crossed rather than walked.
       **Raised above M20**: the four-block calm zone is the structural answer to twenty seconds
       of walking in a circle. That circling is not a length problem — progress requires motion
       and a calm block is a few tiles across, which is jointly sufficient for a lap, which is
-      why M18's shorter stretch did not remove it and no further balance pass will
+      why M18's shorter stretch did not remove it and no further balance pass will.
+      **The calm-zone half is done**: one or two 2×2 zones per city, 22 tiles square,
+      crossed corner to corner in 10.8s against a full meter's 23.8 — so a stretch of calm is two
+      or three traverses of somewhere with sides to it rather than six laps of a lawn. The
+      lattice has holes in it, four T-junctions round each zone and a junction in the middle that
+      nothing reaches, and **route redundancy stopped being true by construction** and is checked
+      by search. Measured against `main` over 24 seeds and four walks each: placed per day 40.1
+      → 40.1, live around her 4.87 → 4.79, on screen 2.74 → 2.75, met on a 40s walk 2.91 → 2.85,
+      so playtest 06's *"I like the difficulty now"* survives it.
+      **Two halves are not done and are deliberately left**: *main roads with lights against side
+      roads with zebras* (finding 6), which decision 3 has largely been answered another way —
+      *"a main road is crossed, not walked"* is enforced by M19's lethal carriageway and M27's
+      density, and walking the arterial's length loses day 1 in fourteen seconds — and the
+      **canal**, which is still the one feature that would move a walkable tile. Neither is
+      blocking anything; both want a playtest of the zones first
 - [x] **M22 Danger you can read** — findings 7 and 8. **Delete the aura circles.** How
       dangerous a thing is becomes visible from the thing itself; the rest is a small symbol
       vocabulary — above an entity when it needs one, at the screen edge when it is
@@ -503,6 +529,31 @@ See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
       all, so a thing moving at 32px/s read as parked. Both were reported as *"dog walkers are
       not moving?"* and neither was the movement
 
+## Playtest 06 — the difficulty landed, the cues did not
+
+See **[docs/PLAYTEST-06.md](PLAYTEST-06.md)**. The first playtest taken on M28–M31, reported
+part-way through M21 with the instruction to *"take note of those but continue implementing the
+next item on the handoff first"*. All four are open. None is a milestone on its own — three are
+small fixes in code M22, M30 and M6 already own.
+
+- [x] **The difficulty is right.** *"I like the difficulty now — it actually became harder."*
+      Not a task; recorded because it is the **first balance number in this game ever confirmed
+      by a human**, and `CLAUDE.md`'s "no balance number has been felt by a human" has been true
+      since M14
+- [ ] **The screen-edge badge measures the wrong speed** — *"they show events far away, and if
+      you walk towards them they sometimes disappear; also they flicker a lot."* One defect
+      behind all three symptoms: `DangerEdge` tests the *relative* closing rate against a 20px/s
+      threshold, and she walks at 92, so **walking towards anything lethal raises its badge**.
+      Wants the event's own approach speed with the player held still, a range cap, and
+      hysteresis — plus a look at whether `MOST_AT_ONCE` is evicting badges mid-approach
+- [ ] **The exclamation mark outlives the car** — *"I get the flashing exclamation marks after
+      the fact, at which point they're not useful."* `CAR_WARNING_HOLD` is 1.4s and nothing
+      lowers the mark when she steps off the carriageway, where a car cannot reach her at all.
+      `Crowd` already computes `on_the_road` every frame. The hold has a real job — surviving
+      the gap between two cars in one lane — so it is a second condition, not a shorter hold
+- [ ] **A lost day is retried, not skipped** — finding 4, and it closes an open design question
+      carried since M6. `GameState.finish_day()` stops advancing the calendar on a loss
+
 ## M10 — Polish · `feature/polish`
 
 Not started. The game is complete without it; this is what would make it shippable.
@@ -580,5 +631,11 @@ These need a human playing the game, not more code.
       trap. Making running necessary is therefore a mechanic to build (M25), not a number to
       change.
 - [ ] Should there be a diegetic-only mode — a baby's face instead of two bars?
-- [ ] Does a lost day advancing the calendar feel right, or should it repeat the day?
-      *(Current: advances, which makes Nerves the real resource.)*
+- [~] Does a lost day advancing the calendar feel right, or should it repeat the day?
+      **Answered by playtest 06, finding 4: it should repeat the day.** *"We shouldn't advance
+      the day, that's for sure."* So a nerve buys a **retry of the same day** — the same city,
+      the same closures, the same event plan, because all of those are deterministic from the
+      seed and the day number — and the calendar only moves when a day is won. Nerves stop being
+      a second currency and become three failed attempts spread over the run. Carried open since
+      M6; closed by being asked out loud. See [PLAYTEST-06.md](PLAYTEST-06.md) for what it does
+      to the one-shots, the block arcs and the endings

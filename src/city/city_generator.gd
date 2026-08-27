@@ -90,9 +90,16 @@ static func _street_tile(x_offset: int, y_offset: int) -> GameEnums.TileType:
 
 # ----------------------------------------------------------------- purposes ---
 
-## Decides what each block starts as. Open calm first and never side by side, so the calm is
-## spread across the map and no two quiet blocks are one street apart; then the built kinds;
-## then courtyards, cut into residential blocks that are not already next to open calm.
+## Decides what each block starts as. **Four-block calm zones first**, because they are the
+## only thing here that needs a shape rather than a slot and every later choice can work round
+## one; then single calm blocks, never side by side with anything calm, so the calm is spread
+## across the map; then the built kinds; then courtyards, cut into residential blocks that are
+## not already next to open calm.
+##
+## The dictionary that comes back is keyed by **lot anchors**, not by blocks: the three blocks a
+## zone absorbed are removed at the end and live in `map.zone_anchor` instead. They carry the
+## zone's purpose while this function runs, though, because that is what makes the "never side
+## by side" rule see a zone as calm ground without a special case for it.
 static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictionary:
 	var blocks: Array[Vector2i] = []
 	for y in Tuning.CITY_BLOCKS.y:
@@ -103,13 +110,17 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 	_shuffle(shuffled, rng)
 
 	var purposes := {}
+	var zones := {}
+	var areas := _place_calm_zones(purposes, zones, shuffled, rng)
+
 	var calm_target := rng.randi_range(Tuning.MIN_CALM_BLOCKS, Tuning.MAX_CALM_BLOCKS)
 	for block in shuffled:
-		if purposes.size() >= calm_target:
+		if areas >= calm_target:
 			break
-		if _has_open_calm_neighbour(purposes, block):
+		if purposes.has(block) or _has_open_calm_neighbour(purposes, Rect2i(block, Vector2i.ONE)):
 			continue
 		purposes[block] = _OPEN_CALM[rng.randi_range(0, _OPEN_CALM.size() - 1)]
+		areas += 1
 
 	var remaining: Array[Vector2i] = []
 	for block in shuffled:
@@ -128,7 +139,76 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 		index += 1
 
 	_cut_courtyards(purposes, remaining, rng)
+	_record_zones(map, purposes, zones)
 	return purposes
+
+# ------------------------------------------------------- four-block calm zones ---
+
+## Picks the 2x2 calm zones and marks all four blocks of each. Returns how many calm areas it
+## made, which is what the single-block pass counts on from.
+##
+## Two constraints beyond "does it fit", and both are about what the zone would take away:
+##
+## - **Never the arterial.** A zone absorbs the corridor between its own columns and the one
+##   between its own rows, and the main road is one street the city cannot afford to lose a
+##   stretch of — it is the noise floor, the thing that has to be crossed, and the street a
+##   player learns first. `CrowdLanes.arterial_index` says which it is.
+## - **Never beside other calm.** The same rule single blocks obey, applied to the whole
+##   footprint: a four-block park with a quiet square across the road from it is one calm area
+##   with an awkward middle, and the point of several is that they are somewhere else.
+static func _place_calm_zones(purposes: Dictionary, zones: Dictionary,
+		shuffled: Array[Vector2i], rng: RandomNumberGenerator) -> int:
+	var wanted := rng.randi_range(Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES)
+	var made := 0
+	var span := Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS
+	for anchor in shuffled:
+		if made >= wanted:
+			break
+		var footprint := Rect2i(anchor, span)
+		if not _zone_fits(purposes, footprint):
+			continue
+		var purpose := _OPEN_CALM[rng.randi_range(0, _OPEN_CALM.size() - 1)]
+		for block in _blocks_in(footprint):
+			purposes[block] = purpose
+		zones[anchor] = footprint
+		made += 1
+	return made
+
+## Whether a 2x2 footprint is inside the map, wholly unclaimed, clear of other calm, and does
+## not swallow a stretch of either arterial.
+static func _zone_fits(purposes: Dictionary, footprint: Rect2i) -> bool:
+	if footprint.end.x > Tuning.CITY_BLOCKS.x or footprint.end.y > Tuning.CITY_BLOCKS.y:
+		return false
+	# The corridors this would absorb are the ones between its own columns and rows.
+	for index in range(footprint.position.x + 1, footprint.end.x):
+		if index == CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x):
+			return false
+	for index in range(footprint.position.y + 1, footprint.end.y):
+		if index == CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y):
+			return false
+	for block in _blocks_in(footprint):
+		if purposes.has(block):
+			return false
+	return not _has_open_calm_neighbour(purposes, footprint)
+
+static func _blocks_in(footprint: Rect2i) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for y in range(footprint.position.y, footprint.end.y):
+		for x in range(footprint.position.x, footprint.end.x):
+			found.append(Vector2i(x, y))
+	return found
+
+## Writes the zones onto the map and takes the absorbed blocks out of `purposes`, so that from
+## here on a lot is one entry however many blocks of ground it owns.
+static func _record_zones(map: CityMap, purposes: Dictionary, zones: Dictionary) -> void:
+	for anchor: Vector2i in zones:
+		var footprint: Rect2i = zones[anchor]
+		map.zone_rects[anchor] = footprint
+		for block in _blocks_in(footprint):
+			map.zone_anchor[block] = anchor
+			if block != anchor:
+				purposes.erase(block)
+		_absorb_streets(map, footprint)
 
 ## Turns some residential blocks into courtyard blocks. Never one that touches open calm:
 ## a hidden court is worth finding, and a court across the street from a park is not.
@@ -140,18 +220,61 @@ static func _cut_courtyards(purposes: Dictionary, remaining: Array[Vector2i],
 			return
 		if purposes[block] != GameEnums.BlockPurpose.RESIDENTIAL:
 			continue
-		if _has_open_calm_neighbour(purposes, block):
+		if _has_open_calm_neighbour(purposes, Rect2i(block, Vector2i.ONE)):
 			continue
 		if rng.randf() >= Tuning.COURTYARD_CHANCE:
 			continue
 		purposes[block] = GameEnums.BlockPurpose.COURTYARD
 		cut += 1
 
-static func _has_open_calm_neighbour(purposes: Dictionary, block: Vector2i) -> bool:
-	for step in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-		if _OPEN_CALM.has(purposes.get(block + step, -1)):
-			return true
+## Whether anything open-calm sits directly across a street from this footprint. Stated over a
+## rect of blocks rather than one block so that a single block and a four-block zone are the
+## same question asked twice, rather than one rule and one special case.
+static func _has_open_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool:
+	for x in range(footprint.position.x, footprint.end.x):
+		for y in [footprint.position.y - 1, footprint.end.y]:
+			if _OPEN_CALM.has(purposes.get(Vector2i(x, y), -1)):
+				return true
+	for y in range(footprint.position.y, footprint.end.y):
+		for x in [footprint.position.x - 1, footprint.end.x]:
+			if _OPEN_CALM.has(purposes.get(Vector2i(x, y), -1)):
+				return true
 	return false
+
+## Takes the streets inside a zone out of the lattice: the two horizontal segments between its
+## rows and the two vertical ones between its columns.
+##
+## That is the whole of it, and the graph half of `StreetNetwork` needs no other change —
+## `map.absent_segments` is added to the closed set of every route search, the four junctions
+## around the removed cross become T-junctions for free, and the one in the middle of the zone
+## is left with nothing reaching it at all.
+##
+## Then the **stub**. Each of the four surviving junctions on the zone's edge is a T now, and
+## the quarter of it on the zone's side is a two-tile spur of carriageway and zebra that leads
+## out of the junction and stops in the grass. Nothing drives there — a car diverting turns on
+## the junction's own road band, a whole tile before it — and nothing has to be crossed there
+## either, so it becomes pavement and the road visibly ends at the junction rather than poking
+## into the park.
+##
+## `grow(SIDEWALK_WIDTH)` is exactly that spur and nothing else: the band it adds is one
+## pavement deep, which alongside a block is pavement already and inside a junction is precisely
+## the quarter beyond the crossroads. Getting the turn wrong makes this repaint *look* wrong —
+## the first build turned late, so cars drove down the spur and stood on the new pavement, which
+## reads as a bug in the paint rather than as a bug in the turn.
+static func _absorb_streets(map: CityMap, footprint: Rect2i) -> void:
+	for y in range(footprint.position.y + 1, footprint.end.y):
+		for x in range(footprint.position.x, footprint.end.x):
+			map.absent_segments[Vector3i(x, y, 0)] = true
+	for x in range(footprint.position.x + 1, footprint.end.x):
+		for y in range(footprint.position.y, footprint.end.y):
+			map.absent_segments[Vector3i(x, y, 1)] = true
+
+	var zone := CityMap.blocks_tile_rect(footprint)
+	for tile in map.rect_tiles(zone.grow(Tuning.SIDEWALK_WIDTH)):
+		if zone.has_point(tile):
+			continue
+		if map.tile_at(tile) == GameEnums.TileType.CROSSING:
+			map.set_tile(tile, GameEnums.TileType.SIDEWALK)
 
 # --------------------------------------------------------------------- arcs ---
 
@@ -218,16 +341,21 @@ static func _shuffle(array: Array, rng: RandomNumberGenerator) -> void:
 static func _build_blocks(map: CityMap, purposes: Dictionary,
 		rng: RandomNumberGenerator) -> Dictionary:
 	var block_rects := {}
-	# Iterate in a fixed order; `purposes` is keyed by an unordered shuffle.
+	# Iterate in a fixed order; `purposes` is keyed by an unordered shuffle. Blocks a calm zone
+	# absorbed are not in it at all — their ground belongs to the anchor and is built with it.
 	for y in Tuning.CITY_BLOCKS.y:
 		for x in Tuning.CITY_BLOCKS.x:
 			var block := Vector2i(x, y)
-			block_rects[block] = _build_block(map, block, purposes[block], rng)
+			if purposes.has(block):
+				block_rects[block] = _build_block(map, block, purposes[block], rng)
 	return block_rects
 
 static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.BlockPurpose,
 		rng: RandomNumberGenerator) -> Array[Rect2i]:
-	var lot := CityMap.block_rect(block)
+	# The whole lot, which for a four-block calm zone is 22 tiles square and takes in the
+	# corridors between its own blocks. Everything below is written against the lot rather than
+	# the block, so a zone is a big park and not a special case.
+	var lot := map.lot_rect(block)
 	var layout := BlockLayout.new()
 	map.block_layouts[block] = layout
 
@@ -442,14 +570,24 @@ static func validate(map: CityMap) -> String:
 		return "only %d calm blocks, need %d" % [
 			map.calm_blocks.size(), Tuning.MIN_CALM_BLOCKS]
 
-	var open_calm: Array[Vector2i] = []
+	# Stated over every block of every open-calm lot, not over the anchors: two four-block zones
+	# whose anchors are three apart can still have their footprints touching.
+	var owner := {}
 	for block in map.calm_blocks:
-		if _OPEN_CALM.has(map.starting_purpose(block)):
-			open_calm.append(block)
-	for block in open_calm:
+		if not _OPEN_CALM.has(map.starting_purpose(block)):
+			continue
+		for member in _blocks_in(map.lot_blocks(block)):
+			owner[member] = block
+	for member: Vector2i in owner:
 		for step in [Vector2i.RIGHT, Vector2i.DOWN]:
-			if block + step in open_calm:
-				return "calm blocks %s and %s are adjacent" % [block, block + step]
+			var neighbour: Vector2i = member + step
+			if owner.has(neighbour) and owner[neighbour] != owner[member]:
+				return "calm areas %s and %s are across the street from each other" % [
+					owner[member], owner[neighbour]]
+
+	if map.zone_rects.size() < Tuning.MIN_CALM_ZONES:
+		return "only %d four-block calm zones, need %d" % [
+			map.zone_rects.size(), Tuning.MIN_CALM_ZONES]
 
 	var calm_distance := map.home_to_nearest_calm()
 	if calm_distance < Tuning.MIN_HOME_TO_PARK_TILES:

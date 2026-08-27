@@ -446,9 +446,14 @@ static func _along_street_path(map: CityMap, tile: Vector2i, def: EventDef,
 		room = backward_room
 
 	var length := mini(def.path_length_tiles, room)
-	# Stop short of a closed street rather than driving through the barrier at the end of it.
+	# Stop short of a closed street rather than driving through the barrier at the end of it —
+	# and, since M21, short of a four-block calm zone as well. A corridor that ends in a park is
+	# not a corridor a delivery van can drive down, and unlike a closure there is nothing there
+	# to hit: the route would simply cross the grass.
+	var from_a_street := map.is_street(tile)
 	for step in range(1, length + 1):
-		if map.is_closed(tile + along * step):
+		var next := tile + along * step
+		if map.is_closed(next) or (from_a_street and not map.is_street(next)):
 			length = step - 1
 			break
 	if length <= 0:

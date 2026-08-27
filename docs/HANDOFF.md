@@ -1,44 +1,66 @@
 # Handoff
 
-**Last updated:** end of the M28/M29/M30/M24/M31 session — playtest 05's session.
-**Read this first, then [PLAYTEST-05.md](PLAYTEST-05.md), then [TODO.md](TODO.md).**
+**Last updated:** end of the M21 session — the first one after a human played M28–M31.
+**Read this first, then [PLAYTEST-06.md](PLAYTEST-06.md), then [TODO.md](TODO.md).**
 
-> **All six of playtest 05's findings are done.** M28 the density, M29 the traffic, M30 the mark
-> over her head, M24 the same park twice, M31 the danger and the variety. Each is written up
-> under its own finding in [PLAYTEST-05.md](PLAYTEST-05.md) with what the analysis got right and
-> what it got wrong — that second half is the part not recoverable from the diffs.
+> **M21's calm-zone half is done.** One or two **four-block calm zones** per city: 2×2 blocks
+> with the streets between them absorbed, 22 tiles square, crossed corner to corner in 10.8s
+> against the 23.8s a full meter of calm takes. That is the structural answer to playtest 03's
+> traced player walking in a circle in a courtyard for twenty seconds — a complaint no balance
+> pass could have fixed, because progress-requires-motion plus small-calm-area is jointly
+> sufficient for a lap.
 >
-> **The next thing is M21**, four-block calm zones, which is the oldest thing still outstanding:
-> playtest 03 found the traced player walking in a circle inside a courtyard for twenty seconds,
-> playtest 04 asked for it again, and playtest 05's finding 4 turned out to be the same
-> complaint one scale up. M24 answered *which* calm area is a choice; M21 is what makes being in
-> one a route rather than a lap.
+> **The lattice has holes in it now**, which is the part that cost something: four T-junctions
+> round each zone, a junction in the middle that nothing reaches, and **route redundancy is no
+> longer true by construction**. It is checked by search — `StreetNetwork.route_count()`, which
+> M16 built for the closures and which needed no change at all, because a street that is not
+> there is a street that is permanently shut as far as a search is concerned.
 >
-> **Two decisions were taken in this session rather than derived, and both are load-bearing.**
-> **M17, the route map, is backlogged** — *"let's not do that for now, we might revisit later"* —
-> so it is no longer the thing behind M21. And **a patrol is wrong for act I** — *"patrol
-> shouldn't be there for act I"* — which is what sent M31 to a cyclist and a reversing lorry
-> instead. M25 keeps the patrol and is now specifically the answer for acts III and IV, where
-> the streets are deliberately empty and the threat should follow rather than sit.
+> **The other two halves of M21 are deliberately not done** and are written up as such in
+> [TODO.md](TODO.md): main roads with traffic lights (largely answered another way — M19's lethal
+> carriageway and M27's density already make the arterial a thing you cross), and the canal.
 >
-> **Nobody has played any of M28–M31.** The street changed shape four times in one session.
+> **Playtest 06 arrived mid-session and is open.** Four things in
+> [PLAYTEST-06.md](PLAYTEST-06.md), and the one to carry around is finding 2: ***"I like the
+> difficulty now — it actually became harder."*** That is the **first balance number in this
+> project ever confirmed by a human**, and it retires the loudest line in "Known-shaky ground".
+> The other three are small, and one of them closes a design question open since M6: **a lost day
+> is retried, not skipped.**
+>
+> **Two decisions from the previous session still govern things and are easy to miss.**
+> **M17, the route map, is backlogged** — *"let's not do that for now, we might revisit later"*.
+> And **a patrol is wrong for act I** — *"patrol shouldn't be there for act I"* — which narrowed
+> M25 to acts III and IV, where the streets are deliberately empty and the threat should follow
+> rather than sit.
 
 ---
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **31768 checks, 0 failures** (~90s);
+`main` is green and playable. `./tools/test.sh` → **47062 checks, 0 failures** (~105s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
-**The check count roughly doubled and that is the density**, not new suites: several tests loop
-over every event a day places, and a day now places fifty instead of thirteen. It moved *down*
-again in M31 — 32735 → 31768 — because two of those loops are per-event-pair and the seven new
-rows spread the same fifty events over more types, which shortens the pairs. A count that moves
-with the catalogue is doing that; a count that drops after anything else is a suite that stopped
-running.
+**The check count went 31768 → 47062 and that is M21's own tests**, not a change of scale: the
+new ones loop over every street of every zone of every seed, which is a great many cheap
+assertions. Before that it roughly doubled with M28's density and moved *down* again in M31 —
+32735 → 31768 — because two of those loops are per-event-pair and seven new rows spread the same
+fifty events over more types. A count that moves with what is being asserted is doing that; a
+count that drops after anything but a deletion is a suite that stopped running.
 
-**Five milestones landed in this session, all of them playtest 05's.**
+**M21 landed in this session, and playtest 06 opened.**
+
+**M21 made the calm big enough to walk in.** A calm **area** is now either one block or a
+four-block **zone**, and every city has one or two zones. What that meant in practice was less
+about parks than about the lattice: `block_plans`, `block_layouts` and `calm_blocks` are keyed by
+the block that *anchors a lot*, so a zone is one entry with four blocks of ground and everything
+counting calm areas counts it once; `CityMap.absent_segments` says which streets this city does
+not have; and `CityMap.blocked_segments()` merges that with today's closures for every route
+search in the game. **Measured against `main` over 24 seeds and four walks each, the density
+playtest 06 had just approved is unchanged**: placed per day 40.1 → 40.1, live around her 4.87 →
+4.79, on screen 2.74 → 2.75, met on a 40s walk 2.91 → 2.85.
+
+**Five milestones landed in the session before it, all of them playtest 05's.**
 
 **M28 put one event on every block.** Day 1 goes from 13 placed to **50 across 49 blocks**, from
 1.8 live around her to ~11, and from about one on screen to **3.3**. The finding that matters
@@ -153,6 +175,11 @@ should now be a great deal more than playtest 03's zero — `road` for time in t
   day 3 — so lethal-per-day runs 0, 3, 4 over days 1–3 and the escalation is a change of kind.
   Plus five more act I rows for variety, each with its own silhouette. Fixed the streaming
   rewind and gave mobile events a gait.
+- **M21 half complete.** Four-block calm zones: 22 tiles square, 10.8s corner to corner against
+  a full meter's 23.8, one or two per city, never taking a stretch of the arterial and never
+  beside other calm. The lattice grew holes and route redundancy stopped being true by
+  construction. **The other two halves — main roads with lights, and the canal — are open by
+  decision**, not forgotten; see `TODO.md`.
 
 ## The decisions that govern the next milestones
 
@@ -222,16 +249,17 @@ The badge announces only what she cannot outwalk, and it **must carry a silhouet
 that can only say "something" is an anxiety rather than a warning. Adding to this vocabulary is
 a design decision, not a drawing one; read `docs/EVENTS.md`, "The visual vocabulary", first.
 
-## Five playtests, and the order they left behind
+## Six playtests, and the order they left behind
 
-All five are live plans: **[PLAYTEST-01.md](PLAYTEST-01.md)** (thirteen findings → M11–M17),
+All six are live plans: **[PLAYTEST-01.md](PLAYTEST-01.md)** (thirteen findings → M11–M17),
 **[PLAYTEST-02.md](PLAYTEST-02.md)** (twelve → M18–M26), **[PLAYTEST-03.md](PLAYTEST-03.md)**
 (the first read off a run log; it reorders rather than adds),
 **[PLAYTEST-04.md](PLAYTEST-04.md)** (seven findings; adds M27 and moved M22 and M21 to the
-front), and **[PLAYTEST-05.md](PLAYTEST-05.md)** (six findings → M28, M29, M30, M24 and M31,
-**all closed**). Read 05 and then 04 before picking anything up; the summaries here are not a
-substitute for them, and 05's write-ups now carry what each analysis got wrong as well as what
-it got right.
+front), **[PLAYTEST-05.md](PLAYTEST-05.md)** (six findings → M28, M29, M30, M24 and M31,
+**all closed**), and **[PLAYTEST-06.md](PLAYTEST-06.md)** (four things, **all open**, none of
+them a milestone). Read 06 and then 05 before picking anything up; the summaries here are not a
+substitute for them, and 05's write-ups carry what each analysis got wrong as well as what it
+got right.
 
 The queue is numeric except where something jumped it, and each jump had one practical reason:
 **M18** because closure counts tuned against a day that was about to halve would have been
@@ -242,8 +270,12 @@ because the player asked for the circles a second time; **M28–M30 and M24** be
 playtest arrived with six findings and four of them were cheap, self-contained and blocking
 judgement of everything else — a player who cannot predict which side a car comes from cannot
 learn a street, and a mark that fires for nothing teaches that marks mean nothing; and **M21**,
-next, because four-block calm zones are the structural fix for twenty seconds of walking in a
-circle and traffic that overtakes is not.
+because four-block calm zones are the structural fix for twenty seconds of walking in a circle
+and traffic that overtakes is not.
+
+**Playtest 06 did not jump anything**, which is worth saying: it arrived part-way through M21
+with the instruction *"take note of those but continue implementing the next item on the handoff
+first"*, so M21 finished and its four things are queued behind it.
 
 **M17 left the queue rather than moving in it** — backlogged by decision, not deferred by
 priority.
@@ -322,35 +354,73 @@ it.
   no bug in it: every crowd agent has a two-frame stride and an `EventInstance` had none, so a
   tile a second read as parked. A bob driven by distance covered, not by time.
 
+## Gotchas learned in the M21 session
+
+- **A turn is the one move that commits without looking, and it had been getting away with it.**
+  A crowd agent's turn swaps the axes, so the coordinate it had *along* its old corridor becomes
+  the one it has *across* the new one — the lane it then steers away from. Turning at the far
+  edge of a junction therefore drops a car onto the pavement band for the next three tiles. That
+  has been true since M13; four closures a day was too rare for anyone to see it, and four
+  dead-end arms per calm zone was not. `_can_turn_here()` waits for the band the agent belongs
+  in, and the lookahead went from 26px to a corridor's width so there is time to wait.
+- **A spawn point is not a position an agent walked to.** An agent dropped into the middle of a
+  junction rolls a turn on its first frame from wherever it was put, which can be the
+  carriageway. Also true since M13, also only surfaced because the RNG order changed and
+  reshuffled the crowd. `_settle_junction()` marks the junction it starts in so it does not.
+- **Five seeds is not a measurement of a noisy number.** The first density comparison said M21
+  had cut "events met on a walk" from 3.6 to 2.0, which would have been most of the difficulty
+  playtest 06 had just approved. Over 24 seeds and four directions each it is 2.91 → 2.85. The
+  handoff already said *"a single total over three seeds fails on noise"*; this is the same
+  lesson costing an hour in the other direction.
+- **The obvious tidy-up round a zone's edge was wrong, and only a tile-by-tile check said so.**
+  A zebra whose road runs into a park looks like nonsense to remove — but a crossing sits where a
+  *pavement* lane meets a *carriageway*, and both are still there. Repainting them put pavement
+  in the middle of a junction cars turn through. What is genuinely dead is only the **stub**: the
+  quarter of each T-junction on the zone's side, which is exactly `grow(SIDEWALK_WIDTH)`.
+- **A repaint that clears as it goes cannot have two lots sharing ground.** `CityMap.repaint()`
+  filled each block with building and then painted its carves, which is order-dependent the
+  moment one lot's open rect covers another lot's block: whichever came later in the dictionary
+  punched a building-shaped hole in the park. Clear everything, then paint everything.
+- **A default in a lookup is a wrong answer waiting to be believed.** The generator's
+  "no two calm areas adjacent" check read `owner.get(neighbour, member)`, so a block with no
+  calm neighbour compared its own coordinate against its anchor and reported every zone as
+  adjacent to itself. Every seed failed validation and the generator quietly fell through 64
+  attempts and returned the last one.
+
 ## What to do next, in order
 
-### First: play it
+### First: playtest 06's four things
 
-Five milestones changed what a street is in one session and **none of them has been played**.
-The density quadrupled, the traffic changed sides and learned to stop at a line, the mark over
-her head narrowed to one meaning, the park stopped repeating, and act I acquired two things that
-can end the day. Every number in this file came off a probe or a trace of a scripted walk.
+All four are small, none is a milestone, and three of them are in code M22, M30 and M6 already
+own. [PLAYTEST-06.md](PLAYTEST-06.md) has the analysis; the short version:
 
-The questions are sharp enough to be answered off a log, and the entries already exist:
+- **The screen-edge badge measures the wrong speed.** `DangerEdge` tests the *relative* closing
+  rate against 20px/s and she walks at 92, so walking towards anything lethal raises its badge —
+  which is all three of *"shows events far away"*, *"disappears when you walk towards them"* and
+  *"flickers a lot"* from one defect. Wants the event's own approach with the player held still,
+  a range cap, and hysteresis.
+- **The exclamation mark outlives the car.** `CAR_WARNING_HOLD` is 1.4s and nothing lowers it
+  when she steps off the carriageway, where a car cannot reach her. The hold has a real job —
+  surviving the gap between two cars in one lane — so this is a second condition, not a shorter
+  hold.
+- **A lost day is retried, not skipped**, which closes a design question open since M6.
+- **The meters want to be readable off the player**, not only off two bars in the corner. Asked
+  for by name: a `zzz` over the stroller when the baby is asleep, and stages of warning as
+  excitement approaches the calm threshold.
 
-- **Is day 2 harder than day 1 now, and does it read as danger rather than noise?** That is
-  finding 5's whole claim and M31's whole answer. `lost` lines with `cyclist` or
-  `reversing_lorry` in them, and whether the trace shows a `turn` after the bell.
-- **Is one event per block right, too many, or still not enough?** It was a stated number rather
-  than a feeling, so the check is whether the feeling now matches it. `near` entries per day.
-- **Does the exclamation mark mean something again?** It only fires for lethal things now, so it
-  is nearly silent in act I before day 2 and then it is not. If it still reads as noise, the
-  narrowing was not the fix.
+### And the questions the fifth and sixth playtests still have not answered
+
+Playtest 06 settled the big one — ***"I like the difficulty now"*** — which retires *"no balance
+number has been felt by a human"* and means the next balance argument starts from "this is
+roughly right". These are the ones it did not reach, and every one is now being asked of a
+**much busier street** than the one that prompted it, so they are worth re-reading off a trace
+before anything is tuned:
+
 - **Do the seven new entities read as what they are** without the caret telling you? That is the
   one thing no test can see and the reason each got its own silhouette.
-
-### And the questions a fifth playtest did not answer
-
-Playtest 05 answered *"is a day a city or a gauntlet"* — it was neither, and finding 6 fixed
-that. These are the ones from the M22 handoff it did not reach, and every one of them is now
-being asked of a **much busier street** than the one that prompted it, so they are worth
-re-reading off a trace before anything is tuned:
-
+- **Is a four-block calm zone a route?** M21's whole claim, and the number behind it — 10.8s
+  corner to corner against 23.8s for a full meter — is arithmetic, not a verdict. The trace
+  entry that says it is `settled`: whether she walks a line through it or laps it anyway.
 - **Is the arterial crossable?** Walking its length loses day 1 in fourteen seconds, which is
   intended; crossing it at a zebra should be routine, and since M29 the giving-way is finally
   legible from the kerb. `road` and `crowd` entries say which happened.
@@ -364,15 +434,22 @@ re-reading off a trace before anything is tuned:
   which playtest 05 flagged as possibly the real gap: there is no way to ask a log *"what was
   she warned about, and did she change what she was doing"*.
 
-### Then M21 — the city overhaul, which has jumped M20
+### What is left of M21
 
-Four-block calm zones. Playtest 03 finding 2 is why it moved: the traced player spent twenty
-seconds walking in a circle inside a courtyard, and **that is what the rules ask for** —
-standing still drains sleepiness at 1.0/s, walking on calm ground fills it at 4.2/s, and a
-calm block is a few tiles across. Progress-requires-motion plus small-calm-area is jointly
-sufficient for a lap. M18's shorter stretch cut the number of laps and could not remove the
-lap; no further balance pass will either. A four-block zone turns the lap into a route, which
-is the game's actual verb.
+The calm-zone half is done. Two halves are not, and both are open by decision rather than by
+oversight:
+
+- **Main roads with lights against side roads with zebras** — playtest 02's finding 6, where a
+  main road is crossed rather than walked. Decision 3 of that document said the way to get there
+  is *"making walking it hostile, reusing finding 3's hazard mechanism, rather than by deleting
+  its pavement"*, and **M19 and M27 did exactly that**: the carriageway is lethal, the traffic
+  is dense, and walking the arterial's length loses day 1 in fourteen seconds. So what is
+  actually left is the *lights* — a signalled junction, which is a mechanic (a window that opens
+  and shuts) rather than a piece of scenery, and which nobody has asked for since.
+- **The canal**, dropped out of M16 into M21 because it is the one feature that would **move a
+  walkable tile**, and M21 was going to be where a lattice with holes was already paid for. It
+  is paid for now — `absent_segments` and `is_street()` are the shape a bridge would use — so
+  this is cheaper than it was, and still unasked-for.
 
 ### M17 — the route map, **backlogged**
 
@@ -397,7 +474,7 @@ entries are how to tell whether the map fixed it.
 
 ### Then the rest, per PLAYTEST-02.md
 
-M18, M19, M22, M23, M24 and M27 done; M21 pulled to the front above; M17 backlogged.
+M18, M19, M22, M23, M24 and M27 done; M21 half done (see above); M17 backlogged.
 **M20 traffic that behaves** is **parked, not queued**: M27 shipped the half that mattered
 (cars follow and queue; zero overlapping pairs a frame, down from 5.2), and what is left —
 overtaking, eight-way driving, a crash as a catalogue event — is unasked-for by any playtest.
@@ -416,10 +493,15 @@ ending in a scripted day-1 event that requires a short run. M26 must come after 
 correctness, not scheduling: forcing a run before running is ever the right answer teaches a
 move that is never correct again.
 
-M21 rewrites the lattice enumeration in `src/routes/street_network.gd`. The graph half of
-that file — route counting, the invariant, the doorway exemptions — survives untouched and
-matters *more* afterwards: with holes in the lattice, route redundancy stops being true by
-construction and has to be checked by search, which is what that file is.
+**M21 was expected to rewrite the lattice enumeration in `src/routes/street_network.gd` and it
+did not have to.** The prediction was right about the consequence and wrong about the shape: the
+graph half of that file — route counting, the invariant, the doorway exemptions — did survive
+untouched, and route redundancy did stop being true by construction. But the enumeration
+survived too. A street a calm zone absorbed is one the lattice still *lists* and this city does
+not *have*, and every route search already took a set of streets to ignore, because M16 built one
+for the closures. `CityMap.absent_segments` joins that set and nothing else changed. The one new
+function on `StreetNetwork` is `around_blocks()`, because "the ways into this calm area" stopped
+being derivable from a block coordinate the moment a calm area could be more than a block.
 
 ---
 

@@ -111,11 +111,42 @@ const STREET_WIDTH := 6
 const SIDEWALK_WIDTH := 2
 const CITY_BLOCKS := Vector2i(7, 7)
 
+## Calm **areas**, not calm blocks: since M21 an area may be a single block or a four-block
+## zone, and what these count is places to go rather than lots. `MIN_CALM_BLOCKS` keeps its
+## name because it is what `calm_blocks` returns — one entry per area — and renaming it would
+## touch every guarantee that is stated over it without changing what any of them mean.
 const MIN_CALM_BLOCKS := 3
 const MAX_CALM_BLOCKS := 6
 ## Walking distance in tiles, not straight-line: the calm has to be earned.
 const MIN_HOME_TO_PARK_TILES := 30
 const PARK_SPOIL_CHANCE := 0.35
+
+# ------------------------------------------------ four-block calm zones (M21) ---
+# Playtest 03, finding 2, restated by playtest 04 and again by playtest 05's finding 4: the
+# traced player spent twenty seconds walking in a circle inside a courtyard. That is not a
+# balance problem and no balance pass removes it — progress requires motion (standing still
+# *drains* sleepiness) and a calm block is eight tiles across, which is jointly sufficient for
+# a lap. A calm area has to be big enough to have a *route* through it.
+#
+# A zone is 2x2 blocks with the streets between them absorbed, so it is
+# `2 * BLOCK_SIZE + STREET_WIDTH` = 22 tiles square — 704px, against a block's 256. At
+# `WALK_SPEED` that is 7.6s to cross corner to corner against 24s to fill the meter from empty,
+# so a stretch of calm is two or three traverses of somewhere with sides to it rather than
+# eight laps of a lawn. See docs/CITY.md, "Calm zones".
+
+## Blocks per side of a four-block calm zone. Two. It is a constant rather than a literal
+## because every piece of arithmetic that follows from it — the tile rect, which segments are
+## absorbed, which junctions survive — is written in terms of it, and a 2 buried in five
+## different files is how the next person changing this discovers the sixth.
+const CALM_ZONE_BLOCKS := 2
+## How many of a city's calm areas are four-block zones. At least one, because the lap is what
+## the milestone exists to remove and a city with none of them still has it; at most two,
+## because a zone is seven and a half blocks' worth of ground and three of them would be a park
+## with a city in it. The rest of the calm stays single-block, which is what keeps *which* calm
+## area to head for a real question — a small quiet square close by against a big park further
+## out is the decision M24 made matter.
+const MIN_CALM_ZONES := 1
+const MAX_CALM_ZONES := 2
 
 ## Per-purpose chance a block is split by a through-alley.
 const ALLEY_CHANCE := {

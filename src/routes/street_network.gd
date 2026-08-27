@@ -112,6 +112,27 @@ static func beside_block(block: Vector2i, side: int) -> Segment:
 		_:
 			return by_key(Vector3i(block.x + 1, block.y, 1))
 
+## Every street running along the outside of a rect of blocks, in a fixed order.
+##
+## One block has four and this is `beside_block` four times over. A four-block calm zone has
+## **eight**, two to a side, because the streets between its own blocks were absorbed and are
+## not there to be one of them — which is the whole reason this exists: "the ways into this calm
+## area" stopped being derivable from a block coordinate the moment a calm area could be more
+## than a block.
+static func around_blocks(blocks: Rect2i) -> Array[Segment]:
+	var found: Array[Segment] = []
+	for x in range(blocks.position.x, blocks.end.x):
+		_append_if_real(found, by_key(Vector3i(x, blocks.position.y, 0)))
+		_append_if_real(found, by_key(Vector3i(x, blocks.end.y, 0)))
+	for y in range(blocks.position.y, blocks.end.y):
+		_append_if_real(found, by_key(Vector3i(blocks.position.x, y, 1)))
+		_append_if_real(found, by_key(Vector3i(blocks.end.x, y, 1)))
+	return found
+
+static func _append_if_real(found: Array[Segment], segment: Segment) -> void:
+	if segment:
+		found.append(segment)
+
 ## The street a tile is on, or null when the tile is inside a junction or inside a block.
 ## A junction belongs to no street on purpose: it is where the choice is made.
 static func segment_containing(tile: Vector2i) -> Segment:

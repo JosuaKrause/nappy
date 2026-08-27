@@ -36,13 +36,18 @@ const CAR_TRIM: Array[Texture2D] = [
 
 ## How fast an agent closes on its lane centre. Slow enough that a corner reads as a turn.
 const STEER_SPEED := 90.0
-## How far ahead an agent looks for a closed street. Just under a tile: far enough to turn
-## at the junction rather than at the barrier, close enough that it does not turn a block
-## early and leave the street it was on looking mysteriously avoided.
-const CLOSURE_LOOKAHEAD := 26.0
-## How far down a street an agent checks before turning into it. A whole tile past the
-## junction, so it does not turn out of one closed street straight into another.
-const DIVERT_PROBE := 40.0
+## How far ahead an agent looks for a street it cannot travel, and how far down a street it
+## checks before turning into one — a corridor's width plus a tile, so a probe fired from
+## *anywhere* inside a junction clears it and lands on the street beyond.
+##
+## It was 26px until M21, which is where a turn actually goes wrong. The agent then saw the
+## obstruction with a fifth of a tile to spare, so it turned at the far edge of the junction —
+## and a turn takes the coordinate the agent had *along* its old corridor and makes it the one
+## it has *across* the new one. Turning at the far edge therefore drops a car onto the pavement
+## band and it spends the next three tiles steering back to its lane. Rare with four closures a
+## day; constant once every four-block calm zone has four dead-end arms on it. Seeing it a
+## street early and turning in the middle of the junction is what `_can_turn_here` is for.
+const LOOKAHEAD := (Tuning.STREET_WIDTH + 1) * Tuning.TILE_SIZE
 ## Where the horn's caret sits over a car, and how big it is. Matched to `EventInstance`'s so
 ## the two carets are the same cue rather than two similar ones, but lower, because a car is
 ## 26px of sprite against a standing figure's 46.
@@ -114,16 +119,38 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	_rng.seed = seed_value
 	_choose_lane(axis_roll)
 	# Start somewhere along the field rather than at its edge, or the whole crowd arrives from
-	# one side in a wave on the first morning. Re-rolled if it lands inside a street that is
-	# closed today: an agent that starts behind a barrier would walk out through it once, which
-	# reads as the barrier being fake.
+	# one side in a wave on the first morning. Re-rolled if it lands somewhere it could not have
+	# walked to: behind a barrier, which reads as the barrier being fake, or in the middle of a
+	# four-block calm zone, where the corridor it belongs to has been park since generation.
 	var bounds := field.along_bounds(_vertical)
 	for _attempt in 8:
 		_set_along(_rng.randf_range(bounds.x, bounds.y))
 		_set_cross(_lane_centre)
-		if not _map.is_closed(_map.world_to_tile(position)):
+		if _stands_on_a_street():
 			break
+	_settle_junction()
 	colour = _colour()
+
+## Marks the junction this agent is standing in, if it is standing in one, so that it does not
+## roll a turn on its very first frame.
+##
+## A turn swaps the axes and takes the *along* coordinate as the new *cross* one — which is the
+## lane it steers away from. Entering a junction that coordinate is at the junction's edge, so
+## the walker cuts the corner onto the nearest pavement and is never on the carriageway. Being
+## dropped into the middle of one is different: the coordinate is wherever it was placed, which
+## can be the road band, and the walker then strolls out of the junction and up the middle of
+## the street while it steers back to a pavement. Rare enough that only a reshuffled crowd found
+## it, and it has been possible since M13.
+func _settle_junction() -> void:
+	_junction = CrowdLanes.corridor_at(_along())
+
+## Whether this agent is standing somewhere it could have got to on its own: an open street, or
+## outside the map, which is where an entry band legitimately begins.
+func _stands_on_a_street() -> bool:
+	var tile := _map.world_to_tile(position)
+	if _map.is_closed(tile):
+		return false
+	return not _map.in_bounds(tile) or _map.is_street(tile)
 
 func _process(delta: float) -> void:
 	_jolt = maxf(0.0, _jolt - delta)
@@ -133,7 +160,7 @@ func _process(delta: float) -> void:
 	_set_cross(move_toward(_cross(), _lane_centre, STEER_SPEED * delta))
 	if kind == Kind.WALKER:
 		_consider_turning()
-	if _closed_ahead(_vertical, _direction, CLOSURE_LOOKAHEAD):
+	if _blocked_ahead(_vertical, _direction, LOOKAHEAD):
 		_divert()
 	if _has_left_the_field():
 		_recycle()
@@ -367,6 +394,18 @@ func _consider_turning() -> void:
 	if _rng.randf() >= Tuning.PEDESTRIAN_TURN_CHANCE:
 		return
 
+	# A turn is the one move that commits without looking, and until M21 that cost nothing: the
+	# only unwalkable thing a street could turn into was a barrier, and `_divert` picked the
+	# turn up on the next frame. It is not free now — a T-junction on the edge of a four-block
+	# calm zone has one arm that is park, and a walker that turns into it is standing on grass
+	# before anything notices. So the direction is chosen from the ones that go somewhere, and
+	# a junction with no such arm is one this walker carries straight on through.
+	var turning := 1.0 if _rng.randf() < 0.5 else -1.0
+	if _blocked_ahead(not _vertical, turning, LOOKAHEAD):
+		turning = -turning
+		if _blocked_ahead(not _vertical, turning, LOOKAHEAD):
+			return
+
 	# The two axes swap roles and the position does not move: what was the distance along
 	# the old corridor is, unchanged, the distance across the new one. The lane it steers
 	# to is the nearest pavement, so a walker that turns from the middle of a junction cuts
@@ -376,16 +415,30 @@ func _consider_turning() -> void:
 	_corridor = crossing
 	_lane = CrowdLanes.nearest_sidewalk(_corridor, _cross())
 	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
-	_direction = 1.0 if _rng.randf() < 0.5 else -1.0
+	_direction = turning
 	# It is now travelling through the corridor it just came down, so that is the junction
 	# it is in — otherwise it would roll a second turn before clearing the first.
 	_junction = kept
 
-## Whether the street `distance` ahead along an axis is closed today.
-func _closed_ahead(vertical: bool, direction: float, distance: float) -> bool:
+## Whether the street `distance` ahead along an axis is one this agent cannot travel: shut for
+## the day, or not a street at all.
+##
+## The second half is M21. A four-block calm zone is painted straight over the corridors between
+## its own blocks, so a lane that used to run the width of the city now runs into a park — and
+## the tiles are perfectly walkable, which is why `is_closed` alone has nothing to say about
+## them. Diverting is the same move a barricade already produces, and it produces the same good
+## side effect: a street with nobody on it is a street that does not go through.
+##
+## Out of bounds is deliberately **not** blocked. The map edge is what `_has_left_the_field`
+## handles, and treating it as a wall here would turn agents round at the boundary instead of
+## recycling them, which quietly drains the pavement the player is walking towards.
+func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 	var offset := Vector2(0.0, direction * distance) if vertical \
 			else Vector2(direction * distance, 0.0)
-	return _map.is_closed(_map.world_to_tile(position + offset))
+	var tile := _map.world_to_tile(position + offset)
+	if _map.is_closed(tile):
+		return true
+	return _map.in_bounds(tile) and not _map.is_street(tile)
 
 ## Traffic goes round a closure, and that is half of what makes one legible: the street with
 ## nobody on it is the street that is shut, which reads from a block away — further than the
@@ -397,14 +450,19 @@ func _closed_ahead(vertical: bool, direction: float, distance: float) -> bool:
 func _divert() -> void:
 	var crossing := CrowdLanes.corridor_at(_along())
 	if crossing < 0:
-		# Caught mid-street, which only happens on the first frame of a day. Turn round.
-		_direction = -_direction
+		# Still in the street, a junction short of where it can turn. Carry on — unless it is
+		# standing *in* the thing it is avoiding, which is a day that started behind a barrier
+		# and is the one case with nowhere to go but back.
+		if not _stands_on_a_street():
+			_direction = -_direction
+		return
+	if not _can_turn_here():
 		return
 
 	var turning := 1.0 if _rng.randf() < 0.5 else -1.0
-	if _closed_ahead(not _vertical, turning, DIVERT_PROBE):
+	if _blocked_ahead(not _vertical, turning, LOOKAHEAD):
 		turning = -turning
-	if _closed_ahead(not _vertical, turning, DIVERT_PROBE):
+	if _blocked_ahead(not _vertical, turning, LOOKAHEAD):
 		_direction = -_direction   # boxed in on three sides; go back the way it came
 		return
 
@@ -420,6 +478,19 @@ func _divert() -> void:
 		_lane = CrowdLanes.nearest_sidewalk(_corridor, _cross())
 	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
 	_junction = kept
+
+## Whether the agent is far enough into a junction to turn without landing on the wrong surface.
+##
+## A turn makes the *along* coordinate the new *across* one, and the new across coordinate is
+## the lane the agent then has to steer away from. So a car turns while it is on the junction's
+## carriageway band and a walker while it is on one of its pavement bands, and each ends the
+## turn a few pixels from a lane it is allowed to be in rather than two tiles from one. Every
+## agent crosses both bands on its way through a junction, so waiting costs at most a tile.
+func _can_turn_here() -> bool:
+	var offset := CityMap.corridor_offset(floori(_along() / float(Tuning.TILE_SIZE)))
+	if offset < 0:
+		return false
+	return CityMap.is_road_offset(offset) == (kind == Kind.CAR)
 
 ## Whether this agent has walked out of the patch of city that is being simulated — either off
 ## the map entirely, or out of the box that travels with the player.
@@ -476,15 +547,20 @@ const ENTRY_SPREAD := 420.0
 ## it. Near the city wall the box hangs into nothing, and an agent placed in that overhang walks
 ## visibly through the boundary before it reaches the street; a lane running the other way, or
 ## on the other axis, almost always has room, so a handful of rolls settles it.
+##
+## Since M21 the entry *point* is rolled inside the same loop and checked too, because a corridor
+## may be park for two blocks of its length: a car re-entering there would be standing on grass
+## and would divert at the first frame, which is a car appearing in a park and driving out of it.
 func _recycle() -> void:
 	for _attempt in 6:
 		_choose_lane(_rng.randf())
-		if _entry_band_fits():
+		var bounds := field.along_bounds(_vertical)
+		var back := _rng.randf() * ENTRY_SPREAD
+		_set_along(bounds.x - back if _direction > 0.0 else bounds.y + back)
+		_set_cross(_lane_centre)
+		if _entry_band_fits() and _stands_on_a_street():
 			break
-	var bounds := field.along_bounds(_vertical)
-	var back := _rng.randf() * ENTRY_SPREAD
-	_set_along(bounds.x - back if _direction > 0.0 else bounds.y + back)
-	_set_cross(_lane_centre)
+	_settle_junction()
 	gap_ahead = INF
 
 ## Whether the whole entry band lies outside the map rather than straddling its edge.

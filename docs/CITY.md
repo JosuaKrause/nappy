@@ -77,16 +77,91 @@ test asserts that the building rects cover every `BUILDING` tile exactly once.
 Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 200 seeds:
 
 - Every walkable tile is reachable from the home.
-- At least **3 park districts**, no two adjacent (so calm zones are spread out).
+- At least **3 calm areas**, no two adjacent (so the calm is spread out). An area is one
+  block or one four-block zone; see below.
+- At least `MIN_CALM_ZONES` (1) of them is a **four-block zone**.
 - The home is at least `MIN_HOME_TO_PARK_TILES` (30) *walking* tiles from the nearest park.
 - Building rects tile the `BUILDING` tiles exactly, with no overlaps and no gaps.
 
+## Calm zones
+
+*(M21.)* A calm **area** is one place to go, and it is either a single block or a **four-block
+zone**: 2×2 blocks with the streets between them absorbed, painted as one unbroken piece of
+ground 22 tiles square. Every city has one or two of them.
+
+The reason is playtest 03, finding 2, asked for again by playtests 04 and 05: the traced player
+spent **twenty seconds walking in a circle** inside a courtyard. That is not a bug and it is not
+a balance problem — it is exactly what the rules ask for. Standing still *drains* sleepiness, so
+progress requires motion; a calm block is eight tiles across; and progress-requires-motion plus
+small-calm-area is jointly sufficient for a lap. M18's shorter day cut the number of laps and
+could not remove the lap, and no further balance pass will.
+
+The numbers, and `tests/test_generator.gd` asserts them as a relationship rather than as
+values:
+
+| | one block | four-block zone |
+| --- | --- | --- |
+| ground | 8×8 tiles, 256 px | 22×22 tiles, 704 px |
+| corner to corner at `WALK_SPEED` | 3.9 s | 10.8 s |
+| a full meter of calm | 23.8 s | 23.8 s |
+
+So a stretch of calm in a zone is two or three traverses of somewhere with sides to it, and a
+stretch in a block is six laps of a lawn. It is deliberately *not* a whole meter in one crossing
+— arriving must not be the whole of it.
+
+The rest of the calm stays single-block on purpose. Which calm area to head for is a real
+question only when they are different from each other: a small quiet square two streets away
+against a big park across the city is the decision M24 made matter, and a city of nothing but
+zones would flatten it again.
+
+### What a zone does to the lattice
+
+This is the part that costs something. A zone absorbs the two horizontal streets between its
+rows and the two vertical ones between its columns, so:
+
+- The **junction in the middle of the zone is gone** — nothing reaches it.
+- The four junctions on the zone's edges become **T-junctions**. The lattice is no longer a
+  full grid and can no longer be derived from a coordinate, which is what M21 was always
+  going to be.
+- **Route redundancy stops being true by construction** and has to be checked by search. See
+  below.
+
+Two rules keep a zone from taking something the city cannot spare:
+
+- **Never the arterial.** A zone may absorb any corridor but the main road, which is the noise
+  floor, the thing that has to be crossed, and the street a player learns first.
+- **Never beside other calm**, the same rule a single calm block obeys, stated over the whole
+  2×2 footprint.
+
+The streets it absorbed live in `CityMap.absent_segments`, and `CityMap.blocked_segments()` adds
+them to whatever a day has closed. Every route search takes that set, so the graph half of
+`StreetNetwork` — route counting, the invariant, the doorway exemptions — needed no change at
+all: a street that is not there is a street that is permanently shut, as far as a search is
+concerned. What is *not* true of a closure is true here and matters: **the ground is calm and
+open**, and the player walks over it. A zone is a shortcut as well as a destination.
+
+The crowd asks a different question. An agent travels the lattice, so it checks `is_street()`
+and diverts at the T-junction rather than strolling across the grass — the same move a
+barricade already produces, with the same good side effect: the street with nobody on it is the
+street that does not go through.
+
+The zebras on a zone's edge are the case that looks obvious and is not. A crossing sits where a
+*pavement* lane meets a *carriageway*, so most of them still make sense — the pavement is there
+and the road is there, and only the arm of the junction beyond has gone. What does not is the
+**stub**: the quarter of each T-junction on the zone's side, which nothing drives down (a car
+diverting turns on the junction's own road band, a tile earlier) and nothing has to cross. That
+becomes pavement, so the road visibly ends at the junction instead of poking into the park.
+
 ### Route redundancy
 
-The design wants at least two distinct routes from home to every park, so that a spoiled or
-blocked route always has an alternative. This holds **by construction** rather than by
-search: carving only ever happens *inside* blocks, so the street lattice is never cut, and
-a full lattice cannot be disconnected by removing any single corridor.
+The design wants at least two distinct routes from home to every calm area, so that a spoiled or
+blocked route always has an alternative. Until M21 this held **by construction** rather than by
+search: carving only ever happened *inside* blocks, so the street lattice was never cut, and a
+full lattice cannot be disconnected by removing any single corridor.
+
+**A calm zone puts holes in the lattice, so the construction argument is gone** and the property
+is now checked. `StreetNetwork.route_count()` is that check and always was — M16 built it for
+the day's closures — and a zone's absent streets simply join the closed set it is given.
 
 `tests/test_generator.gd` checks it directly by closing each street segment in turn and
 confirming a park is still reachable — with one exemption. **The street outside the home is
