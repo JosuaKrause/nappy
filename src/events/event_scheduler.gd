@@ -18,8 +18,29 @@ class Planned extends RefCounted:
 		path = route
 
 ## Budget grows with the day, so late days are denser as well as nastier.
+##
+## Playtest 03, finding 1: the old `3 + day * 1.4` gave day 1 **four** events for a 7x7-block
+## city — one per twelve blocks — and the traced day contains zero `near` entries. The player
+## crossed the city, sat in a courtyard, came home, and was never within reach of anything.
+##
+## The number was deliberately not moved on its own. Eleven of eighteen events cost under
+## fifteen points of a hundred-point meter to walk straight through, and three were *negative*,
+## so quadrupling the budget before M19 would have bought four times as much scenery. The
+## consequences land in the same milestone as the density (playtest 03, decision 1): bodies are
+## solid, the carriageway is lethal, and a café or a dog owns the pavement it is on.
+##
+## The shape is kept — the escalation is still roughly linear in the day — and the floor is
+## raised, which is what "the beginning is challenging too" (playtest 02, decision 9) asks for.
+##
+## The budget is not the count and the difference is not small: about a third of it is spent on
+## events the day then throws away, because `_ensure_one_usable_park` strips whatever reaches
+## the calmest block and `_ensure_the_city_is_still_walkable` drops obstructions that would seal
+## the city. So the number was set by *measuring what a day places* over four seeds rather than
+## by arithmetic — 18 puts 13 or 14 non-ambient events on a day-1 map of 49 blocks, one per
+## four rather than one per twelve, and 43 puts 25 on day 14. Re-measure it, do not re-derive
+## it, if the catalogue's costs move.
 static func budget_for(day: int) -> int:
-	return 3 + floori(day * 1.4)
+	return 17 + floori(day * 1.9)
 
 ## Plans a day. `consumed_one_shots` is read and appended to, so a one-shot fires once
 ## per run.

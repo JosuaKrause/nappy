@@ -3,6 +3,11 @@ extends Node
 ##
 ## See docs/MECHANICS.md for the reasoning behind these numbers.
 
+## The catalogue validates itself when it is first asked for; traffic has no catalogue to
+## hang that on, so the one contract that is not about an event is checked here on boot.
+func _ready() -> void:
+	validate_traffic()
+
 # ---------------------------------------------------------------- movement ---
 
 const WALK_SPEED := 92.0
@@ -246,6 +251,100 @@ const CAR_OUTER_RADIUS := 170.0
 ## Chance a walker turns a corner rather than carrying straight on, rolled once per
 ## junction. High enough that the crowd churns, low enough that streets still have flow.
 const PEDESTRIAN_TURN_CHANCE := 0.35
+
+# ------------------------------------------------- bodies on the street (M19) ---
+# Playtest 02, findings 2 and 3: *"going to and from a park bears no risk. I don't bump into
+# people... I cannot hit cars."* Until M19 the crowd was a field with a picture attached —
+# every pavement was identical and none of them could hurt you, which is why the route was
+# never a decision. See docs/MECHANICS.md, "The street has physics".
+
+## Centre-to-centre distance at which the player and a pedestrian are touching.
+##
+## It has to be **under half a lane spacing**, and that is the whole of why it is 14 rather
+## than a body's width. Pedestrian lanes are one tile apart, so the only line with no contact
+## on it is the midline between two of them; at 18 there was no such line anywhere on a
+## two-tile pavement and walking the arterial cost eleven bumps in forty seconds however
+## carefully it was done. At 14, holding that line takes the same walk down to two — which
+## turns the crowd from a toll into the thing playtest 02 finding 3 asked for.
+const BUMP_RADIUS := 14.0
+## How much of the separation the player takes; the pedestrian takes the rest. She is pushing
+## a pram and they are not, and being shoved by strangers must never take the verb away.
+const BUMP_PLAYER_SHARE := 0.3
+## Speed of the deflection a contact gives the player. Well under `WALK_SPEED`, so a bump
+## knocks her off her line without steering her.
+const BUMP_SHOVE_SPEED := 55.0
+
+## A contact is not a write to `Baby.excitement` — it agitates the *person* she walked into,
+## and the crowd sums them like it always did. See the invariant in CLAUDE.md.
+const BUMP_INTENSITY := 26.0
+const BUMP_DURATION := 1.2
+const BUMP_INNER_RADIUS := 30.0
+const BUMP_OUTER_RADIUS := 90.0
+
+## The car's body, as a box rather than a circle: a car is two tiles long and one wide, and a
+## radius that covered its length would kill people standing beside it.
+const CAR_STRIKE_HALF_LENGTH := 26.0
+const CAR_STRIKE_HALF_WIDTH := 14.0
+## Below this a car cannot run anybody over, however close they stand to it. A car halted at a
+## zebra is scenery, and walking into one must not end the day.
+const CAR_STRIKE_MIN_SPEED := 20.0
+
+## Seconds of travel at which a car sounds its horn at somebody standing in its lane. This is
+## the traffic fairness contract, and `validate_traffic()` checks it: the warning has to be
+## long enough to walk out of the carriageway before the car arrives, with the same doubled
+## margin every other hard fail gets.
+const CAR_HORN_TIME := 1.6
+## The horn itself, as a jolt on the car that sounded it. A near miss costs something even
+## when it is only a near miss.
+const CAR_HORN_INTENSITY := 18.0
+const CAR_HORN_DURATION := 0.9
+const CAR_HORN_INNER_RADIUS := 45.0
+const CAR_HORN_OUTER_RADIUS := 190.0
+## How long the exclamation mark stays up over the player after the last horn. Long enough to
+## survive the gap between two cars in the same lane.
+const CAR_WARNING_HOLD := 1.4
+
+## Deceleration when a car gives way at a crossing, and how far ahead it looks for one. The
+## relationship that matters is `CAR_ZEBRA_SIGHT > CAR_SPEED.y^2 / (2 * CAR_BRAKE)`: a car
+## always has room to stop for a zebra it can see, so giving way is never a screech.
+const CAR_BRAKE := 320.0
+const CAR_ACCELERATE := 150.0
+const CAR_ZEBRA_SIGHT := 200.0
+## How close to the crossing the player has to be for the traffic to yield. Roughly "standing
+## at the kerb waiting", which is the gesture the crossing is for.
+const CAR_ZEBRA_WAIT_RADIUS := 56.0
+
+## The carriageway, in px — the width the player has to clear when a horn goes.
+func carriageway_width() -> float:
+	return (STREET_WIDTH - SIDEWALK_WIDTH * 2) * float(TILE_SIZE)
+
+## The traffic fairness contract, and the one place it is stated.
+##
+## A car is not an event, so `validate_event()` never sees it: it has no telegraph, it is not
+## in the catalogue, and it is lethal. What stands in for the telegraph is the road itself —
+## the carriageway is painted, permanent and learnable, and stepping off the kerb is a choice
+## the player makes. On top of that, a car that is actually going to hit somebody sounds its
+## horn `CAR_HORN_TIME` out, and that warning must be long enough to walk the whole width of
+## the carriageway with the doubled margin a hard fail is owed.
+##
+## Returns true if the geometry is fair; pushes an error and returns false if it is not.
+func validate_traffic() -> bool:
+	var required := required_horn_time()
+	if CAR_HORN_TIME + 0.001 < required:
+		push_error("Unfair traffic: CAR_HORN_TIME %.2fs < required %.2fs (carriageway %.0fpx)"
+				% [CAR_HORN_TIME, required, carriageway_width()])
+		return false
+	return true
+
+## Shortest horn a lethal car may fairly give. Kept separate from `validate_traffic()` so a
+## test can check the contract without tripping the error it raises.
+func required_horn_time() -> float:
+	return carriageway_width() * TELEGRAPH_HARD_FAIL_MARGIN / WALK_SPEED
+
+## Distance a car needs to stop from a given speed. Used by the crossing logic and asserted
+## against `CAR_ZEBRA_SIGHT` in `tests/test_crowd.gd`.
+func braking_distance(speed: float) -> float:
+	return speed * speed / (2.0 * CAR_BRAKE)
 
 ## People on the streets in a given act.
 func crowd_pedestrians(act: int) -> int:

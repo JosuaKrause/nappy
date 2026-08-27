@@ -35,7 +35,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 14963 headless checks, ~55s
+./tools/test.sh               # 15890 headless checks, ~80s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
@@ -46,6 +46,16 @@ the log back. Four real defects in M23's own observer were found that way and by
 means — a `run` entry claiming a six-hundred-pixel event was "in reach", and a meter breakdown
 that read `crowd 0.0, events 0.0` while the meter climbed, because the player was doing it to
 themselves with the run button and nothing said so.
+
+**Where a run cannot be played, walk a rig and read the meter.** M19's collision passed a
+green suite and a screenshot and was still badly wrong: a pedestrian slower than the player
+was ploughed along the pavement in front of her, permanently in contact, permanently loud, at
+150 excitement per second. It took forty seconds of a scripted walk down a real pavement to
+see it, and nothing cheaper would have. A throwaway `tests/test_zz_*.gd` that prints numbers
+and is deleted before committing is the headless stand-in for the minute of play the rule
+above asks for — and the numbers it prints are how a balance constant gets set, rather than
+derived. Two things it found that no amount of arithmetic would have: that one, and that a
+contact radius of 18px leaves **no line to walk** on a two-tile pavement.
 
 **A green `check.sh` says nothing about whether the game looks right** — headless runs never
 call `_draw()`. Several real bugs in this project were found only by opening a screenshot:
@@ -132,6 +142,14 @@ nothing warns you.
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw
 (the 10k-tile city ground) is fine, but anything animated must call `queue_redraw()` itself.
 
+**`move_and_slide()` owns `velocity`, so do not put anything else in it.** M19's collision
+deflects the player, and folding the deflection into `velocity` before the slide meant
+`is_idle()` and `run_excess_ratio()` — the only two questions the baby asks the rig — started
+answering for the crowd rather than for the player. Restoring `velocity` afterwards is worse:
+it throws away the slide's own correction, so walking into a wall stops reading as idle and
+starts making sleep progress. A second displacement goes through its own
+`move_and_collide()`, which respects walls and touches nothing.
+
 ---
 
 ## Code style
@@ -168,6 +186,14 @@ wrong, and an event can be tested without a scene. Do not add a code path that w
 `Baby.excitement` from outside. The crowd (M13) is summed the same way and for the same
 reason — `City.total_excitement_at` adds the two and nothing else.
 
+M19's collision was the first thing that ever wanted to push, and the way it does not is
+worth copying: **a contact startles the person she walked into.** The jolt is a decaying
+source on that agent's own `contribution_at()`, so a bump is summed exactly like the body it
+came from, `City.total_excitement_at` still adds two terms, and a crowded pavement composes
+by addition like everything else. Anything else that wants to "add excitement" should find a
+body to put it on rather than a third summand — and if there genuinely is no body, that is a
+design conversation, not a plumbing one.
+
 **The noise floor is emergent, never a constant.** A street is loud because there are
 people and cars on it, which the player can see. There used to be an invisible ambient band
 on the arterials doing that job; it was replaced, not supplemented. If you find yourself
@@ -195,6 +221,15 @@ and `tests/test_events.gd` checks the whole catalogue. A violation is a bug, not
 setting. Two documented exemptions: `AMBIENT` events (they never "appear") and `city_wide`
 ones (no edge to walk out of).
 
+**The traffic fairness contract.** *(M19.)* A car is lethal and is **not** an event, so
+`validate_event()` never sees it. `Tuning.validate_traffic()` is its equivalent and runs on
+boot. Two things stand in for the telegraph: the painted carriageway, which is permanent and
+learnable and which she chooses to step onto, and the horn, which must be long enough to walk
+the whole width of it with the doubled hard-fail margin. If anything else in the game ever
+becomes lethal without being in the catalogue, it needs its own stated contract in the same
+place — a hard fail with no written contract is a bug waiting to be called a difficulty
+setting.
+
 **Every day stays winnable, and winnable more than one way.** The scheduler guarantees at
 least one unspoiled park and a walkable route from home to a park. Since M16 the day carries
 a stronger guarantee on top of it: **at least two distinct routes to at least two distinct
@@ -216,7 +251,9 @@ thing for `City.total_excitement_at` to sum, and that list is exactly two long o
 
 **No circles around entities.** *(Standing decision, playtest 02 finding 8. The aura rings
 still ship today; M22 deletes them. Do not restyle them, do not add another one, and do not
-reach for a ring when something new needs signalling.)*
+reach for a ring when something new needs signalling. M19 needed to signal a lethal car and
+built the exclamation mark over the player instead — the vocabulary's load-bearing cue,
+shipped early and not provisionally. Reach for that one first.)*
 
 > How dangerous a thing is has to be visible from looking at **the thing**.
 
@@ -258,6 +295,14 @@ visual vocabulary and the two places it is currently incomplete.
 ---
 
 ## Recipes
+
+**Change the event density** — `EventScheduler.budget_for()` *and* a pass over `cost` and
+`max_per_day` in the catalogue, because a budget the catalogue cannot spend is not density.
+Then **measure what a day places**, over several seeds: about a third of the budget is spent
+on events the day then throws away, since `_ensure_one_usable_park` strips whatever reaches
+the calmest block and `_ensure_the_city_is_still_walkable` drops obstructions that would seal
+the city. Do not derive the number; a temporary probe suite that prints per-day counts takes
+two minutes and is the only honest way to set it.
 
 **Add an event** — `src/events/event_catalogue.gd` only, in the act's section, plus a line in
 the `docs/EVENTS.md` table. Everything else is data-driven. If it needs behaviour no field
@@ -350,20 +395,28 @@ Do not "fix" these without a reason; each was a decision.
 
 ## Two measured facts about the catalogue
 
-Both came out of playtest 02 and neither is a bug. The full table is in `docs/EVENTS.md`,
-"What an event actually costs" — regenerate it whenever a rate in `Tuning` moves, because it
-is the fastest way to see what a balance change did to the whole catalogue.
+Both came out of playtest 02. The full table is in `docs/EVENTS.md`, "What an event actually
+costs" — regenerate it whenever a rate in `Tuning` moves, because it is the fastest way to see
+what a balance change did to the whole catalogue.
 
-- **Walking through an event is nearly free before act III.** Eleven of eighteen cost under
-  fifteen points of a hundred-point meter to walk straight through the centre of, and three
-  are *negative*: walking through a `dog_walker` beats walking around it, because the 3.5/s
-  walking decay outruns what it emits. The escalation is entirely back-loaded into acts III
-  and IV, so the days that teach the player teach them that events are safe.
-- **Running is the wrong move against every event in the game.** `EXCITEMENT_FROM_RUNNING`
-  plus the collapsed decay (3.5/s → 0.5/s) beats the shorter exposure every time. The run
-  button is a trap. Making running *necessary* (M25) is therefore a mechanic to build —
-  something that pursues, a lethal radius that grows, a window that shuts — not a constant to
-  tune, and its fairness contract has to be stated over `RUN_SPEED`.
+- **Walking through an event used to be nearly free before act III**, and M19 fixed the worst
+  of it rather than all of it. `dog_walker` cost −0.1 points to walk straight through the
+  centre of, so ploughing into it beat going round; it is +21.6 now, `cafe_tables` blocks a
+  pavement from day 1, and the street costs something on its own. Act II is still gentle and
+  still open. Three rows stay negative on purpose — `poster_crew`, `barricade` and
+  `burnt_shell` are scenery, not obstacles — and `tests/test_events.gd` names exactly those
+  three as the exemptions, so a **fourth** negative event has to be a decision somebody takes
+  rather than a number nobody checked.
+- **Running is the wrong move against every event in the game.** Unchanged by M19.
+  `EXCITEMENT_FROM_RUNNING` plus the collapsed decay (3.5/s → 0.5/s) beats the shorter
+  exposure every time. The run button is a trap. Making running *necessary* (M25) is therefore
+  a mechanic to build — something that pursues, a lethal radius that grows, a window that
+  shuts — not a constant to tune, and its fairness contract has to be stated over `RUN_SPEED`.
+
+**And one fact the table does not cover.** Since M19 the cost of a route is no longer only the
+events on it: a contact with a pedestrian is ~15.6 points and a car's horn ~8, and neither is
+in the catalogue. A balance argument that reaches for the cost table alone is now answering a
+narrower question than it thinks.
 
 ## Known-shaky ground
 

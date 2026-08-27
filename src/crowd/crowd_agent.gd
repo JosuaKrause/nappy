@@ -47,6 +47,17 @@ const DIVERT_PROBE := 40.0
 var kind := Kind.WALKER
 var colour := Color.WHITE
 
+## Somebody standing in front of this car, or `Vector2.INF` for nobody. Written once per
+## physics frame by `Crowd` for the cars near the player and read here: an agent has no
+## business knowing who the player is, but it does have to decide whether to stop.
+var pedestrian_ahead := Vector2.INF
+
+## True while the player is touching this agent. Owned by `Crowd`, and the reason it exists is
+## that a contact is not instantaneous: she walks faster than a pedestrian does, so a person
+## bumped from behind stays inside the contact radius for the better part of a second. Without
+## it the contact re-fires every frame and one person costs what a crowd should.
+var touching := false
+
 var _map: CityMap
 ## Its own RNG, seeded from the day and its own index. Per-agent rather than shared so a
 ## turn taken at a junction cannot depend on the order agents happen to reach junctions in
@@ -66,6 +77,19 @@ var _junction := -1
 ## The frame and flip currently drawn, so a redraw only happens when they change.
 var _picture := Vector2i(-1, -1)
 
+## The speed this agent wants to be doing. A car brakes toward 0 for a crossing somebody is
+## waiting at and accelerates back to `_cruise` afterwards; walkers never use it.
+var _cruise := 60.0
+## Seconds of agitation left, and how loud the agitation started. A person she walked into is
+## startled and says so; a car that had to sound its horn keeps sounding for a moment. This is
+## how a contact reaches the meter *without* anything writing to `Baby.excitement`: the source
+## is the body she touched, summed by `Crowd` exactly like every other body.
+var _jolt := 0.0
+var _jolt_for := 1.0
+var _jolt_intensity := 0.0
+var _jolt_inner := 0.0
+var _jolt_outer := 0.0
+
 func setup(agent_kind: Kind, map: CityMap, seed_value: int, axis_roll: float) -> void:
 	kind = agent_kind
 	_map = map
@@ -84,6 +108,9 @@ func setup(agent_kind: Kind, map: CityMap, seed_value: int, axis_roll: float) ->
 	colour = _colour()
 
 func _process(delta: float) -> void:
+	_jolt = maxf(0.0, _jolt - delta)
+	if kind == Kind.CAR:
+		_give_way(delta)
 	_set_along(_along() + _speed * _direction * delta)
 	_set_cross(move_toward(_cross(), _lane_centre, STEER_SPEED * delta))
 	if kind == Kind.WALKER:
@@ -102,13 +129,49 @@ func _process(delta: float) -> void:
 
 ## Excitement per second this agent contributes at a point. Same falloff as an event, so
 ## the crowd and the events are the same kind of quantity to the baby.
+##
+## The jolt is added on top of the body's ordinary noise rather than replacing it, and it
+## fades linearly over its own duration — so a bump is a spike with a tail rather than a step
+## that ends abruptly, and two people bumped in the same second cost twice.
 func contribution_at(world_position: Vector2) -> float:
+	var distance := global_position.distance_to(world_position)
+	var total := 0.0
 	if kind == Kind.CAR:
-		return Tuning.falloff(global_position.distance_to(world_position),
-				Tuning.CAR_INTENSITY, Tuning.CAR_INNER_RADIUS, Tuning.CAR_OUTER_RADIUS)
-	return Tuning.falloff(global_position.distance_to(world_position),
-			Tuning.PEDESTRIAN_INTENSITY, Tuning.PEDESTRIAN_INNER_RADIUS,
-			Tuning.PEDESTRIAN_OUTER_RADIUS)
+		total = Tuning.falloff(distance, Tuning.CAR_INTENSITY,
+				Tuning.CAR_INNER_RADIUS, Tuning.CAR_OUTER_RADIUS)
+	else:
+		total = Tuning.falloff(distance, Tuning.PEDESTRIAN_INTENSITY,
+				Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS)
+	if _jolt > 0.0:
+		total += Tuning.falloff(distance, _jolt_intensity * (_jolt / _jolt_for),
+				_jolt_inner, _jolt_outer)
+	return total
+
+## Startles this agent for `seconds`. The only way anything outside the crowd adds excitement
+## to the world, and it deliberately adds it to a *body* rather than to the baby.
+func startle(intensity: float, seconds: float, inner: float, outer: float) -> void:
+	# Never shortens an agitation already running: a second bump on top of the first must not
+	# be able to make the first one quieter.
+	if _jolt > 0.0 and intensity * seconds < _jolt_intensity * _jolt:
+		return
+	_jolt = seconds
+	_jolt_for = seconds
+	_jolt_intensity = intensity
+	_jolt_inner = inner
+	_jolt_outer = outer
+
+## True while this agent is agitated, so the same contact is not written down twice.
+func is_startled() -> bool:
+	return _jolt > 0.0
+
+## How fast it is actually going, for the strike test. A car that has stopped for a crossing
+## cannot run anybody over.
+func speed() -> float:
+	return _speed
+
+## Which way it is pointing, in world space.
+func heading() -> Vector2:
+	return (Vector2(0.0, _direction) if _vertical else Vector2(_direction, 0.0)).normalized()
 
 # ------------------------------------------------------------------ lanes ---
 
@@ -144,8 +207,46 @@ func _choose_lane(roll: float) -> void:
 				0, CrowdLanes.SIDEWALK_OFFSETS.size() - 1)]
 		_direction = 1.0 if _rng.randf() < 0.5 else -1.0
 		_speed = _rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
+	_cruise = _speed
 	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
 	_junction = -1
+
+## Playtest 02, finding 3: *"cars should stop at crossings when I am close."* A zebra is only
+## the safe way over if the traffic actually honours it — otherwise it is paint, and the
+## choice between crossing here and jaywalking there has one arm missing.
+##
+## Braking rather than stopping dead, and from `CAR_ZEBRA_SIGHT` out, because the giving way
+## has to be *visible* from the kerb: a player deciding whether to step off needs to see the
+## car slowing, not discover afterwards that it would have.
+func _give_way(delta: float) -> void:
+	var wanted := 0.0 if _somebody_is_waiting_to_cross() else _cruise
+	var rate := Tuning.CAR_BRAKE if wanted < _speed else Tuning.CAR_ACCELERATE
+	_speed = move_toward(_speed, wanted, rate * delta)
+
+## Whether there is a crossing ahead within sight with somebody standing at it.
+##
+## `pedestrian_ahead` is only ever set for the handful of cars near the player, so this probe
+## does not run for the other hundred.
+func _somebody_is_waiting_to_cross() -> bool:
+	if pedestrian_ahead == Vector2.INF:
+		return false
+	# Somebody in the next street over is not this street's problem.
+	var lateral := absf((pedestrian_ahead.x if _vertical else pedestrian_ahead.y) - _cross())
+	if lateral > Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5:
+		return false
+
+	var forward := heading()
+	var waiting_along := pedestrian_ahead.y if _vertical else pedestrian_ahead.x
+	for step in range(1, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
+		var at := global_position + forward * float(step * Tuning.TILE_SIZE)
+		if _map.tile_type_at_world(at) != GameEnums.TileType.CROSSING:
+			continue
+		# Distance along the street, not straight-line: somebody waiting at the far kerb of a
+		# six-tile corridor is beside the crossing, not two tiles from it.
+		var crossing_along := at.y if _vertical else at.x
+		if absf(waiting_along - crossing_along) <= Tuning.CAR_ZEBRA_WAIT_RADIUS:
+			return true
+	return false
 
 ## A walker rounds a corner. Rolled once per junction, and the new lane is whichever
 ## pavement is nearest: someone turning a corner keeps to the side they are already on

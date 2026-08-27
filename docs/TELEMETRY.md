@@ -113,7 +113,7 @@ kind has to be able to name the question it answers, or it is a metric and does 
 | `start` | observer | Where the day began |
 | `cross` | observer | Did the player have to cross the street, and at a zebra? *(finding 3, and M21 later)* |
 | `road` | observer | Did they *walk down* the road rather than across it? Only written when a stretch outlasts a crossing, so the entry existing is the answer |
-| `crowd` | observer | A pedestrian or a car occupying the same space as the pram — finding 2 of playtest 02 with a timestamp on it |
+| `crowd` | `Crowd` → observer | Contact with the street: somebody she walked into, or a car that had to sound its horn at her standing in the road — findings 2 and 3 of playtest 02 with a timestamp on them |
 | `calm` / `left` | observer | Same park every day? **M24 cannot be built without this one** |
 | `near` | observer | How many entities were nearby, which, and how close — the cost table under finding 7 as what happened to a person |
 | `closure` | observer | Are M16's closures a decision or scenery? |
@@ -193,13 +193,19 @@ second.
 
 - **No aggregates, no summary at the end of a run.** Both are computable from the log when
   reading it, and neither can be un-computed back into an order.
-- **No per-agent crowd entries, except when one is standing on the player.** Five hundred and
-  thirty agents would bury everything else, so the crowd is otherwise only its share of the
-  meter. The exception is the one thing about it worth a line each: with no collision until
-  M19, a pedestrian walks through the pram and a car drives through it, and both look
-  identical to passing close by from the meter alone. Pedestrian entries are rate-limited so a
-  packed pavement cannot flood the log; **cars are not**, because a car driving through a pram
-  is what M19 exists to make impossible and must never be dropped for being one of several.
+- **No per-agent crowd entries, except on contact.** Five hundred and thirty agents would bury
+  everything else, so the crowd is otherwise only its share of the meter. The exception is the
+  one thing about it worth a line each — since M19 a contact is something the game *decides*
+  rather than a state to be noticed, so `Crowd` reports it on `EventBus` and the observer
+  writes it down. That split is deliberate: the rate limiting belongs with the rest of what
+  keeps the log readable, and the telemetry stays out of the file that decides things.
+
+  Bumps are rate-limited to one line every 1.5s, and the **dropped count is printed rather
+  than swallowed** — "she bumped somebody at 0:14" and "she ploughed through fourteen people
+  between 0:12 and 0:14" are very different days and without the number they are the same
+  line. **Horns are never dropped**: whether the carriageway is a decision or a place people
+  wander into is the question M19 exists to answer, and the horn is the last entry before a
+  `lost` line when the answer is the second one.
 - **No `near` entries for `city_wide` sources.** A field with no edge cannot be approached.
   What the loudspeaker masts are doing shows up in every meter breakdown instead — which is
   also the most misleading gap in the game today, and `docs/TODO.md` has it under M10.

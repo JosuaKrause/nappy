@@ -1,0 +1,10 @@
+<!-- The exclamation mark that floats over the player when she is standing somewhere that is
+     about to be dangerous. Deliberately not a ring and not attached to the danger: it says
+     "move", which is an instruction, where a mark on the car would only be information.
+     Outlined in near-black so it reads over pavement, grass and asphalt alike. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="26" viewBox="0 0 18 26" shape-rendering="crispEdges">
+  <rect x="4" y="0" width="10" height="26" fill="#221f28"/>
+  <rect x="2" y="2" width="14" height="22" fill="#221f28"/>
+  <rect x="6" y="2" width="6" height="15" fill="#f2c14a"/>
+  <rect x="6" y="19" width="6" height="5" fill="#f2c14a"/>
+</svg>

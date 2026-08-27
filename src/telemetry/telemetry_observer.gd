@@ -55,16 +55,11 @@ const RUN_MIN_TIME := 0.25
 ## reader does not have to judge a duration to see it.
 const ROAD_LINGER := 2.5
 
-## How close a crowd agent has to be to be standing where the player is. Half a tile: with no
-## collision between the two (M19), an agent at this range has walked *through* her.
-const CROWD_TOUCH := 16.0
-## And how far it must get before the same agent can be written down again.
-const CROWD_CLEAR := 40.0
-## A packed pavement is four hundred walkers and would fill the log by itself. This is the
-## floor on how often the crowd may say anything at all; cars are exempt, because a car
-## driving through a pram is the thing M19 exists to make impossible and it must never be
-## dropped for being one of several.
-const CROWD_QUIET_TIME := 1.5
+## A packed pavement is four hundred walkers, and since M19 walking into one is a thing that
+## can happen several times a second. This is the floor on how often a *bump* may say anything;
+## a horn is exempt, because a car that had to sound its horn at her is the whole question M19
+## exists to answer and must never be dropped for being one of several.
+const BUMP_QUIET_TIME := 1.5
 
 ## How close to the chalk mark counts as having found it. Generous on purpose — the question
 ## being answered is "did the player ever go near a contact", not "did they use it".
@@ -87,9 +82,9 @@ var _road_since := 0.0
 var _road_from := Vector2i.ZERO
 var _carriageway := 0.0
 
-# Crowd agents currently overlapping the player, and when one was last written down.
-var _touching := {}
-var _last_touch := -1000.0
+# When a bump was last written down, and how many have gone unwritten since.
+var _last_bump := -1000.0
+var _bumps_dropped := 0
 
 # Doubling back.
 var _committed := Vector2.ZERO
@@ -128,6 +123,8 @@ func setup(city: City, player: Stroller, baby: Baby, day: DayController,
 	EventBus.resistance_seen.connect(_on_resistance_seen)
 	EventBus.resistance_hold_changed.connect(_on_hold_changed)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
+	EventBus.crowd_bumped.connect(_on_bumped)
+	EventBus.car_near_miss.connect(_on_near_miss)
 
 ## Clears yesterday. Called after the day's plan has been written, so the `start` line is the
 ## first thing under the header that the player is responsible for.
@@ -138,8 +135,8 @@ func start_day() -> void:
 	_road_since = 0.0
 	_road_from = _map.world_to_tile(_player.global_position)
 	_carriageway = 0.0
-	_touching.clear()
-	_last_touch = -1000.0
+	_last_bump = -1000.0
+	_bumps_dropped = 0
 	_committed = Vector2.ZERO
 	_committed_for = 0.0
 	_against = 0.0
@@ -179,7 +176,6 @@ func _process(delta: float) -> void:
 	_watch_running()
 	_watch_direction(delta)
 	_watch_what_is_near(here)
-	_watch_the_crowd(here)
 	_watch_closures(here)
 	_watch_the_contact(here)
 
@@ -337,45 +333,6 @@ func _watch_what_is_near(here: Vector2) -> void:
 		if not live.has(id):
 			_near.erase(id)
 
-## Somebody standing exactly where the player is.
-##
-## Nothing in the game stops this: the crowd has no collision with the player until M19, so a
-## pedestrian walks through the pram and a car drives through it, and the only trace either
-## leaves is a bump in the meter that looks identical to passing close by. The crowd is
-## otherwise deliberately absent from the log — five hundred and thirty agents would bury
-## everything else — and this is the one thing about it worth a line each: it is finding 2 of
-## playtest 02 as an event with a timestamp rather than as a recollection.
-##
-## The scan is linear over the whole crowd, which is the same shape and cost as the
-## `total_excitement_at` the baby already runs every physics frame.
-func _watch_the_crowd(here: Vector2) -> void:
-	if not _city.crowd:
-		return
-	var still_touching := {}
-	for agent in _city.crowd.agents():
-		var distance := agent.global_position.distance_to(here)
-		var id := agent.get_instance_id()
-		if distance > CROWD_CLEAR:
-			continue
-		# Hysteresis on the wider radius: an agent keeping pace alongside must not re-log
-		# every time it wobbles across the inner one.
-		if _touching.has(id):
-			still_touching[id] = true
-			continue
-		if distance > CROWD_TOUCH:
-			continue
-		still_touching[id] = true
-		var is_car := agent.kind == CrowdAgent.Kind.CAR
-		# A car is never dropped for being one of several. A crowded pavement is, or the log
-		# becomes four hundred lines of people being walked through.
-		if not is_car and Telemetry.clock() - _last_touch < CROWD_QUIET_TIME:
-			continue
-		_last_touch = Telemetry.clock()
-		Telemetry.note("crowd", "%s at %s | %s" % [
-			"a car drove through her" if is_car else "walked through a pedestrian",
-			TelemetryLog.tile(_map.world_to_tile(here)), _meters()])
-	_touching = still_touching
-
 ## A barrier coming into view. Recorded from where it was seen, because "the player found out
 ## two junctions later" and "the player could see it from the corner" are different days and
 ## the map screen M17 adds exists to change which one this is.
@@ -432,6 +389,35 @@ func _on_hold_changed(progress: float) -> void:
 
 func _on_city_went_quiet() -> void:
 	Telemetry.note("quiet", "the sabotage went through; every city-wide source is off")
+
+## Walking into somebody. Reported by `Crowd` rather than watched from here, because since M19
+## the contact is a decision the game makes rather than a state to be noticed — but the *rate
+## limiting* stays here, with the rest of what keeps the log readable.
+##
+## The dropped count is printed rather than silently swallowed: "she bumped somebody at 0:14"
+## and "she ploughed through fourteen people between 0:12 and 0:14" are very different days,
+## and without the number they are the same line.
+func _on_bumped(at: Vector2) -> void:
+	if not _day.is_running():
+		return
+	if Telemetry.clock() - _last_bump < BUMP_QUIET_TIME:
+		_bumps_dropped += 1
+		return
+	var also := "" if _bumps_dropped == 0 else " (+%d in the last %.1fs)" % [
+		_bumps_dropped, Telemetry.clock() - _last_bump]
+	_last_bump = Telemetry.clock()
+	_bumps_dropped = 0
+	Telemetry.note("crowd", "walked into somebody at %s%s | %s" % [
+		TelemetryLog.tile(_map.world_to_tile(at)), also, _meters()])
+
+## A car sounding its horn at her standing in its lane. Never rate-limited: this is the entry
+## that says whether the carriageway is a decision or a place people wander into, and it is the
+## last thing written before a `lost` line when it is not.
+func _on_near_miss(at: Vector2) -> void:
+	if not _day.is_running():
+		return
+	Telemetry.note("crowd", "a car sounded its horn at her in the road at %s | %s" % [
+		TelemetryLog.tile(_map.world_to_tile(at)), _meters()])
 
 # ------------------------------------------------------------------ readouts ---
 

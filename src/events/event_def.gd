@@ -15,6 +15,8 @@ enum Look {
 	VEHICLE,
 	OBJECT,
 	FIRE,
+	DOG_WALKER, ## A person, a dog, and the taut lead between them.
+	TABLES,     ## A café spilling across the pavement.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.

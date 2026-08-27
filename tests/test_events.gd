@@ -19,6 +19,9 @@ func run(t) -> void:
 	_test_burning_building_is_never_scheduled(t)
 	_test_fire_truck_is_a_day_three_one_shot(t)
 	_test_along_street_paths_stay_in_bounds(t)
+	_test_nothing_is_cheaper_to_walk_through_than_around(t)
+	_test_the_pavement_can_be_blocked_from_day_one(t)
+	_test_a_day_has_enough_in_it_to_meet(t)
 
 # ------------------------------------------------------------------ fairness ---
 
@@ -293,3 +296,78 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 			var delta: Vector2 = plan.path[1] - plan.path[0]
 			t.check(is_zero_approx(delta.x) or is_zero_approx(delta.y),
 					"day %d: '%s' route follows a single corridor" % [day, plan.def.id])
+
+# ------------------------------------------------------- what a street costs (M19) ---
+
+## Events that are deliberately scenery: they are there so the street *looks* different, not
+## so it costs something. Everything else has to cost something to walk through — an obstacle
+## that is cheaper to walk into than to walk around is a bribe, and the player learns to take
+## it. Naming the three explicitly is the point: a fourth one has to be a decision.
+const _SCENERY := ["poster_crew", "barricade", "burnt_shell"]
+
+## Net excitement from walking straight through the centre of an event at walking pace, in
+## points of a hundred-point meter: the falloff integrated along the line, minus the walking
+## decay over the same time. This is what produced the table in docs/EVENTS.md, and the
+## measurement behind playtest 02's finding 7.
+func _cost_to_walk_through(def: EventDef) -> float:
+	var span := def.outer_radius * 2.0
+	var seconds := span / Tuning.WALK_SPEED
+	var steps := 2000
+	var total := 0.0
+	for i in steps:
+		var d := absf(-def.outer_radius + span * (i + 0.5) / steps)
+		total += Tuning.falloff(d, def.intensity, def.inner_radius, def.outer_radius)
+	return (total / steps - Tuning.EXCITEMENT_DECAY_WALKING) * seconds
+
+## The measured failure playtest 02 found and M19 fixes: at intensity 7 the dog walker cost
+## −0.1 points to walk straight through, so the correct play was to plough into it.
+func _test_nothing_is_cheaper_to_walk_through_than_around(t) -> void:
+	for def in EventCatalogue.all():
+		if def.city_wide or def.intensity <= 0.0 or def.id in _SCENERY:
+			continue
+		t.check(_cost_to_walk_through(def) > 0.0,
+				"walking through '%s' costs more than walking around it (%.1f)"
+				% [def.id, _cost_to_walk_through(def)])
+	# And the specific one, stated as itself so the reason survives a rebalance.
+	var dog := EventCatalogue.by_id("dog_walker")
+	t.check(_cost_to_walk_through(dog) > Tuning.EXCITEMENT_CALM_THRESHOLD * 0.4,
+			"a dog walker is a real reason to cross the street (%.1f of a %.0f freeze)"
+			% [_cost_to_walk_through(dog), Tuning.EXCITEMENT_CALM_THRESHOLD])
+
+## Playtest 02, finding 3: *"there should be things that force me to cross the street."*
+## Day one included — decision 9 says the beginning is challenging too, and until M19 the
+## first event that was physically in the way arrived on day 2.
+func _test_the_pavement_can_be_blocked_from_day_one(t) -> void:
+	var blockers: Array[EventDef] = []
+	for def in EventCatalogue.available_on(1):
+		if def.obstructs_radius > 0.0 and def.placement.has(GameEnums.TileType.SIDEWALK):
+			blockers.append(def)
+	t.check(not blockers.is_empty(),
+			"something can be in the way of a pavement on day 1")
+	# Sidewalk is two tiles; an obstruction wider than that would seal the pavement outright
+	# rather than making it the wrong side of the street.
+	for def in blockers:
+		t.check(def.obstructs_radius * 2.0 < Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 2.0,
+				"'%s' takes the pavement without sealing the street" % def.id)
+		t.check(not def.mobile,
+				"'%s' does not walk toward her: a moving wall on a two-tile pavement pins"
+				% def.id)
+
+## Playtest 03, finding 1: day 1 placed four events across a 7x7-block city and the traced
+## player met none of them. The budget is checked against what a day actually *places*, not
+## against the formula, because a budget the catalogue cannot spend is not density.
+func _test_a_day_has_enough_in_it_to_meet(t) -> void:
+	var map := _map()
+	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
+	for day in [1, 3, 7, 14]:
+		var consumed: Array[String] = []
+		var planned := EventScheduler.build_day(day, _rng(day), map, consumed)
+		var real := 0
+		for plan in planned:
+			if plan.def.kind != GameEnums.EventKind.AMBIENT:
+				real += 1
+		t.check(real * 5 >= blocks,
+				"day %d puts %d events across %d blocks — one per five or better"
+				% [day, real, blocks])
+	t.check(EventScheduler.budget_for(14) > EventScheduler.budget_for(1) * 2,
+			"and a late day is still markedly denser than an early one")
