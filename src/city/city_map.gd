@@ -14,9 +14,31 @@ extends RefCounted
 var size: Vector2i
 var tiles: PackedByteArray
 ## Block coordinate -> BlockPlan. The arc each block may travel, fixed at generation.
+##
+## Keyed by the block that **anchors a lot**, which since M21 is not always one block: a
+## four-block calm zone is a single entry whose ground covers all four of its blocks and the
+## streets that used to run between them. The other three appear in `zone_anchor` and nowhere
+## else, so everything stated over `block_plans` — how many calm areas there are, which one is
+## least spoiled, which one she settled in yesterday — counts a zone once, which is what it is.
 var block_plans := {}
-## Block coordinate -> BlockLayout. The carves, also fixed at generation.
+## Block coordinate -> BlockLayout. The carves, also fixed at generation. Anchors only, for the
+## same reason as `block_plans`: an absorbed block has no ground of its own.
 var block_layouts := {}
+## Anchor block -> the rect of *blocks* its lot spans. Only multi-block lots appear here; a
+## plain block's lot is itself and is not worth a dictionary entry. See `lot_blocks()`.
+var zone_rects := {}
+## Every block of a multi-block lot -> that lot's anchor, the anchor included. The inverse of
+## `zone_rects`, kept rather than searched because `block_at()` asks it per event.
+var zone_anchor := {}
+## Segment keys this city does not have at all: the streets a four-block calm zone was painted
+## straight over. Fixed for the run, unlike `closed_tiles`, and a fact about the **lattice**
+## rather than about a day — the tiles are park, and the player walks on them quite happily.
+##
+## This is what M21 does to `StreetNetwork`, which was written assuming a full grid: the
+## enumeration is still the full grid and this is the set that is not really there, so the graph
+## half — route counting, the invariant, the doorway exemptions — survives untouched and simply
+## gets a bigger `closed` set. See `blocked_segments()`.
+var absent_segments := {}
 var building_rects: Array[Rect2i] = []
 ## Blocks that are calm ground *right now*. Recomputed by `repaint()`, because which ground
 ## is calm is the thing that changes over a run.
@@ -50,6 +72,16 @@ static func map_tiles() -> Vector2i:
 static func block_rect(block: Vector2i) -> Rect2i:
 	return Rect2i(Vector2i.ONE * Tuning.STREET_WIDTH + block * period(),
 			Vector2i.ONE * Tuning.BLOCK_SIZE)
+
+## Tile rect spanned by a rect of blocks, **including the streets between them**.
+##
+## For one block that is `block_rect`. For a 2x2 zone it is 22 tiles square, because the two
+## block interiors and the corridor between them are contiguous — which is the whole reason a
+## four-block calm zone can be one rect of grass rather than four with roads through it.
+static func blocks_tile_rect(blocks: Rect2i) -> Rect2i:
+	var first := block_rect(blocks.position)
+	var last := block_rect(blocks.end - Vector2i.ONE)
+	return Rect2i(first.position, last.end - first.position)
 
 ## Position within the current period, or -1 when the coordinate is inside a block.
 static func corridor_offset(coordinate: int) -> int:
@@ -89,6 +121,16 @@ func fill_rect(rect: Rect2i, type: GameEnums.TileType) -> void:
 func is_walkable(tile: Vector2i) -> bool:
 	return Tile.is_walkable(tile_at(tile))
 
+## Street ground: pavement, carriageway or crossing. Anything that travels the lattice asks
+## this, because since M21 a corridor may simply not be there — a four-block calm zone is
+## painted over the streets between its blocks, and those tiles are park somebody walks on
+## rather than street anybody drives down. A crowd agent that only checked `is_walkable` would
+## drive across the grass.
+func is_street(tile: Vector2i) -> bool:
+	var type := tile_at(tile)
+	return type == GameEnums.TileType.SIDEWALK or type == GameEnums.TileType.ROAD \
+			or type == GameEnums.TileType.CROSSING
+
 func is_closed(tile: Vector2i) -> bool:
 	return closed_tiles.has(tile)
 
@@ -97,6 +139,43 @@ func is_closed(tile: Vector2i) -> bool:
 ## `is_walkable`, or it will put it somewhere nobody can reach.
 func is_open(tile: Vector2i) -> bool:
 	return not closed_tiles.has(tile) and Tile.is_walkable(tile_at(tile))
+
+## The lattice as a route search must see it: the streets this city never had, plus whatever
+## today has shut on top of them.
+##
+## Every `StreetNetwork` call that takes a `closed` set wants this rather than the day's
+## closures alone. Passing the closures by themselves lets a route run down the middle of a
+## park, which overstates the redundancy — and route redundancy is the one guarantee that used
+## to be true by construction and is not any more, so overstating it is exactly the failure M21
+## has to avoid.
+func blocked_segments(closed_today: Dictionary = {}) -> Dictionary:
+	if closed_today.is_empty():
+		return absent_segments.duplicate()
+	var blocked := absent_segments.duplicate()
+	for key: Vector3i in closed_today:
+		blocked[key] = true
+	return blocked
+
+## Whether the lattice really has this street. False for the ones a calm zone absorbed.
+func has_street(key: Vector3i) -> bool:
+	return not absent_segments.has(key)
+
+# ---------------------------------------------------------------------- lots ---
+
+## The rect of *blocks* one lot covers — one block for almost everything, 2x2 for a four-block
+## calm zone. `block` may be any member of the lot; the answer is the same for all of them.
+func lot_blocks(block: Vector2i) -> Rect2i:
+	var anchor := anchor_of(block)
+	return zone_rects.get(anchor, Rect2i(anchor, Vector2i.ONE))
+
+## The tile rect one lot covers, streets between its blocks included.
+func lot_rect(block: Vector2i) -> Rect2i:
+	return blocks_tile_rect(lot_blocks(block))
+
+## The block that stands for the lot this one belongs to. Identity for the 45 lots that are one
+## block, and the anchor for the members of a zone.
+func anchor_of(block: Vector2i) -> Vector2i:
+	return zone_anchor.get(block, block)
 
 ## Takes today's closed streets out of the network. The whole street goes in the set, not
 ## just the two barriers: the ground between them is not somewhere anyone can get to, so
@@ -147,19 +226,20 @@ func starting_purpose(block: Vector2i) -> GameEnums.BlockPurpose:
 	var plan: BlockPlan = block_plans.get(block)
 	return plan.starting_purpose() if plan else GameEnums.BlockPurpose.RESIDENTIAL
 
-## The block nearest a world position. Events happen on streets, between blocks, so "which
-## block did this happen to" is nearest-centre rather than containment.
+## The lot nearest a world position, named by its anchor block. Events happen on streets,
+## between blocks, so "which block did this happen to" is nearest-centre rather than
+## containment — and since M21 it is nearest *lot* centre, so a fire on the edge of a
+## four-block park is attributed to the park rather than to one quarter of it that has no arc
+## of its own.
 func block_at(world_position: Vector2) -> Vector2i:
 	var best := Vector2i.ZERO
 	var closest := INF
-	for y in Tuning.CITY_BLOCKS.y:
-		for x in Tuning.CITY_BLOCKS.x:
-			var block := Vector2i(x, y)
-			var centre := tile_rect_to_world(block_rect(block)).get_center()
-			var distance := centre.distance_squared_to(world_position)
-			if distance < closest:
-				closest = distance
-				best = block
+	for block: Vector2i in block_plans:
+		var centre := tile_rect_to_world(lot_rect(block)).get_center()
+		var distance := centre.distance_squared_to(world_position)
+		if distance < closest:
+			closest = distance
+			best = block
 	return best
 
 ## Repaints every block interior for the purposes `state` currently holds, and re-derives
@@ -171,6 +251,13 @@ func block_at(world_position: Vector2) -> Vector2i:
 ## can disconnect the city or make a wall appear where a route used to be. What changes is
 ## what a place is worth walking to.
 func repaint(state: CityState) -> void:
+	# Two passes, and the split is what makes a four-block calm zone possible: one lot's ground
+	# now covers blocks that are not its own, so a single pass that cleared each lot immediately
+	# before painting it would have whichever block came later in the dictionary punch a
+	# building-shaped hole in the park next door. Clear everything, then paint everything.
+	for y in Tuning.CITY_BLOCKS.y:
+		for x in Tuning.CITY_BLOCKS.x:
+			fill_rect(block_rect(Vector2i(x, y)), GameEnums.TileType.BUILDING)
 	for block: Vector2i in block_plans:
 		_repaint_block(block, state.purpose_of(block_plans, block))
 	# The home notch is carved out of a block interior, so it has to go back on top.
@@ -186,7 +273,6 @@ func _repaint_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	var layout: BlockLayout = block_layouts.get(block)
 	if not layout:
 		return
-	fill_rect(block_rect(block), GameEnums.TileType.BUILDING)
 	if BlockLayout.has(layout.open_rect):
 		fill_rect(layout.open_rect, open_tile_for(purpose))
 	if purpose == GameEnums.BlockPurpose.PARK and BlockLayout.has(layout.playground):
@@ -287,10 +373,10 @@ func home_to_nearest_calm() -> int:
 				best = distance
 	return best
 
-## Walkable tiles immediately outside a block — its pavement, effectively. Used to place
+## Walkable tiles immediately outside a lot — its pavement, effectively. Used to place
 ## things "at" a district when the district itself is solid building.
 func perimeter_tiles(block: Vector2i) -> Array[Vector2i]:
-	var lot := block_rect(block)
+	var lot := lot_rect(block)
 	var found: Array[Vector2i] = []
 	for x in range(lot.position.x - 1, lot.end.x + 1):
 		for y in [lot.position.y - 1, lot.end.y]:
@@ -312,7 +398,7 @@ func purpose_tiles(purpose: GameEnums.BlockPurpose) -> Array[Vector2i]:
 	for block: Vector2i in block_plans:
 		if starting_purpose(block) != purpose:
 			continue
-		for tile in rect_tiles(block_rect(block)):
+		for tile in rect_tiles(lot_rect(block)):
 			if is_walkable(tile):
 				found.append(tile)
 		found.append_array(perimeter_tiles(block))

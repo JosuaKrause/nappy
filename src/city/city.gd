@@ -23,8 +23,13 @@ const _HEIGHT_TILES := {
 const MAX_HEIGHT_FRACTION := 0.55
 const BOUNDARY_THICKNESS := 64.0
 
-## Trees per block, by what the block currently is. A forest is a park with more trees in it
-## and no swings, which is most of what the difference between them is on the ground.
+## Trees per *block* of open ground, by what the block currently is. A forest is a park with
+## more trees in it and no swings, which is most of what the difference between them is on the
+## ground.
+##
+## Per block rather than per lot since M21: a four-block calm zone is seven and a half blocks'
+## worth of ground once the absorbed streets are counted, and ten trees spread over that is a
+## field with some shrubs in it rather than a park. `_dress_block` scales by the lot's area.
 const _TREES := {
 	GameEnums.BlockPurpose.PARK: 10,
 	GameEnums.BlockPurpose.FOREST: 22,
@@ -267,9 +272,16 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 		frame.variant = block.x * 31 + block.y
 		_add_prop(frame)
 
-	var wanted: int = _TREES.get(purpose, 0)
-	if wanted == 0:
+	var per_block: int = _TREES.get(purpose, 0)
+	if per_block == 0:
 		return
+	# A block's worth of open ground is the unit the table above is written in, so the count
+	# follows the area actually being dressed. Clamped at one block from below rather than
+	# scaled down: a courtyard is a quarter of a block and its three trees are what makes it
+	# read as a court rather than as a yard, which is a tuned number and not an area.
+	var block_area := float(Tuning.BLOCK_SIZE * Tuning.BLOCK_SIZE)
+	var lots := maxf(1.0, float(layout.open_rect.size.x * layout.open_rect.size.y) / block_area)
+	var wanted := roundi(per_block * lots)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("props:%d:%d:%d" % [map.seed_used, block.x, block.y])
 	var lot := map.tile_rect_to_world(layout.open_rect)

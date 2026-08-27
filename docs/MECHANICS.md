@@ -11,10 +11,10 @@ The win meter. Fills only under the right conditions.
 
 | Condition | Rate (per second) |
 | --- | --- |
-| Walking, excitement below calm threshold | `+0.24` |
-| Walking, in a **calm zone** | `+0.24 × 3.5` = `+0.84` |
+| Walking, excitement below calm threshold | `+0.42` |
+| Walking, in a **calm zone** | `+0.42 × 10` = `+4.2` |
 | Running | `0` (never fills while running) |
-| Idle / near-idle | `-0.6` (drains) |
+| Idle / near-idle | `-1.0` (drains) |
 | Excitement at or above `CALM_THRESHOLD` | `0` (frozen, never drains) |
 
 **Key rule:** while `excitement >= CALM_THRESHOLD` (default `35`), sleepiness does not rise
@@ -34,6 +34,12 @@ other, and they are what makes the walk the game:
 - Standing still drains faster than walking fills, so waiting is never a strategy — but it
   drains *slower* than a calm zone fills, so stopping to let something pass stays a move
   worth making.
+
+**And the calm has to be big enough to walk in.** *(M21.)* The three rates above are jointly
+sufficient for a *lap*: progress requires motion, so a calm area smaller than a stretch of
+walking is somewhere you circle rather than somewhere you go. A four-block calm zone is 704px
+square — 10.8s corner to corner against the 23.8s a full meter takes — so the calm is a route.
+See `docs/CITY.md`, "Calm zones".
 
 **A day is aimed at a minute of play, with a grace of three.** Dusk at 180s is the outer
 bound, not the target. That is deliberate after M18: a day walked well is over in about a

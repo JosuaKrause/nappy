@@ -366,6 +366,16 @@ func _spawn_position() -> Vector2:
 		var mouth: Vector2 = closures[which].mouth_centres(_city.map)[0]
 		var junction := closures[which].cause_centre(_city.map)
 		return _nearest_walkable(mouth + (mouth - junction).normalized() * 64.0)
+	# The north-west corner of a four-block calm zone, a couple of tiles outside it, which is
+	# where the two things M21 has to get right are both in frame: the T-junction where the
+	# absorbed street used to start, and the twenty-two tiles of calm behind it.
+	if args[index + 1] == "zone":
+		if _city.map.zone_rects.is_empty():
+			push_warning("this city has no four-block calm zone")
+			return _city.map.home_world_position()
+		var anchor: Vector2i = _city.map.zone_rects.keys()[0]
+		var corner := CityMap.blocks_tile_rect(_city.map.zone_rects[anchor]).position
+		return _nearest_walkable(_city.map.tile_to_world(corner - Vector2i.ONE * 2))
 	if args[index + 1] == "contact":
 		var contact := _resistance.contact_position()
 		if contact == Vector2.INF:

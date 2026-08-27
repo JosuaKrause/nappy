@@ -44,7 +44,10 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator) -> Arra
 	if not home or areas.size() < Tuning.MIN_CALM_AREAS_WITH_TWO_ROUTES:
 		return chosen
 
-	var closed := {}
+	# The streets a four-block calm zone absorbed start out "closed" and stay that way. They are
+	# not there to be shut and they are not there to be routed down either, and folding them in
+	# here is the whole of what M21's holes cost the planner.
+	var closed := map.blocked_segments()
 	var kinds := RoadClosure.kinds_on(day)
 	for segment in _shuffled_candidates(map, home, areas, rng):
 		if chosen.size() >= wanted:
@@ -75,8 +78,9 @@ static func calm_areas(map: CityMap) -> Array[CalmArea]:
 			found.append(area)
 	return found
 
-## The streets a calm block can be entered from. A block of open calm opens onto all four
-## sides of its lot; a courtyard opens onto exactly one, through its archway.
+## The streets a calm area can be entered from. A block of open calm opens onto all four sides
+## of its lot; a four-block zone onto eight streets, two to a side; a courtyard onto exactly
+## one, through its archway.
 static func _access_streets(map: CityMap, block: Vector2i) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
 	var layout: BlockLayout = map.block_layouts.get(block)
@@ -86,12 +90,7 @@ static func _access_streets(map: CityMap, block: Vector2i) -> Array[StreetNetwor
 		if segment:
 			found.append(segment)
 		return found
-	for side: int in [StreetNetwork.Side.NORTH, StreetNetwork.Side.SOUTH,
-			StreetNetwork.Side.WEST, StreetNetwork.Side.EAST]:
-		var segment := StreetNetwork.beside_block(block, side)
-		if segment:
-			found.append(segment)
-	return found
+	return StreetNetwork.around_blocks(map.lot_blocks(block))
 
 ## Which edge of the lot an archway comes out on. The passage is generated as a one-tile
 ## channel from the court to one lot edge, so the edge it touches is the answer.
@@ -126,11 +125,11 @@ static func _invariant_holds(home: StreetNetwork.Segment, areas: Array[CalmArea]
 ## likelier to be the one that is shut. The invariant is what stops that from being cruel.
 static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment,
 		areas: Array[CalmArea], rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
-	var useful := _streets_on_a_route(home, areas)
+	var useful := _streets_on_a_route(map, home, areas)
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
 	for segment in StreetNetwork.segments():
-		if segment.key() == home.key():
+		if segment.key() == home.key() or not map.has_street(segment.key()):
 			continue
 		pool.append(segment)
 		weights.append(Tuning.CLOSURE_ROUTE_BIAS if useful.has(segment.key()) else 1.0)
@@ -150,16 +149,17 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment,
 ## or a detour. The slack is what keeps it from being a single line of tiles: at slack 1
 ## every street that costs one extra block still counts, which is roughly "the ways a player
 ## would actually consider".
-static func _streets_on_a_route(home: StreetNetwork.Segment,
+static func _streets_on_a_route(map: CityMap, home: StreetNetwork.Segment,
 		areas: Array[CalmArea]) -> Dictionary:
 	var useful := {}
-	var from_home := StreetNetwork.junction_distances([home.a, home.b], {})
+	var absent := map.blocked_segments()
+	var from_home := StreetNetwork.junction_distances([home.a, home.b], absent)
 	for area in areas:
 		var doorsteps: Array[Vector2i] = []
 		for segment in area.access:
 			doorsteps.append(segment.a)
 			doorsteps.append(segment.b)
-		var to_calm := StreetNetwork.junction_distances(doorsteps, {})
+		var to_calm := StreetNetwork.junction_distances(doorsteps, absent)
 		var best := INF
 		for junction in doorsteps:
 			var node := StreetNetwork.node_of(junction)
@@ -168,6 +168,8 @@ static func _streets_on_a_route(home: StreetNetwork.Segment,
 		if best == INF:
 			continue
 		for segment in StreetNetwork.segments():
+			if absent.has(segment.key()):
+				continue
 			var u := StreetNetwork.node_of(segment.a)
 			var v := StreetNetwork.node_of(segment.b)
 			var through := minf(_through(from_home, to_calm, u, v),

@@ -240,6 +240,31 @@ block's **purpose** — a park can be requisitioned, a commercial street can go 
 residential block can burn — and only ever along the arc `CityGenerator` planned for it up
 front. The geometry the player learns stays true; the meaning of it does not.
 
+**The lattice is fixed and it is not a full grid.** *(M21.)* A four-block calm zone absorbs the
+streets between its own blocks, so the city has one or two holes in it, four T-junctions per
+hole, and a junction in the middle of each zone that nothing reaches. Three consequences, and
+each is a way it goes quietly wrong:
+
+- **Route redundancy stopped being true by construction.** A full lattice cannot be
+  disconnected by removing one corridor; this one can. It is checked by search now —
+  `StreetNetwork.route_count()`, which M16 already built.
+- **The absent streets are a set, not a hole in the enumeration.** `StreetNetwork` still
+  enumerates the full grid; `CityMap.absent_segments` says which of them this city does not
+  have, and `CityMap.blocked_segments()` merges it with today's closures. **Every** route
+  search takes that merged set — one that takes only the closures will happily route down the
+  middle of a park and overstate the redundancy, which is the exact failure the invariant
+  exists to catch.
+- **A block is not the unit any more; a lot is.** `block_plans`, `block_layouts` and
+  `calm_blocks` are keyed by the block that *anchors* a lot, so a zone is one entry with four
+  blocks of ground. Anything counting calm areas counts a zone once. `CityMap.anchor_of()` and
+  `lot_rect()` are how the other three blocks are reached.
+
+**An absorbed street is calm ground, not a closure.** The tiles are park and the player walks
+over them — a zone is a shortcut as well as a destination. Only the *lattice* lost the street,
+which is why `absent_segments` is a set of segment keys and `closed_tiles` is a set of tiles.
+Anything that travels the lattice (the crowd, a mobile event's route) asks `CityMap.is_street()`
+instead of `is_walkable()`.
+
 The hard part of that rule is the half that is still absolute: **no purpose change may move
 a walkable tile.** `tests/test_blocks.gd` pushes every block to the end of its arc across 40
 seeds and asserts the walkable set is identical tile for tile. Per-day *closures* remain
@@ -444,7 +469,9 @@ hand), then wherever the generator should emit it.
 **Add a block purpose** — `GameEnums.BlockPurpose`, the ground it puts down in
 `CityMap.open_tile_for`, `Tile.is_calm` if it is calm ground, and the arcs that may reach it
 in `CityGenerator._plan_arcs`. If it is calm, check `MIN_CALM_BLOCKS_AT_END` still holds —
-`validate()` will tell you, on every seed, if it does not.
+`validate()` will tell you, on every seed, if it does not. Write it against
+`map.lot_rect(block)` rather than `CityMap.block_rect(block)`, or it will be a quarter of the
+ground on a four-block calm zone and nobody will notice on the 45 lots that are one block.
 
 **Add a closure kind** — `RoadClosure.Kind`, a row in `RoadClosure.KINDS` (name, first day,
 weight), an SVG in `assets/closures/`, and a line in `ClosureMarker.CAUSES` — unless it has
@@ -556,10 +583,12 @@ not either number, is what makes it a decision.
 
 ## Known-shaky ground
 
-- **No balance number has been felt by a human.** M14 re-pitched the sleepiness numbers
-  against the *day* rather than against each other, and `tests/test_balance.gd` checks the
-  claim against a real city — but nobody has played it. Prime suspects are in
-  `docs/TODO.md` under "Open design questions".
+- **The difficulty has now been felt by a human, once.** *(Playtest 06, finding 2: "I like the
+  difficulty now — it actually became harder.")* That is a verdict on M28's density and M31's
+  act I teeth and nothing else. The sleepiness numbers M14 pitched against the *day*, the nerve
+  economy, and whether the arterial is crossable are all still arithmetic checked by
+  `tests/test_balance.gd` and unfelt. Prime suspects are in `docs/TODO.md` under "Open design
+  questions".
 - **The entities do not yet read as what they are.** *(M22 closed the signalling gaps; this
   is the one it exposed.)* The vocabulary's first row is *the thing itself carries most of
   it* — and `homeless_yeller`, `busker` and `poster_crew` all draw the same `person.svg`, as

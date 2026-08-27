@@ -16,6 +16,8 @@ func run(t) -> void:
 	_test_determinism(t)
 	_test_buildings_tile_the_blocks(t)
 	_test_home_opens_onto_the_street(t)
+	_test_calm_zones_are_four_blocks_of_one_thing(t)
+	_test_a_calm_zone_is_a_route_rather_than_a_lap(t)
 	_test_no_single_street_closure_isolates_the_parks(t)
 
 # ------------------------------------------------------------------- pieces ---
@@ -116,6 +118,88 @@ func _test_home_opens_onto_the_street(t) -> void:
 		var doorstep := Vector2i(map.home_rect.position.x, map.home_rect.end.y)
 		t.check(map.is_walkable(doorstep),
 				"seed %d: the tile outside the front door is walkable" % _seed(i))
+
+## M21. A four-block calm zone is four blocks of *one* thing — one lot, one arc, one entry in
+## everything that counts calm areas — and the ground under it is unbroken.
+##
+## The failure this is really guarding against is a zone that is four calm blocks that happen to
+## be adjacent. That would count as four calm areas, so the closure planner would think a day
+## with two ways into one park had four; `_ensure_one_usable_park` would protect a quarter of it;
+## and M24 would spoil the corner she settled in and call the job done.
+func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
+	for i in 12:
+		var map := CityGenerator.generate(_seed(i))
+		t.check(map.zone_rects.size() >= Tuning.MIN_CALM_ZONES
+				and map.zone_rects.size() <= Tuning.MAX_CALM_ZONES,
+				"seed %d has %d calm zones, wanted %d..%d" % [_seed(i), map.zone_rects.size(),
+				Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES])
+		for anchor: Vector2i in map.zone_rects:
+			var footprint: Rect2i = map.zone_rects[anchor]
+			t.check(footprint.size == Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS,
+					"seed %d: zone %s is %d blocks square" % [_seed(i), anchor,
+					Tuning.CALM_ZONE_BLOCKS])
+
+			# One lot: the anchor has the arc and the layout, and the other three have neither.
+			var members := 0
+			for y in range(footprint.position.y, footprint.end.y):
+				for x in range(footprint.position.x, footprint.end.x):
+					var block := Vector2i(x, y)
+					members += 1
+					t.check(map.anchor_of(block) == anchor,
+							"seed %d: block %s belongs to zone %s" % [_seed(i), block, anchor])
+					t.check((block == anchor) == map.block_plans.has(block),
+							"seed %d: only the anchor of zone %s has an arc" % [_seed(i), anchor])
+			t.check(members == Tuning.CALM_ZONE_BLOCKS * Tuning.CALM_ZONE_BLOCKS,
+					"seed %d: zone %s covers %d blocks" % [_seed(i), anchor, members])
+
+			# One piece of ground: every tile of the lot, streets between the blocks included.
+			var kinds := {}
+			for tile in map.rect_tiles(map.lot_rect(anchor)):
+				kinds[map.tile_at(tile)] = true
+				t.check(map.is_walkable(tile),
+						"seed %d: zone %s is walkable throughout, at %s" % [_seed(i), anchor, tile])
+			for kind: GameEnums.TileType in kinds:
+				t.check(kind == GameEnums.TileType.PLAYGROUND or Tile.is_calm(kind),
+						"seed %d: zone %s is calm ground and nothing else (found %s)"
+						% [_seed(i), anchor, GameEnums.TileType.keys()[kind]])
+
+		# The arterial is the street the city cannot afford to lose a stretch of: it is the
+		# noise floor, it is the thing that has to be crossed, and it is what a player learns
+		# first. A zone may take any corridor but that one.
+		for key: Vector3i in map.absent_segments:
+			var corridor: int = key.y if key.z == 0 else key.x
+			var blocks: int = Tuning.CITY_BLOCKS.y if key.z == 0 else Tuning.CITY_BLOCKS.x
+			t.check(corridor != CrowdLanes.arterial_index(blocks),
+					"seed %d: no zone swallowed a stretch of the arterial (%s did)"
+					% [_seed(i), key])
+
+## The claim M21 exists to make good, as a relationship rather than a number.
+##
+## Playtest 03 watched the traced player walk in a circle inside a courtyard for twenty seconds.
+## That is what the rules ask for and no balance pass removes it: standing still *drains*
+## sleepiness, so progress requires motion, and a calm block is eight tiles across. The fix has
+## to be geometric — the calm has to be big enough that filling the meter is a matter of walking
+## somewhere rather than of walking round.
+##
+## So: crossing a zone corner to corner has to be worth a real share of a full meter, and a
+## single block must not be. Both halves matter — if a block were enough, the zone would be
+## decoration; if the zone were enough on its own, arriving would be the whole of it.
+func _test_a_calm_zone_is_a_route_rather_than_a_lap(t) -> void:
+	var fill := Tuning.METER_MAX / Tuning.sleepiness_gain_calm()
+	var zone_px := (Tuning.CALM_ZONE_BLOCKS * Tuning.BLOCK_SIZE
+			+ (Tuning.CALM_ZONE_BLOCKS - 1) * Tuning.STREET_WIDTH) * Tuning.TILE_SIZE
+	var block_px := Tuning.BLOCK_SIZE * Tuning.TILE_SIZE
+	var zone_cross := sqrt(2.0) * zone_px / Tuning.WALK_SPEED
+	var block_cross := sqrt(2.0) * block_px / Tuning.WALK_SPEED
+	t.check(zone_cross > fill * 0.25,
+			"crossing a calm zone (%.1fs) is a quarter of a full meter (%.1fs) or better"
+			% [zone_cross, fill])
+	t.check(block_cross < fill * 0.25,
+			"crossing a single calm block (%.1fs) is not, which is why one is a lap"
+			% block_cross)
+	t.check(zone_cross < fill,
+			"and a zone is still not a whole meter in one traverse (%.1fs of %.1fs)"
+			% [zone_cross, fill])
 
 ## The street lattice is never cut by generation, so closing any one street segment must
 ## still leave a way to a park. This is the property that lets Act IV drop barricades
