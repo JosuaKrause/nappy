@@ -123,12 +123,21 @@ func _start_day() -> void:
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
 	_city.start_day(GameState.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"))
-	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots)
-	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"))
+	# The day is planned around the doorstep first, because `--spawn event` needs a plan to
+	# find an event in. Since M27 the plan is the whole day and the *world* is only what is
+	# within reach, so where she actually starts decides what exists on the first frame —
+	# which is why the crowd is populated after the spawn position is settled rather than
+	# before it, and why the events are streamed a second time once it is known.
+	var doorstep := _city.map.doorstep_world_position()
+	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots,
+			doorstep)
+	var start_at := _spawn_position() if _first_day else doorstep
+	_city.events.stream_around(start_at)
+	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), start_at)
 	_city.set_act(GameState.current_act())
 	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
 			_day_length())
-	_player.reset_at(_spawn_position() if _first_day else _city.map.doorstep_world_position())
+	_player.reset_at(start_at)
 	_baby.reset()
 	_day.start(_day_length())
 
@@ -138,10 +147,11 @@ func _start_day() -> void:
 		_apply_meter_override()
 	_first_day = false
 
-	print("[Main] day %d (act %d): %d events, %d crowd, %.0fs | calm: %s | closed: %s" % [
-		GameState.day, GameState.current_act(), _city.events.active_count(),
-		_city.crowd.agent_count(), _day.time_total,
-		_calm_summary(), _closure_summary()])
+	print("[Main] day %d (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
+			% [GameState.day, GameState.current_act(), _city.events.planned_count(),
+			_city.events.active_count(), _city.events.owed_ahead(),
+			_city.crowd.agent_count(), _day.time_total]
+			+ "| calm: %s | closed: %s" % [_calm_summary(), _closure_summary()])
 
 	# The shape of the day, written down last because it is only true once everything has been
 	# placed. Three lines rather than one: what is shut, where the calm is, and what is out —
@@ -181,10 +191,13 @@ func _closure_summary() -> String:
 ## Today's events by id. Counted rather than listed one per line: which of eighteen kinds are
 ## out is what makes a day, and where each instance stands is only interesting for the ones
 ## the player actually walked into — which the `near` entries cover, at the moment it matters.
+##
+## The *plan*, not what is live. Since M27 what is live is a fact about where the player is
+## standing this frame, and the question this line answers is what the day contains.
 func _event_summary() -> String:
 	var counts := {}
-	for instance in _city.events.instances():
-		counts[instance.def.id] = int(counts.get(instance.def.id, 0)) + 1
+	for plan in _city.events.plans():
+		counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
 	var parts: Array[String] = []
 	for id: String in counts:
 		parts.append("%s x%d" % [id, counts[id]] if counts[id] > 1 else id)
@@ -230,7 +243,9 @@ func _process(_delta: float) -> void:
 		"speed       %6.1f" % _player.current_speed(),
 		"run excess  %6.2f" % _player.run_excess_ratio(),
 		"",
-		"events      %6d" % _city.events.active_count(),
+		"events      %6d live of %d" % [
+			_city.events.active_count(), _city.events.planned_count()],
+		"ahead owed  %6d" % _city.events.owed_ahead(),
 		"crowd       %6d" % _city.crowd.agent_count(),
 		"fps         %6d" % Engine.get_frames_per_second(),
 		"nearest     %s" % _nearest_event_text(),
@@ -359,18 +374,21 @@ func _spawn_position() -> Vector2:
 	push_warning("no %s tile in this city" % args[index + 1])
 	return _city.map.home_world_position()
 
-## Just outside a live event, on the nearest walkable tile — an offset straight down its
+## Just outside a planned event, on the nearest walkable tile — an offset straight down its
 ## radius lands inside a block as often as not.
+##
+## Reads the day's *plan* rather than what is live: since M27 nothing is live until the player
+## is near it, so the whole point of this flag is to go and stand where one is going to be.
 func _first_event_position(wanted_id: String = "") -> Vector2:
-	for instance in _city.events.instances():
-		if wanted_id != "" and wanted_id != "event":
-			if instance.def.id != wanted_id:
-				continue
-		elif instance.def.kind == GameEnums.EventKind.AMBIENT:
+	for plan in _city.events.plans():
+		if not plan.is_placed():
 			continue
-		var wanted := instance.global_position \
-				+ Vector2(0.0, instance.def.outer_radius * 0.6)
-		return _nearest_walkable(wanted)
+		if wanted_id != "" and wanted_id != "event":
+			if plan.def.id != wanted_id:
+				continue
+		elif plan.def.kind == GameEnums.EventKind.AMBIENT:
+			continue
+		return _nearest_walkable(plan.position + Vector2(0.0, plan.def.outer_radius * 0.6))
 	push_warning("no non-ambient events planned today")
 	return _city.map.home_world_position()
 

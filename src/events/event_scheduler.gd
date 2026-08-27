@@ -6,6 +6,10 @@ extends RefCounted
 ## player learn a run. Nothing here touches the global RNG.
 
 ## What the manager needs to spawn one instance.
+##
+## An `AHEAD_OF_PLAYER` plan has **no position**: the day decides that one more cat is owed and
+## the director decides where, later, out of where the player turns out to walk. `is_placed()`
+## is the question everything that reasons about geometry has to ask first.
 class Planned extends RefCounted:
 	var def: EventDef
 	var position: Vector2
@@ -16,6 +20,36 @@ class Planned extends RefCounted:
 		def = definition
 		position = at
 		path = route
+
+	## The live instance, while this plan is streamed in. Owned by `EventManager`: a plan is the
+	## day's intention and the instance is the few seconds it exists for, and since M27 those
+	## are no longer the same span of time.
+	var live: EventInstance = null
+	## True once the event has run its course, so walking back past it does not start it again.
+	var spent := false
+	## True once it has been in the world at least once. What it is *for* is the bookkeeping
+	## that must happen exactly once however many times an event is streamed in and out: a
+	## burnt-out shell records the fire that made it the first time it is seen and never again.
+	var was_live := false
+
+	## False for an event the day has budgeted but not sited.
+	func is_placed() -> bool:
+		return position != Vector2.INF
+
+	## Distance from a point to the nearest part of this event — the point it stands at, or the
+	## nearest point of the route it will travel. A fire engine two streets away that is going
+	## to come down *this* one has to be in the world before it sets off, or its whole telegraph
+	## is spent somewhere nobody could see it.
+	func distance_from(at: Vector2) -> float:
+		if not is_placed():
+			return INF
+		if path.size() < 2:
+			return position.distance_to(at)
+		var best := INF
+		for i in range(1, path.size()):
+			best = minf(best, at.distance_to(
+					Geometry2D.get_closest_point_to_segment(at, path[i - 1], path[i])))
+		return best
 
 ## Budget grows with the day, so late days are denser as well as nastier.
 ##
@@ -165,6 +199,13 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 
 ## Picks a tile of an allowed type and builds the path, if the event moves.
 static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap) -> Planned:
+	# An `AHEAD_OF_PLAYER` event is budgeted here and sited by `EventDirector` while the player
+	# walks. Costing it here rather than giving the director its own allowance is deliberate:
+	# the cat competes with the café tables and the roadworks for the same day, so making the
+	# cat matter cannot quietly make the day denser as well.
+	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
+		return Planned.new(def, Vector2.INF)
+
 	var candidates: Array[Vector2i] = []
 	for type in def.placement:
 		candidates.append_array(map.tiles_of_type(type as GameEnums.TileType))
@@ -287,7 +328,7 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned]) -> vo
 		var lot := map.tile_rect_to_world(_calm_rect(map, block))
 		var found: Array[Planned] = []
 		for plan in planned:
-			if plan.def.kind == GameEnums.EventKind.AMBIENT:
+			if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
 				continue
 			if _reaches_rect(plan, lot):
 				found.append(plan)
@@ -321,6 +362,8 @@ static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
 static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Planned]) -> void:
 	var blockers: Array[Planned] = []
 	for plan in planned:
+		if not plan.is_placed():
+			continue
 		if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
 			blockers.append(plan)
 	if blockers.is_empty():

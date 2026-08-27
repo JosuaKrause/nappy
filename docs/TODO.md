@@ -4,32 +4,34 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 Each milestone is one git branch, merged to `main` when green.
 
-**Where things stand:** M0–M16, M18, M19 and M23 are done and merged, and the game has now
-been played three times by a human. The first playtest produced thirteen findings, planned as
-M11–M17 in **[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced twelve, planned as
+**Where things stand:** M0–M16, M18, M19, M23 and M27 are done and merged, and the game has
+now been played four times by a human. The first playtest produced thirteen findings, planned
+as M11–M17 in **[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced twelve, planned as
 M18–M26 in **[docs/PLAYTEST-02.md](PLAYTEST-02.md)**; the third, in
 **[docs/PLAYTEST-03.md](PLAYTEST-03.md)**, is the first read off a run log and reorders some
-of what the second one planned rather than adding milestones. All three are live plans and
-should be read before picking anything up.
+of what the second one planned rather than adding milestones; the fourth, in
+**[docs/PLAYTEST-04.md](PLAYTEST-04.md)**, adds one milestone and puts two that were already
+queued at the front of the queue. All four are live plans and should be read before picking
+anything up.
 
-Execution order is numeric, with two exceptions already taken. **M18 was pulled ahead of
+Execution order is numeric, with several exceptions already taken. **M18 was pulled ahead of
 M16**, because closure counts tuned against a day that was about to halve would have been
 tuned wrong. **M23 was pulled ahead of M17**, because it is the gate on M19's balance half and
-on M24, and because it makes judging every other item cheaper — which it is now doing:
-playtest 03 was read off a log rather than argued about.
+on M24. **M27 was taken out of order and immediately**, because playtest 04's emphasised
+finding — *"don't load everything upfront"* — turned out to be what was underneath three of the
+other six, and because M21 and M22 both get judged against a street that now has traffic on it.
 
-**Playtest 03 changed the order.** M19 went next with the event budget folded into it, and is
-done. **M21 rises above M20**, because four-block calm zones are the structural fix for twenty
-seconds of walking in a circle and traffic that overtakes is not, so **M21 is next**. M17 slips
-behind both. Of the two ordering notes recorded with that reorder, one is discharged — M22's
-exclamation mark shipped with M19, because a lethal car needed it — and the other still stands:
-the return phase wants its own pressure from M25.
+**Playtest 04 set the order that stands now.** M27 is done. **M22 is next** (the player has
+asked for the circles to go twice), then **M21** (four-block calm zones), then M17 behind both.
+M20 is **absorbed into M27**: cars follow and queue now, and what is left of it — eight-way
+driving, overtaking, a crash as a catalogue event — is unasked-for and no longer urgent.
 
-**What M19 leaves open, and it is the important one.** The mechanisms are built and the
-numbers are not settled: nobody has played a day with a solid crowd and a lethal road. That is
-what a fourth playtest is for, and the entries to read it off already exist — `crowd` for
-contacts and horns, `near` for what came within reach, `road` for time in the carriageway,
-`lost` for what was around when a day ended. Read a run before touching a constant.
+**What M27 leaves open.** Nobody has played it. The densities in `docs/PLAYTEST-04.md` came off
+a probe, and *"the arterial is for crossing"* is still a claim about a player rather than about
+a rig. Read a run before touching a constant: `crowd` for contacts and horns, `near` for what
+came within reach — which should now be a great deal more than playtest 03's zero — `road` for
+time in the carriageway, `ahead` for what the director put in front of her, and `lost` for what
+was around when a day ended.
 
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
@@ -303,9 +305,14 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       cost table in docs/EVENTS.md was regenerated and is now asserted by a test; and the
       *balance* half is still open, because setting it needs a human playing, which is what
       decision 11 says and what M23 exists for
-- [ ] **M20 Traffic that behaves** — finding 4. Cars follow, slow and overtake instead of
+- [~] **M20 Traffic that behaves** — finding 4. Cars follow, slow and overtake instead of
       driving through each other; 8-direction driving so they can turn; an overtake into
-      oncoming traffic crashes, and the crash is a catalogue event with a real telegraph
+      oncoming traffic crashes, and the crash is a catalogue event with a real telegraph.
+      **The half that mattered shipped in M27**: playtest 04 said *"cars still bump into each
+      other"* and it is now measurably false — a minute of act I traffic has zero frames with
+      one car inside another, down from 5.2 overlapping pairs per frame. What remains is
+      overtaking, eight-way driving and the crash event, none of which any playtest has asked
+      for, so this is **parked** rather than queued
 - [ ] **M21 The city overhaul** — findings 5 and 6, plus the canal dropped out of M16, **plus
       playtest 03 finding 2**. Calm zones of four blocks, so the lattice grows T-junctions and
       L-bends and can no longer be derived from a coordinate; main roads with traffic lights
@@ -360,6 +367,41 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       then shift, then a scripted day-1-only event that requires a short run after the first
       block. **Comes after M25, for correctness not scheduling**: forcing a run before running
       is ever the right answer teaches a move that is never correct again
+
+## M27 — Playtest 04
+
+See **[docs/PLAYTEST-04.md](PLAYTEST-04.md)** for the seven findings, the measurements and the
+reasoning. Two of the seven were milestones already queued (M22, M21) and are unchanged; one
+was the summary of the rest. The other four are one milestone:
+
+- [x] **M27 The world near you** — findings 1, 4, 5 and 6, and the emphasised one is finding 5:
+      *"don't load everything upfront — only load / spawn things in the surrounding few blocks
+      of the player when needed; consistency is not that important, nobody can run after cars
+      anyway to confirm they are still there off screen."* It reads as a performance note and
+      is not one — the game was already at 120fps with 530 agents. It is that **the population
+      was being spent on the 99.2% of the city nobody is looking at**, which is why 110 cars
+      read as a street you could ignore.
+  - [x] **The crowd is a field.** A `CROWD_FIELD_RADIUS` box that travels with the player;
+        agents recycle into a band outside the edge they will come back in through, and the
+        `Tuning` populations became populations of the field. Measured, not converted: the
+        table in PLAYTEST-04 is the record, and the two numbers that decide it are how often
+        there is a gap to cross the arterial (one time in twenty, at act I) and the ratio
+        between walking a lane centre and holding the midline (eleven contacts against one)
+  - [x] **Events stream.** The day is still planned across the whole city — every guarantee is
+        a property of the plan — and a plan becomes a node when the player is within
+        `EVENT_STREAM_RADIUS`. Picks up playtest 03's finding 1 from the other side: a
+        twenty-second event planted across the city at dawn is over before anybody could reach
+        it, and that day's trace had **zero** `near` entries. An event that waits is an event
+        she meets
+  - [x] **The cat happens to you.** `EventDef.SpawnMode.AHEAD_OF_PLAYER` and `EventDirector`:
+        the day budgets it at the usual cost and the director sites it across her line while
+        she walks. Also fixed the six-milestone-old bug underneath the complaint — a mobile
+        event starts moving when its telegraph does, so the cat finished its whole crossing
+        *during* the crouch and the running sprite had never drawn
+  - [x] **Traffic queues.** `CAR_HEADWAY_TIME` and `CAR_GAP_MIN`, and the separation is
+        positional rather than a brake, because a brake cannot open a gap that does not exist.
+        Takes the useful half of M20 with it
+  - [ ] **Nobody has played it.** The whole thing is measured off a probe
 
 ## M10 — Polish · `feature/polish`
 

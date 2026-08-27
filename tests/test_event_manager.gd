@@ -17,12 +17,19 @@ func run(t) -> void:
 	_test_finished_instances_are_dropped(t)
 	_test_successor_replaces_its_parent(t)
 	_test_excitement_sums_over_instances(t)
+	_test_an_event_waits_until_she_is_near_it(t)
+	_test_an_event_that_has_run_does_not_run_again(t)
 	_teardown()
 
 func _build_city(t) -> void:
 	_city = CITY_SCENE.instantiate()
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
+	# There is no player in this rig, so nothing would ever come within streaming reach. This
+	# suite is about the manager's wiring over a whole day's event set — retirement, successors,
+	# the sum — and those are the same questions whether or not the day is streamed. The
+	# streaming itself is checked in `_test_an_event_waits_until_she_is_near_it`.
+	_city.events.stream_radius = INF
 
 func _teardown() -> void:
 	_city.free()
@@ -73,9 +80,8 @@ func _test_successor_replaces_its_parent(t) -> void:
 	if not truck:
 		# The fire engine is a one-shot spread over its eligible days; this seed may not
 		# have rolled it. Spawn one directly rather than skip the check.
-		var plan := EventScheduler.Planned.new(EventCatalogue.by_id("fire_truck"), Vector2(500, 500))
-		_city.events._spawn(plan)
-		truck = _city.events.instances()[_city.events.active_count() - 1]
+		truck = _city.events._spawn_unplanned(
+				EventCatalogue.by_id("fire_truck"), Vector2(500, 500))
 
 	var before := _city.events.active_count()
 	var where := truck.global_position
@@ -109,3 +115,82 @@ func _test_excitement_sums_over_instances(t) -> void:
 	var far := Vector2(-10000.0, -10000.0)
 	t.close_to(_city.events.total_excitement_at(far), 0.0,
 			"nothing reaches a point outside every radius")
+
+# ---------------------------------------------------- the world near you (M27) ---
+# Playtest 04: *"don't load everything upfront."* The day is still planned across the whole
+# city, so every invariant stated over a day survives; what changed is when a plan becomes a
+# node. These are the two properties that make that legal.
+
+## An event is in the world exactly when the player is near it. The distances matter: the
+## streaming radius has to be wider than the widest field in the catalogue, or an event would
+## appear *already inside* its own outer radius and the fairness contract would be a lie.
+func _test_an_event_waits_until_she_is_near_it(t) -> void:
+	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	_start(1)
+
+	var plan: EventScheduler.Planned = null
+	for candidate in _city.events.plans():
+		# Not city-wide, which has no "near", and not mobile: a route means the reach is
+		# measured to the nearest point of it, which is a different check.
+		if candidate.is_placed() and not candidate.def.city_wide and candidate.path.is_empty():
+			plan = candidate
+			break
+	t.check(plan != null, "day 1 has a stationary event somewhere in the city")
+	if not plan:
+		return
+
+	var at := plan.position
+	var away := at + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0)
+	_city.events.stream_around(away)
+	t.check(plan.live == null, "an event across the city is not in the world")
+
+	_city.events.stream_around(at + Vector2(Tuning.EVENT_STREAM_RADIUS - 40.0, 0.0))
+	t.check(plan.live != null, "walking into reach of it puts it there")
+	var arrived := plan.live
+	t.check(arrived.age <= 0.0 or arrived.is_telegraphing(),
+			"and it starts its telegraph on arrival, so the warning is not spent off-screen")
+
+	# The hysteresis: a player pacing on the boundary must not rebuild it every other frame,
+	# because a rebuilt instance telegraphs again and would crouch at her forever.
+	_city.events.stream_around(at + Vector2(Tuning.EVENT_STREAM_RADIUS + 40.0, 0.0))
+	t.check(plan.live == arrived, "stepping just past the edge does not take it away again")
+	_city.events.stream_around(away)
+	t.check(plan.live == null, "walking properly away does")
+
+	t.check(Tuning.EVENT_STREAM_RADIUS > _widest_field(),
+			"an event streams in from further out (%.0f) than its own reach (%.0f), so it is "
+			% [Tuning.EVENT_STREAM_RADIUS, _widest_field()]
+			+ "never already on top of her when it appears")
+
+func _widest_field() -> float:
+	var widest := 0.0
+	for def in EventCatalogue.all():
+		if not def.city_wide:
+			widest = maxf(widest, def.outer_radius)
+	return widest
+
+## The other half, and the one a naive implementation gets wrong: an event that has already
+## happened must not happen again because she walked back past it. Streaming is allowed to take
+## an event away and give it back while it is *running*; it is not allowed to rewind it.
+func _test_an_event_that_has_run_does_not_run_again(t) -> void:
+	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	_start(1)
+	var plan: EventScheduler.Planned = null
+	for candidate in _city.events.plans():
+		if candidate.is_placed() and not candidate.def.city_wide \
+				and candidate.def.spawns_on_finish == "":
+			plan = candidate
+			break
+	if not plan:
+		return
+
+	_city.events.stream_around(plan.position)
+	t.check(plan.live != null, "she walks up to it and it is there")
+	plan.live._finish()
+	_city.events._physics_process(0.016)
+	t.check(plan.spent and plan.live == null, "it runs its course and the plan is spent")
+
+	_city.events.stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
+	_city.events.stream_around(plan.position)
+	t.check(plan.live == null, "and coming back does not start it over")
+	_city.events.stream_radius = INF

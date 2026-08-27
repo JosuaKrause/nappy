@@ -17,7 +17,22 @@ const ROAD_OFFSETS: Array[int] = [2, 3]
 ## How much busier the arterial is than an ordinary street. This file is now the only place
 ## that says which corridor is the main road; before M13 an invisible ambient band said it
 ## too, and two answers to that question is one too many.
-const ARTERIAL_BUSYNESS := 5.5
+##
+## It was 5.5 until M27. When the crowd stopped being spread over the whole city, the share
+## this number takes stopped being a share of sixteen corridors and became a share of the three
+## or four the player can see — so the *same* weight put half again as much traffic on the
+## arterial, and at act I density there was a safe gap in it **0.6% of the time**, with a mean
+## wait at the kerb of twenty-two seconds of a hundred and eighty second day.
+##
+## A road you have to wait for is the hazard playtest 04 asked for. A road that can only be
+## crossed at a zebra is *also* fine, and is the M19 design — traffic gives way there, and the
+## generator puts one at every junction, so nowhere on a street is more than seven tiles from
+## one. What is not fine is a road that cannot be crossed at all and does not say so.
+##
+## At 5.0 the arterial keeps the noise floor it has to keep (see `tests/test_crowd.gd`, "a busy
+## street never lets the meter fall") and jaywalking it is a real gamble rather than an
+## impossibility. Measured with a probe, not derived; re-measure if the population moves.
+const ARTERIAL_BUSYNESS := 5.0
 
 ## Corridors per axis: one on each side of every block, so one more than there are blocks.
 static func corridor_count(axis_blocks: int) -> int:
@@ -71,16 +86,28 @@ static func busyness(map_seed: int, vertical: bool, index: int) -> float:
 ## be nothing to choose between them.
 static func pick_corridor(rng: RandomNumberGenerator, map_seed: int, vertical: bool) -> int:
 	var blocks: int = Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
-	var count := corridor_count(blocks)
+	return pick_corridor_in_range(rng, map_seed, vertical, Vector2i(0, corridor_count(blocks) - 1))
+
+## The same, restricted to an inclusive range of corridor indices — the streets that are
+## actually inside the crowd's field.
+##
+## The weighting survives the restriction, and that is the point of doing it this way rather
+## than picking uniformly among the few streets in view: the arterial is still the busy one
+## when it is one of three corridors on screen, so a player who has learned which street is
+## loud is still right about it.
+static func pick_corridor_in_range(rng: RandomNumberGenerator, map_seed: int, vertical: bool,
+		range_inclusive: Vector2i) -> int:
+	var lo := range_inclusive.x
+	var hi := maxi(lo, range_inclusive.y)
 	var total := 0.0
-	for index in count:
+	for index in range(lo, hi + 1):
 		total += busyness(map_seed, vertical, index)
 	var target := rng.randf() * total
-	for index in count:
+	for index in range(lo, hi + 1):
 		target -= busyness(map_seed, vertical, index)
 		if target <= 0.0:
 			return index
-	return count - 1
+	return hi
 
 ## A point on the pavement beside the north-south arterial, half way down the map. The one
 ## place the crowd's noise floor is highest, which makes it the place worth measuring.

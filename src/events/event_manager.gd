@@ -7,46 +7,111 @@ extends Node
 ## budget formula tops out around 32 concurrent events on the last day — 32 distance
 ## checks per physics frame is nothing, and a hash would be more code with more ways to be
 ## subtly wrong. Revisit if an act ever wants hundreds of sources at once.
+##
+## **Since M27 a day's plan and a day's live events are different things.** Playtest 04:
+## *"don't load everything upfront — only load / spawn things in the surrounding few blocks of
+## the player when needed."* The scheduler still plans the whole city at dawn, which is what
+## keeps every invariant that is stated over a day (one usable park, a walkable route to it,
+## determinism); what changed is that a plan becomes an `EventInstance` when the player comes
+## within `EVENT_STREAM_RADIUS` of it, and goes away again when she leaves.
+##
+## The gameplay half of that is bigger than the frames it saves. Playtest 03 traced a whole day
+## with **zero** events ever coming within reach: a twenty-second event planted across the city
+## fires and finishes at dawn, unobserved, and the budget bought nothing. An event that waits
+## for her is an event she meets.
 
 var _instances: Array[EventInstance] = []
+## Today's whole plan, sited and unsited, spent and unspent. See `EventScheduler.Planned`.
+var _plans: Array[EventScheduler.Planned] = []
+var _director: EventDirector
 var _aura: EventAuraLayer
 var _city: City
 var _map: CityMap
 var _player: Node2D
 var _hard_failed := false
 
+## How close the player has to be for a planned event to exist. `INF` turns streaming off and
+## puts the whole day in the world at once, which is what a test rig with no player wants —
+## `tests/test_event_manager.gd` and `tests/test_full_run.gd` are about a day's whole event set
+## rather than about what one player walked past.
+var stream_radius := Tuning.EVENT_STREAM_RADIUS
+
 func setup(city: City, map: CityMap) -> void:
 	_city = city
 	_map = map
+	_director = EventDirector.new(map)
 	_aura = EventAuraLayer.new()
 	_aura.name = "Auras"
 	_aura.track(_instances)
 	city.add_aura_layer(_aura)
 
-## Clears yesterday and spawns today. `consumed_one_shots` is appended to in place.
-func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[String]) -> void:
+## Clears yesterday and plans today. `consumed_one_shots` is appended to in place.
+##
+## `focus` is where the player will be standing when the day starts, so the events already
+## around the doorstep are in the world on the first frame rather than appearing during it.
+func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
+		focus := Vector2.ZERO) -> void:
 	clear()
 	_hard_failed = false
-	for plan in EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars):
-		_spawn(plan)
+	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars)
+	_director.start_day(_plans, GameState.day_rng(day, "ahead"))
+	stream_around(focus)
 
 func clear() -> void:
 	for instance in _instances:
 		instance.queue_free()
 	_instances.clear()
+	for plan in _plans:
+		plan.live = null
+	_plans.clear()
 
-func _spawn(plan: EventScheduler.Planned) -> void:
-	_instances.append(_create(plan.def, plan.position, plan.path))
+## Brings into the world everything within reach of a point, and takes away what has gone out
+## of it. Idempotent, and cheap: one distance check per planned event.
+##
+## The hysteresis is not a nicety. Without it a player pacing on the boundary of an event's
+## reach rebuilds it every other frame, and since a rebuilt instance starts its telegraph again
+## that is an event permanently crouching at her and never arriving.
+func stream_around(at: Vector2) -> void:
+	for plan in _plans:
+		if plan.spent or not plan.is_placed():
+			continue
+		# A city-wide source is everywhere by definition, so there is no "near" to wait for.
+		var distance := 0.0 if plan.def.city_wide else plan.distance_from(at)
+		if plan.live == null:
+			if distance <= stream_radius:
+				_stream_in(plan)
+		elif distance > stream_radius + Tuning.EVENT_STREAM_HYSTERESIS:
+			_stream_out(plan)
+
+func _stream_in(plan: EventScheduler.Planned) -> void:
+	# The scar is recorded the first time the event is put in the world and never again: walking
+	# back past a burnt-out shell must not re-report the fire that made it.
+	plan.live = _create(plan.def, plan.position, plan.path, not plan.was_live)
+	plan.was_live = true
+	_instances.append(plan.live)
+
+func _stream_out(plan: EventScheduler.Planned) -> void:
+	_instances.erase(plan.live)
+	plan.live.queue_free()
+	plan.live = null
+
+## Adds an event outside the day's plan and outside the streaming, at a path the caller chose.
+## The director's cats arrive this way, and so does the resistance's robbery.
+func _spawn_unplanned(def: EventDef, at: Vector2,
+		path := PackedVector2Array()) -> EventInstance:
+	var instance := _create(def, at, path)
+	_instances.append(instance)
+	return instance
 
 ## Builds an instance, puts it in the world, and records any permanent mark it leaves.
 ## Everything that puts an event on the map goes through here, so a scar can never be
 ## missed by whichever path created the event.
 func _create(def: EventDef, at: Vector2,
-		path := PackedVector2Array()) -> EventInstance:
+		path := PackedVector2Array(), record_scar := true) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, path)
 	_city.add_entity(instance)
-	if def.scar_id != "":
+	if def.scar_id != "" and record_scar:
 		# A scar is where the city stopped being recomputable: it exists because of what
 		# happened on an earlier day, so from day 4 onwards the map depends on run history.
 		Telemetry.note("scar", "%s left at %s by %s" % [
@@ -79,9 +144,7 @@ const _CAUSES := {
 ## Adds an event outside the day's plan. Used by the resistance director to plant the
 ## robbery that may be waiting where a contact is.
 func spawn_extra(def: EventDef, at: Vector2) -> EventInstance:
-	var instance := _create(def, at)
-	_instances.append(instance)
-	return instance
+	return _spawn_unplanned(def, at)
 
 ## Retires every city-wide source. The loudspeakers cut out mid-sentence, and for the
 ## first time since the masts went up on day 5 there is no floor under the meter — the
@@ -95,8 +158,29 @@ func silence_city_wide() -> int:
 			silenced += 1
 	return silenced
 
+## How many events are in the world right now. Since M27 this is *what is around the player*
+## rather than what the day contains — see `planned_count()` for the other question.
 func active_count() -> int:
 	return _instances.size()
+
+## How many sited events the day is carrying, live or waiting to be walked past. This is the
+## number that answers "is thirteen events on day one a city or a gauntlet"; `active_count()`
+## answers "what is she standing in".
+func planned_count() -> int:
+	var total := 0
+	for plan in _plans:
+		if plan.is_placed() and not plan.spent:
+			total += 1
+	return total
+
+## The day's plan, for the readouts and the telemetry. Not for anything that acts on it.
+func plans() -> Array[EventScheduler.Planned]:
+	return _plans
+
+## Events the day has budgeted for the director to put in front of the player and has not
+## spent yet.
+func owed_ahead() -> int:
+	return _director.owed()
 
 func instances() -> Array[EventInstance]:
 	return _instances
@@ -111,9 +195,33 @@ func total_excitement_at(world_position: Vector2) -> float:
 
 # ------------------------------------------------------------------ ticking ---
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	_retire_finished()
+	if _find_player():
+		stream_around(_player.global_position)
+		_place_what_is_owed_ahead(delta)
 	_check_hard_fails()
+
+## The director's half of the day: something that happens *to* her, in front of her, while she
+## is walking. See `EventDirector` for why a cat is authored as a moment rather than a place.
+func _place_what_is_owed_ahead(delta: float) -> void:
+	var body := _player as CharacterBody2D
+	if not body:
+		return
+	var due := _director.due(delta, body.global_position, body.velocity)
+	if due.is_empty():
+		return
+	var def := due[0] as EventDef
+	var path := due[1] as PackedVector2Array
+	_spawn_unplanned(def, path[0], path)
+	Telemetry.note("ahead", "%s crosses %.0fpx in front of her at %s" % [
+		def.id, Tuning.AHEAD_LEAD_DISTANCE,
+		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+
+func _find_player() -> bool:
+	if not _player:
+		_player = get_tree().get_first_node_in_group("player") as Node2D
+	return _player != null
 
 func _retire_finished() -> void:
 	var survivors: Array[EventInstance] = []
@@ -123,6 +231,7 @@ func _retire_finished() -> void:
 			var successor := _successor_of(instance)
 			if successor:
 				successors.append(successor)
+			_mark_plan_spent(instance)
 			instance.queue_free()
 		else:
 			survivors.append(instance)
@@ -132,6 +241,17 @@ func _retire_finished() -> void:
 	# The aura layer holds this same array by reference, so it must be updated in place
 	# rather than reassigned.
 	_instances.assign(survivors)
+
+## An event that has finished has finished for the day: its plan is spent, so walking back past
+## the place it happened does not start it over. This is the half of streaming that a rebuilt
+## instance would otherwise get wrong — an event is allowed to come and go while it is running,
+## and is not allowed to come back once it is over.
+func _mark_plan_spent(instance: EventInstance) -> void:
+	for plan in _plans:
+		if plan.live == instance:
+			plan.live = null
+			plan.spent = true
+			return
 
 ## An event that leaves something behind where it stopped — how a fire engine ends its run
 ## at a fire. The successor is placed at the finishing position, not at a planned tile, so
@@ -147,12 +267,8 @@ func _successor_of(instance: EventInstance) -> EventInstance:
 	return _create(def, instance.global_position)
 
 func _check_hard_fails() -> void:
-	if _hard_failed:
+	if _hard_failed or not _find_player():
 		return
-	if not _player:
-		_player = get_tree().get_first_node_in_group("player") as Node2D
-		if not _player:
-			return
 	for instance in _instances:
 		if instance.is_lethal_at(_player.global_position):
 			_hard_failed = true

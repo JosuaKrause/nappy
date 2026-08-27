@@ -34,7 +34,17 @@ func run(t) -> void:
 func _start_day(day: int) -> void:
 	var consumed: Array[String] = []
 	_city.events.start_day(day, _rng(day, "events"), consumed)
-	_city.crowd.start_day(day, _rng(day, "crowd"))
+
+## Puts the world around a point the way it would be for a player standing there.
+##
+## Since M27 the crowd and the events are both built around the player, so a rig that teleports
+## to a park and starts measuring is measuring an empty city unless it says where it is. This
+## is the rig's stand-in for having walked there — and it is also the honest version of what
+## these tests ask, which was never "what is the excitement at this coordinate" but "what does
+## a player standing on this ground have to survive".
+func _stand_at(day: int, at: Vector2) -> void:
+	_city.events.stream_around(at)
+	_city.crowd.start_day(day, _rng(day, "crowd"), at)
 
 func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -86,6 +96,7 @@ func _walk_until_asleep(at: Vector2, seconds: float) -> float:
 func _test_a_calm_park_still_settles_her(t) -> void:
 	_start_day(1)
 	var park := _quietest_park()
+	_stand_at(1, park)
 	_build_rig(t, park)
 	var settled := _walk_until_asleep(park, Tuning.day_length(1))
 	t.check(settled > 0.0, "a calm park settles her at all")
@@ -102,6 +113,7 @@ func _test_a_calm_park_still_settles_her(t) -> void:
 func _test_the_arterial_never_settles_her(t) -> void:
 	_start_day(1)
 	var street := CrowdLanes.arterial_pavement(_city.map)
+	_stand_at(1, street)
 	_build_rig(t, street)
 	var settled := _walk_until_asleep(street, Tuning.day_length(1))
 	t.check(settled < 0.0,
@@ -116,19 +128,26 @@ func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		_start_day(day)
 		var park := _quietest_park()
+		_stand_at(day, park)
 		_build_rig(t, park)
 		var settled := _walk_until_asleep(park, Tuning.day_length(day))
 		t.check(settled > 0.0, "day %d has a park she can actually settle in" % day)
 
-## The calmest park centre this day, by the excitement standing there right now. This is the
-## park the scheduler's "one usable calm zone" rule is protecting, found by measurement
-## rather than by asking the scheduler which one it picked.
+## The calmest park centre this day, by the excitement a player standing there would be under.
+## This is the park the scheduler's "one usable calm zone" rule is protecting, found by
+## measurement rather than by asking the scheduler which one it picked.
+##
+## Each candidate is streamed in before it is measured, or the answer would be "whichever park
+## the last measurement happened to leave the world around". The crowd is left out of it on
+## purpose: it lives on the street lattice, so what separates one park from another is the
+## events on it, which is exactly what the rule protects.
 func _quietest_park() -> Vector2:
 	var best := _city.map.home_world_position()
 	var quietest := INF
 	for block in _city.map.calm_blocks:
 		var centre := _city.map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
-		var here := _city.total_excitement_at(centre)
+		_city.events.stream_around(centre)
+		var here := _city.events.total_excitement_at(centre)
 		if here < quietest:
 			quietest = here
 			best = centre

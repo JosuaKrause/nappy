@@ -92,18 +92,36 @@ static func _playground() -> EventDef:
 
 ## The tutorial obstacle: visible crouching before it bolts, sharp while it crosses, gone
 ## a second later. Small radius, so walking one lane wide of it is enough.
+##
+## **Playtest 04 found it doing nothing at all, for two separate reasons, and M27 fixed both.**
+##
+## It was placed on a road tile somewhere in the city at dawn and it ran its two and a half
+## seconds out there, alone. *"The cat is ineffective since it happens when it spawns."* A cat
+## is not a place, it is a moment — so it is the first `AHEAD_OF_PLAYER` event: the director
+## puts it across her line while she is walking, and it happens in front of her every time.
+##
+## And it had never once been seen to bolt. `EventInstance` starts a mobile event moving when
+## the telegraph does, which is right for a siren approaching from three streets away and wrong
+## for a crouch: the path is one street wide, so at 240px/s the cat finished its whole run
+## *during* the telegraph. It never reached full intensity and the running sprite never drew.
+## `still_while_telegraphing` is the fix, and the duration now covers the crossing it makes
+## afterwards rather than expiring half way over.
 static func _cat_dash() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cat_dash"
 	def.display_name = "Cat"
 	def.look = EventDef.Look.ANIMAL
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
+	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
 	def.intensity = 15.0
 	def.inner_radius = 30.0
 	def.outer_radius = 120.0
-	def.duration = 1.4
+	# Long enough to carry it the whole way across the street it starts at the edge of:
+	# STREET_WIDTH tiles either side at 240px/s is 1.6s, and it must not expire mid-road.
+	def.duration = 1.8
 	def.telegraph_time = 1.6
 	def.mobile = true
+	def.still_while_telegraphing = true
 	def.speed = 240.0
 	def.weight = 3.0
 	def.max_per_day = 5

@@ -32,6 +32,19 @@ enum PathMode {
 	ALONG_STREET,  ## Down the corridor it starts on.
 }
 
+## Where an instance comes from. *(M27, playtest 04.)*
+enum SpawnMode {
+	## Placed on a tile when the day is planned, and streamed into the world when the player
+	## comes near it. Almost everything: an event that is *somewhere* is half of what makes a
+	## route a decision, because it can be routed around.
+	MAP,
+	## Placed in front of the player, while she walks, by `EventDirector`. For the small number
+	## of events whose whole content is *the moment it happens to you* — a cat bolting out of a
+	## doorway is nothing at all if it does it two blocks away and you arrive at an empty road.
+	## The day still budgets it: the scheduler counts one instead of placing one.
+	AHEAD_OF_PLAYER,
+}
+
 @export var id := ""
 @export var display_name := ""
 @export var kind := GameEnums.EventKind.RECURRING
@@ -65,12 +78,25 @@ enum PathMode {
 ## Seconds per intensity cycle, for events that pulse rather than hold. 0 is constant.
 @export var pulse_period := 0.0
 
+@export var spawn_mode := SpawnMode.MAP
+
 ## Moves along a path at `speed` px/s. The scheduler builds the path.
 @export var mobile := false
 @export var speed := 0.0
 @export var path_mode := PathMode.NONE
 ## Route length for ALONG_STREET, in tiles.
 @export var path_length_tiles := 24
+## Holds still until the telegraph is over, then goes.
+##
+## The default is to move from the first frame, which is right for anything whose telegraph is
+## *the approach*: a fire engine is warning you by being audible three streets away, and it has
+## to cover those three streets to arrive.
+##
+## It is wrong for anything whose telegraph is a *posture*. The cat crouches and then bolts,
+## and a crouch that is already travelling at 240px/s is not a crouch. Worse, it made the cat
+## silent: its path is one street wide, so at full speed the whole run was over by the time the
+## telegraph ended — it never reached full intensity, and the running sprite never drew once.
+@export var still_while_telegraphing := false
 
 ## Radius of solid obstruction, in px. 0 for events you can walk through. Scaffolding does
 ## not politely step aside, and being *forced* to reroute is a different pressure from
@@ -118,6 +144,15 @@ func validate() -> bool:
 	# meaningless for it. It is never a hazard on its own — see the loudspeaker.
 	if city_wide:
 		return true
+	# An `AHEAD_OF_PLAYER` event has no tile, so `_ensure_the_city_is_still_walkable` never sees
+	# it and cannot check that what it blocks leaves a route to a park. Anything that stands in
+	# the way therefore has to be sited on the map, where the day can reason about it. A
+	# transient one that merely *emits* is fine, and so is a lethal one — it appears in front of
+	# her and it is gone in three seconds, so it can never seal a street.
+	if spawn_mode == SpawnMode.AHEAD_OF_PLAYER and obstructs_radius > 0.0:
+		push_error("event '%s' spawns ahead of the player and obstructs %.0fpx: nothing checks "
+				% [id, obstructs_radius] + "that it leaves a route to a park")
+		return false
 	return Tuning.validate_event(id, telegraph_time, inner_radius, outer_radius, hard_fail,
 			speed if mobile else 0.0)
 

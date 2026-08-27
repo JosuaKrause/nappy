@@ -194,6 +194,15 @@ by addition like everything else. Anything else that wants to "add excitement" s
 body to put it on rather than a third summand — and if there genuinely is no body, that is a
 design conversation, not a plumbing one.
 
+**Separation between bodies is positional, never a force.** *(M19 for the player, M27 for the
+traffic.)* A brake, a repulsion, a steering weight — all of them keep a gap that already exists
+and none of them can open one that does not, so two bodies that start inside each other stay
+there. `Crowd._bump()` resolves the player against a pedestrian by moving both; `Crowd.
+space_out_the_traffic()` resolves a lane of cars from the front backwards. M27's first version
+was a headway brake alone, and it left eight overlapping pairs a frame on the arterial, because
+a car recycled into a lane lands at a point it cannot see. If a new pair of things must not be
+inside each other, move them apart; do not ask them to want to be apart.
+
 **The noise floor is emergent, never a constant.** A street is loud because there are
 people and cars on it, which the player can see. There used to be an invisible ambient band
 on the arterials doing that job; it was replaced, not supplemented. If you find yourself
@@ -215,11 +224,40 @@ a walkable tile.** `tests/test_blocks.gd` pushes every block to the end of its a
 seeds and asserts the walkable set is identical tile for tile. Per-day *closures* remain
 events with an `obstructs_radius`, not tile edits.
 
+**The day is planned across the whole city; only the world near the player is built.** *(M27,
+and the licence is playtest 04's own: "consistency is not that important, nobody can run after
+cars anyway to confirm they are still there off screen.")* Every guarantee the game makes is
+stated over a **day** — one usable park, two distinct routes to two distinct calm areas, a
+one-shot that fires once per run, determinism from a seed — and all of them are properties of
+the *plan*. `EventScheduler.build_day()` therefore still plans the entire map at dawn. What
+streams is the *instantiation*: a plan becomes a node when the player is within
+`EVENT_STREAM_RADIUS` and stops being one when she leaves.
+
+Three things that keep it honest, and each is a way it could quietly stop being legal:
+
+- **Nothing may be seen to appear.** Both radii are wider than half the viewport diagonal.
+- **`EVENT_STREAM_RADIUS` must stay wider than the widest field in the catalogue**, so an event
+  is outside its own outer radius the instant it becomes visible. Otherwise streaming is a way
+  of dropping events on people, and the telegraph contract below is a lie.
+  `tests/test_event_manager.gd` asserts it against the catalogue.
+- **A spent plan stays spent.** Streaming may take a *running* event away and give it back; it
+  may never rewind one that has finished, and the bookkeeping an event does once — a scar, a
+  block arc — happens on its first instantiation and never again.
+
+Do not move a guarantee out of `build_day` and into the streaming. If something has to be true
+of a day, it has to be decided where the day is.
+
 **The telegraph fairness contract.** A player who starts walking away the instant an event
 becomes visible must get clear before it hurts. `Tuning.validate_event()` asserts it on load
 and `tests/test_events.gd` checks the whole catalogue. A violation is a bug, not a difficulty
 setting. Two documented exemptions: `AMBIENT` events (they never "appear") and `city_wide`
 ones (no edge to walk out of).
+
+M27 added a third way in and it is *not* an exemption: an `AHEAD_OF_PLAYER` event has no
+telegraph phase the player can see coming, so the contract is paid in geometry instead. It is
+sited far enough ahead that she is outside its outer radius for the whole telegraph, and
+`EventDef.validate()` refuses one that obstructs, because nothing checks a route around a thing
+with no tile.
 
 **The traffic fairness contract.** *(M19.)* A car is lethal and is **not** an event, so
 `validate_event()` never sees it. `Tuning.validate_traffic()` is its equivalent and runs on
@@ -308,6 +346,22 @@ two minutes and is the only honest way to set it.
 the `docs/EVENTS.md` table. Everything else is data-driven. If it needs behaviour no field
 covers, add the field to `EventDef` and handle it in `EventInstance` — resist adding a script
 per event. `tests/test_events.gd` will fail the build if the geometry is unfair.
+
+Decide `spawn_mode` deliberately. `MAP` is the default and is right for anything the player
+could plan around: it is a place, and finding out it is there is what walking a street is for.
+`AHEAD_OF_PLAYER` is for the small number whose entire content is *the moment it happens to
+you* — three seconds of cat is not a place — and it may not obstruct.
+
+**Change the crowd density** — `Tuning.CROWD_PEDESTRIANS_PER_ACT` / `CROWD_CARS_PER_ACT`, which
+since M27 are populations of the **field** rather than of the city, and
+`CrowdLanes.ARTERIAL_BUSYNESS`, which is one street's share of the three or four corridors in
+the box rather than of sixteen. Then **measure it**, with a throwaway probe over a minute of a
+real day: how often there is a safe gap to cross the arterial and an ordinary street, the mean
+wait at the kerb, contacts in a forty-second walk down a lane centre *and* holding the midline
+between two lanes, and whether any two cars share a lane closer than a car's length. The table
+in `docs/PLAYTEST-04.md` is what those came out as, and re-measuring is the only honest way to
+move them: a lane has a **capacity**, and past it the arterial jams solid and no controller
+helps.
 
 **Change a balance number** — `src/autoload/tuning.gd`, which is the only place they live.
 Expect tests to push back: several encode *relationships*, not values (traffic noise must stay
@@ -417,6 +471,14 @@ what a balance change did to the whole catalogue.
 events on it: a contact with a pedestrian is ~15.6 points and a car's horn ~8, and neither is
 in the catalogue. A balance argument that reaches for the cost table alone is now answering a
 narrower question than it thinks.
+
+**M27 widened that gap again, and this time the street is most of the day.** The measured
+numbers are in `docs/PLAYTEST-04.md`. The two worth carrying around: at act I density the
+arterial has a safe gap in the traffic about **one time in twenty** — it is crossed at a zebra,
+where traffic gives way, and there is one at every junction — and forty seconds of pavement
+costs **eleven** contacts walked down a lane centre against **one** holding the midline between
+two lanes. The crowd is expensive to be careless in and free to be careful in, and that ratio,
+not either number, is what makes it a decision.
 
 ## Known-shaky ground
 

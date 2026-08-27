@@ -25,6 +25,10 @@ func _play_a_run(t, seed_value: int) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(CityGenerator.generate(GameState.run_seed))
+	# No player walks this run, so nothing would ever come within streaming reach. This suite is
+	# about a run's whole chain — one-shots, successors, scars — which is a property of the
+	# fourteen *plans*, so it puts every day in the world at once. See `EventManager`.
+	city.events.stream_radius = INF
 
 	var director := ResistanceDirector.new()
 	t.add_child(director)

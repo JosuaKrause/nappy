@@ -109,6 +109,7 @@ kind has to be able to name the question it answers, or it is a metric and does 
 | `roll` | `EventScheduler`, `ResistanceDirector` | Which way a run-branching roll went, with the number and the threshold |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager` | Where the city stopped being recomputable |
+| `ahead` | `EventManager` | When the director put something across her line, and where she was — the only record of an event that has no place on the map *(M27)* |
 | `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial *(decision 10)* |
 | `start` | observer | Where the day began |
 | `cross` | observer | Did the player have to cross the street, and at a zebra? *(finding 3, and M21 later)* |

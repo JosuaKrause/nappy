@@ -236,6 +236,68 @@ So the crossing is the safe way over and jaywalking is the fast way over, which 
 finding 3 asked for. A car closer than its braking distance legitimately cannot stop, and
 there the horn is the contract rather than the brake.
 
+### Traffic queues *(M27)*
+
+A car keeps `CAR_HEADWAY_TIME` seconds of clear road in front of it and never closes to less
+than `CAR_GAP_MIN`, which is a car's own length plus a nose. The two wants compose by taking
+the lower, so a queue at a zebra is the front car stopping and everybody behind it honouring
+the headway rather than a special case for queues.
+
+The **separation is positional**, not a brake, and that is the load-bearing part. A brake keeps
+a gap that already exists and cannot open one that does not: two cars inside each other both
+choose zero and stay there forever, and recycling puts a car into a lane at a point it cannot
+see. `Crowd.space_out_the_traffic()` resolves each lane from the front backwards, so a whole
+chain comes apart in one pass. It is the same shape as the player's bump, for the same reason —
+see the invariant in `CLAUDE.md`.
+
+The relationship, rather than the numbers: **the headway has to outlast the time it takes to
+brake from cruise**, or a car cannot physically honour the gap it is keeping and the queue
+resolves by interpenetration again however good the controller is.
+
+## The world near you *(M27)*
+
+Playtest 04, and the instruction it was emphasised in: *"don't load everything upfront — only
+load / spawn things in the surrounding few blocks of the player when needed; consistency is not
+that important, nobody can run after cars anyway to confirm they are still there off screen."*
+
+The city is 104×104 tiles and the screen is 40×22 of them — **0.8% of it**. Every population
+number was being divided by that, which is why 110 cars read as a street you could ignore. The
+second clause is the licence: continuity of a car you cannot see is unobservable, so it is free
+to give away, and density where somebody is looking is not.
+
+**The crowd is a field.** `CrowdField` is a `CROWD_FIELD_RADIUS` box centred on the player.
+Agents that pass the edge they are heading for — or fall further behind the edge they came in
+at than the entry band is deep, or end up on a street the box no longer reaches — are recycled
+into a band outside the edge they will re-enter through. `Tuning.CROWD_PEDESTRIANS_PER_ACT` and
+`CROWD_CARS_PER_ACT` are populations *of the field*.
+
+The radius has one floor and it is the screen: half the viewport diagonal is the furthest
+anything visible can be from the camera, so an agent recycled outside that is always off-camera
+when it appears, whichever way she is facing.
+
+**Events stream.** `EventScheduler` still plans the whole day across the whole city — every
+guarantee the game makes is a property of the *plan*, so nothing about one usable park, two
+routes to two calm areas, one-shots firing once, or determinism from a seed is touched. What
+changed is when a plan becomes a node: `EventManager.stream_around()` puts a planned event in
+the world when the player comes within `EVENT_STREAM_RADIUS` and takes it away again when she
+leaves, with `EVENT_STREAM_HYSTERESIS` so pacing on the boundary does not rebuild it every
+other frame. An event that has finished is **spent**: streaming may take an event away and give
+it back while it is running, and may never rewind one that is over.
+
+`EVENT_STREAM_RADIUS` has a second floor on top of the screen one, and it is what makes
+streaming an event legal rather than a way of dropping things on people: it is wider than the
+widest field in the catalogue, so an event is outside its own outer radius at the moment it
+becomes visible.
+
+The gameplay consequence is larger than the frames. Playtest 03 traced a day with **zero**
+events ever coming within reach: a twenty-second event planted across the city at dawn is over
+before the player could have reached it. An event that waits for her is an event she meets.
+
+**And some events have no place at all.** `EventDef.SpawnMode.AHEAD_OF_PLAYER` events are
+budgeted by the day and sited by `EventDirector`, which puts them across her line
+`AHEAD_LEAD_DISTANCE` in front of her while she is walking. See docs/EVENTS.md, "Where an event
+happens", for which events earn that and what the contract on them is.
+
 ## Excitement falloff
 
 Each active event has an `intensity`, an `inner_radius` and an `outer_radius`.

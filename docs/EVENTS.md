@@ -28,6 +28,8 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `telegraph_time` | Seconds of visible warning before full intensity |
 | `pulse_period` | Seconds per intensity cycle (`0` = constant) |
 | `mobile` / `speed` | Whether it moves along a path, and how fast |
+| `still_while_telegraphing` | Holds position until the telegraph is over, then goes. Default off, which is right when the telegraph *is* the approach; on when it is a posture — see the cat, below |
+| `spawn_mode` | `MAP` (sited when the day is planned) or `AHEAD_OF_PLAYER` (sited in front of her, while she walks) — see "Where an event happens" |
 | `hard_fail` | Whether contact ends the day immediately |
 | `look` | How the instance draws itself |
 | `act_tag` | Narrative act it belongs to, for palette/audio |
@@ -43,6 +45,44 @@ entire excitement model a pure query with nothing pushing values at the baby.
 - **`ONE_SHOT`** — fires on exactly one day in the run, then never again (fire truck).
 - **`SCRIPTED`** — the scheduler is told exactly which day it fires (story beats).
 
+## Where an event happens *(M27)*
+
+`kind` says *when* an event may happen. `spawn_mode` says **where**, and there are two answers.
+
+**`MAP`, which is nearly everything.** The scheduler puts it on a tile when the day is planned,
+and `EventManager` puts it in the world when the player comes within `EVENT_STREAM_RADIUS` of it
+— of the nearest point of its *route*, for a mobile one, so a fire engine is in the world before
+it sets off down the street she is on. It goes away again when she leaves, and once it has run
+its course its plan is **spent**: walking back past it does not start it over.
+
+An event that is somewhere is half of what makes a route a decision. It can be routed around,
+and finding out it is there is what walking a street is for.
+
+**`AHEAD_OF_PLAYER`, which today is the cat.** No tile. The day budgets it at the same cost as
+everything else, and `EventDirector` sites it across her line, `AHEAD_LEAD_DISTANCE` in front of
+her, while she is walking. Playtest 04: *"the cat is ineffective since it happens when it
+spawns — the cat should get spawned in in front of the player while they walk."*
+
+That is a real distinction and not a placement trick. A café spilling across a pavement is a
+*place*. A cat bolting is not: you cannot plan around three seconds, and a cat that ran across
+an empty road two blocks away was, for six milestones, an event the player had no way of ever
+meeting. It only exists as an interruption, so it is authored as one.
+
+Three rules on it, in the order they matter:
+
+1. **The clock runs on walking, not on wall time.** A player who stops in a park to let the
+   meter recover is not owed a cat for waiting, and must not come back to the pavement and be
+   handed four of them.
+2. **The lead is a reaction window stated as a distance.** `AHEAD_LEAD_DISTANCE` is two seconds
+   at `WALK_SPEED`, and the run starts a street's width off to one side — so she is outside its
+   outer radius for the whole time it is telegraphing. That is the telegraph fairness contract
+   holding for an event that arrives without warning, which is the only way one is allowed to.
+3. **It may not obstruct.** An `AHEAD_OF_PLAYER` event has no tile, so
+   `_ensure_the_city_is_still_walkable` never sees it and nothing checks that what it blocks
+   leaves a route to a park. `EventDef.validate()` refuses one that does. Emitting is fine, and
+   so is being lethal — it is in front of her and gone in three seconds, so it can never seal a
+   street.
+
 ## Scheduling
 
 ```
@@ -56,8 +96,14 @@ EventScheduler.build_day(day_index, run_seed):
     6. validate: a path from home to at least one usable calm zone must exist
 ```
 
-The **event budget** grows with the day index: `budget = 3 + floor(day_index × 1.4)`.
+The **event budget** grows with the day index: `budget = 17 + floor(day_index × 1.9)`.
 Each event costs budget equal to its `intensity` tier, so late days are not just "more cats".
+
+The budget is **not** the count, and the gap is about a third: `_ensure_one_usable_park` strips
+whatever reaches the calmest block and `_ensure_the_city_is_still_walkable` drops obstructions
+that would seal the city. Measure what a day *places*, over several seeds; deriving it from the
+formula gets a number a third too small that looks right. Since M27 an `AHEAD_OF_PLAYER` event
+costs the same budget and takes no tile, so a day's `plan` line reads as *n sited, m ahead*.
 
 ## Catalogue
 
