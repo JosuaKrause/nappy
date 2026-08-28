@@ -8,7 +8,9 @@ func run(t) -> void:
 	_test_catalogue_is_fair(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
+	_test_a_pursuer_leaves_room_to_answer(t)
 	_test_duration_and_finish(t)
+	_test_an_event_leaves_rather_than_vanishing(t)
 	_test_mobile_follows_its_path(t)
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
 	_test_the_director_puts_it_in_front_of_her(t)
@@ -111,14 +113,121 @@ func _test_pulse_envelope(t) -> void:
 	t.check(highest <= def.intensity + 0.001, "the pulse never exceeds the stated intensity")
 	instance.free()
 
+## **The one encounter in the game with a right answer, walked three ways.** *(M35, playtest 08
+## finding 4: "I like the running tutorial on day 3 but I don't know how to solve it yet — I died
+## every time.")*
+##
+## `validate_pursuit` passed every line of itself while the dog was killing people, because every
+## line of it was about **speeds and durations** and a pursuit is played out in **distances**. This
+## is the same contract walked rather than asserted, and the three walks are the three answers a
+## player can give: into it, away from it at a walk, and away from it at a run. What each one has to
+## produce is different, and the first one is the one that was broken — she is *sited walking into
+## it*, because the director puts it where she was already going.
+func _test_a_pursuer_leaves_room_to_answer(t) -> void:
+	var def := EventCatalogue.by_id("charging_dog")
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+	t.check(standoff > def.inner_radius, "a pursuer holds off outside the radius that ends the day")
+
+	# Into it. The geometry the day-3 lesson actually produces, and the one that killed a run three
+	# times: it has to keep its distance while it is only telegraphing, however far she walks in.
+	var walked_in := _chase_rig(def, -Tuning.WALK_SPEED)
+	t.close_to(walked_in["at_the_lunge"], standoff,
+			"walking into it still leaves the whole stand-off when it goes lethal", 8.0)
+	t.check(not walked_in["lethal_while_telegraphing"],
+			"and nothing it does during its own telegraph can end the day")
+
+	# Away from it at a walk. Walking has to lose, or the mechanic teaches nothing.
+	var walked_off := _chase_rig(def, Tuning.WALK_SPEED)
+	t.check(walked_off["caught"], "walking away from it is not enough")
+	t.check(not walked_off["gave_up"], "so it never has to give up on somebody walking")
+
+	# Away from it at a run. Running has to win, and it has to *end* it: the price of the right
+	# answer is fourteen points a second, so a chase that runs its full clock however well it is
+	# played is a toll rather than a lesson.
+	var ran := _chase_rig(def, Tuning.RUN_SPEED)
+	t.check(not ran["caught"], "running away from it works")
+	t.check(ran["gave_up"], "and it breaks off rather than tailing her for the whole chase")
+	t.check(ran["ended_at"] < def.telegraph_time + def.duration,
+			"which ends the chase early: %.1fs against a %.1fs one"
+			% [ran["ended_at"], def.telegraph_time + def.duration])
+	var cost: float = ran["ended_at"] * Tuning.EXCITEMENT_FROM_RUNNING
+	t.check(cost < Tuning.METER_MAX * 0.6,
+			"and the run costs %.0f of a %.0f meter rather than the day"
+			% [cost, Tuning.METER_MAX])
+
+## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
+## them: positive is away from it, negative is into it.
+func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	var her := Vector2(Tuning.AHEAD_LEAD_DISTANCE, 0.0)
+	var elapsed := 0.0
+	var result := {"caught": false, "gave_up": false, "lethal_while_telegraphing": false,
+			"at_the_lunge": INF, "ended_at": INF}
+	var was_telegraphing := true
+	while elapsed < 12.0 and not instance.is_finished and not result["caught"]:
+		her.x += player_speed * STEP
+		instance.player_at = her
+		instance._process(STEP)
+		elapsed += STEP
+		if was_telegraphing and not instance.is_telegraphing():
+			result["at_the_lunge"] = instance.global_position.distance_to(her)
+			was_telegraphing = false
+		if instance.is_lethal_at(her):
+			result["caught"] = true
+			result["lethal_while_telegraphing"] = was_telegraphing
+		if instance.gave_up and result["ended_at"] == INF:
+			result["gave_up"] = true
+			result["ended_at"] = elapsed
+	if result["ended_at"] == INF:
+		result["ended_at"] = elapsed
+	instance.free()
+	return result
+
 func _test_duration_and_finish(t) -> void:
-	var def := EventCatalogue.by_id("cat_dash")
+	# An event that was a *place* is simply over. Nothing to leave, and nowhere to go.
+	var def := EventCatalogue.by_id("abduction")
+	t.check(def.departure_speed() <= 0.0, "the van that was parked there does not drive off")
 	var instance := _instance(t, def)
 	_advance(instance, def.telegraph_time + def.duration + 0.1)
 	t.check(instance.is_finished, "an event with a duration finishes")
 	t.close_to(instance.contribution_at(Vector2.ZERO), 0.0,
 			"a finished event contributes nothing")
 	instance.free()
+
+## **Nothing vanishes while you are looking at it.** *(M35, playtest 08 findings 2 and 3: "running
+## dog events etc — things that move disappear on screen; they should at least run offscreen before
+## despawning", and "pigeons are also completely ineffective", which is the same sentence about a
+## flock that hangs in the air and then is not there.)*
+##
+## Three separate claims, and the middle one is the one that could have gone wrong quietly: an event
+## on its way out is **over**. It emits nothing, it cannot end the day, and it carries no cue — or a
+## cat that has finished its run would trail its whole field behind it for as long as it took to get
+## off screen, which is a worse bug than the one being fixed.
+func _test_an_event_leaves_rather_than_vanishing(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	t.check(def.departure_speed() > 0.0, "a flock has somewhere to go")
+	var instance := _instance(t, def, Vector2.ZERO)
+	instance.player_at = Vector2(60.0, 0.0)
+	_advance(instance, def.telegraph_time + def.duration + 0.1)
+	t.check(not instance.is_finished, "a flock that is done is not deleted where it stands")
+	t.check(instance.is_leaving, "it is leaving")
+	t.close_to(instance.contribution_at(instance.player_at), 0.0,
+			"and it stops emitting the moment it does")
+
+	# Away from her, since a flock has no route to carry on along.
+	_advance(instance, 0.5)
+	t.check(instance.global_position.distance_to(instance.player_at) > 60.0,
+			"it goes away from her rather than in any direction it likes")
+	_advance(instance, Tuning.OUT_OF_SIGHT / def.departure_speed())
+	t.check(instance.is_finished, "and it is gone once it is out of sight")
+	instance.free()
+
+	# The backstop, for a rig or a streamed-out day where there is nobody to be out of sight of.
+	var alone := _instance(t, def, Vector2.ZERO)
+	_advance(alone, def.telegraph_time + def.duration + EventInstance.LEAVING_GIVES_UP + 0.2)
+	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")
+	alone.free()
 
 func _test_mobile_follows_its_path(t) -> void:
 	var def := EventCatalogue.by_id("fire_truck")

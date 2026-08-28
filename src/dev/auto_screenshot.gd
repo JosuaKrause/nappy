@@ -6,6 +6,7 @@ extends Node
 ## the game looks right. This gives a windowed run a way to produce a checkable image.
 ##
 ##     godot --path . -- --screenshot out.png [--after 4.0] [--walk north|south|east|west]
+##                                            [--flee [delay]]
 ##
 ## `--after` is in SECONDS, not frames. It counted frames at first, which was quietly
 ## useless for checking anything time-based: a windowed run here draws ~110fps, so waiting
@@ -18,17 +19,44 @@ extends Node
 ## ever streams in, and nothing at the screen edge is ever closing. It presses the real input
 ## actions rather than writing to the rig, so everything downstream — the gait, the run excess,
 ## the baby — behaves exactly as it does for a person holding the key.
+##
+## `--flee` turns round and runs **when something starts chasing her**, and it exists for exactly
+## one thing. *(M35, playtest 08 finding 4.)* Since M33 the game has one encounter with a **right
+## answer**, and a rig that can only hold a direction can only ever demonstrate the wrong one: every
+## trace of the day-3 dog taken with `--walk` ends in a hard fail, which is the mechanic working and
+## says nothing about whether the answer is affordable. It presses the real actions too, so the run
+## costs what a player's run costs.
+##
+## It waits for the pursuit rather than taking a timestamp, and the first version did take one. That
+## is worth writing down, because the failure was not a bad reading, it was a *reversed* one: the
+## director sites what it owes in front of the direction she is actually travelling, so a rig that
+## started running before the dog was placed had the dog placed in front of the **run** — and then
+## sprinted into it at 168px/s. Three traces of a lethal dog "arriving from nowhere" were a rig
+## running at it.
+##
+## An optional delay in seconds is how long she dithers first, which is the axis worth measuring:
+## the price of the right answer is what it costs to give it late.
 
 const DEFAULT_SECONDS := 1.5
 
 const _DIRECTIONS := {
 	"north": "move_up", "south": "move_down", "east": "move_right", "west": "move_left",
 }
+const _OPPOSITE := {
+	"move_up": "move_down", "move_down": "move_up",
+	"move_left": "move_right", "move_right": "move_left",
+}
 
 var _path := ""
 var _seconds_to_wait := DEFAULT_SECONDS
 var _elapsed := 0.0
 var _holding := ""
+## Whether to answer a pursuit by running, and how long to dither before doing it.
+var _flees := false
+var _dither := 0.0
+## The clock reading at which to turn, once something is chasing. `INF` until it is.
+var _flee_at := INF
+var _fled := false
 
 ## Returns a configured instance, or null if the command line did not ask for a screenshot.
 static func from_command_line() -> AutoScreenshot:
@@ -46,20 +74,46 @@ static func from_command_line() -> AutoScreenshot:
 		node._holding = String(_DIRECTIONS.get(args[walk + 1], ""))
 		if node._holding == "":
 			push_warning("unknown --walk direction '%s'" % args[walk + 1])
+	var flee := args.find("--flee")
+	if flee != -1:
+		node._flees = true
+		# The next argument is a delay only if it is a number; `--flee` on its own is "at once",
+		# and `--flee --seed 4242` must not read the flag after it as one.
+		if flee + 1 < args.size() and args[flee + 1].is_valid_float():
+			node._dither = float(args[flee + 1])
 	return node
 
 func _ready() -> void:
 	if _holding != "":
 		Input.action_press(_holding)
+	if _flees:
+		EventBus.event_telegraphed.connect(_on_telegraphed)
+
+func _on_telegraphed(instance: EventInstance) -> void:
+	if _fled or _flee_at < INF or not instance.def.pursues:
+		return
+	_flee_at = _elapsed + _dither
 
 func _process(delta: float) -> void:
 	_elapsed += delta
+	if not _fled and _elapsed >= _flee_at:
+		_fled = true
+		_turn_and_run()
 	if _elapsed < _seconds_to_wait:
 		return
 	set_process(false)
 	if _holding != "":
 		Input.action_release(_holding)
+	Input.action_release("run")
 	_capture()
+
+## The one answer the game asks for: about-turn, and hold shift.
+func _turn_and_run() -> void:
+	if _holding != "":
+		Input.action_release(_holding)
+		_holding = String(_OPPOSITE.get(_holding, _holding))
+		Input.action_press(_holding)
+	Input.action_press("run")
 
 func _capture() -> void:
 	# The viewport texture is only valid once the frame has actually been drawn.

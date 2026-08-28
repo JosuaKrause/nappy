@@ -106,15 +106,17 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	if _next_in > 0.0:
 		return []
 
-	var path := _crossing_ahead_of(at, velocity / speed)
+	# Peeked rather than popped, because what it wants sited depends on what it is: a pursuer is
+	# put *in her way* rather than across it, and a placement that fails must not spend the event.
+	var next := _owed[0] as EventDef
+	var path := _crossing_ahead_of(at, velocity / speed, next.pursues)
 	if path.is_empty():
 		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
 		# again shortly rather than burning the allowance on a place that would not read.
 		_next_in = 1.0
 		return []
 	_next_in = _roll_interval()
-	var def := _owed.pop_front() as EventDef
-	return [def, path]
+	return [_owed.pop_front() as EventDef, path]
 
 func _roll_interval() -> float:
 	return _rng.randf_range(Tuning.AHEAD_INTERVAL.x, Tuning.AHEAD_INTERVAL.y)
@@ -127,10 +129,20 @@ func _roll_interval() -> float:
 ##
 ## Empty when the crossing point is not somewhere anybody could walk — the lead lands inside a
 ## building, or outside the map. The caller waits and asks again.
-func _crossing_ahead_of(at: Vector2, heading: Vector2) -> PackedVector2Array:
+##
+## **A pursuer is sited at the lead point itself and given no route.** *(M35, playtest 08 finding
+## 4.)* It does not cross her line, it comes down it, so a path is the wrong shape for it entirely
+## — and building one anyway is what put the day-3 dog a street's width off to one side of the
+## place this function had just checked, 266px away and diagonal, which on a 640x360 view is at the
+## corner of the screen or past it. What she is owed is the sight of it coming, and it has to be
+## sited where that can be seen.
+func _crossing_ahead_of(at: Vector2, heading: Vector2,
+		comes_at_her := false) -> PackedVector2Array:
 	var centre := at + heading * Tuning.AHEAD_LEAD_DISTANCE
 	if not _map.is_walkable(_map.world_to_tile(centre)):
 		return PackedVector2Array()
+	if comes_at_her:
+		return PackedVector2Array([centre])
 	var across := Vector2(-heading.y, heading.x) * float(CROSSING_REACH_TILES * Tuning.TILE_SIZE)
 	# The side it comes from is a coin flip, so a player cannot learn to watch one shoulder.
 	if _rng.randf() < 0.5:
