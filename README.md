@@ -74,6 +74,7 @@ godot --path . -- --seed 12345 --day 9 --overview
 | `--screenshot out.png --after N` | Render for N **seconds**, save a PNG, quit |
 | `--walk north\|south\|east\|west` | Hold a direction down for the whole run |
 | `--flee [delay]` | Turn round and run when something starts chasing her, after dithering for `delay` seconds |
+| `--press <action> <seconds>` | Tap an input action once, so a rig can press a key — `--press pause 3` |
 | `--no-telemetry` | Do not write a run log |
 
 ## Run logs

@@ -21,6 +21,7 @@ signal resumed()
 signal quit_requested()
 
 @onready var _root: Control = $Root
+@onready var _dim: ColorRect = $Root/Dim
 
 func _ready() -> void:
 	# Above the world and above the HUD, and it must keep running while everything else stops.
@@ -31,13 +32,27 @@ func _ready() -> void:
 func is_open() -> bool:
 	return visible
 
+## Whether the tree was *already* paused when this opened — the between-days summary pauses it too.
+##
+## Putting back what was found rather than setting `false` is what lets the pause open **over** the
+## summary. The alternative, and the first version, was refusing to open there at all, which reads
+## as the key being broken on the one screen where somebody most wants it.
+var _was_paused := false
+
 func open() -> void:
 	visible = true
+	_was_paused = get_tree().paused
+	# Over the stopped city the dim is a scrim and the street behind it is worth seeing. Over
+	# another screen — which is what an already-paused tree means — it is two paragraphs of
+	# different text in the same place, so it covers instead.
+	_dim.color.a = 1.0 if _was_paused else DIM_OVER_THE_CITY
 	get_tree().paused = true
+
+const DIM_OVER_THE_CITY := 0.78
 
 func close() -> void:
 	visible = false
-	get_tree().paused = false
+	get_tree().paused = _was_paused
 
 ## `Esc` closes it and `Q` leaves the game. Handled here rather than in `main` so that the screen
 ## owns its own keys while it is up, and `main` only owns the one that opens it.

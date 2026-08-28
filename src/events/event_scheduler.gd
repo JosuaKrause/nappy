@@ -32,6 +32,9 @@ class Planned extends RefCounted:
 	var live: EventInstance = null
 	## True once the event has run its course, so walking back past it does not start it again.
 	var spent := false
+	## True for something the *run* left here rather than something today rolled — a burnt-out
+	## shell, a barricade. It is world history and the day may not tidy it away.
+	var permanent := false
 	## True once it has been in the world at least once. What it is *for* is the bookkeeping
 	## that must happen exactly once however many times an event is streamed in and out: a
 	## burnt-out shell records the fire that made it the first time it is seen and never again.
@@ -312,7 +315,9 @@ static func _place_scars(day: int, scars: Array[Dictionary]) -> Array[Planned]:
 			continue
 		var def := EventCatalogue.by_id(String(scar["id"]))
 		if def:
-			planned.append(Planned.new(def, scar["position"]))
+			var plan := Planned.new(def, scar["position"])
+			plan.permanent = true
+			planned.append(plan)
 	return planned
 
 # ----------------------------------------------------------------- placement ---
@@ -673,6 +678,14 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
 		var found: Array[Planned] = []
 		for plan in planned:
 			if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
+				continue
+			# **A scar is not today's noise.** *(M36.)* It is exempt for exactly the reason the
+			# playground above is: it is a permanent feature of the map, and stripping it would
+			# make a burnt-out building that has been on that corner since day 3 vanish for one
+			# day and come back the next. It was strippable until a day-9 plan happened to make
+			# its block the least disturbed one, and `tests/test_acts.gd` caught it by luck rather
+			# than by design — the assertion it broke is "the shell is still there on day 9".
+			if plan.permanent:
 				continue
 			if _reaches_rect(plan, lot):
 				found.append(plan)

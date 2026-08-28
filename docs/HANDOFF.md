@@ -1,7 +1,57 @@
 # Handoff
 
-**Last updated:** end of the M35 session — playtest 08, all five things.
-**Read this first, then [PLAYTEST-08.md](PLAYTEST-08.md), then [TODO.md](TODO.md).**
+**Last updated:** end of the M36 session — playtest 09, all four things. M35 is in the same session,
+just below.
+**Read this first, then [PLAYTEST-09.md](PLAYTEST-09.md) and [PLAYTEST-08.md](PLAYTEST-08.md), then
+[TODO.md](TODO.md).**
+
+> **M36 is playtest 09, and its one sentence is: two things in this build had been doing nothing at
+> all for milestones, and both looked finished from the outside.**
+>
+> **`Esc` never opened the pause once.** It shipped in M33 with a screen, a key, a README line, a
+> `TODO.md` entry and a line in the debug overlay. The guard read `_summary.visible`, and `_summary`
+> is a **`CanvasLayer`, whose `visible` is `true` from the moment it is added to the tree** — what
+> the summary shows and hides is the `Control` inside it, which is what `is_showing()` answers. So
+> the guard was satisfied on every frame of every day. It asks `is_showing()` now and opens **over**
+> the summary as well, with `PauseScreen` putting back the paused state it found rather than
+> assuming one.
+>
+> **The lesson is the rig, not the guard.** Nothing in the suite or in a screenshot has ever pressed
+> a key, so neither could have caught it. `--press <action> <seconds>` exists now — and its own first
+> version used `Input.action_press()`, which sets the polled state and nothing else. That is fine
+> for `--walk`, which the stroller polls every frame, and useless for anything answered in
+> `_unhandled_input`: it produced a screenshot of the game carrying on, which looks exactly like the
+> bug it was written to check. Use `Input.parse_input_event`.
+>
+> **The man shouting was killing runs by standing still.** *"Who is the person killing me in the
+> third try of day 1? It didn't move and it took a long time to have any effect."* The trace names
+> him six times at the same coordinates over twenty-one seconds, which is the finding written down
+> before it was reported. `EventDef.paces` is the answer the player specified: a **beat** rather than
+> a journey — walks its route, turns round at the ends, never departs and never expires, because it
+> is a fixture that moves. He is 10 → 14 intensity, and he loses the body M34 gave him, because
+> **anything mobile is exempt from "solid things are solid"** (M19's `dog_walker` decision, unchanged).
+>
+> **The robber is a pursuit that is a place before it is a moment.** *"A robber should increase
+> excitement on sight and getting close to them should be day ending… and if you get close they
+> should start moving towards you."* `EventDef.pursues_within`: three states rather than two, and
+> both new ones needed saying out loud — **the clock starts when it notices her** (a telegraph run at
+> dawn four streets away is not a notice) and **its notice does not damp what it emits** (the
+> damping means *this has not started yet*, and a man standing in an alley has started; what has not
+> started is the lunge). 16 over 200px, lethal inside 30, comes at 130px/s from 140.
+>
+> **`validate_pursuit` gained a third clause that was found by measuring, not by thinking.** The
+> trigger must be inside `PURSUIT_BREAK_OFF`. At 170 against a break-off of 170 the rig **strolled
+> away from him every time**, because she was already standing at the distance that means it has
+> lost her. Walking away is the one thing that must not work.
+>
+> **And a bug the change exposed:** `_ensure_one_usable_park` could erase a **scar**. It strips the
+> spoilers off the least-disturbed calm block, and a burnt-out shell that had been on that corner
+> since day 3 was one of them — so it vanished for a day and came back the next. `tests/test_acts.gd`
+> caught it by luck (one seed, day 9) rather than by design. Scars are exempt now, for the same
+> reason ambient events are.
+>
+> **Measured:** `homeless_yeller` +17.7 → +31.2; robberies placed per day unchanged at 3.4; events
+> placed per day 39.8 / 58.8 / 78.6 against 40.0 / 58.8 / 78.6. The density did not move.
 
 > **M35 is playtest 08, and the run it came from ended on day 3 — the shortest any playtest has
 > produced.** Five things. Three of them are one sentence and it is playtest 07's own, surviving the
@@ -209,11 +259,20 @@
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **46563 checks, 0 failures** (~110s);
+`main` is green and playable. `./tools/test.sh` → **46394 checks, 0 failures** (~110s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
-**The check count went 46522 → 46563.** M35 added forty-one: the three answers to a pursuit walked
+**The check count went 46563 → 46394, and almost all of the drop is one row changing shape.**
+`homeless_yeller` is mobile now, so it needs an `ALONG_STREET` route and `_place_one` re-rolls when
+one cannot be built — mostly on `SQUARE` tiles, where a corridor axis is not meaningful. Several
+suites assert per *placed* plan over fourteen days, so a handful fewer men shouting is a couple of
+hundred fewer checks about the same days. Events placed per day is unchanged over five seeds, which
+is the number that says it is the same city. M36 added ~35 of its own: the pause, the paced beat,
+the waiting pursuer, and the pursuit walk-through now running over the whole catalogue rather than
+over one row.
+
+**The count before that went 46522 → 46563.** M35 added forty-one: the three answers to a pursuit walked
 rather than asserted, the leaving rule and its out-of-sight and backstop halves, and the two new
 distance clauses on `validate_pursuit` running over the catalogue on load. Nothing was removed —
 the spoiler crowd changes what is in one lot rather than how many events a day places, which the

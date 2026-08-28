@@ -284,7 +284,7 @@ func _process(_delta: float) -> void:
 		"",
 		"arrows/WASD walk",
 		"shift       run",
-		"esc         quit",
+		"esc         pause",
 	])
 
 ## The closest live event and what it is currently doing — the readout that says whether a
@@ -482,12 +482,22 @@ func _apply_meter_override() -> void:
 ## It quit outright until then, which is the entry `CLAUDE.md` has carried under known-shaky
 ## ground since M6. Quitting keeps a key, one step further in: the pause screen owns `Q`.
 ##
-## Not while the summary is up. That screen already has the tree paused and its own key to leave
-## with, and two things fighting over `get_tree().paused` is how a pause stops meaning anything.
+## **This did nothing at all from M33 until M36, and the reason is worth keeping.** The guard read
+## `_summary.visible`, and `_summary` is a `CanvasLayer` whose `visible` is `true` from the moment
+## it is added to the tree — what the summary hides and shows is the `Control` *inside* it, which is
+## what `is_showing()` answers. So the guard was true on every frame of every day and the pause
+## screen was never opened once. A green suite and a screenshot both passed it, because nothing in
+## either of them has ever pressed a key; `--press` exists now so that they can.
+##
+## It opens **over** the summary too, which the first version refused on the grounds that two things
+## fighting over `get_tree().paused` is how a pause stops meaning anything. That is true and it is
+## not an argument for refusing — `PauseScreen` puts back the paused state it found rather than
+## setting `false`, so the two compose. Somebody who has just lost a day and wants out of the game
+## should not have to find the one screen where the key works.
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("pause"):
 		return
-	if _pause.is_open() or (_summary and _summary.visible):
+	if _pause.is_open():
 		return
 	get_viewport().set_input_as_handled()
 	_pause.open()

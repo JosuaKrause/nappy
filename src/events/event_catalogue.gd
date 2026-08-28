@@ -160,21 +160,43 @@ static func _cat_dash() -> EventDef:
 ## He is also the man playtest 07 walked up to and walked *through*: *"there was a person right
 ## on the home block but walking up to them didn't do anything"*, and *"I can walk over the
 ## robber and he doesn't do anything"*. Both are this row — the traces have nineteen `near
-## homeless_yeller` entries and never reach the day an actual robber exists. He is solid at
-## `PERSON_BODY` now, which is the whole of the second complaint; the first one is that he draws
-## the same `person.svg` as a busker, and that is still open.
+## homeless_yeller` entries and never reach the day an actual robber exists.
+##
+## **And he is the man who killed playtest 09's third attempt at day 1 by standing still.** *"Who is
+## the person killing me? It didn't move and it took a long time to have any effect. If it's the
+## homeless person it needs to walk up and down the sidewalk."* Both halves are here.
+##
+## He **paces** now — a beat rather than a journey, which is what `EventDef.paces` is for. That is a
+## design change and not a polish one: a stationary source is a fixed price on a fixed patch of
+## pavement, so the answer to it is a line you draw once and never think about again. A man walking
+## up and down two hundred and fifty pixels of footway is a *timing* problem on top of a routing
+## one, which is the same thing his pulse already asks for at a smaller scale.
+##
+## The cost of pacing is the body. M34 gave him `PERSON_BODY` for the "walk over the robber"
+## complaint and the invariant takes it straight back off: **anything mobile is exempt**, because a
+## moving wall on a two-tile pavement pins her against a building. That is the `dog_walker` decision
+## and it has not changed. What stops you walking through him is the meter, and 14 over 210px is a
+## real wall — it was 10, which is where *"it took a long time to have any effect"* came from.
 static func _homeless_yeller() -> EventDef:
 	var def := EventDef.new()
 	def.id = "homeless_yeller"
 	def.display_name = "Man shouting"
 	def.look = EventDef.Look.PERSON
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
-	def.intensity = 10.0
+	def.intensity = 14.0
 	def.inner_radius = 45.0
 	def.outer_radius = 210.0
 	def.telegraph_time = 2.6
 	def.pulse_period = 5.0
-	def.obstructs_radius = PERSON_BODY
+	def.mobile = true
+	def.paces = true
+	# A third of a walking pace: he is not going anywhere, and something that shuffles reads as
+	# somebody who lives on this pavement rather than somebody crossing it.
+	def.speed = 30.0
+	def.path_mode = EventDef.PathMode.ALONG_STREET
+	# Eight tiles of footway, walked in about eight seconds each way. Long enough that where he is
+	# now is worth looking at, short enough that it is still *a place he is*.
+	def.path_length_tiles = 8
 	def.weight = 2.0
 	def.max_per_day = 14
 	return def
@@ -843,17 +865,32 @@ static func _abduction() -> EventDef:
 	def.cost = 3
 	return def
 
-## Alleys only, and deliberately tiny: the alley itself is the warning. You knew what an
-## alley was when you turned into it. The radius is small enough that the fairness rule is
-## satisfied by half a second, which is as close to "no warning" as the contract allows.
+## **A man in an alley who is worth crossing the road for, and who comes after you if you do not.**
 ##
-## **The inner radius moved 22 → 30 in M34 and it had to.** He is a man, so he is solid at
-## `PERSON_BODY` like every other man in the catalogue, and 11 plus her own 14 is 25: at 22 the
-## pram would have been stopped a clear three pixels *outside* the radius that ends the day, and
-## an event that can never fire is worse than one that fires unfairly. `EventDef.validate()`
-## refuses that arrangement now rather than leaving it to be found by somebody walking into a
-## robbery and strolling away. The telegraph is unchanged and still legal — (42−30)/92 x 2 =
-## 0.26s against the 0.6 it has.
+## *(M36, playtest 09: "a robber should increase excitement on sight and getting close to them
+## should be day ending", and, in the next breath, "if you get close they should start moving
+## towards you".)*
+##
+## It was a 42px field: alleys only, deliberately tiny, on the argument that *the alley itself is the
+## warning*. That argument was fine as far as it went and it went nowhere — a lethal radius of 30
+## inside a field of 42 is a thing that does nothing at all until it does everything, which is
+## playtest 07's whole complaint about the catalogue arriving at the one row where it is fatal. And
+## it never moved, so it was avoidable by walking two tiles wide of it for ever.
+##
+## The three numbers are the three sentences the player used, in order:
+##
+## - **On sight.** 16 over a 200px field, so the far end of an alley is already expensive and the
+##   meter is what tells you he is there. This is the *only* warning the design will give: a robbery
+##   has no telegraph you could see coming, and it never did.
+## - **Getting close is day ending.** Unchanged — `hard_fail` inside 30px — except that it can now
+##   actually be reached. The `PERSON_BODY` M34 gave him comes back off, because a pursuer with a
+##   body is a moving wall and the M19 `dog_walker` decision says no.
+## - **Get close and he comes at you.** `pursues_within` 140: inside that he stands up, takes 1.8s
+##   of visibly coming — the notice `Tuning.PURSUIT_MIN_NOTICE` owes her — and then chases at
+##   130px/s until she has shaken him off. Walking away does not work and running away does, which
+##   is exactly `charging_dog`'s contract arriving in act III as a *place* rather than a moment.
+##
+## The alley is still the warning; it is just no longer the only one.
 static func _alley_robbery() -> EventDef:
 	var def := EventDef.new()
 	def.id = "alley_robbery"
@@ -864,9 +901,22 @@ static func _alley_robbery() -> EventDef:
 	def.placement = [GameEnums.TileType.ALLEY]
 	def.intensity = 16.0
 	def.inner_radius = 30.0
-	def.outer_radius = 42.0
-	def.telegraph_time = 0.6
-	def.obstructs_radius = PERSON_BODY
+	def.outer_radius = 200.0
+	# From the moment he notices her, not from dawn. See `EventDef.pursues_within`.
+	def.telegraph_time = 1.8
+	def.duration = Tuning.PURSUIT_TIME
+	def.pursues = true
+	# The same speed as the charging dog, deliberately: a player who learned on day 3 what a thing
+	# that comes after you moves like should not have to learn it again in act III.
+	def.pursue_speed = 130.0
+	# Inside `Tuning.PURSUIT_BREAK_OFF`, and that is a contract rather than a taste. A trigger at or
+	# beyond the break-off is a pursuit that loses interest the moment it starts, because she is
+	# already standing at the distance that means it has lost her — so walking away would work, and
+	# walking away is the one thing that must not. Measured first, then written into
+	# `validate_pursuit`: at 170 the rig strolled away from him every time.
+	def.pursues_within = 140.0
+	# And he walks off when he has lost her, rather than being deleted where he stood.
+	def.departs_at = 100.0
 	def.hard_fail = true
 	def.weight = 1.5
 	def.max_per_day = 4

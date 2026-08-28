@@ -32,6 +32,8 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `spawn_mode` | `MAP` (sited when the day is planned) or `AHEAD_OF_PLAYER` (sited in front of her, while she walks) — see "Where an event happens" |
 | `departs_at` | How fast it removes itself when it is over (px/s). **Nothing vanishes while you are looking at it** — see "Going away". Anything `mobile` leaves at its own `speed` and needs no value here |
 | `pursues` / `pursue_speed` | Comes after **her** rather than along a path, at a speed strictly between a walk and a run. The one thing running is the answer to — see `Tuning.validate_pursuit` |
+| `pursues_within` | How close she has to come before it takes an interest. `0` is *immediately*, which is a pursuer that is a **moment**; anything else is a pursuer that is a **place** until she walks up to it, and its telegraph and chase are both measured from when it notices |
+| `paces` | Walks its route and turns round at the ends, for ever. The difference between a journey and a **beat** — see `homeless_yeller` |
 | `obstructs_radius` | Radius of solid body (px). **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
@@ -268,7 +270,7 @@ All implemented.
 | `cat_dash` | RECURRING | 1 | Crouches (telegraph), then bolts across the traffic. High intensity, tiny radius, 1.4s duration. The tutorial obstacle. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Barks on a 3.5s pulse. **Re-pitched in M19** from intensity 7 to 26 with a tighter radius: it used to cost −0.1 points to walk straight through, so the correct play was to plough into it. It now owns the pavement it is on, which is what finding 3 asked for. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | **M19.** A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the answer to *"there should be things that force me to cross the street"*. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. |
-| `homeless_yeller` | RECURRING | 1 | Stationary, large radius, 5s yell **pulse**. The counterplay is timing a pass between yells, which is a different skill from routing around a hazard. He is the man playtest 07 walked up to and walked *through*; solid at 11px since M34, and still drawing the same `person.svg` as a busker, which is the half of that finding still open. |
+| `homeless_yeller` | RECURRING | 1 | Large radius, 5s yell **pulse**, and since M36 he **paces** eight tiles of pavement (`EventDef.paces`). *"It didn't move and it took a long time to have any effect"* — playtest 09, about the man who killed a day-1 attempt by standing still. A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. He is louder (10 → 14) and he lost the body M34 gave him, because anything mobile does. Still drawing the same `person.svg` as a busker, which is the half of playtest 07's finding 2 still open. |
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Constant, medium. The plain obstacle route planning is practised on. **M34** moved it off the carriageway and gave it a body: it was *"a still car standing on the road doing nothing"*, standing in a traffic lane the crowd drove through. 48px of van across a 64px footway. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The only Act I event that is physically in the way (`obstructs_radius` 34px). Blocking a 64px sidewalk forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time and exposure, never the day. |
@@ -305,7 +307,7 @@ act I."* Act I is a nice neighbourhood, so its danger is a neighbourhood's own.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `abduction` | RECURRING | 8 | An unmarked van idles first — that idling *is* the telegraph, and it runs 4.6s because the inner radius is a `hard_fail`. Getting close does not excite the baby; it takes you. Solid at 22px, comfortably inside the 54 that takes her, so the metal is metal and touching it is still fatal. |
-| `alley_robbery` | RECURRING | 8 | Alleys only, and deliberately tiny (30/42px) so the fairness rule is satisfied by a quarter of a second. That is as close to "no warning" as the contract allows, and it is honest: **the alley is the warning**. You knew what an alley was when you turned into it. The inner radius was 22 until M34, which is *inside* his own body plus hers — see "Solid things are solid". |
+| `alley_robbery` **`hard_fail`** | RECURRING | 8 | **A man who is worth crossing the road for, and who comes after you if you do not.** *(M36, playtest 09: "a robber should increase excitement on sight and getting close to them should be day ending", then "if you get close they should start moving towards you".)* Three numbers for three sentences: 16 over a **200px** field, so the far end of an alley is already expensive and the meter is the only warning a robbery will ever give; `hard_fail` inside 30px, unchanged except that it can now be reached; and `pursues_within` 140, inside which he takes 1.8s of visibly coming and then chases at 130px/s. It was a 42px field that never moved — a thing that did nothing at all until it did everything. The alley is still the warning; it is no longer the only one. |
 | `night_raid` | SCRIPTED | 10 | Enormous, static, pulsing, and it closes the block (`obstructs_radius` 44). |
 
 ### Act IV — Open conflict (days 12–14)
@@ -427,21 +429,21 @@ should be worth. `charging_dog` dropped from 22 to 12 and still has no row; see 
 | `curfew_announce` | +3.4 | +32.2 |
 | `playground` | +5.8 | +33.6 |
 | `delivery_van` | +8.3 | +34.9 |
-| `alley_robbery` * | +10.0 | +14.0 |
 | `busker` | +13.3 | +45.7 |
 | `police_patrol` | +15.9 | +46.2 |
-| `homeless_yeller` | +17.7 | +52.2 |
 | `cafe_tables` | +20.1 | +45.4 |
 | `cat_dash` | +20.2 | +35.4 |
 | `construction` | +20.3 | +51.6 |
 | `market_stall` | +27.9 | +52.7 |
 | `checkpoint` | +29.0 | +59.4 |
 | `cyclist` * | +30.2 | +45.9 |
+| `homeless_yeller` | +31.2 | +59.6 |
 | `ice_cream_van` | +31.5 | +65.8 |
 | `reversing_lorry` * | +32.6 | +53.3 |
 | `pigeon_flock` | +34.9 | +47.4 |
 | `dog_walker` | +36.5 | +41.2 |
 | `charging_dog` * | see below | — |
+| `alley_robbery` * | see below | — |
 | `loose_dog` | +43.3 | +52.0 |
 | `leaf_blower` | +48.6 | +67.1 |
 | `protest` | +50.0 | +88.1 |
@@ -452,12 +454,16 @@ should be worth. `charging_dog` dropped from 22 to 12 and still has no row; see 
 | `fire_truck` | +115.4 | +132.0 |
 | `firefight` * | +155.9 | +162.3 |
 
-`charging_dog` has no meaningful row, and that is the point: it is the only event in the game
-that **follows**, so there is no line to walk through it and no crossing to price. Walking away
-from it loses the day; running away from it costs between seventeen and twenty-five points,
-depending on how quickly the answer is given. See `docs/MECHANICS.md`, "Running that matters", for
-the measured table — the price falling with the reaction is M35's half of it, and it was forty
-flat until then.
+**The two pursuers have no meaningful row, and that is the point:** they **follow**, so there is no
+line to walk through them and no crossing to price. Walking away from either loses the day; running
+away costs 19–24 points depending on how quickly the answer is given. See `docs/MECHANICS.md`,
+"Running that matters", for the measured tables.
+
+**M36 moved two rows and neither is a rebalance.** `homeless_yeller` went +17.7 → **+31.2** because
+he **paces** now and 10 was not enough to notice — *"it didn't move and it took a long time to have
+any effect"* — and he lost his body, because anything mobile does. And `alley_robbery` left the
+table altogether: it was +10.0 with a 42px field, and it is a 200px field with a trigger in it now,
+so it is priced like the dog rather than like an obstacle.
 
 `*` is a `hard_fail`: the figure is notional, because nobody finishes the walk. Two rows the
 playtest-02 version of this table was missing entirely (`burnt_shell`, `alley_robbery`) are

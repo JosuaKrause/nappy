@@ -268,7 +268,12 @@ func _warn_about_the_ground_she_is_on() -> void:
 			continue
 		if instance.global_position.distance_to(here) > instance.def.outer_radius:
 			continue
-		body.warn(Stroller.Alert.SOON if instance.is_telegraphing() else Stroller.Alert.NOW,
+		# `SOON` is anything that cannot kill her *yet* — a telegraph running, or a pursuer that has
+		# not noticed her. *(M36.)* Without the second half a man standing in an alley would raise
+		# `NOW` — one step from the end of the day — from two hundred pixels away, which is the
+		# marks-everything mistake arriving at the one cue that cannot afford it.
+		var not_yet := instance.is_telegraphing() or instance.is_waiting()
+		body.warn(Stroller.Alert.SOON if not_yet else Stroller.Alert.NOW,
 				WARNING_HOLD, WARNING_SOURCE)
 
 ## How long a raised warning stays up. A shade longer than a physics frame, so the mark does not

@@ -9,6 +9,8 @@ func run(t) -> void:
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
+	_test_a_pursuer_can_wait(t)
+	_test_a_paced_event_walks_a_beat(t)
 	_test_duration_and_finish(t)
 	_test_an_event_leaves_rather_than_vanishing(t)
 	_test_mobile_follows_its_path(t)
@@ -123,44 +125,63 @@ func _test_pulse_envelope(t) -> void:
 ## player can give: into it, away from it at a walk, and away from it at a run. What each one has to
 ## produce is different, and the first one is the one that was broken — she is *sited walking into
 ## it*, because the director puts it where she was already going.
+##
+## *(M36 turned it from a test about the dog into a test about the **catalogue**, because there are
+## two pursuers now and the second one arrives as a place rather than a moment. Everything below is
+## true of both; what differs is only where she is standing when it starts.)*
 func _test_a_pursuer_leaves_room_to_answer(t) -> void:
-	var def := EventCatalogue.by_id("charging_dog")
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-	t.check(standoff > def.inner_radius, "a pursuer holds off outside the radius that ends the day")
+	var pursuers := 0
+	for def in EventCatalogue.all():
+		if not def.pursues:
+			continue
+		pursuers += 1
+		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+		t.check(standoff > def.inner_radius,
+				"'%s' holds off outside the radius that ends the day" % def.id)
 
-	# Into it. The geometry the day-3 lesson actually produces, and the one that killed a run three
-	# times: it has to keep its distance while it is only telegraphing, however far she walks in.
-	var walked_in := _chase_rig(def, -Tuning.WALK_SPEED)
-	t.close_to(walked_in["at_the_lunge"], standoff,
-			"walking into it still leaves the whole stand-off when it goes lethal", 8.0)
-	t.check(not walked_in["lethal_while_telegraphing"],
-			"and nothing it does during its own telegraph can end the day")
+		# Into it. The geometry the day-3 lesson actually produces, and the one that killed a run
+		# three times: it keeps its distance while it is only telegraphing, however far she walks in.
+		var walked_in := _chase_rig(def, -Tuning.WALK_SPEED)
+		t.close_to(walked_in["at_the_lunge"], standoff,
+				"walking into '%s' still leaves the whole stand-off when it goes lethal" % def.id,
+				8.0)
+		t.check(not walked_in["lethal_while_telegraphing"],
+				"and nothing '%s' does during its own telegraph can end the day" % def.id)
 
-	# Away from it at a walk. Walking has to lose, or the mechanic teaches nothing.
-	var walked_off := _chase_rig(def, Tuning.WALK_SPEED)
-	t.check(walked_off["caught"], "walking away from it is not enough")
-	t.check(not walked_off["gave_up"], "so it never has to give up on somebody walking")
+		# Away from it at a walk. Walking has to lose, or the mechanic teaches nothing.
+		var walked_off := _chase_rig(def, Tuning.WALK_SPEED)
+		t.check(walked_off["caught"], "walking away from '%s' is not enough" % def.id)
+		t.check(not walked_off["gave_up"],
+				"so '%s' never has to give up on somebody walking" % def.id)
 
-	# Away from it at a run. Running has to win, and it has to *end* it: the price of the right
-	# answer is fourteen points a second, so a chase that runs its full clock however well it is
-	# played is a toll rather than a lesson.
-	var ran := _chase_rig(def, Tuning.RUN_SPEED)
-	t.check(not ran["caught"], "running away from it works")
-	t.check(ran["gave_up"], "and it breaks off rather than tailing her for the whole chase")
-	t.check(ran["ended_at"] < def.telegraph_time + def.duration,
-			"which ends the chase early: %.1fs against a %.1fs one"
-			% [ran["ended_at"], def.telegraph_time + def.duration])
-	var cost: float = ran["ended_at"] * Tuning.EXCITEMENT_FROM_RUNNING
-	t.check(cost < Tuning.METER_MAX * 0.6,
-			"and the run costs %.0f of a %.0f meter rather than the day"
-			% [cost, Tuning.METER_MAX])
+		# Away from it at a run. Running has to win, and it has to *end* it: the price of the right
+		# answer is fourteen points a second, so a chase that runs its full clock however well it is
+		# played is a toll rather than a lesson.
+		var ran := _chase_rig(def, Tuning.RUN_SPEED)
+		t.check(not ran["caught"], "running away from '%s' works" % def.id)
+		t.check(ran["gave_up"],
+				"and '%s' breaks off rather than tailing her for the whole chase" % def.id)
+		t.check(ran["ended_at"] < def.telegraph_time + def.duration,
+				"which ends '%s' early: %.1fs against a %.1fs chase"
+				% [def.id, ran["ended_at"], def.telegraph_time + def.duration])
+		var cost: float = ran["ended_at"] * Tuning.EXCITEMENT_FROM_RUNNING
+		t.check(cost < Tuning.METER_MAX * 0.6,
+				"and running from '%s' costs %.0f of a %.0f meter rather than the day"
+				% [def.id, cost, Tuning.METER_MAX])
+	t.check(pursuers >= 2, "there is more than one kind of thing that comes after her")
 
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.
+##
+## She starts wherever the chase actually starts: at the director's lead distance for something
+## sited in front of her, and just inside the trigger for something that has been standing there.
 func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	var her := Vector2(Tuning.AHEAD_LEAD_DISTANCE, 0.0)
+	var from := Tuning.AHEAD_LEAD_DISTANCE
+	if def.pursues_within > 0.0:
+		from = def.pursues_within - 10.0
+	var her := Vector2(from, 0.0)
 	var elapsed := 0.0
 	var result := {"caught": false, "gave_up": false, "lethal_while_telegraphing": false,
 			"at_the_lunge": INF, "ended_at": INF}
@@ -183,6 +204,73 @@ func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 		result["ended_at"] = elapsed
 	instance.free()
 	return result
+
+## **A beat rather than a journey.** *(M36, playtest 09: "who is the person killing me? It didn't
+## move… if it's the homeless person it needs to walk up and down the sidewalk.")*
+##
+## The thing that could go quietly wrong is not the turning round, it is what a paced event does at
+## the end of its path: everything else in the catalogue that reaches one is **over**, and since M35
+## it leaves. A fixture that walks must do neither, or the man shouting outside the home block would
+## stroll off down the street eight seconds into every day.
+func _test_a_paced_event_walks_a_beat(t) -> void:
+	var def := EventCatalogue.by_id("homeless_yeller")
+	t.check(def.paces and def.mobile, "the man shouting walks a beat")
+	t.check(def.obstructs_radius <= 0.0,
+			"and has no body, because a moving wall pins her — the dog_walker decision")
+	var path := PackedVector2Array([Vector2.ZERO, Vector2(256.0, 0.0)])
+	var instance := _instance(t, def, Vector2.ZERO, path)
+
+	var out := 256.0 / def.speed
+	_advance(instance, out - 0.2)
+	t.close_to(instance.position.x, 256.0, "it walks to the far end of its beat", 8.0)
+	t.check(instance._heading.x > 0.0, "facing the way it is going")
+
+	_advance(instance, out)
+	t.close_to(instance.position.x, 0.0, "and back again", 8.0)
+	t.check(instance._heading.x < 0.0, "facing the other way on the way back")
+	t.check(not instance.is_finished and not instance.is_leaving,
+			"a fixture that moves neither finishes nor leaves at the end of its path")
+
+	# And it is still there four beats later, which is most of a day.
+	_advance(instance, out * 8.0)
+	t.check(not instance.is_finished, "and it is still there a day later")
+	instance.free()
+
+## **A pursuer can be a place before it is a moment.** *(M36, playtest 09: "a robber should increase
+## excitement on sight and getting close to them should be day ending", and "if you get close they
+## should start moving towards you".)*
+##
+## Three states, and the two that are new are the ones worth asserting: while it is **waiting** it
+## emits at full strength and cannot end the day, and its telegraph and its chase are both measured
+## from the moment it **notices** rather than from the moment the day put it there. A robbery whose
+## telegraph ran at dawn, four streets away, would arrive with no notice in it at all.
+func _test_a_pursuer_can_wait(t) -> void:
+	var def := EventCatalogue.by_id("alley_robbery")
+	t.check(def.pursues_within > 0.0, "the robber waits")
+	var instance := _instance(t, def, Vector2.ZERO)
+
+	# Standing there, all day, at full strength.
+	instance.player_at = Vector2(def.pursues_within + 40.0, 0.0)
+	_advance(instance, 30.0)
+	t.check(instance.is_waiting(), "he is still standing there half a minute later")
+	t.check(not instance.is_finished, "and his duration has not been running")
+	t.close_to(instance.position.x, 0.0, "he has not moved", 0.5)
+	t.close_to(instance.current_intensity(), def.intensity,
+			"he is loud from the moment she can see him, not damped to a telegraph", 0.05)
+	t.check(not instance.is_lethal_at(instance.player_at), "and he cannot end the day yet")
+	t.check(instance.contribution_at(Vector2(def.outer_radius - 10.0, 0.0)) > 0.0,
+			"his field reaches the far end of the alley")
+
+	# She steps inside the trigger: the notice starts *now*.
+	instance.player_at = Vector2(def.pursues_within - 10.0, 0.0)
+	instance._process(STEP)
+	t.check(not instance.is_waiting(), "he notices her")
+	t.check(instance.is_telegraphing(), "and the notice starts when he does, not at dawn")
+	t.check(not instance.is_lethal_at(instance.player_at), "still not lethal during the notice")
+
+	_advance(instance, def.telegraph_time + 0.1)
+	t.check(not instance.is_telegraphing(), "then the notice is over")
+	instance.free()
 
 func _test_duration_and_finish(t) -> void:
 	# An event that was a *place* is simply over. Nothing to leave, and nowhere to go.

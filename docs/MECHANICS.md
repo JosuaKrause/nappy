@@ -495,6 +495,56 @@ a real day):
 
 The gradient is the design: reacting sooner costs less, and every wrong answer costs the same thing.
 
+### A pursuer can be a place before it is a moment *(M36)*
+
+> *"A robber should increase excitement on sight and getting close to them should be day ending."*
+> *"And if you get close they should start moving towards you."* — playtest 09.
+
+`charging_dog` is a **moment**: the director sites it in front of her and the chase is the whole of
+it. `EventDef.pursues_within` is the other shape — a thing that is **somewhere**, that you can see
+and price and route around, and that becomes a chase if you do not. Three states rather than two:
+
+| | it emits | it can kill | it moves |
+| --- | --- | --- | --- |
+| **waiting** | at full strength | no | no |
+| **noticing** (`telegraph_time`) | at full strength | no | closes to the stand-off |
+| **chasing** (`duration`) | at full strength | yes | holds, then comes |
+
+Two things are deliberately not the same as an ordinary telegraph. The **clock starts when it
+notices**, not when the day put it there — a robbery whose telegraph ran at dawn four streets away
+would arrive with no notice in it at all. And its notice does **not** damp what it is emitting:
+`TELEGRAPH_INTENSITY_FRACTION` means *this has not started yet*, and a man who has been standing in
+that alley since she came round the corner has started. What has not started is the lunge.
+
+`validate_pursuit()` gained two clauses for the trigger and a third that was found by measuring
+rather than by thinking. It has to notice her from **outside its own stand-off**, or the notice is
+spent standing still; from **inside its own field**, or it decides about her before she could have
+felt it; and from **inside `PURSUIT_BREAK_OFF`** — which is the one that bit. At a trigger of 170
+against a break-off of 170 the rig strolled away from the robber every time, because she was
+already standing at the distance that means it has lost her.
+
+| she | outcome | cost |
+| --- | --- | ---: |
+| walks up and stops | caught | the day |
+| walks up and past | caught | the day |
+| walks away at a walk | caught | the day |
+| runs when he stands up | shakes him off in 1.5s | 21 points |
+| dithers a second, then runs | shakes him off in 1.6s | 22 points |
+
+### A beat rather than a journey *(M36)*
+
+`EventDef.paces` walks a route and turns round at the ends, for ever. It is the difference between
+a `dog_walker`, which is *going somewhere* and is gone at the end of thirty tiles, and a man
+shouting, who is **at** a place — and until M36 the only way to say the second thing was to make him
+stationary. Playtest 09 is what that cost: *"who is the person killing me? It didn't move and it
+took a long time to have any effect."*
+
+A paced event never reaches the end of its path, so it never departs and never expires: it is a
+fixture that moves. The price is its body — anything mobile is exempt from "solid things are solid",
+because a moving wall on a two-tile pavement pins her against a building, which is the M19
+`dog_walker` decision and is unchanged. What stops you walking through a man shouting is the meter,
+and he is 14 over 210px now rather than 10.
+
 **Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 teaches the arrow keys and says nothing
 about running; day 3 is when something comes after the pram, and the HUD says *Hold SHIFT to run*
 on the frame it telegraphs rather than at dawn — a line of text at dawn is a control list, and the

@@ -493,7 +493,9 @@ func _watch_what_is_near(here: Vector2) -> void:
 func _watch_the_chase(here: Vector2, delta: float) -> void:
 	var seen := {}
 	for instance in _city.events.instances():
-		if not instance.def.pursues or instance.is_finished:
+		# A pursuer that has not noticed her is not a chase, it is scenery with teeth. The span
+		# starts the moment it takes an interest, which for a robbery is the whole finding.
+		if not instance.def.pursues or instance.is_finished or instance.is_waiting():
 			continue
 		var id := instance.get_instance_id()
 		seen[id] = true

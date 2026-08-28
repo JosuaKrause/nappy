@@ -801,8 +801,19 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 ##   button was before there was anything to run from.
 ## - **Running must break it off, inside the chase.** Not merely survive it: the price of the
 ##   answer has to be bounded by how well it is played, or the lesson is a toll.
+##
+## *(M36 added the last two, for `EventDef.pursues_within` — a pursuer that is a **place** until she
+## walks up to it. A trigger is a third distance in a contract that M35 had just finished restating
+## as distances, so it belongs here rather than in a row of the catalogue.)*
+##
+## - **It notices her from outside its own stand-off**, or the notice is spent somewhere it was
+##   never going to move from and the telegraph is a formality.
+## - **It cannot notice her from outside its own field.** What she is owed before a lethal thing
+##   starts making decisions about her is the chance to have felt it: the meter is the only thing
+##   that says a stranger in an alley is worth crossing the road for, and it says nothing at all
+##   past `outer_radius`.
 func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
-		telegraph: float) -> bool:
+		telegraph: float, notice_within := 0.0, outer := 0.0) -> bool:
 	if speed < WALK_SPEED + PURSUIT_MIN_MARGIN:
 		push_error("Unfair pursuit '%s': %.0fpx/s is not enough faster than a walk (%.0f)"
 				% [id, speed, WALK_SPEED])
@@ -838,6 +849,23 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		push_error("Unfair pursuit '%s': running opens %.0fpx in %.1fs and needs %.0fpx to shake "
 				% [id, (RUN_SPEED - speed) * chase_time, chase_time, PURSUIT_BREAK_OFF - standoff]
 				+ "it off, so the run is priced by the clock rather than by the escape")
+		return false
+	if notice_within <= 0.0:
+		return true
+	if notice_within <= standoff:
+		push_error("Unfair pursuit '%s': it notices her at %.0fpx and stands off at %.0fpx, so its "
+				% [id, notice_within, standoff] + "whole notice is spent standing still")
+		return false
+	if notice_within > outer:
+		push_error("Unfair pursuit '%s': it notices her at %.0fpx and reaches %.0fpx, so it decides "
+				% [id, notice_within, outer] + "about her before she can feel it at all")
+		return false
+	# And the trap in the middle: a trigger at or beyond the break-off is a pursuit that gives up
+	# the instant it starts, because she is *already* the distance away that means it has lost her.
+	# Walking away would then work, and walking away is the one thing that must not.
+	if notice_within >= PURSUIT_BREAK_OFF:
+		push_error("Unfair pursuit '%s': it notices her at %.0fpx and loses interest past %.0fpx, "
+				% [id, notice_within, PURSUIT_BREAK_OFF] + "so it can be walked away from")
 		return false
 	return true
 

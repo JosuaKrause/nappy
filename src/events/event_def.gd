@@ -98,6 +98,19 @@ enum SpawnMode {
 @export var path_mode := PathMode.NONE
 ## Route length for ALONG_STREET, in tiles.
 @export var path_length_tiles := 24
+
+## Walks its route and turns round at the ends, for ever. *(M36, playtest 09: "if it's the homeless
+## person it needs to walk up and down the sidewalk".)*
+##
+## The difference between a **journey** and a **beat**, and it is the difference between two kinds
+## of event. A dog walker is going somewhere: its route is thirty tiles, it is gone at the end of
+## them, and what it costs you is the stretch of pavement it happens to own while you are there. A
+## man shouting is not going anywhere — he is *at* a place — and until now the only way to say that
+## was to make him stationary, which is what got him reported as "it didn't move".
+##
+## A paced event never reaches the end of its path, so it never departs and never expires: it is a
+## fixture that moves, which is exactly what it looks like from the street.
+@export var paces := false
 ## Holds still until the telegraph is over, then goes.
 ##
 ## The default is to move from the first frame, which is right for anything whose telegraph is
@@ -146,6 +159,23 @@ func departure_speed() -> float:
 @export var pursues := false
 ## How fast it comes. Must sit strictly between `WALK_SPEED` and `RUN_SPEED`.
 @export var pursue_speed := 0.0
+
+## How close she has to come before it takes an interest. 0 means *immediately*. *(M36, playtest 09:
+## "a robber should increase excitement on sight and getting close to them should be day ending",
+## and "if you get close they should start moving towards you".)*
+##
+## A pursuer with no trigger is a **moment**: `charging_dog` is sited in front of her by the
+## director and the chase is the whole of it. A pursuer with one is a **place** that becomes a
+## moment — a man in an alley who is standing there, who is worth avoiding from the far end of it,
+## and who comes after you if you walk up to him. That is a different thing from both an obstacle
+## and an ambush, and it is the shape the player asked for.
+##
+## Three states rather than two, and the middle one is new: **waiting** (standing there, emitting at
+## full strength, not lethal and not moving), **noticing** (`telegraph_time` of visibly coming, the
+## notice the fairness contract owes), then the chase. `telegraph_time` and `duration` are both
+## measured from the moment it notices, not from the moment it was put in the world — a robbery that
+## spent its telegraph at dawn, four streets away, would have no notice in it at all.
+@export var pursues_within := 0.0
 
 ## Radius of solid obstruction, in px. 0 for events you can walk through. Scaffolding does
 ## not politely step aside, and being *forced* to reroute is a different pressure from
@@ -253,7 +283,7 @@ func validate() -> bool:
 				+ "she is stopped before she can ever reach it")
 		return false
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, inner_radius,
-			telegraph_time):
+			telegraph_time, pursues_within, outer_radius):
 		return false
 	if pursues:
 		# A pursuer has no line to be walked out of — it follows — so the ordinary escape-distance
