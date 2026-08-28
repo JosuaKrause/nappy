@@ -1,0 +1,21 @@
+<!-- The convoy truck. Olive, and the only vehicle in the game with a canvas back — the ribbed
+     tilt is the silhouette, because at 74px/s with a badge on the screen edge the player has to
+     tell it from the fire engine, which is the other long thing that drives past leaving
+     something behind it. Ribs read where a colour does not. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="60" height="38" viewBox="0 0 60 38" shape-rendering="crispEdges">
+  <rect x="20" y="4" width="38" height="22" fill="#5f6b47"/>
+  <rect x="20" y="4" width="38" height="3" fill="#75825a"/>
+  <rect x="26" y="7" width="2" height="19" fill="#4a5438"/>
+  <rect x="34" y="7" width="2" height="19" fill="#4a5438"/>
+  <rect x="42" y="7" width="2" height="19" fill="#4a5438"/>
+  <rect x="50" y="7" width="2" height="19" fill="#4a5438"/>
+  <rect x="2" y="9" width="19" height="17" fill="#4a5438"/>
+  <rect x="4" y="12" width="11" height="7" fill="#2f3630"/>
+  <rect x="2" y="22" width="56" height="4" fill="#221f28"/>
+  <circle cx="12" cy="30" r="6" fill="#26232a"/>
+  <circle cx="34" cy="30" r="6" fill="#26232a"/>
+  <circle cx="48" cy="30" r="6" fill="#26232a"/>
+  <circle cx="12" cy="30" r="2" fill="#464a3f"/>
+  <circle cx="34" cy="30" r="2" fill="#464a3f"/>
+  <circle cx="48" cy="30" r="2" fill="#464a3f"/>
+</svg>

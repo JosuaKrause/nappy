@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dye2niicgjq8t"
-path="res://.godot/imported/vehicle.svg-71e8437978347c7a87a212c2beef2877.ctex"
+uid="uid://cdxihkb8am4wl"
+path="res://.godot/imported/busker.svg-0982c03af786f2a30be4927aa1205c37.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/events/vehicle.svg"
-dest_files=["res://.godot/imported/vehicle.svg-71e8437978347c7a87a212c2beef2877.ctex"]
+source_file="res://assets/events/busker.svg"
+dest_files=["res://.godot/imported/busker.svg-0982c03af786f2a30be4927aa1205c37.ctex"]
 
 [params]
 

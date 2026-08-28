@@ -1,0 +1,16 @@
+<!-- The robber, while he is still only somewhere. A hood with no face in it, shoulders up, hands
+     in the coat: the darkest silhouette in the game and the only one whose head is not a skin
+     circle. He shares an alley with nothing else, so what he has to be told apart from is a
+     busker and a man shouting — see `robber_lunging.svg` for the other half, which is the same
+     figure with the posture that means it has started. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="44" viewBox="0 0 22 44" shape-rendering="crispEdges">
+  <rect x="6" y="34" width="4" height="8" fill="#26262e"/>
+  <rect x="12" y="34" width="4" height="8" fill="#26262e"/>
+  <rect x="5" y="42" width="5" height="2" fill="#17171c"/>
+  <rect x="12" y="42" width="5" height="2" fill="#17171c"/>
+  <rect x="4" y="15" width="14" height="21" fill="#353a46"/>
+  <rect x="4" y="29" width="14" height="7" fill="#2b303a"/>
+  <rect x="3" y="14" width="16" height="6" fill="#2b303a"/>
+  <circle cx="11" cy="9" r="7" fill="#2b303a"/>
+  <circle cx="11" cy="10" r="4" fill="#141419"/>
+</svg>

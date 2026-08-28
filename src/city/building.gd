@@ -8,7 +8,14 @@ extends StaticBody2D
 ## The building's drawn mass fills exactly its lot: the front wall takes the southern
 ## `height` px and the roof takes what is left. That is what an oblique view of a taller
 ## building actually looks like — more wall, less roof — and it keeps every extrusion off
-## the street, so the player is never hidden under a roof while walking past one.
+## the *ground* the player walks on.
+##
+## It does **not** follow that she is never hidden by one, and this comment claimed that it did
+## for twenty-two milestones. The mass extends a whole block north of the origin y-sort compares,
+## so a building drew in front of everything on the pavement beside it wherever the two also
+## overlapped in x — playtest 07's finding 4. What is true is the stronger thing, and it is why
+## the fix lives in `city.gd` rather than here: nothing can ever legitimately be *behind* a
+## building, so nothing sorts against one.
 ##
 ##      lot top ─▶ ┌──────────┐  roof   y = -depth .. -height
 ##                 ├──────────┤

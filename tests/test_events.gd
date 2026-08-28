@@ -41,6 +41,8 @@ func run(t) -> void:
 	_test_the_pram_is_the_size_the_rules_think_it_is(t)
 	_test_a_parked_van_is_at_the_kerb(t)
 	_test_a_lorry_has_a_wall_to_back_into(t)
+	_test_no_two_rows_draw_the_same_picture(t)
+	_test_every_look_carries_its_own_silhouette(t)
 
 # ------------------------------------------------------------------ fairness ---
 
@@ -1145,3 +1147,62 @@ func _test_a_lorry_has_a_wall_to_back_into(t) -> void:
 			t.check(plan.facing == -Vector2(inward),
 					"day %d: '%s' is turned to reverse into it" % [day, plan.def.id])
 	t.check(backing > 0, "and a run sites one (%d over days 3-14)" % backing)
+
+# ------------------------------------------------------- one picture per row ---
+# *(M37, playtest 07 finding 2: "not sure what that person was supposed to be".)* The vocabulary's
+# first row is that **the entity itself carries most of it**, and the catalogue had been quietly
+# failing it since M5: five category looks — `PERSON`, `VEHICLE`, `OBJECT`, `ANIMAL`, `FIRE` —
+# were drawing sixteen of the twenty-eight visible rows between them.
+#
+# It cost two findings before anybody wrote it down, and neither reads as an art problem. M34
+# fixed `alley_robbery` for a complaint about `homeless_yeller`, because a player can only say
+# "the robber" and the two drew the same man; and playtest 09 asked *"who is the person killing
+# me?"*, which is a question the screen is supposed to answer. So this is two assertions rather
+# than a to-do list, for the same reason `obstructs_radius` became a rule in M34: a field that is
+# only ever *reached for* is a list wearing a rule's clothes.
+
+## No two rows draw the same picture, and the rows that draw nothing are named.
+##
+## The `NONE` exemption is spelled out rather than skipped, because `look` has no useful default
+## any more — a row that forgets to choose one is invisible, which is the quietest way for an
+## event to stop working.
+func _test_no_two_rows_draw_the_same_picture(t) -> void:
+	# Three rows are legitimately invisible: something else already draws the ground they stand
+	# on, or there is nothing to draw because the whole city is inside them.
+	var invisible := ["playground", "loudspeaker", "curfew_announce"]
+	var owner_of := {}
+	for def in EventCatalogue.all():
+		if def.look == EventDef.Look.NONE:
+			t.check(invisible.has(def.id), "'%s' draws nothing on purpose" % def.id)
+			continue
+		t.check(not owner_of.has(def.look),
+				"'%s' has a picture of its own (else shared with '%s')"
+				% [def.id, owner_of.get(def.look, "")])
+		owner_of[def.look] = def.id
+	for id in invisible:
+		var def := EventCatalogue.by_id(id)
+		t.check(def != null and def.look == EventDef.Look.NONE,
+				"'%s' is still one of the invisible ones" % id)
+	t.check(owner_of.size() >= 25,
+			"and the catalogue draws %d different things" % owner_of.size())
+
+## And no two of those pictures are the same texture.
+##
+## The half a `look` field cannot enforce by itself: two looks whose `_draw_*` reach for the same
+## sprite are the old failure with more enum rows in front of it. `EventInstance.icon_for()` is
+## the one table of what a look *is*, and it is also what the screen-edge badge draws — so this
+## asserts the badge can never again show a delivery van for a fire engine.
+func _test_every_look_carries_its_own_silhouette(t) -> void:
+	var seen := {}
+	for def in EventCatalogue.all():
+		if def.look == EventDef.Look.NONE:
+			continue
+		var icon := EventInstance.icon_for(def.look)
+		t.check(icon != null, "'%s' has a silhouette a badge could draw" % def.id)
+		if not icon:
+			continue
+		var path := icon.resource_path
+		t.check(not seen.has(path),
+				"'%s' draws %s, which nothing else draws (else '%s')"
+				% [def.id, path.get_file(), seen.get(path, "")])
+		seen[path] = def.id

@@ -35,7 +35,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 46394 headless checks, ~110s
+./tools/test.sh               # 46498 headless checks, ~110s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
@@ -169,6 +169,16 @@ for six milestones and paused nothing: the player kept walking behind the screen
 day was over. The fix is `main._pauses_with_the_game()`, called on every node that is the game
 rather than the frame around it. **If you add a node under `Main`, it needs that call**, and
 nothing warns you.
+
+**Y-sorting compares origins, so a thing whose mass extends away from its own origin sorts
+wrong.** *(M37, playtest 07 finding 4.)* A `Building`'s origin is the south edge of its lot and it
+is drawn a whole block north of there, so it won every comparison against the pavement running up
+the side of that block — visible only where the two also overlapped in **x**, which made a rule
+look like an occasional glitch: a person (18px) never overlaps the 16px from a tile centre to the
+lot edge, a lorry (62px) always does, and the things in between are the ones that move. The general
+shape: **before reaching for a better comparison, ask whether the two things can ever legitimately
+be on opposite sides of each other.** Here they cannot — no lot tile is walkable — so buildings are
+a layer of their own and sort against nothing.
 
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw
 (the 10k-tile city ground) is fine, but anything animated must call `queue_redraw()` itself.
@@ -489,8 +499,27 @@ for a soon-to-be-bad spot, doubled and red for danger already on her; and over t
 only cue that is not about the world — four states of the baby herself, added in M32. Nothing
 draws a field.
 
-Three rules that are easy to lose and are the whole reason it is better than the rings:
+Four rules that are easy to lose and are the whole reason it is better than the rings:
 
+- **The entity carries most of it, so one picture per row.** *(M37, playtest 07 finding 2: "not
+  sure what that person was supposed to be".)* Every rule below is about what to add *on top of*
+  a legible entity, and for thirty-six milestones the entity underneath often was not one:
+  `EventDef.Look` opened with five **categories** — `PERSON`, `VEHICLE`, `OBJECT`, `ANIMAL`,
+  `FIRE` — and a category is a thing you can always put one more row into, so sixteen of the
+  twenty-eight visible rows drew five pictures between them.
+
+  **It reads as an art chore and it was costing findings**, which is the part to carry. M34 spent
+  a milestone fixing `alley_robbery` for a complaint about `homeless_yeller`, because a player can
+  only say *"the robber"* and the two drew the same man; playtest 09 then asked *"who is the person
+  killing me?"*. And the one cue whose entire content is **what** is coming — the screen-edge badge
+  — was drawing a delivery van for a fire engine, because `DangerEdge` kept a *second* table of
+  which picture a look meant.
+
+  So: **no two rows share a look, no two looks share a silhouette**, `EventInstance.icon_for()` is
+  the single table, and there is no generic left to reach for. `tests/test_events.gd` holds both
+  halves, which is what stops this going back to being a list — the M34 `obstructs_radius` move on
+  the other half of the vocabulary. The **crowd** is the deliberate opposite: two hundred and forty
+  bodies share one `person.svg`, because a crowd is what an authored event has to stand out from.
 - **A cue that marks everything says nothing.** The rings marked a notice board exactly as hard
   as an abduction, which is most of why they explained nothing. The caret is for *lethal,
   telegraphing, pulsing or swelling* — a barricade and a burnt-out shell are visibly what they
@@ -575,8 +604,12 @@ driven by **distance covered** rather than by time, so what shows is the movemen
 stopped thing is still and a fast thing bobs faster. A sprite cannot swing its own legs (M12c),
 so a bob is what there is.
 
-**Add an event** — `src/events/event_catalogue.gd` only, in the act's section, plus a line in
-the `docs/EVENTS.md` table. Everything else is data-driven. If it needs behaviour no field
+**Add an event** — `src/events/event_catalogue.gd` in the act's section, a line in the
+`docs/EVENTS.md` table, and **a drawing**: an `EventDef.Look` of its own, an SVG in
+`assets/events/`, a `_draw_*` in `EventInstance`, and a row in `EventInstance.icon_for()` so the
+screen-edge badge has a silhouette. That last part is not optional and there is no generic to
+borrow — see the invariant above; `tests/test_events.gd` fails the build if two rows share a
+picture. Everything else is data-driven. If it needs behaviour no field
 covers, add the field to `EventDef` and handle it in `EventInstance` — resist adding a script
 per event. `tests/test_events.gd` will fail the build if the geometry is unfair.
 
@@ -789,18 +822,14 @@ not either number, is what makes it a decision.
   density but whether being stopped reads as *cross the street* or as an obstacle course. The gap
   between a kerbed van and the frontage is smaller than the pram, which is intended and is also the
   exact shape of M19's *"no line to walk"*, a mistake a green suite and a screenshot both passed.
-- **The entities do not yet read as what they are, and it has now cost a finding.** *(M22 closed
-  the signalling gaps; this is the one it exposed.)* **M34 is where it stopped being cosmetic:**
-  playtest 07's *"I can walk over the robber"* is about `homeless_yeller`, and it was written up,
-  queued and nearly fixed as a bug in `alley_robbery` — an event that is day 8, alleys only, and
-  which neither trace ever reached. The vocabulary's first row is *the thing itself carries most of
-  it* — and `homeless_yeller`, `busker` and `poster_crew` all draw the same `person.svg`, as
-  does an ordinary crowd walker. Two of them are currently covered for by the caret above
-  them, which is exactly the wrong way round: the symbol is meant to add what a silhouette
-  cannot say, not to stand in for a silhouette nobody drew. First thing to fix when the art
-  gets a pass. *(M31 did not fix those three, but it did refuse to make it worse: seven new
-  events arrived and every one got its own silhouette. Adding them as `PERSON` and `VEHICLE`
-  would have turned the exception into the rule.)*
+- **Every row now draws something of its own, and nobody has seen most of it.** *(M37 closed the
+  entry that stood here for fifteen milestones: `homeless_yeller`, `busker` and `poster_crew`
+  drawing one `person.svg`.)* Fourteen new silhouettes, of which the contact sheet is the only
+  thing that has looked at them and only five are reachable before day 4. The two to distrust are
+  the ones that are more than a picture: the **robber's two postures**, where the whole claim is
+  that *waiting* and *coming* are told apart at an alley's length, and the **protest**, which is
+  now a 110px wall of bodies on a crossing where it used to be a man. The crowd is still one
+  `person.svg` for two hundred and forty bodies, and that is the opposite rule kept on purpose.
 - **There is no audio at all.** Less urgent than it sounds, given the rule above: audio is
   redundancy, so the game must already be fully playable without it.
 - **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,

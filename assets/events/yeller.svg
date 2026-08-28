@@ -1,0 +1,19 @@
+<!-- The man shouting. Read against `person.svg`, which is what he used to be: a long coat down
+     to the boots instead of a shirt and trousers, a raised arm, and a beard. The coat is the
+     load-bearing part — it takes the split between two legs out of the silhouette, so he is one
+     solid shape at a distance where an ordinary passer-by is two. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="44" viewBox="0 0 26 44" shape-rendering="crispEdges">
+  <rect x="8" y="37" width="4" height="5" fill="#3b3630"/>
+  <rect x="13" y="37" width="4" height="5" fill="#3b3630"/>
+  <rect x="7" y="42" width="5" height="2" fill="#221f28"/>
+  <rect x="13" y="42" width="5" height="2" fill="#221f28"/>
+  <rect x="4" y="14" width="17" height="24" fill="#6b5b4a"/>
+  <rect x="4" y="32" width="17" height="6" fill="#584a3c"/>
+  <rect x="11" y="16" width="3" height="22" fill="#584a3c"/>
+  <rect x="20" y="6" width="4" height="12" fill="#6b5b4a"/>
+  <circle cx="22" cy="6" r="2" fill="#d9a878"/>
+  <circle cx="12" cy="8" r="6" fill="#d9a878"/>
+  <path d="M6 8 A6 6 0 0 1 18 8 Z" fill="#4a423a"/>
+  <rect x="9" y="10" width="4" height="2" fill="#3a2b26"/>
+  <rect x="8" y="12" width="9" height="4" fill="#8c8377"/>
+</svg>

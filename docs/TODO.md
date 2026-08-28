@@ -71,7 +71,12 @@ and a robber who is worth crossing the road for and comes after you if you do no
 carry is about the *rig* rather than either bug: nothing in the suite or in a screenshot has ever
 pressed a key, so neither could have caught the first one. `--press` exists now.
 
-**What that leaves.** The ten in playtest 07's "Not done" list, and then M25's other half —
+**Playtest 07 is down to four.** M37 closed findings 2, 11, 4 and 14 — one picture per row (and a
+test that keeps it one), a café with people at it, buildings that sort against nothing, and a baby
+cue that stops dodging a mark that is not there. What is left is the cat's axis (1), a four-block
+concrete plaza (8) and a car turning with no diagonal (6).
+
+**What that leaves.** Those three, and then M25's other half —
 patrols, which is unaffected by M31 and is now specifically the answer for **acts III and IV**,
 where the streets are deliberately empty and the threat should follow rather than sit. *M25's
 first half shipped in M33*: running that matters exists now, as a mechanic with a fairness contract
@@ -93,7 +98,7 @@ was around when a day ended.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 46394 checks (~110s); `tools/check.sh` boots the project; `tools/run.sh`
+`tools/test.sh` runs 46498 checks (~110s); `tools/check.sh` boots the project; `tools/run.sh`
 plays it; `tools/telemetry.sh` reads back what the last run did.
 
 ---
@@ -678,16 +683,10 @@ three of them, and the ten that are still open. Nine are done.
       moved 22 → 30, because a lethal radius and a solid body are the same mechanism and a body
       that reaches the kill radius switches the kill off. Day 1: events placed unchanged at ~39,
       pavement-blocking obstacles 12.2 → 17.2
-- [ ] **The other six.** Three act I events still share one `person.svg` (2's other half); a café
-      with no people at it (11); the spoiler has to cover the calm area rather than stand in it
-      (10); the cat crosses the wrong axis (1); the pigeons blink out (9); a four-block concrete
-      plaza (8); a car turning has no diagonal (6); the zzz is stepped aside from the pram (14)
-- [ ] **The warning indicators render below roofs** (4). **Diagnosed in M34, not fixed**, and the
-      diagnosis is in `docs/PLAYTEST-07.md`: a building sorts by its south edge and its mass
-      extends a block north of it, so it is drawn in front of everything on the pavement beside it
-      and occludes whatever also overlaps in x — which is any sprite wider than the 16px from a
-      tile centre to the lot edge, anything drawn above an entity's head, and anybody who walks
-      close to a frontage. Reproduced with a one-line `z_index` on `EventInstance`
+- [x] **One picture per row** — findings 2, 11, 4 and 14, done as **M37**. See the section below
+- [ ] **The last four.** The cat crosses the wrong axis (1); a four-block concrete plaza (8); a car
+      turning has no diagonal (6); and the crowd's own anonymity, which is deliberately *not* the
+      same rule — see the bottom of `docs/PLAYTEST-07.md`
 
 ## M35 — Playtest 08: nothing vanishes, and the dog gives you a chance
 
@@ -774,6 +773,49 @@ See **[docs/PLAYTEST-09.md](PLAYTEST-09.md)**. Four things, all done.
       burnt-out shell that had been on that corner since day 3 was one of them. Scars are exempt now,
       for the same reason ambient events are: a permanent feature of the map is not today's noise
 
+## M37 — Playtest 07 again: one picture per row
+
+See **[docs/PLAYTEST-07.md](PLAYTEST-07.md)**. Four of the six that were left, and they are all
+"what you can actually see".
+
+- [x] **One picture per row, and no two rows share one** — finding 2, and the fix is bigger than
+      the finding because the finding was a symptom. `EventDef.Look` opened with five
+      **categories** — `PERSON`, `VEHICLE`, `OBJECT`, `ANIMAL`, `FIRE` — and a category is a thing
+      you can always put one more row into, so sixteen of the twenty-eight visible rows drew five
+      pictures between them: five people on one man, six vehicles on one van.
+      **It had already cost two findings and neither looked like an art problem.** M34 spent a
+      milestone fixing `alley_robbery` for a complaint about `homeless_yeller`, because a player can
+      only say *"the robber"*; playtest 09 then asked *"who is the person killing me?"*. And a third
+      had gone unreported — `DangerEdge` kept its **own** table of which picture a look meant, so
+      the screen-edge badge, whose entire content is *what* is coming, drew a delivery van for a
+      fire engine and for the unmarked van that takes the baby.
+      So it is a rule with a test rather than fifteen drawings: no two rows share a look, no two
+      looks share a silhouette, `EventInstance.icon_for()` is the one table, and `look` has no
+      default worth having. **The cost of adding an event is a drawing.** Same move as M34's
+      `obstructs_radius`, on the other half of the vocabulary
+- [x] **The robber has two postures** — `is_waiting()` picks between them. M36 gave that row three
+      states and the screen showed one, so *a man is standing there* and *he has seen you* looked
+      identical. The `cat_crouched` / `cat_running` rule, at the row where reading it wrong ends
+      the run
+- [x] **The protest is a crowd, and its body followed its picture** — the catalogue said of that
+      row *"one person's worth, because one person is what it draws… the art is the fix"*, and it
+      is 55px now, two ranks drawn across exactly the ground it takes. The clearest case in the
+      game of art deciding a gameplay number. Measured over five seeds: events placed per day is
+      **identical**, day for day, and so are protests placed
+- [x] **The café has people at it** — finding 11. The tables were what obstructs and the
+      conversation was what it emits, and only the first was drawn
+- [x] **Buildings sort against nothing** — finding 4, diagnosed in M34. The fix is not the one the
+      diagnosis pointed at: the comparison is **meaningless**, not merely wrong. Buildings tile
+      their lots exactly and no lot tile is walkable, both asserted since M3, so nothing can ever
+      legitimately stand behind a building. `Buildings` is a y-sorted layer under `Entities`.
+      `building.gd` had claimed the opposite in a comment for twenty-two milestones
+- [x] **The zzz stops dodging nothing** — finding 14. The baby's cue steps out of the exclamation
+      mark's column, and that column is only occupied when there is a mark in it; unconditional, it
+      put the zzz a body's width to one side of the pram on the commonest picture in the game.
+      Playtest 06's own lesson again — *a cue is a claim about a moment* — reaching a player for
+      the reason M32's two did: nothing in `tests/test_danger.gd` can see a `_draw()`. It is
+      `Stroller.baby_cue_aside()` now, and the suite asks it
+
 ## M10 — Polish · `feature/polish`
 
 Not started. The game is complete without it; this is what would make it shippable.
@@ -792,10 +834,10 @@ Not started. The game is complete without it; this is what would make it shippab
   - [ ] **Sound lines.** Concentric arcs thrown off a source on a pulse's rising edge —
         the visual form of a discrete noise. Would give the yeller, the dog and the
         reversing van a readable "that just happened" beat rather than only a swell.
-  - [ ] **The entities themselves.** `homeless_yeller`, `busker` and `poster_crew` all draw
-        the same `person.svg`, as does a crowd walker. The vocabulary's first row — *the thing
-        itself reads as what it is* — is currently being covered for by the caret over two of
-        them, which is the wrong way round. First thing to fix when the art gets a pass.
+  - [x] **The entities themselves.** *(M37.)* Every visible catalogue row draws something of
+        its own, and it is a rule with a test rather than an art to-do: no two rows share a
+        look, no two looks share a silhouette. The crowd is deliberately still anonymous — that
+        is the opposite rule and it is what an authored event stands out from.
 - [ ] **Audio**, once the above is done and judged on its own: per-act ambient beds,
       per-event cues, the baby's breathing and fussing as the diegetic version of the
       meters. Additive by design — the game must already be fully playable muted.

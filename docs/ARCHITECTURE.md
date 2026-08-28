@@ -178,15 +178,17 @@ kept strictly out of anything that touches the meters.
 
 ## Rendering / 2.5D
 
-- `city.tscn` root has `y_sort_enabled = true`; so do the prop containers.
+- `city.tscn` has two y-sorted layers: `Buildings` (z 1) and `Entities` (z 2). Everything that
+  stands on the ground goes in the second. **Buildings never sort against entities** — a
+  building's mass extends a block north of the origin y-sort compares, and nothing walkable is
+  ever inside a lot, so the comparison could only ever be wrong. See docs/CITY.md, "Rendering".
 - Ground: a `TileMapLayer` fed by `GroundTiles`, which is the only place that decides which
   tile a cell gets. Source ids in `assets/ground_tileset.tres` are positional and
   `ground_tiles.gd` mirrors them by hand — adding a tile means appending to both, in order.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that
   assembles that same lot out of 32px tiles — a front wall (the southern `height` px) and a
-  roof (the remainder). Fitting the mass inside the lot is what keeps extrusions off the
-  street — a roof drawn *overhanging* northward would hide the player whenever she walked
-  along that sidewalk. A taller building therefore shows more wall and less roof, which is
+  roof (the remainder). Fitting the mass inside the lot keeps extrusions off the *ground* she
+  walks on, which is not the same as keeping them off *her* — see the layer note above. A taller building therefore shows more wall and less roof, which is
   what an oblique view of a taller building should look like.
 - Building heights are quantised to whole tiles, because a tiled facade cannot honour a
   float height without stretching a tile. `Building` clamps the requested height itself, so

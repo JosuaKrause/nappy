@@ -1,0 +1,16 @@
+<!-- One segment of a checkpoint: a concrete block with a diagonal hazard stripe. Repeated across
+     the width it closes.
+     Deliberately not roadworks. A checkpoint and a dug-up pavement both stop you, and until M37
+     they were the same picture — but one is a street being mended and the other is a street being
+     held, and act II turning into act III is exactly that difference. Concrete rather than a
+     lightweight barrier, and it stands taller than it is deep. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 22 30" shape-rendering="crispEdges">
+  <rect x="0" y="2" width="22" height="26" fill="#8a8a84"/>
+  <rect x="0" y="2" width="22" height="3" fill="#9e9e97"/>
+  <rect x="0" y="9" width="22" height="8" fill="#c4503c"/>
+  <rect x="2" y="9" width="4" height="8" fill="#e0d8c4"/>
+  <rect x="10" y="9" width="4" height="8" fill="#e0d8c4"/>
+  <rect x="18" y="9" width="4" height="8" fill="#e0d8c4"/>
+  <rect x="0" y="24" width="22" height="4" fill="#6e6e69"/>
+  <rect x="0" y="28" width="22" height="2" fill="#221f28"/>
+</svg>

@@ -132,7 +132,7 @@ static func _cat_dash() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cat_dash"
 	def.display_name = "Cat"
-	def.look = EventDef.Look.ANIMAL
+	def.look = EventDef.Look.CAT
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
 	def.intensity = 15.0
@@ -181,7 +181,7 @@ static func _homeless_yeller() -> EventDef:
 	var def := EventDef.new()
 	def.id = "homeless_yeller"
 	def.display_name = "Man shouting"
-	def.look = EventDef.Look.PERSON
+	def.look = EventDef.Look.YELLER
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.intensity = 14.0
 	def.inner_radius = 45.0
@@ -256,7 +256,7 @@ static func _cafe_tables() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cafe_tables"
 	def.display_name = "Café tables"
-	def.look = EventDef.Look.TABLES
+	def.look = EventDef.Look.CAFE
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 12.0
 	def.inner_radius = 40.0
@@ -290,7 +290,7 @@ static func _delivery_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "delivery_van"
 	def.display_name = "Delivery van"
-	def.look = EventDef.Look.VEHICLE
+	def.look = EventDef.Look.DELIVERY_VAN
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.intensity = 8.0
@@ -308,7 +308,7 @@ static func _busker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "busker"
 	def.display_name = "Busker"
-	def.look = EventDef.Look.PERSON
+	def.look = EventDef.Look.BUSKER
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.PARK, GameEnums.TileType.SQUARE]
 	def.intensity = 9.0
@@ -331,7 +331,7 @@ static func _construction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "construction"
 	def.display_name = "Roadworks"
-	def.look = EventDef.Look.OBJECT
+	def.look = EventDef.Look.ROADWORKS
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 11.0
@@ -352,7 +352,7 @@ static func _fire_truck() -> EventDef:
 	def.id = "fire_truck"
 	def.display_name = "Fire engine"
 	def.kind = GameEnums.EventKind.ONE_SHOT
-	def.look = EventDef.Look.VEHICLE
+	def.look = EventDef.Look.FIRE_ENGINE
 	def.first_day = 3
 	def.last_day = 3
 	def.placement = [GameEnums.TileType.ROAD]
@@ -378,7 +378,7 @@ static func _burning_building() -> EventDef:
 	def.display_name = "Burning building"
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.FIRE
+	def.look = EventDef.Look.BURNING_BUILDING
 	def.intensity = 18.0
 	def.inner_radius = 60.0
 	def.outer_radius = 260.0
@@ -406,7 +406,7 @@ static func _burnt_shell() -> EventDef:
 	def.display_name = "Burnt-out building"
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.OBJECT
+	def.look = EventDef.Look.BURNT_SHELL
 	def.intensity = 2.5
 	def.inner_radius = 30.0
 	def.outer_radius = 90.0
@@ -743,7 +743,7 @@ static func _police_patrol() -> EventDef:
 	var def := EventDef.new()
 	def.id = "police_patrol"
 	def.display_name = "Patrol"
-	def.look = EventDef.Look.VEHICLE
+	def.look = EventDef.Look.POLICE_CAR
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
@@ -764,7 +764,7 @@ static func _poster_crew() -> EventDef:
 	var def := EventDef.new()
 	def.id = "poster_crew"
 	def.display_name = "Poster crew"
-	def.look = EventDef.Look.PERSON
+	def.look = EventDef.Look.POSTER_CREW
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
@@ -820,7 +820,7 @@ static func _checkpoint() -> EventDef:
 	var def := EventDef.new()
 	def.id = "checkpoint"
 	def.display_name = "Checkpoint"
-	def.look = EventDef.Look.OBJECT
+	def.look = EventDef.Look.CHECKPOINT
 	def.first_day = 7
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
@@ -843,7 +843,7 @@ static func _abduction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "abduction"
 	def.display_name = "Unmarked van"
-	def.look = EventDef.Look.VEHICLE
+	def.look = EventDef.Look.UNMARKED_VAN
 	def.first_day = 8
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.CROSSING]
@@ -895,7 +895,7 @@ static func _alley_robbery() -> EventDef:
 	var def := EventDef.new()
 	def.id = "alley_robbery"
 	def.display_name = "Robbery"
-	def.look = EventDef.Look.PERSON
+	def.look = EventDef.Look.ROBBER
 	def.first_day = 8
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.ALLEY]
@@ -930,7 +930,7 @@ static func _night_raid() -> EventDef:
 	def.display_name = "Raid"
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 10
-	def.look = EventDef.Look.VEHICLE
+	def.look = EventDef.Look.RIOT_VAN
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 24.0
@@ -950,7 +950,7 @@ static func _military_convoy() -> EventDef:
 	var def := EventDef.new()
 	def.id = "military_convoy"
 	def.display_name = "Convoy"
-	def.look = EventDef.Look.VEHICLE
+	def.look = EventDef.Look.ARMY_TRUCK
 	def.first_day = 12
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.ROAD]
@@ -974,7 +974,7 @@ static func _barricade() -> EventDef:
 	def.display_name = "Barricade"
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.OBJECT
+	def.look = EventDef.Look.BARRICADE
 	def.act_tag = 4
 	def.intensity = 6.0
 	def.inner_radius = 40.0
@@ -990,7 +990,7 @@ static func _protest() -> EventDef:
 	var def := EventDef.new()
 	def.id = "protest"
 	def.display_name = "Protest"
-	def.look = EventDef.Look.PERSON
+	def.look = EventDef.Look.PROTEST
 	def.first_day = 12
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING]
@@ -1001,10 +1001,16 @@ static func _protest() -> EventDef:
 	def.telegraph_time = 2.6
 	def.intensity_ramp = 1.9
 	def.pulse_period = 8.0
-	# One person's worth, because one person is what it draws. A crowd that swells to fill a
-	# square is what the row is *about*, and the body may not claim ground the picture does not —
-	# that is the same rule `_draw_spread` follows in the other direction. The art is the fix.
-	def.obstructs_radius = PERSON_BODY
+	# *(M37.)* One person's worth until there was a picture of more than one person. This was the
+	# clearest case in the catalogue of art deciding a gameplay number: the body may not claim
+	# ground the picture does not, which is `_draw_spread`'s rule in the other direction, so a
+	# protest that fills a square obstructed 11px because `Look.PERSON` drew one man with no
+	# placard. `_draw_protest` draws two ranks across exactly this width now.
+	#
+	# Under the 70px inner radius on purpose: the loudest part of a protest is still something you
+	# stand in rather than bump into, and being stopped at the edge of it would take the choice of
+	# how close to cut past away from the player.
+	def.obstructs_radius = 55.0
 	def.weight = 2.5
 	def.max_per_day = 3
 	def.cost = 3
@@ -1018,7 +1024,7 @@ static func _firefight() -> EventDef:
 	def.display_name = "Firefight"
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 13
-	def.look = EventDef.Look.FIRE
+	def.look = EventDef.Look.FIREFIGHT
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.CROSSING, GameEnums.TileType.SQUARE]
 	def.intensity = 30.0

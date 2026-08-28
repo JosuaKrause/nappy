@@ -241,33 +241,16 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 			Palette.OUTLINE)
 	draw_string(font, text_at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, colour)
 
-## The silhouette that stands for a kind of event at icon size. `NONE` and `TABLES` never reach
-## here — neither is mobile and neither is lethal — but the fallback keeps the arrow drawable if
-## one ever becomes so.
+## The silhouette that stands for a kind of event at icon size.
+##
+## **The table lives on `EventInstance`, not here.** *(M37.)* It used to be a `match` of its own
+## with eight rows in it, which is one table too many for a rule that says *the entity carries its
+## own picture* — and it went wrong in exactly the way a second copy does: `VEHICLE` returned the
+## generic van, so the badge for a fire engine, an army truck and the unmarked van that takes the
+## baby was a picture of a delivery van. An arrow that says the wrong thing is worse than the arrow
+## that could only say "something", which is what M22 built this to replace.
 func _icon_for(look: EventDef.Look) -> Texture2D:
-	match look:
-		EventDef.Look.VEHICLE:
-			return EventInstance.VEHICLE
-		EventDef.Look.ANIMAL:
-			return EventInstance.CAT_RUNNING
-		EventDef.Look.FIRE:
-			return EventInstance.FLAME
-		EventDef.Look.PERSON, EventDef.Look.DOG_WALKER:
-			return EventInstance.PERSON
-		# M31. Every one of these is here because it is lethal or faster than a walk, which is
-		# the only reason a look ever needs a badge — and without an entry the badge silently
-		# refuses to draw, which is the rule two lines up working as intended and would have
-		# left act I's first lethal event announcing nothing.
-		EventDef.Look.CYCLIST:
-			return EventInstance.CYCLIST
-		EventDef.Look.LOOSE_DOG:
-			return EventInstance.DOG
-		EventDef.Look.LORRY:
-			return EventInstance.LORRY
-		EventDef.Look.ICE_CREAM_VAN:
-			return EventInstance.ICE_CREAM_VAN
-		_:
-			return null
+	return EventInstance.icon_for(look)
 
 func _draw_chevron(at: Vector2, angle: float, colour: Color) -> void:
 	var points := PackedVector2Array([

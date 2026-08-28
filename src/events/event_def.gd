@@ -8,27 +8,59 @@ extends Resource
 
 ## How the instance is drawn. Data rather than a script per event, since most events differ
 ## only in their numbers.
+##
+## **One look per row, and every look is a thing rather than a category.** *(M37, playtest 07
+## finding 2: "not sure what that person was supposed to be".)* This used to open with `ANIMAL`,
+## `PERSON`, `VEHICLE`, `OBJECT` and `FIRE`, and those five names were doing the damage all by
+## themselves: a category is something you can always put one more row into, so sixteen of the
+## twenty-eight visible rows in the catalogue drew five pictures between them. A man shouting, a
+## busker, a poster crew, a protest and the robbery that ends the day were one `person.svg`; a
+## delivery van, a fire engine, a police car, a riot van, an army truck and the unmarked van that
+## takes the baby were one van.
+##
+## That is not a missing art pass, it is the first row of the visual vocabulary failing —
+## *the entity itself carries most of it* — and it had already cost a finding: M34 spent a
+## milestone fixing `alley_robbery` for a complaint about `homeless_yeller`, because the player
+## could only say "the robber" and the two draw the same man. It cost a second one in playtest 09,
+## where *"who is the person killing me?"* is a question the screen should have answered.
+##
+## So a look is now the name of one picture, and `tests/test_events.gd` holds both halves of the
+## rule: **no two rows share a look**, and **no two looks share a silhouette**. There is
+## deliberately no generic left to reach for — the cost of adding an event is a drawing.
 enum Look {
 	NONE,     ## Invisible — something else already draws it (a park's playground frame).
-	ANIMAL,
-	PERSON,
-	VEHICLE,
-	OBJECT,
-	FIRE,
-	DOG_WALKER, ## A person, a dog, and the taut lead between them.
-	TABLES,     ## A café spilling across the pavement.
-	# M31. Each of these earned its own row rather than reusing `PERSON` or `VEHICLE`, and the
-	# reason is the known-shaky-ground note in `CLAUDE.md`: three act I events already draw the
-	# same `person.svg`, so what tells them apart is a caret, which is the vocabulary covering
-	# for art nobody drew. Adding seven more events on that footing would have made it the rule.
-	CYCLIST,      ## A kid on a bike, leaning into it. Act I's first lethal thing.
+	# ---- act I ----
+	CAT,          ## Crouched, then stretched out flat. The crouch is the telegraph.
+	YELLER,       ## A long coat, a raised arm, a beard. One shape where a passer-by is two.
+	DOG_WALKER,   ## A person, a dog, and the taut lead between them.
+	CAFE,         ## Tables across the pavement, with people at them.
+	DELIVERY_VAN, ## Shutter up, hazards on. The plain van the others used to borrow.
+	BUSKER,       ## The guitar and the open case.
+	ROADWORKS,    ## Municipal barriers, repeated across what they close.
+	FIRE_ENGINE,  ## The longest silhouette in the game, and the only red one.
+	BURNING_BUILDING, ## Flames that scale with what it is emitting.
+	BURNT_SHELL,  ## Charred brick and window holes with nothing behind them.
+	# M31. Each of these earned its own row rather than reusing `PERSON` or `VEHICLE` — which is
+	# the rule above being kept one milestone before it was written down.
 	LOOSE_DOG,    ## A dog running with the lead still trailing behind it.
 	STALL,        ## A market trestle, repeated across the pavement it takes.
 	LEAF_BLOWER,  ## A groundskeeper and the nozzle that makes the noise.
 	BIRDS,        ## A flock going up all at once.
+	CYCLIST,      ## A kid on a bike, leaning into it. Act I's first lethal thing.
 	ICE_CREAM_VAN,
 	LORRY,        ## A box lorry: the biggest silhouette in act I, and a wall.
 	CHARGING_DOG, ## Stretched out flat and coming at you. The one thing running is for.
+	# ---- acts II-IV ----
+	POLICE_CAR,   ## Low and pale where everything else in act II is a tall dark box.
+	POSTER_CREW,  ## The poster is the event; the man holding it is scenery.
+	CHECKPOINT,   ## Poured concrete and a hazard stripe. A street being *held*.
+	UNMARKED_VAN, ## No windows, no livery, a door standing open. The one with a hole in it.
+	ROBBER,       ## Two postures — waiting in the hood, and coming.
+	RIOT_VAN,     ## The same dark box as the unmarked van, with mesh over every window.
+	ARMY_TRUCK,   ## Olive, and the only canvas back in the game.
+	BARRICADE,    ## Whatever was on the street, stacked by somebody.
+	PROTEST,      ## A rank of placards, as wide as the ground it takes.
+	FIREFIGHT,    ## People behind cover, not a building on fire.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
@@ -60,7 +92,10 @@ enum SpawnMode {
 @export var id := ""
 @export var display_name := ""
 @export var kind := GameEnums.EventKind.RECURRING
-@export var look := Look.OBJECT
+## No default worth having: it was `OBJECT` — a category, so a row that never chose was drawn as
+## roadworks and looked deliberate. Every visible row states its own picture, and
+## `tests/test_events.gd` names the three that are legitimately invisible.
+@export var look := Look.NONE
 @export var ambient_source := AmbientSource.NONE
 
 ## Day gating, 1-based and inclusive. `last_day = 0` means it never expires.

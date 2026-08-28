@@ -386,8 +386,8 @@ Top-down camera with a fake vertical extrusion:
   recomputed on every redraw.
 - Buildings fill exactly their lot: the front wall takes the southern `height` px and the
   roof takes the rest. Fitting the mass inside the lot is what keeps extrusions off the
-  street — a roof overhanging northward would hide the player whenever she walked along that
-  sidewalk. A taller building therefore shows more wall and less roof, which is what an
+  street. (It does *not* keep every extrusion off the player: the mass is inside the lot and
+  still north of the origin y-sort compares, which is the bug above.) A taller building therefore shows more wall and less roof, which is what an
   oblique view of a taller building should look like.
 - **Building heights are whole tiles.** They used to be continuous floats, which a tiled
   facade cannot honour without stretching a tile. Quantising also makes the "a roof always
@@ -400,7 +400,20 @@ Top-down camera with a fake vertical extrusion:
   top, which is why a corner needs no dedicated corner tile — it takes two edge overlays
   and the parapet turns.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
-  correctly.
+  correctly — with one deliberate exception. **Buildings are a layer of their own, beneath the
+  entities, and sort against nothing but each other.** *(M37, playtest 07 finding 4: "the warning
+  indicators render below roofs".)* A building's origin is the south edge of its lot and its mass
+  extends a whole block north of it, so y-sorting drew it in front of everything on the pavement
+  running up the side of that block — visible wherever the two also overlapped in **x**, which is
+  anything wider than the 16px from a tile centre to the lot edge. A person (18px) never
+  overlapped, a lorry (62px) always did, and the things in between are the ones that move: the
+  player hugging a frontage, and every cue drawn above an entity's head. That is why it read as an
+  occasional glitch rather than as a rule.
+
+  The fix is not a better comparison. Buildings tile their lots exactly and no lot tile is
+  walkable, both asserted in `tests/test_generator.gd`, so **nothing can ever legitimately stand
+  behind a building** — and two things that can never be on opposite sides of each other have no
+  business being sorted against each other.
 - Sprite anchor is the *feet*, not the centre, so y-sorting matches the ground plane. A
   `Sprite2D` with `centered = false` puts the node at the sprite's *top-left*, which makes
   y-sort compare the wrong edge; use `offset` to draw upward from the ground plane instead.

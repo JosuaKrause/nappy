@@ -1,0 +1,23 @@
+<!-- The van a night raid arrives in: a tall dark box with mesh over every window and a step down
+     the side. Read against `unmarked_van.svg`, which is the same colour family and the opposite
+     idea — that one is trying not to be seen and this one is not. The grilles are what tell them
+     apart, and they are drawn coarse enough to survive being shrunk. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="38" viewBox="0 0 54 38" shape-rendering="crispEdges">
+  <rect x="2" y="2" width="50" height="26" fill="#39414f"/>
+  <rect x="2" y="2" width="50" height="4" fill="#48515f"/>
+  <rect x="5" y="8" width="12" height="8" fill="#2a303a"/>
+  <rect x="5" y="8" width="12" height="8" fill="none" stroke="#7a8494" stroke-width="1"/>
+  <rect x="9" y="8" width="1" height="8" fill="#7a8494"/>
+  <rect x="13" y="8" width="1" height="8" fill="#7a8494"/>
+  <rect x="24" y="8" width="12" height="8" fill="#2a303a"/>
+  <rect x="28" y="8" width="1" height="8" fill="#7a8494"/>
+  <rect x="32" y="8" width="1" height="8" fill="#7a8494"/>
+  <rect x="24" y="8" width="12" height="8" fill="none" stroke="#7a8494" stroke-width="1"/>
+  <rect x="40" y="10" width="10" height="12" fill="#2f3641"/>
+  <rect x="4" y="22" width="46" height="3" fill="#2a303a"/>
+  <rect x="2" y="24" width="50" height="4" fill="#221f28"/>
+  <circle cx="14" cy="31" r="6" fill="#26232a"/>
+  <circle cx="40" cy="31" r="6" fill="#26232a"/>
+  <circle cx="14" cy="31" r="2" fill="#3a373f"/>
+  <circle cx="40" cy="31" r="2" fill="#3a373f"/>
+</svg>

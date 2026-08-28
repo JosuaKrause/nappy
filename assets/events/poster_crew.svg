@@ -1,0 +1,23 @@
+<!-- The poster crew. The event is that the walls change, so the thing to draw is the poster, not
+     the man: he holds it up at head height with a paste brush in the other hand and a bucket at
+     his feet. The overall is a colour nothing else in act II wears, because from a street away
+     the poster is the only part that will read. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="44" viewBox="0 0 30 44" shape-rendering="crispEdges">
+  <rect x="0" y="36" width="9" height="7" fill="#58524d"/>
+  <rect x="0" y="35" width="9" height="2" fill="#7a736c"/>
+  <rect x="11" y="30" width="4" height="12" fill="#5c6b5c"/>
+  <rect x="16" y="30" width="4" height="12" fill="#5c6b5c"/>
+  <rect x="10" y="42" width="5" height="2" fill="#221f28"/>
+  <rect x="16" y="42" width="5" height="2" fill="#221f28"/>
+  <rect x="8" y="13" width="14" height="18" fill="#5c6b5c"/>
+  <rect x="8" y="25" width="14" height="6" fill="#4c5a4c"/>
+  <rect x="6" y="18" width="4" height="12" fill="#4c5a4c"/>
+  <rect x="4" y="28" width="5" height="3" fill="#8a6f52"/>
+  <rect x="20" y="14" width="9" height="4" fill="#4c5a4c"/>
+  <rect x="21" y="2" width="9" height="13" fill="#e0d8c4"/>
+  <rect x="22" y="4" width="7" height="3" fill="#c4503c"/>
+  <rect x="22" y="9" width="7" height="1" fill="#5c5248"/>
+  <rect x="22" y="11" width="5" height="1" fill="#5c5248"/>
+  <circle cx="15" cy="8" r="6" fill="#d9a878"/>
+  <path d="M9 8 A6 6 0 0 1 21 8 Z" fill="#3a2b26"/>
+</svg>
