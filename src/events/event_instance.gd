@@ -104,6 +104,10 @@ func _process(delta: float) -> void:
 var gave_up := false
 ## Whether it ever got to its stand-off. See `_chase`.
 var _engaged := false
+## For a pursuer with `pursues_within`: the age at which she came close enough for it to take an
+## interest, or `INF` while it is still only standing there. Its telegraph and its chase are both
+## measured from here rather than from birth. See `is_waiting()`.
+var _noticed_at := INF
 
 ## Comes after her. *(Playtest 07: running has to be right sometimes, and this is the shape of
 ## "sometimes".)* See `EventDef.pursues` and `Tuning.validate_pursuit`.
@@ -127,12 +131,24 @@ var _engaged := false
 ##
 ## `Tuning.pursuit_standoff()` is the same contract restated as one, and holding it is what makes
 ## the notice real from *any* approach geometry — including the one the director actually produces.
+## And a pursuer may be a **place** before it is a moment. *(M36, playtest 09: "a robber should
+## increase excitement on sight… and if you get close they should start moving towards you".)* While
+## it is waiting it emits at full strength, is not lethal and does not move; `pursues_within` is
+## where that stops. Everything below then runs exactly as it does for a dog sited in front of her —
+## the notice, the stand-off and the break-off are the same three distances, started later.
 func _chase(delta: float) -> void:
 	if player_at == Vector2.INF or is_telegraphing_still():
 		return
 	var toward := player_at - global_position
 	var range_to_her := toward.length()
 	if range_to_her < 1.0:
+		return
+	if is_waiting():
+		if range_to_her <= def.pursues_within:
+			_noticed_at = age
+			# It turns to face her on the frame it notices, which is the whole of the cue: a man who
+			# was looking down the alley is now looking at you.
+			_heading = toward.normalized()
 		return
 	_heading = toward.normalized()
 	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
@@ -144,7 +160,7 @@ func _chase(delta: float) -> void:
 	# reacting sooner, since she would be running through a telegraph that could not end.
 	# `PURSUIT_MIN_NOTICE` is the floor under that: it may not lose interest before it has given
 	# her the notice the contract owes, or a pursuit could be over before it was ever a threat.
-	if (_engaged or age >= Tuning.PURSUIT_MIN_NOTICE) \
+	if (_engaged or chase_age() >= Tuning.PURSUIT_MIN_NOTICE) \
 			and range_to_her > Tuning.PURSUIT_BREAK_OFF:
 		gave_up = true
 		_be_done()
@@ -241,22 +257,51 @@ func _advance_along_path(delta: float) -> void:
 	# visible while it is still far away — which is what makes the warning usable.
 	_path_travelled += def.speed * delta
 	var remaining := _path_travelled
+	# **A beat rather than a journey.** *(M36.)* The distance covered is folded back and forth over
+	# the route, so the same walk up and down happens for ever and the end of the path is never
+	# reached — which is what stops a fixture that moves from departing like something that was
+	# passing through. Folded rather than reset, so streaming it out and back in resumes it mid-beat
+	# exactly as `resume()` promises.
+	var back := false
+	if def.paces:
+		var beat := _path_length()
+		if beat <= 0.0:
+			return
+		var cycle := fmod(_path_travelled, beat * 2.0)
+		back = cycle > beat
+		remaining = beat * 2.0 - cycle if back else cycle
 	for i in range(1, path.size()):
 		var segment := path[i] - path[i - 1]
 		var length := segment.length()
 		if remaining <= length:
 			_heading = segment.normalized()
-			position = path[i - 1] + _heading * remaining
+			# Facing the way it is actually walking. Without this a man pacing a pavement moons
+			# along it backwards for half of every beat, which is worse than not moving at all.
+			if back:
+				_heading = -_heading
+			position = path[i - 1] + segment.normalized() * remaining
 			return
 		remaining -= length
 	position = path[path.size() - 1]
+	if def.paces:
+		return
 	# A mobile event that has driven off the end of its route is done, whatever its
 	# nominal duration says — and it keeps going until it is out of sight, rather than stopping
 	# dead on the pavement she is walking down. See "going away" above.
 	_be_done()
 
+## The length of the whole route, in px.
+func _path_length() -> float:
+	var total := 0.0
+	for i in range(1, path.size()):
+		total += path[i].distance_to(path[i - 1])
+	return total
+
 func _has_expired() -> bool:
-	return def.duration > 0.0 and age >= def.telegraph_time + def.duration
+	if is_waiting():
+		# It has not happened yet, and it is not going to until she walks up to it.
+		return false
+	return def.duration > 0.0 and chase_age() >= def.telegraph_time + def.duration
 
 func _finish() -> void:
 	if is_finished:
@@ -269,7 +314,25 @@ func _finish() -> void:
 
 ## True while the event is visible but has not yet reached full strength.
 func is_telegraphing() -> bool:
-	return age < def.telegraph_time
+	if is_waiting():
+		return false
+	return chase_age() < def.telegraph_time
+
+## True for a pursuer that is only standing there, because she has not come near enough for it to
+## take an interest. It emits at full strength, it is not lethal, and it does not move.
+## See `EventDef.pursues_within`.
+func is_waiting() -> bool:
+	return def.pursues_within > 0.0 and _noticed_at == INF
+
+## How long this has been *happening*, which is not always how long it has existed.
+##
+## For everything in the catalogue but one it is the age. For a pursuer that waits, the clock starts
+## when it notices her — a telegraph spent at dawn, four streets away, is not a notice, and
+## `telegraph_time` and `duration` are both promises about the encounter rather than about the day.
+func chase_age() -> float:
+	if def.pursues_within <= 0.0:
+		return age
+	return 0.0 if _noticed_at == INF else age - _noticed_at
 
 ## Current peak intensity at the centre, after the telegraph damping and the pulse envelope.
 func current_intensity() -> float:
@@ -285,7 +348,10 @@ func current_intensity() -> float:
 		# 0.25..1.0, so a pulsing event is never entirely silent between beats.
 		var phase := TAU * age / def.pulse_period
 		value *= 0.25 + 0.75 * (0.5 - 0.5 * cos(phase))
-	if is_telegraphing():
+	# The damping says *this has not started yet*. A pursuer that waits has been standing there
+	# since she came round the corner — what has not started is the lunge, not the man — so its
+	# notice is the only telegraph in the game that does not quieten what it is warning about.
+	if is_telegraphing() and def.pursues_within <= 0.0:
 		value *= Tuning.TELEGRAPH_INTENSITY_FRACTION
 	return value
 
@@ -302,7 +368,7 @@ func contribution_at(world_position: Vector2) -> float:
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is
 ## no longer merely telegraphing.
 func is_lethal_at(world_position: Vector2) -> bool:
-	if is_finished or is_leaving or not def.hard_fail or is_telegraphing():
+	if is_finished or is_leaving or is_waiting() or not def.hard_fail or is_telegraphing():
 		return false
 	return global_position.distance_to(world_position) <= def.inner_radius
 

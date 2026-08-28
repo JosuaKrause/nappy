@@ -36,6 +36,15 @@ extends Node
 ##
 ## An optional delay in seconds is how long she dithers first, which is the axis worth measuring:
 ## the price of the right answer is what it costs to give it late.
+##
+## `--press <action> <seconds>` taps one input action once, and it exists because of the bug that
+## made it necessary. *(M36, playtest 09: "esc doesn't work".)* The pause screen shipped in M33,
+## passed a green suite and a screenshot, and **never opened once** — its guard read `visible` on a
+## `CanvasLayer`, which is true from the moment the node is added. Neither the suite nor a
+## screenshot could have caught it, because nothing in either of them has ever *pressed a key*. Now
+## something can:
+##
+##     tools/shot.sh pause.png 4 --press pause 3
 
 const DEFAULT_SECONDS := 1.5
 
@@ -57,6 +66,10 @@ var _dither := 0.0
 ## The clock reading at which to turn, once something is chasing. `INF` until it is.
 var _flee_at := INF
 var _fled := false
+## One action to tap once, and when. See `--press`.
+var _press := ""
+var _press_at := INF
+var _pressed := false
 
 ## Returns a configured instance, or null if the command line did not ask for a screenshot.
 static func from_command_line() -> AutoScreenshot:
@@ -81,6 +94,13 @@ static func from_command_line() -> AutoScreenshot:
 		# and `--flee --seed 4242` must not read the flag after it as one.
 		if flee + 1 < args.size() and args[flee + 1].is_valid_float():
 			node._dither = float(args[flee + 1])
+	var press := args.find("--press")
+	if press != -1 and press + 2 < args.size():
+		node._press = args[press + 1]
+		node._press_at = float(args[press + 2])
+		if not InputMap.has_action(node._press):
+			push_warning("unknown --press action '%s'" % node._press)
+			node._press = ""
 	return node
 
 func _ready() -> void:
@@ -99,6 +119,9 @@ func _process(delta: float) -> void:
 	if not _fled and _elapsed >= _flee_at:
 		_fled = true
 		_turn_and_run()
+	if not _pressed and _press != "" and _elapsed >= _press_at:
+		_pressed = true
+		_tap(_press)
 	if _elapsed < _seconds_to_wait:
 		return
 	set_process(false)
@@ -106,6 +129,21 @@ func _process(delta: float) -> void:
 		Input.action_release(_holding)
 	Input.action_release("run")
 	_capture()
+
+## Taps an action so that it **propagates**, which `--walk` does not need and this does.
+##
+## `Input.action_press()` sets the polled state and nothing else, which is all the rig ever wanted
+## before: the stroller reads `Input.get_vector` every frame. A key that something answers in
+## `_unhandled_input` — the pause, and anything else that is a *moment* rather than a state — needs a
+## real event pushed through the tree, and that is `parse_input_event`. The first version of
+## `--press` used `action_press` and produced a screenshot of the game carrying on, which looks
+## exactly like the bug it was written to check.
+func _tap(action: String) -> void:
+	for pressed in [true, false]:
+		var event := InputEventAction.new()
+		event.action = action
+		event.pressed = pressed
+		Input.parse_input_event(event)
 
 ## The one answer the game asks for: about-turn, and hold shift.
 func _turn_and_run() -> void:

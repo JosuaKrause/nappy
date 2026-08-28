@@ -35,7 +35,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 46563 headless checks, ~110s
+./tools/test.sh               # 46394 headless checks, ~110s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
@@ -74,6 +74,16 @@ hold a direction can only ever demonstrate the wrong answer, so every trace of t
 with `--walk` ends in a hard fail — which is the mechanic working and says nothing about whether the
 answer is affordable. `--flee [delay]` turns round and runs when something starts chasing her, and
 the delay is the axis worth measuring: what the right answer costs when it is given late.
+
+**Nothing in the suite or in a screenshot has ever pressed a key, so use `--press`.** *(M36,
+playtest 09: "esc doesn't work".)* The pause shipped in M33 with a screen, a key, a README line, a
+`TODO.md` entry and a line in the debug overlay, and it **never opened once** — its guard read
+`visible` on a `CanvasLayer`, which is true from the moment the node is in the tree. A green suite
+and a screenshot both passed it for three milestones because neither of them can press Esc.
+`--press <action> <seconds>` can. Note what its own first version got wrong: `Input.action_press()`
+sets the **polled** state and nothing else, which is right for `--walk` and useless for anything
+answered in `_unhandled_input` — it produced a screenshot of the game carrying on, which looks
+exactly like the bug. Push a real event with `Input.parse_input_event`.
 
 **Where a cue cannot be triggered on demand, relax its condition, look, and put it back.** The
 screen-edge badge needs something lethal off-screen and closing, which is not something a
@@ -390,6 +400,32 @@ three answers rather than restating either. Two traps inside it, both found by d
 - **A rig that runs on a timer runs into it.** The director sites what it owes in front of the
   direction she is *actually travelling*, so a `--flee` that starts before the pursuit is placed
   puts the pursuit in front of the run. It waits for the chase now.
+
+**A pursuit has two shapes and a third state.** *(M36, playtest 09: "a robber should increase
+excitement on sight and getting close to them should be day ending", and "if you get close they
+should start moving towards you".)* `charging_dog` is a **moment** — the director sites it in front
+of her and the chase is all of it. `EventDef.pursues_within` is the other shape: a thing that is
+*somewhere*, that can be seen and priced and routed around, and that becomes a chase if she walks up
+to it. Two things about the waiting state are easy to get backwards:
+
+- **The clock starts when it notices her**, not when the day put it there. A robbery whose telegraph
+  ran at dawn four streets away arrives with no notice in it at all.
+- **Its notice does not damp what it emits.** `TELEGRAPH_INTENSITY_FRACTION` means *this has not
+  started yet*; a man standing in that alley has started, and what has not started is the lunge. It
+  is the one telegraph in the game that does not quieten the thing it is warning about.
+
+And the clause that was found by measuring rather than thinking: **the trigger must be inside
+`PURSUIT_BREAK_OFF`**, or she is already standing at the distance that means it has lost her, and
+walking away — the one answer that must never work — works. `validate_pursuit` refuses it now.
+
+**A fixture can move, and `EventDef.paces` is how.** *(M36, playtest 09: "it didn't move and it took
+a long time to have any effect… if it's the homeless person it needs to walk up and down the
+sidewalk".)* A **beat** rather than a journey: it walks its route, turns round at the ends, and
+neither departs nor expires. The difference matters because a stationary source is a fixed price on
+a fixed patch of ground — a line you draw once and never think about again — and a man pacing two
+hundred and fifty pixels of footway is a timing problem on top of a routing one. The price is the
+body: anything mobile is exempt from the rule below, so making something pace **takes its
+`obstructs_radius` away**, and what has to replace it is intensity.
 
 **Anything that stands still is solid at the width it is drawn.** *(M34, playtest 07 findings 16
 and 13: "none of the non-moving obstacles do anything — I can freely walk over them", and "I can
@@ -732,6 +768,15 @@ not either number, is what makes it a decision.
   reads as *the park is busy today* or as somebody having tipped an event budget into a field. It is
   also the one place in the game where `EVENT_SPACING_SAME` does not apply, which is deliberate and
   is exactly the rule that exists to stop a street looking like a duplicated sprite.
+- **The robber has never been met and act III has never been reached.** *(M36.)* Every number on him
+  is a rig's, and the row is now the most mechanically complicated in the catalogue — a field, a
+  trigger, a notice, a stand-off and a break-off. No playtest has got past **day 3**, so the whole of
+  acts II–IV is arithmetic checked by tests and seen by nobody, and this row is the newest part of
+  it. The `chase` entries are what to read the day somebody gets there.
+- **A pacing man has not been walked past by a person either.** *(M36.)* He is the fix for a
+  complaint that was specific and correct, and he introduces the thing that complaint did not ask
+  about: a man with no body on a 64px footway, who is avoided by the meter alone. That is the
+  `dog_walker` bargain, and `dog_walker` has been playtested and this has not.
 - **The two new cues have been read by a rig and not by a person.** *(M32.)* The mark now comes
   down at the kerb and the badge measures the thing's own approach — both confirmed off a trace,
   which is exactly the evidence playtest 06 said was missing and exactly not a person saying the
@@ -762,5 +807,6 @@ not either number, is what makes it a decision.
   `--overview`, `--day-length` and (in `auto_screenshot.gd`) `--screenshot`, `--after`,
   `--walk` ship in the build and live in `main.gd`. They should be gated behind a debug
   build before release.
-- **There is no main menu.** `Esc` opens a pause screen (M33) and `Q` inside it quits; the
-  between-days summary is still its own kind of pause.
+- **There is no main menu.** `Esc` opens a pause screen (M33, and it did not actually open until
+  M36) and `Q` inside it quits; the between-days summary is still its own kind of pause, and the
+  pause opens over it.
