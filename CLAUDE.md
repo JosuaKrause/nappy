@@ -35,7 +35,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 46498 headless checks, ~110s
+./tools/test.sh               # 46521 headless checks, ~110s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
@@ -84,6 +84,15 @@ and a screenshot both passed it for three milestones because neither of them can
 sets the **polled** state and nothing else, which is right for `--walk` and useless for anything
 answered in `_unhandled_input` — it produced a screenshot of the game carrying on, which looks
 exactly like the bug. Push a real event with `Input.parse_input_event`.
+
+**And a bare key is not an action, which is the same lesson one level down.** *(M38.)* `--press`
+pushed an `InputEventAction`, so it could reach `Esc` and nothing else — while `Q` (quit, since M33)
+and `R` (restart, M38) are read as **keycodes**, the way a screen's own shortcuts usually are. The
+rig that exists *because* nothing had ever pressed a key still could not press the two keys the
+pause screen is mostly made of. `--press key:r 3.5` can, and the flag may be repeated, because one
+tap can only ever photograph one screen and what usually needs checking is a sequence. Note the one
+thing it cannot do: `R` reloads the scene, and the reloaded scene re-presses, so a rig restarting
+the game loops for ever. Read the boot lines rather than waiting for the PNG.
 
 **Where a cue cannot be triggered on demand, relax its condition, look, and put it back.** The
 screen-edge badge needs something lethal off-screen and closing, which is not something a
@@ -170,6 +179,14 @@ day was over. The fix is `main._pauses_with_the_game()`, called on every node th
 rather than the frame around it. **If you add a node under `Main`, it needs that call**, and
 nothing warns you.
 
+M38's title screen is the first thing that needed the split the other way round — the **city**
+running while the **day** does not — and it is the same mechanism used deliberately rather than
+by accident: `_city` goes back to `ALWAYS` for the duration, and `_player` is pinned to `PAUSABLE`
+because she is a child of it and would otherwise inherit the exemption. That last line is the M33
+bug written out as a decision instead of a mistake. Anything that wants the same trick has to name
+its own exceptions the same way; there is no "pause everything except" switch and there should not
+be one.
+
 **Y-sorting compares origins, so a thing whose mass extends away from its own origin sorts
 wrong.** *(M37, playtest 07 finding 4.)* A `Building`'s origin is the south edge of its lot and it
 is drawn a whole block north of there, so it won every comparison against the pavement running up
@@ -179,6 +196,17 @@ lot edge, a lorry (62px) always does, and the things in between are the ones tha
 shape: **before reaching for a better comparison, ask whether the two things can ever legitimately
 be on opposite sides of each other.** Here they cannot — no lot tile is walkable — so buildings are
 a layer of their own and sort against nothing.
+
+**A paused `Camera2D` with smoothing on never arrives.** *(M38.)* `position_smoothing_enabled` is
+applied in the camera's **own** process callback, so a camera that is `PAUSABLE` under a paused tree
+stops following the thing it is attached to and sits wherever it last was — which on the first frame
+of a run is the world origin, clamped to the corner of the boundary wall. The title screen showed an
+empty street for that reason and for no other: ninety-five crowd agents were walking about the
+doorstep a thousand pixels off-camera, and everything the screen was meant to be showing was working
+perfectly. `Stroller.stand_aside()` puts the camera on `ALWAYS` for the duration.
+
+The thing that looks like the cause and is not, checked rather than assumed: **hiding a `Node2D`
+does not deactivate a `Camera2D` under it.**
 
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw
 (the 10k-tile city ground) is fine, but anything animated must call `queue_redraw()` itself.
@@ -260,6 +288,33 @@ nothing to give way to, and pulls away with somebody standing on it. Walk the **
 `world_to_tile` once, then integer steps — whenever the question is about tile types rather than
 about distance. Start at step zero, too: the car's own tile is the difference between "not there
 yet" and "already across".
+
+**A placement is not a separation, and the separation must not be doing the placement's job.**
+*(M38: "when a car turns into an occupied lane the other car just disappears.")* The rule below is
+right and it was carrying more than it should. `CrowdAgent._divert()` chose an arm of a junction out
+of the tile map alone, so a car diverting round a closure materialised wherever that lane happened
+to be occupied — and the positional resolve then did the only thing it can, which is move a body.
+Front-to-back resolution **compounds**: the shortfall a car sees is its own overlap plus everything
+already moved ahead of it, so a bunched queue shunts the rearmost car several lengths backwards in
+one frame. Measured at a closure: 1627 corrections in ninety seconds, worst 134px; 146 and 66px once
+the turn looked first. The queue was legal on every frame either way, which is exactly why five
+years of "no two cars are inside each other" tests could not see it.
+
+Three things to carry:
+
+- **`TrafficIndex` is the look, and it is a frame stale on purpose.** A car covers three pixels in
+  a frame and the question is about a car's length.
+- **Two placements in the same frame cannot see each other**, and that is not a rare case —
+  recycling is what happens to every car that leaves the box, and they all aim at the same entry
+  band. `TrafficIndex.claim()` is the smallest thing that closes it.
+- **A retry is not a guarantee.** Six re-rolls into a busy lane all miss about once a minute, and
+  then the pile is back. `_join_the_back_of_the_queue()` is the fallback, because behind the last
+  car is the one place in a lane that is free by construction.
+
+The one place a large correction is still right is **frame zero of a day**, where the crowd is
+placed without consulting itself and the first pass unpacks it. Nobody has seen a previous frame of
+that street to see it in. Do not "fix" it by spacing the crowd in `start_day`: that turns a random
+morning into tight platoons at minimum headway, and three balance tests correctly object.
 
 **Separation between bodies is positional, never a force.** *(M19 for the player, M27 for the
 traffic.)* A brake, a repulsion, a steering weight — all of them keep a gap that already exists
@@ -597,6 +652,30 @@ only honest way to set it. Measure four things and not one: **placed per day**, 
 `EVENT_STREAM_RADIUS`**, **on screen at once**, and **met on a route** — they moved by
 different multiples in M28, and only the last one is what the player is complaining about.
 
+**And a thing made of several bodies has to be made of several bodies.** *(M38: "the birds are
+broken — they start the flying animation but then freeze. Turn them into individual entities and let
+each fly and make them dangerous.")* A flock was one sprite drawn seven times at offsets derived
+from the instance's own position — which is the right trick for a picture that must not boil, and
+the wrong one for a picture that must move, because it means the seven birds *cannot* move relative
+to each other. The whole animation was one `rise` term that reached 1.0 at the end of the telegraph
+and then held.
+
+`EventDef.flock_size` is the fix and three things about it are worth copying:
+
+- **The excitement stays a pure query, one level down.** The world sums `contribution_at()` over
+  instances; a flock sums over its birds. That is the invariant working, not an exception to it —
+  and it is what makes the middle of a flock cost five times the rim, which is a *route* decision
+  where one disc could only ever be a price.
+- **The birds are held inside `flock_spread`, and `flock_spread` comes out of `outer_radius`.**
+  A bird emits over `outer_radius - flock_spread`, so the union of eleven moving fields is inside
+  the one disc `validate_event` checked. A moving emitter is only legal while that is true.
+- **`lerp` cannot turn a vector round.** Interpolating a unit vector toward its opposite runs down
+  the same line to zero and back out the way it came, so normalising gives the heading it started
+  with — and the one bird the containment could not turn was the one flying straight out of the
+  flock. It went 202px out of a 62px wheel while the code holding it ran every frame. Rotate by a
+  bounded angle (`EventInstance._steer`), and steer from *half way out*, because a turn costs
+  ground.
+
 **A moving thing has to look like it is moving.** *(M31.)* Every crowd agent has a two-frame
 stride and an `EventInstance` had none, so a dog walker at 32px/s — a tile a second against the
 player's three — slid along with nothing on it changing and read as parked. The fix is a bob
@@ -617,6 +696,11 @@ Decide `spawn_mode` deliberately. `MAP` is the default and is right for anything
 could plan around: it is a place, and finding out it is there is what walking a street is for.
 `AHEAD_OF_PLAYER` is for the small number whose entire content is *the moment it happens to
 you* — three seconds of cat is not a place — and it may not obstruct.
+
+`flock_size` is the one field that changes what a row *is* rather than what it does: it makes the
+event several bodies, and `contribution_at` then sums over them. Reach for it only when the event
+genuinely is a number of creatures, and set `flock_spread` out of `outer_radius` rather than on top
+of it — see the invariant above.
 
 `obstructs_radius` is **not** a decision: if it stands still and it is drawn, it is solid at half
 its silhouette (see the invariant above). `pavement_side` usually is not one either — `ANY` is
@@ -830,12 +914,29 @@ not either number, is what makes it a decision.
   that *waiting* and *coming* are told apart at an alley's length, and the **protest**, which is
   now a 110px wall of bodies on a crossing where it used to be a man. The crowd is still one
   `person.svg` for two hundred and forty bodies, and that is the opposite rule kept on purpose.
+- **The park is 20% faster and nobody has felt it.** *(M38.)* `SLEEPINESS_CALM_ZONE_MULTIPLIER`
+  10 → 12, so calm ground fills the meter in 20s rather than 24. The reasoning is sound — every
+  milestone since M28 has made the walk *out* harder and left the reward at the end of it the same
+  length — but the last human verdict on the difficulty is playtest 06's, three milestones and a
+  denser catalogue ago, and this moves the one number that decides whether a day is winnable once
+  the park is reached. It also narrows the "a calm area is more than one lap" margin in
+  `docs/MECHANICS.md` from 23.8s to 19.8s against a 10.8s lap.
+- **A flock has been walked through by a rig and by nobody.** *(M38.)* The gradient is measured —
+  +35 through the middle, +8 eighty pixels off it, nothing at the rim — and what is not measured is
+  whether eleven birds at 96px/s inside a 62px wheel read as *a flock going up in your face* or as
+  a swarm of dots. It is also the only row in the game that is more than one emitter, so it is the
+  only row where the cost table and the thing the player meets are computed differently.
 - **There is no audio at all.** Less urgent than it sounds, given the rule above: audio is
   redundancy, so the game must already be fully playable without it.
 - **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
   `--overview`, `--day-length` and (in `auto_screenshot.gd`) `--screenshot`, `--after`,
   `--walk` ship in the build and live in `main.gd`. They should be gated behind a debug
   build before release.
-- **There is no main menu.** `Esc` opens a pause screen (M33, and it did not actually open until
-  M36) and `Q` inside it quits; the between-days summary is still its own kind of pause, and the
-  pause opens over it.
+- **There is no main menu.** There is a **title screen** since M38 — the doorstep with the traffic
+  and the events running behind it and nobody in it, `space` to begin, and a finished run goes back
+  to it — but it is a title, three lines of controls and two keys, not a menu: no options, no seed
+  box, no load game. `Esc` opens a pause screen (M33, and it did not actually open until M36), `R`
+  inside it starts the run again and `Q` quits; the between-days summary is still its own kind of
+  pause, and the pause opens over it. What M38 closed is the *dead end* — the ending screen said
+  `esc to quit`, `Esc` opened the pause, and the pause offered `Esc` and `Q`, so the only way out of
+  a finished run was to close the window.

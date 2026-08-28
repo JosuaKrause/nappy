@@ -8,6 +8,7 @@ const STROLLER := preload("res://scenes/player/stroller.tscn")
 const HUD := preload("res://scenes/ui/hud.tscn")
 const DAY_SUMMARY := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCREEN := preload("res://scenes/ui/pause_screen.tscn")
+const TITLE_SCREEN := preload("res://scenes/ui/title_screen.tscn")
 
 @onready var _status: Label = $CanvasLayer/Status
 
@@ -19,11 +20,13 @@ var _resistance: ResistanceDirector
 ## Null unless the run is being traced. See src/autoload/telemetry.gd.
 var _observer: TelemetryObserver
 var _hud: CanvasLayer
-## Kept because the telemetry observer asks it what she is being warned about; the layer around
-## it is fire-and-forget.
+## Kept because the telemetry observer asks it what she is being warned about; the layer around it
+## is kept only so the title screen can take it off the street.
 var _edge: DangerEdge
+var _edge_layer: CanvasLayer
 var _summary: CanvasLayer
 var _pause: PauseScreen
+var _title: TitleScreen
 var _follow_camera: Camera2D
 var _follow_id := ""
 ## Dev spawn and meter overrides apply to the opening day only; every later day starts on
@@ -31,6 +34,8 @@ var _follow_id := ""
 var _first_day := true
 var _run_over := false
 var _ending_shown := false
+## Whether the title screen is up, with the city running behind it and nobody in it.
+var _in_the_title := false
 
 func _ready() -> void:
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
@@ -73,6 +78,13 @@ func _ready() -> void:
 	_pause = PAUSE_SCREEN.instantiate()
 	add_child(_pause)
 	_pause.quit_requested.connect(_quit)
+	_pause.restart_requested.connect(_restart_run)
+
+	# Same reasoning, one screen further out. See `TitleScreen`.
+	_title = TITLE_SCREEN.instantiate()
+	add_child(_title)
+	_title.start_requested.connect(_on_title_start)
+	_title.quit_requested.connect(_quit)
 
 	_resistance = ResistanceDirector.new()
 	_resistance.name = "Resistance"
@@ -106,6 +118,61 @@ func _ready() -> void:
 	if screenshot:
 		add_child(screenshot)
 
+	# **Except under a rig.** A screenshot tool that opened onto the title screen would photograph
+	# the title screen, which is every `tools/shot.sh` recipe in `CLAUDE.md` quietly answering the
+	# wrong question, and `--press` and `--walk` would hold keys against a game that has not begun.
+	# A rig is driving, so it starts the day the way the player would. `--title` is how the screen
+	# itself gets photographed.
+	var args := OS.get_cmdline_user_args()
+	if (screenshot or "--no-title" in args) and not "--title" in args:
+		return
+	_open_the_title()
+
+# --------------------------------------------------------------- the title ---
+
+## Puts the game behind the title screen and keeps the *city* running while it is there.
+## *(M38: "as title screen just use the home and street in front without player and let act I events
+## play out like the dog running across the street etc.")*
+##
+## The day is planned and built either way, so what is behind the screen is a real first morning
+## rather than a menu with nothing under it — and `space` then starts a day that already exists.
+## What has to be split apart is **the city and the day**, which the pause deliberately does not
+## distinguish:
+##
+## - `get_tree().paused` stops everything `_pauses_with_the_game()` reaches — the clock, the
+##   resistance deadline, the telemetry observer. Nothing about the run may advance behind a screen
+##   the player has not dismissed; that is the M33 bug this project spent six milestones on.
+## - `_city` is put back to `ALWAYS`, so the traffic drives and the events play out. It is the one
+##   thing on the pausable list that is scenery as well as gameplay.
+## - `_player` is pinned back to `PAUSABLE` — she is a child of the city and would otherwise inherit
+##   the exemption, which is exactly how the M33 bug worked — and then **stands aside**, which takes
+##   her out of the `player` group and with it every way the world can touch her. See
+##   `Stroller.stand_aside()`.
+##
+## The HUD, the screen-edge badge and the developer readout all come off, because every one of them
+## is a statement about a player who is not there.
+func _open_the_title() -> void:
+	_in_the_title = true
+	get_tree().paused = true
+	_city.process_mode = Node.PROCESS_MODE_ALWAYS
+	_player.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_player.stand_aside()
+	_hud.visible = false
+	_edge_layer.visible = false
+	_status.visible = false
+	_title.open(_ending_shown)
+
+## The player has pressed space: hand the city back to the day it belongs to.
+func _on_title_start() -> void:
+	_in_the_title = false
+	_title.close()
+	_player.step_back_in()
+	_pauses_with_the_game(_city)
+	_hud.visible = true
+	_edge_layer.visible = true
+	_status.visible = true
+	get_tree().paused = false
+
 ## The screen-edge half of M22's danger vocabulary, in its own layer.
 ##
 ## Built here rather than inside the HUD scene because it has to ask the world where things are
@@ -114,6 +181,7 @@ func _ready() -> void:
 func _add_danger_edge() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "DangerEdge"
+	_edge_layer = layer
 	_edge = DangerEdge.new()
 	_edge.name = "Edge"
 	_edge.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -250,10 +318,38 @@ func _on_summary_continued() -> void:
 	if not _ending_shown:
 		_ending_shown = true
 		_summary.show_ending(GameState.ending)
+		return
+	# A run that is over goes back to where a run begins. *(M38: "the lost screen doesn't allow for
+	# restarting the game", and "with a game open screen then just go back to that after the loss
+	# screen".)*
+	_restart_run()
+
+## Back to the title, with everything about the run thrown away.
+##
+## A scene reload rather than a `GameState.start_run()` and a rebuild, because the run is not the
+## only thing that would have to be reset: the city, the crowd, the streamed events, the resistance
+## deadline, the telemetry observer and every scar are all state hanging off nodes built in
+## `_ready`. Re-entering `_ready` resets all of it by construction, and *"a fresh run gets a fresh
+## city"* is what the player expects from a restart anyway.
+##
+## Deferred because it is called from inside input handling on a screen that is about to be freed,
+## and the tree is unpaused first: `reload_current_scene` builds the new scene into the same tree,
+## and a paused one would open the title screen over a game that could never start.
+func _restart_run() -> void:
+	Telemetry.end_run()
+	get_tree().paused = false
+	get_tree().call_deferred("reload_current_scene")
 
 func _process(_delta: float) -> void:
 	_update_follow_camera()
 	if not _player or not _baby:
+		return
+	if _in_the_title:
+		# `EventManager` streams around the player and there is no player, so the street outside the
+		# home would play out whatever was standing on it at dawn and then quietly empty. One call a
+		# frame keeps it stocked. Only the *streaming* is stood in for: what the director owes ahead
+		# of her is not placed, because it is placed in front of somebody walking somewhere.
+		_city.events.stream_around(_player.global_position)
 		return
 	_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_day.phase == GameEnums.DayPhase.RETURNING,
@@ -284,7 +380,7 @@ func _process(_delta: float) -> void:
 		"",
 		"arrows/WASD walk",
 		"shift       run",
-		"esc         pause",
+		"esc         pause  (r restart, q quit)",
 	])
 
 ## The closest live event and what it is currently doing — the readout that says whether a
@@ -494,10 +590,13 @@ func _apply_meter_override() -> void:
 ## not an argument for refusing — `PauseScreen` puts back the paused state it found rather than
 ## setting `false`, so the two compose. Somebody who has just lost a day and wants out of the game
 ## should not have to find the one screen where the key works.
+## It does **not** open over the title screen, which is the one screen with nothing behind it to
+## pause: the game has not started, `Esc` would stop a stopped tree, and the way out of the title is
+## the two keys it already offers. See `TitleScreen`.
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("pause"):
 		return
-	if _pause.is_open():
+	if _pause.is_open() or _title.is_open():
 		return
 	get_viewport().set_input_as_handled()
 	_pause.open()

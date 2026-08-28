@@ -41,6 +41,7 @@ const CYCLIST := preload("res://assets/events/cyclist.svg")
 const STALL := preload("res://assets/events/stall.svg")
 const LEAF_BLOWER := preload("res://assets/events/leaf_blower.svg")
 const PIGEON := preload("res://assets/events/pigeon.svg")
+const PIGEON_DOWN := preload("res://assets/events/pigeon_down.svg")
 const ICE_CREAM_VAN := preload("res://assets/events/ice_cream_van.svg")
 const LORRY := preload("res://assets/events/lorry.svg")
 const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
@@ -123,6 +124,8 @@ func _ready() -> void:
 	_telegraph_announced = true
 	if def.obstructs_radius > 0.0:
 		_build_obstruction()
+	if def.flock_size > 0:
+		_build_the_flock()
 
 ## Some events are physically in the way. The body is a child so it travels with a mobile
 ## event and disappears with the instance.
@@ -146,9 +149,11 @@ func _process(delta: float) -> void:
 
 	if is_leaving:
 		_leave(delta)
+		_fly_the_flock(delta)
 		queue_redraw()
 		return
 
+	_fly_the_flock(delta)
 	if def.pursues:
 		_chase(delta)
 	elif def.mobile and path.size() > 1 and not is_telegraphing_still():
@@ -256,6 +261,171 @@ func resume(from_age: float, from_travelled: float) -> void:
 	_path_travelled = from_travelled
 	if def.mobile and path.size() > 1:
 		_advance_along_path(0.0)
+
+# ------------------------------------------------------------------ the flock ---
+# *(M38: "the birds are broken. They start the flying animation but then freeze. Turn them into
+# individual entities and let each fly and make them dangerous.")*
+#
+# **A flock was one picture drawn seven times and one number.** The offsets came from the instance's
+# own position so the shape would not boil between frames, which is right for a still and is exactly
+# what stops the birds ever moving apart; the animation was a single `rise` term that reached 1.0
+# at the end of the telegraph and then held. So the flock went up in one movement and hung in the
+# air, motionless, for the whole three seconds that were supposed to *be* the event — the freeze the
+# report is about, and the third and last reason this row has been ineffective since it was added.
+# (M35 fixed the other two: it was over before she arrived, and it was deleted at the top of its
+# climb. Neither of those was the reason it looked broken.)
+#
+# Each bird is its own body now: its own place on the pavement, its own heading, its own speed, its
+# own height, its own wingbeat, and its own contribution to the excitement. Three things follow and
+# each is load-bearing:
+#
+# - **The excitement is still a pure query, and it is now a query over eleven sources.** `Baby` asks
+#   the world, the world sums `contribution_at()`, and this one sums over its birds — which is the
+#   invariant working exactly as written rather than an exception to it. It is also what makes the
+#   flock *dangerous* in the way a route-planning game can use: the middle of it stacks four or five
+#   overlapping fields and the edge of it stacks one, so walking round it is cheap and walking
+#   through it is the most expensive thing on an act I pavement.
+# - **The birds stay inside `flock_spread` of the middle**, which is what keeps the telegraph
+#   fairness contract true. The contract is stated over `outer_radius` from the instance's own
+#   position; `flock_spread + _bird_outer()` is `outer_radius`, so the union of eleven moving fields
+#   is a subset of the one disc `Tuning.validate_event` checked. Widening the wheel without shrinking
+#   the per-bird radius would quietly move the field the contract was written about.
+# - **They wheel rather than fly straight.** A bird that flies straight leaves, and a flock that
+#   leaves is a flock that is over — which is the M35 rule from the other side. What is over is said
+#   with `is_leaving`, and only then do they all pick the same direction.
+
+## One bird. Deliberately not a node: eleven Node2Ds per flock, y-sorted against a city, to draw
+## eleven 18px sprites that are always within 60px of each other, is a great deal of tree for a
+## picture that one `_draw()` produces correctly. `RefCounted` rather than `Node` so it cannot leak.
+class Bird extends RefCounted:
+	## Where it is on the ground plane, relative to the flock's own origin.
+	var at := Vector2.ZERO
+	## How far off that ground, in px. Zero while it is standing on the pavement.
+	var lift := 0.0
+	var heading := Vector2.RIGHT
+	var speed := 0.0
+	## Radians per second, signed. What makes it wheel instead of flying out of its own event.
+	var turn := 0.0
+	## How high this one goes, and how fast it gets there.
+	var ceiling := 0.0
+	var climb := 0.0
+	## Wingbeats per second, and where in one it currently is.
+	var beat := 0.0
+	var phase := 0.0
+
+var _flock: Array[Bird] = []
+
+## How fast a bird crosses the ground once it is up, and how slowly it shuffles before it is.
+const BIRD_FLIGHT_SPEED := 96.0
+const BIRD_GROUND_SPEED := 7.0
+## How much faster a bird that is getting out of here goes than one that is wheeling.
+const BIRD_DEPARTURE_GAIN := 2.1
+
+## Scatters the flock across the pavement it is standing on.
+##
+## Seeded from the instance's own position rather than from an RNG, and that is not laziness: the
+## determinism invariant says nothing gameplay-relevant may call the global `randi()`, and the day's
+## RNG is not reachable from here — nor should it be, since streaming this event out and back in
+## would then consume from it twice and move every event planned after it. A hash of where it stands
+## gives the same flock every time the same flock is built, which is the property that matters.
+func _build_the_flock() -> void:
+	_flock.clear()
+	var count := def.flock_size
+	for i in count:
+		var bird := Bird.new()
+		# Spread round the middle rather than scattered independently, so eleven birds read as a
+		# flock rather than as eleven birds who happen to be near each other.
+		var angle := TAU * (float(i) + 0.35 * _flock_roll(i, 1)) / float(count)
+		var reach := def.flock_spread * (0.3 + 0.7 * _flock_roll(i, 2))
+		bird.at = Vector2(cos(angle), sin(angle) * GROUND_SQUASH) * reach
+		bird.heading = Vector2.from_angle(TAU * _flock_roll(i, 3))
+		bird.speed = BIRD_GROUND_SPEED
+		# Half of them wheel each way, or the flock rotates as a body and reads as a carousel.
+		bird.turn = (1.2 + 1.4 * _flock_roll(i, 4)) * (1.0 if i % 2 == 0 else -1.0)
+		bird.ceiling = 20.0 + 34.0 * _flock_roll(i, 5)
+		bird.climb = 34.0 + 40.0 * _flock_roll(i, 6)
+		bird.beat = 6.0 + 5.0 * _flock_roll(i, 7)
+		bird.phase = TAU * _flock_roll(i, 8)
+		_flock.append(bird)
+
+## The oblique view: a circle on the ground is drawn as an ellipse, so the flock's footprint is
+## squashed on Y exactly as every shadow in the game is.
+const GROUND_SQUASH := 0.55
+
+## A deterministic 0..1 from the flock's own position, its index and a salt. One salt per property,
+## or every bird's speed would be a function of its own heading.
+func _flock_roll(index: int, salt: int) -> float:
+	var mixed := int(global_position.x) * 73856093 + int(global_position.y) * 19349663 \
+			+ index * 83492791 + salt * 2971215073
+	return float(absi(mixed) % 4096) / 4096.0
+
+## Steps every bird. Three phases, and they are the whole event: **on the pavement** while it
+## telegraphs, which is the part she can see from down the street and walk around; **up and
+## wheeling** for the duration, which is the part that costs; and **away** once it is over.
+func _fly_the_flock(delta: float) -> void:
+	if _flock.is_empty():
+		return
+	var grounded := is_telegraphing()
+	for bird in _flock:
+		bird.phase += bird.beat * TAU * delta
+		if grounded:
+			# Pecking about. It has to move — a bird standing perfectly still is the bug being
+			# fixed, one phase earlier — but slowly enough that the flock is plainly still on the
+			# ground and plainly still avoidable.
+			bird.speed = BIRD_GROUND_SPEED
+			bird.heading = bird.heading.rotated(bird.turn * 0.5 * delta)
+			bird.lift = 0.0
+		elif is_leaving:
+			# Everybody the same way now, and climbing hard. What is over says so by leaving, and a
+			# flock that was still wheeling would read as still happening.
+			bird.heading = _steer(bird.heading, _heading, BIRD_TURN_IN, delta)
+			bird.speed = move_toward(bird.speed, BIRD_FLIGHT_SPEED * BIRD_DEPARTURE_GAIN,
+					260.0 * delta)
+			bird.lift += bird.climb * delta
+		else:
+			bird.heading = bird.heading.rotated(bird.turn * delta)
+			bird.speed = move_toward(bird.speed, BIRD_FLIGHT_SPEED, 320.0 * delta)
+			bird.lift = move_toward(bird.lift, bird.ceiling, bird.climb * delta)
+			# Turned back before the edge of its own event, not at it. A bird's own wheel is wider
+			# than the flock at every speed either of them wants, so without this they simply fly
+			# out of the field they are supposed to be, and take the fairness contract with them.
+			#
+			# **From half way out** rather than from the boundary, because a turn is not free: at
+			# `BIRD_FLIGHT_SPEED` and `BIRD_TURN_IN` the tightest circle a bird can fly has a radius
+			# of about 21px, so a bird that is still heading outwards when it reaches the edge is
+			# already outside by the time it has come round. Starting at half the spread leaves it
+			# the room the turn costs.
+			if bird.at.length() > def.flock_spread * 0.5:
+				bird.heading = _steer(bird.heading, -bird.at.normalized(), BIRD_TURN_IN, delta)
+		bird.at += bird.heading * bird.speed * Vector2(1.0, GROUND_SQUASH) * delta
+		if not is_leaving and bird.at.length() > def.flock_spread:
+			# The steering above is what a bird turning back *looks* like; this is the line that
+			# makes it a **guarantee**, and the fairness contract needs one rather than a tendency:
+			# `_bird_outer()` is `outer_radius - flock_spread` precisely so that a bird at the rim
+			# reaches exactly as far as the event was validated to. Steering from half way out means
+			# it shaves a pixel or two when it fires at all, so nothing visible rides on it.
+			bird.at = bird.at.normalized() * def.flock_spread
+
+## Turns `heading` toward `wanted` at up to `rate` radians a second.
+##
+## **Rotating rather than interpolating, and that is not a style choice.** The first version was
+## `heading.lerp(wanted, k)`, which cannot turn a vector round: interpolating between a unit vector
+## and its opposite runs *down the same line* to zero and back out the way it came, so normalising
+## the result gives the heading it started with. A bird flying directly out of its own flock was
+## therefore the one case the containment could not fix, and it is the case that matters — it flew
+## 202px out of a 62px wheel while the code that was supposed to hold it ran every frame.
+func _steer(heading: Vector2, wanted: Vector2, rate: float, delta: float) -> Vector2:
+	var difference := angle_difference(heading.angle(), wanted.angle())
+	return heading.rotated(clampf(difference, -rate * delta, rate * delta))
+
+## How hard a bird can turn, in radians a second. Fast enough that the wheel it flies fits inside
+## the flock — see the note in `_fly_the_flock` — and slow enough to read as a bird banking.
+const BIRD_TURN_IN := 4.6
+
+## The radius one bird emits over. The rest of the field is the room the flock takes up: a bird at
+## the far edge of the wheel reaches exactly as far as the event says it does and no further.
+func _bird_outer() -> float:
+	return maxf(def.inner_radius + 1.0, def.outer_radius - def.flock_spread)
 
 # --------------------------------------------------------------- going away ---
 # *(M35, playtest 08 findings 2 and 3: "running dog events etc — things that move disappear on
@@ -421,8 +591,28 @@ func contribution_at(world_position: Vector2) -> float:
 	# A city-wide source has no falloff: there is nowhere in the city it does not reach.
 	if def.city_wide:
 		return current_intensity()
+	if not _flock.is_empty():
+		return _flock_contribution_at(world_position)
 	return Tuning.falloff(global_position.distance_to(world_position),
 			current_intensity(), def.inner_radius, def.outer_radius)
+
+## A flock is its birds, summed. *(M38.)*
+##
+## The same shape as `City.total_excitement_at` one level down: nothing is pushed anywhere, the
+## sources compose by plain addition, and there is no ordering to get wrong. Each bird carries an
+## equal share of the event's intensity over a radius that leaves room for the wheel, so the middle
+## of the flock — where four or five fields overlap — comes out at about what the event says it is
+## and the edge of it at a fraction. That gradient is the whole reason to do it this way: the price
+## of a flock should depend on whether you walked through it or round it, and one disc centred on
+## nothing in particular cannot say that.
+func _flock_contribution_at(world_position: Vector2) -> float:
+	var share := current_intensity() / float(_flock.size())
+	var outer := _bird_outer()
+	var total := 0.0
+	for bird in _flock:
+		total += Tuning.falloff((global_position + bird.at).distance_to(world_position),
+				share, def.inner_radius, outer)
+	return total
 
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is
 ## no longer merely telegraphing.
@@ -655,33 +845,37 @@ func _draw_loose_dog() -> void:
 	draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
 	Sprites.draw_standing(self, DOG, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
-## A flock going up. Scattered by the instance's own position rather than randomly, so the
-## same flock is the same shape every frame instead of boiling.
+## Every bird, drawn where it actually is. *(M38.)*
 ##
-## Three phases and they are the whole event: **on the ground**, pecking, while it telegraphs — which
-## is the thing that was missing, because a flock that is already in the air is a flock she has
-## walked past and there is nothing left to decide; **up**, all at once, for the duration; and then
-## **away**, climbing as they go. *(M35: they used to be deleted at the top of the climb, which is
-## playtest 08's "pigeons are also completely ineffective" and playtest 07's "birds just disappear
-## if I get close and do nothing" — the same complaint, twice.)*
+## There is no `rise` term and no shared phase any more — see "the flock" above. What is left here
+## is only the picture: each bird on its own beat, each with a shadow on the pavement under it that
+## shrinks and fades as it climbs, and the whole flock painted back to front so a bird in front
+## overlaps the one behind rather than fighting it for the same pixel every frame.
+##
+## The shadow is what sells the height, and it is the reason a bird 40px up does not simply read as
+## a bird standing 40px further north.
 func _draw_birds() -> void:
-	var rise := clampf(age / maxf(def.telegraph_time, 0.01), 0.0, 1.0)
-	if is_telegraphing():
-		# On the pavement and about to go: no lift at all until the burst, so what she sees from
-		# down the street is a flock she could still walk around.
-		rise = 0.0
-	var seed_value := int(global_position.x) * 31 + int(global_position.y)
-	# Climbing away, so the last thing on screen is them leaving rather than them stopping.
-	var climb := _leaving_for * CLIMB_PER_SECOND
-	for i in 7:
-		var spread := float((seed_value + i * 37) % 11 - 5) * 7.0
-		var lift := 6.0 + float((seed_value + i * 53) % 7) * 5.0
-		Sprites.draw_standing(self, PIGEON,
-				Vector2(spread, -lift * rise - 4.0 * float(i % 3) - climb))
+	var order: Array[int] = []
+	for i in _flock.size():
+		order.append(i)
+	order.sort_custom(func(a: int, b: int) -> bool: return _flock[a].at.y < _flock[b].at.y)
+	for i in order:
+		var bird := _flock[i]
+		if bird.lift < BIRD_SHADOW_CEILING:
+			# Smaller and fainter the higher it is, and gone by the time it is over the rooftops.
+			var faded := 1.0 - bird.lift / BIRD_SHADOW_CEILING
+			Sprites.draw_shadow(self, bird.at, 5.0 * faded)
+		var wings := PIGEON if sin(bird.phase) >= 0.0 else PIGEON_DOWN
+		if bird.lift <= 0.0:
+			# Standing. The upstroke is a bird in flight, and a pavement full of them is a flock
+			# that has already gone — which is the thing the telegraph exists to show her instead.
+			wings = PIGEON_DOWN
+		Sprites.draw_standing(self, wings, bird.at - Vector2(0.0, bird.lift),
+				Vector2.ZERO, bird.heading.x < 0.0)
 
-## How fast a departing flock gains height, on top of the ground it covers. Enough that they are
-## visibly going *up and away* rather than skimming the pavement.
-const CLIMB_PER_SECOND := 42.0
+## How high a bird's shadow survives to. Roughly first-floor height: above it, there is nothing on
+## the pavement to cast one onto that the player can see.
+const BIRD_SHADOW_CEILING := 46.0
 
 func _draw_cat() -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the

@@ -1,5 +1,7 @@
-<!-- One pigeon, wings up. Drawn several times at scattered heights to make a flock going up:
-     a single bird is scenery, a dozen leaving the ground at once is the moment. -->
+<!-- One pigeon on the upstroke. Paired with `pigeon_down.svg`, which is the same bird with its
+     wings under it: a flock is drawn as N of these, each on its own beat, so what shows is a
+     dozen individual birds rather than one shape repeated. -->
+
 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="14" viewBox="0 0 18 14" shape-rendering="crispEdges">
   <rect x="5" y="7" width="8" height="4" fill="#6b7a8c"/>
   <rect x="12" y="5" width="4" height="4" fill="#6b7a8c"/>

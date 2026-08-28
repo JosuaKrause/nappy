@@ -50,8 +50,13 @@ Or open the project folder in Godot 4.7 directly.
 | Arrow keys / WASD | Walk |
 | Hold Shift | Run (raises excitement) |
 | E | Interact |
-| Space | Continue, on the between-days screen |
-| Esc | Quit |
+| Space | Begin, on the title screen; continue, on the between-days screen and from the pause |
+| Esc | Pause, and carry on again |
+| R | Start the run again — from the pause screen |
+| Q | Quit — from the title or the pause screen |
+
+The game opens on a title screen with the street outside your own front door running behind
+it, and a finished run goes back to it.
 
 ## Dev flags
 
@@ -74,7 +79,9 @@ godot --path . -- --seed 12345 --day 9 --overview
 | `--screenshot out.png --after N` | Render for N **seconds**, save a PNG, quit |
 | `--walk north\|south\|east\|west` | Hold a direction down for the whole run |
 | `--flee [delay]` | Turn round and run when something starts chasing her, after dithering for `delay` seconds |
-| `--press <action> <seconds>` | Tap an input action once, so a rig can press a key — `--press pause 3` |
+| `--press <action\|key:name> <seconds>` | Tap an action or a bare key, so a rig can press one. May be given more than once — `--press pause 2 --press key:r 3.5` |
+| `--title` | Open on the title screen even under a screenshot rig, which otherwise skips it |
+| `--no-title` | Skip the title screen |
 | `--no-telemetry` | Do not write a run log |
 
 ## Run logs

@@ -1,11 +1,15 @@
-<!-- The same cat mid-dash: stretched out, tail streaming, legs off the ground. -->
+<!-- The same cat mid-dash: stretched out, tail streaming, legs off the ground.
+
+     Drawn facing EAST, like every other sprite with a front and a back. It faced west for six
+     milestones, which is not a look, it is a flip: `_heading_is_west()` mirrors the art, so a cat
+     bolting west was drawn running east and a cat bolting east was drawn running west. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="46" height="20" viewBox="0 0 46 20" shape-rendering="crispEdges">
-  <rect x="6" y="10" width="27" height="6" fill="#58524d"/>
-  <circle cx="6" cy="9" r="4.5" fill="#58524d"/>
-  <path d="M3 5 L4 9 L6 6 Z" fill="#58524d"/>
-  <path d="M8 5 L9 9 L11 6 Z" fill="#58524d"/>
-  <rect x="32" y="7" width="7" height="3" fill="#58524d"/>
-  <rect x="38" y="3" width="5" height="3" fill="#58524d"/>
-  <rect x="8" y="16" width="7" height="2" fill="#3f3a36"/>
-  <rect x="24" y="16" width="7" height="2" fill="#3f3a36"/>
+  <rect x="13" y="10" width="27" height="6" fill="#58524d"/>
+  <circle cx="40" cy="9" r="4.5" fill="#58524d"/>
+  <path d="M43 5 L42 9 L40 6 Z" fill="#58524d"/>
+  <path d="M38 5 L37 9 L35 6 Z" fill="#58524d"/>
+  <rect x="7" y="7" width="7" height="3" fill="#58524d"/>
+  <rect x="3" y="3" width="5" height="3" fill="#58524d"/>
+  <rect x="31" y="16" width="7" height="2" fill="#3f3a36"/>
+  <rect x="15" y="16" width="7" height="2" fill="#3f3a36"/>
 </svg>

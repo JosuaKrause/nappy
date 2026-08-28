@@ -1,9 +1,74 @@
 # Handoff
 
-**Last updated:** end of the M37 session — playtest 07's last big one. M36, M35 and the rest follow
-below, newest first.
+**Last updated:** end of the M38 session. M37, M36, M35 and the rest follow below, newest first.
 **Read this first, then [PLAYTEST-07.md](PLAYTEST-07.md) and [PLAYTEST-09.md](PLAYTEST-09.md), then
 [TODO.md](TODO.md).**
+
+> **M38 is not a playtest — it is five reports and two design instructions in one sitting — and its
+> one sentence is: every one of them had already passed a green suite, a screenshot, or both.**
+>
+> **The birds froze in mid-air and two playtests had already said so.** A flock was one sprite drawn
+> seven times at offsets derived from the instance's own position, sharing a single `rise` term that
+> reached 1.0 at the end of the telegraph and then held — so the seven birds *could not* move
+> relative to each other and the whole animation was over before the burst began. M35 had rebuilt
+> the **event** around exactly this complaint and never looked at the picture. It is
+> `EventDef.flock_size` now: eleven birds, each with its own heading, speed, height and wingbeat,
+> **and its own `contribution_at`**, so the middle of a flock stacks five fields and the rim stacks
+> one. Three things to carry, all in `CLAUDE.md`: the excitement stays a pure query one level down
+> (the world sums over instances, a flock sums over birds); `flock_spread` comes **out of**
+> `outer_radius`, or the fairness contract was checked against a different disc; and **`lerp` cannot
+> turn a vector round** — interpolating a unit vector toward its opposite runs down the same line to
+> zero and back out the way it came, which is why the one bird the containment could not turn went
+> 202px out of a 62px wheel while the code holding it ran every frame.
+>
+> **The cat was drawn facing the wrong way and the convention was written down nowhere.** Both cat
+> SVGs faced **west** while every other sprite with a front faces east, and `_heading_is_west()`
+> mirrors the art — so a cat bolting west was drawn running east. The art was wrong, not the flip,
+> and the rule is inferable only from `dog.svg`, which reads right in one direction and one only.
+>
+> **And a car turning into an occupied lane made the other car vanish.** The diagnosis is the one
+> worth keeping: **a placement is not a separation, and the separation must not be doing the
+> placement's job.** `_divert()` chose an arm of a junction out of the tile map alone, so a car
+> diverting round a closure materialised inside whatever was already in that lane, and M27's
+> positional resolve then did the only thing it can — move a body. Front-to-back resolution
+> **compounds**, so a bunched queue shunted the rearmost car several lengths backwards in one frame:
+> 1627 corrections in ninety seconds at a closure, worst 134px, down to 146 and 66px once the turn
+> looked first. **The queue was legal on every frame either way**, which is exactly why five years of
+> "no two cars are inside each other" tests could not see it. `TrafficIndex` is the look and it is a
+> frame stale on purpose; `claim()` closes two placements in the same frame; and
+> `_join_the_back_of_the_queue()` is the guarantee behind the six re-rolls, because a retry is not a
+> guarantee.
+>
+> **A finished run had no key on it at all.** The ending said `esc to quit`, `Esc` opened the pause,
+> and the pause offered `Esc` and `Q` — *"you can just cycle between pause screen and loss screen at
+> that point"*. `space` on the ending goes back to the title now and `R` on the pause starts the run
+> again from anywhere.
+>
+> **The title screen is the doorstep of a real first day**, with the traffic driving and the events
+> playing out on it and nobody pushing a pram through them — not a menu and not a still. It needed
+> the `process_mode` split used **deliberately** for the first time: the city on `ALWAYS`, the day
+> paused, and the player pinned back to `PAUSABLE` because she is a child of the city and would
+> otherwise inherit the exemption. That last line is the M33 bug written out as a decision instead of
+> a mistake. The thing that looked like the cause and was not: **a paused `Camera2D` with smoothing
+> on never arrives** — smoothing is applied in the camera's own process callback, so a `PAUSABLE`
+> camera under a paused tree sits wherever it last was, which on frame one is the world origin. The
+> title screen showed an empty street for that reason and no other; ninety-five crowd agents were
+> walking about the doorstep a thousand pixels off-camera and everything the screen was meant to show
+> was working perfectly.
+>
+> **And `--press` could reach `Esc` and nothing else.** The rig that exists *because* nothing in the
+> suite or a screenshot had ever pressed a key still could not press the two keys the pause screen is
+> mostly made of: it pushed an `InputEventAction`, and `Q` and `R` are read as **keycodes**, the way
+> a screen's own shortcuts usually are. `--press key:r 3.5` can, and the flag may be repeated,
+> because one tap can only ever photograph one screen. The one thing it cannot do: `R` reloads the
+> scene and the reloaded scene re-presses, so a rig restarting the game loops for ever — read the
+> boot lines rather than waiting for the PNG.
+>
+> **One balance number moved and nobody has felt it.** `SLEEPINESS_CALM_ZONE_MULTIPLIER` 10 → 12, so
+> calm ground fills the meter in 20s rather than 24. Every milestone since M28 has made the walk
+> *out* harder and left the reward at the end of it the same length — but the last human verdict on
+> the difficulty is playtest 06's, and this is the one number that decides whether a day is winnable
+> once the park is reached. It is in the known-shaky list, with the flock.
 
 > **M37 is playtest 07's finding 2, and its one sentence is: a category is a thing you can always
 > put one more row into.**

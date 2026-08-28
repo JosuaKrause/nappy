@@ -76,10 +76,16 @@ func _resistance_line() -> String:
 		line += "   (%d contact%s lost)" % [lost, "" if lost == 1 else "s"]
 	return line
 
+## The last screen of a run. `space` goes back to the title, which is where the next one begins.
+##
+## It said `esc to quit` until M38, and it was not true: `Esc` opens the pause, and the pause offered
+## `Esc` and `Q` — so a finished run was *"you can just cycle between pause screen and loss screen at
+## that point"*, with closing the window as the only way out. Space already dismisses every other
+## screen in the game, so it is the key that was missing rather than a new one.
 func show_ending(ending: GameEnums.Ending) -> void:
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
 	_body.text = _ENDING_BODY.get(ending, "")
-	_hint.text = "esc to quit"
+	_hint.text = "space to start again"
 	_present()
 
 func _present() -> void:
