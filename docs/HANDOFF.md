@@ -1,7 +1,56 @@
 # Handoff
 
-**Last updated:** end of the M34 session — playtest 07's second half. Thirteen of nineteen closed.
-**Read this first, then [PLAYTEST-07.md](PLAYTEST-07.md), then [TODO.md](TODO.md).**
+**Last updated:** end of the M35 session — playtest 08, all five things.
+**Read this first, then [PLAYTEST-08.md](PLAYTEST-08.md), then [TODO.md](TODO.md).**
+
+> **M35 is playtest 08, and the run it came from ended on day 3 — the shortest any playtest has
+> produced.** Five things. Three of them are one sentence and it is playtest 07's own, surviving the
+> milestone meant to answer it: *a thing exists, and being near it changes nothing.*
+>
+> **The park spoiler denied three percent of a park, and nobody had done the arithmetic.** M24 put
+> **one** event in the block she settled in yesterday. What denies calm ground is not reaching it —
+> it is out-emitting the decay the calm multiplier has already raised to 7.7/s — so a busker at
+> intensity 9 has a *useful* radius of 100px in a lot 704px across. It is a crowd now: a grid over
+> the calm ground sized by `EventScheduler._denial_radius()`, capped by
+> `Tuning.SPOILERS_TO_DENY_A_PARK`, **each cell rolling its own def** so a spoiled park is a busker
+> and a leaf blower and a market stall rather than nine copies of one sprite. 8–12% denied → **91%**
+> of a courtyard and **99%** of a four-block zone, five seeds, twenty lots.
+>
+> *"I can walk over the robber without issue"* is that same finding from close up and **not** a
+> regression of M34 — a probe confirms the body stops her at 25px exactly. A busker at intensity 9
+> against a 7.7/s decay nets +1.3/s **at his own feet**. The complaint was never that he has no
+> body.
+>
+> **Nothing vanishes while you are looking at it.** The end of an event was `_finish()` wherever it
+> stood, which for the two shortest-lived rows is directly in front of her. An event that is over
+> **leaves** now: emits nothing, cannot end the day, carries no cue, and moves until it is past
+> `Tuning.OUT_OF_SIGHT`. Anything mobile leaves at its own speed and needed no data. Two things
+> never leave and both would break something that reads the finishing position — a
+> `spawns_on_finish` event stops where the thing it leaves belongs, and a place was always simply
+> over.
+>
+> **A fairness contract stated in seconds is not stated at all, and this is the one to carry.**
+> `validate_pursuit` bought the day-3 dog 2.4s of telegraph and never asked *where it spends them*:
+> `EventDirector` sites what the day owes 184px in front of her — which is where she was already
+> walking — so it closed the gap in three quarters of a second and then stood **inside its own
+> lethal radius**, unable to fire, for the rest of the phase whose entire purpose is to be a
+> warning. Every line of the contract passed, three attempts running, while it killed her. The fix
+> is the contract restated as geometry: `Tuning.pursuit_standoff()` (which it *holds*, backing off
+> if she walks in) and `Tuning.PURSUIT_BREAK_OFF` (so the chase ends when it is beaten rather than
+> when the clock says so — without it the right answer cost forty points however early it was
+> given, and the trace has her running, doing exactly what the HUD asked, and losing anyway).
+>
+> **Measured on a rig:** walking into it or away from it both lose the day; running costs **21–24
+> points** and reacting sooner costs less. Events placed per day unchanged at 40.0 / 76.0.
+>
+> **Two things found by doing it.** Clamping the approach at zero is *not* a stand-off — it leaves
+> the dog standing politely still while she closes the last hundred pixels herself. And a rig that
+> flees on a timer runs *into* the dog, because the director sites what it owes in front of the
+> direction she is actually travelling; three traces of a lethal dog "arriving from nowhere" were
+> the rig sprinting at it. `--flee` waits for the pursuit now.
+>
+> **Five nerves**, asked for by name. Three was the number from M6, when a lost day also advanced
+> the calendar; M32 took that half away and left the number.
 
 > **M34 is four of playtest 07's findings and one sentence: a thing that stands still is solid at
 > the width it is drawn.** *"None of the non-moving obstacles do anything — I can freely walk over
@@ -160,11 +209,17 @@
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **46522 checks, 0 failures** (~110s);
+`main` is green and playable. `./tools/test.sh` → **46563 checks, 0 failures** (~110s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
-**The check count went 46607 → 46522, and the drop is the same shape as the last one.** M34 added
+**The check count went 46522 → 46563.** M35 added forty-one: the three answers to a pursuit walked
+rather than asserted, the leaving rule and its out-of-sight and backstop halves, and the two new
+distance clauses on `validate_pursuit` running over the catalogue on load. Nothing was removed —
+the spoiler crowd changes what is in one lot rather than how many events a day places, which the
+probe confirms at 40.0 and 76.0 unchanged.
+
+**The count before that went 46607 → 46522, and the drop is the same shape as the one before it.** M34 added
 about 250 checks — the solidity rule over the whole catalogue, the lethal-body constraint, the two
 placement rules asserted over fourteen days, and the pram's own radius against the scene it is
 authored in — and removed about 330, all from one place: `delivery_van` and `ice_cream_van` want

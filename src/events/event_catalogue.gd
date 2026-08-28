@@ -488,12 +488,26 @@ static func _leaf_blower() -> EventDef:
 	def.cost = 2
 	return def
 
-## Pigeons off the pavement all at once. Three seconds of noise and then nothing.
+## Pigeons off the pavement all at once — on the ground in front of her, then up, then away.
 ##
 ## The second `AHEAD_OF_PLAYER` event, and the reason to have a second one is that the director
 ## had a single trick: every moment that happened *to* her was a cat. A flock is the cheapest
 ## possible version of the same idea and it is the one that makes the director read as a
 ## director rather than as a cat dispenser.
+##
+## **It did nothing at all for two milestones and was reported twice.** *(Playtest 07, finding 9:
+## "birds just disappear if I get close and do nothing." Playtest 08, finding 2: "pigeons are also
+## completely ineffective.")* Three separate reasons, and the numbers here are two of them:
+##
+## - It was **over before she arrived**. Sited two seconds of walking ahead with a 0.9s telegraph
+##   and a 2.4s burst, it expired as she reached it. The telegraph is the flock *on the pavement*
+##   now, which is long enough to be seen from down the street and to be walked around, and the
+##   burst outlasts her arrival instead of ending at it.
+## - It was **quiet and small**: 17 over a 110px reach, in a game where a café is 12 over 170. A
+##   flock going up in a pram's face is one of the loudest things that can happen on an ordinary
+##   pavement, and it is now priced like it.
+## - And it was **deleted at the top of its climb**, which is `EventDef.departs_at` and the reason
+##   that field exists. They fly off.
 static func _pigeon_flock() -> EventDef:
 	var def := EventDef.new()
 	def.id = "pigeon_flock"
@@ -502,11 +516,16 @@ static func _pigeon_flock() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE,
 			GameEnums.TileType.PARK]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
-	def.intensity = 17.0
+	def.intensity = 20.0
 	def.inner_radius = 34.0
-	def.outer_radius = 110.0
-	def.duration = 2.4
-	def.telegraph_time = 0.9
+	def.outer_radius = 140.0
+	def.duration = 3.0
+	# On the ground the whole time, which is what makes this a thing to walk around rather than a
+	# thing that happens. Well over the 1.2s the contract asks of a 140px field.
+	def.telegraph_time = 1.6
+	# Faster than she can run, and up: they are gone in a second and a half and they are gone
+	# *somewhere*.
+	def.departs_at = 190.0
 	def.weight = 1.5
 	def.max_per_day = 5
 	return def
@@ -640,14 +659,25 @@ static func _reversing_lorry() -> EventDef:
 ##
 ## The arithmetic is the design, and every number in it is doing one job:
 ##
-## - **148px/s** sits between a walk (92) and a run (168). Walking loses 56px a second and running
-##   gains 20, so the two answers give opposite outcomes rather than the same outcome at different
-##   costs.
-## - **It comes through its own telegraph.** A pursuer that waits politely hands her more ground in
-##   two seconds than the whole chase can take back. The notice is the sight of it closing.
-## - **Three seconds and it gives up.** A run is fourteen points a second; a chase long enough to
-##   be dramatic would be a loss whatever she did. Forty points is the most expensive moment in
-##   act I and much cheaper than the day.
+## - **130px/s** sits between a walk (92) and a run (168), and sits there *symmetrically*: walking
+##   loses 38px a second and running gains 38. So the two answers give opposite outcomes rather than
+##   the same outcome at different costs — and they give them at the same rate, which is the version
+##   of this a player can feel. It was 148 until M35, where the second half of the contract was
+##   written down: at 148 running gains only 20px a second, so shaking it off takes longer than the
+##   chase lasts and the price of doing the right thing is set by the clock instead of by the escape.
+## - **It comes through its own telegraph, and stops short.** A pursuer that waits politely hands
+##   her more ground in two seconds than the whole chase can take back, so the notice is the sight
+##   of it closing — but the sight of it closing *onto her*, which is what playtest 08 was killed
+##   by, is not notice at all. `Tuning.pursuit_standoff()` is where it stops: 104px, six tenths of a
+##   second of its own speed outside the radius that ends the day.
+## - **Three seconds, or until she has shaken it off.** A run is fourteen points a second, so the
+##   chase has a cap; `Tuning.PURSUIT_BREAK_OFF` is what makes reacting *early* worth anything, and
+##   the whole encounter costs about 35 points either way — the most expensive moment in act I and
+##   much cheaper than the day it buys.
+## - **Intensity 12, not 22.** It is lethal; it does not also need to be the loudest thing in act I.
+##   At 22 the correct play — run, at 14 points a second, for as long as it takes — cost more than
+##   the meter had, and playtest 08's trace has her doing exactly that and losing the day to
+##   excitement with the dog still 87px behind her. What ends the day here is the dog, not the noise.
 ##
 ## Day 3 because that is the day act I stops being a nice neighbourhood — `cyclist` lands on day 2
 ## and `reversing_lorry` on day 3 — and because two days of paying for the run button is what makes
@@ -661,7 +691,7 @@ static func _charging_dog() -> EventDef:
 	def.first_day = Tuning.RUN_TAUGHT_DAY
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
-	def.intensity = 22.0
+	def.intensity = 12.0
 	def.inner_radius = 26.0
 	def.outer_radius = 150.0
 	# The chase proper, once it can end the day. `Tuning.PURSUIT_TIME` is the cap and the reason
@@ -671,7 +701,10 @@ static func _charging_dog() -> EventDef:
 	# is the first time the game asks for a key it has spent two days punishing.
 	def.telegraph_time = 2.4
 	def.pursues = true
-	def.pursue_speed = 148.0
+	def.pursue_speed = 130.0
+	# And it trots off rather than blinking out, which is the other half of M35: a dog that gives up
+	# in front of her and then is not there says the chase was never real.
+	def.departs_at = 110.0
 	def.hard_fail = true
 	def.weight = 1.4
 	# Rare on purpose. It is the one thing running answers, and a street with three of them on it

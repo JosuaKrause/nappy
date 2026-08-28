@@ -72,6 +72,8 @@ godot --path . -- --seed 12345 --day 9 --overview
 | `--follow <event id>` | Park a camera on an event wherever it goes |
 | `--overview` | Frame the whole city at once |
 | `--screenshot out.png --after N` | Render for N **seconds**, save a PNG, quit |
+| `--walk north\|south\|east\|west` | Hold a direction down for the whole run |
+| `--flee [delay]` | Turn round and run when something starts chasing her, after dithering for `delay` seconds |
 | `--no-telemetry` | Do not write a run log |
 
 ## Run logs

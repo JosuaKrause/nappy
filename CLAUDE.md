@@ -35,7 +35,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 46522 headless checks, ~110s
+./tools/test.sh               # 46563 headless checks, ~110s
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
@@ -68,6 +68,12 @@ and the events are built around her, and the director only puts something in fro
 she is going somewhere — so use `--walk north|south|east|west`, which holds a direction down for
 the whole run. `tools/shot.sh` forwards every dev flag now; it silently dropped them until M22,
 and a shot taken to look at one specific event was of the doorstep instead.
+
+**`--flee` is how the one encounter with a right answer gets played.** *(M35.)* A rig that can only
+hold a direction can only ever demonstrate the wrong answer, so every trace of the day-3 dog taken
+with `--walk` ends in a hard fail — which is the mechanic working and says nothing about whether the
+answer is affordable. `--flee [delay]` turns round and runs when something starts chasing her, and
+the delay is the axis worth measuring: what the right answer costs when it is given late.
 
 **Where a cue cannot be triggered on demand, relax its condition, look, and put it back.** The
 screen-edge badge needs something lethal off-screen and closing, which is not something a
@@ -350,6 +356,41 @@ off, and that is worse. `EventDef.validate()` refuses the arrangement on load. I
 `alley_robbery` a body meant moving its inner radius from 22 to 30: the pram would otherwise have
 been held three pixels outside the thing that takes the baby.
 
+**Nothing vanishes while you are looking at it.** *(M35, playtest 08 findings 2 and 3: "things that
+move disappear on screen; they should at least run offscreen before despawning", and "pigeons are
+also completely ineffective", which is the same sentence.)* The end of an event was `_finish()`
+wherever it happened to be standing, which for the two shortest-lived rows in the game is directly
+in front of her. An event that is over **leaves**: `EventInstance._be_done()` puts it in a leaving
+phase where it emits nothing, cannot end the day and carries no cue, and it moves until it is past
+`Tuning.OUT_OF_SIGHT` before it is deleted. Three things to keep straight:
+
+- **Anything `mobile` leaves at its own `speed` and needs no data.** `EventDef.departs_at` is for the
+  rest — a flock, which has to fly, and a pursuer that has lost interest.
+- **It is over the moment it starts leaving.** A cat that trailed its field behind it for the two
+  seconds it took to reach the kerb would be a worse bug than the one being fixed.
+- **Two things never leave**, and both would break something that reads the finishing position: an
+  event with a `spawns_on_finish` stops where the thing it leaves belongs, and anything that was a
+  *place* rather than a moment has always simply been over. Do not "fix" a café that does not walk
+  home.
+
+**A fairness contract stated in seconds is not stated at all.** *(M35, playtest 08 finding 4.)*
+`validate_pursuit` bought the day-3 dog 2.4s of telegraph and never asked **where it spends them**:
+the director sites what the day owes 184px in front of her, which is where she was already walking,
+so it closed the gap in three quarters of a second and stood *inside its own lethal radius* for the
+rest of a phase whose entire purpose is to be a warning. Every line of the contract passed while it
+killed people, three attempts running. The rule the fix is an instance of: **when a contract is
+about a moving encounter, state it over distance and check it by walking, not by asserting the
+numbers it was written from.** `Tuning.pursuit_standoff()` is the notice as a distance and
+`PURSUIT_BREAK_OFF` is the price of the right answer as a distance; `tests/test_events.gd` walks
+three answers rather than restating either. Two traps inside it, both found by doing it:
+
+- **Clamping the approach at zero is not a stand-off.** It leaves the dog standing politely still
+  while *she* closes the last hundred pixels and dies on the first lethal frame — the contract true
+  of the thing and false of the encounter. It has to back off.
+- **A rig that runs on a timer runs into it.** The director sites what it owes in front of the
+  direction she is *actually travelling*, so a `--flee` that starts before the pursuit is placed
+  puts the pursuit in front of the run. It waits for the chase now.
+
 **Anything that stands still is solid at the width it is drawn.** *(M34, playtest 07 findings 16
 and 13: "none of the non-moving obstacles do anything — I can freely walk over them", and "I can
 walk over the robber and he doesn't do anything".)* `obstructs_radius` was set on five rows of
@@ -511,7 +552,9 @@ you* — three seconds of cat is not a place — and it may not obstruct.
 `obstructs_radius` is **not** a decision: if it stands still and it is drawn, it is solid at half
 its silhouette (see the invariant above). `pavement_side` usually is not one either — `ANY` is
 right for almost everything, and the two rows that use it do so because a parked vehicle belongs
-at a kerb and a thing that reverses into a yard needs a wall.
+at a kerb and a thing that reverses into a yard needs a wall. `departs_at` is only a decision for a
+**stationary** event with a `duration`: anything mobile already leaves at its own speed, and
+anything without a duration never ends.
 
 **Change the crowd density** — `Tuning.CROWD_PEDESTRIANS_PER_ACT` / `CROWD_CARS_PER_ACT`, which
 since M27 are populations of the **field** rather than of the city, and
@@ -642,6 +685,9 @@ what a balance change did to the whole catalogue.
   why it had to be a mechanic rather than a constant. `Tuning.validate_pursuit()` is its fairness
   contract and it is stated over `RUN_SPEED`, and nothing pursues before `Tuning.RUN_TAUGHT_DAY`
   — day 1 teaches the arrow keys and day 3 teaches the run, with the thing that requires it.
+  *(M35 added the half M33 left out: **it gives up** has to mean "when she has beaten it", not "when
+  the clock says so", or the right answer is priced the same however well it is played. It costs
+  21–24 points now, and reacting sooner costs less.)*
 
 **And one fact the table does not cover.** Since M19 the cost of a route is no longer only the
 events on it: a contact with a pedestrian is ~10.8 points and a car's horn ~8, and neither is
@@ -672,7 +718,20 @@ not either number, is what makes it a decision.
   `tests/test_balance.gd` and unfelt. Prime suspects are in `docs/TODO.md` under "Open design
   questions". *(M32 moved the nerve economy rather than settling it: a lost day is retried now,
   so three nerves are three attempts rather than three days off the calendar, and nobody has
-  played that either.)*
+  played that either.)* *(M35 moved it again and did not settle it either: five nerves, because
+  playtest 08's run ended on day 3 — but two of those went on a **defect**, so the number was raised
+  against a difficulty that no longer exists. If act I now reads as fair, five may be generous.)*
+- **The day-3 lesson has been walked by a rig and played by nobody since it was fixed.** *(M35.)*
+  Every measured answer to the charging dog is a rig's: walking loses, running costs 21–24 points,
+  reacting sooner costs less. What no rig can say is whether a dog that stops 104px away and barks
+  reads as *go now* or as a dog that has changed its mind — the stand-off is the first thing in the
+  game that deliberately does not do what it is threatening to do. The `chase` entries are what to
+  read next, and the one to look for is a chase that ended with `she ran 0.0s of it`.
+- **A spoiled park is now nine things and nobody has stood in one.** *(M35.)* The coverage is
+  measured — 91% of a courtyard, 99% of a four-block zone — and what is not measured is whether it
+  reads as *the park is busy today* or as somebody having tipped an event budget into a field. It is
+  also the one place in the game where `EVENT_SPACING_SAME` does not apply, which is deliberate and
+  is exactly the rule that exists to stop a street looking like a duplicated sprite.
 - **The two new cues have been read by a rig and not by a person.** *(M32.)* The mark now comes
   down at the kerb and the badge measures the thing's own approach — both confirmed off a trace,
   which is exactly the evidence playtest 06 said was missing and exactly not a person saying the

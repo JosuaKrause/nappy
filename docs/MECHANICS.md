@@ -444,15 +444,56 @@ outcomes* rather than the same outcome at two prices:
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
 | Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
-| Bounded | gives up after `PURSUIT_TIME`, because a run is priced per second and an unbounded chase is a loss however well it is played |
+| Bounded | gives up after `PURSUIT_TIME`, **or** as soon as she has opened `PURSUIT_BREAK_OFF`, because a run is priced per second and an unbounded chase is a loss however well it is played |
 
 Its telegraph is the **approach**, the way a fire engine's is. A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
 owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
 
-Measured on a rig: a player who walks directly away from the first frame is still caught, and one
-who runs escapes with 240px to spare.
+### The stand-off, and what a contract in seconds cannot say *(M35)*
+
+> *"I like the running tutorial on day 3 but I don't know how to solve it yet — I died every
+> time."* — playtest 08, finding 4.
+
+The contract above passed every line of itself while the dog was killing people, and the reason is
+worth carrying: **it was stated entirely in speeds and durations, and a pursuit is played out in
+distances.** The trace says where the notice went. `EventDirector` sites what the day owes across
+her line 184px ahead — which is *where she was already walking* — so the dog closed at 148px/s
+against her 92, covered the gap in three quarters of a second, and then stood **inside its own
+lethal radius** for the remaining 1.7 seconds of a telegraph that was not yet allowed to kill her.
+The instant it was, it did: 12px, from a standing start, with nothing she could have done after the
+first second.
+
+Two changes, and they are the same change twice — the contract restated as geometry:
+
+- **`Tuning.pursuit_standoff()`.** The telegraph is spent closing to `inner_radius + speed ×
+  PURSUIT_REACTION` and *holding* it, backing off if she walks in, because she will: it is sited in
+  front of her and forward is where she was going. Clamping the approach at zero instead would have
+  left the contract true of the dog and false of the encounter — it would stand politely still
+  while she closed the gap herself.
+- **`Tuning.PURSUIT_BREAK_OFF`.** It gives up when it has been beaten: it got to her and she opened
+  the gap again, or it never got near her at all. Without it the price of the *right* answer was
+  set by the clock rather than by the escape — forty points whether she reacted on the first frame
+  or the last — and playtest 08's trace has her running, doing exactly what the HUD asked, and
+  losing the day to the meter at 100 with the dog 87px behind her.
+
+The dog also came down from 148px/s to 130 and from intensity 22 to 12. 130 is *symmetric*: walking
+loses 38px a second and running gains 38, which is the version of "opposite outcomes" a player can
+feel. And it is lethal — it does not also need to be the loudest thing in act I.
+
+Measured on a rig (`tests/test_events.gd` walks the same three answers, and `--flee` plays them in
+a real day):
+
+| she | outcome | cost |
+| --- | --- | ---: |
+| walks into it | caught 0.4s after the lunge | the day |
+| walks away | caught 2.1s after the lunge | the day |
+| runs the moment it appears | shakes it off in 1.5s | 21 points |
+| runs when it reaches her | shakes it off in 1.7s | 24 points |
+| dithers 2.4s, then runs | caught | the day |
+
+The gradient is the design: reacting sooner costs less, and every wrong answer costs the same thing.
 
 **Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 teaches the arrow keys and says nothing
 about running; day 3 is when something comes after the pram, and the HUD says *Hold SHIFT to run*
@@ -520,13 +561,20 @@ with an explicit clock in the HUD corner.
 
 ## Nerves
 
-The run-level health bar. Starts at 3. Every lost day costs one. At 0 the run ends with the
+The run-level health bar. Starts at 5. Every lost day costs one. At 0 the run ends with the
 bad ending. Nerves never regenerate — this is what makes an early bad day matter.
+
+**Five since M35**, and it was three from M6 to M34. *(Playtest 08: "we need more nerves let's try
+5?")* Three was set when a lost day also advanced the calendar, so a nerve cost a day of the
+fourteen as well as a life; M32 took that half away and left the number. Three attempts against an
+act I that grew teeth in M31 is what ended playtest 08's run on **day 3**, two of them on the same
+charging dog — a run that ends before act II ends before the game has shown what it is. Five is a
+number to be measured, not derived: the run log's `nerve` entries say where they went.
 
 **A nerve buys a retry of the same day.** *(Playtest 06, finding 4, closing a design question
 open since M6: "what happens if we fail — do we repeat the same day? We shouldn't advance the
-day, that's for sure.")* The calendar moves only when a day is **won**, so three nerves are
-three failed attempts spread wherever they are needed and the fourteen days are fourteen days
+day, that's for sure.")* The calendar moves only when a day is **won**, so the nerves are
+failed attempts spread wherever they are needed and the fourteen days are fourteen days
 the player actually plays. Before this, a lost day cost a nerve *and* a day — which punished
 twice for one mistake and hid act I from the player who needed act I most.
 

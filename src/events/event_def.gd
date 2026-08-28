@@ -110,6 +110,27 @@ enum SpawnMode {
 ## telegraph ended — it never reached full intensity, and the running sprite never drew once.
 @export var still_while_telegraphing := false
 
+## How fast it removes itself from the scene when it is over, in px/s. *(M35, playtest 08 findings
+## 2 and 3.)*
+##
+## **Nothing vanishes while you are looking at it.** The end of an event used to be a deletion
+## wherever it stood, which for the two shortest-lived rows in the game is directly in front of her:
+## *"running dog events etc — things that move disappear on screen; they should at least run
+## offscreen before despawning"*, and *"pigeons are also completely ineffective"*, which is the same
+## sentence about a flock that hangs in the air for a fifth of a second and is then not there.
+##
+## Anything **mobile** already has somewhere to go and leaves at its own `speed` — that is the whole
+## of finding 3 and it costs no data. This field is for the rest: a flock that has to fly off, a dog
+## that has lost interest and trots away. Zero means it simply ends, which is right for anything
+## that was a *place* rather than a moment — a café does not walk home.
+@export var departs_at := 0.0
+
+## What it leaves at, which is its own speed if it had one. See `EventInstance._be_done`.
+func departure_speed() -> float:
+	if departs_at > 0.0:
+		return departs_at
+	return speed if mobile else 0.0
+
 ## Comes after **her**, rather than along a path. *(Playtest 07: "the run button is a trap
 ## shouldn't be an invariant — there should be legitimate cases where running is required.")*
 ##

@@ -166,6 +166,7 @@ func start_day() -> void:
 	_against = 0.0
 	_running = false
 	_near.clear()
+	_chases.clear()
 	_seen_closures.clear()
 	_last_closure = ""
 	_last_closure_at = -1000.0
@@ -207,6 +208,7 @@ func _process(delta: float) -> void:
 	_watch_idling(delta)
 	_watch_direction(delta)
 	_watch_what_is_near(here)
+	_watch_the_chase(here, delta)
 	_watch_closures(here)
 	_watch_the_contact(here)
 
@@ -474,6 +476,62 @@ func _watch_what_is_near(here: Vector2) -> void:
 	for id: int in _near.keys():
 		if not live.has(id):
 			_near.erase(id)
+
+## The one encounter in the game with a right answer, and whether she played it. *(M35, playtest 08
+## finding 4: "I like the running tutorial on day 3 but I don't know how to solve it yet — I died
+## every time (is there enough telemetry to tell what happened?)".)*
+##
+## There was not, and the shape of the gap is worth keeping: the log had an `ahead` line saying a dog
+## was sited, four `near` lines saying it got closer, and a `lost` line saying she died. Every one of
+## them was about the **world**, and the question is about the **exchange** — how close it actually
+## got, whether she ran, and which of the two ways a chase can end it ended in. Reconstructing that
+## from four distances and a separate `run` span is exactly the inference the format exists to make
+## unnecessary, and it is guesswork when the run span outlives the chase.
+##
+## One line per pursuit, written when it ends, which is the same rule as the `cue` and `idle` spans:
+## the duration and the outcome are the finding, and neither exists until it is over.
+func _watch_the_chase(here: Vector2, delta: float) -> void:
+	var seen := {}
+	for instance in _city.events.instances():
+		if not instance.def.pursues or instance.is_finished:
+			continue
+		var id := instance.get_instance_id()
+		seen[id] = true
+		if not _chases.has(id):
+			_chases[id] = {"since": Telemetry.clock(), "closest": INF, "ran": 0.0,
+					"id": instance.def.id, "gave_up": false, "over": false}
+			Telemetry.note("chase", "%s came for her at %s | %s" % [instance.def.id,
+					TelemetryLog.tile(_map.world_to_tile(instance.global_position)), _meters()])
+		var chase: Dictionary = _chases[id]
+		if chase["over"]:
+			continue
+		chase["closest"] = minf(float(chase["closest"]),
+				instance.global_position.distance_to(here))
+		# Its own account of how it ended, read on the frame it breaks off. The entry is kept, and
+		# kept closed, until the instance goes: a dog that has lost interest is still in the world
+		# for as long as it takes to trot out of shot, and none of that is the chase.
+		chase["gave_up"] = bool(chase["gave_up"]) or instance.gave_up
+		if _player.run_excess_ratio() > 0.0:
+			chase["ran"] = float(chase["ran"]) + delta
+		if instance.is_leaving:
+			chase["over"] = true
+			_write_the_chase(chase)
+	for id: int in _chases.keys():
+		if seen.has(id):
+			continue
+		var chase: Dictionary = _chases[id]
+		_chases.erase(id)
+		if not chase["over"]:
+			_write_the_chase(chase)
+
+func _write_the_chase(chase: Dictionary) -> void:
+	Telemetry.note("chase", "%s %s after %.1fs — closest %.0fpx, she ran %.1fs of it | %s" % [
+		chase["id"], "gave up" if chase["gave_up"] else "stopped chasing",
+		Telemetry.clock() - float(chase["since"]), chase["closest"], chase["ran"], _meters()])
+
+## Live pursuits: instance id -> what has happened during it. Ids rather than references, for the
+## same reason `_near` uses them — nothing here may keep a freed event alive.
+var _chases := {}
 
 ## A barrier coming into view. Recorded from where it was seen, because "the player found out
 ## two junctions later" and "the player could see it from the corner" are different days and

@@ -33,13 +33,16 @@ var path: PackedVector2Array = PackedVector2Array()
 var age := 0.0
 var is_finished := false
 
-## Where the thing it is chasing is, in world space, or `INF` for nothing.
+## Where the player is, in world space, or `INF` for nowhere.
 ##
-## Written once per frame by `EventManager`, which is the one place that already knows where the
-## player is. An instance looking her up itself would be thirty lookups a frame for one answer,
-## and — more to the point — `EventInstance` has never had to know the player exists, and this
-## keeps that true: it is handed a point and it walks toward it.
-var chase_target := Vector2.INF
+## Written once per frame by `EventManager`, which is the one place that already knows. An instance
+## looking her up itself would be thirty lookups a frame for one answer, and — more to the point —
+## `EventInstance` has never had to know the player exists, and this keeps that true: it is handed
+## a point, and everything it does with the point is a distance.
+##
+## Two things want it, and neither is a reference to her: a pursuer walks toward it, and anything
+## that is *leaving* uses it to know when it is out of sight.
+var player_at := Vector2.INF
 
 ## Facing, for art with a front and a back. Only a mobile event ever changes it.
 var _heading := Vector2.RIGHT
@@ -82,14 +85,25 @@ func _process(delta: float) -> void:
 		_activation_announced = true
 		EventBus.event_activated.emit(self)
 
+	if is_leaving:
+		_leave(delta)
+		queue_redraw()
+		return
+
 	if def.pursues:
 		_chase(delta)
 	elif def.mobile and path.size() > 1 and not is_telegraphing_still():
 		_advance_along_path(delta)
 
 	if _has_expired():
-		_finish()
+		_be_done()
 	queue_redraw()
+
+## Whether the chase ended because she shook it off rather than because the clock ran out. Read by
+## the telemetry, which is the only thing that can tell the two apart from outside.
+var gave_up := false
+## Whether it ever got to its stand-off. See `_chase`.
+var _engaged := false
 
 ## Comes after her. *(Playtest 07: running has to be right sometimes, and this is the shape of
 ## "sometimes".)* See `EventDef.pursues` and `Tuning.validate_pursuit`.
@@ -100,18 +114,56 @@ func _process(delta: float) -> void:
 ## second, so two seconds of politeness hands her more ground than the entire chase can take
 ## back. The notice is *the sight of it coming*, and `Tuning.PURSUIT_MIN_NOTICE` is how much of
 ## that she is owed before it is allowed to end her day.
+##
+## **But it closes to a stand-off and holds it, rather than arriving.** *(M35, playtest 08 finding
+## 4: "I like the running tutorial on day 3 but I don't know how to solve it yet — I died every
+## time.")* The paragraph above bought the notice in seconds and never asked *where* the dog spends
+## them, and the trace answers that: sited across her line 184px ahead — which is where she was
+## already walking — it closed the gap in three quarters of a second and then stood **inside its own
+## lethal radius** for the remaining 1.7s of a telegraph that was not yet allowed to kill her. The
+## moment it was, it did, from a standing start at 12px. Every line of `validate_pursuit` passed
+## while that happened, because every line of it was about speeds and durations and a pursuit is
+## played out in distances.
+##
+## `Tuning.pursuit_standoff()` is the same contract restated as one, and holding it is what makes
+## the notice real from *any* approach geometry — including the one the director actually produces.
 func _chase(delta: float) -> void:
-	if chase_target == Vector2.INF or is_telegraphing_still():
+	if player_at == Vector2.INF or is_telegraphing_still():
 		return
-	var toward := chase_target - global_position
-	if toward.length() < 1.0:
+	var toward := player_at - global_position
+	var range_to_her := toward.length()
+	if range_to_her < 1.0:
 		return
 	_heading = toward.normalized()
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+	_engaged = _engaged or range_to_her <= standoff + 4.0
+	# **It gives up when it has been beaten**, which is two things and not one: it got to her and
+	# she opened the gap again, or it never got near her in the first place. The second half is what
+	# keeps the incentives the right way round — a player who turns and runs on the first frame is
+	# never engaged, and gating the break-off on the lunge alone would charge her *more* for
+	# reacting sooner, since she would be running through a telegraph that could not end.
+	# `PURSUIT_MIN_NOTICE` is the floor under that: it may not lose interest before it has given
+	# her the notice the contract owes, or a pursuit could be over before it was ever a threat.
+	if (_engaged or age >= Tuning.PURSUIT_MIN_NOTICE) \
+			and range_to_her > Tuning.PURSUIT_BREAK_OFF:
+		gave_up = true
+		_be_done()
+		return
 	# Straight at her, and no faster than its own speed: the contract is the speed, so nothing
 	# here may quietly exceed it.
-	var step := minf(def.pursue_speed * delta, toward.length())
+	var step := minf(def.pursue_speed * delta, range_to_her)
+	if is_telegraphing():
+		# **It keeps its distance and the lunge is the activation.** Closing to the stand-off and
+		# then *holding* it — backing off if she walks into it, which she will, because it is sited
+		# in front of her and forward is where she was already going. Clamping the approach at zero
+		# instead would leave the contract true of the dog and false of the encounter: it would
+		# stand politely still while she closed the gap herself and died on the first lethal frame.
+		step = clampf(range_to_her - standoff,
+				-def.pursue_speed * delta, def.pursue_speed * delta)
 	position += _heading * step
-	_path_travelled += step
+	# Ground covered, not ground gained: backing off is still moving, and the bob is driven by
+	# distance so that a thing holding its ground still reads as alive.
+	_path_travelled += absf(step)
 
 ## How far along its route this instance has got, so streaming it out and back in can resume it
 ## instead of rewinding it. See `EventManager._stream_in`.
@@ -130,6 +182,60 @@ func resume(from_age: float, from_travelled: float) -> void:
 	if def.mobile and path.size() > 1:
 		_advance_along_path(0.0)
 
+# --------------------------------------------------------------- going away ---
+# *(M35, playtest 08 findings 2 and 3: "running dog events etc — things that move disappear on
+# screen; they should at least run offscreen before despawning", and "pigeons are also completely
+# ineffective".)*
+#
+# **Nothing vanishes while you are looking at it.** An event's end was `_finish()` wherever it
+# happened to be standing, which for the two shortest-lived rows in the game is directly in front
+# of her: the cat's route is one street wide and ends in the open, and the pigeons hang in the air
+# for a fifth of a second and are deleted. Both were reported as the same thing, and both are the
+# same fix — the end of an event is a **departure**, not a deletion.
+#
+# What is deliberately *not* here: a fade. A thing that fades out is still a thing that disappears,
+# and it disappears in a way nothing in the world could explain. The cat runs on, the flock climbs
+# away, the dog that lost interest trots off — and each of them is gone because it left.
+
+## True once it has stopped being an event and is only getting out of shot. It emits nothing, it
+## cannot end the day, and it carries no cue: whatever it was, it is over.
+var is_leaving := false
+var _leaving_for := 0.0
+
+## The most it may spend on the way out. A backstop rather than a timing: with no player to be out
+## of sight of — a headless rig, a streamed-out day — nothing else would ever end it.
+const LEAVING_GIVES_UP := 6.0
+
+## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
+##
+## Two things never leave, and both would break something that reads the finishing position. An
+## event with a `spawns_on_finish` stops **where the thing it leaves belongs** — a fire engine's
+## fire is at the building, not two streets past it. And anything with no departure speed has no
+## way to go anywhere; a café that closes has always simply been over.
+func _be_done() -> void:
+	if is_finished or is_leaving:
+		return
+	if def.departure_speed() <= 0.0 or def.spawns_on_finish != "":
+		_finish()
+		return
+	is_leaving = true
+	_leaving_for = 0.0
+	# Something on a route carries on the way it was going; anything else goes away from her,
+	# which is the only direction a flushed flock or a dog that has lost interest can mean.
+	if not (def.mobile and path.size() > 1) and player_at != Vector2.INF \
+			and not global_position.is_equal_approx(player_at):
+		_heading = (global_position - player_at).normalized()
+
+func _leave(delta: float) -> void:
+	_leaving_for += delta
+	var step := def.departure_speed() * delta
+	position += _heading * step
+	_path_travelled += step
+	var gone := player_at != Vector2.INF \
+			and global_position.distance_to(player_at) > Tuning.OUT_OF_SIGHT
+	if gone or _leaving_for >= LEAVING_GIVES_UP:
+		_finish()
+
 func _advance_along_path(delta: float) -> void:
 	# Movement starts when the telegraph does, so an approaching siren is audible and
 	# visible while it is still far away — which is what makes the warning usable.
@@ -145,8 +251,9 @@ func _advance_along_path(delta: float) -> void:
 		remaining -= length
 	position = path[path.size() - 1]
 	# A mobile event that has driven off the end of its route is done, whatever its
-	# nominal duration says.
-	_finish()
+	# nominal duration says — and it keeps going until it is out of sight, rather than stopping
+	# dead on the pavement she is walking down. See "going away" above.
+	_be_done()
 
 func _has_expired() -> bool:
 	return def.duration > 0.0 and age >= def.telegraph_time + def.duration
@@ -166,7 +273,9 @@ func is_telegraphing() -> bool:
 
 ## Current peak intensity at the centre, after the telegraph damping and the pulse envelope.
 func current_intensity() -> float:
-	if is_finished:
+	if is_finished or is_leaving:
+		# On the way out it is scenery. Emitting while it goes would mean the excitement of an
+		# event trailing after her for as long as it took the thing to get off screen.
 		return 0.0
 	var value := def.intensity
 	if not is_equal_approx(def.intensity_ramp, 1.0) and def.duration > 0.0:
@@ -182,7 +291,7 @@ func current_intensity() -> float:
 
 ## Excitement per second this event contributes at a point.
 func contribution_at(world_position: Vector2) -> float:
-	if is_finished:
+	if is_finished or is_leaving:
 		return 0.0
 	# A city-wide source has no falloff: there is nowhere in the city it does not reach.
 	if def.city_wide:
@@ -193,7 +302,7 @@ func contribution_at(world_position: Vector2) -> float:
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is
 ## no longer merely telegraphing.
 func is_lethal_at(world_position: Vector2) -> bool:
-	if is_finished or not def.hard_fail or is_telegraphing():
+	if is_finished or is_leaving or not def.hard_fail or is_telegraphing():
 		return false
 	return global_position.distance_to(world_position) <= def.inner_radius
 
@@ -211,7 +320,7 @@ func _draw() -> void:
 	# its own (the M12c note). Driven by **distance covered**, not by time, so it is the movement
 	# itself that shows: something stopped is still, and something fast bobs faster.
 	var bob := 0.0
-	if def.pursues:
+	if def.pursues or is_leaving:
 		bob = -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
 	elif def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
 		bob = -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
@@ -258,7 +367,7 @@ const MARK_FLASHES_PER_SECOND := 3.0
 ## "louder than the walking decay" instead and marked all three of those, which is the ring's
 ## own mistake in a new shape.
 func wants_a_mark() -> bool:
-	if is_finished or def.city_wide:
+	if is_finished or is_leaving or def.city_wide:
 		# A floor under the whole city has nothing to stand over. That is the HUD's job.
 		return false
 	if def.kind == GameEnums.EventKind.AMBIENT:
@@ -398,16 +507,30 @@ func _draw_loose_dog() -> void:
 ## A flock going up. Scattered by the instance's own position rather than randomly, so the
 ## same flock is the same shape every frame instead of boiling.
 ##
-## They rise with the telegraph and hang once it is over: the burst *is* the event, and a bird
-## that is already up is a bird she has walked past.
+## Three phases and they are the whole event: **on the ground**, pecking, while it telegraphs — which
+## is the thing that was missing, because a flock that is already in the air is a flock she has
+## walked past and there is nothing left to decide; **up**, all at once, for the duration; and then
+## **away**, climbing as they go. *(M35: they used to be deleted at the top of the climb, which is
+## playtest 08's "pigeons are also completely ineffective" and playtest 07's "birds just disappear
+## if I get close and do nothing" — the same complaint, twice.)*
 func _draw_birds() -> void:
 	var rise := clampf(age / maxf(def.telegraph_time, 0.01), 0.0, 1.0)
+	if is_telegraphing():
+		# On the pavement and about to go: no lift at all until the burst, so what she sees from
+		# down the street is a flock she could still walk around.
+		rise = 0.0
 	var seed_value := int(global_position.x) * 31 + int(global_position.y)
+	# Climbing away, so the last thing on screen is them leaving rather than them stopping.
+	var climb := _leaving_for * CLIMB_PER_SECOND
 	for i in 7:
 		var spread := float((seed_value + i * 37) % 11 - 5) * 7.0
 		var lift := 6.0 + float((seed_value + i * 53) % 7) * 5.0
 		Sprites.draw_standing(self, PIGEON,
-				Vector2(spread, -lift * rise - 4.0 * float(i % 3)))
+				Vector2(spread, -lift * rise - 4.0 * float(i % 3) - climb))
+
+## How fast a departing flock gains height, on top of the ground it covers. Enough that they are
+## visibly going *up and away* rather than skimming the pavement.
+const CLIMB_PER_SECOND := 42.0
 
 func _draw_animal() -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the

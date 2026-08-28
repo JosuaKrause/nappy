@@ -132,14 +132,35 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 ##
 ## Three things keep it from being a punishment for playing well, and all three are load-bearing:
 ##
-## - **It spoils with an event, not by taking the ground away.** The park is still there, still
-##   calm ground, still walkable. Something loud is standing in it, and she can see that from
+## - **It spoils with events, not by taking the ground away.** The park is still there, still
+##   calm ground, still walkable. Things are standing in it, and she can see that from
 ##   the street and decide. An event that could seal or end the day is never chosen for this.
 ## - **`_ensure_one_usable_park` is told to protect a different one**, so the day it creates is
 ##   still winnable and the alternative is still real rather than nominal.
-## - **It is one event, placed like any other.** It competes for no budget of its own and it is
-##   drawn from the same day's pool, so day 2 is not "day 1 plus a punishment", it is a day
+## - **They are ordinary events, placed like any other.** They compete for no budget of their own
+##   and are drawn from the same day's pool, so day 2 is not "day 1 plus a punishment", it is a day
 ##   whose noise happens to be somewhere she was counting on.
+##
+## **It has to cover the ground, not stand in it.** *(M35, playtest 08 finding 1: "the robber in the
+## park is still ineffective — I can use the same park every day — and there is only one robber".
+## Playtest 07 asked for the same thing first: "blocking a park etc should have multiple robbers so
+## the entire area is dangerous or a full block party or other things that completely block out the
+## space.")*
+##
+## M24 placed exactly one event and the arithmetic was never done. A busker is intensity 9 over a
+## 190px reach, and what actually denies calm ground is holding the meter above
+## `EXCITEMENT_CALM_THRESHOLD` against a decay the calm multiplier has already raised to 7.7/s — so
+## his *useful* radius is 100px, not 190, in a lot that is 704px across. He denied about three
+## percent of a four-block calm zone. The trace says exactly that: day 2 rolls a spoiler for the
+## block she used, and she settles in that same block at 36.1s.
+##
+## So the spoiler is a **crowd** now: one thing per cell of a grid laid over the calm ground, sized
+## from what each of them can actually deny, capped by `SPOILERS_TO_DENY_A_PARK`. Each cell rolls
+## its own def rather than repeating one, which is both the fiction — a park that is busy today is
+## busy with several different things — and the honest way round the art gap `CLAUDE.md` has carried
+## since M22: nine copies of the same `person.svg` standing in a field would read as a duplicated
+## sprite, which is exactly what the spacing rule at `_room_around` exists to prevent everywhere
+## else.
 ##
 ## Silent if she did not settle anywhere yesterday, or settled somewhere that is no longer calm.
 static func _spoil_the_park_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
@@ -152,22 +173,108 @@ static func _spoil_the_park_she_used(day: int, rng: RandomNumberGenerator, map: 
 		return
 
 	var lot := _calm_rect(map, block)
-	var candidates: Array[Vector2i] = []
+	var open: Array[Vector2i] = []
 	for tile in map.rect_tiles(lot):
 		if not map.is_closed(tile):
-			candidates.append(tile)
-	if candidates.is_empty():
+			open.append(tile)
+	if open.is_empty():
 		return
 
-	var def := _something_to_put_in_a_park(day, rng)
-	if not def:
+	var ground := map.tile_rect_to_world(lot)
+	var pool := _things_to_put_in_a_park(day, ground)
+	if pool.is_empty():
 		return
-	var at := map.tile_to_world(candidates[rng.randi_range(0, candidates.size() - 1)])
-	planned.append(Planned.new(def, at))
+
+	var placed: Array[String] = []
+	for cell in _spoiling_grid(ground, pool):
+		var def := _pick_by_what_it_denies(pool, rng)
+		# Snapped to the nearest open tile of the lot, so nothing lands on a closed street or
+		# outside the calm ground the cell was measured from.
+		var at := map.tile_to_world(_nearest_of(open, map.world_to_tile(cell)))
+		planned.append(Planned.new(def, at))
+		placed.append(def.id)
+	if placed.is_empty():
+		return
 	Telemetry.note("roll", "%s in the park she used yesterday, %s"
-			% [def.id, TelemetryLog.tile(block)])
+			% [", ".join(placed), TelemetryLog.tile(block)])
 
-## Something loud, harmless and visible from the street, for the park she used yesterday.
+## Rolls one of the pool, weighted by how much ground it can actually take.
+##
+## Everywhere else in the scheduler a def's `weight` is how *common* it is, which is a statement
+## about a city. Here the job is covering a lot, and a leaf blower covers four times the ground a
+## busker does — so the roll is by area as well as by weight, and the quiet rows become the garnish
+## on a spoiled park rather than half of it. It stays a roll rather than becoming "always the
+## loudest" for the reason the mix exists at all: a park that is busy today is busy with several
+## different things, and one repeated sprite reads as a duplicated sprite.
+static func _pick_by_what_it_denies(defs: Array[EventDef], rng: RandomNumberGenerator) -> EventDef:
+	var weights: Array[float] = []
+	var total := 0.0
+	for def in defs:
+		var reach := _denial_radius(def)
+		var weight := def.weight * reach * reach
+		weights.append(weight)
+		total += weight
+	var roll := rng.randf() * total
+	for i in defs.size():
+		roll -= weights[i]
+		if roll <= 0.0:
+			return defs[i]
+	return defs[defs.size() - 1]
+
+## The points a spoiler goes at: a grid over the calm ground, spaced by what one of them denies.
+##
+## The spacing is the **average** denial radius of the pool rather than any one row's, because which
+## def lands in which cell is a roll and the grid has to be laid out before the rolls happen.
+static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector2]:
+	var reach := 0.0
+	for def in pool:
+		reach += _denial_radius(def)
+	reach = maxf(reach / float(pool.size()), float(Tuning.TILE_SIZE))
+
+	# Cells wide enough that two neighbours' fields just meet, then thinned until the cap is met:
+	# a lot too big to be covered by `SPOILERS_TO_DENY_A_PARK` things is covered as evenly as that
+	# many can manage rather than densely in one corner.
+	var columns := maxi(1, ceili(ground.size.x / (reach * 2.0)))
+	var rows := maxi(1, ceili(ground.size.y / (reach * 2.0)))
+	while columns * rows > Tuning.SPOILERS_TO_DENY_A_PARK:
+		if columns >= rows:
+			columns -= 1
+		else:
+			rows -= 1
+
+	var points: Array[Vector2] = []
+	for row in rows:
+		for column in columns:
+			points.append(ground.position + Vector2(
+					ground.size.x * (column + 0.5) / float(columns),
+					ground.size.y * (row + 0.5) / float(rows)))
+	return points
+
+## How far from a source calm ground stops being usable.
+##
+## **Not the outer radius**, which is where it stops reaching at all. Calm ground fills the meter at
+## `EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` times the walking decay, so anywhere a source emits less
+## than that is somewhere she can still settle — and for every act I row that is most of its own
+## field. Getting this wrong is how one busker was ever thought to spoil a park.
+static func _denial_radius(def: EventDef) -> float:
+	var decay := Tuning.EXCITEMENT_DECAY_WALKING * Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+	if def.intensity <= decay:
+		return def.inner_radius
+	# `Tuning.falloff` is `1 - t²`, inverted for the t at which it equals the decay.
+	var t := sqrt(1.0 - decay / def.intensity)
+	return def.inner_radius + t * (def.outer_radius - def.inner_radius)
+
+static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
+	var best := tiles[0]
+	var best_distance := INF
+	for tile in tiles:
+		var distance := Vector2(tile - to).length_squared()
+		if distance < best_distance:
+			best_distance = distance
+			best = tile
+	return best
+
+## The things that may be put in the park she used yesterday.
 ##
 ## Deliberately narrow: nothing lethal, nothing that closes the ground, nothing mobile. A spoiled
 ## park has to be a park she can *see* is spoiled and walk away from — an abduction sitting in it
@@ -178,20 +285,24 @@ static func _spoil_the_park_she_used(day: int, rng: RandomNumberGenerator, map: 
 ## until everything that stands still acquired a body. A busker is 18px across and a lot is 704px:
 ## he is loud and he is walked around, which is the whole job. `OBSTRUCTION_A_PARK_CAN_HOLD` is
 ## where that stops being true, and it is the rule this always was rather than a relaxation of it.
-static func _something_to_put_in_a_park(day: int,
-		rng: RandomNumberGenerator) -> EventDef:
+##
+## *(M35 made that allowance depend on the ground, which is what it always meant.)* A body that is
+## nothing in a four-block calm zone is a wall across a four-tile courtyard, and a fixed number
+## cannot be both — so it is a sixteenth of the shortest side of the calm ground, floored at the old
+## constant. That is what lets a market take over a whole park and keeps it out of a back yard.
+static func _things_to_put_in_a_park(day: int, ground: Rect2) -> Array[EventDef]:
+	var allowed := maxf(Tuning.OBSTRUCTION_A_PARK_CAN_HOLD,
+			minf(ground.size.x, ground.size.y) / 16.0)
 	var suitable: Array[EventDef] = []
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day):
 		if def.hard_fail or def.mobile:
 			continue
-		if def.obstructs_radius > Tuning.OBSTRUCTION_A_PARK_CAN_HOLD:
+		if def.obstructs_radius > allowed:
 			continue
 		if def.spawn_mode != EventDef.SpawnMode.MAP:
 			continue
 		suitable.append(def)
-	if suitable.is_empty():
-		return null
-	return _pick_weighted(suitable, rng)
+	return suitable
 
 ## Permanent marks left by earlier days, placed again exactly where they happened.
 static func _place_scars(day: int, scars: Array[Dictionary]) -> Array[Planned]:

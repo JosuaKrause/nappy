@@ -135,7 +135,21 @@ const TELEGRAPH_HARD_FAIL_MARGIN := 2.0
 # ---------------------------------------------------------------------- run ---
 
 const RUN_LENGTH_DAYS := 14
-const STARTING_NERVES := 3
+## How many days a run may lose before it is over. *(Playtest 08: "we need more nerves let's try
+## 5?")*
+##
+## Three was the number from M6, when a lost day also *advanced the calendar* — so a nerve was a
+## day of the fourteen thrown away as well as a life, and three of them was already a hard cap on
+## how much of the run a player would ever see. M32 took that half away: a lost day is retried, so
+## a nerve now costs only the time it took to lose. Three of those against an act I that grew teeth
+## in M31 is what ended playtest 08's run on **day 3** — two of them spent on the same charging dog,
+## which is the milestone's other half.
+##
+## Five is a number to be measured rather than derived, and the thing to read is `docs/TODO.md`'s
+## open question: three nerves were never enough attempts to *learn* a day, and a run that ends
+## before act II ends before the game has shown what it is. The run log's `nerve` entries say where
+## they went.
+const STARTING_NERVES := 5
 ## A day is aimed at **about a minute of play, with a grace of three**. Dusk is the grace,
 ## not the target: a day walked well is over in a minute, and the three minutes are there for
 ## a day that goes wrong — a bad route, a park that turned out to be spoiled, a baby woken on
@@ -592,6 +606,17 @@ const EVENT_STREAM_RADIUS := 900.0
 ## boundary does not flicker in and out as the player paces.
 const EVENT_STREAM_HYSTERESIS := 260.0
 
+## Far enough from the player that nothing there can be seen. *(M35, playtest 08 finding 3.)*
+##
+## The camera sits on her at zoom 2 over a 1280x720 viewport, so the visible world is 640x360 and
+## its far corner is 367px away; `Stroller.CAMERA_LOOK_AHEAD` can push that to about 410 on the
+## trailing side. 420 is the first round number outside it.
+##
+## Not to be confused with `EVENT_STREAM_RADIUS`, which is deliberately more than twice this: an
+## event is put in the world *long* before it can be seen, so that nothing is ever watched into
+## existence. This is the other end of the same rule — nothing is watched out of existence either.
+const OUT_OF_SIGHT := 420.0
+
 ## How far ahead of the player an `AHEAD` event crosses her line, in px. This is a *reaction
 ## window* stated as a distance: at `WALK_SPEED` it is the two seconds she gets between seeing
 ## the cat crouch and reaching the place it bolts through.
@@ -648,6 +673,26 @@ const EVENT_PLACEMENT_TRIES := 24
 ## `construction`, which is exactly the thing it is there to keep out.
 const OBSTRUCTION_A_PARK_CAN_HOLD := 16.0
 
+## The most things M24 will put in the park she used yesterday. *(M35, playtest 08 finding 1: "the
+## robber in the park is still ineffective — I can use the same park every day — and there is only
+## one robber".)*
+##
+## It was one, and one is three percent of a four-block calm zone — see
+## `EventScheduler._denial_radius` for the arithmetic nobody did in M24. A cap rather than a target:
+## the grid asks for as many as it takes to cover the ground and this is where it stops asking,
+## because the events are drawn from the day's own pool and a park with a dozen things in it is not
+## a spoiled park, it is a different kind of city.
+##
+## Nine is a 3x3 grid, and it is measured: over twenty lots and five seeds it denies **99%** of a
+## four-block calm zone and 91% of a one-block courtyard, against 8-12% for the same lot on an
+## ordinary day. Six — a 3x2 grid — was the first try and left 15% of the biggest zones standing,
+## which is a hundred tiles of usable park and *"I can use the same park every day"* all over again.
+##
+## A small lot never asks for nine: the grid is sized from what one of them actually denies, so a
+## 46-tile courtyard takes one or two and this cap is never reached. What it costs is a day with
+## nine more events in it, all of them inside the one lot she is being asked not to use.
+const SPOILERS_TO_DENY_A_PARK := 9
+
 # ------------------------------------------------------ running that matters ---
 # Playtest 07: *"the run button is a trap shouldn't be an invariant — there should be legitimate
 # cases where running is required."* And, in the same breath, when: *"can we make it so those
@@ -689,6 +734,47 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## of it closing, and this is how much of that she is owed before it can touch her.
 const PURSUIT_MIN_NOTICE := 1.5
 
+## How long she is allowed to take to answer the lunge, at the pursuer's own speed.
+##
+## *(Playtest 08, finding 4: "I like the running tutorial on day 3 but I don't know how to solve it
+## yet — I died every time".)* **A notice stated as a duration is not a notice.** M33 bought the
+## telegraph time and never asked where the dog spends it, and the trace says where: sited 184px
+## across her line by the director and closing at 148px/s while she walked *towards* it at 92, it
+## covered the gap in three quarters of a second and then stood inside its own lethal radius for
+## the remaining 1.7s of a telegraph that was not allowed to kill her yet. The instant it ended, it
+## did — at 12px, from a standing start, with nothing she could have done after the first second.
+##
+## So the telegraph is spent **closing to a stand-off and holding there**, which is
+## `pursuit_standoff()` below, and this is the number that sets it: far enough out that the lunge
+## itself can be answered rather than merely watched. Read it as the reaction it buys — six tenths
+## of a second, at whatever speed the thing is coming.
+const PURSUIT_REACTION := 0.6
+
+## And how far she has to open before it loses interest.
+##
+## The other half of the same finding, and it is the half that makes running **payable**. Running
+## costs `EXCITEMENT_FROM_RUNNING` a second, so a chase that always runs its full `PURSUIT_TIME`
+## prices the correct answer at forty points whether she reacted on the first frame or the last —
+## and the trace has her running, doing exactly what the HUD asked, and losing the day to the meter
+## at 100 with the dog still 87px away. A pursuit that ends when it is *beaten* rather than when
+## the clock says so is the difference between a lesson and a toll.
+##
+## Sized against the stand-off rather than invented: it is two street-widths out, which is far
+## enough that breaking off is something the player can see happen and connect to what they did, and
+## near enough that shaking it off is **less than two seconds of running**. That last number is the
+## whole point of the constant, and it was measured rather than chosen: at 200 a rig that turned and
+## ran shook the dog off in 2.6s and lost the day anyway, at 87 excitement of a hundred.
+const PURSUIT_BREAK_OFF := 170.0
+
+## How close a pursuer comes while it is still only telegraphing.
+##
+## Derived rather than authored, because it is the fairness contract in geometric form: she is owed
+## `PURSUIT_REACTION` seconds of the thing's own approach between the moment it is allowed to end
+## her day and the moment it can. Anything nearer and the telegraph is a formality; anything much
+## further and it is not visibly *at* her, which is the whole cue.
+func pursuit_standoff(pursue_speed: float, inner: float) -> float:
+	return inner + pursue_speed * PURSUIT_REACTION
+
 ## The pursuit fairness contract, and the one place it is stated.
 ##
 ## `validate_event`'s escape-distance rule is about walking out of a *field*, and a pursuer has no
@@ -703,6 +789,18 @@ const PURSUIT_MIN_NOTICE := 1.5
 ##   is a death sentence with a keypress attached.
 ## - **It must let go.** A chase with no end is a chase she cannot afford: running is priced per
 ##   second, so an unbounded one is a loss however well it is played.
+##
+## *(Playtest 08 added the last two, and both are relationships the first three assumed without
+## ever saying. The contract was stated entirely in **speeds and durations**, and a pursuit is
+## played out in **distances** — so a dog that satisfied every line of it could still be sitting on
+## top of her when it turned lethal, and a run that satisfied every line of it could still cost
+## more than the day it saved.)*
+##
+## - **Walking must lose, from the stand-off, inside the chase.** Otherwise the stand-off has
+##   quietly turned the pursuit into something you can stroll away from, which is the trap the run
+##   button was before there was anything to run from.
+## - **Running must break it off, inside the chase.** Not merely survive it: the price of the
+##   answer has to be bounded by how well it is played, or the lesson is a toll.
 func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		telegraph: float) -> bool:
 	if speed < WALK_SPEED + PURSUIT_MIN_MARGIN:
@@ -727,6 +825,19 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 	if telegraph < PURSUIT_MIN_NOTICE:
 		push_error("Unfair pursuit '%s': %.1fs of it coming is not enough notice (%.1fs)"
 				% [id, telegraph, PURSUIT_MIN_NOTICE])
+		return false
+	# The two distance clauses. Both are measured from the stand-off, because that is where the
+	# chase actually starts: everything before it is a telegraph she is not allowed to be killed in.
+	var standoff := pursuit_standoff(speed, inner)
+	if (speed - WALK_SPEED) * chase_time < standoff - inner:
+		push_error("Unfair pursuit '%s': walking closes %.0fpx of the %.0fpx stand-off in %.1fs, so "
+				% [id, (speed - WALK_SPEED) * chase_time, standoff - inner, chase_time]
+				+ "it can be strolled away from")
+		return false
+	if (RUN_SPEED - speed) * chase_time < PURSUIT_BREAK_OFF - standoff:
+		push_error("Unfair pursuit '%s': running opens %.0fpx in %.1fs and needs %.0fpx to shake "
+				% [id, (RUN_SPEED - speed) * chase_time, chase_time, PURSUIT_BREAK_OFF - standoff]
+				+ "it off, so the run is priced by the clock rather than by the escape")
 		return false
 	return true
 

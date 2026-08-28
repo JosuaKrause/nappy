@@ -210,7 +210,7 @@ func _physics_process(delta: float) -> void:
 	if _find_player():
 		stream_around(_player.global_position)
 		_place_what_is_owed_ahead(delta)
-		_tell_the_pursuers_where_she_is()
+		_tell_them_where_she_is()
 		_warn_about_the_ground_she_is_on()
 	_check_hard_fails()
 	_announce_the_city_wide_sources()
@@ -291,8 +291,8 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
 	_spawn_unplanned(def, path[0], path)
-	Telemetry.note("ahead", "%s crosses %.0fpx in front of her at %s" % [
-		def.id, Tuning.AHEAD_LEAD_DISTANCE,
+	Telemetry.note("ahead", "%s %s %.0fpx in front of her at %s" % [
+		def.id, "comes at her from" if def.pursues else "crosses", Tuning.AHEAD_LEAD_DISTANCE,
 		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
 
 func _find_player() -> bool:
@@ -343,15 +343,18 @@ func _successor_of(instance: EventInstance) -> EventInstance:
 		return null
 	return _create(def, instance.global_position)
 
-## Hands every pursuer her position. *(Playtest 07: running has to be right sometimes.)*
+## Hands every instance her position. *(Playtest 07: running has to be right sometimes.)*
 ##
 ## Here rather than in the instance for the same reason `Crowd` writes `pedestrian_ahead` rather
 ## than letting each car look: the player is found once a frame in one place, and an
-## `EventInstance` has never had to know she exists. It is handed a point and it walks toward it.
-func _tell_the_pursuers_where_she_is() -> void:
+## `EventInstance` has never had to know she exists. It is handed a point, and everything it does
+## with the point is a distance.
+##
+## *(M35 widened it from the pursuers to everything, because "am I out of sight yet" is the same
+## question asked by anything that is **leaving** — see `EventInstance._be_done`.)*
+func _tell_them_where_she_is() -> void:
 	for instance in _instances:
-		if instance.def.pursues:
-			instance.chase_target = _player.global_position
+		instance.player_at = _player.global_position
 
 func _check_hard_fails() -> void:
 	if _hard_failed or not _find_player():

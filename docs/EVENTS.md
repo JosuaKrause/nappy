@@ -30,6 +30,8 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `mobile` / `speed` | Whether it moves along a path, and how fast |
 | `still_while_telegraphing` | Holds position until the telegraph is over, then goes. Default off, which is right when the telegraph *is* the approach; on when it is a posture — see the cat, below |
 | `spawn_mode` | `MAP` (sited when the day is planned) or `AHEAD_OF_PLAYER` (sited in front of her, while she walks) — see "Where an event happens" |
+| `departs_at` | How fast it removes itself when it is over (px/s). **Nothing vanishes while you are looking at it** — see "Going away". Anything `mobile` leaves at its own `speed` and needs no value here |
+| `pursues` / `pursue_speed` | Comes after **her** rather than along a path, at a speed strictly between a walk and a run. The one thing running is the answer to — see `Tuning.validate_pursuit` |
 | `obstructs_radius` | Radius of solid body (px). **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
@@ -138,6 +140,37 @@ one side and a frontage on the other, and `CityMap.pavement_inward()` says which
   box end is buried in the frontage and the cab is on the pavement. It asks for a frontage **east
   or west** of it, because the silhouettes that back into things are drawn side-on and a sprite
   cannot face north — half the pavements in the city are still eligible.
+
+## Going away *(M35)*
+
+> *"Running dog events etc — things that move disappear on screen; they should at least run
+> offscreen before despawning."* — playtest 08, finding 3.
+> *"Pigeons are also completely ineffective."* — finding 2, which is the same sentence.
+> *"Birds just disappear if I get close and do nothing."* — playtest 07, finding 9, which is the
+> same sentence again, a milestone earlier.
+
+The end of an event was `_finish()` wherever it happened to be standing, and for the two
+shortest-lived rows in the game that is directly in front of her. The rule now:
+
+> **Nothing vanishes while you are looking at it.**
+
+An event that is over enters a **leaving** phase: it stops emitting, it cannot end the day, it
+carries no cue, and it moves until it is more than `Tuning.OUT_OF_SIGHT` from the player — 420px,
+which is the far corner of a 640x360 view with the camera's look-ahead on top of it. Then it is
+deleted, out of shot, where a deletion is what it looks like from the inside and nothing at all
+from the outside.
+
+Three things worth keeping straight:
+
+- **It is over the moment it starts leaving.** A cat that trailed its field behind it for the two
+  seconds it took to reach the kerb would be a worse bug than the one being fixed.
+- **Anything `mobile` leaves at its own `speed` and needs no data.** The cat runs on the way it was
+  going; the dog walker carries on down the street. `departs_at` is for the rest — a flock, which
+  has to fly, and a pursuer that has lost interest and trots off.
+- **Two things never leave**, and both would break something that reads the finishing position: an
+  event with a `spawns_on_finish` stops **where the thing it leaves belongs** (a fire engine's fire
+  is at the building, not two streets past it), and anything with no departure speed has always
+  simply been over, which is right for a café that closes.
 
 ## Scheduling
 
@@ -252,7 +285,7 @@ act I."* Act I is a nice neighbourhood, so its danger is a neighbourhood's own.
 | `loose_dog` | RECURRING | 1 | *The player's idea: "a dog where the owner drops the leash and it starts running."* The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal: act I gets exactly two of those and this is not one. |
 | `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing. `cafe_tables` has been the only one since M19 and M28 made it common, but one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant: a café you squeeze past is a nuisance, a market is a crowd. |
 | `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use, which is what M24 wants more of. Swept in bursts, so there is a rhythm to time a pass through. |
-| `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that the director had a single trick: every moment was a cat. Three seconds of noise and gone. |
+| `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that the director had a single trick: every moment was a cat. **Rebuilt in M35**, having been reported as doing nothing twice: on the pavement for its whole telegraph — which is a thing to walk around — then up, loud and wide enough to be worth avoiding, then *away*. It used to expire as she arrived and then blink out. |
 | `cyclist` **`hard_fail`** | RECURRING | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement, bell going. Everything about it is ordinary, which is the point — the answer to *"there is never any danger"* is not that act I becomes sinister, it is that act I becomes a real street. The bell rings for 3.3s, which is what the doubled margin costs at 165px/s. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb since M34, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. **M34** gave it the yard: `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
@@ -378,6 +411,13 @@ the point of it and does not change what they are worth. The integral is still t
 price a field: it is what it costs to be close, and being stopped by a body is a *route* cost that
 this table has never counted. See "Solid things are solid".
 
+**M35 moved exactly one row too** — `pigeon_flock`, 22.9 → 34.9, which is playtest 08's *"pigeons
+are also completely ineffective"* and playtest 07's *"birds just disappear if I get close and do
+nothing"* priced. It was a 110px field at intensity 17 in a game where a café is 170px at 12, and
+it expired as she reached it. It is 140px at 20 now, it lasts long enough to be arrived at, and it
+sits between a reversing lorry and a dog walker — which is what a flock going up in a pram's face
+should be worth. `charging_dog` dropped from 22 to 12 and still has no row; see below.
+
 | Event | walk through | run through |
 | --- | ---: | ---: |
 | `loudspeaker` | −5.5 | +27.3 |
@@ -394,12 +434,12 @@ this table has never counted. See "Solid things are solid".
 | `cafe_tables` | +20.1 | +45.4 |
 | `cat_dash` | +20.2 | +35.4 |
 | `construction` | +20.3 | +51.6 |
-| `pigeon_flock` | +22.9 | +34.8 |
 | `market_stall` | +27.9 | +52.7 |
 | `checkpoint` | +29.0 | +59.4 |
 | `cyclist` * | +30.2 | +45.9 |
 | `ice_cream_van` | +31.5 | +65.8 |
 | `reversing_lorry` * | +32.6 | +53.3 |
+| `pigeon_flock` | +34.9 | +47.4 |
 | `dog_walker` | +36.5 | +41.2 |
 | `charging_dog` * | see below | — |
 | `loose_dog` | +43.3 | +52.0 |
@@ -414,8 +454,10 @@ this table has never counted. See "Solid things are solid".
 
 `charging_dog` has no meaningful row, and that is the point: it is the only event in the game
 that **follows**, so there is no line to walk through it and no crossing to price. Walking away
-from it loses the day and running away from it costs about forty points. See
-`docs/MECHANICS.md`, "Running that matters".
+from it loses the day; running away from it costs between seventeen and twenty-five points,
+depending on how quickly the answer is given. See `docs/MECHANICS.md`, "Running that matters", for
+the measured table — the price falling with the reaction is M35's half of it, and it was forty
+flat until then.
 
 `*` is a `hard_fail`: the figure is notional, because nobody finishes the walk. Two rows the
 playtest-02 version of this table was missing entirely (`burnt_shell`, `alley_robbery`) are
@@ -674,19 +716,17 @@ being a decision on day two**: a player who finds a good park on day 1 has no qu
 answer, and answering that question is the whole game.
 
 So the calm block the baby actually fell asleep in is remembered — by `GameState`, not by
-reading the telemetry; see docs/TELEMETRY.md — and the next day plans one loud thing into it.
-Measured over five seeds and a whole run, the chance that the quietest calm block today is the
-same one as yesterday goes from **28% of days to zero**.
+reading the telemetry; see docs/TELEMETRY.md — and the next day plans something loud into it.
 
 Three things keep it from being a punishment for playing well, and all three are load-bearing:
 
-- **It spoils with an event, not by taking the ground away.** The park is still calm ground and
-  still walkable; something loud is standing in it, visible from the street, and she decides.
-  Nothing lethal, obstructing or mobile is ever chosen for this.
+- **It spoils with events, not by taking the ground away.** The park is still calm ground and
+  still walkable; things are standing in it, visible from the street, and she decides.
+  Nothing lethal or mobile is ever chosen for this, and nothing whose body would close the lot.
 - **The usable-park rule is told to protect a different one**, or the two halves fight — the day
-  puts one event in her park, and the rule, looking for the least disturbed calm ground, finds
-  the block with exactly one spoiler on it and strips the very event that was the point.
-- **It is one ordinary event from the same day's pool.** Day 2 is not day 1 plus a punishment,
+  puts spoilers in her park, and the rule, looking for the least disturbed calm ground, finds the
+  block with spoilers on it and strips the very events that were the point.
+- **They are ordinary events from the same day's pool.** Day 2 is not day 1 plus a punishment,
   it is a day whose noise happens to be somewhere she was counting on.
 
 Two exemptions, both the same one: if the city has only one calm block, or every other calm
@@ -695,6 +735,38 @@ back.
 
 This is playtest 03's finding 2 one scale up. That one found the calm area was a lap rather than
 a route (M21); this one finds that *which* calm area was not a choice either.
+
+#### It has to cover the ground, not stand in it *(M35)*
+
+> *"The robber in the park is still ineffective — I can use the same park every day — and there is
+> only one robber."* — playtest 08, finding 1, which is playtest 07's finding 10 asked a second
+> time: *"blocking a park etc should have multiple robbers so the entire area is dangerous or a
+> full block party or other things that completely block out the space."*
+
+M24 placed exactly **one** event and nobody did the arithmetic. What denies calm ground is not
+reaching it, it is out-emitting the decay the calm multiplier has already raised to 7.7/s — so a
+busker at intensity 9 is useless past 100px however far his 190px field reaches, in a lot that is
+704px across. He denied about three percent of a four-block calm zone, and the traces show exactly
+that: day 2 rolls a spoiler for the block she used, and she settles in that same block anyway.
+
+`EventScheduler._denial_radius()` is that arithmetic, and the spoiler is now a **crowd** laid out
+on a grid over the calm ground, sized from what each of them actually denies and capped at
+`Tuning.SPOILERS_TO_DENY_A_PARK`. Two details that are not incidental:
+
+- **Each cell rolls its own def**, so a spoiled park is a busker *and* a leaf blower *and* a market
+  stall. That is the fiction — a park that is busy today is busy with several different things —
+  and it is also the honest way round the art gap: nine copies of the same `person.svg` in a field
+  would read as a duplicated sprite, which is what `EVENT_SPACING_SAME` exists to prevent
+  everywhere else in the scheduler.
+- **The roll is weighted by area, not just by `weight`.** Everywhere else a def's weight says how
+  *common* it is; here the job is covering a lot, and a leaf blower covers four times the ground a
+  busker does.
+
+Measured over five seeds and twenty lots: the share of the calm ground she cannot settle on goes
+from **8–12% on an ordinary day to 91% of a one-block courtyard and 99% of a four-block zone**. The
+body a spoiler may have scales with the lot too — a sixteenth of its shortest side, floored at
+`OBSTRUCTION_A_PARK_CAN_HOLD` — because a 28px market trestle is nothing in a 704px zone and a wall
+across a four-tile courtyard.
 
 ## Pulsing events
 
