@@ -1,12 +1,15 @@
 <!-- The cat before it bolts. The crouch IS the telegraph, so it has to read as coiled:
-     low, compact, head down. -->
+     low, compact, head down.
+
+     Facing east, like `cat_running.svg` and like everything else that has a front — see the note
+     there. The two postures must at least point the same way as each other. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="20" viewBox="0 0 30 20" shape-rendering="crispEdges">
   <rect x="7" y="11" width="16" height="7" fill="#58524d"/>
-  <circle cx="7" cy="9" r="5" fill="#58524d"/>
-  <path d="M5 5 L6 9 L8 6 Z" fill="#58524d"/>
-  <path d="M9 5 L10 9 L12 6 Z" fill="#58524d"/>
-  <rect x="22" y="8" width="3" height="8" fill="#58524d"/>
-  <rect x="24" y="4" width="3" height="6" fill="#58524d"/>
-  <rect x="8" y="18" width="3" height="2" fill="#3f3a36"/>
-  <rect x="18" y="18" width="3" height="2" fill="#3f3a36"/>
+  <circle cx="23" cy="9" r="5" fill="#58524d"/>
+  <path d="M25 5 L24 9 L22 6 Z" fill="#58524d"/>
+  <path d="M21 5 L20 9 L18 6 Z" fill="#58524d"/>
+  <rect x="5" y="8" width="3" height="8" fill="#58524d"/>
+  <rect x="3" y="4" width="3" height="6" fill="#58524d"/>
+  <rect x="19" y="18" width="3" height="2" fill="#3f3a36"/>
+  <rect x="9" y="18" width="3" height="2" fill="#3f3a36"/>
 </svg>

@@ -27,6 +27,9 @@ var _player: Stroller
 ## The patch of city being simulated. Held here, moved onto the player every physics frame, and
 ## read by every agent when it recycles.
 var _field: CrowdField
+## Where the cars are, by lane. Filled by `space_out_the_traffic()` out of the buckets it already
+## sorts, and read by a car deciding which arm of a junction to turn into. See `TrafficIndex`.
+var _traffic := TrafficIndex.new()
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
 
@@ -66,12 +69,17 @@ func clear() -> void:
 	for agent in _agents:
 		agent.queue_free()
 	_agents.clear()
+	# With it, yesterday's traffic decides how many rolls one of today's cars needs to find a free
+	# lane, and "the same day and seed rebuild the same crowd in the same places" stops being true.
+	# The index is state about a frame, not about a run.
+	_traffic.rebuild({})
 
 ## Agents alternate axes rather than rolling for one, so a crowd is never accidentally all
 ## north-south on a day when the coin came up that way.
 func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) -> void:
 	for i in count:
 		var agent := CrowdAgent.new()
+		agent.traffic = _traffic
 		agent.setup(kind, _map, _field, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
 		_city.add_entity(agent)
 		_agents.append(agent)
@@ -125,6 +133,19 @@ func space_out_the_traffic() -> void:
 				queue[i].nudge_back(Tuning.CAR_GAP_MIN - gap)
 				gap = Tuning.CAR_GAP_MIN
 			queue[i].gap_ahead = gap
+
+	# And the same buckets, as bare positions, for the cars that have not turned yet. Built after
+	# the resolve rather than before it, so what a turning car sees is where everybody actually
+	# ended up this frame. See `TrafficIndex`.
+	var index := {}
+	for key: String in lanes:
+		var queue: Array[CrowdAgent] = lanes[key]
+		var positions := PackedFloat32Array()
+		positions.resize(queue.size())
+		for i in queue.size():
+			positions[i] = queue[i].queue_position()
+		index[key] = positions
+	_traffic.rebuild(index)
 
 # ----------------------------------------------------------------- contact ---
 # Playtest 02, findings 2 and 3. Until M19 the crowd was a field with a picture attached: you

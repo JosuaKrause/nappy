@@ -28,9 +28,13 @@ other, and they are what makes the walk the game:
 - A whole day of undisturbed street walking reaches about **76** of 100. The street is real
   progress and can never be enough — so circling the starting block, which used to win a
   day outright, now cannot win one at all.
-- A calm stretch clears the meter in about **24s**, and the walk out has already
-  contributed. A second in a park is worth ten on the pavement, which is the whole of what
-  playtest 02's finding 1 asked for: the park has to be *obviously* the answer.
+- A calm stretch clears the meter in about **20s**, and the walk out has already
+  contributed. A second in a park is worth twelve on the pavement, which is the whole of what
+  playtest 02's finding 1 asked for: the park has to be *obviously* the answer. *(24s and ten
+  until M38. Every milestone since M28 has put more between the doorstep and the park — a solid
+  catalogue, a crowd that bites, a pacing man, a robber — and all of it is spent on the way there,
+  which is where the day is meant to be lost. Leaving the reward at the far end the same length
+  while the walk to it got longer turns the park back into a wait.)*
 - Standing still drains faster than walking fills, so waiting is never a strategy — but it
   drains *slower* than a calm zone fills, so stopping to let something pass stays a move
   worth making.
@@ -38,7 +42,9 @@ other, and they are what makes the walk the game:
 **And the calm has to be big enough to walk in.** *(M21.)* The three rates above are jointly
 sufficient for a *lap*: progress requires motion, so a calm area smaller than a stretch of
 walking is somewhere you circle rather than somewhere you go. A four-block calm zone is 704px
-square — 10.8s corner to corner against the 23.8s a full meter takes — so the calm is a route.
+square — 10.8s corner to corner against the 19.8s a full meter takes — so the calm is a route.
+The margin narrowed when M38 raised the rate, and it is the relationship rather than either
+number that has to survive: a calm area must be more than one lap wide.
 See `docs/CITY.md`, "Calm zones".
 
 **A day is aimed at a minute of play, with a grace of three.** Dusk at 180s is the outer

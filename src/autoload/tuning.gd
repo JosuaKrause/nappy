@@ -41,10 +41,17 @@ const SLEEPINESS_DRAIN_IDLE := 1.0
 ## ran 119s, which is not a reward, it is a wait — and at three and a half times a rate you
 ## cannot see, it did not even read as faster than the pavement.
 ##
-## At 10x it is 24s from empty, and a second in a park is worth ten on the street. That makes
+## At 10x it was 24s from empty, and a second in a park was worth ten on the street. That makes
 ## a day comfortably winnable *once calm ground is reached*, which is the point: the day is
 ## meant to be lost on the way there, not in it. See docs/PLAYTEST-02.md, decision 1.
-const SLEEPINESS_CALM_ZONE_MULTIPLIER := 10.0
+##
+## **12x since M38**, which is the same decision taken one notch further: 20s from empty rather
+## than 24. Every milestone since M28 has put more between the doorstep and the park — a solid
+## catalogue, a crowd that bites, a pacing man, a robber — and all of that is spent on the way
+## there, which is where the day is *supposed* to be lost. Making the walk out harder and leaving
+## the reward at the end of it the same length quietly turns the park from a reward into a wait,
+## which is playtest 02's finding 1 coming back by a different road.
+const SLEEPINESS_CALM_ZONE_MULTIPLIER := 12.0
 ## Sleepiness the baby keeps after being woken up. Half the bar, which is now about twelve
 ## seconds of park — a fifth of a well-played day, which is what it was before and should
 ## stay whatever the rates are.

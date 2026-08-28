@@ -41,6 +41,7 @@ func run(t) -> void:
 	_test_the_field_is_wider_than_the_screen(t)
 	_test_cars_do_not_drive_through_each_other(t)
 	_test_a_car_can_honour_the_headway_it_keeps(t)
+	_test_a_car_looks_before_it_turns(t)
 
 	_city.free()
 
@@ -578,6 +579,62 @@ func _test_cars_do_not_drive_through_each_other(t) -> void:
 	t.check(overlapping == 0,
 			"no frame of a minute's traffic has one car inside another (%d did, worst %.0fpx)"
 			% [overlapping, worst])
+
+## **A turn is a placement, and it has to look before it commits.** *(M38: "when a car turns into an
+## occupied lane the other car just disappears.")*
+##
+## The test above is the one that has always been here, and it passes either way: the separation
+## works, and that is the problem. `_divert()` picked an arm of a junction out of the tile map alone,
+## so a car diverting round a closure materialised wherever that lane happened to be occupied — and
+## the M27 rule that separation is positional then resolved it the only way it can, by *moving* a
+## body. Resolving a queue front-to-back cascades, so the correction is the shortfall plus everything
+## ahead of it. A probe parked at a closure measured turns landing 66px from another car 152px from
+## the player, and **1627 corrections over ninety seconds with a worst of 134px** — two car lengths
+## of road, gone in one frame, in plain sight. It is 146 and 66px now. The queue was always legal
+## afterwards, which is exactly why nothing caught it.
+##
+## Two halves. The index, on its own, is the question a turning car asks; and the whole crowd, run
+## for a minute, must not correct anybody by more than a car's own length in a single frame — a
+## *relationship* ("a correction is a nudge, not a teleport") rather than a measured number.
+func _test_a_car_looks_before_it_turns(t) -> void:
+	var index := TrafficIndex.new()
+	index.rebuild({"v:3:2:1": PackedFloat32Array([0.0, 400.0])})
+	t.check(not index.room_at("v:3:2:1", 20.0, Tuning.CAR_GAP_MIN),
+			"there is no room a fifth of a car length behind a car")
+	t.check(not index.room_at("v:3:2:1", -30.0, Tuning.CAR_GAP_MIN),
+			"nor just in front of one — a turn lands *in* a queue, so both sides count")
+	t.check(index.room_at("v:3:2:1", 200.0, Tuning.CAR_GAP_MIN),
+			"and there is room in the gap between the two of them")
+	t.check(index.room_at("h:1:2:1", 0.0, Tuning.CAR_GAP_MIN),
+			"a lane with nobody in it is free")
+
+	_city.crowd.start_day(1, _rng(1))
+	var was: Dictionary = {}
+	var worst := 0.0
+	for i in int(round(60.0 / STEP)):
+		for agent in _city.crowd.agents():
+			agent._process(STEP)
+		# Read the positions **between** the movement and the separation, so what is measured is
+		# what the separation pass did and nothing else. Inferring it from a whole frame does not
+		# work: a recycle is a teleport by design, and re-rolling a lane can land in the one it
+		# just left, so there is no property of the agent that tells the two apart afterwards.
+		for agent in _city.crowd.agents():
+			if agent.kind == CrowdAgent.Kind.CAR:
+				was[agent] = agent.global_position
+		_city.crowd.space_out_the_traffic()
+		if i == 0:
+			# The first frame is the **day being built**, and it is the one frame where a large
+			# correction is right: cars are placed along their corridors without consulting each
+			# other, so a busy lane opens with ten of them inside each other and this pass is what
+			# unpacks it. Nobody sees it — there is no previous frame of that street to have seen it
+			# in — and pre-spacing them in `start_day` instead turns the random morning into tight
+			# platoons at minimum headway, which three balance tests correctly object to.
+			continue
+		for agent: CrowdAgent in was:
+			worst = maxf(worst, agent.global_position.distance_to(was[agent]))
+	t.check(worst <= Tuning.CAR_GAP_MIN,
+			"the separation pass never moves a running car more than its own length in one frame "
+			+ "(worst %.0fpx)" % worst)
 
 ## The tightest two cars sharing a lane got, in px.
 func _closest_two_cars_in_a_lane() -> float:

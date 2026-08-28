@@ -173,6 +173,28 @@ enum SpawnMode {
 ## that was a *place* rather than a moment — a café does not walk home.
 @export var departs_at := 0.0
 
+## How many individual creatures this event is, rather than one thing drawn several times.
+## 0 for everything that is one body. *(M38: "the birds are broken — they start the flying
+## animation but then freeze. Turn them into individual entities and let each fly.")*
+##
+## **A flock was one sprite drawn seven times at seven fixed offsets**, and the offsets were derived
+## from the instance's own position so they would not boil — which is the right trick for a *static*
+## picture and the wrong one for a moving one, because it means the seven birds can only ever move
+## together. The whole animation was a single `rise` term that ramped to 1.0 at the end of the
+## telegraph and then sat there: the flock went up in one movement and hung motionless in the air
+## for the three seconds that were supposed to be the event.
+##
+## With this set, `EventInstance` gives every bird its own position, its own heading, its own speed,
+## its own height and its own wingbeat, and steps them one at a time. There is nothing generic about
+## the field — it is the number of bodies — and nothing else in the catalogue wants it yet. It is a
+## field rather than a script per event for the reason the whole of `EventDef` is: a flock differs
+## from a bird by a number.
+@export var flock_size := 0
+## How far from the middle a flock spreads, in px. Its `outer_radius` is the field it emits over;
+## this is the ground it stands on and the air it wheels in, and it is deliberately much smaller —
+## a flock she can see the shape of is a flock she can walk round.
+@export var flock_spread := 0.0
+
 ## What it leaves at, which is its own speed if it had one. See `EventInstance._be_done`.
 func departure_speed() -> float:
 	if departs_at > 0.0:

@@ -287,7 +287,7 @@ act I."* Act I is a nice neighbourhood, so its danger is a neighbourhood's own.
 | `loose_dog` | RECURRING | 1 | *The player's idea: "a dog where the owner drops the leash and it starts running."* The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal: act I gets exactly two of those and this is not one. |
 | `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing. `cafe_tables` has been the only one since M19 and M28 made it common, but one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant: a café you squeeze past is a nuisance, a market is a crowd. |
 | `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use, which is what M24 wants more of. Swept in bursts, so there is a rhythm to time a pass through. |
-| `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that the director had a single trick: every moment was a cat. **Rebuilt in M35**, having been reported as doing nothing twice: on the pavement for its whole telegraph — which is a thing to walk around — then up, loud and wide enough to be worth avoiding, then *away*. It used to expire as she arrived and then blink out. |
+| `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that the director had a single trick: every moment was a cat. **Rebuilt twice.** M35 fixed the event — on the pavement for its whole telegraph, then up, then *away*, where it used to expire as she arrived and blink out. **M38 fixed the birds**, which was the reason it still read as broken: eleven of them now, each with its own heading, height and wingbeat, and each an emitter — so the middle of a flock stacks four or five fields and the rim stacks one. The only row in the game that is more than one source. |
 | `cyclist` **`hard_fail`** | RECURRING | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement, bell going. Everything about it is ordinary, which is the point — the answer to *"there is never any danger"* is not that act I becomes sinister, it is that act I becomes a real street. The bell rings for 3.3s, which is what the doubled margin costs at 165px/s. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb since M34, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. **M34** gave it the yard: `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
@@ -420,6 +420,21 @@ it expired as she reached it. It is 140px at 20 now, it lasts long enough to be 
 sits between a reversing lorry and a dog walker — which is what a flock going up in a pram's face
 should be worth. `charging_dog` dropped from 22 to 12 and still has no row; see below.
 
+**And M38 moved it again, to +54.1, and changed what the number even means for that one row.**
+A flock is `flock_size` birds sharing `intensity` between them and wheeling inside `flock_spread`,
+so "all of the intensity is at the centre" — the assumption the whole table rests on — is false
+here. Two things follow, and both matter to anyone reading the table:
+
+- **The row is computed from the birds**, not from one disc. Left as a disc it read +97 and broke
+  the running rule on a row that in fact keeps it, which is exactly the silent breakage M33 wrote
+  that rule to catch. `tests/test_events.gd` models the flock the same way, so the two still
+  cannot drift.
+- **The straight line through the middle is no longer the whole story for it.** Walked against
+  the real instance it costs about **+35** through the centre, **+8** eighty pixels off it and
+  **nothing at all** at the rim. Every other row in this table falls away gently from the middle;
+  a flock is a hot spot with a wide quiet margin, and that gradient is the reason to build it out
+  of eleven sources rather than one.
+
 | Event | walk through | run through |
 | --- | ---: | ---: |
 | `loudspeaker` | −5.5 | +27.3 |
@@ -440,13 +455,13 @@ should be worth. `charging_dog` dropped from 22 to 12 and still has no row; see 
 | `homeless_yeller` | +31.2 | +59.6 |
 | `ice_cream_van` | +31.5 | +65.8 |
 | `reversing_lorry` * | +32.6 | +53.3 |
-| `pigeon_flock` | +34.9 | +47.4 |
 | `dog_walker` | +36.5 | +41.2 |
 | `charging_dog` * | see below | — |
 | `alley_robbery` * | see below | — |
 | `loose_dog` | +43.3 | +52.0 |
 | `leaf_blower` | +48.6 | +67.1 |
 | `protest` | +50.0 | +88.1 |
+| `pigeon_flock` † | +54.1 | +63.6 |
 | `burning_building` | +55.9 | +83.2 |
 | `abduction` * | +61.3 | +84.1 |
 | `military_convoy` | +84.9 | +107.2 |
@@ -468,6 +483,10 @@ so it is priced like the dog rather than like an obstacle.
 `*` is a `hard_fail`: the figure is notional, because nobody finishes the walk. Two rows the
 playtest-02 version of this table was missing entirely (`burnt_shell`, `alley_robbery`) are
 included now — the old one listed eighteen of what was then twenty.
+
+`†` is a **flock**, priced from its birds rather than from one disc, and the only row where the
+straight line through the middle is not most of the story: about +35 walked against the real
+instance, +8 eighty pixels to one side and nothing at the rim. See the M38 note above.
 
 **One of these is negative, and it is deliberate.** `burnt_shell` is a reminder rather than an
 obstacle, so it does not have to cost anything. (`loudspeaker` is `city_wide` and has no line to

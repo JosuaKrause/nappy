@@ -61,6 +61,11 @@ var colour := Color.WHITE
 ## recycles an agent now; leaving the *map* was what did it before M27. See `CrowdField`.
 var field: CrowdField
 
+## Where the other cars are, by lane, so a turn can look before it commits. Held by reference and
+## refilled once a frame by `Crowd`; null for an agent built by hand in a test, which then turns
+## the way it always did. See `TrafficIndex`.
+var traffic: TrafficIndex
+
 ## Somebody standing in front of this car, or `Vector2.INF` for nobody. Written once per
 ## physics frame by `Crowd` for the cars near the player and read here: an agent has no
 ## business knowing who the player is, but it does have to decide whether to stop.
@@ -246,7 +251,12 @@ func heading() -> Vector2:
 ## a queue exactly when they share this. `Crowd` buckets on it once per frame rather than
 ## comparing every car against every other one.
 func lane_key() -> String:
-	return "%s:%d:%d:%d" % ["v" if _vertical else "h", _corridor, _lane, signi(int(_direction))]
+	return make_lane_key(_vertical, _corridor, _lane, _direction)
+
+## The same key for a lane this agent is not in yet, which is what a car needs to ask whether the
+## arm it is about to turn into has anybody in it.
+static func make_lane_key(vertical: bool, corridor: int, lane: int, direction: float) -> String:
+	return "%s:%d:%d:%d" % ["v" if vertical else "h", corridor, lane, signi(int(direction))]
 
 ## How far along its own corridor it is, signed so that "ahead" is always *larger*. Only ever
 ## compared between two agents with the same `lane_key()`, where the direction is shared.
@@ -559,10 +569,8 @@ func _divert() -> void:
 	if not _can_turn_here():
 		return
 
-	var turning := 1.0 if _rng.randf() < 0.5 else -1.0
-	if _blocked_ahead(not _vertical, turning, LOOKAHEAD):
-		turning = -turning
-	if _blocked_ahead(not _vertical, turning, LOOKAHEAD):
+	var turning := _pick_an_arm(crossing, 1.0 if _rng.randf() < 0.5 else -1.0)
+	if turning == 0.0:
 		_direction = -_direction   # boxed in on three sides; go back the way it came
 		return
 
@@ -579,6 +587,51 @@ func _divert() -> void:
 	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
 	_forget_the_detour()
 	_junction = kept
+	_claim_the_road_here()
+
+## Which way to turn out of `crossing`, trying `first` before the other one, or `0.0` for neither.
+##
+## Two questions and they are not the same question. **Can it go that way at all** is the tile map
+## — shut for the day, or never a street — and an arm that fails it is not an option. **Is there
+## room** is the other cars, and an arm that fails *that* is a bad option rather than no option.
+##
+## The second one is M38, and it is the fix for *"when a car turns into an occupied lane the other
+## car just disappears"*. A turn is a **placement**: it takes the coordinate the car had along its
+## old corridor and makes it the one it has across the new one, so the car simply materialises
+## somewhere in another queue. The M27 rule then resolves the overlap the only way it can, by moving
+## a body — front-to-back, so the shortfall cascades down the queue behind it, and a car is jumped
+## backwards by up to six of its own lengths in a single frame. Off screen, at the entry band, that
+## is exactly what it is for; at a junction the player is looking at, it is a car vanishing.
+##
+## Preferring rather than requiring, because a car that refuses to turn drives into the barrier it
+## was avoiding. When both arms are full it takes the first one anyway and the resolve does what it
+## always did — which leaves the old behaviour as the rare case instead of the usual one.
+func _pick_an_arm(crossing: int, first: float) -> float:
+	var open: Array[float] = []
+	for turning in [first, -first]:
+		if not _blocked_ahead(not _vertical, turning, LOOKAHEAD):
+			open.append(turning)
+	if open.is_empty():
+		return 0.0
+	for turning in open:
+		if _has_room_to_turn(crossing, turning):
+			return turning
+	return open[0]
+
+## Whether the lane this car would land in has a car's length of road to spare where it would land.
+##
+## Walkers are exempt: two people on a pavement are not two cars in a lane, `space_out_the_traffic`
+## has never looked at them, and there is nothing for this to prevent.
+func _has_room_to_turn(crossing: int, turning: float) -> bool:
+	if kind != Kind.CAR or not traffic:
+		return true
+	var vertical := not _vertical
+	var lane := CrowdLanes.road_lane(vertical, turning)
+	# After the turn the axes swap: what is currently the coordinate *across* this corridor becomes
+	# the one *along* the new one, which is where in that queue the car would appear.
+	var landing := _cross() * turning
+	return traffic.room_at(make_lane_key(vertical, crossing, lane, turning),
+			landing, Tuning.CAR_GAP_MIN)
 
 ## Whether the agent is far enough into a junction to turn without landing on the wrong surface.
 ##
@@ -652,6 +705,12 @@ const ENTRY_SPREAD := 420.0
 ## Since M21 the entry *point* is rolled inside the same loop and checked too, because a corridor
 ## may be park for two blocks of its length: a car re-entering there would be standing on grass
 ## and would divert at the first frame, which is a car appearing in a park and driving out of it.
+##
+## And since M38 it also has to be a piece of road nobody is on, which is the case M27 wrote the
+## positional resolve for — *"a car recycled into a lane lands at a point it cannot see"*. It can
+## see it now, so the resolve goes back to being a backstop rather than the way a car enters a
+## street. It is only a preference: after six rolls it takes what it has, because an entry band with
+## nothing free in it must still put the car somewhere.
 func _recycle() -> void:
 	for _attempt in 6:
 		_choose_lane(_rng.randf())
@@ -659,10 +718,44 @@ func _recycle() -> void:
 		var back := _rng.randf() * ENTRY_SPREAD
 		_set_along(bounds.x - back if _direction > 0.0 else bounds.y + back)
 		_set_cross(_lane_centre)
-		if _entry_band_fits() and _stands_on_a_street():
+		if _entry_band_fits() and _stands_on_a_street() and _has_room_here():
 			break
+	_join_the_back_of_the_queue()
 	_settle_junction()
+	_claim_the_road_here()
 	gap_ahead = INF
+
+## Drops the car in behind whatever is already in its lane, when the rolls above could not find a
+## gap. Nothing at all if it landed somewhere free, which is almost always.
+##
+## **A retry is not a guarantee, and this is the difference.** Six rolls into a busy entry band all
+## miss often enough to happen about once a minute, and what follows is the whole of the bug this
+## chased: the car materialises inside a queue, and the separation pass then shunts everybody behind
+## it back by the overlap *plus* everything moved in front of them — 180px, measured, with the rolls
+## in place. Behind the last car is the one place in a lane that is free by construction.
+##
+## It may put the car further back than the entry band is deep, which is exactly right: further back
+## is further off-screen, and the alternative is a car appearing inside another one.
+func _join_the_back_of_the_queue() -> void:
+	if kind != Kind.CAR or not traffic or _has_room_here():
+		return
+	var last := traffic.rearmost(lane_key())
+	if last == INF:
+		return
+	_set_along((last - Tuning.CAR_GAP_MIN) * _direction)
+
+## Tells the index this car is here, so that another one recycling or turning later in the same
+## frame does not choose the same piece of road. See `TrafficIndex.claim()`.
+func _claim_the_road_here() -> void:
+	if kind != Kind.CAR or not traffic:
+		return
+	traffic.claim(lane_key(), queue_position())
+
+## Whether this car is standing in a piece of its own lane that no other car is in.
+func _has_room_here() -> bool:
+	if kind != Kind.CAR or not traffic:
+		return true
+	return traffic.room_at(lane_key(), queue_position(), Tuning.CAR_GAP_MIN)
 
 ## Whether the whole entry band lies outside the map rather than straddling its edge.
 func _entry_band_fits() -> bool:

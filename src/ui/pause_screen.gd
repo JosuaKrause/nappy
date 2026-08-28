@@ -18,6 +18,7 @@ extends CanvasLayer
 ## reading, so `Telemetry.end_run()` happens on the way out exactly as it did before.
 
 signal resumed()
+signal restart_requested()
 signal quit_requested()
 
 @onready var _root: Control = $Root
@@ -54,8 +55,20 @@ func close() -> void:
 	visible = false
 	get_tree().paused = _was_paused
 
-## `Esc` closes it and `Q` leaves the game. Handled here rather than in `main` so that the screen
-## owns its own keys while it is up, and `main` only owns the one that opens it.
+## `Esc` closes it, `R` starts the whole run again and `Q` leaves the game. Handled here rather than
+## in `main` so that the screen owns its own keys while it is up, and `main` only owns the one that
+## opens it.
+##
+## **`R` is M38**, and it is the other half of the dead end the title screen fixes. *("The lost
+## screen doesn't allow for restarting the game — you can just cycle between pause screen and loss
+## screen at that point.")* The ending offered `Esc`, `Esc` opened this, and this offered `Esc` and
+## `Q`: two screens, four keys, and no way to play again. A run is also abandonable long before it
+## has ended — a day gone wrong on a city you do not want to walk any more is exactly when somebody
+## reaches for the pause — so the key belongs here and not only on the ending.
+##
+## It is deliberately not confirmed. Everything a run holds is a fourteen-day walk with no save in
+## it, `R` is not next to `Esc`, and a confirmation on the one key that gets you out of a stuck game
+## is a second way to be stuck.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
@@ -63,6 +76,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		close()
 		resumed.emit()
-	elif event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_Q:
-		get_viewport().set_input_as_handled()
-		quit_requested.emit()
+		return
+	if not (event is InputEventKey and event.pressed):
+		return
+	match (event as InputEventKey).keycode:
+		KEY_R:
+			get_viewport().set_input_as_handled()
+			restart_requested.emit()
+		KEY_Q:
+			get_viewport().set_input_as_handled()
+			quit_requested.emit()

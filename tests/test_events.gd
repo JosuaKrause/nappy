@@ -13,6 +13,7 @@ func run(t) -> void:
 	_test_a_paced_event_walks_a_beat(t)
 	_test_duration_and_finish(t)
 	_test_an_event_leaves_rather_than_vanishing(t)
+	_test_a_flock_is_birds_rather_than_one_bird_drawn_often(t)
 	_test_mobile_follows_its_path(t)
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
 	_test_the_director_puts_it_in_front_of_her(t)
@@ -318,6 +319,72 @@ func _test_an_event_leaves_rather_than_vanishing(t) -> void:
 	_advance(alone, def.telegraph_time + def.duration + EventInstance.LEAVING_GIVES_UP + 0.2)
 	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")
 	alone.free()
+
+## **The birds move, one at a time, and they stay inside their own event.** *(M38: "the birds are
+## broken — they start the flying animation but then freeze. Turn them into individual entities and
+## let each fly and make them dangerous.")*
+##
+## Three claims, and the middle one is the one that could go wrong silently. A flock used to be one
+## sprite drawn seven times at offsets derived from the instance's own position, sharing a single
+## rise term — so the seven birds *could not* move relative to each other and the whole animation was
+## over at the end of the telegraph. Nothing could see that: it has a duration, it emits, it departs,
+## and every test it had passed while it hung in the air.
+##
+## - **They move apart**, which is the difference between eleven birds and one bird drawn eleven
+##   times, and it is checked during the burst rather than the departure — a flock that only comes
+##   alive on its way out is the original bug with a longer fuse.
+## - **They stay inside `flock_spread`.** The telegraph fairness contract is stated over
+##   `outer_radius` *from the instance*, so eleven moving emitters are only legal while their union
+##   is inside the disc `validate_event` checked. This is the assertion that says so.
+## - **The middle costs and the rim does not**, which is the whole reason a flock is worth eleven
+##   sources: the price of one depends on whether you went through it or round it.
+func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	t.check(def.flock_size > 1 and def.flock_spread > 0.0, "a flock is more than one body")
+	t.check(def.flock_spread < def.outer_radius,
+			"and the room it takes up comes out of the field it emits over, not on top of it")
+	var instance := _instance(t, def, Vector2.ZERO)
+	_advance(instance, def.telegraph_time + 0.2)
+	t.check(not instance.is_telegraphing() and not instance.is_leaving, "the flock is up")
+
+	var spread_before := _widest_gap_between_birds(instance)
+	_advance(instance, 1.0)
+	var spread_after := _widest_gap_between_birds(instance)
+	t.check(not is_equal_approx(spread_before, spread_after),
+			"the birds move relative to each other rather than as one shape (%.1f then %.1f)"
+			% [spread_before, spread_after])
+
+	# Two full seconds of wheeling: whatever they do, they may not leave the event. Reported as one
+	# check with the worst reading in it, rather than one per bird per frame — thirteen hundred
+	# identical passes tell a reader nothing and the one number that matters does.
+	var furthest := 0.0
+	for i in int(2.0 / STEP):
+		instance._process(STEP)
+		if instance.is_leaving:
+			break
+		for bird in instance._flock:
+			furthest = maxf(furthest, bird.at.length())
+	t.check(furthest <= def.flock_spread + 2.0,
+			"every bird stayed inside the %.0fpx flock for the whole burst (furthest %.0fpx)"
+			% [def.flock_spread, furthest])
+
+	var middle := instance.contribution_at(Vector2.ZERO)
+	var rim := instance.contribution_at(Vector2(def.outer_radius - 6.0, 0.0))
+	t.check(middle > rim * 4.0,
+			"walking through the middle of a flock (%.1f/s) costs far more than skirting it (%.1f/s)"
+			% [middle, rim])
+	t.check(rim >= 0.0 and instance.contribution_at(Vector2(def.outer_radius + 80.0, 0.0)) == 0.0,
+			"and nothing at all reaches past the radius the contract was checked against")
+	instance.free()
+
+## The greatest distance between any two birds, which is the cheapest single number that changes
+## when they move independently and does not when they move as one shape.
+func _widest_gap_between_birds(instance: EventInstance) -> float:
+	var widest := 0.0
+	for a in instance._flock:
+		for b in instance._flock:
+			widest = maxf(widest, a.at.distance_to(b.at))
+	return widest
 
 func _test_mobile_follows_its_path(t) -> void:
 	var def := EventCatalogue.by_id("fire_truck")
@@ -652,26 +719,48 @@ const _SCENERY := ["burnt_shell"]
 ## decay over the same time. This is what produced the table in docs/EVENTS.md, and the
 ## measurement behind playtest 02's finding 7.
 func _cost_to_walk_through(def: EventDef) -> float:
-	var span := def.outer_radius * 2.0
-	var seconds := span / Tuning.WALK_SPEED
-	var steps := 2000
-	var total := 0.0
-	for i in steps:
-		var d := absf(-def.outer_radius + span * (i + 0.5) / steps)
-		total += Tuning.falloff(d, def.intensity, def.inner_radius, def.outer_radius)
-	return (total / steps - Tuning.EXCITEMENT_DECAY_WALKING) * seconds
+	var seconds := def.outer_radius * 2.0 / Tuning.WALK_SPEED
+	return (_mean_emission_along_the_line(def) - Tuning.EXCITEMENT_DECAY_WALKING) * seconds
 
 ## The same integral at running pace, with the running penalty in place of the walking decay.
 func _cost_to_run_through(def: EventDef) -> float:
+	var seconds := def.outer_radius * 2.0 / Tuning.RUN_SPEED
+	return (_mean_emission_along_the_line(def) - Tuning.EXCITEMENT_DECAY_RUNNING
+			+ Tuning.EXCITEMENT_FROM_RUNNING) * seconds
+
+## Mean emission along a straight line through the centre — the only property of a field either
+## comparison depends on, since both walk the same line and differ only in how long it takes.
+func _mean_emission_along_the_line(def: EventDef) -> float:
 	var span := def.outer_radius * 2.0
-	var seconds := span / Tuning.RUN_SPEED
 	var steps := 2000
 	var total := 0.0
 	for i in steps:
-		var d := absf(-def.outer_radius + span * (i + 0.5) / steps)
-		total += Tuning.falloff(d, def.intensity, def.inner_radius, def.outer_radius)
-	return (total / steps - Tuning.EXCITEMENT_DECAY_RUNNING
-			+ Tuning.EXCITEMENT_FROM_RUNNING) * seconds
+		total += _emission_at(def, Vector2(-def.outer_radius + span * (i + 0.5) / steps, 0.0))
+	return total / steps
+
+## What a row emits at a point, from its data alone.
+##
+## One disc for almost everything, and it is the assumption this table has always rested on: all of
+## `intensity` is at the centre and it falls away from there.
+##
+## **That assumption is false for a flock.** *(M38.)* A flock is `flock_size` birds sharing the same
+## intensity between them and wheeling inside `flock_spread`, so the same number buys a field that is
+## tighter and, crucially, *quieter along a line through it* — the disc model reads `pigeon_flock` at
+## +97 where the instance itself, walked and integrated, costs +35, which breaks the running rule the
+## row in fact keeps. The birds are placed evenly round the wheel at its mean reach rather than where
+## they happen to be: they move, and what a row costs is the average over where they might be rather
+## than over one frame.
+func _emission_at(def: EventDef, at: Vector2) -> float:
+	if def.flock_size <= 0:
+		return Tuning.falloff(at.length(), def.intensity, def.inner_radius, def.outer_radius)
+	var share := def.intensity / float(def.flock_size)
+	var outer := maxf(def.inner_radius + 1.0, def.outer_radius - def.flock_spread)
+	var total := 0.0
+	for i in def.flock_size:
+		var angle := TAU * float(i) / float(def.flock_size)
+		var bird := Vector2(cos(angle), sin(angle)) * def.flock_spread * 0.65
+		total += Tuning.falloff(bird.distance_to(at), share, def.inner_radius, outer)
+	return total
 
 ## **Running is wrong against everything you route around, and right against the thing that
 ## follows.** Two halves of one rule, and playtest 07 is where the second half arrived: *"the run

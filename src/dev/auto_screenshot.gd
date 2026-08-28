@@ -45,6 +45,14 @@ extends Node
 ## something can:
 ##
 ##     tools/shot.sh pause.png 4 --press pause 3
+##
+## It may be given more than once, and it takes a **bare key** as `key:<name>` as well as an input
+## action. Both are M38 and both were found the same way the flag itself was: one tap can only ever
+## photograph one screen, and the keys a screen's own shortcuts are made of — `q` to quit, `r` to
+## start the run again — are keycodes rather than actions, so `--press` could not reach the two keys
+## the pause screen is mostly made of.
+##
+##     tools/shot.sh restart.png 6 --press pause 2 --press key:r 3.5
 
 const DEFAULT_SECONDS := 1.5
 
@@ -66,10 +74,9 @@ var _dither := 0.0
 ## The clock reading at which to turn, once something is chasing. `INF` until it is.
 var _flee_at := INF
 var _fled := false
-## One action to tap once, and when. See `--press`.
-var _press := ""
-var _press_at := INF
-var _pressed := false
+## What to tap and when: `[{ "what": String, "at": float, "done": bool }]`, in the order the flags
+## were given. See `--press`.
+var _presses: Array[Dictionary] = []
 
 ## Returns a configured instance, or null if the command line did not ask for a screenshot.
 static func from_command_line() -> AutoScreenshot:
@@ -94,14 +101,21 @@ static func from_command_line() -> AutoScreenshot:
 		# and `--flee --seed 4242` must not read the flag after it as one.
 		if flee + 1 < args.size() and args[flee + 1].is_valid_float():
 			node._dither = float(args[flee + 1])
-	var press := args.find("--press")
-	if press != -1 and press + 2 < args.size():
-		node._press = args[press + 1]
-		node._press_at = float(args[press + 2])
-		if not InputMap.has_action(node._press):
-			push_warning("unknown --press action '%s'" % node._press)
-			node._press = ""
+	# Every occurrence, not the first: one tap can only ever demonstrate a screen, and what usually
+	# has to be checked is a *sequence* — `--press pause 2 --press key:r 3.5` is Esc and then the
+	# key the pause screen offers.
+	for i in args.size():
+		if args[i] != "--press" or i + 2 >= args.size():
+			continue
+		var what := args[i + 1]
+		if not what.begins_with(KEY_PREFIX) and not InputMap.has_action(what):
+			push_warning("unknown --press action '%s'" % what)
+			continue
+		node._presses.append({"what": what, "at": float(args[i + 2]), "done": false})
 	return node
+
+## What marks a `--press` argument as a raw key rather than an input action.
+const KEY_PREFIX := "key:"
 
 func _ready() -> void:
 	if _holding != "":
@@ -119,9 +133,10 @@ func _process(delta: float) -> void:
 	if not _fled and _elapsed >= _flee_at:
 		_fled = true
 		_turn_and_run()
-	if not _pressed and _press != "" and _elapsed >= _press_at:
-		_pressed = true
-		_tap(_press)
+	for press in _presses:
+		if not press["done"] and _elapsed >= float(press["at"]):
+			press["done"] = true
+			_tap(String(press["what"]))
 	if _elapsed < _seconds_to_wait:
 		return
 	set_process(false)
@@ -130,7 +145,8 @@ func _process(delta: float) -> void:
 	Input.action_release("run")
 	_capture()
 
-## Taps an action so that it **propagates**, which `--walk` does not need and this does.
+## Taps an action, or a bare key, so that it **propagates** — which `--walk` does not need and this
+## does.
 ##
 ## `Input.action_press()` sets the polled state and nothing else, which is all the rig ever wanted
 ## before: the stroller reads `Input.get_vector` every frame. A key that something answers in
@@ -138,11 +154,26 @@ func _process(delta: float) -> void:
 ## real event pushed through the tree, and that is `parse_input_event`. The first version of
 ## `--press` used `action_press` and produced a screenshot of the game carrying on, which looks
 ## exactly like the bug it was written to check.
-func _tap(action: String) -> void:
+##
+## **And a bare key is not an action, which is the same lesson one level down.** *(M38.)* `Q` has
+## quit the game from the pause screen since M33 and `R` restarts the run now, and neither is in the
+## input map — they are read as keycodes, the way a screen's own shortcuts usually are. So no rig
+## could reach either of them: `--press` existed precisely because nothing in the suite or a
+## screenshot has ever pressed a key, and it still could not press the two keys the pause screen is
+## made of. `key:r` can.
+func _tap(what: String) -> void:
 	for pressed in [true, false]:
-		var event := InputEventAction.new()
-		event.action = action
-		event.pressed = pressed
+		var event: InputEvent
+		if what.begins_with(KEY_PREFIX):
+			var key := InputEventKey.new()
+			key.keycode = OS.find_keycode_from_string(what.trim_prefix(KEY_PREFIX))
+			key.pressed = pressed
+			event = key
+		else:
+			var action := InputEventAction.new()
+			action.action = what
+			action.pressed = pressed
+			event = action
 		Input.parse_input_event(event)
 
 ## The one answer the game asks for: about-turn, and hold shift.

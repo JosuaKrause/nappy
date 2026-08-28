@@ -530,6 +530,27 @@ static func _leaf_blower() -> EventDef:
 ##   pavement, and it is now priced like it.
 ## - And it was **deleted at the top of its climb**, which is `EventDef.departs_at` and the reason
 ##   that field exists. They fly off.
+##
+## **And it was still ineffective, because it froze.** *(M38: "the birds are broken — they start the
+## flying animation but then freeze. Turn them into individual entities and let each fly and make
+## them dangerous.")* All three fixes above are about the *event*, and none of them touched the one
+## thing a player actually looks at: seven copies of one sprite, at seven offsets derived from the
+## instance's own position, sharing a single `rise` term that reached 1.0 at the end of the telegraph
+## and then held. The flock went up in one movement and hung in the air for the whole burst.
+##
+## It is `flock_size` birds now, each with its own heading, speed, height and wingbeat, each an
+## emitter in its own right — see `EventInstance`, "the flock". The numbers here follow from that:
+##
+## - **The intensity is a total to be shared out**, so it buys eleven overlapping fields rather than
+##   one. Walking round the edge meets one bird; walking through the middle meets five. It is the
+##   third loudest thing on an act I pavement at the centre and nearly free at the rim, which is
+##   what a thing worth *routing* around looks like.
+## - **`flock_spread` comes out of `outer_radius`, not on top of it.** A bird emits over
+##   `outer_radius - flock_spread`, so the union of eleven moving fields is inside the one disc the
+##   fairness contract was checked against. The telegraph is still measured against 168px.
+## - **It fades as they climb.** `intensity_ramp` is the burst being loudest at the instant they go
+##   up, which is also what earns it a caret for the whole burst rather than only the telegraph: a
+##   flock is danger that changes over time, which is the one thing the mark is for.
 static func _pigeon_flock() -> EventDef:
 	var def := EventDef.new()
 	def.id = "pigeon_flock"
@@ -538,13 +559,18 @@ static func _pigeon_flock() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE,
 			GameEnums.TileType.PARK]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
-	def.intensity = 20.0
-	def.inner_radius = 34.0
-	def.outer_radius = 140.0
-	def.duration = 3.0
+	def.intensity = 42.0
+	def.inner_radius = 26.0
+	def.outer_radius = 168.0
+	# Eleven of them over a 62px wheel: enough that the middle is unmistakably a crowd of birds and
+	# few enough that a player can see the gaps between them and aim at one.
+	def.flock_size = 11
+	def.flock_spread = 62.0
+	def.intensity_ramp = 0.4
+	def.duration = 4.0
 	# On the ground the whole time, which is what makes this a thing to walk around rather than a
-	# thing that happens. Well over the 1.2s the contract asks of a 140px field.
-	def.telegraph_time = 1.6
+	# thing that happens. Over the 1.55s the contract asks of a 168px field.
+	def.telegraph_time = 1.7
 	# Faster than she can run, and up: they are gone in a second and a half and they are gone
 	# *somewhere*.
 	def.departs_at = 190.0

@@ -14,11 +14,14 @@ extends RefCounted
 
 const SUMMARY := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE := preload("res://scenes/ui/pause_screen.tscn")
+const TITLE := preload("res://scenes/ui/title_screen.tscn")
 
 func run(t) -> void:
 	var was_paused: bool = t.get_tree().paused
 	_test_a_canvas_layer_is_always_visible(t)
 	_test_the_pause_puts_back_what_it_found(t)
+	_test_there_is_a_way_out_of_a_finished_run(t)
+	_test_the_title_screen_does_not_stop_the_city(t)
 	t.get_tree().paused = was_paused
 
 ## The trap, stated as an assertion so that reaching for `.visible` again fails loudly.
@@ -54,3 +57,86 @@ func _test_the_pause_puts_back_what_it_found(t) -> void:
 			+ "that had ended")
 	t.get_tree().paused = false
 	pause.queue_free()
+
+## **The dead end.** *(M38: "the lost screen doesn't allow for restarting the game — you can just
+## cycle between pause screen and loss screen at that point.")*
+##
+## Four keys across two screens and none of them started a run: the ending said `esc to quit`, `Esc`
+## opened the pause, and the pause offered `Esc` and `Q`. What is asserted is the property that was
+## missing rather than the fix — **from every screen the game can come to rest on, some key starts a
+## run** — so a later screen that forgets it fails here rather than in somebody's evening.
+##
+## The keys are pushed as real `InputEventKey`s, because that is what the two screens read and it is
+## exactly the difference the M36 bug turned on. `--press key:r` is the same check in a real window.
+func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var restarts := [0]
+	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
+
+	pause._unhandled_input(_key(KEY_R))
+	t.check(restarts[0] == 0, "a key the pause screen never saw does nothing")
+
+	t.get_tree().paused = false
+	pause.open()
+	pause._unhandled_input(_key(KEY_R))
+	t.check(restarts[0] == 1, "r on the pause screen asks for a new run")
+	pause.close()
+	pause.queue_free()
+
+	# And the other end of the same dead end: the last screen of a run has a key on it.
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	summary.show_ending(GameEnums.Ending.BAD)
+	t.check(summary.is_showing(), "the ending screen is up")
+	var carried_on := [0]
+	summary.continued.connect(func() -> void: carried_on[0] += 1)
+	summary._unhandled_input(_accept())
+	t.check(carried_on[0] == 1,
+			"and space carries on from it, rather than leaving the run with no key on it at all")
+	t.get_tree().paused = false
+	summary.queue_free()
+
+## The title screen is **not** a pause, and the difference is the whole of what is behind it.
+## *(M38: "as title screen just use the home and street in front without player and let act I events
+## play out.")* It shows and hides and owns two keys; deciding what keeps running is `main`'s, and a
+## title screen that paused the tree itself would take that decision away from it.
+func _test_the_title_screen_does_not_stop_the_city(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	t.check(not title.is_open(), "the title starts hidden")
+
+	t.get_tree().paused = false
+	title.open()
+	t.check(title.is_open(), "opening it shows it")
+	t.check(not t.get_tree().paused,
+			"and it does not pause the tree itself — the city plays out behind it")
+
+	var started := [0]
+	var quit := [0]
+	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.quit_requested.connect(func() -> void: quit[0] += 1)
+	title._unhandled_input(_accept())
+	t.check(started[0] == 1, "space begins the run")
+	title._unhandled_input(_key(KEY_Q))
+	t.check(quit[0] == 1, "and q leaves")
+
+	title.close()
+	title._unhandled_input(_accept())
+	t.check(started[0] == 1, "a closed title screen answers nothing")
+	title.queue_free()
+
+func _key(code: Key) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.pressed = true
+	return event
+
+func _accept() -> InputEventAction:
+	return _action("ui_accept")
+
+func _action(name: StringName) -> InputEventAction:
+	var event := InputEventAction.new()
+	event.action = name
+	event.pressed = true
+	return event

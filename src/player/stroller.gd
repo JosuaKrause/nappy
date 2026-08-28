@@ -100,6 +100,45 @@ var _alert_source := &""
 func _ready() -> void:
 	add_to_group("player")
 
+## Takes her out of the world without taking her out of the tree, for the title screen's attract
+## mode. *(M38: "as title screen just use the home and street in front without player".)*
+##
+## **Leaving the `player` group is the whole of it**, and it is worth being explicit about why that
+## is the right switch rather than one more flag. Everything that happens *to* her is reached
+## through that group and nothing else is: `EventManager` streams, places what the director owes,
+## tells the events where she is, warns her about the ground she is on and checks the hard fails
+## only `if _find_player()`; `Crowd` looks her up the same way before it can bump her, honk at her
+## or run her over. Out of the group, none of it can fire — so a lethal thing on the doorstep cannot
+## end a day nobody is playing, and the city in the background is genuinely only a city.
+##
+## **Her camera stays behind, and it has to keep running.** The view is hers, and the shot the title
+## screen wants is the one she would be looking at on the first morning — but the title stops the
+## day, which stops her, and `position_smoothing_enabled` is applied in the **camera's own** process
+## callback. A paused camera therefore never travels to the thing it is following: it sat at the
+## world origin, clamped to the corner of the boundary wall, while ninety-five crowd agents walked
+## about the doorstep a thousand pixels off-camera. An empty title screen, with nothing whatever
+## wrong with the thing it was supposed to be showing.
+##
+## What is *not* the reason, having been checked rather than assumed: hiding a `Node2D` does not
+## deactivate a `Camera2D` under it. `visible` is all this needs to be.
+func stand_aside() -> void:
+	remove_from_group("player")
+	visible = false
+	_camera.process_mode = Node.PROCESS_MODE_ALWAYS
+	_camera.reset_smoothing()
+
+## And back in, when the day starts. The camera goes back to being part of the game, so that a real
+## pause stops the view moving along with everything else.
+func step_back_in() -> void:
+	if not is_in_group("player"):
+		add_to_group("player")
+	visible = true
+	_camera.process_mode = Node.PROCESS_MODE_INHERIT
+
+## Whether she is out of the world for the title screen: still here, still carrying the camera,
+## simply not drawn. See `stand_aside()`.
+var _stood_aside := false
+
 func _physics_process(delta: float) -> void:
 	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var top_speed := Tuning.RUN_SPEED if Input.is_action_pressed("run") else Tuning.WALK_SPEED

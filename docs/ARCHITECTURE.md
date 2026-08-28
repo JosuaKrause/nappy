@@ -16,47 +16,47 @@ scenes/
   ui/day_summary.tscn     between-day screen
 src/
   autoload/
-    tuning.gd             all balance constants           (autoload: Tuning)
-    event_bus.gd          global signals                  (autoload: EventBus)
-    telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
-    game_state.gd         run/day/nerves/resistance       (autoload: GameState)
+	tuning.gd             all balance constants           (autoload: Tuning)
+	event_bus.gd          global signals                  (autoload: EventBus)
+	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
+	game_state.gd         run/day/nerves/resistance       (autoload: GameState)
   player/
-    stroller.gd           movement, input, speed state
-    baby.gd               the two meters + baby state machine
+	stroller.gd           movement, input, speed state
+	baby.gd               the two meters + baby state machine
   city/
-    city_map.gd           tile data, queries (is_calm, is_alley, walkable)
-    city_generator.gd     seeded generation
-    city.gd               the scene: ground, buildings, props, boundary
-    block_plan.gd         one block's arc, planned at generation
-    block_layout.gd       one block's carves, also fixed at generation
-    city_state.gd         run-scoped: how far along each arc the run has got
-    building.gd           one lot, assembled from 32px facade and roof tiles
-    ground_tiles.gd       which ground tile a cell gets
-    tile.gd               TileType enum + per-tile metadata
+	city_map.gd           tile data, queries (is_calm, is_alley, walkable)
+	city_generator.gd     seeded generation
+	city.gd               the scene: ground, buildings, props, boundary
+	block_plan.gd         one block's arc, planned at generation
+	block_layout.gd       one block's carves, also fixed at generation
+	city_state.gd         run-scoped: how far along each arc the run has got
+	building.gd           one lot, assembled from 32px facade and roof tiles
+	ground_tiles.gd       which ground tile a cell gets
+	tile.gd               TileType enum + per-tile metadata
   routes/
-    street_network.gd     the lattice as a graph: junctions, streets, distinct-route counts
-    road_closure.gd       one street shut for one day, and what shut it
-    closure_planner.gd    picks the day's closures; enforces the two-routes invariant
+	street_network.gd     the lattice as a graph: junctions, streets, distinct-route counts
+	road_closure.gd       one street shut for one day, and what shut it
+	closure_planner.gd    picks the day's closures; enforces the two-routes invariant
     closure_marker.gd     one barrier panel, sign or piece of wreckage
   crowd/
-    crowd.gd              owns the day's agents; sums their excitement
-    crowd_agent.gd        one walker or one car
-    crowd_lanes.gd        the lane geometry of the street grid
+	crowd.gd              owns the day's agents; sums their excitement
+	crowd_agent.gd        one walker or one car
+	crowd_lanes.gd        the lane geometry of the street grid
   events/
-    event_def.gd          authored event data
-    event_instance.gd     runtime node: position, lifetime, telegraph, emission
-    event_catalogue.gd    every event, defined in code
-    event_scheduler.gd    builds a day's event set from seed + day
+	event_def.gd          authored event data
+	event_instance.gd     runtime node: position, lifetime, telegraph, emission
+	event_catalogue.gd    every event, defined in code
+	event_scheduler.gd    builds a day's event set from seed + day
     event_manager.gd      owns the live instances; answers total_excitement_at
     event_aura_layer.gd   draws the excitement fields under the entity layer
   day/
     day_controller.gd     the clock, the two phases, the four ways a day ends
   resistance/
-    resistance_director.gd  places the day's contact; the alley roulette and the deadline
-    resistance_steps.gd     the six steps, as a data table
-    contact_point.gd        a chalk mark, and hold-to-interact
+	resistance_director.gd  places the day's contact; the alley roulette and the deadline
+	resistance_steps.gd     the six steps, as a data table
+	contact_point.gd        a chalk mark, and hold-to-interact
   telemetry/
-    telemetry_log.gd      one run's ordered lines, and the file they go to
+	telemetry_log.gd      one run's ordered lines, and the file they go to
     telemetry_observer.gd watches the player: turns, runs, crossings, encounters
   world/
     world_context.gd      the only three questions the baby may ask the world
