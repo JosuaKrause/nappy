@@ -1,0 +1,21 @@
+<!-- The busker. The guitar is the whole tell: a round body across the chest and a neck angled up
+     out of the shoulder line, which is a silhouette nothing else in the game has. The open case
+     on the ground beside him is the second half — it says he is *staying*, which is what makes
+     him a place to route around rather than somebody walking past. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="44" viewBox="0 0 30 44" shape-rendering="crispEdges">
+  <rect x="0" y="37" width="11" height="6" fill="#4a3a2c"/>
+  <rect x="0" y="35" width="11" height="2" fill="#6b543f"/>
+  <rect x="2" y="38" width="7" height="3" fill="#8a6f52"/>
+  <rect x="12" y="30" width="4" height="12" fill="#46506b"/>
+  <rect x="17" y="30" width="4" height="12" fill="#46506b"/>
+  <rect x="11" y="42" width="5" height="2" fill="#221f28"/>
+  <rect x="17" y="42" width="5" height="2" fill="#221f28"/>
+  <rect x="9" y="13" width="14" height="18" fill="#4f8f6b"/>
+  <rect x="9" y="25" width="14" height="6" fill="#42775a"/>
+  <rect x="22" y="8" width="3" height="14" fill="#6b543f"/>
+  <rect x="21" y="5" width="5" height="4" fill="#4a3a2c"/>
+  <circle cx="19" cy="25" r="7" fill="#c96f4a"/>
+  <circle cx="19" cy="25" r="2" fill="#3a2b26"/>
+  <circle cx="16" cy="8" r="6" fill="#d9a878"/>
+  <path d="M10 8 A6 6 0 0 1 22 8 Z" fill="#3a2b26"/>
+</svg>

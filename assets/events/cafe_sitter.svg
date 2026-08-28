@@ -1,0 +1,11 @@
+<!-- Somebody at a café table. Shorter than a standing figure and with no legs under it, which is
+     what makes it read as seated at a glance rather than as a passer-by who has stopped.
+     *(Playtest 07, finding 11: "the café has no people at it" — the tables were the obstacle and
+     the conversation was what made it loud, and only one of the two was drawn.)* -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 16 30" shape-rendering="crispEdges">
+  <rect x="2" y="22" width="12" height="6" fill="#46506b"/>
+  <rect x="3" y="11" width="10" height="12" fill="#8a5f6b"/>
+  <rect x="3" y="19" width="10" height="4" fill="#74505c"/>
+  <circle cx="8" cy="6" r="5" fill="#d9a878"/>
+  <path d="M3 6 A5 5 0 0 1 13 6 Z" fill="#4a3a2c"/>
+</svg>

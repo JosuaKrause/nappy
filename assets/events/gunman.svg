@@ -1,0 +1,19 @@
+<!-- One side of a firefight: somebody down behind cover with a rifle out over it. Crouched, so
+     the silhouette is half the height of every standing figure in the game and cannot be read as
+     a passer-by, and drawn low and wide because what is actually in the way is the cover.
+     The last event in the catalogue used to draw the same five flames as a burning building,
+     which said "this street is on fire" about the one thing that is people shooting at each
+     other. The flashes are drawn in code, off the pulse, so they land on the beat the meter is
+     already on. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="26" viewBox="0 0 30 26" shape-rendering="crispEdges">
+  <rect x="4" y="10" width="12" height="10" fill="#4a5438"/>
+  <circle cx="10" cy="7" r="5" fill="#4a5438"/>
+  <rect x="6" y="6" width="9" height="3" fill="#2f3630"/>
+  <rect x="14" y="11" width="14" height="3" fill="#26232a"/>
+  <rect x="12" y="12" width="4" height="5" fill="#2f3630"/>
+  <rect x="0" y="16" width="30" height="8" fill="#6b6154"/>
+  <rect x="0" y="16" width="30" height="3" fill="#7f7466"/>
+  <rect x="8" y="16" width="2" height="8" fill="#544c42"/>
+  <rect x="20" y="16" width="2" height="8" fill="#544c42"/>
+  <rect x="0" y="24" width="30" height="2" fill="#221f28"/>
+</svg>

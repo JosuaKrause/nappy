@@ -1,9 +1,62 @@
 # Handoff
 
-**Last updated:** end of the M36 session — playtest 09, all four things. M35 is in the same session,
-just below.
-**Read this first, then [PLAYTEST-09.md](PLAYTEST-09.md) and [PLAYTEST-08.md](PLAYTEST-08.md), then
+**Last updated:** end of the M37 session — playtest 07's last big one. M36, M35 and the rest follow
+below, newest first.
+**Read this first, then [PLAYTEST-07.md](PLAYTEST-07.md) and [PLAYTEST-09.md](PLAYTEST-09.md), then
 [TODO.md](TODO.md).**
+
+> **M37 is playtest 07's finding 2, and its one sentence is: a category is a thing you can always
+> put one more row into.**
+>
+> **`EventDef.Look` opened with `PERSON`, `VEHICLE`, `OBJECT`, `ANIMAL` and `FIRE`**, and those five
+> names were doing the damage by themselves. Sixteen of the twenty-eight visible rows drew five
+> pictures between them: a man shouting, a busker, a poster crew, a protest and the robbery that
+> ends the day were one `person.svg`; a delivery van, a fire engine, a police car, a riot van, an
+> army truck and the unmarked van that takes the baby were one van.
+>
+> **The part to carry is that it reads as an art chore and it had already cost two findings.** M34
+> spent a milestone fixing `alley_robbery` for a complaint about `homeless_yeller`, because a player
+> can only say *"the robber"* and the two drew the same man. Playtest 09 then asked *"who is the
+> person killing me?"*, which is exactly the question row one of the vocabulary exists to answer.
+> And a third had gone unreported: `DangerEdge` kept its **own** table of which picture a look
+> meant, so the screen-edge badge — the one cue whose entire content is *what* is coming — drew a
+> delivery van for a fire engine.
+>
+> **So it is a rule with a test rather than fifteen drawings.** No two rows share a look, no two
+> looks share a silhouette, `EventInstance.icon_for()` is the single table and the badge reads it,
+> and `look` has no default worth having. The cost of adding an event is a drawing. That is M34's
+> `obstructs_radius` move arriving at the other half of the vocabulary, and the same sentence
+> underneath it: **a field that is only ever *reached for* is a list wearing a rule's clothes.**
+>
+> **Three of the fourteen new pictures are more than a picture.** The **robber has two postures**,
+> switched on `is_waiting()` — M36 gave that row three states and the screen showed one, so *a man
+> is standing there* and *he has seen you* looked identical, which is the `cat_crouched` /
+> `cat_running` rule arriving at the row where reading it wrong ends the run. The **protest is a
+> crowd**, and its body followed its picture: the catalogue had said *"one person's worth, because
+> one person is what it draws… the art is the fix"*, and it is 55px now, two ranks across exactly
+> the ground it takes — the clearest case in the game of art deciding a gameplay number. And the
+> **café has people at it** (finding 11), which is the tables being what obstructs and the
+> conversation being what it emits, with only the first ever drawn.
+>
+> **Buildings sort against nothing now** (finding 4), and the fix is *not* the one M34's diagnosis
+> pointed at. The comparison is **meaningless**, not merely wrong: buildings tile their lots exactly
+> and no lot tile is walkable — both asserted since M3 — so nothing can ever legitimately stand
+> behind one, and two things that can never be on opposite sides of each other have no business
+> being sorted against each other. `building.gd` had claimed the opposite in a comment for
+> twenty-two milestones, and it was true of the ground footprint and false of every sprite that
+> overhangs it.
+>
+> **And the zzz stopped dodging nothing** (finding 14). The baby's cue steps out of the exclamation
+> mark's column, and that column is only occupied when there *is* a mark in it — unconditional, it
+> put the cue a body's width to one side of the pram on the commonest picture in the game. Playtest
+> 06's own lesson a third time, *a cue is a claim about a moment*, reaching a player for the reason
+> M32's two did: **nothing in `tests/test_danger.gd` can see a `_draw()`.** It is
+> `Stroller.baby_cue_aside()` now and the suite asks it.
+>
+> **Measured, five seeds:** events placed per day is **identical**, day for day, on days 1, 8, 12,
+> 13 and 14 — 48.0 / 66.8 / 79.2 / 84.6 / 86.6 — and so are protests placed and events carrying a
+> body. A five-fold body on three events a day is absorbed, because placement never considers how
+> wide a thing is; only `_ensure_the_city_is_still_walkable` could have refused it, and it had room.
 
 > **M36 is playtest 09, and its one sentence is: two things in this build had been doing nothing at
 > all for milestones, and both looked finished from the outside.**
@@ -259,11 +312,17 @@ just below.
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **46394 checks, 0 failures** (~110s);
+`main` is green and playable. `./tools/test.sh` → **46498 checks, 0 failures** (~110s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
-**The check count went 46563 → 46394, and almost all of the drop is one row changing shape.**
+**The check count went 46394 → 46498, and all of it is M37 asserting the new rule.** Two of those
+checks run over the whole catalogue — one row per look, one silhouette per look — plus the baby
+cue's four answers, which are a test at all only because the decision was pulled out of `_draw()`
+and given a name. Nothing was removed and no plan moved: the density probe returns the same numbers
+day for day against `main`.
+
+**The count before that went 46563 → 46394, and almost all of the drop is one row changing shape.**
 `homeless_yeller` is mobile now, so it needs an `ALONG_STREET` route and `_place_one` re-rolls when
 one cannot be built — mostly on `SQUARE` tiles, where a corridor axis is not meaningful. Several
 suites assert per *placed* plan over fourteen days, so a handful fewer men shouting is a couple of
@@ -301,9 +360,13 @@ tests, which loop over every street of every zone of every seed. A count that mo
 being asserted is doing that; a count that drops after anything but a deletion is a suite that
 stopped running.
 
-**M34 landed in this session and playtest 07 is down to six open findings.** The four it closed
-are the entry above; what is worth carrying forward is in "Gotchas learned in M34" below. **M33
-landed in the session before it**, and it is the other half of the same playtest.
+**M37 landed in this session and playtest 07 is down to three open findings**, none of them large.
+The four it closed are the entry above; what is worth carrying forward is in "Gotchas learned in
+M37" below, and the one to read first is the first: a category in an enum is a list waiting to
+happen, which is M34's lesson arriving a second time from a direction that looked like art.
+
+**M34, M33, M35 and M36 landed in the sessions before it**, and between them they are the rest of
+playtests 07, 08 and 09.
 
 **M32 closed playtest 06.** The five things it fixed are the entry further up; what is worth
 carrying forward is in "Gotchas learned in M32" below.
@@ -448,6 +511,12 @@ should now be a great deal more than playtest 03's zero — `road` for time in t
 - **M33 complete.** Playtest 07's first nine: the falloff grew a shoulder, the crowd paid it back
   in radius, standing still settles nothing, a contact resolves and costs less, running started to
   matter, the run is taught on the day it does, and there is a pause.
+- **M37 complete.** Playtest 07's finding 2 and three more, and one rule: **one picture per row,
+  and no two rows share one.** `EventDef.Look`'s five categories were drawing sixteen of the
+  twenty-eight visible rows; fourteen new silhouettes, a single icon table the screen-edge badge
+  reads, and a test for both halves. Plus a café with people at it, a protest whose body followed
+  its picture (11 → 55px, density unchanged), buildings that sort against nothing, and a baby cue
+  that stops dodging a mark that is not there. Fifteen of playtest 07's nineteen are closed
 - **M34 complete.** Playtest 07's next four, and one rule: anything that stands still is solid at
   half its silhouette. Two thirds of the catalogue has a body now where five rows did; a parked van
   is at the kerb rather than in a traffic lane; a reversing lorry has a building to reverse into;
@@ -540,7 +609,8 @@ All seven are live plans: **[PLAYTEST-01.md](PLAYTEST-01.md)** (thirteen finding
 **[PLAYTEST-04.md](PLAYTEST-04.md)** (seven findings; adds M27 and moved M22 and M21 to the
 front), **[PLAYTEST-05.md](PLAYTEST-05.md)** (six findings → M28, M29, M30, M24 and M31,
 **all closed**), **[PLAYTEST-06.md](PLAYTEST-06.md)** (five things, **all closed** as M32), and
-**[PLAYTEST-07.md](PLAYTEST-07.md)** (nineteen, thirteen closed as M33 and M34).
+**[PLAYTEST-07.md](PLAYTEST-07.md)** (nineteen, **fifteen** closed — M33, M34, two picked up by
+M35, and four as M37).
 Read 07 and then 06 before picking anything up; the summaries here are not a substitute for them,
 and each carries what its analysis got wrong as well as what it got right — 06's is at the bottom
 of the file under "What the analysis missed", and 07's is inside the M34 section, where the finding
@@ -801,15 +871,78 @@ it.
   already says a run with no output is an error rather than a slow suite; this is the cheapest way
   to cause one.
 
+## Gotchas learned in M37
+
+- **A category in an enum is a list waiting to happen.** `Look.PERSON` was not a wrong value on any
+  one row; it was a name that made "one more thing that is roughly a person" always the cheap
+  answer, sixteen times over five names. When a field's values look like a taxonomy rather than
+  like identities, ask what the *next* row will be tempted to reuse. Same shape as M34's
+  `obstructs_radius` and worth recognising faster next time.
+- **A second table of the same fact is where the fact goes wrong.** `DangerEdge._icon_for` and
+  `EventInstance._draw_body` both answered "what does this look like", and the badge's copy was the
+  one nobody looked at — so the cue whose entire content is *what is coming* had been showing a
+  delivery van for a fire engine, an army truck and an abduction, with no test able to see it and
+  no player having reached day 8 to notice. `EventInstance.icon_for()` is the one table now and the
+  badge asks it.
+- **Before fixing a comparison, ask whether it should be happening at all.** Finding 4's diagnosis
+  was correct and pointed at a better sort. The actual fix is that buildings and entities can never
+  legitimately be on opposite sides of each other — nothing walkable is inside a lot — so they do
+  not sort against each other. A comparison that is *always* wrong in one direction is usually a
+  comparison that should not exist.
+- **A comment can outlive the thing it was true of by twenty-two milestones.** `building.gd` said
+  the layout *"keeps every extrusion off the street, so the player is never hidden under a roof
+  while walking past one"*. The first clause was true of the ground footprint and the second did
+  not follow from it, and nothing ever re-read the sentence because the first half kept passing.
+- **A decision that only exists inside `_draw()` cannot be asked about a moment.** M32 learned that
+  a cue is a claim about a moment, and then wrote a new cue's placement as four lines inside a
+  `_draw`, where no test could reach it — and that is exactly the one playtest 07 complained about.
+  `Stroller.baby_cue_aside()` is those four lines with a name. The badge's `approach_speed` and
+  `announces` are static functions for the same reason; this is that rule not being applied twice.
+- **Art can be the thing deciding a gameplay number, and the catalogue can say so and still be
+  wrong for a year.** `protest` obstructed one person's width with a comment explaining that the
+  body may not claim ground the picture does not and that *"the art is the fix"*. It was right, it
+  was written down, and it sat there because the fix looked like a drawing rather than a change.
+- **A contact sheet is worth a screenshot rig.** Fourteen sprites judged one gameplay screenshot at
+  a time is a day's work and mostly photographs of pavement. A throwaway scene that instantiates a
+  real `EventInstance` per `Look` in a grid — real defs, real `_draw`, `process_mode` disabled and
+  `age` set past the telegraph — takes ten minutes and shows every row at once, including the
+  composites a texture viewer cannot. Deleted before committing, like a `test_zz_*` probe.
+- **A `git worktree` for the before-and-after has one trap.** `.godot/` is gitignored, so a fresh
+  worktree has no `class_name` registry and every typed line in the probe fails to parse — which
+  looks like the probe being broken. Run `--headless --import` in it first. And delete the other
+  suites in the throwaway worktree, or the comparison run costs six minutes of tests you are not
+  reading.
+
 ## What to do next, in order
 
-### First: play it, and look at a street that is solid
+### First: play it, and look at the people
 
-**M34 has been walked by a rig and by nobody's eyes**, and it is the first milestone since M28 to
-change what an ordinary pavement *is*: about two thirds of the catalogue has a body now, and day 1
-went from 12.2 things that take a 64px footway to 17.2. The count of events placed did not move, so
-the question is not density — it is whether a street that stops you reads as a route decision or as
-an obstacle course. Three specific things to watch, because a rig cannot:
+**M37 drew fourteen silhouettes and a contact sheet is the only thing that has looked at them.**
+Five of the fourteen are reachable before day 4 and the rest have never been met by anybody, so
+this is the cheapest playtest the project has had in a while: walk a day and see whether the street
+tells you what is on it. What a rig cannot answer:
+
+- **Can you tell the man shouting from the busker without walking up to them?** That is the whole
+  claim. Playtest 09's *"who is the person killing me?"* is the question this milestone exists to
+  answer, and the answer is now supposed to be *look at him*.
+- **Do the robber's two postures read at an alley's length?** *(Day 8, so probably not this run.)*
+  The waiting one has no face in the hood and the coming one is leaning out over a forward leg, and
+  the entire point is that they are told apart **before** the 140px trigger rather than after it.
+  Nothing else in the game asks a silhouette to carry a state change.
+- **Does the protest read as a wall?** It is 55px of body where it was 11, drawn as two ranks of
+  placards across exactly that width, and it sits on crossings and squares from day 12. If it reads
+  as an obstacle course rather than as a crowd, that is the one gameplay number M37 moved.
+- **And does anything now hide behind a building?** Buildings sort against nothing, which is a
+  strictly larger claim than *the bug is fixed*. If a sprite ever looks like it is floating in front
+  of a wall it should be behind, that is this change and not the art.
+
+### Then: play it, and look at a street that is solid
+
+**M34 has still been walked by a rig and by nobody's eyes**, and it is the milestone that changed
+what an ordinary pavement *is*: about two thirds of the catalogue has a body, and day 1 went from
+12.2 things that take a 64px footway to 17.2. The count of events placed did not move, so the
+question is not density — it is whether a street that stops you reads as a route decision or as an
+obstacle course. Three specific things to watch, because a rig cannot:
 
 - **Does a blocked pavement read as a decision?** A van at the kerb takes the footway and the
   answer is meant to be *the other side of the street*, the same answer `construction` has asked
@@ -819,24 +952,17 @@ an obstacle course. Three specific things to watch, because a rig cannot:
   frontage is smaller than she is: she stops. That is intended and it is also exactly the shape of
   M19's *"no line to walk"* mistake, which took a rig walking a real pavement to see.
 - **Does the lorry read as backing into the yard?** It is turned to face out of the frontage it is
-  against, and about half its box end is behind the building's front wall — which is finding 4
-  happening, and which happens to read *correctly* here. It is worth a second opinion.
+  against, and about half its box end is behind the building's front wall. That used to be finding
+  4 happening and reading *correctly* by accident; since M37 the lorry is simply in front of the
+  wall, so it is worth a second look at whether it still reads as reversing into something.
 
-### Then: the six open findings from playtest 07
+### Then: the three left from playtest 07
 
-They are listed at the bottom of [PLAYTEST-07.md](PLAYTEST-07.md) in the order they are worth
-doing. The largest is **10**, the spoiler that has to cover a calm area rather than stand in it,
-and the one with the most leverage on everything else is **2's other half**: `homeless_yeller`,
-`busker` and `poster_crew` all drawing the same `person.svg` is now demonstrably costing findings —
-it is what made *"I can walk over the robber"* about a man who is not a robber.
-
-**Finding 4 is diagnosed and ready to type.** A `Building`'s origin is the **south edge** of its
-lot and its mass extends up to a block north of it, so y-sorting draws it in front of everything on
-the pavement beside it, and it occludes whatever also overlaps in x: any sprite wider than the 16px
-from a tile centre to the lot edge, anything drawn above an entity's head, and anybody who walks
-close to a frontage. Reproduced by putting `z_index = 100` on `EventInstance` for one screenshot —
-thirty pixels of lorry came back. The proposed fix and the argument for it are in
-[PLAYTEST-07.md](PLAYTEST-07.md); the argument is the part to check, not the line.
+Listed at the bottom of [PLAYTEST-07.md](PLAYTEST-07.md), and none of them is large: **1**, the cat
+crossing perpendicular to her *heading*, which is a run down the middle of the carriageway when she
+is crossing a road; **8**, a four-block calm zone rolling `QUIET_SQUARE` and becoming a 22-tile
+concrete plaza with thirty trees on it; and **6**, a car turning swapping axes in one frame with no
+diagonal art to turn through.
 
 ### Then: play it, and read the `idle` and `cue` entries
 

@@ -11,12 +11,31 @@ signal finished(instance: EventInstance)
 
 const CAT_CROUCHED := preload("res://assets/events/cat_crouched.svg")
 const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
+## The only generic left, and it is not a look: it is the *walker* half of a dog walker, which is
+## a picture of somebody holding a lead rather than a picture of nobody in particular. Every event
+## that used to reach for it has its own drawing since M37.
 const PERSON := preload("res://assets/events/person.svg")
-const VEHICLE := preload("res://assets/events/vehicle.svg")
+const YELLER := preload("res://assets/events/yeller.svg")
+const BUSKER := preload("res://assets/events/busker.svg")
+const POSTER_CREW := preload("res://assets/events/poster_crew.svg")
+const ROBBER_WAITING := preload("res://assets/events/robber_waiting.svg")
+const ROBBER_LUNGING := preload("res://assets/events/robber_lunging.svg")
+const PROTESTER := preload("res://assets/events/protester.svg")
+const GUNMAN := preload("res://assets/events/gunman.svg")
+const DELIVERY_VAN := preload("res://assets/events/delivery_van.svg")
+const FIRE_ENGINE := preload("res://assets/events/fire_engine.svg")
+const POLICE_CAR := preload("res://assets/events/police_car.svg")
+const UNMARKED_VAN := preload("res://assets/events/unmarked_van.svg")
+const RIOT_VAN := preload("res://assets/events/riot_van.svg")
+const ARMY_TRUCK := preload("res://assets/events/army_truck.svg")
 const FLAME := preload("res://assets/events/flame.svg")
 const BARRIER_SEGMENT := preload("res://assets/events/barrier_segment.svg")
 const BARRIER_END := preload("res://assets/events/barrier_end.svg")
+const RUBBLE := preload("res://assets/events/rubble.svg")
+const CHECKPOINT_BLOCK := preload("res://assets/events/checkpoint_block.svg")
+const BARRICADE_PILE := preload("res://assets/events/barricade_pile.svg")
 const CAFE_TABLE := preload("res://assets/events/cafe_table.svg")
+const CAFE_SITTER := preload("res://assets/events/cafe_sitter.svg")
 const DOG := preload("res://assets/events/dog.svg")
 const CYCLIST := preload("res://assets/events/cyclist.svg")
 const STALL := preload("res://assets/events/stall.svg")
@@ -25,6 +44,46 @@ const PIGEON := preload("res://assets/events/pigeon.svg")
 const ICE_CREAM_VAN := preload("res://assets/events/ice_cream_van.svg")
 const LORRY := preload("res://assets/events/lorry.svg")
 const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
+
+## The one silhouette that stands for a look, at any size.
+##
+## It lives here rather than in `DangerEdge` for the reason M30 moved the caret into `Sprites`: a
+## cue that belongs to the vocabulary does not belong to a class, and the screen-edge badge's whole
+## job is to draw *the thing's own picture* — a second table of which picture that is, kept in the
+## UI, is how a badge ends up showing a generic van for a fire engine. `tests/test_events.gd`
+## asserts every visible row has one and that no two looks return the same texture, which is the
+## half of the one-picture-per-row rule that a `look` field cannot enforce by itself.
+static func icon_for(look: EventDef.Look) -> Texture2D:
+	match look:
+		EventDef.Look.CAT: return CAT_RUNNING
+		EventDef.Look.YELLER: return YELLER
+		EventDef.Look.DOG_WALKER: return PERSON
+		EventDef.Look.CAFE: return CAFE_TABLE
+		EventDef.Look.DELIVERY_VAN: return DELIVERY_VAN
+		EventDef.Look.BUSKER: return BUSKER
+		EventDef.Look.ROADWORKS: return BARRIER_SEGMENT
+		EventDef.Look.FIRE_ENGINE: return FIRE_ENGINE
+		EventDef.Look.BURNING_BUILDING: return FLAME
+		EventDef.Look.BURNT_SHELL: return RUBBLE
+		EventDef.Look.LOOSE_DOG: return DOG
+		EventDef.Look.STALL: return STALL
+		EventDef.Look.LEAF_BLOWER: return LEAF_BLOWER
+		EventDef.Look.BIRDS: return PIGEON
+		EventDef.Look.CYCLIST: return CYCLIST
+		EventDef.Look.ICE_CREAM_VAN: return ICE_CREAM_VAN
+		EventDef.Look.LORRY: return LORRY
+		EventDef.Look.CHARGING_DOG: return CHARGING_DOG
+		EventDef.Look.POLICE_CAR: return POLICE_CAR
+		EventDef.Look.POSTER_CREW: return POSTER_CREW
+		EventDef.Look.CHECKPOINT: return CHECKPOINT_BLOCK
+		EventDef.Look.UNMARKED_VAN: return UNMARKED_VAN
+		EventDef.Look.ROBBER: return ROBBER_LUNGING
+		EventDef.Look.RIOT_VAN: return RIOT_VAN
+		EventDef.Look.ARMY_TRUCK: return ARMY_TRUCK
+		EventDef.Look.BARRICADE: return BARRICADE_PILE
+		EventDef.Look.PROTEST: return PROTESTER
+		EventDef.Look.FIREFIGHT: return GUNMAN
+		_: return null
 
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
@@ -519,22 +578,26 @@ func _draw_mark() -> void:
 
 func _draw_body() -> void:
 	match def.look:
-		EventDef.Look.FIRE:
-			_draw_fire()
-		EventDef.Look.ANIMAL:
-			_draw_animal()
-		EventDef.Look.PERSON:
-			_draw_person()
-		EventDef.Look.VEHICLE:
-			_draw_vehicle()
-		EventDef.Look.OBJECT:
-			_draw_spread(BARRIER_SEGMENT, BARRIER_END)
-		EventDef.Look.TABLES:
-			_draw_spread(CAFE_TABLE)
+		EventDef.Look.CAT:
+			_draw_cat()
+		EventDef.Look.YELLER:
+			_draw_simple(YELLER, 9.0)
 		EventDef.Look.DOG_WALKER:
 			_draw_dog_walker()
-		EventDef.Look.CYCLIST:
-			_draw_simple(CYCLIST, 12.0)
+		EventDef.Look.CAFE:
+			_draw_cafe()
+		EventDef.Look.DELIVERY_VAN:
+			_draw_simple(DELIVERY_VAN, 20.0)
+		EventDef.Look.BUSKER:
+			_draw_simple(BUSKER, 9.0)
+		EventDef.Look.ROADWORKS:
+			_draw_spread(BARRIER_SEGMENT, BARRIER_END)
+		EventDef.Look.FIRE_ENGINE:
+			_draw_simple(FIRE_ENGINE, 26.0)
+		EventDef.Look.BURNING_BUILDING:
+			_draw_fire()
+		EventDef.Look.BURNT_SHELL:
+			_draw_spread(RUBBLE)
 		EventDef.Look.LOOSE_DOG:
 			_draw_loose_dog()
 		EventDef.Look.STALL:
@@ -543,12 +606,34 @@ func _draw_body() -> void:
 			_draw_simple(LEAF_BLOWER, 8.0)
 		EventDef.Look.BIRDS:
 			_draw_birds()
+		EventDef.Look.CYCLIST:
+			_draw_simple(CYCLIST, 12.0)
 		EventDef.Look.ICE_CREAM_VAN:
 			_draw_simple(ICE_CREAM_VAN, 20.0)
 		EventDef.Look.LORRY:
 			_draw_simple(LORRY, 26.0)
 		EventDef.Look.CHARGING_DOG:
 			_draw_simple(CHARGING_DOG, 13.0)
+		EventDef.Look.POLICE_CAR:
+			_draw_simple(POLICE_CAR, 19.0)
+		EventDef.Look.POSTER_CREW:
+			_draw_simple(POSTER_CREW, 9.0)
+		EventDef.Look.CHECKPOINT:
+			_draw_spread(CHECKPOINT_BLOCK)
+		EventDef.Look.UNMARKED_VAN:
+			_draw_simple(UNMARKED_VAN, 21.0)
+		EventDef.Look.ROBBER:
+			_draw_robber()
+		EventDef.Look.RIOT_VAN:
+			_draw_simple(RIOT_VAN, 23.0)
+		EventDef.Look.ARMY_TRUCK:
+			_draw_simple(ARMY_TRUCK, 26.0)
+		EventDef.Look.BARRICADE:
+			_draw_spread(BARRICADE_PILE)
+		EventDef.Look.PROTEST:
+			_draw_protest()
+		EventDef.Look.FIREFIGHT:
+			_draw_firefight()
 		EventDef.Look.NONE:
 			pass
 
@@ -598,20 +683,25 @@ func _draw_birds() -> void:
 ## visibly going *up and away* rather than skimming the pavement.
 const CLIMB_PER_SECOND := 42.0
 
-func _draw_animal() -> void:
+func _draw_cat() -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
 	# telegraph, so the two silhouettes have to differ at a glance, not by a scale factor.
 	var texture := CAT_CROUCHED if is_telegraphing() else CAT_RUNNING
 	Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
 	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
-func _draw_person() -> void:
-	Sprites.draw_shadow(self, Vector2.ZERO, 8.0)
-	Sprites.draw_standing(self, PERSON, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
-
-func _draw_vehicle() -> void:
-	Sprites.draw_shadow(self, Vector2.ZERO, 20.0)
-	Sprites.draw_standing(self, VEHICLE, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+## Hood up and hands in the coat while he is only somewhere; leaning out over a forward leg once
+## he has taken an interest.
+##
+## The same rule as the cat above, at the one row where reading it wrong ends the run: the two
+## postures are the two states `EventDef.pursues_within` invented, and `is_waiting()` is exactly
+## the line between them. What the player has to be able to see from an alley mouth is not "there
+## is a man there" but *which of the two men that is* — so the change of posture happens on the
+## frame he notices her, before the telegraph has finished and well before he moves.
+func _draw_robber() -> void:
+	var texture := ROBBER_WAITING if is_waiting() else ROBBER_LUNGING
+	Sprites.draw_shadow(self, Vector2.ZERO, 9.0)
+	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars.
 func _draw_fire() -> void:
@@ -640,6 +730,84 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null) -> void:
 		return
 	for side in [-1.0, 1.0]:
 		Sprites.draw_standing(self, cap, Vector2(side * half, 0.0))
+
+## The tables, and the people at them. *(M37, playtest 07 finding 11: "the café has no people at
+## it".)*
+##
+## The tables were always what obstructs and the conversation was always what it emits, and only
+## the first of the two was drawn — so the loudest pleasant thing in act I looked like furniture
+## somebody had left out. The spread is `_draw_spread`'s, so the width is still exactly the width
+## in the way; the sitters are drawn *first* and a little behind, because the table is the part
+## she cannot walk through and the picture has to agree with that.
+##
+## Alternate tables are mirrored, which turns a rank of clones into pairs facing each other — the
+## same problem M35's park spoiler had, at a smaller scale and with the same answer.
+func _draw_cafe() -> void:
+	var half := maxf(11.0, def.obstructs_radius)
+	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.9)
+	var segment := CAFE_TABLE.get_size()
+	var segments := maxi(1, ceili(half * 2.0 / segment.x))
+	var width := half * 2.0 / segments
+	for i in segments:
+		var at := Vector2(-half + width * (i + 0.5), -7.0)
+		# The chair is drawn at one end of the table sprite and turns round with it.
+		Sprites.draw_standing(self, CAFE_SITTER,
+				at + Vector2(width * (0.26 if i % 2 == 1 else -0.26), 0.0))
+	for i in segments:
+		Sprites.draw_standing(self, CAFE_TABLE,
+				Vector2(-half + width * (i + 0.5), 0.0), Vector2(width, segment.y), i % 2 == 1)
+
+## A rank of placards as wide as the ground it takes.
+##
+## The catalogue used to say of this row: *"one person's worth, because one person is what it
+## draws… the art is the fix."* This is the fix, and the body follows it rather than the other way
+## round — a protest that fills a square is the whole content of the event, and it could not have
+## one until there was a picture of one.
+##
+## Two ranks rather than one, offset, so it reads as a crowd with depth instead of a queue; the
+## back rank is drawn first and higher up the screen. Nothing here grows with `intensity_ramp` —
+## the caret over it already breathes with what it is emitting, and a crowd that visibly recruits
+## would be a second cue saying the same thing.
+func _draw_protest() -> void:
+	var half := maxf(11.0, def.obstructs_radius)
+	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.95)
+	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
+	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
+	# which is the lie `_draw_spread` exists to avoid in the other direction.
+	var across := maxi(2, roundi(half * 2.0 / (PROTESTER.get_size().x * 0.8)))
+	var step := half * 2.0 / across
+	for rank in 2:
+		var back := rank == 0
+		var lift := -14.0 if back else 0.0
+		var shift := step * 0.5 if back else 0.0
+		for i in across - (1 if back else 0):
+			var x := -half + step * (i + 0.5) + shift
+			Sprites.draw_standing(self, PROTESTER, Vector2(x, lift))
+
+## People behind cover, shooting at each other. Not a building on fire, which is what it drew for
+## fourteen milestones — the same five flames as `burning_building`, on the one event in the
+## catalogue whose content is that there are *people* doing this.
+##
+## The flashes are drawn rather than authored, because a muzzle flash is a light and not an object,
+## and they are timed off the pulse envelope so they land on the beat the meter is already moving
+## on. Between beats there is nothing but two shapes behind sandbags, which is the point: it is a
+## thing to time a run past, and `can_be_timed()` already says so.
+func _draw_firefight() -> void:
+	var half := maxf(11.0, def.obstructs_radius)
+	Sprites.draw_shadow(self, Vector2.ZERO, half)
+	var strength := 1.0
+	if def.intensity > 0.0:
+		strength = clampf(current_intensity() / def.intensity, 0.0, 1.0)
+	for side in [-1.0, 1.0]:
+		var at := Vector2(side * half * 0.62, 0.0)
+		Sprites.draw_standing(self, GUNMAN, at, Vector2.ZERO, side > 0.0)
+		# Sized off the current emission and jittered per side, so the two are never in step.
+		var flare := strength * (0.6 + 0.4 * sin(age * 17.0 + side * 2.1))
+		if flare <= 0.25:
+			continue
+		var muzzle := at + Vector2(side * 15.0, -12.0)
+		draw_circle(muzzle, 3.0 + 4.0 * flare, Palette.MARK_TELEGRAPH)
+		draw_circle(muzzle, 1.5 + 2.0 * flare, Color.WHITE)
 
 ## The person, the dog, and the lead between them.
 ##

@@ -1,0 +1,20 @@
+<!-- The fire engine. It is the longest silhouette in the game and the only red one, because at
+     190px/s most of its telegraph happens off screen and what the player actually reads is the
+     badge at the screen edge — which draws this at icon size, aspect kept. The ladder along the
+     roof is the part that survives being shrunk to 40px. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="36" viewBox="0 0 62 36" shape-rendering="crispEdges">
+  <rect x="4" y="4" width="18" height="4" fill="#3a3f4a"/>
+  <rect x="24" y="4" width="34" height="4" fill="#3a3f4a"/>
+  <rect x="6" y="5" width="50" height="2" fill="#8a95a4"/>
+  <rect x="2" y="8" width="58" height="18" fill="#c4503c"/>
+  <rect x="2" y="8" width="58" height="3" fill="#d96a52"/>
+  <rect x="4" y="12" width="13" height="8" fill="#454e5c"/>
+  <rect x="22" y="13" width="12" height="8" fill="#a03c2c"/>
+  <rect x="38" y="13" width="12" height="8" fill="#a03c2c"/>
+  <rect x="8" y="1" width="8" height="3" fill="#4a7fc4"/>
+  <rect x="2" y="22" width="58" height="4" fill="#221f28"/>
+  <circle cx="14" cy="29" r="6" fill="#26232a"/>
+  <circle cx="46" cy="29" r="6" fill="#26232a"/>
+  <circle cx="14" cy="29" r="2" fill="#4a464f"/>
+  <circle cx="46" cy="29" r="2" fill="#4a464f"/>
+</svg>

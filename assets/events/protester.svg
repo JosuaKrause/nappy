@@ -1,0 +1,20 @@
+<!-- One body of a protest. Repeated across the width the event obstructs, like the café tables
+     and the market stall, so what is drawn is exactly what is in the way — which is the whole
+     point of the row: a protest is a *crowd*, and drawing one person for it was the reason its
+     body could only ever be one person wide.
+     The placard is above head height, so a rank of them reads as a crowd rather than as a queue
+     even where the bodies overlap. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="52" viewBox="0 0 22 52" shape-rendering="crispEdges">
+  <rect x="6" y="39" width="4" height="11" fill="#46506b"/>
+  <rect x="11" y="39" width="4" height="11" fill="#46506b"/>
+  <rect x="5" y="50" width="5" height="2" fill="#221f28"/>
+  <rect x="11" y="50" width="5" height="2" fill="#221f28"/>
+  <rect x="3" y="22" width="15" height="18" fill="#7a6a58"/>
+  <rect x="3" y="34" width="15" height="6" fill="#665849"/>
+  <rect x="14" y="14" width="3" height="12" fill="#6b543f"/>
+  <rect x="8" y="2" width="14" height="12" fill="#e0d8c4"/>
+  <rect x="10" y="5" width="10" height="2" fill="#c4503c"/>
+  <rect x="10" y="9" width="7" height="2" fill="#c4503c"/>
+  <circle cx="10" cy="17" r="6" fill="#d9a878"/>
+  <path d="M4 17 A6 6 0 0 1 16 17 Z" fill="#3a2b26"/>
+</svg>

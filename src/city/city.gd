@@ -5,6 +5,19 @@ extends WorldContext
 ##
 ## Ground is drawn by this node itself, so it lands behind the y-sorted `Entities` child
 ## without needing a z_index fight.
+##
+## **Buildings are a layer of their own, underneath the entities.** *(M37, playtest 07 finding 4:
+## "the warning indicators render below roofs".)* A `Building`'s origin is the south edge of its
+## lot and its drawn mass extends a whole block north of there, so y-sorting against it draws it
+## in front of everything on the pavement running up the side of that block — which shows
+## wherever the two also overlap in x, and that is anything wider than the 16px from a tile
+## centre to the lot edge: a lorry always, a person never, and the player and every cue over her
+## head whenever she hugs a frontage.
+##
+## The fix is not a better comparison, it is that **the comparison is meaningless**: buildings
+## tile their lots exactly and no lot tile is walkable (`tests/test_generator.gd` asserts both),
+## so nothing can ever legitimately stand behind one. Two things that can never be on opposite
+## sides of each other have no business being sorted against each other.
 
 ## Wall height per district, in whole tiles. Heights are quantised because the facade is
 ## assembled from 32px tiles now; a float height would mean a stretched tile. Clamped
@@ -38,6 +51,7 @@ const _TREES := {
 }
 
 @onready var _entities: Node2D = $Entities
+@onready var _buildings_layer: Node2D = $Buildings
 @onready var _ground: TileMapLayer = $Ground
 
 var map: CityMap
@@ -121,8 +135,9 @@ func _spawn_home() -> void:
 	door.texture = DOOR_TEXTURE
 	# Feet-anchored like everything else: the NODE sits on the ground plane at the back of
 	# the notch and the art is offset upward from there. Putting the node at the sprite's
-	# top instead makes y-sort compare the wrong edge, and the building above the doorway
-	# wins and hides it.
+	# top instead makes y-sort compare the wrong edge, and the player walks in front of a
+	# door she is standing north of. *(It used to be the building above the doorway that won
+	# and hid it; since M37 a building cannot occlude anything in this layer at all.)*
 	door.centered = false
 	door.offset = Vector2(-DOOR_TEXTURE.get_width() * 0.5, -DOOR_TEXTURE.get_height())
 	door.position = Vector2(stoop.get_center().x, stoop.position.y)
@@ -138,7 +153,10 @@ func _spawn_buildings() -> void:
 		building.variant = _variant_for(rect)
 		building.height = _height_for(rect, rect.size.y)
 		building.lot = rect
-		_entities.add_child(building)
+		# Their own layer, under the entities — see the note at the top of this file. They still
+		# y-sort against each other, which costs nothing and keeps two lots that share a block
+		# boundary stacking the way the eye expects.
+		_buildings_layer.add_child(building)
 		_buildings.append(building)
 
 ## The block a lot belongs to.

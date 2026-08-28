@@ -23,6 +23,7 @@ func run(t) -> void:
 	_test_the_badge_measures_the_things_own_speed(t)
 	_test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
 	_test_the_pram_says_how_the_baby_is(t)
+	_test_the_babys_cue_only_steps_aside_for_something(t)
 
 const STEP := 1.0 / 60.0
 
@@ -432,6 +433,36 @@ func _test_the_pram_says_how_the_baby_is(t) -> void:
 			and Tuning.EXCITEMENT_STIR_MARGIN < Tuning.EXCITEMENT_WAKE_THRESHOLD,
 			"and stirring starts before waking, not with it")
 	baby.free()
+
+## And **where** it goes, which is the half M32 got wrong. *(M37, playtest 07 finding 14: "the zzz
+## is stepped aside from the pram".)*
+##
+## The step exists to keep the baby's cue out of the exclamation mark's column, and that column is
+## only occupied when there is a mark in it — so an unconditional step is a cue dodging something
+## that is not there, on the commonest picture in the game. It is the same shape as playtest 06's
+## own two findings, which were both about *when* rather than *which*, and it reached a player for
+## the same reason: nothing in this suite could see a `_draw`, so the decision is a function now.
+func _test_the_babys_cue_only_steps_aside_for_something(t) -> void:
+	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var rig: Stroller = scene.instantiate()
+
+	rig.facing = Vector2.UP
+	t.check(is_zero_approx(rig.baby_cue_aside()),
+			"walking north with nothing happening, the cue stays over the pram")
+	rig.warn(Stroller.Alert.SOON, 1.0, &"test")
+	t.check(not is_zero_approx(rig.baby_cue_aside()),
+			"and steps out of the exclamation mark's column the moment there is one")
+	rig.stand_down(&"test")
+
+	rig.facing = Vector2.DOWN
+	t.check(not is_zero_approx(rig.baby_cue_aside()),
+			"walking south it steps aside whatever else is on screen: the pram is in front of "
+			+ "her, so above it is over her own chest")
+
+	rig.facing = Vector2.RIGHT
+	t.check(is_zero_approx(rig.baby_cue_aside()),
+			"and sideways there is nothing to step around at all")
+	rig.free()
 
 # ------------------------------------------------------------------- helpers ---
 

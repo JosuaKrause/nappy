@@ -178,6 +178,33 @@ func stand_down(source: StringName) -> void:
 func alert_level() -> Alert:
 	return _alert if _alert_left > 0.0 else Alert.NONE
 
+## How far to one side the baby's cue is stepped, and why it is a function rather than four lines
+## inside `_draw`: this is a claim about a *moment*, and nothing that only exists inside a `_draw`
+## can be asked about one. *(The M32 lesson — the badge's own two questions are static functions
+## for the same reason — arriving at the cue M32 itself added.)*
+##
+## Two different reasons to step aside, on the two axes, and only one of them is conditional:
+##
+## - **Walking north** the pram is behind her, so "above the pram" is also above her head, which
+##   is the exclamation mark's column. That column is only occupied while there is a mark in it.
+##   *(M37, playtest 07 finding 14: "the zzz is stepped aside from the pram".)* M32 stepped aside
+##   unconditionally, so the commonest picture in the game — a sleeping baby and nothing else
+##   happening — put the zzz a body's width to one side of the pram it is about, dodging a mark
+##   that was not there, and read as being about *her*.
+## - **Walking south** the pram is in front of her and "above the pram" is over her own chest.
+##   Nothing about that depends on what else is on screen, so neither does the step.
+##
+## It reads `alert_level()` rather than the flash phase: the mark blinks and the cue beside it
+## must not hop back and forth in time with it.
+func baby_cue_aside() -> float:
+	if absf(facing.x) > absf(facing.y):
+		# Walking sideways the pram is already a body's width out in front of her, and there is
+		# nothing to step around.
+		return 0.0
+	if facing.y < 0.0 and alert_level() == Alert.NONE:
+		return 0.0
+	return BABY_CUE_ASIDE if facing.x >= 0.0 else -BABY_CUE_ASIDE
+
 func _turn_toward(target: Vector2, delta: float) -> void:
 	var step := FACING_TURN_SPEED * delta
 	var diff := angle_difference(facing.angle(), target.angle())
@@ -274,11 +301,7 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 	if flashing and fmod(_alert_phase * BABY_CUE_FLASHES_PER_SECOND, 1.0) > 0.6:
 		return
 
-	# Only when the pram is on her own axis. Walking sideways it is already a body's width out
-	# in front of her and there is nothing to step around.
-	var aside := 0.0
-	if absf(facing.x) <= absf(facing.y):
-		aside = BABY_CUE_ASIDE if facing.x >= 0.0 else -BABY_CUE_ASIDE
+	var aside := baby_cue_aside()
 	# The steady ones breathe rather than sit still, or a mark that is up for the whole walk
 	# home stops being read. The urgent two flash instead.
 	var breath := 0.0 if flashing else sin(_alert_phase * TAU) * BABY_CUE_BREATH

@@ -194,6 +194,10 @@ looking at whether a delivery van reads as parked while the meter is being decid
 **M34 is the second, and it is four findings that are one sentence: solid things are not solid.**
 Thirteen of nineteen closed. See "Solid things are solid" below.
 
+**M35 took two more** (the park spoiler, 10, and the pigeons, 9) on its way through playtest 08,
+and **M37 took four**: the art, the café, the roofs and the zzz. **Fifteen of nineteen closed**,
+and the four left are listed at the bottom.
+
 ### Closed
 
 - **3, 5, 17, 18** — the cost model, above. `falloff` grew a shoulder, the crowd paid it back in
@@ -311,47 +315,85 @@ actually take a 64px footway is up 41%, because a parked van is on the footway i
 traffic lane. One row of the cost table moved with the robbery's radius (+9.1 → +10.0) and no
 other.
 
+### One picture per row — M37 (2, 11, 4, 14)
+
+**The finding is `homeless_yeller`, `busker` and `poster_crew` drawing the same `person.svg`, and
+the fix is bigger than the finding, because the finding was a symptom.** `EventDef.Look` opened
+with five **categories** — `PERSON`, `VEHICLE`, `OBJECT`, `ANIMAL`, `FIRE` — and a category is a
+thing you can always put one more row into. Sixteen of the twenty-eight visible rows drew five
+pictures between them: five people on one man, six vehicles on one van.
+
+**It had already cost two findings, and neither of them looked like an art problem.** M34 spent a
+milestone fixing `alley_robbery` for a complaint about `homeless_yeller`, because a player can only
+say *"the robber"*; playtest 09 then asked *"who is the person killing me?"*, which is a question
+row one of the vocabulary exists to answer. And a third had gone unreported: `DangerEdge` kept its
+**own** table of which picture a look meant, so the badge — the cue whose entire content is *what*
+is coming — drew a delivery van for a fire engine, an army truck and the unmarked van that takes
+the baby.
+
+So it is a rule with a test rather than fifteen drawings: **no two rows share a look, and no two
+looks share a silhouette.** `EventInstance.icon_for()` is the single table and the badge reads it.
+There is no generic left to reach for, and `look` has no default worth having — the cost of adding
+an event is now a drawing. It is the same move M34 made with `obstructs_radius`, on the other half
+of the vocabulary.
+
+Three of the new pictures are more than a picture:
+
+- **The robber has two postures**, `robber_waiting` and `robber_lunging`, switched on
+  `is_waiting()`. M36 gave that row three states and the screen showed one, so the two states a
+  player has to tell apart — *a man is standing there* and *he has seen you* — looked identical. It
+  is the `cat_crouched` / `cat_running` rule at the row where reading it wrong ends the run.
+- **The protest is a crowd, and the body followed the picture.** The catalogue said of that row:
+  *"one person's worth, because one person is what it draws… the art is the fix."* It is 55px now,
+  two ranks across exactly the ground it takes. The clearest case in the game of art deciding a
+  gameplay number.
+- **The café has people at it** (finding 11). The tables were what obstructs and the conversation
+  was what it emits, and only the first of the two was ever drawn.
+
+**Measured, five seeds:** events placed per day is **identical**, row for row, on days 1, 8, 12, 13
+and 14 — 48.0 / 66.8 / 79.2 / 84.6 / 86.6 — as are protests placed and events carrying a body. A
+five-fold body on three events a day is absorbed, because placement does not consider how wide a
+thing is and only `_ensure_the_city_is_still_walkable` could refuse it.
+
+### Buildings sort against nothing — M37 (4)
+
+Diagnosed in M34 and fixed here, and the fix is not the one the diagnosis pointed at. **The
+comparison is meaningless, not merely wrong.** Buildings tile their lots exactly and no lot tile is
+walkable — `tests/test_generator.gd` has asserted both since M3 — so nothing can ever legitimately
+stand behind a building, and two things that can never be on opposite sides of each other have no
+business being sorted against each other. `Buildings` is a y-sorted layer of its own under
+`Entities`.
+
+`building.gd`'s own comment claimed the opposite for twenty-two milestones — *"it keeps every
+extrusion off the street, so the player is never hidden under a roof while walking past one"* —
+which is true of the ground footprint and false of every sprite that overhangs it.
+
+### And the zzz stops dodging nothing — M37 (14)
+
+The baby's cue steps aside so it never shares a column with the exclamation mark, and that column
+is only occupied when there **is** a mark in it. Unconditional, it meant the commonest picture in
+the game — a sleeping baby and nothing else happening — put the zzz a body's width to one side of
+the pram it is about. Walking south it still steps aside always, for a different reason that does
+not depend on anything: the pram is in front of her, so "above the pram" is over her own chest.
+
+It is playtest 06's own lesson again — *a cue is a claim about a moment* — and it reached a player
+for the reason M32's two did: nothing in `tests/test_danger.gd` can see a `_draw()`. The decision
+is `Stroller.baby_cue_aside()` now, and the suite asks it.
+
 ### Not done
 
-Everything else, in the order it is worth doing:
+Everything else, in the order it is worth doing. **10 and 9 were closed by M35**, which arrived
+between; what is left is four.
 
-- **2** — the caret is fixed (a pulse only counts if it can be *timed*, which takes day 1 from six
-  marked rows to two) but the other half of that finding is not: *"not sure what that person was
-  supposed to be"* is `homeless_yeller`, `busker` and `poster_crew` all drawing the same
-  `person.svg`, which is the known-shaky-ground entry `CLAUDE.md` has carried since M22.
-- **11** — a café with no people at it.
-- **10** — the spoiler has to cover the calm area rather than stand in it: *"blocking a park etc
-  should have multiple robbers so the entire area is dangerous or a full block party or other
-  things that completely block out the space."*
 - **1** — the cat crosses perpendicular to her heading, so it runs down the middle of the
-  carriageway when she is crossing a road, and it ends its run in the open.
-- **9** — pigeons expire as she arrives and then blink out.
+  carriageway when she is crossing a road.
 - **8** — a four-block calm zone can roll `QUIET_SQUARE`, which is a 22-tile-square concrete plaza
-  with thirty trees on it.
+  with thirty trees on it. A quiet square is a *small* thing and should not be able to be the big
+  one.
 - **6** — a car turning swaps axes in one frame and the sprite snaps from side-on to end-on. Wants
   a diagonal frame and a transition.
-- **4** — the warning indicators render below roofs. **Diagnosed in M34, not fixed.** The
-  reproduction fell out of siting the lorry against a frontage: a `z_index = 100` on
-  `EventInstance` for one screenshot puts thirty pixels of lorry back on screen that the wall had
-  been eating. The mechanism, which the earlier note above had backwards:
-
-  A `Building`'s origin is the **south edge** of its lot and its drawn mass extends *north* from
-  there, up to a whole block deep. Y-sorting compares origins, so a building is drawn in front of
-  everything whose y is north of its south edge — which on a **north-south street is every entity
-  on the pavement beside it**, because that pavement runs the length of the block. It only shows
-  where the two also overlap in **x**, and that is why it looks like an occasional glitch rather
-  than a rule: a tile centre is 16px from the lot edge, so a person (18px) never overlaps and a
-  lorry (62px) always does. The things in between are the ones that move — the player and the
-  crowd walk continuously, so hugging a frontage puts her within 14px of it — and **anything drawn
-  above an entity's head**, which is where the warning indicators are.
-
-  `building.gd` claims the opposite in a comment — *"it keeps every extrusion off the street, so
-  the player is never hidden under a roof while walking past one"* — and that is true of the
-  building's **ground footprint** and false of every sprite that overhangs it.
-
-  The fix is probably one line and the argument for it is worth checking rather than assuming:
-  **buildings fill their lots exactly and no lot tile is walkable, so nothing can ever legitimately
-  be behind a building.** If that holds, an entity should never be occluded by one, and the two
-  should not be sorting against each other at all.
-- **14** — the zzz is stepped aside from the pram when she walks north, which is M32 avoiding the
-  exclamation mark's column and reading, correctly, as *not above the stroller*.
+And one thing M37 deliberately did **not** take with it, listed so the next person does not read
+the new rule as covering it: the **crowd** still draws one `person.svg` for two hundred and forty
+bodies. That is the opposite rule and it is right — a crowd is supposed to be anonymous, it is what
+an authored event has to stand out *from*, and `Palette.COATS` already varies it. One picture per
+row is a rule about the catalogue.

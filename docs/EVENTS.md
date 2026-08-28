@@ -37,7 +37,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `obstructs_radius` | Radius of solid body (px). **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
-| `look` | How the instance draws itself |
+| `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
 | `act_tag` | Narrative act it belongs to, for palette/audio |
 
 There is no `impulse` field. A "sharp spike" is just a short `duration` at high `intensity`
@@ -269,8 +269,8 @@ All implemented.
 | `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
 | `cat_dash` | RECURRING | 1 | Crouches (telegraph), then bolts across the traffic. High intensity, tiny radius, 1.4s duration. The tutorial obstacle. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Barks on a 3.5s pulse. **Re-pitched in M19** from intensity 7 to 26 with a tighter radius: it used to cost −0.1 points to walk straight through, so the correct play was to plough into it. It now owns the pavement it is on, which is what finding 3 asked for. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
-| `cafe_tables` | RECURRING | 1 | **M19.** A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the answer to *"there should be things that force me to cross the street"*. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. |
-| `homeless_yeller` | RECURRING | 1 | Large radius, 5s yell **pulse**, and since M36 he **paces** eight tiles of pavement (`EventDef.paces`). *"It didn't move and it took a long time to have any effect"* — playtest 09, about the man who killed a day-1 attempt by standing still. A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. He is louder (10 → 14) and he lost the body M34 gave him, because anything mobile does. Still drawing the same `person.svg` as a busker, which is the half of playtest 07's finding 2 still open. |
+| `cafe_tables` | RECURRING | 1 | **M19.** A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the answer to *"there should be things that force me to cross the street"*. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. **M37 put people at the tables** — playtest 07's finding 11: the tables were what obstructs and the conversation was what it emits, and only the first was drawn. |
+| `homeless_yeller` | RECURRING | 1 | Large radius, 5s yell **pulse**, and since M36 he **paces** eight tiles of pavement (`EventDef.paces`). *"It didn't move and it took a long time to have any effect"* — playtest 09, about the man who killed a day-1 attempt by standing still. A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. He is louder (10 → 14) and he lost the body M34 gave him, because anything mobile does. M37 gave him a silhouette of his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Constant, medium. The plain obstacle route planning is practised on. **M34** moved it off the carriageway and gave it a body: it was *"a still car standing on the road doing nothing"*, standing in a traffic lane the crowd drove through. 48px of van across a 64px footway. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The only Act I event that is physically in the way (`obstructs_radius` 34px). Blocking a 64px sidewalk forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time and exposure, never the day. |
@@ -316,8 +316,8 @@ act I."* Act I is a nice neighbourhood, so its danger is a neighbourhood's own.
 | --- | --- | --- | --- |
 | `military_convoy` | RECURRING | 12 | Like the fire engine, but what it leaves behind is a `barricade`. |
 | `barricade` | — | — | Never scheduled directly. Left where a convoy stopped, and — via `scar_id` — left there for the rest of the **run**. |
-| `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. Solid at one person's width, because one person is what it draws — the body may not claim ground the picture does not, and the art is the fix. |
-| `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. Solid at the width of its flames. |
+| `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. **Solid at 55px since M37**, which is the clearest case in the catalogue of art deciding a gameplay number: it obstructed one person's width because `Look.PERSON` drew one man, and the body may not claim ground the picture does not. `_draw_protest` draws two ranks across exactly that width now. Under its own 70px inner radius on purpose — the loudest part of a protest is something you stand in rather than bump into. |
+| `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. Solid at the width of its cover. It drew the same five flames as a burning building until M37, which said *this street is on fire* about the one event whose content is that there are **people** doing this. |
 | `sabotage_run` | SCRIPTED | 14 | The good-ending finale route. *(M8/M9)* |
 
 ## Permanent marks
@@ -554,7 +554,7 @@ becoming that.
 
 | Cue | Means | Where |
 | --- | --- | --- |
-| **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** | the art |
+| **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** Since M37 it is a rule with a test rather than an aspiration — one picture per row, no two rows sharing one. See point 6 below. | the art, one `EventDef.Look` per row |
 | **Caret over the entity** | *Danger that changes over time*, and only that: it is about to start, it ends the day, or it comes and goes **on a beat you can play against**. Amber telegraphing, red active, doubled and darker for `hard_fail`. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_horn_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
 | **"Comes and goes" means *timeable*** | A pulse only earns a caret when its period is shorter than the walk across its own field — that is exactly when a pass can be slipped between two beats. Slower than that and the intensity only ever moves one way while she is inside it, which is a drift rather than a rhythm. *(M33. The rule was `pulse_period > 0`, and six of the ten rows available on day 1 have a pulse, so the caret was over most of an ordinary street: the deleted ring's own mistake in a new shape. A player walked up to one to find out what it meant and found out that it meant nothing.)* | `EventInstance.can_be_timed()` |
@@ -620,6 +620,30 @@ Three rules underneath the table, in the order they matter:
      a raised badge — plus a margin outside the screen edge, without which a thing on the
      boundary trades places with its own badge every frame. That last one is most of *"they
      flicker a lot"*.
+
+6. **And row one is a rule, not an aspiration: one picture per row.** *(M37, playtest 07 finding
+   2: "not sure what that person was supposed to be".)* Every rule above is about what to add
+   *on top of* a legible entity, and for thirty-six milestones the entity underneath was often
+   not legible at all. `EventDef.Look` opened with five **categories** — `PERSON`, `VEHICLE`,
+   `OBJECT`, `ANIMAL`, `FIRE` — and a category is something you can always put one more row
+   into, so sixteen of the twenty-eight visible rows drew five pictures between them. A man
+   shouting, a busker, a poster crew, a protest and the robbery that ends the day were one
+   `person.svg`; a delivery van, a fire engine, a police car, a riot van, an army truck and the
+   unmarked van that takes the baby were one van.
+
+   **It reads as an art chore and it was costing findings.** M34 spent a milestone fixing
+   `alley_robbery` for a complaint about `homeless_yeller`, because a player can only say *"the
+   robber"* and the two drew the same man; playtest 09 then asked *"who is the person killing
+   me?"*, which is the question this row of the table exists to answer. And the badge — the one
+   cue whose whole content is *what* is coming — was showing a delivery van for a fire engine,
+   because `DangerEdge` kept a **second** table of which picture a look meant.
+
+   So a look is the name of one picture, there is no generic left to reach for, and
+   `tests/test_events.gd` holds both halves: **no two rows share a look**, and **no two looks
+   share a silhouette**. `EventInstance.icon_for()` is the single table, which is also what the
+   badge draws. The cost of adding an event is a drawing, and that is the point — it is the same
+   move M34 made with `obstructs_radius`, one milestone later and on the other half of the
+   vocabulary: a field that is only ever *reached for* is a list wearing a rule's clothes.
 
 **The traffic pays for its own warning now.** *(M30.)* The table's first row is *the entity
 itself carries most of it*, and the traffic was the one place nothing did: the caret was drawn
@@ -691,12 +715,13 @@ as a colour change, the same rule `alert_close.svg` is drawn to.
 - **Sound lines.** A discrete noise — a yell, a bark, a beep — currently reads only as the
   caret swelling. Concentric arcs thrown off on a pulse's rising edge would give it a "that
   just happened" beat. M10.
-- **The entities themselves.** Row one of the table is doing most of the work and some of the
-  art is not yet up to it: `homeless_yeller`, `busker` and `poster_crew` all draw the same
-  `person.svg` as each other and as a crowd walker, so what tells them apart today is the
-  caret over two of them. That is the vocabulary covering for the art, which is the wrong way
-  round. Not urgent — the standing decision on assets is "something workable for now" — but it
-  is the first thing to fix when the art gets a pass.
+- **~~The entities themselves.~~** *(Closed in M37 — see "One picture per row" below.)* Every
+  visible row draws something of its own now, and the reason it took four milestones to fix a
+  thing that reads as an art chore is worth keeping: it was never *"not urgent"*. Row one of the
+  table is the row that carries the load, and two findings had already been misfiled because it
+  was failing — M34 spent a milestone on `alley_robbery` because of a complaint about
+  `homeless_yeller`, and playtest 09 asked *"who is the person killing me?"*. A player can only
+  name what they can see.
 - **~~The traffic carries no entity-side cue.~~** *(Closed in M30: a car sounding its horn
   draws the doubled lethal caret.)* Worth keeping the shape of the gap, because it is the one
   that hid longest: the caret was a method **on `EventInstance`**, so "an entity carries its own
@@ -761,9 +786,10 @@ on a grid over the calm ground, sized from what each of them actually denies and
 
 - **Each cell rolls its own def**, so a spoiled park is a busker *and* a leaf blower *and* a market
   stall. That is the fiction — a park that is busy today is busy with several different things —
-  and it is also the honest way round the art gap: nine copies of the same `person.svg` in a field
-  would read as a duplicated sprite, which is what `EVENT_SPACING_SAME` exists to prevent
-  everywhere else in the scheduler.
+  and it is also the honest way round the art gap it was written under: nine copies of one sprite
+  in a field would read as a duplicated sprite, which is what `EVENT_SPACING_SAME` exists to
+  prevent everywhere else in the scheduler. *(M37 closed the gap — every row draws something of
+  its own now — and the rule stands on the fiction alone, which is where it should have stood.)*
 - **The roll is weighted by area, not just by `weight`.** Everywhere else a def's weight says how
   *common* it is; here the job is covering a lot, and a leaf blower covers four times the ground a
   busker does.
@@ -798,8 +824,13 @@ otherwise for thirty-odd milestones; it was describing a plan that was abandoned
    moment it happens to you*.
 4. If it stands still and is drawn, give it an `obstructs_radius` of half its silhouette. That
    is a rule rather than a choice; see "Solid things are solid".
-5. Run the project. `EventDef.validate()` rejects unfair geometry, a body on something sited
+5. **Draw it.** A new `EventDef.Look`, a new SVG in `assets/events/`, a `_draw_*` in
+   `EventInstance`, and a row in `EventInstance.icon_for()` so the screen-edge badge has a
+   silhouette to show. There is no generic look to borrow — that is deliberate, and
+   `tests/test_events.gd` fails the build if two rows share a picture. See "The visual
+   vocabulary", point 6.
+6. Run the project. `EventDef.validate()` rejects unfair geometry, a body on something sited
    ahead of the player, and a lethal radius its own body would hide, all on load.
-6. If it needs behaviour no field covers, add the **field** to `EventDef` and handle it in
+7. If it needs behaviour no field covers, add the **field** to `EventDef` and handle it in
    `EventInstance`. Resist a script per event: `pursues`, `still_while_telegraphing` and
    `pavement_side` are all one field each, and each one is now shared or checkable.

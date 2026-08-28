@@ -1,0 +1,19 @@
+<!-- A delivery van at the kerb, seen from the side: shutter up at the back, hazards on. This was
+     `vehicle.svg` and it was drawn for *every* VEHICLE event until M37 — a fire engine, a police
+     car, a riot van, an army truck and the unmarked van that takes the baby were all this
+     picture. The colour is baked rather than modulated: multiplying would tint the tyres and the
+     windscreen too. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="30" viewBox="0 0 48 30" shape-rendering="crispEdges">
+  <rect x="2" y="2" width="44" height="20" fill="#6b7a8c"/>
+  <rect x="2" y="2" width="44" height="4" fill="#7d8a9a"/>
+  <rect x="5" y="7" width="12" height="7" fill="#454e5c"/>
+  <rect x="30" y="6" width="14" height="12" fill="#4e5866"/>
+  <rect x="30" y="6" width="14" height="3" fill="#8a95a4"/>
+  <rect x="44" y="8" width="3" height="4" fill="#e8b64a"/>
+  <rect x="1" y="8" width="3" height="4" fill="#e8b64a"/>
+  <rect x="2" y="18" width="44" height="4" fill="#221f28"/>
+  <circle cx="12" cy="25" r="5" fill="#26232a"/>
+  <circle cx="36" cy="25" r="5" fill="#26232a"/>
+  <circle cx="12" cy="25" r="2" fill="#4a464f"/>
+  <circle cx="36" cy="25" r="2" fill="#4a464f"/>
+</svg>
