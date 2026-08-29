@@ -338,66 +338,139 @@ func _recompute_calm(state: CityState) -> void:
 
 # --------------------------------------------------------------- traversal ---
 
-const _NEIGHBOURS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+## A tile the sweep never got to, and one it was told to treat as a wall. Both read as
+## unreachable to `reaches()`; they are two values only so that `blocked` can be painted into
+## the grid before the sweep starts instead of being asked about per neighbour.
+const UNREACHED := -1
+const BLOCKED := -2
 
-## Walking distance in tiles from `from` to every reachable walkable tile.
-## Unreachable tiles are absent from the result.
-func walk_distances(from: Vector2i, blocked: Dictionary = {}) -> Dictionary:
-	return walk_distances_from([from], blocked)
+## `TileType -> 1` where the ground can be walked on, so the sweep below can ask by index
+## rather than by call. `Tile.is_walkable` stays the one place that decides it.
+static var _WALKABLE: PackedByteArray = _lut(Tile.is_walkable)
+static var _CALM: PackedByteArray = _lut(Tile.is_calm)
+
+## Sized by the largest value rather than by the count of them, so an enum that later gains an
+## explicit value cannot quietly index past the end or read a gap as "no".
+static func _lut(predicate: Callable) -> PackedByteArray:
+	var highest := 0
+	for value: int in GameEnums.TileType.values():
+		highest = maxi(highest, value)
+	var lut := PackedByteArray()
+	lut.resize(highest + 1)
+	for value: int in GameEnums.TileType.values():
+		lut[value] = 1 if predicate.call(value as GameEnums.TileType) else 0
+	return lut
+
+## Walking distance in tiles from `from` to every reachable walkable tile, as a flat grid
+## indexed `y * size.x + x`. Negative where the tile cannot be reached. Read it with
+## `reaches()` and `distance_at()` rather than indexing it by hand.
+##
+## Flat rather than a `Vector2i -> int` dictionary because this is the most-run piece of
+## arithmetic in the project: `CityGenerator.validate` sweeps it twice per generation attempt
+## and `EventScheduler` once more for every day it plans. A dictionary hashes a Variant about
+## fifty thousand times to answer a question the tile grid answers by index, and the four
+## neighbour steps are written out rather than looped for the same reason — the loop's own
+## bounds test costs more than the arithmetic it guards.
+func walk_field(from: Vector2i, blocked: Dictionary = {}) -> PackedInt32Array:
+	return walk_field_from([from], blocked)
 
 ## Multi-source version: distance to the nearest of `sources`. One sweep answers
 ## "how far is the nearest park from anywhere", which is how the home is placed.
-func walk_distances_from(sources: Array, blocked: Dictionary = {}) -> Dictionary:
-	var distances := {}
-	var queue: Array[Vector2i] = []
+func walk_field_from(sources: Array, blocked: Dictionary = {}) -> PackedInt32Array:
+	var width := size.x
+	var cells := width * size.y
+	var field := PackedInt32Array()
+	field.resize(cells)
+	field.fill(UNREACHED)
+	for tile: Vector2i in blocked:
+		if in_bounds(tile):
+			field[tile.y * width + tile.x] = BLOCKED
+
+	var queue := PackedInt32Array()
+	queue.resize(cells)
+	var tail := 0
 	for source in sources:
 		var tile: Vector2i = source
-		if not is_walkable(tile) or blocked.has(tile) or distances.has(tile):
+		if not in_bounds(tile) or _WALKABLE[tiles[tile.y * width + tile.x]] == 0:
 			continue
-		distances[tile] = 0
-		queue.append(tile)
+		var index := tile.y * width + tile.x
+		if field[index] != UNREACHED:
+			continue
+		field[index] = 0
+		queue[tail] = index
+		tail += 1
+
 	var head := 0
-	while head < queue.size():
-		var current: Vector2i = queue[head]
+	while head < tail:
+		var index := queue[head]
 		head += 1
-		var next_distance: int = distances[current] + 1
-		for step in _NEIGHBOURS:
-			var neighbour: Vector2i = current + step
-			if distances.has(neighbour) or blocked.has(neighbour):
-				continue
-			if not is_walkable(neighbour):
-				continue
-			distances[neighbour] = next_distance
-			queue.append(neighbour)
-	return distances
+		var next_distance: int = field[index] + 1
+		# The row's own ends for left and right — the grid is one array, so a step off the left
+		# edge lands on the right end of the row above and would walk through the boundary wall.
+		var x := index % width
+		if x > 0 and field[index - 1] == UNREACHED and _WALKABLE[tiles[index - 1]] == 1:
+			field[index - 1] = next_distance
+			queue[tail] = index - 1
+			tail += 1
+		if x < width - 1 and field[index + 1] == UNREACHED and _WALKABLE[tiles[index + 1]] == 1:
+			field[index + 1] = next_distance
+			queue[tail] = index + 1
+			tail += 1
+		if index >= width and field[index - width] == UNREACHED \
+				and _WALKABLE[tiles[index - width]] == 1:
+			field[index - width] = next_distance
+			queue[tail] = index - width
+			tail += 1
+		if index + width < cells and field[index + width] == UNREACHED \
+				and _WALKABLE[tiles[index + width]] == 1:
+			field[index + width] = next_distance
+			queue[tail] = index + width
+			tail += 1
+	return field
+
+## Whether a sweep reached a tile. Out of bounds is not reached rather than an error, which is
+## what every caller means by it.
+func reaches(field: PackedInt32Array, tile: Vector2i) -> bool:
+	return in_bounds(tile) and field[tile.y * size.x + tile.x] >= 0
+
+## How far a sweep had to walk to a tile, or -1 if it never got there.
+func distance_at(field: PackedInt32Array, tile: Vector2i) -> int:
+	if not in_bounds(tile):
+		return -1
+	return maxi(-1, field[tile.y * size.x + tile.x])
+
+## How many tiles a sweep reached.
+func reach_count(field: PackedInt32Array) -> int:
+	var total := 0
+	for distance in field:
+		if distance >= 0:
+			total += 1
+	return total
 
 func count_walkable() -> int:
 	var total := 0
-	for index in tiles.size():
-		if Tile.is_walkable(tiles[index] as GameEnums.TileType):
-			total += 1
+	for type in tiles:
+		total += _WALKABLE[type]
 	return total
 
 ## Every calm tile in the city right now. Since M14 this is the only ground a day can be
 ## won on, so it is what "how hard is today" actually means.
 func calm_tiles() -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
-	for y in size.y:
-		for x in size.x:
-			var tile := Vector2i(x, y)
-			if Tile.is_calm(tile_at(tile)):
-				result.append(tile)
+	var width := size.x
+	for index in tiles.size():
+		if _CALM[tiles[index]] == 1:
+			result.append(Vector2i(index % width, index / width))
 	return result
 
 ## Shortest walking distance from the home to any calm tile, or -1 if unreachable.
 func home_to_nearest_calm() -> int:
-	var distances := walk_distances_from(calm_tiles())
+	var field := walk_field_from(calm_tiles())
 	var best := -1
 	for tile in rect_tiles(home_rect):
-		if distances.has(tile):
-			var distance: int = distances[tile]
-			if best == -1 or distance < best:
-				best = distance
+		var distance := distance_at(field, tile)
+		if distance >= 0 and (best == -1 or distance < best):
+			best = distance
 	return best
 
 ## Walkable tiles immediately outside a lot — its pavement, effectively. Used to place

@@ -252,10 +252,10 @@ func _test_no_single_street_closure_isolates_the_parks(t) -> void:
 			var blocked := {}
 			for tile in map.rect_tiles(segment):
 				blocked[tile] = true
-			var reachable := map.walk_distances(map.home_rect.position, blocked)
+			var reachable := map.walk_field(map.home_rect.position, blocked)
 			var found := false
 			for park_tile in parks:
-				if reachable.has(park_tile):
+				if map.reaches(reachable, park_tile):
 					found = true
 					break
 			if not found:

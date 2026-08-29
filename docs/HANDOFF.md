@@ -1471,22 +1471,25 @@ Taken in the M12a session and still governing everything after it. All four are 
 - **`var x := SomeEnum.keys()[i]` will not parse.** The value is a Variant, and "inferred
   from a Variant value" is an error, not a warning. Annotate: `var x: String = ...`.
 
-## Known slow: three suites are 70% of the ~80s
+## Where the suite's time goes
 
-Per-suite timings are printed by `tools/test.sh`. As of M24: `test_generator.gd` 21.6s,
-`test_balance.gd` 20.3s, `test_crowd.gd` 15.0s, `test_events.gd` 8.5s (M28 quadrupled what a
-day contains and several of its tests are per-event), everything else under 5s.
-`test_generator.gd`
-generates 200 cities and runs a route-redundancy sweep that closes each street segment in turn
-on the *tile* grid; `test_crowd.gd` is new weight from M19 and M27, and it walks real rigs down
-real pavements, which is exactly the cost that buys the bugs a data-level test cannot see.
+Per-suite timings are printed by `tools/test.sh`, and `tools/test.sh crowd events` runs a subset in
+seconds. Since **M44** the whole run is ~96s for 74540 checks. `test_balance.gd` and `test_crowd.gd`
+are ~26s each, `test_generator.gd` ~16s and `test_events.gd` ~13s; everything else together is ~11s.
+Those four are the suites that generate cities and play days, and that weight is the cost that buys
+the bugs a data-level test cannot see.
 
-The generator sweep is now the obvious thing to speed up, and M16 has already written the
-tool: `StreetNetwork.route_count()` answers the same question by max flow on the junction
-graph in a fraction of the time. It has deliberately not been swapped in — the tile-level
-sweep checks something the graph cannot, namely that the *tiles* agree with the lattice — but
-if the suite needs to get faster, running the cheap check on all 200 seeds and the expensive
-one on a handful would be honest.
+It was **8.4 minutes** before M44, and the thing to remember about that is that four plausible
+explanations were all wrong: it was a rig that stepped the crowd without the frame around it (an
+unbounded `TrafficIndex`), a filtered tile list recomputed four hundred times a day, a
+`Vector2i`-keyed dictionary used as a flood fill, and `CityGenerator.validate` sweeping the map
+twice before its cheap rejections. See `docs/TODO.md`, M44. No check was cut to get there — the
+count went up by one.
+
+One thing deliberately not swapped in, and still true: `test_generator.gd`'s route-redundancy sweep
+closes each street segment in turn on the *tile* grid, where `StreetNetwork.route_count()` would
+answer the same question by max flow on the junction graph far faster. The tile-level sweep checks
+something the graph cannot — that the tiles agree with the lattice — so it stays.
 
 ## Gotchas learned in M14
 

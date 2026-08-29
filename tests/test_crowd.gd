@@ -42,6 +42,7 @@ func run(t) -> void:
 	_test_cars_do_not_drive_through_each_other(t)
 	_test_a_car_can_honour_the_headway_it_keeps(t)
 	_test_a_car_looks_before_it_turns(t)
+	_test_the_traffic_index_is_emptied_every_frame(t)
 
 	_city.free()
 
@@ -50,12 +51,12 @@ func _rng(day: int) -> RandomNumberGenerator:
 	rng.seed = hash("crowd:%d:%d" % [SEED, day])
 	return rng
 
-## Runs the crowd forward. Agents are stepped by hand rather than by the tree, so a suite
-## can cover a minute of traffic without waiting a minute.
+## Runs the crowd forward. Stepped by hand rather than by the tree, so a suite can cover a
+## minute of traffic without waiting a minute — but a whole frame of it, separation pass
+## included, because a crowd without one is not the crowd the game runs. See `Crowd.step`.
 func _advance(seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		for agent in _city.crowd.agents():
-			agent._process(STEP)
+		_city.crowd.step(STEP)
 
 # ------------------------------------------------------------------ population ---
 
@@ -203,8 +204,7 @@ func _mean_excitement(at: Vector2, seconds: float) -> float:
 	var total := 0.0
 	var samples := 0
 	for i in int(round(seconds / STEP)):
-		for agent in _city.crowd.agents():
-			agent._process(STEP)
+		_city.crowd.step(STEP)
 		total += _city.crowd.total_excitement_at(at)
 		samples += 1
 	return total / maxi(1, samples)
@@ -635,6 +635,28 @@ func _test_a_car_looks_before_it_turns(t) -> void:
 	t.check(worst <= Tuning.CAR_GAP_MIN,
 			"the separation pass never moves a running car more than its own length in one frame "
 			+ "(worst %.0fpx)" % worst)
+
+## **The index is thrown away once a frame, and something has to be doing the throwing.**
+##
+## `TrafficIndex.claim()` is written to outlive the frame it was made in and no longer — the next
+## rebuild replaces the lot — so nothing in it bounds its own growth. A rig that walks the agents
+## without running the separation pass therefore leaves every recycle in a lane that never empties:
+## sixty-five thousand entries after three thousand frames of the arterial, with `_recycle` scanning
+## all of them six times over. That was **240 of the suite's 495 seconds**, spent inside a single
+## test, and nothing could say so — a lane full of cars that left an hour ago is still a legal lane,
+## and every assertion about the traffic passed the whole time.
+##
+## Stated as the exact car count rather than as a bound, because there is an exact answer: the
+## rebuild buckets every car once and claims are gone by then.
+func _test_the_traffic_index_is_emptied_every_frame(t) -> void:
+	_city.crowd.start_day(1, _rng(1))
+	# Long enough that plenty of cars have left the field and come back, which is what claims a
+	# place in a lane. The growth is visible within a frame or two of the first recycle, so this
+	# does not need the minute the tests either side of it do.
+	_advance(10.0)
+	t.check(_city.crowd.traffic().entry_count() == Tuning.crowd_cars(1),
+			"ten seconds on, the index holds one entry per car rather than a day's worth (%d of %d)"
+			% [_city.crowd.traffic().entry_count(), Tuning.crowd_cars(1)])
 
 ## The tightest two cars sharing a lane got, in px.
 func _closest_two_cars_in_a_lane() -> float:

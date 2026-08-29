@@ -582,11 +582,6 @@ static func validate(map: CityMap) -> String:
 	if map.home_rect.size == Vector2i.ZERO:
 		return "no home was placed"
 
-	var reachable := map.walk_distances(map.home_rect.position)
-	if reachable.size() != map.count_walkable():
-		return "%d of %d walkable tiles are cut off from the home" % [
-			map.count_walkable() - reachable.size(), map.count_walkable()]
-
 	if map.calm_blocks.size() < Tuning.MIN_CALM_BLOCKS:
 		return "only %d calm blocks, need %d" % [
 			map.calm_blocks.size(), Tuning.MIN_CALM_BLOCKS]
@@ -610,11 +605,6 @@ static func validate(map: CityMap) -> String:
 		return "only %d four-block calm zones, need %d" % [
 			map.zone_rects.size(), Tuning.MIN_CALM_ZONES]
 
-	var calm_distance := map.home_to_nearest_calm()
-	if calm_distance < Tuning.MIN_HOME_TO_PARK_TILES:
-		return "home is only %d tiles from calm ground, need %d" % [
-			calm_distance, Tuning.MIN_HOME_TO_PARK_TILES]
-
 	# The arcs are planned for the whole run, so the end of it can be checked here rather
 	# than hoped for. A run that requisitions its way to nothing is unwinnable, not hard.
 	var lasting := 0
@@ -624,5 +614,19 @@ static func validate(map: CityMap) -> String:
 	if lasting < Tuning.MIN_CALM_BLOCKS_AT_END:
 		return "only %d blocks stay calm for the whole run, need %d" % [
 			lasting, Tuning.MIN_CALM_BLOCKS_AT_END]
+
+	# The two sweeps of the map come last, and the order is the whole reason this is affordable:
+	# `generate` calls it on every attempt and about a third of them fail, so a rejection that
+	# can be seen by counting calm blocks must not first walk eleven thousand tiles twice.
+	# Which reason comes back when several are true changes; whether a map is accepted does not.
+	var reached := map.reach_count(map.walk_field(map.home_rect.position))
+	if reached != map.count_walkable():
+		return "%d of %d walkable tiles are cut off from the home" % [
+			map.count_walkable() - reached, map.count_walkable()]
+
+	var calm_distance := map.home_to_nearest_calm()
+	if calm_distance < Tuning.MIN_HOME_TO_PARK_TILES:
+		return "home is only %d tiles from calm ground, need %d" % [
+			calm_distance, Tuning.MIN_HOME_TO_PARK_TILES]
 
 	return ""

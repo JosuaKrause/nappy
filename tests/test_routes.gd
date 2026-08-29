@@ -282,11 +282,11 @@ func _test_calm_ground_is_still_walkable_to(t) -> void:
 	for map in _maps:
 		for day in [1, 6, 11, 14]:
 			map.close_streets(_plan(map, day))
-			var reached := map.walk_distances(
+			var reached := map.walk_field(
 					map.world_to_tile(map.doorstep_world_position()), map.closed_tiles)
 			var found := false
 			for tile in map.calm_tiles():
-				if reached.has(tile):
+				if map.reaches(reached, tile):
 					found = true
 					break
 			t.check(found, "seed %d day %d: calm ground can still be walked to"
