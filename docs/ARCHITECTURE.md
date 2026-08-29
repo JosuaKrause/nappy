@@ -236,3 +236,14 @@ non-zero on any failure.
 
 These are the places a bug is invisible until it ruins a run, so they are the places with
 tests. Anything a screenshot would catch is checked with `tools/shot.sh` instead.
+
+`tools/test.sh crowd balance` runs only the suites whose file name contains one of those words,
+which is seconds rather than the whole run. A filtered run says `PARTIAL RUN` under its count,
+because a partial pass that could be mistaken for a green build is worse than no filter at all —
+a commit still rests on the unfiltered run.
+
+**A rig that steps the parts is not running the whole.** Several suites walk the crowd by hand so
+that a minute of traffic does not take a minute; what that skips is the frame *around* the agents,
+which is where the traffic queue is resolved and the `TrafficIndex` emptied. `Crowd.step()` is that
+frame, and it is what a rig calls — see `CLAUDE.md`'s verification loop for what stepping only the
+agents cost, in both time and truth.

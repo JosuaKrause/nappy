@@ -125,13 +125,17 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
+	# Which tiles each kind of event may stand on, worked out at most once per day. See
+	# `_ground_for`; it is threaded through rather than kept on the map because its lifetime is
+	# exactly one day and a cache with a shorter life than its invalidation rule is a bug waiting.
+	var ground := {}
 
 	planned.append_array(_place_ambient(day, map))
 	planned.append_array(_place_scars(day, scars))
-	_place_scripted(day, _stream(base, 1), map, planned)
-	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned)
+	_place_scripted(day, _stream(base, 1), map, planned, ground)
+	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground)
 	_spoil_the_park_she_used(day, _stream(base, 3), map, planned, settled_yesterday)
-	_fill_with_recurring(day, base, map, planned)
+	_fill_with_recurring(day, base, map, planned, ground)
 	_ensure_the_run_is_taught(day, planned)
 
 	_ensure_one_usable_park(map, planned, settled_yesterday)
@@ -400,14 +404,14 @@ static func _place_ambient(day: int, map: CityMap) -> Array[Planned]:
 	return planned
 
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
-		planned: Array[Planned]) -> void:
+		planned: Array[Planned], ground := {}) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day):
-		var placement := _place_one(def, rng, map, planned)
+		var placement := _place_one(def, rng, map, planned, ground)
 		if placement:
 			planned.append(placement)
 
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
-		consumed: Array[String], planned: Array[Planned]) -> void:
+		consumed: Array[String], planned: Array[Planned], ground := {}) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day):
 		if def.id in consumed:
 			continue
@@ -423,7 +427,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today"
 					% [def.id, roll, threshold])
 			continue
-		var placement := _place_one(def, rng, map, planned)
+		var placement := _place_one(def, rng, map, planned, ground)
 		if not placement:
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
@@ -446,7 +450,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## run's own history has changed the ground: a scar still displaces the events it actually stands
 ## on, and every other event is where it was yesterday.
 static func _fill_with_recurring(day: int, base: int, map: CityMap,
-		planned: Array[Planned]) -> void:
+		planned: Array[Planned], ground := {}) -> void:
 	var eligible := EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day)
 	if eligible.is_empty():
 		return
@@ -466,7 +470,7 @@ static func _fill_with_recurring(day: int, base: int, map: CityMap,
 			break
 		var rng := _stream(base, FILL_SALT + attempt)
 		var def := _pick_weighted(affordable, rng)
-		var placement := _place_one(def, rng, map, planned)
+		var placement := _place_one(def, rng, map, planned, ground)
 		if not placement:
 			continue
 		planned.append(placement)
@@ -499,7 +503,7 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 ## The fallback is the roomiest candidate offered rather than nothing, because a scripted event
 ## has to happen: on a map with fifty events on it the honest answer is the best spot left.
 static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
-		already: Array[Planned] = []) -> Planned:
+		already: Array[Planned] = [], ground := {}) -> Planned:
 	# An `AHEAD_OF_PLAYER` event is budgeted here and sited by `EventDirector` while the player
 	# walks. Costing it here rather than giving the director its own allowance is deliberate:
 	# the cat competes with the café tables and the roadworks for the same day, so making the
@@ -507,20 +511,7 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 		return Planned.new(def, Vector2.INF)
 
-	var candidates: Array[Vector2i] = []
-	for type in def.placement:
-		candidates.append_array(map.tiles_of_type(type as GameEnums.TileType))
-	if candidates.is_empty():
-		return null
-
-	# A closed street is not somewhere anyone can get to, so it is not somewhere an event
-	# can usefully happen: the player would never see it and the scheduler would have spent
-	# budget on nothing.
-	var open_candidates: Array[Vector2i] = []
-	for candidate in candidates:
-		if map.is_closed(candidate) or not _wants_this_side(def, map, candidate):
-			continue
-		open_candidates.append(candidate)
+	var open_candidates := _ground_for(def, map, ground)
 	if open_candidates.is_empty():
 		return null
 
@@ -541,6 +532,34 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# with no clear ground, or a full pavement. The caller re-rolls; a scripted event that
 	# cannot be placed simply does not happen, which is the right failure direction.
 	return best
+
+## The tiles an event of this kind may stand on today, worked out once and kept for the rest of
+## the day's planning.
+##
+## The answer is two passes over every tile of the right type, and a sidewalk is five thousand of
+## them — while `_fill_with_recurring` asks the question once per attempt, which on a fourteenth day
+## is over four hundred times. Nothing it depends on can move inside one `build_day`: the grid was
+## repainted at dawn and the day's closures are already on the map.
+##
+## The key is the *question* rather than the event, because almost every row in the catalogue asks
+## the same one — a pavement, either side — so one list serves most of the day. The order is exactly
+## the order the two loops used to produce, since the placement roll is an index into it and a day
+## has to be reproducible from its seed.
+static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary) -> Array[Vector2i]:
+	var key := "%s|%d" % [def.placement, def.pavement_side]
+	if ground.has(key):
+		return ground[key]
+	var open: Array[Vector2i] = []
+	for type in def.placement:
+		for candidate in map.tiles_of_type(type as GameEnums.TileType):
+			# A closed street is not somewhere anyone can get to, so it is not somewhere an event
+			# can usefully happen: the player would never see it and the scheduler would have
+			# spent budget on nothing.
+			if map.is_closed(candidate) or not _wants_this_side(def, map, candidate):
+				continue
+			open.append(candidate)
+	ground[key] = open
+	return open
 
 ## Whether a tile is the lane of the pavement this event wants. *(M34, playtest 07 findings 7
 ## and 15.)*
@@ -839,11 +858,9 @@ static func _park_is_reachable(map: CityMap, blockers: Array[Planned]) -> bool:
 				if map.tile_to_world(tile).distance_to(plan.position) <= radius:
 					blocked[tile] = true
 
-	var reachable := map.walk_distances(map.home_rect.position, blocked)
-	if reachable.is_empty():
-		return false
+	var reached := map.walk_field(map.home_rect.position, blocked)
 	for tile in map.calm_tiles():
-		if reachable.has(tile):
+		if map.reaches(reached, tile):
 			return true
 	return false
 

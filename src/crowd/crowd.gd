@@ -65,6 +65,9 @@ func set_focus(at: Vector2) -> void:
 func field() -> CrowdField:
 	return _field
 
+func traffic() -> TrafficIndex:
+	return _traffic
+
 func clear() -> void:
 	for agent in _agents:
 		agent.queue_free()
@@ -93,6 +96,25 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 # The decision is one pass over the crowd here rather than a probe per car, for the same reason
 # `pedestrian_ahead` is written here: the agents are already being walked once a frame, and a
 # per-car search would be the same work done fifty times over.
+
+## One frame of the crowd for a rig: everybody moves, and then the traffic is spaced out.
+##
+## The engine drives those two halves separately — an agent moves in its own `_process`, the queue
+## is resolved in `Crowd._physics_process` — so a headless rig that only walks the agents is not
+## running the crowd the game runs. It is missing the separation pass, and it is also missing the
+## **rebuild** underneath it: `TrafficIndex.claim()` is written to be thrown away once a frame, so
+## with nothing throwing it away every recycle adds a car to a lane that never empties. Measured on
+## the arterial: sixty-five thousand entries after three thousand frames, a `_recycle` that scans
+## all of them six times over, and a frame that had grown from 1.09ms to **3.94** and was still
+## climbing. `test_balance`'s day on the arterial was 240 seconds of a 495-second suite for that
+## reason alone.
+##
+## Movement first and separation after, which is the order the world settles in — see
+## `test_crowd.gd`, "cars do not drive through each other", for why that order is the honest one.
+func step(delta: float) -> void:
+	for agent in _agents:
+		agent._process(delta)
+	space_out_the_traffic()
 
 ## Tells every car how much clear road it has in front of it, and pulls apart any two that have
 ## ended up in the same piece of it.

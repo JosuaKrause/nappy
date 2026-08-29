@@ -79,8 +79,9 @@ func _teardown_rig() -> void:
 func _walk_until_asleep(at: Vector2, seconds: float) -> float:
 	_stroller.global_position = at
 	for i in int(round(seconds / STEP)):
-		for agent in _city.crowd.agents():
-			agent._process(STEP)
+		# The whole crowd frame, not just the walking: a rig that only steps the agents leaves
+		# the traffic unseparated and the traffic index never emptied. See `Crowd.step`.
+		_city.crowd.step(STEP)
 		for instance in _city.events.instances():
 			if not instance.is_finished:
 				instance._process(STEP)

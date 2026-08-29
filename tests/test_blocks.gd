@@ -155,10 +155,10 @@ func _test_a_requisitioned_block_stops_being_calm(t) -> void:
 func _test_a_courtyard_can_be_reached(t) -> void:
 	for i in SEEDS:
 		var map := _map(i)
-		var reachable := map.walk_distances(map.home_rect.position)
+		var reachable := map.walk_field(map.home_rect.position)
 		for rect in map.courtyard_rects:
 			for tile in map.rect_tiles(rect):
-				t.check(reachable.has(tile),
+				t.check(map.reaches(reachable, tile),
 						"seed %d: courtyard tile %s is reachable from home"
 						% [map.seed_used, tile])
 

@@ -80,3 +80,12 @@ func rearmost(key: String) -> float:
 ## that says "there is room everywhere" from one that was never filled.
 func lane_count() -> int:
 	return _lanes.size()
+
+## How many cars the index believes are on the road. Also for tests, and for the other half of the
+## same question: `claim()` is written to be thrown away once a frame, and with nothing throwing it
+## away it grows for as long as the day lasts. See `test_crowd.gd`, "the index is emptied".
+func entry_count() -> int:
+	var total := 0
+	for key: String in _lanes:
+		total += (_lanes[key] as PackedFloat32Array).size()
+	return total

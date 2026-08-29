@@ -46,10 +46,14 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 74539 headless checks, ~8.4min (see TODO)
+./tools/test.sh               # 74540 headless checks, ~96s
+./tools/test.sh crowd events  # just those suites, in seconds — for the inner loop
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
+
+A filtered run prints `PARTIAL RUN` under its count and is not a green build. Commit on the
+unfiltered one.
 
 **A green `test.sh` says nothing about whether a *run* behaves.** Since M23 every run writes
 an ordered trace; if you changed anything the player experiences, play a minute of it and read
@@ -67,6 +71,20 @@ and is deleted before committing is the headless stand-in for the minute of play
 above asks for — and the numbers it prints are how a balance constant gets set, rather than
 derived. Two things it found that no amount of arithmetic would have: that one, and that a
 contact radius of 18px leaves **no line to walk** on a two-tile pavement.
+
+**A rig that steps the parts is not running the whole, and the gap is silent both ways.** *(M44.)*
+Several suites walk the crowd by hand — `for agent in crowd.agents(): agent._process(step)` — so
+that a minute of traffic does not take a minute. What that skipped is the frame *around* the agents:
+`Crowd._physics_process`, which resolves the queue and, underneath it, throws `TrafficIndex` away
+and rebuilds it. `claim()` is written to outlive one frame and nothing bounds it, so with nothing
+rebuilding, every recycle stayed — **64,796 cars in nineteen lanes after three thousand frames**,
+each scanned six times per recycle. `test_balance`'s day on the arterial was **240 of the suite's
+495 seconds** for that reason alone, and all that time three suites were measuring a road with no
+separation pass on it while claiming to measure the real world. `Crowd.step()` is the whole frame
+and is what a rig calls now. The shape to carry: **when a rig drives a subsystem by hand, ask what
+the engine was doing around it** — and if the answer is "keeping something bounded", the rig is not
+slow, it is wrong. `tests/test_crowd.gd` holds it as a rule now, because nothing else could see it:
+a lane full of cars that left an hour ago is still a legal lane.
 
 **A green `check.sh` says nothing about whether the game looks right** — headless runs never
 call `_draw()`. Several real bugs in this project were found only by opening a screenshot:
@@ -218,6 +236,18 @@ perfectly. `Stroller.stand_aside()` puts the camera on `ALWAYS` for the duration
 
 The thing that looks like the cause and is not, checked rather than assumed: **hiding a `Node2D`
 does not deactivate a `Camera2D` under it.**
+
+**A `Dictionary` keyed by `Vector2i` hashes a Variant on every lookup.** *(M44.)* Fine for a set of
+today's closures; not fine for a flood fill. `CityMap.walk_distances` asked one about fifty thousand
+times per sweep to answer a question the tile grid answers by index, and it ran twice per generation
+attempt and once per day planned — 16.3ms a sweep against 4.5 for the same BFS over a flat
+`PackedInt32Array`. Two things that came with it and generalise: **paint the blocked set into the
+grid before the sweep** rather than asking about it per neighbour, since building a `Vector2i` four
+times per tile is most of what is left; and **write the four neighbour steps out** rather than
+looping an offset array, because the loop's own bounds test costs more than the arithmetic it
+guards. The same shape one level down: a `Tile.is_walkable()` call per tile becomes a
+`PackedByteArray` indexed by tile type, built *from* `Tile.is_walkable` so it stays the one place
+that decides.
 
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw
 (the 10k-tile city ground) is fine, but anything animated must call `queue_redraw()` itself.
