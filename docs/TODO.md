@@ -136,7 +136,7 @@ was around when a day ended.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 46521 checks (~110s); `tools/check.sh` boots the project; `tools/run.sh`
+`tools/test.sh` runs 74539 checks (~8.4min); `tools/check.sh` boots the project; `tools/run.sh`
 plays it; `tools/telemetry.sh` reads back what the last run did.
 
 ---
@@ -1005,18 +1005,30 @@ the same day.**
 ### And the tooling that is getting in the way
 
 - [ ] **The test suite takes too long to run.** It is the thing this project checks most often —
-      `CLAUDE.md` asks for it before every commit — and at 46521 checks it is now minutes rather
-      than the ~110s the docs still claim. That is long enough to change behaviour: a suite you run
-      once at the end instead of after each change is a suite that tells you *that* something broke
-      rather than *what*.
-      The per-suite timings `run_tests.gd` already prints are where to start, and the shape of the
-      answer is visible in them: a handful of integration suites are three orders of magnitude
-      heavier than the rest, because they generate cities and play days. Worth considering, and
-      worth **measuring before choosing**: caching generated maps across suites that only read them;
-      making the sweeps over 200 seeds proportional to what actually varies; splitting a fast suite
-      from a slow one so the loop is seconds and the gate is minutes; and cutting checks that assert
-      the same relationship once per seed per day. What must **not** happen is losing coverage to
-      buy time — several of these suites exist because a bug got through everything cheaper
+      `CLAUDE.md` asks for it before every commit — and M42's larger lattice took it from ~110s to
+      **8.4 minutes**. That is long enough to change behaviour: a suite you run once at the end
+      instead of after each change tells you *that* something broke rather than *what*.
+
+      The per-suite timings `run_tests.gd` already prints say where it goes, and it is not spread
+      out — **four suites are 90% of it**:
+
+      | suite | at 9×9 |
+      | --- | ---: |
+      | `test_balance.gd` | **259s** |
+      | `test_events.gd` | 75s |
+      | `test_crowd.gd` | 70s |
+      | `test_generator.gd` | 44s |
+      | `test_full_run.gd` | 20s |
+      | everything else, together | ~32s |
+
+      They are the suites that **generate cities and play days**, and the cost is superlinear in the
+      lattice: a 65% bigger city took the whole suite up 4×. Worth considering, and worth
+      **measuring before choosing**: caching generated maps across the suites that only read them
+      (`CityGenerator.generate` is deterministic and is called afresh dozens of times per suite);
+      making the seed sweeps proportional to what actually varies rather than to the block count;
+      splitting a fast suite from a slow gate so the inner loop is seconds; and cutting checks that
+      re-assert one relationship once per seed per day. What must **not** happen is losing coverage
+      to buy time — several of these suites exist because a bug got through everything cheaper.
 
 ## M40 — Documentation you can read, and history you can retrieve · `feature/timeless-docs`
 
@@ -1113,15 +1125,28 @@ outward is `MIN_HOME_TO_PARK_TILES` = 30, and the centre of a 7×7 city is rarel
 park. Both rules are about the same thing — the walk out has to be long enough to matter — and at
 7×7 they cannot both hold.
 
-- [ ] **9×9.** Odd, and large enough that a central home is still a long walk from calm ground.
+- [x] **9×9.** Odd, and large enough that a central home is still a long walk from calm ground.
       Acceptance test: `MIN_HOME_TO_PARK_TILES` satisfied from a block within one of the centre, over
       200 seeds
-- [ ] **Re-measure every density number in `docs/PLAYTEST-04.md`.** 65% more blocks, one event per
+- [x] **Re-measure every density number in `docs/PLAYTEST-04.md`.** 65% more blocks, one event per
       block since M28, and a crowd that is a field around the player since M27 — so placed per day,
       live inside the stream radius, on screen at once, and met on a route all move, and the budget
       with them. This is why it is a milestone and not a constant
 - [ ] **And check what a wheel does to the return phase**, which playtest 03 already called a
       formality. Four ways out is four ways back
+
+**Measured, ten seeds** (`docs/CITY.md`, "The home", carries the table). Home offset from centre
+1.97 blocks → **0.00**, central in 4/10 → **10/10**, calm areas lying in 2.9 of 4 directions → **3.7
+of 4**, and directions with real city behind them 3.4 of 4 → **4.0 of 4**. The 30-tile guarantee got
+*better* rather than worse — 32.0 tiles at 9/10 seeds → 39.4 at 10/10 — because the clearance rule
+replaced the walk-outward rule. Events per block on day 1: 0.97 → **0.94**, which is the number that
+had to not move, and `budget_for()` is stated per block now so it cannot drift on the next resize.
+
+**One thing this changed and did not measure**, recorded in `docs/CITY.md`: the crowd is a field of
+fixed population in a fixed-size box clamped to the city, so a doorstep at the boundary had the same
+agents spread over fewer streets. A central doorstep should therefore be *thinner* per street, which
+is the opposite direction from the open difficulty question — and it wants the crowd milestone's own
+measurements rather than an assumption.
 
 ## M43 — Things that are in the way of nothing · `feature/in-the-way-of-nothing`
 

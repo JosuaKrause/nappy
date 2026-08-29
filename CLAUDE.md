@@ -46,7 +46,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 46521 headless checks, ~110s
+./tools/test.sh               # 74539 headless checks, ~8.4min (see TODO)
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
@@ -734,6 +734,15 @@ the number; a temporary probe suite that prints per-day counts takes two minutes
 only honest way to set it. Measure four things and not one: **placed per day**, **live inside
 `EVENT_STREAM_RADIUS`**, **on screen at once**, and **met on a route** — they moved by
 different multiples in M28, and only the last one is what the player is complaining about.
+
+**And the budget is per block, because the target is per block.** `budget_for()` multiplies by
+`CITY_BLOCKS.x * CITY_BLOCKS.y`. A flat budget is a statement about one lattice size and nothing
+else: grow the city and the same events spread thinner, which is the density silently falling while
+every constant in the file still reads as correct. The general shape, and it is worth applying to
+the next constant that looks absolute: **ask what a number is per.** The crowd is the deliberate
+opposite — it is a population of the *field* around the player rather than of the city, so it does
+**not** scale with the lattice, and a resize changes it only through `CrowdField.corridor_range`
+clamping the box against the boundary.
 
 **And a thing made of several bodies has to be made of several bodies.** *(M38: "the birds are
 broken — they start the flying animation but then freeze. Turn them into individual entities and let

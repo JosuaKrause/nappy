@@ -20,8 +20,13 @@ The city is a grid of **blocks** separated by **streets**.
 
 - `BLOCK_SIZE` = 8 × 8 tiles of block interior
 - `STREET_WIDTH` = 6 tiles: sidewalk (2) | road (2) | sidewalk (2)
-- `CITY_BLOCKS` = 7 × 7 blocks by default
-- Total: 104 × 104 tiles, or 3328 px square at a 32 px tile
+- `CITY_BLOCKS` = 9 × 9 blocks
+- Total: 132 × 132 tiles, or 4224 px square at a 32 px tile
+
+**Odd on both axes, and that is a constraint.** An odd lattice has a middle block, and the home goes
+in it — see "The home" below. Everything downstream is stated over `CITY_BLOCKS` rather than over a
+literal (the event budget per block, the crowd population per corridor, the arterial index), so a
+resize moves the city and nothing else. It is still a density change: re-measure rather than assume.
 
 A 1-tile sidewalk was the first attempt and had to go: the rig's collision circle is 28 px
 across, so a 32 px sidewalk left 2 px of clearance and walking a street felt like threading
@@ -55,9 +60,9 @@ Tile types:
    it. Commercial blocks are exempt: they already have a plaza carved out, and a second
    hole through the same lot leaves slivers and an alley opening onto a square.
 5. **Place playgrounds** — every `PARK` district gets 1 playground, inset from the edge.
-6. **Place home** — a 2×2 notch in the south edge of a `RESIDENTIAL` block, biased toward
-   the map centre so that no direction is strictly better, and slid sideways if the notch
-   would land in an alley.
+6. **Place home** — a 2×2 notch in the south edge of the **middle block**, slid sideways if the
+   notch would land in an alley. The middle block is claimed as `RESIDENTIAL` before step 3, so
+   nothing calm can be rolled into it and no zone can absorb it. See "The home" below.
 7. **Validate** — see below. On failure, retry with `seed + 1`, up to 64 attempts.
 
 ### Carving is rect subtraction
@@ -80,8 +85,49 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
 - At least **3 calm areas**, no two adjacent (so the calm is spread out). An area is one
   block or one four-block zone; see below.
 - At least `MIN_CALM_ZONES` (1) of them is a **four-block zone**.
-- The home is at least `MIN_HOME_TO_PARK_TILES` (30) *walking* tiles from the nearest park.
+- The home is in the **middle block**, and is at least `MIN_HOME_TO_PARK_TILES` (30) *walking*
+  tiles from the nearest park. Both, together — see "The home".
 - Building rects tile the `BUILDING` tiles exactly, with no overlaps and no gaps.
+
+## The home
+
+**It is the middle block, and that is not a preference.** The two rules about the home used to
+compete for the same thing — *the walk out has to be long enough to matter* — and the competition
+was settled by walking the home **outward** from the centre until it was far enough from calm
+ground. Measured over ten seeds on the old 7×7 lattice, it landed 1.97 blocks off centre and was
+central in four of ten: *"I spawn too often at the edge, leaving only a few ways into the rest of
+the city."* Half the directions out of a boundary block are a wall, and a city you can only leave
+two ways is smaller than the one that was generated.
+
+The competition is settled somewhere else now. The middle block is claimed before any purpose is
+assigned, and **calm ground is kept a clearance of blocks away from it**
+(`CityGenerator._too_near_the_home`) — so the distance guarantee holds where the home *is*, rather
+than deciding where it goes. The clearance is derived from `MIN_HOME_TO_PARK_TILES` rather than
+authored beside it: a block `d` away starts `d × period()` tiles out, of which `BLOCK_SIZE` is the
+home's own lot, so the clearance is the smallest `d` clearing the guarantee. It is a floor, not the
+guarantee — walking is not straight-line — and `validate()` still checks the real thing.
+
+**That is what the size is for.** At 7×7 the two rules cannot both hold: the centre of a 7×7 city is
+rarely 30 tiles of walking from every park. Measured over ten seeds:
+
+| | 7×7, home biased to centre | 9×9, home in the middle |
+| --- | ---: | ---: |
+| Offset from centre | 1.97 blocks | **0.00** |
+| Central in | 4/10 seeds | **10/10** |
+| Home → nearest calm | 32.0 tiles | 39.4 |
+| Guarantee satisfied | 9/10 | **10/10** |
+| Calm areas lie in | 2.9 of 4 directions | **3.7 of 4** |
+| Directions with two blocks of city behind them | 3.4 of 4 | **4.0 of 4** |
+
+**One consequence is a difficulty change hiding inside a layout change, and it is not measured yet.**
+The crowd is a *field* of fixed population in a fixed-size box around the player, and
+`CrowdField.corridor_range` clamps that box to the city — so near the boundary the box hung over the
+wall and the same agents were spread across fewer streets. A doorstep in the middle has the full set
+of corridors in range, so the same population covers more of them. Day 1 at the front door should
+therefore be *thinner* per street than it was, which is the opposite direction from the open crowd
+difficulty question. It wants the crowd milestone's own measurements — contacts in a forty-second
+walk down a lane centre against the midline, and the mean wait at an arterial kerb — not an
+assumption.
 
 ## Calm zones
 

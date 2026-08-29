@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_determinism(t)
 	_test_buildings_tile_the_blocks(t)
 	_test_home_opens_onto_the_street(t)
+	_test_the_home_is_in_the_middle_of_a_city_worth_walking(t)
 	_test_calm_zones_are_four_blocks_of_one_thing(t)
 	_test_a_calm_zone_is_a_route_rather_than_a_lap(t)
 	_test_no_single_street_closure_isolates_the_parks(t)
@@ -118,6 +119,36 @@ func _test_home_opens_onto_the_street(t) -> void:
 		var doorstep := Vector2i(map.home_rect.position.x, map.home_rect.end.y)
 		t.check(map.is_walkable(doorstep),
 				"seed %d: the tile outside the front door is walkable" % _seed(i))
+
+## **The home is in the middle, and the walk out is still long.** *(Playtest 11, finding 4: "I spawn
+## too often at the edge leaving only a few ways into the rest of the city.")*
+##
+## These are two rules that used to compete for the same thing — the walk out has to be long enough
+## to matter — and the competition was settled by walking the home *outward* until it was far
+## enough from calm ground. Measured over ten seeds on the old 7x7 lattice it landed 1.97 blocks off
+## centre and was central in four of ten, which puts the doorstep against the boundary, where half
+## the directions out are a wall.
+##
+## Asserted together and over many seeds, because that is the whole claim: an odd lattice wide
+## enough that the middle is still a long walk from anywhere calm. Either one alone is easy — a home
+## in the middle of a small city has a park next door, and a home a long way from a park is a home in
+## a corner.
+func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
+	t.check(Tuning.CITY_BLOCKS.x % 2 == 1 and Tuning.CITY_BLOCKS.y % 2 == 1,
+			"the lattice is odd on both axes, so there is a middle block to put the home in")
+	var middle := (Tuning.CITY_BLOCKS - Vector2i.ONE) / 2
+	for i in 24:
+		var map := CityGenerator.generate(_seed(i))
+		t.check(map.home_block == middle,
+				"seed %d: the home is in the middle block %s, not %s"
+				% [_seed(i), middle, map.home_block])
+		# The map's own measurement, not a second one: it is taken from inside the home rather
+		# than from the doorstep, so a private version of this sum reads one tile short and fails
+		# on about one seed in twenty-four while the guarantee itself holds.
+		var distance := map.home_to_nearest_calm()
+		t.check(distance >= Tuning.MIN_HOME_TO_PARK_TILES,
+				"seed %d: and calm ground is still %d tiles away, against the %d asked for"
+				% [_seed(i), distance, Tuning.MIN_HOME_TO_PARK_TILES])
 
 ## M21. A four-block calm zone is four blocks of *one* thing — one lot, one arc, one entry in
 ## everything that counts calm areas — and the ground under it is unbroken.
