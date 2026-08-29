@@ -49,11 +49,15 @@ func _test_the_rings_are_gone(t) -> void:
 # ------------------------------------------------------------------- the mark ---
 
 ## The three the cost table already calls scenery, plus the large obvious obstacles. None of
-## them changes over time: they are there, they stay there, and they are visibly what they are.
-## A street where the notice board is marked as hard as the abduction is a street with no
-## information on it, which is what the rings were.
+## them is worth changing your route for: they are there, they stay there, and they are visibly
+## what they are. A street where the notice board is marked as hard as the abduction is a street
+## with no information on it, which is what the rings were.
+##
+## *(M39 dropped `checkpoint` from this list.* It costs +29 to walk through, which is above
+## `MARK_WORTH_A_DETOUR`, and the whole of finding 9 is that the marked set has to be the top of the
+## cost order rather than a list somebody curated. A street being *held* is a real detour.)*
 func _test_scenery_gets_no_mark(t) -> void:
-	for id in ["poster_crew", "barricade", "burnt_shell", "construction", "checkpoint"]:
+	for id in ["poster_crew", "barricade", "burnt_shell", "construction", "busker", "delivery_van"]:
 		var def := EventCatalogue.by_id(id)
 		t.check(def != null, "'%s' is in the catalogue" % id)
 		if not def:
@@ -78,64 +82,54 @@ func _test_the_dangerous_things_do(t) -> void:
 		t.check(instance.wants_a_mark(), "and still marked once it is live")
 		instance.free()
 
-	# A beat fast enough to slip a pass between, so it keeps its mark after the telegraph; and
-	# marked in the telegraph colour first, which is the difference between "this is about to
-	# happen" and "this is happening".
-	var timeable := EventCatalogue.by_id("leaf_blower")
-	if timeable:
-		var instance := _instance(timeable)
-		t.check(instance.wants_a_mark() and instance.mark_colour() == Palette.MARK_TELEGRAPH,
-				"a loud event telegraphs in amber")
-		_advance(instance, timeable.telegraph_time + 0.5)
-		t.check(instance.wants_a_mark() and instance.mark_colour() == Palette.MARK_ACTIVE,
-				"and turns red when it arrives")
+	# A loud row keeps its mark after the telegraph, and the **colour does not change** with the
+	# phase. *(M39, playtest 10 finding 8.)* The flash is what says "not yet"; amber says "worth
+	# going round" and deep red says "ends your day", and there is no third thing.
+	var loud := EventCatalogue.by_id("leaf_blower")
+	if loud:
+		var instance := _instance(loud)
+		t.check(instance.wants_a_mark() and instance.mark_colour() == Palette.MARK_COSTLY,
+				"a loud event is marked in amber while it telegraphs")
+		_advance(instance, loud.telegraph_time + 0.5)
+		t.check(instance.wants_a_mark() and instance.mark_colour() == Palette.MARK_COSTLY,
+				"and in the same amber once it arrives — the colour is the danger, not the phase")
 		instance.free()
 
-	# **A pulse is not automatically something to time.** *(Playtest 07, finding 2: "there was a
-	# person right on the home block but walking up to them didn't do anything — not sure what
-	# that person was supposed to be — it had a red triangle.")* Six of the ten rows available on
-	# day 1 have a pulse, so `pulse_period > 0` put a caret over most of an ordinary street. The
-	# rule is now whether the beat is shorter than the walk across the field, which is exactly
-	# when a pass can be slipped between two of them; below, that.
-	for id in ["homeless_yeller", "cafe_tables", "busker", "ice_cream_van", "market_stall"]:
+	# The rows that are cheap to walk through carry nothing, and the rows the player named carry
+	# something. *(M39, findings 1 and 9: "there is no danger indicator over the homeless person",
+	# and "some dangerous ones don't have indicators and some really benign ones do".)*
+	for id in ["cafe_tables", "busker", "cat_dash", "construction", "police_patrol"]:
 		var def := EventCatalogue.by_id(id)
 		if not def:
 			continue
-		t.check(def.pulse_period > 0.0, "'%s' pulses" % id)
 		var instance := _instance(def)
 		_advance(instance, def.telegraph_time + 0.5)
 		t.check(not instance.wants_a_mark(),
-				"but '%s' beats slower than a walk across it, so there is nothing to time" % id)
+				"'%s' costs %.1f to walk through, which is not a detour"
+				% [id, def.walk_through_cost()])
 		instance.free()
-	for id in ["leaf_blower", "loose_dog", "reversing_lorry", "burning_building"]:
+	for id in ["homeless_yeller", "dog_walker", "leaf_blower", "loose_dog", "fire_truck"]:
 		var def := EventCatalogue.by_id(id)
 		if not def:
 			continue
 		var instance := _instance(def)
 		_advance(instance, def.telegraph_time + 0.5)
 		t.check(instance.wants_a_mark(),
-				"'%s' beats fast enough to play against, so it keeps its mark" % id)
+				"'%s' costs %.1f to walk through, so it is worth a mark"
+				% [id, def.walk_through_cost()])
 		instance.free()
 
-	# The line between the two groups, stated rather than assumed. Anything the mark shows once
-	# its telegraph is over has to be a thing that *changes* — that is what a mark is for, and
-	# a steady one is a ring with fewer pixels.
-	for def in EventCatalogue.all():
-		if def.city_wide or def.kind == GameEnums.EventKind.AMBIENT:
-			continue
-		var instance := _instance(def)
-		_advance(instance, def.telegraph_time + 0.05)
-		if not instance.wants_a_mark():
-			instance.free()
-			continue
-		var changes := def.hard_fail or instance.can_be_timed() \
-				or not is_equal_approx(def.intensity_ramp, 1.0)
-		t.check(changes,
-				"'%s' is only marked after its telegraph because it changes over time" % def.id)
-		instance.free()
-
-	# And the whole catalogue is not marked. If it ever is, the vocabulary has stopped saying
-	# anything and has become the rings again with a different shape.
+	# **And the invariant underneath all of it, which is the whole of finding 9**: the marked set is
+	# the *top of the cost order*. If A carries a mark and B does not, A costs more to walk through
+	# than B — over the whole catalogue, so a new row cannot earn one by pulsing quickly and a
+	# rebalance cannot silently take one away from the row above it.
+	#
+	# Lethal rows are exempt from the ordering and not from the rule: they are marked whatever they
+	# cost, because *ends your day* is a different kind of thing rather than a larger amount of the
+	# same thing. `charging_dog` is the case that proves it — 17 points, the cheapest lethal row in
+	# the game, and the only one running is the answer to.
+	var cheapest_marked := INF
+	var dearest_unmarked := -INF
 	var marked := 0
 	var counted := 0
 	for def in EventCatalogue.all():
@@ -144,11 +138,52 @@ func _test_the_dangerous_things_do(t) -> void:
 		counted += 1
 		var instance := _instance(def)
 		_advance(instance, def.telegraph_time + 0.05)
-		marked += 1 if instance.wants_a_mark() else 0
+		if instance.wants_a_mark():
+			marked += 1
+			if not def.hard_fail:
+				cheapest_marked = minf(cheapest_marked, def.walk_through_cost())
+		else:
+			dearest_unmarked = maxf(dearest_unmarked, def.walk_through_cost())
 		instance.free()
+	t.check(cheapest_marked > dearest_unmarked,
+			"nothing unmarked costs more than something marked (%.1f unmarked vs %.1f marked)"
+			% [dearest_unmarked, cheapest_marked])
+
+	# And the whole catalogue is not marked. If it ever is, the vocabulary has stopped saying
+	# anything and has become the rings again with a different shape.
 	t.check(marked < counted,
 			"only some of the catalogue carries a mark once it has arrived (%d of %d)"
 			% [marked, counted])
+
+	# Day 1 specifically, because that is the street the complaint was made about and the one a
+	# player sees most. It comes out at six of nine, which is more than M33's two — and the count is
+	# a *consequence* rather than a target: the threshold is pinned by `homeless_yeller` at +31,
+	# which is the row the finding named, and the ordering rule then takes everything above it.
+	# What has to stay true is that the cheap end of an ordinary street carries nothing, or the
+	# caret is back to being a ring.
+	var day_one_marked := 0
+	var day_one := 0
+	var cheapest: EventDef = null
+	for def in EventCatalogue.available_on(1):
+		if def.city_wide or def.kind == GameEnums.EventKind.AMBIENT:
+			continue
+		day_one += 1
+		if not cheapest or def.walk_through_cost() < cheapest.walk_through_cost():
+			cheapest = def
+		var instance := _instance(def)
+		_advance(instance, def.telegraph_time + 0.05)
+		day_one_marked += 1 if instance.wants_a_mark() else 0
+		instance.free()
+	t.check(day_one_marked > 0 and day_one_marked < day_one,
+			"day 1 marks some of its street and not all of it (%d of %d)"
+			% [day_one_marked, day_one])
+	if cheapest:
+		var instance := _instance(cheapest)
+		_advance(instance, cheapest.telegraph_time + 0.05)
+		t.check(not instance.wants_a_mark(),
+				"and the cheapest thing on it ('%s', %.1f) carries nothing"
+				% [cheapest.id, cheapest.walk_through_cost()])
+		instance.free()
 
 ## The one property the ring had that a symbol does not get for free. Without it a pulsing event
 ## stops being something to time a pass through and becomes something that hurts at random.
@@ -246,6 +281,31 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"outside its outer radius there is nothing over her head")
+
+	# **And `NOW` is about the pair of them.** *(M39, playtest 10 finding 11: "when I'm walking
+	# orthogonally away from the biker the double !! shouldn't show anymore since there is no way it
+	# can affect me.")* Well inside the outer radius, well outside the lethal one, and not closing:
+	# the strongest cue in the game has nothing to say about that.
+	rig.global_position = lethal.global_position + Vector2(lethal.def.outer_radius - 20.0, 0.0)
+	rig.velocity = Vector2.ZERO
+	_warn_through(manager)
+	t.check(rig.alert_level() == Stroller.Alert.NONE,
+			"standing still inside a live lethal field but nowhere near it is not an instruction")
+
+	# Walking into it is, once she is a step from the end of the day.
+	rig.global_position = lethal.global_position + Vector2(lethal.def.inner_radius + 20.0, 0.0)
+	rig.velocity = Vector2(-Tuning.WALK_SPEED, 0.0)
+	_warn_through(manager)
+	t.check(rig.alert_level() == Stroller.Alert.NOW,
+			"walking the last step into it is")
+
+	# And turning round takes it away again, from the same place, on the same frame.
+	rig.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
+	rig._alert = Stroller.Alert.NONE
+	rig._alert_left = 0.0
+	_warn_through(manager)
+	t.check(rig.alert_level() == Stroller.Alert.NONE,
+			"and walking away from the same spot takes it down — the danger has been avoided")
 
 	rig.free()
 	manager.free()
@@ -454,14 +514,26 @@ func _test_the_babys_cue_only_steps_aside_for_something(t) -> void:
 			"and steps out of the exclamation mark's column the moment there is one")
 	rig.stand_down(&"test")
 
+	# *(M39, playtest 10 finding 3: "when walking downwards the zzz is still left of the stroller
+	# while walking in any other direction it has the correct position.")* M37 made the north case
+	# conditional and left this one unconditional, on the true observation that walking south "above
+	# the pram" is over her own chest — which is an argument for **lifting** the cue over her head,
+	# not for pushing it off the pram sideways.
 	rig.facing = Vector2.DOWN
+	t.check(is_zero_approx(rig.baby_cue_aside()),
+			"walking south with nothing happening, the cue also stays over the pram")
+	t.check(rig.baby_cue_lift() > Stroller.BABY_CUE_LIFT,
+			"and is lifted clear of her instead, because the pram is in front of her and lower")
+	rig.warn(Stroller.Alert.SOON, 1.0, &"test")
 	t.check(not is_zero_approx(rig.baby_cue_aside()),
-			"walking south it steps aside whatever else is on screen: the pram is in front of "
-			+ "her, so above it is over her own chest")
+			"and it steps out of the mark's column there too, once there is a mark")
+	rig.stand_down(&"test")
 
 	rig.facing = Vector2.RIGHT
 	t.check(is_zero_approx(rig.baby_cue_aside()),
 			"and sideways there is nothing to step around at all")
+	t.check(is_equal_approx(rig.baby_cue_lift(), Stroller.BABY_CUE_LIFT),
+			"nor anything to be lifted over: the pram is out to one side of her")
 	rig.free()
 
 # ------------------------------------------------------------------- helpers ---

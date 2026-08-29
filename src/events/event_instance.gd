@@ -166,8 +166,11 @@ func _process(delta: float) -> void:
 ## Whether the chase ended because she shook it off rather than because the clock ran out. Read by
 ## the telemetry, which is the only thing that can tell the two apart from outside.
 var gave_up := false
-## Whether it ever got to its stand-off. See `_chase`.
-var _engaged := false
+## How long the gap to her has been opening, in seconds. The chase ends when it reaches
+## `Tuning.PURSUIT_SHAKEN_OFF`; anything that closes the gap puts it back to zero. See `_chase`.
+var _outrun_for := 0.0
+## The gap on the previous frame, so `_chase` can tell opening from closing. `INF` before the first.
+var _last_range := INF
 ## For a pursuer with `pursues_within`: the age at which she came close enough for it to take an
 ## interest, or `INF` while it is still only standing there. Its telegraph and its chase are both
 ## measured from here rather than from birth. See `is_waiting()`.
@@ -195,11 +198,18 @@ var _noticed_at := INF
 ##
 ## `Tuning.pursuit_standoff()` is the same contract restated as one, and holding it is what makes
 ## the notice real from *any* approach geometry — including the one the director actually produces.
-## And a pursuer may be a **place** before it is a moment. *(M36, playtest 09: "a robber should
+##
+## **And it gives up when it is being outrun, not when a gap has reached a size.** The pursuer is
+## faster than a walk and slower than a run by construction, so "the gap is opening" is a statement
+## the player can only make by running — which is why it can carry the whole of the design. Walking
+## away cannot end a chase at any distance, and running away always ends one in
+## `Tuning.PURSUIT_SHAKEN_OFF` seconds regardless of how big the thing chasing her is.
+##
+## A pursuer may also be a **place** before it is a moment. *(M36, playtest 09: "a robber should
 ## increase excitement on sight… and if you get close they should start moving towards you".)* While
 ## it is waiting it emits at full strength, is not lethal and does not move; `pursues_within` is
-## where that stops. Everything below then runs exactly as it does for a dog sited in front of her —
-## the notice, the stand-off and the break-off are the same three distances, started later.
+## where that stops. Everything below then runs exactly as it does for a dog sited in front of her,
+## started later.
 func _chase(delta: float) -> void:
 	if player_at == Vector2.INF or is_telegraphing_still():
 		return
@@ -216,16 +226,18 @@ func _chase(delta: float) -> void:
 		return
 	_heading = toward.normalized()
 	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-	_engaged = _engaged or range_to_her <= standoff + 4.0
-	# **It gives up when it has been beaten**, which is two things and not one: it got to her and
-	# she opened the gap again, or it never got near her in the first place. The second half is what
-	# keeps the incentives the right way round — a player who turns and runs on the first frame is
-	# never engaged, and gating the break-off on the lunge alone would charge her *more* for
-	# reacting sooner, since she would be running through a telegraph that could not end.
-	# `PURSUIT_MIN_NOTICE` is the floor under that: it may not lose interest before it has given
-	# her the notice the contract owes, or a pursuit could be over before it was ever a threat.
-	if (_engaged or chase_age() >= Tuning.PURSUIT_MIN_NOTICE) \
-			and range_to_her > Tuning.PURSUIT_BREAK_OFF:
+	# Ground gained on it, and the epsilon matters: a run only opens the gap at 38px/s against the
+	# day-3 dog, which is a fifth of a pixel a frame, so float noise on a diagonal can outweigh a
+	# real gain and stall the timer for ever.
+	if _last_range < INF and range_to_her > _last_range + 0.001:
+		_outrun_for += delta
+	else:
+		_outrun_for = 0.0
+	_last_range = range_to_her
+	# `PURSUIT_MIN_NOTICE` is the floor under it, so a chase can never be over before it was a
+	# threat: a player already running when it lunges would otherwise shake off a thing that never
+	# got to say what it was.
+	if _outrun_for >= Tuning.PURSUIT_SHAKEN_OFF and chase_age() >= Tuning.PURSUIT_MIN_NOTICE:
 		gave_up = true
 		_be_done()
 		return
@@ -249,6 +261,27 @@ func _chase(delta: float) -> void:
 ## instead of rewinding it. See `EventManager._stream_in`.
 func path_travelled() -> float:
 	return _path_travelled
+
+## How fast and which way this thing is actually travelling, in px/s.
+##
+## *(M39, playtest 10 finding 11: "when I'm walking orthogonally away from the biker the double !!
+## shouldn't show anymore since there is no way it can affect me".)* Asked by
+## `EventManager._warn_about_the_ground_she_is_on`, which has to know whether a lethal thing is
+## coming *at her* rather than merely near her.
+##
+## Zero while a pursuer is telegraphing, and that is the interesting case rather than an omission:
+## it is holding its stand-off, so it is not closing, and a mark that said otherwise would be
+## warning her about a thing that is deliberately waiting.
+func travel_velocity() -> Vector2:
+	if is_finished or is_leaving:
+		return Vector2.ZERO
+	if def.pursues:
+		if is_waiting() or is_telegraphing():
+			return Vector2.ZERO
+		return _heading * def.pursue_speed
+	if def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
+		return _heading * def.speed
+	return Vector2.ZERO
 
 ## Puts an instance back where a previous incarnation of the same plan had got to. Restores the
 ## age as well as the distance, so the telegraph, the pulse phase and the duration all continue
@@ -665,66 +698,45 @@ const MARK_FLASHES_PER_SECOND := 3.0
 
 ## Whether this event is worth a mark at all.
 ##
-## **The mark is for danger that changes over time, and for nothing else.** That is the whole
-## rule, and it is the answer to the half of finding 8 that says a ring marked a notice board
-## exactly as hard as it marked an abduction and therefore explained nothing:
+## **The mark is raised by what a thing costs.** *(M39, playtest 10 findings 1, 8 and 9: "there is
+## no danger indicator over the homeless person", "I don't understand the difference between yellow
+## and red", and "some dangerous ones don't have indicators and some really benign ones do".)*
 ##
-## - **It is about to start.** The telegraph is the promise the fairness contract makes, and a
-##   promise nobody can see is not one.
-## - **It ends the day.** Nothing else in the game is a different kind of thing from everything
-##   else in the game, and that deserves its own mark whether or not the silhouette carries it.
-## - **It comes and goes.** A pulsing or swelling event has to be *timed*, and timing is the one
-##   thing the ring genuinely did well. See `mark_swell()`.
+## The rule was *danger that changes over time* — lethal, telegraphing, swelling, or pulsing fast
+## enough to be timed. Every clause of that is a true statement about a thing and **none of them is
+## a statement about how bad it is**, so the marked set and the danger came apart completely:
 ##
-## Everything steady is left to its own silhouette, which is the standing decision in
-## `CLAUDE.md` — a barricade, a boarded shopfront and a burnt-out shell are large, distinct and
-## visibly what they are, and pointing at them adds nothing but noise. A first pass used
-## "louder than the walking decay" instead and marked all three of those, which is the ring's
-## own mistake in a new shape.
+## - A **fire engine** (+115 to walk through, the second most expensive row in the game) carried
+##   nothing, and a **burning building** (+56) carried a caret, because one has a pulse and one
+##   does not.
+## - The most expensive ordinary row in act I — a **dog walker** at +36, the row two playtests have
+##   been about — carried nothing, and the **leaf blower** beside it carried one, because its beat
+##   is 4.0s rather than 8.0s.
+## - **`homeless_yeller`** (+31), the man who ends day 1 in three separate traces, missed the pulse
+##   rule by four tenths of a second. That is finding 1, exactly.
+##
+## So the rule is the player's own expectation, stated so a test can hold it: **if A is marked and
+## B is not, A costs more than B.** `EventDef.walk_through_cost()` is the order and
+## `Tuning.MARK_WORTH_A_DETOUR` is where the line falls; `tests/test_danger.gd` asserts the
+## monotonicity over the whole catalogue, so a new row can no longer earn a mark by pulsing.
+##
+## What is kept, because M22 was right about it: **a cue that marks everything says nothing.** Five
+## of the eleven day-1 rows are marked, and the six that are not are the cheap ones — a café, a
+## delivery van, a poster crew, a burnt-out shell, a notice board. And the mark still **breathes**
+## with current emission, which is the one thing the ring did that a symbol does not get for free.
+##
+## What is given up, and it is a decision rather than an oversight: **a crouching cat (+20) loses
+## its caret.** The crouch is its own silhouette and the vocabulary's first rule is that the entity
+## carries it.
 func wants_a_mark() -> bool:
 	if is_finished or is_leaving or def.city_wide:
 		# A floor under the whole city has nothing to stand over. That is the HUD's job.
 		return false
 	if def.kind == GameEnums.EventKind.AMBIENT:
-		# A permanent feature of a fixed map never appears, so there is no moment to mark and
-		# nothing to time. The same reason the fairness contract exempts it.
+		# A permanent feature of a fixed map never appears, so there is no moment to mark. The
+		# same reason the fairness contract exempts it.
 		return false
-	if def.hard_fail or is_telegraphing():
-		return true
-	if not is_equal_approx(def.intensity_ramp, 1.0):
-		return true
-	return can_be_timed()
-
-## Whether this event's pulse is something a player can actually **play against**.
-##
-## *(Playtest 07, finding 2: "there was a person right on the home block but walking up to them
-## didn't do anything — not sure what that person was supposed to be — it had a red triangle.")*
-##
-## The rule used to be `pulse_period > 0`, and six of the ten rows available on day 1 have a pulse.
-## So the caret was over most of an ordinary street, on things that were not going anywhere and
-## were not about to do anything, and a player walked up to one to find out what it meant and
-## found out that it meant nothing. That is the deleted aura ring's own mistake — *a cue that
-## marks everything says nothing* — arriving in the shape M22 invented to replace it.
-##
-## What M22 got right is the reason to keep any of it: *"a pulsing event has to be **timed**, and
-## timing is the one thing the ring genuinely did well."* The mistake was reading "has a pulse" as
-## "can be timed". A beat of eleven seconds cannot be timed — you cannot stand and wait out an ice
-## cream van — and from inside its field the intensity only ever moves one way, so what the mark
-## breathes with is not a rhythm, it is a drift.
-##
-## So it is a **relationship**, and the relationship is the definition: a pulse can be timed when
-## its period is shorter than the time it takes to walk across the field it is pulsing in. Under
-## that, the beat changes while she is inside it and a pass can be slipped between two of them.
-## Over it, the pulse is slower than the whole encounter and there is nothing to time.
-##
-## It leaves the caret on exactly the two steady act I rows it should be on — the loose dog and
-## the leaf blower, which are the two whose whole counterplay is *go now* — and takes it off the
-## café, the market stall, the busker, the ice cream van, the dog walker and the man shouting,
-## every one of which is a place you route around rather than a beat you wait out.
-func can_be_timed() -> bool:
-	if def.pulse_period <= 0.0:
-		return false
-	return def.pulse_period < 2.0 * def.outer_radius / Tuning.WALK_SPEED
+	return def.hard_fail or def.walk_through_cost() >= Tuning.MARK_WORTH_A_DETOUR
 
 ## How hard the mark is breathing, 0..1, from what the event is emitting right now.
 ##
@@ -737,10 +749,24 @@ func mark_swell() -> float:
 		return 1.0
 	return clampf(current_intensity() / def.intensity, 0.0, 1.0)
 
+## What colour the mark is, and it now means exactly one thing.
+##
+## *(M39, playtest 10 finding 8: "I don't understand the difference between yellow and red warning
+## indicators above entities — it looks like it's red further away?")*
+##
+## It was amber while telegraphing and red once live, which is a good sentence and a cue nobody
+## could ever read, because of **streaming**: `EVENT_STREAM_RADIUS` is 900px and no telegraph in the
+## catalogue is longer than four seconds, so all but two rows finish telegraphing before they are
+## anywhere near the screen. The only amber carets a player ever saw belonged to the two
+## `AHEAD_OF_PLAYER` rows, which appear 184px in front of her — so in play, **amber meant *near* and
+## red meant *far***, which is what the player observed with the sign flipped, and it is the correct
+## reading of a colour that carries no information.
+##
+## Colour is the wrong channel for a *phase* and the right one for a *scale*, so the two swap jobs:
+## the colour is now how bad it is, and the **flash** — which is visible whether or not she was
+## there when it started — is what says it has not happened yet. See `_draw_mark`.
 func mark_colour() -> Color:
-	if def.hard_fail:
-		return Palette.MARK_LETHAL
-	return Palette.MARK_TELEGRAPH if is_telegraphing() else Palette.MARK_ACTIVE
+	return Palette.MARK_LETHAL if def.hard_fail else Palette.MARK_COSTLY
 
 ## A caret over anything worth looking at, breathing with what it is currently emitting.
 ##
@@ -749,10 +775,12 @@ func mark_colour() -> Color:
 func _draw_mark() -> void:
 	if not wants_a_mark():
 		return
-	# Flashing while telegraphing, which is the phase that means *this has not happened yet*.
-	# A steady mark for something already happening: it has stopped being a warning.
-	var telegraphing := is_telegraphing()
-	if telegraphing and fmod(age * MARK_FLASHES_PER_SECOND, 1.0) > 0.55:
+	# **The flash is the phase.** *(M39.)* It flashes while telegraphing — *this has not happened
+	# yet* — and is steady once it has, and since M39 that is the only channel saying so: the colour
+	# was carrying it and could not, because a telegraph is over before the event is on screen. A
+	# flash has no such problem, because it is a property of the mark rather than of a moment she
+	# had to be present for.
+	if is_telegraphing() and fmod(age * MARK_FLASHES_PER_SECOND, 1.0) > 0.55:
 		return
 
 	var swell := mark_swell()
@@ -1000,8 +1028,13 @@ func _draw_firefight() -> void:
 		if flare <= 0.25:
 			continue
 		var muzzle := at + Vector2(side * 15.0, -12.0)
-		draw_circle(muzzle, 3.0 + 4.0 * flare, Palette.MARK_TELEGRAPH)
+		draw_circle(muzzle, 3.0 + 4.0 * flare, MUZZLE_FLASH)
 		draw_circle(muzzle, 1.5 + 2.0 * flare, Color.WHITE)
+
+## A muzzle flash is a *light*, and it had been borrowing the amber the danger vocabulary uses for
+## its marks. Two things that mean different things must not share a constant, or a rebalance of one
+## silently repaints the other — the `DangerEdge` mistake M37 found, in the other direction.
+const MUZZLE_FLASH := Color("e8b64a")
 
 ## The person, the dog, and the lead between them.
 ##

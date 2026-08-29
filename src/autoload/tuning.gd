@@ -131,6 +131,30 @@ const EXCITEMENT_FROM_RUNNING := 14.0
 ## Constant dread while standing in an alley.
 const EXCITEMENT_FROM_ALLEY := 3.0
 
+# ----------------------------------------------------------------- the mark ---
+
+## What a row has to cost, in points of the meter, before it earns a caret over its head.
+##
+## *(M39, playtest 10 finding 9: "I would kind of expect for more dangerous entities to have danger
+## indicators but it feels like some dangerous ones don't have indicators and some really benign
+## ones do have indicators.")*
+##
+## The rule it replaces asked whether a danger *changes over time*, which is a true statement about
+## a thing and not a statement about how bad it is — so a fire engine at +115 carried nothing and a
+## burning building at +56 carried a caret, and the most expensive ordinary row in act I had none.
+## See `EventInstance.wants_a_mark()`.
+##
+## **A quarter of the meter**, and it is a taste call stated rather than derived: one of these is a
+## quarter of the bar and a route has three or four on it. What makes it a *safe* taste call is
+## where it falls — the catalogue has a 7.5-point gap between `market_stall` (+27.8) and
+## `construction` (+20.3), so the line sits in open ground rather than slicing a cluster, and a
+## small rebalance cannot flip a row across it by accident.
+##
+## The number does not decide *which* rows are marked so much as *how many*: the ordering is the
+## invariant, and `tests/test_danger.gd` holds it — if A is marked and B is not, A costs more than
+## B, over the whole catalogue.
+const MARK_WORTH_A_DETOUR := METER_MAX * 0.25
+
 # ---------------------------------------------------------------- telegraph ---
 
 ## Fraction of full intensity an event emits while still telegraphing.
@@ -541,6 +565,19 @@ const CAR_HORN_OUTER_RADIUS := 132.0
 ## survive the gap between two cars in the same lane.
 const CAR_WARNING_HOLD := 1.4
 
+## How near the end of the day, in seconds, the doubled mark means *now*.
+##
+## *(M39, playtest 10 finding 11.)* The mark over her head is the one cue in the game that gives an
+## **instruction**, and its second level says *it is bad now and you are in it: one step left*. That
+## is a claim about a moment, so it needs a clock rather than a radius — it was raised anywhere
+## inside a lethal event's **outer** radius, which for a cyclist is more than thirty times the area
+## that can actually end the day, and it stayed up while the bike rode away.
+##
+## Read it as the step: at `WALK_SPEED` it is 64px, which is two tiles, which is the width of the
+## pavement she would have to leave. Long enough to be an instruction she can still obey and short
+## enough that it is never up while the answer is "carry on walking".
+const LETHAL_MARK_LEAD := 0.7
+
 ## Traffic that queues instead of driving through itself. *(M27, playtest 04: "cars still bump
 ## into each other".)* A car keeps `CAR_HEADWAY_TIME` seconds of clear road in front of it and
 ## never closes to less than `CAR_GAP_MIN`, which is a car's own length plus a nose.
@@ -628,6 +665,19 @@ const OUT_OF_SIGHT := 420.0
 ## window* stated as a distance: at `WALK_SPEED` it is the two seconds she gets between seeing
 ## the cat crouch and reaching the place it bolts through.
 const AHEAD_LEAD_DISTANCE := 184.0
+## The furthest ahead of her something may be sited and still be **on screen** when it gets there.
+##
+## *(M39.)* The camera sits on her at zoom 2 over a 1280x720 viewport, so the visible world is
+## 640x360 and the worst axis is the vertical one: 180px, plus about 32 of camera look-ahead. A
+## pursuer is sited beyond its own stand-off so that it visibly closes into it, and this is the cap
+## on that — a dog telegraphing off the top of the screen is a dog with no telegraph, and the sight
+## of it is the whole cue.
+##
+## Not to be confused with `OUT_OF_SIGHT`, which is the *other* end of the same measurement and is
+## deliberately more generous: nothing may be watched out of existence, so that number is the far
+## corner of the view and this one is the near edge of it.
+const SIGHT_AHEAD := 200.0
+
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".
 const AHEAD_MIN_SPEED := 40.0
@@ -721,8 +771,17 @@ const RUN_TAUGHT_DAY := 3
 ##
 ## Bounded by the cost of the answer, not by the fiction: at `EXCITEMENT_FROM_RUNNING` a sprint is
 ## fourteen points a second, so a six-second chase is most of the meter and being *made* to run
-## would be being made to lose. Three seconds is about forty points — the most expensive moment in
-## act I by a distance, and much cheaper than the day it buys.
+## would be being made to lose.
+##
+## It is the cap on **doing nothing**. A player who answers is out of it well before the clock is,
+## because `PURSUIT_SHAKEN_OFF` ends the chase when she has beaten it; a player who does not is
+## caught, which is the point.
+##
+## It cannot fall much below this, and the constraint is worth knowing before reaching for it:
+## walking away must still lose *inside the chase*, so the chase has to be long enough to close the
+## stand-off at `pursue_speed - WALK_SPEED` — 38px/s against the day-3 dog. Every extra pixel of
+## stand-off therefore costs 1/38 s of chase, which is why a **narrower** stand-off is what buys a
+## shorter one.
 const PURSUIT_TIME := 3.0
 
 ## And the least a pursuer's speed may differ from either of hers.
@@ -741,7 +800,7 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## of it closing, and this is how much of that she is owed before it can touch her.
 const PURSUIT_MIN_NOTICE := 1.5
 
-## How long she is allowed to take to answer the lunge, at the pursuer's own speed.
+## How long she is allowed to take to answer the lunge, at the speed the gap is actually closing.
 ##
 ## *(Playtest 08, finding 4: "I like the running tutorial on day 3 but I don't know how to solve it
 ## yet — I died every time".)* **A notice stated as a duration is not a notice.** M33 bought the
@@ -753,32 +812,68 @@ const PURSUIT_MIN_NOTICE := 1.5
 ##
 ## So the telegraph is spent **closing to a stand-off and holding there**, which is
 ## `pursuit_standoff()` below, and this is the number that sets it: far enough out that the lunge
-## itself can be answered rather than merely watched. Read it as the reaction it buys — six tenths
-## of a second, at whatever speed the thing is coming.
+## itself can be answered rather than merely watched.
+##
+## **This number is the one thing about the day-3 dog a player has said is right.** *(Playtest 10:
+## "the charging start earlier was fine — it was enough time to react properly".)* M39's own analysis
+## of finding 13 read it as a reaction-window problem, derived that the window is really two tenths
+## of a second once her own walking speed and the cost of the about-turn are counted, and cut this to
+## 0.45 with a much wider stand-off to compensate. The arithmetic was correct and it was answering a
+## question nobody had asked: the complaint was *"the dog kept following for too long"*, which is the
+## break-off. The reaction stays at 0.6 and the price of the answer is what moved. See
+## `PURSUIT_SHAKEN_OFF` and `docs/PLAYTEST-10.md`, section C.
+##
+## What boxes it in, in both directions: **walking must still lose** and **running must still win**
+## inside `PURSUIT_TIME`, both at 38px/s of authority against the day-3 dog, and the stand-off has to
+## be **on screen** — the visible world is 640x360 at zoom 2, so a dog standing much past 180px in
+## front of her telegraphs off the top of the screen when she walks north or south, and the sight of
+## it is the whole cue.
 const PURSUIT_REACTION := 0.6
 
-## And how far she has to open before it loses interest.
+## How long she has to be visibly beating it before it gives up, in seconds of the gap opening.
 ##
-## The other half of the same finding, and it is the half that makes running **payable**. Running
-## costs `EXCITEMENT_FROM_RUNNING` a second, so a chase that always runs its full `PURSUIT_TIME`
-## prices the correct answer at forty points whether she reacted on the first frame or the last —
-## and the trace has her running, doing exactly what the HUD asked, and losing the day to the meter
-## at 100 with the dog still 87px away. A pursuit that ends when it is *beaten* rather than when
-## the clock says so is the difference between a lesson and a toll.
+## The half that makes running **payable**, and the whole of what the chase costs when it is
+## answered. Running is `EXCITEMENT_FROM_RUNNING` a second, so a chase priced by its own clock costs
+## the same whether she reacted on the first frame or the last — a toll rather than a lesson.
 ##
-## Sized against the stand-off rather than invented: it is two street-widths out, which is far
-## enough that breaking off is something the player can see happen and connect to what they did, and
-## near enough that shaking it off is **less than two seconds of running**. That last number is the
-## whole point of the constant, and it was measured rather than chosen: at 200 a rig that turned and
-## ran shook the dog off in 2.6s and lost the day anyway, at 87 excitement of a hundred.
-const PURSUIT_BREAK_OFF := 170.0
+## **Stated as a rate rather than as a distance, and that is the load-bearing part.** A pursuer is
+## faster than a walk and slower than a run, by `PURSUIT_MIN_MARGIN` on both sides — so the gap can
+## only open while she is *running away from it*, and it must close while she walks. "It has lost
+## her" is therefore a fact about the closing rate, and the two halves of the contract stop needing
+## an inequality to hold them apart:
+##
+## - **Walking away can never end it.** Not "loses inside `PURSUIT_TIME` if the arithmetic works out"
+##   — it cannot happen at all, whatever the stand-off, at any radius, for any row.
+## - **Running away always ends it**, in this many seconds plus whatever the about-turn cost, and no
+##   sooner for a large dog than for a small one. Reacting earlier costs strictly less, because the
+##   clock starts when she starts beating it.
+##
+## Sized so the dog visibly falls behind rather than blinking off: at 38px/s of authority against the
+## day-3 dog it is ~30px of daylight, on top of the ~34px the about-turn hands back. Roughly 1.2s of
+## running all told, about 17 points — the most expensive moment in act I and much cheaper than the
+## day it buys.
+const PURSUIT_SHAKEN_OFF := 0.8
 
 ## How close a pursuer comes while it is still only telegraphing.
 ##
-## Derived rather than authored, because it is the fairness contract in geometric form: she is owed
-## `PURSUIT_REACTION` seconds of the thing's own approach between the moment it is allowed to end
-## her day and the moment it can. Anything nearer and the telegraph is a formality; anything much
-## further and it is not visibly *at* her, which is the whole cue.
+## Derived rather than authored, because it is the fairness contract in geometric form: between the
+## moment it is allowed to end her day and the moment it can, she is owed `PURSUIT_REACTION` seconds
+## of the thing's own approach. Anything nearer and the telegraph is a formality; anything much
+## further and it is off the screen, which is worse — the sight of it closing is the whole cue.
+##
+## **The edge case it does not price, and it is a known gap.** At the instant of the lunge she is
+## usually walking *into* it — a pursuer is sited in front of her, forward is where she was going,
+## and the stand-off is held by the thing backing off rather than by her stopping — so the gap closes
+## at `pursue_speed + WALK_SPEED` and the notice is worth about a third of what this buys. Reversing
+## a walk into a run costs another `(WALK_SPEED + RUN_SPEED) / ACCELERATION` seconds on top, during
+## which the thing keeps coming. Measured against the day-3 dog the real window is about **two tenths
+## of a second**.
+##
+## Both terms were folded into this function and then taken back out. The stand-off they produce is
+## 70px wider, and the extra ground is spent *reversing away from her* through the telegraph, which
+## reads to a player as a dog that has changed its mind. What it bought was a wider window on the one
+## part of the encounter a player has said was already right. The cost of the answer is priced by
+## `PURSUIT_SHAKEN_OFF` instead, which is where the complaint actually was.
 func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 	return inner + pursue_speed * PURSUIT_REACTION
 
@@ -788,7 +883,7 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 ## field to walk out of — it follows. So it needs its own contract, and `docs/TODO.md` said what it
 ## would have to be stated over before there was anything to state it about: `RUN_SPEED`.
 ##
-## Three conditions, and each of them is one of the three ways this could be unfair:
+## The clauses, each of them one of the ways a pursuit can be unfair:
 ##
 ## - **Walking must lose.** Faster than `WALK_SPEED` by a real margin, or the mechanic teaches
 ##   nothing — she strolls away and the run key stays a trap.
@@ -796,29 +891,34 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 ##   is a death sentence with a keypress attached.
 ## - **It must let go.** A chase with no end is a chase she cannot afford: running is priced per
 ##   second, so an unbounded one is a loss however well it is played.
-##
-## *(Playtest 08 added the last two, and both are relationships the first three assumed without
-## ever saying. The contract was stated entirely in **speeds and durations**, and a pursuit is
-## played out in **distances** — so a dog that satisfied every line of it could still be sitting on
-## top of her when it turned lethal, and a run that satisfied every line of it could still cost
-## more than the day it saved.)*
-##
-## - **Walking must lose, from the stand-off, inside the chase.** Otherwise the stand-off has
-##   quietly turned the pursuit into something you can stroll away from, which is the trap the run
-##   button was before there was anything to run from.
-## - **Running must break it off, inside the chase.** Not merely survive it: the price of the
-##   answer has to be bounded by how well it is played, or the lesson is a toll.
-##
-## *(M36 added the last two, for `EventDef.pursues_within` — a pursuer that is a **place** until she
-## walks up to it. A trigger is a third distance in a contract that M35 had just finished restating
-## as distances, so it belongs here rather than in a row of the catalogue.)*
-##
+## - **Running has to open more than the radius that ends the day**, over the whole chase. Otherwise
+##   running is the correct answer and still not enough.
+## - **The notice is the sight of it coming**, and there has to be at least `PURSUIT_MIN_NOTICE` of
+##   it before the thing may end her day.
+## - **It stands off inside its own field.** A pursuer holding a stand-off outside `outer_radius`
+##   emits nothing at her for the whole of the phase that is supposed to *be* the warning: no meter,
+##   no `!` over her head, and a telemetry entry that cannot say what raised the mark. This one was
+##   found by walking a rig rather than by reading it.
 ## - **It notices her from outside its own stand-off**, or the notice is spent somewhere it was
-##   never going to move from and the telegraph is a formality.
+##   never going to move from and the telegraph is a formality. (`pursues_within` only.)
 ## - **It cannot notice her from outside its own field.** What she is owed before a lethal thing
 ##   starts making decisions about her is the chance to have felt it: the meter is the only thing
 ##   that says a stranger in an alley is worth crossing the road for, and it says nothing at all
-##   past `outer_radius`.
+##   past `outer_radius`. (`pursues_within` only.)
+##
+## **Two clauses that used to be here are gone, and their absence is the design.** The chase used to
+## end at a *distance*, so the contract needed "walking cannot reach it inside the chase" and
+## "running can" — two inequalities in the same three numbers, pulling opposite ways, which is why
+## widening a stand-off silently ate an escape and a robber's trigger once had an eleven-pixel window
+## to live in. `PURSUIT_SHAKEN_OFF` ends it at a *rate* instead, and the first two clauses above then
+## make both facts true by construction: nothing slower than the pursuer can open the gap at all, and
+## nothing faster can fail to.
+##
+## **What this contract still cannot see**, and it is why the rig exists: every clause is about the
+## pursuer, and none is about *her*. She is usually walking into the thing when it lunges, and
+## turning round costs ground before the run gains any — so a row can satisfy every line below and
+## still leave a two-tenths-of-a-second window. See `pursuit_standoff()`. The rig in
+## `tests/test_events.gd` that has to accelerate is what checks the half this cannot.
 func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		telegraph: float, notice_within := 0.0, outer := 0.0) -> bool:
 	if speed < WALK_SPEED + PURSUIT_MIN_MARGIN:
@@ -844,18 +944,19 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		push_error("Unfair pursuit '%s': %.1fs of it coming is not enough notice (%.1fs)"
 				% [id, telegraph, PURSUIT_MIN_NOTICE])
 		return false
-	# The two distance clauses. Both are measured from the stand-off, because that is where the
-	# chase actually starts: everything before it is a telegraph she is not allowed to be killed in.
-	var standoff := pursuit_standoff(speed, inner)
-	if (speed - WALK_SPEED) * chase_time < standoff - inner:
-		push_error("Unfair pursuit '%s': walking closes %.0fpx of the %.0fpx stand-off in %.1fs, so "
-				% [id, (speed - WALK_SPEED) * chase_time, standoff - inner, chase_time]
-				+ "it can be strolled away from")
+	# Being shaken off has to be reachable inside the chase at all, or the rate rule is decorative
+	# and the clock is back to pricing the answer.
+	if chase_time <= PURSUIT_SHAKEN_OFF:
+		push_error("Unfair pursuit '%s': a %.1fs chase is shorter than the %.1fs of being outrun "
+				% [id, chase_time, PURSUIT_SHAKEN_OFF] + "that ends it, so nothing she does matters")
 		return false
-	if (RUN_SPEED - speed) * chase_time < PURSUIT_BREAK_OFF - standoff:
-		push_error("Unfair pursuit '%s': running opens %.0fpx in %.1fs and needs %.0fpx to shake "
-				% [id, (RUN_SPEED - speed) * chase_time, chase_time, PURSUIT_BREAK_OFF - standoff]
-				+ "it off, so the run is priced by the clock rather than by the escape")
+	# A pursuer that holds its stand-off outside its own `outer_radius` emits nothing at her for the
+	# whole of the phase that is supposed to be the warning — no meter, no `!` over her head, and a
+	# telemetry entry that cannot say what raised the mark.
+	var standoff := pursuit_standoff(speed, inner)
+	if standoff > outer and outer > 0.0:
+		push_error("Unfair pursuit '%s': it stands off at %.0fpx and reaches %.0fpx, so its whole "
+				% [id, standoff, outer] + "notice is spent outside its own field")
 		return false
 	if notice_within <= 0.0:
 		return true
@@ -866,13 +967,6 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 	if notice_within > outer:
 		push_error("Unfair pursuit '%s': it notices her at %.0fpx and reaches %.0fpx, so it decides "
 				% [id, notice_within, outer] + "about her before she can feel it at all")
-		return false
-	# And the trap in the middle: a trigger at or beyond the break-off is a pursuit that gives up
-	# the instant it starts, because she is *already* the distance away that means it has lost her.
-	# Walking away would then work, and walking away is the one thing that must not.
-	if notice_within >= PURSUIT_BREAK_OFF:
-		push_error("Unfair pursuit '%s': it notices her at %.0fpx and loses interest past %.0fpx, "
-				% [id, notice_within, PURSUIT_BREAK_OFF] + "so it can be walked away from")
 		return false
 	return true
 

@@ -33,6 +33,9 @@ var _log: TelemetryLog
 ## in the log and the clock in the HUD are the same number.
 var _clock := 0.0
 var _day_open := false
+## The log's own filename without its extension, so a screenshot can be named after the run it
+## belongs to and sort next to it.
+var _stem := ""
 
 ## Whether anything is being recorded. Everything else here is a no-op when this is false.
 func is_active() -> bool:
@@ -45,9 +48,22 @@ func begin_run(run_seed: int) -> void:
 	if not _prepare_directory():
 		return
 	var stamp := Time.get_datetime_string_from_system(false, false).replace(":", "").replace(" ", "-")
-	_log = TelemetryLog.new("%s/run-%s-seed%d.log" % [DIRECTORY, stamp, run_seed])
+	# **The commit is in the name, not only on line 1.** *(M39, playtest 10 finding 14: "maybe
+	# include the abbreviated commit hash in the file name too so we can quickly delete sessions from
+	# old commits".)* It has been on the first line of every log since M23, which is no help at all
+	# when the question is asked of a directory listing — and it is always asked of a directory
+	# listing, because what a reader wants to know first is *which of these is still about this
+	# build*. `tools/telemetry.sh -p` is the other half.
+	# The tag goes **last**, and that is not a cosmetic choice: the timestamp has dashes in it and so
+	# does `abc1234-dirty`, so a tag in the middle cannot be parsed back out by anything simpler than
+	# a real parser — and the thing that has to parse it is a bash script old enough to run on
+	# macOS's bash 3.2. At the end it is "everything after `-seed<digits>-`".
+	_stem = "run-%s-seed%d-%s" % [stamp, run_seed, _file_tag()]
+	_log = TelemetryLog.new("%s/%s.log" % [DIRECTORY, _stem])
 	_clock = 0.0
 	_day_open = false
+	_shots_today = 0
+	_last_shot = -INF
 	_log.header("nappy run log  %s  commit %s"
 			% [Time.get_datetime_string_from_system(), source_version()])
 	if _log.path != "":
@@ -72,6 +88,8 @@ func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float)
 		return
 	_clock = 0.0
 	_day_open = true
+	_shots_today = 0
+	_last_shot = -INF
 	_log.header("")
 	_log.header("day %-2d act %d  run seed %d  city seed %d  length %.1fs"
 			% [day, act, run_seed, city_seed, length])
@@ -108,6 +126,69 @@ func clock() -> float:
 func current_log() -> TelemetryLog:
 	return _log
 
+# ---------------------------------------------------------------- snapshots ---
+# *(M39, playtest 10 finding 12: "would it make sense to create screenshots for reference in
+# addition to normal telemetry? doesn't have to be a fixed frequency but could try to heuristically
+# capture key instances.")*
+#
+# A trace says what happened and a screenshot says what it **looked like**, and the second question
+# is the one this project keeps having to answer with a rig. Four of the last five milestones fixed
+# something a log could not see: birds that froze in the air, a cat drawn running backwards, a zzz a
+# body's width off the pram, a caret over the wrong things.
+#
+# Three constraints, and the first is the one the whole file is built on:
+#
+# - **It must not touch gameplay.** A capture reads the viewport after the frame is drawn and writes
+#   a file. It draws nothing, it changes no state, and it takes no RNG. The `await` is on
+#   `RenderingServer.frame_post_draw`, which is where a frame that already exists becomes readable.
+# - **The heuristic is the log's own.** There is no fixed interval. A shot is taken on the entries a
+#   reader already stops at — a day lost, a chase, a lethal cue — because those are exactly the lines
+#   that raise the question a picture answers. See `TelemetryObserver`.
+# - **It has to stay small.** Capped per day and spaced, because a burst of near-identical frames is
+#   a directory nobody opens.
+
+## The most shots one day may produce, and the least time between two of them.
+##
+## Six is about one per losing attempt plus the moment before it. The spacing is longer than any cue
+## in the game holds for, so a condition that is true for two seconds is one picture rather than a
+## hundred and twenty.
+const SHOTS_PER_DAY := 6
+const SHOT_SPACING := 3.0
+
+var _shots_today := 0
+var _last_shot := -INF
+
+## Writes a PNG of the current frame beside the log, named after the moment that asked for it.
+##
+## Silently does nothing when there is no run being traced, when the day's allowance is spent, when
+## another shot was taken a moment ago, or when there is no screen to photograph — a headless test
+## run has a viewport with nothing in it, and the suite must not start writing images.
+func snapshot(kind: String) -> void:
+	if not _log or _log.path == "" or _shots_today >= SHOTS_PER_DAY:
+		return
+	if _clock - _last_shot < SHOT_SPACING:
+		return
+	if DisplayServer.get_name() == "headless":
+		return
+	_shots_today += 1
+	_last_shot = _clock
+	_capture("%s/%s-%03.0fs-%s.png" % [DIRECTORY, _stem, _clock, kind])
+
+## The capture itself, split out because it is the only thing here that has to wait for a frame.
+##
+## The `await` is why this is not inlined: `snapshot()` is called from the middle of an observer's
+## `_process`, and a caller that had to be a coroutine would put an `await` in the telemetry's
+## consumers — which is the shape of a rule ("telemetry never touches gameplay") quietly becoming
+## untrue.
+func _capture(path: String) -> void:
+	await RenderingServer.frame_post_draw
+	var viewport := get_viewport()
+	if not viewport:
+		return
+	var image := viewport.get_texture().get_image()
+	if image.save_png(path) != OK:
+		push_warning("telemetry: could not write %s" % path)
+
 # ----------------------------------------------------------------- provenance ---
 
 ## The commit the run was played on, with a `*` if the working tree was dirty.
@@ -136,6 +217,14 @@ static func source_version() -> String:
 		return commit
 	return commit + ("*" if ("\n".join(status)).strip_edges() != "" else "")
 
+## The same thing in a form a filename can carry, and a shell script can match on. *(M39.)*
+##
+## `*` is the dirty marker on line 1 of the log and is a glob character everywhere else, so it
+## becomes a word: `tools/telemetry.sh -p` compares the tag against `git rev-parse --short HEAD` and
+## a marker that expanded in a shell would make that comparison delete the wrong things.
+static func _file_tag() -> String:
+	return source_version().replace("*", "-dirty")
+
 # ------------------------------------------------------------------ the files ---
 
 func _prepare_directory() -> bool:
@@ -162,4 +251,13 @@ func _prune() -> void:
 	# The name carries the timestamp, so sorting by name sorts by age.
 	ours.sort()
 	for i in ours.size() - KEEP_LOGS + 1:
-		dir.remove(ours[i])
+		_remove_run(dir, ours[i].trim_suffix(".log"))
+
+## Deletes a log and the snapshots taken during it. *(M39.)* They are one artefact — a line and the
+## picture of it — so a pruned run must not leave its images behind, which would otherwise be the
+## only thing in the directory nothing ever cleans up.
+func _remove_run(dir: DirAccess, stem: String) -> void:
+	dir.remove(stem + ".log")
+	for file in dir.get_files():
+		if file.begins_with(stem + "-") and file.ends_with(".png"):
+			dir.remove(file)

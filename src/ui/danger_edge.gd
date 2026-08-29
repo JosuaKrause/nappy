@@ -214,7 +214,9 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 	var direction := offset.normalized()
 	var at := centre + direction * _distance_to_edge(bounds, centre, direction)
 
-	var colour := Palette.MARK_LETHAL if instance.def.hard_fail else Palette.MARK_ACTIVE
+	# The same two colours the caret over the entity uses, meaning the same two things. *(M39.)*
+	# A badge and a caret that disagreed about what red meant would be two vocabularies.
+	var colour := Palette.MARK_LETHAL if instance.def.hard_fail else Palette.MARK_COSTLY
 	# A disc under the whole thing, so the icon and the number read over a pale pavement and a
 	# dark carriageway alike. The one place in the game a filled circle is still allowed —
 	# it is a badge on the screen, not a field drawn in the world.

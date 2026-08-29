@@ -14,7 +14,8 @@ person playing, and nobody should have to have an opinion about those.
 ```sh
 ./tools/telemetry.sh          # print the newest run
 ./tools/telemetry.sh -f       # follow the run happening right now
-./tools/telemetry.sh -l       # list them, newest first
+./tools/telemetry.sh -l       # list them, newest first, with size and commit
+./tools/telemetry.sh -p       # say what is stale; `-p yes` deletes it
 ./tools/telemetry.sh 3        # print the third-newest
 ```
 
@@ -27,10 +28,25 @@ Underneath, one file per run in `user://telemetry/`:
 
 The absolute path is also printed to stdout at the start of every run. Both the script and
 the print exist for the same reason: a trace nobody can find is a trace nobody reads, and on
-macOS the directory is inside `~/Library`, which Finder hides by default. Logs are named
-`run-<timestamp>-seed<N>.log`, the newest fifty are kept and older ones are pruned —
-`check.sh` and `shot.sh` boot the game too, and the directory would otherwise fill with
-two-line traces of runs that never started.
+macOS the directory is inside `~/Library`, which Finder hides by default.
+
+Logs are named `run-<timestamp>-seed<N>-<commit>.log`. The newest fifty are kept and older ones are
+pruned automatically — `check.sh` and `shot.sh` boot the game too, and the directory would otherwise
+fill with two-line traces of runs that never started.
+
+**The commit is in the name since M39** *(playtest 10, finding 14: "is there a mechanism to delete
+old outdated sessions? maybe include the abbreviated commit hash in the file name too")*. It has
+been on the first line of every log since M23, which is no help at all when the question is being
+asked of a directory listing — and it always is, because what a reader wants to know first is which
+of these still describes the build in front of them. `-p` is the other half: it treats a log from
+another commit, or one too short to have been a run, as stale, never touches the newest, and prints
+what it would delete unless told `yes`. It is at the end of the name and not the middle because a
+timestamp has dashes in it and so does `abc1234-dirty`.
+
+**One sitting is often several logs, and that is correct.** Since M38 both `R` on the pause screen
+and a finished run restart the game, which reloads the scene and opens a new log — so a file is one
+*run*, not one session. *(Playtest 10: "oh I see the long session actually got split into multiple
+files.")*
 
 **It is on by default.** `-- --no-telemetry` turns it off. A trace behind a flag is a trace
 the person playtesting has to remember to turn on, which means the interesting run is the one
@@ -200,6 +216,33 @@ class. That node exists so the invariant is easy to keep: the telemetry is not i
 that decide things. It is only added to the tree when a run is being traced, so with
 telemetry off there is no observer at all rather than one checking a flag sixty times a
 second.
+
+## Snapshots
+
+> *"Would it make sense to create screenshots for reference in addition to normal telemetry?
+> Doesn't have to be a fixed frequency but could try to heuristically capture key instances."*
+> — playtest 10, finding 12.
+
+A trace says what happened; a screenshot says what it **looked like**, and the second question is
+the one this project keeps having to answer with a rig. Four of the last five milestones fixed
+something no log could see: birds that froze in the air, a cat drawn running backwards, a zzz a
+body's width off the pram, a caret over the wrong things.
+
+So a run writes PNGs beside its log, named `<log stem>-<clock>s-<what>.png`, and they are pruned
+with it. Three rules:
+
+- **The heuristic is the log's own.** There is no interval. A shot is taken on the entries a reader
+  already stops at, because those are exactly the lines that raise the question a picture answers:
+  `lost` (what the street looked like as the day ended), `chase` starting (the one encounter with a
+  right answer, and the open question is whether a dog that stops short *reads* as "go now"), and
+  the doubled `NOW` mark going up (every complaint about that cue has been about **when**).
+- **It stays small.** `Telemetry.SHOTS_PER_DAY` and `SHOT_SPACING` — six a day, three seconds
+  apart, so a condition that is true for two seconds is one picture rather than a hundred and
+  twenty. A directory of near-identical frames is a directory nobody opens.
+- **It does not touch gameplay**, which is the constraint the whole file is built on. A capture is
+  an `await RenderingServer.frame_post_draw` and a file write: it draws nothing, changes no state
+  and takes no RNG. The calls live in `TelemetryObserver`, not in the classes that decide things,
+  and there is no capture at all under `--headless` — the suite must never start writing images.
 
 ## What it deliberately does not do
 

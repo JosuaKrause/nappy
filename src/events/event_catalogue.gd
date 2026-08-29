@@ -95,6 +95,27 @@ static func _build() -> Array[EventDef]:
 
 ## The reason parks are not a free win. Permanent, wide, and sitting in the middle of the
 ## calmest ground in the city.
+##
+## **And for twenty milestones it was the calmest ground in the city.** *(M39, playtest 10 finding 2:
+## "playground doesn't increase excitement.")* `PLAYGROUND` is on `Tile._CALM`, so the excitement
+## decay on it is `EXCITEMENT_DECAY_WALKING × EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` — **7.7/s** —
+## and this row emitted **7.0/s at the very peak of its pulse**, with an envelope that spends most of
+## its cycle at a fraction of that. It never once out-emitted the ground it was standing on, at any
+## distance, at any phase of its beat: its denial radius — the distance at which calm ground stops
+## being usable — was its own **inner radius**, 40px of a stated 150. Standing in a playground was a
+## net *benefit*.
+##
+## It was right when it was written. In M5 the calm multiplier was 3.5, so the decay under it was
+## 1.5/s and 7.0 was nearly five times that. **M18 took the multiplier to 10 and M38 to 12**, and
+## nobody re-ran the arithmetic on the one ambient row that lives on calm ground — while playtest 08
+## was doing exactly this sum for the busker, one function away, in `EventScheduler._denial_radius`,
+## whose docstring says *"getting this wrong is how one busker was ever thought to spoil a park"*.
+##
+## The number is set from what it should deny rather than by taste, which is the lesson: at 15 the
+## denial radius is 117px at the top of the beat and 86px at the middle of it, against a park block
+## 256px across. So it dominates the middle of a park and leaves the far side genuinely calm, which
+## is what the comment below has claimed since M5 — and `tests/test_balance.gd` still finds a day
+## winnable, because the ground is contested rather than removed.
 static func _playground() -> EventDef:
 	var def := EventDef.new()
 	def.id = "playground"
@@ -102,7 +123,9 @@ static func _playground() -> EventDef:
 	def.kind = GameEnums.EventKind.AMBIENT
 	def.ambient_source = EventDef.AmbientSource.PLAYGROUND
 	def.look = EventDef.Look.NONE  # The park's swing frame already draws it.
-	def.intensity = 7.0
+	# Above the decay on the ground it stands on (7.7/s), which is the whole of what an event on
+	# calm ground has to clear to exist at all. See the note above.
+	def.intensity = 15.0
 	# Sized so it dominates the middle of a park but leaves the far side genuinely calm —
 	# a park block is 256px across, so a 200px reach would have swallowed the whole thing
 	# and made every park useless rather than merely contested.
@@ -718,10 +741,10 @@ static func _reversing_lorry() -> EventDef:
 ##   of it closing — but the sight of it closing *onto her*, which is what playtest 08 was killed
 ##   by, is not notice at all. `Tuning.pursuit_standoff()` is where it stops: 104px, six tenths of a
 ##   second of its own speed outside the radius that ends the day.
-## - **Three seconds, or until she has shaken it off.** A run is fourteen points a second, so the
-##   chase has a cap; `Tuning.PURSUIT_BREAK_OFF` is what makes reacting *early* worth anything, and
-##   the whole encounter costs about 35 points either way — the most expensive moment in act I and
-##   much cheaper than the day it buys.
+## - **Three seconds of doing nothing, or 0.8s of being outrun.** A run is fourteen points a second,
+##   so the chase needs a cap, but the cap is not what prices the answer — `Tuning.PURSUIT_SHAKEN_OFF`
+##   is, which is why reacting early is worth something. About 17 points given promptly: the most
+##   expensive moment in act I and much cheaper than the day it buys.
 ## - **Intensity 12, not 22.** It is lethal; it does not also need to be the loudest thing in act I.
 ##   At 22 the correct play — run, at 14 points a second, for as long as it takes — cost more than
 ##   the meter had, and playtest 08's trace has her doing exactly that and losing the day to
@@ -741,6 +764,11 @@ static func _charging_dog() -> EventDef:
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
 	def.intensity = 12.0
 	def.inner_radius = 26.0
+	# Wider than the stand-off, and that is a constraint rather than a taste: a pursuer holds its
+	# stand-off through its whole telegraph, so a field narrower than that is a field it is never
+	# inside — the dog would spend the entire warning emitting nothing at her, the `!` over her head
+	# would never go up, and the trace would attribute the mark it eventually raises to "nothing in
+	# reach". `validate_pursuit` refuses the arrangement.
 	def.outer_radius = 150.0
 	# The chase proper, once it can end the day. `Tuning.PURSUIT_TIME` is the cap and the reason
 	# for it is the price of running, not the fiction.
@@ -927,6 +955,10 @@ static func _alley_robbery() -> EventDef:
 	def.placement = [GameEnums.TileType.ALLEY]
 	def.intensity = 16.0
 	def.inner_radius = 30.0
+	# Wider than the trigger, and that is the contract rather than a taste: he may not notice her from
+	# outside his own field, because the meter is the only thing that says a stranger in an alley is
+	# worth crossing the road for. The sixty pixels between this and `pursues_within` are the row's
+	# first sentence — **on sight** — with somewhere to happen.
 	def.outer_radius = 200.0
 	# From the moment he notices her, not from dawn. See `EventDef.pursues_within`.
 	def.telegraph_time = 1.8
@@ -935,11 +967,15 @@ static func _alley_robbery() -> EventDef:
 	# The same speed as the charging dog, deliberately: a player who learned on day 3 what a thing
 	# that comes after you moves like should not have to learn it again in act III.
 	def.pursue_speed = 130.0
-	# Inside `Tuning.PURSUIT_BREAK_OFF`, and that is a contract rather than a taste. A trigger at or
-	# beyond the break-off is a pursuit that loses interest the moment it starts, because she is
-	# already standing at the distance that means it has lost her — so walking away would work, and
-	# walking away is the one thing that must not. Measured first, then written into
-	# `validate_pursuit`: at 170 the rig strolled away from him every time.
+	# Outside his stand-off (108px) and inside his field, which is what leaves room for both halves of
+	# the row: far enough out that the notice is not spent standing still, near enough that she has
+	# felt him for a while before he decides anything about her.
+	#
+	# The trap this once fell into, and the reason it is worth a comment rather than a number: the
+	# chase used to end at a *distance*, so a trigger at or past that distance was a pursuit that
+	# lost interest the instant it started — she was already standing where it means "it has lost
+	# her" — and the rig strolled away from him every time. `Tuning.PURSUIT_SHAKEN_OFF` ends a chase
+	# at a rate now, so no trigger distance can reproduce it.
 	def.pursues_within = 140.0
 	# And he walks off when he has lost her, rather than being deleted where he stood.
 	def.departs_at = 100.0

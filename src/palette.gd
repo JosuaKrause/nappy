@@ -52,14 +52,21 @@ const SPOILED_GROUND := Color("6b6357")
 
 # ------------------------------------------------------------------ events ---
 
-## The danger marks. Amber while something is about to happen, red once it is happening, and a
-## deeper red for the things that end the day.
+## The danger marks. **Two colours, and they are a scale rather than a sequence**: amber for
+## something worth going round, deep red for something that ends the day.
 ##
 ## These used to paint the aura rings, which M22 deleted: a ring communicates a falloff radius,
-## which is a number, where a mark over the thing communicates a threat. Same three phases, and
-## nothing draws a field any more. See docs/EVENTS.md, "The visual vocabulary".
-const MARK_TELEGRAPH := Color("e8b64a")
-const MARK_ACTIVE := Color("d2543f")
+## which is a number, where a mark over the thing communicates a threat.
+##
+## *(M39, playtest 10 finding 8: "I don't understand the difference between yellow and red warning
+## indicators above entities".)* There were three, and they were the three *phases* of an event —
+## amber telegraphing, red live, deep red lethal. Two things were wrong with that at once. A
+## telegraph is almost always over before the event is on screen, so the amber was only ever seen on
+## the two rows sited in front of the player and read as "near"; and `MARK_ACTIVE` and `MARK_LETHAL`
+## were two reds a player is asked to tell apart on a 15px caret. Phase is carried by the **flash**
+## now, which is what a flash is for, and the colour carries the only thing a colour is good at:
+## how bad. See `EventInstance.mark_colour()`.
+const MARK_COSTLY := Color("e8b64a")
 const MARK_LETHAL := Color("8f2f38")
 
 const CHALK := Color(0.92, 0.92, 0.88, 0.62)

@@ -29,6 +29,17 @@ lie in the commit rather than a missing change.
 
 Bash keeps what it is for: running `tools/*.sh`, git, and directory inspection.
 
+## Notes belong in the repo
+
+**Anything worth remembering about how to work on this project goes in this file, or in a rule or
+skill file beside it — never only in an assistant's private memory.** A memory is scoped to one
+tool, one machine and one account: it is invisible to everybody else who opens the repo, it is not
+reviewable in a diff, and it is lost the moment that store is cleared or the work moves. The repo is
+the shared, versioned, reviewable place, and it is already where this project keeps its reasoning.
+
+The same rule one level down: a note long enough to unbalance this file becomes a **rule file of its
+own** rather than a longer `CLAUDE.md`. What must not happen is a note living nowhere.
+
 ## Verification loop
 
 Run all three before committing. They are fast and they each catch a different class of bug.
@@ -248,6 +259,23 @@ Pass a distinct `stream` per consumer or two systems asking for "the day's RNG" 
 the same seed and their first rolls move together. Purely cosmetic randomness may use the
 global RNG and must stay away from anything touching the meters.
 
+**And one stream shared by several *phases* is the same bug with a longer fuse.** *(M39, playtest 10
+finding 5: "the tutorial dog on day 3 only appeared once (I died) then it didn't appear again".)*
+`EventScheduler.build_day` ran six phases off one RNG in sequence, so anything that changed how much
+an earlier phase drew moved everything after it — and a **one-shot the run had already spent was
+skipped before its `randf()` was drawn**. So the second attempt at day 3, the day the fire engine
+runs, started the recurring fill one value earlier and produced a different city's worth of events:
+`homeless_yeller` two to eight, `cyclist` none to three, between two consecutive attempts at the
+same day. `docs/TODO.md` had claimed since M32 that *"the retry is the same day"*.
+
+`EventScheduler._stream(base, salt)` is the fix and the rule: **a phase whose consumption can vary
+gets its own stream**, and inside the recurring fill each attempt gets one too, because
+`_place_one` re-rolls a variable number of times and returns early when a candidate is perfect. What
+is deliberately *not* closed: a scar, or a spent one-shot's 1920px route, genuinely frees ground, so
+the placements that were rejected against it now fit. The composition of the day is identical and a
+handful of route rows start a few tiles along the same street — which is the run's own history
+showing through, and is the answer that should show through.
+
 **The falloff has a shoulder, and the shape is a design decision.** *(M33, playtest 07 finding
 18: "the excitement should go substantially up from relatively far away — I shouldn't have to get
 actual contact to get penalized.")* `Tuning.falloff` is `1−t²` between the inner and outer radius,
@@ -455,16 +483,37 @@ so it closed the gap in three quarters of a second and stood *inside its own let
 rest of a phase whose entire purpose is to be a warning. Every line of the contract passed while it
 killed people, three attempts running. The rule the fix is an instance of: **when a contract is
 about a moving encounter, state it over distance and check it by walking, not by asserting the
-numbers it was written from.** `Tuning.pursuit_standoff()` is the notice as a distance and
-`PURSUIT_BREAK_OFF` is the price of the right answer as a distance; `tests/test_events.gd` walks
-three answers rather than restating either. Two traps inside it, both found by doing it:
+numbers it was written from.** `Tuning.pursuit_standoff()` is the notice as a distance;
+`tests/test_events.gd` walks the answers rather than restating either. Four traps inside it, all
+found by doing it:
 
 - **Clamping the approach at zero is not a stand-off.** It leaves the dog standing politely still
   while *she* closes the last hundred pixels and dies on the first lethal frame — the contract true
-  of the thing and false of the encounter. It has to back off.
+  of the thing and false of the encounter. It has to back off. The price of that is the wart:
+  backing off is what it does for the rest of a telegraph once it has arrived, and a stand-off wide
+  enough to be seen doing it is a dog that visibly reverses.
+- **A break-off stated as a distance needs two inequalities and they fight.** "Walking cannot reach
+  it inside the chase" and "running can" are the same three numbers pulling opposite ways, so
+  widening a stand-off silently ate an escape and a robber's trigger — which has to fit *between*
+  them — once had eleven pixels to live in. `PURSUIT_SHAKEN_OFF` ends a chase at a **rate**: the
+  pursuer is faster than a walk and slower than a run by construction, so *only running can open the
+  gap*, and both halves of the design fall out of the speed clauses that were already there.
+- **Check it with a rig that accelerates.** The three walks in `tests/test_events.gd` all held a
+  constant speed from frame one, and all three passed while a player was reporting the encounter as
+  unplayable — because nobody can turn round in nought seconds. Reversing a walk into a run takes
+  `(WALK + RUN) / ACCELERATION` and hands the thing 34px before the run gains a pixel. The general
+  shape, and it is the third time this project has learnt it: **when a contract is about an
+  encounter, put every body in the encounter into it — including the cost of the player's own
+  answer.**
 - **A rig that runs on a timer runs into it.** The director sites what it owes in front of the
   direction she is *actually travelling*, so a `--flee` that starts before the pursuit is placed
   puts the pursuit in front of the run. It waits for the chase now.
+
+And the open half, recorded because a green contract is not a played one: at the lunge she is
+walking *into* the thing, so the gap closes at `pursue_speed + WALK_SPEED` and the window to answer
+is about **0.2s**, not the `PURSUIT_REACTION` it was bought with. A player answers during the
+telegraph instead, where it is visible and closing for two and a half seconds. Widening the window
+means widening the stand-off, which is the first bullet's wart. See `docs/PLAYTEST-10.md`, C.
 
 **A pursuit has two shapes and a third state.** *(M36, playtest 09: "a robber should increase
 excitement on sight and getting close to them should be day ending", and "if you get close they
@@ -479,9 +528,11 @@ to it. Two things about the waiting state are easy to get backwards:
   started yet*; a man standing in that alley has started, and what has not started is the lunge. It
   is the one telegraph in the game that does not quieten the thing it is warning about.
 
-And the clause that was found by measuring rather than thinking: **the trigger must be inside
-`PURSUIT_BREAK_OFF`**, or she is already standing at the distance that means it has lost her, and
-walking away — the one answer that must never work — works. `validate_pursuit` refuses it now.
+And the trap that was found by measuring rather than thinking, kept because the shape of it recurs:
+while the chase ended at a **distance**, a trigger at or past that distance was a pursuit that lost
+interest the instant it started — she was already standing where "it has lost her" means — so the
+rig strolled away from him every time, and walking away is the one answer that must never work. A
+break-off stated as a rate cannot reproduce it at any trigger distance.
 
 **A fixture can move, and `EventDef.paces` is how.** *(M36, playtest 09: "it didn't move and it took
 a long time to have any effect… if it's the homeless person it needs to walk up and down the
@@ -546,8 +597,9 @@ one, and do not reach for a ring when something new needs signalling.)*
 
 A ring communicates a falloff radius, which is a number. A silhouette communicates a threat.
 The vocabulary that replaced it, in `docs/EVENTS.md`, "The visual vocabulary": the **entity
-itself** carries most of it; a **caret above the entity** for danger that *changes over time*
-and nothing else; a **badge at the screen edge** whenever something lethal or faster than a
+itself** carries most of it; a **caret above the entity** for anything worth changing your route
+for, amber for *go round it* and doubled deep red for *it ends your day*, flashing while it has not
+started yet; a **badge at the screen edge** whenever something lethal or faster than a
 walk is off-screen and closing **under its own steam**, carrying its own silhouette so it says
 what is coming rather than that something is; above the **player** a flashing exclamation mark
 for a soon-to-be-bad spot, doubled and red for danger already on her; and over the **pram**, the
@@ -575,12 +627,33 @@ Four rules that are easy to lose and are the whole reason it is better than the 
   halves, which is what stops this going back to being a list — the M34 `obstructs_radius` move on
   the other half of the vocabulary. The **crowd** is the deliberate opposite: two hundred and forty
   bodies share one `person.svg`, because a crowd is what an authored event has to stand out from.
-- **A cue that marks everything says nothing.** The rings marked a notice board exactly as hard
-  as an abduction, which is most of why they explained nothing. The caret is for *lethal,
-  telegraphing, pulsing or swelling* — a barricade and a burnt-out shell are visibly what they
-  are and get none. A first pass used "louder than the walking decay" and marked all of them,
-  which is the ring's own mistake in a new shape. `tests/test_danger.gd` holds the line, and it
-  also asserts that the whole catalogue is never marked at once.
+- **A cue that marks everything says nothing, and a cue that marks the wrong things says something
+  false.** The rings marked a notice board exactly as hard as an abduction, which is most of why
+  they explained nothing — so M22 narrowed the caret to *lethal, telegraphing, pulsing or swelling*,
+  which is **danger that changes over time**, and M33 tightened the pulse clause. Both were right
+  about what they were fixing and neither is a statement about **how bad it is**.
+
+  *(M39, playtest 10 findings 1, 8 and 9.)* Fifteen milestones later the marked set and the danger
+  had come apart completely: a **fire engine** (+115) carried nothing and a **burning building**
+  (+56) carried a caret; a **dog walker** (+36, the most expensive ordinary row in act I and the
+  subject of two playtests) carried nothing while the **leaf blower** beside it did, because its
+  beat is 4.0s rather than 8.0s; and **`homeless_yeller`** (+31) — the man who ends day 1 in three
+  separate traces — missed the pulse rule by four tenths of a second, which is finding 1 exactly.
+
+  So the rule is the player's own expectation, and it is stated as an **invariant a test can hold**
+  rather than as a condition: **if A is marked and B is not, A costs more to walk through than B.**
+  `EventDef.walk_through_cost()` is the order, `Tuning.MARK_WORTH_A_DETOUR` is where the line falls,
+  lethal is marked whatever it costs, and `tests/test_danger.gd` asserts the monotonicity over the
+  whole catalogue plus the thing M22 was right about — the whole catalogue is never marked at once,
+  and day 1 leaves its cheap end alone.
+
+  Two things worth carrying beyond this row. **The cost integral moved out of the test and onto
+  `EventDef`**, because the game now asks the question the test was asking and two copies of it is
+  the `DangerEdge` defect M37 found. And **a colour is the wrong channel for a phase**: amber meant
+  *telegraphing*, but `EVENT_STREAM_RADIUS` is 900px and no telegraph is longer than 4s, so amber
+  was only ever seen on the two `AHEAD_OF_PLAYER` rows and in play it meant *near*. The flash
+  carries the phase now, because a flash is a property of the mark rather than of a moment she had
+  to be present for.
 - **The mark breathes**, tracking current emission, which is the one thing the ring did that a
   discrete symbol does not get for free. Without it a pulsing event stops being something to
   time a pass through and becomes something that hurts at random.
@@ -596,6 +669,16 @@ Four rules that are easy to lose and are the whole reason it is better than the 
   includes her 92px/s is a cue for walking. Nothing in `tests/test_danger.gd` can see a moment,
   which is why both defects reached a player; the `cue` telemetry entry exists so the next one
   does not.
+
+  *(M39, playtest 10 finding 11: "when I'm walking orthogonally away from the biker the double !!
+  shouldn't show anymore since there is no way it can affect me".)* M32 fixed the traffic half and
+  the **events** half kept "inside the outer radius" — so a cyclist lethal inside 26px raised the
+  strongest cue in the game across 145 and held it while the bike rode away. `NOW` is two conditions
+  now: within `LETHAL_MARK_LEAD` of the radius that ends the day, **and** closing. And note that it
+  uses the **relative** rate where the badge deliberately uses the thing's own: the badge says *a
+  thing exists and is coming*, so her walking must not raise one, and this mark says *the contract
+  is now about you*, which is a statement about the pair of them. Two cues, two sentences, two
+  answers to the same-looking question — do not unify them.
 
 The exclamation mark is the load-bearing one. Every other cue says *a thing exists*; that one
 says **the fairness contract is now about you and the clock has started**, which is the

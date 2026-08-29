@@ -87,6 +87,22 @@ stayed legal on every frame; and a finished run had **no key on it at all** — 
 and each emit, a mirrored cat, a turn that looks before it commits, a title screen with the street
 running behind it, `R` to start again, and calm ground 20% faster. See the entries under M38 below.
 
+**M39 is in progress and was stopped deliberately part-way** — read
+**[docs/HANDOFF.md](HANDOFF.md)** first. Eleven of the fourteen are done and green; the pursuit half
+is built on an analysis the player corrected and should be re-decided before anything is committed.
+Nothing is committed, and M38 is in the same working tree.
+
+**Playtest 10 has landed and is M39.** Fourteen findings in
+**[docs/PLAYTEST-10.md](PLAYTEST-10.md)**, off a session of five runs in which **no day was won**.
+The sentence under them is that *the danger marks and the danger have come apart*: three of the
+fourteen are one finding — a fire engine carries no caret and a burning building does — and the rule
+underneath is M22's, which asks whether a danger *changes over time* and never asked how bad it is.
+Under two more is the other one: **a retried day is not the same day**, which `docs/TODO.md` has
+claimed since M32 and five seeds out of five disprove. And a thing nobody reported is in every
+losing line of the trace — the crowd is supplying nearly all of the excitement that ends a day,
+which is playtest 07's finding 17 arriving again after the milestone that answered it. That is
+**the milestone after M39**, measured rather than argued.
+
 **What that leaves.** Those three, and then M25's other half —
 patrols, which is unaffected by M31 and is now specifically the answer for **acts III and IV**,
 where the streets are deliberately empty and the threat should follow rather than sit. *M25's
@@ -732,8 +748,8 @@ See **[docs/PLAYTEST-08.md](PLAYTEST-08.md)**. Five things, all done.
       and they are the same change twice, the contract restated as **geometry**:
       `Tuning.pursuit_standoff()`, which the telegraph is spent closing to and *holding* — backing
       off if she walks into it, because she will, since it is sited in front of her and forward is
-      where she was going — and `Tuning.PURSUIT_BREAK_OFF`, so the chase ends when it is **beaten**
-      rather than when the clock says so. Without the second one the price of the right answer was
+      where she was going — and a **break-off**, so the chase ends when it is beaten rather than when
+      the clock says so. Without the second one the price of the right answer was
       forty points whether she reacted on the first frame or the last, and the trace has her running,
       doing exactly what the HUD asked, and losing to the meter with the dog 87px behind her. The dog
       also came down 148 → 130px/s (symmetric: walking loses 38px a second, running gains 38) and
@@ -776,9 +792,9 @@ See **[docs/PLAYTEST-09.md](PLAYTEST-09.md)**. Four things, all done.
       starting when it **notices** her and its notice **not** damping what it emits. 16 over 200px,
       lethal inside 30, 130px/s from 140. Standing, walking past and walking *away* all end the day;
       running shakes him off in ~1.5s for 21 points.
-      **`validate_pursuit` gained a clause found by measuring:** the trigger must be inside
-      `PURSUIT_BREAK_OFF`, or she is already standing at the distance that means it has lost her —
-      at 170 against 170 the rig strolled away from him every time
+      **And a trap found by measuring:** while the chase ended at a *distance*, a trigger at or past
+      that distance was a pursuit that lost interest the instant it started — at 170 against 170 the
+      rig strolled away from him every time. A break-off stated as a rate cannot reproduce it
 - [x] **And a scar could be tidied away by the usable-park rule** — exposed rather than caused by the
       above. `_ensure_one_usable_park` strips the spoilers off the least-disturbed calm block, and a
       burnt-out shell that had been on that corner since day 3 was one of them. Scars are exempt now,
@@ -878,6 +894,186 @@ at the top.
       screen since M33 and `R` restarts now, and neither is an input action, so the rig that exists
       because *nothing in the suite or a screenshot has ever pressed a key* could not press either
       of them. `--press key:r 3.5`, and the flag may be repeated
+
+## M39 — Playtest 10: the cue that meant nothing, and the day that was not the same day · `feature/marks-that-mean-danger`
+
+See **[docs/PLAYTEST-10.md](PLAYTEST-10.md)**. Fourteen findings, reported as a list after a session
+of five runs in which **no day was won**. Eleven are work; two are answered in writing; one — the
+difficulty — is deliberately the milestone after this one.
+
+The sentence under it: **the danger marks and the danger have come apart, and a retried day is not
+the same day.**
+
+- [x] **The mark is raised by what a thing costs** — findings 1, 8 and 9, which are one finding with
+      three faces. `wants_a_mark()` asks whether the danger *changes over time*, which is a true
+      statement about a thing and not a statement about how bad it is: a fire engine (+115) carries
+      no caret and a burning building (+56) does, the most expensive ordinary row in act I
+      (`dog_walker`, +36) carries none and the leaf blower beside it does, and the man who ends day
+      1 in three separate traces (`homeless_yeller`, +31) misses `can_be_timed()` by four tenths of
+      a second. The colour half is streaming: `EVENT_STREAM_RADIUS` is 900px and no telegraph is
+      longer than 4s, so amber is only ever seen on the two `AHEAD_OF_PLAYER` rows and therefore
+      means *near* rather than *not yet*. New rule, with the invariant a test can hold: **if A is
+      marked and B is not, A costs more than B**; amber for *go round it*, doubled deep red for
+      *ends your day*, and the flash — not a colour — for *it has not started*. Accepted cost,
+      written down as a decision: the crouching cat (+20) loses its caret
+- [x] **The playground is the calmest ground in the city** — finding 2, and it has been true for
+      twenty milestones. `PLAYGROUND` is calm ground, so the decay on it is 7.7/s, and the row emits
+      **7.0/s at the peak of its pulse**: it has never once out-emitted the ground it stands on, and
+      its denial radius is its own inner radius, 40px of 150. It was right in M5, when the calm
+      multiplier was 3.5 and the decay 1.5/s; M18 took it to 10 and M38 to 12. Playtest 08 did this
+      exact sum for the busker one function away, in `_denial_radius`, which carries the warning in
+      its own docstring
+- [x] **The dog follows for too long** — finding 13, *"the running tutorial dog is impossible to
+      escape"*, and **the analysis in this session was wrong**. It read the finding as a *reaction
+      window* — `pursuit_standoff()` buys `PURSUIT_REACTION` seconds of the dog's 130px/s while she
+      is walking into it at 92, so the real window is 0.2s — and built the fix for that. The player's
+      own account: *"the charging start earlier was fine — it was enough time to react properly"*,
+      *"the issue was that the dog kept following for too long"*, and *"the dog now moves backwards
+      before charging — that doesn't make any sense"*.
+      The trace agrees with the player: she reacted, she ran, and she **died to the meter with the
+      dog 63px away**. It is the **break-off**, which is M35's failure repeating. The work built on
+      the wrong reading is in the tree, uncommitted, and `docs/HANDOFF.md` lists every constant to
+      re-decide.
+      **What was built instead**: `Tuning.PURSUIT_SHAKEN_OFF`, which ends a chase after 0.8s of the
+      gap **opening** rather than after a fixed gap has been reached. Because a pursuer is faster
+      than a walk and slower than a run by construction, only running can open the gap — so "walking
+      away can never end a chase" and "running away always ends one" stop being two inequalities that
+      fight over the same three numbers and become facts. The reaction, the stand-off (104px) and the
+      chase (3.0s) all go back to what a player said was already right. Measured: the answer costs
+      **0.86s of running, 12 points**, against 35 before.
+      **Two things found on the way are kept**: a pursuer must stand off inside its own
+      `outer_radius` (found by a rig — the dog was holding 174px out with a 150px field, so the phase
+      that is supposed to *be* the warning emitted nothing and the `!` never went up), and
+      `tests/test_events.gd` has a rig that **accelerates**, which the three that passed while the
+      encounter was unplayable did not.
+      **Still open, and written down rather than hidden**: the window to answer at the lunge itself
+      is 0.1–0.2s, because she is walking into the thing. A player answers during the telegraph
+      instead. Widening it means a wider stand-off, and a wider stand-off is the reversing dog
+- [x] **A retried day is the same day, and the day-3 lesson always happens** — finding 5. Three
+      independent causes and the third is the one that matters. `_place_one_shots` skips a consumed
+      one-shot *before* drawing its `randf()`, so attempt 2 starts a value earlier in the stream and
+      every later placement moves — five seeds out of five produce a different day 3, and one of
+      them changes how many `charging_dog`s exist. `_place_scars` compounds it through
+      `_room_around`. And **the tutorial is a weighted roll**: `_teach_the_run` says outright that
+      if the day did not buy one, nothing happens, and whole day 3s with `charging_dog x0` exist.
+      Also the director's clock only runs while she is moving, and the third attempt in the trace
+      never left the doorstep
+- [x] **The `!!` comes down when the danger has been avoided** — finding 11. The doubled mark is
+      raised for any lethal event whose **outer** radius covers her, so a cyclist lethal inside 26px
+      raises it across 145 and keeps it up while the bike rides away. Playtest 06's finding 3 at the
+      half M32 did not fix — it gave the traffic a `stand_down()` and left the events on "inside the
+      radius". Two conditions now: within a step of what ends the day, **and** closing. Deliberately
+      the *relative* rate, where the screen-edge badge deliberately uses the thing's own — the two
+      cues say different sentences and the difference is the reason
+- [x] **The zzz over the pram** — finding 3, and the other half of M37's own fix
+- [x] **`space` carries on, and the pause says which day and how many nerves** — findings 6 and 7
+- [x] **Screenshots beside the trace** — finding 12. On the entries that are already *about a
+      moment* — a day lost, a nerve, a hard fail, a chase — rate-limited, capped per day, named
+      after the entry. In `TelemetryObserver`, because telemetry never touches gameplay
+- [x] **Logs you can throw away** — finding 14, plus the follow-up that explains it: a run restart
+      reloads the scene, so one sitting is several logs and that is correct. The commit goes in the
+      **filename**, `tools/telemetry.sh` grows a prune, and the listing says which are stale
+- [x] **The yellow person that did not approach** — finding 4, answered in writing rather than
+      built: nothing in act I pursues, and a busker who chases prams is a different game. It is
+      recorded because it is findings 1/8/9 from a fourth side — *I cannot tell what any of these
+      things are going to do to me*
+- [x] **Home at the centre** — finding 10, answered in writing. The city is already odd (7×7) and
+      `_place_home` already sorts by distance to the centre; what pushes the home out is
+      `MIN_HOME_TO_PARK_TILES`. The two rules compete for the same thing and at 7×7 both cannot
+      hold. The recommendation is to take the trade **by growing the city to 9×9**, as its own
+      milestone, because it re-measures every density number in `docs/PLAYTEST-04.md`
+
+### And the thing nobody reported
+
+- [ ] **The crowd is winning.** Nineteen days lost in the session, seventeen to `lost_crying`, and
+      the breakdown on the losing line reads `crowd 39.4, events 0.0` / `crowd 44.4, events 3.1` /
+      `crowd 28.8, events 0.0`. That is playtest 07's finding 17 after the milestone that answered
+      it, and two of the fourteen are downstream of it. **The next milestone**, measured rather than
+      argued — not this one
+
+### And the tooling that is getting in the way
+
+- [ ] **The test suite takes too long to run.** It is the thing this project checks most often —
+      `CLAUDE.md` asks for it before every commit — and at 46521 checks it is now minutes rather
+      than the ~110s the docs still claim. That is long enough to change behaviour: a suite you run
+      once at the end instead of after each change is a suite that tells you *that* something broke
+      rather than *what*.
+      The per-suite timings `run_tests.gd` already prints are where to start, and the shape of the
+      answer is visible in them: a handful of integration suites are three orders of magnitude
+      heavier than the rest, because they generate cities and play days. Worth considering, and
+      worth **measuring before choosing**: caching generated maps across suites that only read them;
+      making the sweeps over 200 seeds proportional to what actually varies; splitting a fast suite
+      from a slow one so the loop is seconds and the gate is minutes; and cutting checks that assert
+      the same relationship once per seed per day. What must **not** happen is losing coverage to
+      buy time — several of these suites exist because a bug got through everything cheaper
+
+## M40 — Documentation you can read, and history you can retrieve · `feature/timeless-docs`
+
+Asked for directly: *"adopt a timeless documenting style. Things should be stated as what they are,
+not where they came from. Keep a dedicated file for ideas that were rejected, decisions that were
+made (and which options were rejected), and changes that happened."* And: *"especially for
+docstrings make sure to document the why and the edge cases; don't restate the full
+implementation."* And: *"we don't want to lose history/information — we just want to make the
+current state more accessible and the history retrievable on demand instead of always in context."*
+
+**The problem, stated plainly.** This project writes history into the thing itself. A docstring
+opens with *"(M39, playtest 10 finding 13: …)"*, a constant's comment is three paragraphs about the
+two numbers it used to be, and `CLAUDE.md` is 900 lines in which the rules and the archaeology are
+interleaved. That was a deliberate bet — the reasoning is not recoverable from a diff — and it has
+paid off repeatedly. What it costs is that **reading the current state means reading every past
+state first**, and every reader of every file pays it whether or not they need it.
+
+The fix is not to delete any of it. It is to **split by question**: *what is this and why is it like
+this* stays with the code; *what was tried, what was rejected, and when it changed* moves to one
+file that is read on demand.
+
+- [ ] **`docs/DECISIONS.md`, the retrievable half.** One file, three kinds of entry, each dated and
+      each linking to the milestone and the playtest that produced it: **decisions taken** with the
+      options that were rejected and why; **ideas rejected** outright; and **changes that happened**,
+      with the measurement that justified them. It is the destination for everything the restyle
+      lifts out, so nothing is lost — the test is that every fact removed from a docstring can be
+      found by searching this file for the symbol name
+- [ ] **Restyle every docstring.** Say what the thing is, why it is that way, and what the edge cases
+      are. Do **not** restate the implementation — the code is right there — and do not narrate the
+      milestones it passed through. Where a number was tuned against something, keep the
+      *relationship* (*"above the 7.7/s decay on the ground it stands on"*) and move the story of how
+      it got there. `Tuning.PURSUIT_SHAKEN_OFF` and `Tuning.pursuit_standoff()` are the worked
+      examples of what an edge-case docstring should read like
+- [ ] **Revisit all documentation, not the code alone.** `CLAUDE.md`, `README.md`, and every file in
+      `docs/` — `ARCHITECTURE`, `CITY`, `DESIGN`, `EVENTS`, `MECHANICS`, `NARRATIVE`, `TELEMETRY`,
+      `TODO`, `HANDOFF`. The playtest files are already history and stay as they are; they are the
+      primary source `DECISIONS.md` cites
+- [ ] **`CLAUDE.md` becomes rules, and the rules get subfiles.** Working preferences, invariants and
+      recipes stay; the war stories under each move out. Anything too long for one file becomes a
+      rule file of its own rather than a longer `CLAUDE.md`
+- [ ] **And notes live in the repo, not in a session's memory.** Anything worth remembering about how
+      to work on this project goes in `CLAUDE.md` or a rule/skill file beside it — a note that exists
+      only in an assistant's memory is a note that gets lost
+
+## M41 — The edge of the city · `feature/the-edge-of-the-city`
+
+Asked for directly: *"the north end of the city should be mountain/cliff, the sides should be
+fences, the south should be water/harbour."*
+
+The map is bounded by an invisible collision wall and, outside it, the clear colour — *"anything
+outside the city should read as void, not as more pavement"*, which is honest and says nothing.
+**Three named edges say where you are**, and that is the point: a city with a cliff to the north and
+water to the south is a place, and a player who can see which way is which has one more thing to
+navigate by than the street lattice.
+
+- [ ] **North: cliff or mountain.** The high edge, drawn above the ground plane so it reads as
+      *behind and above* rather than as a wall lying down
+- [ ] **East and west: fences.** The cheap edge, and deliberately the least interesting: it is a
+      boundary rather than a feature
+- [ ] **South: water and a harbour.** The one edge with something in it. Whether the harbour is
+      scenery or ground she can walk on is the open question, and it is a route question, not an art
+      one — see the constraint below
+- [ ] **It must not move a walkable tile.** The generator's guarantees are all stated over the
+      walkable set, and `tests/test_blocks.gd` asserts that set is identical tile for tile across
+      every seed and every block arc. The edge is decoration outside the boundary unless a milestone
+      decides otherwise on purpose, in which case every route guarantee is re-measured
+- [ ] **And it is judged by eye.** A headless run never calls `_draw()`. Screenshots from all four
+      edges, on several seeds
 
 ## M10 — Polish · `feature/polish`
 
