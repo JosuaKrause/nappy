@@ -450,7 +450,7 @@ outcomes* rather than the same outcome at two prices:
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
 | Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
-| Bounded | gives up after `PURSUIT_TIME`, **or** as soon as she has opened `PURSUIT_BREAK_OFF`, because a run is priced per second and an unbounded chase is a loss however well it is played |
+| Bounded | gives up after `PURSUIT_TIME`, **or** after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, because a run is priced per second and an unbounded chase is a loss however well it is played |
 
 Its telegraph is the **approach**, the way a fire engine's is. A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
@@ -478,28 +478,55 @@ Two changes, and they are the same change twice — the contract restated as geo
   front of her and forward is where she was going. Clamping the approach at zero instead would have
   left the contract true of the dog and false of the encounter — it would stand politely still
   while she closed the gap herself.
-- **`Tuning.PURSUIT_BREAK_OFF`.** It gives up when it has been beaten: it got to her and she opened
-  the gap again, or it never got near her at all. Without it the price of the *right* answer was
-  set by the clock rather than by the escape — forty points whether she reacted on the first frame
-  or the last — and playtest 08's trace has her running, doing exactly what the HUD asked, and
-  losing the day to the meter at 100 with the dog 87px behind her.
+- **`Tuning.PURSUIT_SHAKEN_OFF`.** It gives up once the gap has been **opening** for that long.
+  Without a break-off at all, the price of the *right* answer is set by the clock rather than by the
+  escape — forty points whether she reacted on the first frame or the last — and playtest 08's trace
+  has her running, doing exactly what the HUD asked, and losing the day to the meter at 100 with the
+  dog 87px behind her.
 
 The dog also came down from 148px/s to 130 and from intensity 22 to 12. 130 is *symmetric*: walking
 loses 38px a second and running gains 38, which is the version of "opposite outcomes" a player can
 feel. And it is lethal — it does not also need to be the loudest thing in act I.
 
-Measured on a rig (`tests/test_events.gd` walks the same three answers, and `--flee` plays them in
-a real day):
+### Why the break-off is a rate and not a distance
+
+A break-off stated as a distance needs two inequalities to be safe — walking must not reach it
+inside the chase, running must — and they pull against each other in the same three numbers. That is
+how a stand-off widened to buy reaction time silently ate the escape from the other end, and how a
+robber's trigger, which has to fit *between* the two, once had an eleven-pixel window to live in.
+
+Stated as a rate, both facts come free from the speed clauses that were already there. A pursuer is
+faster than a walk and slower than a run, so the gap can only open while she is running and must
+close while she walks:
+
+- **Walking away can never end a chase.** Not "loses if the arithmetic works out" — it cannot happen
+  at any distance, for any row, at any radius.
+- **Running away always ends one**, in `PURSUIT_SHAKEN_OFF` seconds plus the about-turn, and no
+  slower for a large pursuer than for a small one.
+
+The measured encounter, on a rig that **accelerates** (`tests/test_events.gd`, `_answer_rig`) — a
+constant-speed rig cannot see any of this, because nobody can turn round in nought seconds:
 
 | she | outcome | cost |
 | --- | --- | ---: |
-| walks into it | caught 0.4s after the lunge | the day |
-| walks away | caught 2.1s after the lunge | the day |
-| runs the moment it appears | shakes it off in 1.5s | 21 points |
-| runs when it reaches her | shakes it off in 1.7s | 24 points |
-| dithers 2.4s, then runs | caught | the day |
+| turns and runs at the lunge | it gives up 1.1s later, 68px at the closest | 0.86s of running, **12 points** |
+| dithers 0.1s, then runs | it gives up, 45px at the closest | 0.86s, 12 points |
+| dithers 0.2s or more | caught | the day |
+| walks away | caught | the day |
+| stands still | caught | the day |
 
-The gradient is the design: reacting sooner costs less, and every wrong answer costs the same thing.
+**The price of the answer is flat, and that is the design**: running from a thing that follows costs
+about a tenth of the meter, and hesitating costs the day. What reacting sooner buys is margin — 68px
+against 45 — rather than a discount.
+
+**The open question is the window at the lunge**, which the table puts between 0.1s and 0.2s. She is
+walking *into* the thing at that instant, so the gap closes at `pursue_speed + WALK_SPEED` and the
+stand-off is worth about a third of the `PURSUIT_REACTION` it was bought with; reversing a walk into
+a run costs another 0.37s on top. A player answers during the **telegraph**, where the dog is
+visible and closing for two and a half seconds, so the lunge is the worst case rather than the
+expected one — but the worst case is what a contract is for. Widening it means widening the
+stand-off, and a stand-off much past 180px is a dog that visibly reverses away from her through its
+own telegraph, which a player has watched and called nonsense. See `docs/PLAYTEST-10.md`, section C.
 
 ### A pursuer can be a place before it is a moment *(M36)*
 
@@ -525,9 +552,13 @@ that alley since she came round the corner has started. What has not started is 
 `validate_pursuit()` gained two clauses for the trigger and a third that was found by measuring
 rather than by thinking. It has to notice her from **outside its own stand-off**, or the notice is
 spent standing still; from **inside its own field**, or it decides about her before she could have
-felt it; and from **inside `PURSUIT_BREAK_OFF`** — which is the one that bit. At a trigger of 170
-against a break-off of 170 the rig strolled away from the robber every time, because she was
-already standing at the distance that means it has lost her.
+felt it; and from **inside its break-off** — which is the one that bit. At a trigger of 170 against
+a break-off of 170 the rig strolled away from the robber every time, because she was already
+standing at the distance that means it has lost her.
+
+*(M39 moved all three of those numbers without changing a clause, which is the point of stating a
+contract over derived quantities: the robber's trigger went 140 → 195 because the stand-off went
+under it, and his field 200 → 240 so that "on sight" still comes before "he has seen you".)*
 
 | she | outcome | cost |
 | --- | --- | ---: |

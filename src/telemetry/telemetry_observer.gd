@@ -193,6 +193,9 @@ func day_finished(result: GameEnums.DayResult) -> void:
 	Telemetry.note("lost", "%s after %.1fs — %s | %s | near: %s" % [
 		name.to_lower(), _day.time_total - _day.time_remaining,
 		_day.failure_reason, _meters(), _nearest()])
+	# The single most useful frame in a run, and the only one that is always worth the file: what
+	# the street looked like at the moment the day ended. *(M39, finding 12.)*
+	Telemetry.snapshot("lost-%s" % name.to_lower())
 
 # ------------------------------------------------------------------- watching ---
 
@@ -294,6 +297,12 @@ func _watch_the_cues(delta: float) -> void:
 			_mark_since = Telemetry.clock()
 			_mark_on_road = 0.0
 			_mark_why = " | %s" % _what_raised_the_mark()
+			# Only the doubled one, and only as it goes up. *(M39, finding 12.)* `NOW` is the one cue
+			# in the game that gives an instruction, and every complaint about it — playtest 06's
+			# *"after the fact"*, playtest 10's *"there is no way it can affect me"* — has been about
+			# **when** it appears, which is a question a line of text has never been able to settle.
+			if level == Stroller.Alert.NOW:
+				Telemetry.snapshot("mark-now")
 		_mark = level
 
 	if not _edge:
@@ -504,6 +513,10 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 					"id": instance.def.id, "gave_up": false, "over": false}
 			Telemetry.note("chase", "%s came for her at %s | %s" % [instance.def.id,
 					TelemetryLog.tile(_map.world_to_tile(instance.global_position)), _meters()])
+			# The one encounter in the game with a right answer, and the open question about it is
+			# whether a dog that stops short and barks *reads* as "go now". A picture of the frame
+			# it starts on is the only thing that can say. *(M39, finding 12.)*
+			Telemetry.snapshot("chase-%s" % instance.def.id)
 		var chase: Dictionary = _chases[id]
 		if chase["over"]:
 			continue

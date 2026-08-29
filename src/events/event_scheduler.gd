@@ -111,17 +111,72 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
 		settled_yesterday := Vector2i(-1, -1)) -> Array[Planned]:
 	var planned: Array[Planned] = []
+	# Captured before anything draws from it. Every phase below gets its own stream off this, which
+	# is what makes a retried day the same day — see `_stream`.
+	var base := rng.seed
 
 	planned.append_array(_place_ambient(day, map))
 	planned.append_array(_place_scars(day, scars))
-	_place_scripted(day, rng, map, planned)
-	_place_one_shots(day, rng, map, consumed_one_shots, planned)
-	_spoil_the_park_she_used(day, rng, map, planned, settled_yesterday)
-	_fill_with_recurring(day, rng, map, planned)
+	_place_scripted(day, _stream(base, 1), map, planned)
+	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned)
+	_spoil_the_park_she_used(day, _stream(base, 3), map, planned, settled_yesterday)
+	_fill_with_recurring(day, base, map, planned)
+	_ensure_the_run_is_taught(day, planned)
 
 	_ensure_one_usable_park(map, planned, settled_yesterday)
 	_ensure_the_city_is_still_walkable(map, planned)
 	return planned
+
+## A private RNG for one phase of the day, derived from the day's seed and a salt.
+##
+## **A retried day has to be the same day, and it was not.** *(M39, playtest 10 finding 5: "the
+## tutorial dog on day 3 only appeared once (I died) then it didn't appear again".)* `docs/TODO.md`
+## has claimed since M32 that *"the retry is the same day — everything about one is deterministic
+## from the seed and the day number"*, and five seeds out of five disprove it. The six phases above
+## ran off **one** stream in sequence, so anything that changed how much an earlier phase drew moved
+## everything after it, and two things change between attempts by design:
+##
+## - `_place_one_shots` skips a one-shot the run has already spent, and it skipped it with a
+##   `continue` **before** drawing its `randf()`. So the second attempt at day 3 — the day the fire
+##   engine runs — started `_fill_with_recurring` one value earlier and produced a different city's
+##   worth of events. In the trace, `homeless_yeller` goes from two to eight and `cyclist` from none
+##   to three between two consecutive attempts at the same day.
+## - `_place_scars` prepends what the run has burnt down, and every scar is one more plan for
+##   `_room_around` to reject a placement against — and a rejection is a re-roll.
+##
+## Separate streams close the first completely and most of the second (see `_fill_with_recurring`).
+## What is deliberately *not* closed: a scar that genuinely occupies the ground an event wanted still
+## moves that event. That is the right answer — a fire that burnt a block down did happen, and the
+## day should acknowledge it — and it is a handful of placements rather than the whole day.
+static func _stream(base: int, salt: int) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d" % [base, salt])
+	return rng
+
+## The day the run is taught cannot leave the lesson to a weighted roll.
+##
+## *(M39, playtest 10 finding 5.)* `EventDirector._teach_the_run` moves a pursuit to the head of the
+## owed list on `RUN_TAUGHT_DAY` and says outright what happens otherwise: *"if the day happened not
+## to buy one, there is nothing to teach and nothing happens."* `charging_dog` is weight 1.4 of a
+## day-3 pool, so whole day 3s with none of them exist — the probe finds them — and a player can
+## therefore reach act II never having been shown the one control the game will later require.
+##
+## It is added **outside** the budget rather than competing for it, and that is the exception being
+## made honestly: everywhere else in this file the density is the budget, and a lesson that only
+## happens when the dice agree is not a lesson. One event on one day of fourteen.
+static func _ensure_the_run_is_taught(day: int, planned: Array[Planned]) -> void:
+	if day != Tuning.RUN_TAUGHT_DAY:
+		return
+	for plan in planned:
+		if plan.def.pursues:
+			return
+	for def in EventCatalogue.available_on(day):
+		if not def.pursues or def.spawn_mode != EventDef.SpawnMode.AHEAD_OF_PLAYER:
+			continue
+		planned.append(Planned.new(def, Vector2.INF))
+		Telemetry.note("plan", "day %d bought no pursuit, so the run lesson is added: %s"
+				% [day, def.id])
+		return
 
 # ------------------------------------------------------- the city remembers ---
 
@@ -371,7 +426,15 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 				% [def.id, roll, threshold,
 				TelemetryLog.tile(map.world_to_tile(placement.position))])
 
-static func _fill_with_recurring(day: int, rng: RandomNumberGenerator, map: CityMap,
+## Fills the day's budget, **one stream per attempt**.
+##
+## *(M39, finding 5.)* The stream is derived from the attempt number rather than shared across the
+## whole fill, so how much any one placement draws — `_place_one` re-rolls up to
+## `EVENT_PLACEMENT_TRIES` times and returns early when a candidate is perfect — cannot move the
+## placements after it. That is what makes a retried day recognisably the same day even when the
+## run's own history has changed the ground: a scar still displaces the events it actually stands
+## on, and every other event is where it was yesterday.
+static func _fill_with_recurring(day: int, base: int, map: CityMap,
 		planned: Array[Planned]) -> void:
 	var eligible := EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day)
 	if eligible.is_empty():
@@ -381,7 +444,7 @@ static func _fill_with_recurring(day: int, rng: RandomNumberGenerator, map: City
 	var counts := {}
 	# Bounded rather than while-true: a catalogue where nothing affordable remains would
 	# otherwise spin forever.
-	for _attempt in budget * 4:
+	for attempt in budget * 4:
 		if budget <= 0:
 			break
 		var affordable: Array[EventDef] = []
@@ -390,6 +453,7 @@ static func _fill_with_recurring(day: int, rng: RandomNumberGenerator, map: City
 				affordable.append(def)
 		if affordable.is_empty():
 			break
+		var rng := _stream(base, FILL_SALT + attempt)
 		var def := _pick_weighted(affordable, rng)
 		var placement := _place_one(def, rng, map, planned)
 		if not placement:
@@ -397,6 +461,10 @@ static func _fill_with_recurring(day: int, rng: RandomNumberGenerator, map: City
 		planned.append(placement)
 		counts[def.id] = int(counts.get(def.id, 0)) + 1
 		budget -= def.cost
+
+## Where the per-attempt streams start, far enough above the phase salts in `build_day` that the
+## two sets can never collide however many phases are added.
+const FILL_SALT := 1000
 
 static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) -> EventDef:
 	var total := 0.0

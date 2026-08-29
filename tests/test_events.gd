@@ -9,7 +9,11 @@ func run(t) -> void:
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
+	_test_the_answer_is_priced_by_how_soon_it_is_given(t)
+	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
 	_test_a_pursuer_can_wait(t)
+	_test_a_retried_day_is_the_same_day(t)
+	_test_the_run_is_always_taught(t)
 	_test_a_paced_event_walks_a_beat(t)
 	_test_duration_and_finish(t)
 	_test_an_event_leaves_rather_than_vanishing(t)
@@ -159,7 +163,9 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 
 		# Away from it at a run. Running has to win, and it has to *end* it: the price of the right
 		# answer is fourteen points a second, so a chase that runs its full clock however well it is
-		# played is a toll rather than a lesson.
+		# played is a toll rather than a lesson. Both facts follow from the speed clauses alone —
+		# nothing slower than the pursuer can open the gap and nothing faster can fail to — which is
+		# why `PURSUIT_SHAKEN_OFF` is stated as a rate and there is no distance to get wrong.
 		var ran := _chase_rig(def, Tuning.RUN_SPEED)
 		t.check(not ran["caught"], "running away from '%s' works" % def.id)
 		t.check(ran["gave_up"],
@@ -173,17 +179,233 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 				% [def.id, cost, Tuning.METER_MAX])
 	t.check(pursuers >= 2, "there is more than one kind of thing that comes after her")
 
+## **The answer is priced by how soon it is given, and the rig has to turn round to find out.**
+## *(Playtest 10, finding 13: "the running tutorial dog is impossible to escape at the moment",
+## clarified as "the issue was that the dog kept following for too long".)*
+##
+## The three walks above hold a constant speed from the first frame, and all three passed while a
+## player was reporting the encounter as unplayable — because nobody can turn round in nought
+## seconds and nothing said she had to. Reversing a walk into a run takes
+## `(WALK_SPEED + RUN_SPEED) / ACCELERATION` = 0.37s, and the thing keeps coming through all of it.
+##
+## What is asserted is the shape rather than any one number: **it can be answered, answering sooner
+## costs strictly less, and doing nothing still loses.** The cost is bounded by
+## `PURSUIT_SHAKEN_OFF` plus the about-turn rather than by the chase clock, which is the whole
+## difference between a lesson and a toll.
+##
+## **The measured number this reports rather than asserts is the window at the lunge**, and it is
+## the open half of finding 13. She is walking *into* the thing at that instant — it is sited in
+## front of her and holds its distance by backing off — so the gap closes at `pursue_speed +
+## WALK_SPEED` and the stand-off is worth about a third of the `PURSUIT_REACTION` it was bought
+## with. A player answers during the **telegraph**, where the dog is visible and closing for two and
+## a half seconds, and that answer is cheap; the lunge is the worst case rather than the expected
+## one. Widening it means a wider stand-off, and a wider stand-off is a dog that visibly reverses.
+func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
+	for def in EventCatalogue.all():
+		if not def.pursues:
+			continue
+		var at_once := _answer_rig(def, 0.0)
+		t.check(not at_once["caught"],
+				"'%s' can be answered at the lunge (closest %.0fpx)" % [def.id, at_once["closest"]])
+		t.check(at_once["closest"] > def.inner_radius,
+				"and answering it clears the %.0fpx that ends the day by %.0fpx"
+				% [def.inner_radius, at_once["closest"] - def.inner_radius])
+
+		# The price is the about-turn plus being visibly outrun, and nothing else. A chase that ran
+		# its clock however well it was played would cost `PURSUIT_TIME` here instead.
+		var turn := (Tuning.WALK_SPEED + Tuning.RUN_SPEED) / Tuning.ACCELERATION
+		t.check(at_once["running"] < Tuning.PURSUIT_SHAKEN_OFF + turn + 0.5,
+				"and it costs %.1fs of running rather than the %.1fs chase"
+				% [at_once["running"], def.duration])
+		t.check(at_once["running"] * Tuning.EXCITEMENT_FROM_RUNNING < Tuning.METER_MAX * 0.3,
+				"which is %.0f of a %.0f meter"
+				% [at_once["running"] * Tuning.EXCITEMENT_FROM_RUNNING, Tuning.METER_MAX])
+
+		# Answering during the telegraph — what a player who reads the cue actually does — is cheaper
+		# still, and that gradient is the reason the break-off is a rate rather than a clock.
+		var early := _chase_rig(def, Tuning.RUN_SPEED)
+		t.check(early["gave_up"] and not early["caught"],
+				"running from '%s' the moment it appears shakes it off" % def.id)
+
+		# And doing nothing still loses, which is the whole reason any of this is a mechanic.
+		t.check(_answer_rig(def, 1.0)["caught"],
+				"'%s' still catches somebody who leaves it far too long" % def.id)
+
+		# Reported, not asserted: the widest reaction at the lunge that still survives. See above.
+		var window := 0.0
+		for i in 12:
+			var reaction := i * 0.05
+			if _answer_rig(def, reaction)["caught"]:
+				break
+			window = reaction
+		t.check(window > 0.0,
+				"the window to answer '%s' at the lunge itself is %.2fs" % [def.id, window])
+
+## **A pursuer has to be sited where it can be seen doing it.** *(M39, finding 13.)*
+##
+## Three things have to agree and none of them knows about the other two: the stand-off is where it
+## stops, the director decides where it starts, and the viewport decides what is on screen. If the
+## stand-off ever grows past the lead the director gives it, a pursuer *backs away* through its own
+## telegraph instead of closing; if the lead grows past `SIGHT_AHEAD`, the whole telegraph happens
+## off the top of the screen when she walks north or south, and the notice is the sight of it.
+##
+## M39 moved the stand-off from 104px to 174 and would have broken the first of those silently — the
+## dog was sited at 184 — so the relationship is asserted rather than left as a coincidence.
+func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
+	for def in EventCatalogue.all():
+		if not def.pursues:
+			continue
+		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+		t.check(standoff < Tuning.SIGHT_AHEAD,
+				"'%s' stands off at %.0fpx, inside the %.0fpx that is still on screen"
+				% [def.id, standoff, Tuning.SIGHT_AHEAD])
+		if def.pursues_within > 0.0:
+			# A place, not a moment: the director never sites it, so what has to hold is that its
+			# trigger is outside its stand-off — which `validate_pursuit` also checks, from the
+			# other side and for a different reason.
+			t.check(def.pursues_within > standoff,
+					"'%s' notices her before it has stopped coming" % def.id)
+			continue
+		t.check(_sited_at(def) >= standoff,
+				"'%s' is sited at %.0fpx, at or beyond the %.0fpx it stops at, so it closes rather "
+				% [def.id, _sited_at(def), standoff] + "than backing away through its own telegraph")
+
+## **A retried day is the same day.** *(M39, playtest 10 finding 5: "the tutorial dog on day 3 only
+## appeared once (I died) then it didn't appear again.")*
+##
+## `docs/TODO.md` has claimed this since M32 and it was not true: `build_day` ran six phases off one
+## RNG, and a one-shot the run had already spent was skipped *before* its `randf()` was drawn, so the
+## second attempt at day 3 — the day the fire engine runs — started the recurring fill one value
+## earlier and produced a different city's worth of events. The trace has `homeless_yeller` going
+## from two to eight and `cyclist` from none to three between two consecutive attempts at the same
+## day.
+##
+## **What is asserted is the day's *composition*, not every coordinate**, and the difference is the
+## measurement rather than a hedge. A spent one-shot is genuinely gone, and `fire_truck`'s route is
+## sixty tiles — nineteen hundred pixels of corridor that the recurring fill had to keep
+## `EVENT_SPACING_ANY` clear of. With it gone, the long mobile rows whose own routes brushed that
+## corridor now fit where they did not, so they start a few tiles along the street they were always
+## going to be on. Measured over three seeds: the multiset of event **kinds** is identical every
+## time, and the number of *positions* that move is 0, 5 and 14 — all of them `dog_walker`,
+## `cyclist`, `reversing_lorry` and `loose_dog`, all of them route rows.
+##
+## A dog walker starting three tiles further up the same street is not a different day. Eight
+## shouting men where there were two is, and that is what this stops.
+func _test_a_retried_day_is_the_same_day(t) -> void:
+	var day := Tuning.RUN_TAUGHT_DAY
+	for run_seed in [4242, 90210, 1234567]:
+		var map := CityGenerator.generate(run_seed)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:%d:events" % [run_seed, day])
+
+		var consumed: Array[String] = []
+		var first := EventScheduler.build_day(day, rng, map, consumed)
+		t.check(not consumed.is_empty(), "day %d spends a one-shot on seed %d" % [day, run_seed])
+		var again := RandomNumberGenerator.new()
+		again.seed = rng.seed
+		var second := EventScheduler.build_day(day, again, map, consumed.duplicate())
+
+		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent.
+		# Everything else may move by at most one instance, which is what the freed corridor is
+		# worth — a placement that used to fail now fits, so the budget runs out one event earlier
+		# or later. Before M39 this was `homeless_yeller` going from two to eight.
+		var before := _kinds_in(first)
+		var after := _kinds_in(second)
+		var changed := 0
+		for id: String in before.keys() + after.keys():
+			var expected: int = int(before.get(id, 0)) - (1 if id in consumed else 0)
+			var drift: int = absi(int(after.get(id, 0)) - expected)
+			t.check(drift <= 1,
+					"seed %d: the retry has %d '%s' where the day had %d"
+					% [run_seed, int(after.get(id, 0)), id, expected])
+			changed += 1 if drift > 0 else 0
+		t.check(changed <= 2,
+				"seed %d: and at most a couple of kinds move at all (%d did)" % [run_seed, changed])
+
+## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
+func _kinds_in(plans: Array[EventScheduler.Planned]) -> Dictionary:
+	var counts := {}
+	for plan in plans:
+		counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
+	return counts
+
+## **The day the run is taught always has something to teach it with.** *(M39, finding 5.)*
+##
+## `charging_dog` is weight 1.4 of a day-3 pool and `EventDirector._teach_the_run` says outright what
+## happens when the dice disagree — *"if the day happened not to buy one, there is nothing to teach
+## and nothing happens"* — so a player could reach act II never having been shown the one control the
+## game will later require. A lesson that only happens on some seeds is not a lesson.
+func _test_the_run_is_always_taught(t) -> void:
+	var day := Tuning.RUN_TAUGHT_DAY
+	for run_seed in [4242, 90210, 1234567, 31337]:
+		var map := CityGenerator.generate(run_seed)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:%d:events" % [run_seed, day])
+		var consumed: Array[String] = []
+		var pursuits := 0
+		for plan in EventScheduler.build_day(day, rng, map, consumed):
+			pursuits += 1 if plan.def.pursues else 0
+		t.check(pursuits > 0,
+				"seed %d: day %d has something that has to be run from" % [run_seed, day])
+
+## Walks the encounter the way it is actually played: she is walking into it when it lunges, dithers
+## for `reaction` seconds, then turns and runs — accelerating, rather than changing speed instantly.
+##
+## Reports how close it got and how long she spent running, because those are the two numbers the
+## contract is about: one is whether the answer works and the other is what it costs.
+##
+## The running stops being counted the moment the thing gives up, which is not fussiness: an event
+## that is over still exists for several seconds while it leaves, and a rig that kept holding the
+## key down through that would price the answer at whatever `departs_at` happens to be.
+func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	var her := Vector2(_sited_at(def), 0.0)
+	# Positive is away from it, matching `_chase_rig`. She starts walking in.
+	var speed := -Tuning.WALK_SPEED
+	var elapsed := 0.0
+	var since_the_lunge := INF
+	var result := {"caught": false, "closest": INF, "running": 0.0}
+	while elapsed < 14.0 and not instance.is_leaving and not result["caught"]:
+		if not instance.is_telegraphing() and not instance.is_waiting() and since_the_lunge == INF:
+			since_the_lunge = 0.0
+		var wanted := -Tuning.WALK_SPEED
+		if since_the_lunge != INF and since_the_lunge >= reaction:
+			wanted = Tuning.RUN_SPEED
+		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
+		if speed > Tuning.WALK_SPEED:
+			result["running"] = float(result["running"]) + STEP
+		her.x += speed * STEP
+		instance.player_at = her
+		instance._process(STEP)
+		elapsed += STEP
+		if since_the_lunge != INF:
+			since_the_lunge += STEP
+		result["closest"] = minf(float(result["closest"]),
+				instance.global_position.distance_to(her))
+		if instance.is_lethal_at(her):
+			result["caught"] = true
+	instance.free()
+	return result
+
+## Where the encounter actually starts, in px: where the director sites something that comes at her,
+## or just inside the trigger for something that has been standing there.
+##
+## *(M39.)* It was `AHEAD_LEAD_DISTANCE` for the first case, which stopped being true when the
+## stand-off grew past it — the director sites a pursuer beyond its own stand-off now, and a rig
+## measuring from the cat's lead would have been measuring an encounter the game cannot produce.
+func _sited_at(def: EventDef) -> float:
+	if def.pursues_within > 0.0:
+		return def.pursues_within - 10.0
+	return clampf(Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+			+ float(Tuning.TILE_SIZE), Tuning.AHEAD_LEAD_DISTANCE, Tuning.SIGHT_AHEAD)
+
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.
-##
-## She starts wherever the chase actually starts: at the director's lead distance for something
-## sited in front of her, and just inside the trigger for something that has been standing there.
 func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	var from := Tuning.AHEAD_LEAD_DISTANCE
-	if def.pursues_within > 0.0:
-		from = def.pursues_within - 10.0
+	var from := _sited_at(def)
 	var her := Vector2(from, 0.0)
 	var elapsed := 0.0
 	var result := {"caught": false, "gave_up": false, "lethal_while_telegraphing": false,
@@ -715,52 +937,22 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 const _SCENERY := ["burnt_shell"]
 
 ## Net excitement from walking straight through the centre of an event at walking pace, in
-## points of a hundred-point meter: the falloff integrated along the line, minus the walking
-## decay over the same time. This is what produced the table in docs/EVENTS.md, and the
+## points of a hundred-point meter. This is what produced the table in docs/EVENTS.md, and the
 ## measurement behind playtest 02's finding 7.
+##
+## **It lives on `EventDef` since M39** and this is a one-line forwarder. The game itself now asks
+## the question — the danger caret is raised by what a row costs — and two implementations of a
+## number the vocabulary depends on is exactly the defect M37 found in `DangerEdge`: a second table
+## of which picture a look meant, and a fire engine drawn as a delivery van. A test that keeps its
+## own copy would go on passing while the game used a different one.
 func _cost_to_walk_through(def: EventDef) -> float:
-	var seconds := def.outer_radius * 2.0 / Tuning.WALK_SPEED
-	return (_mean_emission_along_the_line(def) - Tuning.EXCITEMENT_DECAY_WALKING) * seconds
+	return def.walk_through_cost()
 
 ## The same integral at running pace, with the running penalty in place of the walking decay.
 func _cost_to_run_through(def: EventDef) -> float:
 	var seconds := def.outer_radius * 2.0 / Tuning.RUN_SPEED
-	return (_mean_emission_along_the_line(def) - Tuning.EXCITEMENT_DECAY_RUNNING
+	return (def.mean_emission_along_the_line() - Tuning.EXCITEMENT_DECAY_RUNNING
 			+ Tuning.EXCITEMENT_FROM_RUNNING) * seconds
-
-## Mean emission along a straight line through the centre — the only property of a field either
-## comparison depends on, since both walk the same line and differ only in how long it takes.
-func _mean_emission_along_the_line(def: EventDef) -> float:
-	var span := def.outer_radius * 2.0
-	var steps := 2000
-	var total := 0.0
-	for i in steps:
-		total += _emission_at(def, Vector2(-def.outer_radius + span * (i + 0.5) / steps, 0.0))
-	return total / steps
-
-## What a row emits at a point, from its data alone.
-##
-## One disc for almost everything, and it is the assumption this table has always rested on: all of
-## `intensity` is at the centre and it falls away from there.
-##
-## **That assumption is false for a flock.** *(M38.)* A flock is `flock_size` birds sharing the same
-## intensity between them and wheeling inside `flock_spread`, so the same number buys a field that is
-## tighter and, crucially, *quieter along a line through it* — the disc model reads `pigeon_flock` at
-## +97 where the instance itself, walked and integrated, costs +35, which breaks the running rule the
-## row in fact keeps. The birds are placed evenly round the wheel at its mean reach rather than where
-## they happen to be: they move, and what a row costs is the average over where they might be rather
-## than over one frame.
-func _emission_at(def: EventDef, at: Vector2) -> float:
-	if def.flock_size <= 0:
-		return Tuning.falloff(at.length(), def.intensity, def.inner_radius, def.outer_radius)
-	var share := def.intensity / float(def.flock_size)
-	var outer := maxf(def.inner_radius + 1.0, def.outer_radius - def.flock_spread)
-	var total := 0.0
-	for i in def.flock_size:
-		var angle := TAU * float(i) / float(def.flock_size)
-		var bird := Vector2(cos(angle), sin(angle)) * def.flock_spread * 0.65
-		total += Tuning.falloff(bird.distance_to(at), share, def.inner_radius, outer)
-	return total
 
 ## **Running is wrong against everything you route around, and right against the thing that
 ## follows.** Two halves of one rule, and playtest 07 is where the second half arrived: *"the run

@@ -435,44 +435,64 @@ here. Two things follow, and both matter to anyone reading the table:
   a flock is a hot spot with a wide quiet margin, and that gradient is the reason to build it out
   of eleven sources rather than one.
 
-| Event | walk through | run through |
-| --- | ---: | ---: |
-| `loudspeaker` | −5.5 | +27.3 |
-| `burnt_shell` | −3.0 | +16.5 |
-| `poster_crew` | +0.7 | +22.6 |
-| `barricade` | +3.0 | +26.0 |
-| `curfew_announce` | +3.4 | +32.2 |
-| `playground` | +5.8 | +33.6 |
-| `delivery_van` | +8.3 | +34.9 |
-| `busker` | +13.3 | +45.7 |
-| `police_patrol` | +15.9 | +46.2 |
-| `cafe_tables` | +20.1 | +45.4 |
-| `cat_dash` | +20.2 | +35.4 |
-| `construction` | +20.3 | +51.6 |
-| `market_stall` | +27.9 | +52.7 |
-| `checkpoint` | +29.0 | +59.4 |
-| `cyclist` * | +30.2 | +45.9 |
-| `homeless_yeller` | +31.2 | +59.6 |
-| `ice_cream_van` | +31.5 | +65.8 |
-| `reversing_lorry` * | +32.6 | +53.3 |
-| `dog_walker` | +36.5 | +41.2 |
-| `charging_dog` * | see below | — |
-| `alley_robbery` * | see below | — |
-| `loose_dog` | +43.3 | +52.0 |
-| `leaf_blower` | +48.6 | +67.1 |
-| `protest` | +50.0 | +88.1 |
-| `pigeon_flock` † | +54.1 | +63.6 |
-| `burning_building` | +55.9 | +83.2 |
-| `abduction` * | +61.3 | +84.1 |
-| `military_convoy` | +84.9 | +107.2 |
-| `night_raid` | +101.8 | +122.6 |
-| `fire_truck` | +115.4 | +132.0 |
-| `firefight` * | +155.9 | +162.3 |
+| Event | walk through | run through | mark |
+| --- | ---: | ---: | :---: |
+| `loudspeaker` | — | — | — |
+| `curfew_announce` | — | — | — |
+| `burnt_shell` | −3.0 | +16.5 | |
+| `poster_crew` | +0.7 | +22.6 | |
+| `barricade` | +3.0 | +26.0 | |
+| `delivery_van` | +8.3 | +34.9 | |
+| `busker` | +13.3 | +45.7 | |
+| `police_patrol` | +15.9 | +46.2 | |
+| `charging_dog` * | +16.9 | — | ●● |
+| `cafe_tables` | +20.1 | +45.4 | |
+| `cat_dash` | +20.2 | +35.4 | |
+| `construction` | +20.3 | +51.6 | |
+| `playground` | +25.5 | +44.3 | — |
+| `market_stall` | +27.9 | +52.7 | ● |
+| `checkpoint` | +29.0 | +59.4 | ● |
+| `cyclist` * | +30.2 | +45.9 | ●● |
+| `homeless_yeller` | +31.2 | +59.6 | ● |
+| `ice_cream_van` | +31.5 | +65.8 | ● |
+| `reversing_lorry` * | +32.6 | +53.3 | ●● |
+| `alley_robbery` * | +34.6 | — | ●● |
+| `dog_walker` | +36.5 | +41.2 | ● |
+| `loose_dog` | +43.3 | +52.0 | ● |
+| `leaf_blower` | +48.6 | +67.1 | ● |
+| `protest` | +50.0 | +88.1 | ● |
+| `pigeon_flock` † | +54.1 | +63.6 | ● |
+| `burning_building` | +55.9 | +83.2 | ● |
+| `abduction` * | +61.3 | +84.1 | ●● |
+| `military_convoy` | +84.9 | +107.2 | ● |
+| `night_raid` | +101.8 | +122.6 | ● |
+| `fire_truck` | +115.4 | +132.0 | ● |
+| `firefight` * | +155.9 | +162.3 | ●● |
 
-**The two pursuers have no meaningful row, and that is the point:** they **follow**, so there is no
-line to walk through them and no crossing to price. Walking away from either loses the day; running
-away costs 19–24 points depending on how quickly the answer is given. See `docs/MECHANICS.md`,
-"Running that matters", for the measured tables.
+**The `mark` column is M39, and reading it downwards is the whole of playtest 10's findings 1, 8
+and 9.** ● is the amber caret — *worth going round* — and ●● the doubled deep red that means it ends
+the day. The threshold is `Tuning.MARK_WORTH_A_DETOUR`, a quarter of the meter, and it falls in the
+gap between `construction` and `market_stall`; a lethal row is marked whatever it costs, which is
+why `charging_dog` at +16.9 carries one and `cat_dash` at +20.2 does not. The column has to be
+**monotone** apart from the lethal rows, and `tests/test_danger.gd` asserts exactly that — before
+M39 it was not, and a fire engine carried nothing while a burning building did.
+
+`playground` is the one row above the line with no mark, because it is `AMBIENT`: it never appears,
+there is no moment to mark, and the park's own swing frame is the picture. It is also the row M39
+had to fix — see below.
+
+**The two pursuers' run-through column is empty, and that is the point:** they **follow**, so there
+is no crossing to price and no line to run along. Walking away from either loses the day; running
+away costs 35 points from the lunge and less the sooner it is given. See `docs/MECHANICS.md`,
+"Running that matters", for the measured tables. The city-wide rows have no line through them at
+all, which is why `EventDef.walk_through_cost()` answers zero for them and this table says nothing.
+
+**M39 moved two rows and both are defects rather than rebalances.** `playground` went +5.8 →
+**+25.5**, because at intensity 7 it never once out-emitted the calm-ground decay it stands on
+(7.7/s) and its denial radius was its own inner radius, 40px of 150 — *"playground doesn't increase
+excitement"*, and it had been true since M18 raised the calm multiplier. And `alley_robbery` has a
+row again at **+34.6**: the pursuers used to be priced as "see below", and a thing that is a *place*
+for as long as she is outside its trigger has a line through it like anything else.
 
 **M36 moved two rows and neither is a rebalance.** `homeless_yeller` went +17.7 → **+31.2** because
 he **paces** now and 10 was not enough to notice — *"it didn't move and it took a long time to have
@@ -574,12 +594,13 @@ becoming that.
 | Cue | Means | Where |
 | --- | --- | --- |
 | **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** Since M37 it is a rule with a test rather than an aspiration — one picture per row, no two rows sharing one. See point 6 below. | the art, one `EventDef.Look` per row |
-| **Caret over the entity** | *Danger that changes over time*, and only that: it is about to start, it ends the day, or it comes and goes **on a beat you can play against**. Amber telegraphing, red active, doubled and darker for `hard_fail`. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_horn_mark()` |
+| **Caret over the entity** | *This is worth changing your route for.* Raised by what a row **costs to walk through**, and by nothing else — see point 1 below. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_horn_mark()` |
+| **Its colour** | **Amber** = go round it. **Deep red, doubled** = it ends your day. Two colours, and they are a scale rather than a sequence. | `EventInstance.mark_colour()` |
+| **Its flash** | *It has not started yet.* The telegraph phase, and the only channel carrying it. *(M39: the colour was carrying it and could not — a telegraph is over before the event is on screen, so amber was only ever seen on the two rows sited in front of the player and read as "near".)* | `EventInstance._draw_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
-| **"Comes and goes" means *timeable*** | A pulse only earns a caret when its period is shorter than the walk across its own field — that is exactly when a pass can be slipped between two beats. Slower than that and the intensity only ever moves one way while she is inside it, which is a drift rather than a rhythm. *(M33. The rule was `pulse_period > 0`, and six of the ten rows available on day 1 have a pulse, so the caret was over most of an ordinary street: the deleted ring's own mistake in a new shape. A player walked up to one to find out what it meant and found out that it meant nothing.)* | `EventInstance.can_be_timed()` |
 | **Edge badge** | Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
 | **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
-| **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live and she is inside its reach with one step left to make. | `Stroller._draw_alert()` |
+| **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live, she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the day, **and the gap is closing at the speeds in play**. *(M39: it was "inside the outer radius", which for a cyclist is thirty times the area that can hurt her and stayed up while the bike rode away.)* | `EventManager._warn_about_the_ground_she_is_on()` |
 | **zzz over the pram** | *The baby is asleep* — the return phase, and the state with the most consequence and the least presence on screen. Flashing instead of breathing: *she is stirring*, and waking costs half the sleepiness bar. | `Stroller._draw_baby_cue()` |
 | **Waves over the pram** | *She is not settling* (amber, at the calm threshold, where the day stops progressing) and *she is nearly crying* (red, three of them, flashing). | `Stroller._draw_baby_cue()` |
 | **HUD line** | For a `city_wide` source, which has no position and therefore nothing to stand under. | `hud.gd` |
@@ -591,11 +612,35 @@ fits, that is a design conversation and not a licence to draw a radius.
 
 Three rules underneath the table, in the order they matter:
 
-1. **The caret is for danger that *changes*.** Lethal, telegraphing, pulsing or swelling —
-   nothing else. A barricade, a boarded shopfront and a burnt-out shell are large, distinct and
-   visibly what they are, and pointing at them adds noise and no information. A first pass used
-   "louder than the walking decay" instead and marked all three, which is the ring's own
-   mistake in a new shape. `tests/test_danger.gd` holds the line.
+1. **The caret is raised by what a thing costs.** *(M39, playtest 10 findings 1, 8 and 9: "there
+   is no danger indicator over the homeless person", "I don't understand the difference between
+   yellow and red", and "some dangerous ones don't have indicators and some really benign ones
+   do".)*
+
+   It was *danger that changes over time* — lethal, telegraphing, swelling, or pulsing fast
+   enough to be timed — and every clause of that is a true statement about a thing and **none of
+   them is a statement about how bad it is**. So the marked set and the danger came apart: a
+   fire engine (+115, the second most expensive row in the game) carried nothing and a burning
+   building (+56) carried a caret; the most expensive ordinary row in act I, a dog walker at
+   +36, carried nothing and the leaf blower beside it carried one, because its beat is 4.0s
+   rather than 8.0s; and `homeless_yeller` at +31 — the man who ends day 1 in three separate
+   traces — missed the pulse rule by four tenths of a second.
+
+   The rule is the player's own expectation, stated so a test can hold it: **if A is marked and
+   B is not, A costs more than B.** `EventDef.walk_through_cost()` is the order,
+   `Tuning.MARK_WORTH_A_DETOUR` is where the line falls (a quarter of the meter, which lands in
+   the 7.5-point gap between `market_stall` and `construction` rather than slicing a cluster),
+   and lethal rows are marked whatever they cost — *ends your day* is a different kind of thing
+   rather than a larger amount of the same one. `tests/test_danger.gd` holds all of it.
+
+   What survives from the old rule is what it was right about: **a cue that marks everything
+   says nothing.** Day 1 marks six of nine rows and leaves the cheap end of the street alone; a
+   barricade, a poster crew and a burnt-out shell are large, distinct and visibly what they are,
+   and pointing at them adds noise and no information.
+
+   What is given up, as a decision rather than an oversight: **a crouching cat (+20) loses its
+   caret.** The crouch is its own silhouette and the vocabulary's first row is that the entity
+   carries it.
 2. **Breathing had to survive.** It is the one thing the ring did that a discrete symbol does
    not get for free, and without it a pulsing event stops being something to time a pass
    through and becomes something that hurts at random.

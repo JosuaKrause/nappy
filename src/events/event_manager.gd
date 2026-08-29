@@ -258,6 +258,26 @@ var _announced_city_wide := ""
 ## no lethal events at all, so the mark almost never appears before day 8. That is not the cue
 ## being broken, it is the cue being honest about a game where nothing is dangerous yet — which
 ## is finding 5, and a different milestone.
+## **And `NOW` is about the pair of them, not about the disc.** *(M39, playtest 10 finding 11: "when
+## I'm walking orthogonally away from the biker the double !! shouldn't show anymore since there is
+## no way it can affect me — the danger has been avoided".)*
+##
+## `NOW` was raised for any live lethal event whose **outer** radius covered her. A cyclist ends the
+## day inside 26px and reaches 145, so the strongest cue in the game was up across more than
+## thirty times the area that could hurt her, and it stayed up while the bike rode away — which is
+## playtest 06's *"I get the flashing exclamation marks after the fact"* at the half M32 did not
+## fix. M32 gave the traffic a `stand_down()`; the events kept "inside the radius".
+##
+## So it is two conditions: she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the
+## day, **and** the gap is actually shrinking at the speeds in play.
+##
+## The closing rate is **relative** — her velocity is in it — and that is deliberately the opposite
+## of what M32 did to the screen-edge badge, which measures the event's own approach with the player
+## held still. The two cues say different sentences. A badge says *a thing exists and is coming*, so
+## her walking towards it must not raise one; this mark says *the contract is now about you*, which
+## is a statement about the pair of them and is false the moment she is opening the gap. It is also
+## what makes the mark work for something that never moves: a reversing lorry cannot come to her, so
+## the only way it becomes about her is that she is walking into it.
 func _warn_about_the_ground_she_is_on() -> void:
 	var here := _player.global_position
 	var body := _player as Stroller
@@ -266,15 +286,25 @@ func _warn_about_the_ground_she_is_on() -> void:
 	for instance in _instances:
 		if instance.is_finished or instance.def.city_wide or not instance.def.hard_fail:
 			continue
-		if instance.global_position.distance_to(here) > instance.def.outer_radius:
-			continue
+		var gap := instance.global_position.distance_to(here) - instance.def.inner_radius
 		# `SOON` is anything that cannot kill her *yet* — a telegraph running, or a pursuer that has
 		# not noticed her. *(M36.)* Without the second half a man standing in an alley would raise
 		# `NOW` — one step from the end of the day — from two hundred pixels away, which is the
 		# marks-everything mistake arriving at the one cue that cannot afford it.
-		var not_yet := instance.is_telegraphing() or instance.is_waiting()
-		body.warn(Stroller.Alert.SOON if not_yet else Stroller.Alert.NOW,
-				WARNING_HOLD, WARNING_SOURCE)
+		#
+		# It keeps the whole outer radius, because that is exactly what the fairness contract
+		# promises her time to walk out of. Only `NOW` is about a moment.
+		if instance.is_telegraphing() or instance.is_waiting():
+			if gap + instance.def.inner_radius <= instance.def.outer_radius:
+				body.warn(Stroller.Alert.SOON, WARNING_HOLD, WARNING_SOURCE)
+			continue
+		var to_her := here - instance.global_position
+		if to_her.length_squared() < 1.0:
+			body.warn(Stroller.Alert.NOW, WARNING_HOLD, WARNING_SOURCE)
+			continue
+		var closing := (instance.travel_velocity() - body.velocity).dot(to_her.normalized())
+		if closing > 0.0 and gap <= closing * Tuning.LETHAL_MARK_LEAD:
+			body.warn(Stroller.Alert.NOW, WARNING_HOLD, WARNING_SOURCE)
 
 ## How long a raised warning stays up. A shade longer than a physics frame, so the mark does not
 ## strobe on the boundary of a radius she is walking along — which is short enough that this
@@ -296,8 +326,14 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
 	_spawn_unplanned(def, path[0], path)
+	# The distance it was actually sited at rather than the constant. *(M39.)* A pursuer is sited
+	# beyond its own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant would
+	# have made every `ahead` line for the one row a chase is about say the wrong number.
+	var crossing_point: Vector2 = path[0] if path.size() < 2 \
+			else (path[0] + path[path.size() - 1]) * 0.5
+	var lead := crossing_point.distance_to(body.global_position)
 	Telemetry.note("ahead", "%s %s %.0fpx in front of her at %s" % [
-		def.id, "comes at her from" if def.pursues else "crosses", Tuning.AHEAD_LEAD_DISTANCE,
+		def.id, "comes at her from" if def.pursues else "crosses", lead,
 		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
 
 func _find_player() -> bool:

@@ -222,16 +222,20 @@ func alert_level() -> Alert:
 ## can be asked about one. *(The M32 lesson — the badge's own two questions are static functions
 ## for the same reason — arriving at the cue M32 itself added.)*
 ##
-## Two different reasons to step aside, on the two axes, and only one of them is conditional:
+## **There is one reason to step aside and it is conditional**, on both vertical axes. Walking
+## towards or away from the viewer the pram shares her column, so "above the pram" is also the
+## exclamation mark's column — and that column is only occupied while there is a mark in it.
+## *(M37, playtest 07 finding 14.)*
 ##
-## - **Walking north** the pram is behind her, so "above the pram" is also above her head, which
-##   is the exclamation mark's column. That column is only occupied while there is a mark in it.
-##   *(M37, playtest 07 finding 14: "the zzz is stepped aside from the pram".)* M32 stepped aside
-##   unconditionally, so the commonest picture in the game — a sleeping baby and nothing else
-##   happening — put the zzz a body's width to one side of the pram it is about, dodging a mark
-##   that was not there, and read as being about *her*.
-## - **Walking south** the pram is in front of her and "above the pram" is over her own chest.
-##   Nothing about that depends on what else is on screen, so neither does the step.
+## *(M39, playtest 10 finding 3: "when walking downwards the zzz is still left of the stroller while
+## walking in any other direction it has the correct position.")* M37 made the **north** case
+## conditional and left the south one unconditional, on the argument that walking south "above the
+## pram" is over her own chest and nothing about that depends on what else is on screen. That is a
+## true observation and the wrong conclusion: it is an argument for lifting the cue over her head,
+## which is `baby_cue_lift()`, and not for shoving it sideways off the thing it is about. So the
+## rule is one rule now — *dodge the mark, and only the mark* — and the screenshot that made M37's
+## own case makes this one: a sleeping baby, nothing else happening, and a zzz a full body's width
+## to the right of the pram.
 ##
 ## It reads `alert_level()` rather than the flash phase: the mark blinks and the cue beside it
 ## must not hop back and forth in time with it.
@@ -240,9 +244,27 @@ func baby_cue_aside() -> float:
 		# Walking sideways the pram is already a body's width out in front of her, and there is
 		# nothing to step around.
 		return 0.0
-	if facing.y < 0.0 and alert_level() == Alert.NONE:
+	if alert_level() == Alert.NONE:
 		return 0.0
 	return BABY_CUE_ASIDE if facing.x >= 0.0 else -BABY_CUE_ASIDE
+
+## How far above the pram the cue floats, which is not the same on both vertical axes.
+##
+## *(M39, finding 3.)* `BABY_CUE_LIFT` clears the pram's own art, which is all it has to do when the
+## pram is the topmost thing under the cue. Walking **south** it is not: the pram is in front of her
+## and therefore *lower* on the screen, so a cue lifted off the pram alone lands over her chest.
+## Clearing her as well is what puts it above the pair of them, over the pram's own column, which is
+## where a cue about the baby belongs — and it is why the step aside above could stop being
+## unconditional.
+func baby_cue_lift() -> float:
+	if absf(facing.y) >= absf(facing.x) and facing.y > 0.0:
+		return BABY_CUE_LIFT + FIGURE_HEIGHT
+	return BABY_CUE_LIFT
+
+## How tall she is, in px, from the ground point her sprite is anchored at. Only the cue above the
+## pram needs it, and it needs it as a number rather than as a texture size because the cue is
+## placed before anything is drawn.
+const FIGURE_HEIGHT := 46.0
 
 func _turn_toward(target: Vector2, delta: float) -> void:
 	var step := FACING_TURN_SPEED * delta
@@ -345,7 +367,7 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 	# home stops being read. The urgent two flash instead.
 	var breath := 0.0 if flashing else sin(_alert_phase * TAU) * BABY_CUE_BREATH
 	Sprites.draw_standing(self, texture,
-			pram_offset + Vector2(aside, -BABY_CUE_LIFT + breath))
+			pram_offset + Vector2(aside, -baby_cue_lift() + breath))
 
 ## *This spot is about to be bad; move* — or, doubled and red, *it is bad now.* Drawn over the
 ## player rather than over the thing that is coming, because "there is a car on this road" is

@@ -20,6 +20,8 @@ func run(t) -> void:
 	var was_paused: bool = t.get_tree().paused
 	_test_a_canvas_layer_is_always_visible(t)
 	_test_the_pause_puts_back_what_it_found(t)
+	_test_space_carries_on_from_every_screen(t)
+	_test_the_pause_says_where_the_run_stands(t)
 	_test_there_is_a_way_out_of_a_finished_run(t)
 	_test_the_title_screen_does_not_stop_the_city(t)
 	t.get_tree().paused = was_paused
@@ -55,6 +57,68 @@ func _test_the_pause_puts_back_what_it_found(t) -> void:
 	t.check(t.get_tree().paused,
 			"and closing it hands the screen underneath back its pause rather than resuming a day "
 			+ "that had ended")
+	t.get_tree().paused = false
+	pause.queue_free()
+
+## **One verb, every screen.** *(M39, playtest 10 finding 6: "from pause space should also let you
+## continue".)*
+##
+## The title screen and the between-days summary have both meant *carry on* by `space` since M38, and
+## the pause was the one screen that did not take it — so a player learned the verb on two screens out
+## of three and found it missing on the third. Asserted as the property rather than as the key, so a
+## fourth screen that forgets it fails here: **from every screen the game can come to rest on, space
+## carries on.**
+func _test_space_carries_on_from_every_screen(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var resumed := [0]
+	pause.resumed.connect(func() -> void: resumed[0] += 1)
+
+	t.get_tree().paused = false
+	pause.open()
+	pause._unhandled_input(_accept())
+	t.check(resumed[0] == 1 and not pause.is_open(), "space carries on from the pause")
+	t.check(not t.get_tree().paused, "and the day starts again")
+
+	# Esc still works, because it is also the key that opened this and a toggle should untoggle.
+	pause.open()
+	pause._unhandled_input(_action("pause"))
+	t.check(resumed[0] == 2 and not pause.is_open(), "and so does the key that opened it")
+	t.get_tree().paused = false
+	pause.queue_free()
+
+## **A pause with the run on it.** *(M39, playtest 10 finding 7: "in the pause screen the day and
+## nerves should show prominently as well".)*
+##
+## Both numbers live in the HUD, behind a screen that covers the HUD — and the pause is exactly when
+## somebody stops to ask how far in they are and how much they can still get wrong. It is read at
+## `open()` rather than kept in step with `EventBus`: a screen only ever looked at while the game is
+## stopped cannot go stale, and a listener that has to stay correct across fourteen days will not.
+func _test_the_pause_says_where_the_run_stands(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var day := GameState.day
+	var nerves := GameState.nerves
+
+	GameState.day = 7
+	GameState.nerves = 3
+	t.get_tree().paused = false
+	pause.open()
+	var line: String = pause._standing.text
+	t.check(line.contains("7") and line.contains("3"),
+			"the pause says which day it is and how many nerves are left ('%s')" % line)
+	pause.close()
+
+	# The last one reads as itself rather than as a number, because that is the one that changes
+	# what a player does next.
+	GameState.nerves = 1
+	pause.open()
+	t.check(pause._standing.text.contains("last nerve"),
+			"and the last one says so ('%s')" % pause._standing.text)
+	pause.close()
+
+	GameState.day = day
+	GameState.nerves = nerves
 	t.get_tree().paused = false
 	pause.queue_free()
 

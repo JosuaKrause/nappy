@@ -360,3 +360,63 @@ func minimum_telegraph() -> float:
 		return Tuning.PURSUIT_MIN_NOTICE
 	return Tuning.required_telegraph_time(inner_radius, outer_radius, hard_fail,
 			speed if mobile else 0.0)
+
+# ------------------------------------------------------------ what a row costs ---
+# *(M39, playtest 10 findings 1, 8 and 9: "some dangerous ones don't have indicators and some
+# really benign ones do".)*
+#
+# This integral has existed since M19 and lived in `tests/test_events.gd`, where it produced the
+# cost table in `docs/EVENTS.md` and asserted that nothing is cheaper to walk through than around.
+# It moves here because the **game** now asks the question: the danger caret is raised by what a
+# row costs rather than by whether its danger changes over time, and a second copy of a number the
+# vocabulary depends on is exactly the mistake M37 found in `DangerEdge` — two tables of which
+# picture a look meant, and a fire engine drawn as a delivery van.
+
+## What walking straight through the middle of one costs, in points of a hundred-point meter:
+## the field integrated along the line, less the walking decay over the same time.
+##
+## Cached, because `EventInstance.wants_a_mark()` asks it on every `_draw()` and the answer is a
+## property of the def rather than of the moment. `city_wide` has no line through it and answers
+## zero; nothing reads that answer, and returning it is cheaper than a special case at every caller.
+func walk_through_cost() -> float:
+	if _cost_cache == INF:
+		_cost_cache = 0.0 if city_wide else \
+				(mean_emission_along_the_line() - Tuning.EXCITEMENT_DECAY_WALKING) \
+				* (outer_radius * 2.0 / Tuning.WALK_SPEED)
+	return _cost_cache
+
+var _cost_cache := INF
+
+## Mean emission along a straight line through the centre. The only property of a field that either
+## the walking or the running comparison depends on: both integrate this line and differ only in how
+## long the crossing takes.
+func mean_emission_along_the_line() -> float:
+	var span := outer_radius * 2.0
+	var steps := 2000
+	var total := 0.0
+	for i in steps:
+		total += emission_at(Vector2(-outer_radius + span * (i + 0.5) / steps, 0.0))
+	return total / steps
+
+## What a row emits at a point, from its data alone.
+##
+## One disc for almost everything, and it is the assumption the whole table rests on: all of
+## `intensity` is at the centre and it falls away from there.
+##
+## **That assumption is false for a flock.** *(M38.)* A flock is `flock_size` birds sharing the same
+## intensity between them and wheeling inside `flock_spread`, so the same number buys a field that is
+## tighter and, crucially, *quieter along a line through it* — the disc model reads `pigeon_flock` at
+## +97 where the instance itself, walked and integrated, costs +35. The birds are placed evenly round
+## the wheel at its mean reach rather than where they happen to be: they move, and what a row costs
+## is the average over where they might be, not over one frame.
+func emission_at(at: Vector2) -> float:
+	if flock_size <= 0:
+		return Tuning.falloff(at.length(), intensity, inner_radius, outer_radius)
+	var share := intensity / float(flock_size)
+	var outer := maxf(inner_radius + 1.0, outer_radius - flock_spread)
+	var total := 0.0
+	for i in flock_size:
+		var angle := TAU * float(i) / float(flock_size)
+		var bird := Vector2(cos(angle), sin(angle)) * flock_spread * 0.65
+		total += Tuning.falloff(bird.distance_to(at), share, inner_radius, outer)
+	return total

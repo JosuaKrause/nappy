@@ -109,7 +109,7 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# Peeked rather than popped, because what it wants sited depends on what it is: a pursuer is
 	# put *in her way* rather than across it, and a placement that fails must not spend the event.
 	var next := _owed[0] as EventDef
-	var path := _crossing_ahead_of(at, velocity / speed, next.pursues)
+	var path := _crossing_ahead_of(at, velocity / speed, next)
 	if path.is_empty():
 		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
 		# again shortly rather than burning the allowance on a place that would not read.
@@ -136,12 +136,23 @@ func _roll_interval() -> float:
 ## place this function had just checked, 266px away and diagonal, which on a 640x360 view is at the
 ## corner of the screen or past it. What she is owed is the sight of it coming, and it has to be
 ## sited where that can be seen.
+##
+## **And a pursuer is sited beyond its own stand-off, which `AHEAD_LEAD_DISTANCE` does not
+## guarantee.** That constant is a *cat's* reaction window and has nothing to do with a chase: a
+## pursuer closes to `Tuning.pursuit_standoff()` and holds there, so a lead inside the stand-off is a
+## dog that materialises already stopped, with no visible closing in a telegraph whose whole content
+## is the sight of it closing. The cap is `Tuning.SIGHT_AHEAD`, because a dog telegraphing off the
+## top of the screen is worse than one that barely moves — the visible world is only 360px tall.
 func _crossing_ahead_of(at: Vector2, heading: Vector2,
-		comes_at_her := false) -> PackedVector2Array:
-	var centre := at + heading * Tuning.AHEAD_LEAD_DISTANCE
+		def: EventDef = null) -> PackedVector2Array:
+	var lead := Tuning.AHEAD_LEAD_DISTANCE
+	if def and def.pursues:
+		lead = clampf(Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+				+ float(Tuning.TILE_SIZE), Tuning.AHEAD_LEAD_DISTANCE, Tuning.SIGHT_AHEAD)
+	var centre := at + heading * lead
 	if not _map.is_walkable(_map.world_to_tile(centre)):
 		return PackedVector2Array()
-	if comes_at_her:
+	if def and def.pursues:
 		return PackedVector2Array([centre])
 	var across := Vector2(-heading.y, heading.x) * float(CROSSING_REACH_TILES * Tuning.TILE_SIZE)
 	# The side it comes from is a coin flip, so a player cannot learn to watch one shoulder.

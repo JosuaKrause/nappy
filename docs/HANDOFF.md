@@ -1,8 +1,91 @@
 # Handoff
 
-**Last updated:** end of the M38 session. M37, M36, M35 and the rest follow below, newest first.
-**Read this first, then [PLAYTEST-07.md](PLAYTEST-07.md) and [PLAYTEST-09.md](PLAYTEST-09.md), then
-[TODO.md](TODO.md).**
+**Last updated:** end of the M39 session. M38, M37 and the rest follow below, newest first.
+**Read this first, then [PLAYTEST-10.md](PLAYTEST-10.md), then [TODO.md](TODO.md).**
+
+> **M39 is playtest 10, and its one sentence is: the danger marks and the danger had come apart,
+> and a retried day was not the same day.**
+>
+> **A cue that marks the wrong things says something false.** M22's rule raised the caret for danger
+> that *changes over time* — lethal, telegraphing, swelling, pulsing fast enough to be timed — which
+> is a true statement about a thing and not a statement about how bad it is. Fifteen milestones on,
+> the marked set and the danger had come apart completely: a fire engine (+115) carried nothing and
+> a burning building (+56) carried a caret; the dog walker (+36, the most expensive ordinary row in
+> act I and the subject of two playtests) carried nothing while the leaf blower beside it did,
+> because its beat is 4.0s rather than 8.0s; and `homeless_yeller` (+31), the man who ends day 1 in
+> three separate traces, missed the pulse rule by four tenths of a second — *"there is no danger
+> indicator over the homeless person"*, exactly.
+>
+> The rule is the player's own expectation, stated as an invariant a test can hold rather than as a
+> condition: **if A is marked and B is not, A costs more to walk through than B.**
+> `EventDef.walk_through_cost()` is the order and `Tuning.MARK_WORTH_A_DETOUR` is where the line
+> falls. Two things worth carrying beyond the row. The cost integral **moved out of the test and
+> onto `EventDef`**, because the game now asks the question the test was asking, and two copies of a
+> number the vocabulary depends on is the `DangerEdge` defect M37 found. And **a colour is the wrong
+> channel for a phase**: amber meant *telegraphing*, but `EVENT_STREAM_RADIUS` is 900px and no
+> telegraph is longer than 4s, so amber was only ever seen on the two `AHEAD_OF_PLAYER` rows and in
+> play it meant *near*. The flash carries the phase now, because a flash is a property of the mark
+> rather than of a moment she had to be present for. Accepted cost, written down as a decision: the
+> crouching cat (+20) loses its caret.
+>
+> **One stream shared by several phases is a determinism bug with a long fuse.**
+> *(Finding 5: "the tutorial dog on day 3 only appeared once (I died) then it didn't appear
+> again".)* `EventScheduler.build_day` ran six phases off one RNG in sequence, so anything that
+> changed how much an earlier phase drew moved everything after it — and **a one-shot the run had
+> already spent was skipped before its `randf()` was drawn**. So the second attempt at day 3, the
+> day the fire engine runs, started the recurring fill one value earlier and produced a different
+> city's worth of events: `homeless_yeller` two to eight, `cyclist` none to three, between two
+> consecutive attempts at the same day. `docs/TODO.md` had claimed since M32 that *"the retry is the
+> same day"*. `_stream(base, salt)` is the fix and the rule: **a phase whose consumption can vary
+> gets its own stream.**
+>
+> What is deliberately *not* closed: a scar, or a spent one-shot's route, genuinely frees ground, so
+> placements rejected against it now fit. The composition of the day is identical and a handful of
+> route rows start a few tiles along the same street — which is the run's own history showing
+> through, and is the answer that should show through.
+>
+> **And the tutorial was a weighted roll.** `charging_dog` is weight 1.4 of a day-3 pool and
+> `_teach_the_run` said outright what happens when the dice disagree. Whole day 3s with
+> `charging_dog x0` exist, so a player could reach act II never having been shown the one control
+> the game later requires. `_ensure_the_run_is_taught()` closes it.
+>
+> **The chase ends at a rate now, and that is the part to carry.** *(Finding 13: "the running
+> tutorial dog is impossible to escape at the moment", clarified by the player as "the charging
+> start earlier was fine — it was enough time to react properly" and "the issue was that the dog
+> kept following for too long".)* This session's first answer was wrong and the way it was wrong is
+> worth more than the fix: it read the finding as a **reaction window** problem, measured a real
+> two-tenths-of-a-second window, and built for that — while the player had been talking about the
+> **break-off** the whole time. **A probe that reproduces the numbers is not evidence that it
+> reproduces the complaint.**
+>
+> `Tuning.PURSUIT_SHAKEN_OFF` ends a chase after 0.8s of the gap **opening**. A pursuer is faster
+> than a walk and slower than a run by construction, so only running can open the gap — which means
+> "walking away can never end a chase" and "running away always ends one" stop being two
+> inequalities fighting over the same three numbers and become facts. That fight is what let a
+> widened stand-off silently eat an escape, and what once left a robber's trigger eleven pixels to
+> live in. Measured on a rig that accelerates: the answer costs **0.86s of running, 12 points**,
+> against 35 before, and every wrong answer still costs the day.
+>
+> **Two things are open and are written down rather than hidden.** The window to answer at the lunge
+> itself is 0.1–0.2s, because she is walking into the thing; a player answers during the telegraph
+> instead, where it is visible and closing for two and a half seconds. And **the dog still backs off
+> through its telegraph**, which a player has watched and called nonsense — it is what a stand-off
+> costs while the lunge is fired by a clock rather than by proximity, and it is the first entry in
+> the next plan.
+>
+> **The rest of the fourteen.** The playground had never once out-emitted the calm ground it stands
+> on — 7.0/s against a 7.7/s decay, so its denial radius was its own inner radius, 40px of 150, and
+> standing in one was a net benefit; it was right in M5 at a 3.5x calm multiplier and has been wrong
+> since M18. The doubled `!!` is two conditions now, within `LETHAL_MARK_LEAD` of the radius that
+> ends the day **and** closing, deliberately at the *relative* rate where the screen-edge badge uses
+> the thing's own — the badge says *a thing is coming*, this says *the contract is about you*. The
+> pause takes `space` and carries the day and the nerves. `Telemetry.snapshot()` puts a PNG beside
+> the entries that are about a moment. And the commit is in the log filename, at the end, because a
+> timestamp has dashes in it and so does `abc1234-dirty`.
+>
+> **The thing nobody reported, and it should be the next milestone:** five runs, no day won, and
+> every losing line reads `crowd 39.4, events 0.0`. That is playtest 07's finding 17 after the
+> milestone that answered it.
 
 > **M38 is not a playtest — it is five reports and two design instructions in one sitting — and its
 > one sentence is: every one of them had already passed a green suite, a screenshot, or both.**
