@@ -228,8 +228,13 @@ acts III and IV, where the streets are deliberately empty and the threat should 
 
 ### The density, and why it is caps before budget *(M28)*
 
-Playtest 05, finding 6, stated it as a number: **one event per block**. The city is 7×7 blocks,
-so day 1 places **49** rather than the 13 it used to. Measured over five seeds:
+Playtest 05, finding 6, stated it as a number: **one event per block** — which is why
+`EventScheduler.budget_for()` is stated *per block* and not as a flat number. A flat budget is a
+statement about one lattice size: grow the city and the same events spread thinner, which is the
+density quietly falling while every constant still reads as correct. At 9×9 that is **76 placed on
+day 1**, 0.94 per block, against 0.97 at the 7×7 the table below was measured on.
+
+The original measurement, over five seeds at 7×7:
 
 | | before M28 | after |
 | --- | --- | --- |

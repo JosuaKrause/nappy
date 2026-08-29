@@ -50,7 +50,7 @@ static func _attempt(seed_value: int) -> CityMap:
 	_lay_streets(map)
 	var purposes := _assign_purposes(map, rng)
 	var block_rects := _build_blocks(map, purposes, rng)
-	_place_home(map, purposes, block_rects, rng)
+	_place_home(map, block_rects)
 	_plan_arcs(map, purposes, rng)
 
 	for rects in block_rects.values():
@@ -111,6 +111,12 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 
 	var purposes := {}
 	var zones := {}
+	# **The middle block is claimed for the home before anything else is decided.** Claiming it
+	# rather than preferring it is what makes the home central *mandatorily*: a claimed block cannot
+	# be swallowed by a calm zone (`_zone_fits` requires a wholly unclaimed footprint), cannot be
+	# rolled as calm below, and is not in `remaining`, so no courtyard is cut into it either.
+	purposes[home_block()] = GameEnums.BlockPurpose.RESIDENTIAL
+
 	var areas := _place_calm_zones(purposes, zones, shuffled, rng)
 
 	var calm_target := rng.randi_range(Tuning.MIN_CALM_BLOCKS, Tuning.MAX_CALM_BLOCKS)
@@ -118,6 +124,8 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 		if areas >= calm_target:
 			break
 		if purposes.has(block) or _has_open_calm_neighbour(purposes, Rect2i(block, Vector2i.ONE)):
+			continue
+		if _too_near_the_home(Rect2i(block, Vector2i.ONE)):
 			continue
 		purposes[block] = _OPEN_CALM[rng.randi_range(0, _OPEN_CALM.size() - 1)]
 		areas += 1
@@ -174,10 +182,43 @@ static func _place_calm_zones(purposes: Dictionary, zones: Dictionary,
 		made += 1
 	return made
 
-## Whether a 2x2 footprint is inside the map, wholly unclaimed, clear of other calm, and does
-## not swallow a stretch of either arterial.
+## The middle of the lattice, which is the home's block. Odd on both axes by constraint, so there
+## is exactly one — see `Tuning.CITY_BLOCKS`.
+static func home_block() -> Vector2i:
+	return (Tuning.CITY_BLOCKS - Vector2i.ONE) / 2
+
+## Whether a footprint is close enough to the home that putting calm ground in it would undo the
+## thing the walk out is for.
+##
+## The two rules about the home compete — it is central, and it is `MIN_HOME_TO_PARK_TILES` of
+## walking from calm ground — and with the home pinned to the middle this is the only remaining
+## place to settle that.
+##
+## Stated in blocks because the lattice is what it constrains, and **derived from the tile guarantee
+## rather than authored beside it**, or the two drift apart the first time either moves. A block `d`
+## away starts `d * period()` tiles from the home block's own origin, of which `BLOCK_SIZE` is the
+## home's lot — so the shortest walk to it is about `d * period() - BLOCK_SIZE`, and the clearance is
+## the smallest `d` that clears the guarantee.
+##
+## It is a floor rather than the guarantee itself: walking distance is not straight-line, and the
+## home sits in the *south* edge of its block, so real distances come out longer. `validate()` still
+## checks the tile guarantee, which is what catches the case this approximation is wrong about.
+static func _too_near_the_home(footprint: Rect2i) -> bool:
+	var home := home_block()
+	var clearance := ceili(float(Tuning.MIN_HOME_TO_PARK_TILES + Tuning.BLOCK_SIZE)
+			/ float(CityMap.period()))
+	for block in _blocks_in(footprint):
+		var away: Vector2i = (block - home).abs()
+		if maxi(away.x, away.y) < clearance:
+			return true
+	return false
+
+## Whether a 2x2 footprint is inside the map, wholly unclaimed, clear of other calm, clear of the
+## home, and does not swallow a stretch of either arterial.
 static func _zone_fits(purposes: Dictionary, footprint: Rect2i) -> bool:
 	if footprint.end.x > Tuning.CITY_BLOCKS.x or footprint.end.y > Tuning.CITY_BLOCKS.y:
+		return false
+	if _too_near_the_home(footprint):
 		return false
 	# The corridors this would absorb are the ones between its own columns and rows.
 	for index in range(footprint.position.x + 1, footprint.end.x):
@@ -486,37 +527,24 @@ static func _subtract(outer: Rect2i, hole: Rect2i) -> Array[Rect2i]:
 
 # --------------------------------------------------------------------- home ---
 
-## Picks the most central residential block that is still a long walk from any park, then
-## notches the home into its south edge.
+## Notches the home into the south edge of the middle block.
 ##
-## The distance test runs on a single multi-source sweep out from every park tile, taken
-## before the home exists — so no candidate has to be carved and un-carved to be measured.
-static func _place_home(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
-		rng: RandomNumberGenerator) -> void:
-	var from_calm := map.walk_distances_from(map.calm_tiles())
-	var centre := Vector2(Tuning.CITY_BLOCKS - Vector2i.ONE) * 0.5
-
-	var candidates: Array[Vector2i] = []
-	for block in block_rects:
-		if purposes[block] == GameEnums.BlockPurpose.RESIDENTIAL:
-			candidates.append(block)
-	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
-		return Vector2(a).distance_squared_to(centre) < Vector2(b).distance_squared_to(centre))
-
-	var fallback := Vector2i.ZERO
-	var fallback_distance := -1
-	for block in candidates:
-		var home := _home_rect(map, block)
-		var distance := _distance_to_calm(map, from_calm, home)
-		if distance >= Tuning.MIN_HOME_TO_PARK_TILES:
-			_carve_home(map, block_rects, block, home)
-			return
-		if distance > fallback_distance:
-			fallback_distance = distance
-			fallback = block
-
-	# No block was far enough; take the furthest one and let validate() report it.
-	_carve_home(map, block_rects, fallback, _home_rect(map, fallback))
+## **The middle, not the most central block that happens to work.** The home used to be chosen by
+## sorting residential blocks by distance to the centre and taking the first that was
+## `MIN_HOME_TO_PARK_TILES` from calm ground — two rules competing for the same thing, which the
+## walk out settled by walking the home outward until it was far enough. Measured over ten seeds at
+## 7x7 it landed about two blocks off centre and was central in four, which puts the doorstep near
+## the boundary: *"I spawn too often at the edge, leaving only a few ways into the rest of the
+## city."* Half the directions out of a corner block are a wall, and a city you can only leave two
+## ways is a smaller city than the one that was generated.
+##
+## The competition is settled in `_assign_purposes` instead, by keeping calm ground away from the
+## middle (`_too_near_the_home`) — so the distance guarantee holds where the home *is* rather than
+## deciding where it goes. `validate()` still checks it, because a clearance stated in blocks is an
+## approximation of a guarantee stated in tiles.
+static func _place_home(map: CityMap, block_rects: Dictionary) -> void:
+	var block := home_block()
+	_carve_home(map, block_rects, block, _home_rect(map, block))
 
 ## The home notch: `HOME_SIZE_TILES` in the south edge of the lot, slid sideways if that
 ## would land it in an alley.
@@ -539,13 +567,6 @@ static func _is_all_building(map: CityMap, rect: Rect2i) -> bool:
 		if map.tile_at(tile) != GameEnums.TileType.BUILDING:
 			return false
 	return true
-
-static func _distance_to_calm(map: CityMap, from_calm: Dictionary, home: Rect2i) -> int:
-	# The home opens onto the sidewalk directly south of it.
-	var doorstep := Vector2i(home.position.x, home.end.y)
-	if not from_calm.has(doorstep):
-		return -1
-	return int(from_calm[doorstep]) + 1
 
 static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
 		home: Rect2i) -> void:

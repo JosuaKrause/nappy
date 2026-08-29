@@ -203,7 +203,19 @@ const BLOCK_SIZE := 8
 ## the rig, which made walking a street feel like threading a needle.
 const STREET_WIDTH := 6
 const SIDEWALK_WIDTH := 2
-const CITY_BLOCKS := Vector2i(7, 7)
+## Odd on both axes, and that is a constraint rather than a coincidence: an odd lattice has a
+## **middle block**, and the home goes in it. See `CityGenerator._place_home`.
+##
+## The size is what lets the two rules about the home both hold. It has to be central, and it has to
+## be `MIN_HOME_TO_PARK_TILES` of walking from calm ground — and those pull against each other, so
+## the lattice has to be wide enough that the centre is still a long walk from the edge of anything.
+## At 7x7 it was not: the home was walked outward until it was far enough, landing about two blocks
+## off centre and often against the boundary, where most directions are a wall.
+##
+## Everything downstream of this is stated over it — the event budget per block, the crowd
+## population per corridor, the arterial index — so a change here is a change to the whole density
+## table. Re-measure it; see `docs/PLAYTEST-04.md`.
+const CITY_BLOCKS := Vector2i(9, 9)
 
 ## Calm **areas**, not calm blocks: since M21 an area may be a single block or a four-block
 ## zone, and what these count is places to go rather than lots. `MIN_CALM_BLOCKS` keeps its

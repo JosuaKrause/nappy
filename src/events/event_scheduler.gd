@@ -99,8 +99,19 @@ class Planned extends RefCounted:
 ## The escalation is still linear in the day and is now steep enough to be felt as one: day 14
 ## carries about half again as many events as day 1, and a larger share of them are act III and
 ## IV rows rather than more dog walkers, because those caps rose too.
+## **It is stated per block, because the target it encodes is per block.** A flat budget is a
+## statement about a 7x7 city and nothing else: grow the lattice and the same events spread thinner,
+## which is the density silently falling while every number in this file still reads as correct.
+## The two constants below reproduce the flat formula exactly at 7x7, so a resize moves the city and
+## nothing else.
 static func budget_for(day: int) -> int:
-	return 69 + floori(day * 6.2)
+	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
+	return floori(blocks * (BUDGET_PER_BLOCK + day * BUDGET_PER_BLOCK_PER_DAY))
+
+## Measured, not derived — see the note above. The floor is what day 1 costs and the slope is the
+## escalation; both are per block of lattice.
+const BUDGET_PER_BLOCK := 69.0 / 49.0
+const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 
 ## Plans a day. `consumed_one_shots` is read and appended to, so a one-shot fires once
 ## per run.
