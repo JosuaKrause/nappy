@@ -1,7 +1,18 @@
 # Handoff
 
-**Last updated:** end of the M39 session. M38, M37 and the rest follow below, newest first.
-**Read this first, then [PLAYTEST-10.md](PLAYTEST-10.md), then [TODO.md](TODO.md).**
+**Last updated:** end of the M39 session, with playtest 11 already in hand and planned.
+M38, M37 and the rest follow below, newest first.
+**Read this first, then [PLAYTEST-11.md](PLAYTEST-11.md), then [TODO.md](TODO.md).**
+
+> **Playtest 11 arrived after M39 was built and before it was merged**, so two of its nine findings
+> are about work the player was not running. It is written up in
+> [PLAYTEST-11.md](PLAYTEST-11.md) and planned as **M41** (a main road with lights, a tunnel, a
+> bridge, junctions that give way), **M42** (a 9x9 city with the home in the middle) and **M43**
+> (the rest). The one sentence is *several things in this city are placed without asking what they
+> are in the way of*, and the one to read first is the day-3 dog: **standing still is not the fix on
+> its own** — it is what M35 rejected, correctly, because she then reaches the dog before the clock
+> lets it fire. The lunge has to be triggered by proximity instead, and `PURSUIT_MIN_NOTICE`
+> re-decided with it.
 
 > **M39 is playtest 10, and its one sentence is: the danger marks and the danger had come apart,
 > and a retried day was not the same day.**

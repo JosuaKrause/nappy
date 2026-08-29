@@ -87,12 +87,14 @@ stayed legal on every frame; and a finished run had **no key on it at all** — 
 and each emit, a mirrored cat, a turn that looks before it commits, a title screen with the street
 running behind it, `R` to start again, and calm ground 20% faster. See the entries under M38 below.
 
-**M39 is in progress and was stopped deliberately part-way** — read
-**[docs/HANDOFF.md](HANDOFF.md)** first. Eleven of the fourteen are done and green; the pursuit half
-is built on an analysis the player corrected and should be re-decided before anything is committed.
-Nothing is committed, and M38 is in the same working tree.
+**M38 and M39 are both merged**, and the pursuit half of M39 is the second answer rather than the
+first: the session's own analysis read finding 13 as a reaction-window problem, measured a real
+two-tenths-of-a-second window, and built for it — while the player had been talking about the
+break-off the whole time. *A probe that reproduces the numbers is not evidence that it reproduces
+the complaint.* All of it was reverted and replaced with `Tuning.PURSUIT_SHAKEN_OFF`, which ends a
+chase at a **rate**. Two things about the day-3 dog are still open and are written down in M43.
 
-**Playtest 10 has landed and is M39.** Fourteen findings in
+**Playtest 10 landed as M39.** Fourteen findings in
 **[docs/PLAYTEST-10.md](PLAYTEST-10.md)**, off a session of five runs in which **no day was won**.
 The sentence under them is that *the danger marks and the danger have come apart*: three of the
 fourteen are one finding — a fire engine carries no caret and a burning building does — and the rule
@@ -103,7 +105,16 @@ losing line of the trace — the crowd is supplying nearly all of the excitement
 which is playtest 07's finding 17 arriving again after the milestone that answered it. That is
 **the milestone after M39**, measured rather than argued.
 
-**What that leaves.** Those three, and then M25's other half —
+**Playtest 11 has landed and is M41, M42 and M43.** Nine findings plus a design for the edge of
+the map, in **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**. The sentence under it: *several things in this
+city are placed without asking what they are in the way of* — an event on the home block, a closure
+beside a park, a busker in a courtyard she can walk round, a car turning into a junction another car
+is already in. Underneath three more is a larger one: **the city has no hierarchy.** Every street is
+the same street, the home sits wherever two competing generator rules leave it, and the map stops at
+an invisible wall. That splits into a **spine and an edge you can walk off** (M41, which also closes
+M21's open half), a **9×9 city with the home in the middle** (M42), and the rest (M43).
+
+**What that leaves.** Those three, plus the crowd, and then M25's other half —
 patrols, which is unaffected by M31 and is now specifically the answer for **acts III and IV**,
 where the streets are deliberately empty and the threat should follow rather than sit. *M25's
 first half shipped in M33*: running that matters exists now, as a mechanic with a fairness contract
@@ -1050,30 +1061,119 @@ file that is read on demand.
       to work on this project goes in `CLAUDE.md` or a rule/skill file beside it — a note that exists
       only in an assistant's memory is a note that gets lost
 
-## M41 — The edge of the city · `feature/the-edge-of-the-city`
+## M41 — The shape of the city: a spine, and an edge you can walk to · `feature/the-shape-of-the-city`
 
-Asked for directly: *"the north end of the city should be mountain/cliff, the sides should be
-fences, the south should be water/harbour."*
+See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**, section C. Three things that were separate entries
+and are one milestone, because they are the same sentence: **the city has no hierarchy.** Every
+street is the same street, the arterials differ only by how many cars are on them, and the map stops
+at an invisible wall.
 
-The map is bounded by an invisible collision wall and, outside it, the clear colour — *"anything
-outside the city should read as void, not as more pavement"*, which is honest and says nothing.
-**Three named edges say where you are**, and that is the point: a city with a cliff to the north and
-water to the south is a place, and a player who can see which way is which has one more thing to
-navigate by than the street lattice.
+This also closes the half of **M21** left open by decision — *main roads with lights* — and replaces
+the earlier "cliff, fences, harbour" sketch with the design the player gave, which is better for the
+reason they gave: *"that way it's not an artificial end but an emergent end."*
 
-- [ ] **North: cliff or mountain.** The high edge, drawn above the ground plane so it reads as
-      *behind and above* rather than as a wall lying down
-- [ ] **East and west: fences.** The cheap edge, and deliberately the least interesting: it is a
-      boundary rather than a feature
-- [ ] **South: water and a harbour.** The one edge with something in it. Whether the harbour is
-      scenery or ground she can walk on is the open question, and it is a route question, not an art
-      one — see the constraint below
-- [ ] **It must not move a walkable tile.** The generator's guarantees are all stated over the
-      walkable set, and `tests/test_blocks.gd` asserts that set is identical tile for tile across
-      every seed and every block arc. The edge is decoration outside the boundary unless a milestone
-      decides otherwise on purpose, in which case every route guarantee is re-measured
-- [ ] **And it is judged by eye.** A headless run never calls `_draw()`. Screenshots from all four
-      edges, on several seeds
+- [ ] **Two kinds of street, told apart at a glance.** A main road — wide, fast, heavily trafficked,
+      signalled — against an ordinary or pedestrianised street that is slow, crowded and has no cars
+      in it. The point is not decoration: with one kind of street the route decision is only *which
+      way*, and with two it is also *which kind*, which is the trade the whole game is made of. It
+      needs a visual difference that reads without a legend
+- [ ] **Traffic lights.** A signalled crossing is a **timing** problem where a zebra is a gap-hunting
+      one, and it is the honest counterpart to *"the arterial has a safe gap about one time in
+      twenty"*. Re-measure the mean wait at a kerb afterwards; that number is the whole of whether an
+      arterial is crossable
+- [ ] **A tunnel north, a bridge south, and the main road running out east and west.** One of each,
+      carrying the spine off the map. **Walkable, and fatal when a car comes** — not a special case,
+      just the traffic fairness contract on a stretch of carriageway with no pavement beside it. The
+      player walks out of the world rather than being stopped by a wall
+- [ ] **T-intersections everywhere else on the edge.** The lattice currently runs into the boundary
+      and stops. A T says the street turns rather than being cut off
+- [ ] **Cars do not enter a junction they cannot leave.** M38 made a car turning into an occupied
+      *lane* look first (`TrafficIndex`); the **junction box** was never modelled, so two cars on
+      crossing arms both see a clear lane ahead and both enter, and the positional resolve then does
+      the only thing it can — move a body. Same shape as M38's fix, plus the thing a junction needs
+      that a lane does not: a **priority rule.** Right-before-left, which settles the symmetric case
+      without a negotiation; lights override it where they exist
+- [ ] **And a car that does enter an occupied box is an accident**, which is an event, not a
+      collision to be resolved away. Deliberate, and worth building rather than losing
+- [ ] **Judged by eye.** A headless run never calls `_draw()`. Screenshots of both kinds of street,
+      a signalled crossing, all four edges, and a junction under load, on several seeds
+- [ ] **And every route guarantee is re-measured, not assumed.** Three walkable exits move the
+      walkable set, which `tests/test_blocks.gd` asserts is identical tile for tile across every seed
+      and block arc. A route that leaves through a tunnel must not count as a route to a calm area
+
+## M42 — A city with a middle · `feature/a-city-with-a-middle`
+
+Playtest 11, finding 4, asked as a question in playtest 10 and as an instruction now: *"let's make
+the home be the center (with an odd number of rows/cols blocks) mandatory. I spawn too often at the
+edge leaving only a few ways into the rest of the city."*
+
+**The diagnosis is that two existing rules compete for the same thing.** The city is already odd at
+7×7 and `_place_home` already sorts candidate blocks by distance to the centre; what walks the home
+outward is `MIN_HOME_TO_PARK_TILES` = 30, and the centre of a 7×7 city is rarely 30 tiles from every
+park. Both rules are about the same thing — the walk out has to be long enough to matter — and at
+7×7 they cannot both hold.
+
+- [ ] **9×9.** Odd, and large enough that a central home is still a long walk from calm ground.
+      Acceptance test: `MIN_HOME_TO_PARK_TILES` satisfied from a block within one of the centre, over
+      200 seeds
+- [ ] **Re-measure every density number in `docs/PLAYTEST-04.md`.** 65% more blocks, one event per
+      block since M28, and a crowd that is a field around the player since M27 — so placed per day,
+      live inside the stream radius, on screen at once, and met on a route all move, and the budget
+      with them. This is why it is a milestone and not a constant
+- [ ] **And check what a wheel does to the return phase**, which playtest 03 already called a
+      formality. Four ways out is four ways back
+
+## M43 — Things that are in the way of nothing · `feature/in-the-way-of-nothing`
+
+Playtest 11's remaining findings. See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**. The sentence under
+the first three: **several things in this city are placed without asking what they are in the way
+of** — which is `CLAUDE.md`'s first rule failing at *placement* rather than at design.
+
+- [ ] **Nothing is placed on the home block** — finding 1. Every day starts on the doorstep and the
+      scheduler is currently allowed to put something on it, which is not a route decision but a tax:
+      the home is the one tile the player does not choose to be on. The exemption already exists in
+      spirit — `ClosurePlanner` never closes the street outside the home — and it should be the same
+      rule, applied to events
+- [ ] **A closure has to change a route** — finding 2, *"road blocks next to parks are pointless"*.
+      The route-redundancy invariant is used as a **floor** (the day stays winnable two ways) and
+      never as a **filter**: a closure that does not lengthen the best route to any calm area by a
+      real margin is legal, invisible and pointless. Measure what fraction of today's closures do
+      nothing before choosing the margin
+- [ ] **A busker in a courtyard denies the courtyard** — finding 5, *"I can still walk around (and
+      over him) while the sleepiness meter goes up"*. Two halves and both are arithmetic. **Around:**
+      what denies calm ground is out-emitting the 7.7/s decay the calm multiplier has already raised,
+      which is what `EventScheduler._denial_radius()` exists to compute — this is the third row to be
+      caught by that sum (the busker in playtest 08, the playground in playtest 10). The suspicion is
+      that a courtyard, the smallest calm area, gets a spoiler grid of one. **Over:** anything mobile
+      is exempt from *solid things are solid*, and `EventDef.paces` made the pacing man mobile. Both
+      need measuring before either is moved
+- [ ] **The dog stands its ground, and lunges on proximity rather than on a clock** — finding 3,
+      *"it should be still"*. It reverses because it reaches its stand-off in a third of a second and
+      then has two more seconds of telegraph to spend while she walks into it. *Standing still* alone
+      is the thing M35 rejected and was right to: she then reaches it **before** the clock lets it
+      fire, and it kills her from a standing start. Firing the lunge when she comes inside the
+      stand-off — or when the telegraph runs out, whichever is first — gives both: it never reverses,
+      and the chase always starts at the stand-off, which is the whole content of the contract.
+      **`PURSUIT_MIN_NOTICE` has to be re-decided with it**: a player who walks straight in then gets
+      about 1.2s of visible dog against a 1.5s floor that was authored rather than derived. Siting it
+      further out is capped by the screen — 360px tall, so past ~180px a dog telegraphing north or
+      south of her is off the top of it
+- [ ] **And the cool-off is played, not re-derived** — finding 6. `Tuning.PURSUIT_SHAKEN_OFF` landed
+      in M39, after this report was taken: 0.8s of the gap opening, and the measured price of the
+      answer went from ~35 points to **12**. If it still reads as slow it is one constant
+- [ ] **Dying at high excitement on a quiet street** — finding 8, and read the trace before touching
+      anything. The strongest suspect is the **recovery**, and it is a rule taken on purpose:
+      `EXCITEMENT_DECAY_IDLE` is 0.0, so above the calm threshold the only way down is walking
+      somewhere quieter at 3.5/s — on a quiet street the meter sits where it is and any small source
+      is a net climb with no floor under it. Three things to measure first: what the `lost` line's own
+      `crowd X, events Y` breakdown says (if it reads like playtest 10's, this finding *is* the crowd
+      milestone); whether the pram's `EXCITEMENT_NEARLY_CRYING` cue is being shown and not read; and
+      whether **one contact at 90 is a cliff** — a pedestrian contact is ~10.8 points, so above 89 a
+      single bump on an empty street ends the day
+- [ ] **The diagonal zzz comes back down** — finding 9. `baby_cue_lift()` catches the diagonals and
+      should not; walking diagonally the pram is already offset and there is nothing to lift over.
+      `tests/test_danger.gd` should hold the answer for **all eight facings** rather than for the two
+      that have been reported, because this cue has now been adjusted three times
 
 ## M10 — Polish · `feature/polish`
 
