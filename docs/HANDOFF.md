@@ -93,10 +93,11 @@ it. Nothing has been implemented since `b7590fb`. M41 and older follow below, ne
 >
 > **Signals have to be measured, not authored.** Arbitrary offsets stop a car at *every* junction it
 > comes to — two thirds of the traffic stationary at any instant, and the mean speed on the arterial
-> a quarter of a cruise. The cycle is derived from the block spacing now, and both directions
-> progress because it is an **even** multiple of the junction-to-junction travelling time. The
-> fairness contract is the *side* street's green, since she crosses the main road while the main
-> road is stopped, and the amber is a clearance period rather than a warning.
+> a quarter of a cruise. The cycle is derived from the block spacing now. The wave serves **one**
+> direction — 93% of arrivals green with it, 51% against, and a two-way wave is arithmetically
+> impossible on this geometry; M41 claimed both and M46 measured it. The fairness contract is the
+> *side* street's green, since she crosses the main road while the main road is stopped, and the
+> amber is a clearance period rather than a warning.
 >
 > **And junction control gave the road a capacity it never had.** With crossing cars driving through
 > each other the network's throughput was unbounded, so the car population was only ever a noise

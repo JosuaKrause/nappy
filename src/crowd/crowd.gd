@@ -154,6 +154,7 @@ func space_out_the_traffic() -> void:
 		if agent.kind != CrowdAgent.Kind.CAR:
 			continue
 		agent.gap_ahead = INF
+		agent.leader_speed = 0.0
 		var key := agent.lane_key()
 		if not lanes.has(key):
 			lanes[key] = [] as Array[CrowdAgent]
@@ -173,6 +174,7 @@ func space_out_the_traffic() -> void:
 				queue[i].nudge_back(Tuning.CAR_GAP_MIN - gap)
 				gap = Tuning.CAR_GAP_MIN
 			queue[i].gap_ahead = gap
+			queue[i].leader_speed = queue[i + 1].speed()
 
 	# And the same buckets, as bare positions, for the cars that have not turned yet. Built after
 	# the resolve rather than before it, so what a turning car sees is where everybody actually
@@ -278,7 +280,11 @@ func _can_clear_the_box(agent: CrowdAgent) -> bool:
 	if agent.gap_ahead == INF:
 		return true
 	var box := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
-	return agent.gap_ahead >= agent.distance_to_junction() + box + Tuning.CAR_GAP_MIN
+	var far_side := agent.distance_to_junction() + box
+	var room := agent.gap_ahead
+	if room >= far_side:
+		room += agent.leader_speed * Tuning.CAR_HEADWAY_TIME
+	return room >= far_side + Tuning.CAR_GAP_MIN
 
 ## Two cars from crossing arms that have ended up in the same box anyway.
 ##

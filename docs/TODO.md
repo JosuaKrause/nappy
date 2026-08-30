@@ -1140,7 +1140,9 @@ reason they gave: *"that way it's not an artificial end but an emergent end."*
 - [x] **Traffic lights.** The cycle is **derived** from the block spacing rather than authored —
       `2 × SIGNAL_PROGRESSION_BLOCKS` junction-to-junction travelling times — which is what lets a
       green wave run both ways down the same street. Without a progression two thirds of the traffic
-      stands still at any instant, measured. The side street's green is the fairness contract
+      stands still at any instant, measured. **The "both ways" half of that is wrong and M46
+      measured it: the wave serves one direction and cannot serve two on this geometry.** The side
+      street's green is the fairness contract
       (`Tuning.validate_signals`), because she crosses a main road while the main road is red; the
       amber is a clearance period, not a warning. *(Playtest 12, finding 4: the four heads at a
       junction are now two drawings — face-on for the arms running up and down the screen, edge-on
@@ -1799,28 +1801,85 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
       finding 7 asked for**, and every lever that lowers it lowers the crossing with it. What is
       wrong is the *worst* case — 133 for one unlucky arrival, which she cannot see coming — and
       the thing underneath it is the next item
-- [ ] **The main road is two fifths stopped, and that is where its noise comes from.** Measured
+- [x] **The main road is two fifths stopped, and that is where its noise comes from.** Measured
       while pricing the wait, over three seeds and thirty seconds of act I: the cars on the spine
       average **49 px/s of a 158 cruise, with 41% of them stationary**. `CLAUDE.md` says to
       measure exactly this alongside the floor *"or a road that reads as busy in a screenshot is
       a car park in motion"*, and nobody had.
 
-      **The progression is not the cause and the speed spread is.** `SIGNAL_PROGRESSION_BLOCKS`
-      is derived so that a car holding the *mean* cruise sees the same phase at every junction,
-      and the arithmetic works in both directions — a car travelling against the wave sees
-      `t + j·travel` where the offset cancels the position exactly. But `CAR_SPEED` is 130–185
-      and the wave is tuned for 157.5, so a slow car drifts 0.6s per junction and is a whole
-      green out of step after five of them. What looks like congestion is a green band that only
-      one speed can stay inside.
+      **The diagnosis this item was written with is wrong, and measuring it found a five-milestone
+      error in the design record.** It is worth reading as an example of how confident a wrong
+      cause can sound: the drift argument below is arithmetically correct and explains nothing.
 
-      Two shapes to weigh, and they are not the same statement. **A car near a signalled spine
-      could hold the progression speed** rather than its own, which is what a real driver does on
-      a timed road and costs nothing but a line in `_give_way`. Or **the spine's speed range could
-      be narrower than an ordinary street's**, which says the same thing as a property of the road
-      instead of of the driver. Either way the number to watch is the stopped fraction, and the
-      thing to check afterwards is the arterial floor: a spine that flows has fewer cars beside
-      her at once, so **fixing the jam may cost the noise floor finding 7 asked for**, and if it
-      does, that is where `CROWD_CARS_PER_ACT` goes back up rather than down
+      **The speed spread is real and is not the mechanism.** `CAR_SPEED` is 130–185 against a wave
+      tuned for 157.5, so a slow car does drift 0.6s per junction. But it needs **13 junctions** to
+      drift out of an 8.07s green band and a car lives **3.8 junctions** on the spine before it
+      recycles — and measured over three seeds, the **fast** half stopped more often than the slow
+      half (4.25 against 3.00, 4.29 against 3.00, 2.44 against 2.38). Both proposed shapes — a car
+      holding the progression speed, a narrower range on the spine — treat the drift, so both were
+      dropped.
+
+      **What is actually wrong is that the wave only ever served one direction.** M41's note said
+      both did, "because the cycle is an even multiple of the junction-to-junction travelling
+      time", and that is the condition upside down. With offsets `j·travel`, a car passing
+      junctions `j0 + d·h` at `t0 + h·travel` sees phase `t0 + j0·travel + h·travel·(1 + d)`: going
+      *with* the wave the `h` term vanishes and the phase never moves, going *against* it the phase
+      advances `2·travel` per junction, which is constant only if the cycle **divides** `2·travel`
+      — true at `blocks = 1` and nowhere else. Measured on the signals alone with no traffic in
+      them, twenty departures spread across a cycle:
+
+      | | arrivals meeting a green |
+      |---|---:|
+      | with the wave | **93%** |
+      | against it | **51%** |
+
+      and 51% is the main green's share of the cycle, which is to say chance. `tests/test_crowd.gd`
+      had asserted `cycle / travel` is an even multiple since M41 — **true, and not the property
+      the sentence beside it claimed**, so it pinned nothing. It walks a car down the platoon now.
+
+      **It cannot be fixed, and that is a fact about the geometry rather than a setting.** A
+      two-way wave needs `cycle = 2·travel` = 5.7s; the side green plus its two ambers is 9.0s
+      before the main road gets a second, and widening `travel` instead means a spine cruise under
+      100px/s, barely above a walk. No offset does better on average either: `θ = travel` buys one
+      direction a perfect run and leaves the other at chance (72% overall), while the
+      symmetric-looking `θ = cycle/2` puts **both** directions on a three-phase sweep at 47% each.
+      The asymmetry is the good answer, not a compromise.
+
+      **So the light is the floor and density is what sits on top of it.** Dropping
+      `CROWD_CARS_PER_ACT[0]` to 12 for one probe — a third of the traffic — took the spine to 79
+      px/s and 33% stopped, so density is worth about ten points and more than half the stops, and
+      the irreducible remainder is the main arm being red 53% of the cycle. The cars stay: the same
+      probe took the arterial floor 9.95 → 7.40 and the crossing 29.7 → 19.0, which is finding 7
+      undone to answer finding 1.
+
+      **What did move it is a snapshot being read as a fact.** `Crowd._can_clear_the_box` compared
+      a static `gap_ahead` against the room a car needs beyond a junction, so a car queued behind a
+      leader that was *already accelerating away* refused to enter, stopped, and made the jam the
+      rule exists to prevent. Crediting the leader's speed for one `CAR_HEADWAY_TIME` — the horizon
+      the car-following rule already trusts it for — is the whole change:
+
+      | | before | after |
+      |---|---:|---:|
+      | mean speed on the spine | 44.6 px/s | **53.6** |
+      | stationary at any instant | 43% | **39%** |
+      | stops per car per life | 3.28 | **2.05** |
+      | junctions crossed per life | 3.9 | **4.1** |
+      | arterial floor | 9.95–13.17 | 9.17–11.09 |
+      | worst crossing of the spine | 29.7 | **30.2** |
+
+      So the road moves half again as fast for a third fewer stops, and the two numbers the
+      previous items fought for — the floor and the ~33 points to cross — do not move. The noise
+      floor did not have to be bought back with `CROWD_CARS_PER_ACT`, which the item expected it
+      would.
+
+      **The half that had to be walked back is the instructive one.** Crediting the leader's speed
+      *unconditionally* put **238 overlapping crossing-axis pairs in 3,600 frames** against a
+      tolerance of 180 — `tests/test_crowd.gd` caught it on the first run — because it let a car
+      follow its leader straight *into* the box. The credit is only sound once the leader is past
+      the far side, where its speed answers "will the last 66px have opened up by the time I get
+      there", a question about road this car is not yet on. **Ask what the number you are
+      crediting is a fact about**: a leader inside the box is the obstacle, not evidence about the
+      road beyond it
 - [ ] **A contact is 22–34 points a second and there were fifteen of them in four days.** Either
       the cost or the frequency is wrong and the trace cannot say which. `BUMP_RADIUS` is 14 and
       the M33 note says the careful line was two pixels wide when M19 measured it — so widening

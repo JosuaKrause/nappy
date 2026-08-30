@@ -76,6 +76,11 @@ var pedestrian_ahead := Vector2.INF
 ## neighbour search is one pass over the whole crowd, not one per agent.
 var gap_ahead := INF
 
+## How fast the car that gap is measured to is going, or 0.0 when there is nobody ahead. Written
+## beside `gap_ahead` and by the same pass, because the two are only ever asked together: a gap is
+## a distance and *do not block the box* is a question about whether that distance is opening.
+var leader_speed := 0.0
+
 ## Distance to the stop line of a junction this car has to give way at, or `INF` when it has
 ## right of way. Written once per physics frame by `Crowd.give_way_at_junctions()`, because
 ## whose turn it is at a box is a question about the pair of them and not about either one.

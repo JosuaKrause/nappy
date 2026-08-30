@@ -642,11 +642,37 @@ func _test_a_signal_gives_her_time_to_cross(t) -> void:
 	t.check(Tuning.SIGNAL_AMBER_SECONDS * Tuning.CAR_SPEED.x > box,
 			"the amber clears the junction it is protecting (%.0fpx of %.0f)"
 			% [Tuning.SIGNAL_AMBER_SECONDS * Tuning.CAR_SPEED.x, box])
-	# And the wave: a cycle that is an even multiple of the junction-to-junction travelling time
-	# is what lets both directions progress. See `Tuning.SIGNAL_PROGRESSION_BLOCKS`.
-	var ratio := Tuning.signal_cycle_seconds() / Tuning.signal_travel_seconds()
-	t.close_to(fposmod(ratio, 2.0), 0.0,
-			"the cycle is an even multiple of a junction's travelling time", 0.001)
+	# And the wave. This used to assert that the cycle is an even multiple of the travelling time,
+	# on the grounds that it "lets both directions progress" — which is the condition upside down
+	# and was true of an arrangement that has never existed. *(M46.)* The property that is real is
+	# behavioural, so it is walked rather than restated: a car holding the progression speed down
+	# the spine **the way the wave runs** meets a green at every junction it comes to. The other
+	# direction is at chance and cannot be rescued on this geometry — see
+	# `Tuning.SIGNAL_PROGRESSION_BLOCKS`, which carries the derivation.
+	var signals := _city.crowd.signals_for_tests()
+	var was := signals.elapsed
+	var travel := Tuning.signal_travel_seconds()
+	var greens := 0
+	var arrivals := 0
+	for departure in 12:
+		signals.elapsed = float(departure) / 12.0 * Tuning.signal_cycle_seconds()
+		# Start where the wave has just turned green for this junction, which is what a car that
+		# has already joined the platoon has done. Bounded rather than `while green_for(...)`,
+		# because a suite that spins prints nothing at all and reads as a hang rather than a
+		# failure — see `run_tests.gd`.
+		for tick in int(Tuning.signal_cycle_seconds() / 0.01) + 1:
+			if signals.green_for(Vector2i(_city.map.main_road, 8), true):
+				break
+			signals.elapsed += 0.01
+		for hop in 6:
+			signals.elapsed += travel
+			arrivals += 1
+			if signals.green_for(Vector2i(_city.map.main_road, 8 - hop - 1), true):
+				greens += 1
+	signals.elapsed = was
+	t.check(greens == arrivals,
+			"a car in the platoon never meets a red going the way the wave runs (%d of %d)"
+			% [greens, arrivals])
 
 ## **A precinct has no cars in it.** Not few: none. The tile map alone cannot enforce it — a
 ## pedestrianised corridor is paved end to end, so every tile of it says "street" — so this is

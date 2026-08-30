@@ -663,12 +663,49 @@ nobody meets in a run is a silhouette and a fairness contract spent on decoratio
 
 **A signalled grid has a capacity, and the population has to respect it.** Two more measured facts
 that generalise. Signals with arbitrary offsets stop a car at *every* junction — two thirds of the
-traffic stationary — so the cycle is derived from the block spacing (`SIGNAL_PROGRESSION_BLOCKS`)
-and both directions progress because it is an **even** multiple of the junction-to-junction
-travelling time. And junction control gave the road a throughput it never had, so the car
-population is now a number about capacity as well as about noise: the same forty-six cars put the
-arterial's floor over the ceiling `tests/test_crowd.gd` states, because a car waiting at a light
-beside you is louder for longer than one going past.
+traffic stationary — so the cycle is derived from the block spacing (`SIGNAL_PROGRESSION_BLOCKS`).
+And junction control gave the road a throughput it never had, so the car population is now a number
+about capacity as well as about noise: the same forty-six cars put the arterial's floor over the
+ceiling `tests/test_crowd.gd` states, because a car waiting at a light beside you is louder for
+longer than one going past.
+
+**The green wave serves one direction, and for five milestones the docs said two.** *(M46.)* M41
+wrote that both directions progress "because the cycle is an **even** multiple of the
+junction-to-junction travelling time", and that is the condition upside down: with offsets
+`j·travel`, a car going *with* the wave holds its phase exactly, and one going *against* it
+advances `2·travel` per junction, which is only constant if the cycle **divides** `2·travel` — true
+at `blocks = 1` and nowhere else. Measured on the wave alone, no traffic in it: **93% of arrivals
+green with it, 51% against it**, and 51% is the main green's share of the cycle, i.e. chance.
+
+Three things to carry, because the shape recurs:
+
+- **A two-way wave is not available at any setting of this constant.** It needs `cycle = 2·travel`
+  = 5.7s and the side green plus its ambers is 9.0s before the main road gets a second. The
+  asymmetric offset is the *best* answer, not a compromise: `θ = travel` gives 72% overall, and
+  `θ = cycle/2` — the symmetric-looking one — puts both directions on a three-phase sweep at 47%.
+- **An identity is not the property.** `tests/test_crowd.gd` asserted `cycle / travel` is an even
+  multiple for five milestones. That was *true* and pinned nothing, because it was not the
+  condition the sentence beside it claimed. It walks a car down the platoon now.
+- **The stopped fraction was blamed on the speed spread and it is not that.** `CAR_SPEED` is
+  130–185 against a wave tuned for 157.5, so a slow car drifts 0.6s per junction — but a car lives
+  3.8 junctions on the spine and needs 13 to drift out of a green band, and measured, the **fast**
+  half stopped more than the slow half. Drift is real and it is not the mechanism. The mechanism is
+  that the main arm is red 53% of the cycle and only half the traffic gets the wave.
+
+**A gap is a snapshot, and *do not block the box* has to know the queue is moving.** *(M46.)*
+`Crowd._can_clear_the_box` compared a static `gap_ahead` against the room a car needs beyond a
+junction, so a car sitting behind a leader that was already accelerating away refused to enter,
+stopped, and created the jam the rule exists to prevent. Crediting the leader's speed for one
+`CAR_HEADWAY_TIME` — the same horizon the car-following rule already trusts it for — took the spine
+from **44.6 to 53.6 px/s and 43% stopped to 39%**, with 37% fewer stops per car and the crossing
+cost unmoved at ~30.
+
+The half that had to be walked back is the instructive one: crediting it **unconditionally** put
+238 overlapping crossing-axis pairs in 3,600 frames against a tolerance of 180, because it let a
+car follow its leader *into* the box. The credit is only sound when the leader is already past the
+far side — then the leader's speed answers "will the last 66px have opened up", which is a
+question about road this car is not yet on. **Ask what the number you are crediting is a fact
+about**: a leader inside the box is the obstacle, not evidence about the road beyond it.
 
 **Every day stays winnable, and winnable more than one way.** The scheduler guarantees at
 least one unspoiled park and a walkable route from home to a park. Since M16 the day carries

@@ -291,13 +291,32 @@ const SIGNAL_AMBER_SECONDS := 2.0
 ## Signals with arbitrary offsets stop a car at every junction it comes to: measured at act I
 ## density, two thirds of the traffic was stationary at any instant and the mean speed on the
 ## arterial was a quarter of a cruise. What fixes it is a *progression* — each junction's cycle
-## starts one junction's travelling time after the last — and the reason it can run **both** ways
-## down the same street is the arithmetic: a car going against the wave arrives two travel times
-## after the one going with it, so both are in step exactly when the cycle is an even multiple of
-## the travel time. Hence `2 * blocks`, and hence the cycle being derived rather than authored.
+## starts one junction's travelling time after the last.
 ##
-## Three is what makes that come out near a quarter of a minute: shorter and the side street's
-## share stops being long enough to cross on, longer and a red is a wait a player will not spend.
+## **The wave serves one direction, not two, and M41 claimed otherwise.** *(M46.)* The old note
+## here said a car going against the wave "arrives two travel times after the one going with it,
+## so both are in step exactly when the cycle is an even multiple of the travel time", and that is
+## the wrong condition. Walk it: with offsets `j·travel`, a car passing junctions `j0 + d·h` at
+## `t0 + h·travel` sees phase `t0 + j0·travel + h·travel·(1 + d)`. Going **with** the wave (`d =
+## -1`) the `h` term vanishes and the phase never moves — a perfect progression. Going **against**
+## it the phase advances `2·travel` per junction, which is constant only if the cycle *divides*
+## `2·travel`. "An even multiple" is that condition upside down, and it is only true at
+## `blocks = 1`.
+##
+## Measured on the wave alone, twenty departures spread across a cycle, no traffic in it:
+## **93% of arrivals green with the wave, 51% against it** — and 51% is chance, because the main
+## green is 47% of the cycle.
+##
+## **A two-way wave is impossible here, which is why this is a note and not a fix.** It needs
+## `cycle = 2·travel` = 5.7s, and the side green plus its two ambers is 9.0s before the main road
+## gets a second. Widening `travel` instead means a spine cruise under 100px/s, which is barely
+## above a walk. No offset scheme does better on average either: `θ = travel` buys one direction
+## a perfect run and leaves the other at chance (72% overall), while `θ = cycle/2` puts *both*
+## directions on a three-phase sweep at 47% each. The asymmetric answer is the good one.
+##
+## Three is what makes the cycle come out near a quarter of a minute: shorter and the side
+## street's share stops being long enough to cross on, longer and a red is a wait a player will
+## not spend — see M46 in `docs/TODO.md` for what a longer one costs her, measured.
 const SIGNAL_PROGRESSION_BLOCKS := 3
 
 ## Calm **areas**, not calm blocks: since M21 an area may be a single block or a four-block
