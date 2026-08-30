@@ -471,8 +471,12 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       **The half that mattered shipped in M27**: playtest 04 said *"cars still bump into each
       other"* and it is now measurably false — a minute of act I traffic has zero frames with
       one car inside another, down from 5.2 overlapping pairs per frame. What remains is
-      overtaking, eight-way driving and the crash event, none of which any playtest has asked
-      for, so this is **parked** rather than queued
+      overtaking, eight-way driving and the crash event — **asked for by name in this very
+      finding**, and **parked with the player's agreement** on 2026-08-31: *"yes, I asked for cars
+      overtaking each other and car crashes — not something we need to implement right now but
+      something to discuss at a later time."* So it is parked as a **conversation that is owed**,
+      not as a thing nobody wanted. The status line said *"none of which any playtest has asked
+      for"* for twenty-odd milestones, which is how a parked request becomes an abandoned one
 - [~] **M21 The city overhaul** — findings 5 and 6, plus the canal dropped out of M16, **plus
       playtest 03 finding 2**. Calm zones of four blocks, so the lattice grows T-junctions and
       can no longer be derived from a coordinate; main roads with traffic lights against side
@@ -2302,18 +2306,43 @@ a branch of its own.
       **Make the guarantee match the derivation: every calm area she has not used this act stays
       clean.** Spoiling stays the answer to *returning* and nothing else. Then check what it costs
       the catalogue — parks are one of the few places several rows can go
-- [ ] **Nothing guides her toward the calm, and hard/soft diversions were never written down.**
-      *"I still don't feel the game guiding me to calm zones via obstacles — also tell me you have
-      a note about hard and soft diversions."* There was none, anywhere. The current logic is now
-      stated in `docs/CITY.md`, "Guiding her to the calm": the city **permits** routes to calm and
-      **protects** them from becoming impossible, and never suggests one — closures are drawn at
-      random from whatever keeps the two-routes invariant, so one is as likely to be behind her as
-      across her route.
+- [ ] **Nothing guides her toward the calm, and hard/soft diversions were summarised away on day
+      one.** *"I still don't feel the game guiding me to calm zones via obstacles — also tell me you
+      have a note about hard and soft diversions."* The current logic is stated in `docs/CITY.md`,
+      "Guiding her to the calm": the city **permits** routes to calm and **protects** them from
+      becoming impossible, and never suggests one — closures are drawn at random from whatever
+      keeps the two-routes invariant, so one is as likely to be behind her as across her route.
 
-      **The design has to be captured from the player before anything is built.** Guessing at a
-      brief is how the border went wrong in this same playtest. What is already in the plan and
-      points the same way: M47's *main road as a soft block*, and M45's *closures placed to say
-      "not this way today"*
+      **This entry said the design had to be captured from the player because there was no note
+      anywhere. That was wrong — the note is `docs/PLAYTEST-01.md` finding 12**, given on the first
+      day of the project and recorded as a summary that kept the topology and dropped the
+      mechanism. The player's words:
+
+      > *"Use forced events to enforce limited paths through the city — build a tree network with
+      > allowed paths and **block off all other roads with events that cause excitement overload**
+      > — **should still be possible to avoid them but it should be clear that that road cannot be
+      > taken** — example of such events: road construction, fallen tree, car accident, etc."*
+
+      Two clauses, and both are the part that was lost. **The blocker and the noise are one
+      object** — a road is shut *by* something loud standing on it. And **it is not shut**: it is
+      passable at a price you can read before committing. That is the soft diversion; a
+      `RoadClosure` is the hard one, and it is the only one that exists.
+
+      What the game has instead is a **split**: closures are hard, silent and topological; events
+      are noisy and placed without reference to where she is going. There is nothing in the city
+      that is walkable-but-obviously-wrong. And `CLAUDE.md`'s *"do not let a closure emit"*
+      invariant now **forbids the missing half** — taken on engineering grounds, never taken as a
+      decision against finding 12, because the summary had already removed the clause it
+      contradicts. The invariant is marked contested; it must not be cited to close this.
+
+      **Two things before anything is built**, and the first is a conversation, not code:
+      1. **Confirm the reading with the player**, including whether a soft diversion should be an
+         ordinary catalogue event the *scheduler places to point* — which answers the engineering
+         objection without adding a third summand to `City.total_excitement_at`.
+      2. Then the mechanism. What already points the same way: M47's *main road as a soft block*
+         (measured at ~35 of the meter to cross, so this one half-exists by accident), and M45's
+         *closures placed to say "not this way today"*, which is the hard half becoming
+         directional
 
 ### Recorded and not started — the second round of playtest 14
 
@@ -2456,7 +2485,9 @@ hard/soft diversions) are the ones already written up under M49, and almost ever
 mostly the *second* category. It is the evidence behind the new `CLAUDE.md` rule, *"Never silently
 overturn a decision the player took"*.
 
-- [ ] **M20's parking says no playtest asked for it, and playtest 02 did.** The entry above
+- [x] **M20's parking says no playtest asked for it, and playtest 02 did.** *(Resolved
+      2026-08-31: the request is real, it stays parked, and it is a discussion that is owed rather
+      than a dead item. Status line corrected.)* The entry above
       (`M20 Traffic that behaves`) parks eight-way driving, overtaking and the crash event as
       *"none of which any playtest has asked for"*. Playtest 02 finding 4 is the player asking for
       all three: *"faster cars should either slow down or when the opposite lane is clear overtake
@@ -2465,7 +2496,11 @@ overturn a decision the player took"*.
       to clear the area fast."* It is recorded correctly in `docs/PLAYTEST-02.md`; only the status
       line is false. **Fix the line, then ask whether it stays parked** — parked with the player's
       agreement is a fine place for it to be, and that is not what it currently is
-- [ ] **The east and west spine exits were deleted, and three places still describe them.** M49
+- [x] **The east and west spine exits were deleted, and three places still describe them.**
+      *(Resolved 2026-08-31: **"east/west is a hard no. There is only one main road and it is from
+      north to south."** The deletion stands, and it is now a decision rather than an inference.
+      `docs/CITY.md` and `city_generator.gd` corrected; the generator's east-west calm guard is
+      left in place with a note that it has outlived its stated reason.)* M49
       removed them, reasoning that playtest 12's *"there should be no east to west [main roads] at
       all"* took them with it. But the exits are their own brief, given separately: *"the side to
       side mainroad just going towards east west in one space. the player should be able to walk
@@ -2483,6 +2518,15 @@ overturn a decision the player took"*.
       note still describes the M38 10 → 12 move as the current state. Correct all three before the
       number is moved — this is the constant M38's own entry warns decides whether a day is
       winnable once the park is reached
+- [ ] **The routing brief is the worst case in the record, and it is not a lost note.** Playtest
+      01 finding 12 gave hard and soft diversions in full on the first day. The plan summarised it
+      to topology, M16 built the topology, the row still reads *"done"*, and an invariant was later
+      written that forbids the half that was dropped. Four playtests then asked why nothing guides
+      the player anywhere, and playtest 14 concluded there had never been a note. **A finding
+      marked done is never re-read** — which is what makes summarising one on the way in the most
+      expensive mistake available here, worse than losing it outright, because a lost note leaves a
+      gap somebody notices. Written up in `docs/PLAYTEST-01.md`, "12's other half"; the live item is
+      the M49 entry above
 - [ ] **A bug reported inside a design finding was fixed and never closed out.** Playtest 12
       finding 1 is tagged *design + bug* and carries *"(also people seems to not go in the middle)"*.
       The design half drove M41; the bug half is fixed — `CrowdLanes.PRECINCT_OFFSETS` is six lanes

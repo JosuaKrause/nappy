@@ -326,10 +326,13 @@ static func _zone_fits(purposes: Dictionary, footprint: Rect2i, main_road: int) 
 	for index in range(footprint.position.x + 1, footprint.end.x):
 		if index == main_road:
 			return false
-	# The east-west guard is **not** about an arterial — there is only one main road and it runs
-	# north to south. What this one protects is the corridor the east and west city exits open
-	# onto (`City._spawn_spine_exits`), which would otherwise be a hole in the boundary opening
-	# into a park. Same shape, different reason, and it stays a constant because the exits do.
+	# The east-west guard is **not** about an arterial — there is one main road and it runs north
+	# to south, confirmed by the player as a hard no on any east-west one. It used to protect the
+	# corridor the east and west city exits opened onto; playtest 14 deleted those exits, so what
+	# is left is a guard on the middle east-west corridor with no stated reason. Keeping a calm
+	# zone off one central corridor per axis is defensible on its own — it is the street a walk
+	# across the city is most likely to use — but that is a rule nobody has taken. See
+	# `docs/TODO.md`, "Audit of the feedback record".
 	for index in range(footprint.position.y + 1, footprint.end.y):
 		if index == CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y):
 			return false
