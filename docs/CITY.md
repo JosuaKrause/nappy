@@ -466,11 +466,15 @@ value of a chokepoint is arithmetic: it is what makes "every route touches one o
 or three candidate sites instead of a dozen. **Anything written as "the tile she must cross" is
 wrong**, and a first draft of this section said exactly that.
 
-**Every calm area is reached two distinct ways, and one of them will usually be longer.** That is
-not a flaw to tune out — *"out of the two options one way is going to be probably shorter than the
-other"* — it is what makes the pair a choice rather than a mirror. The two routes come out of the
-construction rather than out of a check: see `docs/TODO.md`, M50, where two probes are grown from
-each calm area and paths of the same colour are forbidden from merging.
+**A calm area is reached two distinct ways where the map allows it, and one of them will usually be
+longer.** That is not a flaw to tune out — *"out of the two options one way is going to be probably
+shorter than the other"* — it is what makes the pair a choice rather than a mirror.
+
+**And it is a niceness, not a promise.** *"Having two distinct paths is really a niceness to the
+user. If we cannot construct a path B at all, let's not try."* An area with one way in is a
+legitimate area; the second route is an offer the day makes when the ground allows one. What must
+still hold absolutely is only that **some** calm is reachable. See `docs/TODO.md`, M50, for the
+construction and for the one thing this trades away.
 
 **Placement follows the tree, not a budget.** Plan the tree first and place from it — possibly with
 a budget *per role and per region*, but not a single per-block number that the whole city competes
