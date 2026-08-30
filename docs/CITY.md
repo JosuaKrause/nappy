@@ -390,8 +390,11 @@ placement rule has to serve, and it gives each kind a different job:
 - **A benign blocker suggests a scenario.** The specific one: *"turning around on the curb to cross
   the street and continue"* — a restaurant, a dog walker, a yeller. It is a **local** answer, a
   street to cross rather than a route to rethink, and that is what separates it from a wall.
-- **Road closures shape the day without ending it.** They are how the set of available routes
-  changes between days.
+- **Road closures shape the day without ending it, and they are guidance rather than hindrance.**
+  *"A road block becomes guidance and is not a hindrance. It flips its role."* A closure is a
+  **wall**: it is placed off the day's tree, to prune the ways that lead nowhere she should go, and
+  it is how the set of available routes changes between days. It is **not** placed where it will be
+  met — a closure exists to make a route obvious, not to make one harder.
 
 **The main road is the challenge to overcome, and it is what makes a run have an arc — emergent by
 construction, and nothing enforces it.** As calm areas on her side are used up they are spoiled,

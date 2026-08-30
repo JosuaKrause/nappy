@@ -2469,22 +2469,60 @@ it is used for is weighting *which street to close*. So this milestone is much l
 a structure than about **promoting one that is already there** and letting everything place against
 it.
 
-And one thing found by reading it that has to be decided early: **closures are currently biased
-`CLOSURE_ROUTE_BIAS = 5.0` toward streets that are on a route**, which makes a closure *matter* and
-is close to the opposite of guiding — it degrades the good ways rather than pruning the bad ones. A
-wall bounds a corridor from outside it. Whether that constant flips, splits or stays is the first
-real decision in the build.
+And one thing found by reading it, now decided: **closures are currently biased
+`CLOSURE_ROUTE_BIAS = 5.0` toward streets that are on a route, and that flips.** *"A road block
+becomes guidance and is not a hindrance. It flips its role."* Today a closure is placed where it
+will be **met**, which degrades the good ways; under the design it is a **wall**, placed off the
+tree to prune the ways that lead nowhere she should go. The purpose changes with it: a closure
+used to exist to make a route harder, and now exists to make a route **obvious**.
 
-### Step 0 — the tree, promoted and made per-area *(no behaviour change)*
+Two consequences worth having in mind while building, because they run opposite ways. Closures stop
+being a threat to winnability almost by construction — a wall sited off the tree cannot cut the
+tree — which takes pressure off the two-routes check from the closure side. And the old sanity rule
+inverts: *"a closure nobody would have walked is pointless"* was right when a closure was an
+obstacle, and is exactly backwards for one that is a signpost.
 
+### Step 0 — the tree, and it is a tree on purpose
+
+**A tree, not a bundle of shortest paths.** *"Don't take the strictly shortest path. Aim for paths
+that share prefixes. The paths to some calm zones might not be optimal or short but that is
+okay."* This is the instruction that decides the whole structure, and it is why the day's plan was
+called a **tree** from the first sentence of the design rather than a set of routes.
+
+`_streets_on_a_route` is exactly the wrong primitive for it: it keeps every street within
+`CLOSURE_ROUTE_SLACK` of the **best route to that area**, computed per area and then unioned — which
+is the definition of *independent* shortest paths. Run it on a day with five calm areas and you get
+five rays fanning out of the doorstep sharing almost nothing, which is a star, and a star has no
+bundles, no chokepoints, and a fan-out equal to the number of destinations. Everything the placement
+depends on comes from the sharing.
+
+- [ ] **Build it by attaching to the tree, not to the root.** Start at the doorstep; repeatedly
+      connect the nearest not-yet-connected calm area to the **nearest point of the tree so far**,
+      not to home. Edges already in the tree are free, so a later area prefers to run up the
+      existing trunk and branch off late. This is the standard shortest-path heuristic for a Steiner
+      tree and it produces shared prefixes by construction — and it is *why* some areas get a route
+      that is not their shortest, which is stated as fine
+- [ ] **Order of attachment is part of the answer, and it comes from the day's RNG.** Nearest-first
+      is the obvious rule and it makes the trunk point at whatever is closest to home. Whether that
+      is right, or whether the trunk should be rolled, is a question for the first day this can be
+      drawn — which is what the telemetry map is for
 - [ ] **`RouteTree`, in `src/routes/`.** Built from `map`, the day's closed set and the available
-      calm areas. It holds, **per calm area**: the corridor as a set of segment keys, and the
-      distance fields it was derived from. Plus, over the whole day: the **bundles** — segments
-      shared by two or more corridors — and the **fan-out**, meaning how few sites it takes to
-      touch every corridor, which is what a set piece needs
-- [ ] **`ClosurePlanner._streets_on_a_route` becomes `RouteTree`'s constructor** and the planner
-      calls it. Behaviour identical, one caller, suite unchanged. This is the whole of step 0 and it
-      is deliberately dull: it is the refactor that makes every later step small
+      calm areas. It holds, per calm area, the **branch** that reaches it; over the whole day, the
+      **bundles** — edges carried by two or more branches — and the **fan-out**, meaning the
+      smallest set of sites touching every branch, which is what a set piece needs
+- [ ] **Leave `_streets_on_a_route` alone for now.** It is not `RouteTree`'s constructor and
+      swapping it would change what closures do as a side effect of a refactor. `RouteTree` lands
+      beside it; the two converge in step 2, where what a closure is *for* is being decided anyway.
+      `StreetNetwork.junction_distances` is the piece that genuinely is shared
+
+**And the knob this creates has to be watched, because it cuts against winnability.** Sharing is
+what makes placement cheap, and it is also what makes **one closure decide the day** — a trunk that
+every branch runs up is a bridge, and cutting it takes all the calm with it. The design already
+bounds this: *"you have to account for things to be potentially in one of two places at the very
+least, in the ideal case where there are exactly two distinct paths."* So the rule is **maximise
+sharing subject to at least two genuinely distinct paths surviving**, and the tree is never allowed
+to become a single trunk. That is the same quantity as the invariant decision below, approached
+from the other side, and the two should be settled together
 
 ### Step 1 — hard blockers exist *(once per run, and it gates everything)*
 
@@ -2514,8 +2552,11 @@ blockers."*
       walls for segments just *outside* a corridor, friction for segments *inside* one, set pieces
       for a covering set. Keep `_stream(base, salt)` per phase; a phase whose consumption changes
       needs its own stream, which is M39's rule and this changes several
-- [ ] **`ClosurePlanner` places closures as walls**, which is where `CLOSURE_ROUTE_BIAS` gets
-      decided rather than tuned
+- [ ] **`ClosurePlanner` places closures as walls, off the tree.** `CLOSURE_ROUTE_BIAS` inverts:
+      the weight goes to segments that are *not* on a branch, and preferentially to those leading
+      away from calm. Keep the `_invariant_holds` check on each candidate — a wall off the tree
+      should never fail it, so a failure means the tree and the wall disagree about where she is
+      going, which is worth an assertion rather than a silent skip
 - [ ] **Set pieces get a covering set.** Candidate sites such that every corridor touches at least
       one — *not* a single site on her chosen route. `fire_truck` first, then the resistance
       note's alley. **A bundle is not a guarantee**: two distinct paths means at least two sites,
