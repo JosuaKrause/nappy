@@ -1644,10 +1644,22 @@ unchanged and is the second half of M47; read it there.
 
 ## M46 — The crowd is not the game · `feature/the-crowd-is-not-the-game`
 
-Not started, and it is next. Playtest 13's finding 1 — *"just walking around now increases
-excitement — this is bad"* — which is playtest 07's finding 17 and playtest 10's *"the thing
-nobody reported"*, found for the third time and said out loud for the first. See
+**Done.** Playtest 13's finding 1 — *"just walking around now increases excitement — this is
+bad"* — which is playtest 07's finding 17 and playtest 10's *"the thing nobody reported"*, found
+for the third time and said out loud for the first. See
 **[docs/PLAYTEST-13.md](PLAYTEST-13.md)**.
+
+**What it came to, in one paragraph.** Almost every item was answered by measuring rather than by
+arguing, and four of them came back the opposite of what the item predicted. The crowd was not too
+loud: an ordinary footway is **net recovery to walk**, and what is expensive is **standing**, which
+is `EXCITEMENT_DECAY_IDLE` being 0 and stays that way for two measured reasons. The careful line was
+not gone, it was **four pixels wide** — widened to twenty by moving the pavement's lanes apart, not
+by shrinking the body — and that closed the separate problem that contacts and noise had been
+pricing the same choice in opposite directions. The main road was quiet because a weighting could
+not cross a split something upstream had already made, and it is a soft block now at about a third
+of the meter to cross. And the green wave, which the docs had said served both directions since M41,
+**serves one and arithmetically cannot serve two**. The population was honest, the box was not, and
+the cost table did not move at all.
 
 **The one sentence: the crowd is supplying almost all of the difficulty, and every authored system
 in the game is being judged through it.** A day was lost in 29.4s reading `crowd 24.6, events
@@ -2050,9 +2062,21 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
       `tests/test_crowd.gd`, "the crowd does not bunch against the wall", as two checks rather
       than one: the geometry, which is the mechanism and is free, and the density, which is what
       the player feels and is the half that could pass while the other fails
-- [ ] **Re-measure the whole cost table afterwards** — `docs/EVENTS.md`, "What an event actually
+- [x] **Re-measure the whole cost table afterwards** — `docs/EVENTS.md`, "What an event actually
       costs" — because if the crowd's share moves, every authored row's share moves with it, and
       the table is the fastest way to see what a balance change did to the catalogue
+
+      **Regenerated from `EventDef.walk_through_cost()` and compared row for row: identical, all
+      thirty-one of them.** That is the result rather than the absence of one — it says M46 was a
+      milestone about the *street* and not about the catalogue, and it is worth doing precisely
+      because nothing would have told us otherwise. Nothing in the milestone touched an intensity,
+      a radius, `Tuning.falloff` or a decay.
+
+      What moved is the ground the rows stand on, and `docs/EVENTS.md` carries it above the table
+      now: an ordinary footway is **net recovery** to walk (55–87 points of crowd over forty
+      seconds against a decay paying back 140), the middle of a pavement went 74 → 56, and
+      crossing the main road costs ~30 with ~33 more for the wait — between a `dog_walker` and a
+      `loose_dog`, and neither is in the table because neither is an event
 
 ## M47 — A city with places in it · `feature/a-city-with-places`
 

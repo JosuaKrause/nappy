@@ -440,6 +440,28 @@ here. Two things follow, and both matter to anyone reading the table:
   a flock is a hot spot with a wide quiet margin, and that gradient is the reason to build it out
   of eleven sources rather than one.
 
+**M46 moved no row at all, and that is the result rather than the absence of one.** The milestone
+rebalanced the crowd and the traffic, and `CLAUDE.md` says to re-measure this table whenever a rate
+moves — so it was regenerated from `EventDef.walk_through_cost()` and compared row for row.
+Identical, because nothing in it touched an intensity, a radius, `Tuning.falloff` or a decay. The
+table is a property of the **catalogue**, and M46 was a milestone about the street.
+
+What did move is the ground every one of these rows stands on, which is the half the table has
+never shown:
+
+- **An ordinary footway is net recovery to walk.** 55–87 points of crowd over forty seconds against
+  a walking decay that pays back 140, at every line from the frontage to the kerb. So an authored
+  row on an ordinary street is very nearly the *whole* of what that stretch costs, which is what
+  the figures below have always quietly assumed and had never been checked.
+- **The middle of a pavement got cheaper**: `CrowdLanes.SIDEWALK_LANE_SPREAD` took an ordinary
+  midline from 74 to 56 points per forty seconds.
+- **Crossing the main road costs about 30**, and the wait at its lights about 33 more — between them
+  a `dog_walker` and a `loose_dog`, and neither is in this table because neither is an event.
+
+That last point is the one to carry: since M19 the cost of a route has not been only the events on
+it, and since M41 the *street kind* is a bigger term than most rows here. A balance argument that
+reaches for this table alone is answering a narrower question than it thinks.
+
 | Event | walk through | run through | mark |
 | --- | ---: | ---: | :---: |
 | `loudspeaker` | — | — | — |
