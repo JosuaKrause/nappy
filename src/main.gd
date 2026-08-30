@@ -255,6 +255,10 @@ func _start_day() -> void:
 	Telemetry.note("plan", "closed: %s" % _closure_summary())
 	Telemetry.note("plan", "calm: %s" % _calm_summary())
 	Telemetry.note("plan", "events: %s" % _event_summary())
+	# And the same three lines as a picture. After them, because it is the same information and a
+	# reader who has the log open should meet the words first; per day, because the closures and
+	# what each block *is* both moved above. See `TelemetryMap`.
+	Telemetry.write_map(_city.map, GameState.day, _city.closures())
 	if _observer:
 		_observer.start_day()
 
@@ -635,12 +639,47 @@ func _apply_meter_override() -> void:
 ## pause: the game has not started, `Esc` would stop a stopped tree, and the way out of the title is
 ## the two keys it already offers. See `TitleScreen`.
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("snapshot"):
+		get_viewport().set_input_as_handled()
+		_snapshot_now()
+		return
 	if not event.is_action_pressed("pause"):
 		return
 	if _pause.is_open() or _title.is_open():
 		return
 	get_viewport().set_input_as_handled()
 	_pause.open()
+
+## `P` (or `F9`) writes a screenshot and a line of trace beside it. *(Playtest 13, finding 5:
+## "allow creating a screenshot via key press that saves into the telemetry folder and writes a
+## telemetry note for context — this is to help debugging; not a game feature".)*
+##
+## **It works on every screen, including the pause and the title**, which is why it is answered
+## before the pause guard rather than after it: the frames worth photographing by hand are
+## disproportionately the ones where something looks wrong and the player has just stopped the game
+## to look at it.
+##
+## The context is assembled here rather than in `Telemetry`, for the reason the whole of that file
+## is written that way: the telemetry asks the world no questions, so it can never be the thing
+## that changed one. It is the four things a picture cannot carry and a reader always wants —
+## where she is in tiles, what the meters read, and what is nearest — and it takes nothing that is
+## not already on screen.
+## Every field is guarded, because the one screen this is most likely to be pressed on is the one
+## where the world is least finished — a title screen, or a boot that went wrong.
+func _snapshot_now() -> void:
+	var where := Vector2i.ZERO
+	if _city and _player:
+		where = _city.map.world_to_tile(_player.global_position)
+	var meters := "no baby yet"
+	if _baby:
+		meters = "exc %d, sleep %d" % [roundi(_baby.excitement), roundi(_baby.sleepiness)]
+	var screen := "playing"
+	if _title and _title.is_open():
+		screen = "title"
+	elif _pause and _pause.is_open():
+		screen = "paused"
+	Telemetry.snapshot_now("asked for a picture at (%d,%d) | %s | %s"
+			% [where.x, where.y, meters, screen])
 
 func _quit() -> void:
 	Telemetry.end_run()
