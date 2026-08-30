@@ -466,9 +466,11 @@ value of a chokepoint is arithmetic: it is what makes "every route touches one o
 or three candidate sites instead of a dozen. **Anything written as "the tile she must cross" is
 wrong**, and a first draft of this section said exactly that.
 
-**A calm area is reached two distinct ways where the map allows it, and one of them will usually be
-longer.** That is not a flaw to tune out — *"out of the two options one way is going to be probably
-shorter than the other"* — it is what makes the pair a choice rather than a mirror.
+**A calm area is reached two distinct ways where the map allows it**, and one will often be longer
+than the other. That asymmetry is **incidental** — *"if it happens it happens, if not it doesn't"* —
+so nothing should be tuned to produce it and no rule should depend on it. A draft of this section
+called it "what makes the pair a choice rather than a mirror", which was reading a design goal into
+an artefact of how the two routes are found.
 
 **And it is a niceness, not a promise.** *"Having two distinct paths is really a niceness to the
 user. If we cannot construct a path B at all, let's not try."* An area with one way in is a

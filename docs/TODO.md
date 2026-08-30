@@ -2576,12 +2576,24 @@ ends were always the point of hard blockers and the old gate fought them; a `rou
 requirement would have refused most of the interesting ones. Use `route_count >= 1`, or just the
 walk field, and keep the reference tree as the readable sanity check rather than as the gate.
 
-**One detail left, and it is small.** The existence check is a shortest path avoiding probe 1 —
-but is path B *that* shortest path, or a fresh loop-erased walk constrained to the subgraph
-without probe 1? Recommendation: **use the shortest path directly.** It is simpler, and it produces
-the asymmetry already noted as wanted — *"one way is going to be probably shorter than the other"* —
-with the wandering route and the efficient alternative falling naturally out of the two methods.
-Revisit only if the drawn map makes B look conspicuously optimal beside A
+**Decided: B is the shortest remaining path.** The same computation that answers *does a second
+route exist* also is the route — no second walk.
+
+The reason is not simplicity, and it is worth keeping because it points the other way from the
+usual instinct: **a shorter B puts less of the map in play.** *"The shortest path also reduces the
+overall number of available blocks, which makes the area more approachable — the player feels less
+lost."* A wandering B would be more interesting per street and would spread the day's ground over
+more of the city, and being spread thin is the thing that reads as *lost*. The tree is a way of
+saying *here is where today happens*, and a tight second route says it more clearly than a scenic
+one.
+
+**The known risk, recorded rather than designed away: B may run alongside A.** A shortest path
+avoiding A's segments is often the next street over. That is **not a correctness problem** — the
+design already blesses it explicitly, *"non-mergeable paths can be directly adjacent… the player
+can walk the beginning of path A and then switch to path B without noticing"* — so what is at
+stake is only whether the pair **reads** as two options or as one thick one. A map question, for
+the first day this can be drawn, and the answer if it reads badly is a separating road block, which
+the design already offers as optional
 - [ ] **`RouteTree`, in `src/routes/`.** Built from `map`, the day's closed set and the available
       calm areas. It holds, per calm area, the **branch** that reaches it; over the whole day, the
       **bundles** — edges carried by two or more branches — and the **fan-out**, meaning the
