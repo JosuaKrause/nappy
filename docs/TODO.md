@@ -2233,6 +2233,18 @@ player has now asked for twice. See **[docs/PLAYTEST-14.md](PLAYTEST-14.md)**.
 what it is**, and the sixth is a mechanic that was answering a question about geometry when the
 player was asking one about themselves.
 
+**Merged to `main` unfinished, deliberately, and this is the third time** — see M43 and M47. What
+is merged is the first round of playtest 14, finished and green: the dog, the border built to its
+brief, the moving spine, calm areas that are not diagonal, and calm areas she has not visited
+staying clean. What is **not** started is the whole second round, recorded below under *"Recorded
+and not started"* — the traffic lights, the calm-ground multipliers, the fence drawn from the
+camera's angle, and the four faults on the borders.
+
+The reason to merge rather than hold: the first round contains the process fix in `CLAUDE.md` and
+the design record in `docs/CITY.md`, and both of those are rules the *next* piece of work has to be
+done under. A branch is the wrong place for a rule about how to work. The rest of M49 continues on
+a branch of its own.
+
 - [x] **The pursuing dog does not stop.** *"It's a very simple rule — when I run the dog backs down
       almost immediately."* Third report of this encounter. `PURSUIT_SHAKEN_OFF` counted seconds of
       the **gap opening**, and a run opens it at 38px/s against the day-3 dog — a fifth of a pixel
