@@ -85,41 +85,18 @@ least two topologically distinct routes from home to every park and enforces it 
 The scheduler already has most of the machinery (`_ensure_the_city_is_still_walkable`); it
 needs to count distinct routes and destinations rather than just find one.
 
-### 12's other half — the one this plan lost *(written up 2026-08-31, after an audit)*
+### What the row above lost *(restored 2026-08-31)*
 
-**The section above is about the shape of the network. Finding 12 was mostly about the
-blockers, and that half is not in this document at all.** It is the origin of what the player
-later called **hard and soft diversions**, and playtest 14's conclusion that *"there was no note
-about them anywhere in this repo"* is half wrong in a way that matters: the design was given on
-day one, right here, and what happened to it was not loss but **summary**.
+The table row was a summary that kept the topology and dropped two clauses — *"block off all other
+roads with events that cause excitement overload"* and *"should still be possible to avoid them but
+it should be clear that that road cannot be taken"*. Both are restored to it. The general lesson is
+the one worth keeping: **a finding marked done is never re-read**, so summarising one on the way in
+is worse than losing it — a lost note leaves a gap somebody eventually trips over, and this left a
+checkmark.
 
-The player's sentence has two clauses this plan never carried:
-
-- **"block off all other roads with events that cause excitement overload."** The blocker and the
-  noise are **the same object**. A road is shut *by* something being loud on it.
-- **"should still be possible to avoid them but it should be clear that that road cannot be
-  taken."** So it is not shut. It is **passable at a price you can see before you commit** — a
-  cost, not a wall. That is the soft diversion, stated in full, before a line of the game existed.
-
-What got built instead was a **split**: `RoadClosure`, which is hard, silent and topological, and
-the event catalogue, which is noisy and never placed to point anywhere. Both halves are good and
-neither is what was asked for. The road that *"cannot be taken"* is either genuinely impassable or
-completely ordinary; there is nothing in the game that is walkable-but-obviously-wrong.
-
-**And then the split was written into an invariant that forbids putting it back.** `CLAUDE.md`:
-*"A closure is silent… **Do not let a closure emit**; it would be a third thing for
-`City.total_excitement_at` to sum, and that list is exactly two long on purpose."* That rule is
-sound engineering and it is a direct contradiction of the brief on this page. It was never taken as
-a decision against finding 12, because by then nobody remembered finding 12 said anything about
-emission — the summary had already removed it.
-
-Note the shape, because it is the whole reason the `CLAUDE.md` rule about overturning exists: **no
-single step here was wrong.** A summary dropped a clause; a milestone built the clause that
-survived; an invariant tidied up what the milestone had built; and four playtests later the player
-asked why nothing guides them anywhere. The instruction was still in the repo the entire time, one
-table row above, in their own words — and *"done, M16"* was written beside it.
-
-The open item is `docs/TODO.md`, M49, *"Nothing guides her toward the calm"*.
+**This is not the diversion design, and a session once claimed it was.** The real brief is in
+`docs/CITY.md`, "Guiding her to the calm", where hard and soft mean **permanent** and **per-day**
+rather than anything on this page. Do not reason about diversions from here.
 
 ### 11 makes the city mutable — by design, and further than a scar overlay
 
