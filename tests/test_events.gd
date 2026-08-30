@@ -46,6 +46,7 @@ func run(t) -> void:
 	_test_the_pram_is_the_size_the_rules_think_it_is(t)
 	_test_a_parked_van_is_at_the_kerb(t)
 	_test_a_lorry_has_a_wall_to_back_into(t)
+	_test_nothing_stands_on_the_doorstep_street(t)
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
 
@@ -394,11 +395,14 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 ## *(M39.)* It was `AHEAD_LEAD_DISTANCE` for the first case, which stopped being true when the
 ## stand-off grew past it — the director sites a pursuer beyond its own stand-off now, and a rig
 ## measuring from the cat's lead would have been measuring an encounter the game cannot produce.
+##
+## *(M43.)* And it is `SIGHT_AHEAD` flat now rather than a clamp, because the notice a pursuit
+## gives is exactly the ground between the siting and the stand-off. It has to keep matching
+## `EventDirector._crossing_ahead_of`, which is the reason this is one line and not a formula.
 func _sited_at(def: EventDef) -> float:
 	if def.pursues_within > 0.0:
 		return def.pursues_within - 10.0
-	return clampf(Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-			+ float(Tuning.TILE_SIZE), Tuning.AHEAD_LEAD_DISTANCE, Tuning.SIGHT_AHEAD)
+	return Tuning.SIGHT_AHEAD
 
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.
@@ -1445,6 +1449,46 @@ func _test_a_lorry_has_a_wall_to_back_into(t) -> void:
 			t.check(plan.facing == -Vector2(inward),
 					"day %d: '%s' is turned to reverse into it" % [day, plan.def.id])
 	t.check(backing > 0, "and a run sites one (%d over days 3-14)" % backing)
+
+## Playtest 11, finding 1: *"events/hazards should not spawn on the home block."* The home is a
+## notch with one exit, so the walk from the doorstep to the first junction is the one stretch of
+## a day she does not choose to be on — and a thing standing on it is a tax rather than a route
+## decision. `ClosurePlanner` has refused to close that same street since M16, for the same reason.
+##
+## Measured before the exemption, eight seeds over days 1, 3, 7 and 14: **0.47 events a day** stood
+## on it, which is one morning in two starting with something on the doorstep. The share is exactly
+## the share of the pavement the street is (0.30% of both), which is placement being uniform and is
+## why this needed a rule rather than a weighting.
+##
+## The last two checks are the ones that keep it from passing vacuously: an exemption over ground
+## nothing could have stood on is not an exemption, and a day that stopped placing events would
+## satisfy the first check perfectly.
+func _test_nothing_stands_on_the_doorstep_street(t) -> void:
+	var map := _map()
+	var home := ClosurePlanner.home_street(map)
+	t.check(home != null, "the front door opens onto a street")
+	if not home:
+		return
+	var rect := home.tile_rect()
+	var placed := 0
+	for day in range(1, 15):
+		var consumed: Array[String] = []
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+			if plan.position == Vector2.INF:
+				continue   # an `AHEAD_OF_PLAYER` row, sited by the director while she walks
+			placed += 1
+			t.check(not rect.has_point(map.world_to_tile(plan.position)),
+					"day %d: '%s' is not standing on the street she starts the day on"
+					% [day, plan.def.id])
+
+	var pavement := 0
+	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if rect.has_point(tile):
+			pavement += 1
+	t.check(pavement > 0,
+			"and the exempt street is pavement something could otherwise have stood on (%d tiles)"
+			% pavement)
+	t.check(placed > 14, "and the days it was checked over still place events (%d)" % placed)
 
 # ------------------------------------------------------- one picture per row ---
 # *(M37, playtest 07 finding 2: "not sure what that person was supposed to be".)* The vocabulary's

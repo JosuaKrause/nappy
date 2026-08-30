@@ -137,9 +137,18 @@ telegraph still caught it mid-telegraph and looked like a broken telegraph.
 
 - **One branch per milestone**, named `feature/<thing>`, merged to `main` with `--no-ff`.
   The merge commits are the project's spine; keep them.
+- **One commit per `TODO.md` item, inside that one branch.** A milestone is a list of things
+  that were decided separately and are each true or false on their own, so each one gets a
+  commit that can be read, reverted or bisected by itself. A single commit at the end of a
+  milestone throws that away and makes the branch's own history unusable.
+- **Commit before stopping.** Work that is finished and green does not sit in the working tree
+  waiting to be asked about: an unfinished milestone is a branch with commits on it, not a
+  dirty tree. The local repository is the assistant's to manage — branch, commit and merge
+  without asking each time.
 - **Commit the docs in the same commit as the code.** `docs/` is not a report written
   afterwards, it is the design. If an implementation contradicts a doc, the doc is wrong and
-  gets fixed in that commit.
+  gets fixed in that commit. With one commit per item this means the item's own `TODO.md`
+  paragraphs travel with the code that closed it, rather than in a write-up commit at the end.
 - Commit messages explain **why**, and say what was tried and rejected. When something was
   discovered mid-implementation ("the first version parked every route against the city
   wall"), say so — that is the part that is not recoverable from the diff.

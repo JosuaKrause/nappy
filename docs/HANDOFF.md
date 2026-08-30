@@ -7,15 +7,21 @@ is this file going stale for two milestones and is worth not repeating.
 
 > ## Where to pick up
 >
-> **The order is M43, then M40, then a playtest**, set explicitly at the end of the M41 session,
-> with the note that by then *"everything might have changed to the point where crowd balancing is
-> not needed"*. So:
+> **M41 is merged** (`c4e18d2`), and so is the built half of **M43** — merged deliberately
+> unfinished, because what is left of it cannot be done at a keyboard. The order is **the rest of
+> M43, then M45, then M40, then a playtest**.
 >
-> - **M43** — playtest 11's remaining findings: nothing on the home block, a closure that has to
->   change a route, the busker who denies nothing, the dog that reverses before it charges, dying
->   at high excitement on a quiet street, the diagonal `zzz`. Two of them want re-measuring against
->   M41 before anything is moved — the busker's denial arithmetic now has a *precinct* rate in it,
->   and "dying on a quiet street" was going to be the crowd milestone's evidence.
+> - **M43, what is left** — the two findings a rig cannot answer. The pursuit **cool-off** (is 0.8s
+>   of the gap opening still slow? it is one constant) and **dying at high excitement on a quiet
+>   street**, which `TODO.md` says to read a trace for before touching anything. Built already:
+>   nothing is placed on the home block, the diagonal `zzz` comes back down, and the day-3 dog holds
+>   its ground and lunges on proximity. Answered by measuring instead of building: the busker (the
+>   denial arithmetic is right at every size of calm area now) and the closure (below).
+> - **M45 is new and it came out of M43's measurement.** A closure cannot change a route in this
+>   city — 8 streets of 768 could lengthen the walk if closed alone — so the answer is that
+>   *lengthening the route was never the job*. Permanent impassable blocks to make the grid less
+>   open, and closures placed to stop her walking a direction that cannot win today. The design is
+>   quoted in full in `TODO.md`.
 > - **M40** — the documentation split: `docs/DECISIONS.md` for what was tried and rejected, and
 >   docstrings that say what a thing is rather than what it used to be.
 > - **Then play it.** Nothing about M41 has been played except the half-built version playtest 12

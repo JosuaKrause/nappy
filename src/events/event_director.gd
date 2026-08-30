@@ -137,18 +137,23 @@ func _roll_interval() -> float:
 ## corner of the screen or past it. What she is owed is the sight of it coming, and it has to be
 ## sited where that can be seen.
 ##
-## **And a pursuer is sited beyond its own stand-off, which `AHEAD_LEAD_DISTANCE` does not
-## guarantee.** That constant is a *cat's* reaction window and has nothing to do with a chase: a
-## pursuer closes to `Tuning.pursuit_standoff()` and holds there, so a lead inside the stand-off is a
-## dog that materialises already stopped, with no visible closing in a telegraph whose whole content
-## is the sight of it closing. The cap is `Tuning.SIGHT_AHEAD`, because a dog telegraphing off the
-## top of the screen is worse than one that barely moves — the visible world is only 360px tall.
+## **And a pursuer is sited as far ahead as it can be seen from.** *(M43, playtest 11 finding 3.)*
+## That is `Tuning.SIGHT_AHEAD` flat, rather than the clamp it used to be: `AHEAD_LEAD_DISTANCE` is
+## a *cat's* reaction window and has nothing to do with a chase, and everything between the siting
+## and the stand-off is the only notice a pursuit has left to give.
+##
+## The arithmetic is why it is the cap rather than a choice. Since M43 the lunge is fired by
+## **proximity** — see `EventInstance._lunged` — so the notice a player gets is the time it takes
+## the gap to fall from the lead to `Tuning.pursuit_standoff()`, and she is usually walking *into*
+## it, so that gap closes at her speed plus its own. There are 96px of it at 200px of lead and
+## 80px at 184, which is the difference between 0.43s and 0.38s: small, and it is all there is.
+## Siting further out is not available at any price — the visible world is 360px tall, and a dog
+## telegraphing off the top of the screen has no telegraph at all.
 func _crossing_ahead_of(at: Vector2, heading: Vector2,
 		def: EventDef = null) -> PackedVector2Array:
 	var lead := Tuning.AHEAD_LEAD_DISTANCE
 	if def and def.pursues:
-		lead = clampf(Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-				+ float(Tuning.TILE_SIZE), Tuning.AHEAD_LEAD_DISTANCE, Tuning.SIGHT_AHEAD)
+		lead = Tuning.SIGHT_AHEAD
 	var centre := at + heading * lead
 	if not _map.is_walkable(_map.world_to_tile(centre)):
 		return PackedVector2Array()
