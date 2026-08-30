@@ -2344,8 +2344,38 @@ a branch of its own.
       4. **What paces the main-road crossing?** *"Until all are exhausted"* is the arc; the
          mechanism is presumably calm areas on both sides plus `_spoil_the_parks_she_used`. Worth
          confirming that is the intent rather than an explicit gate.
-      5. **How much of the budget goes to walls vs. texture?** Benign-on-route and lethal-as-wall
-         compete for the same per-block budget, and today every row competes on weight alone
+      5. **How much of the budget goes to walls vs. friction?** Costly-on-corridor and
+         lethal-as-wall compete for the same per-block budget, and today every row competes on
+         weight alone
+- [ ] **Day 3 carries act I's whole payload, and the run lesson is the thing it crowds out.**
+      *(Raised by the player: "does the fire truck conflict with the run tutorial? Should we move
+      the run tutorial one day earlier to disentangle?")* **It conflicts, and it is three rows
+      rather than two.** Everything in act I that is not day 1 or 2 arrives at once on day 3:
+
+      | row | what it is | |
+      |---|---|---|
+      | `fire_truck` | `first_day = 3, last_day = 3` — the **only one-shot in act I**, and a set piece | mobile 190px/s, 340px radius, leaves a `burning_building` for the rest of the day |
+      | `charging_dog` | `first_day = RUN_TAUGHT_DAY` — **the run lesson** | `hard_fail`, `AHEAD_OF_PLAYER`, pursues |
+      | `reversing_lorry` | new that day as well | `hard_fail` |
+
+      So the last day of act I introduces **two new lethal rows and the only set piece**, on the
+      day it also teaches a key the game has spent two days punishing. And the two headline
+      encounters teach **opposite answers**: the dog is the one thing in the game running beats,
+      the fire engine is a thing to be off the road for. A player who learns "run" from day 3 has
+      learnt it next to the one row where it is least relevant.
+
+      **Recommendation: move `RUN_TAUGHT_DAY` to 2**, so act I reads walk → run → set piece, and
+      the dog gets a day where it is the only new thing. Three things to check rather than assume,
+      because this is the most-reported encounter in the project and playtest 08 explicitly liked
+      where it sits (*"I like the running tutorial on day 3"*):
+      - `RUN_TAUGHT_DAY` gates **everything that pursues**, so moving it moves the robber's first
+        possible day too — check act I is not made harder by a constant that was only meant to move
+        a tutorial
+      - `charging_dog` is `first_day = RUN_TAUGHT_DAY` **by reference**, so it follows for free;
+        `reversing_lorry` is a literal `3` and would then be the only new lethal row on day 3
+      - the day-2 difficulty was tuned without a `hard_fail` row on it
+
+      **Do not take this one alone** — it moves a number a player has already approved of
 
 ### Recorded and not started — the second round of playtest 14
 
@@ -2392,6 +2422,29 @@ yet"*) and under the `CLAUDE.md` rule the first round produced.
       Whatever fixes the east has to be stated over **a border** rather than over one side of the
       map: the first border pass wrote four sides four times, which is one bug per side waiting to
       happen, and this is it happening
+
+## Tooling for the diversion work · `feature/a-map-that-shows-the-plan`
+
+Asked for alongside the diversion design, and it goes **first** for the reason the playtest-13
+tooling did: the thing being built is a *placement*, and a placement is exactly what a trace in
+words cannot show. Without this the only way to check that a corridor points anywhere is to play
+the day and form an impression.
+
+- [ ] **Draw the corridor on the telemetry map.** `TelemetryMap` already writes a
+      `<stem>-map-day<NN>.png` per day with the home, the calm areas, the spine, the precincts and
+      the closures. Add the day's **corridor** — the routes from the doorstep to the calm areas
+      that are still worth reaching — as a drawn path over the grid. This is the picture that
+      answers *"is anything guiding her"*, which is the open question the whole milestone exists
+      for, and it cannot be answered from a log line
+- [ ] **Mark every placed event with its categorisation.** Not just *where* — **what kind**, in the
+      vocabulary in `docs/CITY.md`, "The words for it": its **effect** (lethal / impassable /
+      costly) and its **role** (wall / friction / set piece). A wall drawn on the corridor instead
+      of beside it is the central defect this milestone can have, and it is one glance to see and
+      invisible in every other tool. Distinguish placed-and-live from placed-and-never-reached, and
+      keep it legible at 640px
+
+Both obey the telemetry invariant — no RNG, nothing that changes a placement, no cost when
+telemetry is off — and both are dev tooling under the same eventual debug-build gate.
 
 ## Tooling for playtest 13 · `feature/a-picture-of-the-city`
 
