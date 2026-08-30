@@ -393,10 +393,16 @@ placement rule has to serve, and it gives each kind a different job:
 - **Road closures shape the day without ending it.** They are how the set of available routes
   changes between days.
 
-**The main road is the challenge to overcome, and it is what makes a run have an arc.** The player
-will take routes on **her side** of it until they are exhausted, and only then is she forced to
-explore the other half of the map. So the spine is not one day's obstacle; it is the thing that
-paces the whole act.
+**The main road is the challenge to overcome, and it is what makes a run have an arc — emergent by
+construction, and nothing enforces it.** As calm areas on her side are used up they are spoiled,
+which closes off parts of that side, and eventually the only calm left is across the spine. She is
+never *held* on one side and never steered at the road: *"it's not a hard rule that she doesn't go
+over the main road until it's the only option — I was predicting player behaviour, but players can
+cross whenever they want."*
+
+**That is a constraint on what may be built.** The arc falls out of exhaustion plus spoiling, both
+of which already exist. Nothing may be added that withholds the far side, gates it behind a day
+number, or nudges her toward a crossing — a player who crosses on day 1 is playing correctly.
 
 **Sealing off a section of the map is allowed, and it is the point.** A combination of hard and
 soft blockers may make an entire section inaccessible. That is fine — *"the purpose is to guide the
@@ -447,10 +453,15 @@ instruction. So the day's plan is a small **tree**: the doorstep at the root, on
 available calm area.
 
 **One corridor per calm area, and overlaps are a resource rather than a problem.** Paths may share
-ground on the way out and separate later, since they end in distinct places. Where the tree forces
-every path through the same point, that **chokepoint is a placement opportunity** — it is the one
-tile the player is guaranteed to cross whatever she chooses, and it is where something can be put
-that she will certainly meet.
+ground on the way out and separate later, since they end in distinct places. Where several
+corridors run together, that shared stretch is a **chokepoint**.
+
+**A chokepoint is a bundle, not a guarantee.** It narrows *how many places* a thing has to be in
+order to be met; it never narrows it to one. Even in the ideal case — a day with exactly two
+distinct paths — anything that must be encountered has to exist in **at least two** places. So the
+value of a chokepoint is arithmetic: it is what makes "every route touches one of these" cost two
+or three candidate sites instead of a dozen. **Anything written as "the tile she must cross" is
+wrong**, and a first draft of this section said exactly that.
 
 **Placement follows the tree, not a budget.** Plan the tree first and place from it — possibly with
 a budget *per role and per region*, but not a single per-block number that the whole city competes
@@ -481,20 +492,24 @@ It may not be *steered onto her*: `AHEAD_OF_PLAYER` is for moments, and a fire e
 deliberately a **place**. What makes it a place and still unmissable is the candidate set, not a
 director.
 
-**Two invariants this runs into, and both need a decision before anything is built.**
+**Two invariants this runs into, and both turned out smaller than a first pass claimed.**
 
-- **Chokepoints versus edge-disjointness.** *"If all paths have to go through one point we can make
-  use of that"* — but `ClosurePlanner` requires **two routes sharing no street** to two calm areas,
-  and a chokepoint every path crosses is exactly the thing that rule was written to forbid. It was
-  written against *sealing her in*, and a deliberate chokepoint is not that. The rule probably has
-  to become *"the calm is reachable and the day is not decided by one closure"* — but it is a
-  load-bearing invariant with a test behind it, so it changes by decision, not by exception.
-- **Late binding versus "a retried day is the same day".** Placeholders and route-bound one-shots
-  mean the day's content depends on where she walked, and M39 fixed a real bug to make a retried
-  day identical. These are reconcilable: resolve a placeholder deterministically from the day's RNG
-  and the placeholder's own identity, so the *offer* is fixed and only *which offer she redeems*
-  varies. What must not happen is resolution that draws from a shared stream at the moment she
-  arrives, which puts M39's defect back with a longer fuse.
+- **Chokepoints and edge-disjointness barely conflict at all.** A first draft read a chokepoint as
+  a single tile every route crosses, which *would* have broken `ClosurePlanner`'s two-routes rule.
+  It is a bundle, and the design keeps at least two distinct paths standing by construction — which
+  is the same thing the invariant is protecting. What may still need loosening is its
+  **formulation**: *distinct* currently means **sharing no street**, and corridors that run together
+  and then separate share plenty. The guarantee to keep is *"the calm is reachable and no single
+  closure decides the day"*; the edge-disjoint max-flow reading is one way to get it and is
+  stricter than the design needs. A decision, but a small one.
+- **A retried day discards what happened in the failed one.** *"Retrying a day doesn't retain any
+  decisions made on that day — the failed day doesn't exist anymore."* So late binding costs
+  nothing: the **plan** is identical on every attempt — the same tree, the same placeholders, the
+  same candidate sets, all deterministic from the seed and the day number, which is what M39
+  fixed — and the **resolutions** she caused by walking are thrown away and made again. Determinism
+  is a property of the offer, never of what she did with it. The thing that would still be a bug is
+  a placeholder resolving off a stream shared with the rest of the day, because then *where she
+  walked* would move everything planned after it.
 
 **Nothing in the current invariants forbids any of this**, which is worth stating because a session
 once thought otherwise. `_park_is_reachable` asks only that **some** calm area is still reachable
