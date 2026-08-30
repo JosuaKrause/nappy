@@ -378,6 +378,7 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 			result["running"] = float(result["running"]) + STEP
 		her.x += speed * STEP
 		instance.player_at = her
+		instance.player_running = speed > Tuning.WALK_SPEED
 		instance._process(STEP)
 		elapsed += STEP
 		if since_the_lunge != INF:
@@ -418,6 +419,9 @@ func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 	while elapsed < 12.0 and not instance.is_finished and not result["caught"]:
 		her.x += player_speed * STEP
 		instance.player_at = her
+		# The break-off is a fact about *her* since playtest 14, so a rig that only moves her is
+		# not running the rule. See `Tuning.PURSUIT_SHAKEN_OFF`.
+		instance.player_running = player_speed > Tuning.WALK_SPEED
 		instance._process(STEP)
 		elapsed += STEP
 		if was_telegraphing and not instance.is_telegraphing():

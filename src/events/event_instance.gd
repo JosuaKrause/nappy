@@ -104,6 +104,11 @@ var is_finished := false
 ## that is *leaving* uses it to know when it is out of sight.
 var player_at := Vector2.INF
 
+## Whether she is running right now. Written beside `player_at` and by the same pass, because the
+## one thing that reads it asks both together: a pursuer gives up because **she ran**, which is a
+## fact about her and not about the gap. See `_chase`.
+var player_running := false
+
 ## Facing, for art with a front and a back. Only a mobile event ever changes it.
 var _heading := Vector2.RIGHT
 var _path_travelled := 0.0
@@ -245,10 +250,15 @@ func _chase(delta: float) -> void:
 		return
 	_heading = toward.normalized()
 	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-	# Ground gained on it, and the epsilon matters: a run only opens the gap at 38px/s against the
-	# day-3 dog, which is a fifth of a pixel a frame, so float noise on a diagonal can outweigh a
-	# real gain and stall the timer for ever.
-	if _last_range < INF and range_to_her > _last_range + 0.001:
+	# **She ran, so it backs off.** *(Playtest 14.)* This used to count seconds of the *gap actually
+	# opening*, which is the same sentence said about the geometry instead of about the player — and
+	# in play it was a different rule. A run opens the gap at 38px/s against the day-3 dog, a fifth
+	# of a pixel a frame, so a corner, a kerb, a body in the way or the 0.37s it takes to reverse a
+	# walk all reset the timer, and the dog kept coming while she was plainly running from it. The
+	# rule now is the one a player can state and therefore learn: **run and it gives up.**
+	#
+	# `_last_range` is still tracked because the leaving phase reads it; nothing decides on it.
+	if player_running:
 		_outrun_for += delta
 	else:
 		_outrun_for = 0.0
