@@ -2391,14 +2391,16 @@ a branch of its own.
       | **B. `reversing_lorry` → day 4** | day 3 keeps the lesson and the set piece, minus one lethal row | the two opposite lessons still share a day |
       | **C. `fire_truck` → day 2** | day 3 becomes purely the run lesson; the set piece gets its own day | act I loses its day-3 finale, which is where a one-shot naturally wants to be |
 
-      **A is still my recommendation**, because it is the only one that separates the two opposite
-      lessons *and* leaves the set piece where a finale belongs — and because `cyclist` on day 2 is
-      arguably the right neighbour for a running lesson rather than the wrong one. But the premise
-      it was first offered under was false, so it is worth re-taking rather than confirming.
+      **Decided: A.** *("Let's do A", 2026-08-31, taken with the corrected premise in front of
+      it — day 2 is the busiest day in act I, not an empty one.)* It is the only option that
+      separates the two opposite lessons *and* leaves the set piece where a finale belongs, and
+      `cyclist` on day 2 is arguably the right neighbour for a running lesson rather than the wrong
+      one. **Not implemented** — the change is `Tuning.RUN_TAUGHT_DAY` 3 → 2 plus the docs that
+      state it, and it is the one code change queued out of this whole conversation.
 
-      Three things to check rather than assume, because this is the most-reported encounter in the
-      project and playtest 08 explicitly liked where it sits (*"I like the running tutorial on day
-      3"*):
+      Three things to check rather than assume when it is made, because this is the most-reported
+      encounter in the project and playtest 08 explicitly liked where it sits (*"I like the running
+      tutorial on day 3"*):
       - `RUN_TAUGHT_DAY` gates **everything that pursues**, so moving it moves the robber's first
         possible day too — check act I is not made harder by a constant that was only meant to move
         a tutorial
@@ -2406,7 +2408,9 @@ a branch of its own.
         `reversing_lorry` is a literal `3` and would then be the only new lethal row on day 3
       - the day-2 difficulty was tuned without a `hard_fail` row on it
 
-      **Do not take this one alone** — it moves a number a player has already approved of
+      And `docs/MECHANICS.md`, `docs/EVENTS.md` and `CLAUDE.md` all state *"day 1 teaches the arrow
+      keys and day 3 teaches the run"* in prose. All three move with the constant, in the same
+      commit, or the docs start lying about the day the game teaches its second verb
 
 ### Recorded and not started — the second round of playtest 14
 
