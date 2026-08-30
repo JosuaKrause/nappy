@@ -563,13 +563,15 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary) -> Arra
 	var key := "%s|%d" % [def.placement, def.pavement_side]
 	if ground.has(key):
 		return ground[key]
+	var doorstep := _the_street_she_starts_on(map)
 	var open: Array[Vector2i] = []
 	for type in def.placement:
 		for candidate in map.tiles_of_type(type as GameEnums.TileType):
 			# A closed street is not somewhere anyone can get to, so it is not somewhere an event
 			# can usefully happen: the player would never see it and the scheduler would have
 			# spent budget on nothing.
-			if map.is_closed(candidate) or not _wants_this_side(def, map, candidate):
+			if map.is_closed(candidate) or doorstep.has_point(candidate) \
+					or not _wants_this_side(def, map, candidate):
 				continue
 			open.append(candidate)
 			# **A precinct is a retail street**, so it carries more of the day than a length of
@@ -584,6 +586,26 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary) -> Arra
 					open.append(candidate)
 	ground[key] = open
 	return open
+
+## The street the front door opens onto, which nothing is placed on. *(M43, playtest 11 finding 1:
+## "events/hazards should not spawn on the home block".)*
+##
+## The home is a notch with one exit, so the walk from the doorstep to the first junction is the
+## one stretch of a day she does not choose to be on — and a thing standing on it is not a route
+## decision, it is a tax. `ClosurePlanner.home_street` has refused to close this exact segment
+## since M16 for exactly that reason, and this is that exemption applied to the other thing in the
+## game that occupies ground.
+##
+## **It is the segment rather than a radius**, which is the part worth keeping. A radius is a
+## number somebody has to tune and it stops at an arbitrary distance down a street; a segment is
+## the unit the player can see the shape of, ending at the junction where the choice is made — the
+## same argument that made a segment the unit a closure works in.
+##
+## Nothing else needs the exemption: the spoiler grid places on calm ground, a scar is where
+## something already burnt, and an ambient event has no tile.
+static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
+	var segment := ClosurePlanner.home_street(map)
+	return segment.tile_rect() if segment else Rect2i()
 
 ## Whether a tile is the lane of the pavement this event wants. *(M34, playtest 07 findings 7
 ## and 15.)*

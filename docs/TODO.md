@@ -1224,11 +1224,14 @@ Playtest 11's remaining findings. See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**.
 the first three: **several things in this city are placed without asking what they are in the way
 of** — which is `CLAUDE.md`'s first rule failing at *placement* rather than at design.
 
-- [ ] **Nothing is placed on the home block** — finding 1. Every day starts on the doorstep and the
-      scheduler is currently allowed to put something on it, which is not a route decision but a tax:
-      the home is the one tile the player does not choose to be on. The exemption already exists in
-      spirit — `ClosurePlanner` never closes the street outside the home — and it should be the same
-      rule, applied to events
+- [x] **Nothing is placed on the home block** — finding 1. It is `ClosurePlanner`'s exemption
+      applied to the other thing in the game that occupies ground, and it is stated over the
+      **street segment** rather than a radius, because a segment is the unit the player can see the
+      shape of and it ends at the junction where the choice is made. Measured before the change,
+      eight seeds over days 1, 3, 7 and 14: **0.47 events a day** stood on the street outside the
+      front door — one morning in two — and it is 0.00 after, with events placed per day unchanged
+      at 155.9. The share was exactly the share of the pavement that street is (0.30% of both),
+      which is placement being uniform and is why it needed a rule rather than a weighting
 - [ ] **A closure has to change a route** — finding 2, *"road blocks next to parks are pointless"*.
       The route-redundancy invariant is used as a **floor** (the day stays winnable two ways) and
       never as a **filter**: a closure that does not lengthen the best route to any calm area by a
