@@ -1718,11 +1718,65 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
       a corridor whose visible stretch is all precinct re-rolled its position eight times, found
       bollards every time, and was placed among them anyway: **a retry is not a guarantee, one
       scale out**, so `CrowdAgent.setup` re-picks the street rather than only the spot on it
-- [ ] **`EXCITEMENT_DECAY_IDLE` is 0.0 and there is no floor under her on ordinary ground.** M33
+- [x] **`EXCITEMENT_DECAY_IDLE` is 0.0 and there is no floor under her on ordinary ground.** M33
       set it there for a good reason — *what settles a baby is being pushed* — and the consequence
       nobody priced is that a stationary pram on a pavement is a pure climb at whatever the crowd
       is doing. Decide whether "standing still settles nothing" should mean "standing still is
-      worse than walking", which is what it currently means
+      worse than walking", which is what it currently means.
+
+      **Decided: it stays 0.0, and the question was pointing at the wrong number.** Two measured
+      reasons, and the second is the one that was nearly missed.
+
+      **It is not the lever for the case that matters.** The place the game *makes* her stand
+      still is the kerb of the main road, waiting for the side street's green — and main-road
+      ground is `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER`, 0.6. So even handing idle the whole
+      walking rate would give back 2.1/s of a 5.9/s bill. The number that decides what a wait
+      costs is the crowd's, not the decay's.
+
+      **And removing the zero re-opens what it was built to close, by a route that is easy to
+      miss.** Sleepiness is **frozen, not drained**, above `EXCITEMENT_CALM_THRESHOLD` — see
+      `Baby._update_sleepiness` — and that is exactly the state somebody would stop in. So above
+      the threshold standing still already costs nothing on the other meter, and any non-zero
+      idle decay makes waiting it out strictly better than walking on every ground quieter than
+      the decay: every back street and every park. `SLEEPINESS_DRAIN_IDLE` looks like the guard
+      and is not, because it is switched off precisely when the exploit would be used.
+
+      *Standing still is worse than walking* is the right sentence for a game whose only verb is
+      *where do I walk*. What it must not be is the game's answer to something the game made her
+      do, which is the next item
+- [ ] **Waiting for the main road's light costs a third of the meter, and up to all of it.**
+      Found by measuring the item above rather than arguing it. Twenty arrivals spread across the
+      cycle, at a signalled junction on the spine, five seeds:
+
+      | | value |
+      |---|---:|
+      | cycle | 17.1s = 8.1 main green + 2.0 amber + **5.0 side green** + 2.0 amber |
+      | mean wait for the crossing arm | **5.7s** |
+      | worst wait | **12.0s** |
+      | mean cost of the wait | **33.4** of a 100 meter |
+      | worst cost of the wait | **133.0** |
+
+      So obeying the light is worth a third of the day's tolerance on average and can end the day
+      by itself, and this is *before* the crossing, which the item above measured at up to 35
+      more. That is not a soft block, it is a toll gate with a queue, and she has no choice about
+      any of it: `Tuning.validate_signals` guarantees she can only cross on the side green.
+
+      **The suspect is not the wait, it is what she is standing next to.** A car's
+      `contribution_at` does not look at how fast it is going, so a queue held at the stop line
+      beside her is worth exactly what the same cars are worth streaming past — and the queue is
+      there *because* she is being made to wait, so the two arrive together. M41 already wrote
+      this down as *"a car waiting at a light beside you is louder for longer than one going
+      past"* and answered it by **cutting the car population**, which M46 then had to answer a
+      second time; the population has now been the answer to a traffic problem twice, and it was
+      the wrong lever both times.
+
+      So: **noise is traffic moving, not traffic existing.** A stationary car idles rather than
+      falling silent, so it is a fraction rather than zero, and the jolt a bump puts on a body
+      stays at full strength — a horn is not quieter for being sounded by a stopped car. Check
+      what it does to the two things the spine has to keep: the arterial floor
+      `tests/test_crowd.gd` pins, and the cost of *jaywalking* it, which must not move at all,
+      because the cars she runs in front of are moving by definition. If it works, the light
+      starts meaning something: crossing legally gets cheap and crossing anyway does not
 - [ ] **A contact is 22–34 points a second and there were fifteen of them in four days.** Either
       the cost or the frequency is wrong and the trace cannot say which. `BUMP_RADIUS` is 14 and
       the M33 note says the careful line was two pixels wide when M19 measured it — so widening
