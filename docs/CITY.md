@@ -402,6 +402,57 @@ paces the whole act.
 soft blockers may make an entire section inaccessible. That is fine — *"the purpose is to guide the
 player away from that section anyway, since there are no calm zones in that area."*
 
+**A route to a calm area is not stable across days, and that is the mechanism rather than a side
+effect.** The hard blockers hold still for the whole run — they are what the player *learns* — and
+the soft ones re-cut the map every morning, so the same destination is reached a different way on
+two consecutive days. A city worth knowing plus a day worth reading.
+
+### The words for it
+
+*(Proposed 2026-08-31 so that placement can be talked about precisely. Adopt, rename or reject —
+this is a naming proposal, not a decision.)* Three independent questions get asked about every
+blocker, and the project has been answering all three with the word "blocker".
+
+**Permanence — hard or soft.** Settled above: in the layout for the whole run, or placed for a day.
+
+**Effect — what it does to a route that meets it.** Three values, and *lethal* is not the top of a
+scale, it is a different thing:
+
+| | | |
+|---|---|---|
+| **lethal** | ends the day | charging dog, robber, the carriageway |
+| **impassable** | stops passage, does not kill | road closures |
+| **costly** | passable at a price she can read before committing | restaurant, dog walker, yeller |
+
+**Role — what the scheduler is placing it *for*.** This is the axis that does not exist yet, and it
+is the whole of the work:
+
+- **wall** — placed to *bound* the corridor. Hard blockers are always walls; lethal soft ones are
+  walls for a day.
+- **friction** — placed *inside* the corridor, on the route she is meant to take, to make the route
+  worth thinking about. Costly blockers.
+- **set piece** — an authored one-shot placed so that she actually **meets** it, rather than so it
+  exists somewhere. See the fire engine below.
+
+And the thing the roles are stated relative to needs a name too: **the corridor** — the ground
+today's routes run through, from the doorstep to the calm areas that are still worth reaching.
+"Wall" and "friction" mean nothing until there is a corridor to be outside or inside of.
+
+### A set piece has to be met
+
+*"The fire + fire truck — it should be used in a way that the player actually encounters it on
+their chosen route, so we could dynamically choose it from a candidate set on that day."*
+
+The fire engine is the only one-shot in act I and it is currently placed like everything else: a
+legal spot somewhere on the map, on a day she may never walk that way. An authored set piece that
+fires once per run and is missed is a fairness contract and a silhouette spent on nothing.
+
+So a **set piece is chosen against the corridor**: pick from the day's candidate sites the one that
+the route actually crosses. Two things it must not become — it may not be *steered onto her*, which
+is what `AHEAD_OF_PLAYER` is for and the fire engine is deliberately not; and choosing late must
+not break determinism, so the candidate set and the choice both come from the day's RNG, not from
+where she happens to be standing.
+
 **Nothing in the current invariants forbids any of this**, which is worth stating because a session
 once thought otherwise. `_park_is_reachable` asks only that **some** calm area is still reachable
 from home, not that the city stays connected, so a sealed quarter is already legal.
