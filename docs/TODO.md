@@ -1747,7 +1747,31 @@ The decision taken on the finding, quoted, because it is not what the analysis e
       Then **measure the room before committing**, because this is where it goes quietly wrong:
       48 blocks must hold 5–7 non-adjacent calm areas, 1–2 four-block zones needing a wholly
       unclaimed 2×2, and up to 3 courtyards — and `generate()` retries with `seed + 1`, so a rule
-      that is too tight shows up as a slower generator rather than as an error
+      that is too tight shows up as a slower generator rather than as an error.
+
+      **The spine half is expendable and that is a decision, not a fallback.** *"The not next to
+      main road rule is not that important, you can remove it if it loses too much freedom."* So
+      the edge rule is the one that must land; if the measurement above says the field is too
+      tight, the spine rule is what comes out, and it comes out **before** `MIN_CALM_BLOCKS` or the
+      non-adjacency rule are touched — those two are what the player asked for by name
+- [ ] **And no two calm areas are directly next to each other — including courtyards.** *"Also
+      don't place calm areas directly next to each other."* Half of this is already true and half
+      of it is a real gap, which is why it is its own item.
+
+      `_has_open_calm_neighbour` tests `_OPEN_CALM` only — park, forest, quiet square — and
+      `_cut_courtyards` runs **after** the open calm is placed. So a courtyard is correctly refused
+      beside a park, and **two courtyards may sit directly across a street from each other**, with
+      nothing in the generator able to see it: the open-calm pass cannot, because no courtyard
+      exists yet, and the courtyard pass does not look for its own kind. The trace's day 1 planned
+      **three** courtyards, so this is reachable rather than theoretical.
+
+      Two things to decide while fixing it, and neither is obvious. **Whether a courtyard counts as
+      calm for spreading purposes at all** — it is *hidden* calm, cut into a residential block, and
+      the argument that two of them across a street are one awkward area is weaker than for two
+      parks. And **whether diagonal counts**: `_has_open_calm_neighbour` walks the four edges and
+      skips the corners, so two calm blocks meeting at a junction are legal today. That is
+      probably right — they are a junction apart rather than a street apart — but it is currently
+      an accident of the loop bounds rather than a decision, and it should become one either way
 - [ ] **The 2×2 inner courtyard — an apartment complex.** Asked for *"a long time ago"* and never
       built. What exists is `COURTYARD_SIZE_TILES`, a 4-tile court carved inside **one**
       residential block. What is wanted is four blocks of buildings with a shared court in the
