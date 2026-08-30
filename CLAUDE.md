@@ -68,6 +68,47 @@ decision somebody can overturn. Nothing else is.
 And the test of whether it was written down is not "did I mention it" — it is whether somebody
 opening the repo cold could **build the thing that was asked for** from what is on disk.
 
+### Never silently overturn a decision the player took
+
+**Recording a request is not the end of the obligation to it.** Once something has been asked for,
+the only ways it may stop being true are: *it gets built*, *the player changes their mind*, or
+*they are asked and they agree*. **There is no fourth way.** If a milestone is about to drop,
+narrow, park, invert or reinterpret something the player asked for — **stop and ask first**, in the
+session, before writing the code or the status line. Carry on with everything the answer does not
+block, and put the question where they will see it.
+
+The reason it has to be a rule is that overturning never looks like overturning from the inside. It
+arrives as an *argument*, and the argument is usually a good one — measurement said the opposite,
+two instructions conflicted, the thing turned out to cost more than it was worth. All of that is
+worth writing down, and **none of it is a decision this side of the conversation gets to take.**
+The player is the only one who knows what they wanted it for.
+
+Three shapes it takes here, all found in the record and each worse than the last:
+
+- **Parking something and erasing who asked for it.** `docs/TODO.md`'s M20 entry parks eight-way
+  driving, overtaking and the crash event as *"none of which any playtest has asked for"* — and it
+  is the status line of **playtest 02 finding 4**, which is the player asking for exactly those
+  three by name. The request was recorded correctly and its provenance was written out from under
+  it, which is worse than losing it: the parking now reads as justified to everyone who comes
+  after, and no one will ever check.
+- **Letting a later instruction repeal more than it said.** *"There should be no east to west main
+  roads at all"* is about **corridors**. M49 read it as also repealing *"the side to side mainroad
+  just going towards east west in one space… certain death once a car comes… not an artificial end
+  but an emergent end"* and deleted those exits. Maybe right — but two instructions in tension is
+  the exact case that has to go back to the player, because only they know which one was load-
+  bearing. **When a new instruction contradicts an old one, the overlap is a question, not an
+  inference.**
+- **Answering the complaint and dropping the design.** This is the border failure above, one level
+  up: the complaint is the part that can be verified fixed, so it is the part that survives.
+
+**When you do ask, ask with the work already done up to the fork** — what was asked, what it now
+collides with, what each branch costs, and which you would pick. A question that hands the whole
+problem back is its own kind of failure.
+
+And when a decision *is* overturned with agreement, the note says so in the player's words:
+`asked for X · overturned to Y on <date>, because Z`. A status line that cannot name who agreed is
+a silent overturn that has not been noticed yet.
+
 ## Names are content, never identifiers
 
 The mother and the baby have names — see `docs/NARRATIVE.md`, which is the one place that says
