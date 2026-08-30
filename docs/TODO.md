@@ -1744,7 +1744,7 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
       *Standing still is worse than walking* is the right sentence for a game whose only verb is
       *where do I walk*. What it must not be is the game's answer to something the game made her
       do, which is the next item
-- [ ] **Waiting for the main road's light costs a third of the meter, and up to all of it.**
+- [x] **Waiting for the main road's light costs a third of the meter, and up to all of it.**
       Found by measuring the item above rather than arguing it. Twenty arrivals spread across the
       cycle, at a signalled junction on the spine, five seeds:
 
@@ -1761,22 +1761,66 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
       more. That is not a soft block, it is a toll gate with a queue, and she has no choice about
       any of it: `Tuning.validate_signals` guarantees she can only cross on the side green.
 
-      **The suspect is not the wait, it is what she is standing next to.** A car's
-      `contribution_at` does not look at how fast it is going, so a queue held at the stop line
-      beside her is worth exactly what the same cars are worth streaming past — and the queue is
-      there *because* she is being made to wait, so the two arrive together. M41 already wrote
-      this down as *"a car waiting at a light beside you is louder for longer than one going
-      past"* and answered it by **cutting the car population**, which M46 then had to answer a
-      second time; the population has now been the answer to a traffic problem twice, and it was
-      the wrong lever both times.
+      **And the diagnosis it was written with is wrong, which the measuring found and the
+      arguing did not.** The suspect was *what she is standing next to*: a queue held at the stop
+      line is worth what the same cars are worth streaming past, because `contribution_at` never
+      looks at how fast a car is going. But **she waits while the main road has green**. The
+      traffic beside her is moving by construction, and the queue is on the side street she is
+      not standing on.
 
-      So: **noise is traffic moving, not traffic existing.** A stationary car idles rather than
-      falling silent, so it is a fraction rather than zero, and the jolt a bump puts on a body
-      stays at full strength — a horn is not quieter for being sounded by a stopped car. Check
-      what it does to the two things the spine has to keep: the arterial floor
-      `tests/test_crowd.gd` pins, and the cost of *jaywalking* it, which must not move at all,
-      because the cars she runs in front of are moving by definition. If it works, the light
-      starts meaning something: crossing legally gets cheap and crossing anyway does not
+      **What is actually expensive is standing, and it is not specially expensive here.** The
+      spine's junction kerb reads **5.9/s** during a wait — an ordinary pavement reads 4.5–5.1.
+      So this is the item above's other half arriving with a bill: `EXCITEMENT_DECAY_IDLE` is 0,
+      any six-second stop anywhere costs a quarter of the meter, and the spine is the one place
+      the game *makes* her take one.
+
+      Three candidates, all measured, all rejected, because two of them buy the wait with the
+      thing finding 7 just fixed and the third buys it with the road itself:
+
+      | | wait | worst | arterial floor | jaywalk | spine stopped |
+      |---|---:|---:|---:|---:|---:|
+      | today | 33.9 | 133.0 | 11.98 | 26.1 | 41% |
+      | a stopped car idles at 0.35 | 32.9 | 122.6 | **8.55** | **11.0** | 41% |
+      | `CAR_OUTER_RADIUS` 104 → 64 | 23.2 | — | **7.62** | **11.0** | 41% |
+      | side green 5.0 → 8.0 | **15.3** | **56.3** | 11.98 | 26.1 | **63%** |
+
+      - **The idling fraction does nothing for the wait** — 33.9 to 32.9 — for the reason above,
+        and its real effect is to halve the arterial floor and the cost of jaywalking. That is
+        M41's *"a car waiting at a light beside you is louder for longer than one going past"*
+        answered at last, and it turns out to be an answer to a different question.
+      - **A narrower car field does not make a careful line**, which is the surprise. The profile
+        across an ordinary footway stays flat at every radius tried — 3.31 / 3.74 / 3.39 at 64 —
+        because **the flatness is the pedestrians**, who are 3.3 of the 4.5 and whose spacing is
+        arithmetic no radius can change. All it buys is the same halving of the spine.
+      - **A longer side green works and the road pays for it.** It halves the wait and the worst
+        case, and it takes the spine from two fifths stopped to two thirds.
+
+      So the mean is left alone on purpose: **33 points to cross the spine is the soft block
+      finding 7 asked for**, and every lever that lowers it lowers the crossing with it. What is
+      wrong is the *worst* case — 133 for one unlucky arrival, which she cannot see coming — and
+      the thing underneath it is the next item
+- [ ] **The main road is two fifths stopped, and that is where its noise comes from.** Measured
+      while pricing the wait, over three seeds and thirty seconds of act I: the cars on the spine
+      average **49 px/s of a 158 cruise, with 41% of them stationary**. `CLAUDE.md` says to
+      measure exactly this alongside the floor *"or a road that reads as busy in a screenshot is
+      a car park in motion"*, and nobody had.
+
+      **The progression is not the cause and the speed spread is.** `SIGNAL_PROGRESSION_BLOCKS`
+      is derived so that a car holding the *mean* cruise sees the same phase at every junction,
+      and the arithmetic works in both directions — a car travelling against the wave sees
+      `t + j·travel` where the offset cancels the position exactly. But `CAR_SPEED` is 130–185
+      and the wave is tuned for 157.5, so a slow car drifts 0.6s per junction and is a whole
+      green out of step after five of them. What looks like congestion is a green band that only
+      one speed can stay inside.
+
+      Two shapes to weigh, and they are not the same statement. **A car near a signalled spine
+      could hold the progression speed** rather than its own, which is what a real driver does on
+      a timed road and costs nothing but a line in `_give_way`. Or **the spine's speed range could
+      be narrower than an ordinary street's**, which says the same thing as a property of the road
+      instead of of the driver. Either way the number to watch is the stopped fraction, and the
+      thing to check afterwards is the arterial floor: a spine that flows has fewer cars beside
+      her at once, so **fixing the jam may cost the noise floor finding 7 asked for**, and if it
+      does, that is where `CROWD_CARS_PER_ACT` goes back up rather than down
 - [ ] **A contact is 22–34 points a second and there were fifteen of them in four days.** Either
       the cost or the frequency is wrong and the trace cannot say which. `BUMP_RADIUS` is 14 and
       the M33 note says the careful line was two pixels wide when M19 measured it — so widening
