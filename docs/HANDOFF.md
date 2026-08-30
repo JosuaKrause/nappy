@@ -1,8 +1,102 @@
 # Handoff
 
-**Last updated:** end of the M39 session, with playtest 11 already in hand and planned.
-M38, M37 and the rest follow below, newest first.
-**Read this first, then [PLAYTEST-11.md](PLAYTEST-11.md), then [TODO.md](TODO.md).**
+**Last updated:** end of the M41 session. M39 and the rest follow below, newest first — **M42 (the
+9×9 city) and M44 (the suite you can run) have entries in [TODO.md](TODO.md) and none here**, which
+is this file going stale for two milestones and is worth not repeating.
+**Read this first, then [PLAYTEST-12.md](PLAYTEST-12.md), then [TODO.md](TODO.md).**
+
+> ## Where to pick up
+>
+> **The order is M43, then M40, then a playtest**, set explicitly at the end of the M41 session,
+> with the note that by then *"everything might have changed to the point where crowd balancing is
+> not needed"*. So:
+>
+> - **M43** — playtest 11's remaining findings: nothing on the home block, a closure that has to
+>   change a route, the busker who denies nothing, the dog that reverses before it charges, dying
+>   at high excitement on a quiet street, the diagonal `zzz`. Two of them want re-measuring against
+>   M41 before anything is moved — the busker's denial arithmetic now has a *precinct* rate in it,
+>   and "dying on a quiet street" was going to be the crowd milestone's evidence.
+> - **M40** — the documentation split: `docs/DECISIONS.md` for what was tried and rejected, and
+>   docstrings that say what a thing is rather than what it used to be.
+> - **Then play it.** Nothing about M41 has been played except the half-built version playtest 12
+>   caught, which is the best thing that happened in the milestone and is also not a verdict.
+> - **The crowd milestone is not next and may not exist.** M41 moved the car population twice (46 →
+>   30 → 40), gave the ground a recovery rate, and gave the junctions a capacity they never had.
+>   Every number that milestone was going to argue about has already moved; read the traces before
+>   assuming the finding survived.
+
+> **M41 is the shape of the city, and its one sentence is: a hierarchy is only a hierarchy if there
+> is one of the top thing.**
+>
+> The city had one kind of street. The arterials differed from the rest only by how many cars were
+> on them, so the only route question a junction ever asked was *which way*. It now has **one** main
+> road running north to south — dark asphalt, an unbroken double centre line, clearway markings on
+> its kerbs, signalled at every junction, and it does not give way to anybody — **two** retail
+> precincts of three blocks each, one along the southern shore, which are brick from frontage to
+> frontage with no cars in them; and ordinary streets everywhere else.
+>
+> **The first build got the scale wrong and a person caught it the same day.** It made a main road
+> of *each axis* and a precinct of one corridor in each, which is three kinds of street and no
+> hierarchy among them: a spine that crosses itself is two spines, and a precinct you meet on every
+> third street is what a street is. Two of the three kinds are **places** now rather than classes,
+> and that is the correction worth carrying — see [PLAYTEST-12.md](PLAYTEST-12.md), which is the
+> first playtest this project has ever taken *inside* a milestone rather than a milestone late.
+>
+> **The ground is a rate, not a category**, and it is the change that reaches furthest. Calm 2.2,
+> precinct 1.5, ordinary street 1.0, main road 0.6, multiplying the excitement decay — so choosing a
+> route is choosing a **recovery rate** and not only a set of things to walk past. `WorldContext`
+> grows a fourth question, and the shape to copy is that it *generalises an old answer* rather than
+> sitting beside it: `is_calm_zone` was a threshold doing a rate's job for the excitement half and
+> genuinely being a threshold for the sleepiness half. It is also what makes a precinct worth
+> walking to although it is loud, and it is most of what *"a main road is crossed, not walked"* now
+> means arithmetically.
+>
+> **A lane is a queue and a junction is a box, and only the queue was ever modelled.** M38 made a
+> car turning into an occupied *lane* look first; nothing modelled the box, so two cars on crossing
+> arms each read a clear lane ahead and both entered. Measured over ninety seconds of the arterial:
+> **3,776 overlapping crossing-axis pairs, one in half of all frames, the deepest 39px into a 40px
+> footprint** — with every assertion about the traffic passing throughout, because each car's own
+> lane was legal on every frame. That is the M44 lesson again from the other side: a green suite
+> said nothing because it was asking about the wrong unit.
+>
+> Four clauses close it and each is a way it goes wrong without them. Only crossing traffic
+> conflicts. A car that cannot stop is counted as *already in the box* rather than asked to brake —
+> the zebra's commit rule, because braking too late means stopping in the thing. **Nothing enters a
+> box it cannot leave**, which is the clause that decides whether a busy grid queues or seizes: five
+> of forty-six cars were parked in a box without it. And nearest first, then right before left,
+> because distance alone leaves a symmetric arrival undecided and right-before-left alone deadlocks
+> four cars in a ring.
+>
+> **Signals have to be measured, not authored.** Arbitrary offsets stop a car at *every* junction it
+> comes to — two thirds of the traffic stationary at any instant, and the mean speed on the arterial
+> a quarter of a cruise. The cycle is derived from the block spacing now, and both directions
+> progress because it is an **even** multiple of the junction-to-junction travelling time. The
+> fairness contract is the *side* street's green, since she crosses the main road while the main
+> road is stopped, and the amber is a clearance period rather than a warning.
+>
+> **And junction control gave the road a capacity it never had.** With crossing cars driving through
+> each other the network's throughput was unbounded, so the car population was only ever a noise
+> number; the same forty-six put the arterial's floor over the ceiling `tests/test_crowd.gd` states,
+> because a car waiting at a light beside you is louder for longer than one going past. It went to
+> thirty, and then playtest 12 said the spine was too quiet — which it was, for a reason the number
+> could not see: there were two main roads and the weighting split between them. One spine, forty
+> cars, blocked 81% of the time.
+>
+> **The edge of the world was an invisible wall and the camera was the reason.** The lattice already
+> ended in T-junctions and nobody could see it — the outermost corridor is a whole street and every
+> interior street runs into it and stops — but there was nothing beyond its far pavement, and the
+> camera was clamped to the last walkable tile, so anything built out there would have been drawn
+> every frame and never once seen. There is a ring of frontages a block deep outside the map now, a
+> tunnel where the spine leaves northward, a bridge where it leaves south, and the road simply
+> carrying on east and west. **No walkable tile moved**, which is what keeps the route guarantees
+> true rather than re-argued.
+>
+> **Two things about the drawing that a test could not have caught.** Each exit has to fill what it
+> opens onto or the gap in the frontages shows the void behind them, which is the invisible wall
+> again with a picture either side of it. And four identical signal heads at one junction say
+> nothing about which road each of them is stopping: they are two drawings now, face-on for the arms
+> running up and down the screen and edge-on for the ones running across it, so *what you can see of
+> the lamp* is which street it means.
 
 > **Playtest 11 arrived after M39 was built and before it was merged**, so two of its nine findings
 > are about work the player was not running. It is written up in
@@ -471,9 +565,26 @@ M38, M37 and the rest follow below, newest first.
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **46498 checks, 0 failures** (~110s);
+`main` is green and playable. `./tools/test.sh` → **122119 checks, 0 failures** (~161s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
+
+**The count went 74540 → 122119 on M41, and it is the lattice rather than the milestone.** The
+jump is +64% and it wanted checking rather than asserting, because a count that moves by that much
+without a deletion or a new rule is usually a suite that started doing something else. Measured by
+putting `CITY_BLOCKS` back to 9×9 with all of M41's code in place: **74362**, against `main`'s
+74540 — the same suite asserting the same things about a smaller city. So M41's own new
+assertions (the signal contract, the junction box, the ground rate, the boundary) are worth about
+nothing on the count and the whole of it is 49% more city being asserted over per block, per
+street and per seed. Two things came out of that measurement worth keeping: the run at 9×9 fails
+three checks in `test_telemetry.gd` (*"the retry has 5 `delivery_van` where the day had 7"*), so
+the retry-determinism assertion now has a **city size** in it — M41's act I caps went up with the
+lattice and a smaller city cannot spend them — and the ~161s is the honest new cost of the inner
+loop, which M44 had just brought down to 96s.
+
+**The counts for M42 and M44 were never written down here** — that is the two milestones of
+staleness this file opens by admitting — so the 74540 above is `main` as M44 left it and there is
+no M42 figure to compare against.
 
 **The check count went 46394 → 46498, and all of it is M37 asserting the new rule.** Two of those
 checks run over the whole catalogue — one row per look, one silhouette per look — plus the baby

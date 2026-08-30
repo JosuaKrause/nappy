@@ -43,6 +43,10 @@ func run(t) -> void:
 	_test_a_car_can_honour_the_headway_it_keeps(t)
 	_test_a_car_looks_before_it_turns(t)
 	_test_the_traffic_index_is_emptied_every_frame(t)
+	_test_a_main_road_is_kept_by_its_lights(t)
+	_test_a_signal_gives_her_time_to_cross(t)
+	_test_a_precinct_has_no_cars_in_it(t)
+	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 
 	_city.free()
 
@@ -439,12 +443,19 @@ func _test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t) -> void:
 ## Finding 3: *"cars should stop at crossings when I am close."* A zebra is only the safe way
 ## over if the traffic honours it — otherwise it is paint, and the choice between crossing here
 ## and jaywalking there has one arm missing.
+##
+## **Ordinary streets only, since M41.** A main road's zebras are kept by the light rather than by
+## the drivers, which is the difference between the two kinds of street and is checked by
+## `_test_a_main_road_is_kept_by_its_lights` below. A car on the spine driving straight past
+## somebody at the kerb is this suite watching the design work.
 func _test_traffic_gives_way_at_a_crossing(t) -> void:
 	_city.crowd.start_day(1, _rng(1))
 	var tested := 0
 	var extent := _city.map.world_size()
 	for agent in _city.crowd.agents():
 		if tested >= 3 or agent.kind != CrowdAgent.Kind.CAR:
+			continue
+		if _street_of(agent) != GameEnums.StreetKind.ORDINARY:
 			continue
 		# Away from the edge, or the car is recycled mid-test and comes back somewhere else.
 		var at := agent.global_position
@@ -467,9 +478,16 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		# Playtest 05, finding 1: *where* it stops is the complaint, not whether. Aiming at zero
 		# speed instead of at a place put it most of a block short — `CAR_ZEBRA_SIGHT` is nearly
 		# four times the distance a car needs — or, if it noticed late, on the paint.
-		var gap := _distance_along(agent, crossing)
-		t.check(gap > 0.0, "and stops short of the crossing rather than on it (%.0fpx)" % gap)
-		t.check(gap < Tuning.CAR_STOP_LINE_SETBACK + Tuning.TILE_SIZE,
+		# Measured to the **near edge of the paint**, which is what the car aims at, rather than to
+		# the point the scan above happened to sample. A zebra is two tiles deep and the scan
+		# starts far enough out to guarantee stopping room, so it can land on the far tile — which
+		# made this read as a car stopping a hundred pixels short when it had stopped exactly
+		# where it should. A test that measures a different thing from the code is a test that
+		# fails when the map changes shape.
+		t.check(_city.map.tile_type_at_world(agent.global_position)
+				!= GameEnums.TileType.CROSSING, "and comes to rest off the paint, not on it")
+		var gap := _distance_to_the_paint(agent)
+		t.check(gap > 0.0 and gap < Tuning.CAR_STOP_LINE_SETBACK + Tuning.TILE_SIZE,
 				"and stops *at* the line rather than wherever the braking ran out (%.0fpx)"
 				% gap)
 
@@ -478,6 +496,174 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		t.check(agent.speed() > Tuning.CAR_SPEED.x * 0.5,
 				"and pulls away again once the crossing is clear")
 	t.check(tested > 0, "at least one car had a zebra ahead of it to give way at")
+
+## Distance from a car's centre to the near edge of the first zebra in front of it, walked tile by
+## tile the way the car walks it. `INF` when there is none within sight.
+func _distance_to_the_paint(agent: CrowdAgent) -> float:
+	var forward := agent.heading()
+	var step_tile := Vector2i(roundi(forward.x), roundi(forward.y))
+	var here := _city.map.world_to_tile(agent.global_position)
+	for step in range(0, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
+		var tile := here + step_tile * step
+		if _city.map.tile_at(tile) != GameEnums.TileType.CROSSING:
+			continue
+		var vertical := absf(forward.y) > 0.0
+		var along: int = tile.y if vertical else tile.x
+		var edge: int = along + (0 if (forward.y if vertical else forward.x) > 0.0 else 1)
+		var at: float = agent.global_position.y if vertical else agent.global_position.x
+		return (float(edge * Tuning.TILE_SIZE) - at) * (1.0 if (forward.y if vertical
+				else forward.x) > 0.0 else -1.0)
+	return INF
+
+## What kind of street an agent is travelling down right now.
+func _street_of(agent: CrowdAgent) -> GameEnums.StreetKind:
+	return _city.map.street_kind_at(agent.travelling_vertically(),
+			_city.map.world_to_tile(agent.global_position))
+
+# ------------------------------------------------ the shape of the city (M41) ---
+# Playtest 11, finding 7: *"we need a separation between easy-to-navigate road and heavily
+# trafficked and pedestrianised road."* Three kinds of street where there was one, and the tests
+# below are the ones that say the kinds are a **difference** rather than three names for the same
+# street. None of them asserts a value; all of them assert what a kind promises.
+
+## **A main road is kept by its lights, not by its drivers.** That is the whole content of the
+## distinction: an ordinary crossing is a negotiation with somebody who can see you, and a
+## signalled one is a wait with a known end. If traffic on the spine also gave way at the kerb,
+## the signals would be scenery on top of a courtesy that was already sufficient.
+func _test_a_main_road_is_kept_by_its_lights(t) -> void:
+	_city.crowd.start_day(1, _rng(1))
+	var spine := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x)
+	t.check(_city.map.main_road == spine,
+			"the north-south arterial is the one main road")
+	t.check(_city.crowd.signals_for_tests().is_signalled(Vector2i(spine, 3)),
+			"every junction on the spine is signalled")
+	t.check(not _city.crowd.signals_for_tests().is_signalled(Vector2i(spine + 1, 3)),
+			"and a junction of two ordinary streets is not")
+
+	# A car on the spine, with somebody standing at the zebra it is coming to, does not slow for
+	# them. It is stated over the car's own give-way probe rather than by walking one, because the
+	# thing being asserted is that the probe never fires at all.
+	var tested := 0
+	for agent in _city.crowd.agents():
+		if tested >= 2 or agent.kind != CrowdAgent.Kind.CAR:
+			continue
+		if _street_of(agent) != GameEnums.StreetKind.MAIN:
+			continue
+		var crossing := _crossing_ahead_of(agent)
+		if crossing == Vector2.INF:
+			continue
+		tested += 1
+		_city.crowd.set_focus(agent.global_position)
+		agent.junction_hold = INF
+		agent.pedestrian_ahead = crossing
+		var cruising := agent.speed()
+		_step(agent, 2.0)
+		t.check(agent.speed() > cruising * 0.9,
+				"a car on the spine does not give way to somebody at the kerb (%.0f to %.0f)"
+				% [cruising, agent.speed()])
+	t.check(tested > 0, "at least one car on the spine had a zebra ahead of it")
+
+## The contract the light replaces the courtesy with. Stated over the **side** street's green,
+## because that is what is running while the main road is stopped and she is on the paint.
+func _test_a_signal_gives_her_time_to_cross(t) -> void:
+	t.check(Tuning.validate_signals(), "the side street's green clears the carriageway fairly")
+	t.check(Tuning.SIGNAL_SIDE_GREEN_SECONDS > Tuning.required_horn_time(),
+			"a green is longer than the walk across it (%.2fs vs %.2fs)"
+			% [Tuning.SIGNAL_SIDE_GREEN_SECONDS, Tuning.required_horn_time()])
+	# The amber is a clearance period, so a car that has just committed has to be out of the box
+	# before the crossing arm goes green. Slowest car, longest box.
+	var box := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE) + Tuning.CAR_STRIKE_HALF_LENGTH * 2.0
+	t.check(Tuning.SIGNAL_AMBER_SECONDS * Tuning.CAR_SPEED.x > box,
+			"the amber clears the junction it is protecting (%.0fpx of %.0f)"
+			% [Tuning.SIGNAL_AMBER_SECONDS * Tuning.CAR_SPEED.x, box])
+	# And the wave: a cycle that is an even multiple of the junction-to-junction travelling time
+	# is what lets both directions progress. See `Tuning.SIGNAL_PROGRESSION_BLOCKS`.
+	var ratio := Tuning.signal_cycle_seconds() / Tuning.signal_travel_seconds()
+	t.close_to(fposmod(ratio, 2.0), 0.0,
+			"the cycle is an even multiple of a junction's travelling time", 0.001)
+
+## **A precinct has no cars in it.** Not few: none. The tile map alone cannot enforce it — a
+## pedestrianised corridor is paved end to end, so every tile of it says "street" — so this is
+## the check that the corridor kind is actually reaching the two places a car picks a road.
+func _test_a_precinct_has_no_cars_in_it(t) -> void:
+	var vertical: Array[Vector4i] = []
+	for span in _city.map.precinct_spans:
+		if span.x == 1:
+			vertical.append(span)
+	t.check(not vertical.is_empty(), "the city has a north-south precinct")
+	t.check(_city.map.precinct_spans.size() == 2, "and exactly two precincts in all (%d)"
+			% _city.map.precinct_spans.size())
+	for span in _city.map.precinct_spans:
+		t.check(span.w - span.z + 1 == Tuning.PRECINCT_BLOCKS,
+				"a precinct is %d blocks long" % Tuning.PRECINCT_BLOCKS)
+
+	# Built around one, so the field is looking at it rather than at the middle of the map.
+	var span_v: Vector4i = vertical[0]
+	var at := _city.map.tile_to_world(Vector2i(
+			span_v.y * CityMap.period() + Tuning.STREET_WIDTH / 2,
+			(span_v.z + span_v.w) / 2 * CityMap.period() + Tuning.STREET_WIDTH))
+	_city.crowd.start_day(1, _rng(1), at)
+	_advance(45.0)
+
+	var intruders := 0
+	var walkers := 0
+	for agent in _city.crowd.agents():
+		var tile := _city.map.world_to_tile(agent.position)
+		if not _city.map.in_bounds(tile):
+			continue
+		if _city.map.street_kind_at(true, tile) != GameEnums.StreetKind.PEDESTRIAN:
+			continue
+		if agent.kind == CrowdAgent.Kind.CAR:
+			intruders += 1
+		else:
+			walkers += 1
+	t.check(intruders == 0, "no car is standing in a precinct (%d were)" % intruders)
+	t.check(walkers > 0, "and the pavement it replaced the road with has people on it (%d)"
+			% walkers)
+
+## **Cars do not enter a junction they cannot leave.** *(Playtest 11, finding 7: "cars overlap on
+## intersections — they should not go somewhere if they will run into another car.")*
+##
+## The M38 test above is about a *lane* and it passes either way, which is the whole reason this
+## one had to be written separately: a lane is a queue and a junction is a **box**, and two cars
+## on crossing arms can each have a clear lane ahead while both are about to be in the same box.
+## Measured before the rule, over ninety seconds of the arterial: **3,776 overlapping
+## crossing-axis pairs, one in half of all frames, the deepest 39px into a 40px footprint.**
+##
+## Stated as a rate rather than as zero, because the commit rule is deliberate: a car too close to
+## stop carries on, which is the only safe thing it can do and is what makes a collision an
+## accident rather than a routine outcome. What must not come back is the routine outcome.
+func _test_cars_do_not_enter_a_junction_they_cannot_leave(t) -> void:
+	var focus := CrowdLanes.arterial_pavement(_city.map)
+	_city.crowd.start_day(1, _rng(1), focus)
+	_city.crowd.set_focus(focus)
+	var frames := 0
+	var overlapping := 0
+	for i in int(60.0 / STEP):
+		_city.crowd.step(STEP)
+		frames += 1
+		var boxes := {}
+		for agent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.CAR:
+				continue
+			var junction := agent.junction_occupied()
+			if junction.x < 0:
+				continue
+			if not boxes.has(junction):
+				boxes[junction] = [] as Array[CrowdAgent]
+			boxes[junction].append(agent)
+		for junction: Vector2i in boxes:
+			var here: Array[CrowdAgent] = boxes[junction]
+			for a in here.size():
+				for b in range(a + 1, here.size()):
+					if here[a].heading().dot(here[b].heading()) != 0.0:
+						continue
+					if here[a].global_position.distance_to(here[b].global_position) \
+							<= Tuning.CAR_STRIKE_HALF_LENGTH + Tuning.CAR_STRIKE_HALF_WIDTH:
+						overlapping += 1
+	t.check(overlapping < frames / 20,
+			"two cars are almost never inside each other in a junction (%d in %d frames)"
+			% [overlapping, frames])
 
 # --------------------------------------------- the world near you (M27) ---
 # Playtest 04: *"traffic feels too light — I can just ignore it and cross the street whenever"*,
@@ -713,14 +899,21 @@ func _step(agent: CrowdAgent, seconds: float) -> void:
 ## The floor is written out of the constants rather than as a tile count, because it moved when
 ## the stop line arrived: a car now needs its braking distance **plus the setback**, and a
 ## hard-coded "three tiles" was silently a tile short of that.
+## Since M41 it returns the tile that **begins** a run of paint, not any tile of one. A car stops
+## short of the whole zebra, and a zebra is two tiles on an ordinary street and six where a road
+## crosses a pedestrianised one — so a person standing on the far tile of a deep one is somebody
+## the car legitimately cannot stop for, which read as the give-way being broken.
 func _crossing_ahead_of(agent: CrowdAgent) -> Vector2:
 	var forward := agent.heading()
 	var floor_px := Tuning.braking_distance(Tuning.CAR_SPEED.y) + Tuning.CAR_STOP_LINE_SETBACK
 	var first := ceili((floor_px + Tuning.TILE_SIZE) / float(Tuning.TILE_SIZE))
-	for step in range(first, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
+	var was_paint := false
+	for step in range(0, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
 		var at := agent.global_position + forward * float(step * Tuning.TILE_SIZE)
-		if _city.map.tile_type_at_world(at) == GameEnums.TileType.CROSSING:
+		var paint := _city.map.tile_type_at_world(at) == GameEnums.TileType.CROSSING
+		if paint and not was_paint and step >= first:
 			return at
+		was_paint = paint
 	return Vector2.INF
 
 ## How far a point is in front of an agent, along the street it is on. Negative once the agent

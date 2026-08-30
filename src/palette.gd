@@ -69,6 +69,14 @@ const SPOILED_GROUND := Color("6b6357")
 const MARK_COSTLY := Color("e8b64a")
 const MARK_LETHAL := Color("8f2f38")
 
+## The three lamps of a signal head. **Not** the mark colours, deliberately: a caret says how bad
+## a thing is and a lamp says whether you may go, and borrowing `MARK_LETHAL` for a red light
+## would make the one instruction in the game that is about permission look like a threat. These
+## are lamp colours — saturated, self-lit, and readable against the asphalt at dusk.
+const SIGNAL_RED := Color("e04a3f")
+const SIGNAL_AMBER := Color("f0a92e")
+const SIGNAL_GREEN := Color("5fc46a")
+
 const CHALK := Color(0.92, 0.92, 0.88, 0.62)
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")

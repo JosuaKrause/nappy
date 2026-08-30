@@ -102,7 +102,7 @@ func _update_excitement(delta: float, here: Vector2, in_calm_zone: bool, in_alle
 	if state == GameEnums.BabyState.ASLEEP:
 		incoming *= Tuning.SLEEPING_SENSITIVITY
 
-	var decay := _decay_rate(in_calm_zone)
+	var decay := _decay_rate()
 	last_incoming = incoming
 	last_decay = decay
 
@@ -113,15 +113,19 @@ func _update_excitement(delta: float, here: Vector2, in_calm_zone: bool, in_alle
 	if not is_equal_approx(before, excitement):
 		EventBus.excitement_changed.emit(excitement)
 
-func _decay_rate(in_calm_zone: bool) -> float:
+## How fast the meter falls: what she is doing, times what she is standing on.
+##
+## The ground half used to be `in_calm_zone`, a bool, and is a rate the world answers with since
+## M41 — calm, precinct, ordinary street, main road, best to worst. The two halves multiply
+## rather than adding, so *walking somewhere better* is always worth something and running is
+## always worth little, whichever ground she does it on.
+func _decay_rate() -> float:
 	var rate := Tuning.EXCITEMENT_DECAY_WALKING
 	if _stroller.is_idle():
 		rate = Tuning.EXCITEMENT_DECAY_IDLE
 	elif _stroller.run_excess_ratio() > 0.0:
 		rate = Tuning.EXCITEMENT_DECAY_RUNNING
-	if in_calm_zone:
-		rate *= Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
-	return rate
+	return rate * _world.decay_multiplier(_stroller.global_position)
 
 # --------------------------------------------------------------- sleepiness ---
 

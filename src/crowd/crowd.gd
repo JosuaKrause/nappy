@@ -30,12 +30,17 @@ var _field: CrowdField
 ## Where the cars are, by lane. Filled by `space_out_the_traffic()` out of the buckets it already
 ## sorts, and read by a car deciding which arm of a junction to turn into. See `TrafficIndex`.
 var _traffic := TrafficIndex.new()
+## The lights on the spine. Owned by `City`; the clock is advanced here because this is the class
+## a rig steps, and a rig that runs the traffic without running the signals is running a
+## different city — see `step()` and the M44 note above it.
+var _signals: TrafficSignals
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
 
 func setup(city: City, map: CityMap) -> void:
 	_city = city
 	_map = map
+	_signals = city.signals
 	_field = CrowdField.new(map, map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, map.size)).get_center())
 
@@ -51,6 +56,13 @@ func setup(city: City, map: CityMap) -> void:
 func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> void:
 	clear()
 	_struck = false
+	# The lights go back to the top of their cycle with the traffic. They are a property of the
+	# city rather than of the day, so leaving them running reads as the right thing — and it
+	# breaks the invariant everything else here is built on: two attempts at the same day from the
+	# same seed would then find the same cars at different lights and diverge on the first frame.
+	# A day is reproducible or it is not, and this is not the place to spend that.
+	if _signals:
+		_signals.elapsed = 0.0
 	_field.centre = focus if focus != Vector2.INF else _map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, _map.size)).get_center()
 	var act := Tuning.act_for_day(day)
@@ -67,6 +79,10 @@ func field() -> CrowdField:
 
 func traffic() -> TrafficIndex:
 	return _traffic
+
+## The lights, for a suite that has a `Crowd` and wants to ask what the junction ahead is doing.
+func signals_for_tests() -> TrafficSignals:
+	return _signals
 
 func clear() -> void:
 	for agent in _agents:
@@ -112,6 +128,8 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 ## Movement first and separation after, which is the order the world settles in — see
 ## `test_crowd.gd`, "cars do not drive through each other", for why that order is the honest one.
 func step(delta: float) -> void:
+	if _signals:
+		_signals.advance(delta)
 	for agent in _agents:
 		agent._process(delta)
 	space_out_the_traffic()
@@ -168,6 +186,151 @@ func space_out_the_traffic() -> void:
 			positions[i] = queue[i].queue_position()
 		index[key] = positions
 	_traffic.rebuild(index)
+	give_way_at_junctions()
+
+## Decides, once per frame and per junction, whose turn it is to be in the box.
+##
+## **A lane is a queue and a junction is a box, and only the queue was ever modelled.** Two cars
+## on crossing arms each read a clear lane ahead, both entered, and `space_out_the_traffic` then
+## did the only thing a positional resolve can do — move a body. Measured over ninety seconds of
+## the arterial: 3,776 overlapping crossing-axis pairs, one in half of all frames, the deepest
+## 39px into a 40px footprint. Every assertion about the traffic passed the whole time, because
+## each car's own *lane* was legal on every frame.
+##
+## Three rules, and the order is the whole of it:
+##
+## - **Only crossing traffic conflicts.** Two cars meeting head-on at a box are in different lanes
+##   and pass each other; holding them would stop the city dead for nothing. So occupancy is per
+##   axis, and a car only ever waits for the other one.
+## - **A car that cannot stop is already in the box.** It is counted as occupying it rather than
+##   asked to brake, so nobody else is waved in on top of a car that is committed. This is the
+##   zebra's commit rule (`_distance_to_stop_line`) applied to a box, and for the same reason:
+##   braking too late means stopping *in* the thing.
+## - **Nearest first, and right before left when they arrive together.** Distance alone leaves a
+##   symmetric arrival undecided, and right-before-left alone deadlocks four cars in a ring. Taken
+##   in that order there is exactly one winner per box per frame, so nothing can gridlock: the
+##   loser is holding for a car that is by construction going.
+func give_way_at_junctions() -> void:
+	# junction -> which axes are in the box: 1 for the north-south arm, 2 for the east-west one.
+	var occupied := {}
+	# junction -> the cars actually standing in it, so the rare pair that ends up in one together
+	# can be told about each other. See `_collide_in_the_box`.
+	var inside_the_box := {}
+	var approaching := {}
+	for agent in _agents:
+		if agent.kind != CrowdAgent.Kind.CAR:
+			continue
+		agent.junction_hold = INF
+		var axis := 1 if agent.travelling_vertically() else 2
+		var inside := agent.junction_occupied()
+		if inside.x >= 0:
+			occupied[inside] = int(occupied.get(inside, 0)) | axis
+			if not inside_the_box.has(inside):
+				inside_the_box[inside] = [] as Array[CrowdAgent]
+			inside_the_box[inside].append(agent)
+			continue
+		var distance := agent.distance_to_junction()
+		if distance > Tuning.CAR_JUNCTION_SIGHT:
+			continue
+		var junction := agent.junction_ahead()
+		if distance < Tuning.braking_distance(agent.speed()):
+			occupied[junction] = int(occupied.get(junction, 0)) | axis
+			continue
+		if not approaching.has(junction):
+			approaching[junction] = [] as Array[CrowdAgent]
+		approaching[junction].append(agent)
+
+	for junction: Vector2i in inside_the_box:
+		if int(occupied.get(junction, 0)) == 3:
+			_collide_in_the_box(inside_the_box[junction])
+
+	for junction: Vector2i in approaching:
+		var queue: Array[CrowdAgent] = approaching[junction]
+		var busy := int(occupied.get(junction, 0))
+		var signalled := _signals != null and _signals.is_signalled(junction)
+		# Right of way is only negotiated where nothing is deciding it. A light decides it, and
+		# two answers to the same question is how a junction stops meaning anything.
+		var winner: CrowdAgent = null
+		if busy == 0 and not signalled:
+			winner = _first_through(queue)
+		for agent in queue:
+			var axis := 1 if agent.travelling_vertically() else 2
+			var crossing_is_in_the_box := (busy & (3 - axis)) != 0
+			var outranked := winner != null \
+					and winner.travelling_vertically() != agent.travelling_vertically()
+			var red := signalled \
+					and not _signals.green_for(junction, agent.travelling_vertically())
+			if crossing_is_in_the_box or outranked or red or not _can_clear_the_box(agent):
+				agent.junction_hold = maxf(0.0,
+						agent.distance_to_junction() - Tuning.CAR_STOP_LINE_SETBACK)
+
+## Whether there is somewhere on the far side for this car to be.
+##
+## The other half of *do not enter a junction you cannot leave*, and the half that decides whether
+## a busy grid queues or seizes: a car that stops **inside** a box holds the crossing arm shut for
+## as long as it is there, so one queue backing up through one junction takes the streets either
+## side of it with it. Measured before this rule: five of forty-six cars parked in a box at any
+## instant and over half the traffic stationary.
+##
+## `gap_ahead` is to the car in front in this car's own lane, so the room it needs is the distance
+## to the box, plus the box, plus a car's length of road beyond it.
+func _can_clear_the_box(agent: CrowdAgent) -> bool:
+	if agent.gap_ahead == INF:
+		return true
+	var box := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
+	return agent.gap_ahead >= agent.distance_to_junction() + box + Tuning.CAR_GAP_MIN
+
+## Two cars from crossing arms that have ended up in the same box anyway.
+##
+## **It stays possible on purpose.** A car too close to stop carries on — the commit rule, the same
+## one the zebra has — because braking too late means stopping *in* the junction, which is the
+## thing all of this exists to prevent. So the rule makes a collision rare rather than impossible:
+## measured over a minute of the arterial at act I density, none at all, against 3,776 overlapping
+## pairs before the rule.
+##
+## What happens when it does is deliberately **not** a new catalogue row. An event nobody sees in a
+## run is a silhouette, a docs table and a fairness contract spent on decoration, and the rule this
+## project opens with is that a thing which changes no route decision is decoration. It is the
+## mechanism M19 already established instead: the collision **startles the bodies it happened to**,
+## so it is loud exactly where it happened, it composes with everything else by plain addition, and
+## nothing writes to the meter from outside. They stop dead and pull away again, which is what two
+## drivers who have just hit each other do.
+func _collide_in_the_box(here: Array[CrowdAgent]) -> void:
+	for a in here.size():
+		for b in range(a + 1, here.size()):
+			var one := here[a]
+			var two := here[b]
+			if one.travelling_vertically() == two.travelling_vertically():
+				continue
+			if one.global_position.distance_to(two.global_position) \
+					> Tuning.CAR_STRIKE_HALF_LENGTH + Tuning.CAR_STRIKE_HALF_WIDTH:
+				continue
+			one.crashed_into()
+			two.crashed_into()
+
+## The one car that may take the box this frame. Stable given a stable agent order, which is
+## what makes a day's traffic reproducible from its seed.
+func _first_through(queue: Array[CrowdAgent]) -> CrowdAgent:
+	var best := queue[0]
+	for i in range(1, queue.size()):
+		if _goes_first(queue[i], best):
+			best = queue[i]
+	return best
+
+## Whether `a` has right of way over `b`: nearest first, and right before left when the two of
+## them are arriving together. `CAR_JUNCTION_TIE` is what "together" means.
+func _goes_first(a: CrowdAgent, b: CrowdAgent) -> bool:
+	var difference := a.distance_to_junction() - b.distance_to_junction()
+	if absf(difference) > Tuning.CAR_JUNCTION_TIE:
+		return difference < 0.0
+	return _is_to_the_right_of(a, b)
+
+## Whether `a` is approaching from `b`'s right. Screen coordinates put +y south, so the right of
+## a heading is a quarter turn *clockwise* on screen: east looks south, south looks west.
+func _is_to_the_right_of(a: CrowdAgent, b: CrowdAgent) -> bool:
+	var forward := b.heading()
+	var right := Vector2(-forward.y, forward.x)
+	return (a.global_position - b.global_position).dot(right) > 0.0
 
 # ----------------------------------------------------------------- contact ---
 # Playtest 02, findings 2 and 3. Until M19 the crowd was a field with a picture attached: you
@@ -179,7 +342,9 @@ func space_out_the_traffic() -> void:
 # *player*, and an agent has no business knowing the player exists. One linear scan, the same
 # shape and cost as the `total_excitement_at` the baby already runs every physics frame.
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
+	if _signals:
+		_signals.advance(delta)
 	# Before the player check, because traffic has to queue whether or not anybody is watching:
 	# a car driving through another one at the far end of the street is still the thing playtest
 	# 04 saw, and a test rig has no player in it.

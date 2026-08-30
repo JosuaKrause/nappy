@@ -174,7 +174,7 @@ static func _cat_dash() -> EventDef:
 	# The one cap M28 did *not* multiply. A cat is sited by the director while she walks, and
 	# `AHEAD_INTERVAL` spreads them 11-26s apart over a 180s day, so a seventh has nowhere to
 	# happen: raising it would spend budget on cats the day cannot fit.
-	def.max_per_day = 6
+	def.max_per_day = 8
 	return def
 
 ## Stationary, loud, and *pulsing* — the intensity envelope means the counterplay is timing
@@ -221,7 +221,7 @@ static func _homeless_yeller() -> EventDef:
 	# now is worth looking at, short enough that it is still *a place he is*.
 	def.path_length_tiles = 8
 	def.weight = 2.0
-	def.max_per_day = 14
+	def.max_per_day = 18
 	return def
 
 ## Slow, and it owns the pavement it is on.
@@ -262,7 +262,7 @@ static func _dog_walker() -> EventDef:
 	# Playtest 05, finding 6, in the player's own words: *"the dog walker decision should happen
 	# meaningfully — I want to have to make that decision at least twice on day one."* Three on a
 	# forty-nine-block city made that a coin flip she lost. Repeats are explicitly fine.
-	def.max_per_day = 20
+	def.max_per_day = 26
 	def.cost = 2
 	return def
 
@@ -293,7 +293,7 @@ static func _cafe_tables() -> EventDef:
 	# with only the ~23% of the map near her ever instantiated, the expected number of cafés she
 	# could see in a day was under one — so the day-1 event built to force a crossing was in
 	# practice absent from most day ones.
-	def.max_per_day = 18
+	def.max_per_day = 24
 	def.cost = 2
 	return def
 
@@ -322,7 +322,7 @@ static func _delivery_van() -> EventDef:
 	def.telegraph_time = 1.3
 	def.obstructs_radius = VEHICLE_BODY
 	def.weight = 2.0
-	def.max_per_day = 14
+	def.max_per_day = 18
 	return def
 
 ## A park spoiler, and a pleasant one. Nothing about it is threatening; it is simply
@@ -344,7 +344,7 @@ static func _busker() -> EventDef:
 	# Kept the lowest of the raised act I caps on purpose: a busker is placed on PARK or SQUARE,
 	# which is the only calm ground there is, and `_ensure_one_usable_park` pays for every one
 	# that lands on the block it ends up protecting.
-	def.max_per_day = 8
+	def.max_per_day = 10
 	return def
 
 ## The only Act I event that is physically in the way. Blocking the sidewalk forces a
@@ -363,7 +363,7 @@ static func _construction() -> EventDef:
 	def.telegraph_time = 1.8
 	def.obstructs_radius = 34.0
 	def.weight = 1.5
-	def.max_per_day = 12
+	def.max_per_day = 15
 	def.cost = 2
 	return def
 
@@ -482,7 +482,7 @@ static func _loose_dog() -> EventDef:
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 24
 	def.weight = 1.2
-	def.max_per_day = 8
+	def.max_per_day = 10
 	def.cost = 2
 	return def
 
@@ -504,7 +504,7 @@ static func _market_stall() -> EventDef:
 	def.pulse_period = 8.0
 	def.obstructs_radius = 28.0
 	def.weight = 1.6
-	def.max_per_day = 10
+	def.max_per_day = 13
 	def.cost = 2
 	return def
 
@@ -529,7 +529,7 @@ static func _leaf_blower() -> EventDef:
 	def.pulse_period = 4.0
 	def.obstructs_radius = PERSON_BODY
 	def.weight = 1.2
-	def.max_per_day = 8
+	def.max_per_day = 10
 	def.cost = 2
 	return def
 

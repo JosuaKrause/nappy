@@ -7,6 +7,7 @@ extends Node
 ## hang that on, so the one contract that is not about an event is checked here on boot.
 func _ready() -> void:
 	validate_traffic()
+	validate_signals()
 
 # ---------------------------------------------------------------- movement ---
 
@@ -51,7 +52,10 @@ const SLEEPINESS_DRAIN_IDLE := 1.0
 ## there, which is where the day is *supposed* to be lost. Making the walk out harder and leaving
 ## the reward at the end of it the same length quietly turns the park from a reward into a wait,
 ## which is playtest 02's finding 1 coming back by a different road.
-const SLEEPINESS_CALM_ZONE_MULTIPLIER := 12.0
+## **14x since M41** — *"let's increase the sleepiness speed for calm zones again"* — which is the
+## same argument a third time: 17s from empty rather than 20. What went between the doorstep and
+## the park this time is a main road that is bad ground to recover on and a lattice a fifth wider.
+const SLEEPINESS_CALM_ZONE_MULTIPLIER := 14.0
 ## Sleepiness the baby keeps after being woken up. Half the bar, which is now about twelve
 ## seconds of park — a fifth of a well-played day, which is what it was before and should
 ## stay whatever the rates are.
@@ -110,9 +114,22 @@ const SLEEPING_SENSITIVITY := 0.55
 const EXCITEMENT_DECAY_IDLE := 0.0
 const EXCITEMENT_DECAY_WALKING := 3.5
 const EXCITEMENT_DECAY_RUNNING := 0.5
-## The park has to read on *both* bars, not just the sleepiness one — half of "this is
-## working" is the excitement visibly falling away as she walks in under the trees.
+## What the **ground** does to the decay, best to worst. *(Playtest 12, finding 8: "excitement
+## decay — best: calm, then pedestrian, then side road, then main road, worst.")*
+##
+## This is the first time since M14 that the ground under her feet has done anything except be
+## calm or not, and it is the change that makes a route a **recovery rate** rather than only a set
+## of things to walk past. It is also what makes a precinct worth walking to although it is loud:
+## a retail street is busy, and it is still the best place in the city that is not a park to bring
+## a meter down.
+##
+## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
+## the excitement visibly falling away as she walks in under the trees. The main road is the same
+## sentence inverted: it is the one ground in the city that is actively bad at letting her recover,
+## which is most of what "a main road is crossed, not walked" now means arithmetically.
 const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.2
+const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
+const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.6
 
 ## Excitement per second at full sprint, scaled by how far above walk speed we are.
 ##
@@ -206,6 +223,11 @@ const SIDEWALK_WIDTH := 2
 ## Odd on both axes, and that is a constraint rather than a coincidence: an odd lattice has a
 ## **middle block**, and the home goes in it. See `CityGenerator._place_home`.
 ##
+## **11x11 since M41** — *"I think we can make the map even bigger"* — which is the first resize
+## taken for room rather than for a rule: nine blocks was what the home needed to be central, and
+## eleven is what a city with one spine, two precincts and a ring of frontages needs to have a
+## middle you can get lost in the middle of.
+##
 ## The size is what lets the two rules about the home both hold. It has to be central, and it has to
 ## be `MIN_HOME_TO_PARK_TILES` of walking from calm ground — and those pull against each other, so
 ## the lattice has to be wide enough that the centre is still a long walk from the edge of anything.
@@ -215,14 +237,83 @@ const SIDEWALK_WIDTH := 2
 ## Everything downstream of this is stated over it — the event budget per block, the crowd
 ## population per corridor, the arterial index — so a change here is a change to the whole density
 ## table. Re-measure it; see `docs/PLAYTEST-04.md`.
-const CITY_BLOCKS := Vector2i(9, 9)
+const CITY_BLOCKS := Vector2i(11, 11)
+
+# -------------------------------------------------------- the street hierarchy ---
+# Playtest 11, finding 7: *"we need a separation between easy-to-navigate road and heavily
+# trafficked and pedestrianised road — there should be a visual difference and traffic lights."*
+# Until M41 the city had **one kind of street**; the arterials differed from the rest only by how
+# many cars were on them, so the only route question a junction ever asked was *which way*. With
+# three kinds it also asks *which kind*, and that is the trade this game is made of.
+#
+# The lattice itself does not move. Every corridor is still `sidewalk | road | sidewalk` and the
+# layout maths is still a modulo — see the note on `STREET_WIDTH`.
+
+## How long a precinct is, in blocks. *(Playtest 12, finding 7: "a stretch of three blocks at the
+## shore, like a coney island beach walk, and three blocks in the city somewhere — no more.")*
+##
+## The first version made a whole corridor of each axis pedestrianised, and the report on it was
+## *"there are way too many pedestrian only zones"*. A kind of street you meet every third block is
+## what a street is; three blocks with an end you can see is a place.
+const PRECINCT_BLOCKS := 3
+
+## How busy a precinct's pavement is against an ordinary street's. It is the other end of the same
+## trade the main road is at: nothing on it can kill you, and there is a great deal more of it in
+## your way. A retail street — *"a lot of foot traffic and restaurants"* — so this is the crowd
+## half of that and `EVENT_PRECINCT_WEIGHT` is the other.
+const PRECINCT_BUSYNESS := 3.6
+
+## How many times over a precinct tile is offered to the event scheduler against an ordinary
+## pavement tile. Weighting the candidates rather than adding a rule: a precinct is where the cafés
+## and the market stalls and the buskers are, and the way to say that is to make the ground more
+## likely rather than to give the catalogue a new field.
+const EVENT_PRECINCT_WEIGHT := 4
+
+## Seconds the **side** street gets, and the amber between the two arms. The main road gets
+## whatever is left of the cycle, which is most of it.
+##
+## The side green is the one the player is actually spending: she crosses a main road while the
+## main road is red, which is while the side street is green. So it has to be long enough to walk
+## the carriageway with the doubled hard-fail margin a lethal thing owes — a light that turns
+## while she is on the paint is the traffic contract broken by the one thing that was supposed to
+## be keeping it. `validate_signals()` states exactly that.
+##
+## The amber is a clearance period rather than a warning — the crossing arm stays red through it,
+## and a car too close to stop is treated as already in the box — so it only has to be long
+## enough for a committed car to be out the far side. At `CAR_SPEED.x` two seconds is 260px
+## against a 192px junction.
+const SIGNAL_SIDE_GREEN_SECONDS := 5.0
+const SIGNAL_AMBER_SECONDS := 2.0
+
+## How many junctions apart a green wave repeats. **The whole cycle is derived from this**, and
+## it is the difference between a signalled spine and a car park.
+##
+## Signals with arbitrary offsets stop a car at every junction it comes to: measured at act I
+## density, two thirds of the traffic was stationary at any instant and the mean speed on the
+## arterial was a quarter of a cruise. What fixes it is a *progression* — each junction's cycle
+## starts one junction's travelling time after the last — and the reason it can run **both** ways
+## down the same street is the arithmetic: a car going against the wave arrives two travel times
+## after the one going with it, so both are in step exactly when the cycle is an even multiple of
+## the travel time. Hence `2 * blocks`, and hence the cycle being derived rather than authored.
+##
+## Three is what makes that come out near a quarter of a minute: shorter and the side street's
+## share stops being long enough to cross on, longer and a red is a wait a player will not spend.
+const SIGNAL_PROGRESSION_BLOCKS := 3
 
 ## Calm **areas**, not calm blocks: since M21 an area may be a single block or a four-block
 ## zone, and what these count is places to go rather than lots. `MIN_CALM_BLOCKS` keeps its
 ## name because it is what `calm_blocks` returns — one entry per area — and renaming it would
 ## touch every guarantee that is stated over it without changing what any of them mean.
-const MIN_CALM_BLOCKS := 3
-const MAX_CALM_BLOCKS := 6
+##
+## **The floor is an act's worth plus one.** *(Playtest 12, finding 5: "since each day one gets
+## removed we need as many as days in an act, plus one more as backup. That forces exploration.")*
+## M24 spoils the calm area she settled in, and since M41 it spoils every one she has used *so far
+## this act* — so an act of four days burns four, and the plus one is what stops the last day of
+## an act being unwinnable rather than merely hard. It is derived from the act lengths below
+## rather than authored beside them, because the two would otherwise drift the first time either
+## moved: `calm_areas_needed()`.
+const MIN_CALM_BLOCKS := 5
+const MAX_CALM_BLOCKS := 7
 ## Walking distance in tiles, not straight-line: the calm has to be earned.
 const MIN_HOME_TO_PARK_TILES := 30
 const PARK_SPOIL_CHANCE := 0.35
@@ -363,8 +454,15 @@ func closures_for_day(day: int) -> int:
 ## one every six seconds in your lane, which is playtest 04's *"I can just ignore it and cross
 ## the street whenever"*. These are measured — see `tests/test_crowd.gd`, "the road has to be
 ## waited for" — rather than converted from the old ones by area.
+## **And since M41 a junction is a place a car can be stopped**, which gave the road a capacity
+## it never had. Until then two cars on crossing arms simply drove through each other, so the
+## network's throughput was unbounded and 46 cars was whatever 46 cars looked like. With the box
+## rationed, the same 46 put the arterial floor at 11.3/s against the 10.5 ceiling
+## `tests/test_crowd.gd` states — *"expensive to cross, not impossible"* — because a car waiting
+## at a light beside you is louder for longer than one going past. Thirty restores the floor
+## to 8.0, which is what the same street measured before any of this. Measured, not converted.
 const CROWD_PEDESTRIANS_PER_ACT: Array[int] = [200, 150, 42, 70]
-const CROWD_CARS_PER_ACT: Array[int] = [46, 35, 9, 18]
+const CROWD_CARS_PER_ACT: Array[int] = [40, 30, 8, 16]
 
 ## Half-extent of the box the crowd lives in, in px. Everything inside it is simulated;
 ## anything that leaves it is recycled to the far edge and walks back in.
@@ -643,6 +741,23 @@ const CAR_ZEBRA_APPROACH_BRAKE := 90.0
 ## How close to the crossing the player has to be for the traffic to yield. Roughly "standing
 ## at the kerb waiting", which is the gesture the crossing is for.
 const CAR_ZEBRA_WAIT_RADIUS := 56.0
+
+## How far out a car starts watching the junction it is coming to.
+##
+## The relationship, the same one `CAR_ZEBRA_SIGHT` keeps and for the same reason: it has to
+## exceed `braking_distance(CAR_SPEED.y)` by the setback, or a car that has only just seen a box
+## it must wait at cannot stop before it. Below that the give-way turns into a car standing in the
+## middle of the junction, which is the failure it exists to prevent rather than a milder version
+## of it.
+const CAR_JUNCTION_SIGHT := 200.0
+## How close two arrivals have to be for the box to be a *conflict* rather than a queue, and
+## therefore for right-before-left to decide it instead of distance.
+##
+## A car's own length, near enough: closer than that and the second car is behind the first
+## through the box rather than beside it. Wider and a car yields to somebody who was never in its
+## way; narrower and a symmetric arrival is settled by a couple of pixels of float noise, which is
+## right-before-left never actually running.
+const CAR_JUNCTION_TIE := 60.0
 
 # ------------------------------------------------- the world near you (M27) ---
 # Playtest 04: *"the cat is ineffective since it happens when it spawns — the cat should get
@@ -986,6 +1101,40 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 func carriageway_width() -> float:
 	return (STREET_WIDTH - SIDEWALK_WIDTH * 2) * float(TILE_SIZE)
 
+## How long a car takes to get from one junction to the next at a middling cruise. The unit the
+## whole signal cycle is built out of; see `SIGNAL_PROGRESSION_BLOCKS`.
+func signal_travel_seconds() -> float:
+	return (BLOCK_SIZE + STREET_WIDTH) * float(TILE_SIZE) \
+			/ ((CAR_SPEED.x + CAR_SPEED.y) * 0.5)
+
+## One full cycle of a signalled junction, both arms and both ambers.
+func signal_cycle_seconds() -> float:
+	return 2.0 * SIGNAL_PROGRESSION_BLOCKS * signal_travel_seconds()
+
+## What is left of the cycle for the main road, which is most of it — the spine carries five times
+## an ordinary street's traffic, so an even split starves it and backs the queue through the
+## junction behind.
+func signal_main_green_seconds() -> float:
+	return signal_cycle_seconds() - SIGNAL_SIDE_GREEN_SECONDS - SIGNAL_AMBER_SECONDS * 2.0
+
+## The signalled half of the traffic contract. *(M41.)*
+##
+## A zebra on an ordinary street is kept by the drivers: traffic gives way to somebody standing
+## at the kerb, and `CAR_ZEBRA_SIGHT` is what makes that visible before she steps off. On a main
+## road nobody gives way, and the only thing standing between her and a hard fail is the length
+## of the light — so the side street's green has to be long enough to cross the carriageway with
+## the **same doubled margin** every other lethal thing in the game owes.
+##
+## Stated over the crossing she is making rather than over the light she is watching: it is the
+## side street that is green while the main road is stopped.
+func validate_signals() -> bool:
+	var required := required_horn_time()
+	if SIGNAL_SIDE_GREEN_SECONDS + 0.001 < required:
+		push_error("Unfair signal: side green %.2fs < %.2fs needed to cross %.0fpx of carriageway"
+				% [SIGNAL_SIDE_GREEN_SECONDS, required, carriageway_width()])
+		return false
+	return true
+
 ## The traffic fairness contract, and the one place it is stated.
 ##
 ## A car is not an event, so `validate_event()` never sees it: it has no telegraph, it is not
@@ -1026,6 +1175,20 @@ func crowd_cars(act: int) -> int:
 
 ## Day index (1-based, inclusive) at which each act begins.
 const ACT_START_DAYS := [1, 4, 8, 12]
+
+## The longest act, in days. What the calm-area floor is stated over.
+func longest_act_days() -> int:
+	var longest := 0
+	for i in ACT_START_DAYS.size():
+		var ends: int = ACT_START_DAYS[i + 1] if i + 1 < ACT_START_DAYS.size() \
+				else RUN_LENGTH_DAYS + 1
+		longest = maxi(longest, ends - ACT_START_DAYS[i])
+	return longest
+
+## How many calm areas a city has to have: one per day of the longest act, plus one in reserve.
+## See `MIN_CALM_BLOCKS`, which this is asserted against on boot.
+func calm_areas_needed() -> int:
+	return longest_act_days() + 1
 
 ## Returns the 1-based act number for a given 1-based day.
 func act_for_day(day: int) -> int:

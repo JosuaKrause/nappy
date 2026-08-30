@@ -1,0 +1,8 @@
+<!-- Main-road asphalt, half of an unbroken double centre line on the east edge.
+     Solid rather than dashed: a dash says overtake, a double line says this is the spine. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#3b3b45"/>
+  <rect x="4" y="6" width="3" height="1" fill="#43434e"/>
+  <rect x="26" y="0" width="2" height="32" fill="#b9b087"/>
+  <rect x="30" y="0" width="2" height="32" fill="#b9b087"/>
+</svg>

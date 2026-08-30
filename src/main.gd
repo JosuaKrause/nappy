@@ -63,7 +63,7 @@ func _ready() -> void:
 
 	_player = STROLLER.instantiate()
 	_city.add_entity(_player)
-	_player.set_camera_limits(Rect2(Vector2.ZERO, _city.map.world_size()))
+	_player.set_camera_limits(_city.camera_bounds())
 	_baby = _player.get_node("Baby")
 
 	_hud = HUD.instantiate()
@@ -483,6 +483,44 @@ func _spawn_position() -> Vector2:
 		var anchor: Vector2i = _city.map.zone_rects.keys()[0]
 		var corner := CityMap.blocks_tile_rect(_city.map.zone_rects[anchor]).position
 		return _nearest_walkable(_city.map.tile_to_world(corner - Vector2i.ONE * 2))
+	# A signalled junction on the spine, stood a little back down the side street, so that the
+	# main road, its lights and one of its zebras are all in the same frame. *(M41.)* The lights
+	# are the only cue in the game whose whole content is *when*, so they cannot be judged from a
+	# still of one — take several seconds apart, or use `--walk` and watch the cycle.
+	if args[index + 1] == "signal":
+		var spine := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x)
+		var down := clampi(Tuning.CITY_BLOCKS.y / 2, 1, Tuning.CITY_BLOCKS.y - 1)
+		# On the side street's own pavement, a couple of tiles east of the junction: the block
+		# east of corridor `spine` is block `spine`, and offset 1 of a corridor is footway.
+		var corner := Vector2i(CityMap.block_rect(Vector2i(spine, 0)).position.x + 2,
+				down * CityMap.period() + 1)
+		return _nearest_walkable(_city.map.tile_to_world(corner))
+	# The mouth of the tunnel the main road leaves by, from a few tiles down the spine. `edge:s`
+	# is the bridge at the other end and `edge:e` / `edge:w` the road simply running out.
+	if args[index + 1].begins_with("edge"):
+		var side := args[index + 1].get_slice(":", 1)
+		var spine_x := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x) * CityMap.period() \
+				+ Tuning.STREET_WIDTH / 2
+		var spine_y := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y) * CityMap.period() \
+				+ Tuning.STREET_WIDTH / 2
+		# Beside the carriageway, not on it: the exits are lethal, which is the point of them.
+		var at := Vector2i(spine_x - 2, 1)
+		match side:
+			"s": at = Vector2i(spine_x - 2, _city.map.size.y - 2)
+			"e": at = Vector2i(_city.map.size.x - 2, spine_y - 2)
+			"w": at = Vector2i(1, spine_y - 2)
+		return _nearest_walkable(_city.map.tile_to_world(at))
+	# The middle of a pedestrianised street, which is the other end of the same trade: paving
+	# frontage to frontage, no kerb, no asphalt and nothing on it that can kill you.
+	if args[index + 1] == "precinct":
+		if _city.map.precinct_spans.is_empty():
+			push_warning("this city has no precinct")
+			return _city.map.home_world_position()
+		var span: Vector4i = _city.map.precinct_spans[0]
+		var across := span.y * CityMap.period() + Tuning.STREET_WIDTH / 2
+		var along := (span.z + span.w) / 2 * CityMap.period() + Tuning.STREET_WIDTH
+		return _nearest_walkable(_city.map.tile_to_world(
+				Vector2i(across, along) if span.x == 1 else Vector2i(along, across)))
 	if args[index + 1] == "contact":
 		var contact := _resistance.contact_position()
 		if contact == Vector2.INF:
@@ -540,10 +578,13 @@ func _nearest_walkable(near: Vector2) -> Vector2:
 ## shows up at map scale (a walled-off quarter, parks bunched together) is visible.
 func _make_overview_camera() -> void:
 	var camera := Camera2D.new()
-	var extent := _city.map.world_size()
+	# The frontages outside the map included, since M41: the ring is what makes the boundary a
+	# street with two sides, and an overview that framed the walkable tiles alone would be a
+	# picture of the thing this was supposed to have stopped looking like.
+	var bounds := _city.camera_bounds()
 	var viewport := get_viewport_rect().size
-	camera.position = extent * 0.5
-	camera.zoom = Vector2.ONE * minf(viewport.x / extent.x, viewport.y / extent.y)
+	camera.position = bounds.get_center()
+	camera.zoom = Vector2.ONE * minf(viewport.x / bounds.size.x, viewport.y / bounds.size.y)
 	add_child(camera)
 	camera.make_current()
 

@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" load_steps=43 format=3]
+[gd_resource type="TileSet" load_steps=63 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/tiles/road.svg" id="0_road"]
 [ext_resource type="Texture2D" path="res://assets/tiles/road_line_e.svg" id="1_road_line_e"]
@@ -21,6 +21,16 @@
 [ext_resource type="Texture2D" path="res://assets/tiles/quiet_square.svg" id="18_quiet_square"]
 [ext_resource type="Texture2D" path="res://assets/tiles/courtyard.svg" id="19_courtyard"]
 [ext_resource type="Texture2D" path="res://assets/tiles/spoiled.svg" id="20_spoiled"]
+[ext_resource type="Texture2D" path="res://assets/tiles/road_main.svg" id="21_road_main"]
+[ext_resource type="Texture2D" path="res://assets/tiles/road_main_line_e.svg" id="22_road_main_line_e"]
+[ext_resource type="Texture2D" path="res://assets/tiles/road_main_line_w.svg" id="23_road_main_line_w"]
+[ext_resource type="Texture2D" path="res://assets/tiles/road_main_line_n.svg" id="24_road_main_line_n"]
+[ext_resource type="Texture2D" path="res://assets/tiles/road_main_line_s.svg" id="25_road_main_line_s"]
+[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_main_n.svg" id="26_sidewalk_kerb_main_n"]
+[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_main_s.svg" id="27_sidewalk_kerb_main_s"]
+[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_main_e.svg" id="28_sidewalk_kerb_main_e"]
+[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_main_w.svg" id="29_sidewalk_kerb_main_w"]
+[ext_resource type="Texture2D" path="res://assets/tiles/precinct.svg" id="30_precinct"]
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road"]
 texture = ExtResource("0_road")
@@ -127,6 +137,56 @@ texture = ExtResource("20_spoiled")
 texture_region_size = Vector2i(32, 32)
 0:0/0 = 0
 
+[sub_resource type="TileSetAtlasSource" id="atlas_road_main"]
+texture = ExtResource("21_road_main")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_road_main_line_e"]
+texture = ExtResource("22_road_main_line_e")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_road_main_line_w"]
+texture = ExtResource("23_road_main_line_w")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_road_main_line_n"]
+texture = ExtResource("24_road_main_line_n")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_road_main_line_s"]
+texture = ExtResource("25_road_main_line_s")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_main_n"]
+texture = ExtResource("26_sidewalk_kerb_main_n")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_main_s"]
+texture = ExtResource("27_sidewalk_kerb_main_s")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_main_e"]
+texture = ExtResource("28_sidewalk_kerb_main_e")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_main_w"]
+texture = ExtResource("29_sidewalk_kerb_main_w")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_precinct"]
+texture = ExtResource("30_precinct")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
 [resource]
 tile_size = Vector2i(32, 32)
 sources/0 = SubResource("atlas_road")
@@ -150,3 +210,13 @@ sources/17 = SubResource("atlas_forest")
 sources/18 = SubResource("atlas_quiet_square")
 sources/19 = SubResource("atlas_courtyard")
 sources/20 = SubResource("atlas_spoiled")
+sources/21 = SubResource("atlas_road_main")
+sources/22 = SubResource("atlas_road_main_line_e")
+sources/23 = SubResource("atlas_road_main_line_w")
+sources/24 = SubResource("atlas_road_main_line_n")
+sources/25 = SubResource("atlas_road_main_line_s")
+sources/26 = SubResource("atlas_sidewalk_kerb_main_n")
+sources/27 = SubResource("atlas_sidewalk_kerb_main_s")
+sources/28 = SubResource("atlas_sidewalk_kerb_main_e")
+sources/29 = SubResource("atlas_sidewalk_kerb_main_w")
+sources/30 = SubResource("atlas_precinct")

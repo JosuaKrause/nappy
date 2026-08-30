@@ -114,7 +114,23 @@ the same street, the home sits wherever two competing generator rules leave it, 
 an invisible wall. That splits into a **spine and an edge you can walk off** (M41, which also closes
 M21's open half), a **9×9 city with the home in the middle** (M42), and the rest (M43).
 
-**What that leaves.** Those three, plus the crowd, and then M25's other half —
+**M41 is done, and playtest 12 landed in the middle of it.** The city has a hierarchy now: one
+main road running north to south, signalled at every junction and bad ground to recover on; two
+retail precincts of three blocks each, one along the southern shore; ordinary streets everywhere
+else; junctions that ration their own box; a lattice grown to 11×11; and a boundary with frontages
+on the far side of it and a tunnel, a bridge and a road running out of the map. Nine findings in
+**[docs/PLAYTEST-12.md](PLAYTEST-12.md)**, taken on the branch while it was half-built, and the
+sentence under them is *a hierarchy is only a hierarchy if there is one of the top thing* — the
+first build put a main road on each axis and a precinct in every corridor, which is three kinds of
+street and no hierarchy among them.
+
+**The order from here is M43, then M40, then a playtest** — set explicitly, and with the note that
+by that point *"everything might have changed to the point where crowd balancing is not needed"*.
+The crowd milestone below is therefore **not next**: M41 moved the car population twice, gave the
+ground a recovery rate and gave the junctions a capacity, so every number the crowd milestone was
+going to argue about has already moved. Re-read the traces before assuming it still exists.
+
+**What that leaves.** M43, M40, a playtest, and then M25's other half —
 patrols, which is unaffected by M31 and is now specifically the answer for **acts III and IV**,
 where the streets are deliberately empty and the threat should follow rather than sit. *M25's
 first half shipped in M33*: running that matters exists now, as a mechanic with a fairness contract
@@ -136,7 +152,7 @@ was around when a day ended.
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 74540 checks (~96s, and `tools/test.sh crowd balance` runs one suite in
+`tools/test.sh` runs 122119 checks (~161s, and `tools/test.sh crowd balance` runs one suite in
 seconds); `tools/check.sh` boots the project; `tools/run.sh` plays it; `tools/telemetry.sh` reads
 back what the last run did.
 
@@ -1054,14 +1070,89 @@ file that is read on demand.
 
 ## M41 — The shape of the city: a spine, and an edge you can walk to · `feature/the-shape-of-the-city`
 
-See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**, section C. Three things that were separate entries
-and are one milestone, because they are the same sentence: **the city has no hierarchy.** Every
-street is the same street, the arterials differ only by how many cars are on them, and the map stops
-at an invisible wall.
+See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**, section C, and **[docs/PLAYTEST-12.md](PLAYTEST-12.md)**,
+which is this milestone played while it was still on the branch. Three entries that are one
+milestone, because they are the same sentence: **the city has no hierarchy.** Every street is the
+same street, the arterials differ only by how many cars are on them, and the map stops at an
+invisible wall.
 
 This also closes the half of **M21** left open by decision — *main roads with lights* — and replaces
 the earlier "cliff, fences, harbour" sketch with the design the player gave, which is better for the
 reason they gave: *"that way it's not an artificial end but an emergent end."*
+
+**All of it is done.** What follows is what each part turned out to be; the corrections marked
+*(playtest 12)* are the ones a person found in it the same day.
+
+- [x] **Three kinds of street, told apart at a glance.** A main road — dark asphalt, an unbroken
+      double centre line, doubled clearway markings on its kerbs, signalled at every junction and
+      **it does not give way to anybody** — against a retail precinct, which is brick from frontage
+      to frontage with no kerb and no cars in it, against the ordinary street that is everything
+      else. *(Playtest 12, findings 1, 2 and 7: there is **one** main road and it runs north to
+      south, and there are **two** precincts of three blocks each, one along the southern shore.
+      The first build made one of each per axis, which is three kinds of street and no hierarchy
+      among them.)*
+      **A wider main road was tried on paper and rejected**, and the reasoning is in `docs/CITY.md`:
+      the corridor cross-section is uniform by construction, a 1-tile pavement is the width M1
+      found unwalkable, and doubling a carriageway restates the traffic fairness contract for every
+      street at once
+- [x] **And the ground is a rate, not a category** — *(playtest 12, finding 8)*, the change that
+      makes a route a **recovery rate**: calm 2.2, precinct 1.5, ordinary street 1.0, main road 0.6.
+      `WorldContext` grows a fourth question, which generalises the half of `is_calm_zone` that was
+      never a threshold. It is the first time since M14 that the ground has done anything except be
+      calm or not, and it is what makes a precinct worth walking to although it is loud
+- [x] **Traffic lights.** The cycle is **derived** from the block spacing rather than authored —
+      `2 × SIGNAL_PROGRESSION_BLOCKS` junction-to-junction travelling times — which is what lets a
+      green wave run both ways down the same street. Without a progression two thirds of the traffic
+      stands still at any instant, measured. The side street's green is the fairness contract
+      (`Tuning.validate_signals`), because she crosses a main road while the main road is red; the
+      amber is a clearance period, not a warning. *(Playtest 12, finding 4: the four heads at a
+      junction are now two drawings — face-on for the arms running up and down the screen, edge-on
+      for the ones running across it, so what you can see of the lamp is which street it means.)*
+- [x] **A tunnel north, a bridge south, and the main road running out east and west**, plus a ring
+      of frontages one block deep outside the whole boundary — and **the camera may see past the
+      map**, which it could not, and which is why the edge would have gone on looking like a wall
+      however much was built out there. The lattice already ended in T-junctions and nobody could
+      see it: the outermost corridor is a whole street and every interior street runs into it and
+      stops. No walkable tile moved
+- [x] **Cars do not enter a junction they cannot leave.** Measured before: **3,776 overlapping
+      crossing-axis pairs in ninety seconds of the arterial, one in half of all frames, the deepest
+      39px into a 40px footprint** — with every assertion about the traffic passing throughout,
+      because each car's own *lane* was legal. Four clauses, all load-bearing, in `CLAUDE.md`. The
+      one that decides whether a grid queues or seizes is *nothing enters a box it cannot leave*
+- [x] **And a car that does enter an occupied box is an accident** — built as the M19 mechanism
+      rather than as a catalogue row: it **startles the cars it happened to**, so it is loud where
+      it happened and composes by addition like every other body. Deliberate: with the box rationed
+      it happens under one frame in twenty of the busiest street in the city, and an event nobody
+      meets in a run is a silhouette and a fairness contract spent on decoration
+- [x] **11×11.** *(Playtest 12, finding 9.)* The first resize taken for room rather than for a rule.
+      The act I caps went up with it — a budget the catalogue cannot spend is not density (M28) —
+      and the suite went from 96s to ~160s, which is the price of 49% more city
+- [x] **Judged by eye.** Screenshots of all three kinds of street, a signalled junction across the
+      cycle, the promenade, and all three exits. Two things were only visible that way: the tunnel
+      opening into the void beyond the frontages, and the four identical signal heads at a junction
+- [x] **And every route guarantee re-measured, not assumed.** Nothing moved a walkable tile, which
+      is why `tests/test_blocks.gd` and `tests/test_routes.gd` are the measurement rather than a
+      hope: a precinct is paving where pavement was, a main road is paint, and an exit is the last
+      stretch of a street that was already there
+
+### What playtest 12 changed on top of that
+
+- [x] **One main road, north to south** — finding 2
+- [x] **Two precincts of three blocks, one on the shore** — findings 1 and 7, and they are retail:
+      `PRECINCT_BUSYNESS` for the foot traffic, `EVENT_PRECINCT_WEIGHT` for the cafés and stalls
+- [x] **Walkers use the whole width of a precinct** — finding 1's *"people seem to not go in the
+      middle"*, which was right and was not a steering bug: the middle two offsets are the
+      carriageway on every other street, so nothing had ever been placed there
+- [x] **The spine carries forty cars** — finding 3. It was not that thirty was too few; it was that
+      there were two main roads and the weighting split between them. One spine is blocked 81% of
+      the time
+- [x] **Calm areas: one per day of the longest act, plus one** — finding 5, and the spoiler
+      remembers the whole **act** rather than the night before, resetting when the act turns. One
+      night's memory makes day 2 a fresh decision and day 3 the same decision as day 1
+- [x] **Calm ground fills the meter 20% faster again** — finding 6, `SLEEPINESS_CALM_ZONE_MULTIPLIER`
+      12 → 14
+
+### The old plan, for what it said
 
 - [ ] **Two kinds of street, told apart at a glance.** A main road — wide, fast, heavily trafficked,
       signalled — against an ordinary or pedestrianised street that is slow, crowded and has no cars

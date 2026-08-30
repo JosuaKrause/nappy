@@ -1,0 +1,13 @@
+<!-- A traffic signal head on its post, seen from the game's oblique angle: the post rises from
+     the pavement and the three lamps face down the street. The lamps are drawn dark here and
+     the live one is painted over the top by TrafficLight, so one piece of art covers all three
+     states and the colour never drifts from the phase it is supposed to mean. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="14" height="42" viewBox="0 0 14 42" shape-rendering="crispEdges">
+  <rect x="5" y="18" width="4" height="24" fill="#3a3f45"/>
+  <rect x="5" y="40" width="4" height="2" fill="#2a2e33"/>
+  <rect x="2" y="0" width="10" height="20" fill="#2f343a"/>
+  <rect x="3" y="1" width="8" height="18" fill="#22262b"/>
+  <rect x="4" y="2" width="6" height="4" fill="#3d3228"/>
+  <rect x="4" y="8" width="6" height="4" fill="#3b3628"/>
+  <rect x="4" y="14" width="6" height="4" fill="#26332a"/>
+</svg>

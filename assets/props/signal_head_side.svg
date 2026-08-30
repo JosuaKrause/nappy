@@ -1,0 +1,20 @@
+<!-- A signal head seen from the side, for the arms that face east and west. *(Playtest 12,
+     finding 4: "turn the ones that are for the horizontal roads — that makes the light only
+     visible as cone but then the direction is clear.")*
+     From directly above, four identical heads on one junction say nothing about which road each
+     of them is stopping. Turning half of them does: a head you are looking at face-on controls
+     the street running up the screen, and one you are looking at edge-on controls the street
+     running across it. The lamp shows as the cone under its visor rather than as a full disc,
+     which is what a signal actually looks like from the side. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="42" viewBox="0 0 16 42" shape-rendering="crispEdges">
+  <rect x="6" y="18" width="4" height="24" fill="#3a3f45"/>
+  <rect x="6" y="40" width="4" height="2" fill="#2a2e33"/>
+  <rect x="5" y="0" width="6" height="20" fill="#2f343a"/>
+  <rect x="6" y="1" width="4" height="18" fill="#22262b"/>
+  <rect x="11" y="2" width="4" height="2" fill="#2f343a"/>
+  <rect x="11" y="8" width="4" height="2" fill="#2f343a"/>
+  <rect x="11" y="14" width="4" height="2" fill="#2f343a"/>
+  <rect x="10" y="4" width="2" height="2" fill="#3d3228"/>
+  <rect x="10" y="10" width="2" height="2" fill="#3b3628"/>
+  <rect x="10" y="16" width="2" height="2" fill="#26332a"/>
+</svg>

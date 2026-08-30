@@ -1241,11 +1241,14 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 			"the map has calm ground to choose between (%d blocks)" % map.calm_blocks.size())
 
 	var used: Vector2i = map.calm_blocks[0]
+	var used_set: Array[Vector2i] = [used]
 	var lot := map.tile_rect_to_world(_calm_rect(map, used))
+	var allowed := maxf(Tuning.OBSTRUCTION_A_PARK_CAN_HOLD,
+			minf(lot.size.x, lot.size.y) / 16.0)
 	var spoiled_days := 0
 	for day in range(2, 15):
 		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [], used)
+		var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [], used_set)
 
 		var on_her_park := 0
 		var clean_elsewhere := 0
@@ -1274,11 +1277,17 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 		# until M34 made everything that stands still solid, and reading it as the stricter one
 		# would have emptied the pool of loud harmless things and retired this rule by accident.
 		# A busker is 22px of a 704px lot. See `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD`.
+		#
+		# And the allowance is the lot's, not a constant: `_things_to_put_in_a_park` lets a
+		# bigger park hold a bigger thing, because what matters is the share of the ground it
+		# takes. Asserting the constant instead passed for as long as `calm_blocks[0]` happened
+		# to be a single block, and failed the day a city had enough calm areas for a four-block
+		# zone to come first — which is the test restating a rule the scheduler owns rather than
+		# asking it.
 		for plan in planned:
 			if not plan.is_placed() or not lot.has_point(plan.position):
 				continue
-			t.check(not plan.def.hard_fail
-					and plan.def.obstructs_radius <= Tuning.OBSTRUCTION_A_PARK_CAN_HOLD,
+			t.check(not plan.def.hard_fail and plan.def.obstructs_radius <= allowed,
 					"day %d puts '%s' in her park, which is loud rather than lethal"
 					% [day, plan.def.id])
 
@@ -1289,21 +1298,29 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 	var forgetful: Array[String] = []
 	var remembering: Array[String] = []
 	var a := EventScheduler.build_day(3, _rng(3), map, forgetful)
-	var b := EventScheduler.build_day(3, _rng(3), map, remembering, [], Vector2i(-1, -1))
+	var nothing: Array[Vector2i] = []
+	var b := EventScheduler.build_day(3, _rng(3), map, remembering, [], nothing)
 	t.check(_signature(a) == _signature(b),
 			"and a day with nothing to remember is unchanged by the rule")
 
 	# The whole run, played the way a player plays it: settle in the quietest calm block, and
 	# the next day is planned knowing that. Measured over five seeds while this was built, the
 	# repeat rate goes from 28% of days to 0 — this asserts the claim rather than the number.
-	var yesterday := Vector2i(-1, -1)
+	# Since playtest 12 the memory is the whole **act**, not the night before, so this walks the
+	# run the way `GameState.settled_this_act` does: the used set grows through an act and is
+	# emptied at the boundary. A day must send her somewhere she has not been this act.
+	var used_this_act: Array[Vector2i] = []
+	var act := 0
 	for day in range(1, 15):
+		if Tuning.act_for_day(day) != act:
+			act = Tuning.act_for_day(day)
+			used_this_act = []
 		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [], yesterday)
+		var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [], used_this_act)
 		var quietest := _quietest_calm_block(map, planned)
-		t.check(day == 1 or quietest != yesterday,
-				"day %d sends her somewhere other than yesterday's park" % day)
-		yesterday = quietest
+		t.check(not used_this_act.has(quietest),
+				"day %d sends her somewhere she has not used this act" % day)
+		used_this_act.append(quietest)
 
 ## The calm block with the least reaching it — the one a player would find and settle in.
 func _quietest_calm_block(map: CityMap, planned: Array) -> Vector2i:

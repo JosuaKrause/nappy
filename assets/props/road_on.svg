@@ -1,0 +1,15 @@
+<!-- The main road simply carrying on east and west out of the map, which is what the design
+     asked for: no structure, just the fact that the street does not stop. Six tiles tall, the
+     width of a corridor, and as deep as the camera can see past the boundary. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="192" viewBox="0 0 256 192" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="256" height="192" fill="#8b8478"/>
+  <rect x="0" y="60" width="256" height="72" fill="#3b3b45"/>
+  <rect x="0" y="58" width="256" height="2" fill="#a49b8c"/>
+  <rect x="0" y="132" width="256" height="2" fill="#a49b8c"/>
+  <rect x="0" y="55" width="256" height="1" fill="#a8564b"/>
+  <rect x="0" y="136" width="256" height="1" fill="#a8564b"/>
+  <rect x="0" y="92" width="256" height="3" fill="#b9b087"/>
+  <rect x="0" y="98" width="256" height="3" fill="#b9b087"/>
+  <rect x="0" y="15" width="256" height="1" fill="#7a7469"/>
+  <rect x="0" y="175" width="256" height="1" fill="#7a7469"/>
+</svg>

@@ -1,0 +1,24 @@
+<!-- The portal the main road disappears into at the north edge of the map. Six tiles wide, the
+     width of a corridor, and as deep as the camera can see past the boundary — a gap in the ring
+     of frontages showing the void behind them would be the invisible wall back again with a
+     picture either side of it.
+     The opening is deliberately shallow. From this angle only about a hundred pixels of the far
+     side of a boundary street are ever on screen, so a taller mouth is a black rectangle with no
+     wall around it: a hole in the world rather than a way out of it. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="256" viewBox="0 0 192 256" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="192" height="256" fill="#5a5048"/>
+  <rect x="0" y="0" width="192" height="6" fill="#6d6259"/>
+  <rect x="0" y="60" width="192" height="3" fill="#4b423b"/>
+  <rect x="0" y="166" width="192" height="3" fill="#4b423b"/>
+  <rect x="60" y="120" width="72" height="18" fill="#4b423b"/>
+  <rect x="62" y="122" width="68" height="14" fill="#3f3830"/>
+  <rect x="28" y="196" width="136" height="60" fill="#1a1720"/>
+  <rect x="28" y="196" width="136" height="5" fill="#2a2530"/>
+  <rect x="22" y="190" width="6" height="66" fill="#6d6259"/>
+  <rect x="164" y="190" width="6" height="66" fill="#6d6259"/>
+  <rect x="22" y="190" width="148" height="6" fill="#6d6259"/>
+  <rect x="4" y="204" width="12" height="8" fill="#453d37"/>
+  <rect x="176" y="204" width="12" height="8" fill="#453d37"/>
+  <rect x="4" y="230" width="12" height="8" fill="#453d37"/>
+  <rect x="176" y="230" width="12" height="8" fill="#453d37"/>
+</svg>

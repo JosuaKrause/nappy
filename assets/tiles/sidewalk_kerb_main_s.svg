@@ -1,0 +1,14 @@
+<!-- Main-road pavement: the kerb along its s edge, with the doubled clearway
+     marking that says which street this is. Markings and not a railing, deliberately — a rail
+     would promise a barrier, and the whole of the traffic contract is that she can step off the
+     kerb and it costs her the day. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#8b8478"/>
+  <rect x="0" y="15" width="32" height="1" fill="#7a7469"/>
+  <rect x="15" y="0" width="1" height="15" fill="#7a7469"/>
+  <rect x="7" y="16" width="1" height="16" fill="#7a7469"/>
+  <rect x="23" y="16" width="1" height="16" fill="#7a7469"/>
+  <rect x="0" y="30" width="32" height="2" fill="#a49b8c"/>
+  <rect x="0" y="29" width="32" height="1" fill="#a8564b"/>
+  <rect x="0" y="27" width="32" height="1" fill="#a8564b"/>
+</svg>

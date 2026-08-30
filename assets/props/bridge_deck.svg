@@ -1,0 +1,22 @@
+<!-- The bridge the main road leaves by at the south edge: the deck running out between two
+     parapets, carrying the same double centre line the spine has everywhere else. Drawn under the
+     entities, so a car on its way off the map is on the bridge rather than behind it. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="256" viewBox="0 0 192 256" shape-rendering="crispEdges">
+  <rect x="26" y="0" width="140" height="256" fill="#3b3b45"/>
+  <rect x="92" y="0" width="3" height="256" fill="#b9b087"/>
+  <rect x="98" y="0" width="3" height="256" fill="#b9b087"/>
+  <rect x="8" y="0" width="18" height="256" fill="#5a5048"/>
+  <rect x="166" y="0" width="18" height="256" fill="#5a5048"/>
+  <rect x="8" y="0" width="18" height="5" fill="#6d6259"/>
+  <rect x="166" y="0" width="18" height="5" fill="#6d6259"/>
+  <rect x="10" y="18" width="14" height="10" fill="#7b6f64"/>
+  <rect x="168" y="18" width="14" height="10" fill="#7b6f64"/>
+  <rect x="10" y="72" width="14" height="10" fill="#7b6f64"/>
+  <rect x="168" y="72" width="14" height="10" fill="#7b6f64"/>
+  <rect x="10" y="126" width="14" height="10" fill="#7b6f64"/>
+  <rect x="168" y="126" width="14" height="10" fill="#7b6f64"/>
+  <rect x="10" y="180" width="14" height="10" fill="#7b6f64"/>
+  <rect x="168" y="180" width="14" height="10" fill="#7b6f64"/>
+  <rect x="10" y="234" width="14" height="10" fill="#7b6f64"/>
+  <rect x="168" y="234" width="14" height="10" fill="#7b6f64"/>
+</svg>
