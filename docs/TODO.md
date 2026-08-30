@@ -1728,9 +1728,80 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
       the M33 note says the careful line was two pixels wide when M19 measured it — so widening
       the *street* rather than narrowing the *body* may be the honest answer, and that is a
       question for `CrowdLanes.SIDEWALK_OFFSETS` and `_make_way`
-- [ ] **`CROWD_PEDESTRIANS_PER_ACT[0]` is 200 and it is a population of the field, not the city.**
+- [x] **`CROWD_PEDESTRIANS_PER_ACT[0]` is 200 and it is a population of the field, not the city.**
       It has not been re-measured since the field's box last moved. Measure what is actually
-      within a screen of her, not what the constant says
+      within a screen of her, not what the constant says.
+
+      **Taken out of order, and on purpose: the two decisions above cannot be made until it is
+      known whether the population is the lever.** It is not, and that is the finding.
+
+      Measured over five seeds, act I, thirty seconds standing on each of eight corridors:
+
+      | | value |
+      |---|---:|
+      | walkers in the box, every sample | **200.0** of 200 |
+      | cars in the box, every sample | **34.0** of 34 |
+      | walkers on a 1280×720 screen | **67.6** |
+      | cars on a 1280×720 screen | **10.2** |
+      | walkers within 200px of her | 9.4 |
+
+      So **the constant is honest**: the box is 1600×1600 and never spills, the screen is 36% of
+      it, and 34% of the population is on it. Nothing is hiding. And it must not come down —
+      the same population is what put 15.4 cars on the spine and made crossing it cost a third
+      of the meter two items ago, so cutting it undoes finding 7 to answer finding 1.
+
+      **What the measurement actually found is where the floor comes from, and it is geometry
+      rather than population.** The floor across a footway, same five seeds, in lane units —
+      0 is against the frontage, 1 is the kerb:
+
+      | | frontage 0.0 | midline 0.5 | kerb 1.0 |
+      |---|---:|---:|---:|
+      | mean over 20 ordinary standing points | **4.30** | **4.96** | **4.76** |
+
+      **It is flat, and the midline — the careful line — is the loudest of the three.** Both
+      halves fall out of arithmetic that nobody has re-checked since the corridor was last
+      resized:
+
+      - **A car's field is 208px across and a corridor is 192px.** Every tile of both footways
+        is inside `CAR_OUTER_RADIUS` of a carriageway lane — the frontage lane is 64px from the
+        nearer one. There is no line on an ordinary street that is out of the traffic's earshot,
+        which is why the profile barely tilts.
+      - **A walker's field is 110px across and a footway is 64px.** Lanes are 32px apart and
+        `PEDESTRIAN_INNER_RADIUS` is 22, so the midline is 16px from two lane centres and inside
+        the **full-intensity core** of both. `Tuning.PEDESTRIAN_INTENSITY`'s own comment says
+        *"walking wide of them does not [cost] — the pavement is two tiles, so how close to pass
+        is a real choice"*, and there is nowhere on a footway to be wide.
+
+      This is the M46 headline finding — *the careful line is invisible* — arriving with a
+      cause, and the cause is not that nothing tells her about it. **The careful line exists for
+      contacts and does not exist for the field**, and the two want opposite lines: the midline
+      is the only line with no head-on contact on it (`BUMP_RADIUS` 14 against a 16px half-lane)
+      and it is the worst line for the ambient noise. A player who finds one has found the other
+      one's punishment
+- [ ] **The crowd bunches against the boundary wall, where the comment says it thins.** Found
+      while measuring the above. `CrowdField.corridor_range` clamps to the city and says so:
+      *"that is also why the crowd thins out honestly in the corner of the map instead of
+      bunching against the wall — there are simply fewer streets to put anybody on"*. The
+      population does not clamp with it, so fewer streets and the same two hundred people is
+      **more people per street**, which is the opposite of what the comment claims.
+
+      Measured, five seeds, walkers on screen against how much of the box is inside the city:
+
+      | corridor | box in city | walkers on screen | mean floor |
+      |---|---:|---:|---:|
+      | 0 (against the west wall) | 53% | 67.0 | **7.50** |
+      | 1 | 81% | **78.3** | 7.90 |
+      | 3, 6, 8 (ordinary, mid-map) | 100% | 66–70 | 3.91–5.89 |
+      | 5 (the spine) | 100% | 69.9 | 11.58 |
+      | 11 (against the east wall) | 59% | 55.3 | 6.80 |
+
+      **The count on screen is flat while the city on screen is halved**, so the density per
+      street at the wall is about double and the outer corridors read as **1.6× an ordinary
+      middle one** — loud enough that on two of five seeds a corridor beside the wall beat the
+      main road. The fix is that the population is a population of the box, so it has to be a
+      population of *the part of the box that is city*. The trap to avoid is spawning and
+      despawning as she walks: what changes is how many agents are live, and a day that visibly
+      gains people as she approaches the middle of the map is worse than the bug
 - [ ] **Re-measure the whole cost table afterwards** — `docs/EVENTS.md`, "What an event actually
       costs" — because if the crowd's share moves, every authored row's share moves with it, and
       the table is the fastest way to see what a balance change did to the catalogue

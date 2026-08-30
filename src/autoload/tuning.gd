@@ -509,6 +509,15 @@ const CAR_SPEED := Vector2(130.0, 185.0)
 ## one: **careless is expensive and careful is free.** A close pass still costs 4.2/s, because the
 ## intensity and the inner radius did not move; two tiles away is 0/s again, as it was. What is
 ## gone is the wide, cheap middle that used to be worth almost nothing and is now worth a lot.
+##
+## **"Two tiles away" is true of one walker and unreachable on a footway.** *(M46, measured.)* A
+## footway is two tiles and its lanes are 32px apart, so the far side of one is 71px from the near
+## lane and off the kerb; and the midline — the only line with no head-on contact on it, since
+## `BUMP_RADIUS` is 14 against a 16px half-lane — is 16px from two lane centres and inside the
+## **full-intensity core** of both. So the ambient floor measures flat across a pavement (4.30
+## frontage / 4.96 midline / 4.76 kerb), the careful line for contacts is the careless one for
+## noise, and *how close to pass* is not yet the choice this comment says it is. See M46 in
+## `docs/TODO.md`.
 const PEDESTRIAN_INTENSITY := 4.2
 const PEDESTRIAN_INNER_RADIUS := 22.0
 const PEDESTRIAN_OUTER_RADIUS := 55.0
@@ -522,6 +531,12 @@ const PEDESTRIAN_OUTER_RADIUS := 55.0
 ## 170 → 104 for the same reason the pedestrian's radius came in, and measured the same way: the
 ## arterial has to stay between the walking decay and three times it, which is `tests/test_crowd.gd`
 ## and is the one place the noise floor is pinned to anything.
+##
+## **And 104 is wider than the street it is on.** *(M46, measured.)* A corridor is six tiles —
+## 192px — and a car's field is 208px across, so every tile of both footways is inside it and the
+## frontage lane, the furthest place from a carriageway there is, sits 64px from the nearer lane
+## centre. Nowhere on an ordinary street is out of the traffic's earshot, which is most of why the
+## noise floor measures flat across a pavement. See M46 in `docs/TODO.md`.
 const CAR_INTENSITY := 5.4
 const CAR_INNER_RADIUS := 38.0
 const CAR_OUTER_RADIUS := 104.0

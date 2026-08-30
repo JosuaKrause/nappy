@@ -47,9 +47,14 @@ func along_bounds(vertical: bool) -> Vector2:
 ## The corridors of one axis that the box overlaps, as an inclusive index range.
 ##
 ## Clamped to the city rather than to the box: near the map edge the box hangs over the
-## boundary wall, and a corridor index out there does not exist. That is also why the crowd
-## thins out honestly in the corner of the map instead of bunching against the wall — there
-## are simply fewer streets to put anybody on.
+## boundary wall, and a corridor index out there does not exist.
+##
+## This used to claim the clamp is *why* the crowd thins out in the corner of the map instead of
+## bunching against the wall, "because there are simply fewer streets to put anybody on". It does
+## the opposite, and M46 measured it: the population is a fixed number per act and does not clamp
+## with the range, so fewer streets and the same two hundred people is more people per street.
+## Against the west wall the box is 53% city and still puts 67 walkers on screen — the same count
+## as mid-map, in half the ground. See M46 in `docs/TODO.md`.
 func corridor_range(vertical: bool) -> Vector2i:
 	var blocks: int = Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
 	var last := CrowdLanes.corridor_count(blocks) - 1
