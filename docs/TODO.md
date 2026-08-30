@@ -2224,6 +2224,54 @@ rule rather than a row.
       is has to be visible from looking at the thing*, and municipal barriers are red-and-white
       for exactly that reason
 
+## M49 — A city that says what it is · `feature/run-and-it-backs-off`
+
+Playtest 14, taken **before** M47 because four of its six are small and two of them are things a
+player has now asked for twice. See **[docs/PLAYTEST-14.md](PLAYTEST-14.md)**.
+
+**The one sentence: nothing here is about balance — five of the six are the city failing to say
+what it is**, and the sixth is a mechanic that was answering a question about geometry when the
+player was asking one about themselves.
+
+- [x] **The pursuing dog does not stop.** *"It's a very simple rule — when I run the dog backs down
+      almost immediately."* Third report of this encounter. `PURSUIT_SHAKEN_OFF` counted seconds of
+      the **gap opening**, and a run opens it at 38px/s against the day-3 dog — a fifth of a pixel
+      a frame — so a corner, a kerb, a pedestrian or the 0.37s about-turn reset the timer and the
+      dog chased somebody who was visibly sprinting. Confirmed off a trace first: `run  ran 1.3s,
+      exc 57 -> 98`, escaped and lost the day doing it.
+
+      It is a fact about **her** now. Measured with a rig that accelerates: **0.35s of running for
+      5 points**, against 1.2s for 17 — which is also the answer to *"or make running less
+      costly"*, without moving `EXCITEMENT_FROM_RUNNING`, which is the whole of why running is
+      wrong against everything that does not follow her. The contract is untouched: it rests on
+      the speed clauses, so walking still cannot end a chase and running always can
+- [x] **The border is just black.** M41 built the ring of frontages and opened the camera onto it
+      and neither put anything on the floor out there. Each outside tile clamps to the nearest tile
+      *in* the map and takes its picture, so the edge continues outward and the spine's four exits
+      get their road for free. `CityMap` is untouched — this paints the tilemap only
+- [x] **The main road is always in the same place.** It was the middle corridor on **every seed
+      ever generated**. Rolled from the city's street stream now, three corridors clear of either
+      boundary so both halves are worth being in. Four places still derived it from the constant —
+      the M46 defect exactly, *a fact about a city answered from an axis length*
+- [ ] **Junctions are four-way where an arm dead-ends.** **Not reproduced.** Two candidates checked
+      and correct: an absorbed street's T-junctions already carry no crossing on the missing arm
+      (measured, two seeds), and a boundary junction's outward crossing is right rather than wrong
+      — it is how somebody on the outer pavement gets over the road she is meeting. It read as a
+      dead end because there was nothing beyond it, which is the item above and is fixed. **Needs a
+      location from the player**, or a third candidate
+- [ ] **Courtyards are still one block.** Asked for twice now. This is the M47 entry *"The 2×2
+      inner courtyard — an apartment complex"* unchanged: M21's mechanism — absorb the streets
+      between four blocks — with frontages around the outside instead of open ground, so it is a
+      calm area you have to find a way **into**. The largest remaining piece of M47
+- [ ] **And the 0.2s window at the lunge, which is the reason the dog will be reported a fourth
+      time.** Answering at the lunge now works and answering two tenths of a second later is still
+      caught, because she is walking *into* the thing when it fires: the gap closes at
+      `pursue_speed + WALK_SPEED` and the stand-off was priced against the dog's speed alone.
+      `Tuning.pursuit_standoff` has carried this as a known gap since M35. The fix it names — a
+      wider stand-off — is a dog that visibly reverses through its telegraph, so the honest options
+      are to **hold the stand-off against the closing rate rather than the thing's own speed**, or
+      to stop the lunge firing while she is still walking toward it
+
 ## Tooling for playtest 13 · `feature/a-picture-of-the-city`
 
 Findings 4 and 5. Small, asked for by name, and **built first**, because M46 and M47 both want
