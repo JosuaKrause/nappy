@@ -2331,22 +2331,32 @@ a branch of its own.
       about connectivity. This is a **placement** milestone end to end: no new blocker kinds, no
       new cues, no change to what a closure is.
 
-      **Five things to settle with the player before building**, because each changes the algorithm
-      rather than a constant:
-      1. **What is the target?** Every unspoiled calm area today, or one chosen as *today's*
-         destination with the rest merely permitted?
-      2. **How wide is a guided path** — a single corridor, or a braid of two or three, which is
-         what the existing two-distinct-routes invariant would leave standing?
-      3. **Are hard blockers generated to serve this?** Cul-de-sacs and big buildings are the
-         stated vocabulary and the lattice currently prunes edges only where a calm zone absorbs
-         them. If the layout is to form paths, that is a `CityGenerator` change made **once per
-         run**, and it has to work for every calm area the run will ever use.
-      4. **What paces the main-road crossing?** *"Until all are exhausted"* is the arc; the
-         mechanism is presumably calm areas on both sides plus `_spoil_the_parks_she_used`. Worth
-         confirming that is the intent rather than an explicit gate.
-      5. **How much of the budget goes to walls vs. friction?** Costly-on-corridor and
-         lethal-as-wall compete for the same per-block budget, and today every row competes on
-         weight alone
+      **All five opening questions are answered** and the answers are in `docs/CITY.md`, "How the
+      corridor is built": the target is **every available calm area**, one **corridor** each, and
+      the day's plan is a **tree** rooted at the doorstep; overlaps are wanted, and a **chokepoint**
+      is a guaranteed placement; there is **no budget**, only the tree, and **placeholders** that
+      resolve when she arrives; one-shots **bind late**. What is left is the build, in this order:
+
+      1. **Hard blockers do not exist and have to be built first.** *"Cul-de-sacs and big buildings
+         don't exist yet — but we need them to implement proper hard blockers."* This is the only
+         piece that is **once per run** rather than per day, everything else is placed relative to
+         what it leaves, and it has to work for every calm area the run will ever use. It is a
+         `CityGenerator` change and it is the gate on the rest
+      2. **The tree**, per day: doorstep to every available calm area, corridors and chokepoints
+         computed and available to whatever places things
+      3. **Placement by role** against the tree — walls out of hard blockers and lethal rows,
+         friction inside the corridors, set pieces on candidate sets that every corridor touches
+      4. **Placeholders**, so nothing is spent on ground she never reaches
+      5. **The two invariant decisions** in `docs/CITY.md` — edge-disjointness versus chokepoints,
+         and late binding versus the retried day. Neither is a coding problem and both block 3
+- [ ] **Restate the main-road pacing question, which was not understood.** *(Asked badly the first
+      time: "what paces the main-road crossing?")* What is meant: the design says she takes routes
+      on **her side** of the spine until they are exhausted and is only then forced across. The
+      question is **what makes that happen** — is it simply that calm areas exist on both sides and
+      `_spoil_the_parks_she_used` burns the near ones over an act, so the far side becomes the only
+      thing left? Or does something have to actively withhold the far side early on, and steer her
+      across late? The first needs no new code and falls out of what exists; the second is a
+      mechanism nobody has designed. **The answer decides whether the arc is emergent or authored**
 - [ ] **Day 3 carries act I's whole payload, and the run lesson is the thing it crowds out.**
       *(Raised by the player: "does the fire truck conflict with the run tutorial? Should we move
       the run tutorial one day earlier to disentangle?")* **It conflicts, and it is three rows
@@ -2364,10 +2374,31 @@ a branch of its own.
       the fire engine is a thing to be off the road for. A player who learns "run" from day 3 has
       learnt it next to the one row where it is least relevant.
 
-      **Recommendation: move `RUN_TAUGHT_DAY` to 2**, so act I reads walk → run → set piece, and
-      the dog gets a day where it is the only new thing. Three things to check rather than assume,
-      because this is the most-reported encounter in the project and playtest 08 explicitly liked
-      where it sits (*"I like the running tutorial on day 3"*):
+      **Day 2 is not empty, and the premise for moving there was that it is.** *("Day 2 might be a
+      good option since it doesn't introduce anything else I think?")* Measured off the catalogue,
+      **day 2 is the busiest introduction day in act I**: `busker`, `construction`, `cyclist` and
+      `ice_cream_van` — four rows, and `cyclist` is **lethal**. Day 3 introduces three. So moving
+      the lesson to day 2 does not give it a quiet day; it gives it a day with four other new
+      things and an existing lethal row on it.
+
+      That does not sink the move — **the argument was never about counts**. It is that day 3's two
+      headline rows teach opposite answers, and that a set piece needs room. But it changes what
+      the options are, so all three are worth having:
+
+      | | | |
+      |---|---|---|
+      | **A. run lesson → day 2** | act I reads walk → run → set piece | day 2 gains a 5th new row and a 2nd lethal one; `cyclist` already teaches *fast things kill* |
+      | **B. `reversing_lorry` → day 4** | day 3 keeps the lesson and the set piece, minus one lethal row | the two opposite lessons still share a day |
+      | **C. `fire_truck` → day 2** | day 3 becomes purely the run lesson; the set piece gets its own day | act I loses its day-3 finale, which is where a one-shot naturally wants to be |
+
+      **A is still my recommendation**, because it is the only one that separates the two opposite
+      lessons *and* leaves the set piece where a finale belongs — and because `cyclist` on day 2 is
+      arguably the right neighbour for a running lesson rather than the wrong one. But the premise
+      it was first offered under was false, so it is worth re-taking rather than confirming.
+
+      Three things to check rather than assume, because this is the most-reported encounter in the
+      project and playtest 08 explicitly liked where it sits (*"I like the running tutorial on day
+      3"*):
       - `RUN_TAUGHT_DAY` gates **everything that pursues**, so moving it moves the robber's first
         possible day too — check act I is not made harder by a constant that was only meant to move
         a tutorial

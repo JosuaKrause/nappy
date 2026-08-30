@@ -803,6 +803,16 @@ not a route.** The street outside the home is never closed (the home is a notch 
 exit), and an area is reached by arriving at *either end* of a street it opens onto, so a
 courtyard with one archway can still have two routes to it.
 
+**The words for placement are fixed, and there are three axes rather than one.** *(Adopted from
+the player, 2026-08-31; the full table is `docs/CITY.md`, "The words for it".)* A blocker has a
+**permanence** — `hard` (pruned into the layout, whole run) or `soft` (placed for one day); an
+**effect** — `lethal` (ends the day), `impassable` (stops passage, does not kill — a road closure),
+or `costly` (passable at a readable price); and a **role**, which is what the scheduler placed it
+*for* — `wall` (bounds the corridor), `friction` (sits inside it), or `set piece` (placed so she
+meets it). The **corridor** is the ground a day's routes run through. Do not reintroduce the bare
+word "blocker" for any of these: three questions answered by one word is why this design had to be
+restated three times.
+
 **A closure is silent, and it is the only thing that moves where the player may walk.**
 Closures change the shape of the route and contribute nothing to the meter — the noise of a
 street is the crowd, the danger is the events, the shape is the closures. A noisy roadworks

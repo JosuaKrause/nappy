@@ -409,9 +409,10 @@ two consecutive days. A city worth knowing plus a day worth reading.
 
 ### The words for it
 
-*(Proposed 2026-08-31 so that placement can be talked about precisely. Adopt, rename or reject —
-this is a naming proposal, not a decision.)* Three independent questions get asked about every
-blocker, and the project has been answering all three with the word "blocker".
+**Adopted 2026-08-31.** *("Like the terminology, let's adopt it consistently.")* These are the
+words the rest of the project uses for this — in docs, in identifiers and in the telemetry map's
+legend. Three independent questions get asked about every blocker, and the project used to answer
+all three with the word "blocker".
 
 **Permanence — hard or soft.** Settled above: in the layout for the whole run, or placed for a day.
 
@@ -438,6 +439,29 @@ And the thing the roles are stated relative to needs a name too: **the corridor*
 today's routes run through, from the doorstep to the calm areas that are still worth reaching.
 "Wall" and "friction" mean nothing until there is a corridor to be outside or inside of.
 
+### How the corridor is built *(answered by the player, 2026-08-31)*
+
+**The target is every calm area still available that day, not one of them.** Each gets a corridor
+and **the player chooses which to take** — the guidance is the set of offers, not a single
+instruction. So the day's plan is a small **tree**: the doorstep at the root, one path per
+available calm area.
+
+**One corridor per calm area, and overlaps are a resource rather than a problem.** Paths may share
+ground on the way out and separate later, since they end in distinct places. Where the tree forces
+every path through the same point, that **chokepoint is a placement opportunity** — it is the one
+tile the player is guaranteed to cross whatever she chooses, and it is where something can be put
+that she will certainly meet.
+
+**Placement follows the tree, not a budget.** Plan the tree first and place from it — possibly with
+a budget *per role and per region*, but not a single per-block number that the whole city competes
+for. And the important half: **budget is not spent on what she never sees.** So the day places
+**placeholders**, and a placeholder is resolved into a concrete row when she actually reaches it.
+
+**Which means the one-shots must bind late.** *"This has to influence the design of one-off events
+so they actually happen on the route the player chose and in front of the player instead of
+somewhere else in the city — e.g. fire truck, which alley contains the note."* An authored one-shot
+is not a place the day picks at dawn; it is a promise the day makes and the route redeems.
+
 ### A set piece has to be met
 
 *"The fire + fire truck — it should be used in a way that the player actually encounters it on
@@ -447,11 +471,30 @@ The fire engine is the only one-shot in act I and it is currently placed like ev
 legal spot somewhere on the map, on a day she may never walk that way. An authored set piece that
 fires once per run and is missed is a fairness contract and a silhouette spent on nothing.
 
-So a **set piece is chosen against the corridor**: pick from the day's candidate sites the one that
-the route actually crosses. Two things it must not become — it may not be *steered onto her*, which
-is what `AHEAD_OF_PLAYER` is for and the fire engine is deliberately not; and choosing late must
-not break determinism, so the candidate set and the choice both come from the day's RNG, not from
-where she happens to be standing.
+So a **set piece is sited against the tree**, and the shape is the player's: *"we can have multiple
+candidate places and make sure all routes touch at least one of them."* The day picks a **set** of
+candidate sites such that **every corridor passes at least one**, and the one she reaches is the
+one that fires. That is better than choosing a site on her chosen route, because it needs no
+knowledge of what she chose — the guarantee is structural, and it holds whichever way she goes.
+
+It may not be *steered onto her*: `AHEAD_OF_PLAYER` is for moments, and a fire engine is
+deliberately a **place**. What makes it a place and still unmissable is the candidate set, not a
+director.
+
+**Two invariants this runs into, and both need a decision before anything is built.**
+
+- **Chokepoints versus edge-disjointness.** *"If all paths have to go through one point we can make
+  use of that"* — but `ClosurePlanner` requires **two routes sharing no street** to two calm areas,
+  and a chokepoint every path crosses is exactly the thing that rule was written to forbid. It was
+  written against *sealing her in*, and a deliberate chokepoint is not that. The rule probably has
+  to become *"the calm is reachable and the day is not decided by one closure"* — but it is a
+  load-bearing invariant with a test behind it, so it changes by decision, not by exception.
+- **Late binding versus "a retried day is the same day".** Placeholders and route-bound one-shots
+  mean the day's content depends on where she walked, and M39 fixed a real bug to make a retried
+  day identical. These are reconcilable: resolve a placeholder deterministically from the day's RNG
+  and the placeholder's own identity, so the *offer* is fixed and only *which offer she redeems*
+  varies. What must not happen is resolution that draws from a shared stream at the moment she
+  arrives, which puts M39's defect back with a longer fuse.
 
 **Nothing in the current invariants forbids any of this**, which is worth stating because a session
 once thought otherwise. `_park_is_reachable` asks only that **some** calm area is still reachable
