@@ -2454,6 +2454,102 @@ yet"*) and under the `CLAUDE.md` rule the first round produced.
       map: the first border pass wrote four sides four times, which is one bug per side waiting to
       happen, and this is it happening
 
+## M50 — The city points somewhere · `feature/the-city-points-somewhere`
+
+**The plan for the diversion design.** The design itself is `docs/CITY.md`, "Diversions — the
+design"; this is only *how*. Nothing here is started.
+
+**The one sentence: the corridor already exists in the code and nothing is allowed to see it.**
+`ClosurePlanner._streets_on_a_route` computes, today, the set of streets on a near-shortest way
+from the door to some calm ground — distances from home, distances to each calm area's access
+streets, and a street counts if the best route through it is within `CLOSURE_ROUTE_SLACK` of the
+best route overall. **That is a corridor.** It is private, it is thrown away every time it is
+computed, it is unioned across all calm areas so the individual paths are lost, and the only thing
+it is used for is weighting *which street to close*. So this milestone is much less about inventing
+a structure than about **promoting one that is already there** and letting everything place against
+it.
+
+And one thing found by reading it that has to be decided early: **closures are currently biased
+`CLOSURE_ROUTE_BIAS = 5.0` toward streets that are on a route**, which makes a closure *matter* and
+is close to the opposite of guiding — it degrades the good ways rather than pruning the bad ones. A
+wall bounds a corridor from outside it. Whether that constant flips, splits or stays is the first
+real decision in the build.
+
+### Step 0 — the tree, promoted and made per-area *(no behaviour change)*
+
+- [ ] **`RouteTree`, in `src/routes/`.** Built from `map`, the day's closed set and the available
+      calm areas. It holds, **per calm area**: the corridor as a set of segment keys, and the
+      distance fields it was derived from. Plus, over the whole day: the **bundles** — segments
+      shared by two or more corridors — and the **fan-out**, meaning how few sites it takes to
+      touch every corridor, which is what a set piece needs
+- [ ] **`ClosurePlanner._streets_on_a_route` becomes `RouteTree`'s constructor** and the planner
+      calls it. Behaviour identical, one caller, suite unchanged. This is the whole of step 0 and it
+      is deliberately dull: it is the refactor that makes every later step small
+
+### Step 1 — hard blockers exist *(once per run, and it gates everything)*
+
+*"Cul-de-sacs and big buildings don't exist yet — but we need them to implement proper hard
+blockers."*
+
+- [ ] **A cul-de-sac is an `absent_segment` with a dead end at one end.** The mechanism is already
+      built and proven: M21's calm zones absorb the streets between their blocks, `absent_segments`
+      is the set of lattice edges this city does not have, and `blocked_segments()` merges it with
+      the day's closures. What is new is **choosing** them for a reason rather than as a
+      side effect of a zone. Note the M21 rule that comes with it: an absorbed street is still
+      *ground* — so a cul-de-sac must be a street that genuinely stops, not a park to walk through
+- [ ] **A big building is a block whose lot is solid**, removing the streets around it from the
+      lattice. This is a `BlockPurpose` and an arc, per the "Add a block purpose" recipe
+- [ ] **They are placed to shape the run's paths**, in `CityGenerator`, from the city RNG — so they
+      hold still for the whole run and are what the player learns. They must leave every calm area
+      the run will **ever** use reachable, including ones only reached in act IV, which is the
+      constraint that makes this the hard step and the reason it goes first
+- [ ] **`CityGenerator.validate()` gains the new condition** and it runs on every seed, like the
+      rest. `tests/test_blocks.gd` already asserts the walkable set is identical tile-for-tile
+      across every block arc — hard blockers must not move a walkable tile after generation
+
+### Step 2 — placement by role
+
+- [ ] **`EventScheduler.build_day` takes the `RouteTree`.** The phase list stays and gains the tree
+      as an input; each placement phase gets a **role** and asks the tree a different question —
+      walls for segments just *outside* a corridor, friction for segments *inside* one, set pieces
+      for a covering set. Keep `_stream(base, salt)` per phase; a phase whose consumption changes
+      needs its own stream, which is M39's rule and this changes several
+- [ ] **`ClosurePlanner` places closures as walls**, which is where `CLOSURE_ROUTE_BIAS` gets
+      decided rather than tuned
+- [ ] **Set pieces get a covering set.** Candidate sites such that every corridor touches at least
+      one — *not* a single site on her chosen route. `fire_truck` first, then the resistance
+      note's alley. **A bundle is not a guarantee**: two distinct paths means at least two sites,
+      and any code that assumes one is wrong
+
+### Step 3 — placeholders
+
+- [ ] **A `Planned` may be unresolved**, and resolves to a concrete row when she comes within
+      range — reusing `EVENT_STREAM_RADIUS`, which is already the "she is about to be able to see
+      this" boundary. *"Budget is not really used up if the player doesn't see it."*
+- [ ] **Resolution draws from the placeholder's own stream** — `_stream(base, salt)` keyed by the
+      placeholder's identity, never from a stream shared with the rest of the day. Otherwise where
+      she walked moves everything planned after it, which is M39's defect with a longer fuse
+- [ ] **`tests/test_telemetry.gd`'s shape, applied here**: plan a day, resolve every placeholder,
+      and require the result to match planning it with the player walking a different way
+
+### The two invariant decisions, which block step 2
+
+- [ ] **Restate the two-routes guarantee.** *Distinct* currently means **sharing no street**, and
+      corridors that bundle and then separate share plenty. The guarantee worth keeping is *"the
+      calm is reachable and no single closure decides the day"*; edge-disjoint max flow is one way
+      to get it and is stricter than the design needs. `tests/test_routes.gd` is what changes with
+      it, and it must not become weaker by accident — the day this rule stops holding is the day a
+      run becomes unwinnable and nothing says so
+- [ ] **`_ensure_one_usable_park` versus the tree.** It protects exactly one calm area today; with
+      corridors to *every* available area, the guarantee it makes may want to be stated over the
+      tree instead. Related to the open playtest-14 item about an unvisited calm area being spoiled
+
+### What this does not touch
+
+Presentation, in any form. *"How they are presented is already solved. The issue is that they are
+not placed properly."* No new cue, no new silhouette, no change to what a closure is, no change to
+`City.total_excitement_at`. If this milestone finds itself drawing something, it has gone wrong.
+
 ## Tooling for the diversion work · `feature/a-map-that-shows-the-plan`
 
 Asked for alongside the diversion design, and it goes **first** for the reason the playtest-13
