@@ -519,9 +519,19 @@ func _choose_lane(roll: float) -> void:
 		_direction = 1.0 if _rng.randf() < 0.5 else -1.0
 		_speed = _rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
 	_cruise = _speed
-	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
+	_lane_centre = _lane_centre_here()
 	_junction = -1
 	_forget_the_detour()
+
+## Where this agent travels in its lane. A car sits on the tile centre; a walker is pushed toward
+## the outer edge of its own footway, which is what leaves a gap between the two lanes of a
+## pavement worth aiming at. See `CrowdLanes.SIDEWALK_LANE_SPREAD`.
+func _lane_centre_here() -> float:
+	if kind == Kind.CAR:
+		return CrowdLanes.lane_centre(_corridor, _lane)
+	return CrowdLanes.walker_lane_centre(_corridor, _lane,
+			CrowdLanes.walkable_offsets(_map, _vertical, _corridor,
+			floori(_along() / float(Tuning.TILE_SIZE))))
 
 ## Which way a car drives, weighted by the traffic each axis is carrying **inside the field**.
 ##
@@ -702,7 +712,7 @@ func _consider_turning() -> void:
 	_vertical = not _vertical
 	_corridor = crossing
 	_lane = CrowdLanes.nearest_sidewalk(_corridor, _cross())
-	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
+	_lane_centre = _lane_centre_here()
 	_direction = turning
 	_forget_the_detour()
 	# It is now travelling through the corridor it just came down, so that is the junction
@@ -770,7 +780,7 @@ func _divert() -> void:
 		_lane = CrowdLanes.road_lane(_vertical, turning)
 	else:
 		_lane = CrowdLanes.nearest_sidewalk(_corridor, _cross())
-	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
+	_lane_centre = _lane_centre_here()
 	_forget_the_detour()
 	_junction = kept
 	_claim_the_road_here()

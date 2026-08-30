@@ -529,14 +529,18 @@ const CAR_SPEED := Vector2(130.0, 185.0)
 ## intensity and the inner radius did not move; two tiles away is 0/s again, as it was. What is
 ## gone is the wide, cheap middle that used to be worth almost nothing and is now worth a lot.
 ##
-## **"Two tiles away" is true of one walker and unreachable on a footway.** *(M46, measured.)* A
-## footway is two tiles and its lanes are 32px apart, so the far side of one is 71px from the near
-## lane and off the kerb; and the midline — the only line with no head-on contact on it, since
-## `BUMP_RADIUS` is 14 against a 16px half-lane — is 16px from two lane centres and inside the
-## **full-intensity core** of both. So the ambient floor measures flat across a pavement (4.30
-## frontage / 4.96 midline / 4.76 kerb), the careful line for contacts is the careless one for
-## noise, and *how close to pass* is not yet the choice this comment says it is. See M46 in
-## `docs/TODO.md`.
+## **"Two tiles away" is true of one walker and was unreachable on a footway.** *(M46, measured
+## twice.)* A footway is two tiles, and while its lanes sat on their tile centres they were 32px
+## apart — so the midline, the only line with no head-on contact on it, was 16px from two lane
+## centres and inside the **full-intensity core** of both. The ambient floor measured flat across a
+## pavement (4.30 frontage / 4.96 midline / 4.76 kerb), the careful line for contacts was the
+## careless one for noise, and *how close to pass* was not the choice this comment claims.
+##
+## `CrowdLanes.SIDEWALK_LANE_SPREAD` is what made it one: the lanes are 48px apart now, so the
+## midline is **24px from each of them and outside `PEDESTRIAN_INNER_RADIUS`** rather than inside
+## it. Measured over the same walk, the field at an ordinary midline fell 74 → 56 points per forty
+## seconds. That is the one change to make if this ever stops being true again — the intensity and
+## the radii are pinned by the arterial floor and the shoulder, and the geometry is not.
 const PEDESTRIAN_INTENSITY := 4.2
 const PEDESTRIAN_INNER_RADIUS := 22.0
 const PEDESTRIAN_OUTER_RADIUS := 55.0
@@ -582,11 +586,19 @@ const PLAYER_BODY_RADIUS := 14.0
 ## Centre-to-centre distance at which the player and a pedestrian are touching.
 ##
 ## It has to be **under half a lane spacing**, and that is the whole of why it is 14 rather
-## than a body's width. Pedestrian lanes are one tile apart, so the only line with no contact
-## on it is the midline between two of them; at 18 there was no such line anywhere on a
-## two-tile pavement and walking the arterial cost eleven bumps in forty seconds however
-## carefully it was done. At 14, holding that line takes the same walk down to two — which
-## turns the crowd from a toll into the thing playtest 02 finding 3 asked for.
+## than a body's width. The only line with no contact on it is the midline between two lanes; at 18
+## there was no such line anywhere on a two-tile pavement and walking the arterial cost eleven
+## bumps in forty seconds however carefully it was done. At 14, holding that line takes the same
+## walk down to two — which turns the crowd from a toll into the thing playtest 02 finding 3 asked
+## for.
+##
+## **What M19 did not check is how *wide* that line is, and until M46 it was four pixels.** The
+## lanes were a tile apart, so the clear line was `32 - 2 × 14` — something a player is
+## occasionally on rather than something she can aim at, while forty seconds down an arterial lane
+## centre cost 15.3 contacts against the midline's none. The fix is deliberately **not** here:
+## `CrowdLanes.SIDEWALK_LANE_SPREAD` moves the lanes apart instead, because this number is what
+## makes a contact mean *walking into somebody* and buying the line by shrinking it would make one
+## require a near-perfect overlap. See M46 in `docs/TODO.md`.
 const BUMP_RADIUS := 14.0
 
 ## How far apart a contact is pushed, and how far apart it has to get before it counts as over.

@@ -1140,10 +1140,31 @@ against 5 on the midline — 14.6:1**, better than the 11:1 M19 built the crowd 
 re-measured after M41 moved the crowd, so the project carried "the careful line is gone" through
 four milestones after it stopped being true.
 
-**So the open half is not that the careful line is absent, it is that it is invisible.** Nothing
-in the game tells a player that walking sixteen pixels to one side of a pavement costs fourteen
-times less, and a ratio nobody can see is not a decision — it is a tax on people who walk down the
-middle, which is everybody. See M46 in `docs/TODO.md`.
+**So the open half was not that the careful line is absent, it is that it was invisible — and the
+cause was that it was four pixels wide.** A contact fires inside `BUMP_RADIUS` of a lane centre and
+the lanes sat a tile apart, so the line with nothing on it was `32 − 2 × 14`. That is not something
+a player aims at, it is something she is occasionally on, and 165 points of a hundred rode on it:
+forty seconds down an arterial lane centre costs 15.3 contacts and the midline costs none.
+
+`CrowdLanes.SIDEWALK_LANE_SPREAD` widens it to 20px by moving the two lanes of a footway toward the
+pavement's own edges. **Widen the street, not the body** — `BUMP_RADIUS` is what makes a contact
+mean *walking into somebody*, and buying the same line by shrinking it would make a contact require
+a near-perfect overlap. Two things fell out and the second is the one worth carrying:
+
+- **The careless line stayed careless** (13.7 → 15.3 contacts down a lane centre), which it had to.
+  A crowd is only a decision if walking down the middle of it still costs.
+- **The field wants the same line now.** Walkers further from the middle of the pavement means the
+  midline is 24px from each lane rather than 16 — outside `PEDESTRIAN_INNER_RADIUS` instead of
+  inside it — and the ambient cost of an ordinary midline fell 74 → 56 per forty seconds. Before
+  this, contacts and noise wanted **opposite** lines and a player who found one had found the
+  other's punishment. When two systems price the same choice, check they are not pricing it in
+  opposite directions; that is not a balance error, it is a design that cannot be played.
+
+And one number this corrected on the way past: the *ordinary* street was never the problem. Every
+line across an ordinary footway is **net recovery** while walking — the crowd charges 55–87 points
+over forty seconds against a decay that pays back 140. Walking an ordinary pavement is free;
+**standing** on one is not, which is `EXCITEMENT_DECAY_IDLE` and not the crowd. See M46 in
+`docs/TODO.md`.
 
 ## Known-shaky ground
 

@@ -1473,12 +1473,17 @@ Taken in the M12a session and still governing everything after it. All four are 
   Nothing in the test suite could see it and the screenshot showed a normal street. Forty
   seconds of a scripted walk down a real pavement showed it immediately. A bumped body **steps
   aside** now.
-- **The contact radius is set by the lane spacing, not by a body's width.** Pedestrian lanes
-  are one tile apart, so the only line with no contact on it is the midline between two of
-  them. At 18px there was no such line anywhere on a two-tile pavement: the same forty-second
-  walk cost eleven bumps however carefully it was done, which is a toll rather than a decision.
-  At 14px it costs two. That relationship is the assertion in `tests/test_crowd.gd`, not the
-  number.
+- **The contact radius is set by the lane spacing, not by a body's width.** The only line with no
+  contact on it is the midline between two lanes. At 18px there was no such line anywhere on a
+  two-tile pavement: the same forty-second walk cost eleven bumps however carefully it was done,
+  which is a toll rather than a decision. At 14px it costs two. That relationship is the assertion
+  in `tests/test_crowd.gd`, not the number.
+- **And the line has to be wide enough to aim at.** *(M46.)* With the lanes on their tile centres
+  it was `32 − 2 × 14` = **four pixels**, which is a line a player is occasionally on rather than
+  one she chooses — while forty seconds down an arterial lane centre cost 15.3 contacts and the
+  midline cost none. `CrowdLanes.SIDEWALK_LANE_SPREAD` pushes the two lanes of a footway apart to
+  make it 20px. Widen the **street**, never the body: `BUMP_RADIUS` is what makes a contact mean
+  walking into somebody.
 - **A contact has to startle once, not once per frame.** She walks faster than a pedestrian, so
   a person bumped from behind stays inside the radius for the better part of a second.
   `CrowdAgent.touching` is the hysteresis; without it one person cost what a crowd should.

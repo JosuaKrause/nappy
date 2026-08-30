@@ -1880,11 +1880,68 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
       there", a question about road this car is not yet on. **Ask what the number you are
       crediting is a fact about**: a leader inside the box is the obstacle, not evidence about the
       road beyond it
-- [ ] **A contact is 22–34 points a second and there were fifteen of them in four days.** Either
+- [x] **A contact is 22–34 points a second and there were fifteen of them in four days.** Either
       the cost or the frequency is wrong and the trace cannot say which. `BUMP_RADIUS` is 14 and
       the M33 note says the careful line was two pixels wide when M19 measured it — so widening
       the *street* rather than narrowing the *body* may be the honest answer, and that is a
       question for `CrowdLanes.SIDEWALK_OFFSETS` and `_make_way`
+
+      **Neither is wrong, and the question was asking about the wrong axis: what is wrong is the
+      *place*.** Measured over three seeds, forty-second walks, with the whole frame run — the
+      crowd stepped **and** the player half of `Crowd._physics_process`, so `_make_way` is in it:
+
+      | | value |
+      |---|---:|
+      | one contact | **10.8 points** — 18.0/s fading linearly over 1.2s |
+      | contacts, 40s down an **ordinary** footway | 2.7, whichever line is taken |
+      | contacts, 40s down an **arterial** lane centre | **15.3** |
+      | the same, on the arterial midline | **0.0** |
+
+      **The cost is right.** 10.8 is a tenth of the meter, and `tests/test_crowd.gd` already pins
+      the shape it has to keep — one is survivable, four freeze the meter, ten lose the day. The
+      *22–34 points a second* in the trace is the instantaneous rate with the field underneath it,
+      not what a contact costs.
+
+      **The frequency is right too, and an ordinary street turned out not to be the problem at
+      all.** Every line across an ordinary footway is **net recovery** while walking: the crowd
+      charges 55–87 points over forty seconds and the walking decay pays back 140, so the net runs
+      −53 to −85 at every offset from the frontage to the kerb. That is worth holding against the
+      standing numbers three items up — 5.82/s on the same ground — because the gap between them is
+      the whole of `EXCITEMENT_DECAY_IDLE` being 0 and of `_make_way` only running for somebody who
+      is moving. **Walking an ordinary pavement is free; standing on one is not.**
+
+      **So the contact question is an arterial question, and there the careful line was four pixels
+      wide.** A contact fires inside `BUMP_RADIUS` of a lane centre, the lanes sat a tile apart, and
+      `TILE_SIZE − 2 × BUMP_RADIUS` is 32 − 28 = **4**. That is not a line a player can aim at, it
+      is one she is occasionally on — with **165 points of a hundred** riding on it, which is the
+      M46 headline (*the careful line is invisible*) arriving with a number and a cause.
+
+      **Fixed by widening the street, which is what the item guessed and is the honest direction.**
+      `CrowdLanes.SIDEWALK_LANE_SPREAD` pushes the two lanes of a footway 8px apart toward its own
+      edges, so the clear line goes **4px → 20px** while the lanes stay 8px inside the pavement.
+      Nothing about a contact changed: `BUMP_RADIUS` is what makes one mean *walking into
+      somebody*, and narrowing it would have bought the same line by making a contact require a
+      near-perfect overlap.
+
+      | | before | after |
+      |---|---:|---:|
+      | clear line between two lanes | 4px | **20px** |
+      | arterial lane centre, 40s | 13.7 contacts | 15.3 |
+      | arterial midline, 40s | 0.0 | **0.0** |
+      | field over 40s at an ordinary midline | 74 | **56** |
+
+      Two things came with it. The careless line stayed careless, which it had to — the crowd is
+      only a decision if walking down the middle of it still costs. And the field got **quieter in
+      the middle of the pavement** as well, because the walkers are further from it, so for the
+      first time the two halves of the crowd want the *same* line: the item below found them
+      wanting opposite ones, and that is what this closes. `tests/test_crowd.gd` holds the band
+      against `PLAYER_BODY_RADIUS` — it has to be aimable, not merely non-empty — and holds the
+      spread under half a tile, because `CrowdAgent._pavement_band` measures the footway from the
+      **tile** centres and nothing else in the suite would notice somebody walking in a shopfront.
+
+      Open, and it is the half a geometry change cannot reach: **nothing yet says the channel is
+      there.** It is now wide enough to find by walking down the middle of a pavement, which is
+      what most people do — but that is a claim about a player and no rig can settle it
 - [x] **`CROWD_PEDESTRIANS_PER_ACT[0]` is 200 and it is a population of the field, not the city.**
       It has not been re-measured since the field's box last moved. Measure what is actually
       within a screen of her, not what the constant says.
@@ -1934,7 +1991,13 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
       contacts and does not exist for the field**, and the two want opposite lines: the midline
       is the only line with no head-on contact on it (`BUMP_RADIUS` 14 against a 16px half-lane)
       and it is the worst line for the ambient noise. A player who finds one has found the other
-      one's punishment
+      one's punishment.
+
+      **Closed by the contact item above, and by one change rather than two.**
+      `CrowdLanes.SIDEWALK_LANE_SPREAD` moves the two lanes of a footway 48px apart, which widens
+      the contact-free line from 4px to 20px **and** puts the midline 24px from each walker —
+      outside `PEDESTRIAN_INNER_RADIUS` rather than inside it. The ordinary midline's field falls
+      74 → 56 per forty seconds. The two halves of the crowd want the same line now
 - [x] **The crowd bunches against the boundary wall, where the comment says it thins.** Found
       while measuring the above. `CrowdField.corridor_range` clamps to the city and says so:
       *"that is also why the crowd thins out honestly in the corner of the map instead of

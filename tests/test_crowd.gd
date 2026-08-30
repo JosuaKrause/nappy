@@ -414,9 +414,28 @@ func _test_a_bump_costs_and_one_of_them_is_survivable(t) -> void:
 	# line anywhere on a two-tile pavement: walking the arterial cost eleven bumps in forty
 	# seconds however carefully it was done. Under half a lane spacing there is one, and
 	# holding it takes the same forty seconds down to two.
-	t.check(Tuning.BUMP_RADIUS < Tuning.TILE_SIZE * 0.5,
+	var spacing := float(Tuning.TILE_SIZE) + CrowdLanes.SIDEWALK_LANE_SPREAD * 2.0
+	t.check(Tuning.BUMP_RADIUS < spacing * 0.5,
 			"there is a line between two pavement lanes with no contact on it (%.0f < %.0f)"
-			% [Tuning.BUMP_RADIUS, Tuning.TILE_SIZE * 0.5])
+			% [Tuning.BUMP_RADIUS, spacing * 0.5])
+	# **And it has to be wide enough to aim at.** *(M46, playtest 13 finding 1.)* The line is
+	# `spacing - 2 * BUMP_RADIUS` across, and while the lanes sat on their tile centres that was
+	# **four pixels** — something a player is occasionally on rather than something she can
+	# choose — with 165 points of a hundred riding on it: measured over three seeds, forty seconds
+	# down an arterial lane centre costs 15.3 contacts and the midline costs none.
+	# `CrowdLanes.SIDEWALK_LANE_SPREAD` widens the *street* instead of narrowing the body, which is
+	# the half of this that must not be traded away — `BUMP_RADIUS` is what makes a contact mean
+	# walking into somebody.
+	var clear_line := spacing - Tuning.BUMP_RADIUS * 2.0
+	t.check(clear_line >= Tuning.PLAYER_BODY_RADIUS,
+			"and it is wide enough to aim at rather than to land on (%.0fpx against a %.0fpx pram)"
+			% [clear_line, Tuning.PLAYER_BODY_RADIUS])
+	# The lanes it makes still have to be on the pavement. `CrowdAgent._pavement_band` measures the
+	# footway from the **tile** centres rather than from the lanes, so a spread of half a tile would
+	# put somebody in a shopfront or off a kerb and nothing else in the suite would object.
+	t.check(CrowdLanes.SIDEWALK_LANE_SPREAD < float(Tuning.TILE_SIZE) * 0.5,
+			"a spread lane is still on the footway (%.0f of a %d tile)"
+			% [CrowdLanes.SIDEWALK_LANE_SPREAD, Tuning.TILE_SIZE])
 
 ## The contact resolves as a *position*, so two bodies can never end up inside each other
 ## however fast she is going, and the person she walked into is the thing that gets loud —
