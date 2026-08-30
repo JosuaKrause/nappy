@@ -2313,36 +2313,39 @@ a branch of its own.
       becoming impossible, and never suggests one — closures are drawn at random from whatever
       keeps the two-routes invariant, so one is as likely to be behind her as across her route.
 
-      **This entry said the design had to be captured from the player because there was no note
-      anywhere. That was wrong — the note is `docs/PLAYTEST-01.md` finding 12**, given on the first
-      day of the project and recorded as a summary that kept the topology and dropped the
-      mechanism. The player's words:
+      **The design has now been given in full and is written up in `docs/CITY.md`, "Diversions —
+      the design". Read it there rather than here.** In one paragraph: hard and soft mean
+      **permanent** and **per-day**, not severity; hard blockers are pruned lattice edges
+      (cul-de-sacs, big buildings) and soft ones are the day's placements (closures, fallen tree,
+      restaurants); soft splits into **lethal**, **mild/benign**, and **road closures**, which are
+      not lethal but prevent full access. **Hard and lethal form the paths; benign go on the path.**
+      The main road paces the run — she exhausts her own side before she is forced across. Sealing
+      a section is fine, because there is no calm in it.
 
-      > *"Use forced events to enforce limited paths through the city — build a tree network with
-      > allowed paths and **block off all other roads with events that cause excitement overload**
-      > — **should still be possible to avoid them but it should be clear that that road cannot be
-      > taken** — example of such events: road construction, fallen tree, car accident, etc."*
+      **Presentation is not the problem and must not be touched.** *"How they are presented is
+      already solved. The issue is that they are not placed properly."*
 
-      Two clauses, and both are the part that was lost. **The blocker and the noise are one
-      object** — a road is shut *by* something loud standing on it. And **it is not shut**: it is
-      passable at a price you can read before committing. That is the soft diversion; a
-      `RoadClosure` is the hard one, and it is the only one that exists.
+      **And nothing in the invariants forbids it** — checked rather than assumed.
+      `_park_is_reachable` requires **one** reachable calm area, not a connected city, so a sealed
+      quarter is already legal; `ClosurePlanner`'s two-routes rule is about reaching calm, not
+      about connectivity. This is a **placement** milestone end to end: no new blocker kinds, no
+      new cues, no change to what a closure is.
 
-      What the game has instead is a **split**: closures are hard, silent and topological; events
-      are noisy and placed without reference to where she is going. There is nothing in the city
-      that is walkable-but-obviously-wrong. And `CLAUDE.md`'s *"do not let a closure emit"*
-      invariant now **forbids the missing half** — taken on engineering grounds, never taken as a
-      decision against finding 12, because the summary had already removed the clause it
-      contradicts. The invariant is marked contested; it must not be cited to close this.
-
-      **Two things before anything is built**, and the first is a conversation, not code:
-      1. **Confirm the reading with the player**, including whether a soft diversion should be an
-         ordinary catalogue event the *scheduler places to point* — which answers the engineering
-         objection without adding a third summand to `City.total_excitement_at`.
-      2. Then the mechanism. What already points the same way: M47's *main road as a soft block*
-         (measured at ~35 of the meter to cross, so this one half-exists by accident), and M45's
-         *closures placed to say "not this way today"*, which is the hard half becoming
-         directional
+      **Five things to settle with the player before building**, because each changes the algorithm
+      rather than a constant:
+      1. **What is the target?** Every unspoiled calm area today, or one chosen as *today's*
+         destination with the rest merely permitted?
+      2. **How wide is a guided path** — a single corridor, or a braid of two or three, which is
+         what the existing two-distinct-routes invariant would leave standing?
+      3. **Are hard blockers generated to serve this?** Cul-de-sacs and big buildings are the
+         stated vocabulary and the lattice currently prunes edges only where a calm zone absorbs
+         them. If the layout is to form paths, that is a `CityGenerator` change made **once per
+         run**, and it has to work for every calm area the run will ever use.
+      4. **What paces the main-road crossing?** *"Until all are exhausted"* is the arc; the
+         mechanism is presumably calm areas on both sides plus `_spoil_the_parks_she_used`. Worth
+         confirming that is the intent rather than an explicit gate.
+      5. **How much of the budget goes to walls vs. texture?** Benign-on-route and lethal-as-wall
+         compete for the same per-block budget, and today every row competes on weight alone
 
 ### Recorded and not started — the second round of playtest 14
 
@@ -2518,15 +2521,16 @@ overturn a decision the player took"*.
       note still describes the M38 10 → 12 move as the current state. Correct all three before the
       number is moved — this is the constant M38's own entry warns decides whether a day is
       winnable once the park is reached
-- [ ] **The routing brief is the worst case in the record, and it is not a lost note.** Playtest
-      01 finding 12 gave hard and soft diversions in full on the first day. The plan summarised it
-      to topology, M16 built the topology, the row still reads *"done"*, and an invariant was later
-      written that forbids the half that was dropped. Four playtests then asked why nothing guides
-      the player anywhere, and playtest 14 concluded there had never been a note. **A finding
-      marked done is never re-read** — which is what makes summarising one on the way in the most
-      expensive mistake available here, worse than losing it outright, because a lost note leaves a
-      gap somebody notices. Written up in `docs/PLAYTEST-01.md`, "12's other half"; the live item is
-      the M49 entry above
+- [x] **The routing brief was never captured, and reconstructing it from the record failed.**
+      *(Resolved 2026-08-31 by the player restating it; `docs/CITY.md`, "Diversions — the design".)*
+      Worth keeping for the shape of the failure. Playtest 14 recorded *"no note anywhere"*; an
+      audit then found playtest 01 finding 12, which is about blockers and route pruning, and read
+      it as the missing design. **It is not** — hard/soft there was inferred to mean *impassable
+      vs. expensive*, where the player means **permanent vs. per-day**, and the real brief has a
+      severity axis underneath it that nothing in the record hints at. Two lessons, and the second
+      is the expensive one: **a finding marked done is never re-read**, so summarising one on the
+      way in leaves a checkmark rather than a gap. And **a plausible reconstruction is worse than a
+      blank**, because it gets built. The one thing that produced the actual design was asking
 - [ ] **A bug reported inside a design finding was fixed and never closed out.** Playtest 12
       finding 1 is tagged *design + bug* and carries *"(also people seems to not go in the middle)"*.
       The design half drove M41; the bug half is fixed — `CrowdLanes.PRECINCT_OFFSETS` is six lanes

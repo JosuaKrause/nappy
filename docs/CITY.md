@@ -358,18 +358,57 @@ obstacles.")*
   ground. "Planning-time legibility" is named a paragraph above as not existing.
 - **The main road as a soft block** — the one thing in the design that would divide the city into
   a near half and a far half — is planned in M47 and not built.
-- **Hard and soft diversions were designed on day one and summarised away.** This section first
-  said there was *"no note about them anywhere in this repo"*. That is wrong, and the truth is
-  worse: **playtest 01 finding 12** is the design, in the player's own words — *"block off all
-  other roads with events that cause excitement overload… should still be possible to avoid them
-  but it should be clear that that road cannot be taken"*. The blocker and the noise are one
-  object, and the road stays **passable at a visible price**. The plan summarised it down to
-  topology, M16 built the topology, and the row still reads *"done"*. See
-  `docs/PLAYTEST-01.md`, "12's other half".
-- **And the invariant now forbids the missing half.** `CLAUDE.md`'s *"a closure is silent… do not
-  let a closure emit"* is the exact mechanism finding 12 asked for, ruled out — decided on
-  engineering grounds by somebody who no longer knew a player had asked for it. **It is contested
-  and needs a decision**, not a quiet exception.
+- **Blockers are not placed to guide anybody**, which is the whole of it. The design is below.
+
+### Diversions — the design *(given by the player, 2026-08-31)*
+
+**Everything about how a blocker is presented is already solved.** The silhouettes, the caret, the
+badge, the meters — none of that is the problem. **The problem is placement, and only placement.**
+
+**Two axes, and they are independent.** The first is *permanence*, and it is what hard and soft
+mean here — not severity, and not how a thing looks:
+
+| | what it means | what it is made of |
+|---|---|---|
+| **Hard blocker** | the **layout** has pruned edges that cannot be traversed — permanent for the run | cul-de-sacs, big buildings |
+| **Soft blocker** | placed **for a given day**, and changes from day to day | road closures, fallen tree, restaurants, dog walker, homeless yeller |
+
+The second axis splits the soft ones by what they cost:
+
+- **Lethal** — ends the day.
+- **Mild / benign** — a price, not a stop.
+- **Road closures are their own case**: *not lethal, but they prevent full access.* An absolute
+  stop that does not kill.
+
+**The purpose of a blocker is to guide the player to a calm zone.** That is the sentence every
+placement rule has to serve, and it gives each kind a different job:
+
+- **Hard and lethal blockers form the paths.** They are the walls. They are placed *"in a way to
+  form paths through the map towards the calm zone"* — the route is what is left between them.
+- **Benign blockers go on the route.** Not walls: texture. They are placed on the path she is meant
+  to take, *"to make it more challenging / force the player to think their route through better"*.
+- **A benign blocker suggests a scenario.** The specific one: *"turning around on the curb to cross
+  the street and continue"* — a restaurant, a dog walker, a yeller. It is a **local** answer, a
+  street to cross rather than a route to rethink, and that is what separates it from a wall.
+- **Road closures shape the day without ending it.** They are how the set of available routes
+  changes between days.
+
+**The main road is the challenge to overcome, and it is what makes a run have an arc.** The player
+will take routes on **her side** of it until they are exhausted, and only then is she forced to
+explore the other half of the map. So the spine is not one day's obstacle; it is the thing that
+paces the whole act.
+
+**Sealing off a section of the map is allowed, and it is the point.** A combination of hard and
+soft blockers may make an entire section inaccessible. That is fine — *"the purpose is to guide the
+player away from that section anyway, since there are no calm zones in that area."*
+
+**Nothing in the current invariants forbids any of this**, which is worth stating because a session
+once thought otherwise. `_park_is_reachable` asks only that **some** calm area is still reachable
+from home, not that the city stays connected, so a sealed quarter is already legal.
+`ClosurePlanner`'s two-distinct-routes rule is likewise about reaching calm rather than about
+global connectivity. What is missing is not permission — it is that **closures are drawn at random
+from the legal candidates and events are placed by budget and weight, so neither has ever been
+asked where the player is trying to go.**
 
 So the honest summary: **the city permits routes to calm and protects them from becoming
 impossible. It never suggests one.**
