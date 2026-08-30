@@ -2334,10 +2334,15 @@ yet"*) and under the `CLAUDE.md` rule the first round produced.
       they are different code paths;
       **b)** a road runs into the border and stops in the grass instead of teeing into the boundary
       corridor;
-      **c)** people walk out onto the border as if it were pavement and vanish there — which breaks
-      *"nothing vanishes while you are looking at it"*, and note that M46 deliberately **grew** the
-      crowd's box near the boundary, so agents now have further to go outside the map before they
-      recycle and the ground out there is grass rather than the black that used to hide it;
+      **c)** people walk out onto the border as if it were pavement and vanish there — *"nobody
+      should be walking there since it is not a walkable area, they need to turn like the cars on a
+      t-junction"*, and the player is right: **`CrowdAgent._blocked_ahead` returns `false` for a
+      tile out of bounds**, so the one wall that should stop them is the one it reports as clear.
+      Every agent already runs the divert (`_process` calls it for walkers and cars alike), so the
+      fix is likely to be *out of bounds is blocked* and nothing else — which would take **b)**
+      with it. Check it against the **spine exits**, which are the one place a car is meant to
+      leave the map. The first note here blamed M46 growing the crowd's box; that is how far they
+      get, not why they are out there;
       **d)** the fence again
 - [ ] **The same faults on the north and south borders.** *"Same issue with other borders."*
       Whatever fixes the east has to be stated over **a border** rather than over one side of the

@@ -276,12 +276,37 @@ tile (152,103), east edge. Four separate faults, listed as the player numbered t
 - **b) A road runs into the border instead of ending in a T-junction.** The lattice is supposed to
   end in a boundary corridor that every interior street tees into. Here a carriageway reaches the
   edge and simply stops in the grass.
-- **c) People walk into the border as if it were pavement, and disappear.** Crowd agents are
-  ranging past the last walkable tile and vanishing in the open. Two things to look at together:
-  the crowd's box is a **population of the field**, and M46 deliberately *grew* that box near the
-  boundary — so the agents now have further to travel outside the map before they recycle, and the
-  ground out there is grass instead of the black it used to be, which is what made it visible.
-  *"Nothing vanishes while you are looking at it"* is an existing invariant and this breaks it.
+- **c) People walk into the border as if it were pavement, and disappear.**
+
+  > "Nobody should be walking there since it is not a walkable area — they need to turn like the
+  > cars on a t-junction."
+
+  **The player's diagnosis is right and the first one written here was wrong.** It was recorded as
+  agents *ranging too far* — that M46 grew the crowd's box near the boundary, so they now travel
+  further outside the map before recycling, and the new grass made it visible. That explains how
+  far they get. It does not explain why they are out there at all, and the answer is one line.
+
+  Every agent, walker and car alike, already runs the T-junction rule: `_process` calls
+  `_blocked_ahead(_vertical, _direction, LOOKAHEAD)` and diverts. `_blocked_ahead` reads:
+
+  ```gdscript
+  if _map.is_closed(tile):
+      return true
+  if not _map.in_bounds(tile):
+      return false          # <- the boundary is the one wall it says is clear
+  ```
+
+  **Out of bounds is reported as not blocked.** So the machinery that turns a car off a closed
+  street, off a precinct and out of a park is in place, applies to walkers, and is told that the
+  edge of the world is open road. Nothing about the crowd's population or its box is implicated;
+  they walk off the map because the only thing that would stop them says they may.
+
+  Two things follow and both are worth having before this is built. The fix is likely to be
+  *"out of bounds is blocked"* and then the existing divert does the rest — which would also make
+  fault **b)** disappear, since a car reaching the edge would turn instead of running into the
+  grass. And it wants checking against the **spine exits**, which are the one place an agent is
+  supposed to leave the map: the tunnel and the bridge are lethal on purpose and a car has to be
+  able to drive into them.
 - **d) The fence again** — finding 12.
 
 ## 14. The same faults on the other borders
