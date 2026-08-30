@@ -358,10 +358,18 @@ obstacles.")*
   ground. "Planning-time legibility" is named a paragraph above as not existing.
 - **The main road as a soft block** — the one thing in the design that would divide the city into
   a near half and a far half — is planned in M47 and not built.
-- **Hard and soft diversions** were asked for by a player and there was **no note about them
-  anywhere in this repo**, so nothing was ever designed or built. That is the item this section
-  exists to stop happening again; see `CLAUDE.md`, "Write the feedback down with all of its
-  detail".
+- **Hard and soft diversions were designed on day one and summarised away.** This section first
+  said there was *"no note about them anywhere in this repo"*. That is wrong, and the truth is
+  worse: **playtest 01 finding 12** is the design, in the player's own words — *"block off all
+  other roads with events that cause excitement overload… should still be possible to avoid them
+  but it should be clear that that road cannot be taken"*. The blocker and the noise are one
+  object, and the road stays **passable at a visible price**. The plan summarised it down to
+  topology, M16 built the topology, and the row still reads *"done"*. See
+  `docs/PLAYTEST-01.md`, "12's other half".
+- **And the invariant now forbids the missing half.** `CLAUDE.md`'s *"a closure is silent… do not
+  let a closure emit"* is the exact mechanism finding 12 asked for, ruled out — decided on
+  engineering grounds by somebody who no longer knew a player had asked for it. **It is contested
+  and needs a decision**, not a quiet exception.
 
 So the honest summary: **the city permits routes to calm and protects them from becoming
 impossible. It never suggests one.**

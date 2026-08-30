@@ -809,6 +809,21 @@ street is the crowd, the danger is the events, the shape is the closures. A nois
 already exists as the `construction` event. Do not let a closure emit; it would be a third
 thing for `City.total_excitement_at` to sum, and that list is exactly two long on purpose.
 
+> **This invariant is contested and is awaiting a decision — do not cite it to close an
+> argument.** It rules out exactly the mechanism playtest 01 finding 12 asked for: *"block off all
+> other roads **with events that cause excitement overload** — should still be possible to avoid
+> them but it should be clear that that road cannot be taken."* The blocker and the noise were
+> meant to be one object, and the road was meant to stay **passable at a visible price**. This rule
+> was written years of milestones later, on sound engineering grounds, by somebody who no longer
+> knew a player had asked for the opposite — which is the failure the *"never silently overturn"*
+> rule above exists to catch, found in the record after the fact. See `docs/PLAYTEST-01.md`,
+> "12's other half", and `docs/TODO.md`, M49.
+>
+> Note that the engineering objection is **answerable without touching the two-summand rule**: a
+> soft diversion can be an ordinary catalogue event that the *scheduler* places to say "not this
+> way today", which is a placement decision rather than a third thing to sum. That is a design
+> conversation to have with the player, not a fix to apply.
+
 **No circles around entities.** *(Standing decision, playtest 02 finding 8, restated by
 playtest 04 finding 2. The aura rings were **deleted** in M22, not restyled. Do not add another
 one, and do not reach for a ring when something new needs signalling.)*
