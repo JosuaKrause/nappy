@@ -38,6 +38,7 @@ func run(t) -> void:
 	_test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t)
 	_test_traffic_gives_way_at_a_crossing(t)
 	_test_the_crowd_stays_in_the_field(t)
+	_test_the_crowd_does_not_bunch_against_the_wall(t)
 	_test_the_field_is_wider_than_the_screen(t)
 	_test_cars_do_not_drive_through_each_other(t)
 	_test_a_car_can_honour_the_headway_it_keeps(t)
@@ -786,6 +787,70 @@ func _agents_in_front_of(field: CrowdField) -> int:
 		if agent.global_position.y > field.centre.y:
 			found += 1
 	return found
+
+## The box holds the same amount of *city* wherever she stands, so the crowd does not bunch
+## against the boundary wall. *(M46.)*
+##
+## `CrowdField.corridor_range` clamps to the city and the population does not clamp with it, so a
+## box that is half wall put the same two hundred people on half the streets: measured before the
+## fix, the corridor against the west wall showed 67 walkers on 54% of a screen of city — the same
+## count as mid-map in half the ground — and read as 1.6x an ordinary middle corridor, beating the
+## main road on two seeds of five.
+##
+## Two checks, because the mechanism and the thing the player feels are different statements and
+## either could hold while the other fails. The first is the rule itself and is free. The second
+## is short on purpose — five seconds of settling and five of counting, which is enough to
+## separate a doubling and not enough to pin a value, and pinning a value is not what it is for.
+func _test_the_crowd_does_not_bunch_against_the_wall(t) -> void:
+	var field := _city.crowd.field()
+	var extent := _city.map.world_size()
+	var middle := extent * 0.5
+	var corner := Vector2(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
+	var worst := 0.0
+	for at in [middle, corner, Vector2(Tuning.TILE_SIZE, middle.y),
+			Vector2(extent.x - Tuning.TILE_SIZE, middle.y)]:
+		field.centre = at
+		var across := minf(extent.x, at.x + field.radius) - maxf(0.0, at.x - field.radius)
+		var down := minf(extent.y, at.y + field.radius) - maxf(0.0, at.y - field.radius)
+		worst = maxf(worst, absf(across * down / pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) - 1.0))
+	t.check(worst < 0.02,
+			"the box holds the same city at the wall as in the middle (worst %.0f%% out)"
+			% [worst * 100.0])
+
+	# Two ordinary corridors at the same height, one against the west wall and one three blocks
+	# in. Not the middle of the map, which is the main road: the busiest pavement in the city is
+	# the wrong yardstick for an ordinary one, in either direction.
+	var open := _density_around(_pavement_beside(3))
+	var walled := _density_around(_pavement_beside(0))
+	t.check(walled < open * 1.5,
+			"and a street beside the wall is not denser than one mid-map (%.0f vs %.0f walkers "
+			% [walled, open] + "per screen of city)")
+
+func _pavement_beside(corridor: int) -> Vector2:
+	var x := corridor * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
+	return _city.map.tile_to_world(Vector2i(x, _city.map.size.y / 2))
+
+## Walkers on screen per *screen of city*, standing at a point. Normalised because half a screen
+## against the boundary wall is half a screen of wall, and counting what is on it without saying
+## so is how the bug being tested for got in.
+func _density_around(at: Vector2) -> float:
+	_city.crowd.start_day(1, _rng(1), at)
+	_advance(10.0)
+	var extent := _city.map.world_size()
+	var visible := (minf(extent.x, at.x + 640.0) - maxf(0.0, at.x - 640.0)) \
+			* (minf(extent.y, at.y + 360.0) - maxf(0.0, at.y - 360.0))
+	var walkers := 0.0
+	var samples := 0
+	for i in int(round(10.0 / STEP)):
+		_city.crowd.step(STEP)
+		samples += 1
+		for agent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.WALKER:
+				continue
+			var away: Vector2 = agent.global_position - at
+			if absf(away.x) <= 640.0 and absf(away.y) <= 360.0:
+				walkers += 1.0
+	return walkers / float(maxi(1, samples)) * (1280.0 * 720.0) / maxf(1.0, visible)
 
 ## The floor under `CROWD_FIELD_RADIUS`, and the only one that matters: nothing may appear on
 ## screen. Half the viewport diagonal is the furthest anything visible can be from the camera,

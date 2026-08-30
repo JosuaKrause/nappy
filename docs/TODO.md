@@ -1778,7 +1778,7 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
       is the only line with no head-on contact on it (`BUMP_RADIUS` 14 against a 16px half-lane)
       and it is the worst line for the ambient noise. A player who finds one has found the other
       one's punishment
-- [ ] **The crowd bunches against the boundary wall, where the comment says it thins.** Found
+- [x] **The crowd bunches against the boundary wall, where the comment says it thins.** Found
       while measuring the above. `CrowdField.corridor_range` clamps to the city and says so:
       *"that is also why the crowd thins out honestly in the corner of the map instead of
       bunching against the wall — there are simply fewer streets to put anybody on"*. The
@@ -1798,10 +1798,38 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
       **The count on screen is flat while the city on screen is halved**, so the density per
       street at the wall is about double and the outer corridors read as **1.6× an ordinary
       middle one** — loud enough that on two of five seeds a corridor beside the wall beat the
-      main road. The fix is that the population is a population of the box, so it has to be a
-      population of *the part of the box that is city*. The trap to avoid is spawning and
-      despawning as she walks: what changes is how many agents are live, and a day that visibly
-      gains people as she approaches the middle of the map is worse than the bug
+      main road.
+
+      **Fixed on the box rather than on the population, which is what made it nine lines.** The
+      first design was the obvious one — fewer agents live where there is less street — and it
+      is the wrong one twice over: it needs a live count that varies, and a live count that
+      varies has to sleep somebody, which is *"nothing vanishes while you are looking at it"*
+      asking for a whole waking-and-sleeping protocol that only ever runs off-screen. Instead
+      `CrowdField` **grows the box near the wall** until the amount of *city* in it is what a box
+      mid-map holds: `contains`, `along_bounds` and `corridor_range` all read `radius`, so every
+      one of them follows, and no agent is created, destroyed or hidden. Growing is always the
+      safe direction — the only floor under `CROWD_FIELD_RADIUS` is that nothing may be seen to
+      appear.
+
+      Solved by iterating rather than in closed form, and that was a decision: the exact answer
+      is a quadratic whose terms depend on which of the four sides are against a wall **and**
+      which of them clip while it grows, which is four cases to get wrong. Scaling by the square
+      root of the shortfall lands within a pixel in three passes.
+
+      | | before | after |
+      |---|---:|---:|
+      | radius against the west wall | 800 | **1108** |
+      | walkers per screen of city, at the wall | **105** | **64** |
+      | the same, three blocks in | 58 | 58 |
+      | mean floor, outer corridors (5 seeds) | 7.50 / 6.80 | **3.12 / 4.52** |
+
+      So the wall now reads as an ordinary street rather than as a busy one, and the two
+      corridors against it come in slightly *under* an ordinary middle corridor — an error in the
+      safe direction, and the honest reason is that keeping the box's **area** constant does not
+      keep its split between north-south and east-west street length constant. Held by
+      `tests/test_crowd.gd`, "the crowd does not bunch against the wall", as two checks rather
+      than one: the geometry, which is the mechanism and is free, and the density, which is what
+      the player feels and is the half that could pass while the other fails
 - [ ] **Re-measure the whole cost table afterwards** — `docs/EVENTS.md`, "What an event actually
       costs" — because if the crowd's share moves, every authored row's share moves with it, and
       the table is the fastest way to see what a balance change did to the catalogue
