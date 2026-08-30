@@ -205,6 +205,31 @@ and harder to miss, and shapes that are not all squares. Three things follow.
   That is the same machinery M45 wants for permanent restrictions, arriving from the other
   direction — so these two are one piece of work and should be built together.
 
+**And a second lever was taken in the same session, which is a placement rule rather than new
+geometry:**
+
+> *"another way to get density is to make a rule to not have a calm area at the edge of the map or
+> next to the main road"*
+
+Today a single calm block has **neither** rule — `_assign_purposes` constrains it only by "not
+claimed", "no open calm across the street" and `_too_near_the_home` — so a quiet square can stand
+in the outermost block column against the boundary wall, or across the road from the spine. A 2×2
+zone has half of one: `_zone_fits` refuses a footprint that would *absorb* a stretch of the
+arterial, which is a different rule about a different thing.
+
+Counted on the lattice, for a single calm area, with the home clearance already applied: **96
+eligible blocks today → 56 with the edge rule → 48 with both.** The field halves and the count
+does not move, which is exactly what the finding asked for.
+
+Two things the count says that the proposal did not. **The density argument is almost entirely the
+edge rule** — the outer ring is 40 blocks and the spine's two columns add 8 more, because the main
+road runs down the middle where the home clearance has already removed a 5×5 — so *"not beside the
+main road"* has to stand on design instead, where it is the stronger of the two: the spine is 0.6
+decay ground, a park you can hear it from is not calm, and calm that never sits beside it means
+**crossing it always leads somewhere worth crossing for**. And **it recovers half the loss, not all
+of it**: the 7×7 city had ~24 eligible blocks for the same 5–7 areas. This lever and the bigger
+calm areas are complementary — one shrinks the field, the other enlarges each destination.
+
 ## Finding 3 — the gray barriers are `construction`, and they are drawn wrong twice
 
 *"no clue what they are supposed to be"* is the finding, and the trace names the row:

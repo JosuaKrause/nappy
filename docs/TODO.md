@@ -1700,6 +1700,54 @@ The decision taken on the finding, quoted, because it is not what the analysis e
 > got implemented. not all calm areas have to take up multiple blocks but add more that do. also,
 > add calm varieties that take up 2x1 non-square shapes"*
 
+- [ ] **Calm ground is never at the edge of the map and never beside the main road** — the second
+      lever on density, taken in the same session and **cheaper than everything below it**, because
+      it is a placement rule rather than new geometry. *"Another way to get density is to make a
+      rule to not have a calm area at the edge of the map or next to the main road."*
+
+      **Today a single calm block has neither rule.** `_assign_purposes` constrains it three ways
+      — unclaimed, no open-calm neighbour across a street, `_too_near_the_home` — so a quiet square
+      can sit in the outermost block column against the boundary wall, or directly across the road
+      from the spine. A 2×2 zone has half of one: `_zone_fits` refuses a footprint that would
+      **absorb** a stretch of the arterial, which is about swallowing the street rather than about
+      being beside it.
+
+      **Measured on the lattice, for a single calm area, with the home clearance already applied:**
+
+      | eligible blocks | count |
+      |---|---:|
+      | today (121 minus the 5×5 home clearance) | **96** |
+      | + no calm in the outer ring of blocks | 56 |
+      | + no calm in the two block-columns beside the spine | **48** |
+
+      So it halves the field for the same 5–7 open calm areas, and **the count the player asked to
+      keep does not move**. Two things about that table are worth carrying:
+
+      - **The two halves are wildly unequal and the density argument is almost all the edge rule.**
+        The outer ring is 40 blocks; the spine's two columns add only **8** on top, because the
+        main road runs down the middle where `_too_near_the_home` has already taken a 5×5 out. So
+        *"not beside the main road"* has to be justified on **design** rather than on density —
+        where it is stronger: `decay_multiplier` is 0.6 on the spine, so a park you can hear it
+        from is not calm ground, and if calm never sits beside it then **crossing it always leads
+        somewhere worth crossing for**, which is what makes it a soft block rather than a wall.
+      - **It recovers half the loss, not all of it.** At 7×7 the eligible field was ~24 blocks for
+        the same 5–7 areas. This lever and the bigger calm areas below are complementary — one
+        shrinks the field, the other enlarges each destination — and neither is sufficient alone.
+
+      Three things to get right when building it. State both rules over a **footprint**, like
+      `_too_near_the_home` and `_zone_fits` already do, so single blocks and zones obey one rule
+      rather than two that drift. State the spine rule over **`map.main_road`**, never over
+      `CrowdLanes.arterial_index` — `_zone_fits` currently uses the latter and so carries the same
+      M41 defect as `CrowdLanes.busyness()` (see M46), protecting a horizontal arterial the city no
+      longer has; adding a third copy of a fact that already has two, one of them wrong, is the
+      `DangerEdge` mistake M37 found. And **decide courtyards separately**: a courtyard is *hidden*
+      calm you have to know about, it is cut from `remaining` with only the neighbour rule on it,
+      and an argument can be made either way for one against the boundary.
+
+      Then **measure the room before committing**, because this is where it goes quietly wrong:
+      48 blocks must hold 5–7 non-adjacent calm areas, 1–2 four-block zones needing a wholly
+      unclaimed 2×2, and up to 3 courtyards — and `generate()` retries with `seed + 1`, so a rule
+      that is too tight shows up as a slower generator rather than as an error
 - [ ] **The 2×2 inner courtyard — an apartment complex.** Asked for *"a long time ago"* and never
       built. What exists is `COURTYARD_SIZE_TILES`, a 4-tile court carved inside **one**
       residential block. What is wanted is four blocks of buildings with a shared court in the
