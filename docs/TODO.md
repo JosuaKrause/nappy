@@ -2506,9 +2506,9 @@ nearest home on every seed, and it had nothing to say about the second route.)*
       what is left where they have all come together
 - [ ] **A path carries the colour of its origin**, and both probes from one calm area carry the
       same colour
-- [ ] **Same colours may not merge.** That is the whole of the second-route guarantee: the two
-      probes from one area can never become one path, so each calm area ends up reached **two
-      genuinely distinct ways**, by construction rather than by a check afterwards
+- [ ] **Same colours may not merge.** The two probes from one area can never become one path, so
+      where a second route exists at all the area is reached **two genuinely distinct ways**. It is
+      an offer rather than a guarantee — see below
 - [ ] **Different colours merge, and the colours add up.** A probe that touches a differently
       coloured path joins it, and the joined path carries the **union** of both colour sets. Which
       is the elegant half: once the `A`+`B` path exists, `A`'s other probe is locked out of it by
@@ -2530,50 +2530,58 @@ nearest home on every seed, and it had nothing to say about the second route.)*
 3. **Loop-erased random walk.** Wilson's algorithm — walk randomly, delete loops as they close —
    rather than a drift toward home. It is the standard tool for exactly this shape and it gives
    variety without wandering.
-4. **A blocked probe swaps designation with the path it ran into.** *"If probe B wants to walk into
-   A's path we call the remainder of A's path path B, and re-roll A from the segment before that."*
-   So the tail from the touch point home changes owner, and the probe that lost it re-rolls. Two
-   paths that do not cross, out of a collision that would otherwise be a dead end.
+4. **Probes go out sequentially, and the second one is optional.** *"No swapping — if we send out
+   the probes sequentially we can check if there is another path left, via a shortest path
+   algorithm that avoids path A. Having two distinct paths is really a niceness to the user. If we
+   cannot construct a path B at all, let's not try."* So: grow probe 1, then ask whether a route to
+   that area exists **avoiding probe 1's segments**. If it does, that is probe 2. If it does not,
+   the area has one way in and the day is fine.
 5. **Hard blockers are placed against a tree, not before one.** *"First construct an example tree
    from the initial map, then place the hard blockers — that way we can't block off regions
    entirely. Then when a day starts we construct a tree for real."* So generation runs: lay the
    city → grow a **reference tree** → place hard blockers that leave it intact → and only then does
    each day grow its own tree on what is left.
 
-### The swap does not fully close it, and here is what is left
+### Dropping the swap removes every hard case at once
 
-*(Asked directly: "would this fully solve the issue?")* It closes the common case cleanly and three
-things survive it. None is a reason not to do it; all three need an answer in the code.
+The swap was proposed to rescue a probe that could not merge, and it carried three problems: it
+could ping-pong with no decreasing quantity so nothing guaranteed termination; it was undefined
+against a **merged** path, where re-designating a tail carrying `{A, B, C}` would silently re-route
+`B` and `C` and could collapse *their* second routes; and it could not fix a pocket anyway. **All
+three are gone** — sequential probes with an existence check have no collision to resolve, so there
+is nothing to ping-pong, nothing to re-designate, and a pocket is simply an area with one way in.
 
-- **It can ping-pong.** After the swap, `A`'s re-roll starts one segment back and may immediately
-  run into `A`'s *other* path — which now owns the tail — and swap again. There is no obviously
-  decreasing quantity, so nothing here guarantees termination. **Bound the swaps** and fall back to
-  re-rolling the day's whole tree, which is this project's own lesson that *a retry is not a
-  guarantee* applied one scale out.
-- **It is not well defined against a merged path.** Swapping is clean when `A2` runs into a pure
-  `A` path. If it runs into one carrying `{A, B, C}`, "the remainder becomes `A2`" also re-routes
-  `B` and `C` — and may collapse *their* two distinct routes into one, breaking the guarantee
-  somewhere nobody was looking. Either restrict swapping to single-colour paths and treat the
-  merged case as a plain re-roll, or define what a swap means for a colour set. **This is the one
-  that would ship as a silent bug.**
-- **It cannot fix a pocket.** If the lattice around a calm area offers only one way out, two
-  disjoint paths do not exist and no swap invents them. That is a **generation-time** property, and
-  it is exactly what answer 5 above is for.
+**What it costs is a guarantee, and that is a deliberate trade.** *"Having two distinct paths is
+really a niceness to the user."* So a second route is an **offer the day makes when the map allows
+it**, not a promise. This is the right way round — the alternative was a construction bending
+itself to preserve a property nobody had asked to be absolute — but it has to be taken with the
+consequence below open-eyed, not discovered later.
 
-**And 5 wants stating as a property rather than as an example.** A reference tree is one sample of
-a random construction, so hard blockers that leave *it* intact may still strand some other day's
-roll. The property actually needed is the one already computable: **after hard blockers, every calm
-area the run will ever use still has two edge-disjoint routes from home** — `StreetNetwork.
-route_count` is a max flow and already answers exactly this, on the junction graph, cheaply enough
-to run per candidate blocker. Keep the reference tree as the readable sanity check and the eyeball
-test; make `route_count` the gate.
+**The consequence: winnability loses one of its two protections.** `MIN_CALM_AREAS_WITH_TWO_ROUTES`
+existed so that no single closure could cut every route to the calm. Under this design that
+protection comes instead from **where a wall is placed** — off the tree, by construction — so the
+redundancy is no longer the backstop, the placement is. That is coherent, and it means one bug in
+wall placement is now the whole distance between a normal day and an unwinnable one.
 
-**This strengthens the invariant conversation rather than complicating it.** Two distinct routes to
-*every* calm area is stronger than `MIN_CALM_AREAS_WITH_TWO_ROUTES = 2`, and it arrives by
-construction. The open question below may end up answered by deleting a check rather than weakening
-one — but not before the construction is real and measured, because a guarantee that holds "by
-construction" is exactly the kind that stops holding silently. Note that the three residual cases
-above are all ways it would stop holding
+- [ ] **Keep a reachability check as the last line.** `_ensure_the_city_is_still_walkable` /
+      `_park_is_reachable` already asks only that *some* calm area is reachable, which is exactly
+      the weakened guarantee and costs one BFS. **Do not delete it when
+      `MIN_CALM_AREAS_WITH_TWO_ROUTES` goes.** Two independent mechanisms became one; this keeps it
+      at two, cheaply, and it is the difference between a placement bug being a bad day and being
+      an unwinnable one
+
+**And this makes step 1's gate much weaker, which is a gift.** Hard blockers no longer have to
+leave two edge-disjoint routes to every calm area — only **reachability**. Cul-de-sacs and dead
+ends were always the point of hard blockers and the old gate fought them; a `route_count >= 2`
+requirement would have refused most of the interesting ones. Use `route_count >= 1`, or just the
+walk field, and keep the reference tree as the readable sanity check rather than as the gate.
+
+**One detail left, and it is small.** The existence check is a shortest path avoiding probe 1 —
+but is path B *that* shortest path, or a fresh loop-erased walk constrained to the subgraph
+without probe 1? Recommendation: **use the shortest path directly.** It is simpler, and it produces
+the asymmetry already noted as wanted — *"one way is going to be probably shorter than the other"* —
+with the wandering route and the efficient alternative falling naturally out of the two methods.
+Revisit only if the drawn map makes B look conspicuously optimal beside A
 - [ ] **`RouteTree`, in `src/routes/`.** Built from `map`, the day's closed set and the available
       calm areas. It holds, per calm area, the **branch** that reaches it; over the whole day, the
       **bundles** — edges carried by two or more branches — and the **fan-out**, meaning the
@@ -2608,11 +2616,9 @@ blockers."*
 - [ ] **They are placed against a tree, not before one**, in `CityGenerator`, from the city RNG —
       so they hold still for the whole run and are what the player learns. Grow a **reference
       tree** on the finished lattice first, then place blockers that leave it intact, *"that way we
-      can't block off regions entirely"*. The gate is not the sample though: it is
-      `StreetNetwork.route_count`, which already answers *"are there two edge-disjoint routes from
-      home to this calm area"* as a max flow on the junction graph, cheap enough to run per
-      candidate. Every calm area the run will **ever** use, including act IV ones — which is the
-      constraint that makes this the hard step and the reason it goes first
+      can't block off regions entirely"*. The gate is **reachability**, for every calm area the run
+      will ever use including act IV ones — not two routes, which a cul-de-sac would fail by
+      definition. The reference tree is the readable sanity check beside it, not the check itself
 - [ ] **`CityGenerator.validate()` gains the new condition** and it runs on every seed, like the
       rest. `tests/test_blocks.gd` already asserts the walkable set is identical tile-for-tile
       across every block arc — hard blockers must not move a walkable tile after generation
