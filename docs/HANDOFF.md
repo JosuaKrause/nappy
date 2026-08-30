@@ -7,8 +7,9 @@ is this file going stale for two milestones and is worth not repeating.
 
 > ## Where to pick up
 >
-> **M41 is merged** (`c4e18d2`). **M43 is half done on `feature/in-the-way-of-nothing` and
-> uncommitted**, and the order is **the rest of M43, then M45, then M40, then a playtest**.
+> **M41 is merged** (`c4e18d2`), and so is the built half of **M43** — merged deliberately
+> unfinished, because what is left of it cannot be done at a keyboard. The order is **the rest of
+> M43, then M45, then M40, then a playtest**.
 >
 > - **M43, what is left** — the two findings a rig cannot answer. The pursuit **cool-off** (is 0.8s
 >   of the gap opening still slow? it is one constant) and **dying at high excitement on a quiet

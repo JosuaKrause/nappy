@@ -127,14 +127,18 @@ street and no hierarchy among them.
 **M41 is merged.** It landed at `c4e18d2` after the session that built it, and the suite is
 122119 checks green on it.
 
-**M43 is half done and it produced a milestone.** Three of its seven are built (nothing on the home
-block, the diagonal `zzz`, a dog that does not reverse), two were **answered by measuring rather
-than by building** — the busker's arithmetic is already right at every size of calm area, and a
-closure cannot change a route in this city at all — and the closure half turned into **M45**, on a
-design taken in that session: a closure's job is *direction, not distance*, and the grid has to
-stop being a full grid before anything can point anywhere. What is left in M43 is the two findings
-that need a **played run** rather than a rig: the pursuit cool-off and dying at high excitement on
-a quiet street.
+**M43 is merged half done, on purpose, and it produced a milestone.** Three of its seven are built
+(nothing on the home block, the diagonal `zzz`, a dog that does not reverse), two were **answered
+by measuring rather than by building** — the busker's arithmetic is already right at every size of
+calm area, and a closure cannot change a route in this city at all — and the closure half turned
+into **M45**, on a design taken in that session: a closure's job is *direction, not distance*, and
+the grid has to stop being a full grid before anything can point anywhere.
+
+It is on `main` unfinished because **what is left of it cannot be done at a keyboard**: the pursuit
+cool-off and dying at high excitement on a quiet street both need a *played run*, and holding five
+green changes on a branch until somebody has time to play the game is how a branch goes stale. The
+branch stays open for the two findings; the work that is done is on `main` where the next
+screenshot and the next playtest will be taken against it.
 
 **The order from here is the rest of M43, then M45, then M40, then a playtest** — the original
 order was M43, M40, a playtest, with the note that by that point *"everything might have changed to
