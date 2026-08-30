@@ -518,3 +518,33 @@ func _paint_ground() -> void:
 			var source := GroundTiles.source_for(map, tile)
 			if source >= 0:
 				_ground.set_cell(tile, source, Vector2i.ZERO)
+	_paint_outside_the_map()
+
+## Ground under the ring of frontages outside the map. *(Playtest 14: "did you do the border yet?
+## It's just black.")*
+##
+## M41 built the ring and `camera_bounds()` opened the camera onto it, and neither put anything
+## on the floor out there — the tilemap has only ever been painted over `map.size`, so the
+## frontages stood on the clear colour. From inside the city that is a black seam past the last
+## kerb; from the boundary street it is most of the far side of the road.
+##
+## **Painted by continuing the edge outward rather than by choosing an "outside" tile.** The tile
+## the map ends on is already the right answer to "what is out there" — pavement behind a
+## frontage, carriageway where a corridor runs off the map — so each outside tile clamps to the
+## nearest tile *in* the map and takes its picture. The spine's four exits then get their road
+## for free, which is the thing that would have needed a special case.
+##
+## The one substitution is a crossing: zebra stripes repeated eight tiles into the distance are a
+## ladder lying in the road, and there is nothing out there to cross to.
+func _paint_outside_the_map() -> void:
+	var depth := OUTSIDE_DEPTH_TILES
+	for y in range(-depth, map.size.y + depth):
+		for x in range(-depth, map.size.x + depth):
+			if x >= 0 and x < map.size.x and y >= 0 and y < map.size.y:
+				continue
+			var inside := Vector2i(clampi(x, 0, map.size.x - 1), clampi(y, 0, map.size.y - 1))
+			var source := GroundTiles.source_for(map, inside)
+			if map.tile_at(inside) == GameEnums.TileType.CROSSING:
+				source = GroundTiles.ROAD
+			if source >= 0:
+				_ground.set_cell(Vector2i(x, y), source, Vector2i.ZERO)
