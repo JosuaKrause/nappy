@@ -40,6 +40,20 @@ the shared, versioned, reviewable place, and it is already where this project ke
 The same rule one level down: a note long enough to unbalance this file becomes a **rule file of its
 own** rather than a longer `CLAUDE.md`. What must not happen is a note living nowhere.
 
+## Names are content, never identifiers
+
+The mother and the baby have names — see `docs/NARRATIVE.md`, which is the one place that says
+what they are. **Nothing in `src/` may be named after them.** No `hal.gd`, no `var wren`, no
+`WREN_CRY_THRESHOLD`.
+
+**Why:** a name can change at any time, and a name that has reached an identifier changes with a
+rename across every file that mentions it — which is a diff nobody can review for anything else, on
+a decision that was meant to be cheap to revisit. The code calls them what they *are* — `Stroller`,
+`Baby`, `player`, `mother` — which is stable under every renaming the narrative might want. The
+names belong in the writing: dialogue, the HUD's own strings, `docs/NARRATIVE.md`.
+
+The same holds for anything else the fiction may rename: the city has no name for the same reason.
+
 ## Verification loop
 
 Run all three before committing. They are fast and they each catch a different class of bug.

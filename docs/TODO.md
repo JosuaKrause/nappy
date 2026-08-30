@@ -140,14 +140,34 @@ green changes on a branch until somebody has time to play the game is how a bran
 branch stays open for the two findings; the work that is done is on `main` where the next
 screenshot and the next playtest will be taken against it.
 
-**The order from here is the rest of M43, then M45, then M40, then a playtest** — the original
-order was M43, M40, a playtest, with the note that by that point *"everything might have changed to
-the point where crowd balancing is not needed"*.
-The crowd milestone below is therefore **not next**: M41 moved the car population twice, gave the
-ground a recovery rate and gave the junctions a capacity, so every number the crowd milestone was
-going to argue about has already moved. Re-read the traces before assuming it still exists.
+**Playtest 13 has landed and it overrides that order.** Eight findings in
+**[docs/PLAYTEST-13.md](PLAYTEST-13.md)**, off one run that ended on day 4 with a bad ending, and
+the sentence under it is *the crowd is supplying almost all of the difficulty and every authored
+system in the game is being judged through it* — reported this time by a person, in the plainest
+possible words: **"just walking around now increases excitement — this is bad."** The trace has
+her standing still for three seconds on an ordinary pavement outside her own front door and
+gaining eight points, and a day lost in 29.4s reading `crowd 24.6, events 0.0`.
 
-**What that leaves.** M43, M40, a playtest, and then M25's other half —
+**So the crowd milestone exists, it is `M46`, and it is next.** The note below said to re-read the
+traces before assuming it survived M41. The traces were re-read; it survived. It has now been
+found by playtest 07, by playtest 10 and by a human sentence, and deferred three times.
+
+**And the process finding is the one to read first.** The player opened by saying they could not
+comment on much *"since you didn't actually finish your work"*, and closed with:
+*"don't tell me to playtest again unless all the things we discussed have been implemented — there
+is otherwise not really any point in playtesting since it will just surface the already mentioned
+things again."* M43 was merged half done on the argument that what was left needed a played run.
+This is what that bought: five nerves spent rediscovering things already written down.
+**A playtest is a scarce resource. Do not spend one on a build known to be incomplete.**
+
+**The order from here is: the tooling (findings 4 and 5), then M46, then M47, then the rest of
+M43, then M48, then M40 — and only then a playtest.** The tooling goes first because M46 and M47
+both want exactly the two things it provides: a picture of the grid, and a screenshot on demand
+with a line in the trace beside it. M45 is absorbed into **M47**, because the permanent
+restrictions it needs and the bigger calm areas playtest 13 asked for are the same mechanism —
+`absent_segments`, and what a lot is.
+
+**What that leaves.** M46, M47, M43's last two, M48, M40, a playtest, and then M25's other half —
 patrols, which is unaffected by M31 and is now specifically the answer for **acts III and IV**,
 where the streets are deliberately empty and the threat should follow rather than sit. *M25's
 first half shipped in M33*: running that matters exists now, as a mechanic with a fairness contract
@@ -1241,9 +1261,11 @@ Playtest 11's remaining findings. See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**.
 the first three: **several things in this city are placed without asking what they are in the way
 of** — which is `CLAUDE.md`'s first rule failing at *placement* rather than at design.
 
-**Where it stands: three done, two answered by measuring rather than by building, two open — and
-one of those is a design decision that has to be taken rather than derived.** What follows is the
-plan with what each part turned out to be.
+**Where it stands: three done, two answered by measuring rather than by building, and the two that
+needed a played run have now had one.** Playtest 13 answered both — the cool-off is the wrong
+*quantity* rather than the wrong constant, and dying at high excitement on a quiet street is the
+crowd milestone — and added one more to this milestone, the day-4 dog. What follows is the plan
+with what each part turned out to be.
 
 - [x] **Nothing is placed on the home block** — finding 1. It is `ClosurePlanner`'s exemption
       applied to the other thing in the game that occupies ground, and it is stated over the
@@ -1365,15 +1387,75 @@ plan with what each part turned out to be.
 - [ ] **And the cool-off is played, not re-derived** — finding 6. `Tuning.PURSUIT_SHAKEN_OFF` landed
       in M39, after this report was taken: 0.8s of the gap opening, and the measured price of the
       answer went from ~35 points to **12**. If it still reads as slow it is one constant
+
+      **Played, and it is not one constant — it is the wrong quantity.** *(Playtest 13, finding 6:
+      "the dog doesn't stop fast enough on day 3 — we talked about this! when running the pursuit
+      should stop quickly — it **only** should keep going if the player doesn't run.")* Two chases
+      in the trace lasted **5.4s**, nearly twice `PURSUIT_TIME`, while she was running for most of
+      them; the first turned a meter reading 9 into a meter reading 95 and ended the day.
+
+      | day | chase lasted | she ran | it cost |
+      |---|---:|---:|---|
+      | 3, attempt 1 | **5.4s** | 3.2s | exc 9 → 95, lost the day |
+      | 3, attempt 4 | **5.4s** | 2.1s | exc 16 → 66 |
+
+      The cause is that `_outrun_for` needs **0.8 continuous seconds** of the gap opening and any
+      frame that does not open it resets the timer to zero. A real player does not hold a key down
+      for a clean 0.8s: she ran in four separate bursts — 1.2s, 0.5s, 1.4s, 0.4s — and every gap
+      between them put the counter back. Worse, the first `(WALK_SPEED + RUN_SPEED) / ACCELERATION`
+      of every burst is spent turning round, during which the gap is still **closing**, so a 1.2s
+      burst can contain well under 0.8s of opening.
+
+      **So the break-off condition becomes *she is running away from it*, read directly.** M39's
+      rate framing was the right fix for a different complaint and its guarantee still holds —
+      *only running can open the gap*, so walking cannot fake it — but it buys that guarantee by
+      measuring the **consequence** of running rather than running itself, and the consequence is
+      polluted by acceleration, by diagonals and by a player who lets go of shift. Reading the
+      state gives the same guarantee with none of the noise, and makes the player's sentence true.
+
+      Two things must not be lost with it, both already written down: the chase may not end before
+      it has been a threat (`PURSUIT_MIN_NOTICE` is the floor), and **walking away must never work
+      at any distance** — the M36 trap, where a trigger sitting at the break-off distance let a rig
+      stroll away from a robber every time
+- [ ] **The tutorial dog is not a tutorial after day 3** — playtest 13, finding 8, *"I had a
+      tutorial pursuing dog on day 4 — that should not happen"*. `charging_dog` is `first_day 3`
+      with `spawn_mode = AHEAD_OF_PLAYER` and no last day, so the scheduler goes on placing it
+      (three on day 4 of the trace) and the director goes on siting it in front of her, in the
+      identical presentation to the day-3 lesson: `ahead charging_dog comes at her from 200px in
+      front of her`. `_ensure_the_run_is_taught()` is correctly gated to `RUN_TAUGHT_DAY`; the row
+      underneath it is gated to nothing.
+
+      **Decided: it recurs, but is not sited ahead of her.** `AHEAD_OF_PLAYER` is for *"the small
+      number whose entire content is the moment it happens to you"*, and after day 3 that is
+      exactly what a charging dog stops being — the lesson is over and the row becomes a hazard
+      with a place. `alley_robbery` is the shape: `pursues_within`, a thing that is *somewhere*,
+      that can be seen and priced and routed around, and that becomes a chase if she walks up to
+      it. Two constraints: a `MAP`-placed pursuer needs a `pursues_within` or it can never trigger
+      at all, and `validate_pursuit`'s third clause puts that trigger inside `PURSUIT_BREAK_OFF`;
+      and **day 3 keeps the placement it has**, because the lesson depends on being unavoidable
 - [ ] **Dying at high excitement on a quiet street** — finding 8, and read the trace before touching
-      anything. The strongest suspect is the **recovery**, and it is a rule taken on purpose:
+      anything.
+
+      **Playtest 13's trace is that read, and the answer is the first of the three suspects: this
+      finding *is* the crowd milestone.** The losing line is
+      `lost_crying after 29.4s … exc 100, in 24.6/s (crowd 24.6, events 0.0)`, with the nearest
+      catalogue row 272px away and out of range — playtest 10's own shape, one milestone later. It
+      is **M46**, and this entry closes into it rather than being answered here. The other two
+      suspects stay open and are cheap to check while M46 is being measured: whether the pram's
+      `EXCITEMENT_NEARLY_CRYING` cue is shown and not read, and whether one contact at 90 is a
+      cliff — at 22–34 points a second a single bump above ~89 ends the day on an empty street, and
+      the trace has fifteen bumps in four days.
+
+      What the entry said before the read, kept because the reasoning still holds and is now
+      M46's: the strongest suspect is the **recovery**, and it is a rule taken on purpose —
       `EXCITEMENT_DECAY_IDLE` is 0.0, so above the calm threshold the only way down is walking
       somewhere quieter at 3.5/s — on a quiet street the meter sits where it is and any small source
       is a net climb with no floor under it. Three things to measure first: what the `lost` line's own
       `crowd X, events Y` breakdown says (if it reads like playtest 10's, this finding *is* the crowd
       milestone); whether the pram's `EXCITEMENT_NEARLY_CRYING` cue is being shown and not read; and
       whether **one contact at 90 is a cliff** — a pedestrian contact is ~10.8 points, so above 89 a
-      single bump on an empty street ends the day
+      single bump on an empty street ends the day. The first of the three is what the trace
+      answered
 - [x] **The diagonal zzz comes back down** — finding 9. `baby_cue_lift()` caught the diagonals
       because both cues asked *which axis is she mostly facing*, and that answer puts a diagonal on
       the vertical side of the line. It is one question now — `Stroller._pram_shares_her_column()`
@@ -1552,6 +1634,149 @@ one per day of the longest act plus one, precisely so that the spoiler can never
 nowhere to go — that sizing is playtest 12 finding 5 and it is the thing this would push against.
 Decide it with a measurement, not an argument: the number that matters is how far the *last*
 remaining calm area is from the door on the last day of an act, against the 180s she has.
+
+**Absorbed into M47.** The two halves that are still open here — permanent restrictions and
+closures that point — need the same machinery as playtest 13's bigger calm areas, and building
+`absent_segments` twice is how the second one goes quietly wrong. The design above stands
+unchanged and is the second half of M47; read it there.
+
+## M46 — The crowd is not the game · `feature/the-crowd-is-not-the-game`
+
+Not started, and it is next. Playtest 13's finding 1 — *"just walking around now increases
+excitement — this is bad"* — which is playtest 07's finding 17 and playtest 10's *"the thing
+nobody reported"*, found for the third time and said out loud for the first. See
+**[docs/PLAYTEST-13.md](PLAYTEST-13.md)**.
+
+**The one sentence: the crowd is supplying almost all of the difficulty, and every authored system
+in the game is being judged through it.** A day was lost in 29.4s reading `crowd 24.6, events
+0.0`, with the nearest catalogue row out of range; the freeze threshold is reached within ten
+seconds of the doorstep on **all five** attempts that got that far; and standing still for three
+seconds on an ordinary pavement is worth eight points.
+
+**What this must not become.** The noise floor is emergent, never a constant — that is an
+invariant and it stays. *"The crowd is expensive to be careless in and free to be careful in"* is
+the ratio the whole design rests on, and the finding is that **the careful line has stopped
+existing**, not that the crowd is loud. M33 already measured the line away (eleven contacts down a
+lane centre against one on the midline became thirteen against fifteen) and answered with a
+behaviour — people step aside. Fifteen contacts in four days says the behaviour is not carrying it.
+
+- [ ] **Measure before touching anything, and measure the four things separately.** Playtest 04's
+      recipe, re-run on `main`: contacts in forty seconds walked down a lane centre *against*
+      forty seconds holding the midline, the mean crowd contribution at a standing point on
+      ordinary / precinct / main-road pavement over a real minute, and the share of a losing day's
+      excitement that came from the crowd. The ratio is the finding, not either number
+- [ ] **`EXCITEMENT_DECAY_IDLE` is 0.0 and there is no floor under her on ordinary ground.** M33
+      set it there for a good reason — *what settles a baby is being pushed* — and the consequence
+      nobody priced is that a stationary pram on a pavement is a pure climb at whatever the crowd
+      is doing. Decide whether "standing still settles nothing" should mean "standing still is
+      worse than walking", which is what it currently means
+- [ ] **A contact is 22–34 points a second and there were fifteen of them in four days.** Either
+      the cost or the frequency is wrong and the trace cannot say which. `BUMP_RADIUS` is 14 and
+      the M33 note says the careful line was two pixels wide when M19 measured it — so widening
+      the *street* rather than narrowing the *body* may be the honest answer, and that is a
+      question for `CrowdLanes.SIDEWALK_OFFSETS` and `_make_way`
+- [ ] **`CROWD_PEDESTRIANS_PER_ACT[0]` is 200 and it is a population of the field, not the city.**
+      It has not been re-measured since the field's box last moved. Measure what is actually
+      within a screen of her, not what the constant says
+- [ ] **Re-measure the whole cost table afterwards** — `docs/EVENTS.md`, "What an event actually
+      costs" — because if the crowd's share moves, every authored row's share moves with it, and
+      the table is the fastest way to see what a balance change did to the catalogue
+
+## M47 — A city with places in it · `feature/a-city-with-places`
+
+Not started. Playtest 13's finding 2 and the second half of finding 7, **plus the whole of M45**,
+which is absorbed here because it is the same machinery. See **[docs/PLAYTEST-13.md](PLAYTEST-13.md)**
+and the M45 entry above, which is still the design for the closure half.
+
+**The one sentence: the count of calm areas is right and their density is not, and the answer is
+area rather than count.** The city went 7×7 → 11×11 across M42 and M41 — 49 blocks to 121 — while
+the calm areas stayed at eight. The equation playtest 12 asked to keep was about *count*; what a
+player experiences is *density*, and the two came apart when the map grew.
+
+The decision taken on the finding, quoted, because it is not what the analysis expected:
+
+> *"make more calm areas take up multiple blocks — I said a long time ago that an inner courtyard
+> (surrounded by buildings) should have a footprint of 2x2 blocks (apartment complex) — this never
+> got implemented. not all calm areas have to take up multiple blocks but add more that do. also,
+> add calm varieties that take up 2x1 non-square shapes"*
+
+- [ ] **The 2×2 inner courtyard — an apartment complex.** Asked for *"a long time ago"* and never
+      built. What exists is `COURTYARD_SIZE_TILES`, a 4-tile court carved inside **one**
+      residential block. What is wanted is four blocks of buildings with a shared court in the
+      middle of them, which is neither that nor M21's open four-block zone. **The mechanism is
+      M21's** — absorb the streets between four blocks — with frontages around the outside
+      instead of open ground, so it is a calm area you have to find a way *into*
+- [ ] **Calm areas that are not square.** `CALM_ZONE_BLOCKS` is one integer and everything
+      downstream is that integer squared — the tile rect, which segments are absorbed, which
+      junctions survive. It becomes a `Vector2i`, and `CityMap.anchor_of()` and `lot_rect()` are
+      where it is felt. A 2×1 is the case to build first because it is the one that breaks every
+      piece of arithmetic that assumed a square
+- [ ] **More of them are multi-block, and not all of them.** *"Not all calm areas have to take up
+      multiple blocks but add more that do."* `MIN_CALM_ZONES` / `MAX_CALM_ZONES` are 1 and 2 and
+      were sized for a 49-block city. Re-derive against 121, and keep single-block calm in the
+      mix — *which* calm area to head for stays a real question only while a small quiet square
+      close by competes with a big park further out
+- [ ] **The main road as a soft block.** Finding 7's second half: *"think of the main road as a
+      soft block to guide the player — they will avoid crossing it until it becomes necessary."*
+      This is M45's *"a city that is not a full grid, permanently"* achieved without removing a
+      walkable tile: the spine is already a line down the middle of the map with a hierarchy and a
+      picture, and making it genuinely expensive to cross splits the city into two halves with a
+      toll between them. **Build it before the cul-de-sacs**, because it costs no geometry and
+      nothing downstream has to be re-proved
+- [ ] **Then the rest of M45** — permanent impassable blocks, and closures placed to say *not this
+      way today*. The design is in the M45 entry above and is unchanged. The trap it names is the
+      one to keep in front of you: **a nudge that removes the decision is worse than a closure
+      that does nothing**, because the game's one verb is *where do I walk*
+- [ ] **Re-check `MIN_CALM_BLOCKS` and `MIN_HOME_TO_PARK_TILES` at the end, not the start.** Both
+      are stated in a lattice that is about to change what a calm area *is*. `calm_areas_needed()`
+      derives the floor from the act lengths and must go on doing so
+
+## M48 — Things drawn where they stand · `feature/drawn-where-they-stand`
+
+Not started. Playtest 13's finding 3 — *"random gray barriers placed half on the street and half
+on the sidewalk — no clue what they are supposed to be but they raise excitement for some
+reason?"* — which is `construction`, and which is wrong in three separate ways that are each a
+rule rather than a row.
+
+- [ ] **A body on a pavement has to fit on the pavement.** `construction` has `obstructs_radius
+      34`, so `_draw_spread` draws it 68px wide; a sidewalk is `SIDEWALK_WIDTH * TILE_SIZE` = 64px
+      and an event stands at a tile centre, 16px from one edge and 48px from the other. **It
+      overhangs by 18px whichever lane it lands in.** This is M34's rule (*a body is half the
+      silhouette*) meeting ground it was never checked against, and every `_draw_spread` row can
+      break the same way — `market_stall`, `checkpoint`, `barricade`, `burnt_shell`,
+      `cafe_tables`. It wants a test over the catalogue, in the shape of M34's own
+- [ ] **A spread is always drawn east–west, whatever street it is on.** `_draw_spread` spreads
+      along local x and nothing ever rotates an `EventInstance` — there is no orientation anywhere
+      in the file. So the barrier that hangs into the carriageway on a north–south street lies
+      *along* the kerb on an east–west one, parallel to the traffic, blocking a pavement it is not
+      across. **A barrier's entire content is which way it faces**
+- [ ] **And it does not say what it is.** The sprite is blue-grey (`#6b7a8c`, `#4e5a68`) with no
+      hazard marking on it. M37's rule — one picture per row, no two rows sharing one — passes
+      here and the row still says nothing, which is the rule's own limit: *how dangerous a thing
+      is has to be visible from looking at the thing*, and municipal barriers are red-and-white
+      for exactly that reason
+
+## Tooling for playtest 13 · `feature/a-picture-of-the-city`
+
+Findings 4 and 5. Small, asked for by name, and **built first**, because M46 and M47 both want
+exactly what they provide. Neither is a game feature; both go with the dev flags and under the
+same eventual debug-build gate.
+
+- [ ] **Render the whole city grid to a picture in the telemetry folder** — finding 4. Not
+      `--overview`, which is a dev flag on a run somebody has to take and which photographs the
+      *rendered* city: this is the grid itself, one small square per tile coloured by tile type,
+      written beside the log every run without anybody doing anything. Everything needed exists —
+      `Tile` decides the colour, `CityMap` holds the grid, `Telemetry` owns the directory and the
+      naming. Mark what a trace cannot say in words: the home, the calm areas, the main road, the
+      precincts, the day's closures. It must obey the telemetry invariant — **no RNG, nothing that
+      changes a placement** — and it must cost nothing when telemetry is off
+- [ ] **A key that takes a screenshot and writes a note** — finding 5. `Telemetry.snapshot()`
+      exists and is heuristic; what is missing is the player saying *look at this*. Its own key, it
+      **bypasses `SHOTS_PER_DAY`** (a person asking is not a heuristic firing), and it writes a
+      `note` alongside so the picture has a line in the trace to sit next to — position, day,
+      meters, and what is near her. Note the M36/M38 lesson before wiring it: nothing in the suite
+      or a screenshot has ever pressed a key, and a bare key is not an action — `--press key:<x>`
+      is how it gets tested at all
 
 ## M10 — Polish · `feature/polish`
 
