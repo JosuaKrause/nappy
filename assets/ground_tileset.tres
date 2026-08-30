@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" load_steps=63 format=3]
+[gd_resource type="TileSet" load_steps=73 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/tiles/road.svg" id="0_road"]
 [ext_resource type="Texture2D" path="res://assets/tiles/road_line_e.svg" id="1_road_line_e"]
@@ -31,6 +31,11 @@
 [ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_main_e.svg" id="28_sidewalk_kerb_main_e"]
 [ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_main_w.svg" id="29_sidewalk_kerb_main_w"]
 [ext_resource type="Texture2D" path="res://assets/tiles/precinct.svg" id="30_precinct"]
+[ext_resource type="Texture2D" path="res://assets/tiles/water.svg" id="31_water"]
+[ext_resource type="Texture2D" path="res://assets/tiles/bulkhead.svg" id="32_bulkhead"]
+[ext_resource type="Texture2D" path="res://assets/tiles/fence.svg" id="33_fence"]
+[ext_resource type="Texture2D" path="res://assets/tiles/mountain.svg" id="34_mountain"]
+[ext_resource type="Texture2D" path="res://assets/tiles/scree.svg" id="35_scree"]
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road"]
 texture = ExtResource("0_road")
@@ -187,6 +192,31 @@ texture = ExtResource("30_precinct")
 texture_region_size = Vector2i(32, 32)
 0:0/0 = 0
 
+[sub_resource type="TileSetAtlasSource" id="atlas_water"]
+texture = ExtResource("31_water")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_bulkhead"]
+texture = ExtResource("32_bulkhead")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_fence"]
+texture = ExtResource("33_fence")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_mountain"]
+texture = ExtResource("34_mountain")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_scree"]
+texture = ExtResource("35_scree")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
 [resource]
 tile_size = Vector2i(32, 32)
 sources/0 = SubResource("atlas_road")
@@ -220,3 +250,8 @@ sources/27 = SubResource("atlas_sidewalk_kerb_main_s")
 sources/28 = SubResource("atlas_sidewalk_kerb_main_e")
 sources/29 = SubResource("atlas_sidewalk_kerb_main_w")
 sources/30 = SubResource("atlas_precinct")
+sources/31 = SubResource("atlas_water")
+sources/32 = SubResource("atlas_bulkhead")
+sources/33 = SubResource("atlas_fence")
+sources/34 = SubResource("atlas_mountain")
+sources/35 = SubResource("atlas_scree")

@@ -374,17 +374,28 @@ static func _cut_courtyards(purposes: Dictionary, remaining: Array[Vector2i],
 		purposes[block] = GameEnums.BlockPurpose.COURTYARD
 		cut += 1
 
-## Whether anything open-calm sits directly across a street from this footprint. Stated over a
-## rect of blocks rather than one block so that a single block and a four-block zone are the
-## same question asked twice, rather than one rule and one special case.
+## Whether anything open-calm sits anywhere around this footprint. Stated over a rect of blocks
+## rather than one block so that a single block and a four-block zone are the same question asked
+## twice, rather than one rule and one special case.
+##
+## **The whole ring, corners included.** *(Playtest 14: "calm zones shouldn't be possible diagonal
+## from each other — we said they should not be next to each other, this includes the entire
+## surrounding".)* It used to walk the four edges and skip the four corners, so two calm areas
+## could meet at a junction: not across a street from each other but across a *crossroads*, which
+## from the pavement is the same sight and is exactly what the rule exists to stop. `docs/TODO.md`
+## had it as an open question in M47 — *"probably right, but it is currently an accident of the
+## loop bounds rather than a decision"* — and this is the decision.
+##
+## Grown by one and tested by containment, rather than by four loops with the corners bolted on:
+## the shape being asked about is a ring, and a ring is what `grow(1)` makes.
 static func _has_open_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool:
-	for x in range(footprint.position.x, footprint.end.x):
-		for y in [footprint.position.y - 1, footprint.end.y]:
-			if _OPEN_CALM.has(purposes.get(Vector2i(x, y), -1)):
-				return true
-	for y in range(footprint.position.y, footprint.end.y):
-		for x in [footprint.position.x - 1, footprint.end.x]:
-			if _OPEN_CALM.has(purposes.get(Vector2i(x, y), -1)):
+	var ring := footprint.grow(1)
+	for y in range(ring.position.y, ring.end.y):
+		for x in range(ring.position.x, ring.end.x):
+			var block := Vector2i(x, y)
+			if footprint.has_point(block):
+				continue
+			if _OPEN_CALM.has(purposes.get(block, -1)):
 				return true
 	return false
 

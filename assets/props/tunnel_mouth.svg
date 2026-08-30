@@ -1,24 +1,20 @@
-<!-- The portal the main road disappears into at the north edge of the map. Six tiles wide, the
-     width of a corridor, and as deep as the camera can see past the boundary — a gap in the ring
-     of frontages showing the void behind them would be the invisible wall back again with a
-     picture either side of it.
-     The opening is deliberately shallow. From this angle only about a hundred pixels of the far
-     side of a boundary street are ever on screen, so a taller mouth is a black rectangle with no
-     wall around it: a hole in the world rather than a way out of it. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="256" viewBox="0 0 192 256" shape-rendering="crispEdges">
-  <rect x="0" y="0" width="192" height="256" fill="#5a5048"/>
-  <rect x="0" y="0" width="192" height="6" fill="#6d6259"/>
-  <rect x="0" y="60" width="192" height="3" fill="#4b423b"/>
-  <rect x="0" y="166" width="192" height="3" fill="#4b423b"/>
-  <rect x="60" y="120" width="72" height="18" fill="#4b423b"/>
-  <rect x="62" y="122" width="68" height="14" fill="#3f3830"/>
-  <rect x="28" y="196" width="136" height="60" fill="#1a1720"/>
-  <rect x="28" y="196" width="136" height="5" fill="#2a2530"/>
-  <rect x="22" y="190" width="6" height="66" fill="#6d6259"/>
-  <rect x="164" y="190" width="6" height="66" fill="#6d6259"/>
-  <rect x="22" y="190" width="148" height="6" fill="#6d6259"/>
-  <rect x="4" y="204" width="12" height="8" fill="#453d37"/>
-  <rect x="176" y="204" width="12" height="8" fill="#453d37"/>
-  <rect x="4" y="230" width="12" height="8" fill="#453d37"/>
-  <rect x="176" y="230" width="12" height="8" fill="#453d37"/>
+<!-- Where the spine goes under the mountain at the north edge. *(Playtest 14.)*
+
+     It used to be a 192x256 slab of masonry filling the whole depth of the border, because the
+     border used to be a row of buildings and the tunnel had to be a gap in it. The border is the
+     mountainside now, so the portal is cut into rock and is only the arch: the road runs on
+     underneath it and is swallowed by `CityEdge`'s darkening ramp rather than by this sprite.
+     Six tiles wide, the width of a corridor. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="96" viewBox="0 0 192 96" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="192" height="96" fill="#6b6660"/>
+  <rect x="0" y="0" width="192" height="4" fill="#7a746d"/>
+  <rect x="14" y="12" width="18" height="3" fill="#5d5952"/>
+  <rect x="150" y="20" width="22" height="3" fill="#7a746d"/>
+  <rect x="8" y="52" width="16" height="3" fill="#7a746d"/>
+  <rect x="164" y="62" width="20" height="3" fill="#5d5952"/>
+  <!-- The opening: a stone surround, then the dark the road disappears into. -->
+  <rect x="32" y="34" width="128" height="62" fill="#8a8378"/>
+  <rect x="36" y="40" width="120" height="56" fill="#5a5048"/>
+  <rect x="42" y="48" width="108" height="48" fill="#241f1b"/>
+  <rect x="42" y="48" width="108" height="4" fill="#1a1613"/>
 </svg>

@@ -1,0 +1,13 @@
+<!-- The sea wall the southern shore ends at: one course of stone with the water beginning at its
+     foot. It is the tile that says *the city stops here* on the one side where the ground does
+     not simply carry on, so it is drawn as a built edge rather than as a beach. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="22" fill="#8a8378"/>
+  <rect x="0" y="0" width="32" height="2" fill="#9c9488"/>
+  <rect x="0" y="20" width="32" height="2" fill="#6d675e"/>
+  <rect x="10" y="2" width="1" height="18" fill="#7b756b"/>
+  <rect x="22" y="2" width="1" height="18" fill="#7b756b"/>
+  <rect x="0" y="22" width="32" height="10" fill="#335066"/>
+  <rect x="3" y="24" width="6" height="1" fill="#456781"/>
+  <rect x="20" y="27" width="6" height="1" fill="#456781"/>
+</svg>

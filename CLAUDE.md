@@ -40,6 +40,34 @@ the shared, versioned, reviewable place, and it is already where this project ke
 The same rule one level down: a note long enough to unbalance this file becomes a **rule file of its
 own** rather than a longer `CLAUDE.md`. What must not happen is a note living nowhere.
 
+### Write the feedback down with all of its detail, before doing anything about it
+
+**Every piece of playtest feedback goes into `docs/PLAYTEST-NN.md` in full — the player's own
+words, and every specific they gave — before a line of code is written.** Then it becomes a
+`docs/TODO.md` item, and only then does it get implemented. A finding that was summarised on the
+way in has already lost the part that was hard to work out.
+
+*(Playtest 14 is why this is a rule and not an assumption.)* Two things were asked for, in detail,
+and neither survived to the repo:
+
+- **The border.** The brief was *"in the south there needs to be a bulkhead first then water — no
+  buildings — in the east and west there needs to be a fence, then grass and forest — in the north
+  there needs to be a mountainside"*, plus the two exceptions. What got written down was *"the
+  border is just black"*, and what got built from it was a clamp that continued the pavement
+  outward: the complaint answered, the design thrown away.
+- **Hard and soft diversions.** Asked for, and there was **no note about it anywhere in the repo**
+  — not in `CLAUDE.md`, not in `docs/`, not in `TODO.md`. So it was never built, and the player had
+  to ask a second time whether there was any point giving feedback at all.
+
+The failure mode is specific and it is not laziness: a finding arrives as *a complaint plus a
+design*, the complaint is the part that is easy to restate, and the design is the part that took
+the player thought. **Record the design even when you are about to fix the complaint**, and record
+it even when you disagree with it — a note saying "asked for X, built Y instead, because Z" is a
+decision somebody can overturn. Nothing else is.
+
+And the test of whether it was written down is not "did I mention it" — it is whether somebody
+opening the repo cold could **build the thing that was asked for** from what is on disk.
+
 ## Names are content, never identifiers
 
 The mother and the baby have names — see `docs/NARRATIVE.md`, which is the one place that says
@@ -1178,12 +1206,22 @@ over forty seconds against a decay that pays back 140. Walking an ordinary pavem
   played that either.)* *(M35 moved it again and did not settle it either: five nerves, because
   playtest 08's run ended on day 3 — but two of those went on a **defect**, so the number was raised
   against a difficulty that no longer exists. If act I now reads as fair, five may be generous.)*
-- **The day-3 lesson has been walked by a rig and played by nobody since it was fixed.** *(M35.)*
-  Every measured answer to the charging dog is a rig's: walking loses, running costs 21–24 points,
-  reacting sooner costs less. What no rig can say is whether a dog that stops 104px away and barks
-  reads as *go now* or as a dog that has changed its mind — the stand-off is the first thing in the
-  game that deliberately does not do what it is threatening to do. The `chase` entries are what to
-  read next, and the one to look for is a chase that ended with `she ran 0.0s of it`.
+- **The day-3 lesson is settled, and it is the one entry here that a player has closed.**
+  *(Playtest 14: "the pursuing dog is perfect now — when I walk away I die, if I run a bit I get
+  rid of the dog. Perfect balance.")* It stood open from M35 to M49 saying every answer was a
+  rig's, and three playtests reported the encounter broken while the rig kept passing.
+
+  **What was wrong was never a number.** The speeds, the stand-off, the telegraph and the chase
+  clock were all tuned, repeatedly, and none of them was the fault: `PURSUIT_SHAKEN_OFF` ended the
+  chase when *the gap had been opening for 0.8s*, which is the design's sentence — *run and it
+  gives up* — restated as a fact about geometry. Against this dog a run opens the gap at 38px/s, a
+  fifth of a pixel a frame, so a corner, a kerb, a body in the way or the 0.37s about-turn reset it
+  to zero and the dog chased somebody who was plainly sprinting. Stating it about **her** fixed it
+  in one line and took the cost of the right answer from 17 points to 5.
+
+  The shape to carry, because this project has now paid for it three times: **when a rule is about
+  what the player did, state it over the player.** A proxy that is equivalent in the ideal case is
+  not equivalent in a street, and every measurement you take of the proxy will agree with you.
 - **A spoiled park is now nine things and nobody has stood in one.** *(M35.)* The coverage is
   measured — 91% of a courtyard, 99% of a four-block zone — and what is not measured is whether it
   reads as *the park is busy today* or as somebody having tipped an event budget into a field. It is

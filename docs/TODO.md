@@ -2263,14 +2263,86 @@ player was asking one about themselves.
       inner courtyard — an apartment complex"* unchanged: M21's mechanism — absorb the streets
       between four blocks — with frontages around the outside instead of open ground, so it is a
       calm area you have to find a way **into**. The largest remaining piece of M47
-- [ ] **And the 0.2s window at the lunge, which is the reason the dog will be reported a fourth
-      time.** Answering at the lunge now works and answering two tenths of a second later is still
-      caught, because she is walking *into* the thing when it fires: the gap closes at
-      `pursue_speed + WALK_SPEED` and the stand-off was priced against the dog's speed alone.
-      `Tuning.pursuit_standoff` has carried this as a known gap since M35. The fix it names — a
-      wider stand-off — is a dog that visibly reverses through its telegraph, so the honest options
-      are to **hold the stand-off against the closing rate rather than the thing's own speed**, or
-      to stop the lunge firing while she is still walking toward it
+- [x] **The 0.2s window at the lunge — offered and declined.** *"The pursuing dog is fixed now,
+      the additional change you suggested is not needed."* The measured gap is real and stays
+      recorded on `Tuning.pursuit_standoff`; what it no longer carries is a claim that anybody
+      wants it closed. **Do not reopen without a player asking**
+- [x] **The border, as briefed rather than as complained about.** Specific tiles per side: south a
+      bulkhead then water and **no buildings**, east and west a fence then grass then forest, north
+      scree then mountainside. The only things that cross are the **tunnel** — the carriageway
+      carries on and darkens a step per tile until it is gone — and the **bridge**. M41's east and
+      west road exits are deleted with it: they made sense as gaps in a ring of frontages and make
+      none in a wood, and they were never on a main road anyway
+- [x] **The fence is rotated the wrong way.** It is drawn running north-south now, the axis it is
+      used on, and symmetric about its own centre line so one tile serves both sides
+- [x] **Calm areas must not be diagonal from each other either.** *"We said they should not be next
+      to each other — this includes the entire surrounding."* `_has_open_calm_neighbour` walked the
+      four edges and skipped the corners, so two could meet at a crossroads. It is the whole ring
+      now. This closes the M47 open question that called the diagonal case *"an accident of the
+      loop bounds rather than a decision"*
+- [ ] **A calm area she has never visited was already spoiled, and that can end a run a day
+      early.** The most serious finding here, because it is an unwinnable-day bug. `MIN_CALM_BLOCKS`
+      is derived as *an act's worth plus one* on the assumption that only **going** to an area
+      burns it — which is what `_spoil_the_parks_she_used` does. But `_ensure_one_usable_park`
+      protects exactly **one**, and ordinary placement can drop a busker or a market stall into any
+      of the rest, so the pool falls below the derivation through no decision she made.
+
+      **Make the guarantee match the derivation: every calm area she has not used this act stays
+      clean.** Spoiling stays the answer to *returning* and nothing else. Then check what it costs
+      the catalogue — parks are one of the few places several rows can go
+- [ ] **Nothing guides her toward the calm, and hard/soft diversions were never written down.**
+      *"I still don't feel the game guiding me to calm zones via obstacles — also tell me you have
+      a note about hard and soft diversions."* There was none, anywhere. The current logic is now
+      stated in `docs/CITY.md`, "Guiding her to the calm": the city **permits** routes to calm and
+      **protects** them from becoming impossible, and never suggests one — closures are drawn at
+      random from whatever keeps the two-routes invariant, so one is as likely to be behind her as
+      across her route.
+
+      **The design has to be captured from the player before anything is built.** Guessing at a
+      brief is how the border went wrong in this same playtest. What is already in the plan and
+      points the same way: M47's *main road as a soft block*, and M45's *closures placed to say
+      "not this way today"*
+
+### Recorded and not started — the second round of playtest 14
+
+Written down before anything is built, on the player's instruction (*"write those down — no fixes
+yet"*) and under the `CLAUDE.md` rule the first round produced.
+
+- [ ] **Traffic lights stand against the building instead of the kerb.** *"The traffic lights go to
+      the side of the road not the building — they always stay close to the road."* A head belongs
+      on the carriageway side of the footway and should stay there whatever the pavement is doing.
+      M41 built them on the principle that *where it stands is what says which road it is talking
+      about*, so a head against a shopfront has stopped pointing at anything
+- [ ] **Calm ground is worth more, and a small calm area worth more still.** *"x1.5 the sleepiness
+      effect of calm zones and double it for 1x1 calm zones."*
+      `Tuning.SLEEPINESS_CALM_ZONE_MULTIPLIER` is 12. **Two readings, and they differ for the
+      multi-block case** — (A) 18 for a zone and 24 for a single block, or (B) 18 and 36. A unless
+      corrected. The design is the good part either way: a four-block zone is more than one lap
+      wide and a single block is not, so the small ones have always been the weaker choice for
+      reasons unrelated to what they are for. Re-check `docs/MECHANICS.md`'s "more than one lap"
+      margin afterwards — M38's entry warns this is the constant that decides whether a day is
+      winnable once the park is reached
+- [ ] **The fence is drawn in elevation and turned on its side.** *"It just looks like a fence from
+      the front but rotated sideways, which doesn't make sense."* Both attempts have been a side
+      view — palings with a rail across them. The game looks straight down, where a fence is a thin
+      line with post-heads and a shadow. Rotating an elevation does not make it a top-down drawing
+- [ ] **The eastern border, four faults in one screenshot.**
+      `run-2026-08-30T233248-seed3225216943-834423d-dirty-069s-asked.png`, seed 3225216943, day 2,
+      tile (152,103):
+      **a)** a calm area sits directly against the border, although M47 shipped *"calm ground is
+      never at the edge"* — check `_zone_fits` and the single-block calm placement separately,
+      they are different code paths;
+      **b)** a road runs into the border and stops in the grass instead of teeing into the boundary
+      corridor;
+      **c)** people walk out onto the border as if it were pavement and vanish there — which breaks
+      *"nothing vanishes while you are looking at it"*, and note that M46 deliberately **grew** the
+      crowd's box near the boundary, so agents now have further to go outside the map before they
+      recycle and the ground out there is grass rather than the black that used to hide it;
+      **d)** the fence again
+- [ ] **The same faults on the north and south borders.** *"Same issue with other borders."*
+      Whatever fixes the east has to be stated over **a border** rather than over one side of the
+      map: the first border pass wrote four sides four times, which is one bug per side waiting to
+      happen, and this is it happening
 
 ## Tooling for playtest 13 · `feature/a-picture-of-the-city`
 

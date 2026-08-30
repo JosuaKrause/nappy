@@ -1,0 +1,19 @@
+<!-- The boundary fence on the east and west sides: pavement stops, palings, then open country.
+
+     Drawn **running north-south**, which is the axis it is actually used on — the first version
+     was a horizontal rail and appeared side-on to the border it was fencing. *(Playtest 14: "the
+     fence is rotated the wrong way".)* It is symmetric about its own centre line on purpose, so
+     the same tile serves the east border and the west one without a mirrored copy: which side the
+     city is on differs, and a fence looks the same from both.
+
+     Palings rather than a wall, because the sentence it has to say is *the city ends here* and
+     not *you are shut in* -- the mountain and the water say that already. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#6d9159"/>
+  <rect x="16" y="0" width="16" height="32" fill="#5f8250"/>
+  <rect x="13" y="0" width="2" height="32" fill="#8a7a5c"/>
+  <rect x="18" y="0" width="1" height="32" fill="#8a7a5c"/>
+  <rect x="10" y="3" width="12" height="2" fill="#6f6248"/>
+  <rect x="10" y="14" width="12" height="2" fill="#6f6248"/>
+  <rect x="10" y="25" width="12" height="2" fill="#6f6248"/>
+</svg>

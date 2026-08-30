@@ -173,73 +173,41 @@ func _spawn_home() -> void:
 	door.position = Vector2(stoop.get_center().x, stoop.position.y)
 	_entities.add_child(door)
 
-## What is on the far side of the streets that run along the boundary. *(M41.)*
+## What is on the far side of the streets that run along the boundary.
 ##
-## **The lattice already ends in T-junctions and nobody could see it.** The outermost corridor on
-## each side is a whole street — pavement, carriageway, pavement — and every interior street runs
-## into it and stops, which is exactly what a T is. What was missing is the other half of the
-## street: there was nothing beyond its far pavement, so the edge of the map read as a road with a
-## void along one side, and an interior street reaching it read as being *cut off* rather than as
-## turning. A row of frontages is the whole fix, and it is the cheapest thing in this milestone.
+## **M41 answered this with a ring of frontages and playtest 14 replaced it with the land.** The
+## finding M41 fixed was real — the outermost corridor is a whole street, every interior street
+## runs into it and stops, and with nothing beyond its far pavement the edge read as a road with a
+## void along one side. What a row of buildings said, though, was *more city, going on for ever*,
+## which is the one thing the edge of the map must not say. A city with no end to it has no shape,
+## and the boundary wall then has nothing to be.
 ##
-## Art and nothing else: these buildings are outside the map, so no tile, no route and no event
-## can ever reach them. They are deliberately kept out of `_buildings`, which is the list whose
-## condition follows a block's arc — an outside lot has no block and no arc, and a burnt-out
-## frontage across a boundary the player cannot cross would be a story about nothing.
-##
-## The gaps in the row are where the corridors meet the boundary, so the two exits below need no
-## exception carved for them: the spine reaches the edge through a gap that is already there.
+## The land says it instead, and says something different on each side: water to the south, open
+## country east and west, a mountain to the north. See `_paint_outside_the_map`, which is now the
+## whole of the border — it is ground rather than objects, so this function has nothing left to do
+## except put the exits in.
 func _spawn_the_edge_of_the_city() -> void:
-	var depth := OUTSIDE_DEPTH_TILES
-	for bx in Tuning.CITY_BLOCKS.x:
-		var span := CityMap.block_rect(Vector2i(bx, 0))
-		_spawn_outside_frontage(Rect2i(Vector2i(span.position.x, -depth),
-				Vector2i(span.size.x, depth)))
-		_spawn_outside_frontage(Rect2i(Vector2i(span.position.x, map.size.y),
-				Vector2i(span.size.x, depth)))
-	for by in Tuning.CITY_BLOCKS.y:
-		var span := CityMap.block_rect(Vector2i(0, by))
-		_spawn_outside_frontage(Rect2i(Vector2i(-depth, span.position.y),
-				Vector2i(depth, span.size.y)))
-		_spawn_outside_frontage(Rect2i(Vector2i(map.size.x, span.position.y),
-				Vector2i(depth, span.size.y)))
-	# And the four corners, so the ring has no notch in it where two frontages nearly meet.
-	for corner in [Vector2i(-depth, -depth), Vector2i(map.size.x, -depth),
-			Vector2i(-depth, map.size.y), Vector2i(map.size.x, map.size.y)]:
-		_spawn_outside_frontage(Rect2i(corner as Vector2i, Vector2i.ONE * depth))
 	_spawn_spine_exits()
 
-func _spawn_outside_frontage(lot: Rect2i) -> void:
-	var world := map.tile_rect_to_world(lot)
-	var building := Building.new()
-	building.position = Vector2(world.get_center().x, world.end.y)
-	building.footprint = world.size
-	building.variant = _variant_for(lot)
-	# Two or three storeys, the residential range, rolled the same way every other lot is. A
-	# skyline that stops being a skyline at the boundary is the thing this is here to prevent.
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("edge:%d:%d:%d" % [map.seed_used, lot.position.x, lot.position.y])
-	building.height = rng.randi_range(2, 3) * float(Tuning.TILE_SIZE)
-	building.lot = lot
-	_buildings_layer.add_child(building)
-
-## The four ways the spine leaves: a tunnel north, a bridge south, and the east-west main road
-## simply carrying on — *"the side-to-side main road just going towards east/west in one space"*.
+## The two ways the spine leaves: a tunnel under the mountain to the north, a bridge over the water
+## to the south.
 ##
-## Each one fills the gap its own corridor leaves in the ring of frontages, which is the whole
-## reason they have to exist at all rather than being left as bare road: the camera can see past
-## the boundary now, and a gap with nothing in it is the invisible wall back again with a picture
-## either side of it.
+## **It was four until playtest 14**, and the two that went were the east-west road simply carrying
+## on — *"the side-to-side main road just going towards east/west in one space"*, playtest 11. They
+## made sense while the border was a ring of frontages and every exit was a gap in it; they make
+## none now that east and west are a fence, grass and forest. *"The only exception is the tunnel
+## and the bridge in the south."* A carriageway running out into a wood is a road to nowhere, and
+## it was never a main road anyway: there is one spine and it runs north to south, so those two
+## were sited on a corridor that is an arterial in no other part of the game.
+##
+## What they leave behind is the thing that makes them worth having, and it is unchanged: the exits
+## are the last stretch of the spine as it already exists, lethal for the same reason every other
+## carriageway is. See `CityEdge` — *the city goes on and this is how you would leave it*.
 func _spawn_spine_exits() -> void:
-	var extent := map.world_size()
 	var down := (map.main_road * CityMap.period()
 			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
-	var across := (CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y) * CityMap.period()
-			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
 	_spawn_exit(CityEdge.Kind.TUNNEL, Vector2(down, 0.0))
-	_spawn_exit(CityEdge.Kind.BRIDGE, Vector2(down, extent.y))
-	_spawn_exit(CityEdge.Kind.ROAD_EAST, Vector2(extent.x, across))
-	_spawn_exit(CityEdge.Kind.ROAD_WEST, Vector2(0.0, across))
+	_spawn_exit(CityEdge.Kind.BRIDGE, Vector2(down, map.world_size().y))
 
 func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 	var exit := CityEdge.new()
@@ -520,31 +488,73 @@ func _paint_ground() -> void:
 				_ground.set_cell(tile, source, Vector2i.ZERO)
 	_paint_outside_the_map()
 
-## Ground under the ring of frontages outside the map. *(Playtest 14: "did you do the border yet?
-## It's just black.")*
+## What the city stops at, on each of its four sides. *(Playtest 14: "did you do the border yet?
+## It's just black", and then the brief for what should be there instead.)*
 ##
-## M41 built the ring and `camera_bounds()` opened the camera onto it, and neither put anything
-## on the floor out there — the tilemap has only ever been painted over `map.size`, so the
-## frontages stood on the clear colour. From inside the city that is a black seam past the last
-## kerb; from the boundary street it is most of the far side of the road.
+## M41 built a ring of **frontages** out here and `camera_bounds()` opened the camera onto it, and
+## neither put anything on the floor — the tilemap has only ever been painted over `map.size`, so
+## the frontages stood on the clear colour. The first fix painted ground by continuing the edge
+## outward, which cured the black and left the wrong answer standing: more city, receding into a
+## camera limit, on every side.
 ##
-## **Painted by continuing the edge outward rather than by choosing an "outside" tile.** The tile
-## the map ends on is already the right answer to "what is out there" — pavement behind a
-## frontage, carriageway where a corridor runs off the map — so each outside tile clamps to the
-## nearest tile *in* the map and takes its picture. The spine's four exits then get their road
-## for free, which is the thing that would have needed a special case.
+## **The border is now the land, and each side says a different thing about why the city ends:**
 ##
-## The one substitution is a crossing: zebra stripes repeated eight tiles into the distance are a
-## ladder lying in the road, and there is nothing out there to cross to.
+## - **South — a bulkhead, then open water.** The southern boundary street is already the *shore*
+##   (`CityGenerator._place_precincts` puts a promenade there and says so), and this is the half of
+##   that sentence the ground was never told. No buildings: the one course of stone is the edge.
+## - **East and west — a fence, then grass going into forest.** The city runs out into open
+##   country rather than stopping at anything, which is why the fence is palings and not a wall:
+##   it has to say *the city ends here* without saying *you are shut in*.
+## - **North — scree, then the mountainside.** The one side that is a wall, and it should read as
+##   one: the city backs onto rock.
+##
+## **Two exceptions, and they are the whole reason the exits exist.** The spine leaves by a tunnel
+## north and a bridge south, so at the spine's own width the carriageway carries straight on
+## through the border instead of being buried in it — see `_spawn_spine_exits`, and
+## `_darken_the_tunnel_approach` for the road going into the dark. Take the exceptions away and
+## `CityEdge`'s whole sentence — *the city goes on and this is how you would leave it* — is a
+## tunnel mouth set into a cliff with no road reaching it.
+##
+## Nothing here is walkable and none of it has a `GameEnums.TileType`: this paints the **tilemap**
+## and `CityMap` is untouched, so the walkable set and every guarantee stated over it are identical
+## tile for tile. The boundary wall is still what stops her.
 func _paint_outside_the_map() -> void:
 	var depth := OUTSIDE_DEPTH_TILES
 	for y in range(-depth, map.size.y + depth):
 		for x in range(-depth, map.size.x + depth):
 			if x >= 0 and x < map.size.x and y >= 0 and y < map.size.y:
 				continue
-			var inside := Vector2i(clampi(x, 0, map.size.x - 1), clampi(y, 0, map.size.y - 1))
-			var source := GroundTiles.source_for(map, inside)
-			if map.tile_at(inside) == GameEnums.TileType.CROSSING:
-				source = GroundTiles.ROAD
+			var source := _border_source(x, y, depth)
 			if source >= 0:
 				_ground.set_cell(Vector2i(x, y), source, Vector2i.ZERO)
+
+## Which border tile belongs at an outside cell. `step` is how far out of the city it is, so each
+## side is written as *what you meet, in order, walking away from the last kerb*.
+##
+## A corner belongs to whichever side it is further out of, and ties go to north or south, because
+## those are the two that read as continuous bands — a strip of water that stopped short of the
+## corner would be a lake with a square end.
+func _border_source(x: int, y: int, depth: int) -> int:
+	var north := -y
+	var south := y - (map.size.y - 1)
+	var west := -x
+	var east := x - (map.size.x - 1)
+	var step := maxi(maxi(north, south), maxi(west, east))
+
+	if _leaves_by_the_spine(x) and (north > 0 or south > 0) and north <= depth and south <= depth:
+		return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)))
+	if north == step:
+		return GroundTiles.SCREE if step == 1 else GroundTiles.MOUNTAIN
+	if south == step:
+		return GroundTiles.BULKHEAD if step == 1 else GroundTiles.WATER
+	if step == 1:
+		return GroundTiles.FENCE
+	return GroundTiles.GRASS if step <= 3 else GroundTiles.FOREST
+
+## Whether this column is the carriageway of the spine, which is the one thing that crosses the
+## border rather than stopping at it. The kerbs either side stop with the city: a pavement running
+## into a tunnel would be an invitation, and what is out there is lethal by design.
+func _leaves_by_the_spine(x: int) -> bool:
+	var offset := x - map.main_road * CityMap.period()
+	return offset >= Tuning.SIDEWALK_WIDTH \
+			and offset < Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH

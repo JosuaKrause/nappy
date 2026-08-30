@@ -839,21 +839,39 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
 	if clean:
 		return
 
-	# The parks she has already used this act are the last ones considered, not excluded ones: if
-	# every calm block is one of them, a winnable day still outranks a fresh decision.
-	var choosable: Array[Vector2i] = []
+	# **Every calm area she has not used this act stays clean, not just one of them.**
+	# *(Playtest 14, finding 8: "I just came to a calm zone that already had events play out but I
+	# have never been to it before... this calm zone would make the game hard stop since no calm
+	# zone would be available one day early.")*
+	#
+	# The player's arithmetic is the argument and it is right. `MIN_CALM_BLOCKS` is derived as an
+	# act's worth of days **plus one** on the assumption that the only thing which burns an area is
+	# *going* to it — which is what `_spoil_the_parks_she_used` does, deliberately, so that she
+	# cannot go back to the same bench every day. This rule protected exactly **one** area, and
+	# nothing stopped ordinary placement dropping a busker or a market stall into any of the rest:
+	# so an area she had never seen could be spoiled by chance, the pool fell below the derivation,
+	# and the act ran out a day early through no decision she made and with nothing saying so.
+	#
+	# Making the guarantee match the derivation costs the catalogue less than it looks. A calm area
+	# is a small part of the map, `_something_to_put_in_a_park` is already a narrow pool, and what
+	# is stripped here was never going to be met by a player who was heading somewhere quiet.
+	var untouched: Array[Vector2i] = []
 	for block in map.calm_blocks:
 		if not used_calm.has(block):
-			choosable.append(block)
-	if choosable.is_empty():
-		choosable = map.calm_blocks
+			untouched.append(block)
 
-	var least: Vector2i = choosable[0]
-	for block in choosable:
-		if spoilers[block].size() < spoilers[least].size():
-			least = block
-	for plan in spoilers[least]:
-		planned.erase(plan)
+	# If she has been to all of them, a winnable day still outranks a fresh decision: protect the
+	# least disturbed one and let the rest stand.
+	if untouched.is_empty():
+		var least: Vector2i = map.calm_blocks[0]
+		for block in map.calm_blocks:
+			if spoilers[block].size() < spoilers[least].size():
+				least = block
+		untouched = [least] as Array[Vector2i]
+
+	for block in untouched:
+		for plan in spoilers[block]:
+			planned.erase(plan)
 
 ## The rect of a calm block's actual calm ground, falling back to the whole lot.
 static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
