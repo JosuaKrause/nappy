@@ -153,6 +153,7 @@ kind has to be able to name the question it answers, or it is a metric and does 
 | `home` / `lost` | observer | The outcome, the margin, and what was around when it happened |
 | `nerve` | `GameState` | Where the nerves went — which day, which act *(decisions 9, 11)* |
 | `ending` | `GameState` | How the run finished |
+| `shot` | `main.gd` | **A person pressed `P` and said *look at this*** — where she was, what the meters read, which screen was up, and a PNG beside it. The only entry in the table that is not about the game: it is about somebody watching it *(playtest 13, finding 5)* |
 
 ### Reading the meter breakdown
 
@@ -243,6 +244,57 @@ with it. Three rules:
   an `await RenderingServer.frame_post_draw` and a file write: it draws nothing, changes no state
   and takes no RNG. The calls live in `TelemetryObserver`, not in the classes that decide things,
   and there is no capture at all under `--headless` — the suite must never start writing images.
+
+### And one a person asks for
+
+> *"Allow creating a screenshot via key press that saves into the telemetry folder and writes a
+> telemetry note for context — this is to help debugging; not a game feature."*
+> — playtest 13, finding 5.
+
+`P` (or `F9`) writes `<log stem>-<clock>s-asked.png` and a `shot` entry beside it.
+`Telemetry.snapshot_now()` is the heuristic one with the two limits taken off, and that is the
+whole difference: `SHOTS_PER_DAY` and `SHOT_SPACING` exist because a condition that stays true for
+two seconds would otherwise write a hundred and twenty frames, and **somebody pressing a key has
+already decided this frame is worth keeping**. A cap that silently swallows the seventh press is a
+tool that lies about having worked.
+
+Two things about it that are not obvious. It answers **before** the pause guard in
+`Main._unhandled_input`, so it works on the pause and title screens too — the frames worth
+photographing by hand are disproportionately the ones where something looks wrong and the player
+has just stopped the game to look at it. And the context string is assembled in `main.gd` rather
+than here, for the reason everything in this file takes what it needs as an argument: **the
+telemetry asks the world no questions, so it can never be the thing that changed one.**
+
+## The city grid
+
+> *"For telemetry render out the entire city grid into a picture in the telemetry folder."*
+> — playtest 13, finding 4.
+
+**A trace says where she was and cannot say what she was walking around.** Nearly every question
+asked of a log in the last five milestones has been a question about the layout — how far the
+nearest calm area is, whether a closure cut anything, which street the spine is, why a park was
+never reached — and answering one from a list of tile coordinates is a thing nobody does twice.
+
+So a run writes `<log stem>-map-day<NN>.png`: one four-pixel square per tile, coloured by tile
+type, with the home, the calm areas, the main road, the precincts and today's closures marked over
+it. `TelemetryMap` does the drawing.
+
+- **It is not `--overview`.** That flag frames the *rendered* city — buildings, props, dusk, an
+  act's colour cast — on a run somebody has to take deliberately. This is the grid, so it says what
+  the generator decided rather than what the renderer drew, and it is written without being asked.
+- **One picture per day, not one per run.** The lattice is fixed for a run and **what a block is is
+  not**: an arc requisitions a park, a fire leaves a shell, and today's closures are down. A single
+  map taken at dawn on day 1 would be a lie by day 12.
+- **Marks are outlines and lines, never fills**, so nothing can hide the ground it is describing —
+  the commonest way a debug overlay lies is by covering the thing that was going to answer the
+  question. The home is filled, because it is a point rather than an area. A crosshair reaching a
+  block either way was built and taken back out: it is the only red in a picture with no other red
+  in it, so it was already the first thing the eye lands on, and the reach was covering two streets
+  to buy nothing.
+- It has **its own** building colour rather than `Tile.ground_colour`'s `BUILDING` answer, whose
+  `_:` arm returns `Palette.OUTLINE` under a comment saying the case only shows through bugs.
+  Leaning on a fallback whose stated purpose is *this should never be seen* is how a contract
+  quietly becomes untrue.
 
 ## What it deliberately does not do
 

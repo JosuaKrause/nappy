@@ -24,6 +24,9 @@ func run(t) -> void:
 	_test_tracing_a_day_does_not_change_it(t)
 	_test_tracing_the_arcs_does_not_change_them(t)
 	_test_a_day_header_opens_a_day(t)
+	_test_the_map_picture_covers_the_city_and_marks_it(t)
+	_test_the_map_picture_reads_the_map_and_nothing_else(t)
+	_test_a_picture_asked_for_by_hand_is_never_capped(t)
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -166,6 +169,73 @@ func _test_a_day_header_opens_a_day(t) -> void:
 	t.check(lines[3].begins_with("  11.3  turn"), "an entry is timestamped from dawn")
 	t.check(lines[4].begins_with("  11.3  nerve"),
 			"and what happens after dusk keeps the time the day ended at (got '%s')" % lines[4])
+
+# ------------------------------------------------------------- the city grid ---
+# *(Playtest 13, finding 4.)* What a test can hold about a picture is its geometry and its
+# innocence; whether it is *legible* is a thing to open the PNG and look at, which is the
+# `check.sh` / screenshot split this project has had since M1.
+
+## The picture covers every tile at the stated scale, and every mark actually lands.
+##
+## The colours are asserted by **presence** rather than by pixel address: an outline moved a tile
+## would still be a correct picture, and a mark that never got drawn is the failure worth catching
+## — three of them are stated over data the generator could legitimately return empty
+## (`precinct_spans`, closures), so those are asserted only when there is something to assert.
+func _test_the_map_picture_covers_the_city_and_marks_it(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var image := TelemetryMap.render(map)
+	t.check(image.get_size() == map.size * TelemetryMap.SCALE,
+			"the picture is the whole map at SCALE pixels a tile")
+
+	var seen := {}
+	for y in image.get_height():
+		for x in image.get_width():
+			seen[image.get_pixel(x, y)] = true
+	t.check(seen.has(TelemetryMap.HOME_MARK), "the home is marked")
+	t.check(seen.has(TelemetryMap.CALM_MARK), "and every calm area is outlined")
+	t.check(map.main_road < 0 or seen.has(TelemetryMap.SPINE_MARK), "and the spine is drawn")
+	t.check(map.precinct_spans.is_empty() or seen.has(TelemetryMap.PRECINCT_MARK),
+			"and the precincts are")
+	# The ground is under all of it: a picture that is only marks has covered what it describes,
+	# which is the one way a debug overlay lies that nobody notices.
+	t.check(seen.has(TelemetryMap.BUILDING_GROUND), "and the buildings show through")
+	t.check(seen.has(Tile.ground_colour(GameEnums.TileType.SIDEWALK)), "and so do the pavements")
+	t.check(seen.has(Tile.ground_colour(GameEnums.TileType.ROAD)), "and so do the roads")
+
+## Rendering is a **read**. It takes no RNG and changes nothing about the map, which is the same
+## promise `_test_tracing_a_day_does_not_change_it` makes about the log — and it is worth its own
+## check because this one draws from a `CityMap` that is mutable by design.
+func _test_the_map_picture_reads_the_map_and_nothing_else(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var before := map.tiles.duplicate()
+	var calm_before := map.calm_blocks.size()
+	var first := TelemetryMap.render(map)
+	var second := TelemetryMap.render(map)
+	t.check(map.tiles == before, "rendering the grid does not repaint it")
+	t.check(map.calm_blocks.size() == calm_before, "and does not disturb what it counted")
+	t.check(first.get_data() == second.get_data(),
+			"and the same map twice is the same picture, pixel for pixel")
+
+## A person pressing the key is not a heuristic firing. *(Playtest 13, finding 5.)*
+##
+## `snapshot()`'s two limits are what stop a two-second condition writing a hundred and twenty
+## frames; `snapshot_now()` must not have them, because a cap that silently swallows the seventh
+## press is a tool that lies about having worked. Asserted through the **log**, which is the only
+## part of it that exists headless — there is no viewport to photograph in the suite, and that is
+## itself the thing being relied on.
+func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+	var log := Telemetry.current_log()
+	var before := log.lines.size()
+	for i in Telemetry.SHOTS_PER_DAY * 2 + 1:
+		Telemetry.snapshot_now("press %d" % i)
+	t.check(log.lines.size() - before == Telemetry.SHOTS_PER_DAY * 2 + 1,
+			"every press writes its line, well past the heuristic's own daily cap")
+	t.check(log.lines[log.lines.size() - 1].contains("shot"),
+			"and the line is a shot entry")
+	Telemetry.end_run()
+	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
 
 # ------------------------------------------------------------------ helpers ---
 

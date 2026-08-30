@@ -6,6 +6,29 @@ Nothing is explained. The player is a mother with a baby that will not sleep. Sh
 The story is entirely in *what she walks past*, and the fact that she keeps having to walk
 past it because the baby still will not sleep.
 
+## The two names
+
+She is **Peregrine**. The baby is **Wren**.
+
+They are the only proper nouns in the game — the city has no name, the country has no name, and
+nobody on the other side of a checkpoint is ever given one. Two is what the premise can afford:
+a name says who somebody is to *you* without saying where they are or which side they are on,
+which is the one piece of explaining that costs nothing.
+
+Both are birds and neither reason is on the surface, which is the register this wants. A **wren**
+is small and will not settle. *Peregrinus* is a common noun before it is a name — *the one from
+abroad, the one passing through* — and the falcon is the **pilgrim** falcon, named for only ever
+being seen on passage, never where it nests. She has a home she cannot stay in, and the city gets
+less hers every day. The whole game is the walk between those two facts.
+
+Considered and rejected: **Hal**, for the halcyon and its fourteen days of calm — the arithmetic
+was perfect (a run is fourteen days, and the halcyon's whole job is to make the world quiet enough
+to nest in) and the name reads male on sight, which costs the premise more than the reason buys.
+
+**These names are content and never identifiers.** Nothing in `src/` is named after them; see
+`CLAUDE.md`, "Names are content, never identifiers". A name can change and a rename that has
+reached the code is a diff nobody can review.
+
 ## Acts
 
 A run is 14 days, split into four acts. The act determines the colour cast, the ambient

@@ -38,6 +38,7 @@ func run(t) -> void:
 	_test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t)
 	_test_traffic_gives_way_at_a_crossing(t)
 	_test_the_crowd_stays_in_the_field(t)
+	_test_the_crowd_does_not_bunch_against_the_wall(t)
 	_test_the_field_is_wider_than_the_screen(t)
 	_test_cars_do_not_drive_through_each_other(t)
 	_test_a_car_can_honour_the_headway_it_keeps(t)
@@ -182,25 +183,90 @@ func _test_a_car_is_louder_and_carries_further_than_a_person(t) -> void:
 ## reference for "she stops here and waits"; now that waiting is never a plan, the only question a
 ## street has to answer is what it costs to *walk down*, which is what a route is made of.
 func _test_a_busy_street_never_lets_the_meter_fall(t) -> void:
-	_city.crowd.start_day(1, _rng(1))
-	var arterial := _mean_excitement(CrowdLanes.arterial_pavement(_city.map), 60.0)
-	_city.crowd.start_day(1, _rng(1))
-	var quiet := _mean_excitement(CrowdLanes.quietest_pavement(_city.map), 60.0)
+	var arterial := _floor_on(CrowdLanes.arterial_pavement(_city.map))
+	var quiet := _floor_on(CrowdLanes.quietest_pavement(_city.map))
 
 	t.check(arterial > Tuning.EXCITEMENT_DECAY_WALKING,
 			"walking the arterial loses ground on average (%.1f vs %.1f decay)"
 			% [arterial, Tuning.EXCITEMENT_DECAY_WALKING])
-	# The other half of the same rule, and the mistake made first: the arterial has to be
-	# expensive, not impassable. At three times the walking decay it fills the meter faster
-	# than a player can cross it, and a street nobody can use is not a route decision.
-	t.check(arterial < Tuning.EXCITEMENT_DECAY_WALKING * 3.0,
-			"the arterial is expensive to cross, not impossible (%.1f vs %.1f decay)"
-			% [arterial, Tuning.EXCITEMENT_DECAY_WALKING])
+	# The other half of the same rule: the main road has to be expensive, not impassable, because
+	# a street nobody can use is not a route decision.
+	#
+	# **Stated over the crossing now, not over the standing floor.** *(Playtest 13, finding 7.)*
+	# It used to be `arterial < decay * 3`, and that is a proxy for the thing it cares about —
+	# whether she can *get across* — measured by standing still on a street the design says to
+	# cross. The two came apart the moment the spine got the traffic M41 always intended it to
+	# have: the floor went over the ceiling while a crossing still cost about a sixth of the
+	# meter. This is M35's lesson in the crowd's half of the game — **when a rule is about a
+	# journey, state it over the walk and check it by walking.**
+	# Hoisted, because it walks eight crossings with fifteen seconds of traffic between them and
+	# calling it twice would put two minutes of simulation into a message string.
+	#
+	# Half the meter is where "not fatal" falls: a crossing that costs more than that can end a
+	# day started in perfect health, and one that costs less always leaves her the room to get
+	# back off the road and recover. It measures about 35 at act I density, so the spine is a
+	# third of the meter to cross — which is a **soft block**, and is what finding 7 asked for in
+	# its second half.
+	var crossing := _crossing_the_main_road_costs()
+	t.check(crossing < Tuning.METER_MAX / 2.0,
+			"crossing the main road is expensive, not fatal (%.0f of %d)"
+			% [crossing, Tuning.METER_MAX])
 	t.check(quiet < Tuning.EXCITEMENT_DECAY_WALKING,
 			"a back street is somewhere she can recover (%.1f vs %.1f decay)"
 			% [quiet, Tuning.EXCITEMENT_DECAY_WALKING])
 	t.check(arterial > quiet * 2.0,
 			"the main road is not merely busier than a back street, it is a different place")
+
+## The noise floor of a street, measured with the crowd **actually on it**.
+##
+## *(Playtest 13, and it is M44's lesson in the one test that pins the floor.)* This used to call
+## `start_day(1, rng)` with no focus, which parks the field on the map centre — and then measured
+## at `quietest_pavement`, which is whichever north-south corridor this city made quietest and is
+##1968px from that centre on seed 4242. Measured: **zero agents within 400px**, so "a back street
+## is somewhere she can recover" was 0.00 against a decay of 3.50 and "the arterial is a different
+## place" was 7.58 against 0.00. Three of this test's four checks were passing against a street
+## with nobody on it.
+##
+## The crowd is a population of the box around the player, so a floor is only a floor where she
+## is standing. Focusing it is what makes the number mean anything: the same point reads 3.12
+## rather than 0.00.
+func _floor_on(at: Vector2) -> float:
+	_city.crowd.start_day(1, _rng(1), at)
+	return _mean_excitement(at, 60.0)
+
+## What a kerb-to-kerb crossing of the main road actually costs her, worst of eight attempts.
+##
+## Walked rather than asserted, and the **worst** rather than the mean, because the rule is about
+## whether the road is passable at all — a mean crossing that is cheap and a worst one that ends
+## the day is a road she cannot use, and the mean would hide it. Fifteen seconds of traffic
+## between attempts, so each crossing meets a different road rather than the same eight cars.
+##
+## The ground's own decay is netted off inside the loop: the spine is `EXCITEMENT_DECAY_MAIN_ROAD_
+## MULTIPLIER` ground, so what she pays is what the crowd loads minus what that ground gives back,
+## and pricing it against the flat walking decay would flatter it by a third.
+func _crossing_the_main_road_costs() -> float:
+	var corridor := _city.map.main_road
+	var from_x := CrowdLanes.lane_centre(corridor, 0)
+	var to_x := CrowdLanes.lane_centre(corridor, CrowdLanes.SIDEWALK_OFFSETS[-1])
+	var start := Vector2(from_x, float(_city.map.size.y / 2) * Tuning.TILE_SIZE)
+	_city.crowd.start_day(1, _rng(1), start)
+	var worst := 0.0
+	for attempt in 8:
+		for i in int(round(15.0 / STEP)):
+			_city.crowd.step(STEP)
+		var walker := start
+		var paid := 0.0
+		var took := 0.0
+		while walker.x < to_x and took < 12.0:
+			walker.x += Tuning.WALK_SPEED * STEP
+			_city.crowd.set_focus(walker)
+			_city.crowd.step(STEP)
+			paid += (_city.crowd.total_excitement_at(walker)
+					- Tuning.EXCITEMENT_DECAY_WALKING * _city.decay_multiplier(walker)) * STEP
+			took += STEP
+		worst = maxf(worst, paid)
+		_city.crowd.set_focus(start)
+	return worst
 
 ## Mean crowd excitement at a point over `seconds` of traffic. A single instant says nothing
 ## — the whole character of a street is how often the next car comes.
@@ -348,9 +414,28 @@ func _test_a_bump_costs_and_one_of_them_is_survivable(t) -> void:
 	# line anywhere on a two-tile pavement: walking the arterial cost eleven bumps in forty
 	# seconds however carefully it was done. Under half a lane spacing there is one, and
 	# holding it takes the same forty seconds down to two.
-	t.check(Tuning.BUMP_RADIUS < Tuning.TILE_SIZE * 0.5,
+	var spacing := float(Tuning.TILE_SIZE) + CrowdLanes.SIDEWALK_LANE_SPREAD * 2.0
+	t.check(Tuning.BUMP_RADIUS < spacing * 0.5,
 			"there is a line between two pavement lanes with no contact on it (%.0f < %.0f)"
-			% [Tuning.BUMP_RADIUS, Tuning.TILE_SIZE * 0.5])
+			% [Tuning.BUMP_RADIUS, spacing * 0.5])
+	# **And it has to be wide enough to aim at.** *(M46, playtest 13 finding 1.)* The line is
+	# `spacing - 2 * BUMP_RADIUS` across, and while the lanes sat on their tile centres that was
+	# **four pixels** — something a player is occasionally on rather than something she can
+	# choose — with 165 points of a hundred riding on it: measured over three seeds, forty seconds
+	# down an arterial lane centre costs 15.3 contacts and the midline costs none.
+	# `CrowdLanes.SIDEWALK_LANE_SPREAD` widens the *street* instead of narrowing the body, which is
+	# the half of this that must not be traded away — `BUMP_RADIUS` is what makes a contact mean
+	# walking into somebody.
+	var clear_line := spacing - Tuning.BUMP_RADIUS * 2.0
+	t.check(clear_line >= Tuning.PLAYER_BODY_RADIUS,
+			"and it is wide enough to aim at rather than to land on (%.0fpx against a %.0fpx pram)"
+			% [clear_line, Tuning.PLAYER_BODY_RADIUS])
+	# The lanes it makes still have to be on the pavement. `CrowdAgent._pavement_band` measures the
+	# footway from the **tile** centres rather than from the lanes, so a spread of half a tile would
+	# put somebody in a shopfront or off a kerb and nothing else in the suite would object.
+	t.check(CrowdLanes.SIDEWALK_LANE_SPREAD < float(Tuning.TILE_SIZE) * 0.5,
+			"a spread lane is still on the footway (%.0f of a %d tile)"
+			% [CrowdLanes.SIDEWALK_LANE_SPREAD, Tuning.TILE_SIZE])
 
 ## The contact resolves as a *position*, so two bodies can never end up inside each other
 ## however fast she is going, and the person she walked into is the thing that gets loud —
@@ -576,11 +661,37 @@ func _test_a_signal_gives_her_time_to_cross(t) -> void:
 	t.check(Tuning.SIGNAL_AMBER_SECONDS * Tuning.CAR_SPEED.x > box,
 			"the amber clears the junction it is protecting (%.0fpx of %.0f)"
 			% [Tuning.SIGNAL_AMBER_SECONDS * Tuning.CAR_SPEED.x, box])
-	# And the wave: a cycle that is an even multiple of the junction-to-junction travelling time
-	# is what lets both directions progress. See `Tuning.SIGNAL_PROGRESSION_BLOCKS`.
-	var ratio := Tuning.signal_cycle_seconds() / Tuning.signal_travel_seconds()
-	t.close_to(fposmod(ratio, 2.0), 0.0,
-			"the cycle is an even multiple of a junction's travelling time", 0.001)
+	# And the wave. This used to assert that the cycle is an even multiple of the travelling time,
+	# on the grounds that it "lets both directions progress" — which is the condition upside down
+	# and was true of an arrangement that has never existed. *(M46.)* The property that is real is
+	# behavioural, so it is walked rather than restated: a car holding the progression speed down
+	# the spine **the way the wave runs** meets a green at every junction it comes to. The other
+	# direction is at chance and cannot be rescued on this geometry — see
+	# `Tuning.SIGNAL_PROGRESSION_BLOCKS`, which carries the derivation.
+	var signals := _city.crowd.signals_for_tests()
+	var was := signals.elapsed
+	var travel := Tuning.signal_travel_seconds()
+	var greens := 0
+	var arrivals := 0
+	for departure in 12:
+		signals.elapsed = float(departure) / 12.0 * Tuning.signal_cycle_seconds()
+		# Start where the wave has just turned green for this junction, which is what a car that
+		# has already joined the platoon has done. Bounded rather than `while green_for(...)`,
+		# because a suite that spins prints nothing at all and reads as a hang rather than a
+		# failure — see `run_tests.gd`.
+		for tick in int(Tuning.signal_cycle_seconds() / 0.01) + 1:
+			if signals.green_for(Vector2i(_city.map.main_road, 8), true):
+				break
+			signals.elapsed += 0.01
+		for hop in 6:
+			signals.elapsed += travel
+			arrivals += 1
+			if signals.green_for(Vector2i(_city.map.main_road, 8 - hop - 1), true):
+				greens += 1
+	signals.elapsed = was
+	t.check(greens == arrivals,
+			"a car in the platoon never meets a red going the way the wave runs (%d of %d)"
+			% [greens, arrivals])
 
 ## **A precinct has no cars in it.** Not few: none. The tile map alone cannot enforce it — a
 ## pedestrianised corridor is paved end to end, so every tile of it says "street" — so this is
@@ -721,6 +832,70 @@ func _agents_in_front_of(field: CrowdField) -> int:
 		if agent.global_position.y > field.centre.y:
 			found += 1
 	return found
+
+## The box holds the same amount of *city* wherever she stands, so the crowd does not bunch
+## against the boundary wall. *(M46.)*
+##
+## `CrowdField.corridor_range` clamps to the city and the population does not clamp with it, so a
+## box that is half wall put the same two hundred people on half the streets: measured before the
+## fix, the corridor against the west wall showed 67 walkers on 54% of a screen of city — the same
+## count as mid-map in half the ground — and read as 1.6x an ordinary middle corridor, beating the
+## main road on two seeds of five.
+##
+## Two checks, because the mechanism and the thing the player feels are different statements and
+## either could hold while the other fails. The first is the rule itself and is free. The second
+## is short on purpose — five seconds of settling and five of counting, which is enough to
+## separate a doubling and not enough to pin a value, and pinning a value is not what it is for.
+func _test_the_crowd_does_not_bunch_against_the_wall(t) -> void:
+	var field := _city.crowd.field()
+	var extent := _city.map.world_size()
+	var middle := extent * 0.5
+	var corner := Vector2(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
+	var worst := 0.0
+	for at in [middle, corner, Vector2(Tuning.TILE_SIZE, middle.y),
+			Vector2(extent.x - Tuning.TILE_SIZE, middle.y)]:
+		field.centre = at
+		var across := minf(extent.x, at.x + field.radius) - maxf(0.0, at.x - field.radius)
+		var down := minf(extent.y, at.y + field.radius) - maxf(0.0, at.y - field.radius)
+		worst = maxf(worst, absf(across * down / pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) - 1.0))
+	t.check(worst < 0.02,
+			"the box holds the same city at the wall as in the middle (worst %.0f%% out)"
+			% [worst * 100.0])
+
+	# Two ordinary corridors at the same height, one against the west wall and one three blocks
+	# in. Not the middle of the map, which is the main road: the busiest pavement in the city is
+	# the wrong yardstick for an ordinary one, in either direction.
+	var open := _density_around(_pavement_beside(3))
+	var walled := _density_around(_pavement_beside(0))
+	t.check(walled < open * 1.5,
+			"and a street beside the wall is not denser than one mid-map (%.0f vs %.0f walkers "
+			% [walled, open] + "per screen of city)")
+
+func _pavement_beside(corridor: int) -> Vector2:
+	var x := corridor * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
+	return _city.map.tile_to_world(Vector2i(x, _city.map.size.y / 2))
+
+## Walkers on screen per *screen of city*, standing at a point. Normalised because half a screen
+## against the boundary wall is half a screen of wall, and counting what is on it without saying
+## so is how the bug being tested for got in.
+func _density_around(at: Vector2) -> float:
+	_city.crowd.start_day(1, _rng(1), at)
+	_advance(10.0)
+	var extent := _city.map.world_size()
+	var visible := (minf(extent.x, at.x + 640.0) - maxf(0.0, at.x - 640.0)) \
+			* (minf(extent.y, at.y + 360.0) - maxf(0.0, at.y - 360.0))
+	var walkers := 0.0
+	var samples := 0
+	for i in int(round(10.0 / STEP)):
+		_city.crowd.step(STEP)
+		samples += 1
+		for agent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.WALKER:
+				continue
+			var away: Vector2 = agent.global_position - at
+			if absf(away.x) <= 640.0 and absf(away.y) <= 360.0:
+				walkers += 1.0
+	return walkers / float(maxi(1, samples)) * (1280.0 * 720.0) / maxf(1.0, visible)
 
 ## The floor under `CROWD_FIELD_RADIUS`, and the only one that matters: nothing may appear on
 ## screen. Half the viewport diagonal is the furthest anything visible can be from the camera,
@@ -924,13 +1099,21 @@ func _distance_along(agent: CrowdAgent, point: Vector2) -> float:
 ## A grid where every street is equally loud is a grid with nothing to choose between. The
 ## arterial has to be the loud one, and it has to be the *same* one every morning.
 func _test_the_arterial_is_the_busiest_street(t) -> void:
-	var arterial := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x)
-	var busiest := CrowdLanes.busyness(_city.map.seed_used, true, arterial)
+	var arterial := _city.map.main_road
+	var busiest := CrowdLanes.busyness(_city.map, true, arterial)
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		if index == arterial:
 			continue
-		t.check(CrowdLanes.busyness(_city.map.seed_used, true, index) < busiest,
+		t.check(CrowdLanes.busyness(_city.map, true, index) < busiest,
 				"corridor %d is quieter than the arterial" % index)
-	t.check(CrowdLanes.busyness(_city.map.seed_used, true, arterial)
-			== CrowdLanes.busyness(_city.map.seed_used, true, arterial),
+	t.check(CrowdLanes.busyness(_city.map, true, arterial)
+			== CrowdLanes.busyness(_city.map, true, arterial),
 			"a street's character is stable, not rolled afresh on every question")
+	# And there is exactly **one** of it. *(Playtest 13, finding 7.)* `busyness` used to answer
+	# `index == arterial_index(blocks)` with `blocks` taken from whichever axis it was asked
+	# about, so the middle corridor of the east-west axis was weighted as an arterial too —
+	# M41 abolished the second main road everywhere except here, and the phantom held more cars
+	# than the real one. A hierarchy is only a hierarchy if there is one of the top thing.
+	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y):
+		t.check(CrowdLanes.busyness(_city.map, false, index) < CrowdLanes.ARTERIAL_BUSYNESS,
+				"east-west corridor %d is an ordinary street, not a second spine" % index)

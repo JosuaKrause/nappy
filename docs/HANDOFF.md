@@ -1,35 +1,53 @@
 # Handoff
 
-**Last updated:** end of the M41 session. M39 and the rest follow below, newest first — **M42 (the
-9×9 city) and M44 (the suite you can run) have entries in [TODO.md](TODO.md) and none here**, which
-is this file going stale for two milestones and is worth not repeating.
-**Read this first, then [PLAYTEST-12.md](PLAYTEST-12.md), then [TODO.md](TODO.md).**
+**Last updated:** the playtest 13 session — which wrote the report and the plan and built none of
+it. Nothing has been implemented since `b7590fb`. M41 and older follow below, newest first.
+**Read this first, then [PLAYTEST-13.md](PLAYTEST-13.md), then [TODO.md](TODO.md).**
 
 > ## Where to pick up
 >
-> **M41 is merged** (`c4e18d2`), and so is the built half of **M43** — merged deliberately
-> unfinished, because what is left of it cannot be done at a keyboard. The order is **the rest of
-> M43, then M45, then M40, then a playtest**.
+> **Nothing is half-built and nothing is on a branch.** `main` is `b7590fb` plus the playtest 13
+> documents. The order is **the tooling, then M46, then M47, then M43's last two, then M48, then
+> M40 — and only then a playtest.**
 >
-> - **M43, what is left** — the two findings a rig cannot answer. The pursuit **cool-off** (is 0.8s
->   of the gap opening still slow? it is one constant) and **dying at high excitement on a quiet
->   street**, which `TODO.md` says to read a trace for before touching anything. Built already:
->   nothing is placed on the home block, the diagonal `zzz` comes back down, and the day-3 dog holds
->   its ground and lunges on proximity. Answered by measuring instead of building: the busker (the
->   denial arithmetic is right at every size of calm area now) and the closure (below).
-> - **M45 is new and it came out of M43's measurement.** A closure cannot change a route in this
->   city — 8 streets of 768 could lengthen the walk if closed alone — so the answer is that
->   *lengthening the route was never the job*. Permanent impassable blocks to make the grid less
->   open, and closures placed to stop her walking a direction that cannot win today. The design is
->   quoted in full in `TODO.md`.
+> - **Read the process finding before anything else.** The player closed playtest 13 with
+>   *"don't tell me to playtest again unless all the things we discussed have been implemented —
+>   there is otherwise not really any point in playtesting since it will just surface the already
+>   mentioned things again."* M43 was merged half done on the argument that what was left needed a
+>   played run; that run spent five nerves rediscovering things already written down. **A playtest
+>   is a scarce resource — do not spend one on a build known to be incomplete.**
+> - **The tooling first** (playtest 13, findings 4 and 5): a picture of the whole city grid written
+>   into the telemetry folder every run, and a key that takes a screenshot and writes a note beside
+>   it. Small, asked for by name, and M46 and M47 both want exactly what they provide.
+> - **M46, the crowd milestone, is next — and it exists.** The note that used to stand here said it
+>   might not, because M41 had moved every number it was going to argue about. The numbers moved and
+>   the finding survived: *"just walking around now increases excitement — this is bad."* Three
+>   seconds of standing still on an ordinary pavement is **+8**, the freeze threshold is reached
+>   within ten seconds of the doorstep on all five attempts, and the day that was lost read
+>   `crowd 24.6, events 0.0` with the nearest catalogue row out of range. Found by playtest 07, by
+>   playtest 10, and now said out loud. **Measure the ratio, not either number** — the finding is
+>   that the careful line has stopped existing, not that the crowd is loud.
+> - **M47 is playtest 13's finding 2 plus the whole of M45**, because they are one mechanism. The
+>   calm *count* is right and its *density* is not: 49 blocks became 121 and the eight calm areas
+>   did not move. The answer taken is **area rather than count** — a 2×2 inner courtyard
+>   (an apartment complex, asked for long ago and never built), calm areas that are 2×1 rather than
+>   square, and the **main road as a soft block**, which is M45's permanent restriction achieved
+>   without removing a walkable tile.
+> - **M43's last two are answered by the played run at last.** The cool-off is the wrong *quantity*
+>   rather than the wrong constant — `_outrun_for` needs 0.8 **continuous** seconds of the gap
+>   opening and a real player runs in bursts, so two chases lasted 5.4s while she ran through most
+>   of them. And the day-4 dog: `charging_dog` recurs past day 3 but must stop being sited ahead of
+>   her.
+> - **M48** — `construction` is 68px wide on a 64px pavement and is always drawn east–west. Three
+>   rules, not a row.
 > - **M40** — the documentation split: `docs/DECISIONS.md` for what was tried and rejected, and
 >   docstrings that say what a thing is rather than what it used to be.
-> - **Then play it.** Nothing about M41 has been played except the half-built version playtest 12
->   caught, which is the best thing that happened in the milestone and is also not a verdict.
-> - **The crowd milestone is not next and may not exist.** M41 moved the car population twice (46 →
->   30 → 40), gave the ground a recovery rate, and gave the junctions a capacity they never had.
->   Every number that milestone was going to argue about has already moved; read the traces before
->   assuming the finding survived.
+>
+> **Two things were decided in this session that are not milestones.** The mother and the baby have
+> names — **Peregrine and Wren**, in [NARRATIVE.md](NARRATIVE.md) with the reasoning and the one
+> that was rejected — and **names are content, never identifiers**: nothing in `src/` may be named
+> after them, because a name can change and a rename that has reached the code is a diff nobody can
+> review. That rule is in `CLAUDE.md`.
 
 > **M41 is the shape of the city, and its one sentence is: a hierarchy is only a hierarchy if there
 > is one of the top thing.**
@@ -75,10 +93,11 @@ is this file going stale for two milestones and is worth not repeating.
 >
 > **Signals have to be measured, not authored.** Arbitrary offsets stop a car at *every* junction it
 > comes to — two thirds of the traffic stationary at any instant, and the mean speed on the arterial
-> a quarter of a cruise. The cycle is derived from the block spacing now, and both directions
-> progress because it is an **even** multiple of the junction-to-junction travelling time. The
-> fairness contract is the *side* street's green, since she crosses the main road while the main
-> road is stopped, and the amber is a clearance period rather than a warning.
+> a quarter of a cruise. The cycle is derived from the block spacing now. The wave serves **one**
+> direction — 93% of arrivals green with it, 51% against, and a two-way wave is arithmetically
+> impossible on this geometry; M41 claimed both and M46 measured it. The fairness contract is the
+> *side* street's green, since she crosses the main road while the main road is stopped, and the
+> amber is a clearance period rather than a warning.
 >
 > **And junction control gave the road a capacity it never had.** With crossing cars driving through
 > each other the network's throughput was unbounded, so the car population was only ever a noise
@@ -1454,12 +1473,17 @@ Taken in the M12a session and still governing everything after it. All four are 
   Nothing in the test suite could see it and the screenshot showed a normal street. Forty
   seconds of a scripted walk down a real pavement showed it immediately. A bumped body **steps
   aside** now.
-- **The contact radius is set by the lane spacing, not by a body's width.** Pedestrian lanes
-  are one tile apart, so the only line with no contact on it is the midline between two of
-  them. At 18px there was no such line anywhere on a two-tile pavement: the same forty-second
-  walk cost eleven bumps however carefully it was done, which is a toll rather than a decision.
-  At 14px it costs two. That relationship is the assertion in `tests/test_crowd.gd`, not the
-  number.
+- **The contact radius is set by the lane spacing, not by a body's width.** The only line with no
+  contact on it is the midline between two lanes. At 18px there was no such line anywhere on a
+  two-tile pavement: the same forty-second walk cost eleven bumps however carefully it was done,
+  which is a toll rather than a decision. At 14px it costs two. That relationship is the assertion
+  in `tests/test_crowd.gd`, not the number.
+- **And the line has to be wide enough to aim at.** *(M46.)* With the lanes on their tile centres
+  it was `32 − 2 × 14` = **four pixels**, which is a line a player is occasionally on rather than
+  one she chooses — while forty seconds down an arterial lane centre cost 15.3 contacts and the
+  midline cost none. `CrowdLanes.SIDEWALK_LANE_SPREAD` pushes the two lanes of a footway apart to
+  make it 20px. Widen the **street**, never the body: `BUMP_RADIUS` is what makes a contact mean
+  walking into somebody.
 - **A contact has to startle once, not once per frame.** She walks faster than a pedestrian, so
   a person bumped from behind stays inside the radius for the better part of a second.
   `CrowdAgent.touching` is the hysteresis; without it one person cost what a crowd should.

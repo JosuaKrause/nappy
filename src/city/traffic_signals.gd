@@ -23,8 +23,11 @@ extends RefCounted
 ## The greens run down the spine as a **wave**, and that is not a driver's convenience — it is what
 ## makes the spine a road rather than a car park. Arbitrary offsets stop a car at every junction it
 ## comes to: measured at act I density, two thirds of the traffic was stationary at any instant.
-## See `Tuning.SIGNAL_PROGRESSION_BLOCKS` for why the cycle is derived from the block spacing and
-## why that lets both directions progress.
+##
+## **The wave runs one way.** *(M46.)* Northbound traffic — the way the offsets count down — meets
+## a green at 93% of junctions; southbound meets one at 51%, which is chance. That is not a bug to
+## be fixed but an arithmetic fact about this geometry, and `Tuning.SIGNAL_PROGRESSION_BLOCKS`
+## carries the derivation and the two alternatives that are worse.
 
 ## The four states of a junction, in cycle order. Amber belongs to the arm that is *losing* the
 ## green — it is a clearance period, so the crossing arm stays red through it.
@@ -84,8 +87,8 @@ func amber_for(junction: Vector2i, vertical: bool) -> bool:
 	return phase == Phase.MAIN_AMBER if main else phase == Phase.SIDE_AMBER
 
 ## How far along the wave a junction sits: one junction's travelling time per junction down the
-## spine. See `Tuning.SIGNAL_PROGRESSION_BLOCKS` for why this makes both directions progress and
-## what happens without it — two thirds of the traffic standing still, measured.
+## spine. See `Tuning.SIGNAL_PROGRESSION_BLOCKS` for which direction that serves — one of them,
+## not both — and what happens without it: two thirds of the traffic standing still, measured.
 ##
 ## The index is the one the main arm travels along, so the wave runs down the spine and the side
 ## streets take what they are given.

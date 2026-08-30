@@ -291,13 +291,32 @@ const SIGNAL_AMBER_SECONDS := 2.0
 ## Signals with arbitrary offsets stop a car at every junction it comes to: measured at act I
 ## density, two thirds of the traffic was stationary at any instant and the mean speed on the
 ## arterial was a quarter of a cruise. What fixes it is a *progression* — each junction's cycle
-## starts one junction's travelling time after the last — and the reason it can run **both** ways
-## down the same street is the arithmetic: a car going against the wave arrives two travel times
-## after the one going with it, so both are in step exactly when the cycle is an even multiple of
-## the travel time. Hence `2 * blocks`, and hence the cycle being derived rather than authored.
+## starts one junction's travelling time after the last.
 ##
-## Three is what makes that come out near a quarter of a minute: shorter and the side street's
-## share stops being long enough to cross on, longer and a red is a wait a player will not spend.
+## **The wave serves one direction, not two, and M41 claimed otherwise.** *(M46.)* The old note
+## here said a car going against the wave "arrives two travel times after the one going with it,
+## so both are in step exactly when the cycle is an even multiple of the travel time", and that is
+## the wrong condition. Walk it: with offsets `j·travel`, a car passing junctions `j0 + d·h` at
+## `t0 + h·travel` sees phase `t0 + j0·travel + h·travel·(1 + d)`. Going **with** the wave (`d =
+## -1`) the `h` term vanishes and the phase never moves — a perfect progression. Going **against**
+## it the phase advances `2·travel` per junction, which is constant only if the cycle *divides*
+## `2·travel`. "An even multiple" is that condition upside down, and it is only true at
+## `blocks = 1`.
+##
+## Measured on the wave alone, twenty departures spread across a cycle, no traffic in it:
+## **93% of arrivals green with the wave, 51% against it** — and 51% is chance, because the main
+## green is 47% of the cycle.
+##
+## **A two-way wave is impossible here, which is why this is a note and not a fix.** It needs
+## `cycle = 2·travel` = 5.7s, and the side green plus its two ambers is 9.0s before the main road
+## gets a second. Widening `travel` instead means a spine cruise under 100px/s, which is barely
+## above a walk. No offset scheme does better on average either: `θ = travel` buys one direction
+## a perfect run and leaves the other at chance (72% overall), while `θ = cycle/2` puts *both*
+## directions on a three-phase sweep at 47% each. The asymmetric answer is the good one.
+##
+## Three is what makes the cycle come out near a quarter of a minute: shorter and the side
+## street's share stops being long enough to cross on, longer and a red is a wait a player will
+## not spend — see M46 in `docs/TODO.md` for what a longer one costs her, measured.
 const SIGNAL_PROGRESSION_BLOCKS := 3
 
 ## Calm **areas**, not calm blocks: since M21 an area may be a single block or a four-block
@@ -461,8 +480,19 @@ func closures_for_day(day: int) -> int:
 ## `tests/test_crowd.gd` states — *"expensive to cross, not impossible"* — because a car waiting
 ## at a light beside you is louder for longer than one going past. Thirty restores the floor
 ## to 8.0, which is what the same street measured before any of this. Measured, not converted.
+##
+## **And the cars came back down when the spine finally got the share it was always weighted for.**
+## *(Playtest 13, finding 7.)* Forty was set after playtest 12 said the main road was too sparse,
+## and it was the wrong lever for a reason nothing could see: half the arterial weight was being
+## spent on a phantom east-west arterial (`CrowdLanes.busyness`) and the axis was chosen 50/50
+## *before* the corridor, so no weight could put more than half the traffic on one north-south
+## street. With both fixed the spine holds **15.4 cars of the city's total against 11.2 before**,
+## and forty of them put junction contention over the rate `tests/test_crowd.gd` allows. So the
+## number goes down and the street the player is complaining about gets busier: this is the
+## capacity clause above arriving for real, and it is the second time the honest answer to
+## *"the main road is too quiet"* has been something other than *more cars*.
 const CROWD_PEDESTRIANS_PER_ACT: Array[int] = [200, 150, 42, 70]
-const CROWD_CARS_PER_ACT: Array[int] = [40, 30, 8, 16]
+const CROWD_CARS_PER_ACT: Array[int] = [34, 26, 8, 16]
 
 ## Half-extent of the box the crowd lives in, in px. Everything inside it is simulated;
 ## anything that leaves it is recycled to the far edge and walks back in.
@@ -498,6 +528,19 @@ const CAR_SPEED := Vector2(130.0, 185.0)
 ## one: **careless is expensive and careful is free.** A close pass still costs 4.2/s, because the
 ## intensity and the inner radius did not move; two tiles away is 0/s again, as it was. What is
 ## gone is the wide, cheap middle that used to be worth almost nothing and is now worth a lot.
+##
+## **"Two tiles away" is true of one walker and was unreachable on a footway.** *(M46, measured
+## twice.)* A footway is two tiles, and while its lanes sat on their tile centres they were 32px
+## apart — so the midline, the only line with no head-on contact on it, was 16px from two lane
+## centres and inside the **full-intensity core** of both. The ambient floor measured flat across a
+## pavement (4.30 frontage / 4.96 midline / 4.76 kerb), the careful line for contacts was the
+## careless one for noise, and *how close to pass* was not the choice this comment claims.
+##
+## `CrowdLanes.SIDEWALK_LANE_SPREAD` is what made it one: the lanes are 48px apart now, so the
+## midline is **24px from each of them and outside `PEDESTRIAN_INNER_RADIUS`** rather than inside
+## it. Measured over the same walk, the field at an ordinary midline fell 74 → 56 points per forty
+## seconds. That is the one change to make if this ever stops being true again — the intensity and
+## the radii are pinned by the arterial floor and the shoulder, and the geometry is not.
 const PEDESTRIAN_INTENSITY := 4.2
 const PEDESTRIAN_INNER_RADIUS := 22.0
 const PEDESTRIAN_OUTER_RADIUS := 55.0
@@ -511,6 +554,12 @@ const PEDESTRIAN_OUTER_RADIUS := 55.0
 ## 170 → 104 for the same reason the pedestrian's radius came in, and measured the same way: the
 ## arterial has to stay between the walking decay and three times it, which is `tests/test_crowd.gd`
 ## and is the one place the noise floor is pinned to anything.
+##
+## **And 104 is wider than the street it is on.** *(M46, measured.)* A corridor is six tiles —
+## 192px — and a car's field is 208px across, so every tile of both footways is inside it and the
+## frontage lane, the furthest place from a carriageway there is, sits 64px from the nearer lane
+## centre. Nowhere on an ordinary street is out of the traffic's earshot, which is most of why the
+## noise floor measures flat across a pavement. See M46 in `docs/TODO.md`.
 const CAR_INTENSITY := 5.4
 const CAR_INNER_RADIUS := 38.0
 const CAR_OUTER_RADIUS := 104.0
@@ -537,11 +586,19 @@ const PLAYER_BODY_RADIUS := 14.0
 ## Centre-to-centre distance at which the player and a pedestrian are touching.
 ##
 ## It has to be **under half a lane spacing**, and that is the whole of why it is 14 rather
-## than a body's width. Pedestrian lanes are one tile apart, so the only line with no contact
-## on it is the midline between two of them; at 18 there was no such line anywhere on a
-## two-tile pavement and walking the arterial cost eleven bumps in forty seconds however
-## carefully it was done. At 14, holding that line takes the same walk down to two — which
-## turns the crowd from a toll into the thing playtest 02 finding 3 asked for.
+## than a body's width. The only line with no contact on it is the midline between two lanes; at 18
+## there was no such line anywhere on a two-tile pavement and walking the arterial cost eleven
+## bumps in forty seconds however carefully it was done. At 14, holding that line takes the same
+## walk down to two — which turns the crowd from a toll into the thing playtest 02 finding 3 asked
+## for.
+##
+## **What M19 did not check is how *wide* that line is, and until M46 it was four pixels.** The
+## lanes were a tile apart, so the clear line was `32 - 2 × 14` — something a player is
+## occasionally on rather than something she can aim at, while forty seconds down an arterial lane
+## centre cost 15.3 contacts against the midline's none. The fix is deliberately **not** here:
+## `CrowdLanes.SIDEWALK_LANE_SPREAD` moves the lanes apart instead, because this number is what
+## makes a contact mean *walking into somebody* and buying the line by shrinking it would make one
+## require a near-perfect overlap. See M46 in `docs/TODO.md`.
 const BUMP_RADIUS := 14.0
 
 ## How far apart a contact is pushed, and how far apart it has to get before it counts as over.

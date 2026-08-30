@@ -140,14 +140,34 @@ green changes on a branch until somebody has time to play the game is how a bran
 branch stays open for the two findings; the work that is done is on `main` where the next
 screenshot and the next playtest will be taken against it.
 
-**The order from here is the rest of M43, then M45, then M40, then a playtest** — the original
-order was M43, M40, a playtest, with the note that by that point *"everything might have changed to
-the point where crowd balancing is not needed"*.
-The crowd milestone below is therefore **not next**: M41 moved the car population twice, gave the
-ground a recovery rate and gave the junctions a capacity, so every number the crowd milestone was
-going to argue about has already moved. Re-read the traces before assuming it still exists.
+**Playtest 13 has landed and it overrides that order.** Eight findings in
+**[docs/PLAYTEST-13.md](PLAYTEST-13.md)**, off one run that ended on day 4 with a bad ending, and
+the sentence under it is *the crowd is supplying almost all of the difficulty and every authored
+system in the game is being judged through it* — reported this time by a person, in the plainest
+possible words: **"just walking around now increases excitement — this is bad."** The trace has
+her standing still for three seconds on an ordinary pavement outside her own front door and
+gaining eight points, and a day lost in 29.4s reading `crowd 24.6, events 0.0`.
 
-**What that leaves.** M43, M40, a playtest, and then M25's other half —
+**So the crowd milestone exists, it is `M46`, and it is next.** The note below said to re-read the
+traces before assuming it survived M41. The traces were re-read; it survived. It has now been
+found by playtest 07, by playtest 10 and by a human sentence, and deferred three times.
+
+**And the process finding is the one to read first.** The player opened by saying they could not
+comment on much *"since you didn't actually finish your work"*, and closed with:
+*"don't tell me to playtest again unless all the things we discussed have been implemented — there
+is otherwise not really any point in playtesting since it will just surface the already mentioned
+things again."* M43 was merged half done on the argument that what was left needed a played run.
+This is what that bought: five nerves spent rediscovering things already written down.
+**A playtest is a scarce resource. Do not spend one on a build known to be incomplete.**
+
+**The order from here is: the tooling (findings 4 and 5), then M46, then M47, then the rest of
+M43, then M48, then M40 — and only then a playtest.** The tooling goes first because M46 and M47
+both want exactly the two things it provides: a picture of the grid, and a screenshot on demand
+with a line in the trace beside it. M45 is absorbed into **M47**, because the permanent
+restrictions it needs and the bigger calm areas playtest 13 asked for are the same mechanism —
+`absent_segments`, and what a lot is.
+
+**What that leaves.** M46, M47, M43's last two, M48, M40, a playtest, and then M25's other half —
 patrols, which is unaffected by M31 and is now specifically the answer for **acts III and IV**,
 where the streets are deliberately empty and the threat should follow rather than sit. *M25's
 first half shipped in M33*: running that matters exists now, as a mechanic with a fairness contract
@@ -1120,7 +1140,9 @@ reason they gave: *"that way it's not an artificial end but an emergent end."*
 - [x] **Traffic lights.** The cycle is **derived** from the block spacing rather than authored —
       `2 × SIGNAL_PROGRESSION_BLOCKS` junction-to-junction travelling times — which is what lets a
       green wave run both ways down the same street. Without a progression two thirds of the traffic
-      stands still at any instant, measured. The side street's green is the fairness contract
+      stands still at any instant, measured. **The "both ways" half of that is wrong and M46
+      measured it: the wave serves one direction and cannot serve two on this geometry.** The side
+      street's green is the fairness contract
       (`Tuning.validate_signals`), because she crosses a main road while the main road is red; the
       amber is a clearance period, not a warning. *(Playtest 12, finding 4: the four heads at a
       junction are now two drawings — face-on for the arms running up and down the screen, edge-on
@@ -1241,9 +1263,11 @@ Playtest 11's remaining findings. See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**.
 the first three: **several things in this city are placed without asking what they are in the way
 of** — which is `CLAUDE.md`'s first rule failing at *placement* rather than at design.
 
-**Where it stands: three done, two answered by measuring rather than by building, two open — and
-one of those is a design decision that has to be taken rather than derived.** What follows is the
-plan with what each part turned out to be.
+**Where it stands: three done, two answered by measuring rather than by building, and the two that
+needed a played run have now had one.** Playtest 13 answered both — the cool-off is the wrong
+*quantity* rather than the wrong constant, and dying at high excitement on a quiet street is the
+crowd milestone — and added one more to this milestone, the day-4 dog. What follows is the plan
+with what each part turned out to be.
 
 - [x] **Nothing is placed on the home block** — finding 1. It is `ClosurePlanner`'s exemption
       applied to the other thing in the game that occupies ground, and it is stated over the
@@ -1365,15 +1389,75 @@ plan with what each part turned out to be.
 - [ ] **And the cool-off is played, not re-derived** — finding 6. `Tuning.PURSUIT_SHAKEN_OFF` landed
       in M39, after this report was taken: 0.8s of the gap opening, and the measured price of the
       answer went from ~35 points to **12**. If it still reads as slow it is one constant
+
+      **Played, and it is not one constant — it is the wrong quantity.** *(Playtest 13, finding 6:
+      "the dog doesn't stop fast enough on day 3 — we talked about this! when running the pursuit
+      should stop quickly — it **only** should keep going if the player doesn't run.")* Two chases
+      in the trace lasted **5.4s**, nearly twice `PURSUIT_TIME`, while she was running for most of
+      them; the first turned a meter reading 9 into a meter reading 95 and ended the day.
+
+      | day | chase lasted | she ran | it cost |
+      |---|---:|---:|---|
+      | 3, attempt 1 | **5.4s** | 3.2s | exc 9 → 95, lost the day |
+      | 3, attempt 4 | **5.4s** | 2.1s | exc 16 → 66 |
+
+      The cause is that `_outrun_for` needs **0.8 continuous seconds** of the gap opening and any
+      frame that does not open it resets the timer to zero. A real player does not hold a key down
+      for a clean 0.8s: she ran in four separate bursts — 1.2s, 0.5s, 1.4s, 0.4s — and every gap
+      between them put the counter back. Worse, the first `(WALK_SPEED + RUN_SPEED) / ACCELERATION`
+      of every burst is spent turning round, during which the gap is still **closing**, so a 1.2s
+      burst can contain well under 0.8s of opening.
+
+      **So the break-off condition becomes *she is running away from it*, read directly.** M39's
+      rate framing was the right fix for a different complaint and its guarantee still holds —
+      *only running can open the gap*, so walking cannot fake it — but it buys that guarantee by
+      measuring the **consequence** of running rather than running itself, and the consequence is
+      polluted by acceleration, by diagonals and by a player who lets go of shift. Reading the
+      state gives the same guarantee with none of the noise, and makes the player's sentence true.
+
+      Two things must not be lost with it, both already written down: the chase may not end before
+      it has been a threat (`PURSUIT_MIN_NOTICE` is the floor), and **walking away must never work
+      at any distance** — the M36 trap, where a trigger sitting at the break-off distance let a rig
+      stroll away from a robber every time
+- [ ] **The tutorial dog is not a tutorial after day 3** — playtest 13, finding 8, *"I had a
+      tutorial pursuing dog on day 4 — that should not happen"*. `charging_dog` is `first_day 3`
+      with `spawn_mode = AHEAD_OF_PLAYER` and no last day, so the scheduler goes on placing it
+      (three on day 4 of the trace) and the director goes on siting it in front of her, in the
+      identical presentation to the day-3 lesson: `ahead charging_dog comes at her from 200px in
+      front of her`. `_ensure_the_run_is_taught()` is correctly gated to `RUN_TAUGHT_DAY`; the row
+      underneath it is gated to nothing.
+
+      **Decided: it recurs, but is not sited ahead of her.** `AHEAD_OF_PLAYER` is for *"the small
+      number whose entire content is the moment it happens to you"*, and after day 3 that is
+      exactly what a charging dog stops being — the lesson is over and the row becomes a hazard
+      with a place. `alley_robbery` is the shape: `pursues_within`, a thing that is *somewhere*,
+      that can be seen and priced and routed around, and that becomes a chase if she walks up to
+      it. Two constraints: a `MAP`-placed pursuer needs a `pursues_within` or it can never trigger
+      at all, and `validate_pursuit`'s third clause puts that trigger inside `PURSUIT_BREAK_OFF`;
+      and **day 3 keeps the placement it has**, because the lesson depends on being unavoidable
 - [ ] **Dying at high excitement on a quiet street** — finding 8, and read the trace before touching
-      anything. The strongest suspect is the **recovery**, and it is a rule taken on purpose:
+      anything.
+
+      **Playtest 13's trace is that read, and the answer is the first of the three suspects: this
+      finding *is* the crowd milestone.** The losing line is
+      `lost_crying after 29.4s … exc 100, in 24.6/s (crowd 24.6, events 0.0)`, with the nearest
+      catalogue row 272px away and out of range — playtest 10's own shape, one milestone later. It
+      is **M46**, and this entry closes into it rather than being answered here. The other two
+      suspects stay open and are cheap to check while M46 is being measured: whether the pram's
+      `EXCITEMENT_NEARLY_CRYING` cue is shown and not read, and whether one contact at 90 is a
+      cliff — at 22–34 points a second a single bump above ~89 ends the day on an empty street, and
+      the trace has fifteen bumps in four days.
+
+      What the entry said before the read, kept because the reasoning still holds and is now
+      M46's: the strongest suspect is the **recovery**, and it is a rule taken on purpose —
       `EXCITEMENT_DECAY_IDLE` is 0.0, so above the calm threshold the only way down is walking
       somewhere quieter at 3.5/s — on a quiet street the meter sits where it is and any small source
       is a net climb with no floor under it. Three things to measure first: what the `lost` line's own
       `crowd X, events Y` breakdown says (if it reads like playtest 10's, this finding *is* the crowd
       milestone); whether the pram's `EXCITEMENT_NEARLY_CRYING` cue is being shown and not read; and
       whether **one contact at 90 is a cliff** — a pedestrian contact is ~10.8 points, so above 89 a
-      single bump on an empty street ends the day
+      single bump on an empty street ends the day. The first of the three is what the trace
+      answered
 - [x] **The diagonal zzz comes back down** — finding 9. `baby_cue_lift()` caught the diagonals
       because both cues asked *which axis is she mostly facing*, and that answer puts a diagonal on
       the vertical side of the line. It is one question now — `Stroller._pram_shares_her_column()`
@@ -1552,6 +1636,640 @@ one per day of the longest act plus one, precisely so that the spoiler can never
 nowhere to go — that sizing is playtest 12 finding 5 and it is the thing this would push against.
 Decide it with a measurement, not an argument: the number that matters is how far the *last*
 remaining calm area is from the door on the last day of an act, against the 180s she has.
+
+**Absorbed into M47.** The two halves that are still open here — permanent restrictions and
+closures that point — need the same machinery as playtest 13's bigger calm areas, and building
+`absent_segments` twice is how the second one goes quietly wrong. The design above stands
+unchanged and is the second half of M47; read it there.
+
+## M46 — The crowd is not the game · `feature/the-crowd-is-not-the-game`
+
+**Done.** Playtest 13's finding 1 — *"just walking around now increases excitement — this is
+bad"* — which is playtest 07's finding 17 and playtest 10's *"the thing nobody reported"*, found
+for the third time and said out loud for the first. See
+**[docs/PLAYTEST-13.md](PLAYTEST-13.md)**.
+
+**What it came to, in one paragraph.** Almost every item was answered by measuring rather than by
+arguing, and four of them came back the opposite of what the item predicted. The crowd was not too
+loud: an ordinary footway is **net recovery to walk**, and what is expensive is **standing**, which
+is `EXCITEMENT_DECAY_IDLE` being 0 and stays that way for two measured reasons. The careful line was
+not gone, it was **four pixels wide** — widened to twenty by moving the pavement's lanes apart, not
+by shrinking the body — and that closed the separate problem that contacts and noise had been
+pricing the same choice in opposite directions. The main road was quiet because a weighting could
+not cross a split something upstream had already made, and it is a soft block now at about a third
+of the meter to cross. And the green wave, which the docs had said served both directions since M41,
+**serves one and arithmetically cannot serve two**. The population was honest, the box was not, and
+the cost table did not move at all.
+
+**The one sentence: the crowd is supplying almost all of the difficulty, and every authored system
+in the game is being judged through it.** A day was lost in 29.4s reading `crowd 24.6, events
+0.0`, with the nearest catalogue row out of range; the freeze threshold is reached within ten
+seconds of the doorstep on **all five** attempts that got that far; and standing still for three
+seconds on an ordinary pavement is worth eight points.
+
+**What this must not become.** The noise floor is emergent, never a constant — that is an
+invariant and it stays. *"The crowd is expensive to be careless in and free to be careful in"* is
+the ratio the whole design rests on, and the finding is that **the careful line has stopped
+existing**, not that the crowd is loud. M33 already measured the line away (eleven contacts down a
+lane centre against one on the midline became thirteen against fifteen) and answered with a
+behaviour — people step aside. Fifteen contacts in four days says the behaviour is not carrying it.
+
+- [x] **Measure before touching anything, and measure the four things separately.** Playtest 04's
+      recipe, re-run on `main`: contacts in forty seconds walked down a lane centre *against*
+      forty seconds holding the midline, the mean crowd contribution at a standing point on
+      ordinary / precinct / main-road pavement over a real minute, and the share of a losing day's
+      excitement that came from the crowd. The ratio is the finding, not either number
+
+      **Measured, and one of the four came back the opposite of what was feared.** Five seeds,
+      act I, focused on the point being measured:
+
+      | | value | against a 3.5/s walking decay |
+      |---|---:|---|
+      | ordinary corridors, standing | mean **5.82**, median 5.62 | **44 of 55 beat the decay** |
+      | main road, standing | mean 11.90 | all five |
+      | precinct, standing | 5.75 | net +0.50 after its 1.5x ground |
+      | contacts, 40s down a lane centre | **73** | |
+      | contacts, 40s on the midline | **5** | |
+
+      So a typical ordinary street is **+2.1/s while walking and +5.8/s while standing** — 100
+      points in 48 seconds of pavement with nothing authored anywhere near her, which is finding 1
+      exactly. But **the careful line is not gone**: 73 against 5 is a ratio of **14.6:1**, better
+      than the 11:1 M19 built the crowd on. `CLAUDE.md` has said since M33 that the ratio was
+      measured away (13 against 15) and it is wrong — M41's crowd changes brought it back and
+      nobody re-measured. **The finding is that the careful line is invisible, not that it is
+      absent**: nothing tells a player that walking sixteen pixels to one side costs fourteen times
+      less
+- [x] **And the one test pinning the floor was measuring an empty street.** Found while measuring
+      the above, and it is M44's lesson in the place it does the most damage.
+      `_test_a_busy_street_never_lets_the_meter_fall` called `start_day(1, rng)` with **no focus**,
+      which parks the crowd field on the map centre, and then measured at `quietest_pavement` —
+      whichever north-south corridor the city made quietest, **1968px from that centre on seed
+      4242**. Measured: **zero agents within 400px.** So *"a back street is somewhere she can
+      recover"* was 0.00 against a decay of 3.50, and *"the arterial is a different place"* was
+      7.58 against 0.00. **Three of that test's four checks were passing against a road with
+      nobody on it**, and the fourth — the ceiling — was passing only because focusing the field
+      is what pushes the arterial from 7.58 to 11.55, which is already over it.
+
+      The crowd is a population of the box around the player, so **a floor is only a floor where
+      she is standing**. `_floor_on()` focuses it
+- [x] **The main road is the quietest thing in the city, and it is two defects** — finding 7's
+      first half, done. `CrowdLanes.busyness` still weighted the middle corridor of *each* axis at
+      `ARTERIAL_BUSYNESS` while `CityMap.main_road` is one vertical corridor, so the phantom
+      east-west arterial held **14.6 cars against the spine's 11.2**. And underneath it,
+      `_choose_lane` picked the axis 50/50 **before** the corridor, so no weight could ever put
+      more than half the traffic on one north-south street.
+
+      Both fixed: the spine holds **15.4 cars** and crossing it costs **~35 of the 100 meter**,
+      worst of eight crossings — which is finding 7's *second* half arriving for free, because a
+      third of the meter to cross is precisely the **soft block** that was asked for.
+
+      Three things came with it. `CROWD_CARS_PER_ACT` went **40 → 34** (act II 30 → 26), because
+      the concentrated spine put junction contention over the rate `test_crowd` allows: the car
+      number is a capacity number now, and the honest answer to *"the main road is too quiet"* was
+      fewer cars for the second time. The arterial ceiling is **stated over the crossing** rather
+      than over the standing floor — a proxy that came apart the moment the spine got its traffic,
+      and M35's *state it over the walk* arriving in the crowd's half of the game. And a car handed
+      a corridor whose visible stretch is all precinct re-rolled its position eight times, found
+      bollards every time, and was placed among them anyway: **a retry is not a guarantee, one
+      scale out**, so `CrowdAgent.setup` re-picks the street rather than only the spot on it
+- [x] **`EXCITEMENT_DECAY_IDLE` is 0.0 and there is no floor under her on ordinary ground.** M33
+      set it there for a good reason — *what settles a baby is being pushed* — and the consequence
+      nobody priced is that a stationary pram on a pavement is a pure climb at whatever the crowd
+      is doing. Decide whether "standing still settles nothing" should mean "standing still is
+      worse than walking", which is what it currently means.
+
+      **Decided: it stays 0.0, and the question was pointing at the wrong number.** Two measured
+      reasons, and the second is the one that was nearly missed.
+
+      **It is not the lever for the case that matters.** The place the game *makes* her stand
+      still is the kerb of the main road, waiting for the side street's green — and main-road
+      ground is `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER`, 0.6. So even handing idle the whole
+      walking rate would give back 2.1/s of a 5.9/s bill. The number that decides what a wait
+      costs is the crowd's, not the decay's.
+
+      **And removing the zero re-opens what it was built to close, by a route that is easy to
+      miss.** Sleepiness is **frozen, not drained**, above `EXCITEMENT_CALM_THRESHOLD` — see
+      `Baby._update_sleepiness` — and that is exactly the state somebody would stop in. So above
+      the threshold standing still already costs nothing on the other meter, and any non-zero
+      idle decay makes waiting it out strictly better than walking on every ground quieter than
+      the decay: every back street and every park. `SLEEPINESS_DRAIN_IDLE` looks like the guard
+      and is not, because it is switched off precisely when the exploit would be used.
+
+      *Standing still is worse than walking* is the right sentence for a game whose only verb is
+      *where do I walk*. What it must not be is the game's answer to something the game made her
+      do, which is the next item
+- [x] **Waiting for the main road's light costs a third of the meter, and up to all of it.**
+      Found by measuring the item above rather than arguing it. Twenty arrivals spread across the
+      cycle, at a signalled junction on the spine, five seeds:
+
+      | | value |
+      |---|---:|
+      | cycle | 17.1s = 8.1 main green + 2.0 amber + **5.0 side green** + 2.0 amber |
+      | mean wait for the crossing arm | **5.7s** |
+      | worst wait | **12.0s** |
+      | mean cost of the wait | **33.4** of a 100 meter |
+      | worst cost of the wait | **133.0** |
+
+      So obeying the light is worth a third of the day's tolerance on average and can end the day
+      by itself, and this is *before* the crossing, which the item above measured at up to 35
+      more. That is not a soft block, it is a toll gate with a queue, and she has no choice about
+      any of it: `Tuning.validate_signals` guarantees she can only cross on the side green.
+
+      **And the diagnosis it was written with is wrong, which the measuring found and the
+      arguing did not.** The suspect was *what she is standing next to*: a queue held at the stop
+      line is worth what the same cars are worth streaming past, because `contribution_at` never
+      looks at how fast a car is going. But **she waits while the main road has green**. The
+      traffic beside her is moving by construction, and the queue is on the side street she is
+      not standing on.
+
+      **What is actually expensive is standing, and it is not specially expensive here.** The
+      spine's junction kerb reads **5.9/s** during a wait — an ordinary pavement reads 4.5–5.1.
+      So this is the item above's other half arriving with a bill: `EXCITEMENT_DECAY_IDLE` is 0,
+      any six-second stop anywhere costs a quarter of the meter, and the spine is the one place
+      the game *makes* her take one.
+
+      Three candidates, all measured, all rejected, because two of them buy the wait with the
+      thing finding 7 just fixed and the third buys it with the road itself:
+
+      | | wait | worst | arterial floor | jaywalk | spine stopped |
+      |---|---:|---:|---:|---:|---:|
+      | today | 33.9 | 133.0 | 11.98 | 26.1 | 41% |
+      | a stopped car idles at 0.35 | 32.9 | 122.6 | **8.55** | **11.0** | 41% |
+      | `CAR_OUTER_RADIUS` 104 → 64 | 23.2 | — | **7.62** | **11.0** | 41% |
+      | side green 5.0 → 8.0 | **15.3** | **56.3** | 11.98 | 26.1 | **63%** |
+
+      - **The idling fraction does nothing for the wait** — 33.9 to 32.9 — for the reason above,
+        and its real effect is to halve the arterial floor and the cost of jaywalking. That is
+        M41's *"a car waiting at a light beside you is louder for longer than one going past"*
+        answered at last, and it turns out to be an answer to a different question.
+      - **A narrower car field does not make a careful line**, which is the surprise. The profile
+        across an ordinary footway stays flat at every radius tried — 3.31 / 3.74 / 3.39 at 64 —
+        because **the flatness is the pedestrians**, who are 3.3 of the 4.5 and whose spacing is
+        arithmetic no radius can change. All it buys is the same halving of the spine.
+      - **A longer side green works and the road pays for it.** It halves the wait and the worst
+        case, and it takes the spine from two fifths stopped to two thirds.
+
+      So the mean is left alone on purpose: **33 points to cross the spine is the soft block
+      finding 7 asked for**, and every lever that lowers it lowers the crossing with it. What is
+      wrong is the *worst* case — 133 for one unlucky arrival, which she cannot see coming — and
+      the thing underneath it is the next item
+- [x] **The main road is two fifths stopped, and that is where its noise comes from.** Measured
+      while pricing the wait, over three seeds and thirty seconds of act I: the cars on the spine
+      average **49 px/s of a 158 cruise, with 41% of them stationary**. `CLAUDE.md` says to
+      measure exactly this alongside the floor *"or a road that reads as busy in a screenshot is
+      a car park in motion"*, and nobody had.
+
+      **The diagnosis this item was written with is wrong, and measuring it found a five-milestone
+      error in the design record.** It is worth reading as an example of how confident a wrong
+      cause can sound: the drift argument below is arithmetically correct and explains nothing.
+
+      **The speed spread is real and is not the mechanism.** `CAR_SPEED` is 130–185 against a wave
+      tuned for 157.5, so a slow car does drift 0.6s per junction. But it needs **13 junctions** to
+      drift out of an 8.07s green band and a car lives **3.8 junctions** on the spine before it
+      recycles — and measured over three seeds, the **fast** half stopped more often than the slow
+      half (4.25 against 3.00, 4.29 against 3.00, 2.44 against 2.38). Both proposed shapes — a car
+      holding the progression speed, a narrower range on the spine — treat the drift, so both were
+      dropped.
+
+      **What is actually wrong is that the wave only ever served one direction.** M41's note said
+      both did, "because the cycle is an even multiple of the junction-to-junction travelling
+      time", and that is the condition upside down. With offsets `j·travel`, a car passing
+      junctions `j0 + d·h` at `t0 + h·travel` sees phase `t0 + j0·travel + h·travel·(1 + d)`: going
+      *with* the wave the `h` term vanishes and the phase never moves, going *against* it the phase
+      advances `2·travel` per junction, which is constant only if the cycle **divides** `2·travel`
+      — true at `blocks = 1` and nowhere else. Measured on the signals alone with no traffic in
+      them, twenty departures spread across a cycle:
+
+      | | arrivals meeting a green |
+      |---|---:|
+      | with the wave | **93%** |
+      | against it | **51%** |
+
+      and 51% is the main green's share of the cycle, which is to say chance. `tests/test_crowd.gd`
+      had asserted `cycle / travel` is an even multiple since M41 — **true, and not the property
+      the sentence beside it claimed**, so it pinned nothing. It walks a car down the platoon now.
+
+      **It cannot be fixed, and that is a fact about the geometry rather than a setting.** A
+      two-way wave needs `cycle = 2·travel` = 5.7s; the side green plus its two ambers is 9.0s
+      before the main road gets a second, and widening `travel` instead means a spine cruise under
+      100px/s, barely above a walk. No offset does better on average either: `θ = travel` buys one
+      direction a perfect run and leaves the other at chance (72% overall), while the
+      symmetric-looking `θ = cycle/2` puts **both** directions on a three-phase sweep at 47% each.
+      The asymmetry is the good answer, not a compromise.
+
+      **So the light is the floor and density is what sits on top of it.** Dropping
+      `CROWD_CARS_PER_ACT[0]` to 12 for one probe — a third of the traffic — took the spine to 79
+      px/s and 33% stopped, so density is worth about ten points and more than half the stops, and
+      the irreducible remainder is the main arm being red 53% of the cycle. The cars stay: the same
+      probe took the arterial floor 9.95 → 7.40 and the crossing 29.7 → 19.0, which is finding 7
+      undone to answer finding 1.
+
+      **What did move it is a snapshot being read as a fact.** `Crowd._can_clear_the_box` compared
+      a static `gap_ahead` against the room a car needs beyond a junction, so a car queued behind a
+      leader that was *already accelerating away* refused to enter, stopped, and made the jam the
+      rule exists to prevent. Crediting the leader's speed for one `CAR_HEADWAY_TIME` — the horizon
+      the car-following rule already trusts it for — is the whole change:
+
+      | | before | after |
+      |---|---:|---:|
+      | mean speed on the spine | 44.6 px/s | **53.6** |
+      | stationary at any instant | 43% | **39%** |
+      | stops per car per life | 3.28 | **2.05** |
+      | junctions crossed per life | 3.9 | **4.1** |
+      | arterial floor | 9.95–13.17 | 9.17–11.09 |
+      | worst crossing of the spine | 29.7 | **30.2** |
+
+      So the road moves half again as fast for a third fewer stops, and the two numbers the
+      previous items fought for — the floor and the ~33 points to cross — do not move. The noise
+      floor did not have to be bought back with `CROWD_CARS_PER_ACT`, which the item expected it
+      would.
+
+      **The half that had to be walked back is the instructive one.** Crediting the leader's speed
+      *unconditionally* put **238 overlapping crossing-axis pairs in 3,600 frames** against a
+      tolerance of 180 — `tests/test_crowd.gd` caught it on the first run — because it let a car
+      follow its leader straight *into* the box. The credit is only sound once the leader is past
+      the far side, where its speed answers "will the last 66px have opened up by the time I get
+      there", a question about road this car is not yet on. **Ask what the number you are
+      crediting is a fact about**: a leader inside the box is the obstacle, not evidence about the
+      road beyond it
+- [x] **A contact is 22–34 points a second and there were fifteen of them in four days.** Either
+      the cost or the frequency is wrong and the trace cannot say which. `BUMP_RADIUS` is 14 and
+      the M33 note says the careful line was two pixels wide when M19 measured it — so widening
+      the *street* rather than narrowing the *body* may be the honest answer, and that is a
+      question for `CrowdLanes.SIDEWALK_OFFSETS` and `_make_way`
+
+      **Neither is wrong, and the question was asking about the wrong axis: what is wrong is the
+      *place*.** Measured over three seeds, forty-second walks, with the whole frame run — the
+      crowd stepped **and** the player half of `Crowd._physics_process`, so `_make_way` is in it:
+
+      | | value |
+      |---|---:|
+      | one contact | **10.8 points** — 18.0/s fading linearly over 1.2s |
+      | contacts, 40s down an **ordinary** footway | 2.7, whichever line is taken |
+      | contacts, 40s down an **arterial** lane centre | **15.3** |
+      | the same, on the arterial midline | **0.0** |
+
+      **The cost is right.** 10.8 is a tenth of the meter, and `tests/test_crowd.gd` already pins
+      the shape it has to keep — one is survivable, four freeze the meter, ten lose the day. The
+      *22–34 points a second* in the trace is the instantaneous rate with the field underneath it,
+      not what a contact costs.
+
+      **The frequency is right too, and an ordinary street turned out not to be the problem at
+      all.** Every line across an ordinary footway is **net recovery** while walking: the crowd
+      charges 55–87 points over forty seconds and the walking decay pays back 140, so the net runs
+      −53 to −85 at every offset from the frontage to the kerb. That is worth holding against the
+      standing numbers three items up — 5.82/s on the same ground — because the gap between them is
+      the whole of `EXCITEMENT_DECAY_IDLE` being 0 and of `_make_way` only running for somebody who
+      is moving. **Walking an ordinary pavement is free; standing on one is not.**
+
+      **So the contact question is an arterial question, and there the careful line was four pixels
+      wide.** A contact fires inside `BUMP_RADIUS` of a lane centre, the lanes sat a tile apart, and
+      `TILE_SIZE − 2 × BUMP_RADIUS` is 32 − 28 = **4**. That is not a line a player can aim at, it
+      is one she is occasionally on — with **165 points of a hundred** riding on it, which is the
+      M46 headline (*the careful line is invisible*) arriving with a number and a cause.
+
+      **Fixed by widening the street, which is what the item guessed and is the honest direction.**
+      `CrowdLanes.SIDEWALK_LANE_SPREAD` pushes the two lanes of a footway 8px apart toward its own
+      edges, so the clear line goes **4px → 20px** while the lanes stay 8px inside the pavement.
+      Nothing about a contact changed: `BUMP_RADIUS` is what makes one mean *walking into
+      somebody*, and narrowing it would have bought the same line by making a contact require a
+      near-perfect overlap.
+
+      | | before | after |
+      |---|---:|---:|
+      | clear line between two lanes | 4px | **20px** |
+      | arterial lane centre, 40s | 13.7 contacts | 15.3 |
+      | arterial midline, 40s | 0.0 | **0.0** |
+      | field over 40s at an ordinary midline | 74 | **56** |
+
+      Two things came with it. The careless line stayed careless, which it had to — the crowd is
+      only a decision if walking down the middle of it still costs. And the field got **quieter in
+      the middle of the pavement** as well, because the walkers are further from it, so for the
+      first time the two halves of the crowd want the *same* line: the item below found them
+      wanting opposite ones, and that is what this closes. `tests/test_crowd.gd` holds the band
+      against `PLAYER_BODY_RADIUS` — it has to be aimable, not merely non-empty — and holds the
+      spread under half a tile, because `CrowdAgent._pavement_band` measures the footway from the
+      **tile** centres and nothing else in the suite would notice somebody walking in a shopfront.
+
+      Open, and it is the half a geometry change cannot reach: **nothing yet says the channel is
+      there.** It is now wide enough to find by walking down the middle of a pavement, which is
+      what most people do — but that is a claim about a player and no rig can settle it
+- [x] **`CROWD_PEDESTRIANS_PER_ACT[0]` is 200 and it is a population of the field, not the city.**
+      It has not been re-measured since the field's box last moved. Measure what is actually
+      within a screen of her, not what the constant says.
+
+      **Taken out of order, and on purpose: the two decisions above cannot be made until it is
+      known whether the population is the lever.** It is not, and that is the finding.
+
+      Measured over five seeds, act I, thirty seconds standing on each of eight corridors:
+
+      | | value |
+      |---|---:|
+      | walkers in the box, every sample | **200.0** of 200 |
+      | cars in the box, every sample | **34.0** of 34 |
+      | walkers on a 1280×720 screen | **67.6** |
+      | cars on a 1280×720 screen | **10.2** |
+      | walkers within 200px of her | 9.4 |
+
+      So **the constant is honest**: the box is 1600×1600 and never spills, the screen is 36% of
+      it, and 34% of the population is on it. Nothing is hiding. And it must not come down —
+      the same population is what put 15.4 cars on the spine and made crossing it cost a third
+      of the meter two items ago, so cutting it undoes finding 7 to answer finding 1.
+
+      **What the measurement actually found is where the floor comes from, and it is geometry
+      rather than population.** The floor across a footway, same five seeds, in lane units —
+      0 is against the frontage, 1 is the kerb:
+
+      | | frontage 0.0 | midline 0.5 | kerb 1.0 |
+      |---|---:|---:|---:|
+      | mean over 20 ordinary standing points | **4.30** | **4.96** | **4.76** |
+
+      **It is flat, and the midline — the careful line — is the loudest of the three.** Both
+      halves fall out of arithmetic that nobody has re-checked since the corridor was last
+      resized:
+
+      - **A car's field is 208px across and a corridor is 192px.** Every tile of both footways
+        is inside `CAR_OUTER_RADIUS` of a carriageway lane — the frontage lane is 64px from the
+        nearer one. There is no line on an ordinary street that is out of the traffic's earshot,
+        which is why the profile barely tilts.
+      - **A walker's field is 110px across and a footway is 64px.** Lanes are 32px apart and
+        `PEDESTRIAN_INNER_RADIUS` is 22, so the midline is 16px from two lane centres and inside
+        the **full-intensity core** of both. `Tuning.PEDESTRIAN_INTENSITY`'s own comment says
+        *"walking wide of them does not [cost] — the pavement is two tiles, so how close to pass
+        is a real choice"*, and there is nowhere on a footway to be wide.
+
+      This is the M46 headline finding — *the careful line is invisible* — arriving with a
+      cause, and the cause is not that nothing tells her about it. **The careful line exists for
+      contacts and does not exist for the field**, and the two want opposite lines: the midline
+      is the only line with no head-on contact on it (`BUMP_RADIUS` 14 against a 16px half-lane)
+      and it is the worst line for the ambient noise. A player who finds one has found the other
+      one's punishment.
+
+      **Closed by the contact item above, and by one change rather than two.**
+      `CrowdLanes.SIDEWALK_LANE_SPREAD` moves the two lanes of a footway 48px apart, which widens
+      the contact-free line from 4px to 20px **and** puts the midline 24px from each walker —
+      outside `PEDESTRIAN_INNER_RADIUS` rather than inside it. The ordinary midline's field falls
+      74 → 56 per forty seconds. The two halves of the crowd want the same line now
+- [x] **The crowd bunches against the boundary wall, where the comment says it thins.** Found
+      while measuring the above. `CrowdField.corridor_range` clamps to the city and says so:
+      *"that is also why the crowd thins out honestly in the corner of the map instead of
+      bunching against the wall — there are simply fewer streets to put anybody on"*. The
+      population does not clamp with it, so fewer streets and the same two hundred people is
+      **more people per street**, which is the opposite of what the comment claims.
+
+      Measured, five seeds, walkers on screen against how much of the box is inside the city:
+
+      | corridor | box in city | walkers on screen | mean floor |
+      |---|---:|---:|---:|
+      | 0 (against the west wall) | 53% | 67.0 | **7.50** |
+      | 1 | 81% | **78.3** | 7.90 |
+      | 3, 6, 8 (ordinary, mid-map) | 100% | 66–70 | 3.91–5.89 |
+      | 5 (the spine) | 100% | 69.9 | 11.58 |
+      | 11 (against the east wall) | 59% | 55.3 | 6.80 |
+
+      **The count on screen is flat while the city on screen is halved**, so the density per
+      street at the wall is about double and the outer corridors read as **1.6× an ordinary
+      middle one** — loud enough that on two of five seeds a corridor beside the wall beat the
+      main road.
+
+      **Fixed on the box rather than on the population, which is what made it nine lines.** The
+      first design was the obvious one — fewer agents live where there is less street — and it
+      is the wrong one twice over: it needs a live count that varies, and a live count that
+      varies has to sleep somebody, which is *"nothing vanishes while you are looking at it"*
+      asking for a whole waking-and-sleeping protocol that only ever runs off-screen. Instead
+      `CrowdField` **grows the box near the wall** until the amount of *city* in it is what a box
+      mid-map holds: `contains`, `along_bounds` and `corridor_range` all read `radius`, so every
+      one of them follows, and no agent is created, destroyed or hidden. Growing is always the
+      safe direction — the only floor under `CROWD_FIELD_RADIUS` is that nothing may be seen to
+      appear.
+
+      Solved by iterating rather than in closed form, and that was a decision: the exact answer
+      is a quadratic whose terms depend on which of the four sides are against a wall **and**
+      which of them clip while it grows, which is four cases to get wrong. Scaling by the square
+      root of the shortfall lands within a pixel in three passes.
+
+      | | before | after |
+      |---|---:|---:|
+      | radius against the west wall | 800 | **1108** |
+      | walkers per screen of city, at the wall | **105** | **64** |
+      | the same, three blocks in | 58 | 58 |
+      | mean floor, outer corridors (5 seeds) | 7.50 / 6.80 | **3.12 / 4.52** |
+
+      So the wall now reads as an ordinary street rather than as a busy one, and the two
+      corridors against it come in slightly *under* an ordinary middle corridor — an error in the
+      safe direction, and the honest reason is that keeping the box's **area** constant does not
+      keep its split between north-south and east-west street length constant. Held by
+      `tests/test_crowd.gd`, "the crowd does not bunch against the wall", as two checks rather
+      than one: the geometry, which is the mechanism and is free, and the density, which is what
+      the player feels and is the half that could pass while the other fails
+- [x] **Re-measure the whole cost table afterwards** — `docs/EVENTS.md`, "What an event actually
+      costs" — because if the crowd's share moves, every authored row's share moves with it, and
+      the table is the fastest way to see what a balance change did to the catalogue
+
+      **Regenerated from `EventDef.walk_through_cost()` and compared row for row: identical, all
+      thirty-one of them.** That is the result rather than the absence of one — it says M46 was a
+      milestone about the *street* and not about the catalogue, and it is worth doing precisely
+      because nothing would have told us otherwise. Nothing in the milestone touched an intensity,
+      a radius, `Tuning.falloff` or a decay.
+
+      What moved is the ground the rows stand on, and `docs/EVENTS.md` carries it above the table
+      now: an ordinary footway is **net recovery** to walk (55–87 points of crowd over forty
+      seconds against a decay paying back 140), the middle of a pavement went 74 → 56, and
+      crossing the main road costs ~30 with ~33 more for the wait — between a `dog_walker` and a
+      `loose_dog`, and neither is in the table because neither is an event
+
+## M47 — A city with places in it · `feature/a-city-with-places`
+
+Not started. Playtest 13's finding 2 and the second half of finding 7, **plus the whole of M45**,
+which is absorbed here because it is the same machinery. See **[docs/PLAYTEST-13.md](PLAYTEST-13.md)**
+and the M45 entry above, which is still the design for the closure half.
+
+**The one sentence: the count of calm areas is right and their density is not, and the answer is
+area rather than count.** The city went 7×7 → 11×11 across M42 and M41 — 49 blocks to 121 — while
+the calm areas stayed at eight. The equation playtest 12 asked to keep was about *count*; what a
+player experiences is *density*, and the two came apart when the map grew.
+
+The decision taken on the finding, quoted, because it is not what the analysis expected:
+
+> *"make more calm areas take up multiple blocks — I said a long time ago that an inner courtyard
+> (surrounded by buildings) should have a footprint of 2x2 blocks (apartment complex) — this never
+> got implemented. not all calm areas have to take up multiple blocks but add more that do. also,
+> add calm varieties that take up 2x1 non-square shapes"*
+
+- [ ] **Calm ground is never at the edge of the map and never beside the main road** — the second
+      lever on density, taken in the same session and **cheaper than everything below it**, because
+      it is a placement rule rather than new geometry. *"Another way to get density is to make a
+      rule to not have a calm area at the edge of the map or next to the main road."*
+
+      **Today a single calm block has neither rule.** `_assign_purposes` constrains it three ways
+      — unclaimed, no open-calm neighbour across a street, `_too_near_the_home` — so a quiet square
+      can sit in the outermost block column against the boundary wall, or directly across the road
+      from the spine. A 2×2 zone has half of one: `_zone_fits` refuses a footprint that would
+      **absorb** a stretch of the arterial, which is about swallowing the street rather than about
+      being beside it.
+
+      **Measured on the lattice, for a single calm area, with the home clearance already applied:**
+
+      | eligible blocks | count |
+      |---|---:|
+      | today (121 minus the 5×5 home clearance) | **96** |
+      | + no calm in the outer ring of blocks | 56 |
+      | + no calm in the two block-columns beside the spine | **48** |
+
+      So it halves the field for the same 5–7 open calm areas, and **the count the player asked to
+      keep does not move**. Two things about that table are worth carrying:
+
+      - **The two halves are wildly unequal and the density argument is almost all the edge rule.**
+        The outer ring is 40 blocks; the spine's two columns add only **8** on top, because the
+        main road runs down the middle where `_too_near_the_home` has already taken a 5×5 out. So
+        *"not beside the main road"* has to be justified on **design** rather than on density —
+        where it is stronger: `decay_multiplier` is 0.6 on the spine, so a park you can hear it
+        from is not calm ground, and if calm never sits beside it then **crossing it always leads
+        somewhere worth crossing for**, which is what makes it a soft block rather than a wall.
+      - **It recovers half the loss, not all of it.** At 7×7 the eligible field was ~24 blocks for
+        the same 5–7 areas. This lever and the bigger calm areas below are complementary — one
+        shrinks the field, the other enlarges each destination — and neither is sufficient alone.
+
+      Three things to get right when building it. State both rules over a **footprint**, like
+      `_too_near_the_home` and `_zone_fits` already do, so single blocks and zones obey one rule
+      rather than two that drift. State the spine rule over **`map.main_road`**, never over
+      `CrowdLanes.arterial_index` — `_zone_fits` currently uses the latter and so carries the same
+      M41 defect as `CrowdLanes.busyness()` (see M46), protecting a horizontal arterial the city no
+      longer has; adding a third copy of a fact that already has two, one of them wrong, is the
+      `DangerEdge` mistake M37 found. And **decide courtyards separately**: a courtyard is *hidden*
+      calm you have to know about, it is cut from `remaining` with only the neighbour rule on it,
+      and an argument can be made either way for one against the boundary.
+
+      Then **measure the room before committing**, because this is where it goes quietly wrong:
+      48 blocks must hold 5–7 non-adjacent calm areas, 1–2 four-block zones needing a wholly
+      unclaimed 2×2, and up to 3 courtyards — and `generate()` retries with `seed + 1`, so a rule
+      that is too tight shows up as a slower generator rather than as an error.
+
+      **The spine half is expendable and that is a decision, not a fallback.** *"The not next to
+      main road rule is not that important, you can remove it if it loses too much freedom."* So
+      the edge rule is the one that must land; if the measurement above says the field is too
+      tight, the spine rule is what comes out, and it comes out **before** `MIN_CALM_BLOCKS` or the
+      non-adjacency rule are touched — those two are what the player asked for by name
+- [ ] **And no two calm areas are directly next to each other — including courtyards.** *"Also
+      don't place calm areas directly next to each other."* Half of this is already true and half
+      of it is a real gap, which is why it is its own item.
+
+      `_has_open_calm_neighbour` tests `_OPEN_CALM` only — park, forest, quiet square — and
+      `_cut_courtyards` runs **after** the open calm is placed. So a courtyard is correctly refused
+      beside a park, and **two courtyards may sit directly across a street from each other**, with
+      nothing in the generator able to see it: the open-calm pass cannot, because no courtyard
+      exists yet, and the courtyard pass does not look for its own kind. The trace's day 1 planned
+      **three** courtyards, so this is reachable rather than theoretical.
+
+      Two things to decide while fixing it, and neither is obvious. **Whether a courtyard counts as
+      calm for spreading purposes at all** — it is *hidden* calm, cut into a residential block, and
+      the argument that two of them across a street are one awkward area is weaker than for two
+      parks. And **whether diagonal counts**: `_has_open_calm_neighbour` walks the four edges and
+      skips the corners, so two calm blocks meeting at a junction are legal today. That is
+      probably right — they are a junction apart rather than a street apart — but it is currently
+      an accident of the loop bounds rather than a decision, and it should become one either way
+- [ ] **The 2×2 inner courtyard — an apartment complex.** Asked for *"a long time ago"* and never
+      built. What exists is `COURTYARD_SIZE_TILES`, a 4-tile court carved inside **one**
+      residential block. What is wanted is four blocks of buildings with a shared court in the
+      middle of them, which is neither that nor M21's open four-block zone. **The mechanism is
+      M21's** — absorb the streets between four blocks — with frontages around the outside
+      instead of open ground, so it is a calm area you have to find a way *into*
+- [ ] **Calm areas that are not square.** `CALM_ZONE_BLOCKS` is one integer and everything
+      downstream is that integer squared — the tile rect, which segments are absorbed, which
+      junctions survive. It becomes a `Vector2i`, and `CityMap.anchor_of()` and `lot_rect()` are
+      where it is felt. A 2×1 is the case to build first because it is the one that breaks every
+      piece of arithmetic that assumed a square
+- [ ] **More of them are multi-block, and not all of them.** *"Not all calm areas have to take up
+      multiple blocks but add more that do."* `MIN_CALM_ZONES` / `MAX_CALM_ZONES` are 1 and 2 and
+      were sized for a 49-block city. Re-derive against 121, and keep single-block calm in the
+      mix — *which* calm area to head for stays a real question only while a small quiet square
+      close by competes with a big park further out
+- [ ] **The main road as a soft block.** Finding 7's second half: *"think of the main road as a
+      soft block to guide the player — they will avoid crossing it until it becomes necessary."*
+      This is M45's *"a city that is not a full grid, permanently"* achieved without removing a
+      walkable tile: the spine is already a line down the middle of the map with a hierarchy and a
+      picture, and making it genuinely expensive to cross splits the city into two halves with a
+      toll between them. **Build it before the cul-de-sacs**, because it costs no geometry and
+      nothing downstream has to be re-proved
+- [ ] **Then the rest of M45** — permanent impassable blocks, and closures placed to say *not this
+      way today*. The design is in the M45 entry above and is unchanged. The trap it names is the
+      one to keep in front of you: **a nudge that removes the decision is worse than a closure
+      that does nothing**, because the game's one verb is *where do I walk*
+- [ ] **Re-check `MIN_CALM_BLOCKS` and `MIN_HOME_TO_PARK_TILES` at the end, not the start.** Both
+      are stated in a lattice that is about to change what a calm area *is*. `calm_areas_needed()`
+      derives the floor from the act lengths and must go on doing so
+
+## M48 — Things drawn where they stand · `feature/drawn-where-they-stand`
+
+Not started. Playtest 13's finding 3 — *"random gray barriers placed half on the street and half
+on the sidewalk — no clue what they are supposed to be but they raise excitement for some
+reason?"* — which is `construction`, and which is wrong in three separate ways that are each a
+rule rather than a row.
+
+- [ ] **A body on a pavement has to fit on the pavement.** `construction` has `obstructs_radius
+      34`, so `_draw_spread` draws it 68px wide; a sidewalk is `SIDEWALK_WIDTH * TILE_SIZE` = 64px
+      and an event stands at a tile centre, 16px from one edge and 48px from the other. **It
+      overhangs by 18px whichever lane it lands in.** This is M34's rule (*a body is half the
+      silhouette*) meeting ground it was never checked against, and every `_draw_spread` row can
+      break the same way — `market_stall`, `checkpoint`, `barricade`, `burnt_shell`,
+      `cafe_tables`. It wants a test over the catalogue, in the shape of M34's own
+- [ ] **A spread is always drawn east–west, whatever street it is on.** `_draw_spread` spreads
+      along local x and nothing ever rotates an `EventInstance` — there is no orientation anywhere
+      in the file. So the barrier that hangs into the carriageway on a north–south street lies
+      *along* the kerb on an east–west one, parallel to the traffic, blocking a pavement it is not
+      across. **A barrier's entire content is which way it faces**
+- [ ] **And it does not say what it is.** The sprite is blue-grey (`#6b7a8c`, `#4e5a68`) with no
+      hazard marking on it. M37's rule — one picture per row, no two rows sharing one — passes
+      here and the row still says nothing, which is the rule's own limit: *how dangerous a thing
+      is has to be visible from looking at the thing*, and municipal barriers are red-and-white
+      for exactly that reason
+
+## Tooling for playtest 13 · `feature/a-picture-of-the-city`
+
+Findings 4 and 5. Small, asked for by name, and **built first**, because M46 and M47 both want
+exactly what they provide. Neither is a game feature; both go with the dev flags and under the
+same eventual debug-build gate.
+
+- [x] **Render the whole city grid to a picture in the telemetry folder** — finding 4. Not
+      `--overview`, which is a dev flag on a run somebody has to take and which photographs the
+      *rendered* city: this is the grid itself, one small square per tile coloured by tile type,
+      written beside the log every run without anybody doing anything. Everything needed exists —
+      `Tile` decides the colour, `CityMap` holds the grid, `Telemetry` owns the directory and the
+      naming. Mark what a trace cannot say in words: the home, the calm areas, the main road, the
+      precincts, the day's closures. It must obey the telemetry invariant — **no RNG, nothing that
+      changes a placement** — and it must cost nothing when telemetry is off
+- [x] **A key that takes a screenshot and writes a note** — finding 5. `Telemetry.snapshot()`
+      exists and is heuristic; what is missing is the player saying *look at this*. Its own key, it
+      **bypasses `SHOTS_PER_DAY`** (a person asking is not a heuristic firing), and it writes a
+      `note` alongside so the picture has a line in the trace to sit next to — position, day,
+      meters, and what is near her. Note the M36/M38 lesson before wiring it: nothing in the suite
+      or a screenshot has ever pressed a key, and a bare key is not an action — `--press key:<x>`
+      is how it gets tested at all
+
+**Both built, and it is `TelemetryMap` plus twelve lines in `main.gd`.** `P` (or `F9`, two
+bindings because a bare F-key is the convention and is also what macOS hands to the volume control
+unless a setting is changed) writes `<stem>-<clock>s-asked.png` and a `shot` entry; every day
+writes `<stem>-map-day<NN>.png`, 640px square and about 5kB.
+
+**Three things were found by building it, and two of them are the reason it has tests.**
+
+- **A float colour does not survive `FORMAT_RGB8`.** The marks were authored as
+  `Color(1.0, 0.25, 0.35)` and read back a fraction off, so the test that asked *is this mark in
+  the picture* failed against the constant it had just drawn with. They are hex now, like
+  everything in `Palette`, and the ground colours never had the problem because `Palette` already
+  was.
+- **`snapshot_now` guarded the note and the picture together, and the suite is the configuration
+  that keeps the note.** `begin_memory_log()` produces a log with no path, which is a real state
+  rather than an edge case, and one guard covering both halves made the entry vanish along with
+  the PNG it could not write. They are guarded separately.
+- **The home crosshair was built and taken back out.** It reached a block either way to make a
+  few tiles of stoop findable in a 160-tile map — and it is the only red in a picture with no
+  other red in it, so it was already the first thing the eye lands on. It was covering two streets
+  to buy nothing. *(Reported directly: "the home cross hair is not needed — home was easily
+  findable with just the red dot from before.")*
+
+And the first two maps it drew already show M47's own finding without anybody measuring anything:
+calm areas hard against the map edge, and one directly beside the spine.
 
 ## M10 — Polish · `feature/polish`
 

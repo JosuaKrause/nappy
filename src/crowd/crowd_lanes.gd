@@ -18,6 +18,26 @@ extends RefCounted
 ## one on the midline) are what the pavement is balanced on, and they assume a walker may be
 ## coming the other way in any lane.
 const SIDEWALK_OFFSETS: Array[int] = [0, 1, 4, 5]
+
+## How far each footway lane is pushed away from the middle of its own footway, in px.
+##
+## **The careful line has to be wide enough to aim at.** *(M46, playtest 13 finding 1.)* A contact
+## fires inside `BUMP_RADIUS` of a lane centre, so the line with no contact on it is
+## `TILE_SIZE - 2 * BUMP_RADIUS` wide — and at tile centres that is **four pixels**. M19 built the
+## crowd on "careless is expensive and careful is free" and the careful half was a line nobody
+## could aim at, only occasionally be on: measured over three seeds, forty seconds down an
+## arterial lane centre costs 13.7 contacts and the midline costs 0.0, which is 148 points of a
+## 100 meter riding on four pixels.
+##
+## Pushing the two lanes of a footway apart widens that line without touching `BUMP_RADIUS`, which
+## is the honest direction: the body stays the size it is drawn and the *street* is what changes.
+## At 8 the clear line is 20px — she aims at the middle of the pavement and gets it — and the
+## lanes sit 8px inside the footway's own edges, so nobody walks in a wall or off a kerb.
+##
+## It is deliberately **not** applied in a precinct: `PRECINCT_OFFSETS` is six lanes across a
+## street with no carriageway in it, so there are no footways to have a middle, and the pairs the
+## spread would make are arbitrary. `walker_lane_centre` takes the lane list for that reason.
+const SIDEWALK_LANE_SPREAD := 8.0
 ## And the same for a precinct, which has no carriageway between its two footways: every tile
 ## across it is somewhere a person may be. *(Playtest 12, finding 1: "people seem to not go in the
 ## middle.")* They were right and it was not a steering bug — the middle two offsets are the
@@ -60,8 +80,25 @@ static func corridor_count(axis_blocks: int) -> int:
 	return axis_blocks + 1
 
 ## World coordinate of the centre of the lane at `offset` in corridor `index`.
+##
+## The tile centre, which is where a **car** drives and where a footway's own edges are measured
+## from. A walker stands `SIDEWALK_LANE_SPREAD` off it — see `walker_lane_centre`, and note that
+## `CrowdAgent._pavement_band` deliberately keeps using this one, because the band is the extent
+## of the pavement rather than the extent of the lanes on it.
 static func lane_centre(index: int, offset: int) -> float:
 	return (index * CityMap.period() + offset + 0.5) * Tuning.TILE_SIZE
+
+## Where a walker in that lane actually walks: the tile centre, pushed toward the near edge of its
+## own footway so the two lanes of a pavement leave a gap between them worth aiming at.
+##
+## `offsets` is the lane list the walker was chosen from, so a precinct — which has six lanes and
+## no footways — is left alone. Offsets 0 and 4 are the outer lane of their footway and 1 and 5 the
+## inner one, which is what the parity test reads.
+static func walker_lane_centre(index: int, offset: int, offsets: Array[int]) -> float:
+	var centre := lane_centre(index, offset)
+	if offsets.size() != SIDEWALK_OFFSETS.size():
+		return centre
+	return centre + (SIDEWALK_LANE_SPREAD if offset % 2 == 1 else -SIDEWALK_LANE_SPREAD)
 
 ## Corridor index a world coordinate falls in, or -1 when it is inside a block.
 static func corridor_at(world_coordinate: float) -> int:
@@ -119,12 +156,25 @@ static func arterial_index(axis_blocks: int) -> int:
 ## The plain form is what it always was and is the pavement's answer. `busyness_for` is the one
 ## anything placing an agent should ask, because since M41 the two populations do not want the
 ## same streets: a precinct is the busiest pavement in the city and has no cars on it at all.
-static func busyness(map_seed: int, vertical: bool, index: int) -> float:
-	var blocks: int = Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
-	if index == arterial_index(blocks):
+##
+## **It takes the map now, because "which corridor is the main road" is a fact about a city and
+## not about an axis.** *(Playtest 13, finding 7: "the main road doesn't really have much traffic
+## I can freely walk over it".)* This used to compute the answer itself, as
+## `index == arterial_index(blocks)` — with `blocks` taken from whichever axis it was asked about,
+## so the middle corridor of **each** axis was weighted at `ARTERIAL_BUSYNESS`. M41's correction
+## is that there is *one* main road and it runs north to south; it reached `street_kind`,
+## `GroundTiles`, `TrafficSignals` and `decay_multiplier`, and it never reached here. So the city
+## had one main road you could see and two the traffic believed in, and the weighting measured for
+## one street was being spent on two.
+##
+## Measured before the fix, five seeds, thirty seconds of act I: the phantom east-west arterial
+## held **14.6 cars against the spine's 11.2** — more traffic on the street with no lights, no
+## dark asphalt and no clearway than on the one that has all three.
+static func busyness(map: CityMap, vertical: bool, index: int) -> float:
+	if vertical and index == map.main_road:
 		return ARTERIAL_BUSYNESS
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("busy:%d:%s:%d" % [map_seed, "v" if vertical else "h", index])
+	rng.seed = hash("busy:%d:%s:%d" % [map.seed_used, "v" if vertical else "h", index])
 	return rng.randf_range(0.5, 1.7)
 
 ## How busy a corridor is *for one kind of traffic*.
@@ -145,7 +195,7 @@ static func busyness_for(map: CityMap, vertical: bool, index: int, cars: bool) -
 		# "busiest corridor" delivers its people to wherever on it she is standing.
 		if not cars:
 			return Tuning.PRECINCT_BUSYNESS
-	return busyness(map.seed_used, vertical, index)
+	return busyness(map, vertical, index)
 
 ## A corridor chosen in proportion to how busy it is. This is what makes a route decision
 ## out of a grid: a uniform crowd would make every street equally loud, and then there would
@@ -195,7 +245,7 @@ static func quietest_pavement(map: CityMap) -> Vector2:
 	var count := corridor_count(Tuning.CITY_BLOCKS.x)
 	var quietest := 0
 	for index in count:
-		if busyness(map.seed_used, true, index) < busyness(map.seed_used, true, quietest):
+		if busyness(map, true, index) < busyness(map, true, quietest):
 			quietest = index
 	var x := quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
 	return map.tile_to_world(Vector2i(x, map.size.y / 2))

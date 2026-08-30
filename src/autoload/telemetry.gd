@@ -174,6 +174,53 @@ func snapshot(kind: String) -> void:
 	_last_shot = _clock
 	_capture("%s/%s-%03.0fs-%s.png" % [DIRECTORY, _stem, _clock, kind])
 
+## The same picture, asked for by a person rather than by a heuristic.
+##
+## *(Playtest 13, finding 5: "allow creating a screenshot via key press that saves into the
+## telemetry folder and writes a telemetry note for context — this is to help debugging; not a game
+## feature".)*
+##
+## **It bypasses `SHOTS_PER_DAY` and `SHOT_SPACING`, and that is the whole difference.** Those two
+## exist because a heuristic firing on a condition that stays true for two seconds would write a
+## hundred and twenty near-identical frames; somebody pressing a key has already decided this frame
+## is worth keeping, and a cap that silently swallows the seventh press is a tool that lies about
+## having worked. It still writes nothing headless, because there is nothing to photograph.
+##
+## The `note` is what makes it more than a screenshot: a picture in a directory is a mystery a week
+## later, and a picture with a line of the trace beside it is evidence. The caller supplies the
+## context, because this file must not start asking the world questions.
+## **The note is written whenever there is a log at all, and only the picture needs a file to sit
+## beside.** The two halves are guarded separately on purpose: a log with no path is a real state —
+## it is what `begin_memory_log()` produces and what the whole suite runs on — and folding the two
+## guards together made the entry disappear along with the PNG, which is the valuable half going
+## missing in exactly the configuration that can still keep it.
+func snapshot_now(context: String) -> void:
+	if not _log:
+		return
+	note("shot", context)
+	if _log.path == "" or DisplayServer.get_name() == "headless":
+		return
+	_shots_today += 1
+	_capture("%s/%s-%03.0fs-asked.png" % [DIRECTORY, _stem, _clock])
+
+# --------------------------------------------------------------- the city grid ---
+
+## Writes a picture of the whole tile grid beside the log. *(Playtest 13, finding 4.)*
+##
+## Called once per day rather than once per run, because the lattice is fixed and **what a block is
+## is not**: an arc requisitions a park, a fire leaves a shell, and today's closures are down. See
+## `TelemetryMap`, which does the drawing and carries the reasoning.
+##
+## It takes the day rather than reading `GameState`, for the reason everything in this file takes
+## what it needs: the telemetry asks the world no questions, so it can never be the thing that
+## changed one.
+func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = []) -> void:
+	if not _log or _log.path == "":
+		return
+	var path := "%s/%s-map-day%02d.png" % [DIRECTORY, _stem, day]
+	if TelemetryMap.render(map, closures).save_png(path) != OK:
+		push_warning("telemetry: could not write %s" % path)
+
 ## The capture itself, split out because it is the only thing here that has to wait for a frame.
 ##
 ## The `await` is why this is not inlined: `snapshot()` is called from the middle of an observer's

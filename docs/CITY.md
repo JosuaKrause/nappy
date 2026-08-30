@@ -498,10 +498,14 @@ negotiation with a driver who can see you and gets better the longer you look; a
 a wait with a known end. Having both is what makes *which street* worth asking about.
 
 - **The cycle is derived, not authored.** It is `2 × SIGNAL_PROGRESSION_BLOCKS` junction-to-junction
-  travelling times, which is what lets a green wave run **both ways** down the same street: a car
-  going against the wave arrives two travel times after one going with it, so both are in step
-  exactly when the cycle is an even multiple of that time. Without a progression, two thirds of the
-  traffic stands still — measured.
+  travelling times. Without a progression, two thirds of the traffic stands still — measured.
+- **The wave runs one way, and until M46 this said two.** A car going with it holds its phase at
+  every junction; a car going against it advances two travel times per junction and meets a green
+  at chance. Measured on the wave alone: **93% green with it, 51% against**. It is not fixable —
+  a two-way wave needs a 5.7s cycle and the side green plus its ambers is 9.0s — and the
+  asymmetric offset beats every symmetric one on average. `Tuning.SIGNAL_PROGRESSION_BLOCKS`
+  carries the derivation; `tests/test_crowd.gd` walks a car down the platoon rather than
+  restating the arithmetic.
 - **The side street's green is the fairness contract.** She crosses a main road while the main road
   is red, which is while the side street is green, so that green has to be longer than the walk
   across the carriageway with the doubled hard-fail margin. `Tuning.validate_signals()` on boot.

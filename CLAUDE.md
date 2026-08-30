@@ -40,6 +40,20 @@ the shared, versioned, reviewable place, and it is already where this project ke
 The same rule one level down: a note long enough to unbalance this file becomes a **rule file of its
 own** rather than a longer `CLAUDE.md`. What must not happen is a note living nowhere.
 
+## Names are content, never identifiers
+
+The mother and the baby have names — see `docs/NARRATIVE.md`, which is the one place that says
+what they are. **Nothing in `src/` may be named after them.** No `hal.gd`, no `var wren`, no
+`WREN_CRY_THRESHOLD`.
+
+**Why:** a name can change at any time, and a name that has reached an identifier changes with a
+rename across every file that mentions it — which is a diff nobody can review for anything else, on
+a decision that was meant to be cheap to revisit. The code calls them what they *are* — `Stroller`,
+`Baby`, `player`, `mother` — which is stable under every renaming the narrative might want. The
+names belong in the writing: dialogue, the HUD's own strings, `docs/NARRATIVE.md`.
+
+The same holds for anything else the fiction may rename: the city has no name for the same reason.
+
 ## Verification loop
 
 Run all three before committing. They are fast and they each catch a different class of bug.
@@ -649,12 +663,49 @@ nobody meets in a run is a silhouette and a fairness contract spent on decoratio
 
 **A signalled grid has a capacity, and the population has to respect it.** Two more measured facts
 that generalise. Signals with arbitrary offsets stop a car at *every* junction — two thirds of the
-traffic stationary — so the cycle is derived from the block spacing (`SIGNAL_PROGRESSION_BLOCKS`)
-and both directions progress because it is an **even** multiple of the junction-to-junction
-travelling time. And junction control gave the road a throughput it never had, so the car
-population is now a number about capacity as well as about noise: the same forty-six cars put the
-arterial's floor over the ceiling `tests/test_crowd.gd` states, because a car waiting at a light
-beside you is louder for longer than one going past.
+traffic stationary — so the cycle is derived from the block spacing (`SIGNAL_PROGRESSION_BLOCKS`).
+And junction control gave the road a throughput it never had, so the car population is now a number
+about capacity as well as about noise: the same forty-six cars put the arterial's floor over the
+ceiling `tests/test_crowd.gd` states, because a car waiting at a light beside you is louder for
+longer than one going past.
+
+**The green wave serves one direction, and for five milestones the docs said two.** *(M46.)* M41
+wrote that both directions progress "because the cycle is an **even** multiple of the
+junction-to-junction travelling time", and that is the condition upside down: with offsets
+`j·travel`, a car going *with* the wave holds its phase exactly, and one going *against* it
+advances `2·travel` per junction, which is only constant if the cycle **divides** `2·travel` — true
+at `blocks = 1` and nowhere else. Measured on the wave alone, no traffic in it: **93% of arrivals
+green with it, 51% against it**, and 51% is the main green's share of the cycle, i.e. chance.
+
+Three things to carry, because the shape recurs:
+
+- **A two-way wave is not available at any setting of this constant.** It needs `cycle = 2·travel`
+  = 5.7s and the side green plus its ambers is 9.0s before the main road gets a second. The
+  asymmetric offset is the *best* answer, not a compromise: `θ = travel` gives 72% overall, and
+  `θ = cycle/2` — the symmetric-looking one — puts both directions on a three-phase sweep at 47%.
+- **An identity is not the property.** `tests/test_crowd.gd` asserted `cycle / travel` is an even
+  multiple for five milestones. That was *true* and pinned nothing, because it was not the
+  condition the sentence beside it claimed. It walks a car down the platoon now.
+- **The stopped fraction was blamed on the speed spread and it is not that.** `CAR_SPEED` is
+  130–185 against a wave tuned for 157.5, so a slow car drifts 0.6s per junction — but a car lives
+  3.8 junctions on the spine and needs 13 to drift out of a green band, and measured, the **fast**
+  half stopped more than the slow half. Drift is real and it is not the mechanism. The mechanism is
+  that the main arm is red 53% of the cycle and only half the traffic gets the wave.
+
+**A gap is a snapshot, and *do not block the box* has to know the queue is moving.** *(M46.)*
+`Crowd._can_clear_the_box` compared a static `gap_ahead` against the room a car needs beyond a
+junction, so a car sitting behind a leader that was already accelerating away refused to enter,
+stopped, and created the jam the rule exists to prevent. Crediting the leader's speed for one
+`CAR_HEADWAY_TIME` — the same horizon the car-following rule already trusts it for — took the spine
+from **44.6 to 53.6 px/s and 43% stopped to 39%**, with 37% fewer stops per car and the crossing
+cost unmoved at ~30.
+
+The half that had to be walked back is the instructive one: crediting it **unconditionally** put
+238 overlapping crossing-axis pairs in 3,600 frames against a tolerance of 180, because it let a
+car follow its leader *into* the box. The credit is only sound when the leader is already past the
+far side — then the leader's speed answers "will the last 66px have opened up", which is a
+question about road this car is not yet on. **Ask what the number you are crediting is a fact
+about**: a leader inside the box is the obstacle, not evidence about the road beyond it.
 
 **Every day stays winnable, and winnable more than one way.** The scheduler guarantees at
 least one unspoiled park and a walkable route from home to a park. Since M16 the day carries
@@ -913,6 +964,32 @@ rather than a parameter** — the first build made one of each per *axis* and th
 the city had three kinds of street and no hierarchy among them. If a kind starts appearing in
 every third corridor, it has stopped being a place.
 
+**And a correction that reaches four files reaches four files.** *(M46, playtest 13 finding 7: "the
+main road doesn't really have much traffic I can freely walk over it".)* M41's *one of the top
+thing* landed in `street_kind`, `GroundTiles`, `TrafficSignals` and `decay_multiplier` — and not in
+`CrowdLanes.busyness`, which went on computing the answer itself as `index == arterial_index(blocks)`
+with `blocks` from whichever axis it was asked about. So the middle corridor of **each** axis was
+weighted as an arterial, and the phantom east-west one held **14.6 cars against the spine's 11.2**:
+more traffic on a street with no lights, no dark asphalt and no clearway than on the one with all
+three. It takes the map now, because *which corridor is the main road* is a fact about a city.
+
+**The deeper half is that a weighting applied inside a fixed split cannot cross it.** `_choose_lane`
+picked the axis 50/50 *before* the corridor, so `busyness` could only ever redistribute cars within
+an axis and **no weight at all — 5, 50, any number — could put more than half the traffic on one
+north-south street.** Cars pick their axis by weight now; walkers keep the even split on purpose,
+because a pavement has no hierarchy for them to follow. The general shape, and it is worth checking
+for wherever this project weights anything: **ask what the weight is competing inside of.** A
+number that looks like a global priority is a local one if something upstream has already chosen
+the bracket.
+
+Two consequences that came with it and are not obvious. **The car population is a capacity number,
+not only a noise one** — the spine went 11.2 → 15.4 cars and forty of them put junction contention
+over the rate `tests/test_crowd.gd` allows, so the honest answer to *"the main road is too quiet"*
+was **fewer cars**, for the second time. And **a retry is not a guarantee, one scale out**: a car
+handed a corridor whose visible stretch is all precinct re-rolled its position eight times, found
+bollards every time, and was placed among them anyway. When re-rolling the small decision keeps
+failing, re-take the big one — `CrowdAgent.setup` picks another street now.
+
 **Change a balance number** — `src/autoload/tuning.gd`, which is the only place they live.
 Expect tests to push back: several encode *relationships*, not values (traffic noise must stay
 under the walking decay; a fast mover must telegraph across its whole radius). If a test
@@ -1054,6 +1131,40 @@ where traffic gives way, and there is one at every junction — and forty second
 costs **eleven** contacts walked down a lane centre against **one** holding the midline between
 two lanes. The crowd is expensive to be careless in and free to be careful in, and that ratio,
 not either number, is what makes it a decision.
+
+**Re-measured in M46, and the careful line is back — which means the M33 note above is stale and
+this is why numbers get re-measured rather than quoted.** M33 found the ratio collapsed to
+thirteen against fifteen and answered it with a *behaviour* (somebody who sees a pram coming steps
+aside). Five seeds of forty-second walks on `main` now give **73 contacts down a lane centre
+against 5 on the midline — 14.6:1**, better than the 11:1 M19 built the crowd on. Nobody
+re-measured after M41 moved the crowd, so the project carried "the careful line is gone" through
+four milestones after it stopped being true.
+
+**So the open half was not that the careful line is absent, it is that it was invisible — and the
+cause was that it was four pixels wide.** A contact fires inside `BUMP_RADIUS` of a lane centre and
+the lanes sat a tile apart, so the line with nothing on it was `32 − 2 × 14`. That is not something
+a player aims at, it is something she is occasionally on, and 165 points of a hundred rode on it:
+forty seconds down an arterial lane centre costs 15.3 contacts and the midline costs none.
+
+`CrowdLanes.SIDEWALK_LANE_SPREAD` widens it to 20px by moving the two lanes of a footway toward the
+pavement's own edges. **Widen the street, not the body** — `BUMP_RADIUS` is what makes a contact
+mean *walking into somebody*, and buying the same line by shrinking it would make a contact require
+a near-perfect overlap. Two things fell out and the second is the one worth carrying:
+
+- **The careless line stayed careless** (13.7 → 15.3 contacts down a lane centre), which it had to.
+  A crowd is only a decision if walking down the middle of it still costs.
+- **The field wants the same line now.** Walkers further from the middle of the pavement means the
+  midline is 24px from each lane rather than 16 — outside `PEDESTRIAN_INNER_RADIUS` instead of
+  inside it — and the ambient cost of an ordinary midline fell 74 → 56 per forty seconds. Before
+  this, contacts and noise wanted **opposite** lines and a player who found one had found the
+  other's punishment. When two systems price the same choice, check they are not pricing it in
+  opposite directions; that is not a balance error, it is a design that cannot be played.
+
+And one number this corrected on the way past: the *ordinary* street was never the problem. Every
+line across an ordinary footway is **net recovery** while walking — the crowd charges 55–87 points
+over forty seconds against a decay that pays back 140. Walking an ordinary pavement is free;
+**standing** on one is not, which is `EXCITEMENT_DECAY_IDLE` and not the crowd. See M46 in
+`docs/TODO.md`.
 
 ## Known-shaky ground
 
