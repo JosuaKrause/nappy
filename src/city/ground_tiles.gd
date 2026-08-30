@@ -41,6 +41,19 @@ const SIDEWALK_KERB_MAIN_E := 28
 const SIDEWALK_KERB_MAIN_W := 29
 const PRECINCT := 30
 
+## The land the city stops at. *(Playtest 14.)* These five are the **only** sources no
+## `GameEnums.TileType` maps to, and that is deliberate: they are painted outside `map.size` by
+## `City._paint_outside_the_map` and nothing in the game can stand on them, so giving them tile
+## types would put five entries nobody can reach into every `match` that walks the enum — and into
+## `Tile.is_walkable`, which is the one place a mistake would be silent and expensive.
+##
+## See `City._paint_outside_the_map` for which side gets which.
+const WATER := 31
+const BULKHEAD := 32
+const FENCE := 33
+const MOUNTAIN := 34
+const SCREE := 35
+
 ## Tileset source id for a cell, or -1 where no ground should be drawn at all.
 static func source_for(map: CityMap, tile: Vector2i) -> int:
 	match map.tile_at(tile):

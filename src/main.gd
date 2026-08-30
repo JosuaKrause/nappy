@@ -492,7 +492,7 @@ func _spawn_position() -> Vector2:
 	# are the only cue in the game whose whole content is *when*, so they cannot be judged from a
 	# still of one — take several seconds apart, or use `--walk` and watch the cycle.
 	if args[index + 1] == "signal":
-		var spine := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x)
+		var spine := _city.map.main_road
 		var down := clampi(Tuning.CITY_BLOCKS.y / 2, 1, Tuning.CITY_BLOCKS.y - 1)
 		# On the side street's own pavement, a couple of tiles east of the junction: the block
 		# east of corridor `spine` is block `spine`, and offset 1 of a corridor is footway.
@@ -503,8 +503,7 @@ func _spawn_position() -> Vector2:
 	# is the bridge at the other end and `edge:e` / `edge:w` the road simply running out.
 	if args[index + 1].begins_with("edge"):
 		var side := args[index + 1].get_slice(":", 1)
-		var spine_x := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x) * CityMap.period() \
-				+ Tuning.STREET_WIDTH / 2
+		var spine_x := _city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH / 2
 		var spine_y := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y) * CityMap.period() \
 				+ Tuning.STREET_WIDTH / 2
 		# Beside the carriageway, not on it: the exits are lethal, which is the point of them.

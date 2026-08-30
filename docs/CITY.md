@@ -314,6 +314,57 @@ respect closures, and it is better than the thing it fell out of.
 What this does *not* give is planning-time legibility — knowing a street is shut before you
 are standing next to it. That is M17's route map, and the sequencing is deliberate.
 
+### Guiding her to the calm — what the game actually does
+
+*(Written down in playtest 14, because it had never been stated anywhere and the answer to "how
+does the game guide the player to a calm zone" turned out to be that it does not.)*
+
+**Everything the city does about calm areas is a floor under winnability. None of it is
+guidance.** Set out in full, because the difference between the two is the whole of the open
+question below:
+
+**At generation, once per run — where they are:**
+
+| | |
+|---|---|
+| how many | 5–7 areas, derived as an act's worth of days **plus one** |
+| how far | at least `MIN_HOME_TO_PARK_TILES` (30) of **walking** distance from home — the calm is earned |
+| how spread | no two calm areas anywhere in each other's eight-block ring, corners included |
+| where not | never at the map edge, never beside the spine *(M47)* |
+| what shape | mostly single-block, with one or two four-block zones |
+
+**Each day — what is protected:**
+
+- `ClosurePlanner` shuts 1 street a day in act I, rising to 4, and accepts a candidate **only if
+  at least two distinct routes to at least two distinct calm areas survive it**.
+- `EventScheduler._ensure_one_usable_park` guarantees exactly **one** calm area has nothing
+  reaching it.
+- `_spoil_the_parks_she_used` spoils the ones she has already settled in **this act**, which is
+  what stops her going back to the same bench every day.
+- `_ensure_the_city_is_still_walkable` drops obstructions that would seal the city.
+
+**One thing that reads as guidance and was not designed as any:** the crowd respects closures, so
+a shut street is the street with nobody on it, and that is legible from a block away.
+
+**And here is the gap.** *(Playtest 14: "I still don't feel the game guiding me to calm zones via
+obstacles.")*
+
+- **Closures are chosen at random** from a shuffled list of legal candidates. Nothing chooses them
+  to *point* anywhere — a closure is as likely to be behind her, or on a street she was never
+  going to walk, as across the route she is taking. The invariant asks *did this stay winnable*,
+  never *did this say anything*.
+- **There is no cue of any kind toward calm.** No marker, no map, no HUD line, nothing on the
+  ground. "Planning-time legibility" is named a paragraph above as not existing.
+- **The main road as a soft block** — the one thing in the design that would divide the city into
+  a near half and a far half — is planned in M47 and not built.
+- **Hard and soft diversions** were asked for by a player and there was **no note about them
+  anywhere in this repo**, so nothing was ever designed or built. That is the item this section
+  exists to stop happening again; see `CLAUDE.md`, "Write the feedback down with all of its
+  detail".
+
+So the honest summary: **the city permits routes to calm and protects them from becoming
+impossible. It never suggests one.**
+
 ### The invariant
 
 > **At least two distinct routes to at least two distinct calm areas.**

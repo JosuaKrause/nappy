@@ -393,9 +393,18 @@ func _successor_of(instance: EventInstance) -> EventInstance:
 ##
 ## *(M35 widened it from the pursuers to everything, because "am I out of sight yet" is the same
 ## question asked by anything that is **leaving** — see `EventInstance._be_done`.)*
+## *(Playtest 14 added the second fact, and `_player` is deliberately a `Node2D` — the cast is
+## here rather than on the field so that "an instance is handed a point" stays true of everything
+## except the one row that has to know whether she is running. A `Node2D` has no
+## `run_excess_ratio`, and reading it off the untyped field is a per-frame runtime error that
+## aborts this whole callback and stops the day dead — which is what it did, and which `check.sh`
+## cannot see because nothing there is wrong until it runs.)*
 func _tell_them_where_she_is() -> void:
+	var stroller := _player as Stroller
+	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0
 	for instance in _instances:
 		instance.player_at = _player.global_position
+		instance.player_running = running
 
 func _check_hard_fails() -> void:
 	if _hard_failed or not _find_player():

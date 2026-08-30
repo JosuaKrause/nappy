@@ -1014,29 +1014,30 @@ const PURSUIT_MIN_NOTICE := 1.5
 ## it is the whole cue.
 const PURSUIT_REACTION := 0.6
 
-## How long she has to be visibly beating it before it gives up, in seconds of the gap opening.
+## How long she has to be **running** before it gives up, in seconds.
 ##
 ## The half that makes running **payable**, and the whole of what the chase costs when it is
 ## answered. Running is `EXCITEMENT_FROM_RUNNING` a second, so a chase priced by its own clock costs
 ## the same whether she reacted on the first frame or the last — a toll rather than a lesson.
 ##
-## **Stated as a rate rather than as a distance, and that is the load-bearing part.** A pursuer is
-## faster than a walk and slower than a run, by `PURSUIT_MIN_MARGIN` on both sides — so the gap can
-## only open while she is *running away from it*, and it must close while she walks. "It has lost
-## her" is therefore a fact about the closing rate, and the two halves of the contract stop needing
-## an inequality to hold them apart:
+## **Stated over the player, not over the gap.** *(Playtest 14: "the pursuing dog still doesn't
+## stop. It's a very simple rule — when I run the dog backs down almost immediately.")* It was
+## 0.8s of the *gap actually opening*, which is the same idea expressed as geometry, and the two
+## are not the same rule in a real street. A run opens the gap at 38px/s against the day-3 dog —
+## a fifth of a pixel a frame — so anything that momentarily stopped her gaining ground reset the
+## timer to zero: a corner, a kerb, a pedestrian, the 0.37s the about-turn itself takes. The dog
+## went on chasing somebody who was visibly sprinting, which is the one outcome that makes the
+## mechanic unteachable, and it was reported three playtests running.
 ##
-## - **Walking away can never end it.** Not "loses inside `PURSUIT_TIME` if the arithmetic works out"
-##   — it cannot happen at all, whatever the stand-off, at any radius, for any row.
-## - **Running away always ends it**, in this many seconds plus whatever the about-turn cost, and no
-##   sooner for a large dog than for a small one. Reacting earlier costs strictly less, because the
-##   clock starts when she starts beating it.
+## The contract it used to carry is unaffected, because it never rested here — it rests on the
+## speed clauses in `validate_pursuit`. A pursuer is faster than a walk and slower than a run by
+## `PURSUIT_MIN_MARGIN` on both sides, so **walking away still cannot end it** (she is never
+## running, so this timer never starts) and **running away always can**.
 ##
-## Sized so the dog visibly falls behind rather than blinking off: at 38px/s of authority against the
-## day-3 dog it is ~30px of daylight, on top of the ~34px the about-turn hands back. Roughly 1.2s of
-## running all told, about 17 points — the most expensive moment in act I and much cheaper than the
-## day it buys.
-const PURSUIT_SHAKEN_OFF := 0.8
+## 0.8 → 0.35, which is "almost immediately" and is about what the about-turn costs: the dog breaks
+## off as she comes up to speed rather than after she has opened thirty pixels of daylight on it.
+## It buys back the bulk of what the answer used to cost — see M49 in `docs/TODO.md`.
+const PURSUIT_SHAKEN_OFF := 0.35
 
 ## How close a pursuer comes while it is still only telegraphing.
 ##

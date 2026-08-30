@@ -1,0 +1,13 @@
+<!-- The foot of the mountainside, where the rock meets the last pavement: loose stone over the
+     grass that is still trying. One row of it is what stops the cliff starting at a kerb. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#7d776e"/>
+  <rect x="0" y="24" width="32" height="8" fill="#6a7458"/>
+  <rect x="3" y="5" width="3" height="2" fill="#6b6660"/>
+  <rect x="14" y="9" width="4" height="2" fill="#8b857c"/>
+  <rect x="24" y="4" width="3" height="2" fill="#6b6660"/>
+  <rect x="8" y="16" width="4" height="2" fill="#8b857c"/>
+  <rect x="20" y="18" width="3" height="2" fill="#6b6660"/>
+  <rect x="5" y="27" width="3" height="1" fill="#5f6a4f"/>
+  <rect x="19" y="29" width="4" height="1" fill="#5f6a4f"/>
+</svg>

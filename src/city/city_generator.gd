@@ -69,13 +69,35 @@ static func _attempt(seed_value: int) -> CityMap:
 ## same trick `CrowdLanes.busyness` uses: the hierarchy is a property of the city, and taking it
 ## out of the shared stream means adding it moves nothing else that a seed already decided.
 ##
-## The spine is the corridor `CrowdLanes.arterial_index` already called the arterial, so the
-## busiest street and the main road are the same street rather than two overlapping claims about
-## which one matters — and it is **only** the north-south one. *(Playtest 12, finding 2.)*
+## There is **only** one main road and it is the north-south one. *(Playtest 12, finding 2.)*
+##
+## **Where it runs is rolled, and until playtest 14 it was always the middle corridor.** It was
+## `CrowdLanes.arterial_index` — the centre of the map, on every seed — so the one landmark the
+## city has stood in the same place relative to the home in every run anybody had ever played:
+## *"I have the feeling the main road is now always left to home. It should move around more."*
+## A fixed city is worth learning; a city that is the same city every time is not, and the spine
+## is the largest single thing a player navigates by.
+##
+## Kept **three corridors clear of either boundary**, which is the one constraint that is not
+## taste. The spine divides the city in two and both halves have to be worth being in — M47 makes
+## crossing it a soft block — so a main road near the edge is a wall with a corner behind it rather
+## than a division. It also cannot be a boundary corridor at all: those have buildings on one side
+## only, and the tunnel and the bridge are holes punched through the ring of frontages.
+##
+## Two was tried first and is too near. At corridor 9 of eleven the city east of the spine is two
+## block-columns, and `tests/test_crowd.gd` saw it before a player could: 256 overlapping
+## crossing-axis pairs in a junction box over a minute against a tolerance of 180, where the same
+## city with a central spine gives well under it. A sliver has the spine's whole traffic funnelling
+## through junctions that have nowhere to spread to.
+##
+## `map.main_road` is the answer everywhere. `CrowdLanes.arterial_index` is now only the *default*
+## the map is built from, and anything asking "which corridor is the main road" that reaches for it
+## instead is the M46 defect — a fact about a city answered from a constant.
 static func _assign_street_kinds(map: CityMap) -> void:
-	map.main_road = CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("street:%d" % map.seed_used)
+	var corridors := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x)
+	map.main_road = rng.randi_range(3, corridors - 4)
 	_place_precincts(map, rng)
 
 ## The two precincts, three blocks each. *(Playtest 12, findings 1 and 7: "a stretch of three
@@ -197,7 +219,7 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 	# rolled as calm below, and is not in `remaining`, so no courtyard is cut into it either.
 	purposes[home_block()] = GameEnums.BlockPurpose.RESIDENTIAL
 
-	var areas := _place_calm_zones(purposes, zones, shuffled, rng)
+	var areas := _place_calm_zones(purposes, zones, shuffled, rng, map.main_road)
 
 	var calm_target := rng.randi_range(Tuning.MIN_CALM_BLOCKS, Tuning.MAX_CALM_BLOCKS)
 	for block in shuffled:
@@ -245,7 +267,7 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 ##   footprint: a four-block park with a quiet square across the road from it is one calm area
 ##   with an awkward middle, and the point of several is that they are somewhere else.
 static func _place_calm_zones(purposes: Dictionary, zones: Dictionary,
-		shuffled: Array[Vector2i], rng: RandomNumberGenerator) -> int:
+		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int) -> int:
 	var wanted := rng.randi_range(Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES)
 	var made := 0
 	var span := Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS
@@ -253,7 +275,7 @@ static func _place_calm_zones(purposes: Dictionary, zones: Dictionary,
 		if made >= wanted:
 			break
 		var footprint := Rect2i(anchor, span)
-		if not _zone_fits(purposes, footprint):
+		if not _zone_fits(purposes, footprint, main_road):
 			continue
 		var purpose := _OPEN_CALM[rng.randi_range(0, _OPEN_CALM.size() - 1)]
 		for block in _blocks_in(footprint):
@@ -295,15 +317,19 @@ static func _too_near_the_home(footprint: Rect2i) -> bool:
 
 ## Whether a 2x2 footprint is inside the map, wholly unclaimed, clear of other calm, clear of the
 ## home, and does not swallow a stretch of either arterial.
-static func _zone_fits(purposes: Dictionary, footprint: Rect2i) -> bool:
+static func _zone_fits(purposes: Dictionary, footprint: Rect2i, main_road: int) -> bool:
 	if footprint.end.x > Tuning.CITY_BLOCKS.x or footprint.end.y > Tuning.CITY_BLOCKS.y:
 		return false
 	if _too_near_the_home(footprint):
 		return false
 	# The corridors this would absorb are the ones between its own columns and rows.
 	for index in range(footprint.position.x + 1, footprint.end.x):
-		if index == CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x):
+		if index == main_road:
 			return false
+	# The east-west guard is **not** about an arterial — there is only one main road and it runs
+	# north to south. What this one protects is the corridor the east and west city exits open
+	# onto (`City._spawn_spine_exits`), which would otherwise be a hole in the boundary opening
+	# into a park. Same shape, different reason, and it stays a constant because the exits do.
 	for index in range(footprint.position.y + 1, footprint.end.y):
 		if index == CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y):
 			return false
@@ -348,17 +374,28 @@ static func _cut_courtyards(purposes: Dictionary, remaining: Array[Vector2i],
 		purposes[block] = GameEnums.BlockPurpose.COURTYARD
 		cut += 1
 
-## Whether anything open-calm sits directly across a street from this footprint. Stated over a
-## rect of blocks rather than one block so that a single block and a four-block zone are the
-## same question asked twice, rather than one rule and one special case.
+## Whether anything open-calm sits anywhere around this footprint. Stated over a rect of blocks
+## rather than one block so that a single block and a four-block zone are the same question asked
+## twice, rather than one rule and one special case.
+##
+## **The whole ring, corners included.** *(Playtest 14: "calm zones shouldn't be possible diagonal
+## from each other — we said they should not be next to each other, this includes the entire
+## surrounding".)* It used to walk the four edges and skip the four corners, so two calm areas
+## could meet at a junction: not across a street from each other but across a *crossroads*, which
+## from the pavement is the same sight and is exactly what the rule exists to stop. `docs/TODO.md`
+## had it as an open question in M47 — *"probably right, but it is currently an accident of the
+## loop bounds rather than a decision"* — and this is the decision.
+##
+## Grown by one and tested by containment, rather than by four loops with the corners bolted on:
+## the shape being asked about is a ring, and a ring is what `grow(1)` makes.
 static func _has_open_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool:
-	for x in range(footprint.position.x, footprint.end.x):
-		for y in [footprint.position.y - 1, footprint.end.y]:
-			if _OPEN_CALM.has(purposes.get(Vector2i(x, y), -1)):
-				return true
-	for y in range(footprint.position.y, footprint.end.y):
-		for x in [footprint.position.x - 1, footprint.end.x]:
-			if _OPEN_CALM.has(purposes.get(Vector2i(x, y), -1)):
+	var ring := footprint.grow(1)
+	for y in range(ring.position.y, ring.end.y):
+		for x in range(ring.position.x, ring.end.x):
+			var block := Vector2i(x, y)
+			if footprint.has_point(block):
+				continue
+			if _OPEN_CALM.has(purposes.get(block, -1)):
 				return true
 	return false
 
