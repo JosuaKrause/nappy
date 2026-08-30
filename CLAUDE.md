@@ -242,6 +242,13 @@ telegraph still caught it mid-telegraph and looked like a broken telegraph.
   waiting to be asked about: an unfinished milestone is a branch with commits on it, not a
   dirty tree. The local repository is the assistant's to manage — branch, commit and merge
   without asking each time.
+- **And that includes a session that only writes docs.** *("Even though we are only changing docs
+  right now, make sure to commit your progress regularly.")* A long design conversation produces
+  the most valuable and least recoverable thing in this repo — a brief in the player's own words,
+  and the reasoning around it — and it is exactly the work that feels too unfinished to commit,
+  because the design is still moving. Commit each piece as it is settled. A decision that is only
+  in the working tree is a decision that is only in the session, which is the failure this whole
+  file is about.
 - **Commit the docs in the same commit as the code.** `docs/` is not a report written
   afterwards, it is the design. If an implementation contradicts a doc, the doc is wrong and
   gets fixed in that commit. With one commit per item this means the item's own `TODO.md`
