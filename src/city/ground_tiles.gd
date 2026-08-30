@@ -30,6 +30,16 @@ const FOREST := 17
 const QUIET_SQUARE := 18
 const COURTYARD := 19
 const SPOILED := 20
+const ROAD_MAIN := 21
+const ROAD_MAIN_LINE_E := 22
+const ROAD_MAIN_LINE_W := 23
+const ROAD_MAIN_LINE_N := 24
+const ROAD_MAIN_LINE_S := 25
+const SIDEWALK_KERB_MAIN_N := 26
+const SIDEWALK_KERB_MAIN_S := 27
+const SIDEWALK_KERB_MAIN_E := 28
+const SIDEWALK_KERB_MAIN_W := 29
+const PRECINCT := 30
 
 ## Tileset source id for a cell, or -1 where no ground should be drawn at all.
 static func source_for(map: CityMap, tile: Vector2i) -> int:
@@ -37,9 +47,9 @@ static func source_for(map: CityMap, tile: Vector2i) -> int:
 		GameEnums.TileType.BUILDING:
 			return -1  # A building covers its whole lot; nothing shows through.
 		GameEnums.TileType.SIDEWALK:
-			return _sidewalk_variant(tile)
+			return _sidewalk_variant(map, tile)
 		GameEnums.TileType.ROAD:
-			return _road_variant(tile)
+			return _road_variant(map, tile)
 		GameEnums.TileType.CROSSING:
 			return _crossing_variant(tile)
 		GameEnums.TileType.PARK:
@@ -65,45 +75,67 @@ static func source_for(map: CityMap, tile: Vector2i) -> int:
 
 ## The kerb runs along the pavement's edge against the carriageway — but only alongside a
 ## block. Through a junction there is no kerb, because that is the mouth of the junction.
-static func _sidewalk_variant(tile: Vector2i) -> int:
+##
+## Two exceptions, and both are a street kind saying what it is. A **pedestrianised** corridor is
+## brick from frontage to frontage: no kerb, because there is nothing on the other side of it to
+## step down to. A **main road** keeps its kerb and adds the doubled clearway marking, so a
+## pavement says which street it belongs to even when the road itself is off-screen.
+static func _sidewalk_variant(map: CityMap, tile: Vector2i) -> int:
 	var x := CityMap.corridor_offset(tile.x)
 	var y := CityMap.corridor_offset(tile.y)
+	var x_kind := map.street_kind_at(true, tile)
+	var y_kind := map.street_kind_at(false, tile)
+	if (x >= 0 and x_kind == GameEnums.StreetKind.PEDESTRIAN) \
+			or (y >= 0 and y_kind == GameEnums.StreetKind.PEDESTRIAN):
+		return PRECINCT
+
 	var inner := Tuning.SIDEWALK_WIDTH - 1
 	var outer := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
+	var main: bool
 
 	# In a vertical corridor, running alongside a block.
 	if x >= 0 and y < 0:
+		main = x_kind == GameEnums.StreetKind.MAIN
 		if x == inner:
-			return SIDEWALK_KERB_E
+			return SIDEWALK_KERB_MAIN_E if main else SIDEWALK_KERB_E
 		if x == outer:
-			return SIDEWALK_KERB_W
+			return SIDEWALK_KERB_MAIN_W if main else SIDEWALK_KERB_W
 	# In a horizontal corridor, running alongside a block.
 	if y >= 0 and x < 0:
+		main = y_kind == GameEnums.StreetKind.MAIN
 		if y == inner:
-			return SIDEWALK_KERB_S
+			return SIDEWALK_KERB_MAIN_S if main else SIDEWALK_KERB_S
 		if y == outer:
-			return SIDEWALK_KERB_N
+			return SIDEWALK_KERB_MAIN_N if main else SIDEWALK_KERB_N
 	return SIDEWALK
 
 ## The centre line falls on the seam between the two carriageway tiles, so each of them
 ## carries half of it. Junctions get plain asphalt: a centre line does not run through one.
-static func _road_variant(tile: Vector2i) -> int:
+##
+## A main road is the same geometry in a darker asphalt with an unbroken double line, and the
+## carriageway is the half of the difference that has to read from a distance — it is what a
+## player sees before she sees the traffic on it.
+static func _road_variant(map: CityMap, tile: Vector2i) -> int:
 	var x := CityMap.corridor_offset(tile.x)
 	var y := CityMap.corridor_offset(tile.y)
+	var x_main := map.street_kind_at(true, tile) == GameEnums.StreetKind.MAIN
+	var y_main := map.street_kind_at(false, tile) == GameEnums.StreetKind.MAIN
 	var first := Tuning.SIDEWALK_WIDTH
 	var second := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH - 1
 
 	if x >= 0 and y < 0:
 		if x == first:
-			return ROAD_LINE_E
+			return ROAD_MAIN_LINE_E if x_main else ROAD_LINE_E
 		if x == second:
-			return ROAD_LINE_W
+			return ROAD_MAIN_LINE_W if x_main else ROAD_LINE_W
 	if y >= 0 and x < 0:
 		if y == first:
-			return ROAD_LINE_S
+			return ROAD_MAIN_LINE_S if y_main else ROAD_LINE_S
 		if y == second:
-			return ROAD_LINE_N
-	return ROAD
+			return ROAD_MAIN_LINE_N if y_main else ROAD_LINE_N
+	# Inside a junction, or a stretch of main-road carriageway where a side street's zebra would
+	# have been. Either way it is the main road's own surface if either corridor is one.
+	return ROAD_MAIN if (x_main and x >= 0) or (y_main and y >= 0) else ROAD
 
 ## A crossing is where a carriageway passes over the *other* corridor's pavement, so the
 ## road's axis is whichever of the two offsets is on the carriageway.

@@ -35,6 +35,9 @@ const _HEIGHT_TILES := {
 ## A building never takes more than this share of its lot depth, so a roof remains.
 const MAX_HEIGHT_FRACTION := 0.55
 const BOUNDARY_THICKNESS := 64.0
+## How deep the ring of frontages outside the map is, in tiles. A block, so the far side of a
+## boundary street is the same depth of building as both sides of every other street.
+const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 
 ## Trees per *block* of open ground, by what the block currently is. A forest is a park with
 ## more trees in it and no swings, which is most of what the difference between them is on the
@@ -57,6 +60,9 @@ const _TREES := {
 var map: CityMap
 var events: EventManager
 var crowd: Crowd
+## The lights on the spine. Held here because both the traffic and the signal heads read it, and
+## advanced by `Crowd`, which is the thing a rig steps — see `Crowd.step()`.
+var signals: TrafficSignals
 var _daylight: CanvasModulate
 var _act := 1
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
@@ -80,6 +86,9 @@ func build(city_map: CityMap) -> void:
 	_spawn_buildings()
 	_spawn_home()
 	_spawn_boundary()
+	_spawn_the_edge_of_the_city()
+	signals = TrafficSignals.new(map)
+	_spawn_signal_heads()
 	events = EventManager.new()
 	events.name = "Events"
 	add_child(events)
@@ -112,6 +121,27 @@ func set_daylight(fraction: float) -> void:
 func is_calm_zone(world_position: Vector2) -> bool:
 	return Tile.is_calm(map.tile_type_at_world(world_position)) if map else false
 
+## What the ground she is standing on does to her recovery: calm, precinct, ordinary, main road,
+## best to worst. *(M41, playtest 12 finding 8.)*
+##
+## A precinct beats a main road even where the two cross, and that is not an oversight: standing
+## on brick is standing on brick, and the tile she is on is the whole of what this question is
+## about. A main road's *pavement* is main road, though — the thing that makes it bad ground is
+## the road beside it, not the surface under her.
+func decay_multiplier(world_position: Vector2) -> float:
+	if not map:
+		return 1.0
+	if Tile.is_calm(map.tile_type_at_world(world_position)):
+		return Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+	var tile := map.world_to_tile(world_position)
+	var across := map.street_kind_at(true, tile)
+	var along := map.street_kind_at(false, tile)
+	if across == GameEnums.StreetKind.PEDESTRIAN or along == GameEnums.StreetKind.PEDESTRIAN:
+		return Tuning.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER
+	if across == GameEnums.StreetKind.MAIN or along == GameEnums.StreetKind.MAIN:
+		return Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
+	return 1.0
+
 func is_alley(world_position: Vector2) -> bool:
 	return Tile.is_alley(map.tile_type_at_world(world_position)) if map else false
 
@@ -142,6 +172,117 @@ func _spawn_home() -> void:
 	door.offset = Vector2(-DOOR_TEXTURE.get_width() * 0.5, -DOOR_TEXTURE.get_height())
 	door.position = Vector2(stoop.get_center().x, stoop.position.y)
 	_entities.add_child(door)
+
+## What is on the far side of the streets that run along the boundary. *(M41.)*
+##
+## **The lattice already ends in T-junctions and nobody could see it.** The outermost corridor on
+## each side is a whole street — pavement, carriageway, pavement — and every interior street runs
+## into it and stops, which is exactly what a T is. What was missing is the other half of the
+## street: there was nothing beyond its far pavement, so the edge of the map read as a road with a
+## void along one side, and an interior street reaching it read as being *cut off* rather than as
+## turning. A row of frontages is the whole fix, and it is the cheapest thing in this milestone.
+##
+## Art and nothing else: these buildings are outside the map, so no tile, no route and no event
+## can ever reach them. They are deliberately kept out of `_buildings`, which is the list whose
+## condition follows a block's arc — an outside lot has no block and no arc, and a burnt-out
+## frontage across a boundary the player cannot cross would be a story about nothing.
+##
+## The gaps in the row are where the corridors meet the boundary, so the two exits below need no
+## exception carved for them: the spine reaches the edge through a gap that is already there.
+func _spawn_the_edge_of_the_city() -> void:
+	var depth := OUTSIDE_DEPTH_TILES
+	for bx in Tuning.CITY_BLOCKS.x:
+		var span := CityMap.block_rect(Vector2i(bx, 0))
+		_spawn_outside_frontage(Rect2i(Vector2i(span.position.x, -depth),
+				Vector2i(span.size.x, depth)))
+		_spawn_outside_frontage(Rect2i(Vector2i(span.position.x, map.size.y),
+				Vector2i(span.size.x, depth)))
+	for by in Tuning.CITY_BLOCKS.y:
+		var span := CityMap.block_rect(Vector2i(0, by))
+		_spawn_outside_frontage(Rect2i(Vector2i(-depth, span.position.y),
+				Vector2i(depth, span.size.y)))
+		_spawn_outside_frontage(Rect2i(Vector2i(map.size.x, span.position.y),
+				Vector2i(depth, span.size.y)))
+	# And the four corners, so the ring has no notch in it where two frontages nearly meet.
+	for corner in [Vector2i(-depth, -depth), Vector2i(map.size.x, -depth),
+			Vector2i(-depth, map.size.y), Vector2i(map.size.x, map.size.y)]:
+		_spawn_outside_frontage(Rect2i(corner as Vector2i, Vector2i.ONE * depth))
+	_spawn_spine_exits()
+
+func _spawn_outside_frontage(lot: Rect2i) -> void:
+	var world := map.tile_rect_to_world(lot)
+	var building := Building.new()
+	building.position = Vector2(world.get_center().x, world.end.y)
+	building.footprint = world.size
+	building.variant = _variant_for(lot)
+	# Two or three storeys, the residential range, rolled the same way every other lot is. A
+	# skyline that stops being a skyline at the boundary is the thing this is here to prevent.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("edge:%d:%d:%d" % [map.seed_used, lot.position.x, lot.position.y])
+	building.height = rng.randi_range(2, 3) * float(Tuning.TILE_SIZE)
+	building.lot = lot
+	_buildings_layer.add_child(building)
+
+## The four ways the spine leaves: a tunnel north, a bridge south, and the east-west main road
+## simply carrying on — *"the side-to-side main road just going towards east/west in one space"*.
+##
+## Each one fills the gap its own corridor leaves in the ring of frontages, which is the whole
+## reason they have to exist at all rather than being left as bare road: the camera can see past
+## the boundary now, and a gap with nothing in it is the invisible wall back again with a picture
+## either side of it.
+func _spawn_spine_exits() -> void:
+	var extent := map.world_size()
+	var down := (CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x) * CityMap.period()
+			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
+	var across := (CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y) * CityMap.period()
+			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
+	_spawn_exit(CityEdge.Kind.TUNNEL, Vector2(down, 0.0))
+	_spawn_exit(CityEdge.Kind.BRIDGE, Vector2(down, extent.y))
+	_spawn_exit(CityEdge.Kind.ROAD_EAST, Vector2(extent.x, across))
+	_spawn_exit(CityEdge.Kind.ROAD_WEST, Vector2(0.0, across))
+
+func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
+	var exit := CityEdge.new()
+	exit.kind = kind
+	exit.position = at
+	if exit.occludes():
+		_entities.add_child(exit)
+	else:
+		_buildings_layer.add_child(exit)
+
+## A signal head on every arm of every junction the spine passes through.
+##
+## Four per junction rather than one. A single light in the middle of a crossroads would be asking
+## the reader to work out which arm it means, and from directly above a head has no face to point
+## with — so **where it stands is what says which road it is talking about**: each one is on the
+## kerb *beside the carriageway it stops*, one junction-mouth back on the approach side and on
+## that approach's right, which is where a driver would look for it and where a person waiting to
+## cross that road is already standing.
+##
+## Nineteen junctions of a hundred, so this is seventy-six nodes that redraw two or three times a
+## minute each. Fixed for the run: a light is part of the lattice, not part of the day.
+func _spawn_signal_heads() -> void:
+	var inset := Tuning.TILE_SIZE * 0.5
+	var half := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE) * 0.5
+	for x in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
+		for y in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y):
+			var junction := Vector2i(x, y)
+			if not signals.is_signalled(junction):
+				continue
+			var centre := Vector2(x * CityMap.period() + Tuning.STREET_WIDTH * 0.5,
+					y * CityMap.period() + Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
+			var arms: Array[Vector2] = [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]
+			for heading in arms:
+				var right := Vector2(-heading.y, heading.x)
+				var at := centre - heading * (half + inset) + right * (half - inset)
+				if not map.is_walkable(map.world_to_tile(at)):
+					continue
+				var light := TrafficLight.new()
+				light.junction = junction
+				light.faces(heading)
+				light.signals = signals
+				light.position = at
+				_entities.add_child(light)
 
 func _spawn_buildings() -> void:
 	for rect in map.building_rects:
@@ -325,6 +466,17 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 func _add_prop(prop: Node2D) -> void:
 	_props.append(prop)
 	_entities.add_child(prop)
+
+## How far the camera may see. The map, plus the ring of frontages outside it. *(M41.)*
+##
+## It used to be the map exactly, which is the reason the boundary looked like a wall and would
+## have gone on looking like one however much was built out there: the camera stopped at the last
+## walkable tile, so the far side of a boundary street — and the tunnel the spine leaves by — were
+## drawn every frame and never once on screen. She still cannot *walk* past the boundary; what
+## changed is that she can see there is something past it.
+func camera_bounds() -> Rect2:
+	return Rect2(Vector2.ZERO, map.world_size()).grow(
+			OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE))
 
 ## Walls just outside the map, so the player cannot walk off the edge of the world.
 func _spawn_boundary() -> void:

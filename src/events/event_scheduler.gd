@@ -116,11 +116,12 @@ const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 ## Plans a day. `consumed_one_shots` is read and appended to, so a one-shot fires once
 ## per run.
 ##
-## `settled_yesterday` is the calm block the baby actually went to sleep in on the previous day,
-## or `(-1, -1)` for none. See `_spoil_the_park_she_used`.
+## `used_calm` is every calm area she has settled in so far this act, most recent first. See
+## `_spoil_the_park_she_used`, and `GameState.settled_this_act` for why it is an act rather than a
+## night.
 static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
-		settled_yesterday := Vector2i(-1, -1)) -> Array[Planned]:
+		used_calm: Array[Vector2i] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
@@ -134,11 +135,11 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	planned.append_array(_place_scars(day, scars))
 	_place_scripted(day, _stream(base, 1), map, planned, ground)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground)
-	_spoil_the_park_she_used(day, _stream(base, 3), map, planned, settled_yesterday)
+	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm)
 	_fill_with_recurring(day, base, map, planned, ground)
 	_ensure_the_run_is_taught(day, planned)
 
-	_ensure_one_usable_park(map, planned, settled_yesterday)
+	_ensure_one_usable_park(map, planned, used_calm)
 	_ensure_the_city_is_still_walkable(map, planned)
 	return planned
 
@@ -235,15 +236,28 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned]) -> void
 ## sprite, which is exactly what the spacing rule at `_room_around` exists to prevent everywhere
 ## else.
 ##
-## Silent if she did not settle anywhere yesterday, or settled somewhere that is no longer calm.
-static func _spoil_the_park_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
+## **Every area she has used this act, not just last night.** *(Playtest 12, finding 5.)* One
+## night's memory makes day 2 a fresh decision and day 3 the same decision as day 1; an act's
+## memory is what turns "find a different park" into "find your way around the city". The city
+## forgets at the act boundary, which is the only good news a run ever gets.
+##
+## One is always left alone whatever the memory says: the guarantee that a day is winnable outranks
+## the guarantee that it is a fresh decision, and `MIN_CALM_BLOCKS` is sized so that the two do not
+## have to fight — an act's worth of days plus one in reserve.
+##
+## Silent for anywhere she did not settle, or that is no longer calm.
+static func _spoil_the_parks_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
+		planned: Array[Planned], used: Array[Vector2i]) -> void:
+	var spoilable := map.calm_blocks.size() - 1
+	for block in used:
+		if spoilable <= 0:
+			return
+		if block.x >= 0 and block in map.calm_blocks:
+			spoilable -= 1
+			_spoil_one_park(day, rng, map, planned, block)
+
+static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
 		planned: Array[Planned], block: Vector2i) -> void:
-	if block.x < 0 or not (block in map.calm_blocks):
-		return
-	# One calm area cannot be spoiled: it is the only one there is, and the guarantee that a day
-	# is winnable outranks the guarantee that it is a fresh decision.
-	if map.calm_blocks.size() < 2:
-		return
 
 	var lot := _calm_rect(map, block)
 	var open: Array[Vector2i] = []
@@ -558,6 +572,16 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary) -> Arra
 			if map.is_closed(candidate) or not _wants_this_side(def, map, candidate):
 				continue
 			open.append(candidate)
+			# **A precinct is a retail street**, so it carries more of the day than a length of
+			# ordinary pavement does. *(Playtest 12, finding 1: "they should have a higher density
+			# of events" — a precinct is where the cafés and the market stalls and the buskers
+			# are.)* Weighting the candidate list rather than adding a placement rule: the roll is
+			# an index into this array, so offering a tile several times *is* the weighting, and
+			# every spacing rule downstream keeps working unchanged.
+			if map.street_kind_at(true, candidate) == GameEnums.StreetKind.PEDESTRIAN \
+					or map.street_kind_at(false, candidate) == GameEnums.StreetKind.PEDESTRIAN:
+				for _extra in Tuning.EVENT_PRECINCT_WEIGHT - 1:
+					open.append(candidate)
 	ground[key] = open
 	return open
 
@@ -762,7 +786,7 @@ static func _cross_street_path(map: CityMap, tile: Vector2i) -> PackedVector2Arr
 ## park, and then this rule, looking for the least disturbed calm ground, finds the block with
 ## exactly one spoiler on it and strips the very event that was the point.
 static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
-		settled_yesterday := Vector2i(-1, -1)) -> void:
+		used_calm: Array[Vector2i] = []) -> void:
 	if map.calm_blocks.is_empty():
 		return
 
@@ -793,11 +817,11 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
 	if clean:
 		return
 
-	# Yesterday's park is the last one considered, not an excluded one: if it is the only calm
-	# block left standing, a winnable day still outranks a fresh decision.
+	# The parks she has already used this act are the last ones considered, not excluded ones: if
+	# every calm block is one of them, a winnable day still outranks a fresh decision.
 	var choosable: Array[Vector2i] = []
 	for block in map.calm_blocks:
-		if block != settled_yesterday:
+		if not used_calm.has(block):
 			choosable.append(block)
 	if choosable.is_empty():
 		choosable = map.calm_blocks

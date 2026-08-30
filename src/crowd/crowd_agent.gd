@@ -76,6 +76,11 @@ var pedestrian_ahead := Vector2.INF
 ## neighbour search is one pass over the whole crowd, not one per agent.
 var gap_ahead := INF
 
+## Distance to the stop line of a junction this car has to give way at, or `INF` when it has
+## right of way. Written once per physics frame by `Crowd.give_way_at_junctions()`, because
+## whose turn it is at a box is a question about the pair of them and not about either one.
+var junction_hold := INF
+
 ## True while the player is touching this agent. Owned by `Crowd`, and the reason it exists is
 ## that a contact is not instantaneous: she walks faster than a pedestrian does, so a person
 ## bumped from behind stays inside the contact radius for the better part of a second. Without
@@ -164,7 +169,21 @@ func _stands_on_a_street() -> bool:
 	var tile := _map.world_to_tile(position)
 	if _map.is_closed(tile):
 		return false
-	return not _map.in_bounds(tile) or _map.is_street(tile)
+	if not _map.in_bounds(tile):
+		return true
+	# A precinct is paved end to end, so every tile of it says "street" and a car placed there
+	# would look perfectly settled right up to the moment it drove off down the paving. Asked
+	# here rather than at lane-choosing time because it is a question about a *place*, and the
+	# place is not decided until the along position is rolled.
+	if kind == Kind.CAR and not _map.is_driveable_at(_vertical, tile):
+		return false
+	# And a walker is never placed in a carriageway. It matters since M41 because a precinct's
+	# lanes run the whole width of the corridor, and a lane is chosen before the along position
+	# that decides whether this stretch is a precinct at all — so the re-roll is what keeps the
+	# two in step rather than an ordering assumption that would be wrong once in ten.
+	if kind == Kind.WALKER and _map.tile_at(tile) == GameEnums.TileType.ROAD:
+		return false
+	return _map.is_street(tile)
 
 func _process(delta: float) -> void:
 	_jolt = maxf(0.0, _jolt - delta)
@@ -233,6 +252,20 @@ func startle(intensity: float, seconds: float, inner: float, outer: float) -> vo
 func is_startled() -> bool:
 	return _jolt > 0.0
 
+## This car has hit another one in a junction. It stops dead and sounds off, and then pulls away
+## again on its own — `_cruise` is untouched, so recovery is the ordinary acceleration.
+##
+## The startle is what makes it *loud where it happened* rather than a number written at the baby;
+## see `Crowd._collide_in_the_box` for why a collision is this and not a catalogue row. Already
+## being startled is enough to skip it, which is the same hysteresis a contact uses: a pair sitting
+## inside each other for half a second must cost one crash, not thirty.
+func crashed_into() -> void:
+	if _jolt > 0.0:
+		return
+	_speed = 0.0
+	startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION * 2.0,
+			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
+
 ## How fast it is actually going, for the strike test. A car that has stopped for a crossing
 ## cannot run anybody over.
 func speed() -> float:
@@ -241,6 +274,60 @@ func speed() -> float:
 ## How fast and which way it is actually travelling, for anything predicting where it will be.
 func velocity() -> Vector2:
 	return heading() * _speed * _yield_factor()
+
+## True while travelling along a vertical corridor. What decides whether two cars at the same
+## junction are crossing each other's path or merely queueing behind one another.
+func travelling_vertically() -> bool:
+	return _vertical
+
+# -------------------------------------------------------------- junctions ---
+# A lane is a queue and a junction is a **box**, and until M41 only the queue was modelled. Two
+# cars on crossing arms each saw a clear lane ahead, both entered, and the M27 positional resolve
+# then did the only thing it can — move a body. Measured over ninety seconds of the arterial:
+# 3,776 overlapping crossing-axis pairs, one in half of all frames, the deepest 39px into a 40px
+# footprint. That is two cars passing through each other's centres, in plain sight, and the queue
+# was legal on every frame — which is why five milestones of "no two cars are inside each other"
+# tests could not see it. Same shape as M38's fix one level along: look before committing.
+
+## Half the length of the body along its own line of travel, which is what actually enters a box
+## first and leaves it last. Zero for a walker, who is not what a box is rationed between.
+func _nose() -> float:
+	return Tuning.CAR_STRIKE_HALF_LENGTH if kind == Kind.CAR else 0.0
+
+## The junction this agent's **body** is standing in, or `(-1, -1)`. Nose and tail, not the
+## centre: a car is 52px long against a 192px box, so half a length of it is still in the way
+## after its middle has left.
+func junction_occupied() -> Vector2i:
+	var half := _nose()
+	for edge in [_along() - half, _along() + half]:
+		var tile_along := floori(edge / float(Tuning.TILE_SIZE))
+		if CityMap.corridor_offset(tile_along) < 0:
+			continue
+		var index := CityMap.junction_index(tile_along)
+		return Vector2i(_corridor, index) if _vertical else Vector2i(index, _corridor)
+	return Vector2i(-1, -1)
+
+## The junction this agent is coming to, whether or not it is in it yet.
+func junction_ahead() -> Vector2i:
+	var index := _junction_index()
+	return Vector2i(_corridor, index) if _vertical else Vector2i(index, _corridor)
+
+## Distance from this agent's nose to the near edge of that box. Negative once it is inside.
+func distance_to_junction() -> float:
+	var index := _junction_index()
+	var low := float(index * CityMap.period() * Tuning.TILE_SIZE)
+	var near := low if _direction > 0.0 \
+			else low + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
+	return (near - _along()) * _direction - _nose()
+
+## Which corridor band along its own axis the agent is in or heading for. Inside one, that is the
+## one it is in; in the block band between two, it is whichever lies the way it is pointing.
+func _junction_index() -> int:
+	var along_tile := floori(_along() / float(Tuning.TILE_SIZE))
+	var index := CityMap.junction_index(along_tile)
+	if CityMap.corridor_offset(along_tile) < 0 and _direction > 0.0:
+		index += 1
+	return index
 
 ## Which way it is pointing, in world space.
 func heading() -> Vector2:
@@ -318,7 +405,13 @@ func step_aside(away: Vector2, distance: float, seconds: float) -> void:
 ## kerbwards must stop at the kerb — the first version clamped by distance and would happily have
 ## put somebody 48px into the road to get out of her way, which is a pedestrian under a car.
 func _pavement_band() -> Vector2:
-	var offsets := CrowdLanes.SIDEWALK_OFFSETS
+	var offsets := CrowdLanes.walkable_offsets(_map, _vertical, _corridor,
+			floori(_along() / float(Tuning.TILE_SIZE)))
+	# A precinct has one footway and it is the whole street, so there is no far side to be on.
+	if offsets.size() > 4:
+		var slack_all := float(Tuning.TILE_SIZE) * 0.5
+		return Vector2(CrowdLanes.lane_centre(_corridor, offsets[0]) - slack_all,
+				CrowdLanes.lane_centre(_corridor, offsets[offsets.size() - 1]) + slack_all)
 	var near_side: bool = _lane <= offsets[1]
 	var low := CrowdLanes.lane_centre(_corridor, offsets[0] if near_side else offsets[2])
 	var high := CrowdLanes.lane_centre(_corridor, offsets[1] if near_side else offsets[3])
@@ -376,15 +469,16 @@ func _choose_lane(roll: float) -> void:
 	# Only the corridors the field actually reaches. Picking from the whole city and then
 	# discarding what is out of view is the same crowd spread over ten thousand tiles, which
 	# is the thing M27 stops doing.
-	_corridor = CrowdLanes.pick_corridor_in_range(_rng, _map.seed_used, _vertical,
-			field.corridor_range(_vertical))
+	_corridor = CrowdLanes.pick_corridor_in_range(_rng, _map, _vertical,
+			field.corridor_range(_vertical), kind == Kind.CAR)
 	if kind == Kind.CAR:
 		_lane = CrowdLanes.ROAD_OFFSETS[_rng.randi_range(0, 1)]
 		_direction = CrowdLanes.road_direction(_vertical, _lane)
 		_speed = _rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
 	else:
-		_lane = CrowdLanes.SIDEWALK_OFFSETS[_rng.randi_range(
-				0, CrowdLanes.SIDEWALK_OFFSETS.size() - 1)]
+		var offsets := CrowdLanes.walkable_offsets(_map, _vertical, _corridor,
+				floori(_along() / float(Tuning.TILE_SIZE)))
+		_lane = offsets[_rng.randi_range(0, offsets.size() - 1)]
 		_direction = 1.0 if _rng.randf() < 0.5 else -1.0
 		_speed = _rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
 	_cruise = _speed
@@ -404,8 +498,14 @@ func _choose_lane(roll: float) -> void:
 ## 04, *"cars still bump into each other"*. The two wants compose by taking the lower, so a
 ## queue at a zebra is the car in front stopping and everybody behind it honouring the headway,
 ## rather than a special case for queues.
+## Since M41 it is also where a car waits its turn at a junction. The three wants compose by
+## taking the lowest, exactly as the queue and the zebra already did — a car held at a box and a
+## car behind another car are the same behaviour asked for by two different things, and giving
+## the junction its own brake would be a second answer to a question that already has one.
 func _give_way(delta: float) -> void:
 	var wanted := _cruise
+	if junction_hold < INF:
+		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * junction_hold))
 	var to_line := _distance_to_stop_line()
 	if to_line < INF:
 		# The speed that runs out exactly at the line at the *approach* rate. Braking toward a
@@ -458,8 +558,16 @@ func _following_speed() -> float:
 ##
 ## `pedestrian_ahead` is only ever set for the handful of cars near the player, so this probe
 ## does not run for the other hundred.
+## **A main road does not give way**, and that is the whole difference between its crossings and
+## an ordinary street's. *(M41.)* The paint is identical and what honours it is not: on an
+## ordinary street the drivers do, which makes crossing a matter of catching somebody's eye; on
+## the spine the light does, which makes it a matter of waiting for one. Take this exemption away
+## and a signal is decoration on top of a courtesy that was already enough.
 func _crossing_ahead_somebody_is_waiting_at() -> float:
 	if pedestrian_ahead == Vector2.INF:
+		return INF
+	if _map.street_kind_at(_vertical, _map.world_to_tile(global_position)) \
+			== GameEnums.StreetKind.MAIN:
 		return INF
 	# Somebody in the next street over is not this street's problem.
 	var lateral := absf((pedestrian_ahead.x if _vertical else pedestrian_ahead.y) - _cross())
@@ -476,16 +584,28 @@ func _crossing_ahead_somebody_is_waiting_at() -> float:
 	var step_tile := Vector2i(0, signi(int(_direction))) if _vertical \
 			else Vector2i(signi(int(_direction)), 0)
 	var here := _map.world_to_tile(global_position)
+	# The first tile of the run of paint currently being walked, or -1 between runs. **A zebra is
+	# not one tile**, and the car has to stop short of the whole of it rather than short of the
+	# tile the person happens to be standing on — otherwise it parks on the near half of the same
+	# crossing and the paint stops meaning anything. Two tiles deep on an ordinary street, and
+	# *six* where a road crosses a pedestrianised one, which is where this first showed up.
+	var run_start := -1
 	for step in range(0, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
 		var tile := here + step_tile * step
+		var along_index: int = tile.y if _vertical else tile.x
 		if _map.tile_at(tile) != GameEnums.TileType.CROSSING:
+			run_start = -1
 			continue
+		if run_start < 0:
+			run_start = along_index
 		# Distance along the street, not straight-line: somebody waiting at the far kerb of a
 		# six-tile corridor is beside the crossing, not two tiles from it.
-		var crossing_along := float((tile.y if _vertical else tile.x) * Tuning.TILE_SIZE)
+		var crossing_along := float(along_index * Tuning.TILE_SIZE)
 		if absf(waiting_along - crossing_along) > Tuning.CAR_ZEBRA_WAIT_RADIUS:
 			continue
-		var edge_tile: int = (tile.y if _vertical else tile.x) + (0 if _direction > 0.0 else 1)
+		# The near edge of the run, which is its lowest coordinate going one way and its highest
+		# going the other — the scan always starts at the end nearest the car.
+		var edge_tile := run_start + (0 if _direction > 0.0 else 1)
 		return (float(edge_tile * Tuning.TILE_SIZE) - _along()) * _direction
 	return INF
 
@@ -548,7 +668,14 @@ func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 	var tile := _map.world_to_tile(position + offset)
 	if _map.is_closed(tile):
 		return true
-	return _map.in_bounds(tile) and not _map.is_street(tile)
+	if not _map.in_bounds(tile):
+		return false
+	# And a precinct is a wall to a car and a street to everybody else. The tile map cannot say
+	# so — it is paving either way — so the street kind has to, or a car reaching the three
+	# blocks of a precinct drives onto them instead of turning off.
+	if kind == Kind.CAR and not _map.is_driveable_at(vertical, tile):
+		return true
+	return not _map.is_street(tile)
 
 ## Traffic goes round a closure, and that is half of what makes one legible: the street with
 ## nobody on it is the street that is shut, which reads from a block away — further than the
@@ -607,6 +734,13 @@ func _divert() -> void:
 ## was avoiding. When both arms are full it takes the first one anyway and the resolve does what it
 ## always did — which leaves the old behaviour as the rare case instead of the usual one.
 func _pick_an_arm(crossing: int, first: float) -> float:
+	# A precinct is not an arm a car has. Neither of the two questions below would catch it: it is
+	# paved end to end, so the tile map says it is a street, and there is never a car in it to
+	# leave no room. A car with nowhere else to go turns round instead, which is what a driver
+	# meeting a bollarded street actually does.
+	if kind == Kind.CAR and not _map.is_driveable(not _vertical, crossing,
+			floori(_cross() / float(Tuning.TILE_SIZE))):
+		return 0.0
 	var open: Array[float] = []
 	for turning in [first, -first]:
 		if not _blocked_ahead(not _vertical, turning, LOOKAHEAD):
@@ -724,6 +858,7 @@ func _recycle() -> void:
 	_settle_junction()
 	_claim_the_road_here()
 	gap_ahead = INF
+	junction_hold = INF
 
 ## Drops the car in behind whatever is already in its lane, when the rolls above could not find a
 ## gap. Nothing at all if it landed somewhere free, which is almost always.

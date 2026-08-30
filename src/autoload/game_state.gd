@@ -42,6 +42,26 @@ var settled_in: Dictionary = {}
 func settled_yesterday() -> Vector2i:
 	return settled_in.get(day - 1, Vector2i(-1, -1))
 
+## Every calm area she has used **so far this act**, most recent first, today excluded.
+##
+## *(Playtest 12, finding 5: "since each day one gets removed we need as many as days in an act,
+## plus one more as backup. That forces exploration. At the end of an act we can reset the used up
+## status.")* M24 remembered one night and spoiled one park, which makes day 2 a fresh decision and
+## day 3 the same decision as day 1. Remembering the act is what turns "find a different park" into
+## "find your way around the city", and forgetting at the act boundary is what stops it becoming
+## "there is nowhere left".
+##
+## The reset is the act's, not the calendar's: an act is where the city changes character anyway,
+## so the parks going quiet again is the one piece of good news in a run that has none.
+func settled_this_act() -> Array[Vector2i]:
+	var start: int = Tuning.ACT_START_DAYS[Tuning.act_for_day(day) - 1]
+	var used: Array[Vector2i] = []
+	for past in range(day - 1, start - 1, -1):
+		var block: Vector2i = settled_in.get(past, Vector2i(-1, -1))
+		if block.x >= 0 and not used.has(block):
+			used.append(block)
+	return used
+
 ## Called when the baby falls asleep, with the calm block she is standing in. The one place
 ## the city learns anything about how the player actually played.
 func remember_where_she_settled(block: Vector2i) -> void:

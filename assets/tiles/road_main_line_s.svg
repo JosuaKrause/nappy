@@ -1,0 +1,7 @@
+<!-- Main-road asphalt, half of the double centre line on the south edge. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#3b3b45"/>
+  <rect x="19" y="8" width="4" height="1" fill="#43434e"/>
+  <rect x="0" y="26" width="32" height="2" fill="#b9b087"/>
+  <rect x="0" y="30" width="32" height="2" fill="#b9b087"/>
+</svg>

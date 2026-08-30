@@ -46,7 +46,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 74540 headless checks, ~96s
+./tools/test.sh               # 122119 headless checks, ~161s
 ./tools/test.sh crowd events  # just those suites, in seconds — for the inner loop
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
@@ -388,9 +388,17 @@ people and cars on it, which the player can see. There used to be an invisible a
 on the arterials doing that job; it was replaced, not supplemented. If you find yourself
 adding a city-wide "background noise" number, that is the thing this rule exists to stop.
 
-**`Baby` knows nothing about tiles or events.** Its entire interface to the world is three
-questions: `is_calm_zone`, `is_alley`, `total_excitement_at`. Adding an event type must never
-require touching the meters.
+**`Baby` knows nothing about tiles or events.** Its entire interface to the world is four
+questions: `is_calm_zone`, `decay_multiplier`, `is_alley`, `total_excitement_at`. Adding an event
+type must never require touching the meters.
+
+It was three until M41, and the fourth is worth the precedent it sets rather than the field it
+adds: *the ground is a rate, not a category*. `is_calm_zone` was doing two jobs — a threshold for
+the sleepiness (only calm ground puts a baby to sleep, which is genuinely a yes/no) and a
+multiplier for the excitement decay (which never was). Splitting them is what let the street
+hierarchy reach the meters at all — calm 2.2, precinct 1.5, ordinary 1.0, main road 0.6 — and the
+shape to copy is that **the new question generalises an old answer instead of sitting beside it**.
+A fifth question that is a special case of one of these four is the thing this rule exists to stop.
 
 **The lattice is fixed; what a block *is* is not.** *(M15 replaced the old "the `CityMap`
 is immutable for the run" rule with this one.)* The street lattice, the block boundaries,
@@ -599,6 +607,45 @@ the whole width of it with the doubled hard-fail margin. If anything else in the
 becomes lethal without being in the catalogue, it needs its own stated contract in the same
 place — a hard fail with no written contract is a bug waiting to be called a difficulty
 setting.
+
+**And the main road replaces the courtesy with a clock, so the clock is the contract.** *(M41.)*
+Traffic on the spine does not give way at a zebra — what stops it is the light — so the thing
+standing between her and a hard fail there is the length of the **side street's** green, and
+`Tuning.validate_signals()` states it in the same place and the same shape: long enough to walk the
+carriageway with the doubled margin. Two things about that are easy to get backwards. The green
+that matters is the *other* arm's, because she crosses the main road while the main road is
+stopped; and the amber is a **clearance** period rather than a warning — the crossing arm stays red
+through it and a car too close to stop is counted as already in the box — so lengthening it buys
+her nothing and lengthening the side green buys her everything.
+
+**A lane is a queue; a junction is a box.** *(M41, playtest 11 finding 7: "cars overlap on
+intersections".)* M38 made a car turning into an occupied *lane* look first and the box was never
+modelled, so two cars on crossing arms each read a clear lane ahead and both entered: **3,776
+overlapping crossing-axis pairs in ninety seconds of the arterial, one in half of all frames**, with
+every assertion about the traffic passing throughout. `Crowd.give_way_at_junctions()` is the rule
+and four clauses of it are load-bearing:
+
+- **Only crossing traffic conflicts.** Two cars meeting head-on are in different lanes and pass.
+- **A car that cannot stop is counted as already in the box**, not asked to brake — the zebra's
+  commit rule, for the same reason: braking too late means stopping *in* the thing.
+- **Nothing enters a box it cannot leave.** Without this one clause a single backed-up queue takes
+  the streets either side of it with it — five of forty-six cars parked in a box, measured.
+- **Nearest first, then right before left.** Distance alone leaves a symmetric arrival undecided
+  and right-before-left alone deadlocks four cars in a ring; in that order there is exactly one
+  winner per box per frame. A light overrides the whole negotiation where there is one.
+
+The collision that gets through is deliberate and is **not** a catalogue row: it startles the cars
+it happened to, which is M19's mechanism and composes by addition like every other body. An event
+nobody meets in a run is a silhouette and a fairness contract spent on decoration.
+
+**A signalled grid has a capacity, and the population has to respect it.** Two more measured facts
+that generalise. Signals with arbitrary offsets stop a car at *every* junction — two thirds of the
+traffic stationary — so the cycle is derived from the block spacing (`SIGNAL_PROGRESSION_BLOCKS`)
+and both directions progress because it is an **even** multiple of the junction-to-junction
+travelling time. And junction control gave the road a throughput it never had, so the car
+population is now a number about capacity as well as about noise: the same forty-six cars put the
+arterial's floor over the ceiling `tests/test_crowd.gd` states, because a car waiting at a light
+beside you is louder for longer than one going past.
 
 **Every day stays winnable, and winnable more than one way.** The scheduler guarantees at
 least one unspoiled park and a walkable route from home to a park. Since M16 the day carries
@@ -840,7 +887,22 @@ wait at the kerb, contacts in a forty-second walk down a lane centre *and* holdi
 between two lanes, and whether any two cars share a lane closer than a car's length. The table
 in `docs/PLAYTEST-04.md` is what those came out as, and re-measuring is the only honest way to
 move them: a lane has a **capacity**, and past it the arterial jams solid and no controller
-helps.
+helps. **Since M41 the junctions have a capacity too**, so the car number is no longer only a noise
+number — measure the mean speed and the stopped fraction alongside the floor, or a road that reads
+as "busy" in a screenshot is a car park in motion.
+
+**Change the street hierarchy** — `CityGenerator._assign_street_kinds` decides *where*
+(`CityMap.main_road`, `CityMap.precinct_spans`); `Tuning.PRECINCT_BLOCKS`,
+`PRECINCT_BUSYNESS`, `EVENT_PRECINCT_WEIGHT` and the `EXCITEMENT_DECAY_*_MULTIPLIER` trio decide
+*what it means*. Four places have to agree and the failure mode of each is silent:
+`GroundTiles` (what it looks like), `CrowdLanes.busyness_for` + `walkable_offsets` (who walks and
+drives there), `City.decay_multiplier` (what the ground does to the meter), and
+`TrafficSignals.is_signalled` (whether its junctions have lights).
+
+The trap is scale. **There is one main road and there are two precincts, and that is the design
+rather than a parameter** — the first build made one of each per *axis* and the report was that
+the city had three kinds of street and no hierarchy among them. If a kind starts appearing in
+every third corridor, it has stopped being a place.
 
 **Change a balance number** — `src/autoload/tuning.gd`, which is the only place they live.
 Expect tests to push back: several encode *relationships*, not values (traffic noise must stay

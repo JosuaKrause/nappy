@@ -18,6 +18,19 @@ extends RefCounted
 ## one on the midline) are what the pavement is balanced on, and they assume a walker may be
 ## coming the other way in any lane.
 const SIDEWALK_OFFSETS: Array[int] = [0, 1, 4, 5]
+## And the same for a precinct, which has no carriageway between its two footways: every tile
+## across it is somewhere a person may be. *(Playtest 12, finding 1: "people seem to not go in the
+## middle.")* They were right and it was not a steering bug — the middle two offsets are the
+## carriageway on every other street, so nothing had ever been placed there.
+const PRECINCT_OFFSETS: Array[int] = [0, 1, 2, 3, 4, 5]
+
+## The lanes a walker may use in a corridor: the whole width of a precinct, the two footways of
+## anything else.
+static func walkable_offsets(map: CityMap, vertical: bool, index: int,
+		along_tile: int) -> Array[int]:
+	if map.street_kind(vertical, index, along_tile) == GameEnums.StreetKind.PEDESTRIAN:
+		return PRECINCT_OFFSETS
+	return SIDEWALK_OFFSETS
 ## The two carriageway lanes, across the corridor: `ROAD_OFFSETS[0]` is the one with the smaller
 ## cross-axis coordinate. Which way each runs depends on the **axis** — see `road_direction()`.
 const ROAD_OFFSETS: Array[int] = [2, 3]
@@ -102,6 +115,10 @@ static func arterial_index(axis_blocks: int) -> int:
 ## How busy a corridor is, relative to an ordinary street. Seeded from the city rather than
 ## the day, because it is a property of the city: the same street is busy every morning, and
 ## learning which ones are quiet is most of what a fixed city is *for*.
+##
+## The plain form is what it always was and is the pavement's answer. `busyness_for` is the one
+## anything placing an agent should ask, because since M41 the two populations do not want the
+## same streets: a precinct is the busiest pavement in the city and has no cars on it at all.
 static func busyness(map_seed: int, vertical: bool, index: int) -> float:
 	var blocks: int = Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
 	if index == arterial_index(blocks):
@@ -110,12 +127,34 @@ static func busyness(map_seed: int, vertical: bool, index: int) -> float:
 	rng.seed = hash("busy:%d:%s:%d" % [map_seed, "v" if vertical else "h", index])
 	return rng.randf_range(0.5, 1.7)
 
+## How busy a corridor is *for one kind of traffic*.
+##
+## A pedestrianised street is the whole reason this is not one number. There is no carriageway on
+## it, so a car's weight there is zero — not low, zero, because a car that picks it has nowhere
+## legal to be and diverts out on its first frame, which reads as cars appearing in a precinct
+## and immediately leaving. Its pavement, meanwhile, is the busiest in the city, which is the
+## other end of the trade it offers: nothing on it can kill you and a great deal of it is in
+## your way.
+static func busyness_for(map: CityMap, vertical: bool, index: int, cars: bool) -> float:
+	for span in map.precinct_spans:
+		if (span.x == 1) != vertical or span.y != index:
+			continue
+		# Walkers only. A precinct is three blocks of an otherwise ordinary street, so the cars
+		# keep their weight and divert at the bollards; what changes is that the corridor is now
+		# the busiest pavement in the city, and because the crowd is a box around the player,
+		# "busiest corridor" delivers its people to wherever on it she is standing.
+		if not cars:
+			return Tuning.PRECINCT_BUSYNESS
+	return busyness(map.seed_used, vertical, index)
+
 ## A corridor chosen in proportion to how busy it is. This is what makes a route decision
 ## out of a grid: a uniform crowd would make every street equally loud, and then there would
 ## be nothing to choose between them.
-static func pick_corridor(rng: RandomNumberGenerator, map_seed: int, vertical: bool) -> int:
+static func pick_corridor(rng: RandomNumberGenerator, map: CityMap, vertical: bool,
+		cars: bool) -> int:
 	var blocks: int = Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
-	return pick_corridor_in_range(rng, map_seed, vertical, Vector2i(0, corridor_count(blocks) - 1))
+	return pick_corridor_in_range(rng, map, vertical, Vector2i(0, corridor_count(blocks) - 1),
+			cars)
 
 ## The same, restricted to an inclusive range of corridor indices — the streets that are
 ## actually inside the crowd's field.
@@ -124,16 +163,22 @@ static func pick_corridor(rng: RandomNumberGenerator, map_seed: int, vertical: b
 ## than picking uniformly among the few streets in view: the arterial is still the busy one
 ## when it is one of three corridors on screen, so a player who has learned which street is
 ## loud is still right about it.
-static func pick_corridor_in_range(rng: RandomNumberGenerator, map_seed: int, vertical: bool,
-		range_inclusive: Vector2i) -> int:
+##
+## A window with no weight in it at all is possible and is not an error — a car whose field only
+## reaches precincts — so it falls back to the first corridor rather than dividing by nothing.
+## The caller re-rolls anyway; see `CrowdAgent._recycle`.
+static func pick_corridor_in_range(rng: RandomNumberGenerator, map: CityMap, vertical: bool,
+		range_inclusive: Vector2i, cars: bool) -> int:
 	var lo := range_inclusive.x
 	var hi := maxi(lo, range_inclusive.y)
 	var total := 0.0
 	for index in range(lo, hi + 1):
-		total += busyness(map_seed, vertical, index)
+		total += busyness_for(map, vertical, index, cars)
+	if total <= 0.0:
+		return lo
 	var target := rng.randf() * total
 	for index in range(lo, hi + 1):
-		target -= busyness(map_seed, vertical, index)
+		target -= busyness_for(map, vertical, index, cars)
 		if target <= 0.0:
 			return index
 	return hi

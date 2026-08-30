@@ -20,8 +20,9 @@ The city is a grid of **blocks** separated by **streets**.
 
 - `BLOCK_SIZE` = 8 × 8 tiles of block interior
 - `STREET_WIDTH` = 6 tiles: sidewalk (2) | road (2) | sidewalk (2)
-- `CITY_BLOCKS` = 9 × 9 blocks
-- Total: 132 × 132 tiles, or 4224 px square at a 32 px tile
+- `CITY_BLOCKS` = 11 × 11 blocks
+- Total: 160 × 160 tiles, or 5120 px square at a 32 px tile
+- Plus a ring of frontages one block deep **outside** the map, which is art rather than ground
 
 **Odd on both axes, and that is a constraint.** An odd lattice has a middle block, and the home goes
 in it — see "The home" below. Everything downstream is stated over `CITY_BLOCKS` rather than over a
@@ -31,6 +32,56 @@ resize moves the city and nothing else. It is still a density change: re-measure
 A 1-tile sidewalk was the first attempt and had to go: the rig's collision circle is 28 px
 across, so a 32 px sidewalk left 2 px of clearance and walking a street felt like threading
 a needle. Two tiles of sidewalk is the number the whole layout is sized around.
+
+### Three kinds of street
+
+Every corridor is the same shape and they are not the same street. All of it is fixed for the run
+and decided before a tile is laid — see `CityGenerator._assign_street_kinds`.
+
+| Kind | How many | What it is |
+| --- | --- | --- |
+| `ORDINARY` | everything else | Two lanes, a zebra at every junction, and traffic that gives way to somebody standing at the kerb. |
+| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. `CityMap.main_road`. |
+| `PEDESTRIAN` | **two stretches of three blocks** | A retail precinct: paving frontage to frontage, no kerb, no cars, the busiest pavement in the city, and the best ground outside a park to bring a meter down on. `CityMap.precinct_spans`. |
+
+**With one kind of street the only route question is *which way*; with three it is also *which
+kind*, and that is the trade the whole game is made of.** A main road is quick to cross at a light,
+lethal anywhere else along it, and bad ground to recover on; a precinct cannot kill you and is full
+of people to walk into; an ordinary street is the middle of both.
+
+**Two of the three are places, not classes.** The first build made a main road of each axis and a
+precinct of one corridor in each, and it produced a city with three kinds of street and no
+hierarchy among them: a spine that crosses itself is two spines, and a precinct you meet on every
+third street is what a street is. There is one main road because there is nowhere else it could be,
+and a precinct is three blocks with an end you can see — one along the southern shore, one inland.
+A span covers its blocks and the junctions between them and stops short of the crossroads at either
+end, which is where the bollards are.
+
+The lattice itself does not move. Every corridor is still `sidewalk | road | sidewalk` and the
+layout arithmetic is still a modulo, which is why a kind can never disconnect the city or shift a
+block. **A wider main road was the obvious alternative and was rejected**: the corridor
+cross-section is uniform by construction, a 1-tile pavement is the width M1 found unwalkable, and
+doubling a carriageway restates the traffic fairness contract for every street at once. What the
+main road gets instead is everything that is actually a route decision — the signals, the
+priority, the density, the recovery rate — and a drawing that says so.
+
+### What the ground does to the meter
+
+Since M41 the ground is not calm-or-not; it is a rate, and choosing a route is choosing a recovery
+rate. `WorldContext.decay_multiplier()` is the question and `City` answers it from the tile she is
+standing on.
+
+| Ground | × decay | Walking decay |
+| --- | ---: | ---: |
+| Calm (park, forest, quiet square, courtyard, playground) | 2.2 | 7.7/s |
+| Precinct | 1.5 | 5.25/s |
+| Ordinary street | 1.0 | 3.5/s |
+| Main road | 0.6 | 2.1/s |
+
+It is the first time since M14 that the ground under her feet has done anything except be calm or
+not, and it is what makes a precinct worth walking to although it is loud. `is_calm_zone` stays a
+threshold beside it, because the *sleepiness* half genuinely is one: only calm ground puts a baby
+to sleep.
 
 Tile types:
 
@@ -408,6 +459,19 @@ is loud, and the reason a park is quiet.
   *city*, so the busy streets are the same streets every morning and learning the quiet ones
   is worth something. The arterial is much the busiest, and it is the same arterial the
   event scheduler uses.
+- **And it is per kind, because the two populations do not want the same streets.** A precinct
+  corridor is the busiest **pavement** in the city and keeps its ordinary weight of cars, which
+  divert at the bollards — the three blocks are closed to them and the eight either side are not.
+  Because the crowd is a box around the player, "the busiest corridor" delivers its people to
+  wherever on it she is standing.
+- **A precinct carries more of the day than a length of ordinary pavement.** Its tiles are offered
+  to the event scheduler `EVENT_PRECINCT_WEIGHT` times over, which is a retail street said as a
+  weighting rather than as a new placement rule.
+- **The road has a capacity now.** Junction control gave it one; before that two cars on crossing
+  arms drove through each other and throughput was unbounded. The same forty-six cars put the
+  arterial's noise floor above the ceiling `tests/test_crowd.gd` states, because a car waiting at a
+  light beside you is louder for longer than one going past. Thirty restores the floor to what the
+  same street measured before any of it.
 - **Density is per act.** The crowd thins as the occupation settles in: act III's streets
   are close to deserted, which makes the city *easier*. See docs/NARRATIVE.md.
 - **Nobody walks through a park.** The crowd lives on the street lattice only, which is the
@@ -422,6 +486,80 @@ is loud, and the reason a park is quiet.
   a contact **deflects** rather than blocking: the separation is resolved positionally so
   nothing can ever be walked into and stuck on. See docs/MECHANICS.md, "The street has
   physics", for the geometry and the traffic fairness contract.
+
+## Traffic signals
+
+Every junction the spine passes through is signalled, and no other one is — nineteen of a hundred.
+`TrafficSignals` owns the phase; `City` owns the object and the heads that show it; `Crowd`
+advances the clock, because that is what a rig steps.
+
+**A signal is a timing problem where a zebra is a gap-hunting one.** An ordinary crossing is a
+negotiation with a driver who can see you and gets better the longer you look; a signalled one is
+a wait with a known end. Having both is what makes *which street* worth asking about.
+
+- **The cycle is derived, not authored.** It is `2 × SIGNAL_PROGRESSION_BLOCKS` junction-to-junction
+  travelling times, which is what lets a green wave run **both ways** down the same street: a car
+  going against the wave arrives two travel times after one going with it, so both are in step
+  exactly when the cycle is an even multiple of that time. Without a progression, two thirds of the
+  traffic stands still — measured.
+- **The side street's green is the fairness contract.** She crosses a main road while the main road
+  is red, which is while the side street is green, so that green has to be longer than the walk
+  across the carriageway with the doubled hard-fail margin. `Tuning.validate_signals()` on boot.
+- **The amber is a clearance period, not a warning.** The crossing arm stays red through it, and a
+  car too close to stop is counted as already in the box.
+- **Four heads per junction, each beside the carriageway it stops.** From directly above a head has
+  no face to point with, so *where it stands* is what says which road it is talking about.
+- **The clock restarts with the day.** Not because a signal is a property of a day, but because two
+  attempts at the same day must find the same cars at the same lights. What is learnable is the
+  pattern, not where the cycle happens to be.
+
+## Junctions
+
+A lane is a queue and a junction is a **box**. Until M41 only the queue was modelled: two cars on
+crossing arms each read a clear lane ahead, both entered, and the positional resolve then did the
+only thing it can — move a body. Measured over ninety seconds of the arterial: **3,776 overlapping
+crossing-axis pairs, one in half of all frames, the deepest 39 px into a 40 px footprint.** Every
+assertion about the traffic passed the whole time, because each car's own lane was legal.
+
+`Crowd.give_way_at_junctions()` decides whose turn it is, once a frame, per junction:
+
+- **Only crossing traffic conflicts.** Two cars meeting head-on are in different lanes and pass;
+  holding them would stop the city for nothing.
+- **A car that cannot stop is counted as already in the box** rather than asked to brake, so nobody
+  is waved in on top of it. That is the zebra's commit rule applied to a box.
+- **Nothing enters a box it cannot leave.** A car whose own queue has no room beyond the junction
+  waits short of it. Without this one rule a single backed-up queue takes the streets either side
+  of it with it.
+- **Nearest first, then right before left.** Distance alone leaves a symmetric arrival undecided;
+  right-before-left alone deadlocks four cars in a ring. In that order there is exactly one winner
+  per box per frame, and a light overrides the whole negotiation where there is one.
+
+A collision stays possible because the commit rule is deliberate, and when it happens it
+**startles the cars it happened to** — loud where it happened, composing by addition like every
+other body. It is not a catalogue row: an event nobody meets in a run is a silhouette and a
+fairness contract spent on decoration.
+
+## The edge of the world
+
+The lattice already ended in T-junctions and nobody could see it. The outermost corridor on each
+side is a whole street, and every interior street runs into it and stops — which is what a T is —
+but there was nothing beyond its far pavement, so the boundary read as a road with a void along
+one side and the map stopped at an invisible wall.
+
+- **A ring of frontages outside the map**, one block deep, so a boundary street has two sides and
+  reaching one reads as the street *turning* rather than being cut off. Art only: outside the map,
+  no tile, no route and no event can reach it, and it is kept out of the list whose condition
+  follows a block's arc.
+- **The camera may see past the boundary.** It was clamped to the last walkable tile, which is why
+  the edge would have gone on looking like a wall however much was built out there.
+- **The spine leaves by a tunnel north, a bridge south, and the road simply carrying on east and
+  west.** *"That way it's not an artificial end but an emergent end."* They are lethal for the
+  reason every stretch of carriageway is lethal; nothing new was needed for the danger.
+
+**No walkable tile moved.** The exits are the last stretch of the spine as it already was, which
+she could already stand on and already be killed on. That matters because the walkable set is
+asserted tile for tile across every seed and block arc, and because a route out of the city must
+never count as a route to a calm area.
 
 ## Rendering (2.5D)
 

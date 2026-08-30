@@ -624,14 +624,30 @@ telegraph is 4 seconds and not the 2.9 the band rule would have allowed.
 `Tuning.validate_event()` asserts this on load, and `tests/test_events.gd` checks it over
 the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.
 
-## Calm zones
+## Calm zones, and what every other ground does
 
-Parks, quiet squares and courtyards are `CALM` tiles. Inside them:
+Parks, quiet squares, forests and courtyards are `CALM` tiles. Inside them:
 
-- Sleepiness gain ×`10` — a second in a park is worth ten on the street *(M18)*
-- Excitement decay ×`2.2`, so the park reads on **both** bars
+- Sleepiness gain ×`14` — a second in a park is worth fourteen on the street. Only calm ground
+  fills the sleepiness bar at all, which is why that half stays a threshold rather than a rate.
+- Excitement decay ×`2.2`, so the park reads on **both** bars.
 
-But calm zones are contested — see `docs/CITY.md` (spoiling) and `docs/EVENTS.md`.
+**And the excitement half is a rate everywhere now.** *(M41.)* The ground is no longer calm-or-not:
+`WorldContext.decay_multiplier()` answers with what this ground does, and the order is
+
+    calm 2.2  >  precinct 1.5  >  ordinary street 1.0  >  main road 0.6
+
+so a route is a **recovery rate** and not only a set of things to walk past. Two consequences worth
+holding on to. A precinct is worth walking to although it is loud — a retail street is busy, and it
+is still the best ground outside a park to bring a meter down on. And the main road is the same
+sentence inverted: it is the one ground in the city that is actively bad at letting her recover,
+which is most of what *"a main road is crossed, not walked"* now means arithmetically. Walking its
+length loses a day in about fifteen seconds; that is the intent, measured.
+
+But calm zones are contested — see `docs/CITY.md` (spoiling) and `docs/EVENTS.md`. Since M41 the
+spoiling remembers a whole **act** rather than a night, and the city has one calm area per day of
+the longest act plus one in reserve (`Tuning.calm_areas_needed()`), so finding a new one is the
+work of an act and the parks go quiet again when it turns.
 
 ## Alleys
 

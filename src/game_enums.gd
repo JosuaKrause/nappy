@@ -54,6 +54,26 @@ enum TileType {
 	SPOILED,       ## Calm ground that has been taken or burnt. Walkable, not calm.
 }
 
+## What a street corridor is, as opposed to how it is laid out.
+##
+## The lattice is uniform — every corridor is `sidewalk | road | sidewalk` and the layout maths
+## is a modulo — so a kind never moves a tile. What it changes is the **decision**: with one kind
+## of street the only route question is *which way*, and with three it is also *which kind*, which
+## is the trade the whole game is made of.
+##
+## Fixed for the run, like everything else about the lattice. A player learns where the spine is
+## on day 1 and it is still there on day 14.
+##
+## **Two of the three are places rather than classes.** *(Playtest 12.)* There is one main road,
+## running north to south, and there are two precincts of three blocks each — not a kind every
+## corridor is asked to be. A spine that crosses itself is two spines and a precinct on every
+## third street is what a street is, and either way the hierarchy this exists to build is gone.
+enum StreetKind {
+	ORDINARY,   ## Two lanes, a zebra at every junction, traffic that gives way at it.
+	MAIN,       ## The spine. Dense, fast, signalled, and it does not stop for anybody mid-block.
+	PEDESTRIAN, ## A retail precinct. No carriageway at all: loud with people, and safe.
+}
+
 enum District {
 	RESIDENTIAL,
 	PARK,

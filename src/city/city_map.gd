@@ -39,6 +39,23 @@ var zone_anchor := {}
 ## half — route counting, the invariant, the doorway exemptions — survives untouched and simply
 ## gets a bigger `closed` set. See `blocked_segments()`.
 var absent_segments := {}
+## The corridor index of the one main road, which runs north to south. `-1` before generation.
+##
+## One of it, and only on this axis. *(Playtest 12, finding 2: "there should be one north to south
+## main road, I had multiple, and there should be no east to west ones at all.")* A spine that
+## crosses itself is two spines; what makes a main road the main road is that there is nowhere
+## else it could be.
+var main_road := -1
+
+## The precincts, as stretches rather than corridors: `(axis, corridor, first block, last block)`
+## with axis 1 for north-south. Three blocks long and two of them, so a precinct is a place you
+## can be told how to find rather than a kind of street. See `CityGenerator._place_precincts`.
+##
+## A span covers its blocks' frontages and the junctions **between** them, and stops short of the
+## crossroads at either end. That is where the bollards are: the road runs up to the junction and
+## the paving begins after it, so a car reaching a precinct has an ordinary junction to turn at
+## rather than having to turn round on brick.
+var precinct_spans: Array[Vector4i] = []
 var building_rects: Array[Rect2i] = []
 ## Blocks that are calm ground *right now*. Recomputed by `repaint()`, because which ground
 ## is calm is the thing that changes over a run.
@@ -87,6 +104,65 @@ static func blocks_tile_rect(blocks: Rect2i) -> Rect2i:
 static func corridor_offset(coordinate: int) -> int:
 	var offset := posmod(coordinate, period())
 	return offset if offset < Tuning.STREET_WIDTH else -1
+
+# ------------------------------------------------------------ street kinds ---
+
+## What kind of street a stretch of corridor is: the axis, the corridor index, and how far along
+## it in tiles. `ORDINARY` for anything outside the lattice, which is what every caller means by
+## "not a street I know about".
+##
+## It takes the **along** coordinate as well as the corridor because a precinct is three blocks of
+## a street rather than the whole of it. Callers that genuinely have no along coordinate — a car
+## choosing which corridor to drive down — want `is_driveable_street` instead.
+func street_kind(vertical: bool, index: int, along_tile: int) -> GameEnums.StreetKind:
+	if vertical and index == main_road:
+		return GameEnums.StreetKind.MAIN
+	for span in precinct_spans:
+		if (span.x == 1) != vertical or span.y != index:
+			continue
+		if along_tile >= span.z * period() + Tuning.STREET_WIDTH \
+				and along_tile < (span.w + 1) * period():
+			return GameEnums.StreetKind.PEDESTRIAN
+	return GameEnums.StreetKind.ORDINARY
+
+## The kind of street at a tile, asked about one of the two corridors it may belong to. The along
+## coordinate is the *other* axis, which is what a stretch is measured along.
+func street_kind_at(vertical: bool, tile: Vector2i) -> GameEnums.StreetKind:
+	var across: int = tile.x if vertical else tile.y
+	if corridor_offset(across) < 0:
+		return GameEnums.StreetKind.ORDINARY
+	return street_kind(vertical, junction_index(across), tile.y if vertical else tile.x)
+
+## Whether there is a carriageway here. The one question a car asks about a street that a walker
+## never does: a precinct is paved from frontage to frontage, so it is perfectly walkable ground
+## with nowhere on it a car is allowed to be.
+##
+## Stated over a **point** rather than over a corridor, because a precinct is three blocks of a
+## street and the eight either side of it are an ordinary road that ought to have traffic on it.
+## A car meeting the end of the precinct diverts, which is what a driver meeting a bollarded
+## street does.
+func is_driveable(vertical: bool, index: int, along_tile: int) -> bool:
+	return street_kind(vertical, index, along_tile) != GameEnums.StreetKind.PEDESTRIAN
+
+## The same for a world tile, asked about whichever corridor it is travelling along.
+func is_driveable_at(vertical: bool, tile: Vector2i) -> bool:
+	return street_kind_at(vertical, tile) != GameEnums.StreetKind.PEDESTRIAN
+
+## The junction a tile stands in — the pair of corridor indices whose bands cross there — or
+## `(-1, -1)` where it is not inside one.
+##
+## A junction is the one piece of street that belongs to two corridors at once, which is why it
+## needs a name of its own: a lane is a queue and a junction is a **box**, and two cars on
+## crossing arms can each have a clear lane ahead while both are about to be in the same box.
+static func junction_at(tile: Vector2i) -> Vector2i:
+	if corridor_offset(tile.x) < 0 or corridor_offset(tile.y) < 0:
+		return Vector2i(-1, -1)
+	return Vector2i(junction_index(tile.x), junction_index(tile.y))
+
+## Which corridor a coordinate's period belongs to. Floored rather than integer-divided so a
+## coordinate just outside the map answers -1 instead of sharing corridor 0.
+static func junction_index(coordinate: int) -> int:
+	return floori(float(coordinate) / float(period()))
 
 ## Whether a corridor offset lands on the carriageway rather than the pavement.
 ## Layout across a corridor is sidewalk | road | sidewalk.

@@ -47,6 +47,7 @@ static func _attempt(seed_value: int) -> CityMap:
 	var map := CityMap.new()
 	map.seed_used = seed_value
 
+	_assign_street_kinds(map)
 	_lay_streets(map)
 	var purposes := _assign_purposes(map, rng)
 	var block_rects := _build_blocks(map, purposes, rng)
@@ -62,22 +63,101 @@ static func _attempt(seed_value: int) -> CityMap:
 
 # ------------------------------------------------------------------ streets ---
 
+## Decides where the main road and the precincts are, before a tile is laid.
+##
+## Seeded from the map seed with an RNG of its own rather than drawn from the generator's, the
+## same trick `CrowdLanes.busyness` uses: the hierarchy is a property of the city, and taking it
+## out of the shared stream means adding it moves nothing else that a seed already decided.
+##
+## The spine is the corridor `CrowdLanes.arterial_index` already called the arterial, so the
+## busiest street and the main road are the same street rather than two overlapping claims about
+## which one matters — and it is **only** the north-south one. *(Playtest 12, finding 2.)*
+static func _assign_street_kinds(map: CityMap) -> void:
+	map.main_road = CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("street:%d" % map.seed_used)
+	_place_precincts(map, rng)
+
+## The two precincts, three blocks each. *(Playtest 12, findings 1 and 7: "a stretch of three
+## blocks at the shore, like a coney island beach walk, and three blocks in the city somewhere —
+## no more.")*
+##
+## One is always the **shore**: the southern boundary street, which is the one corridor in the
+## city with buildings on a single side, so a promenade there has a front and a back the way a
+## sea front does. The other is inland and may be on either axis.
+##
+## They are stretches rather than corridors because that is what makes a precinct a *place*. A
+## whole corridor of it is a kind of street, and a kind of street you meet every third block is
+## simply what a street is — which is the version this replaced.
+static func _place_precincts(map: CityMap, rng: RandomNumberGenerator) -> void:
+	map.precinct_spans.clear()
+	var length := Tuning.PRECINCT_BLOCKS
+
+	var shore := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y) - 1
+	var along := rng.randi_range(0, Tuning.CITY_BLOCKS.x - length)
+	map.precinct_spans.append(Vector4i(0, shore, along, along + length - 1))
+
+	# Inland: never the spine, never beside it — a car diverted off the main road needs the
+	# street next to it to be a street — and never the boundary, which is either the shore itself
+	# or the far side of the city from it.
+	for _attempt in 24:
+		var vertical := rng.randf() < 0.5
+		var blocks: int = Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
+		var across: int = Tuning.CITY_BLOCKS.y if vertical else Tuning.CITY_BLOCKS.x
+		var corridor := rng.randi_range(1, CrowdLanes.corridor_count(blocks) - 2)
+		if vertical and absi(corridor - map.main_road) <= 1:
+			continue
+		var start := rng.randi_range(0, across - length)
+		map.precinct_spans.append(
+				Vector4i(1 if vertical else 0, corridor, start, start + length - 1))
+		return
+
 static func _lay_streets(map: CityMap) -> void:
+	# The offsets are a modulo and the kinds are a short scan of the precinct list, so both are
+	# hoisted per row and per column rather than asked once per tile of a lattice this size.
+	var x_offsets := PackedInt32Array()
+	x_offsets.resize(map.size.x)
+	for x in map.size.x:
+		x_offsets[x] = CityMap.corridor_offset(x)
 	for y in map.size.y:
 		var y_offset := CityMap.corridor_offset(y)
+		# The kind of each corridor *at this row*: a precinct is three blocks of a street, so a
+		# vertical corridor's kind changes as the row moves down it.
+		var x_kinds := PackedByteArray()
+		x_kinds.resize(map.size.x)
 		for x in map.size.x:
-			var x_offset := CityMap.corridor_offset(x)
+			x_kinds[x] = map.street_kind_at(true, Vector2i(x, y))
+		for x in map.size.x:
+			var x_offset := x_offsets[x]
 			if x_offset < 0 and y_offset < 0:
 				map.set_tile(Vector2i(x, y), GameEnums.TileType.BUILDING)
 			else:
-				map.set_tile(Vector2i(x, y), _street_tile(x_offset, y_offset))
+				map.set_tile(Vector2i(x, y), _street_tile(x_offset,
+						x_kinds[x] as GameEnums.StreetKind, y_offset,
+						map.street_kind_at(false, Vector2i(x, y))))
 
 ## Sidewalk | road | sidewalk across a corridor. Where a road crosses the *other*
 ## corridor's sidewalk band you get a pedestrian crossing, which is exactly where a
 ## crossing belongs.
-static func _street_tile(x_offset: int, y_offset: int) -> GameEnums.TileType:
-	var x_road := x_offset >= 0 and CityMap.is_road_offset(x_offset)
-	var y_road := y_offset >= 0 and CityMap.is_road_offset(y_offset)
+##
+## Two kinds change what that produces, and both changes are the kind saying what the street is
+## rather than a new rule about geometry:
+##
+## - **A pedestrianised corridor has no carriageway**, so its own band is paving all the way
+##   across and a driveable street crossing it does so over a zebra six tiles deep.
+## - **A main road's zebra is signalled rather than negotiated.** The paint is the same paint and
+##   it stays: what changes is who honours it. Traffic on a main road does not give way to
+##   somebody standing at the kerb — it obeys the light — so the crossing becomes a *timing*
+##   problem where an ordinary one is a gap-hunting problem. See `CrowdAgent._give_way` and
+##   `TrafficSignals`. Painting it away instead was tried and is worse: a walker crossing a side
+##   street would then be standing on open carriageway, and the one thing a zebra is for is
+##   saying where a person on a road is meant to be.
+static func _street_tile(x_offset: int, x_kind: GameEnums.StreetKind,
+		y_offset: int, y_kind: GameEnums.StreetKind) -> GameEnums.TileType:
+	var x_road := x_offset >= 0 and x_kind != GameEnums.StreetKind.PEDESTRIAN \
+			and CityMap.is_road_offset(x_offset)
+	var y_road := y_offset >= 0 and y_kind != GameEnums.StreetKind.PEDESTRIAN \
+			and CityMap.is_road_offset(y_offset)
 
 	if x_offset >= 0 and y_offset >= 0:
 		if x_road and y_road:

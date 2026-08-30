@@ -49,7 +49,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	clear()
 	_hard_failed = false
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
-			GameState.settled_yesterday())
+			GameState.settled_this_act())
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
 	stream_around(focus)
 
