@@ -2520,32 +2520,60 @@ nearest home on every seed, and it had nothing to say about the second route.)*
       road block, *"but that is not a hard requirement"*. So the constraint is on the graph, never
       on spacing, and any implementation that enforces a distance between paths has misread it
 
-**Five things this leaves open, none of them guessed:**
+**The five details, answered:**
 
-1. **When does a probe stop?** On reaching the doorstep, on merging, or either. Presumably either —
-   a probe that reaches home unmerged is a direct route and is finished.
-2. **What is a step?** Almost certainly a segment on the `StreetNetwork` junction graph, since a
-   corridor is a set of segment keys everywhere else in this design. Walking tiles would produce
-   something no other part can consume.
-3. **How random is "random directions"?** A pure random walk on an 11×11 lattice wanders and loops.
-   The standard tool for exactly this shape is a **loop-erased random walk** — Wilson's algorithm,
-   which grows uniform spanning trees by walking randomly and deleting loops as it closes them —
-   and it may be the right primitive rather than a drift toward home. Worth trying both and looking
-   at the drawn map, because "does this look like a route somebody would take" is not a property a
-   test can hold.
-4. **What if a probe cannot merge and cannot reach home?** Rule three can strand one: if every path
-   around it already carries its own colour, it has nowhere to go. This project's own lesson is
-   that *a retry is not a guarantee* — so it needs a stated fallback, and the honest one is probably
-   re-rolling the whole day's tree rather than patching one probe.
-5. **How do hard blockers interact?** They are already in the lattice before the probes start, so
-   probes simply cannot cross them — which is the right relationship and is worth confirming rather
-   than assuming.
+1. **A probe stops on either** — reaching the doorstep, or merging. A probe that gets home unmerged
+   is a direct route and is finished.
+2. **A step is a segment on the `StreetNetwork` junction graph.** Not tiles: a corridor is a set of
+   segment keys everywhere else in this design, and tile-walking would produce something no other
+   part can consume.
+3. **Loop-erased random walk.** Wilson's algorithm — walk randomly, delete loops as they close —
+   rather than a drift toward home. It is the standard tool for exactly this shape and it gives
+   variety without wandering.
+4. **A blocked probe swaps designation with the path it ran into.** *"If probe B wants to walk into
+   A's path we call the remainder of A's path path B, and re-roll A from the segment before that."*
+   So the tail from the touch point home changes owner, and the probe that lost it re-rolls. Two
+   paths that do not cross, out of a collision that would otherwise be a dead end.
+5. **Hard blockers are placed against a tree, not before one.** *"First construct an example tree
+   from the initial map, then place the hard blockers — that way we can't block off regions
+   entirely. Then when a day starts we construct a tree for real."* So generation runs: lay the
+   city → grow a **reference tree** → place hard blockers that leave it intact → and only then does
+   each day grow its own tree on what is left.
 
-**And this strengthens the invariant conversation rather than complicating it.** Two distinct
-routes to *every* calm area is a stronger guarantee than `MIN_CALM_AREAS_WITH_TWO_ROUTES = 2`, and
-it arrives by construction. The open question below may end up being answered by deleting a check
-rather than by weakening one — but only once the construction is real and measured, because a
-guarantee that holds "by construction" is exactly the kind that stops holding silently
+### The swap does not fully close it, and here is what is left
+
+*(Asked directly: "would this fully solve the issue?")* It closes the common case cleanly and three
+things survive it. None is a reason not to do it; all three need an answer in the code.
+
+- **It can ping-pong.** After the swap, `A`'s re-roll starts one segment back and may immediately
+  run into `A`'s *other* path — which now owns the tail — and swap again. There is no obviously
+  decreasing quantity, so nothing here guarantees termination. **Bound the swaps** and fall back to
+  re-rolling the day's whole tree, which is this project's own lesson that *a retry is not a
+  guarantee* applied one scale out.
+- **It is not well defined against a merged path.** Swapping is clean when `A2` runs into a pure
+  `A` path. If it runs into one carrying `{A, B, C}`, "the remainder becomes `A2`" also re-routes
+  `B` and `C` — and may collapse *their* two distinct routes into one, breaking the guarantee
+  somewhere nobody was looking. Either restrict swapping to single-colour paths and treat the
+  merged case as a plain re-roll, or define what a swap means for a colour set. **This is the one
+  that would ship as a silent bug.**
+- **It cannot fix a pocket.** If the lattice around a calm area offers only one way out, two
+  disjoint paths do not exist and no swap invents them. That is a **generation-time** property, and
+  it is exactly what answer 5 above is for.
+
+**And 5 wants stating as a property rather than as an example.** A reference tree is one sample of
+a random construction, so hard blockers that leave *it* intact may still strand some other day's
+roll. The property actually needed is the one already computable: **after hard blockers, every calm
+area the run will ever use still has two edge-disjoint routes from home** — `StreetNetwork.
+route_count` is a max flow and already answers exactly this, on the junction graph, cheaply enough
+to run per candidate blocker. Keep the reference tree as the readable sanity check and the eyeball
+test; make `route_count` the gate.
+
+**This strengthens the invariant conversation rather than complicating it.** Two distinct routes to
+*every* calm area is stronger than `MIN_CALM_AREAS_WITH_TWO_ROUTES = 2`, and it arrives by
+construction. The open question below may end up answered by deleting a check rather than weakening
+one — but not before the construction is real and measured, because a guarantee that holds "by
+construction" is exactly the kind that stops holding silently. Note that the three residual cases
+above are all ways it would stop holding
 - [ ] **`RouteTree`, in `src/routes/`.** Built from `map`, the day's closed set and the available
       calm areas. It holds, per calm area, the **branch** that reaches it; over the whole day, the
       **bundles** — edges carried by two or more branches — and the **fan-out**, meaning the
@@ -2577,9 +2605,13 @@ blockers."*
       *ground* — so a cul-de-sac must be a street that genuinely stops, not a park to walk through
 - [ ] **A big building is a block whose lot is solid**, removing the streets around it from the
       lattice. This is a `BlockPurpose` and an arc, per the "Add a block purpose" recipe
-- [ ] **They are placed to shape the run's paths**, in `CityGenerator`, from the city RNG — so they
-      hold still for the whole run and are what the player learns. They must leave every calm area
-      the run will **ever** use reachable, including ones only reached in act IV, which is the
+- [ ] **They are placed against a tree, not before one**, in `CityGenerator`, from the city RNG —
+      so they hold still for the whole run and are what the player learns. Grow a **reference
+      tree** on the finished lattice first, then place blockers that leave it intact, *"that way we
+      can't block off regions entirely"*. The gate is not the sample though: it is
+      `StreetNetwork.route_count`, which already answers *"are there two edge-disjoint routes from
+      home to this calm area"* as a max flow on the junction graph, cheap enough to run per
+      candidate. Every calm area the run will **ever** use, including act IV ones — which is the
       constraint that makes this the hard step and the reason it goes first
 - [ ] **`CityGenerator.validate()` gains the new condition** and it runs on every seed, like the
       rest. `tests/test_blocks.gd` already asserts the walkable set is identical tile-for-tile
