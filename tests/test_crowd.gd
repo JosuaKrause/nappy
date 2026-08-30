@@ -617,9 +617,17 @@ func _street_of(agent: CrowdAgent) -> GameEnums.StreetKind:
 ## the signals would be scenery on top of a courtesy that was already sufficient.
 func _test_a_main_road_is_kept_by_its_lights(t) -> void:
 	_city.crowd.start_day(1, _rng(1))
-	var spine := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x)
-	t.check(_city.map.main_road == spine,
-			"the north-south arterial is the one main road")
+	# **Where the spine runs is a fact about this city, not a constant.** *(Playtest 14: "I have
+	# the feeling the main road is now always left to home — it should move around more.")* It was
+	# always the middle corridor, so this used to assert `main_road == arterial_index`, which is
+	# the shape M46 found in `CrowdLanes.busyness`: a question about a city answered from a
+	# constant. What is worth pinning is that it is somewhere a main road can *be*.
+	var spine := _city.map.main_road
+	var corridors := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x)
+	t.check(spine >= 3 and spine <= corridors - 4,
+			"the spine leaves a city on both sides of it (corridor %d of %d)" % [spine, corridors])
+	t.check(CrowdLanes.busyness(_city.map, true, spine) == CrowdLanes.ARTERIAL_BUSYNESS,
+			"and the busiest street and the main road are the same street")
 	t.check(_city.crowd.signals_for_tests().is_signalled(Vector2i(spine, 3)),
 			"every junction on the spine is signalled")
 	t.check(not _city.crowd.signals_for_tests().is_signalled(Vector2i(spine + 1, 3)),
@@ -628,6 +636,13 @@ func _test_a_main_road_is_kept_by_its_lights(t) -> void:
 	# A car on the spine, with somebody standing at the zebra it is coming to, does not slow for
 	# them. It is stated over the car's own give-way probe rather than by walking one, because the
 	# thing being asserted is that the probe never fires at all.
+	#
+	# **Focused on the spine to find one.** *(Playtest 14.)* The crowd is a population of the box
+	# around her, and this used to open the day with no focus at all — which parks the box on the
+	# middle of the map. That found cars on the spine only for as long as the spine *was* the
+	# middle corridor; the day it started moving, there were none in the box to test. Same defect
+	# M46 found in the floor test, in the test next door to it.
+	_city.crowd.start_day(1, _rng(1), CrowdLanes.arterial_pavement(_city.map))
 	var tested := 0
 	for agent in _city.crowd.agents():
 		if tested >= 2 or agent.kind != CrowdAgent.Kind.CAR:
@@ -697,22 +712,24 @@ func _test_a_signal_gives_her_time_to_cross(t) -> void:
 ## pedestrianised corridor is paved end to end, so every tile of it says "street" — so this is
 ## the check that the corridor kind is actually reaching the two places a car picks a road.
 func _test_a_precinct_has_no_cars_in_it(t) -> void:
-	var vertical: Array[Vector4i] = []
-	for span in _city.map.precinct_spans:
-		if span.x == 1:
-			vertical.append(span)
-	t.check(not vertical.is_empty(), "the city has a north-south precinct")
-	t.check(_city.map.precinct_spans.size() == 2, "and exactly two precincts in all (%d)"
+	# **Whichever axis this city put its inland precinct on.** *(Playtest 14.)* This used to require
+	# a north-south one and stand in it, which was never a rule — one precinct is the shore, which
+	# is always east-west, and the other is inland *on either axis*. Seed 4242 happened to roll a
+	# vertical one for eleven milestones, and moving the main road (which draws from the same city
+	# stream) rolled it the other way. A fixture that only exists on one seed is not a fixture.
+	t.check(_city.map.precinct_spans.size() == 2, "there are exactly two precincts in all (%d)"
 			% _city.map.precinct_spans.size())
 	for span in _city.map.precinct_spans:
 		t.check(span.w - span.z + 1 == Tuning.PRECINCT_BLOCKS,
 				"a precinct is %d blocks long" % Tuning.PRECINCT_BLOCKS)
+	var chosen: Vector4i = _city.map.precinct_spans[_city.map.precinct_spans.size() - 1]
+	var vertical := chosen.x == 1
 
 	# Built around one, so the field is looking at it rather than at the middle of the map.
-	var span_v: Vector4i = vertical[0]
-	var at := _city.map.tile_to_world(Vector2i(
-			span_v.y * CityMap.period() + Tuning.STREET_WIDTH / 2,
-			(span_v.z + span_v.w) / 2 * CityMap.period() + Tuning.STREET_WIDTH))
+	var along := (chosen.z + chosen.w) / 2 * CityMap.period() + Tuning.STREET_WIDTH
+	var across := chosen.y * CityMap.period() + Tuning.STREET_WIDTH / 2
+	var at := _city.map.tile_to_world(Vector2i(across, along) if vertical
+			else Vector2i(along, across))
 	_city.crowd.start_day(1, _rng(1), at)
 	_advance(45.0)
 
@@ -722,7 +739,7 @@ func _test_a_precinct_has_no_cars_in_it(t) -> void:
 		var tile := _city.map.world_to_tile(agent.position)
 		if not _city.map.in_bounds(tile):
 			continue
-		if _city.map.street_kind_at(true, tile) != GameEnums.StreetKind.PEDESTRIAN:
+		if _city.map.street_kind_at(vertical, tile) != GameEnums.StreetKind.PEDESTRIAN:
 			continue
 		if agent.kind == CrowdAgent.Kind.CAR:
 			intruders += 1

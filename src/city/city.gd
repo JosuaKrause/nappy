@@ -232,7 +232,7 @@ func _spawn_outside_frontage(lot: Rect2i) -> void:
 ## either side of it.
 func _spawn_spine_exits() -> void:
 	var extent := map.world_size()
-	var down := (CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x) * CityMap.period()
+	var down := (map.main_road * CityMap.period()
 			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
 	var across := (CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y) * CityMap.period()
 			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)

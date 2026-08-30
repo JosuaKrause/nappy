@@ -199,8 +199,13 @@ func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
 		# first. A zone may take any corridor but that one.
 		for key: Vector3i in map.absent_segments:
 			var corridor: int = key.y if key.z == 0 else key.x
-			var blocks: int = Tuning.CITY_BLOCKS.y if key.z == 0 else Tuning.CITY_BLOCKS.x
-			t.check(corridor != CrowdLanes.arterial_index(blocks),
+			# Which corridor that is comes from the **map** since playtest 14, because the spine
+			# is rolled per city rather than always being the middle one. The east-west number is
+			# still a constant and is not an arterial — it is the corridor the city's east and
+			# west exits open onto. See `CityGenerator._zone_fits`.
+			var protected: int = map.main_road if key.z != 0 \
+					else CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y)
+			t.check(corridor != protected,
 					"seed %d: no zone swallowed a stretch of the arterial (%s did)"
 					% [_seed(i), key])
 

@@ -236,8 +236,7 @@ static func pick_corridor_in_range(rng: RandomNumberGenerator, map: CityMap, ver
 ## A point on the pavement beside the north-south arterial, half way down the map. The one
 ## place the crowd's noise floor is highest, which makes it the place worth measuring.
 static func arterial_pavement(map: CityMap) -> Vector2:
-	var corridor := arterial_index(Tuning.CITY_BLOCKS.x)
-	var x := corridor * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
+	var x := map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
 	return map.tile_to_world(Vector2i(x, map.size.y / 2))
 
 ## The same, for whichever north-south corridor this city made the quietest.
