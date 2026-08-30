@@ -179,6 +179,20 @@ telegraph still caught it mid-telegraph and looked like a broken telegraph.
 
 - **One branch per milestone**, named `feature/<thing>`, merged to `main` with `--no-ff`.
   The merge commits are the project's spine; keep them.
+- **Delete a branch as soon as it is fully merged, always, without being asked.** The merge commit
+  is what the project keeps; the branch pointer is scaffolding. Left alone they accumulate one per
+  milestone — fifty of them by M49, all identical in meaning to a line of `git log` — and the cost
+  is not clutter, it is that `git branch` stops being able to answer the only question it is good
+  for: **is there work that is not on `main`?** With fifty merged pointers in the way the answer
+  takes a `--no-merged`; with none, the list *is* the answer.
+
+  ```sh
+  git branch --merged main | grep -v '^\*' | grep -vw main | xargs git branch -d
+  ```
+
+  `-d` and never `-D`: `-d` refuses anything not merged, so the command cannot lose work, and a
+  branch it refuses is exactly the one worth looking at. (On macOS `xargs` has no `-a` — feed it
+  by pipe or `< file`.)
 - **One commit per `TODO.md` item, inside that one branch.** A milestone is a list of things
   that were decided separately and are each true or false on their own, so each one gets a
   commit that can be read, reverted or bisected by itself. A single commit at the end of a
