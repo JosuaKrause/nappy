@@ -175,6 +175,25 @@ var _last_range := INF
 ## interest, or `INF` while it is still only standing there. Its telegraph and its chase are both
 ## measured from here rather than from birth. See `is_waiting()`.
 var _noticed_at := INF
+## True once she has come inside the stand-off during the telegraph, which ends the telegraph
+## there and then. *(M43, playtest 11 finding 3: "the pursuing dog still moves backwards before
+## charging. it should be still.")*
+##
+## **The lunge was fired by a clock and it should be fired by her.** A pursuer reaches its
+## stand-off in about a third of a second and then has the rest of a 2.4s telegraph to spend
+## while she keeps walking into it — so *holding a distance* meant backing away from her, and a
+## dog that reverses down the street in front of you is not a dog that is about to charge.
+##
+## Standing still instead is the thing M35 rejected, and the rejection was right for the build it
+## was made in: a dog that holds its ground while she closes the last hundred pixels herself is a
+## dog she reaches **before** the clock lets it fire, and it then kills her from a standing start
+## on the first lethal frame. That is M35's defect exactly, and it is only a defect because the
+## clock is what says when the lunge may happen.
+##
+## Firing on proximity gives both halves at once: it never reverses, and the chase always starts
+## at the stand-off however she approached it — which is the whole content of the contract, since
+## `Tuning.pursuit_standoff()` is the distance that leaves her `PURSUIT_REACTION` to answer.
+var _lunged := false
 
 ## Comes after her. *(Playtest 07: running has to be right sometimes, and this is the shape of
 ## "sometimes".)* See `EventDef.pursues` and `Tuning.validate_pursuit`.
@@ -245,13 +264,12 @@ func _chase(delta: float) -> void:
 	# here may quietly exceed it.
 	var step := minf(def.pursue_speed * delta, range_to_her)
 	if is_telegraphing():
-		# **It keeps its distance and the lunge is the activation.** Closing to the stand-off and
-		# then *holding* it — backing off if she walks into it, which she will, because it is sited
-		# in front of her and forward is where she was already going. Clamping the approach at zero
-		# instead would leave the contract true of the dog and false of the encounter: it would
-		# stand politely still while she closed the gap herself and died on the first lethal frame.
-		step = clampf(range_to_her - standoff,
-				-def.pursue_speed * delta, def.pursue_speed * delta)
+		# **It closes to the stand-off, holds it, and lunges when she reaches it.** The lunge is
+		# fired by *her* rather than by the clock, whichever comes first — see `_lunged`.
+		if range_to_her <= standoff:
+			_lunged = true
+		else:
+			step = minf(step, range_to_her - standoff)
 	position += _heading * step
 	# Ground covered, not ground gained: backing off is still moving, and the bob is driven by
 	# distance so that a thing holding its ground still reads as alive.
@@ -575,8 +593,13 @@ func _finish() -> void:
 # ------------------------------------------------------------------ emission ---
 
 ## True while the event is visible but has not yet reached full strength.
+##
+## A pursuer has a second way out of it, and it is the one that usually happens: `_lunged`, when
+## she walked up to the stand-off before the clock ran out. *(M43, finding 3.)*
 func is_telegraphing() -> bool:
 	if is_waiting():
+		return false
+	if _lunged:
 		return false
 	return chase_age() < def.telegraph_time
 

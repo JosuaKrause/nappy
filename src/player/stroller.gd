@@ -222,10 +222,10 @@ func alert_level() -> Alert:
 ## can be asked about one. *(The M32 lesson — the badge's own two questions are static functions
 ## for the same reason — arriving at the cue M32 itself added.)*
 ##
-## **There is one reason to step aside and it is conditional**, on both vertical axes. Walking
-## towards or away from the viewer the pram shares her column, so "above the pram" is also the
+## **There is one reason to step aside and it is conditional**, on the two facings that put the
+## pram in her column. Walking due towards or away from the viewer, "above the pram" is also the
 ## exclamation mark's column — and that column is only occupied while there is a mark in it.
-## *(M37, playtest 07 finding 14.)*
+## *(M37, playtest 07 finding 14; the column question is `_pram_shares_her_column()` since M43.)*
 ##
 ## *(M39, playtest 10 finding 3: "when walking downwards the zzz is still left of the stroller while
 ## walking in any other direction it has the correct position.")* M37 made the **north** case
@@ -240,24 +240,46 @@ func alert_level() -> Alert:
 ## It reads `alert_level()` rather than the flash phase: the mark blinks and the cue beside it
 ## must not hop back and forth in time with it.
 func baby_cue_aside() -> float:
-	if absf(facing.x) > absf(facing.y):
-		# Walking sideways the pram is already a body's width out in front of her, and there is
-		# nothing to step around.
+	if not _pram_shares_her_column():
 		return 0.0
 	if alert_level() == Alert.NONE:
 		return 0.0
 	return BABY_CUE_ASIDE if facing.x >= 0.0 else -BABY_CUE_ASIDE
 
-## How far above the pram the cue floats, which is not the same on both vertical axes.
+## Whether the pram is drawn in her own column, which is the one question both cues below turn on.
+##
+## *(M43, playtest 11 finding 9: "the diagonal zzz got moved up like the downward zzz. Let's move
+## them down to the stroller again.")* Both cues had been asking it as *which axis is she mostly
+## facing*, and that answer puts a **diagonal** on the vertical side of the line — so a diagonal
+## walk got the southward lift, over a pram that was never behind her to begin with.
+##
+## Asked as geometry instead, because it is a question about geometry: `pram_offset` carries
+## `facing.x` at full `PRAM_DISTANCE`, so the pram is 24px to one side on a diagonal and 34px on
+## a due east or west, and only a due north or south leaves it in her column at all. That is
+## **six of the eight facings** it has nothing to do on, where the axis test said four.
+##
+## It is a distance rather than `absf(facing.x) > absf(facing.y)` for a second reason worth
+## keeping: `_turn_toward` rotates by an angle and normalises, so on a diagonal the two components
+## are equal only to within float noise, and a strict comparison between them would have let the
+## cue flicker between two positions while she walked in a straight line. This cue has been
+## adjusted three times; a fourth report of it moving on its own is not worth 10px of margin.
+func _pram_shares_her_column() -> bool:
+	return absf(facing.x) * PRAM_DISTANCE < Tuning.PLAYER_BODY_RADIUS
+
+## How far above the pram the cue floats, which is more on exactly one of the eight facings.
 ##
 ## *(M39, finding 3.)* `BABY_CUE_LIFT` clears the pram's own art, which is all it has to do when the
-## pram is the topmost thing under the cue. Walking **south** it is not: the pram is in front of her
-## and therefore *lower* on the screen, so a cue lifted off the pram alone lands over her chest.
+## pram is the topmost thing under the cue. Walking **due south** it is not: the pram is in front of
+## her and therefore *lower* on the screen, so a cue lifted off the pram alone lands over her chest.
 ## Clearing her as well is what puts it above the pair of them, over the pram's own column, which is
 ## where a cue about the baby belongs — and it is why the step aside above could stop being
 ## unconditional.
+##
+## *(M43, finding 9.)* South**-east** and south-west are not that facing, whatever they have in
+## common with it: the pram is already 24px to one side, nothing is behind anything, and the extra
+## `FIGURE_HEIGHT` was lifting the cue off a pram it was supposed to be sitting on.
 func baby_cue_lift() -> float:
-	if absf(facing.y) >= absf(facing.x) and facing.y > 0.0:
+	if _pram_shares_her_column() and facing.y > 0.0:
 		return BABY_CUE_LIFT + FIGURE_HEIGHT
 	return BABY_CUE_LIFT
 

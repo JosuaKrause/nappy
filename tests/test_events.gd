@@ -395,11 +395,14 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 ## *(M39.)* It was `AHEAD_LEAD_DISTANCE` for the first case, which stopped being true when the
 ## stand-off grew past it — the director sites a pursuer beyond its own stand-off now, and a rig
 ## measuring from the cat's lead would have been measuring an encounter the game cannot produce.
+##
+## *(M43.)* And it is `SIGHT_AHEAD` flat now rather than a clamp, because the notice a pursuit
+## gives is exactly the ground between the siting and the stand-off. It has to keep matching
+## `EventDirector._crossing_ahead_of`, which is the reason this is one line and not a formula.
 func _sited_at(def: EventDef) -> float:
 	if def.pursues_within > 0.0:
 		return def.pursues_within - 10.0
-	return clampf(Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-			+ float(Tuning.TILE_SIZE), Tuning.AHEAD_LEAD_DISTANCE, Tuning.SIGHT_AHEAD)
+	return Tuning.SIGHT_AHEAD
 
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.

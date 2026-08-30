@@ -124,8 +124,21 @@ sentence under them is *a hierarchy is only a hierarchy if there is one of the t
 first build put a main road on each axis and a precinct in every corridor, which is three kinds of
 street and no hierarchy among them.
 
-**The order from here is M43, then M40, then a playtest** — set explicitly, and with the note that
-by that point *"everything might have changed to the point where crowd balancing is not needed"*.
+**M41 is merged.** It landed at `c4e18d2` after the session that built it, and the suite is
+122119 checks green on it.
+
+**M43 is half done and it produced a milestone.** Three of its seven are built (nothing on the home
+block, the diagonal `zzz`, a dog that does not reverse), two were **answered by measuring rather
+than by building** — the busker's arithmetic is already right at every size of calm area, and a
+closure cannot change a route in this city at all — and the closure half turned into **M45**, on a
+design taken in that session: a closure's job is *direction, not distance*, and the grid has to
+stop being a full grid before anything can point anywhere. What is left in M43 is the two findings
+that need a **played run** rather than a rig: the pursuit cool-off and dying at high excitement on
+a quiet street.
+
+**The order from here is the rest of M43, then M45, then M40, then a playtest** — the original
+order was M43, M40, a playtest, with the note that by that point *"everything might have changed to
+the point where crowd balancing is not needed"*.
 The crowd milestone below is therefore **not next**: M41 moved the car population twice, gave the
 ground a recovery rate and gave the junctions a capacity, so every number the crowd milestone was
 going to argue about has already moved. Re-read the traces before assuming it still exists.
@@ -1224,6 +1237,10 @@ Playtest 11's remaining findings. See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**.
 the first three: **several things in this city are placed without asking what they are in the way
 of** — which is `CLAUDE.md`'s first rule failing at *placement* rather than at design.
 
+**Where it stands: three done, two answered by measuring rather than by building, two open — and
+one of those is a design decision that has to be taken rather than derived.** What follows is the
+plan with what each part turned out to be.
+
 - [x] **Nothing is placed on the home block** — finding 1. It is `ClosurePlanner`'s exemption
       applied to the other thing in the game that occupies ground, and it is stated over the
       **street segment** rather than a radius, because a segment is the unit the player can see the
@@ -1232,11 +1249,38 @@ of** — which is `CLAUDE.md`'s first rule failing at *placement* rather than at
       front door — one morning in two — and it is 0.00 after, with events placed per day unchanged
       at 155.9. The share was exactly the share of the pavement that street is (0.30% of both),
       which is placement being uniform and is why it needed a rule rather than a weighting
+- [x] **The diagonal zzz comes back down** — finding 9, and see the entry further down
+- [x] **The dog stands its ground** — finding 3's first half, and see the entry further down. What
+      it left open is the number, and that is the decision below
 - [ ] **A closure has to change a route** — finding 2, *"road blocks next to parks are pointless"*.
       The route-redundancy invariant is used as a **floor** (the day stays winnable two ways) and
       never as a **filter**: a closure that does not lengthen the best route to any calm area by a
       real margin is legal, invisible and pointless. Measure what fraction of today's closures do
       nothing before choosing the margin
+
+      **Measured, and the filter is not the answer — there is nothing to filter to.** Ten seeds,
+      fourteen days, 350 closures, each measured against the set accepted before it:
+
+      | what it changed | share |
+      |---|---|
+      | streets on the best route to the nearest calm area | **+0 for 100%** (1 closure of 350 added one) |
+      | streets on the best route to *any* calm area | **+0 for 97%** |
+      | tiles actually walked from the door to the nearest calm ground | **+0 for 99%** (the worst four added 1, 2, 6 and 6) |
+
+      Then the question the filter would have to answer: **of every street in three whole cities,
+      how many would lengthen the walk at all if they were the day's only closure? Eight of 768** —
+      and three of those eight seal the city off entirely, which the invariant already refuses. A
+      *run* of consecutive streets is no better: 11 of 534 four-street runs move the number.
+
+      The cause is structural rather than a bug, and it is the city that moved. A Manhattan lattice
+      has many equal-length staircases between any two points, so removing one street almost never
+      lengthens anything — and the city now has **8.9 calm areas** with the nearest **38.8 tiles**
+      from the door, so there is always another destination in another direction. M16 built closures
+      for a 7x7 city with far fewer parks in it. **A closure cannot change a route while there are
+      nine destinations and a full grid**, and no margin, filter or run length fixes that.
+
+      **Deferred to M45, with the design taken.** The answer is not a filter and not a margin: it
+      is that the question was wrong. A closure's job is **direction, not distance** — see M45
 - [ ] **A busker in a courtyard denies the courtyard** — finding 5, *"I can still walk around (and
       over him) while the sleepiness meter goes up"*. Two halves and both are arithmetic. **Around:**
       what denies calm ground is out-emitting the 7.7/s decay the calm multiplier has already raised,
@@ -1245,7 +1289,27 @@ of** — which is `CLAUDE.md`'s first rule failing at *placement* rather than at
       that a courtyard, the smallest calm area, gets a spoiler grid of one. **Over:** anything mobile
       is exempt from *solid things are solid*, and `EventDef.paces` made the pacing man mobile. Both
       need measuring before either is moved
-- [ ] **The dog stands its ground, and lunges on proximity rather than on a clock** — finding 3,
+
+      **Measured, and both halves come back negative on `main`.** Eight seeds, three days, every
+      calm area spoiled in turn, counting a tile as denied when what the day emits there beats the
+      calm decay:
+
+      | calm area | denied | things in it | of them solid |
+      |---|---|---|---|
+      | courtyard, 16 tiles | **100%** | 1.0 | 1.0 |
+      | one block, 64 tiles | **100%** | 3.4 | 3.1 |
+      | four-block zone, 484 tiles | **98%** | 9.9 | 9.7 |
+
+      So the suspicion is wrong in the most useful way: **a courtyard does get a grid of one, and
+      one is the right number** — a busker's denial radius is 100px and a 16-tile courtyard is 128px
+      across, so one of him covers it. M35's crowd and M41's act-long memory closed the "around"
+      half between them. And the "over" half is a case of *check which event a complaint is about*
+      (the M34 lesson): the **busker has a body** (`PERSON_BODY`) and does not pace. The only row in
+      the catalogue that paces is `homeless_yeller`, which is mobile **by decision** — playtest 09
+      asked for it by name, and mobile things have no body since M19. What is left of this finding
+      is therefore not arithmetic at all: it is whether a *paced* man in a park should be walkable
+      through, which is the `dog_walker` bargain and is already in the known-shaky list
+- [x] **The dog stands its ground, and lunges on proximity rather than on a clock** — finding 3,
       *"it should be still"*. It reverses because it reaches its stand-off in a third of a second and
       then has two more seconds of telegraph to spend while she walks into it. *Standing still* alone
       is the thing M35 rejected and was right to: she then reaches it **before** the clock lets it
@@ -1256,6 +1320,44 @@ of** — which is `CLAUDE.md`'s first rule failing at *placement* rather than at
       about 1.2s of visible dog against a 1.5s floor that was authored rather than derived. Siting it
       further out is capped by the screen — 360px tall, so past ~180px a dog telegraphing north or
       south of her is off the top of it
+
+      **Built, and it does what was asked: the reversing is gone and every lunge starts at the
+      stand-off.** Walked on a rig, four ways of meeting it, sited at 184px against a 104px
+      stand-off:
+
+      | she | notice | lunges at | reverses |
+      |---|---|---|---|
+      | walks straight in | **0.38s** | 100px | 0.0px |
+      | stands still | 0.63s | 102px | 0.0px |
+      | walks away | 2.42s (the clock, not her) | 103px | 0.0px |
+      | runs away at once | never lunges | — | it gives up at 1.5s |
+
+      **And the estimate above was three times too generous, which is the part that matters.** The
+      notice is not 1.2s, it is **0.38s**, and the arithmetic says it cannot be much more: she is
+      walking *into* it at 92px/s while it comes at 130, so the 80px between where the director
+      sites it and where it stops close at 222px/s. Siting it at the screen's own cap
+      (`SIGHT_AHEAD`, 200px) buys 0.43s. Nothing reaches the 1.5s floor from that geometry.
+
+      The floor still **passes on load**, because `validate_pursuit` reads `telegraph_time` off the
+      def and the def still says 2.4 — which is M35's lesson arriving for the third time: *a
+      fairness contract stated in seconds is not stated at all*, and the encounter changed while
+      every line about it stayed true.
+
+      **Decided: buy back what the geometry can, and leave the floor alone.** A pursuer is sited at
+      `Tuning.SIGHT_AHEAD` (200px) now rather than at the clamp that produced 184 — the cat's
+      reaction window was never a chase's, and everything between the siting and the stand-off is
+      the whole of the notice a pursuit has left to give. It buys **0.38s → 0.43s**, and it is all
+      that is available: the visible world is 360px tall and a dog telegraphing off the top of the
+      screen has no telegraph at all.
+
+      **Still open, and written down rather than quietly closed:** `PURSUIT_MIN_NOTICE` is 1.5s and
+      the walk pays 0.43s, so the constant is a statement about `telegraph_time` and not about the
+      encounter. What makes that survivable rather than a lie is that the *contract* was never the
+      floor — it is `pursuit_standoff()`, which every lunge now starts at, so she is owed
+      `PURSUIT_REACTION` from the moment it can touch her whatever she did to get there. The next
+      person to touch this should state the notice **over the walk** and assert it with a rig, and
+      the two ways to widen it both cost something: a narrower stand-off spends the reaction window
+      at the lunge, and there is no more screen
 - [ ] **And the cool-off is played, not re-derived** — finding 6. `Tuning.PURSUIT_SHAKEN_OFF` landed
       in M39, after this report was taken: 0.8s of the gap opening, and the measured price of the
       answer went from ~35 points to **12**. If it still reads as slow it is one constant
@@ -1268,10 +1370,34 @@ of** — which is `CLAUDE.md`'s first rule failing at *placement* rather than at
       milestone); whether the pram's `EXCITEMENT_NEARLY_CRYING` cue is being shown and not read; and
       whether **one contact at 90 is a cliff** — a pedestrian contact is ~10.8 points, so above 89 a
       single bump on an empty street ends the day
-- [ ] **The diagonal zzz comes back down** — finding 9. `baby_cue_lift()` catches the diagonals and
-      should not; walking diagonally the pram is already offset and there is nothing to lift over.
-      `tests/test_danger.gd` should hold the answer for **all eight facings** rather than for the two
-      that have been reported, because this cue has now been adjusted three times
+- [x] **The diagonal zzz comes back down** — finding 9. `baby_cue_lift()` caught the diagonals
+      because both cues asked *which axis is she mostly facing*, and that answer puts a diagonal on
+      the vertical side of the line. It is one question now — `Stroller._pram_shares_her_column()`
+      — and it is asked as **geometry**: `pram_offset` carries `facing.x` at full `PRAM_DISTANCE`,
+      so the pram is 24px to one side on a diagonal and 34 on a due east or west, and only a due
+      north or south leaves it in her column. That is six of the eight facings both cues have
+      nothing to do on, where the axis test said four.
+
+      It is a distance rather than `absf(facing.x) > absf(facing.y)` for a second reason worth
+      keeping: `_turn_toward` rotates by an angle and normalises, so on a diagonal the two
+      components are equal only to within float noise, and a strict comparison between them would
+      have let the cue flicker between two positions while she walked in a straight line. This cue
+      has been adjusted in M32, M37, M39 and now M43, and each of the last three was a facing the
+      previous fix had not been asked about — so `tests/test_danger.gd` holds **all eight** now
+
+### The two decisions this milestone could not take on its own
+
+Both were taken in the session, and the first of them turned into a milestone of its own.
+
+**~~What a closure is for.~~ Taken, and it is M45.** The measurement said no filter, margin or run
+length can make a single closed street change a route, and the answer to that is not a better
+closure — it is that *lengthening the route was never the job*. See **M45**.
+
+**~~What notice a lethal thing owes when you walk into it.~~ Taken: site it at the screen edge.**
+`SIGHT_AHEAD` rather than the 184px clamp, which buys 0.38s → 0.43s and is everything the geometry
+has. The floor was deliberately left where it is; see the entry above for what that leaves open,
+and the standing instruction that comes with it — a notice has to be **stated over the walk** and
+asserted by a rig, or it will go on passing while the encounter changes underneath it.
 
 ## M44 — A suite you can run · `feature/a-suite-you-can-run`
 
@@ -1346,6 +1472,82 @@ whose result depends on what ran before it. And `Crowd.step()` is the whole crow
 player half — `_bump`, `_make_way`, `_strike`, `_horn` — which a rig with a stationary player would
 also now be able to run. Whether `test_balance` *should* run it is a real question about what that
 suite measures, and it is a design question rather than a speed one.
+
+## M45 — A grid with fewer ways through, and closures that point · `feature/closures-that-point`
+
+Not started. Taken as a design instruction in the M43 session, in answer to the measurement in
+M43's closure entry above — read that first, because it is what makes this a milestone rather than
+a tuning pass.
+
+**The one sentence: a closure was being asked to lengthen a route, and lengthening a route is not
+what it is for.** What it is for is *direction* — stopping a player from committing to a way that
+cannot win today — and the reason it cannot even do that at the moment is that the city has no
+shape to work with: 8 streets of 768 could lengthen the walk if closed alone, 11 of 534 four-street
+runs, because a Manhattan lattice has many equal-length staircases and there are 8.9 calm areas
+scattered across it.
+
+The design, as given:
+
+> *"In the beginning the player has a lot of freedom to find calm areas. As the game goes on the
+> choices go down making it harder to find the calm areas. That causes an issue that later the
+> player might walk into the wrong direction first making them not find the last remaining calm
+> area in the time given. Closures can come in two ways: 1) a permanent restriction in the city's
+> grid — we should have impassable blocks that are not technically a closure but just the city's
+> layout, e.g. a cul-de-sac or a scrapyard, a city feature that naturally breaks up the grid; 2) an
+> existing road gets closed later in the game for one or more days. 1) is to reduce the total
+> number of valid paths making the graph less open. 2) is to guide the player to remaining calm
+> zones — those closures should be placed to prevent the player from walking in a wrong,
+> unwinnable direction. The goal is to guide/nudge the player to go into the right direction. This
+> can be hard (full closure) or soft (multiple events forcing the player to turn around)."*
+
+### The three parts
+
+- [ ] **A city that is not a full grid, permanently.** Impassable blocks that are the *layout*
+      rather than an event: a cul-de-sac, a scrapyard, a depot. They are what makes every route
+      question downstream answerable at all — with a full lattice, no closure, cut or run of
+      closures can change a route, which is measured rather than argued.
+
+      **The mechanism already exists and should be reused rather than reinvented.** M21's calm
+      zones absorb the streets between their own blocks: `CityMap.absent_segments` is the set of
+      streets this city does not have, and `blocked_segments()` merges it with today's closures for
+      **every** route search in the game. A permanent restriction is more absent segments plus
+      ground that is not walkable — the same shape, decided at generation, fixed for the run.
+
+      Four things it has to keep true, and each already has a test that will say so: route
+      redundancy on day 0 (`StreetNetwork.route_count() >= 2` to two distinct calm areas — the
+      thing M21 made true by search rather than by construction); no purpose change may move a
+      walkable tile (`tests/test_blocks.gd`); the home's doorstep street stays reachable; and the
+      crowd's lanes have to stop at whatever the new edge is, which is the M41 boundary problem one
+      scale in — the lattice already ends in T-junctions at the map edge, and a cul-de-sac is that
+      shape happening inside the city
+- [ ] **A closure that points.** The acceptance test changes from *"does this lengthen the best
+      route"*, which nothing can satisfy, to *"does this stop her committing to a direction that
+      cannot win today"*. The information to do it already exists at dawn: `build_day` knows which
+      calm areas are spoiled and `_ensure_one_usable_park` knows which one is protected, so the
+      day knows which way is a wasted journey before the player takes a step.
+
+      The trap to avoid, and it is the whole difficulty of this part: **a nudge that removes the
+      decision is worse than a closure that does nothing.** The game's one verb is *where do I
+      walk*; a day that fences her into the only right answer has taken the verb away. So this is a
+      barrier on the way to somewhere unusable, not a corridor to somewhere usable, and the
+      two-distinct-routes invariant stays exactly where it is
+- [ ] **And a soft version, which is events rather than barriers.** *"Multiple events forcing the
+      player to turn around."* The pieces are all there — `obstructs_radius` since M34, the spacing
+      rules since M28, the density since M41 — and what is missing is the **intent**: nothing in
+      `EventScheduler` has ever placed events in order to say *not this way*. Worth building second
+      and measuring against the hard version, because a soft nudge she can push through is the one
+      that keeps the decision hers
+
+### The open question underneath it
+
+**How fast should the choices narrow, and does `MIN_CALM_BLOCKS` survive it?** The narrowing is
+half-built already and by a different mechanism: since M41 the park spoiler remembers **the whole
+act** and resets when the act turns, so choice narrows within an act and is handed back at the
+boundary. This design wants it to narrow across the *run*. `MIN_CALM_BLOCKS` is currently sized as
+one per day of the longest act plus one, precisely so that the spoiler can never leave her with
+nowhere to go — that sizing is playtest 12 finding 5 and it is the thing this would push against.
+Decide it with a measurement, not an argument: the number that matters is how far the *last*
+remaining calm area is from the door on the last day of an act, against the 180s she has.
 
 ## M10 — Polish · `feature/polish`
 

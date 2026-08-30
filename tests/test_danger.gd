@@ -534,6 +534,30 @@ func _test_the_babys_cue_only_steps_aside_for_something(t) -> void:
 			"and sideways there is nothing to step around at all")
 	t.check(is_equal_approx(rig.baby_cue_lift(), Stroller.BABY_CUE_LIFT),
 			"nor anything to be lifted over: the pram is out to one side of her")
+
+	# *(M43, playtest 11 finding 9: "the diagonal zzz got moved up like the downward zzz.")* Both
+	# cues used to ask *which axis is she mostly facing*, which puts a diagonal on the vertical
+	# side of the line — so south-east and south-west took the southward lift off a pram that was
+	# 24px to one side of her and never behind anything.
+	#
+	# All eight are held here rather than the three that have been reported, because this cue has
+	# been adjusted in M32, M37, M39 and now M43, and each of the last three was a facing the
+	# previous fix had not been asked about.
+	for facing: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT,
+			Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(),
+			Vector2(1, -1).normalized(), Vector2(-1, -1).normalized()]:
+		rig.facing = facing
+		var in_column := is_zero_approx(facing.x)
+		t.check(is_zero_approx(rig.baby_cue_aside()),
+				"facing %v with nothing happening, the cue sits on the pram" % facing)
+		t.check(is_equal_approx(rig.baby_cue_lift(),
+						Stroller.BABY_CUE_LIFT + Stroller.FIGURE_HEIGHT)
+				== (in_column and facing.y > 0.0),
+				"facing %v is lifted over her only when the pram is due south of her" % facing)
+		rig.warn(Stroller.Alert.SOON, 1.0, &"test")
+		t.check(not is_zero_approx(rig.baby_cue_aside()) == in_column,
+				"facing %v steps out of the mark's column only when it shares one" % facing)
+		rig.stand_down(&"test")
 	rig.free()
 
 # ------------------------------------------------------------------- helpers ---
