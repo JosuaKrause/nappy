@@ -461,8 +461,19 @@ func closures_for_day(day: int) -> int:
 ## `tests/test_crowd.gd` states — *"expensive to cross, not impossible"* — because a car waiting
 ## at a light beside you is louder for longer than one going past. Thirty restores the floor
 ## to 8.0, which is what the same street measured before any of this. Measured, not converted.
+##
+## **And the cars came back down when the spine finally got the share it was always weighted for.**
+## *(Playtest 13, finding 7.)* Forty was set after playtest 12 said the main road was too sparse,
+## and it was the wrong lever for a reason nothing could see: half the arterial weight was being
+## spent on a phantom east-west arterial (`CrowdLanes.busyness`) and the axis was chosen 50/50
+## *before* the corridor, so no weight could put more than half the traffic on one north-south
+## street. With both fixed the spine holds **15.4 cars of the city's total against 11.2 before**,
+## and forty of them put junction contention over the rate `tests/test_crowd.gd` allows. So the
+## number goes down and the street the player is complaining about gets busier: this is the
+## capacity clause above arriving for real, and it is the second time the honest answer to
+## *"the main road is too quiet"* has been something other than *more cars*.
 const CROWD_PEDESTRIANS_PER_ACT: Array[int] = [200, 150, 42, 70]
-const CROWD_CARS_PER_ACT: Array[int] = [40, 30, 8, 16]
+const CROWD_CARS_PER_ACT: Array[int] = [34, 26, 8, 16]
 
 ## Half-extent of the box the crowd lives in, in px. Everything inside it is simulated;
 ## anything that leaves it is recycled to the far edge and walks back in.

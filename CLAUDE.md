@@ -927,6 +927,32 @@ rather than a parameter** — the first build made one of each per *axis* and th
 the city had three kinds of street and no hierarchy among them. If a kind starts appearing in
 every third corridor, it has stopped being a place.
 
+**And a correction that reaches four files reaches four files.** *(M46, playtest 13 finding 7: "the
+main road doesn't really have much traffic I can freely walk over it".)* M41's *one of the top
+thing* landed in `street_kind`, `GroundTiles`, `TrafficSignals` and `decay_multiplier` — and not in
+`CrowdLanes.busyness`, which went on computing the answer itself as `index == arterial_index(blocks)`
+with `blocks` from whichever axis it was asked about. So the middle corridor of **each** axis was
+weighted as an arterial, and the phantom east-west one held **14.6 cars against the spine's 11.2**:
+more traffic on a street with no lights, no dark asphalt and no clearway than on the one with all
+three. It takes the map now, because *which corridor is the main road* is a fact about a city.
+
+**The deeper half is that a weighting applied inside a fixed split cannot cross it.** `_choose_lane`
+picked the axis 50/50 *before* the corridor, so `busyness` could only ever redistribute cars within
+an axis and **no weight at all — 5, 50, any number — could put more than half the traffic on one
+north-south street.** Cars pick their axis by weight now; walkers keep the even split on purpose,
+because a pavement has no hierarchy for them to follow. The general shape, and it is worth checking
+for wherever this project weights anything: **ask what the weight is competing inside of.** A
+number that looks like a global priority is a local one if something upstream has already chosen
+the bracket.
+
+Two consequences that came with it and are not obvious. **The car population is a capacity number,
+not only a noise one** — the spine went 11.2 → 15.4 cars and forty of them put junction contention
+over the rate `tests/test_crowd.gd` allows, so the honest answer to *"the main road is too quiet"*
+was **fewer cars**, for the second time. And **a retry is not a guarantee, one scale out**: a car
+handed a corridor whose visible stretch is all precinct re-rolled its position eight times, found
+bollards every time, and was placed among them anyway. When re-rolling the small decision keeps
+failing, re-take the big one — `CrowdAgent.setup` picks another street now.
+
 **Change a balance number** — `src/autoload/tuning.gd`, which is the only place they live.
 Expect tests to push back: several encode *relationships*, not values (traffic noise must stay
 under the walking decay; a fast mover must telegraph across its whole radius). If a test
@@ -1068,6 +1094,19 @@ where traffic gives way, and there is one at every junction — and forty second
 costs **eleven** contacts walked down a lane centre against **one** holding the midline between
 two lanes. The crowd is expensive to be careless in and free to be careful in, and that ratio,
 not either number, is what makes it a decision.
+
+**Re-measured in M46, and the careful line is back — which means the M33 note above is stale and
+this is why numbers get re-measured rather than quoted.** M33 found the ratio collapsed to
+thirteen against fifteen and answered it with a *behaviour* (somebody who sees a pram coming steps
+aside). Five seeds of forty-second walks on `main` now give **73 contacts down a lane centre
+against 5 on the midline — 14.6:1**, better than the 11:1 M19 built the crowd on. Nobody
+re-measured after M41 moved the crowd, so the project carried "the careful line is gone" through
+four milestones after it stopped being true.
+
+**So the open half is not that the careful line is absent, it is that it is invisible.** Nothing
+in the game tells a player that walking sixteen pixels to one side of a pavement costs fourteen
+times less, and a ratio nobody can see is not a decision — it is a tax on people who walk down the
+middle, which is everybody. See M46 in `docs/TODO.md`.
 
 ## Known-shaky ground
 

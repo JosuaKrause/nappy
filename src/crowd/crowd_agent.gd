@@ -136,17 +136,35 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	_map = map
 	field = crowd_field
 	_rng.seed = seed_value
-	_choose_lane(axis_roll)
 	# Start somewhere along the field rather than at its edge, or the whole crowd arrives from
 	# one side in a wave on the first morning. Re-rolled if it lands somewhere it could not have
 	# walked to: behind a barrier, which reads as the barrier being fake, or in the middle of a
 	# four-block calm zone, where the corridor it belongs to has been park since generation.
-	var bounds := field.along_bounds(_vertical)
-	for _attempt in 8:
-		_set_along(_rng.randf_range(bounds.x, bounds.y))
-		_set_cross(_lane_centre)
-		if _stands_on_a_street():
+	#
+	# **And if the whole street is wrong, it picks another street.** *(Playtest 13.)* Re-rolling
+	# only the position along a corridor cannot help a car that was given a corridor with nowhere
+	# drivable in view — a precinct is three blocks of an otherwise ordinary street, so the
+	# corridor keeps its car weight and the *stretch in the field* may be entirely pedestrianised.
+	# Eight position re-rolls all landed among the bollards and the ninth placed it there anyway:
+	# a car standing in a precinct, which `tests/test_crowd.gd` asks about by name. This is M38's
+	# rule one scale out — **a retry is not a guarantee** — and the answer is the same shape:
+	# when re-rolling the small decision keeps failing, re-take the big one.
+	for _street in 4:
+		_choose_lane(axis_roll)
+		var bounds := field.along_bounds(_vertical)
+		var placed := false
+		for _attempt in 8:
+			_set_along(_rng.randf_range(bounds.x, bounds.y))
+			_set_cross(_lane_centre)
+			if _stands_on_a_street():
+				placed = true
+				break
+		if placed:
 			break
+		# A fresh axis roll, or the second attempt at a car is the first attempt again: the roll
+		# the caller passed is a *fixed* alternation for walkers, so re-using it re-picks the same
+		# axis and, in a field with one drivable corridor, very often the same corridor.
+		axis_roll = _rng.randf()
 	_settle_junction()
 	colour = _colour()
 
@@ -464,8 +482,22 @@ func _set_cross(value: float) -> void:
 
 ## Picks a corridor, a lane in it and a direction. `roll` decides the axis, so a caller can
 ## spread a crowd evenly across both instead of letting one axis win by chance.
+##
+## **A car picks its axis by weight, and a walker still splits it evenly.** *(Playtest 13,
+## finding 7: "the main road doesn't really have much traffic I can freely walk over it".)* The
+## even split was applied to both and it silently capped the main road: the axis was decided
+## *before* the corridor, so `busyness` could only ever redistribute cars **within** an axis, and
+## no weight — 5.0, 50, any number — could put more than half the traffic on one north-south
+## street. Measured at act I density the spine held 11.2 cars of forty with a weight five times
+## its neighbours'.
+##
+## So for cars the two decisions become one: pick among the corridors of **both** axes in
+## proportion to how busy each is, which is what the weight was always supposed to mean. Walkers
+## keep the even split deliberately — a pavement has no hierarchy for them to follow (a precinct
+## is a *place*, not an axis), and the alternating roll from `Crowd._populate` is what stops a
+## morning's crowd landing lopsided by chance.
 func _choose_lane(roll: float) -> void:
-	_vertical = roll < 0.5
+	_vertical = roll < 0.5 if kind != Kind.CAR else _pick_axis_by_weight()
 	# Only the corridors the field actually reaches. Picking from the whole city and then
 	# discarding what is out of view is the same crowd spread over ten thousand tiles, which
 	# is the thing M27 stops doing.
@@ -485,6 +517,28 @@ func _choose_lane(roll: float) -> void:
 	_lane_centre = CrowdLanes.lane_centre(_corridor, _lane)
 	_junction = -1
 	_forget_the_detour()
+
+## Which way a car drives, weighted by the traffic each axis is carrying **inside the field**.
+##
+## Restricted to the corridors in view for the same reason `pick_corridor_in_range` is: the crowd
+## is a population of the box around her, so the question is which streets *she* can see, and a
+## spine two miles north is not competing for these cars. A field with no drivable weight in it at
+## all — every corridor in view a precinct — falls back to an even split rather than dividing by
+## nothing, exactly as the corridor pick does; the caller re-rolls anyway.
+func _pick_axis_by_weight() -> bool:
+	var vertical_weight := _axis_weight(true)
+	var horizontal_weight := _axis_weight(false)
+	var total := vertical_weight + horizontal_weight
+	if total <= 0.0:
+		return _rng.randf() < 0.5
+	return _rng.randf() * total < vertical_weight
+
+func _axis_weight(vertical: bool) -> float:
+	var span := field.corridor_range(vertical)
+	var total := 0.0
+	for index in range(span.x, span.y + 1):
+		total += CrowdLanes.busyness_for(_map, vertical, index, true)
+	return total
 
 ## Playtest 02, finding 3: *"cars should stop at crossings when I am close."* A zebra is only
 ## the safe way over if the traffic actually honours it — otherwise it is paint, and the

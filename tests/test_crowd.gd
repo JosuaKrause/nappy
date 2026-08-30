@@ -182,25 +182,90 @@ func _test_a_car_is_louder_and_carries_further_than_a_person(t) -> void:
 ## reference for "she stops here and waits"; now that waiting is never a plan, the only question a
 ## street has to answer is what it costs to *walk down*, which is what a route is made of.
 func _test_a_busy_street_never_lets_the_meter_fall(t) -> void:
-	_city.crowd.start_day(1, _rng(1))
-	var arterial := _mean_excitement(CrowdLanes.arterial_pavement(_city.map), 60.0)
-	_city.crowd.start_day(1, _rng(1))
-	var quiet := _mean_excitement(CrowdLanes.quietest_pavement(_city.map), 60.0)
+	var arterial := _floor_on(CrowdLanes.arterial_pavement(_city.map))
+	var quiet := _floor_on(CrowdLanes.quietest_pavement(_city.map))
 
 	t.check(arterial > Tuning.EXCITEMENT_DECAY_WALKING,
 			"walking the arterial loses ground on average (%.1f vs %.1f decay)"
 			% [arterial, Tuning.EXCITEMENT_DECAY_WALKING])
-	# The other half of the same rule, and the mistake made first: the arterial has to be
-	# expensive, not impassable. At three times the walking decay it fills the meter faster
-	# than a player can cross it, and a street nobody can use is not a route decision.
-	t.check(arterial < Tuning.EXCITEMENT_DECAY_WALKING * 3.0,
-			"the arterial is expensive to cross, not impossible (%.1f vs %.1f decay)"
-			% [arterial, Tuning.EXCITEMENT_DECAY_WALKING])
+	# The other half of the same rule: the main road has to be expensive, not impassable, because
+	# a street nobody can use is not a route decision.
+	#
+	# **Stated over the crossing now, not over the standing floor.** *(Playtest 13, finding 7.)*
+	# It used to be `arterial < decay * 3`, and that is a proxy for the thing it cares about —
+	# whether she can *get across* — measured by standing still on a street the design says to
+	# cross. The two came apart the moment the spine got the traffic M41 always intended it to
+	# have: the floor went over the ceiling while a crossing still cost about a sixth of the
+	# meter. This is M35's lesson in the crowd's half of the game — **when a rule is about a
+	# journey, state it over the walk and check it by walking.**
+	# Hoisted, because it walks eight crossings with fifteen seconds of traffic between them and
+	# calling it twice would put two minutes of simulation into a message string.
+	#
+	# Half the meter is where "not fatal" falls: a crossing that costs more than that can end a
+	# day started in perfect health, and one that costs less always leaves her the room to get
+	# back off the road and recover. It measures about 35 at act I density, so the spine is a
+	# third of the meter to cross — which is a **soft block**, and is what finding 7 asked for in
+	# its second half.
+	var crossing := _crossing_the_main_road_costs()
+	t.check(crossing < Tuning.METER_MAX / 2.0,
+			"crossing the main road is expensive, not fatal (%.0f of %d)"
+			% [crossing, Tuning.METER_MAX])
 	t.check(quiet < Tuning.EXCITEMENT_DECAY_WALKING,
 			"a back street is somewhere she can recover (%.1f vs %.1f decay)"
 			% [quiet, Tuning.EXCITEMENT_DECAY_WALKING])
 	t.check(arterial > quiet * 2.0,
 			"the main road is not merely busier than a back street, it is a different place")
+
+## The noise floor of a street, measured with the crowd **actually on it**.
+##
+## *(Playtest 13, and it is M44's lesson in the one test that pins the floor.)* This used to call
+## `start_day(1, rng)` with no focus, which parks the field on the map centre — and then measured
+## at `quietest_pavement`, which is whichever north-south corridor this city made quietest and is
+##1968px from that centre on seed 4242. Measured: **zero agents within 400px**, so "a back street
+## is somewhere she can recover" was 0.00 against a decay of 3.50 and "the arterial is a different
+## place" was 7.58 against 0.00. Three of this test's four checks were passing against a street
+## with nobody on it.
+##
+## The crowd is a population of the box around the player, so a floor is only a floor where she
+## is standing. Focusing it is what makes the number mean anything: the same point reads 3.12
+## rather than 0.00.
+func _floor_on(at: Vector2) -> float:
+	_city.crowd.start_day(1, _rng(1), at)
+	return _mean_excitement(at, 60.0)
+
+## What a kerb-to-kerb crossing of the main road actually costs her, worst of eight attempts.
+##
+## Walked rather than asserted, and the **worst** rather than the mean, because the rule is about
+## whether the road is passable at all — a mean crossing that is cheap and a worst one that ends
+## the day is a road she cannot use, and the mean would hide it. Fifteen seconds of traffic
+## between attempts, so each crossing meets a different road rather than the same eight cars.
+##
+## The ground's own decay is netted off inside the loop: the spine is `EXCITEMENT_DECAY_MAIN_ROAD_
+## MULTIPLIER` ground, so what she pays is what the crowd loads minus what that ground gives back,
+## and pricing it against the flat walking decay would flatter it by a third.
+func _crossing_the_main_road_costs() -> float:
+	var corridor := _city.map.main_road
+	var from_x := CrowdLanes.lane_centre(corridor, 0)
+	var to_x := CrowdLanes.lane_centre(corridor, CrowdLanes.SIDEWALK_OFFSETS[-1])
+	var start := Vector2(from_x, float(_city.map.size.y / 2) * Tuning.TILE_SIZE)
+	_city.crowd.start_day(1, _rng(1), start)
+	var worst := 0.0
+	for attempt in 8:
+		for i in int(round(15.0 / STEP)):
+			_city.crowd.step(STEP)
+		var walker := start
+		var paid := 0.0
+		var took := 0.0
+		while walker.x < to_x and took < 12.0:
+			walker.x += Tuning.WALK_SPEED * STEP
+			_city.crowd.set_focus(walker)
+			_city.crowd.step(STEP)
+			paid += (_city.crowd.total_excitement_at(walker)
+					- Tuning.EXCITEMENT_DECAY_WALKING * _city.decay_multiplier(walker)) * STEP
+			took += STEP
+		worst = maxf(worst, paid)
+		_city.crowd.set_focus(start)
+	return worst
 
 ## Mean crowd excitement at a point over `seconds` of traffic. A single instant says nothing
 ## — the whole character of a street is how often the next car comes.
@@ -924,13 +989,21 @@ func _distance_along(agent: CrowdAgent, point: Vector2) -> float:
 ## A grid where every street is equally loud is a grid with nothing to choose between. The
 ## arterial has to be the loud one, and it has to be the *same* one every morning.
 func _test_the_arterial_is_the_busiest_street(t) -> void:
-	var arterial := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.x)
-	var busiest := CrowdLanes.busyness(_city.map.seed_used, true, arterial)
+	var arterial := _city.map.main_road
+	var busiest := CrowdLanes.busyness(_city.map, true, arterial)
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		if index == arterial:
 			continue
-		t.check(CrowdLanes.busyness(_city.map.seed_used, true, index) < busiest,
+		t.check(CrowdLanes.busyness(_city.map, true, index) < busiest,
 				"corridor %d is quieter than the arterial" % index)
-	t.check(CrowdLanes.busyness(_city.map.seed_used, true, arterial)
-			== CrowdLanes.busyness(_city.map.seed_used, true, arterial),
+	t.check(CrowdLanes.busyness(_city.map, true, arterial)
+			== CrowdLanes.busyness(_city.map, true, arterial),
 			"a street's character is stable, not rolled afresh on every question")
+	# And there is exactly **one** of it. *(Playtest 13, finding 7.)* `busyness` used to answer
+	# `index == arterial_index(blocks)` with `blocks` taken from whichever axis it was asked
+	# about, so the middle corridor of the east-west axis was weighted as an arterial too —
+	# M41 abolished the second main road everywhere except here, and the phantom held more cars
+	# than the real one. A hierarchy is only a hierarchy if there is one of the top thing.
+	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y):
+		t.check(CrowdLanes.busyness(_city.map, false, index) < CrowdLanes.ARTERIAL_BUSYNESS,
+				"east-west corridor %d is an ordinary street, not a second spine" % index)

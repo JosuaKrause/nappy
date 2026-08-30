@@ -1660,11 +1660,64 @@ existing**, not that the crowd is loud. M33 already measured the line away (elev
 lane centre against one on the midline became thirteen against fifteen) and answered with a
 behaviour — people step aside. Fifteen contacts in four days says the behaviour is not carrying it.
 
-- [ ] **Measure before touching anything, and measure the four things separately.** Playtest 04's
+- [x] **Measure before touching anything, and measure the four things separately.** Playtest 04's
       recipe, re-run on `main`: contacts in forty seconds walked down a lane centre *against*
       forty seconds holding the midline, the mean crowd contribution at a standing point on
       ordinary / precinct / main-road pavement over a real minute, and the share of a losing day's
       excitement that came from the crowd. The ratio is the finding, not either number
+
+      **Measured, and one of the four came back the opposite of what was feared.** Five seeds,
+      act I, focused on the point being measured:
+
+      | | value | against a 3.5/s walking decay |
+      |---|---:|---|
+      | ordinary corridors, standing | mean **5.82**, median 5.62 | **44 of 55 beat the decay** |
+      | main road, standing | mean 11.90 | all five |
+      | precinct, standing | 5.75 | net +0.50 after its 1.5x ground |
+      | contacts, 40s down a lane centre | **73** | |
+      | contacts, 40s on the midline | **5** | |
+
+      So a typical ordinary street is **+2.1/s while walking and +5.8/s while standing** — 100
+      points in 48 seconds of pavement with nothing authored anywhere near her, which is finding 1
+      exactly. But **the careful line is not gone**: 73 against 5 is a ratio of **14.6:1**, better
+      than the 11:1 M19 built the crowd on. `CLAUDE.md` has said since M33 that the ratio was
+      measured away (13 against 15) and it is wrong — M41's crowd changes brought it back and
+      nobody re-measured. **The finding is that the careful line is invisible, not that it is
+      absent**: nothing tells a player that walking sixteen pixels to one side costs fourteen times
+      less
+- [x] **And the one test pinning the floor was measuring an empty street.** Found while measuring
+      the above, and it is M44's lesson in the place it does the most damage.
+      `_test_a_busy_street_never_lets_the_meter_fall` called `start_day(1, rng)` with **no focus**,
+      which parks the crowd field on the map centre, and then measured at `quietest_pavement` —
+      whichever north-south corridor the city made quietest, **1968px from that centre on seed
+      4242**. Measured: **zero agents within 400px.** So *"a back street is somewhere she can
+      recover"* was 0.00 against a decay of 3.50, and *"the arterial is a different place"* was
+      7.58 against 0.00. **Three of that test's four checks were passing against a road with
+      nobody on it**, and the fourth — the ceiling — was passing only because focusing the field
+      is what pushes the arterial from 7.58 to 11.55, which is already over it.
+
+      The crowd is a population of the box around the player, so **a floor is only a floor where
+      she is standing**. `_floor_on()` focuses it
+- [x] **The main road is the quietest thing in the city, and it is two defects** — finding 7's
+      first half, done. `CrowdLanes.busyness` still weighted the middle corridor of *each* axis at
+      `ARTERIAL_BUSYNESS` while `CityMap.main_road` is one vertical corridor, so the phantom
+      east-west arterial held **14.6 cars against the spine's 11.2**. And underneath it,
+      `_choose_lane` picked the axis 50/50 **before** the corridor, so no weight could ever put
+      more than half the traffic on one north-south street.
+
+      Both fixed: the spine holds **15.4 cars** and crossing it costs **~35 of the 100 meter**,
+      worst of eight crossings — which is finding 7's *second* half arriving for free, because a
+      third of the meter to cross is precisely the **soft block** that was asked for.
+
+      Three things came with it. `CROWD_CARS_PER_ACT` went **40 → 34** (act II 30 → 26), because
+      the concentrated spine put junction contention over the rate `test_crowd` allows: the car
+      number is a capacity number now, and the honest answer to *"the main road is too quiet"* was
+      fewer cars for the second time. The arterial ceiling is **stated over the crossing** rather
+      than over the standing floor — a proxy that came apart the moment the spine got its traffic,
+      and M35's *state it over the walk* arriving in the crowd's half of the game. And a car handed
+      a corridor whose visible stretch is all precinct re-rolled its position eight times, found
+      bollards every time, and was placed among them anyway: **a retry is not a guarantee, one
+      scale out**, so `CrowdAgent.setup` re-picks the street rather than only the spot on it
 - [ ] **`EXCITEMENT_DECAY_IDLE` is 0.0 and there is no floor under her on ordinary ground.** M33
       set it there for a good reason — *what settles a baby is being pushed* — and the consequence
       nobody priced is that a stationary pram on a pavement is a pure climb at whatever the crowd

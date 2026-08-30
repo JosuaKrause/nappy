@@ -119,12 +119,25 @@ static func arterial_index(axis_blocks: int) -> int:
 ## The plain form is what it always was and is the pavement's answer. `busyness_for` is the one
 ## anything placing an agent should ask, because since M41 the two populations do not want the
 ## same streets: a precinct is the busiest pavement in the city and has no cars on it at all.
-static func busyness(map_seed: int, vertical: bool, index: int) -> float:
-	var blocks: int = Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
-	if index == arterial_index(blocks):
+##
+## **It takes the map now, because "which corridor is the main road" is a fact about a city and
+## not about an axis.** *(Playtest 13, finding 7: "the main road doesn't really have much traffic
+## I can freely walk over it".)* This used to compute the answer itself, as
+## `index == arterial_index(blocks)` — with `blocks` taken from whichever axis it was asked about,
+## so the middle corridor of **each** axis was weighted at `ARTERIAL_BUSYNESS`. M41's correction
+## is that there is *one* main road and it runs north to south; it reached `street_kind`,
+## `GroundTiles`, `TrafficSignals` and `decay_multiplier`, and it never reached here. So the city
+## had one main road you could see and two the traffic believed in, and the weighting measured for
+## one street was being spent on two.
+##
+## Measured before the fix, five seeds, thirty seconds of act I: the phantom east-west arterial
+## held **14.6 cars against the spine's 11.2** — more traffic on the street with no lights, no
+## dark asphalt and no clearway than on the one that has all three.
+static func busyness(map: CityMap, vertical: bool, index: int) -> float:
+	if vertical and index == map.main_road:
 		return ARTERIAL_BUSYNESS
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("busy:%d:%s:%d" % [map_seed, "v" if vertical else "h", index])
+	rng.seed = hash("busy:%d:%s:%d" % [map.seed_used, "v" if vertical else "h", index])
 	return rng.randf_range(0.5, 1.7)
 
 ## How busy a corridor is *for one kind of traffic*.
@@ -145,7 +158,7 @@ static func busyness_for(map: CityMap, vertical: bool, index: int, cars: bool) -
 		# "busiest corridor" delivers its people to wherever on it she is standing.
 		if not cars:
 			return Tuning.PRECINCT_BUSYNESS
-	return busyness(map.seed_used, vertical, index)
+	return busyness(map, vertical, index)
 
 ## A corridor chosen in proportion to how busy it is. This is what makes a route decision
 ## out of a grid: a uniform crowd would make every street equally loud, and then there would
@@ -195,7 +208,7 @@ static func quietest_pavement(map: CityMap) -> Vector2:
 	var count := corridor_count(Tuning.CITY_BLOCKS.x)
 	var quietest := 0
 	for index in count:
-		if busyness(map.seed_used, true, index) < busyness(map.seed_used, true, quietest):
+		if busyness(map, true, index) < busyness(map, true, quietest):
 			quietest = index
 	var x := quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
 	return map.tile_to_world(Vector2i(x, map.size.y / 2))
