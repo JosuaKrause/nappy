@@ -409,9 +409,10 @@ two consecutive days. A city worth knowing plus a day worth reading.
 
 ### The words for it
 
-*(Proposed 2026-08-31 so that placement can be talked about precisely. Adopt, rename or reject —
-this is a naming proposal, not a decision.)* Three independent questions get asked about every
-blocker, and the project has been answering all three with the word "blocker".
+**Adopted 2026-08-31.** *("Like the terminology, let's adopt it consistently.")* These are the
+words the rest of the project uses for this — in docs, in identifiers and in the telemetry map's
+legend. Three independent questions get asked about every blocker, and the project used to answer
+all three with the word "blocker".
 
 **Permanence — hard or soft.** Settled above: in the layout for the whole run, or placed for a day.
 
