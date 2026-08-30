@@ -471,8 +471,12 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       **The half that mattered shipped in M27**: playtest 04 said *"cars still bump into each
       other"* and it is now measurably false — a minute of act I traffic has zero frames with
       one car inside another, down from 5.2 overlapping pairs per frame. What remains is
-      overtaking, eight-way driving and the crash event, none of which any playtest has asked
-      for, so this is **parked** rather than queued
+      overtaking, eight-way driving and the crash event — **asked for by name in this very
+      finding**, and **parked with the player's agreement** on 2026-08-31: *"yes, I asked for cars
+      overtaking each other and car crashes — not something we need to implement right now but
+      something to discuss at a later time."* So it is parked as a **conversation that is owed**,
+      not as a thing nobody wanted. The status line said *"none of which any playtest has asked
+      for"* for twenty-odd milestones, which is how a parked request becomes an abandoned one
 - [~] **M21 The city overhaul** — findings 5 and 6, plus the canal dropped out of M16, **plus
       playtest 03 finding 2**. Calm zones of four blocks, so the lattice grows T-junctions and
       can no longer be derived from a coordinate; main roads with traffic lights against side
@@ -2456,7 +2460,9 @@ hard/soft diversions) are the ones already written up under M49, and almost ever
 mostly the *second* category. It is the evidence behind the new `CLAUDE.md` rule, *"Never silently
 overturn a decision the player took"*.
 
-- [ ] **M20's parking says no playtest asked for it, and playtest 02 did.** The entry above
+- [x] **M20's parking says no playtest asked for it, and playtest 02 did.** *(Resolved
+      2026-08-31: the request is real, it stays parked, and it is a discussion that is owed rather
+      than a dead item. Status line corrected.)* The entry above
       (`M20 Traffic that behaves`) parks eight-way driving, overtaking and the crash event as
       *"none of which any playtest has asked for"*. Playtest 02 finding 4 is the player asking for
       all three: *"faster cars should either slow down or when the opposite lane is clear overtake
@@ -2465,7 +2471,11 @@ overturn a decision the player took"*.
       to clear the area fast."* It is recorded correctly in `docs/PLAYTEST-02.md`; only the status
       line is false. **Fix the line, then ask whether it stays parked** — parked with the player's
       agreement is a fine place for it to be, and that is not what it currently is
-- [ ] **The east and west spine exits were deleted, and three places still describe them.** M49
+- [x] **The east and west spine exits were deleted, and three places still describe them.**
+      *(Resolved 2026-08-31: **"east/west is a hard no. There is only one main road and it is from
+      north to south."** The deletion stands, and it is now a decision rather than an inference.
+      `docs/CITY.md` and `city_generator.gd` corrected; the generator's east-west calm guard is
+      left in place with a note that it has outlived its stated reason.)* M49
       removed them, reasoning that playtest 12's *"there should be no east to west [main roads] at
       all"* took them with it. But the exits are their own brief, given separately: *"the side to
       side mainroad just going towards east west in one space. the player should be able to walk

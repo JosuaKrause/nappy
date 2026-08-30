@@ -22,7 +22,8 @@ The city is a grid of **blocks** separated by **streets**.
 - `STREET_WIDTH` = 6 tiles: sidewalk (2) | road (2) | sidewalk (2)
 - `CITY_BLOCKS` = 11 × 11 blocks
 - Total: 160 × 160 tiles, or 5120 px square at a 32 px tile
-- Plus a ring of frontages one block deep **outside** the map, which is art rather than ground
+- Plus a border one block deep **outside** the map — water, forest or mountainside depending on the
+  side — which is art rather than ground. See "The edge of the world"
 
 **Odd on both axes, and that is a constraint.** An odd lattice has a middle block, and the home goes
 in it — see "The home" below. Everything downstream is stated over `CITY_BLOCKS` rather than over a
@@ -601,15 +602,20 @@ side is a whole street, and every interior street runs into it and stops — whi
 but there was nothing beyond its far pavement, so the boundary read as a road with a void along
 one side and the map stopped at an invisible wall.
 
-- **A ring of frontages outside the map**, one block deep, so a boundary street has two sides and
-  reaching one reads as the street *turning* rather than being cut off. Art only: outside the map,
-  no tile, no route and no event can reach it, and it is kept out of the list whose condition
-  follows a block's arc.
+- **The border is the land, and each side says why the city ends.** South a bulkhead and then open
+  water, no buildings; east and west a fence, then grass going into forest; north scree and then
+  mountainside. Built to the player's brief in playtest 14, and it replaced M41's ring of
+  frontages rather than dressing it. `City._paint_outside_the_map` is the whole of it — ground
+  rather than objects, outside the map, where no tile, route or event can reach.
 - **The camera may see past the boundary.** It was clamped to the last walkable tile, which is why
   the edge would have gone on looking like a wall however much was built out there.
-- **The spine leaves by a tunnel north, a bridge south, and the road simply carrying on east and
-  west.** *"That way it's not an artificial end but an emergent end."* They are lethal for the
-  reason every stretch of carriageway is lethal; nothing new was needed for the danger.
+- **The spine leaves by a tunnel north and a bridge south.** *"That way it's not an artificial end
+  but an emergent end."* They are lethal for the reason every stretch of carriageway is lethal;
+  nothing new was needed for the danger.
+- **There is no east or west exit, and there is no east-west main road.** Both existed in M41 and
+  both are gone. *"East/west is a hard no. There is only one main road and it is from north to
+  south."* A carriageway running out into a wood was a road to nowhere, and the corridor it ran on
+  is an arterial in no other part of the game.
 
 **No walkable tile moved.** The exits are the last stretch of the spine as it already was, which
 she could already stand on and already be killed on. That matters because the walkable set is
