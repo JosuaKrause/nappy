@@ -2496,16 +2496,56 @@ five rays fanning out of the doorstep sharing almost nothing, which is a star, a
 bundles, no chokepoints, and a fan-out equal to the number of destinations. Everything the placement
 depends on comes from the sharing.
 
-- [ ] **Build it by attaching to the tree, not to the root.** Start at the doorstep; repeatedly
-      connect the nearest not-yet-connected calm area to the **nearest point of the tree so far**,
-      not to home. Edges already in the tree are free, so a later area prefers to run up the
-      existing trunk and branch off late. This is the standard shortest-path heuristic for a Steiner
-      tree and it produces shared prefixes by construction — and it is *why* some areas get a route
-      that is not their shortest, which is stated as fine
-- [ ] **Order of attachment is part of the answer, and it comes from the day's RNG.** Nearest-first
-      is the obvious rule and it makes the trunk point at whatever is closest to home. Whether that
-      is right, or whether the trunk should be rolled, is a question for the first day this can be
-      drawn — which is what the telemetry map is for
+**The construction is probes and colours, grown from the calm areas back toward the door.**
+*(The player's algorithm. It replaces a greedy Steiner attachment proposed here first, which was
+worse: it needed a global cost function, it made the trunk point at whatever calm happened to be
+nearest home on every seed, and it had nothing to say about the second route.)*
+
+- [ ] **Two probes at each calm area, walking in random directions.** Not one probe from home —
+      the growth runs **backwards**, from every destination toward the doorstep, and the trunk is
+      what is left where they have all come together
+- [ ] **A path carries the colour of its origin**, and both probes from one calm area carry the
+      same colour
+- [ ] **Same colours may not merge.** That is the whole of the second-route guarantee: the two
+      probes from one area can never become one path, so each calm area ends up reached **two
+      genuinely distinct ways**, by construction rather than by a check afterwards
+- [ ] **Different colours merge, and the colours add up.** A probe that touches a differently
+      coloured path joins it, and the joined path carries the **union** of both colour sets. Which
+      is the elegant half: once the `A`+`B` path exists, `A`'s other probe is locked out of it by
+      the rule above, so the guarantee maintains itself as the tree grows and nothing has to police
+      it
+- [ ] **"Touch" means *merge*, not *be near*.** Non-mergeable paths may run **directly adjacent** —
+      *"the player can walk the beginning of path A and then switch to path B without noticing"*,
+      and that is fine, because both go to the same place. Optionally they can be separated with a
+      road block, *"but that is not a hard requirement"*. So the constraint is on the graph, never
+      on spacing, and any implementation that enforces a distance between paths has misread it
+
+**Five things this leaves open, none of them guessed:**
+
+1. **When does a probe stop?** On reaching the doorstep, on merging, or either. Presumably either —
+   a probe that reaches home unmerged is a direct route and is finished.
+2. **What is a step?** Almost certainly a segment on the `StreetNetwork` junction graph, since a
+   corridor is a set of segment keys everywhere else in this design. Walking tiles would produce
+   something no other part can consume.
+3. **How random is "random directions"?** A pure random walk on an 11×11 lattice wanders and loops.
+   The standard tool for exactly this shape is a **loop-erased random walk** — Wilson's algorithm,
+   which grows uniform spanning trees by walking randomly and deleting loops as it closes them —
+   and it may be the right primitive rather than a drift toward home. Worth trying both and looking
+   at the drawn map, because "does this look like a route somebody would take" is not a property a
+   test can hold.
+4. **What if a probe cannot merge and cannot reach home?** Rule three can strand one: if every path
+   around it already carries its own colour, it has nowhere to go. This project's own lesson is
+   that *a retry is not a guarantee* — so it needs a stated fallback, and the honest one is probably
+   re-rolling the whole day's tree rather than patching one probe.
+5. **How do hard blockers interact?** They are already in the lattice before the probes start, so
+   probes simply cannot cross them — which is the right relationship and is worth confirming rather
+   than assuming.
+
+**And this strengthens the invariant conversation rather than complicating it.** Two distinct
+routes to *every* calm area is a stronger guarantee than `MIN_CALM_AREAS_WITH_TWO_ROUTES = 2`, and
+it arrives by construction. The open question below may end up being answered by deleting a check
+rather than by weakening one — but only once the construction is real and measured, because a
+guarantee that holds "by construction" is exactly the kind that stops holding silently
 - [ ] **`RouteTree`, in `src/routes/`.** Built from `map`, the day's closed set and the available
       calm areas. It holds, per calm area, the **branch** that reaches it; over the whole day, the
       **bundles** — edges carried by two or more branches — and the **fan-out**, meaning the

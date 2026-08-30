@@ -466,6 +466,12 @@ value of a chokepoint is arithmetic: it is what makes "every route touches one o
 or three candidate sites instead of a dozen. **Anything written as "the tile she must cross" is
 wrong**, and a first draft of this section said exactly that.
 
+**Every calm area is reached two distinct ways, and one of them will usually be longer.** That is
+not a flaw to tune out — *"out of the two options one way is going to be probably shorter than the
+other"* — it is what makes the pair a choice rather than a mirror. The two routes come out of the
+construction rather than out of a check: see `docs/TODO.md`, M50, where two probes are grown from
+each calm area and paths of the same colour are forbidden from merging.
+
 **Placement follows the tree, not a budget.** Plan the tree first and place from it — possibly with
 a budget *per role and per region*, but not a single per-block number that the whole city competes
 for. And the important half: **budget is not spent on what she never sees.** So the day places
