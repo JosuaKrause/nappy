@@ -195,8 +195,7 @@ func _test_the_map_picture_covers_the_city_and_marks_it(t) -> void:
 	t.check(seen.has(TelemetryMap.HOME_MARK), "the home is marked")
 	t.check(seen.has(TelemetryMap.CALM_MARK), "and every calm area is outlined")
 	t.check(map.main_road < 0 or seen.has(TelemetryMap.SPINE_MARK), "and the spine is drawn")
-	t.check(map.precinct_spans.is_empty() or seen.has(TelemetryMap.PRECINCT_MARK),
-			"and the precincts are")
+	_check_a_precinct_shows_as_paving(t, map, image)
 	# A hard blocker nobody can find in the one picture built to check placements might as well
 	# not have been placed. It showed through as building at first, which is invisible.
 	t.check(map.built_over.is_empty() or seen.has(TelemetryMap.DEAD_END_MARK),
@@ -207,46 +206,73 @@ func _test_the_map_picture_covers_the_city_and_marks_it(t) -> void:
 	t.check(seen.has(Tile.ground_colour(GameEnums.TileType.SIDEWALK)), "and so do the pavements")
 	t.check(seen.has(Tile.ground_colour(GameEnums.TileType.ROAD)), "and so do the roads")
 
+## A precinct is legible without a mark on it, which is why it has not got one.
+##
+## *(2026-08-31: "why blue? why not just take the sidewalk colour and use it for those road
+## segments".)* It is the same question the picture answers everywhere else — *is the ground
+## telling the truth* — and the answer here is that a pedestrianised corridor is laid `SIDEWALK`
+## all the way across, so where every other street has a stripe of asphalt down its middle this one
+## has none. Asserted across the corridor rather than by presence: the old assertion could have
+## passed on a single blue pixel, and this one fails if the paving ever stops being paving.
+func _check_a_precinct_shows_as_paving(t, map: CityMap, image: Image) -> void:
+	var paving := Tile.ground_colour(GameEnums.TileType.SIDEWALK)
+	for span: Vector4i in map.precinct_spans:
+		var vertical := span.x == 1
+		var across: int = span.y * CityMap.period()
+		var along: int = (span.z + 1) * CityMap.period() - 2
+		var paved := true
+		for offset in Tuning.STREET_WIDTH:
+			var tile := Vector2i(across + offset, along) if vertical \
+					else Vector2i(along, across + offset)
+			paved = paved and image.get_pixel(tile.x * TelemetryMap.SCALE,
+					tile.y * TelemetryMap.SCALE) == paving
+		t.check(paved, "the precinct %s is drawn paved from frontage to frontage" % span)
+
 ## The day's corridor, drawn. *(M50.)*
 ##
-## Three things, and the middle one is the reason this is a test rather than a look at a PNG. The
-## marks land at all; the corridor is drawn **only when there is a tree to draw**, because every
-## other mark in the picture is a fact about the ground and this one is a plan, and a picture that
-## invents a plan when it was given none is worse than a picture without one; and a stroke lands
-## on a **street**, since a line drawn a tile off runs along a frontage and reads as a route
-## through a building.
+## Four things, and the middle two are the reason this is a test rather than a look at a PNG. The
+## corridor is drawn **only when there is a tree to draw**, because every other mark in the picture
+## is a fact about the ground and this one is a plan, and a picture that invents a plan when it was
+## given none is worse than a picture without one; a stroke lands on a **street**, since a line
+## drawn a tile off runs along a frontage and reads as a route through a building; a street the
+## tree never took is left alone, which is what makes the picture an answer rather than a decoration;
+## and the ground **survives** the stroke.
+##
+## Asserted as *the pixel changed* rather than as *the pixel is this colour*, because the stroke is
+## blended into whatever it crosses — see `TelemetryMap.CORRIDOR_ALPHA`. A test naming one colour
+## would have to know the ground under every street, and would be asserting the alpha rather than
+## the drawing.
 func _test_the_map_picture_draws_the_corridor(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var tree := RouteTree.for_day(map, 1)
 	t.check(not tree.branches.is_empty(), "the day has a corridor to draw")
 
-	var plain := _colours_in(TelemetryMap.render(map))
-	t.check(not plain.has(TelemetryMap.CORRIDOR_MARK)
-			and not plain.has(TelemetryMap.BUNDLE_MARK),
-			"a picture given no tree draws no corridor")
+	var plain := TelemetryMap.render(map)
+	var drawn := TelemetryMap.render(map, [], tree)
+	t.check(plain.get_data() != drawn.get_data(), "a picture given a tree draws it")
 
-	var drawn := _colours_in(TelemetryMap.render(map, [], tree))
-	t.check(drawn.has(TelemetryMap.CORRIDOR_MARK), "and one given a tree draws it")
-	t.check(drawn.has(TelemetryMap.BUNDLE_MARK),
-			"and draws the stretches more than one area is reached by")
-
-	# Every stroke is on a street, checked at the one place a stroke could be off by a tile and
-	# still look right in the small: the middle of the street it belongs to.
-	var image := TelemetryMap.render(map, [], tree)
+	var on_the_tree := {}
 	for key in tree.streets():
-		var segment := StreetNetwork.by_key(key)
-		var middle := segment.tile_rect().position + segment.tile_rect().size / 2
-		var pixel := image.get_pixel(middle.x * TelemetryMap.SCALE,
-				middle.y * TelemetryMap.SCALE)
-		t.check(pixel == TelemetryMap.CORRIDOR_MARK or pixel == TelemetryMap.BUNDLE_MARK,
-				"the corridor down street %s is drawn on the street" % key)
+		on_the_tree[key] = true
 
-func _colours_in(image: Image) -> Dictionary:
-	var seen := {}
-	for y in image.get_height():
-		for x in image.get_width():
-			seen[image.get_pixel(x, y)] = true
-	return seen
+	# Checked at the one place a stroke could be off by a tile and still look right in the small:
+	# the middle of the street it belongs to.
+	var elsewhere := 0
+	for segment in StreetNetwork.segments():
+		var rect := segment.tile_rect()
+		var middle := rect.position + rect.size / 2
+		var before := plain.get_pixel(middle.x * TelemetryMap.SCALE, middle.y * TelemetryMap.SCALE)
+		var after := drawn.get_pixel(middle.x * TelemetryMap.SCALE, middle.y * TelemetryMap.SCALE)
+		if on_the_tree.has(segment.key()):
+			t.check(after != before, "the corridor down street %s is drawn on the street"
+					% segment.key())
+			# The ground is mixed in rather than painted over, so a stroke can never be the mark's
+			# own colour: that is the whole of "keep the violet lines transparent".
+			t.check(after != TelemetryMap.CORRIDOR_MARK,
+					"and the street under %s still shows through it" % segment.key())
+		elif after != before:
+			elsewhere += 1
+	t.check(elsewhere == 0, "and no street off the tree is marked (%d were)" % elsewhere)
 
 ## Rendering is a **read**. It takes no RNG and changes nothing about the map, which is the same
 ## promise `_test_tracing_a_day_does_not_change_it` makes about the log — and it is worth its own

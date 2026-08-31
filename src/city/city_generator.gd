@@ -803,15 +803,23 @@ static func _runs_beside_calm(segment: StreetNetwork.Segment, calm: Dictionary) 
 	var opposite := block + (Vector2i.UP if segment.horizontal else Vector2i.LEFT)
 	return calm.has(block) or calm.has(opposite)
 
-## A block that is one solid building with no street around it. *(M50 step 1.)*
+## Two blocks built together as one mass, with the street between them gone. *(M50 step 1.)*
 ##
-## **The bigger of the two hard blockers, and the one that is a landmark.** A dead end takes one
-## street out of the lattice; this takes four, and leaves a mass twenty tiles across that a player
-## navigates by and walks round. The four **junctions** at its corners stay — a car still turns
-## there, a crossing is still painted there — so what is gone is the road between them and not the
-## grid around it.
+## **The bigger of the two hard blockers, and the one that is a landmark.** A dead end takes a
+## street out of the lattice and walls one end of it; this takes one out and builds over the whole
+## of it, joining the blocks either side into a mass twenty-two tiles long that a player navigates
+## by and walks round. Everything else about the grid there is untouched: the four streets round
+## each block, and every junction, still exist and still turn.
 ##
-## It is a `BlockPurpose` so that the block stays solid for the whole run: an empty `BlockLayout`
+## **It joins two blocks, and a building that closes all four of its streets would be a different
+## kind of thing.** *(2026-08-31: "why do big buildings close off four streets each? a big building
+## just connects two blocks… we can add a building type with all four roads closed but that's a
+## different building type. but I want one that just connects two blocks (closes one road)".)* The
+## first version took the whole ring, which made every one of them an island in the lattice and put
+## four streets' worth of hard blocking behind a single roll. The four-sided one is recorded in
+## `docs/TODO.md` as its own type and is not this one.
+##
+## It is a `BlockPurpose` so that the blocks stay solid for the whole run: an empty `BlockLayout`
 ## means `CityMap._repaint_block` has nothing to paint, so every later day's repaint leaves the lot
 ## exactly as the clearing pass left it, which is building. The arc is the trivial one — a
 ## landmark has nowhere to go — and that is the shape the recipe asks for rather than a special
@@ -819,109 +827,120 @@ static func _runs_beside_calm(segment: StreetNetwork.Segment, calm: Dictionary) 
 ##
 ## **Chosen late and converted, rather than assigned with the other purposes.** The choice needs
 ## the reference tree, and the tree needs the calm areas, and those need the block layouts — so by
-## the time this can be decided the block has already been carved. Converting it is three lines
+## the time this can be decided the blocks have already been carved. Converting them is a few lines
 ## and keeps the ordering honest; deciding it early would have meant deciding it blind.
 static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
 		home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea], reference: RouteTree,
 		calm: Dictionary, rng: RandomNumberGenerator) -> void:
 	var wanted := rng.randi_range(Tuning.MIN_BIG_BUILDINGS, Tuning.MAX_BIG_BUILDINGS)
 	var made := 0
-	for block in _big_building_candidates(map, purposes, home, reference, calm, rng):
+	for pair in _big_building_candidates(map, purposes, home, reference, calm, rng):
 		if made >= wanted:
 			break
 		# Asked **again**, here, and not only when the pool was built. The pool is enumerated
-		# before anything is placed, so the first big building's four streets are news to the
-		# second one's ring check — which is how two of them ended up sharing a street and
-		# drawing two buildings on the same tiles. A candidate list is a snapshot; a placement
-		# is a change.
-		if not _the_ring_is_free(map, block, home, reference, calm):
+		# before anything is placed, so the first big building's blocks are news to the second
+		# one's check — which is how two of them ended up sharing a street and drawing two
+		# buildings on the same tiles. A candidate list is a snapshot; a placement is a change.
+		if not _the_pair_is_free(map, purposes, pair, home, reference, calm):
 			continue
-		var around := StreetNetwork.around_blocks(Rect2i(block, Vector2i.ONE))
-		for segment in around:
-			map.absent_segments[segment.key()] = true
+		var between := _street_between(pair)
+		map.absent_segments[between.key()] = true
 		if _the_calm_survives(map, home, areas):
-			_make_the_block_solid(map, purposes, block_rects, block, around)
+			_make_the_pair_solid(map, purposes, block_rects, pair, between)
 			made += 1
 		else:
-			for segment in around:
-				map.absent_segments.erase(segment.key())
+			map.absent_segments.erase(between.key())
 
-## Every block that could be one, in the order this city will try them.
+## Every pair of neighbouring blocks that could be one, in the order this city will try them.
 ##
-## The exclusions are the dead end's four, restated over a block and its ring, plus two that only
-## a big building needs:
+## Each block is offered with the neighbour to its east and the one to its south, so every
+## adjacent pair is enumerated exactly once.
+static func _big_building_candidates(map: CityMap, purposes: Dictionary,
+		home: StreetNetwork.Segment, reference: RouteTree, calm: Dictionary,
+		rng: RandomNumberGenerator) -> Array[Rect2i]:
+	var pool: Array[Rect2i] = []
+	for y in range(1, Tuning.CITY_BLOCKS.y - 1):
+		for x in range(1, Tuning.CITY_BLOCKS.x - 1):
+			for size: Vector2i in [Vector2i(2, 1), Vector2i(1, 2)]:
+				var pair := Rect2i(Vector2i(x, y), size)
+				if _the_pair_is_free(map, purposes, pair, home, reference, calm):
+					pool.append(pair)
+	_shuffle(pool, rng)
+	return pool
+
+## Whether two neighbouring blocks and the street between them are something a landmark may be
+## built out of.
+##
+## The exclusions are the dead end's, restated over a pair, plus two that only a big building
+## needs:
 ##
 ## - **Interior blocks only.** A block on the outer ring has boundary corridors round it, and the
 ##   edge of the world is a ring of frontages with a tunnel and a bridge punched through it — not
 ##   somewhere to put a wall.
-## - **A single-block lot.** A four-block calm zone is already a lot of its own, and there is no
+## - **Single-block lots.** A four-block calm zone is already a lot of its own, and there is no
 ##   sense in which a zone could also be a building.
 ##
 ## The "nothing beside calm" rule applies here too, and for a *different* reason than it does to a
 ## dead end. There the worry is that the blocker is a lie — you step sideways into the park. Here
 ## the ground really is solid, and what a big building beside a zone would do is take one of the
-## zone's eight ways in **away**, frontage and all. That is legitimate city and it is also a
-## deliberate narrowing of an M21 guarantee, so it is not something to acquire while adding
-## landmarks. `tests/test_routes.gd` says so out loud: *"the way in is a real street."*
-static func _big_building_candidates(map: CityMap, purposes: Dictionary,
-		home: StreetNetwork.Segment, reference: RouteTree, calm: Dictionary,
-		rng: RandomNumberGenerator) -> Array[Vector2i]:
-	var pool: Array[Vector2i] = []
-	for y in range(1, Tuning.CITY_BLOCKS.y - 1):
-		for x in range(1, Tuning.CITY_BLOCKS.x - 1):
-			var block := Vector2i(x, y)
-			if _too_near_the_home(Rect2i(block, Vector2i.ONE)):
-				continue
-			if map.lot_blocks(block) != Rect2i(block, Vector2i.ONE):
-				continue
-			if BlockPlan.is_calm(purposes.get(block, GameEnums.BlockPurpose.RESIDENTIAL)):
-				continue
-			if _the_ring_is_free(map, block, home, reference, calm):
-				pool.append(block)
-	_shuffle(pool, rng)
-	return pool
-
-## Whether all four streets round a block are ones a hard blocker may take.
-static func _the_ring_is_free(map: CityMap, block: Vector2i, home: StreetNetwork.Segment,
-		reference: RouteTree, calm: Dictionary) -> bool:
-	var around := StreetNetwork.around_blocks(Rect2i(block, Vector2i.ONE))
-	if around.size() < 4:
+## zone's ways in **away**, frontage and all. That is legitimate city and it is also a deliberate
+## narrowing of an M21 guarantee, so it is not something to acquire while adding landmarks.
+## `tests/test_routes.gd` says so out loud: *"the way in is a real street."*
+static func _the_pair_is_free(map: CityMap, purposes: Dictionary, pair: Rect2i,
+		home: StreetNetwork.Segment, reference: RouteTree, calm: Dictionary) -> bool:
+	if pair.end.x > Tuning.CITY_BLOCKS.x - 1 or pair.end.y > Tuning.CITY_BLOCKS.y - 1:
 		return false
-	for segment in around:
-		if not map.has_street(segment.key()) or segment.key() == home.key():
+	if _too_near_the_home(pair):
+		return false
+	for block in _blocks_in(pair):
+		if map.lot_blocks(block) != Rect2i(block, Vector2i.ONE):
 			return false
-		if reference.is_on_the_tree(segment.key()) or map.is_hard_blocker(segment.key()):
+		if BlockPlan.is_calm(purposes.get(block, GameEnums.BlockPurpose.RESIDENTIAL)):
 			return false
-		if _runs_beside_calm(segment, calm):
+		if purposes.get(block) == GameEnums.BlockPurpose.BIG_BUILDING:
 			return false
-		var rect := segment.tile_rect()
-		if map.street_kind_at(not segment.horizontal, rect.position + rect.size / 2) \
-				!= GameEnums.StreetKind.ORDINARY:
-			return false
-	return true
 
-## Turns a carved block and the four streets round it into one solid mass.
+	var between := _street_between(pair)
+	if not between or not map.has_street(between.key()) or between.key() == home.key():
+		return false
+	if reference.is_on_the_tree(between.key()) or map.is_hard_blocker(between.key()):
+		return false
+	if _runs_beside_calm(between, calm):
+		return false
+	var rect := between.tile_rect()
+	return map.street_kind_at(not between.horizontal, rect.position + rect.size / 2) \
+			== GameEnums.StreetKind.ORDINARY
+
+## The one street a pair of neighbouring blocks has between them. A segment key names the block it
+## runs along the north or west edge of, so it is the far block's own western or northern street.
+static func _street_between(pair: Rect2i) -> StreetNetwork.Segment:
+	var far := pair.position + pair.size - Vector2i.ONE
+	return StreetNetwork.beside_block(far,
+			StreetNetwork.Side.WEST if pair.size.x == 2 else StreetNetwork.Side.NORTH)
+
+## Turns two carved blocks and the street between them into one solid mass.
 ##
-## The block's carved rects are **replaced** rather than added to: whatever plaza or alley it had
-## is gone, and leaving the old rects behind would draw buildings inside a building.
-static func _make_the_block_solid(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
-		block: Vector2i, around: Array[StreetNetwork.Segment]) -> void:
-	purposes[block] = GameEnums.BlockPurpose.BIG_BUILDING
-	map.block_plans[block] = BlockPlan.of(GameEnums.BlockPurpose.BIG_BUILDING)
-	# Nothing carved, so nothing to repaint: the daily clearing pass leaves the lot as building
-	# and `_repaint_block` returns having found no rects to fill.
-	map.block_layouts[block] = BlockLayout.new()
-	map.big_buildings.append(block)
+## The blocks' carved rects are **replaced** rather than added to: whatever plaza or alley they had
+## is gone, and leaving the old rects behind would draw buildings inside a building. The mass goes
+## down as **one** rect covering both lots and the street, so what gets built is a single landmark
+## rather than two buildings with a seam where the road used to be.
+static func _make_the_pair_solid(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
+		pair: Rect2i, between: StreetNetwork.Segment) -> void:
+	for block in _blocks_in(pair):
+		purposes[block] = GameEnums.BlockPurpose.BIG_BUILDING
+		map.block_plans[block] = BlockPlan.of(GameEnums.BlockPurpose.BIG_BUILDING)
+		# Nothing carved, so nothing to repaint: the daily clearing pass leaves the lot as building
+		# and `_repaint_block` returns having found no rects to fill.
+		map.block_layouts[block] = BlockLayout.new()
+		var nothing: Array[Rect2i] = []
+		block_rects[block] = nothing
+	map.big_buildings.append(pair)
 
-	var lot := CityMap.block_rect(block)
-	map.fill_rect(lot, GameEnums.TileType.BUILDING)
-	var solid: Array[Rect2i] = [lot]
-	block_rects[block] = solid
-	for segment in around:
-		var rect := segment.tile_rect()
-		map.built_over[segment.key()] = rect
-		map.fill_rect(rect, GameEnums.TileType.BUILDING)
-		map.building_rects.append(rect)
+	var mass := CityMap.blocks_tile_rect(pair)
+	map.fill_rect(mass, GameEnums.TileType.BUILDING)
+	var solid: Array[Rect2i] = [mass]
+	block_rects[pair.position] = solid
+	map.built_over[between.key()] = between.tile_rect()
 
 ## The gate, and it is deliberately the **strong** one for now.
 ##

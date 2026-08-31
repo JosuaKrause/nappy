@@ -276,8 +276,8 @@ nearest calm area is, whether a closure cut anything, which street the spine is,
 never reached — and answering one from a list of tile coordinates is a thing nobody does twice.
 
 So a run writes `<log stem>-map-day<NN>.png`: one four-pixel square per tile, coloured by tile
-type, with the home, the calm areas, the main road, the precincts and today's closures marked over
-it. `TelemetryMap` does the drawing.
+type, with the home, the calm areas, the main road and today's closures marked over it.
+`TelemetryMap` does the drawing.
 
 - **It is not `--overview`.** That flag frames the *rendered* city — buildings, props, dusk, an
   act's colour cast — on a run somebody has to take deliberately. This is the grid, so it says what
@@ -295,12 +295,19 @@ it. `TelemetryMap` does the drawing.
   `_:` arm returns `Palette.OUTLINE` under a comment saying the case only shows through bugs.
   Leaning on a fallback whose stated purpose is *this should never be seen* is how a contract
   quietly becomes untrue.
+- **A precinct has no mark, and that is the correction rather than the omission.** *(2026-08-31:
+  "why blue? why not just take the sidewalk colour and use it for those road segments.")* A
+  pedestrianised corridor is laid `SIDEWALK` all the way across, so the ground pass already draws
+  it as an unbroken pale band where every other street has a stripe of asphalt down its middle.
+  The blue line was an overlay repeating something the picture was already saying, which is the
+  one kind of mark that can go out of date without anybody noticing. `tests/test_telemetry.gd`
+  asserts the paving across the corridor now, which is the fact rather than the overlay.
 
 ### The corridor
 
 *(M50, and it went before the milestone it serves.)* The picture also carries the day's
 **corridor** — `RouteTree`, the branch from the doorstep to every calm area still worth reaching —
-in **violet**, and in **white and twice as wide** where more than one area is reached that way.
+as one **translucent violet** line down the middle of every street on the tree.
 
 It is the one mark in the picture that is a **plan rather than a fact about the ground**, which is
 why `render` takes it as an argument and draws nothing when there is none: a picture that invented
@@ -312,14 +319,29 @@ gameplay stream.
 
 Each stroke runs from the middle of one junction to the middle of the next rather than over the
 street alone, so consecutive streets meet and a turn crosses: the picture is a **path** rather
-than a set of dashes, which is the difference between reading a route and inferring one. What to
-look at is the white — where the bundles run is where a wall is cheap and a set piece is worth
-siting, and a picture that is all thin violet is a tree that has quietly become a star, which is
-the one failure the construction is built to avoid and the one nothing else can see.
+than a set of dashes, which is the difference between reading a route and inferring one.
 
-### The dead ends
+**Every street on the tree is drawn the same, and the stroke is mixed into the ground rather than
+laid over it.** *(2026-08-31: "keep the violet lines transparent and don't draw the bundles white —
+don't make a distinction between path and bundle.")* The first version drew a bundled street solid
+white and two tiles wide, which put a third of the map under a colour that hides everything beneath
+it and made the shared trunk read as the subject of the picture rather than as a property of it.
+Transparency is a mix rather than an alpha, because the image is `FORMAT_RGB8` — chosen so the file
+sits in a directory listing — and a colour with an alpha component written into one is simply
+stored opaque.
 
-Every street that stops has its wall drawn in **teal**, filled. That is the one exception to
+What that costs is a diagnostic, and it is recorded here rather than argued away: *a picture in
+which nothing is shared is a tree that has quietly become a star* used to be readable at a glance
+and now is not. It is asserted directly instead, by `RouteTree.bundles()` and
+`tests/test_route_tree.gd`, which is the stronger place for it — but it is no longer something a
+person notices without looking for it.
+
+### The hard blockers
+
+Every street a hard blocker took has it drawn in **teal**, filled — the wall at the end of a dead
+end, and the whole street a big building was built over. The two read differently by shape rather
+than by colour: a dead end is a stub at one end of a street, and a landmark is a street's whole
+width with solid block either side of it. That is the one exception to
 "outlines, never fills" above, and it is not a slip: the rule exists because a mark that covers
 the ground stops the picture answering the question it was opened for, and here the ground *is*
 the mark — the tiles under it were built over, and an outline round a wall leaves the middle of it

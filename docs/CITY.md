@@ -420,8 +420,9 @@ two consecutive days. A city worth knowing plus a day worth reading.
 
 *"Cul-de-sacs and big buildings don't exist yet — but we need them to implement proper hard
 blockers."* Both exist now. A **dead end** is one street with one end built over; a **big
-building** is a block whose lot is solid with all four of its streets built over. They share a
-placement pass, a reference tree and a gate, and differ only in scale.
+building** is two neighbouring blocks joined into one mass with the street between them built over.
+They share a placement pass, a reference tree and a gate, and each takes exactly one street out of
+the lattice — what differs is the size of the thing left standing there.
 
 A dead end is **one street, gone from the lattice, with one end built over**. Four to eight of
 them per city, rolled from the city RNG, so they hold still for the whole run and are what the
@@ -453,14 +454,28 @@ Four kinds of street may not be a dead end, and the last was found by building i
   park down one side is a street you walk into and step sideways out of, whatever the graph says.
   It is M21's rule read backwards: calm ground beside a dead end makes the dead end a doorway.
 
-**A big building is the same thing at four times the size, and it is a landmark.** One or two per
-city, twenty tiles across, tall enough to be the tallest thing in the district. The **junctions at
-its corners stay** — a car still turns there and a crossing is still painted there — so what is
-gone is the road between them and not the grid around it. It is a `BlockPurpose` with an empty
-`BlockLayout`, which is what keeps it solid for the whole run: a repaint finds nothing to paint
-back. It obeys the same four exclusions plus two of its own — interior blocks only, since the edge
-of the world is a ring of frontages rather than somewhere to put a wall, and single-block lots
-only, since a four-block zone is already a lot.
+**A big building joins two blocks, and it is a landmark.** One or two per city: two neighbouring
+blocks and the street between them, built as a single mass twenty-two tiles long and tall enough to
+be the tallest thing in the district. **Every other street around the pair stays**, and so does
+every junction — a car still turns at all of them — so what is gone is one road and not the grid
+around it. It is a `BlockPurpose` with an empty `BlockLayout` on each block, which is what keeps it
+solid for the whole run: a repaint finds nothing to paint back. It obeys the same four exclusions
+plus two of its own — interior blocks only, since the edge of the world is a ring of frontages
+rather than somewhere to put a wall, and single-block lots only, since a four-block zone is already
+a lot.
+
+*"A big building just connects two blocks… we can add a building type with all four roads closed
+but that's a different building type. But I want one that just connects two blocks (closes one
+road)."* **(2026-08-31.)** The first version took the whole ring, which made every landmark an
+island in the lattice: four streets removed by one roll of the dice, where what was asked for
+removes one. The four-sided kind is a separate type, recorded in `docs/TODO.md` and not built —
+what makes it separate is not its size but what it does to the graph, and that is the question it
+would have to answer for itself.
+
+`--spawn landmark` stands the player on the pavement off the long side of one, which is where the
+seam would show if the two blocks were still two buildings. It exists because they shipped with a
+picture of the *grid* and no picture of the *city*: the whole claim of a landmark is about how it
+reads from the street.
 
 **The gate is the strong one, deliberately, and moving it is a decision nobody has taken yet.**
 The design permits a weaker one — *"sealing off a section of the map is allowed, and it is the
