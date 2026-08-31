@@ -3357,6 +3357,27 @@ entries that have been sitting under "Known-shaky ground" waiting for exactly it
       by setting its own position and **nothing in the event system has ever collided with the
       city** — harmless while every mobile row travelled a route the scheduler had already checked,
       and not harmless the moment something steers at the player
+- [ ] **The bike, the running dog and the cat never have an impact** — finding 9, and it is a
+      complaint plus a design. Three rows whose whole content is *a moving thing meeting her*, and
+      none of them ever does: `cyclist` and `loose_dog` are `MAP` rows sited at dawn with a 26- and
+      24-tile route, so the day chose where they go before it knew where she goes and the offscreen
+      badge announces something that was never aimed at her; `cat_dash` **is** already
+      `AHEAD_OF_PLAYER` and is aimed **late**, crossing behind her at a walk because the lead is
+      measured from where she is rather than where she will be.
+
+      The design, in the player's terms: **place them when she gets close**; the biker goes **on the
+      pavement she is walking on, coming toward her**, *"in a way like the placement of the pursuing
+      dog"*; so that she **has** to answer it *"by changing the side of the road or make a turn"*;
+      and the fairness is already paid — *"since there is an offscreen hint for the bike there is
+      enough indication that the player doesn't need to run and has enough time to plan the route
+      change."*
+
+      **What it collides with, named rather than resolved.** `CLAUDE.md` says `AHEAD_OF_PLAYER` is
+      *"for the small number whose entire content is the moment it happens to you"* and `MAP` is
+      *"for anything the player could plan around"*. A bike aimed at her that she answers by
+      **planning a turn** is neither, so this may be a **third spawn mode** rather than a
+      reassignment of two rows. And `EventDef.validate()` refuses an `AHEAD_OF_PLAYER` row with a
+      body — fine for a moving bike, but a rule to check rather than assume
 - [ ] **The run hint belongs to the lesson, not to the mechanic** — finding 6, *"hold SHIFT to run
       randomly shows up sometimes after the running tutorial. it should only show up for the
       tutorial."* Once day 3 has taught the run, a line telling her to hold shift is the game

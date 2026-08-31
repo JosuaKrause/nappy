@@ -4,7 +4,7 @@ Played on `main` at M50 — `5d2a276`, seed `374709573` (both screenshots) — w
 findings in the build. Reported mid-run, in five messages, three of them with a screenshot
 attached. The wording below is the player's, verbatim.
 
-**Eight findings, in three groups.**
+**Nine findings, in four groups.**
 
 **Four of them are one complaint**: the city draws a lattice it does not have, and the crowd walks
 it. It goes onto a bridge with no footway, off a bulkhead into the sea, and through crossroads whose
@@ -16,7 +16,11 @@ The robber works — *"very good and effective… the timing is good"* — and w
 resistance is invisible: the player reached a chalk mark and could not tell that anything had
 happened, which is the deliberate risk that file has named since the beginning finally being run.
 
-**And the third group is a different kind of finding and the more uncomfortable one**: calm areas at the
+**One is about aim**: the bike, the loose dog and the cat are the three rows whose whole content is
+a moving thing meeting her, and none of them ever does — two are sited at dawn on a street she does
+not walk, and the third crosses behind her. It comes with a design.
+
+**And the last is a different kind of finding and the more uncomfortable one**: calm areas at the
 edge of the map, *"which should be impossible"* — and the rule saying so is already written down,
 unbuilt, in `docs/TODO.md`'s M47, along with its measurement. Together with M41's T-junction item
 and M51's cul-de-sac, that is **three findings in one session that the project had recorded and not
@@ -199,3 +203,52 @@ The bug is precise: a pursuing `EventInstance` moves by setting its own position
 event system has ever collided with the city — which was harmless while every mobile row travelled a
 route the scheduler had already checked, and stops being harmless the moment something steers at the
 player.
+
+## 9. The bike, the running dog and the cat never have an impact
+
+> "the bike, the running dog (which is running a direction *not* the pursuing one), the cat never
+> have an impact. bike and running dog are always somewhere else (I can see the offscreen indicators
+> but they're going somewhere else). the cat always aims in a way that by normal walking she runs
+> behind me instead of in front of me. these issues can be solved by dynamically placing those
+> obstacles when getting close -- the biker should always be positioned on the sidewalk the player
+> walks coming towards the player (in a way like the placement of the pursuing dog) so the player
+> *has* to deal with the biker (by changing the side of the road or make a turn). since there is an
+> offscreen hint for the bike there is enough indication that the player doesn't need to run and has
+> enough time to plan the route change."
+
+**Three rows, two different failures, and one proposed mechanism** — kept apart here because the
+sentence names them apart.
+
+- **`cyclist` and `loose_dog` are `MAP` rows**, sited at dawn on a street somewhere and given a
+  26- and 24-tile route to travel down it. So the day decides where they go before it knows where
+  she goes, and the offscreen badge — which is working, and is what makes the miss legible —
+  announces something that was never aimed at her. The parenthesis *"which is running a direction
+  **not** the pursuing one"* is a second report inside the first: the loose dog is not a chase, it
+  is a mobile row that happens to be running, and it runs away as readily as toward.
+- **`cat_dash` is already `AHEAD_OF_PLAYER`** and its failure is different in kind: it is aimed at
+  her and it is aimed **late**. At 240px/s across the street it crosses *behind* her at a walk,
+  which means the director's lead is measured from where she is rather than from where she will be.
+
+**The design, and it is specific enough to build from:**
+
+1. **Place them dynamically when she gets close**, rather than at dawn.
+2. **The biker is on the pavement she is walking on, coming toward her** — explicitly *"in a way
+   like the placement of the pursuing dog"*, which is `EventDirector`'s siting of `charging_dog`.
+3. **So that she *has* to deal with it** — *"by changing the side of the road or make a turn"*. The
+   answer is a route change, not a reaction: this is a routing problem delivered at walking speed,
+   which is what the whole game is about.
+4. **And the fairness is already paid for by the badge.** *"Since there is an offscreen hint for the
+   bike there is enough indication that the player doesn't need to run and has enough time to plan
+   the route change."* That is the player pre-empting the objection: an `AHEAD_OF_PLAYER` row has no
+   telegraph phase she can see coming, so `EventDef.validate()` makes it pay the contract in
+   geometry instead — and here the player is saying the screen-edge badge is the notice, and a
+   *plan-able* one rather than a reflex one.
+
+**What this collides with, named rather than resolved.** `AHEAD_OF_PLAYER` is documented in
+`CLAUDE.md` as being *"for the small number whose entire content is the moment it happens to you —
+three seconds of cat is not a place"*, and `MAP` as right *"for anything the player could plan
+around: it is a place, and finding out it is there is what walking a street is for."* A bike aimed
+at her that she answers by **planning a turn** is neither of those, and it may be a third mode
+rather than a reassignment of one row. It also may not obstruct — `validate()` refuses an
+`AHEAD_OF_PLAYER` row with a body — which is fine for a moving bike and is a rule to check rather
+than assume.
