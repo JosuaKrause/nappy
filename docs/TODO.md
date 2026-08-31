@@ -2831,11 +2831,24 @@ the day and form an impression.
       the closures. Add the day's **corridor** — the routes from the doorstep to the calm areas
       that are still worth reaching — as a drawn path over the grid. This is the picture that
       answers *"is anything guiding her"*, which is the open question the whole milestone exists
-      for, and it cannot be answered from a log line. **Built**: violet per branch, white and twice
-      as wide for a bundle, junction centre to junction centre so it reads as a path. And it
-      immediately earned itself — the first picture shows the trunk wandering west, north and back
-      east before it arrives anywhere, which is the 13.2-against-4.4 measurement above as something
-      a person can look at
+      for, and it cannot be answered from a log line. **Built**: violet, junction centre to junction
+      centre so it reads as a path. And it immediately earned itself — the first picture shows the
+      trunk wandering west, north and back east before it arrives anywhere, which is the
+      13.2-against-4.4 measurement above as something a person can look at
+- [x] **And then it was read by the player, which changed three things about it.** *(2026-08-31,
+      the first time anybody looked at one.)* Two were about the picture and the third was about the
+      city; all three are in `docs/TELEMETRY.md` and the code, and the shape they share is worth the
+      line: **a debug picture that decorates is a debug picture that lies.**
+      - *"Marks disappearing is a problem"* — the corridor was drawn under four other marks and
+        over one, so a stroke could simply not be there. It is **mixed into the ground** now rather
+        than laid over it, which is also what *"keep the violet lines transparent"* asks for.
+      - *"Don't draw the bundles white — don't make a distinction between path and bundle."* Gone.
+        What goes with it is a diagnostic — a picture with no sharing in it is a star — and it is
+        asserted in `tests/test_route_tree.gd` instead of being visible.
+      - *"Why blue? Why not just take the sidewalk colour"* — the precinct mark is **deleted**. A
+        precinct is laid `SIDEWALK` from frontage to frontage, so the ground pass already draws it
+        as the one corridor with no asphalt stripe down it, and the blue line was an overlay
+        repeating a fact the picture had
 - [ ] **Mark every placed event with its categorisation.** Not just *where* — **what kind**, in the
       vocabulary in `docs/CITY.md`, "The words for it": its **effect** (lethal / impassable /
       costly) and its **role** (wall / friction / set piece). A wall drawn on the corridor instead

@@ -42,14 +42,28 @@ const SCALE := 4
 ## and comes back a fraction off. A test that asks "is this mark in the picture" then fails against
 ## the constant it drew with, which is a test failing for a reason that has nothing to do with the
 ## thing it is checking.
+##
+## **There is no precinct mark and that is the correction, not an omission.** *(2026-08-31: "why
+## blue? why not just take the sidewalk colour and use it for those road segments".)* A precinct
+## has no carriageway — `CityGenerator._street_tile` lays its whole six-tile corridor as
+## `SIDEWALK` — so the ground pass already draws it as an unbroken pale band where every other
+## street has a dark stripe down the middle. The blue line was an overlay standing in for a fact
+## the picture was already telling, and an overlay that repeats the ground is the one kind that can
+## go out of date without anybody noticing.
 const HOME_MARK := Color("ff4059")
 const CALM_MARK := Color("33ff73")
 const SPINE_MARK := Color("ff8c1a")
-const PRECINCT_MARK := Color("73a6ff")
 const CLOSURE_MARK := Color("ff2626")
 const CORRIDOR_MARK := Color("b366ff")
-const BUNDLE_MARK := Color("ffffff")
 const DEAD_END_MARK := Color("2ee6d0")
+
+## How much of the ground a corridor stroke lets through.
+##
+## *(2026-08-31: "keep the violet lines transparent".)* It is the one mark that runs the length of
+## a street rather than sitting on a tile or outlining a lot, so it is the one that can hide a
+## city. Blended rather than drawn, because the image is `FORMAT_RGB8` and has no alpha channel to
+## carry it — what is stored is the mix.
+const CORRIDOR_ALPHA := 0.55
 
 ## What a building is drawn as here.
 ##
@@ -85,7 +99,6 @@ static func render(map: CityMap, closures: Array[RoadClosure] = [],
 			image.fill_rect(Rect2i(tile * SCALE, Vector2i.ONE * SCALE), colour)
 
 	_mark_the_spine(image, map)
-	_mark_the_precincts(image, map)
 	# Under the calm, the closures and the home on purpose: those three are what the corridor is
 	# drawn to be read *against* — where it arrives, what it had to go round, where it starts —
 	# and a plan that covers them would be answering its own question.
@@ -111,19 +124,8 @@ static func _mark_the_spine(image: Image, map: CityMap) -> void:
 		_fill_tiles(image, Rect2i(Vector2i(corridor + offset, 0), Vector2i(1, map.size.y)),
 				SPINE_MARK)
 
-## The two precincts, as a line along the middle of each. `precinct_spans` is
-## `(vertical, corridor, first block, last block)`; see `CityMap.precinct_spans`.
-static func _mark_the_precincts(image: Image, map: CityMap) -> void:
-	for span in map.precinct_spans:
-		var vertical := span.x == 1
-		var across: int = span.y * CityMap.period() + Tuning.STREET_WIDTH / 2
-		var from: int = span.z * CityMap.period()
-		var to: int = (span.w + 1) * CityMap.period()
-		_fill_tiles(image, Rect2i(Vector2i(across, from), Vector2i(1, to - from)) if vertical
-				else Rect2i(Vector2i(from, across), Vector2i(to - from, 1)), PRECINCT_MARK)
-
-## The day's corridor, as the path it is: a line down the middle of every street on the tree,
-## drawn white and twice as wide where more than one calm area is reached that way.
+## The day's corridor, as the path it is: one translucent line down the middle of every street on
+## the tree.
 ##
 ## *(M50, and the reason this tooling went first: the thing being built is a **placement**, and a
 ## placement is exactly what a trace in words cannot show. "Is anything guiding her" is the open
@@ -131,10 +133,16 @@ static func _mark_the_precincts(image: Image, map: CityMap) -> void:
 ##
 ## Each stroke runs from the middle of one junction to the middle of the next rather than over the
 ## street alone, so consecutive streets meet and a turn crosses — the picture is a **path** rather
-## than a set of dashes, which is the difference between reading a route and inferring one. The
-## bundles being the wide white ones is most of what there is to see: where they run is where a
-## wall is cheap and a set piece is worth siting, and a picture in which everything is thin violet
-## is a tree that has quietly become a star.
+## than a set of dashes, which is the difference between reading a route and inferring one.
+##
+## **Every street on the tree is drawn the same, and the bundles are not picked out.** *(2026-08-31:
+## "don't draw the bundles white — don't make a distinction between path and bundle".)* The first
+## version drew a bundled street solid white and two tiles wide, which was a third of the map under
+## a colour that hides everything beneath it, and it made the shared trunk read as the subject of
+## the picture rather than as a property of it. What is lost with it is a diagnostic — *a picture
+## in which nothing is shared is a tree that has quietly become a star* — and that has to be read
+## somewhere else now: `RouteTree.bundles()` and `tests/test_route_tree.gd`, which assert the
+## sharing directly rather than by eye.
 static func _mark_the_corridor(image: Image, tree: RouteTree) -> void:
 	if not tree:
 		return
@@ -142,19 +150,16 @@ static func _mark_the_corridor(image: Image, tree: RouteTree) -> void:
 		var segment := StreetNetwork.by_key(key)
 		if not segment:
 			continue
-		var bundled := tree.colours_on(key) >= 2
-		_fill_tiles(image, _corridor_stroke(segment, bundled),
-				BUNDLE_MARK if bundled else CORRIDOR_MARK)
+		_blend_tiles(image, _corridor_stroke(segment), CORRIDOR_MARK, CORRIDOR_ALPHA)
 
 ## One street's stroke, junction centre to junction centre.
-static func _corridor_stroke(segment: StreetNetwork.Segment, wide: bool) -> Rect2i:
-	var thickness := 2 if wide else 1
-	var across := Tuning.STREET_WIDTH / 2 - (1 if wide else 0)
+static func _corridor_stroke(segment: StreetNetwork.Segment) -> Rect2i:
+	var across := Tuning.STREET_WIDTH / 2
 	var from := segment.a * CityMap.period()
 	var length := CityMap.period() + Tuning.STREET_WIDTH
 	if segment.horizontal:
-		return Rect2i(Vector2i(from.x, from.y + across), Vector2i(length, thickness))
-	return Rect2i(Vector2i(from.x + across, from.y), Vector2i(thickness, length))
+		return Rect2i(Vector2i(from.x, from.y + across), Vector2i(length, 1))
+	return Rect2i(Vector2i(from.x + across, from.y), Vector2i(1, length))
 
 ## Every street a hard blocker built over: the wall at the end of a dead end, and all four sides
 ## of a big building. *(M50 step 1.)*
@@ -201,6 +206,20 @@ static func _mark_the_home(image: Image, map: CityMap) -> void:
 # ------------------------------------------------------------------ tile drawing ---
 # All three take a rect in **tiles** and scale it here, so nothing above multiplies by SCALE and
 # gets it wrong once.
+
+## A mark mixed into the ground rather than laid over it, tile by tile.
+##
+## **The picture has no alpha channel, so "transparent" has to mean *mixed on the way in*.** It is
+## `FORMAT_RGB8` — chosen so the file is small enough to sit in a directory listing — and a colour
+## with an alpha component written into one is simply stored opaque. What is blended here is the
+## ground already in the image, so a stroke crossing a junction, a kerb and a lot boundary picks up
+## all three rather than flattening them.
+static func _blend_tiles(image: Image, rect: Rect2i, colour: Color, alpha: float) -> void:
+	var clipped := rect.intersection(Rect2i(Vector2i.ZERO, image.get_size() / SCALE))
+	for y in range(clipped.position.y, clipped.end.y):
+		for x in range(clipped.position.x, clipped.end.x):
+			var under := image.get_pixel(x * SCALE, y * SCALE)
+			_fill_tiles(image, Rect2i(Vector2i(x, y), Vector2i.ONE), under.lerp(colour, alpha))
 
 static func _fill_tiles(image: Image, rect: Rect2i, colour: Color) -> void:
 	var clipped := rect.intersection(Rect2i(Vector2i.ZERO, image.get_size() / SCALE))
