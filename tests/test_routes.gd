@@ -350,6 +350,8 @@ func _test_calm_ground_is_still_walkable_to(t) -> void:
 ## one of the places the design is written down.
 func _test_closures_land_where_a_wall_belongs(t) -> void:
 	var on_the_rim := 0
+	var in_a_gap := 0
+	var gaps := 0
 	var total := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -360,6 +362,10 @@ func _test_closures_land_where_a_wall_belongs(t) -> void:
 			var rim := {}
 			for key in tree.rim():
 				rim[key] = true
+			var gap := {}
+			for key in tree.gaps():
+				gap[key] = true
+			gaps += gap.size()
 			for closure in _plan(map, day):
 				total += 1
 				t.check(not tree.is_on_the_tree(closure.segment.key()),
@@ -367,12 +373,28 @@ func _test_closures_land_where_a_wall_belongs(t) -> void:
 						% [map.seed_used, day, closure.segment.key()])
 				if rim.has(closure.segment.key()):
 					on_the_rim += 1
+				if gap.has(closure.segment.key()):
+					in_a_gap += 1
 	t.check(total > 0, "the planner shuts streets at all (%d over %d seeds)" % [total, SEEDS])
 	# The rim is a minority of the off-tree lattice — measured at about a third of it — so an
 	# unweighted planner would land there about a third of the time. Half is a floor with room in
 	# it rather than a measurement, which is the same shape the old assertion had.
 	t.check(float(on_the_rim) / maxf(1.0, float(total)) > 0.5,
 			"%d of %d closures landed on a turning off the corridor" % [on_the_rim, total])
+
+	# **A gap gets the impassable half of *"wall or event"*, and the quota is what keeps it a
+	# "sometimes".** *(M55, playtest 17 finding 2.)* `CLOSURE_GAP_BIAS` aims a closure at the one
+	# street two adjacent strands are joined by; a day shuts one street in act I and four in act IV,
+	# so it can never shut the fifteen a day has. Both bounds are the instruction: an unweighted
+	# planner lands in a gap about a twelfth of the time, and a planner that only ever shut gaps
+	# would have stopped being a wall round the corridor and become a fence down the middle of it.
+	var gap_share := float(in_a_gap) / maxf(1.0, float(total))
+	t.check(gaps > total * 4,
+			"a day has many more gaps than it has closures to spend (%d against %d)"
+			% [gaps, total])
+	t.check(gap_share > 0.15, "%d of %d closures landed in one of them" % [in_a_gap, total])
+	t.check(gap_share < 0.7, "and most of the rim is still ordinary ground (%.0f%% in a gap)"
+			% (gap_share * 100.0))
 
 ## **A closure never cuts the corridor, so the day-level invariant should never have to refuse
 ## one.** `ClosurePlanner` still checks each candidate and still skips a failure, because two

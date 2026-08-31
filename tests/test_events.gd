@@ -1688,18 +1688,28 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	var friction := 0
 	var deep := {true: 0, false: 0}
 	var placed := {true: 0, false: 0}
+	# Every gap of every day sampled, and which of them a wall was put in. Keyed by day as well as
+	# by street, because the same street is a gap on one day and ordinary ground on another.
+	var gaps := {}
+	var gaps_walled := {}
 	for day in [1, 5, 8, 11, 14]:
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
+		for key in tree.gaps():
+			gaps["%d:%s" % [day, key]] = true
 		var consumed: Array[String] = []
 		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
 			if not plan.is_placed():
 				continue
 			var tile := map.world_to_tile(plan.position)
 			var away := corridor.depth(tile)
+			if plan.role == GameEnums.BlockerRole.WALL and corridor.is_in_a_gap(tile):
+				var segment := StreetNetwork.segment_containing(tile)
+				if segment:
+					gaps_walled["%d:%s" % [day, segment.key()]] = true
 			if plan.role == GameEnums.BlockerRole.WALL:
 				walls += 1
 				t.check(plan.def.hard_fail
@@ -1735,3 +1745,15 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(deadly_deep > costly_deep,
 			"and the deadly end of the range sits further off the routes than the costly end "
 			+ "(%.0f%% against %.0f%% two turnings out)" % [deadly_deep * 100.0, costly_deep * 100.0])
+
+	# **A gap is sometimes closed and sometimes open, and both halves are the instruction.** *(M55,
+	# playtest 17 finding 2: "sometimes put a blocker between (wall or event) and sometimes leave it
+	# open".)* Asserted as a band rather than a number, because `EVENT_WALL_GAP_WEIGHT` is a weight
+	# and the exact share moves with the catalogue — what may not move is that neither end is empty.
+	# A day that walled every gap would have turned one corridor into several separate ones, which
+	# is the shape `RouteTree` deliberately does not grow; a day that walled none is the finding.
+	t.check(gaps.size() > 20, "the days sampled have gaps between adjacent strands (%d)" % gaps.size())
+	var walled_share := float(gaps_walled.size()) / maxf(1.0, float(gaps.size()))
+	t.check(walled_share > 0.25, "%d of %d gaps carry a wall" % [gaps_walled.size(), gaps.size()])
+	t.check(walled_share < 0.85,
+			"and the rest are left open (%.0f%% walled)" % (walled_share * 100.0))

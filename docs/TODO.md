@@ -3370,8 +3370,10 @@ rather than to move a number.
 
 ## M55 — Off the paths is the dangerous place · partly built
 
-Playtest 17, in full in **[docs/PLAYTEST-17.md](PLAYTEST-17.md)**. Twelve findings, four of which
-are already done and are ticked below; the rest are the queue.
+Playtest 17, in full in **[docs/PLAYTEST-17.md](PLAYTEST-17.md)**. Twelve findings. Everything the
+player ranked first is done and ticked below — the off-corridor cost, and then what goes between two
+strands of corridor that run alongside each other. What is left is the corners of the world and the
+four items of resistance design, which is drafted rather than built.
 
 **The one sentence is the player's own: *"leaving the path should be lethal or very expensive. right
 now that is not the case… that is not as we planned."*** The design was agreed in M50 and the build
@@ -3438,7 +3440,7 @@ project now has the instrument to say whether it closed.
       a **range**, and a day that spends only the cheap end of it is spending the range. Recorded so
       the next reader does not re-open it: **the escalation across the acts is where "deadly" comes
       from, and M31's teaching decision and M50's gradient were never in tension**
-- [ ] **Something between parallel strands of corridor** *(finding 2)*. Asked back because it
+- [x] **Something between parallel strands of corridor** *(finding 2)*. Asked back because it
       overlapped `RouteTree`'s recorded instruction — *"the player can walk the beginning of path A
       and then switch to path B without noticing, and that is fine… the constraint is on the graph
       and never on spacing"* — and **answered on 2026-09-01**:
@@ -3457,7 +3459,77 @@ project now has the instrument to say whether it closed.
 
       So: *sometimes* a wall, *sometimes* an event, *sometimes* nothing — variety in what one gap is
       worth rather than a rule that closes them all. And it goes **after** the item above by the
-      player's own ranking
+      player's own ranking.
+
+      **Built, and it is two weights on placements that already existed rather than a phase of its
+      own.** `RouteTree.gaps()` is the question — a street off the tree with a strand of corridor
+      crossing each of its two ends, at right angles, so that the two strands are parallel and one
+      block apart. `Corridor.is_in_a_gap()` is that asked about a tile. Then
+      `Tuning.CLOSURE_GAP_BIAS` aims the day's closure quota at one (the **impassable** half of
+      *"wall or event"*), and `Tuning.EVENT_WALL_GAP_WEIGHT` offers a gap's pavement six times over
+      to a very costly wall (the **costly** half).
+
+      **A weight and not a per-gap roll, which is the decision worth writing down.** A roll reads
+      more directly off the instruction — walk the gaps, roll three ways — and it needs a phase, a
+      stream, a budget of its own and a share of the per-row caps, all of which are places the day's
+      density can quietly move. A weight rides on the budget, the spacing and the caps unchanged and
+      **cannot place more than the day can afford**. Measured over eight seeds, days 1/5/9: a day
+      places 106.6 / 140.0 / 169.5 events before and 106.6 / 140.1 / 169.5 after, and walls are
+      31% / 26–27% / 30% of them either way. Nothing moved except *where*.
+
+      **What a day has, and what it does with it.** ~15 gaps, of which 7.9 / 8.2 / 8.5 end up
+      carrying something — **about half, and about half left open**, which is the instruction rather
+      than a compromise. Closures land in one 0.2 / 0.2 / 1.4 times, which is the quota talking: a
+      day shuts one street in act I and four in act IV, so it can never shut fifteen.
+
+      Cost per tile of street, eight seeds, before and after — the gap is now the dearest ground in
+      the city and by a distance:
+
+      | | on corridor | rim (not a gap) | **gap** | deep (2+) |
+      |---|---:|---:|---:|---:|
+      | day 1, before | 0.339 | 0.345 | — | 0.203 |
+      | day 1, after | 0.343 | 0.318 | **0.547** | 0.188 |
+      | day 5, before | 0.382 | 0.302 | — | 0.279 |
+      | day 5, after | 0.385 | 0.257 | **0.595** | 0.262 |
+      | day 9, before | 0.455 | 0.356 | — | 0.387 |
+      | day 9, after | 0.445 | 0.322 | **0.670** | 0.368 |
+
+      The *before* rows have no gap column because there was no such band: those streets are in the
+      rim figure beside them, which is why the rim falls when they are taken out of it.
+
+      **The correction this needed is the part to carry, and it was found by measuring rather than
+      by thinking.** The first version multiplied the gap weight through the *whole* wall band. A
+      gap is on the rim by construction, so a lethal row's weight there is 1 against
+      `WALL_DEEP_WEIGHT` further out — and six times one beats four, which quietly made a gap **the
+      best lethal ground in the city**. The deep band went from the dearest ground on day 9 to level
+      with the corridor, and lethal placements in it fell 8.5 → 7.8 on day 5 and 16.8 → 15.6 on day
+      9: M55's first item undone by its second, in one multiplication, with every test still green.
+      Restricting the weight to the costly half fixed it and then some — lethal in the deep band
+      comes out at **8.8 and 18.1**, above where it started, because the costly rows that left the
+      rim were competing with it for the same budget. The gradient's own sentence is what says which
+      half gets the weight: *stray one turning and it is expensive, stray further and it ends the
+      day.*
+
+      **The picture is the check, and it is the finding's own instrument.** The same day either side
+      of the change is in `docs/evidence/`:
+      [before](evidence/rig-2026-09-01T014558-seed4242-f604488-dirty-map-day01.png) and
+      [after](evidence/rig-2026-09-01T014420-seed4242-f604488-dirty-map-day01.png), seed 4242, day 1.
+      The yellow crosses gather onto the streets between the parallel purple strands and a good half
+      of those streets are still bare. **Nothing was added to the map to show this**, deliberately:
+      a gap that got a wall is a wall mark between two corridor lines and a gap that got nothing is
+      a bare street between two corridor lines, so the picture already answered it. The vocabulary
+      is short on purpose — *"don't draw the bundles white"* is the same decision one milestone
+      earlier.
+
+      **One thing this side could not do and is recording rather than papering over.** The table in
+      the item above says *"cost per tile of street"* and does not say **which** tiles or **how** a
+      placement's cost is attributed, and three plausible readings were tried against it without
+      reproducing its numbers. The table here is a different measurement — cost of the placements in
+      a band, over the street tiles of that band — so the two are comparable **in shape and not in
+      value**, and the before/after columns are what carries the argument. The guard against the
+      previous item is stated in that item's own numbers instead, which are unambiguous: placements
+      a day, walls as a share of them, and lethal placements in the deep band. **A measurement whose
+      formula is not written down is a measurement nobody can take twice**
 - [x] **A switch between strands is a switch** *(finding 2's last clause: "make sure the log notes a
       path switch correctly if it happens — technically it's leaving a path and entering a new
       path")*. As first built, `path` could not see one: both strands answer `on`, so changing route

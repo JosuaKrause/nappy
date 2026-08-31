@@ -660,6 +660,53 @@ legitimate area; the second route is an offer the day makes when the ground allo
 still hold absolutely is only that **some** calm is reachable. See `docs/TODO.md`, M50, for the
 construction and for the one thing this trades away.
 
+### Two strands side by side, and the street between them *(M55, playtest 17 finding 2)*
+
+> *"Also if two paths go parallel add some blocking events between them."*
+
+Two strands of corridor running down neighbouring streets with nothing between them are not two
+routes she chooses between; they are **one wide easy region**, and the choice they were supposed to
+create is not there. The finding is about the corridor's *shape on the ground* rather than about
+what a catalogue row costs.
+
+It looked at first like a contradiction of the section above — *"the player can walk the beginning
+of path A and then switch to path B without noticing, and that is fine… the constraint is on the
+graph and never on spacing"* — so it went back, and the answer dissolves it rather than choosing a
+side:
+
+> *"Apply nuance here. Sometimes put a blocker between (wall or event) and sometimes leave it open
+> — this is not as important as going off the path completely."*
+> *"Only directly adjacent paths (with a single street connecting both) counts for this case
+> obviously. Everything further apart should just naturally be never connectable."*
+
+Three things, and the third is the one that resolves it:
+
+- **Sometimes, not always.** Either of the two costed things — a **closure**, which makes the
+  switch impossible, or an **event**, which makes it expensive — and sometimes nothing at all. It is
+  variety in what one gap is worth, not a rule that closes every gap. A day that closed them all
+  would have turned one corridor into several separate ones, which is exactly the star this design
+  refuses to grow.
+- **It ranks below "off the corridor has to cost".** *"Not as important as going off the path
+  completely"*, and that was the build order.
+- **Only directly adjacent.** A **gap** is one street with a strand of corridor crossing each of its
+  two ends. Two strands further apart have off-corridor ground between them, which is lethal or very
+  costly on its own since M55's first item — so they are separated *by the map*, and nothing has to
+  be placed. The old instruction is about the **tree** and is untouched; this is about a
+  **placement** in one specific street.
+
+Nothing here changes how the tree is grown. `RouteTree.gaps()` is a question asked of the finished
+thing, and both answers to it are weights on placements that already existed: `CLOSURE_GAP_BIAS`
+aims the day's closure quota at a gap, and `EVENT_WALL_GAP_WEIGHT` offers a gap's pavement more
+often to a **very costly** wall. Not to a lethal one — a gap is on the rim, which is the costly end
+of the range, and a thing that ends the day one turning off a route she is being guided down is the
+gradient inverted. See `docs/TODO.md`, M55, for the measurement.
+
+**And a strand is a stretch of corridor rather than a branch.** A single branch that runs out along
+one street and home along the next one down is two parallel lines with a free step between them, and
+the player switching between them cannot see — and has no reason to care — that they are the same
+colour. What tells two *routes* apart is `RouteTree.branches_on()`, and that is the telemetry's
+question: the trace has to be able to say she left one path and joined another.
+
 **Placement follows the tree, not a budget.** Plan the tree first and place from it — possibly with
 a budget *per role and per region*, but not a single per-block number that the whole city competes
 for. And the important half: **budget is not spent on what she never sees.** So the day places

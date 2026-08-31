@@ -17,6 +17,8 @@ makes the file worth having.
 | file | what it is | referenced by |
 | --- | --- | --- |
 | `run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png` | Day 1's plan on `feature/the-calm-has-a-shape` at `7367ab0`, seed 8000. Purple is the day's corridor, blue friction, yellow walls, green calm outlines, orange the spine. | [PLAYTEST-17.md](../PLAYTEST-17.md), finding 1 |
+| `rig-2026-09-01T014558-seed4242-f604488-dirty-map-day01.png` | Day 1 of seed 4242 **before** the gap weighting — the pair below is the same day either side of one change, so the two are told apart by their timestamp and by nothing else. Both say `f604488-dirty`, because the "before" was taken with the change stashed rather than on a commit of its own. Walls (yellow) are scattered over the whole map. | [TODO.md](../TODO.md), M55 finding 2 |
+| `rig-2026-09-01T014420-seed4242-f604488-dirty-map-day01.png` | The same day **after**. The walls have gathered onto the streets between the parallel purple strands, and about half of those streets still have nothing on them. | [TODO.md](../TODO.md), M55 finding 2 |
 
 ## Three references that were already lost
 

@@ -1074,6 +1074,37 @@ const EVENT_WALL_RIM_WEIGHT := 4
 ## make the rim the quiet part of the off-corridor city, which inverts the sentence.
 const WALL_DEEP_WEIGHT := 4
 
+## How many times over the street **between two adjacent strands of the day's corridor** is offered
+## to a wall, against the rest of the band it is in.
+##
+## *(M55, playtest 17 finding 2: "if two paths go parallel add some blocking events between them" —
+## nuanced on 2026-09-01 to "sometimes put a blocker between (wall or event) and sometimes leave it
+## open… this is not as important as going off the path completely".)* `RouteTree.gaps()` is what a
+## gap is; the placement is `EventScheduler._copies_of`, where this multiplies the band weight
+## rather than replacing it.
+##
+## **Set to leave about half of them open, which is the instruction rather than a compromise.** The
+## complaint is that two parallel strands with a free step between them are one wide region instead
+## of two routes; the answer asked for is *variety in what a gap is worth*, so a number that closed
+## every gap would be as wrong as the zero it replaced — it would turn the corridor back into a set
+## of separate corridors, which is the shape `RouteTree` deliberately does not grow.
+##
+## It is also the reason this is a weight and not the per-gap roll that reads more directly. A roll
+## needs a phase, a stream, a budget of its own and a share of the caps; a weight rides on the day's
+## existing budget, spacing and per-row caps unchanged, and *cannot place more than the day can
+## afford*. The measurement is in `docs/TODO.md`, M55.
+const EVENT_WALL_GAP_WEIGHT := 6
+
+## How much likelier a closure is to land in a gap between two adjacent strands than on the rest of
+## the rim it is already biased toward.
+##
+## The other half of *"wall or event"*, and it is the **impassable** half: an event in a gap makes
+## switching strands expensive and a closure makes it impossible, which is the variety the finding
+## asks for rather than two names for the same thing. There is at most one closure a day in act I
+## and four in act IV, so this can be strong without closing many gaps — the quota is the limit and
+## it has not moved.
+const CLOSURE_GAP_BIAS := 4.0
+
 ## Where the line between *friction* and a *very costly* wall falls, in points of the meter it costs
 ## to walk through the middle of a row.
 ##

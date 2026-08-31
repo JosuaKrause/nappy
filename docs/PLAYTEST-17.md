@@ -100,6 +100,12 @@ another has to appear in the log, *"technically it's leaving a path and entering
 built, finding 6's `path` entry cannot see it — both strands answer `on` — so the trace calls a
 route change no change at all.
 
+**Done in M55**, both halves. The trace carries the branch colours, so a switch is a switch; and a
+*gap* — one street with a strand of corridor crossing each of its two ends — is aimed at by the
+day's closure quota and by a very costly wall, which leaves about half of the fifteen a day has
+open. The measurement, and the one correction it needed, are in `docs/TODO.md` under M55; the design
+is `docs/CITY.md`, "Two strands side by side, and the street between them".
+
 ## 3. Telemetry logs have to say whose run they are
 
 > "one thing -- can you make telemetry logs be distinguishable whether they are from real playtests

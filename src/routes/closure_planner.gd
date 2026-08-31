@@ -193,11 +193,26 @@ static func _invariant_holds(home: StreetNetwork.Segment, areas: Array[CalmArea]
 ## - **Everywhere else** — legal, and it is the far corner of the map that the old bias existed to
 ##   avoid. Kept in the pool rather than refused, because a day that cannot find its quota of
 ##   rim streets should still shut something.
+##
+## **And one part of the rim is worth more than the rest of it.** *(M55, playtest 17 finding 2: "if
+## two paths go parallel add some blocking events between them", and "sometimes put a blocker
+## between (wall or event) and sometimes leave it open".)* A **gap** is the single street two
+## adjacent strands of today's corridor are joined by — see `RouteTree.gaps()` — and a closure is
+## the *impassable* half of the answer, where a wall event is the costly half. `CLOSURE_GAP_BIAS`
+## is the preference, and the day's quota is what keeps it a "sometimes": one street shut in act I
+## and four in act IV cannot close fifteen gaps however hard it aims at them.
+##
+## The invariant below is unmoved and still does the deciding. A gap is off the tree like every
+## other candidate, so nothing here can cut the corridor; what the check catches is the same thing
+## it always did.
 static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment,
 		tree: RouteTree, rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
 	var rim := {}
 	for key in tree.rim():
 		rim[key] = true
+	var gaps := {}
+	for key in tree.gaps():
+		gaps[key] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
 	for segment in StreetNetwork.segments():
@@ -205,7 +220,8 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment,
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
 			continue
 		pool.append(segment)
-		weights.append(Tuning.CLOSURE_WALL_BIAS if rim.has(key) else 1.0)
+		var weight := Tuning.CLOSURE_WALL_BIAS if rim.has(key) else 1.0
+		weights.append(weight * Tuning.CLOSURE_GAP_BIAS if gaps.has(key) else weight)
 
 	var order: Array[StreetNetwork.Segment] = []
 	while not pool.is_empty():

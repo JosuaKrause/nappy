@@ -52,6 +52,8 @@ func run(t) -> void:
 	_test_a_second_route_is_offered_where_the_map_allows_one(t)
 	_test_the_fan_out_meets_every_route(t)
 	_test_the_fan_out_is_never_one_place(t)
+	_test_a_gap_joins_two_parallel_strands(t)
+	_test_a_gap_is_a_small_part_of_the_rim(t)
 	_test_the_same_day_grows_the_same_tree(t)
 	_test_a_different_day_is_a_different_way(t)
 
@@ -244,6 +246,63 @@ func _test_the_fan_out_is_never_one_place(t) -> void:
 		t.check(planned.tree.covering_sites().size() >= 2,
 				"seed %d day %d: %d areas have a choice, so the fan-out is at least two places"
 				% [planned.map.seed_used, planned.day, choices])
+
+# ------------------------------------------------------------------- the gaps ---
+
+## **A gap is the one street between two strands of corridor that run alongside each other.**
+## *(M55, playtest 17 finding 2.)* The definition is re-derived here from `StreetNetwork` and
+## `is_on_the_tree` rather than from the links `gaps()` walks, so the two have to agree by meaning
+## and not merely by sharing an implementation.
+##
+## Three clauses, and each is a way the answer could be quietly useless. It is **off the tree** —
+## a placement on it would otherwise be a wall across the route. It is a **real street today**, or
+## it is somewhere a calm zone absorbed and nothing can stand there. And a street of the tree
+## **crosses each of its two ends**, which is the whole of *"only directly adjacent paths (with a
+## single street connecting both) counts"* — at right angles, because a tree street running
+## straight on through the junction is one strand carrying on rather than two lying alongside.
+func _test_a_gap_joins_two_parallel_strands(t) -> void:
+	var total := 0
+	for planned in _days:
+		for key in planned.tree.gaps():
+			total += 1
+			var segment := StreetNetwork.by_key(key)
+			t.check(segment != null and not planned.tree.is_on_the_tree(key),
+					"seed %d day %d: the gap %s is a street off the tree"
+					% [planned.map.seed_used, planned.day, key])
+			t.check(not planned.map.blocked_segments().has(key),
+					"seed %d day %d: and one the city still has (%s)"
+					% [planned.map.seed_used, planned.day, key])
+			if not segment:
+				continue
+			for junction in [segment.a, segment.b]:
+				t.check(_crossed_by_the_tree(planned, junction, key.z),
+						"seed %d day %d: and a strand of corridor runs across %s of it"
+						% [planned.map.seed_used, planned.day, junction])
+	t.check(total > 100, "the days sampled have gaps in them at all (%d)" % total)
+
+## **A gap is a hole in the middle of the rim, not most of it**, which is the whole reason it is
+## worth weighting separately: a preference that applied to half the band it sits in would not be a
+## preference. Measured at about one gap for every six turnings off the corridor.
+func _test_a_gap_is_a_small_part_of_the_rim(t) -> void:
+	for planned in _days:
+		var rim := {}
+		for key in planned.tree.rim():
+			rim[key] = true
+		var gaps := planned.tree.gaps()
+		for key in gaps:
+			t.check(rim.has(key), "seed %d day %d: the gap %s is on the rim"
+					% [planned.map.seed_used, planned.day, key])
+		t.check(gaps.size() * 3 < rim.size(),
+				"seed %d day %d: and the rim is mostly not gaps (%d of %d)"
+				% [planned.map.seed_used, planned.day, gaps.size(), rim.size()])
+
+## Whether a street of the tree meets this junction at right angles to a street running `along`.
+func _crossed_by_the_tree(planned: Day, junction: Vector2i, along: int) -> bool:
+	for segment in StreetNetwork.at_junction(junction):
+		var key := segment.key()
+		if key.z != along and planned.tree.is_on_the_tree(key):
+			return true
+	return false
 
 # ------------------------------------------------------------- the same day ---
 
