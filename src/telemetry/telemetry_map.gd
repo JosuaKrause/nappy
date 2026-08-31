@@ -57,6 +57,23 @@ const CLOSURE_MARK := Color("ff2626")
 const CORRIDOR_MARK := Color("b366ff")
 const DEAD_END_MARK := Color("2ee6d0")
 
+## What the day placed a thing **for**, as a colour. *(M50; `GameEnums.BlockerRole`, and
+## `docs/CITY.md`, "The words for it".)*
+##
+## **The role is the colour and not the shape, because the role is the question.** A wall drawn on
+## the corridor instead of beside it is the central defect this milestone can have, and it is one
+## glance to see in a picture and invisible in every other tool — so it gets the channel the eye
+## reads first, and the effect below gets the weaker one.
+##
+## `NONE` is deliberately the dullest thing in the picture. It is not a fourth kind of placement, it
+## is everything the day put down for a reason that is not about the route — an ambient playground,
+## a scar the run left, a cat the director will site in front of her later — and a grey blob is the
+## right amount of attention for something the corridor had no say in.
+const WALL_MARK := Color("ffe14d")
+const FRICTION_MARK := Color("4db8ff")
+const SET_PIECE_MARK := Color("ff5ce0")
+const NO_ROLE_MARK := Color("8c93a1")
+
 ## How much of the ground a corridor stroke lets through.
 ##
 ## *(2026-08-31: "keep the violet lines transparent".)* It is the one mark that runs the length of
@@ -64,6 +81,33 @@ const DEAD_END_MARK := Color("2ee6d0")
 ## city. Blended rather than drawn, because the image is `FORMAT_RGB8` and has no alpha channel to
 ## carry it — what is stored is the mix.
 const CORRIDOR_ALPHA := 0.55
+
+## The single tile put through the middle of an event that has been in the world, which is what
+## tells a placement she reached from one she never did.
+##
+## **It is a mark added rather than strength taken away, and the first version was the other way
+## round.** Fading what she never reached is the obvious design and it answers the wrong question:
+## a wall placed in the far corner of a map she never walked into is still a wall in the wrong
+## place, and it is the placement no trace can report — so the picture would have whispered exactly
+## the thing it exists to shout. Drawn instead, every mark stays at full strength and the ones she
+## met carry a white pip, which also gives the picture something it was not asked for and is worth
+## keeping: the pips are a trail of **where she actually went**, against the corridor the day
+## planned for her.
+const MET_MARK := Color("ffffff")
+
+## How much of the ground the line of a routed event lets through.
+##
+## Much fainter than the mark it belongs to, and the number was set by looking rather than chosen:
+## a fire engine's route is 1920px of street and a day places a hundred and seventy-five events, so
+## at 0.3 the routes were the loudest thing in the picture and read as **corridor** — thin coloured
+## lines down the middle of streets, which is exactly what the violet is. A mark that can be
+## mistaken for the one thing it has to be compared against is worse than no mark.
+##
+## It is kept rather than dropped because leaving it out is its own lie: a van that sweeps a whole
+## street would be drawn as a point, and *how much ground a placement covers* is half of what makes
+## a wall a wall. At 0.18 it is a shadow you find when you look for it, which is the right weight
+## for a fact about an event you have already found.
+const ROUTE_ALPHA := 0.18
 
 ## What a building is drawn as here.
 ##
@@ -82,8 +126,12 @@ const BUILDING_GROUND := Color("211f26")
 ##
 ## `tree` is the day's corridor, and it is the one mark here that is a **plan** rather than a fact
 ## about the ground. It is optional because everything else in the picture is true without it.
+##
+## `plans` is what the day placed, and it is the corridor's other half: a corridor with nothing
+## drawn against it says where the routes went and not whether anything was placed *for* them. See
+## `_mark_the_events`.
 static func render(map: CityMap, closures: Array[RoadClosure] = [],
-		tree: RouteTree = null) -> Image:
+		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = []) -> Image:
 	var image := Image.create_empty(map.size.x * SCALE, map.size.y * SCALE, false, Image.FORMAT_RGB8)
 	for y in map.size.y:
 		for x in map.size.x:
@@ -103,6 +151,11 @@ static func render(map: CityMap, closures: Array[RoadClosure] = [],
 	# drawn to be read *against* — where it arrives, what it had to go round, where it starts —
 	# and a plan that covers them would be answering its own question.
 	_mark_the_corridor(image, tree)
+	# Over the corridor, because a placement is read *against* it and the pair has to be seen at
+	# once — and under the four below for the same reason the corridor is: where she arrives, what
+	# was shut and where she starts are the picture's fixed points, and a hundred and twenty event
+	# marks laid over them would bury the frame everything else is measured in.
+	_mark_the_events(image, map, plans)
 	_mark_the_dead_ends(image, map)
 	_mark_the_calm(image, map)
 	_mark_the_closures(image, closures)
@@ -160,6 +213,87 @@ static func _corridor_stroke(segment: StreetNetwork.Segment) -> Rect2i:
 	if segment.horizontal:
 		return Rect2i(Vector2i(from.x, from.y + across), Vector2i(length, 1))
 	return Rect2i(Vector2i(from.x + across, from.y), Vector2i(1, length))
+
+## Everything the day sited, each carrying what it is: **colour is the role, shape is the effect,
+## and a white pip is whether she ever got to it.** *(M50, and it is the picture the milestone is
+## checked against rather than a decoration on one.)*
+##
+## Three channels because the vocabulary has three axes and reading two of them off a log means
+## joining a `plan` line to a `near` line by hand, which is the thing nobody does twice. The
+## permanence axis is the one deliberately not drawn: a dead end and a big building are already
+## teal, and everything here is by definition soft.
+##
+## **An unplaced plan is skipped and that is the honest answer, not a gap.** An `AHEAD_OF_PLAYER`
+## row has no position — the day budgets one more cat and the director decides where out of where
+## she turns out to walk — so drawing it anywhere would be the picture claiming a placement that
+## nothing made. `_role_for` gives it `NONE` for the same reason.
+##
+## A **spent** offer is drawn like any other: a set piece is planned at every site of a covering set
+## and exactly one happens, so the sites that did not are what makes the covering set visible at
+## all. They come out without a pip, which is right — she never reached them.
+static func _mark_the_events(image: Image, map: CityMap,
+		plans: Array[EventScheduler.Planned]) -> void:
+	for plan in plans:
+		if not plan.is_placed():
+			continue
+		var colour := role_mark(plan.role)
+		if plan.path.size() >= 2:
+			_blend_tiles(image, _route_stroke(map, plan.path), colour, ROUTE_ALPHA)
+		_mark_one_event(image, map.world_to_tile(plan.position), colour,
+				plan.def.effect() == GameEnums.BlockerEffect.LETHAL, plan.was_live)
+
+## One event's glyph, three tiles across whatever it is.
+##
+## **A lethal one is filled and everything else is a cross**, which is the game's own vocabulary
+## rather than a new one: the caret over an entity is doubled and solid for a thing that ends the
+## day, and single for a thing that merely costs. Both fit the same three-tile box on purpose — the
+## picture is about *where* things went, so a mark that grew with its severity would make a lethal
+## row look like it took more ground than it does, and on a six-tile street that is most of a
+## pavement.
+##
+## The cross is the shape the rule above asks for; the filled square is the second exception to it,
+## after the hard blockers, and it is bounded rather than argued: nine tiles of a six-tile street,
+## on the handful of rows a day that end it.
+##
+## The pip goes on last and takes the centre tile of either shape, so it never changes a glyph's
+## footprint and cannot be mistaken for a fourth kind of mark.
+static func _mark_one_event(image: Image, at: Vector2i, colour: Color, lethal: bool,
+		met: bool) -> void:
+	if lethal:
+		_fill_tiles(image, Rect2i(at - Vector2i.ONE, Vector2i(3, 3)), colour)
+	else:
+		_fill_tiles(image, Rect2i(Vector2i(at.x - 1, at.y), Vector2i(3, 1)), colour)
+		_fill_tiles(image, Rect2i(Vector2i(at.x, at.y - 1), Vector2i(1, 3)), colour)
+	if met:
+		_fill_tiles(image, Rect2i(at, Vector2i.ONE), MET_MARK)
+
+## The role a placement carries, as the colour it is drawn in.
+##
+## Public because the test asserts against these by name, and a test that hard-codes the hex of a
+## mark is a test that passes when the drawing and the legend have come apart.
+static func role_mark(role: GameEnums.BlockerRole) -> Color:
+	match role:
+		GameEnums.BlockerRole.WALL:
+			return WALL_MARK
+		GameEnums.BlockerRole.FRICTION:
+			return FRICTION_MARK
+		GameEnums.BlockerRole.SET_PIECE:
+			return SET_PIECE_MARK
+	return NO_ROLE_MARK
+
+## The ground a routed event covers, as the one-tile band between its ends.
+##
+## Every path in the catalogue is **two axis-aligned points** — a van down a street, a cat across
+## one — so the band between them is the route itself rather than an approximation of it, and
+## `tests/test_telemetry.gd` holds that over the whole catalogue rather than leaving it as an
+## assumption in a comment. It has to, because the failure is silent: a route that ever bent would
+## be drawn here as its bounding box, which is a picture of ground the event never covers.
+static func _route_stroke(map: CityMap, path: PackedVector2Array) -> Rect2i:
+	var from := map.world_to_tile(path[0])
+	var to := map.world_to_tile(path[path.size() - 1])
+	var low := Vector2i(mini(from.x, to.x), mini(from.y, to.y))
+	var high := Vector2i(maxi(from.x, to.x), maxi(from.y, to.y))
+	return Rect2i(low, high - low + Vector2i.ONE)
 
 ## Every street a hard blocker built over: the wall at the end of a dead end, and all four sides
 ## of a big building. *(M50 step 1.)*

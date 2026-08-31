@@ -26,6 +26,8 @@ func run(t) -> void:
 	_test_a_day_header_opens_a_day(t)
 	_test_the_map_picture_covers_the_city_and_marks_it(t)
 	_test_the_map_picture_draws_the_corridor(t)
+	_test_the_map_picture_marks_what_the_day_placed(t)
+	_test_every_routed_event_is_a_straight_line(t)
 	_test_the_map_picture_reads_the_map_and_nothing_else(t)
 	_test_a_picture_asked_for_by_hand_is_never_capped(t)
 
@@ -188,10 +190,7 @@ func _test_the_map_picture_covers_the_city_and_marks_it(t) -> void:
 	t.check(image.get_size() == map.size * TelemetryMap.SCALE,
 			"the picture is the whole map at SCALE pixels a tile")
 
-	var seen := {}
-	for y in image.get_height():
-		for x in image.get_width():
-			seen[image.get_pixel(x, y)] = true
+	var seen := _colours_in(image)
 	t.check(seen.has(TelemetryMap.HOME_MARK), "the home is marked")
 	t.check(seen.has(TelemetryMap.CALM_MARK), "and every calm area is outlined")
 	t.check(map.main_road < 0 or seen.has(TelemetryMap.SPINE_MARK), "and the spine is drawn")
@@ -274,6 +273,129 @@ func _test_the_map_picture_draws_the_corridor(t) -> void:
 			elsewhere += 1
 	t.check(elsewhere == 0, "and no street off the tree is marked (%d were)" % elsewhere)
 
+## What the day placed, carrying what it is. *(M50, and this is the picture the milestone is
+## checked against rather than a decoration on one.)*
+##
+## The thing being asserted is that the **legend is the drawing**: a picture whose colours have
+## drifted from `role_mark` is worse than no picture, because it answers the one question the
+## milestone can get badly wrong — *is that wall on the corridor or beside it* — confidently and
+## wrongly. Two days rather than one because the vocabulary has four roles and no single day places
+## in all of them: day 9 has walls and friction and no one-shot, day 3 is the day the fire engine
+## runs.
+##
+## What is not asserted here is whether it is **legible**, which is a PNG to open and look at. That
+## split is this project's oldest and the marks were moved twice by looking: the route lines were
+## drawn at the mark's own strength and read as corridor, and "she reached this one" was a fade
+## before it was a pip.
+func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var consumed: Array[String] = []
+	var roles := {}
+	for day in [3, 9]:
+		var tree := RouteTree.for_day(map, day)
+		var plans := EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree)
+		var plain := TelemetryMap.render(map, [], tree)
+		var drawn := TelemetryMap.render(map, [], tree, plans)
+		t.check(plain.get_data() != drawn.get_data(),
+				"day %d's placements are drawn over the corridor they were placed against" % day)
+
+		var placed := {}
+		for plan in plans:
+			if plan.is_placed():
+				placed[plan.role] = true
+				roles[plan.role] = true
+		var seen := _colours_in(drawn)
+		for role: GameEnums.BlockerRole in placed:
+			t.check(seen.has(TelemetryMap.role_mark(role)),
+					"and every role day %d placed in is in the picture (%s is not)"
+					% [day, GameEnums.BlockerRole.keys()[role]])
+		if day == 9:
+			_check_a_glyph_says_what_it_is(t, map, plans)
+	t.check(roles.size() == 4,
+			"and between them the two days draw all four roles (%d of 4)" % roles.size())
+
+## One event's glyph, rendered alone so nothing else can be what the pixels are.
+##
+## Three claims, and the middle one is the one a whole-picture check cannot make: a lethal row
+## **fills** its three tiles and a costly one is a **cross**, so the corners are the difference and
+## a corner is where the two would be confused. The third is `was_live`, which is the only thing the
+## dusk picture says that the dawn one does not — and it is checked by flipping the flag rather than
+## by playing a day, because what is being tested is the drawing.
+func _check_a_glyph_says_what_it_is(t, map: CityMap,
+		plans: Array[EventScheduler.Planned]) -> void:
+	var lethal: EventScheduler.Planned = null
+	var costly: EventScheduler.Planned = null
+	for plan in plans:
+		# A routed event lays a band over its own corners, so the shape is read off a stationary one.
+		if not plan.is_placed() or plan.path.size() >= 2:
+			continue
+		if plan.def.hard_fail and lethal == null:
+			lethal = plan
+		elif not plan.def.hard_fail and costly == null:
+			costly = plan
+	t.check(lethal != null and costly != null, "the day places something lethal and something costly")
+	if lethal == null or costly == null:
+		return
+
+	var corner := Vector2i(1, 1)
+	for plan in [costly, lethal]:
+		var only: Array[EventScheduler.Planned] = [plan]
+		var image := TelemetryMap.render(map, [], null, only)
+		var at := map.world_to_tile(plan.position)
+		var colour := TelemetryMap.role_mark(plan.role)
+		t.check(_tile_colour(image, at) == colour,
+				"%s is marked on the tile the day put it on" % plan.def.id)
+		t.check(_tile_colour(image, at + Vector2i(1, 0)) == colour, "and reaches a tile across")
+		t.check((_tile_colour(image, at + corner) == colour) == plan.def.hard_fail,
+				"and %s fills its corners only if it ends the day" % plan.def.id)
+
+		# The pip is the whole of "she got to this one", and it is added rather than taken away:
+		# every mark stays at full strength, because a wall in the wrong place in a corner of the
+		# map she never walked into is exactly the placement worth seeing.
+		t.check(_tile_colour(image, at) != TelemetryMap.MET_MARK,
+				"and nothing she has not reached carries a pip")
+		plan.was_live = true
+		var met := TelemetryMap.render(map, [], null, only)
+		plan.was_live = false
+		t.check(_tile_colour(met, at) == TelemetryMap.MET_MARK,
+				"while one she reached does, in the middle of the same mark")
+		t.check(_tile_colour(met, at + Vector2i(1, 0)) == colour,
+				"and the pip does not change the glyph around it")
+
+## `_route_stroke` draws the band between a route's two ends, which **is** the route only while
+## every route in the catalogue is two axis-aligned points.
+##
+## Asserted rather than assumed because the failure is silent and would be a picture of ground the
+## event never covers: a route that ever bent would be drawn as its bounding box, and a bounding box
+## is a plausible-looking rectangle rather than an obvious error. It is the same shape as the rest
+## of this file — *an identity standing in for the property* — caught before it can happen.
+func _test_every_routed_event_is_a_straight_line(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var consumed: Array[String] = []
+	for day in [1, 3, 7, 14]:
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+			if plan.path.size() < 2:
+				continue
+			t.check(plan.path.size() == 2, "%s's route is two points, not %d"
+					% [plan.def.id, plan.path.size()])
+			var along := plan.path[plan.path.size() - 1] - plan.path[0]
+			t.check(is_zero_approx(along.x) or is_zero_approx(along.y),
+					"and %s's route runs along one axis" % plan.def.id)
+
+## Every colour anywhere in a picture. Presence rather than address, which is what the marks are
+## asserted by: an outline moved one tile is still a correct picture, and a mark that never got
+## drawn at all is the failure worth catching.
+func _colours_in(image: Image) -> Dictionary:
+	var seen := {}
+	for y in image.get_height():
+		for x in image.get_width():
+			seen[image.get_pixel(x, y)] = true
+	return seen
+
+## The colour of one **tile**, which is what every mark in the picture is drawn in units of.
+func _tile_colour(image: Image, tile: Vector2i) -> Color:
+	return image.get_pixel(tile.x * TelemetryMap.SCALE, tile.y * TelemetryMap.SCALE)
+
 ## Rendering is a **read**. It takes no RNG and changes nothing about the map, which is the same
 ## promise `_test_tracing_a_day_does_not_change_it` makes about the log — and it is worth its own
 ## check because this one draws from a `CityMap` that is mutable by design.
@@ -310,6 +432,13 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
 
 # ------------------------------------------------------------------ helpers ---
+
+## A day's own stream, fixed to one city so a picture test is asserting the drawing rather than
+## whichever day the generator happened to hand it.
+func _rng(day: int) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d" % [4242, day])
+	return rng
 
 ## Everything a planned day is, as one comparable string: what was placed, where, and in what
 ## order. Positions to the pixel, because a shifted RNG moves an event without changing the

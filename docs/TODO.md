@@ -193,8 +193,11 @@ morning. Step 1 — the city has permanent structure in it, four to eight dead e
 big buildings, placed against a reference tree. **Step 2 is placement by role**: a closure is a
 **wall** placed off the corridor (the `CLOSURE_ROUTE_BIAS` inversion), a lethal event is a wall
 too, a costly one is **friction** weighted onto the corridor, and a one-shot is a **set piece**
-offered at every site of a covering set with exactly one of them happening. What is left is step 3,
-placeholders, and the one tooling item that draws the roles on the map.
+offered at every site of a covering set with exactly one of them happening. The tooling that draws
+the roles on the map is done with them — colour is the role, shape is the effect, a white pip is
+whether she reached it, and there is a **dusk** picture now, because that last one cannot mean
+anything at dawn. **What is left is step 3, placeholders**, plus the resistance note's alley as a
+set piece.
 
 Read the M50 entry before picking any of it up: the things that went wrong there are worth more
 than the things that went right, and two of them are the same shape — **a test that was true by
@@ -3192,12 +3195,37 @@ the day and form an impression.
         precinct is laid `SIDEWALK` from frontage to frontage, so the ground pass already draws it
         as the one corridor with no asphalt stripe down it, and the blue line was an overlay
         repeating a fact the picture had
-- [ ] **Mark every placed event with its categorisation.** Not just *where* — **what kind**, in the
+- [x] **Mark every placed event with its categorisation.** Not just *where* — **what kind**, in the
       vocabulary in `docs/CITY.md`, "The words for it": its **effect** (lethal / impassable /
       costly) and its **role** (wall / friction / set piece). A wall drawn on the corridor instead
       of beside it is the central defect this milestone can have, and it is one glance to see and
       invisible in every other tool. Distinguish placed-and-live from placed-and-never-reached, and
       keep it legible at 640px
+
+      **Built: colour is the role, shape is the effect, a white pip is whether she reached it.** No
+      row carries an effect the vocabulary did not already have — `EventDef.effect()` and
+      `Planned.role` both existed by the end of step 2 — so this is a legend rather than a model,
+      and `tests/test_telemetry.gd` asserts the legend *is* the drawing. Three things came out of
+      building it, and two of them were found only by opening the PNG:
+
+      - **"Distinguish placed-and-live from placed-and-never-reached" needs a second picture, and
+        the second picture is the more useful half.** At dawn nothing has been reached, so the flag
+        can only mean something at dusk — `-map-day<NN>-dusk.png`, written from `_on_day_finished`
+        before `end_day()`. What the pair says that neither says alone: the dawn map shows a wall in
+        the wrong place, and only the dusk one shows **a corridor with nothing on it ever met**.
+      - **The first version faded what she never reached, and that is the picture whispering the
+        thing it exists to shout.** A wall in the far corner of a map she never walked into is
+        still a wall in the wrong place, and it is exactly the placement no trace can report. Drawn
+        as a pip instead, every mark stays at full strength — and the pips turn out to be a **trail
+        of where she actually went**, laid over the corridor the day planned for her, which is a
+        second question answered for nothing.
+      - **A faint mark can still be the loudest thing in a picture if it is the wrong shape.** A
+        routed event draws a band along the ground it covers; at the mark's own strength, on a day
+        with 175 placements, those bands read as *corridor* — thin coloured lines down the middle of
+        streets, which is what the violet is. Dropping them was wrong too (a van that sweeps a whole
+        street would be drawn as a point). 0.18 makes it a shadow you find when you look for it. The
+        shape to carry: **a mark that can be mistaken for the one thing it has to be compared
+        against is worse than no mark.**
 
 Both obey the telemetry invariant — no RNG, nothing that changes a placement, no cost when
 telemetry is off — and both are dev tooling under the same eventual debug-build gate.

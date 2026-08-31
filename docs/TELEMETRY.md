@@ -276,18 +276,21 @@ nearest calm area is, whether a closure cut anything, which street the spine is,
 never reached — and answering one from a list of tile coordinates is a thing nobody does twice.
 
 So a run writes `<log stem>-map-day<NN>.png`: one four-pixel square per tile, coloured by tile
-type, with the home, the calm areas, the main road and today's closures marked over it.
-`TelemetryMap` does the drawing.
+type, with the home, the calm areas, the main road, today's closures, the day's corridor and every
+event the day placed marked over it. `TelemetryMap` does the drawing.
 
 - **It is not `--overview`.** That flag frames the *rendered* city — buildings, props, dusk, an
   act's colour cast — on a run somebody has to take deliberately. This is the grid, so it says what
   the generator decided rather than what the renderer drew, and it is written without being asked.
-- **One picture per day, not one per run.** The lattice is fixed for a run and **what a block is is
-  not**: an arc requisitions a park, a fire leaves a shell, and today's closures are down. A single
-  map taken at dawn on day 1 would be a lie by day 12.
-- **Marks are outlines and lines, never fills**, so nothing can hide the ground it is describing —
-  the commonest way a debug overlay lies is by covering the thing that was going to answer the
-  question. The home is filled, because it is a point rather than an area. A crosshair reaching a
+- **Per day, not per run.** The lattice is fixed for a run and **what a block is is not**: an arc
+  requisitions a park, a fire leaves a shell, and today's closures are down. A single map taken at
+  dawn on day 1 would be a lie by day 12. Since M50 it is twice a day — see "What the day placed".
+- **Marks are outlines, lines and crosses, never fills**, so nothing can hide the ground it is
+  describing — the commonest way a debug overlay lies is by covering the thing that was going to
+  answer the question. Three things are filled and each is bounded rather than argued: the home,
+  because it is a point rather than an area; a hard blocker, because there the ground *is* the mark;
+  and a lethal event, at nine tiles of a six-tile street on the handful of rows a day that end it.
+  A crosshair reaching a
   block either way was built and taken back out: it is the only red in a picture with no other red
   in it, so it was already the first thing the eye lands on, and the reach was covering two streets
   to buy nothing.
@@ -351,6 +354,48 @@ It earns a colour rather than being left to show through as building, which was 
 and was invisible: a two-tile slab of dark building inside a dark street is exactly the thing
 nobody spots, and **a hard blocker nobody can find in the one picture built to check placements
 might as well not have been placed.**
+
+### What the day placed
+
+*(M50, and it is the picture the milestone is checked against rather than a decoration on one.)*
+Every **sited** event is drawn where the day put it, carrying the three things `docs/CITY.md`,
+"The words for it", says about a placement:
+
+| channel | says | values |
+|---|---|---|
+| colour | **role** — what it was placed *for* | wall (yellow), friction (blue), set piece (magenta), none (grey) |
+| shape | **effect** — what it does to a route | lethal fills its three tiles, costly is a cross |
+| a white pip in the middle | whether she ever reached it | drawn only once it has been in the world |
+
+- **The role gets the colour because the role is the question.** A wall drawn *on* the corridor
+  instead of beside it is the central defect M50 can have, and it is one glance to see here and
+  invisible in every other tool. Reading it off a log means joining a `plan` line to a `near` line
+  by hand, which is the thing nobody does twice.
+- **`NONE` is deliberately the dullest thing in the picture.** It is not a fourth kind of
+  placement, it is everything the day put down for a reason that is not about the route — an
+  ambient playground, a scar the run left, a cat the director will site in front of her later.
+- **An unplaced plan is not drawn**, and that is the honest answer rather than a gap. An
+  `AHEAD_OF_PLAYER` row has no position at dawn, so drawing it anywhere would be the picture
+  claiming a placement nothing made.
+- **A spent set-piece offer is drawn like any other**, because the sites that did not fire are what
+  makes the covering set visible at all. They come out without a pip, which is right.
+- A **routed** event also gets a faint band along the ground it covers. It is much fainter than
+  the mark, and that number was set by looking: at the mark's own strength the routes were the
+  loudest thing in the picture and read as *corridor* — thin coloured lines down the middle of
+  streets, which is exactly what the violet is.
+
+**And it is written twice a day, which is the only reason the pip means anything.**
+`<log stem>-map-day<NN>.png` at dawn is purely *what the day intended*; `-map-day<NN>-dusk.png` is
+the same picture with the placements she actually walked up to burnt into it. Neither is derivable
+from the other and neither is the more useful one — a wall in the wrong place is visible in the
+first, and *a corridor with nothing on it ever met* is visible only in the second.
+
+**The pip is a mark added rather than strength taken away, and the first version was the other way
+round.** Fading what she never reached is the obvious design and it answers the wrong question: a
+wall in the far corner of a map she never walked into is still a wall in the wrong place, and it is
+the placement no trace can report — so the picture would have whispered exactly the thing it exists
+to shout. Drawn instead, the pips also give the picture something nobody asked for and worth
+keeping: **a trail of where she actually went, against the corridor the day planned for her.**
 
 ## What it deliberately does not do
 
