@@ -227,6 +227,11 @@ day — a police car drives north showing its flank, and a car reaches the bridg
 Two of the seven are about the frame rather than the game, and one is a report the player is not
 sure about and is recorded as exactly that.
 
+**And the next three are asked for and written down: `M52`.** *"2x2 courtyard and rectangular calm
+zones, calm zone rate adjustments, traffic light placements."* Recorded in the player's own words,
+with this side's reading kept separate from it and four questions that have to go back before any
+of it is built — see the entry. Nothing is started.
+
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
@@ -3164,6 +3169,60 @@ rather than to move a number.
       a report that the ending was unreadable — three screens deep, in the fiction's own voice,
       dismissed with the same key as everything else. Finding 5 is the fix and this is the evidence
       for it. Reopen it if the counter is ever seen to move with nerves still on the HUD
+
+## M52 — The calm has a shape, and the lights have a reason · not started
+
+**Asked for on 2026-08-31, in the player's own words and in this order:**
+
+> *"The next steps after M50 are 1) 2x2 courtyard and rectangular calm zones 2) calm zone rate
+> adjustments 3) traffic light placements."*
+
+**That is the whole of what was said, and it is written down before anything is read into it**, per
+the rule at the top of `CLAUDE.md`: a finding summarised on the way in has already lost the part
+that was hard to work out. What follows is *this side's reading* of each, kept separate from the
+sentence above, together with the questions that have to go back — because all three are single
+clauses about systems that currently answer them with a constant, and a reading is not an
+instruction.
+
+**Where each of the three stands today**, so the questions below are asked with the work done up to
+the fork:
+
+1. **Calm zones are square and there is one size of them.** `Tuning.CALM_ZONE_BLOCKS` is `2`, and
+   every piece of arithmetic that follows — the tile rect, which segments are absorbed, which
+   junctions survive — is written in terms of it (`CityGenerator._zone_fits`, `_absorb_the_zone`,
+   `CityMap.lot_rect`). A city gets one or two zones and the rest of its calm is single-block. A
+   **courtyard** is a different thing again: `BlockPurpose.COURTYARD`, the court inside one
+   residential block, and it has never been a zone.
+2. **A calm area's rates do not depend on what kind of calm it is.**
+   `SLEEPINESS_CALM_ZONE_MULTIPLIER` (14.0) and `EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` (2.2) are
+   asked of the *ground*, through `Baby`'s four questions, and every calm tile answers the same —
+   a 22-tile zone and an eight-tile courtyard fill the meter at the same rate.
+3. **Lights are on the spine and nowhere else.** `TrafficSignals.is_signalled` is
+   `junction.x == _map.main_road`, one line, and M41's note beside it says that is deliberate:
+   *"every junction on the spine is signalled and no other one is, which is what makes the lights a
+   property of the street rather than a scattering of them."* Anything that moves it is moving that
+   sentence, so it wants to be moved on purpose.
+
+**The questions that have to be answered before any of it is built**, and none of them is a
+detail — each changes what gets written:
+
+- [ ] **A "2x2 courtyard": is that a courtyard *lot* four blocks across, or four blocks of ordinary
+      residential with one shared court in the middle?** The first is `CALM_ZONE_BLOCKS` applied to
+      a purpose it has never had; the second is a new block layout and leaves the lattice alone.
+- [ ] **"Rectangular": which rectangles, and how many per city?** 1x2 and 2x3 are a different city
+      from 1x4. The two constraints the current code enforces and that a rectangle has to keep or
+      overturn are that a zone never takes the arterial, and that it absorbs the streets *inside*
+      its own footprint — a long thin zone absorbs a long run of one corridor, which is a bigger
+      cut to the lattice than a square of the same area.
+- [ ] **"Rate adjustments": is the rate a property of the *kind* of calm, of its *size*, or a
+      number that moves for all calm at once?** Per-kind is the one that reaches `Baby`'s
+      interface, and M41's rule applies — a fifth question that is a special case of one of the
+      four is what that rule exists to stop, so this wants to generalise `decay_multiplier` rather
+      than sit beside it.
+- [ ] **"Traffic light placements": what decides where a light goes, now that it is not just the
+      spine?** And what it is *for* — M41 states the signals' fairness contract over the side
+      street's green, and lights on an ordinary junction would put that contract on streets the
+      player crosses casually all day.
 
 ## Tooling for the diversion work · `feature/a-map-that-shows-the-plan`
 
