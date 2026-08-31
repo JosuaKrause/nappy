@@ -252,14 +252,28 @@ becomes pavement, so the road visibly ends at the junction instead of poking int
 
 ### Route redundancy
 
-The design wants at least two distinct routes from home to every calm area, so that a spoiled or
-blocked route always has an alternative. Until M21 this held **by construction** rather than by
+The design **wanted** at least two distinct routes from home to every calm area, so that a spoiled
+or blocked route always has an alternative. Until M21 this held **by construction** rather than by
 search: carving only ever happened *inside* blocks, so the street lattice was never cut, and a
 full lattice cannot be disconnected by removing any single corridor.
 
 **A calm zone puts holes in the lattice, so the construction argument is gone** and the property
 is now checked. `StreetNetwork.route_count()` is that check and always was — M16 built it for
 the day's closures — and a zone's absent streets simply join the closed set it is given.
+
+**And since 2026-08-31 what is checked is weaker, on purpose.** *"The two routes guarantee is not
+a hard rule"* — the second route is an **offer** (see "How the corridor is built", and
+`RouteTree`, which manages it for 241 areas of 241 the map allows one to) rather than something
+placement is gated on. Three things hold instead, and each is stated where its decision is taken:
+
+| | |
+|---|---|
+| the generator | every calm area stays **reachable**, whatever hard blockers took |
+| the day | at least `MIN_CALM_AREAS_REACHABLE` calm areas are still reachable after the closures |
+| the city | **no single street cuts off all the calm** — the winnability sentence edge-disjointness was standing in for, now asserted directly |
+
+The count of *areas* deliberately did not move with it: two, because one of them may be the one
+the day has just spoiled.
 
 `tests/test_generator.gd` checks it directly by closing each street segment in turn and
 confirming a park is still reachable — with one exemption. **The street outside the home is
@@ -337,9 +351,11 @@ question below:
 **Each day — what is protected:**
 
 - `ClosurePlanner` shuts 1 street a day in act I, rising to 4, and accepts a candidate **only if
-  at least two distinct routes to at least two distinct calm areas survive it**.
-- `EventScheduler._ensure_one_usable_park` guarantees exactly **one** calm area has nothing
-  reaching it.
+  at least two distinct calm areas are still reachable after it**.
+- `EventScheduler._calm_to_leave_alone` refuses the ground: **nothing is placed near a calm area
+  she has not used this act**, so those stay clean rather than being cleaned up afterwards.
+- `EventScheduler._ensure_one_usable_park` is the last line under it, for the day she has used
+  every calm area there is and nothing was protected.
 - `_spoil_the_parks_she_used` spoils the ones she has already settled in **this act**, which is
   what stops her going back to the same bench every day.
 - `_ensure_the_city_is_still_walkable` drops obstructions that would seal the city.
@@ -477,14 +493,20 @@ seam would show if the two blocks were still two buildings. It exists because th
 picture of the *grid* and no picture of the *city*: the whole claim of a landmark is about how it
 reads from the street.
 
-**The gate is the strong one, deliberately, and moving it is a decision nobody has taken yet.**
-The design permits a weaker one — *"sealing off a section of the map is allowed, and it is the
-point"* — and `docs/TODO.md`'s M50 says hard blockers should need only reachability rather than
-two routes. That is coherent, and weakening it as a **side effect** of adding dead ends would be
-an overturn nobody chose, so the gate still demands that every calm area keeps two distinct
-routes. Measured, that costs almost nothing: with candidates already off the reference tree,
-**99% of them pass either gate**, and a city gets 5.9 dead ends against a rolled 4–8. The weaker
-gate is worth taking when the two-routes invariant itself is restated, not before.
+**The gate is reachability: every calm area the run will ever use can still be walked to.**
+
+M50 built it as the strong gate — two distinct routes to every area — deliberately, because
+weakening a winnability guarantee as a *side effect* of adding dead ends would have been an
+overturn nobody chose. It was moved on purpose on 2026-08-31, when the player pointed out the
+two-routes guarantee had never been a hard rule. Measured either way it costs almost nothing:
+with candidates already off the reference tree, **99% of them pass either gate**, and a city gets
+5.9 dead ends against a rolled 4–8.
+
+What makes reachability the *right* gate here rather than merely an allowed one is that
+cul-de-sacs are the point. Every dead end takes one of some area's ways in, so a two-routes rule
+refuses exactly the interesting candidates — and *"sealing off a section of the map is allowed,
+and it is the point."* What a hard blocker may never do is make calm unreachable, because it
+holds for the whole run: a day can be bad, a run cannot be dead.
 
 ### The words for it
 
@@ -619,16 +641,24 @@ impossible. It never suggests one.**
 
 ### The invariant
 
-> **At least two distinct routes to at least two distinct calm areas.**
-
-Distinct means **sharing no street**. Two routes may cross at a junction; if they run down
-the same street they are one route with a detour in it.
+> **At least two distinct calm areas can still be walked to.**
 
 `ClosurePlanner` checks it *before* accepting each closure rather than repairing the day
 afterwards, so the set it produces always satisfies it and there is no order-dependent
-unwinding to reason about. Counting routes is a unit-capacity max flow on the junction
-graph — by Menger's theorem the count is also "how many streets it would take to cut this
-area off", which is the honest reading of the guarantee.
+unwinding to reason about. Counting routes is a unit-capacity max flow on the junction graph,
+asked for one path.
+
+**It read *"at least two distinct routes to at least two distinct calm areas"* from M16 to
+2026-08-31**, where distinct meant sharing no street. *"The two routes guarantee is not a hard
+rule."* Edge-disjointness was a **stand-in** for winnability — by Menger, two routes means no
+single street is a cut — and the sentence it stood in for is now asserted directly and about the
+city rather than about each area: **no one street cuts off all the calm**
+(`tests/test_routes.gd`). The second route to any given area is an offer the day makes when the
+map allows one.
+
+What did **not** move is the count of areas. Two, because one of them may be the one the day has
+spoiled this morning; one reachable area is the unwinnable day this invariant has existed to
+prevent, and going there would be a separate decision.
 
 Both ends of the journey are exempt from being charged for their own doorway:
 
@@ -636,9 +666,9 @@ Both ends of the journey are exempt from being charged for their own doorway:
   sealing that street seals the player in however well connected the rest of the city is.
   This exemption predates closures — see "Route redundancy" above.
 - An area is reached by arriving at **either end** of a street it opens onto. So a courtyard
-  with a single archway can still have two routes to it; the routes differ everywhere except
-  the doorway. Shutting that one street does put the courtyard out of reach for the day, and
-  the invariant is what keeps that safe: two *other* areas still have two ways in.
+  with a single archway is still reachable two ways; the routes differ everywhere except the
+  doorway. Shutting that one street does put the courtyard out of reach for the day, and the
+  invariant is what keeps that safe: two *other* areas can still be walked to.
 
 ### What closes a street
 

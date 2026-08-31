@@ -10,12 +10,17 @@ extends RefCounted
 ## there would be nothing worth learning. So the day-level invariant is a floor, not a
 ## ceiling:
 ##
-##     at least two distinct routes to at least two distinct calm areas.
+##     at least two distinct calm areas can still be walked to.
 ##
-## That is stronger than the rule it replaces (`_ensure_the_city_is_still_walkable` only ever
-## looked for *one* way to *one* park), and it is checked before a closure is accepted rather
-## than repaired afterwards — so the set that comes out of here always satisfies it, and
-## there is no order-dependent unwinding to reason about.
+## It is checked before a closure is accepted rather than repaired afterwards — so the set that
+## comes out of here always satisfies it, and there is no order-dependent unwinding to reason
+## about.
+##
+## **It read "two distinct routes to two distinct calm areas" from M16 to 2026-08-31**, and the
+## player's clarification is what changed it: *"the two routes guarantee is not a hard rule."*
+## Edge-disjointness was standing in for winnability rather than being it — see
+## `Tuning.MIN_CALM_AREAS_REACHABLE` — and under M50 a wall is placed off the day's tree, so what
+## keeps the calm reachable is where a closure goes rather than how many ways round it there are.
 ##
 ## Everything here is deterministic from the day's RNG. A run is learnable or it is nothing.
 
@@ -41,7 +46,7 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator) -> Arra
 	var home := home_street(map)
 	var areas := calm_areas(map)
 	# Nothing to protect, or nowhere to protect it from: close nothing rather than guess.
-	if not home or areas.size() < Tuning.MIN_CALM_AREAS_WITH_TWO_ROUTES:
+	if not home or areas.size() < Tuning.MIN_CALM_AREAS_REACHABLE:
 		return chosen
 
 	# The streets a four-block calm zone absorbed start out "closed" and stay that way. They are
@@ -103,14 +108,19 @@ static func _passage_side(lot: Rect2i, passage: Rect2i) -> int:
 
 # ---------------------------------------------------------------- invariant ---
 
-## The day-level guarantee, in one place: enough calm areas still have a choice of ways in.
+## The day-level guarantee, in one place: enough calm areas can still be walked to.
+##
+## **It asked for two distinct routes to each of them until 2026-08-31**, and the player's own
+## clarification is why it does not: *"the two routes guarantee is not a hard rule."* See
+## `Tuning.MIN_CALM_AREAS_REACHABLE` for what that leaves standing and what it deliberately does
+## not weaken.
 static func _invariant_holds(home: StreetNetwork.Segment, areas: Array[CalmArea],
 		closed: Dictionary) -> bool:
-	var with_a_choice := 0
+	var reachable := 0
 	for area in areas:
-		if StreetNetwork.route_count(home, area.access, closed, 2) >= 2:
-			with_a_choice += 1
-			if with_a_choice >= Tuning.MIN_CALM_AREAS_WITH_TWO_ROUTES:
+		if StreetNetwork.route_count(home, area.access, closed, 1) >= 1:
+			reachable += 1
+			if reachable >= Tuning.MIN_CALM_AREAS_REACHABLE:
 				return true
 	return false
 

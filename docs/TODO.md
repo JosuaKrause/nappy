@@ -438,7 +438,9 @@ sequencing. Summary only here:
       least two distinct routes to at least two distinct calm areas. Five kinds of closure,
       sealed at both mouths so a shut street is readable from the junction; the invariant
       checked by unit-capacity max flow on the junction graph before each closure is
-      accepted. Canal dropped to M21
+      accepted. Canal dropped to M21. *(The invariant was weakened on 2026-08-31 to two calm
+      areas still **reachable** — the two-routes half was never a hard rule. The max flow and
+      the check-before-accepting are unchanged; see M50 and `docs/CITY.md`, "The invariant".)*
 - [~] **M17 Route map** — the planning screen, rendering M15's block states. **Backlogged, by
       decision, at the end of the M29 session**: *"in case you have it still in your notes about
       showing a brief map at the start let's not do that for now — we might revisit later but
@@ -2573,20 +2575,25 @@ consequence below open-eyed, not discovered later.
 existed so that no single closure could cut every route to the calm. Under this design that
 protection comes instead from **where a wall is placed** — off the tree, by construction — so the
 redundancy is no longer the backstop, the placement is. That is coherent, and it means one bug in
-wall placement is now the whole distance between a normal day and an unwinnable one.
+wall placement is now the whole distance between a normal day and an unwinnable one. *(Taken
+2026-08-31: the constant is `MIN_CALM_AREAS_REACHABLE` and asks for reachability. The count of
+areas deliberately stayed at two — see "The two invariant decisions" below.)*
 
-- [ ] **Keep a reachability check as the last line.** `_ensure_the_city_is_still_walkable` /
+- [x] **Keep a reachability check as the last line.** `_ensure_the_city_is_still_walkable` /
       `_park_is_reachable` already asks only that *some* calm area is reachable, which is exactly
-      the weakened guarantee and costs one BFS. **Do not delete it when
-      `MIN_CALM_AREAS_WITH_TWO_ROUTES` goes.** Two independent mechanisms became one; this keeps it
-      at two, cheaply, and it is the difference between a placement bug being a bad day and being
-      an unwinnable one
+      the weakened guarantee and costs one BFS. **It was not deleted when
+      `MIN_CALM_AREAS_WITH_TWO_ROUTES` went** *(2026-08-31)*, and neither was the closure planner's
+      own check — it asks for reachability now instead of for two routes. Two independent
+      mechanisms rather than one, cheaply, which is the difference between a placement bug being a
+      bad day and being an unwinnable one
 
-**And this makes step 1's gate much weaker, which is a gift.** Hard blockers no longer have to
-leave two edge-disjoint routes to every calm area — only **reachability**. Cul-de-sacs and dead
-ends were always the point of hard blockers and the old gate fought them; a `route_count >= 2`
-requirement would have refused most of the interesting ones. Use `route_count >= 1`, or just the
-walk field, and keep the reference tree as the readable sanity check rather than as the gate.
+**And this makes step 1's gate much weaker, which is a gift.** *(Taken 2026-08-31.)* Hard blockers
+no longer have to leave two edge-disjoint routes to every calm area — only **reachability**.
+Cul-de-sacs and dead ends were always the point of hard blockers and the old gate fought them; a
+`route_count >= 2` requirement would have refused most of the interesting ones.
+`CityGenerator._the_calm_survives` uses `route_count >= 1` now, over every calm area rather than
+over a count, because a hard blocker holds for the whole run: a day can be bad, a run cannot be
+dead.
 
 **Decided: B is the shortest remaining path.** The same computation that answers *does a second
 route exist* also is the route — no second walk.
@@ -2666,8 +2673,17 @@ and not a number to quietly bias**, and the map picture below is what it should 
 **Asked, and decided 2026-08-31: leave it.** *"Let's try it like this for now and keep the other
 options as potential improvements in the future if playtesting shows issues with the design."* So
 the wander ships, and the two answers that were on the table are recorded here rather than
-discarded, because the thing that would make one of them right is a playtest sentence about
-feeling lost — which nobody can have until somebody walks a day of it:
+discarded.
+
+**What they are not is pre-approved, and the earlier wording of this paragraph implied they were.**
+*(2026-08-31, the player: "I want to make very clear that saying 'I'm feeling lost' is not an
+endorsement of those ideas and doesn't count as approval. The most it does is bringing those items
+back to discussion.")* It said the thing that would make one of them right is a playtest sentence
+about feeling lost — which reads as a **trigger**: hear the sentence, apply the fix. It is not one.
+A complaint says the design has a problem; it says nothing about which of these two is the answer,
+or whether the answer is either of them. **A parked option comes back as a question, never as a
+plan.** The same holds for every other option parked anywhere in this file against a future
+sentence:
 
 - **Cap the wander, keep the walk.** Re-roll a probe whose route exceeds some multiple of the
   shortest way. One constant, still deterministic, and detail 3 stays literally true — it is still
@@ -2710,17 +2726,17 @@ blockers."*
 
 **Dead ends are built. What they came out as, and the three things worth carrying:**
 
-**The gate stayed the strong one and the plan above is why that needed a decision.** *"The gate is
-reachability — not two routes, which a cul-de-sac would fail by definition"* is written just
-above, and it is a **weakening of a guarantee three other things rest on**:
-`MIN_CALM_AREAS_WITH_TWO_ROUTES`, `ClosurePlanner`'s day-level invariant, and
-`tests/test_routes.gd`'s *"an open city has two routes to everywhere calm"* all assume the
-generator hands them a city where it holds. Taking it as a **side effect of adding dead ends** is
-the exact shape of overturn `CLAUDE.md` has a rule about, so the gate still demands two routes.
-And the fear turned out to be unfounded: with candidates already off the reference tree, **99% of
-them pass either gate**, and a city gets **5.9 dead ends against a rolled 4–8**. So the weaker
-gate buys ~nothing today and can be taken when the invariant itself is restated, which is where it
-belongs — see "The two invariant decisions" below.
+**The gate stayed the strong one while dead ends were built, and the plan above is why that needed
+a decision.** *"The gate is reachability — not two routes, which a cul-de-sac would fail by
+definition"* is written just above, and it is a **weakening of a guarantee three other things rest
+on**: `MIN_CALM_AREAS_WITH_TWO_ROUTES`, `ClosurePlanner`'s day-level invariant, and
+`tests/test_routes.gd`'s *"an open city has two routes to everywhere calm"* all assumed the
+generator hands them a city where it holds. Taking that as a **side effect of adding dead ends**
+is the exact shape of overturn `CLAUDE.md` has a rule about, so the gate kept demanding two routes
+until the invariant itself was restated — which happened on 2026-08-31 and is where the gate moved
+with it. And the fear turned out to be unfounded either way: with candidates already off the
+reference tree, **99% of them pass either gate**, and a city gets **5.9 dead ends against a rolled
+4–8**.
 
 **A dead end is a claim on the lattice paid for on the tiles, and calm ground beside one breaks
 it.** Found by building it: `tests/test_routes.gd` failed with *"the way in (5, 11, 0) is a real
@@ -2817,14 +2833,31 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
 - [ ] **`tests/test_telemetry.gd`'s shape, applied here**: plan a day, resolve every placeholder,
       and require the result to match planning it with the player walking a different way
 
-### The two invariant decisions, which block step 2
+### The two invariant decisions, which blocked step 2 — both taken 2026-08-31
 
-- [ ] **Restate the two-routes guarantee.** *Distinct* currently means **sharing no street**, and
-      corridors that bundle and then separate share plenty. The guarantee worth keeping is *"the
-      calm is reachable and no single closure decides the day"*; edge-disjoint max flow is one way
-      to get it and is stricter than the design needs. `tests/test_routes.gd` is what changes with
-      it, and it must not become weaker by accident — the day this rule stops holding is the day a
-      run becomes unwinnable and nothing says so
+**And the first of them should never have been a question.** *"I already clarified that the two
+routes guarantee is not a hard rule — is that not in your notes?"* It was: step 0 above says *"a
+second route is an offer, not a promise"* and *"what it costs is a guarantee, and that is a
+deliberate trade"*, `RouteTree`'s own class comment says it, and `docs/CITY.md` carries the
+player's *"having two distinct paths is really a niceness to the user"* and *"sealing off a
+section of the map is allowed, and it is the point."* The decision was recorded correctly and
+then re-opened from this stale heading, which is a smaller version of the failure `CLAUDE.md`'s
+overturn rule is about: **a decision that is written down in one place and contradicted by a
+to-do list in another is a decision that will be asked again.**
+
+- [x] **Restate the two-routes guarantee.** Done. `MIN_CALM_AREAS_WITH_TWO_ROUTES` is
+      `MIN_CALM_AREAS_REACHABLE`, the day-level check asks for one path rather than two, and the
+      generator gate is reachability — which is what M50 step 1 deliberately left alone until
+      somebody moved it on purpose.
+
+      Two things were kept rather than swept along with it, because the weakening had to be
+      deliberate on both sides. **The count of areas did not move**: two, because one of them may
+      be the one the day just spoiled, and one reachable area is the unwinnable day the constant
+      has existed to prevent since M16. And **the sentence edge-disjointness was standing in for
+      is now asserted directly** — by Menger it meant *no single street is a cut*, so
+      `tests/test_routes.gd` says that about the **city** rather than about each area: no one
+      street cuts off all the calm. The per-area version is false by construction now, because a
+      dead end is allowed to take one of an area's ways in
 - [x] **`_ensure_one_usable_park` versus the tree.** Answered from the other end on 2026-08-31 and
       it never needed the tree: the guarantee is stated over **where she has been**, not over where
       today's corridor goes, and it is enforced at placement now rather than by a strip. See the
