@@ -976,7 +976,51 @@ const EVENT_CORRIDOR_WEIGHT := 4
 ## streets away bounds nothing. That is the preference. What is not a preference is the exclusion
 ## beside it — the same reasoning as `CLOSURE_WALL_BIAS`, which is this number's twin one system
 ## over and deliberately the same value.
+##
+## **Since the range arrived it applies to the *costly* half of the wall band only.** A very costly
+## row is what the rim is for — she has strayed one turning and it is expensive — and a lethal row
+## wants the ground beyond it. See `EventScheduler._copies_of` and `WALL_DEEP_WEIGHT`.
 const EVENT_WALL_RIM_WEIGHT := 4
+
+## How many times over ground two or more turnings off the corridor is offered to a **lethal** wall,
+## against the rim.
+##
+## *(2026-08-31: "areas that outside the paths should have blocking events all over — we don't want
+## the player to step in those areas and it ranges from very costly to deadly.")* The range is over
+## distance from the routes, so the two ends of it pull in opposite directions and this is the
+## second one. Deliberately the same strength as the rim weight it mirrors: the design is a gradient
+## rather than a preference for one band, and giving deadly a stronger pull than very costly would
+## make the rim the quiet part of the off-corridor city, which inverts the sentence.
+const WALL_DEEP_WEIGHT := 4
+
+## Where the line between *friction* and a *very costly* wall falls, in points of the meter it costs
+## to walk through the middle of a row.
+##
+## Below it a row is friction and is weighted **onto** the routes; at or above it the row is what
+## closes the ground **off** them. Stated over `EventDef.walk_through_cost()` — the same integral
+## the caret is ordered by — rather than over a field somebody sets per row, because a second answer
+## to *how expensive is this* is the defect M37 found in `DangerEdge`.
+##
+## **It was `MARK_WORTH_A_DETOUR` for one measurement and that was wrong, which is worth keeping
+## because the argument for it was good.** That constant is where the game raises a caret — *this is
+## worth going round* — so putting the same rows off the corridor made the cue and the placement say
+## one sentence. What it actually did was empty the routes: at 25 points **two thirds of every day
+## became a wall**, and day 1's corridor went from 69.6 placements to 27.8 of 113. The player asked
+## for the ground off the paths to be closed; nobody asked for the paths to be cleared.
+##
+## The line is set by one row instead, and by the right one. **`dog_walker` costs 36.5 and has to
+## stay friction**: *"the dog walker decision should happen meaningfully — I want to have to make
+## that decision at least twice on day one"* (playtest 05) is the route decision this game is made
+## of, and a dog walker that is never on her route is that decision deleted. So the line goes above
+## it, and the first row above it is `loose_dog` at 43.3 — which is where *very costly* starts
+## reading as the player's own word rather than as "costly". Forty points is four tenths of the
+## meter to walk through the middle of.
+##
+## What that leaves on the corridor is `cafe_tables`, `market_stall`, `homeless_yeller`,
+## `delivery_van` and the dog walker — the ordinary expensive city — and what it puts off it is
+## `loose_dog`, `leaf_blower`, `burning_building`, `protest`, `military_convoy`, `night_raid` and
+## every lethal row. Re-measure with a probe if the cost table moves; do not re-derive it.
+const WALL_WORTH_OF_COST := METER_MAX * 0.4
 
 # ------------------------------------------------ solid things are solid (M34) ---
 # Playtest 07, finding 16: *"none of the non-moving obstacles do anything — I can freely walk

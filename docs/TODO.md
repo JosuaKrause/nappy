@@ -193,8 +193,25 @@ morning. Step 1 — the city has permanent structure in it, four to eight dead e
 big buildings, placed against a reference tree. **Step 2 is placement by role**: a closure is a
 **wall** placed off the corridor (the `CLOSURE_ROUTE_BIAS` inversion), a lethal event is a wall
 too, a costly one is **friction** weighted onto the corridor, and a one-shot is a **set piece**
-offered at every site of a covering set with exactly one of them happening. What is left is step 3,
-placeholders, and the one tooling item that draws the roles on the map.
+offered at every site of a covering set with exactly one of them happening. The tooling that draws
+the roles on the map is done with them — colour is the role, shape is the effect, a white pip is
+whether she reached it, and there is a **dusk** picture now, because that last one cannot mean
+anything at dawn. **What is left is step 3, placeholders**, plus the resistance note's alley as a
+set piece.
+
+**Step 2 also gained an item after it shipped**, and it is a strengthening rather than a fix:
+*"areas that outside the paths should have blocking events all over — we don't want the player to
+step in those areas and it ranges from very costly to deadly."* What shipped biases walls onto the
+**rim**; what is asked for is that the ground off the paths be **closed**, on a gradient. It
+collides with M28's rule that nothing else happens inside a lethal event's field, and with how few
+lethal rows the catalogue has — both named in the entry, neither resolved, plus the one question
+that has to go back.
+
+**And read step 3's own opening before touching it**, because the thing it is for was misread here
+first: *"the role of budget is to provide variety in encounters and make sure to not spam the same
+event over and over again"* — a variety ledger, not a density cap. The count of sites is the
+density; the budget decides what fills them, and the point of resolving late is that **variety gets
+measured over the encounters that happen rather than over a city she never saw.**
 
 Read the M50 entry before picking any of it up: the things that went wrong there are worth more
 than the things that went right, and two of them are the same shape — **a test that was true by
@@ -223,6 +240,34 @@ two contradictory promises about who gives way, on the one street where getting 
 day — a police car drives north showing its flank, and a car reaches the bridge and blinks out.
 Two of the seven are about the frame rather than the game, and one is a report the player is not
 sure about and is recorded as exactly that.
+
+**Playtest 16 landed live and is `M53`, queued by the player *after* M52's traffic lights.** Three
+findings and one complaint: **the crowd travels a lattice that is not the city** — onto a bridge
+with no footway, off a bulkhead into the sea, through crossroads whose arms are grass, vanishing
+each time where somebody is looking at it. Underneath two of the three is a missing rule: a
+junction is drawn wherever two corridors cross, whether or not its arms are streets. None of it is
+news to this file, and that is the part to read: M41 has carried the T-junction item unbuilt for
+twelve milestones and M51 finding 1 was the same defect on a cul-de-sac. **A finding that arrives
+twice from a player after being written down once by the project is a to-do that was filed and not
+read.**
+
+**And playtest 16 also carries the first report anybody has ever made about the back half of the
+game: `M54`.** The robber works — *"very good and effective… the timing is good"* — and walks
+through walls, because nothing in the event system has ever collided with the city. The resistance
+is invisible: *"I'm not sure if I ever did the resistance… there was no indication at the end of the
+day or any guidance what to do next."* Both are entries that have sat under "Known-shaky ground"
+waiting for exactly this, and the resistance one is the **deliberate risk** this file has named
+since the beginning — *"a player may finish a run never knowing the good ending existed"* — being
+run and not paying off.
+
+**So the running order is `M52`, then `M53`**, on the player's instruction, and the third of M52's
+three items is the one M53 waits on. `M54` is unordered against them and its robber half is a
+one-line-shaped bug on a row a player has just called good.
+
+**And the next three are asked for and written down: `M52`.** *"2x2 courtyard and rectangular calm
+zones, calm zone rate adjustments, traffic light placements."* Recorded in the player's own words,
+with this side's reading kept separate from it and four questions that have to go back before any
+of it is built — see the entry. Nothing is started.
 
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
@@ -2954,6 +2999,83 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
       M39 could promise with a single one-shot — and it is the direction step 3 is going anyway,
       *"budget is not really used up if the player doesn't see it."*
 
+- [~] **Off the corridor is not merely unweighted, it is closed.** *(2026-08-31, and it is the
+      player's own sentence: "also make sure that areas that outside the paths should have blocking
+      events all over — we don't want the player to step in those areas and it ranges from very
+      costly to deadly.")*
+
+      **This is a stronger instruction than what step 2 built, and the difference is the point.**
+      What shipped weights walls onto the **rim** — the off-tree streets meeting an on-tree one at a
+      junction, *the turning she can see from the corridor* — and leaves everything beyond the rim
+      to whatever the fill happens to drop there. Measured, that put lethal rows on the rim 63% →
+      80% on day 5, which is a bias. The sentence above is not a bias: **the ground off the paths is
+      somewhere she must not go**, and it is priced so, from *very costly* at the edge to *deadly*
+      further in.
+
+      Recorded before it is built, with the two things it collides with named rather than resolved,
+      because both are invariants somebody would have to move on purpose:
+
+      - **A lethal row has to keep its whole `outer_radius` clear of every other event, with no
+        fallback** — M28's rule, and the reason it exists is that the telegraph contract is stated
+        per event while the player experiences the sum. "Deadly all over" and "nothing else happens
+        inside a lethal event's field" are in direct tension, and the second one is what stops an
+        abduction being walked into out of somebody else's field.
+      - **The catalogue has few lethal rows and they have caps.** Saturating the off-corridor
+        ground is a question about `max_per_day` and about how many silhouettes exist before it is
+        a question about placement, which is `CLAUDE.md`'s *"a budget the catalogue cannot spend is
+        not density"* arriving at the other end of the map.
+
+      **Both were put to the player and both were answered on 2026-08-31.** The gradient is over
+      **distance from the corridor** — *"stray one street and you pay, stray three and you die"* —
+      and M28's clearance rule is **exempted off the corridor**, keeping its full strength on the
+      ground she is being guided along.
+
+      **Built, and here is what it came out as.** `Corridor.depth()` is the range's axis, a BFS in
+      turnings over `RouteTree.depths()`; a **very costly** row is a wall now as well as a lethal
+      one, `Tuning.WALL_WORTH_OF_COST`; and `_copies_of` pulls the costly end to the rim and the
+      deadly end past it. Measured over five seeds:
+
+      | day | placed | inside | rim | deep | lethal in / rim / deep |
+      |---|---:|---:|---:|---:|---|
+      | 1 (before) | 113.6 | 69.6 | 21.2 | 22.8 | 0 / 0 / 0 |
+      | 1 | 113.6 | 60.0 | 29.2 | 24.4 | 0 / 0 / 0 |
+      | 5 | 146.4 | 78.8 | 34.2 | 33.4 | 0 / 2.4 / 6.2 |
+      | 9 | 177.6 | 88.8 | 44.8 | 44.0 | 0 / 4.2 / 12.8 |
+      | 14 | 202.2 | 103.6 | 48.0 | 50.6 | 0 / 4.8 / 12.2 |
+
+      Three things worth carrying, and the first is a mistake caught by measuring:
+
+      - **The threshold was borrowed and it emptied the routes.** `WALL_WORTH_OF_COST` was
+        `MARK_WORTH_A_DETOUR` — 25 points, the line where the game raises a caret — with a good
+        argument beside it: the cue and the placement would say one sentence. What it did was make
+        **two thirds of every day a wall**, taking day 1's corridor from 69.6 placements to 27.8.
+        The player asked for the ground off the paths to be closed; nobody asked for the paths to be
+        cleared. The line is set by one row instead: **`dog_walker` costs 36.5 and has to stay
+        friction**, because *"the dog walker decision should happen meaningfully"* is the route
+        decision this game is made of, so the line goes above it at 40 and the first row past it is
+        `loose_dog` at 43.3.
+      - **The exemption is the `WALL` role and that is by construction.** A wall is offered zero
+        copies of any tile inside the corridor, so a lethal placement carrying the role is off the
+        routes or it does not exist. A lethal set piece and a lethal `NONE` keep their clearance,
+        and `tests/test_events.gd` splits rather than weakens: it checks the ones that keep it and
+        asserts the run actually places some of both, so the exemption cannot become a way of
+        asserting nothing.
+      - **And the gradient is asserted as a relationship, not as two numbers.** *"It ranges from
+        very costly to deadly"* is a claim about which end is further out, so the test is
+        `deadly_deep > costly_deep`. Two thresholds would have passed on a day where both bands sat
+        at the same depth, which is not a gradient.
+
+      **What is left, and it is a catalogue question rather than a placement one.** *"Blocking
+      events all over"* is not true yet: day 1 puts 60 placements on the ~25% of the lattice that is
+      corridor and 53.6 on the other 75%, so the routes are still **six times denser** than the
+      ground she is meant to avoid. Weights cannot close that — they redistribute, and
+      redistributing away from the corridor is the mistake above. Only **16.2 of day 1's 113.6
+      placements are walls at all**, because the expensive rows have low `max_per_day`, so this is
+      `CLAUDE.md`'s *"a budget the catalogue cannot spend is not density"* arriving at the other end
+      of the map. Raising those caps is a real balance change and wants its own measurement; day 1
+      also has **no lethal row in the catalogue at all**, so its off-path ground cannot be deadly
+      whatever the caps say
+
 - [ ] **The resistance note's alley is a set piece too.** *(Split out of the item above rather
       than left implied.)* `ResistanceDirector` chooses where a chalk mark goes, and it has exactly
       the fire engine's problem — an authored thing placed somewhere she may never walk, with a
@@ -2963,14 +3085,53 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
 
 ### Step 3 — placeholders
 
-- [ ] **A `Planned` may be unresolved**, and resolves to a concrete row when she comes within
-      range — reusing `EVENT_STREAM_RADIUS`, which is already the "she is about to be able to see
-      this" boundary. *"Budget is not really used up if the player doesn't see it."*
+**What the budget is for was misread here, and the player corrected it before anything was
+built.** *(2026-08-31: "I think you are misunderstanding the role of budget. It is to provide
+variety in encounters and make sure to not spam the same event over and over again. The amount of
+placeholders is almost one per block sometimes multiple per block.")*
+
+The misreading is worth keeping because it is what the three bullets below were about to be built
+from. This side read the budget as a **density cap** — a pot of ground the day is allowed to
+occupy — and from there the quote *"budget is not really used up if the player doesn't see it"*
+can only mean *charge the pot late so the far side of the city is free*, which is order-dependent,
+empties out a day the longer she walks, and contradicts the third bullet. The whole question that
+went back to the player was built on that reading, and it was the wrong question.
+
+**The budget is a variety ledger.** The count of *sites* is the density and it is roughly one per
+block; the budget, the `max_per_day` caps and the weighted pick decide **what fills them**, so that
+what she meets is a city rather than nine dog walkers. Which makes the quote mean something quite
+different and quite simple: **variety should be measured over the encounters that happen, not over
+the whole map.** Fix all ~121 rows at dawn and the twenty she actually walks past can be nine dog
+walkers by chance, with the catalogue's caps perfectly satisfied across a city she never saw.
+
+So a placeholder is a **site with a pool**, not an absence:
+
+- [ ] **A `Planned` carries a pool of interchangeable rows**, chosen at dawn, and resolves to one
+      of them when she comes within `EVENT_STREAM_RADIUS` — which is already the "she is about to
+      be able to see this" boundary. It keeps a **provisional** `def` from the moment it is
+      planned, so the day is fully legal at dawn exactly as it is today: every guarantee, every
+      spacing rule and both culls run against a concrete row and none of them has to learn about
+      pools. Resolution may only *swap* within the pool
+- [ ] **The pool is what is interchangeable at that site**, and it is built from what already
+      decides placements: the same **role** (so a wall never resolves to friction and the lethal
+      spacing rule cannot be broken after the fact), ground that includes the tile, and the same
+      `spawn_mode`. The chosen row is re-checked against the day's room and spacing before it is
+      taken, which is the same check the provisional row passed — and the provisional row is the
+      fallback, so a resolution can never fail
+- [ ] **The caps become caps on what she meets.** Resolution prefers a row she has met least today,
+      which is the whole of *"do not spam the same event over and over again"*, and a row already
+      at its `max_per_day` **in encounters** is not offered
 - [ ] **Resolution draws from the placeholder's own stream** — `_stream(base, salt)` keyed by the
       placeholder's identity, never from a stream shared with the rest of the day. Otherwise where
       she walked moves everything planned after it, which is M39's defect with a longer fuse
-- [ ] **`tests/test_telemetry.gd`'s shape, applied here**: plan a day, resolve every placeholder,
-      and require the result to match planning it with the player walking a different way
+- [ ] **The test's sentence has to move with the correction, and this is the half that changes.**
+      It read *"resolve every placeholder and require the result to match planning it with the
+      player walking a different way"*, and under a variety ledger that is false by design: the
+      ledger is consumed by encounters, so two walks legitimately meet different rows. What must be
+      identical is **the offer** — the sites, the roles, the pools, the paths — which is the M39
+      property and the one `docs/CITY.md` states: *"determinism is a property of the offer, never
+      of what she did with it."* So: plan a day, walk it two ways, require the plan identical
+      placement for placement and require both walks to respect the caps
 
 ### The two invariant decisions, which blocked step 2 — both taken 2026-08-31
 
@@ -3162,6 +3323,176 @@ rather than to move a number.
       dismissed with the same key as everything else. Finding 5 is the fix and this is the evidence
       for it. Reopen it if the counter is ever seen to move with nerves still on the HUD
 
+## M54 — The resistance says something, and the robber stops at walls · not started
+
+Playtest 16's findings 6, 7 and 8, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. **This is
+the first report anybody has ever made about the back half of the game**, and two of the three are
+entries that have been sitting under "Known-shaky ground" waiting for exactly it.
+
+- [ ] **The resistance never announced itself** — finding 7, and it is the answer to the open
+      question "Things deliberately not done" has carried from the beginning: *"no quest log or
+      marker for the resistance… a player may finish a run never knowing the good ending existed.
+      `docs/TODO.md` lists it as an open question for playtesting."* The answer is that the risk did
+      not pay off — *"I'm not sure if I ever did the resistance. I walked on one chalk symbol once
+      but there was no indication at the end of the day or any guidance what to do next."*
+
+      Four instructions, and they are not one instruction:
+
+      - **The day brief carries the resistance's own words.** *"During the day brief there should be
+        instructions from the chalk marks to tell me what the next task is."* In the fiction's
+        voice, on the between-days screen.
+      - **The first chalk mark is the one exception and it is absolute.** *"Only the first encounter
+        (the chalk mark) should come without hint (yes, no hint even at the bottom left)."* The
+        parenthesis pre-empts the obvious half-measure: today's HUD line does not count as *no
+        hint*, and it goes for that first encounter.
+      - **A chalk mark is placed against a route** — *"placed dynamically alongside a route"* —
+        which is M50 step 2's own open item, the one that says `ResistanceDirector` places a
+        **contact** rather than a `Planned` and so does not simply inherit the covering set. Close
+        the two together
+      - **And the end of a day says whether anything happened**, which is the sentence the finding
+        opens with
+- [ ] **The robber runs through walls** — finding 8, and the rest of that sentence is a verdict:
+      *"the robber is very good and effective… the timing is good."* So M36's "Known-shaky ground"
+      entry closes on everything except this. The bug is precise: a pursuing `EventInstance` moves
+      by setting its own position and **nothing in the event system has ever collided with the
+      city** — harmless while every mobile row travelled a route the scheduler had already checked,
+      and not harmless the moment something steers at the player
+- [ ] **The run hint belongs to the lesson, not to the mechanic** — finding 6, *"hold SHIFT to run
+      randomly shows up sometimes after the running tutorial. it should only show up for the
+      tutorial."* Once day 3 has taught the run, a line telling her to hold shift is the game
+      explaining something she has already been made to do
+
+## M53 — A junction is made of the streets that meet at it · not started, queued after M52's lights
+
+**Ordered by the player: *"queue those fixes after the traffic light fix."*** So M52's third item
+goes first and this follows it, which is the right way round for a reason worth writing down — the
+lights are a decision about **which junctions are junctions at all**, and three of the four items
+below are about what a junction is made of. Building them against a lattice that is about to be
+re-asked the same question would be doing the work twice.
+
+
+Playtest 16, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. Five findings; four of them are
+one complaint: **the city draws a lattice it does not have, and the crowd walks it.** It walks onto a bridge with no
+footway, off a bulkhead into the sea, and through crossroads whose arms are grass — and in every
+case it then vanishes where somebody is looking at it. Underneath the first two is one missing
+rule: the lattice draws a full crossroads wherever two corridors cross, whether or not the arms of
+it are streets.
+
+**Neither of these is news to the repo, which is the part worth noticing.** M41 has carried
+*"T-intersections everywhere else on the edge — the lattice currently runs into the boundary and
+stops"* as an unbuilt item for twelve milestones, and M51 finding 1 was this exact defect on a
+cul-de-sac, fixed there for the crowd's *view* of the wall and not for the junction that should
+never have been drawn. A finding that arrives twice from a player after being written down once by
+the project is a to-do that was filed and not read.
+
+- [ ] **Cars and people still go off the map** — finding 1, and *"still"* is the word to read.
+      M51's fix was deliberately narrow: overrunning the boundary is for **a car on the main road
+      going north or south**, because outside the map is water, forest and mountainside. Everybody
+      else keeps "the tile of slack they had", and this report is that the slack is visible at an
+      edge with nothing beyond it, for people as well as cars. Two candidate causes and they want
+      different fixes — the agent is **recycled on screen** (M35's *"nothing vanishes while you are
+      looking at it"*, which has never reached the crowd away from the three holes in the border),
+      or the **junction should not be there**, which is finding 2
+- [ ] **A junction between two precinct arms is still asphalt with zebras on it.** A precinct is
+      laid `SIDEWALK` frontage to frontage by `CityGenerator._street_tile`; the junction between two
+      of them was never included, so a pedestrianised stretch has a road crossing in the middle of
+      it
+- [ ] **A junction whose arm is not a street has three arms, not four.** The shore, a park, a calm
+      zone's absorbed corridor, a dead end's plug — `CityMap.absent_segments`, `built_over` and the
+      map edge already say which arms exist. Nothing that draws a junction asks
+- [ ] **No crossing onto a wall** — finding 5, *"the backside of a cul-de-sac should not have a
+      pedestrian crossing"*, and it is the item above stated where it cannot be argued with:
+      `CityMap.built_over` names the tiles, and there is a zebra painted onto them with a traffic
+      light beside it. A crossing marks **where to cross to**, so this one is worth doing even if
+      the full three-armed junction is not — the paint is the promise
+- [ ] **Only cars go over the bridge** — finding 3, and it is M51 finding 7's own sentence read
+      back. A bridge is *"a stretch of carriageway with no pavement beside it"*, which is the whole
+      design and is why she may walk onto it and be run over rather than be stopped by a wall. The
+      **overrun permission** was narrowed to a car on the spine and the **lane** was not, so a
+      walker's lanes still run the length of a corridor that at the boundary is a bridge. Note what
+      is not being asked for: the bridge is not to be made safe
+- [ ] **And the crowd has to agree with the drawing**, which is M51 finding 1's lesson arriving
+      where it was pointing: a T-junction the paint knows about and `CrowdAgent._divert` does not is
+      the same bug in the other direction
+- [ ] **Calm areas at the edge of the map** — finding 4, *"which should be impossible"*, and it is
+      **not this milestone's to build**. The rule is already written down, unbuilt, in M47: *"make a
+      rule to not have a calm area at the edge of the map or next to the main road"*, with the
+      measurement (96 eligible blocks → 56 with the edge rule → 48 with the spine rule) and the
+      three things to get right already beside it. Recorded here so the finding is not lost, and
+      **closed from M47** rather than re-designed. It is the third item in one session that this
+      file had filed and not read
+
+## M52 — The calm has a shape, and the lights have a reason · not started
+
+**Asked for on 2026-08-31, in the player's own words and in this order:**
+
+> *"The next steps after M50 are 1) 2x2 courtyard and rectangular calm zones 2) calm zone rate
+> adjustments 3) traffic light placements."*
+
+**That is the whole of what was said, and it is written down before anything is read into it**, per
+the rule at the top of `CLAUDE.md`: a finding summarised on the way in has already lost the part
+that was hard to work out. What follows is *this side's reading* of each, kept separate from the
+sentence above, together with the questions that have to go back — because all three are single
+clauses about systems that currently answer them with a constant, and a reading is not an
+instruction.
+
+**Where each of the three stands today**, so the questions below are asked with the work done up to
+the fork:
+
+1. **Calm zones are square and there is one size of them.** `Tuning.CALM_ZONE_BLOCKS` is `2`, and
+   every piece of arithmetic that follows — the tile rect, which segments are absorbed, which
+   junctions survive — is written in terms of it (`CityGenerator._zone_fits`, `_absorb_the_zone`,
+   `CityMap.lot_rect`). A city gets one or two zones and the rest of its calm is single-block. A
+   **courtyard** is a different thing again: `BlockPurpose.COURTYARD`, the court inside one
+   residential block, and it has never been a zone.
+2. **A calm area's rates do not depend on what kind of calm it is.**
+   `SLEEPINESS_CALM_ZONE_MULTIPLIER` (14.0) and `EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` (2.2) are
+   asked of the *ground*, through `Baby`'s four questions, and every calm tile answers the same —
+   a 22-tile zone and an eight-tile courtyard fill the meter at the same rate.
+3. **Lights are on the spine and nowhere else.** `TrafficSignals.is_signalled` is
+   `junction.x == _map.main_road`, one line, and M41's note beside it says that is deliberate:
+   *"every junction on the spine is signalled and no other one is, which is what makes the lights a
+   property of the street rather than a scattering of them."* Anything that moves it is moving that
+   sentence, so it wants to be moved on purpose.
+
+**And two of the four questions below were answered on disk before they were asked, which is the
+thing to read first.** *(Found while recording playtest 16's finding 4.)* **M47 already holds item
+1, unbuilt, in the player's own earlier words:**
+
+> *"Make more calm areas take up multiple blocks — I said a long time ago that an inner courtyard
+> (surrounded by buildings) should have a footprint of 2x2 blocks (apartment complex) — this never
+> got implemented. Not all calm areas have to take up multiple blocks but add more that do. Also,
+> add calm varieties that take up 2x1 non-square shapes."*
+
+So *"2x2 courtyard"* is an **inner courtyard surrounded by buildings, an apartment complex, four
+blocks**; *"rectangular"* is **2x1**; and the answer to *how many* is *"not all of them, but more
+than now"*. The two questions this side had drafted are struck below rather than deleted, because
+what they cost is the point: **the answer to "what exactly did you mean" was already on disk, and
+asking again is what a to-do that was filed and not read costs.** It is the third such item in one
+session, after M41's T-junctions and M51's cul-de-sac, and the M47 entry that answers it also
+carries playtest 16's finding 4 — *"a calm area at the edge of the map should be impossible"* —
+which is likewise recorded there and likewise never built.
+
+**Build item 1 as M47's entry**, not as a fresh design. What is genuinely new in M52 is items 2 and
+3.
+
+**The questions that are still open**, and neither is a detail — each changes what gets written:
+
+- [x] ~~A "2x2 courtyard": a courtyard lot four blocks across, or four blocks with a shared
+      court?~~ Answered by M47: an **inner courtyard surrounded by buildings**, an apartment
+      complex, 2x2 blocks.
+- [x] ~~"Rectangular": which rectangles, and how many per city?~~ Answered by M47: **2x1**, and
+      *"not all calm areas have to take up multiple blocks but add more that do"*.
+- [ ] **"Rate adjustments": is the rate a property of the *kind* of calm, of its *size*, or a
+      number that moves for all calm at once?** Per-kind is the one that reaches `Baby`'s
+      interface, and M41's rule applies — a fifth question that is a special case of one of the
+      four is what that rule exists to stop, so this wants to generalise `decay_multiplier` rather
+      than sit beside it.
+- [ ] **"Traffic light placements": what decides where a light goes, now that it is not just the
+      spine?** And what it is *for* — M41 states the signals' fairness contract over the side
+      street's green, and lights on an ordinary junction would put that contract on streets the
+      player crosses casually all day.
+
 ## Tooling for the diversion work · `feature/a-map-that-shows-the-plan`
 
 Asked for alongside the diversion design, and it goes **first** for the reason the playtest-13
@@ -3192,12 +3523,37 @@ the day and form an impression.
         precinct is laid `SIDEWALK` from frontage to frontage, so the ground pass already draws it
         as the one corridor with no asphalt stripe down it, and the blue line was an overlay
         repeating a fact the picture had
-- [ ] **Mark every placed event with its categorisation.** Not just *where* — **what kind**, in the
+- [x] **Mark every placed event with its categorisation.** Not just *where* — **what kind**, in the
       vocabulary in `docs/CITY.md`, "The words for it": its **effect** (lethal / impassable /
       costly) and its **role** (wall / friction / set piece). A wall drawn on the corridor instead
       of beside it is the central defect this milestone can have, and it is one glance to see and
       invisible in every other tool. Distinguish placed-and-live from placed-and-never-reached, and
       keep it legible at 640px
+
+      **Built: colour is the role, shape is the effect, a white pip is whether she reached it.** No
+      row carries an effect the vocabulary did not already have — `EventDef.effect()` and
+      `Planned.role` both existed by the end of step 2 — so this is a legend rather than a model,
+      and `tests/test_telemetry.gd` asserts the legend *is* the drawing. Three things came out of
+      building it, and two of them were found only by opening the PNG:
+
+      - **"Distinguish placed-and-live from placed-and-never-reached" needs a second picture, and
+        the second picture is the more useful half.** At dawn nothing has been reached, so the flag
+        can only mean something at dusk — `-map-day<NN>-dusk.png`, written from `_on_day_finished`
+        before `end_day()`. What the pair says that neither says alone: the dawn map shows a wall in
+        the wrong place, and only the dusk one shows **a corridor with nothing on it ever met**.
+      - **The first version faded what she never reached, and that is the picture whispering the
+        thing it exists to shout.** A wall in the far corner of a map she never walked into is
+        still a wall in the wrong place, and it is exactly the placement no trace can report. Drawn
+        as a pip instead, every mark stays at full strength — and the pips turn out to be a **trail
+        of where she actually went**, laid over the corridor the day planned for her, which is a
+        second question answered for nothing.
+      - **A faint mark can still be the loudest thing in a picture if it is the wrong shape.** A
+        routed event draws a band along the ground it covers; at the mark's own strength, on a day
+        with 175 placements, those bands read as *corridor* — thin coloured lines down the middle of
+        streets, which is what the violet is. Dropping them was wrong too (a van that sweeps a whole
+        street would be drawn as a point). 0.18 makes it a shadow you find when you look for it. The
+        shape to carry: **a mark that can be mistaken for the one thing it has to be compared
+        against is worse than no mark.**
 
 Both obey the telemetry invariant — no RNG, nothing that changes a placement, no cost when
 telemetry is off — and both are dev tooling under the same eventual debug-build gate.

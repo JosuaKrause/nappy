@@ -219,13 +219,22 @@ func snapshot_now(context: String) -> void:
 ## city's seed, the day and what is shut, so the tree drawn is the same tree anything else that
 ## asks for today's would get. Growing one touches no gameplay stream and cannot move a placement,
 ## which is the invariant this whole file is built on.
+## It also draws what the day **placed**, and that is why it is written twice.
+##
+## `at_dusk` is only the filename, and the difference between the two pictures is entirely in the
+## plans: at dawn nothing has been reached, so every mark is drawn faint and the picture is purely
+## *what the day intended*; at dusk the ones she actually walked up to have burnt in, so the same
+## picture also says **which of it happened**. Neither is derivable from the other and neither is
+## the more useful one — a wall in the wrong place is visible in the first, and a corridor nothing
+## on it was ever met is visible only in the second.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
-		tree: RouteTree = null) -> void:
+		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
+		at_dusk := false) -> void:
 	if not _log or _log.path == "":
 		return
-	var path := "%s/%s-map-day%02d.png" % [DIRECTORY, _stem, day]
+	var path := "%s/%s-map-day%02d%s.png" % [DIRECTORY, _stem, day, "-dusk" if at_dusk else ""]
 	var drawn := tree if tree else RouteTree.for_day(map, day)
-	if TelemetryMap.render(map, closures, drawn).save_png(path) != OK:
+	if TelemetryMap.render(map, closures, drawn, plans).save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
 
 ## The capture itself, split out because it is the only thing here that has to wait for a frame.

@@ -289,7 +289,8 @@ func _start_day() -> void:
 	# And the same three lines as a picture. After them, because it is the same information and a
 	# reader who has the log open should meet the words first; per day, because the closures and
 	# what each block *is* both moved above. See `TelemetryMap`.
-	Telemetry.write_map(_city.map, GameState.day, _city.closures(), _city.route_tree())
+	Telemetry.write_map(_city.map, GameState.day, _city.closures(), _city.route_tree(),
+			_city.events.plans())
 	if _observer:
 		_observer.start_day()
 
@@ -341,6 +342,11 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# before `end_day()` stops the clock, so it is timestamped where it happened.
 	if _observer:
 		_observer.day_finished(result)
+	# The same picture again, now that the day has been walked: the marks she reached are opaque and
+	# the rest are not, which is the one thing the dawn map cannot say. Before `end_day()`, so it
+	# belongs to the day it is of. See `Telemetry.write_map`.
+	Telemetry.write_map(_city.map, finished_day, _city.closures(), _city.route_tree(),
+			_city.events.plans(), true)
 	Telemetry.end_day()
 	_run_over = not GameState.finish_day(result)
 	_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves)
