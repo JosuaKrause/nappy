@@ -851,6 +851,18 @@ is loud, and the reason a park is quiet.
   structural half of "a park is quiet because nobody is in it". `tests/test_crowd.gd`
   asserts the middle of every park is out of earshot.
 
+- **And nobody walks into a cul-de-sac's wall.** *(M51, playtest 15 finding 1: "cars and people
+  go through cul-de-sacs".)* The crowd is the one thing that travels the lattice without asking
+  `blocked_segments()`, and it does not need to — a dead end is a street with its far end built
+  over, so the *tiles* say so. What it needed was to **look** at them. Avoidance was a single
+  probe fired seven tiles ahead, which answers *is there something coming up* and looks straight
+  past a two-tile wall into the open road behind it: an agent entering the street from the
+  junction beside the wall never saw it. It walks the tiles now, cached per tile — which is both
+  correct and *cheaper* than the probe, because an agent covers a tile in about twenty frames.
+  Measured at a dead end before the fix: **eight agents inside a wall at once, and something in
+  one on 87% of frames**; zero after, and `tests/test_crowd.gd` stands the field at a dead end so
+  it can see it at all.
+
 - **Bodies are solid, and cars are lethal.** *(M19, replacing "agents have no collision: the
   player walks through them".)* Walking into somebody displaces you both and startles them;
   stepping into the carriageway in front of a moving car ends the day; traffic gives way at a

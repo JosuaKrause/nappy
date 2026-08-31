@@ -3006,7 +3006,7 @@ art bug and one report the player is not certain of.
 where what is drawn and what is true have come apart, and the fix is to make the drawing agree
 rather than to move a number.
 
-- [ ] **A cul-de-sac stops the crowd too** — finding 1, *"cars and people go through
+- [x] **A cul-de-sac stops the crowd too** — finding 1, *"cars and people go through
       cul-de-sacs"*. Dead ends are `absent_segments`, which every route search takes through
       `CityMap.blocked_segments()`; the crowd is the one thing that travels the lattice without
       asking. Be precise about what is being fixed: a car that drives *down* a dead end and turns
@@ -3015,6 +3015,41 @@ rather than to move a number.
       from its own view of the map. `CrowdAgent._divert` and `CrowdLanes` are where to look, and
       M38's rule applies — *a placement is not a separation* — so a recycled car must not be
       **placed** on a street that is not there either
+
+      **And the answer was none of the things above.** The crowd never needed `blocked_segments()`:
+      a dead end is a street with its far end **built over**, so the tiles already say so, and
+      `_blocked_ahead` already reads tiles. What it could not do was *see* the wall. It was a
+      single probe fired seven tiles ahead — right for *is there something coming up*, and it looks
+      straight **past** a two-tile plug into the open road behind it. An agent that entered the
+      street from the junction beside the wall therefore never saw it at all. **M29's invariant
+      exactly**, in the one scan it had not reached: *sampling a tile grid by stepping world points
+      aliases, and it aliases where it matters.*
+
+      Four things worth carrying:
+
+      - **The rig had to stand in the right place before it could see anything.** The first probe
+        built the crowd field at the doorstep and reported **zero** agents in a wall on three
+        seeds. The crowd is a population of the box around the player, so a dead end the box never
+        contains is a wall nothing was ever going to reach. Standing the field at a dead end gave
+        850 / 2091 / 821 frames of 2400 with somebody inside one, and 8 at once. A clean
+        measurement of the wrong place looks exactly like a clean build.
+      - **Walking the tiles is *cheaper* than the probe, once it is cached by tile.** The answer
+        depends on the agent's tile, its axis and its direction, over a map that is fixed for the
+        day, and an agent covers a tile in about twenty frames — so seven lookups per tile beats
+        one probe per frame. `test_crowd` went 48.7s → 42.4s and `test_balance` 37.9 → 27.2 while
+        gaining a correctness fix. The intermediate version, which added the near check *beside*
+        the probe rather than replacing both, cost +28%.
+      - **A car that turns round changes lane.** `_direction = -_direction` on its own left it
+        driving the wrong way down its own queue, and `space_out_the_traffic` then had to resolve
+        a head-on overlap the only way it can — by moving a body. `_turn_round()` is the one place
+        that now happens.
+      - **And a test that had been true by luck for eleven milestones failed for a reason that had
+        nothing to do with this.** *"No car is standing in a precinct"* asked `street_kind_at`
+        about the **precinct's** axis, and a precinct span covers the junctions between its blocks
+        — so a car crossing it on a north-south street is legal and was being counted. Sixteen do
+        in the forty-five seconds that test runs; the assertion passed only because none of them
+        was inside a junction on the frame it sampled, and a few frames of timing change broke it.
+        It asks whether the car is on ground **no** axis lets it drive on now
 - [ ] **The main road has dotted lines, not a zebra** — finding 2, and the design half outranks
       the art half. *"The main road shouldn't have zebra crossings (since they have traffic
       lights) it should be two dotted lines demarking the pedestrian safe zone."* A zebra means
