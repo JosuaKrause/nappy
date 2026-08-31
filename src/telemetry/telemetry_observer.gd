@@ -232,9 +232,18 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 			_road_since = Telemetry.clock()
 			_road_from = _map.world_to_tile(here)
 			_carriageway = 0.0
-			Telemetry.note("cross", "stepped into the road at %s, %s" % [
-				TelemetryLog.tile(_road_from),
-				"at a zebra" if type == GameEnums.TileType.CROSSING else "mid-block"])
+			# **A crossing on the spine is not a zebra and the trace has to say which**, because the
+			# two are different bargains: a zebra is a negotiation with a driver who can see you
+			# and a signalled crossing is a wait with a known end. A line reading "at a zebra" on
+			# the one street where traffic does not give way is a trace that would send the next
+			# reader looking for the wrong bug. *(M51, playtest 15 finding 2.)*
+			var where := "mid-block"
+			if type == GameEnums.TileType.CROSSING:
+				where = "at a signalled crossing" if _map.street_kind_at(
+						CityMap.is_road_offset(CityMap.corridor_offset(_road_from.x)),
+						_road_from) == GameEnums.StreetKind.MAIN else "at a zebra"
+			Telemetry.note("cross", "stepped into the road at %s, %s"
+					% [TelemetryLog.tile(_road_from), where])
 		if type == GameEnums.TileType.ROAD:
 			_carriageway += delta
 	elif _was_road:

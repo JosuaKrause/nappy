@@ -3050,7 +3050,7 @@ rather than to move a number.
         in the forty-five seconds that test runs; the assertion passed only because none of them
         was inside a junction on the frame it sampled, and a few frames of timing change broke it.
         It asks whether the car is on ground **no** axis lets it drive on now
-- [ ] **The main road has dotted lines, not a zebra** — finding 2, and the design half outranks
+- [x] **The main road has dotted lines, not a zebra** — finding 2, and the design half outranks
       the art half. *"The main road shouldn't have zebra crossings (since they have traffic
       lights) it should be two dotted lines demarking the pedestrian safe zone."* A zebra means
       *traffic gives way to you* and on the spine it does not — what stops the traffic is the
@@ -3061,6 +3061,25 @@ rather than to move a number.
       **tiles** and looks for `CROSSING`, which is the M29 invariant — so a new tile type or a
       changed one has to keep that question answerable), and the traffic's give-way rule, which
       must **not** start giving way on the spine
+
+      **Built, and three of those four places needed nothing.** The tile type is unchanged, which
+      is the whole shape of the fix: M41 had already considered painting the crossing away and
+      rejected it — *"a walker crossing a side street would then be standing on open carriageway,
+      and the one thing a zebra is for is saying where a person on a road is meant to be"* — and
+      the player is not asking for that either. They are asking for **different paint**. So
+      `GroundTiles._crossing_variant` picks four new tiles when either corridor is the spine and
+      every rule that reads `CROSSING` goes on meaning what it meant: the crossing scan, the
+      give-way rule (which already exempted `MAIN`), and where an event may stand.
+
+      The one thing that did have to move is the **trace**, which said *"at a zebra"* on a street
+      that has none — a line that would send the next reader looking for the wrong bug, on the one
+      street where the difference between a negotiation and a wait is the difference between a day
+      and a day lost.
+
+      Two dotted lines per crossing and two crossings per junction, so a spine crossroads has four
+      dashed rows across it: the lines run the way she is crossing, one at each edge of the
+      two-tile band, which is what `% SIDEWALK_WIDTH` is asking in that function. Photographed once
+      and played by nobody
 - [x] **The police car has a rear view** — finding 3, *"the police car only has a sideview even
       when driving vertically"*. An art gap in the crowd rather than in the catalogue
 

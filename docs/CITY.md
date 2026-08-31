@@ -42,7 +42,7 @@ and decided before a tile is laid — see `CityGenerator._assign_street_kinds`.
 | Kind | How many | What it is |
 | --- | --- | --- |
 | `ORDINARY` | everything else | Two lanes, a zebra at every junction, and traffic that gives way to somebody standing at the kerb. |
-| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. `CityMap.main_road`. |
+| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. Its crossings are two dotted lines rather than a zebra, because a zebra is a promise it does not make. `CityMap.main_road`. |
 | `PEDESTRIAN` | **two stretches of three blocks** | A retail precinct: paving frontage to frontage, no kerb, no cars, the busiest pavement in the city, and the best ground outside a park to bring a meter down on. `CityMap.precinct_spans`. |
 
 **With one kind of street the only route question is *which way*; with three it is also *which
@@ -881,6 +881,18 @@ advances the clock, because that is what a rig steps.
 **A signal is a timing problem where a zebra is a gap-hunting one.** An ordinary crossing is a
 negotiation with a driver who can see you and gets better the longer you look; a signalled one is
 a wait with a known end. Having both is what makes *which street* worth asking about.
+
+**And since M51 the two look different, which they had not.** *(Playtest 15, finding 2: "the main
+road shouldn't have zebra crossings (since they have traffic lights) it should be two dotted lines
+demarking the pedestrian safe zone".)* A zebra says *the traffic gives way to you* and the spine's
+does not, so for ten milestones the paint made the opposite promise at every junction of the one
+street where believing it ends the day. The spine's crossings are two dotted lines now.
+
+**The tile type did not change and that is the point.** M41 considered painting the crossing away
+and rejected it — *"a walker crossing a side street would then be standing on open carriageway,
+and the one thing a zebra is for is saying where a person on a road is meant to be"* — so what
+moved is the picture, in `GroundTiles._crossing_variant`, and nothing that reads `CROSSING` had to
+know. The one thing that did is the trace, which said *"at a zebra"* on a street that has none.
 
 - **The cycle is derived, not authored.** It is `2 × SIGNAL_PROGRESSION_BLOCKS` junction-to-junction
   travelling times. Without a progression, two thirds of the traffic stands still — measured.

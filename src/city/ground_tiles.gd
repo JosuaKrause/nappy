@@ -53,6 +53,10 @@ const BULKHEAD := 32
 const FENCE := 33
 const MOUNTAIN := 34
 const SCREE := 35
+const CROSSING_MAIN_N := 36
+const CROSSING_MAIN_S := 37
+const CROSSING_MAIN_W := 38
+const CROSSING_MAIN_E := 39
 
 ## Tileset source id for a cell, or -1 where no ground should be drawn at all.
 static func source_for(map: CityMap, tile: Vector2i) -> int:
@@ -64,7 +68,7 @@ static func source_for(map: CityMap, tile: Vector2i) -> int:
 		GameEnums.TileType.ROAD:
 			return _road_variant(map, tile)
 		GameEnums.TileType.CROSSING:
-			return _crossing_variant(tile)
+			return _crossing_variant(map, tile)
 		GameEnums.TileType.PARK:
 			return GRASS
 		GameEnums.TileType.PLAYGROUND:
@@ -152,5 +156,32 @@ static func _road_variant(map: CityMap, tile: Vector2i) -> int:
 
 ## A crossing is where a carriageway passes over the *other* corridor's pavement, so the
 ## road's axis is whichever of the two offsets is on the carriageway.
-static func _crossing_variant(tile: Vector2i) -> int:
-	return CROSSING_V if CityMap.is_road_offset(CityMap.corridor_offset(tile.x)) else CROSSING_H
+##
+## **On the main road it is not a zebra**, and that is a rule rather than a decoration.
+## *(M51, playtest 15 finding 2: "the main road shouldn't have zebra crossings (since they have
+## traffic lights) it should be two dotted lines demarking the pedestrian safe zone".)* A zebra
+## means *the traffic gives way to you*, and on the spine it does not — what stops it is the light,
+## which is `Tuning.validate_signals`' whole contract. So the paint had been contradicting the rule
+## at every junction of the one street where getting it wrong ends the day.
+##
+## What replaces it is **two dotted lines** and not nothing, which is the distinction M41 already
+## drew when it considered painting the crossing away and rejected it: *"a walker crossing a side
+## street would then be standing on open carriageway, and the one thing a zebra is for is saying
+## where a person on a road is meant to be."* The tile type is unchanged for exactly that reason —
+## every rule that reads `CROSSING`, from the traffic's give-way scan to where an event may stand,
+## goes on meaning what it meant. Only the picture moved.
+##
+## The two lines run **along the way she is crossing**, one at each edge of the two-tile band, so
+## each tile carries the one on its own outer side. Within a pavement band the tile at the even
+## offset is the outer one, which is what `% SIDEWALK_WIDTH` is asking.
+static func _crossing_variant(map: CityMap, tile: Vector2i) -> int:
+	var across_x := CityMap.is_road_offset(CityMap.corridor_offset(tile.x))
+	var main := map.street_kind_at(across_x, tile) == GameEnums.StreetKind.MAIN
+	if not main:
+		return CROSSING_V if across_x else CROSSING_H
+	if across_x:
+		# A north-south carriageway: she crosses east to west, so the lines run that way.
+		return CROSSING_MAIN_N if CityMap.corridor_offset(tile.y) % Tuning.SIDEWALK_WIDTH == 0 \
+				else CROSSING_MAIN_S
+	return CROSSING_MAIN_W if CityMap.corridor_offset(tile.x) % Tuning.SIDEWALK_WIDTH == 0 \
+			else CROSSING_MAIN_E
