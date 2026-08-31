@@ -10,20 +10,23 @@ which is finding 10's rule applied to finding 1 on the way in.
 **The wording below is the player's, verbatim.** Everything under a *"What this side reads into it"*
 heading is this side's analysis and is kept apart from it on purpose.
 
-**Ten findings, in four groups.**
+**Twelve findings, in four groups.**
 
-- **Two are about the day's corridor** and they are one sentence between them: *the corridor is the
-  dangerous place and the rest of the map is the safe one*, which is upside down. One is a
-  re-report of an item M50 left open with its own measurement; the other is new and is a rule about
-  the shape of the corridor rather than about what is on it.
+- **Three are about the day's corridor** and they are one sentence between them: *the corridor is
+  the dangerous place and the rest of the map is the safe one*, which is upside down. One is a
+  re-report of an item M50 left open with its own measurement, one is the player's own unprompted
+  clarification of it — *"leaving the path should be lethal or very expensive… that is not as we
+  planned"* — and the third is new, and is a rule about the shape of the corridor rather than about
+  what is on it.
 - **Three are about the resistance**, and they are the first design work anybody has asked for on
   it since it was built. One is a correction of what this side proposed, one is a task with a real
   risk in it, and one is a verdict on something that already happened by accident and should be
   made deliberate.
 - **Two are about the telemetry** and both are about being able to trust it later: whose run a log
   is, and whether she was on the corridor at the time.
-- **Three are small and specific**: a sprite that blends into the wall behind it, a status check on
-  playtest 16's finding 9 (answer: not started), and a process rule about where evidence lives.
+- **Four are small and specific**: the title lettering blending into the wall behind it, a diagonal
+  seam where two edges of the world meet, a status check on playtest 16's finding 9 (answer: not
+  started), and a process rule about where evidence lives.
 
 ---
 
@@ -86,14 +89,24 @@ blocker** goes there, since the words are fixed (`docs/CITY.md`, "The words for 
 a run reaches, which events get met — is counted mostly over three-second screenshots taken at the
 doorstep.
 
-## 4. The pram blends into the wall behind it
+## 4. The title lettering blends into the wall behind it
 
 > "another minor thing -- the start screen nappy can we make it have a black outline? right now the
 > color blends in with the home entrance and apartment wall"
 
-**What this side reads into it.** A readability defect on the **title screen**, which is the first
-thing anybody sees, and the one screen where the pram is standing still against a doorway rather
-than moving across a street. Asked for concretely: a black outline.
+> "the outline I'm talking about is for the *font* of the *text* "nappy" from the title screen --
+> _nothing else_!"
+
+**What this side reads into it.** The word **Nappy** on the title screen — the 64pt label — set in a
+warm colour over a doorway and brick of about the same value. A black outline on that label and
+nothing else.
+
+The second quote is a correction of this side, and it is recorded because the misreading is worth
+more than the fix: *"the start screen nappy"* was read as the pram, on the reasoning that the game
+is named after the thing she pushes, and an outline was put round the mother and the pram instead —
+a change to a sprite everywhere in the game, from a sentence about one label on one screen. The
+player's reply was *"not sure how you could interpret this in any other way"*, and they are right.
+**The title screen has exactly one thing on it called "nappy", and it is the word.**
 
 ## 5. The bike, the fire engine and the rest still never arrive
 
@@ -187,6 +200,42 @@ currently reference, **none is still on disk**, against 163 runs that are. They 
 [evidence/README.md](evidence/README.md). They cannot be regenerated, because a run log records
 what a *player* did and is not a function of the seed — replaying it gives a different run. The
 numbers the docs quote from them stand; the files behind the numbers are gone.
+
+## 11. The corners of the world go diagonal
+
+> "at the corner of the map the mountain and sea textures should just continue not become diagonal
+> (diagonal doesn't really make sense in this context)"
+
+**What this side reads into it.** About the ring outside the lattice — M41's edge of the world, and
+playtest 14's brief for what is out there: *"in the south there needs to be a bulkhead first then
+water — no buildings — in the east and west there needs to be a fence, then grass and forest — in
+the north there needs to be a mountainside."* Those are four **bands**, each running along one side,
+and a band has to do something where two of them meet. Whatever `CityEdge` currently does there
+reads as a diagonal seam, and the player's instruction is that there should not be one: each
+texture simply carries on.
+
+Worth noting what it is *not* asking for: no new terrain, no corner feature. It is the simpler
+answer — the mountain keeps being mountain round the corner and the sea keeps being sea.
+
+## 12. Leaving the path is supposed to be lethal, and it is the opposite
+
+> "also just to clarify the comment about leaving the path -- leaving the path should be lethal or
+> very expensive. right now that is not the case, though. so the event density from the path gets
+> *less dangerous* right now when leaving the path. that is not as we planned"
+
+**What this side reads into it.** A clarification of finding 1, given unprompted, and it removes the
+last bit of room the reading had. Three things are pinned by it:
+
+- **The intended cost is *lethal or very expensive*, not merely "denser".** That is M50's own words
+  — *"areas that outside the paths should have blocking events all over — we don't want the player
+  to step in those areas and it ranges from very costly to deadly"* — restated, so the design is
+  confirmed rather than revised.
+- **The observed cost is the reverse**, and the mechanism is named exactly: the *density* is on the
+  corridor, so stepping off it is a step into quieter ground. The bug is not that off-corridor is
+  insufficiently lethal in isolation; it is that the two are the wrong way round relative to each
+  other.
+- ***"That is not as we planned"*** — so this is a build that does not match a design already
+  agreed, which is the shape M50's own entry admits to. It is not a new decision to take.
 
 ---
 
