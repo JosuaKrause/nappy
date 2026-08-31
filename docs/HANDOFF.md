@@ -1,53 +1,100 @@
 # Handoff
 
-**Last updated:** the playtest 13 session — which wrote the report and the plan and built none of
-it. Nothing has been implemented since `b7590fb`. M41 and older follow below, newest first.
-**Read this first, then [PLAYTEST-13.md](PLAYTEST-13.md), then [TODO.md](TODO.md).**
+**Last updated:** the M50 / playtest 16 session. `main` is `c82bcbb`, green and playable, and
+**nothing is half-built and nothing is on a branch.** Everything below the pick-up block is older
+history, newest first.
+**Read this first, then [PLAYTEST-16.md](PLAYTEST-16.md), then [TODO.md](TODO.md).**
 
 > ## Where to pick up
 >
-> **Nothing is half-built and nothing is on a branch.** `main` is `b7590fb` plus the playtest 13
-> documents. The order is **the tooling, then M46, then M47, then M43's last two, then M48, then
-> M40 — and only then a playtest.**
+> `./tools/test.sh` → **175380 checks, 0 failures** (~200s); `./tools/check.sh` → OK;
+> `./tools/run.sh` plays it; `./tools/telemetry.sh` reads back what the last run did.
 >
-> - **Read the process finding before anything else.** The player closed playtest 13 with
->   *"don't tell me to playtest again unless all the things we discussed have been implemented —
->   there is otherwise not really any point in playtesting since it will just surface the already
->   mentioned things again."* M43 was merged half done on the argument that what was left needed a
->   played run; that run spent five nerves rediscovering things already written down. **A playtest
->   is a scarce resource — do not spend one on a build known to be incomplete.**
-> - **The tooling first** (playtest 13, findings 4 and 5): a picture of the whole city grid written
->   into the telemetry folder every run, and a key that takes a screenshot and writes a note beside
->   it. Small, asked for by name, and M46 and M47 both want exactly what they provide.
-> - **M46, the crowd milestone, is next — and it exists.** The note that used to stand here said it
->   might not, because M41 had moved every number it was going to argue about. The numbers moved and
->   the finding survived: *"just walking around now increases excitement — this is bad."* Three
->   seconds of standing still on an ordinary pavement is **+8**, the freeze threshold is reached
->   within ten seconds of the doorstep on all five attempts, and the day that was lost read
->   `crowd 24.6, events 0.0` with the nearest catalogue row out of range. Found by playtest 07, by
->   playtest 10, and now said out loud. **Measure the ratio, not either number** — the finding is
->   that the careful line has stopped existing, not that the crowd is loud.
-> - **M47 is playtest 13's finding 2 plus the whole of M45**, because they are one mechanism. The
->   calm *count* is right and its *density* is not: 49 blocks became 121 and the eight calm areas
->   did not move. The answer taken is **area rather than count** — a 2×2 inner courtyard
->   (an apartment complex, asked for long ago and never built), calm areas that are 2×1 rather than
->   square, and the **main road as a soft block**, which is M45's permanent restriction achieved
->   without removing a walkable tile.
-> - **M43's last two are answered by the played run at last.** The cool-off is the wrong *quantity*
->   rather than the wrong constant — `_outrun_for` needs 0.8 **continuous** seconds of the gap
->   opening and a real player runs in bursts, so two chases lasted 5.4s while she ran through most
->   of them. And the day-4 dog: `charging_dog` recurs past day 3 but must stop being sited ahead of
->   her.
-> - **M48** — `construction` is 68px wide on a 64px pavement and is always drawn east–west. Three
->   rules, not a row.
-> - **M40** — the documentation split: `docs/DECISIONS.md` for what was tried and rejected, and
->   docstrings that say what a thing is rather than what it used to be.
+> **The order, and it is the player's:** *"queue those fixes after the traffic light fix"* — so
+> M52's remaining item, then M53. M54 and M50's leftovers are unordered against them.
 >
-> **Two things were decided in this session that are not milestones.** The mother and the baby have
-> names — **Peregrine and Wren**, in [NARRATIVE.md](NARRATIVE.md) with the reasoning and the one
-> that was rejected — and **names are content, never identifiers**: nothing in `src/` may be named
-> after them, because a name can change and a rename that has reached the code is a diff nobody can
-> review. That rule is in `CLAUDE.md`.
+> ### 1. M52, item 1 — the calm areas get shapes · `docs/TODO.md`, M52 and **M47**
+>
+> **Build it from M47's entry, not from a fresh design.** M52's items 2 and 3 are done (the calm
+> rate curve and the light poles); item 1 is *"2x2 courtyard and rectangular calm zones"*, and that
+> is verbatim an M47 to-do that has been sitting unbuilt with the player's own longer wording:
+> *"an inner courtyard (surrounded by buildings) should have a footprint of 2x2 blocks (apartment
+> complex) — this never got implemented… also, add calm varieties that take up 2x1 non-square
+> shapes."* Two things ship with it:
+>
+> - **A calm area is never at the edge of the map or beside the main road** — playtest 16, finding
+>   4, *"which should be impossible"*, and also already in M47 with its measurement (96 eligible
+>   blocks → 56 with the edge rule → 48 with the spine rule). State both over a **footprint**, like
+>   `_too_near_the_home` and `_zone_fits` already do, and state the spine rule over
+>   `map.main_road` rather than `CrowdLanes.arterial_index`.
+> - **The sleepiness curve is already waiting for the new sizes.** `Tuning.sleepiness_calm_multiplier`
+>   is `1 / sqrt(blocks)` normalised to a 2×2 zone — 21× / 29.7× / 42× for four, two and one blocks
+>   — so a 2×1 lot gets its rate for nothing the moment the generator can make one.
+>
+> ### 2. M53 — a junction is made of the streets that meet at it · playtest 16, findings 1, 2, 3, 5
+>
+> One sentence: **the lattice draws a full crossroads wherever two corridors cross, whether or not
+> the arms of it are streets.** The southern arm of one is the sea; others open onto precinct paving
+> and park grass; one has a zebra painted onto a cul-de-sac's plug. And the crowd walks all of it and
+> then vanishes where somebody is looking at it. `CityMap.absent_segments`, `built_over` and the map
+> edge already say which arms exist — nothing that draws a junction asks.
+>
+> **This was filed twelve milestones ago** as M41's *"T-intersections everywhere else on the edge"*,
+> and M51 finding 1 was the same defect on a cul-de-sac.
+>
+> ### 3. M54 — the back half of the game, reported for the first time
+>
+> - **The resistance never announced itself.** The deliberate risk in "Things deliberately not done"
+>   — *"a player may finish a run never knowing the good ending existed"* — has been run and did not
+>   pay off. Four separate instructions, kept apart in the entry: the day brief carries the chalk
+>   marks' own words; the **first** encounter is the one exception and it is absolute (*"no hint even
+>   at the bottom left"*); the mark is placed dynamically alongside a route, which is M50 step 2's
+>   own open item about `ResistanceDirector`; and the end of a day says whether anything happened.
+> - **The robber runs through walls**, and the rest of that sentence is a verdict — *"very good and
+>   effective… the timing is good"*. A pursuing `EventInstance` moves by setting its own position and
+>   nothing in the event system has ever collided with the city.
+> - **The bike, the loose dog and the cat never have an impact** (finding 9). Three rows whose whole
+>   content is a moving thing meeting her. Comes with a design and one open question: a bike aimed at
+>   her that she answers by **planning a turn** is neither `MAP` nor `AHEAD_OF_PLAYER`, so it may
+>   want a third spawn mode. That is a design conversation, not a field.
+> - **The run hint belongs to the lesson, not the mechanic** (finding 6).
+>
+> ### 4. What M50 still owes
+>
+> - **"Blocking events all over" off the paths is not true yet, and it is a catalogue question.**
+>   The *gradient* is built — very costly at the rim, deadly beyond it, with M28's clearance rule
+>   exempted off the corridor — but day 1 is still ~6× denser on the corridor than off it, and only
+>   16.2 of its 113.6 placements are walls at all, because the expensive rows have low `max_per_day`.
+>   That is *"a budget the catalogue cannot spend is not density"* at the other end of the map, and
+>   raising those caps is a balance change that wants its own measurement.
+> - **Step 3, placeholders.** Rewritten after the player's correction and **not** started: the budget
+>   is a **variety ledger**, not a density cap. *"Its role is to provide variety in encounters and
+>   make sure to not spam the same event over and over again. The amount of placeholders is almost
+>   one per block sometimes multiple per block."* So a placeholder is a site with a **pool**, and
+>   resolving late means variety is measured over the encounters that happen rather than over a city
+>   she never saw. Read step 3's opening before touching it — the first reading of it was wrong and
+>   the wrong reading is recorded there.
+> - **The resistance note's alley as a set piece** — the same item as M54's third resistance bullet.
+>
+> ### Not queued, and deliberately so
+>
+> - **Should more junctions be signalled?** Nobody asked for it. Parked in M52 with its costs, since
+>   it would repeal M41's *"a property of the street rather than a scattering of them"*.
+> - **A building type that closes all four of its streets** (M50 step 1). Recorded, not built, and
+>   a different type rather than a bigger one.
+> - **M10, polish**, still after the playtest work.
+>
+> ### The two process rules this session added, and they cost the most
+>
+> - **Read the file before designing against it.** Four items in one session were things this
+>   project had already written down and not built — M41's T-junctions, M47's edge rule and calm
+>   shapes, M51's cul-de-sac — and one of them answered, word for word on disk, two questions this
+>   side had just put to the player. `CLAUDE.md` has the rule now: **the first tool call of a design
+>   task is a search for the words, not a plan.**
+> - **A borrowed constant is not a measured one.** `WALL_WORTH_OF_COST` was set to
+>   `MARK_WORTH_A_DETOUR` with a tidy argument and it emptied the corridor — two thirds of every day
+>   became a wall. It is set by `dog_walker` now, which has to stay on the route because that
+>   decision is what the game is made of.
 
 > **M41 is the shape of the city, and its one sentence is: a hierarchy is only a hierarchy if there
 > is one of the top thing.**
@@ -590,16 +637,33 @@ it. Nothing has been implemented since `b7590fb`. M41 and older follow below, ne
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **202075 checks, 0 failures** (~200s);
+`main` is green and playable. `./tools/test.sh` → **175380 checks, 0 failures** (~200s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
-**M50 is under way**: the day's corridor exists (`RouteTree`), the telemetry map draws it, and the
-city has permanent structure in it — dead ends, and big buildings that join two blocks by building
-over the street between them. What is left is **placement by role** — walls off the tree, friction
-on it, set pieces on the fan-out — plus placeholders. **The two invariant decisions are taken**
-*(2026-08-31)*: the two-routes guarantee is reachability, and the park rule refuses ground at
-placement rather than stripping events afterwards. See `docs/TODO.md`, M50.
+**M50 is done except for step 3.** The day's corridor exists (`RouteTree`), the telemetry map draws
+it *and* what was placed against it, the city has permanent structure — dead ends and big buildings
+that join two blocks — and the day is **placed by role**: walls off the tree, friction on it, set
+pieces offered at every site of a covering set with one of them happening. Off the corridor is a
+**range** now rather than a bias, very costly at the rim and deadly beyond it. What is left is
+**placeholders** (step 3, rewritten after the player's budget correction and not started), the
+resistance note's alley as a set piece, and the catalogue-caps half of *"blocking events all over"*.
+**Three invariant decisions are taken** *(2026-08-31)*: the two-routes guarantee is reachability,
+the park rule refuses ground at placement rather than stripping events afterwards, and M28's lethal
+clearance rule is exempted off the corridor. See `docs/TODO.md`, M50.
+
+**M51 and M52 are done, M53 and M54 are the queue.** M51 is playtest 15 — the cul-de-sac the crowd
+walked through, the spine's zebra, the police car's flank, the game-over heading, the title colour,
+the bridge. M52 is the calm rate curve (`1 / sqrt(blocks)`, 21× / 29.7× / 42×) and the signal heads
+moved to the kerb they were always documented as standing on; its remaining item is the calm
+**shapes**, which is M47's entry. M53 and M54 are playtest 16, and the pick-up block at the top of
+this file is the order.
+
+*(The count went 202075 → 175380 in that session, and the drop is one assertion narrowing on
+purpose: `_test_nothing_happens_inside_a_lethal_field` no longer walks every other placement past a
+lethal **wall**, because a wall is exempt from that rule now. It still checks every lethal set piece
+and asserts that a run places both kinds, so the exemption cannot become a way of asserting
+nothing.)*
 
 *(The count went 135308 → 202075 in that session. Most of it is one new test —
 `test_calm_she_has_not_used_is_left_alone` walks three seeds through a whole run and asks the
@@ -861,6 +925,19 @@ than code. All of them are written up in `PLAYTEST-02.md` (decisions 9–14).
    M8.)* No marker, no quest log — wanting the difficulty dial and finding it are the same
    behaviour. But `E` appears in exactly one line of the game, so the hold becomes automatic
    on proximity: the cost was always standing still in an alley, never the keypress. M26.
+
+   **Overturned by the player on 2026-08-31, and only the first half of it.** *(Playtest 16, finding
+   7: "I'm not sure if I ever did the resistance. I walked on one chalk symbol once but there was no
+   indication at the end of the day or any guidance what to do next. During the day brief there
+   should be instructions from the chalk marks to tell me what the next task is. Only the first
+   encounter (the chalk mark) should come without hint.")* This is the first playtest ever to reach
+   a chalk mark, so it is the risk in *"Things deliberately not done"* being run — *"a player may
+   finish a run never knowing the good ending existed"* — and not paying off.
+
+   What survives is decision 2 and the **first encounter**: finding the dial is still the player's
+   own doing, with no hint at all, deliberately including the HUD line that exists today. What is
+   overturned is everything after it — once she has found a mark, the resistance speaks to her in
+   the day brief. See M54.
 
 ## Read this before touching the event or signalling code
 
@@ -1220,7 +1297,16 @@ it.
   suites in the throwaway worktree, or the comparison run costs six minutes of tests you are not
   reading.
 
-## What to do next, in order
+## What to do next, in order — *superseded; see "Where to pick up" at the top of this file*
+
+**This section is M37-era and is kept as history rather than as a queue.** The live order is the
+pick-up block at the top: M52's calm shapes, then M53's junctions, then M54, then M50's leftovers.
+Two lists of next steps in one file is how a to-do gets filed and not read, which this session paid
+for four times — so if these two ever disagree, the top of the file wins and this heading is the one
+to correct.
+
+What is still worth reading here is the **playtest questions**, which are not stale: most of them
+have still never been answered by a person, and they are the shape of question a rig cannot answer.
 
 ### First: play it, and look at the people
 
