@@ -190,14 +190,23 @@ was around when a day ended.
 corridor by the player's algorithm, and the telemetry map draws it, which is what turns *"is
 anything guiding her"* from an impression formed while playing into a picture written every
 morning. Step 1 is done — the city has permanent structure in it now, four to eight dead ends and
-one or two big buildings, placed against a reference tree. What is left is **step 2, placement by
-role**, and the two invariant decisions that block it. Read the M50 entry before picking it up: the
-things that went wrong there are worth more than the things that went right.
+one or two big buildings, placed against a reference tree. **The two invariant decisions are taken**
+*(2026-08-31)*, so what is left is **step 2, placement by role**, and step 3. Read the M50 entry
+before picking it up: the things that went wrong there are worth more than the things that went
+right.
+
+**And the three corrections that came out of the player reading the first telemetry map are the
+ones to read first**, because none of them was a bug report and all three were the session having
+asked the wrong question. The picture drew bundles white and a precinct blue, where the ground was
+already saying both; a big building closed four streets where what was wanted joins two blocks; and
+the park rule *deleted* events off calm she had not used, where the answer was **"just don't place
+events there"** — which keeps every unvisited area clean and raises the density, because a repair
+spends the budget twice.
 
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
-`tools/test.sh` runs 135308 checks (~195s, and `tools/test.sh crowd balance` runs one suite in
+`tools/test.sh` runs 202075 checks (~200s, and `tools/test.sh crowd balance` runs one suite in
 seconds); `tools/check.sh` boots the project; `tools/run.sh` plays it; `tools/telemetry.sh` reads
 back what the last run did.
 

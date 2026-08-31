@@ -590,14 +590,21 @@ it. Nothing has been implemented since `b7590fb`. M41 and older follow below, ne
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **135308 checks, 0 failures** (~195s);
+`main` is green and playable. `./tools/test.sh` → **202075 checks, 0 failures** (~200s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
 
 **M50 is under way**: the day's corridor exists (`RouteTree`), the telemetry map draws it, and the
-city has permanent structure in it (dead ends and big buildings). What is left is placement by
-role — walls off the tree, friction on it, set pieces on the fan-out — plus placeholders and the
-two invariant decisions. See `docs/TODO.md`, M50.
+city has permanent structure in it — dead ends, and big buildings that join two blocks by building
+over the street between them. What is left is **placement by role** — walls off the tree, friction
+on it, set pieces on the fan-out — plus placeholders. **The two invariant decisions are taken**
+*(2026-08-31)*: the two-routes guarantee is reachability, and the park rule refuses ground at
+placement rather than stripping events afterwards. See `docs/TODO.md`, M50.
+
+*(The count went 135308 → 202075 in that session. Most of it is one new test —
+`test_calm_she_has_not_used_is_left_alone` walks three seeds through a whole run and asks the
+question of every plan against every unused calm area — and the rest is that a day now places 5–9%
+more events, so every per-event assertion runs more often.)*
 
 **The count went 74540 → 122119 on M41, and it is the lattice rather than the milestone.** The
 jump is +64% and it wanted checking rather than asserting, because a count that moves by that much
