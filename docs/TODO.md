@@ -2185,7 +2185,7 @@ The decision taken on the finding, quoted, because it is not what the analysis e
 > got implemented. not all calm areas have to take up multiple blocks but add more that do. also,
 > add calm varieties that take up 2x1 non-square shapes"*
 
-- [ ] **Calm ground is never at the edge of the map and never beside the main road** — the second
+- [x] **Calm ground is never at the edge of the map and never beside the main road** — the second
       lever on density, taken in the same session and **cheaper than everything below it**, because
       it is a placement rule rather than new geometry. *"Another way to get density is to make a
       rule to not have a calm area at the edge of the map or next to the main road."*
@@ -2239,6 +2239,23 @@ The decision taken on the finding, quoted, because it is not what the analysis e
       the edge rule is the one that must land; if the measurement above says the field is too
       tight, the spine rule is what comes out, and it comes out **before** `MIN_CALM_BLOCKS` or the
       non-adjacency rule are touched — those two are what the player asked for by name
+
+      **Built in M52 as one question over a footprint** — `CityGenerator._calm_may_sit_here`, asked
+      by all three placement paths (the zone pass, the single-block pass and `_cut_courtyards`),
+      which is what this entry asked for and is why the home clearance now reaches a courtyard too.
+      **The field was measured before committing and the room is there:** 40 seeds, calm areas at
+      the edge **4.42 per city → 0**, beside the spine **1.50 → 0**, areas per city 8.85 → 8.43
+      (courtyards 3.00 → 2.55, open calm inside its 5–7 band throughout), and generation retries per
+      city **0.50 → 0.00** — the courtyard beside the front door that used to fail the home-distance
+      guarantee is refused at placement instead. The spine rule did not have to come out.
+
+      **And the east-west guard came out with it.** `_zone_fits` refused a footprint that would
+      absorb the middle east-west corridor, tested against `CrowdLanes.arterial_index` — the phantom
+      arterial of M46, protecting a street that stopped being anything when playtest 14 deleted the
+      east and west city exits. `tests/test_generator.gd` asserted the same phantom, and now asserts
+      the sentence that is load-bearing: no zone swallows a stretch of the **main road**, which the
+      new spine clause makes true by construction. Recorded rather than merely deleted, because it is
+      a rule nobody took being removed rather than one somebody asked for
 - [ ] **And no two calm areas are directly next to each other — including courtyards.** *"Also
       don't place calm areas directly next to each other."* Half of this is already true and half
       of it is a real gap, which is why it is its own item.

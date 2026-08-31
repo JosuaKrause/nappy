@@ -212,6 +212,53 @@ question only when they are different from each other: a small quiet square two 
 against a big park across the city is the decision M24 made matter, and a city of nothing but
 zones would flatten it again.
 
+### Where calm ground may go
+
+*(M52, built from M47's entry. Playtest 16, finding 4: "this map shows multiple calm zones at the
+edge of the map which should be impossible".)*
+
+**One question, asked of a footprint**, so a single block, a zone and a courtyard obey one rule
+rather than three that drift apart — `CityGenerator._calm_may_sit_here`. Three clauses:
+
+- **Never near the home.** The oldest of the three: the walk out has to be worth walking, and with
+  the home pinned to the middle block this is where that is settled. See "The home".
+- **Never in the outer ring of blocks.** *"Another way to get density is to make a rule to not have
+  a calm area at the edge of the map or next to the main road."* A calm area against the boundary
+  has the ring of frontages behind it, so half its approaches are a wall and it is a destination
+  you can only arrive at from one side. This clause is also almost all of the density argument:
+  the ring is **40 of the lattice's 121 blocks**.
+- **Never in either block column beside the main road.** Worth only **eight** blocks on top of the
+  ring, because the spine runs down the middle where the home clearance has already taken a 5×5
+  out — so this one is justified on design rather than on density. `decay_multiplier` is 0.6 on
+  the spine, so a park you can hear the main road from is not calm ground; and if calm never sits
+  beside it, **crossing it always leads somewhere worth crossing for**, which is what makes it a
+  soft block rather than a wall. It is the expendable clause by the player's own words — *"the not
+  next to main road rule is not that important, you can remove it if it loses too much freedom"* —
+  so if the field ever gets too tight, this comes out before `MIN_CALM_BLOCKS` or the
+  non-adjacency rule are touched.
+
+The eligible field, on the 11×11 lattice, for a single calm area:
+
+| eligible blocks | count |
+| --- | ---: |
+| the lattice minus the 5×5 home clearance | 96 |
+| + no calm in the outer ring | 56 |
+| + no calm in the two columns beside the spine | **48** |
+
+**Measured over 40 seeds, and the room is there.** Calm areas touching the edge went **4.42 per
+city to zero** and areas beside the spine **1.50 to zero**, with the count the player asked to keep
+unmoved — 8.85 areas of which 3.00 courtyards, against 8.43 of which 2.55, open calm inside its 5–7
+band throughout. Generation retries per city fell **0.50 → 0.00**: a courtyard cut beside the front
+door used to fail the home-distance guarantee and roll the whole map again, and the home clearance
+now refuses the block instead.
+
+**The spine clause is stated over `map.main_road`** and nothing else. `CrowdLanes.arterial_index`
+is the *default* a map is built from, and asking it where the spine is is the M46 defect — the one
+that put a phantom east-west arterial in `CrowdLanes.busyness()` for five milestones. `_zone_fits`
+carried a copy of that same mistake, refusing a zone that would absorb the middle east-west
+corridor, and it is gone: there is one main road, it runs north to south, and the guard on the
+other axis was written for city exits playtest 14 deleted.
+
 ### What a zone does to the lattice
 
 This is the part that costs something. A zone absorbs the two horizontal streets between its
@@ -224,12 +271,13 @@ rows and the two vertical ones between its columns, so:
 - **Route redundancy stops being true by construction** and has to be checked by search. See
   below.
 
-Two rules keep a zone from taking something the city cannot spare:
+Two rules keep a zone from taking something the city cannot spare, and both are the rules every
+calm area obeys, asked of the whole footprint:
 
-- **Never the arterial.** A zone may absorb any corridor but the main road, which is the noise
-  floor, the thing that has to be crossed, and the street a player learns first.
-- **Never beside other calm**, the same rule a single calm block obeys, stated over the whole
-  2×2 footprint.
+- **Somewhere calm ground may go at all** — see "Where calm ground may go" below. The clause that
+  keeps the spine off the two columns beside it is also what stops a zone absorbing a stretch of
+  it, which used to be a guard of its own here.
+- **Never beside other calm**, the same rule a single calm block obeys.
 
 The streets it absorbed live in `CityMap.absent_segments`, and `CityMap.blocked_segments()` adds
 them to whatever a day has closed. Every route search takes that set, so the graph half of

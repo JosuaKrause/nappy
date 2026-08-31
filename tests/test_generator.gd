@@ -18,6 +18,7 @@ func run(t) -> void:
 	_test_home_opens_onto_the_street(t)
 	_test_the_home_is_in_the_middle_of_a_city_worth_walking(t)
 	_test_calm_zones_are_four_blocks_of_one_thing(t)
+	_test_calm_is_never_at_the_edge_or_beside_the_spine(t)
 	_test_no_two_calm_areas_are_in_each_others_ring(t)
 	_test_a_calm_zone_is_a_route_rather_than_a_lap(t)
 	_test_a_dead_end_is_a_dead_end(t)
@@ -197,25 +198,25 @@ func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
 						"seed %d: zone %s is calm ground and nothing else (found %s)"
 						% [_seed(i), anchor, GameEnums.TileType.keys()[kind]])
 
-		# The arterial is the street the city cannot afford to lose a stretch of: it is the
+		# The main road is the street the city cannot afford to lose a stretch of: it is the
 		# noise floor, it is the thing that has to be crossed, and it is what a player learns
 		# first. A zone may take any corridor but that one.
+		#
+		# **It is one street and one axis, which is the half this used to get wrong.** Until M52 it
+		# also protected `CrowdLanes.arterial_index` on the east-west axis, which is not an arterial
+		# — there is one main road and it runs north to south. That guard was written when the city
+		# had east and west exits opening onto that corridor; playtest 14 deleted them, and what was
+		# left was a rule nobody had taken, asserted here against a constant rather than against the
+		# map. It is gone from `_zone_fits` and gone from here with it.
 		for key: Vector3i in map.absent_segments:
 			# Zone-absorbed streets only. `absent_segments` stopped being the zone set in M50 —
 			# a dead end is absent too, for the opposite reason — and this sentence is about
 			# zones. Asserting it over the whole set was the identity standing in for the
 			# property, which is a mistake this project has made before and can now name.
-			if map.is_hard_blocker(key):
+			if map.is_hard_blocker(key) or key.z == 0:
 				continue
-			var corridor: int = key.y if key.z == 0 else key.x
-			# Which corridor that is comes from the **map** since playtest 14, because the spine
-			# is rolled per city rather than always being the middle one. The east-west number is
-			# still a constant and is not an arterial — it is the corridor the city's east and
-			# west exits open onto. See `CityGenerator._zone_fits`.
-			var protected: int = map.main_road if key.z != 0 \
-					else CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y)
-			t.check(corridor != protected,
-					"seed %d: no zone swallowed a stretch of the arterial (%s did)"
+			t.check(key.x != map.main_road,
+					"seed %d: no zone swallowed a stretch of the main road (%s did)"
 					% [_seed(i), key])
 
 ## The claim M21 exists to make good, as a relationship rather than a number.
@@ -475,6 +476,35 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 func _seed(index: int) -> int:
 	# Spread the seeds out; consecutive integers are what generate() retries with.
 	return 1000 + index * 7919
+
+## **No calm area touches the outer ring of blocks, and none sits in either block column beside the
+## main road.** *(M52, built from M47's entry; playtest 16 finding 4: "this map shows multiple calm
+## zones at the edge of the map which should be impossible".)*
+##
+## Stated over `map.calm_blocks` and every block of every lot, for the same reason the ring test
+## below is: that list is what the telemetry map outlines, and the outlines in the outer column are
+## what the player was looking at when they said it. A rule checked over the *placement* path would
+## have agreed with the placement path — three of them place calm and it took one shared question
+## over a footprint to stop them drifting.
+##
+## Measured over 40 seeds: **4.42 calm areas per city touched the edge and 1.50 sat beside the
+## spine** before the rule, both zero after, with open calm per city unmoved inside its 5–7 band
+## (8.85 areas of which 3.00 courtyards → 8.43 of which 2.55) and generation retries per city
+## falling 0.50 → 0.00 — because a courtyard beside the front door used to fail the home-distance
+## guarantee and roll the whole map again.
+func _test_calm_is_never_at_the_edge_or_beside_the_spine(t) -> void:
+	var last := Tuning.CITY_BLOCKS - Vector2i.ONE
+	for i in 24:
+		var map := CityGenerator.generate(_seed(i))
+		for anchor in map.calm_blocks:
+			var lot := map.lot_blocks(anchor)
+			for block in CityGenerator._blocks_in(lot):
+				t.check(block.x > 0 and block.y > 0 and block.x < last.x and block.y < last.y,
+						"seed %d: calm area %s has a block at the map edge (%s)"
+						% [_seed(i), anchor, block])
+				t.check(block.x != map.main_road and block.x != map.main_road - 1,
+						"seed %d: calm area %s has a block beside the main road (%s, spine %d)"
+						% [_seed(i), anchor, block, map.main_road])
 
 ## **No two calm areas are anywhere in each other's eight-block ring, corners included, whatever
 ## kind of calm they are.** *(Playtest 14 finding 7, and the 2026-08-31 re-report off a telemetry
