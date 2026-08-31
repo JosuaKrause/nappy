@@ -214,11 +214,18 @@ func snapshot_now(context: String) -> void:
 ## It takes the day rather than reading `GameState`, for the reason everything in this file takes
 ## what it needs: the telemetry asks the world no questions, so it can never be the thing that
 ## changed one.
-func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = []) -> void:
+## Since M50 it also draws the day's **corridor**. The tree is grown here when the caller has none
+## to hand, and that is safe rather than convenient: `RouteTree.for_day` is a pure function of the
+## city's seed, the day and what is shut, so the tree drawn is the same tree anything else that
+## asks for today's would get. Growing one touches no gameplay stream and cannot move a placement,
+## which is the invariant this whole file is built on.
+func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
+		tree: RouteTree = null) -> void:
 	if not _log or _log.path == "":
 		return
 	var path := "%s/%s-map-day%02d.png" % [DIRECTORY, _stem, day]
-	if TelemetryMap.render(map, closures).save_png(path) != OK:
+	var drawn := tree if tree else RouteTree.for_day(map, day, closures)
+	if TelemetryMap.render(map, closures, drawn).save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
 
 ## The capture itself, split out because it is the only thing here that has to wait for a frame.

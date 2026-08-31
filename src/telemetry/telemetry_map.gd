@@ -47,6 +47,8 @@ const CALM_MARK := Color("33ff73")
 const SPINE_MARK := Color("ff8c1a")
 const PRECINCT_MARK := Color("73a6ff")
 const CLOSURE_MARK := Color("ff2626")
+const CORRIDOR_MARK := Color("b366ff")
+const BUNDLE_MARK := Color("ffffff")
 
 ## What a building is drawn as here.
 ##
@@ -62,7 +64,11 @@ const BUILDING_GROUND := Color("211f26")
 ## `closed_today` is the day's closures rather than `map.closed_tiles`, because the caller has them
 ## as objects and the mouths are what a reader is looking for — a closed street reads as a street
 ## with two crosses on it, which is what it looks like from the junction.
-static func render(map: CityMap, closures: Array[RoadClosure] = []) -> Image:
+##
+## `tree` is the day's corridor, and it is the one mark here that is a **plan** rather than a fact
+## about the ground. It is optional because everything else in the picture is true without it.
+static func render(map: CityMap, closures: Array[RoadClosure] = [],
+		tree: RouteTree = null) -> Image:
 	var image := Image.create_empty(map.size.x * SCALE, map.size.y * SCALE, false, Image.FORMAT_RGB8)
 	for y in map.size.y:
 		for x in map.size.x:
@@ -79,6 +85,10 @@ static func render(map: CityMap, closures: Array[RoadClosure] = []) -> Image:
 
 	_mark_the_spine(image, map)
 	_mark_the_precincts(image, map)
+	# Under the calm, the closures and the home on purpose: those three are what the corridor is
+	# drawn to be read *against* — where it arrives, what it had to go round, where it starts —
+	# and a plan that covers them would be answering its own question.
+	_mark_the_corridor(image, tree)
 	_mark_the_calm(image, map)
 	_mark_the_closures(image, closures)
 	_mark_the_home(image, map)
@@ -109,6 +119,40 @@ static func _mark_the_precincts(image: Image, map: CityMap) -> void:
 		var to: int = (span.w + 1) * CityMap.period()
 		_fill_tiles(image, Rect2i(Vector2i(across, from), Vector2i(1, to - from)) if vertical
 				else Rect2i(Vector2i(from, across), Vector2i(to - from, 1)), PRECINCT_MARK)
+
+## The day's corridor, as the path it is: a line down the middle of every street on the tree,
+## drawn white and twice as wide where more than one calm area is reached that way.
+##
+## *(M50, and the reason this tooling went first: the thing being built is a **placement**, and a
+## placement is exactly what a trace in words cannot show. "Is anything guiding her" is the open
+## question the whole milestone exists for, and it cannot be answered from a log line.)*
+##
+## Each stroke runs from the middle of one junction to the middle of the next rather than over the
+## street alone, so consecutive streets meet and a turn crosses — the picture is a **path** rather
+## than a set of dashes, which is the difference between reading a route and inferring one. The
+## bundles being the wide white ones is most of what there is to see: where they run is where a
+## wall is cheap and a set piece is worth siting, and a picture in which everything is thin violet
+## is a tree that has quietly become a star.
+static func _mark_the_corridor(image: Image, tree: RouteTree) -> void:
+	if not tree:
+		return
+	for key in tree.streets():
+		var segment := StreetNetwork.by_key(key)
+		if not segment:
+			continue
+		var bundled := tree.colours_on(key) >= 2
+		_fill_tiles(image, _corridor_stroke(segment, bundled),
+				BUNDLE_MARK if bundled else CORRIDOR_MARK)
+
+## One street's stroke, junction centre to junction centre.
+static func _corridor_stroke(segment: StreetNetwork.Segment, wide: bool) -> Rect2i:
+	var thickness := 2 if wide else 1
+	var across := Tuning.STREET_WIDTH / 2 - (1 if wide else 0)
+	var from := segment.a * CityMap.period()
+	var length := CityMap.period() + Tuning.STREET_WIDTH
+	if segment.horizontal:
+		return Rect2i(Vector2i(from.x, from.y + across), Vector2i(length, thickness))
+	return Rect2i(Vector2i(from.x + across, from.y), Vector2i(thickness, length))
 
 ## Every calm area, outlined at its lot. Outlined rather than tinted because *how big it is* is
 ## most of what this picture is being asked, and a tint over grass answers that worse than a box.
