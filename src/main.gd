@@ -487,6 +487,29 @@ func _spawn_position() -> Vector2:
 		var anchor: Vector2i = _city.map.zone_rects.keys()[0]
 		var corner := CityMap.blocks_tile_rect(_city.map.zone_rects[anchor]).position
 		return _nearest_walkable(_city.map.tile_to_world(corner - Vector2i.ONE * 2))
+	# A big building, stood on the street running along the joined side of it, level with the
+	# street it was built over. *(2026-08-31.)* The whole claim of a landmark is that it reads as
+	# **one mass** rather than as two blocks with the road missing between them, and until this
+	# existed there was no way to point a camera at one: the two hard blockers shipped in M50 with
+	# a picture of the grid and no picture of the city.
+	if args[index + 1] == "landmark":
+		if _city.map.big_buildings.is_empty():
+			push_warning("this city has no big building")
+			return _city.map.home_world_position()
+		var pair: Rect2i = _city.map.big_buildings[0]
+		var mass := CityMap.blocks_tile_rect(pair)
+		# Off the **long** side, which is the one the joined seam runs the width of: a mass two
+		# blocks wide is looked at from the north, a mass two blocks deep from the west. Two tiles
+		# out and not three, because a corridor is `sidewalk | road | sidewalk` and three tiles off
+		# a frontage is the carriageway — `_nearest_walkable` will happily leave her standing on it,
+		# and the first shot taken with this flag ended the day before it was taken.
+		# And a little off the middle of that side, because the middle of the mass is where the
+		# built-over street was, so the tile facing it across the corridor is a junction — which is
+		# somewhere a camera may stand and a pram should not.
+		var beside := Vector2i(mass.get_center().x - Tuning.STREET_WIDTH, mass.position.y - 2) \
+				if pair.size.x == 2 \
+				else Vector2i(mass.position.x - 2, mass.get_center().y - Tuning.STREET_WIDTH)
+		return _nearest_walkable(_city.map.tile_to_world(beside))
 	# A signalled junction on the spine, stood a little back down the side street, so that the
 	# main road, its lights and one of its zebras are all in the same frame. *(M41.)* The lights
 	# are the only cue in the game whose whole content is *when*, so they cannot be judged from a

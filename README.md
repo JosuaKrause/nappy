@@ -75,6 +75,7 @@ godot --path . -- --seed 12345 --day 9 --overview
 | `--meters S E` | Seed the two meters, to screenshot a UI state |
 | `--spawn park\|alley\|square\|playground` | Drop the player on a tile type |
 | `--spawn event[:id]` | Drop the player beside a live event |
+| `--spawn arterial\|zone\|signal\|landmark\|closure[:n]\|edge[:s\|e\|w]` | Drop her at one of the places worth photographing: the busiest pavement, a four-block calm zone, a signalled junction on the spine, a big building, a closed street seen from its junction, or one of the ways out of the map |
 | `--follow <event id>` | Park a camera on an event wherever it goes |
 | `--overview` | Frame the whole city at once |
 | `--screenshot out.png --after N` | Render for N **seconds**, save a PNG, quit |

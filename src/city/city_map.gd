@@ -55,8 +55,11 @@ var built_over := {}
 ## Which of `built_over` are **dead ends** — a street with one end walled — as a set of keys. The
 ## rest belong to a big building, which took its street whole.
 var dead_ends := {}
-## The blocks that are a single solid building with no street around them. *(M50 step 1.)*
-var big_buildings: Array[Vector2i] = []
+## The landmarks, each as the **pair of blocks** it joins. *(M50 step 1.)* A big building builds
+## over the one street between two neighbouring blocks and leaves every other street around them
+## alone; a type that closes all four is a different type and does not exist yet. See
+## `CityGenerator._place_big_buildings`.
+var big_buildings: Array[Rect2i] = []
 
 ## Whether a street is missing because something was built over it rather than because a calm zone
 ## painted a park across it. The question every rule about *zones* actually wants to ask, now that

@@ -2742,17 +2742,23 @@ dark street and is invisible. A hard blocker nobody can find in the one picture 
 placements might as well not have been placed. It has its own colour now.
 
 **Big buildings are built too, and the interesting part is what they exposed rather than what they
-are.** One or two per city: a block whose lot is solid with its four streets built over, twenty
-tiles across, junctions at its corners kept so the grid still turns there. Chosen late and
-converted rather than assigned with the other purposes, because the choice needs the reference
-tree, the tree needs the calm areas and those need the block layouts — by the time it can be
-decided the block has already been carved. Two things came out of it:
+are.** One or two per city: **two neighbouring blocks joined into one mass**, twenty-two tiles
+long, with the one street between them built over and every other street around them left alone.
+Chosen late and converted rather than assigned with the other purposes, because the choice needs
+the reference tree, the tree needs the calm areas and those need the block layouts — by the time it
+can be decided the blocks have already been carved. Three things came out of it:
 
+- **The first version took the whole ring, and the player corrected it.** *(2026-08-31: "why do big
+  buildings close off four streets each? a big building just connects two blocks… we can add a
+  building type with all four roads closed but that's a different building type. but I want one
+  that just connects two blocks (closes one road)".)* A block with all four of its streets built
+  over is an **island in the lattice** — one roll of the dice removing four streets — where what
+  was asked for is a landmark that removes one. The four-sided kind is recorded below as a type of
+  its own and is not built.
 - **A candidate list is a snapshot; a placement is a change.** The pool was enumerated once and
-  the first big building's four streets were news to the second one's ring check, so two of them
-  shared a street and drew two buildings on the same tiles. The ring is re-checked at placement
-  now. The same shape as M38's *"two placements in the same frame cannot see each other"*, one
-  scale out.
+  the first big building's streets were news to the second one's check, so two of them shared a
+  street and drew two buildings on the same tiles. It is re-checked at placement now. The same
+  shape as M38's *"two placements in the same frame cannot see each other"*, one scale out.
 - **And a density floor failed for a reason that had nothing to do with hard blockers.** Day 1
   planned 93 events against a floor of 96 on two seeds of eight, and the cause was neither lost
   ground nor the walkability cull (which drops nothing): it was
@@ -2772,6 +2778,16 @@ where the older one already failed, which is a coin flip: on seed 4242 it strips
 seed 90210 it strips none. That is the **old rule silently defeating the new one written under
 it**, and it is why the density shortfall looked like a hard-blocker problem — a big building
 moves enough placements to tip the coin. Worth its own item; see "Open design questions".
+
+- [ ] **A building type that closes all four of its streets.** *(2026-08-31, recorded rather than
+      built: "we can add a building type with all four roads closed but that's a different building
+      type".)* It is what the first version of the big building accidentally was, and the code for
+      it is in this branch's history — a block whose lot is solid with its whole ring taken and the
+      four corner junctions kept. What makes it a different type rather than a bigger one is what
+      it does to the lattice: a landmark that joins two blocks removes one street and leaves the
+      grid around it, and this removes four and makes an island. So it needs its own name, its own
+      count, and its own answer to *how many of these can a city take before the corridor has
+      nowhere to run* — none of which the two-block one has to answer
 
 ### Step 2 — placement by role
 

@@ -336,9 +336,12 @@ and now is not. It is asserted directly instead, by `RouteTree.bundles()` and
 `tests/test_route_tree.gd`, which is the stronger place for it — but it is no longer something a
 person notices without looking for it.
 
-### The dead ends
+### The hard blockers
 
-Every street that stops has its wall drawn in **teal**, filled. That is the one exception to
+Every street a hard blocker took has it drawn in **teal**, filled — the wall at the end of a dead
+end, and the whole street a big building was built over. The two read differently by shape rather
+than by colour: a dead end is a stub at one end of a street, and a landmark is a street's whole
+width with solid block either side of it. That is the one exception to
 "outlines, never fills" above, and it is not a slip: the rule exists because a mark that covers
 the ground stops the picture answering the question it was opened for, and here the ground *is*
 the mark — the tiles under it were built over, and an outline round a wall leaves the middle of it

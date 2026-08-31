@@ -20,7 +20,7 @@ func run(t) -> void:
 	_test_calm_zones_are_four_blocks_of_one_thing(t)
 	_test_a_calm_zone_is_a_route_rather_than_a_lap(t)
 	_test_a_dead_end_is_a_dead_end(t)
-	_test_a_big_building_has_no_street_round_it(t)
+	_test_a_big_building_joins_two_blocks(t)
 	_test_no_single_street_closure_isolates_the_parks(t)
 
 # ------------------------------------------------------------------- pieces ---
@@ -373,19 +373,22 @@ func _test_a_dead_end_is_a_dead_end(t) -> void:
 			"a city gets %.1f dead ends, wanting at least %d"
 			% [float(total) / seeds, Tuning.MIN_CUL_DE_SACS])
 
-## The other hard blocker: a block that is one solid mass with its four streets taken. *(M50.)*
+## The other hard blocker: two blocks joined into one mass, with the street between them built
+## over. *(M50, corrected 2026-08-31: "a big building just connects two blocks… I want one that
+## just connects two blocks (closes one road)".)*
 ##
-## The two clauses that matter are the ones a picture would not settle. **The mass is solid all the
-## way to the junctions** — a big building with a walkable strip left round it is a building with a
-## pavement, which is every other block in the city. And **the four junctions at its corners
-## survive**, because the thing being removed is the road between them and not the grid around it:
-## a car still turns there and a crossing is still painted there, and a blocker that ate its own
-## corners would be cutting four streets it was never offered.
+## Three clauses, and the first two are the ones a picture would not settle. **The mass is solid
+## from lot to lot across the street between** — a landmark with a walkable strip left through the
+## middle of it is two buildings with a road between them, which is every other pair in the city.
+## **Every other street round the pair survives**, which is the correction itself: the first
+## version took the whole ring, so one roll of the dice removed four streets and made an island.
+## And a big building **is not a dead end**, so the two are told apart in `built_over`, because
+## they are absent for opposite reasons and the picture draws them differently.
 ##
-## Its lot never re-opens either. `tests/test_blocks.gd` holds that in general — the walkable set
-## is identical tile for tile across every block arc — and here the mechanism is that the block's
+## Its lots never re-open either. `tests/test_blocks.gd` holds that in general — the walkable set
+## is identical tile for tile across every block arc — and here the mechanism is that each block's
 ## `BlockLayout` is empty, so a repaint finds nothing to paint back.
-func _test_a_big_building_has_no_street_round_it(t) -> void:
+func _test_a_big_building_joins_two_blocks(t) -> void:
 	var seeds := 12
 	var total := 0
 	for i in seeds:
@@ -396,35 +399,52 @@ func _test_a_big_building_has_no_street_round_it(t) -> void:
 				% [_seed(i), Tuning.MAX_BIG_BUILDINGS, map.big_buildings.size()])
 		total += map.big_buildings.size()
 
-		for block in map.big_buildings:
-			t.check(map.starting_purpose(block) == GameEnums.BlockPurpose.BIG_BUILDING,
-					"seed %d: block %s is a big building for the whole run" % [_seed(i), block])
-			var layout: BlockLayout = map.block_layouts.get(block)
-			t.check(layout != null and not BlockLayout.has(layout.open_rect),
-					"seed %d: and has nothing carved into it to repaint" % _seed(i))
+		for pair: Rect2i in map.big_buildings:
+			t.check(pair.size == Vector2i(2, 1) or pair.size == Vector2i(1, 2),
+					"seed %d: the landmark %s is two neighbouring blocks" % [_seed(i), pair])
+			for block in [pair.position, pair.end - Vector2i.ONE]:
+				t.check(map.starting_purpose(block) == GameEnums.BlockPurpose.BIG_BUILDING,
+						"seed %d: block %s is a big building for the whole run" % [_seed(i), block])
+				var layout: BlockLayout = map.block_layouts.get(block)
+				t.check(layout != null and not BlockLayout.has(layout.open_rect),
+						"seed %d: and has nothing carved into it to repaint" % _seed(i))
 
-			# Solid from one junction to the next: the lot, and the four streets round it. Not
-			# the whole grown square — that would include the corner junctions, which stay.
-			var mass: Array[Rect2i] = [CityMap.block_rect(block)]
-			for segment in StreetNetwork.around_blocks(Rect2i(block, Vector2i.ONE)):
-				mass.append(segment.tile_rect())
-				t.check(not map.has_street(segment.key()),
-						"seed %d: %s is out of the lattice" % [_seed(i), segment.key()])
-				t.check(map.is_hard_blocker(segment.key()),
-						"seed %d: and out of it because it was built over" % _seed(i))
-				t.check(not map.dead_ends.has(segment.key()),
-						"seed %d: and is not counted as a dead end" % _seed(i))
-			for rect in mass:
-				for tile in map.rect_tiles(rect):
-					t.check(not map.is_walkable(tile),
-							"seed %d: the mass at %s is solid at %s" % [_seed(i), block, tile])
+			# Solid across the whole footprint, the street between included.
+			for tile in map.rect_tiles(CityMap.blocks_tile_rect(pair)):
+				t.check(not map.is_walkable(tile),
+						"seed %d: the mass at %s is solid at %s" % [_seed(i), pair, tile])
 
-			# The corners are still crossroads.
-			for corner: Vector2i in [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]:
-				var junction: Vector2i = (block + corner) * CityMap.period()
+			# One street gone, and it is the one between them — derived here as the street both
+			# blocks' own rings have in common, rather than restated from the generator's rule.
+			var ring := {}
+			for segment in StreetNetwork.around_blocks(Rect2i(pair.position, Vector2i.ONE)):
+				ring[segment.key()] = true
+			var between := Vector3i.ZERO
+			for segment in StreetNetwork.around_blocks(Rect2i(pair.end - Vector2i.ONE,
+					Vector2i.ONE)):
+				if ring.has(segment.key()):
+					between = segment.key()
+			t.check(not map.has_street(between),
+					"seed %d: the street %s between them is out of the lattice"
+					% [_seed(i), between])
+			t.check(map.is_hard_blocker(between),
+					"seed %d: and out of it because it was built over" % _seed(i))
+			t.check(not map.dead_ends.has(between),
+					"seed %d: and is not counted as a dead end" % _seed(i))
+
+			# And nothing else round the pair was taken *by the landmark*. A dead end may still sit
+			# on one of them, which is legitimate city and is why the exception is named.
+			for segment in StreetNetwork.around_blocks(pair):
+				t.check(map.has_street(segment.key()) or map.dead_ends.has(segment.key()),
+						"seed %d: %s round the landmark %s is still a street"
+						% [_seed(i), segment.key(), pair])
+
+			# Every junction round the pair is still a crossroads: what was removed is the road
+			# between two of them and not the grid around it.
+			for corner in map.rect_tiles(Rect2i(pair.position, pair.size + Vector2i.ONE)):
+				var junction: Vector2i = corner * CityMap.period()
 				t.check(map.is_street(junction + Vector2i.ONE * (Tuning.STREET_WIDTH / 2)),
-						"seed %d: the junction at %s is still a junction"
-						% [_seed(i), block + corner])
+						"seed %d: the junction at %s is still a junction" % [_seed(i), corner])
 	t.check(float(total) / seeds >= float(Tuning.MIN_BIG_BUILDINGS),
 			"a city gets %.1f big buildings, wanting at least %d"
 			% [float(total) / seeds, Tuning.MIN_BIG_BUILDINGS])
