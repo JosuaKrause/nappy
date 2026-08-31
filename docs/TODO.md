@@ -3277,8 +3277,8 @@ below are about what a junction is made of. Building them against a lattice that
 re-asked the same question would be doing the work twice.
 
 
-Playtest 16, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. Three findings and they are one
-complaint: **the crowd travels a lattice that is not the city.** It walks onto a bridge with no
+Playtest 16, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. Four findings; the first three
+are one complaint: **the crowd travels a lattice that is not the city.** It walks onto a bridge with no
 footway, off a bulkhead into the sea, and through crossroads whose arms are grass — and in every
 case it then vanishes where somebody is looking at it. Underneath the first two is one missing
 rule: the lattice draws a full crossroads wherever two corridors cross, whether or not the arms of
@@ -3315,6 +3315,13 @@ the project is a to-do that was filed and not read.
 - [ ] **And the crowd has to agree with the drawing**, which is M51 finding 1's lesson arriving
       where it was pointing: a T-junction the paint knows about and `CrowdAgent._divert` does not is
       the same bug in the other direction
+- [ ] **Calm areas at the edge of the map** — finding 4, *"which should be impossible"*, and it is
+      **not this milestone's to build**. The rule is already written down, unbuilt, in M47: *"make a
+      rule to not have a calm area at the edge of the map or next to the main road"*, with the
+      measurement (96 eligible blocks → 56 with the edge rule → 48 with the spine rule) and the
+      three things to get right already beside it. Recorded here so the finding is not lost, and
+      **closed from M47** rather than re-designed. It is the third item in one session that this
+      file had filed and not read
 
 ## M52 — The calm has a shape, and the lights have a reason · not started
 
@@ -3349,17 +3356,34 @@ the fork:
    property of the street rather than a scattering of them."* Anything that moves it is moving that
    sentence, so it wants to be moved on purpose.
 
-**The questions that have to be answered before any of it is built**, and none of them is a
-detail — each changes what gets written:
+**And two of the four questions below were answered on disk before they were asked, which is the
+thing to read first.** *(Found while recording playtest 16's finding 4.)* **M47 already holds item
+1, unbuilt, in the player's own earlier words:**
 
-- [ ] **A "2x2 courtyard": is that a courtyard *lot* four blocks across, or four blocks of ordinary
-      residential with one shared court in the middle?** The first is `CALM_ZONE_BLOCKS` applied to
-      a purpose it has never had; the second is a new block layout and leaves the lattice alone.
-- [ ] **"Rectangular": which rectangles, and how many per city?** 1x2 and 2x3 are a different city
-      from 1x4. The two constraints the current code enforces and that a rectangle has to keep or
-      overturn are that a zone never takes the arterial, and that it absorbs the streets *inside*
-      its own footprint — a long thin zone absorbs a long run of one corridor, which is a bigger
-      cut to the lattice than a square of the same area.
+> *"Make more calm areas take up multiple blocks — I said a long time ago that an inner courtyard
+> (surrounded by buildings) should have a footprint of 2x2 blocks (apartment complex) — this never
+> got implemented. Not all calm areas have to take up multiple blocks but add more that do. Also,
+> add calm varieties that take up 2x1 non-square shapes."*
+
+So *"2x2 courtyard"* is an **inner courtyard surrounded by buildings, an apartment complex, four
+blocks**; *"rectangular"* is **2x1**; and the answer to *how many* is *"not all of them, but more
+than now"*. The two questions this side had drafted are struck below rather than deleted, because
+what they cost is the point: **the answer to "what exactly did you mean" was already on disk, and
+asking again is what a to-do that was filed and not read costs.** It is the third such item in one
+session, after M41's T-junctions and M51's cul-de-sac, and the M47 entry that answers it also
+carries playtest 16's finding 4 — *"a calm area at the edge of the map should be impossible"* —
+which is likewise recorded there and likewise never built.
+
+**Build item 1 as M47's entry**, not as a fresh design. What is genuinely new in M52 is items 2 and
+3.
+
+**The questions that are still open**, and neither is a detail — each changes what gets written:
+
+- [x] ~~A "2x2 courtyard": a courtyard lot four blocks across, or four blocks with a shared
+      court?~~ Answered by M47: an **inner courtyard surrounded by buildings**, an apartment
+      complex, 2x2 blocks.
+- [x] ~~"Rectangular": which rectangles, and how many per city?~~ Answered by M47: **2x1**, and
+      *"not all calm areas have to take up multiple blocks but add more that do"*.
 - [ ] **"Rate adjustments": is the rate a property of the *kind* of calm, of its *size*, or a
       number that moves for all calm at once?** Per-kind is the one that reaches `Baby`'s
       interface, and M41's rule applies — a fifth question that is a special case of one of the

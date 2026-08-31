@@ -460,6 +460,45 @@ func bundles() -> Array[Vector3i]:
 ## deliberately **not** excluded here is the street outside the front door: it is a turning off the
 ## first junction like any other, and both callers that must leave it alone already do — the
 ## closure planner by name and the scheduler through `_the_street_she_starts_on`.
+## How far off the corridor every street the day can reach is, counted in **turnings**.
+##
+## Zero is on the tree, one is the rim, and it counts outwards from there. *(2026-08-31: "areas
+## that outside the paths should have blocking events all over — we don't want the player to step in
+## those areas and it ranges from very costly to deadly", and the range is over this.)*
+##
+## **A depth is not the same fact as a rim and both are worth having.** The rim is a *place in the
+## design* — the turning she can see from the junction she is standing at — and it is what a wall
+## that bounds the corridor has to be on. The depth is how far she has strayed, which is what the
+## price is stated over. `rim()` is this at one and is kept as its own method, because a caller that
+## wants the turning off a junction should not have to know that it is spelled `1`.
+##
+## A street the day cannot reach at all is simply **absent from the answer**, which is the honest
+## shape rather than an infinity: `_build_links` has already dropped what is shut and what the
+## lattice does not have, so an unreachable street is not somewhere anything can be placed either.
+func depths() -> Dictionary:
+	var found := {}
+	var frontier: Array[Vector3i] = []
+	for key: Vector3i in _colours:
+		found[key] = 0
+		frontier.append(key)
+	var hop := 0
+	while not frontier.is_empty():
+		hop += 1
+		var next: Array[Vector3i] = []
+		for key in frontier:
+			var segment := StreetNetwork.by_key(key)
+			if not segment:
+				continue
+			for junction in [segment.a, segment.b]:
+				for link: Array in _links[StreetNetwork.node_of(junction)]:
+					var beside := link[1] as Vector3i
+					if found.has(beside):
+						continue
+					found[beside] = hop
+					next.append(beside)
+		frontier = next
+	return found
+
 func rim() -> Array[Vector3i]:
 	var found: Array[Vector3i] = []
 	var seen := {}

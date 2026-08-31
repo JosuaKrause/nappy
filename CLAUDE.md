@@ -127,6 +127,38 @@ as *what would make this worth discussing again*. Never as what would authorise 
 overturn rule pointing the other way: there, the risk is a decision quietly dropped; here, it is a
 rejected option quietly reinstated by a sentence that was never about it.
 
+### Writing it down is half the rule. Reading it back is the other half
+
+**Before designing anything, search `docs/TODO.md` and the playtest files for the thing being
+asked.** Not for a milestone number — for the *words*: `grep` the noun. A request that has been made
+before is already written down here in the player's own sentence, usually with the measurement, the
+constraints and the three things to get right sitting under it.
+
+*(Playtest 16 is why this is a rule. In one session: the player reported cars driving off the map at
+a junction whose arm is the sea, and M41 had carried "T-intersections everywhere else on the edge —
+the lattice currently runs into the boundary and stops" **unbuilt for twelve milestones**. They
+reported calm areas at the edge of the map "which should be impossible", and M47 had the rule, the
+eligible-block count with and without it, and a note on where to state it. And they asked for "2x2
+courtyard and rectangular calm zones" — which M47 already held, verbatim, as "an inner courtyard
+should have a footprint of 2x2 blocks (apartment complex) — this never got implemented… also, add
+calm varieties that take up 2x1 non-square shapes", a sentence that itself says it had been asked
+before that.)*
+
+Two costs, and the second is the one that does damage:
+
+- **The player pays to say it again.** Every re-report is time spent describing something the
+  project already agreed to, and it is indistinguishable from the project not having listened.
+- **A question goes back that the repo could have answered.** Four questions were drafted about what
+  "2x2 courtyard and rectangular" meant. Two of them were answered word for word on disk. Asking is
+  right when the answer does not exist; asking when it does is the overturn rule's shape in
+  miniature — **a decision written down in one place and not read in another is a decision that will
+  be asked again**, and this file already says so about a to-do list contradicting a doc.
+
+The practical form: **the first tool call of a design task is a search, not a plan.** And when a
+finding turns out to be a re-report, say so in the entry and close it *from* the older one rather
+than writing a second design for it — two entries for one request is how the next reader loses the
+half with the measurement in it.
+
 ## Names are content, never identifiers
 
 The mother and the baby have names — see `docs/NARRATIVE.md`, which is the one place that says
