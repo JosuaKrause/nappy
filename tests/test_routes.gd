@@ -35,7 +35,8 @@ func run(t) -> void:
 	_test_closure_counts_follow_the_act(t)
 	_test_a_closed_street_is_out_of_the_network(t)
 	_test_calm_ground_is_still_walkable_to(t)
-	_test_closures_land_on_streets_that_matter(t)
+	_test_closures_land_where_a_wall_belongs(t)
+	_test_a_wall_off_the_corridor_never_fails_the_invariant(t)
 
 # ------------------------------------------------------------------ lattice ---
 
@@ -317,27 +318,90 @@ func _test_calm_ground_is_still_walkable_to(t) -> void:
 					% [map.seed_used, day])
 			map.closed_tiles.clear()
 
-## A closure in the far corner of the map is scenery, not a decision. The bias is what aims
-## the mechanic at the route, so it is worth asserting that it lands — as a proportion over
-## many days, because any single day may legitimately shut a street nobody wanted.
-func _test_closures_land_on_streets_that_matter(t) -> void:
-	var on_a_route := 0
+## A closure is a **wall**, so it is placed off the day's corridor and preferentially on a turning
+## off it. *(M50 step 2: "a road block becomes guidance and is not a hindrance. It flips its
+## role.")*
+##
+## Two assertions and they are deliberately of different strengths, because the two halves of the
+## rule are of different strengths. **Never on the corridor** is absolute — a wall across the route
+## is not a worse wall, it is the opposite of one — and it is what lets the rest of the day be
+## planned against a tree that is still walkable once the barriers are up. **On the rim** is a
+## preference, `CLOSURE_WALL_BIAS`, so it is asserted as a proportion over a run's worth of days.
+##
+## This test used to say the opposite in both halves — *"%d of %d closures landed on a street the
+## player would have used"* — and it passed for thirty-four milestones while doing so. It is worth
+## keeping that in view: the assertion was not wrong then and is not right now for any reason a
+## test could have found. The design changed, and a test that encodes a design has to be read as
+## one of the places the design is written down.
+func _test_closures_land_where_a_wall_belongs(t) -> void:
+	var on_the_rim := 0
 	var total := 0
 	for map in _maps:
-		var home := ClosurePlanner.home_street(map)
-		var areas := ClosurePlanner.calm_areas(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			var useful := _useful_streets(map, home, areas)
+			# Today's city before today's corridor: which blocks are calm is what the tree grows
+			# from, and a repaint moves them. Growing one against yesterday's paint is a tree the
+			# planner has never seen, which is what the first version of this test did.
+			var tree := _todays_tree(map, day)
+			var rim := {}
+			for key in tree.rim():
+				rim[key] = true
 			for closure in _plan(map, day):
 				total += 1
-				if useful.has(closure.segment.key()):
-					on_a_route += 1
+				t.check(not tree.is_on_the_tree(closure.segment.key()),
+						"seed %d day %d: the closure at %s is off the corridor"
+						% [map.seed_used, day, closure.segment.key()])
+				if rim.has(closure.segment.key()):
+					on_the_rim += 1
 	t.check(total > 0, "the planner shuts streets at all (%d over %d seeds)" % [total, SEEDS])
-	# The unweighted share would be whatever fraction of the lattice is on a route; the bias
-	# has to beat that clearly. Half is a floor with plenty of room, not a measurement.
-	t.check(float(on_a_route) / maxf(1.0, float(total)) > 0.5,
-			"%d of %d closures landed on a street the player would have used"
-			% [on_a_route, total])
+	# The rim is a minority of the off-tree lattice — measured at about a third of it — so an
+	# unweighted planner would land there about a third of the time. Half is a floor with room in
+	# it rather than a measurement, which is the same shape the old assertion had.
+	t.check(float(on_the_rim) / maxf(1.0, float(total)) > 0.5,
+			"%d of %d closures landed on a turning off the corridor" % [on_the_rim, total])
+
+## **A closure never cuts the corridor, so the day-level invariant should never have to refuse
+## one.** `ClosurePlanner` still checks each candidate and still skips a failure, because two
+## independent mechanisms is what M50 kept deliberately rather than trusting the placement alone —
+## but a skip means the wall and the tree disagree about where she is going, and that is a bug
+## rather than a near miss. This is the assertion the planner's telemetry note stands in for at
+## runtime: over a run's worth of days on every seed, every candidate the planner reaches is legal.
+##
+## Every off-corridor street is tried rather than only the handful a day happens to reach, which
+## is what makes the planner's `else` branch provably dead rather than merely unvisited. Four
+## seeds and not twelve: it is a max flow per candidate per day, and the property is about the
+## construction rather than about a layout.
+func _test_a_wall_off_the_corridor_never_fails_the_invariant(t) -> void:
+	for i in 4:
+		var map := _maps[i]
+		var home := ClosurePlanner.home_street(map)
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			var tree := _todays_tree(map, day)
+			var areas := ClosurePlanner.calm_areas(map)
+			var closed := map.blocked_segments()
+			var refused := 0
+			for segment in StreetNetwork.segments():
+				var key := segment.key()
+				if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
+					continue
+				closed[key] = true
+				if not _enough_calm_is_reachable(home, areas, closed):
+					refused += 1
+				closed.erase(key)
+			t.check(refused == 0,
+					"seed %d day %d: %d off-corridor streets would have cut the calm"
+					% [map.seed_used, day, refused])
+
+## `ClosurePlanner._invariant_holds`, restated here rather than exposed from it: a test that asks
+## the code under test what the right answer is has not checked anything.
+func _enough_calm_is_reachable(home: StreetNetwork.Segment,
+		areas: Array[ClosurePlanner.CalmArea], closed: Dictionary) -> bool:
+	var reachable := 0
+	for area in areas:
+		if StreetNetwork.route_count(home, area.access, closed, 1) >= 1:
+			reachable += 1
+			if reachable >= Tuning.MIN_CALM_AREAS_REACHABLE:
+				return true
+	return false
 
 # ------------------------------------------------------------------ helpers ---
 
@@ -351,40 +415,16 @@ func _plan(map: CityMap, day: int) -> Array[RoadClosure]:
 	rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
 	return ClosurePlanner.plan_day(map, day, rng)
 
+## Today's city, and then today's corridor grown on it — the order `City.start_day` uses.
+func _todays_tree(map: CityMap, day: int) -> RouteTree:
+	var state := CityState.new()
+	state.begin_day(map.block_plans, day)
+	map.repaint(state)
+	return RouteTree.for_day(map, day)
+
 func _closed_set(closures: Array[RoadClosure]) -> Dictionary:
 	var closed := {}
 	for closure in closures:
 		closed[closure.segment.key()] = true
 	return closed
 
-## The same "is this street on the way" question the planner asks, asked again here rather
-## than exposed from the planner: a test that calls the code under test to decide what the
-## right answer is has not checked anything.
-func _useful_streets(map: CityMap, home: StreetNetwork.Segment,
-		areas: Array[ClosurePlanner.CalmArea]) -> Dictionary:
-	var useful := {}
-	var absent := map.blocked_segments()
-	var from_home := StreetNetwork.junction_distances([home.a, home.b], absent)
-	for area in areas:
-		var doorsteps: Array[Vector2i] = []
-		for segment in area.access:
-			doorsteps.append(segment.a)
-			doorsteps.append(segment.b)
-		var to_calm := StreetNetwork.junction_distances(doorsteps, absent)
-		var best := INF
-		for junction in doorsteps:
-			var node := StreetNetwork.node_of(junction)
-			if from_home.has(node):
-				best = minf(best, float(from_home[node]))
-		for segment in StreetNetwork.segments():
-			if absent.has(segment.key()):
-				continue
-			var u := StreetNetwork.node_of(segment.a)
-			var v := StreetNetwork.node_of(segment.b)
-			for pair in [[u, v], [v, u]]:
-				if not from_home.has(pair[0]) or not to_calm.has(pair[1]):
-					continue
-				if float(from_home[pair[0]]) + 1.0 + float(to_calm[pair[1]]) \
-						<= best + Tuning.CLOSURE_ROUTE_SLACK:
-					useful[segment.key()] = true
-	return useful

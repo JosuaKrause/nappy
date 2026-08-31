@@ -366,10 +366,11 @@ a shut street is the street with nobody on it, and that is legible from a block 
 **And here is the gap.** *(Playtest 14: "I still don't feel the game guiding me to calm zones via
 obstacles.")*
 
-- **Closures are chosen at random** from a shuffled list of legal candidates. Nothing chooses them
-  to *point* anywhere — a closure is as likely to be behind her, or on a street she was never
-  going to walk, as across the route she is taking. The invariant asks *did this stay winnable*,
-  never *did this say anything*.
+- ~~**Closures are chosen at random** from a shuffled list of legal candidates. Nothing chooses
+  them to *point* anywhere.~~ *(Closed by M50 step 2.)* A closure is a **wall** now: never on the
+  day's corridor, preferentially on a turning off it. See "Where a closure goes" below. What has
+  not been answered is whether that **reads** as guidance to a person — the picture says the walls
+  are where they should be, and nobody has walked past one.
 - **There is no cue of any kind toward calm.** No marker, no map, no HUD line, nothing on the
   ground. "Planning-time legibility" is named a paragraph above as not existing.
 - **The main road as a soft block** — the one thing in the design that would divide the city into
@@ -526,15 +527,29 @@ scale, it is a different thing:
 | **impassable** | stops passage, does not kill | road closures |
 | **costly** | passable at a price she can read before committing | restaurant, dog walker, yeller |
 
-**Role — what the scheduler is placing it *for*.** This is the axis that does not exist yet, and it
-is the whole of the work:
+**Role — what the scheduler is placing it *for*.** `GameEnums.BlockerRole` since M50 step 2, and
+it is recorded on the thing that was placed rather than derived from it: the same `cyclist` row is
+a wall on a day it is rolled onto a street and nothing at all when the director sites one in front
+of her.
 
 - **wall** — placed to *bound* the corridor. Hard blockers are always walls; lethal soft ones are
-  walls for a day.
+  walls for a day. **Never inside the corridor**, preferentially on the rim — the turnings off it,
+  which is where a wall can be seen from and therefore where it bounds anything
+  (`EVENT_WALL_RIM_WEIGHT`).
 - **friction** — placed *inside* the corridor, on the route she is meant to take, to make the route
-  worth thinking about. Costly blockers.
+  worth thinking about. Costly blockers. A weight (`EVENT_CORRIDOR_WEIGHT`) rather than a rule,
+  because a city whose off-route streets are empty reads as a set.
 - **set piece** — an authored one-shot placed so that she actually **meets** it, rather than so it
   exists somewhere. See the fire engine below.
+- **none** — not placed against the corridor at all, which is the honest answer for an ambient
+  playground, a scar the run left, the spoilers of a park she used, and anything the director sites
+  in front of her. It is not a leftover bin: calling the charging dog a wall would claim a
+  placement nothing made.
+
+The three are stated relative to the corridor and none of them means anything without one, which
+is why they arrived in the same milestone as `RouteTree`. `Corridor` is the one translation from
+the tree's segment keys to the tile a placement actually happens on — *inside*, *rim* or *away* —
+so an event, a closure and the telemetry picture all mean the same thing by the words.
 
 And the thing the roles are stated relative to needs a name too: **the corridor** — the ground
 today's routes run through, from the doorstep to the calm areas that are still worth reaching.
@@ -698,10 +713,35 @@ city that has had a bad morning, not a city under siege, and it is deliberately 
 was drafted as though closures would be the only thing making a route interesting, and
 playtest 02's findings 2 and 3 put route pressure at the scale of a *block* instead.
 
-Closures are aimed rather than scattered. A street is *useful* if it lies on a shortest way
-from the door to some calm ground give or take a block, and a useful street is
-`CLOSURE_ROUTE_BIAS` times likelier to be the one that is shut — because a closure in the far
-corner of the map is not a decision, it is scenery.
+### Where a closure goes — a wall, off the corridor *(M50 step 2)*
+
+**A closure is never placed on the day's corridor**, and preferentially lands on a turning off it
+(`CLOSURE_WALL_BIAS`). That is the flip: *"a road block becomes guidance and is not a hindrance.
+It flips its role."*
+
+It is worth setting the two side by side, because the numbers are identical and the meaning is
+opposite. Until M50 a street was *useful* if it lay on a shortest way from the door to some calm
+ground give or take a block, and a useful street was `CLOSURE_ROUTE_BIAS` = 5 times likelier to be
+shut — because a closure was an **obstacle**, and an obstacle nobody meets is scenery. A closure is
+now a **wall**: it prunes the ways that lead nowhere she should go so that the ways that remain are
+obvious, and putting one across her route is the defect rather than the point. The bias survived
+the inversion at the same strength; what it is measured against turned upside down.
+
+Two consequences, and the first is what makes the rest of the day's placement possible at all:
+
+- **The corridor is still walkable once the barriers are up.** `City.start_day` grows the tree,
+  `ClosurePlanner` excludes every street on it, and the events are then placed against that same
+  tree. Nothing has to re-derive a corridor after the closures, and no closure can cut one.
+- **The invariant became the second opinion rather than the guard.** A wall off the tree cannot
+  cut the tree, so `_invariant_holds` should never refuse a candidate. It is still checked on every
+  one — two independent mechanisms is the point — and a refusal now writes a `plan` line saying the
+  wall and the corridor disagree about where she is going. `tests/test_routes.gd` asserts it never
+  happens, over every off-corridor street of every day of four seeds.
+
+The old bias's own reason survives too, and it is what the rim is for: a closure in the far corner
+of the map is not a decision, it is scenery. A closure at the mouth of a turning is read from the
+junction, which is where the wrong way is still a choice — the same reason `RoadClosure` seals both
+mouths rather than putting one sign half way down a street.
 
 ### Everything else has to know
 

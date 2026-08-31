@@ -203,6 +203,15 @@ the park rule *deleted* events off calm she had not used, where the answer was *
 events there"** — which keeps every unvisited area clean and raises the density, because a repair
 spends the budget twice.
 
+**Playtest 15 has landed, mid-M50, and it is `M51`.** Seven things in
+**[docs/PLAYTEST-15.md](PLAYTEST-15.md)** plus a re-report that belongs to playtest 14's finding 7.
+The sentence under it is *the city is drawing things it does not mean*: a cul-de-sac is a wall on
+the graph and nothing on the pavement, the spine has a zebra painted under a traffic light —
+two contradictory promises about who gives way, on the one street where getting it wrong ends the
+day — a police car drives north showing its flank, and a car reaches the bridge and blinks out.
+Two of the seven are about the frame rather than the game, and one is a report the player is not
+sure about and is recorded as exactly that.
+
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
@@ -2816,20 +2825,129 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
 
 ### Step 2 — placement by role
 
-- [ ] **`EventScheduler.build_day` takes the `RouteTree`.** The phase list stays and gains the tree
+- [x] **`EventScheduler.build_day` takes the `RouteTree`.** The phase list stays and gains the tree
       as an input; each placement phase gets a **role** and asks the tree a different question —
       walls for segments just *outside* a corridor, friction for segments *inside* one, set pieces
       for a covering set. Keep `_stream(base, salt)` per phase; a phase whose consumption changes
       needs its own stream, which is M39's rule and this changes several
-- [ ] **`ClosurePlanner` places closures as walls, off the tree.** `CLOSURE_ROUTE_BIAS` inverts:
+
+      **Built, and the role turned out to be a property of the *row* rather than of the phase.**
+      The item above says "each placement phase gets a role", and written that way it is wrong in
+      the one case that matters: the recurring fill is a single phase and it places both the walls
+      and the friction, because what decides which a thing is is whether it ends the day.
+      `EventScheduler._role_for` is four lines and no row in the catalogue carries a role field.
+      *(The phase salts did not have to move for the same reason — no phase changed how much it
+      draws, only which tiles the array it draws from contains.)*
+
+      Four things worth carrying:
+
+      - **The mechanism is the precinct weight, not a new one.** A tile is offered to the roll
+        several times over, so the roll, the spacing and the room measurement all keep working
+        unchanged and nothing new can refuse a placement. **One thing is a rule and not a weight**
+        — a wall is never inside the corridor — and that one is safe to state absolutely only
+        because the rest of the city stays available to it.
+      - **`Corridor` is the translation, and it had to exist.** `RouteTree` is segment keys and a
+        placement is a **tile**, and sixteen rows of the catalogue stand on alley, park, square or
+        courtyard ground where `segment_containing` returns null. A classification written over
+        segments alone would have made `alley_robbery` unplaceable while the whole suite passed. A
+        block interior answers for the four streets around it; a junction for the streets that meet
+        at it.
+      - **Measured, and the two numbers that had to *not* move did not.** Placed per day is
+        identical (111 / 145 / 175 / 201 over six seeds), and so is the count of lethal rows —
+        which was the real risk, since a `hard_fail` placement must clear its whole outer radius of
+        everything else with no fallback, and refusing it a quarter of the city could have quietly
+        stopped placing it. What moved is where: costly rows on the corridor 34% → 64% on day 1,
+        lethal rows on the rim 63% → 80% on day 5. The table is in `docs/EVENTS.md`.
+      - **And it cost the suite time, which is worth writing down because the first version cost
+        twice as much.** Every `build_day` now grows a tree, and `tests/test_events.gd` plans a lot
+        of days. The first version also keyed the *whole ground scan* by role, so two passes over
+        every sidewalk in the city ran three times a day instead of once — 44s → 88s. The role only
+        ever re-weights tiles the scan already accepted, so it is a second pass over a list already
+        in memory (`_open_ground_for`), and `Corridor` caches its answer per lattice cell rather
+        than allocating an array per tile. 88 → 68s, of which about ten is the new test itself
+- [x] **`ClosurePlanner` places closures as walls, off the tree.** `CLOSURE_ROUTE_BIAS` inverts:
       the weight goes to segments that are *not* on a branch, and preferentially to those leading
       away from calm. Keep the `_invariant_holds` check on each candidate — a wall off the tree
       should never fail it, so a failure means the tree and the wall disagree about where she is
       going, which is worth an assertion rather than a silent skip
-- [ ] **Set pieces get a covering set.** Candidate sites such that every corridor touches at least
+
+      **Built, and it was taken first rather than second.** The bullet above it needs the tree
+      threaded from `City` into the scheduler, and doing that while closures were still biased
+      *onto* the corridor would have left a commit in which friction is aimed at a route that a
+      closure is aimed at cutting. The order is one commit's worth of difference and the transient
+      is the kind of thing that gets shipped.
+
+      Three things came out of it:
+
+      - **The tree is excluded rather than weighted against, and that is what the rest of the
+        milestone rests on.** A wall across the route is not a worse wall, it is the opposite of
+        one — so `City.start_day` grows the corridor *before* the closures and every street on it
+        is refused, which is what makes it still walkable when the barriers go up. It is also why
+        `RouteTree.for_day` stopped taking the day's closures: a tree grown against them would be
+        grown against decisions taken by consulting it.
+      - **The rim is the unit both halves of step 2 needed**, and it is one method. `RouteTree.rim()`
+        is the off-tree streets meeting an on-tree one at a junction, which is exactly *the turning
+        she can see from the corridor*. A wall further out is legal and bounds less; a wall in the
+        far corner of the map is the scenery the old bias existed to avoid, so the constant
+        survived the inversion at the same strength with a different thing to measure against.
+      - **The assertion asked for is a test rather than an `assert`.** A failing `assert` aborts a
+        headless suite, which in this project prints nothing at all and looks exactly like a hang
+        (`CLAUDE.md`). So the planner writes a `plan` line and skips, and `tests/test_routes.gd`
+        proves the branch is dead by trying **every** off-corridor street of every day on four
+        seeds rather than the one or two a day happens to reach.
+
+      And one defect the first version of the test had, which is the same shape as several already
+      in this file: it grew its own tree to check the planner's answer against, and grew it
+      **before** `map.repaint(state)`. Which blocks are calm is what a tree grows from, so it was
+      comparing against a corridor for yesterday's city — 26 failures that were all the test being
+      wrong. A tree is a fact about a *repainted* map, and nothing in the type says so
+- [x] **Set pieces get a covering set.** Candidate sites such that every corridor touches at least
       one — *not* a single site on her chosen route. `fire_truck` first, then the resistance
       note's alley. **A bundle is not a guarantee**: two distinct paths means at least two sites,
       and any code that assumes one is wrong
+
+      **Built for the catalogue's one-shots, which is `fire_truck` and nothing else.** The day
+      plans the row at **every** site and the placements share a `set_piece_group`; the first one
+      to enter the world spends the rest, in `EventManager._stream_in`. That hook is where an
+      event becomes real — it is where the scar is recorded and the block moves along its arc — so
+      the alternatives have to stop being possible on the same frame rather than when it finishes.
+
+      **The resistance note's alley is not done**, and it is deliberately left: `ResistanceDirector`
+      places a contact rather than an event, on its own schedule and with its own expiry, so it is
+      a second caller of this idea rather than a second row of the same one. It is written down as
+      a to-do below rather than folded in silently.
+
+      What it moved that was not obvious: **three counts came apart that used to be one.**
+      `max_per_day` is a cap on *instances*, and the number of offers is not one — so a one-shot is
+      exempt from the cap assertion in `tests/test_events.gd` and the real count moved to
+      `tests/test_event_manager.gd`, where an instance actually exists. And *"the retry has one
+      fewer of a spent one-shot"* became *"none"*, because the whole group goes with it. Both
+      tests failed on the first run and both were the test being narrower than the sentence it
+      was written from.
+
+      **And a third thing it broke, which took a second commit and is the one worth reading.** With
+      the offers spacing the rest of the day around all of them, *"a retried day is the same day"*
+      stopped being true — the day after a set piece fires has two to six long routes' worth of
+      ground freed rather than one, so the fill lands differently: `leaf_blower` seven to five and
+      eight kinds moving, on seed 4242. It surfaced a commit late and by luck, because the calm-area
+      fix below changed which city seed 4242 generates; the suite had been green on the old one.
+
+      Two answers were tried and the first was wrong in an instructive way. **Placing the set piece
+      after the fill** makes the fill identical by construction — and it cannot find its own sites:
+      a fire engine's route is 1920px long and `_room_around` refuses anything within 64px of
+      anything, so on a map with 120 events already on it every candidate on every covering site is
+      illegal and only the fallback places. The rule that shipped is the other one: **an offer takes
+      up no room**, because it is not in the world and only one of the group ever will be. That
+      makes the fill *identical* between attempts rather than merely close, which is stronger than
+      M39 could promise with a single one-shot — and it is the direction step 3 is going anyway,
+      *"budget is not really used up if the player doesn't see it."*
+
+- [ ] **The resistance note's alley is a set piece too.** *(Split out of the item above rather
+      than left implied.)* `ResistanceDirector` chooses where a chalk mark goes, and it has exactly
+      the fire engine's problem — an authored thing placed somewhere she may never walk, with a
+      run's good ending resting on it. What makes it a separate item rather than the same one is
+      that a contact is not an `EventScheduler.Planned`: it has its own schedule, its own expiry
+      and no streaming, so the mutual-exclusion mechanism above does not simply apply to it
 
 ### Step 3 — placeholders
 
@@ -2877,6 +2995,55 @@ to-do list in another is a decision that will be asked again.**
 Presentation, in any form. *"How they are presented is already solved. The issue is that they are
 not placed properly."* No new cue, no new silhouette, no change to what a closure is, no change to
 `City.total_excitement_at`. If this milestone finds itself drawing something, it has gone wrong.
+
+## M51 — The city draws what it means · `feature/draws-what-it-means`
+
+Playtest 15, in full in **[docs/PLAYTEST-15.md](PLAYTEST-15.md)**. Seven findings, and they split
+into three that are the city lying about its own rules, two about the frame around the game, one
+art bug and one report the player is not certain of.
+
+**Nothing here is a balance change**, which is worth saying up front: every one of them is a place
+where what is drawn and what is true have come apart, and the fix is to make the drawing agree
+rather than to move a number.
+
+- [ ] **A cul-de-sac stops the crowd too** — finding 1, *"cars and people go through
+      cul-de-sacs"*. Dead ends are `absent_segments`, which every route search takes through
+      `CityMap.blocked_segments()`; the crowd is the one thing that travels the lattice without
+      asking. Be precise about what is being fixed: a car that drives *down* a dead end and turns
+      round is right, a car that drives out of the end that was built over is not, and neither is
+      one that never diverts because the street it is aiming at is gone from the graph but not
+      from its own view of the map. `CrowdAgent._divert` and `CrowdLanes` are where to look, and
+      M38's rule applies — *a placement is not a separation* — so a recycled car must not be
+      **placed** on a street that is not there either
+- [ ] **The main road has dotted lines, not a zebra** — finding 2, and the design half outranks
+      the art half. *"The main road shouldn't have zebra crossings (since they have traffic
+      lights) it should be two dotted lines demarking the pedestrian safe zone."* A zebra means
+      *traffic gives way to you* and on the spine it does not — what stops the traffic is the
+      light, which is `Tuning.validate_signals`' whole contract — so the paint has been
+      contradicting the rule at every junction of the one street where getting it wrong ends the
+      day. Four places have to agree, per `CLAUDE.md`'s street-hierarchy recipe: `GroundTiles`,
+      `CityGenerator`'s tile choice, whatever `CrowdAgent`'s crossing scan reads (it walks
+      **tiles** and looks for `CROSSING`, which is the M29 invariant — so a new tile type or a
+      changed one has to keep that question answerable), and the traffic's give-way rule, which
+      must **not** start giving way on the spine
+- [ ] **The police car has a rear view** — finding 3, *"the police car only has a sideview even
+      when driving vertically"*. An art gap in the crowd rather than in the catalogue
+- [ ] **Say GAME OVER on the game over screen, in big letters** — finding 5. *"In addition to
+      everything else that is already there"*, so the ending text, the reason and the keys all
+      stay; this adds a heading
+- [ ] **Change the colour of the title on the title screen** — finding 6
+- [ ] **A car on the bridge drives off the map instead of vanishing** — finding 7. This is M35's
+      *"nothing vanishes while you are looking at it"* arriving at the crowd, which has never had
+      it: `Crowd` recycles a car when it leaves the corridor box and the box is smaller than the
+      map, so the three holes in the boundary — the bridge, the tunnel, the road out — are exactly
+      where a recycle is visible. The rule to state is the events' one: past `Tuning.OUT_OF_SIGHT`
+      before it is taken
+- [ ] **Did the day counter reset mid-run?** — finding 4, and it is recorded with the player's own
+      doubt: *"maybe I died fully without noticing."* Read it **with** finding 5 rather than
+      instead of it — if a run can end and restart without the player noticing it has, that is the
+      game-over screen's complaint arriving from the other side, and fixing the screen may be the
+      whole of it. What to check first is whether the ending path can reach the title screen and
+      begin a new run without the ending screen having been readable
 
 ## Tooling for the diversion work · `feature/a-map-that-shows-the-plan`
 

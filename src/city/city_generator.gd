@@ -33,6 +33,23 @@ const _OPEN_CALM: Array[GameEnums.BlockPurpose] = [
 	GameEnums.BlockPurpose.QUIET_SQUARE,
 ]
 
+## Every purpose that makes a block a **calm area**, which is what the spread guarantee is stated
+## over and what `map.calm_blocks` contains.
+##
+## **It is not `_OPEN_CALM`, and reading one for the other is a bug this project has now shipped.**
+## *(2026-08-31: "I see two diagonally adjacent parks — that bug is still not fixed?", off a
+## telemetry map. See `docs/PLAYTEST-14.md`, finding 7.)* `_OPEN_CALM` is the list of purposes laid
+## as *open ground*, which is a fact about what a generator paints; the spread rule is about what
+## the player can see from a pavement, and a courtyard is calm she can settle in like any other. So
+## the M49 fix that added the corners to the ring was checking three of the four kinds of calm, and
+## 10 cities in 40 had a pair of courtyards touching — 12 side by side and 8 diagonal.
+const _CALM_PURPOSES: Array[GameEnums.BlockPurpose] = [
+	GameEnums.BlockPurpose.PARK,
+	GameEnums.BlockPurpose.FOREST,
+	GameEnums.BlockPurpose.QUIET_SQUARE,
+	GameEnums.BlockPurpose.COURTYARD,
+]
+
 ## Generates a city, retrying with adjacent seeds until the guarantees hold.
 static func generate(seed_value: int) -> CityMap:
 	var last: CityMap = null
@@ -234,7 +251,7 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 	for block in shuffled:
 		if areas >= calm_target:
 			break
-		if purposes.has(block) or _has_open_calm_neighbour(purposes, Rect2i(block, Vector2i.ONE)):
+		if purposes.has(block) or _has_calm_neighbour(purposes, Rect2i(block, Vector2i.ONE)):
 			continue
 		if _too_near_the_home(Rect2i(block, Vector2i.ONE)):
 			continue
@@ -348,7 +365,7 @@ static func _zone_fits(purposes: Dictionary, footprint: Rect2i, main_road: int) 
 	for block in _blocks_in(footprint):
 		if purposes.has(block):
 			return false
-	return not _has_open_calm_neighbour(purposes, footprint)
+	return not _has_calm_neighbour(purposes, footprint)
 
 static func _blocks_in(footprint: Rect2i) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
@@ -379,16 +396,16 @@ static func _cut_courtyards(purposes: Dictionary, remaining: Array[Vector2i],
 			return
 		if purposes[block] != GameEnums.BlockPurpose.RESIDENTIAL:
 			continue
-		if _has_open_calm_neighbour(purposes, Rect2i(block, Vector2i.ONE)):
+		if _has_calm_neighbour(purposes, Rect2i(block, Vector2i.ONE)):
 			continue
 		if rng.randf() >= Tuning.COURTYARD_CHANCE:
 			continue
 		purposes[block] = GameEnums.BlockPurpose.COURTYARD
 		cut += 1
 
-## Whether anything open-calm sits anywhere around this footprint. Stated over a rect of blocks
-## rather than one block so that a single block and a four-block zone are the same question asked
-## twice, rather than one rule and one special case.
+## Whether any calm area sits anywhere around this footprint. Stated over a rect of blocks rather
+## than one block so that a single block and a four-block zone are the same question asked twice,
+## rather than one rule and one special case.
 ##
 ## **The whole ring, corners included.** *(Playtest 14: "calm zones shouldn't be possible diagonal
 ## from each other — we said they should not be next to each other, this includes the entire
@@ -400,14 +417,20 @@ static func _cut_courtyards(purposes: Dictionary, remaining: Array[Vector2i],
 ##
 ## Grown by one and tested by containment, rather than by four loops with the corners bolted on:
 ## the shape being asked about is a ring, and a ring is what `grow(1)` makes.
-static func _has_open_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool:
+##
+## **And every calm purpose, which is the half M49 left out.** It asked about `_OPEN_CALM` and was
+## named for it, so a courtyard was invisible to it and two courtyards could meet at a corner — the
+## same sight from the pavement, reported off a telemetry map on 2026-08-31. The only caller this
+## changes is `_cut_courtyards`: zones and open calm are placed before a courtyard exists, so for
+## them the two lists are the same list.
+static func _has_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool:
 	var ring := footprint.grow(1)
 	for y in range(ring.position.y, ring.end.y):
 		for x in range(ring.position.x, ring.end.x):
 			var block := Vector2i(x, y)
 			if footprint.has_point(block):
 				continue
-			if _OPEN_CALM.has(purposes.get(block, -1)):
+			if _CALM_PURPOSES.has(purposes.get(block, -1)):
 				return true
 	return false
 
@@ -1008,19 +1031,25 @@ static func validate(map: CityMap) -> String:
 		return "only %d calm blocks, need %d" % [
 			map.calm_blocks.size(), Tuning.MIN_CALM_BLOCKS]
 
-	# Stated over every block of every open-calm lot, not over the anchors: two four-block zones
-	# whose anchors are three apart can still have their footprints touching.
+	# Stated over every block of every calm lot, not over the anchors: two four-block zones whose
+	# anchors are three apart can still have their footprints touching.
+	#
+	# **Two things about it were wrong until 2026-08-31 and neither could have been caught by this
+	# check, because this check was both of them.** It skipped every lot that was not `_OPEN_CALM`,
+	# so a courtyard was not a calm area as far as the guarantee was concerned; and it stepped
+	# `RIGHT` and `DOWN` only, so it had never once looked at a diagonal — including through M49,
+	# which fixed the diagonal in the *placement* rule and left the thing that is supposed to hold
+	# it checking the old shape. A guarantee that is narrower than the rule it guards will agree
+	# with the rule for as long as the rule is right and say nothing on the day it is not.
 	var owner := {}
 	for block in map.calm_blocks:
-		if not _OPEN_CALM.has(map.starting_purpose(block)):
-			continue
 		for member in _blocks_in(map.lot_blocks(block)):
 			owner[member] = block
 	for member: Vector2i in owner:
-		for step in [Vector2i.RIGHT, Vector2i.DOWN]:
+		for step in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(1, -1)]:
 			var neighbour: Vector2i = member + step
 			if owner.has(neighbour) and owner[neighbour] != owner[member]:
-				return "calm areas %s and %s are across the street from each other" % [
+				return "calm areas %s and %s are in each other's ring" % [
 					owner[member], owner[neighbour]]
 
 	if map.zone_rects.size() < Tuning.MIN_CALM_ZONES:

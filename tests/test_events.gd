@@ -50,6 +50,7 @@ func run(t) -> void:
 	_test_nothing_stands_on_the_doorstep_street(t)
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
+	_test_the_day_is_placed_by_role(t)
 
 # ------------------------------------------------------------------ fairness ---
 
@@ -307,22 +308,27 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 		again.seed = rng.seed
 		var second := EventScheduler.build_day(day, again, map, consumed.duplicate())
 
-		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent.
-		# Everything else may move by at most one instance, which is what the freed corridor is
-		# worth — a placement that used to fail now fits, so the budget runs out one event earlier
-		# or later. Before M39 this was `homeless_yeller` going from two to eight.
+		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent, so
+		# the retry plans **none** of it. *(Since M50 step 2 that is "none" rather than "one fewer":
+		# a set piece is offered at every site of a covering set and the whole group goes with it.)*
+		#
+		# **And nothing else moves at all**, which is stronger than what M39 could promise. It used
+		# to allow one instance of drift, because the ground a spent one-shot freed let a placement
+		# that had failed now fit; an offer costs no room since M50 step 2 — see `_room_around` —
+		# so the fill is identical between attempts rather than merely close. What is *not* closed
+		# is still not closed: a **scar** genuinely occupies ground and still moves what stood
+		# there, which is the run's own history showing through and is the answer that should.
 		var before := _kinds_in(first)
 		var after := _kinds_in(second)
 		var changed := 0
 		for id: String in before.keys() + after.keys():
-			var expected: int = int(before.get(id, 0)) - (1 if id in consumed else 0)
-			var drift: int = absi(int(after.get(id, 0)) - expected)
-			t.check(drift <= 1,
+			var expected: int = 0 if id in consumed else int(before.get(id, 0))
+			t.check(int(after.get(id, 0)) == expected,
 					"seed %d: the retry has %d '%s' where the day had %d"
 					% [run_seed, int(after.get(id, 0)), id, expected])
-			changed += 1 if drift > 0 else 0
-		t.check(changed <= 2,
-				"seed %d: and at most a couple of kinds move at all (%d did)" % [run_seed, changed])
+			changed += 1 if int(after.get(id, 0)) != expected else 0
+		t.check(changed == 0,
+				"seed %d: and nothing else moves at all (%d kinds did)" % [run_seed, changed])
 
 ## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
 func _kinds_in(plans: Array[EventScheduler.Planned]) -> Dictionary:
@@ -804,21 +810,44 @@ func _test_scheduler_respects_placement_and_caps(t) -> void:
 					"day %d: '%s' was placed on an allowed tile type" % [day, plan.def.id])
 		for id in counts:
 			var def: EventDef = EventCatalogue.by_id(id)
-			if def.kind != GameEnums.EventKind.AMBIENT:
-				t.check(counts[id] <= def.max_per_day,
-						"day %d: '%s' respects max_per_day" % [day, id])
+			# A one-shot is exempt because since M50 step 2 it is planned at **every** site of a
+			# covering set and only one of them ever happens — so the count here is how many places
+			# the day offered it in, not how many of it there are. `max_per_day` is a cap on
+			# instances and the group is one instance by construction; the count that would break
+			# it is asserted in `tests/test_event_manager.gd`, where an instance actually exists.
+			if def.kind == GameEnums.EventKind.AMBIENT \
+					or def.kind == GameEnums.EventKind.ONE_SHOT:
+				continue
+			t.check(counts[id] <= def.max_per_day,
+					"day %d: '%s' respects max_per_day" % [day, id])
 
+## **A one-shot is planned on at most one day of a run, at a covering set of sites, and exactly one
+## of those sites happens.** *(M50 step 2 split this sentence in two; it used to be one clause.)*
+##
+## The day half is asserted here, over the plan. The *site* half cannot be — a plan is a set of
+## offers and which one is taken is decided by where she walks — so it is asserted where it is
+## decided: `tests/test_event_manager.gd`, against a real `EventManager` with the plans streamed in.
 func _test_one_shots_fire_once_per_run(t) -> void:
 	var map := _map()
 	var consumed: Array[String] = []
 	var seen := {}
 	for day in range(1, 15):
+		var groups := {}
 		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
 			if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 				continue
-			t.check(not seen.has(plan.def.id),
-					"one-shot '%s' fires at most once in a run" % plan.def.id)
+			t.check(int(seen.get(plan.def.id, day)) == day,
+					"one-shot '%s' is planned on one day of a run" % plan.def.id)
 			seen[plan.def.id] = day
+			groups[plan.def.id] = int(groups.get(plan.def.id, 0)) + 1
+			t.check(plan.set_piece_group != "",
+					"one-shot '%s' is planned as one of a group" % plan.def.id)
+		for id: String in groups:
+			# Two, because two distinct routes to one area share no street by construction, so no
+			# single site can ever cover both. One offer means the covering set collapsed and the
+			# fallback fired, which is legal and is not what a normal day looks like.
+			t.check(groups[id] >= 2,
+					"day %d offers '%s' in at least two places (%d)" % [day, id, groups[id]])
 
 ## The rule that keeps a day winnable: however bad it gets, one calm zone stays usable.
 ##
@@ -1603,3 +1632,64 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 				"'%s' draws %s, which nothing else draws (else '%s')"
 				% [def.id, path.get_file(), seen.get(path, "")])
 		seen[path] = def.id
+
+# --------------------------------------------------- placement by role (M50) ---
+
+## The two halves of `EventScheduler._role_for`, checked in one pass over the days because each of
+## them costs a whole `build_day` and the suite is already the slowest thing in this project.
+##
+## **A lethal event is a wall, and a wall is never inside the corridor.** *(`docs/CITY.md`: "hard
+## and lethal blockers form the paths — they are the walls… the route is what is left between
+## them.")* This is the one absolute in `_copies_of` and it is what the milestone can most easily
+## get wrong: a lethal row on the route she is being guided down is not a wall in the wrong place,
+## it is the guidance pointing at the thing it exists to point away from.
+##
+## **Friction is aimed at the route**, which is the other half of the same sentence: *"benign
+## blockers go on the route… to make it more challenging."* That one is a **weight** and is
+## asserted as a proportion. About a third of the ground is on the corridor, so an unweighted day
+## lands about a third of its costly rows there — measured at 34% with `EVENT_CORRIDOR_WEIGHT`
+## flattened to 1, against 64% at 4. Half is a floor with room in it rather than a measurement, and
+## the upper bound matters as much: a corridor carrying nearly all of it would mean every street
+## off the route is empty, which reads as a set rather than as a city.
+##
+## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
+## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to
+## be walking, so it is by construction on her route and the scheduler never chose a tile for it.
+## That is why `_role_for` calls it `NONE` — see the note there.
+##
+## Five days rather than fourteen. What is being checked is a property of the construction, and the
+## days are sampled across the acts so that the catalogue's lethal rows (none before day 5) and its
+## late density are both in the sample.
+func _test_the_day_is_placed_by_role(t) -> void:
+	var map := _map()
+	var walls := 0
+	var friction_on_the_route := 0
+	var friction := 0
+	for day in [1, 5, 8, 11, 14]:
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		map.repaint(state)
+		var tree := RouteTree.for_day(map, day)
+		var corridor := Corridor.of(tree)
+		var consumed: Array[String] = []
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+			if not plan.is_placed():
+				continue
+			var where := corridor.where(map.world_to_tile(plan.position))
+			if plan.role == GameEnums.BlockerRole.WALL:
+				walls += 1
+				t.check(plan.def.effect() == GameEnums.BlockerEffect.LETHAL,
+						"day %d: '%s' is a wall because it ends the day" % [day, plan.def.id])
+				t.check(where != Corridor.Where.INSIDE,
+						"day %d: the wall '%s' at %s is off the corridor"
+						% [day, plan.def.id, TelemetryLog.tile(map.world_to_tile(plan.position))])
+			elif plan.role == GameEnums.BlockerRole.FRICTION:
+				friction += 1
+				if where == Corridor.Where.INSIDE:
+					friction_on_the_route += 1
+	# A sample with no walls in it would pass every assertion above and mean nothing.
+	t.check(walls > 20, "the days sampled place walls at all (%d)" % walls)
+	t.check(friction > 0, "and friction at all (%d)" % friction)
+	var share := float(friction_on_the_route) / maxf(1.0, float(friction))
+	t.check(share > 0.45, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
+	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))

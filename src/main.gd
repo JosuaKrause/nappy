@@ -258,7 +258,7 @@ func _start_day() -> void:
 	# And the same three lines as a picture. After them, because it is the same information and a
 	# reader who has the log open should meet the words first; per day, because the closures and
 	# what each block *is* both moved above. See `TelemetryMap`.
-	Telemetry.write_map(_city.map, GameState.day, _city.closures())
+	Telemetry.write_map(_city.map, GameState.day, _city.closures(), _city.route_tree())
 	if _observer:
 		_observer.start_day()
 

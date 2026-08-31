@@ -460,14 +460,19 @@ const HOME_SIZE_TILES := Vector2i(2, 2)
 ## morning, not a city under siege.
 const CLOSURES_PER_ACT: Array[int] = [1, 2, 3, 4]
 
-## How much likelier a closure is to land on a street the player would actually have used
-## than on one they would not. A closure in the far corner of the map is not a decision, it
-## is scenery; this is what aims the mechanic at the route.
-const CLOSURE_ROUTE_BIAS := 5.0
-## How many blocks longer than the best route a street may be and still count as "on the
-## way". At 0 only the single shortest line counts, which aims every closure at the same few
-## streets; at 1 it is roughly the set of routes a player would consider.
-const CLOSURE_ROUTE_SLACK := 1
+## How much likelier a closure is to land on a turning off the day's corridor than on a street
+## somewhere else entirely. **A closure never lands on the corridor at all** — that is a rule in
+## `ClosurePlanner._shuffled_candidates` rather than a weight, because a wall across the route is
+## not a worse wall, it is the opposite of one.
+##
+## **It replaced `CLOSURE_ROUTE_BIAS`, which was the same number pointing the other way.** *(M50
+## step 2: "a road block becomes guidance and is not a hindrance. It flips its role.")* That one
+## aimed closures **at** the streets the player would have used, five to one, because a closure
+## was an obstacle and an obstacle nobody meets is scenery. A wall's job is to prune the ways that
+## lead nowhere she should go, and a wall nobody can see from the route prunes nothing — so the
+## number survived the inversion and what it is measured against did not. The far corner of the
+## map is still the thing it exists to avoid.
+const CLOSURE_WALL_BIAS := 5.0
 
 ## The day-level invariant, and the whole reason the planner is allowed to close anything:
 ## **at least this many calm areas are still reachable.** Two areas, because a choice of
@@ -938,6 +943,40 @@ const EVENT_SPACING_ANY := 64.0
 ## fallback rather than a failure: a scripted event has to happen, and on a full map the honest
 ## answer is the best spot left, not no event.
 const EVENT_PLACEMENT_TRIES := 24
+
+# --------------------------------------------------- placement by role (M50) ---
+# docs/CITY.md, "The words for it" and "Diversions — the design". A day is planned against a
+# **corridor** now — the ways from the doorstep to the calm areas still worth reaching — and what
+# each of these two numbers does is pull one kind of thing toward one part of it.
+#
+# Both are stated as **how many times a tile is offered to the roll**, which is `_ground_for`'s
+# existing mechanism rather than a new one: the roll is an index into the candidate array, so
+# offering a tile four times over *is* the weight, and every spacing rule downstream keeps working
+# unchanged. The precinct weight above is the same shape and is multiplied through, so a corridor
+# tile in a precinct is offered sixteen times.
+#
+# Neither is a filter, and the one filter there is lives in `EventScheduler._copies_of`: **a wall
+# is never inside the corridor.** That one can be absolute because the whole off-corridor city
+# remains available to it, so it cannot starve a row of ground — which is what a weight buys
+# everywhere else here and is why these are weights.
+
+## How many times over a tile on the day's routes is offered to a **friction** placement.
+##
+## *"Benign blockers go on the route… to make it more challenging / force the player to think their
+## route through better."* About a quarter of the lattice is on the tree, so at 4 rather better
+## than half of the costly rows land on the corridor and the rest of the city keeps a scatter — a
+## city where every street off the route is empty would read as a set rather than as a place, and
+## nothing in the design asks for that.
+const EVENT_CORRIDOR_WEIGHT := 4
+
+## How many times over a turning off the corridor is offered to a **wall** placement, against a
+## street further out.
+##
+## A wall bounds the corridor, so it has to be somewhere the corridor can see; a lethal thing four
+## streets away bounds nothing. That is the preference. What is not a preference is the exclusion
+## beside it — the same reasoning as `CLOSURE_WALL_BIAS`, which is this number's twin one system
+## over and deliberately the same value.
+const EVENT_WALL_RIM_WEIGHT := 4
 
 # ------------------------------------------------ solid things are solid (M34) ---
 # Playtest 07, finding 16: *"none of the non-moving obstacles do anything — I can freely walk

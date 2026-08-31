@@ -148,14 +148,22 @@ const REFERENCE_DAY := 0
 static func for_the_run(map: CityMap) -> RouteTree:
 	return for_day(map, REFERENCE_DAY)
 
-static func for_day(map: CityMap, day: int, closures: Array[RoadClosure] = []) -> RouteTree:
-	var closed := {}
-	for closure in closures:
-		closed[closure.segment.key()] = true
+## **It is grown on the permanent lattice, and today's closures are not in it.** *(M50 step 2.)*
+## That reads backwards until the order the day is planned in is in view: the corridor comes
+## **first**, and the closures are then placed off it — so a tree grown against today's barriers
+## would be a tree grown against decisions that were taken by consulting it. What makes it sound
+## rather than merely circular is the guarantee on the other side: `ClosurePlanner` excludes every
+## street on the tree, so a corridor grown this morning is still walkable this evening.
+##
+## It took a parameter for the day's closures until step 2 and nothing may pass one now. A tree
+## that included them would differ from the one the day was planned against — the random walk sees
+## a different graph, not merely a shorter one — and the picture would then be of a plan nobody
+## used.
+static func for_day(map: CityMap, day: int) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
 	return grow(ClosurePlanner.home_street(map), ClosurePlanner.calm_areas(map),
-			map.blocked_segments(closed), rng)
+			map.blocked_segments(), rng)
 
 ## Grows the tree. `closed` is the merged set `CityMap.blocked_segments()` returns — the streets
 ## a calm zone absorbed as well as the ones shut this morning, because neither is there to be
@@ -438,6 +446,34 @@ func bundles() -> Array[Vector3i]:
 	for key: Vector3i in _colours:
 		if (_colours[key] as Dictionary).size() >= 2:
 			found.append(key)
+	return found
+
+## The streets just outside the corridor: not on the tree, and meeting one that is at a junction.
+##
+## **This is where a wall goes**, and the adjacency is the whole content of it. *"Hard and lethal
+## blockers form the paths… the route is what is left between them"* — a wall bounds the corridor,
+## which means it has to be somewhere the corridor can see: the turning off the junction she is
+## standing at, not a lethal thing four streets away that nothing about the day points her toward.
+##
+## Asked of the links rather than of `StreetNetwork.at_junction`, so a street a calm zone absorbed
+## or a dead end took out of the lattice is not offered as a place to put anything. What is
+## deliberately **not** excluded here is the street outside the front door: it is a turning off the
+## first junction like any other, and both callers that must leave it alone already do — the
+## closure planner by name and the scheduler through `_the_street_she_starts_on`.
+func rim() -> Array[Vector3i]:
+	var found: Array[Vector3i] = []
+	var seen := {}
+	for key: Vector3i in _colours:
+		var segment := StreetNetwork.by_key(key)
+		if not segment:
+			continue
+		for junction in [segment.a, segment.b]:
+			for link: Array in _links[StreetNetwork.node_of(junction)]:
+				var beside := link[1] as Vector3i
+				if _colours.has(beside) or seen.has(beside):
+					continue
+				seen[beside] = true
+				found.append(beside)
 	return found
 
 func branch_for(area: Vector2i) -> Branch:
