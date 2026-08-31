@@ -12,7 +12,9 @@ The win meter. Fills only under the right conditions.
 | Condition | Rate (per second) |
 | --- | --- |
 | Walking, excitement below calm threshold | `+0.42` |
-| Walking, in a **calm zone** | `+0.42 × 10` = `+4.2` |
+| Walking, in a **four-block calm zone** | `+0.42 × 21` = `+8.8` |
+| Walking, in a **two-block** calm area | `+0.42 × 29.7` = `+12.5` |
+| Walking, in a **single-block** calm area | `+0.42 × 42` = `+17.6` |
 | Running | `0` (never fills while running) |
 | Idle / near-idle | `-1.0` (drains) |
 | Excitement at or above `CALM_THRESHOLD` | `0` (frozen, never drains) |
@@ -28,13 +30,14 @@ other, and they are what makes the walk the game:
 - A whole day of undisturbed street walking reaches about **76** of 100. The street is real
   progress and can never be enough — so circling the starting block, which used to win a
   day outright, now cannot win one at all.
-- A calm stretch clears the meter in about **20s**, and the walk out has already
-  contributed. A second in a park is worth twelve on the pavement, which is the whole of what
-  playtest 02's finding 1 asked for: the park has to be *obviously* the answer. *(24s and ten
-  until M38. Every milestone since M28 has put more between the doorstep and the park — a solid
-  catalogue, a crowd that bites, a pacing man, a robber — and all of it is spent on the way there,
-  which is where the day is meant to be lost. Leaving the reward at the far end the same length
-  while the walk to it got longer turns the park back into a wait.)*
+- A calm stretch clears the meter in **11.3s** in a four-block zone and **5.7s** in a single
+  block, and the walk out has already contributed. A second in a park is worth twenty-one on the
+  pavement, which is the whole of what playtest 02's finding 1 asked for: the park has to be
+  *obviously* the answer. *(24s and ten until M38, 17s and fourteen until M52. Every milestone
+  since M28 has put more between the doorstep and the park — a solid catalogue, a crowd that
+  bites, a pacing man, a robber — and all of it is spent on the way there, which is where the day
+  is meant to be lost. Leaving the reward at the far end the same length while the walk to it got
+  longer turns the park back into a wait.)*
 - Standing still drains faster than walking fills, so waiting is never a strategy — but it
   drains *slower* than a calm zone fills, so stopping to let something pass stays a move
   worth making.
@@ -42,10 +45,25 @@ other, and they are what makes the walk the game:
 **And the calm has to be big enough to walk in.** *(M21.)* The three rates above are jointly
 sufficient for a *lap*: progress requires motion, so a calm area smaller than a stretch of
 walking is somewhere you circle rather than somewhere you go. A four-block calm zone is 704px
-square — 10.8s corner to corner against the 19.8s a full meter takes — so the calm is a route.
-The margin narrowed when M38 raised the rate, and it is the relationship rather than either
-number that has to survive: a calm area must be more than one lap wide.
+square — 10.8s corner to corner against the 11.3s a full meter takes — so the calm is a route.
+The margin narrowed when M38 raised the rate and again when M52 did, and it is the relationship
+rather than either number that has to survive: a calm area must be more than one lap wide.
 See `docs/CITY.md`, "Calm zones".
+
+**Since M52 the rate is a curve over the lot's size, and it exists to pay for that lap rather than
+to be generous.** *(Playtest 14, finding 11: "x1.5 the sleepiness effect of calm zones and double
+it for 1x1 calm zones", with playtest 16 settling the sizes between.)* It goes as
+`1 / sqrt(blocks)`, normalised so a 2x2 zone is the base — **21x for four blocks, 29.7x for two,
+42x for one.**
+
+The reason to divide by the **side** rather than by the block count is that the two anchors the
+player gave cannot both hold otherwise: a 1x1 against a 2x2 is a factor of two in width and four in
+area, and the rate asked for **doubles**. And it is the same thing the design says in words: *a lap
+is a length, not an area.* Paying inversely to width pays every size about the same for one
+traverse of itself — **1.4 traverses for a single block against 1.05 for a zone**, where before the
+curve they were 2.75x apart — so a small calm area stops being the weaker destination for a reason
+that has nothing to do with what it is, and *which* calm area to head for goes back to being a real
+question. `tests/test_generator.gd` holds that ratio rather than either number.
 
 **A day is aimed at a minute of play, with a grace of three.** Dusk at 180s is the outer
 bound, not the target. That is deliberate after M18: a day walked well is over in about a

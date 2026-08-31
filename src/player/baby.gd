@@ -84,16 +84,16 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var here := _stroller.global_position
-	var in_calm_zone := _world.is_calm_zone(here) if _world else false
+	var calm_gain := _world.sleepiness_multiplier(here) if _world else 1.0
 	var in_alley := _world.is_alley(here) if _world else false
 
-	_update_excitement(delta, here, in_calm_zone, in_alley)
-	_update_sleepiness(delta, in_calm_zone)
+	_update_excitement(delta, here, in_alley)
+	_update_sleepiness(delta, calm_gain)
 	_update_state()
 
 # --------------------------------------------------------------- excitement ---
 
-func _update_excitement(delta: float, here: Vector2, in_calm_zone: bool, in_alley: bool) -> void:
+func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	var incoming := _world.total_excitement_at(here) if _world else 0.0
 	incoming += Tuning.EXCITEMENT_FROM_RUNNING * _stroller.run_excess_ratio()
 	if in_alley:
@@ -129,7 +129,7 @@ func _decay_rate() -> float:
 
 # --------------------------------------------------------------- sleepiness ---
 
-func _update_sleepiness(delta: float, in_calm_zone: bool) -> void:
+func _update_sleepiness(delta: float, calm_gain: float) -> void:
 	if state == GameEnums.BabyState.ASLEEP:
 		return
 
@@ -143,10 +143,10 @@ func _update_sleepiness(delta: float, in_calm_zone: bool) -> void:
 		# Never fills while running, at any excitement level.
 		pass
 	else:
-		var gain := Tuning.SLEEPINESS_GAIN_WALKING
-		if in_calm_zone:
-			gain *= Tuning.SLEEPINESS_CALM_ZONE_MULTIPLIER
-		sleepiness += gain * delta
+		# One multiplier rather than a branch: since M52 the ground answers with a **rate** —
+		# 1.0 anywhere ordinary, more on calm, more again on a calm area that is one block — so
+		# there is nothing here to ask about what kind of place she is standing in.
+		sleepiness += Tuning.SLEEPINESS_GAIN_WALKING * calm_gain * delta
 
 	sleepiness = clampf(sleepiness, 0.0, Tuning.METER_MAX)
 	if not is_equal_approx(before, sleepiness):

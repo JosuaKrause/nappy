@@ -55,15 +55,51 @@ const SLEEPINESS_DRAIN_IDLE := 1.0
 ## **14x since M41** — *"let's increase the sleepiness speed for calm zones again"* — which is the
 ## same argument a third time: 17s from empty rather than 20. What went between the doorstep and
 ## the park this time is a main road that is bad ground to recover on and a lattice a fifth wider.
-const SLEEPINESS_CALM_ZONE_MULTIPLIER := 14.0
+## **21x since M52**, and this one was asked for twice before it was built: *"x1.5 the sleepiness
+## effect of calm zones and double it for 1x1 calm zones"* (playtest 14, finding 11), restated as
+## *"calm zones need to fill up the sleep meter faster in general"*. 11.3s from empty.
+##
+## One correction travelled with it. `docs/PLAYTEST-14.md` recorded the request against a value of
+## **12**, which had been wrong since M41 — so the 1.5 is taken on the 14 that is actually here.
+const SLEEPINESS_CALM_ZONE_MULTIPLIER := 21.0
+
+## How much faster again a **small** calm area fills it, as a curve over the lot's size.
+##
+## *(Playtest 14, finding 11: "double it for 1x1 calm zones". Playtest 16: "the size of the calm
+## zone increases the speed even further if it is small", then "2x1 calm zones have a proportional
+## multiplier, the base is 2x2 — or maybe redefine the base to 1x1 and divide by the number of
+## blocks".)*
+##
+## **The two phrasings of the curve give different answers and the arithmetic is why one was
+## picked.** Three anchors were asked for: a 2x2 zone is the base, a 1x1 is **double** it, and a 2x1
+## sits proportionally between. Dividing by the **number of blocks** cannot hold the first two at
+## once — from a 2x2 base of 21 it makes a 1x1 *four* times as fast, and from a 1x1 base of 42 it
+## makes a 2x2 half of what it is today. Dividing by the **side** holds both exactly, because a 1x1
+## against a 2x2 is a factor of two in width and a factor of four in area, and the rate asked for
+## doubles rather than quadrupling.
+##
+## So the rate goes as `1 / sqrt(blocks)`, normalised so a `CALM_ZONE_BLOCKS`-square zone is the
+## base: **21x for four blocks (11.3s from empty), 29.7x for two (8.0s), 42x for one (5.7s)**.
+##
+## And that is the same thing the design says in words, which is the reason to trust it over the
+## simpler formula: **a lap is a length, not an area.** A four-block zone is 22 tiles square and has
+## a route through it; a single block is eight tiles across and has a lap round it, which is what
+## M21 exists to remove. Paying inversely to the *width* of a lot pays each of them about the same
+## for a lap of it — so the small ones stop being the weaker destination for a reason that has
+## nothing to do with what they are for, and *which* calm area to head for goes back to being a real
+## question. That is `docs/CITY.md`'s own argument for keeping single-block calm in the mix.
+func sleepiness_calm_multiplier(blocks: int) -> float:
+	var side := sqrt(float(maxi(blocks, 1)))
+	return SLEEPINESS_CALM_ZONE_MULTIPLIER * float(CALM_ZONE_BLOCKS) / side
 ## Sleepiness the baby keeps after being woken up. Half the bar, which is now about twelve
 ## seconds of park — a fifth of a well-played day, which is what it was before and should
 ## stay whatever the rates are.
 const WAKE_SLEEPINESS_PENALTY := 50.0
 
-## Sleepiness per second on calm ground.
-func sleepiness_gain_calm() -> float:
-	return SLEEPINESS_GAIN_WALKING * SLEEPINESS_CALM_ZONE_MULTIPLIER
+## Sleepiness per second on calm ground, for a lot of `blocks` blocks. The default is the
+## `CALM_ZONE_BLOCKS`-square zone, which is the size every other constant here is pitched against.
+func sleepiness_gain_calm(blocks := CALM_ZONE_BLOCKS * CALM_ZONE_BLOCKS) -> float:
+	return SLEEPINESS_GAIN_WALKING * sleepiness_calm_multiplier(blocks)
 
 # ------------------------------------------------------------- excitement ---
 

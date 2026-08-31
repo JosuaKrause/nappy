@@ -12,8 +12,11 @@ class FakeWorld extends WorldContext:
 	var alley := false
 	var noise := 0.0
 
-	func is_calm_zone(_world_position: Vector2) -> bool:
-		return calm
+	# The ground answers with a **rate** since M52, and a fake that answers with a bool would be
+	# testing an interface the baby no longer has. `calm` stands for the base four-block zone;
+	# nothing here is about size, which is `City`'s question and `test_generator`'s to check.
+	func sleepiness_multiplier(_world_position: Vector2) -> float:
+		return Tuning.sleepiness_calm_multiplier(Tuning.CALM_ZONE_BLOCKS ** 2) if calm else 1.0
 
 	func is_alley(_world_position: Vector2) -> bool:
 		return alley
