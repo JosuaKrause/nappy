@@ -23,6 +23,14 @@ extends RefCounted
 ## - **`AWAY`** — everywhere else. Still legal ground for a wall (a wall further out bounds less;
 ##   it does not bound the wrong thing), and never legal ground for friction to be *aimed* at.
 ##
+## **And since the off-corridor ground stopped being merely unweighted, there is a fourth thing to
+## ask and it is a number rather than a name.** *(2026-08-31: "areas that outside the paths should
+## have blocking events all over — we don't want the player to step in those areas and it ranges
+## from very costly to deadly.")* `depth()` is how far off the routes a tile is, in **turnings**:
+## zero inside, one on the rim, and upwards. The three names above are the first two values and
+## everything else, kept because they are what the design is written in; the number is what the
+## *range* is stated over, and one cache answers both.
+##
 ## **A tile that is on no street still has an answer**, which is the part that had to be got right
 ## rather than assumed. Sixteen rows of the catalogue stand on alley, park, square or courtyard
 ## ground, and `StreetNetwork.segment_containing` returns null for every one of them — so a
@@ -35,15 +43,16 @@ extends RefCounted
 ## however many turnings run off it.
 
 enum Where {
-	AWAY,    ## Not on the corridor and not beside it.
+	AWAY,    ## Two turnings off the corridor or more — `depth()` is what says how far.
 	INSIDE,  ## On a street the day's routes run down.
 	RIM,     ## On a street that meets one of those at a junction.
 }
 
-## Segment key -> true, for the streets on the tree.
-var _on := {}
-## Segment key -> true, for the streets that meet one of those and are not one of them.
-var _rim := {}
+## Segment key -> how many turnings off the corridor it is. Zero for a street on the tree, one for
+## the rim, upwards from there; a street the day cannot reach at all is absent. See
+## `RouteTree.depths()`, and note that this replaced two sets — `_on` and `_rim` were the same
+## dictionary asked for its zeroes and its ones.
+var _depths := {}
 ## The covering set: the smallest set of streets such that every route touches one of them. Kept in
 ## order rather than as a set, because a **set piece** is placed once at each of them.
 var _sites: Array[Vector3i] = []
@@ -58,10 +67,7 @@ static func of(tree: RouteTree) -> Corridor:
 	corridor._answers.fill(_UNKNOWN)
 	if not tree:
 		return corridor
-	for key in tree.streets():
-		corridor._on[key] = true
-	for key in tree.rim():
-		corridor._rim[key] = true
+	corridor._depths = tree.depths()
 	corridor._sites = tree.covering_sites()
 	return corridor
 
@@ -86,6 +92,19 @@ const _UNKNOWN := 255
 
 ## Where a tile stands in relation to the day's routes.
 func where(tile: Vector2i) -> Where:
+	var away := depth(tile)
+	if away == 0:
+		return Where.INSIDE
+	return Where.RIM if away == 1 else Where.AWAY
+
+## How many turnings off the corridor a tile is. Zero is on it, one is the rim, and it counts
+## outwards; `DEEP` is the answer for ground the day's routes cannot reach at all.
+##
+## **The cap is what makes this a byte and it is also the design.** Beyond a couple of turnings the
+## player is not straying, she is somewhere else, and pricing the fourth turning differently from
+## the third would be a gradient nobody can feel — so the range saturates and the constant says
+## where.
+func depth(tile: Vector2i) -> int:
 	var period := CityMap.period()
 	var across_x := CityMap.corridor_offset(tile.x) >= 0
 	var across_y := CityMap.corridor_offset(tile.y) >= 0
@@ -94,26 +113,30 @@ func where(tile: Vector2i) -> Where:
 	var kind := (2 if across_x else 0) + (1 if across_y else 0)
 	var slot := (cell.y * count.x + cell.x) * 4 + kind
 	if slot < 0 or slot >= _answers.size():
-		return Where.AWAY   # off the lattice entirely: the frontages beyond the boundary
+		return DEEP   # off the lattice entirely: the frontages beyond the boundary
 	if _answers[slot] == _UNKNOWN:
 		_answers[slot] = _work_out(cell, across_x, across_y)
-	return _answers[slot] as Where
+	return _answers[slot]
+
+## As far off the corridor as this answers. Anything at or past it is simply *elsewhere*.
+const DEEP := 3
 
 func is_inside(tile: Vector2i) -> bool:
-	return where(tile) == Where.INSIDE
+	return depth(tile) == 0
 
 func _work_out(cell: Vector2i, across_x: bool, across_y: bool) -> int:
-	var answer := Where.AWAY
+	var answer := DEEP
 	for key in _streets_at(cell, across_x, across_y):
-		if _on.has(key):
-			return Where.INSIDE
-		if _rim.has(key):
-			answer = Where.RIM
+		if not _depths.has(key):
+			continue
+		answer = mini(answer, _depths[key] as int)
+		if answer == 0:
+			break
 	return answer
 
 ## Whether this street is one of the ones the day's routes run down.
 func holds_street(key: Vector3i) -> bool:
-	return _on.has(key)
+	return _depths.get(key, DEEP) == 0
 
 ## The streets a tile answers for.
 ##

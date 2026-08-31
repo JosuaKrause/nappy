@@ -194,13 +194,26 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## out to be walking and the scheduler never chooses a tile for it. Calling it a wall would put a
 ## mark on the telemetry map claiming a placement that nothing made — which is the exact failure
 ## the picture exists to catch, arriving through the legend.
+##
+## **A wall stopped being only the lethal rows.** *(2026-08-31: "areas that outside the paths should
+## have blocking events all over — we don't want the player to step in those areas and it ranges
+## from very costly to deadly.")* The range is the instruction: what closes the ground off the
+## routes is *very costly* at one end and *deadly* at the other, so an expensive row is a wall too
+## and `Tuning.WALL_WORTH_OF_COST` is where the line falls. Cheap rows stay friction and stay on the
+## corridor, which is what keeps the routes worth walking rather than merely survivable.
+##
+## It is stated over `walk_through_cost()` — the same integral `tests/test_danger.gd` orders the
+## caret by — rather than over a new field, because *how expensive a row is* is a question the
+## catalogue already answers and two answers to it is the `DangerEdge` defect M37 found.
 static func _role_for(def: EventDef) -> GameEnums.BlockerRole:
 	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER \
 			or def.kind == GameEnums.EventKind.AMBIENT:
 		return GameEnums.BlockerRole.NONE
 	if def.kind == GameEnums.EventKind.ONE_SHOT:
 		return GameEnums.BlockerRole.SET_PIECE
-	return GameEnums.BlockerRole.WALL if def.hard_fail else GameEnums.BlockerRole.FRICTION
+	if def.hard_fail or def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST:
+		return GameEnums.BlockerRole.WALL
+	return GameEnums.BlockerRole.FRICTION
 
 ## A private RNG for one phase of the day, derived from the day's seed and a salt.
 ##
@@ -694,7 +707,9 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 	var base := _open_ground_for(def, map, ground)
 	if not corridor or role == GameEnums.BlockerRole.NONE:
 		return base
-	var key := "%s|%d|%d|%s" % [def.placement, def.pavement_side, role, site]
+	# The key is the *question*, and `hard_fail` is part of it since the wall band gained a
+	# gradient: two lethal rows share an answer and a lethal row and a costly one no longer do.
+	var key := "%s|%d|%d|%s|%s" % [def.placement, def.pavement_side, role, site, def.hard_fail]
 	if ground.has(key):
 		return ground[key]
 	var aimed: Array[Vector2i] = []
@@ -709,7 +724,7 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 			if only.has_point(tile):
 				aimed.append(tile)
 			continue
-		for _copy in _copies_of(tile, corridor, role):
+		for _copy in _copies_of(tile, corridor, role, def.hard_fail):
 			aimed.append(tile)
 	ground[key] = aimed
 	return aimed
@@ -750,17 +765,28 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 ## Zero means the tile is not offered at all, and there is exactly one case of it — **a wall is
 ## never inside the corridor.** Every other preference here is a weight, because a weight cannot
 ## starve a row of ground and a filter can. What makes this one safe to state absolutely is that
-## the rest of the city stays available to it: a wall wants the rim, it settles for anywhere else
-## off the routes, and only the routes themselves are refused.
-static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.BlockerRole) -> int:
-	var where := corridor.where(tile)
+## the rest of the city stays available to it: a wall wants its own band, it settles for anywhere
+## else off the routes, and only the routes themselves are refused.
+##
+## **The wall band has a gradient in it now, and the gradient is the instruction.** *(2026-08-31:
+## "areas that outside the paths should have blocking events all over — we don't want the player to
+## step in those areas and it ranges from very costly to deadly.")* Stray one turning and it is
+## expensive; stray further and it ends the day. So a **very costly** wall is pulled to the rim,
+## which is the turning she can see from the junction she is standing at, and a **lethal** one is
+## pulled past it. Both keep the whole off-corridor city as a weight rather than a filter, so
+## neither can be starved of ground on a day whose corridor happens to be most of the map.
+static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.BlockerRole,
+		lethal := false) -> int:
+	var away := corridor.depth(tile)
 	match role:
 		GameEnums.BlockerRole.WALL:
-			if where == Corridor.Where.INSIDE:
+			if away == 0:
 				return 0
-			return Tuning.EVENT_WALL_RIM_WEIGHT if where == Corridor.Where.RIM else 1
+			if lethal:
+				return Tuning.WALL_DEEP_WEIGHT if away >= 2 else 1
+			return Tuning.EVENT_WALL_RIM_WEIGHT if away == 1 else 1
 		GameEnums.BlockerRole.FRICTION:
-			return Tuning.EVENT_CORRIDOR_WEIGHT if where == Corridor.Where.INSIDE else 1
+			return Tuning.EVENT_CORRIDOR_WEIGHT if away == 0 else 1
 		_:
 			return 1
 
@@ -879,13 +905,44 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 		if not elsewhere:
 			if gap < Tuning.EVENT_SPACING_ANY:
 				return -INF
-			if plan.def.hard_fail and gap < plan.def.outer_radius:
+			if _keeps_its_field_clear(plan) and gap < plan.def.outer_radius:
 				return -INF
 			if plan.def.id == candidate.def.id:
 				room_same = minf(room_same, gap)
-		if candidate.def.hard_fail and gap < candidate.def.outer_radius:
+		if _keeps_its_field_clear(candidate) and gap < candidate.def.outer_radius:
 			return -INF
 	return INF if room_same >= Tuning.EVENT_SPACING_SAME else room_same
+
+## Whether M28's clearance rule is about this placement: a lethal event with nothing else inside
+## its whole `outer_radius`.
+##
+## **The rule is now stated over the ground she is being guided along, and off it there is an
+## exemption.** *(2026-08-31, agreed with the player: "areas that outside the paths should have
+## blocking events all over — we don't want the player to step in those areas and it ranges from
+## very costly to deadly", and, asked directly which of the two had to give, "exempt the
+## off-corridor ground from it".)*
+##
+## Read the rule's own reason and the exemption falls out of it. M28's sentence is *the contract is
+## stated per event and the player experiences the sum* — walking out of one field can mean walking
+## into another, and where that second field ends the day it is a death arriving out of something
+## she was already reading. That is an argument about **a route she is meant to take**. Off the
+## corridor there is no route she is meant to take; the whole point of the ground is that she should
+## not be on it, and a lethal field that overlaps another one is the city saying so rather than a
+## fairness failure. With the rule applied out there, "deadly all over" is not merely hard to
+## achieve — it is arithmetically impossible: six lethal rows capped at three to five, at radii of
+## 145 to 380px, cannot tile anything.
+##
+## **A `WALL` is exactly the off-corridor set and that is by construction, not by coincidence.**
+## `_copies_of` offers a wall zero copies of any tile inside the corridor, so a placement carrying
+## this role is off the routes or it does not exist. What keeps its clearance is everything else: a
+## set piece, which is sited where every route passes, and anything the day placed for a reason that
+## is not about the corridor at all.
+##
+## The telegraph contract is untouched by this and must not be "fixed" alongside it. That one is
+## stated over a single event's own geometry, `Tuning.validate_event()` checks it on load, and
+## nothing here changes what any event owes the player who sees it coming.
+static func _keeps_its_field_clear(plan: Planned) -> bool:
+	return plan.def.hard_fail and plan.role != GameEnums.BlockerRole.WALL
 
 ## The closest two events come to each other, counting the whole of a route at both ends.
 ##

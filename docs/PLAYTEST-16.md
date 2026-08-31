@@ -1,15 +1,15 @@
 # Playtest 16
 
 Played on `main` at M50 — `5d2a276`, seed `374709573` (both screenshots) — with M51's seven
-findings in the build. Reported mid-run, in three messages, the first two with a screenshot
+findings in the build. Reported mid-run, in four messages, three of them with a screenshot
 attached. The wording below is the player's, verbatim.
 
-**Four findings. The first three are one complaint**: the crowd travels a lattice that is not the
-city.
-It walks onto a bridge with no footway, off a bulkhead into the sea, and through crossroads whose
-arms are grass — and in every case it then vanishes where somebody is looking at it.
+**Five findings. Four of them are one complaint**: the city draws a lattice it does not have, and
+the crowd walks it. It goes onto a bridge with no footway, off a bulkhead into the sea, and through
+crossroads whose arms are grass or a wall — and in every case it then vanishes where somebody is
+looking at it.
 
-**The fourth is a different kind of finding and the more uncomfortable one**: calm areas at the
+**The fifth is a different kind of finding and the more uncomfortable one**: calm areas at the
 edge of the map, *"which should be impossible"* — and the rule saying so is already written down,
 unbuilt, in `docs/TODO.md`'s M47, along with its measurement. Together with M41's T-junction item
 and M51's cul-de-sac, that is **three findings in one session that the project had recorded and not
@@ -112,7 +112,7 @@ even states why it was never true — `_assign_purposes` constrains a single cal
 and none of them is about the edge, and `_zone_fits` only refuses a footprint that would *absorb*
 the arterial, which is about swallowing the street rather than being beside it.
 
-**So this is the third finding in one session that the project had already written down and not
+**So this is the third thing in one session that the project had already written down and not
 built**, after M41's T-junctions and M51's cul-de-sac. It is also the second time the *same* M47
 entry has come back: M52's *"2x2 courtyard and rectangular calm zones"*, asked for earlier in this
 same session, is verbatim the request sitting two lines above it — *"an inner courtyard (surrounded
@@ -122,3 +122,18 @@ implemented… also, add calm varieties that take up 2x1 non-square shapes."*
 Which answers, from the record rather than from the player, two of the four questions M52 was
 recorded with. That is the lesson worth more than the fix: **the answer to "what exactly did you
 mean" was on disk, and asking again is the cost of a to-do that was filed and not read.**
+
+## 5. The back of a cul-de-sac still has a pedestrian crossing on it
+
+> "the backside of a cul-de-sac should not have a pedestrian crossing"
+
+Sent with a screenshot of a junction whose **northern arm is built over** — the dead end's plug is
+right there in the picture, a building where the street would have continued — and a full zebra
+still painted across it, with a traffic light beside it.
+
+**This is finding 2 again and it is the clearest statement of it**, because here there is no
+argument about what the arm *is*: `CityMap.built_over` names those exact tiles. The junction is
+drawn with four arms because the lattice has four entries at that crossing, and nothing that lays
+paint asks whether the street on the other side exists. A crossing marks *where to cross to*, so a
+zebra onto a wall is the city promising something it does not have — M51's own sentence, in the one
+place M51 was already looking.

@@ -2989,7 +2989,7 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
       M39 could promise with a single one-shot — and it is the direction step 3 is going anyway,
       *"budget is not really used up if the player doesn't see it."*
 
-- [ ] **Off the corridor is not merely unweighted, it is closed.** *(2026-08-31, and it is the
+- [~] **Off the corridor is not merely unweighted, it is closed.** *(2026-08-31, and it is the
       player's own sentence: "also make sure that areas that outside the paths should have blocking
       events all over — we don't want the player to step in those areas and it ranges from very
       costly to deadly.")*
@@ -3015,11 +3015,56 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
         a question about placement, which is `CLAUDE.md`'s *"a budget the catalogue cannot spend is
         not density"* arriving at the other end of the map.
 
-      And one question that has to go back, because both answers are defensible and only the player
-      knows which was wanted: **what is the gradient over?** Distance from the corridor is the
-      obvious reading — the rim is very costly and the deep interior is deadly — but *"we don't want
-      the player to step in those areas"* would also be served by a hard edge, and the two make very
-      different cities to walk into by accident
+      **Both were put to the player and both were answered on 2026-08-31.** The gradient is over
+      **distance from the corridor** — *"stray one street and you pay, stray three and you die"* —
+      and M28's clearance rule is **exempted off the corridor**, keeping its full strength on the
+      ground she is being guided along.
+
+      **Built, and here is what it came out as.** `Corridor.depth()` is the range's axis, a BFS in
+      turnings over `RouteTree.depths()`; a **very costly** row is a wall now as well as a lethal
+      one, `Tuning.WALL_WORTH_OF_COST`; and `_copies_of` pulls the costly end to the rim and the
+      deadly end past it. Measured over five seeds:
+
+      | day | placed | inside | rim | deep | lethal in / rim / deep |
+      |---|---:|---:|---:|---:|---|
+      | 1 (before) | 113.6 | 69.6 | 21.2 | 22.8 | 0 / 0 / 0 |
+      | 1 | 113.6 | 60.0 | 29.2 | 24.4 | 0 / 0 / 0 |
+      | 5 | 146.4 | 78.8 | 34.2 | 33.4 | 0 / 2.4 / 6.2 |
+      | 9 | 177.6 | 88.8 | 44.8 | 44.0 | 0 / 4.2 / 12.8 |
+      | 14 | 202.2 | 103.6 | 48.0 | 50.6 | 0 / 4.8 / 12.2 |
+
+      Three things worth carrying, and the first is a mistake caught by measuring:
+
+      - **The threshold was borrowed and it emptied the routes.** `WALL_WORTH_OF_COST` was
+        `MARK_WORTH_A_DETOUR` — 25 points, the line where the game raises a caret — with a good
+        argument beside it: the cue and the placement would say one sentence. What it did was make
+        **two thirds of every day a wall**, taking day 1's corridor from 69.6 placements to 27.8.
+        The player asked for the ground off the paths to be closed; nobody asked for the paths to be
+        cleared. The line is set by one row instead: **`dog_walker` costs 36.5 and has to stay
+        friction**, because *"the dog walker decision should happen meaningfully"* is the route
+        decision this game is made of, so the line goes above it at 40 and the first row past it is
+        `loose_dog` at 43.3.
+      - **The exemption is the `WALL` role and that is by construction.** A wall is offered zero
+        copies of any tile inside the corridor, so a lethal placement carrying the role is off the
+        routes or it does not exist. A lethal set piece and a lethal `NONE` keep their clearance,
+        and `tests/test_events.gd` splits rather than weakens: it checks the ones that keep it and
+        asserts the run actually places some of both, so the exemption cannot become a way of
+        asserting nothing.
+      - **And the gradient is asserted as a relationship, not as two numbers.** *"It ranges from
+        very costly to deadly"* is a claim about which end is further out, so the test is
+        `deadly_deep > costly_deep`. Two thresholds would have passed on a day where both bands sat
+        at the same depth, which is not a gradient.
+
+      **What is left, and it is a catalogue question rather than a placement one.** *"Blocking
+      events all over"* is not true yet: day 1 puts 60 placements on the ~25% of the lattice that is
+      corridor and 53.6 on the other 75%, so the routes are still **six times denser** than the
+      ground she is meant to avoid. Weights cannot close that — they redistribute, and
+      redistributing away from the corridor is the mistake above. Only **16.2 of day 1's 113.6
+      placements are walls at all**, because the expensive rows have low `max_per_day`, so this is
+      `CLAUDE.md`'s *"a budget the catalogue cannot spend is not density"* arriving at the other end
+      of the map. Raising those caps is a real balance change and wants its own measurement; day 1
+      also has **no lethal row in the catalogue at all**, so its off-path ground cannot be deadly
+      whatever the caps say
 
 - [ ] **The resistance note's alley is a set piece too.** *(Split out of the item above rather
       than left implied.)* `ResistanceDirector` chooses where a chalk mark goes, and it has exactly
@@ -3277,8 +3322,8 @@ below are about what a junction is made of. Building them against a lattice that
 re-asked the same question would be doing the work twice.
 
 
-Playtest 16, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. Four findings; the first three
-are one complaint: **the crowd travels a lattice that is not the city.** It walks onto a bridge with no
+Playtest 16, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. Five findings; four of them are
+one complaint: **the city draws a lattice it does not have, and the crowd walks it.** It walks onto a bridge with no
 footway, off a bulkhead into the sea, and through crossroads whose arms are grass — and in every
 case it then vanishes where somebody is looking at it. Underneath the first two is one missing
 rule: the lattice draws a full crossroads wherever two corridors cross, whether or not the arms of
@@ -3304,8 +3349,13 @@ the project is a to-do that was filed and not read.
       of them was never included, so a pedestrianised stretch has a road crossing in the middle of
       it
 - [ ] **A junction whose arm is not a street has three arms, not four.** The shore, a park, a calm
-      zone's absorbed corridor — `CityMap.absent_segments` and the map edge already say which arms
-      exist. Nothing that draws a junction asks
+      zone's absorbed corridor, a dead end's plug — `CityMap.absent_segments`, `built_over` and the
+      map edge already say which arms exist. Nothing that draws a junction asks
+- [ ] **No crossing onto a wall** — finding 5, *"the backside of a cul-de-sac should not have a
+      pedestrian crossing"*, and it is the item above stated where it cannot be argued with:
+      `CityMap.built_over` names the tiles, and there is a zebra painted onto them with a traffic
+      light beside it. A crossing marks **where to cross to**, so this one is worth doing even if
+      the full three-armed junction is not — the paint is the promise
 - [ ] **Only cars go over the bridge** — finding 3, and it is M51 finding 7's own sentence read
       back. A bridge is *"a stretch of carriageway with no pavement beside it"*, which is the whole
       design and is why she may walk onto it and be run over rather than be stopped by a wall. The

@@ -652,6 +652,24 @@ cannot find room is not placed. `EventScheduler._room_around()` enforces it, `te
 asserts it over a whole run. If a new event ever becomes lethal, it inherits this, not just the
 telegraph.
 
+**And in M50 it became a rule about the corridor rather than about the city, which is where its own
+argument always was.** *(2026-08-31: "areas that outside the paths should have blocking events all
+over — we don't want the player to step in those areas and it ranges from very costly to deadly",
+and, asked directly which of the two had to give, "exempt the off-corridor ground from it".)* Read
+the paragraph above and the split falls out: every word of it is about **a route she is meant to
+take**. Off the day's corridor there is no such route — the point of that ground is that she should
+not be on it — so lethal fields there may overlap each other and everything else, and that is the
+city saying so rather than a fairness failure. Under the old rule "deadly all over" was not merely
+hard, it was arithmetic: six lethal rows capped at three to five, at radii of 145–380px, cannot
+tile anything.
+
+The exemption is exactly the `WALL` role and that is by construction, not by coincidence:
+`_copies_of` offers a wall zero copies of any tile inside the corridor, so a lethal placement
+carrying that role is off the routes or it does not exist. `EventScheduler._keeps_its_field_clear`
+is the one place that decides. **What is untouched and must not be "fixed" alongside it** is the
+telegraph contract — that one is about a single event's own geometry, `Tuning.validate_event()`
+checks it on load, and nothing here changes what an event owes the player who sees it coming.
+
 M34 added a fifth, and it is the same shape as M28's: **a lethal radius and a solid body are the
 same mechanism.** The player is stopped with her centre `obstructs_radius + PLAYER_BODY_RADIUS`
 from the centre of a thing, so a `hard_fail` event whose body reaches its own inner radius can
