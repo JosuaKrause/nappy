@@ -199,6 +199,14 @@ whether she reached it, and there is a **dusk** picture now, because that last o
 anything at dawn. **What is left is step 3, placeholders**, plus the resistance note's alley as a
 set piece.
 
+**Step 2 also gained an item after it shipped**, and it is a strengthening rather than a fix:
+*"areas that outside the paths should have blocking events all over — we don't want the player to
+step in those areas and it ranges from very costly to deadly."* What shipped biases walls onto the
+**rim**; what is asked for is that the ground off the paths be **closed**, on a gradient. It
+collides with M28's rule that nothing else happens inside a lethal event's field, and with how few
+lethal rows the catalogue has — both named in the entry, neither resolved, plus the one question
+that has to go back.
+
 **And read step 3's own opening before touching it**, because the thing it is for was misread here
 first: *"the role of budget is to provide variety in encounters and make sure to not spam the same
 event over and over again"* — a variety ledger, not a density cap. The count of sites is the
@@ -2967,6 +2975,38 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
       makes the fill *identical* between attempts rather than merely close, which is stronger than
       M39 could promise with a single one-shot — and it is the direction step 3 is going anyway,
       *"budget is not really used up if the player doesn't see it."*
+
+- [ ] **Off the corridor is not merely unweighted, it is closed.** *(2026-08-31, and it is the
+      player's own sentence: "also make sure that areas that outside the paths should have blocking
+      events all over — we don't want the player to step in those areas and it ranges from very
+      costly to deadly.")*
+
+      **This is a stronger instruction than what step 2 built, and the difference is the point.**
+      What shipped weights walls onto the **rim** — the off-tree streets meeting an on-tree one at a
+      junction, *the turning she can see from the corridor* — and leaves everything beyond the rim
+      to whatever the fill happens to drop there. Measured, that put lethal rows on the rim 63% →
+      80% on day 5, which is a bias. The sentence above is not a bias: **the ground off the paths is
+      somewhere she must not go**, and it is priced so, from *very costly* at the edge to *deadly*
+      further in.
+
+      Recorded before it is built, with the two things it collides with named rather than resolved,
+      because both are invariants somebody would have to move on purpose:
+
+      - **A lethal row has to keep its whole `outer_radius` clear of every other event, with no
+        fallback** — M28's rule, and the reason it exists is that the telegraph contract is stated
+        per event while the player experiences the sum. "Deadly all over" and "nothing else happens
+        inside a lethal event's field" are in direct tension, and the second one is what stops an
+        abduction being walked into out of somebody else's field.
+      - **The catalogue has few lethal rows and they have caps.** Saturating the off-corridor
+        ground is a question about `max_per_day` and about how many silhouettes exist before it is
+        a question about placement, which is `CLAUDE.md`'s *"a budget the catalogue cannot spend is
+        not density"* arriving at the other end of the map.
+
+      And one question that has to go back, because both answers are defensible and only the player
+      knows which was wanted: **what is the gradient over?** Distance from the corridor is the
+      obvious reading — the rim is very costly and the deep interior is deadly — but *"we don't want
+      the player to step in those areas"* would also be served by a hard edge, and the two make very
+      different cities to walk into by accident
 
 - [ ] **The resistance note's alley is a set piece too.** *(Split out of the item above rather
       than left implied.)* `ResistanceDirector` chooses where a chalk mark goes, and it has exactly
