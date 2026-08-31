@@ -822,6 +822,18 @@ Three rules underneath the table, in the order they matter:
    move M34 made with `obstructs_radius`, one milestone later and on the other half of the
    vocabulary: a field that is only ever *reached for* is a list wearing a rule's clothes.
 
+   **A mobile vehicle needs two of them, and until M51 it had one.** *(Playtest 15, finding 3:
+   "the police car only has a sideview even when driving vertically".)* Every vehicle in the
+   catalogue was one side-on sprite mirrored east and west, so a patrol car heading north drove up
+   the street showing its flank — while the *crowd's* cars have had an end-on view since M12, with
+   a note on the file saying that at that angle the front and the back of a car are the same
+   shape. The three mobile rows — `police_patrol`, `fire_truck`, `military_convoy` — have their
+   own `_end` picture now, and *their own* rather than the crowd's: the whole content of a vehicle
+   row is which vehicle it is, and a police car that becomes a generic saloon the moment it turns
+   north loses the one silhouette the badge exists to show at the moment it starts coming towards
+   her. The **badge keeps the side view**, because an icon is read at 40px against a row of other
+   icons and a vehicle end-on is a box at any size.
+
 **The traffic pays for its own warning now.** *(M30.)* The table's first row is *the entity
 itself carries most of it*, and the traffic was the one place nothing did: the caret was drawn
 by `EventInstance`, and a car is not an event. So a lethal thing bearing down on the player

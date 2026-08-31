@@ -24,10 +24,13 @@ const PROTESTER := preload("res://assets/events/protester.svg")
 const GUNMAN := preload("res://assets/events/gunman.svg")
 const DELIVERY_VAN := preload("res://assets/events/delivery_van.svg")
 const FIRE_ENGINE := preload("res://assets/events/fire_engine.svg")
+const FIRE_ENGINE_END := preload("res://assets/events/fire_engine_end.svg")
 const POLICE_CAR := preload("res://assets/events/police_car.svg")
+const POLICE_CAR_END := preload("res://assets/events/police_car_end.svg")
 const UNMARKED_VAN := preload("res://assets/events/unmarked_van.svg")
 const RIOT_VAN := preload("res://assets/events/riot_van.svg")
 const ARMY_TRUCK := preload("res://assets/events/army_truck.svg")
+const ARMY_TRUCK_END := preload("res://assets/events/army_truck_end.svg")
 const FLAME := preload("res://assets/events/flame.svg")
 const BARRIER_SEGMENT := preload("res://assets/events/barrier_segment.svg")
 const BARRIER_END := preload("res://assets/events/barrier_end.svg")
@@ -844,7 +847,7 @@ func _draw_body() -> void:
 		EventDef.Look.ROADWORKS:
 			_draw_spread(BARRIER_SEGMENT, BARRIER_END)
 		EventDef.Look.FIRE_ENGINE:
-			_draw_simple(FIRE_ENGINE, 26.0)
+			_draw_vehicle(FIRE_ENGINE, FIRE_ENGINE_END, 26.0)
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire()
 		EventDef.Look.BURNT_SHELL:
@@ -866,7 +869,7 @@ func _draw_body() -> void:
 		EventDef.Look.CHARGING_DOG:
 			_draw_simple(CHARGING_DOG, 13.0)
 		EventDef.Look.POLICE_CAR:
-			_draw_simple(POLICE_CAR, 19.0)
+			_draw_vehicle(POLICE_CAR, POLICE_CAR_END, 19.0)
 		EventDef.Look.POSTER_CREW:
 			_draw_simple(POSTER_CREW, 9.0)
 		EventDef.Look.CHECKPOINT:
@@ -878,7 +881,7 @@ func _draw_body() -> void:
 		EventDef.Look.RIOT_VAN:
 			_draw_simple(RIOT_VAN, 23.0)
 		EventDef.Look.ARMY_TRUCK:
-			_draw_simple(ARMY_TRUCK, 26.0)
+			_draw_vehicle(ARMY_TRUCK, ARMY_TRUCK_END, 26.0)
 		EventDef.Look.BARRICADE:
 			_draw_spread(BARRICADE_PILE)
 		EventDef.Look.PROTEST:
@@ -890,6 +893,28 @@ func _draw_body() -> void:
 
 ## A shadow and a sprite, facing the way it is going. What most of M31's new looks are, and
 ## having it once is what stopped seven near-identical three-line functions.
+## A vehicle, drawn from whichever of its four sides is facing the camera.
+##
+## *(M51, playtest 15 finding 3: "the police car only has a sideview even when driving
+## vertically".)* Every vehicle in the catalogue was one side-on sprite mirrored east and west, so
+## a patrol car heading north drove up the street showing its flank. The crowd's own cars have had
+## an end-on view since M12 — `car_end_body.svg`, with the note that at that angle the front and
+## the back of a car are the same shape — and the catalogue never got one.
+##
+## **Each row keeps its own end-on picture rather than borrowing the crowd's.** That is M37's rule
+## and it bites hardest here: the whole content of a vehicle row is *which* vehicle it is, and a
+## police car that becomes a generic saloon the moment it turns north is the one silhouette the
+## screen-edge badge exists to show, gone at the moment it starts coming towards her.
+##
+## The badge itself keeps the **side** view, which is deliberate: an icon is read at 40px against a
+## row of other icons, and a vehicle end-on is a box at any size.
+func _draw_vehicle(side: Texture2D, end: Texture2D, shadow: float) -> void:
+	Sprites.draw_shadow(self, Vector2.ZERO, shadow)
+	if absf(_heading.y) > absf(_heading.x):
+		Sprites.draw_standing(self, end, Vector2.ZERO, Vector2.ZERO, false)
+		return
+	Sprites.draw_standing(self, side, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+
 func _draw_simple(texture: Texture2D, shadow: float) -> void:
 	Sprites.draw_shadow(self, Vector2.ZERO, shadow)
 	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
