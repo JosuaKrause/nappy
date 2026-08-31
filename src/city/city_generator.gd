@@ -4,10 +4,14 @@ extends RefCounted
 ##
 ## Pure data, no nodes, so a test can hammer it across hundreds of seeds headlessly.
 ##
-## The street lattice is never cut — alleys, plazas and the home are carved *inside*
-## blocks. That is what guarantees the "at least two distinct routes to every park"
-## property from docs/CITY.md by construction rather than by search: a full lattice cannot
-## be disconnected by removing any single corridor.
+## The street lattice is cut in exactly two places and both are deliberate: a calm zone absorbs
+## the streets between its own blocks (M21), and a hard blocker takes one (M50). Everything else —
+## alleys, plazas, the home — is carved *inside* a block, so the grid a player learns is the grid.
+##
+## That used to guarantee *"at least two distinct routes to every park"* by construction, because a
+## full lattice cannot be disconnected by removing any single corridor. It is checked by search
+## now, and what is checked is weaker on purpose: **every calm area stays reachable**, with the
+## second route an offer rather than a promise. See `Tuning.MIN_CALM_AREAS_REACHABLE`.
 
 ## How many seeds to try before accepting a map that fails the soft guarantees.
 const MAX_ATTEMPTS := 64
@@ -942,21 +946,27 @@ static func _make_the_pair_solid(map: CityMap, purposes: Dictionary, block_rects
 	block_rects[pair.position] = solid
 	map.built_over[between.key()] = between.tile_rect()
 
-## The gate, and it is deliberately the **strong** one for now.
+## The gate: **every calm area the run will ever use can still be walked to.**
 ##
-## *(M50. The design permits a weaker one — "hard blockers no longer have to leave two
-## edge-disjoint routes to every calm area, only reachability", because cul-de-sacs are the point
-## and a two-routes rule fights them. That is true, and it is also one of the two invariant
-## decisions M50 says have to be taken deliberately: `MIN_CALM_AREAS_WITH_TWO_ROUTES`, the day-
-## level closure invariant and `tests/test_routes.gd` all rest on the generator handing them a
-## city where every calm area has a choice of ways in. Weakening it as a **side effect** of adding
-## dead ends is exactly the shape of overturn this project has a rule about, so the gate stays
-## where it was until somebody moves it on purpose. See docs/TODO.md, M50.)*
+## *(M50 built this as the strong gate — two edge-disjoint routes to every area — deliberately,
+## because weakening a winnability guarantee as a side effect of adding dead ends is the shape of
+## overturn this project has a rule about. It was moved on purpose on 2026-08-31: "I already
+## clarified that the two routes guarantee is not a hard rule." See
+## `Tuning.MIN_CALM_AREAS_REACHABLE`.)*
+##
+## **Reachability rather than redundancy is the right gate here for a reason of its own**, and it
+## is the one the design gives: cul-de-sacs are the *point* of a hard blocker, and a two-routes
+## rule fights them — every dead end takes one of an area's ways in, so the strong gate refused
+## exactly the interesting ones. What it may never do is make a calm area unreachable, because a
+## hard blocker holds for the whole run: a day can be bad, a run cannot be dead.
+##
+## It stays stated over **every** area rather than over a count, unlike the day-level invariant,
+## for the same reason: a closure is gone tomorrow and this is not.
 static func _the_calm_survives(map: CityMap, home: StreetNetwork.Segment,
 		areas: Array[ClosurePlanner.CalmArea]) -> bool:
 	var blocked := map.blocked_segments()
 	for area in areas:
-		if StreetNetwork.route_count(home, area.access, blocked, 2) < 2:
+		if StreetNetwork.route_count(home, area.access, blocked, 1) < 1:
 			return false
 	return true
 

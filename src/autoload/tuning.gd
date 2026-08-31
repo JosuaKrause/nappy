@@ -470,10 +470,24 @@ const CLOSURE_ROUTE_BIAS := 5.0
 const CLOSURE_ROUTE_SLACK := 1
 
 ## The day-level invariant, and the whole reason the planner is allowed to close anything:
-## **at least this many calm areas keep at least two distinct routes to them.** Two routes,
-## because one route is a corridor and a corridor is not a decision; two areas, because a
-## choice of destination is what makes a choice of route mean anything.
-const MIN_CALM_AREAS_WITH_TWO_ROUTES := 2
+## **at least this many calm areas are still reachable.** Two areas, because a choice of
+## destination is what makes a choice of route mean anything — and because one of them may be the
+## one she used yesterday, which the day has deliberately spoiled.
+##
+## **It used to demand two *distinct routes* to each of them, and that is not a hard rule.**
+## *(2026-08-31: "I already clarified that the two routes guarantee is not a hard rule."* The
+## clarification is `docs/CITY.md` — *"having two distinct paths is really a niceness to the
+## user… if we cannot construct a path B at all, let's not try"*, and *"sealing off a section of
+## the map is allowed, and it is the point"*.) Edge-disjointness was a **stand-in** for winnability,
+## by Menger: two routes means no single street is a cut. Under M50 that protection comes from
+## where a wall is *placed* — off the day's tree, so it cannot cut the tree — and the second route
+## is an offer the day makes when the map allows one. `RouteTree` measures it (241 areas of 241
+## that the map allowed one to); nothing gates on it.
+##
+## What is deliberately **not** weakened is the count. Dropping to one reachable area would let a
+## day arrive where the only calm left is the one it spoiled this morning, which is the unwinnable
+## day this constant has existed to prevent since M16.
+const MIN_CALM_AREAS_REACHABLE := 2
 
 ## How deep the barrier across a closed street's mouth is, in pixels. Thin enough to read as
 ## a line drawn across the road, thick enough that nothing walks through it in one frame.

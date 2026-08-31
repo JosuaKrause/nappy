@@ -26,8 +26,8 @@ func run(t) -> void:
 	_test_the_lattice_is_the_lattice(t)
 	_test_a_calm_zone_takes_its_streets_out_of_the_lattice(t)
 	_test_a_tile_knows_which_street_it_is_on(t)
-	_test_an_open_city_has_two_routes_to_everywhere_calm(t)
-	_test_one_closure_is_never_enough_to_cut_a_calm_area_off(t)
+	_test_an_open_city_can_reach_everywhere_calm(t)
+	_test_no_single_street_cuts_off_all_the_calm(t)
 	_test_a_doorway_is_not_a_route(t)
 	_test_every_planned_day_keeps_the_invariant(t)
 	_test_the_home_street_is_never_closed(t)
@@ -135,52 +135,77 @@ func _test_a_tile_knows_which_street_it_is_on(t) -> void:
 # ---------------------------------------------------------------- the routes ---
 
 ## The layout guarantee from docs/CITY.md, restated on the graph: with nothing closed, every
-## piece of calm ground has a choice of ways in. If this ever fails the *generator* is wrong,
-## not the planner, and no closure set could rescue the day.
-func _test_an_open_city_has_two_routes_to_everywhere_calm(t) -> void:
+## piece of calm ground can be walked to. If this ever fails the *generator* is wrong, not the
+## planner, and no closure set could rescue the day.
+##
+## **It asked for two ways in until 2026-08-31**, and the second is an offer now rather than a
+## guarantee: *"the two routes guarantee is not a hard rule."* What replaces it here is not a
+## weaker version of the same sentence but a different one — a hard blocker holds for the whole
+## run, so what it may never do is make calm unreachable, and how many ways round it there are is
+## the city's business. `tests/test_route_tree.gd` is where the second route is measured; the
+## count below is what it came out as, kept as a floor rather than as the promise.
+func _test_an_open_city_can_reach_everywhere_calm(t) -> void:
+	var with_a_choice := 0
+	var total := 0
 	for map in _maps:
 		var home := ClosurePlanner.home_street(map)
 		t.check(home != null, "seed %d: the front door opens onto a street" % map.seed_used)
 		for area in ClosurePlanner.calm_areas(map):
-			t.check(StreetNetwork.route_count(home, area.access, map.blocked_segments(), 2) >= 2,
-					"seed %d: calm area %s has two ways in before anything closes"
+			t.check(StreetNetwork.route_count(home, area.access, map.blocked_segments(), 1) >= 1,
+					"seed %d: calm area %s can be walked to before anything closes"
 					% [map.seed_used, area.block])
+			total += 1
+			if StreetNetwork.route_count(home, area.access, map.blocked_segments(), 2) >= 2:
+				with_a_choice += 1
+	# Measured at 100% of areas on these seeds with the weaker gate in place. A floor well under
+	# it, because the offer is allowed to fail on a map that cannot make it — what would be worth
+	# knowing about is the offer quietly disappearing.
+	t.check(float(with_a_choice) / float(total) >= 0.8,
+			"and most of them still have a choice of ways in (%d of %d)" % [with_a_choice, total])
 
-## Menger, the other way round: two distinct routes means no *single* street is a cut. This
-## checks the flow count against the definition it is standing in for, by actually closing
-## each street in turn — the same brute force `tests/test_generator.gd` uses on the tile
-## grid, on one seed, because it is O(streets x flow).
+## Menger, the other way round, asked about the **city** rather than about one area: no single
+## street may cut off *all* the calm. This is the winnability property the old edge-disjoint rule
+## was standing in for, stated directly — by actually closing each street in turn, the same brute
+## force `tests/test_generator.gd` uses on the tile grid, on one seed because it is
+## O(streets x flow).
 ##
-## The area's own access streets are excluded, and that exclusion is the doorway exemption
-## rather than a convenience: a courtyard has one archway onto one street, so shutting that
-## street does put it out of reach. "Two routes to it" has always meant two routes *to the
-## door* — the same thing it means at the home end, where the street outside the front door
-## is exempt for exactly the same reason. `_test_a_doorway_is_not_a_route` below is the other
-## half of this, and says so out loud.
-func _test_one_closure_is_never_enough_to_cut_a_calm_area_off(t) -> void:
+## **It used to be stated per area and cannot be any more.** *(2026-08-31.)* A calm area with one
+## way in is legitimate — the design says so about courtyards and now about the tree's second
+## probe — so *"this area survives any street being shut"* is false by construction the moment a
+## dead end takes one of its ways in. What is not allowed to be false is that shutting one street
+## leaves her nowhere to go, and that is the sentence worth holding: it is the one whose failure
+## is an unwinnable run rather than a short day.
+##
+## The area's own access streets are excluded, and that exclusion is the doorway exemption rather
+## than a convenience: a courtyard has one archway onto one street, so shutting that street does
+## put it out of reach. `_test_a_doorway_is_not_a_route` below is the other half of this.
+func _test_no_single_street_cuts_off_all_the_calm(t) -> void:
 	var map := _maps[0]
 	var home := ClosurePlanner.home_street(map)
-	for area in ClosurePlanner.calm_areas(map):
-		var doors := {}
-		for segment in area.access:
-			doors[segment.key()] = true
-		var reachable_everywhere := true
-		for segment in StreetNetwork.segments():
-			if segment.key() == home.key() or doors.has(segment.key()):
+	var areas := ClosurePlanner.calm_areas(map)
+	for segment in StreetNetwork.segments():
+		if segment.key() == home.key() or not map.has_street(segment.key()):
+			continue
+		var closed := map.blocked_segments()
+		closed[segment.key()] = true
+		var reachable := 0
+		for area in areas:
+			var doors := {}
+			for door in area.access:
+				doors[door.key()] = true
+			# An area reached only through the street being shut is out of reach today, which is
+			# the doorway exemption and not a failure.
+			if doors.has(segment.key()) and area.access.size() == 1:
 				continue
-			if not map.has_street(segment.key()):
-				continue   # already not there; shutting it is not a thing that can happen
-			var closed := map.blocked_segments()
-			closed[segment.key()] = true
-			if StreetNetwork.route_count(home, area.access, closed, 1) < 1:
-				reachable_everywhere = false
-				break
-		t.check(reachable_everywhere,
-				"calm block %s survives any single street being shut" % area.block)
+			if StreetNetwork.route_count(home, area.access, closed, 1) >= 1:
+				reachable += 1
+		t.check(reachable >= Tuning.MIN_CALM_AREAS_REACHABLE,
+				"shutting %s still leaves %d calm areas to walk to, wanting %d"
+				% [segment.key(), reachable, Tuning.MIN_CALM_AREAS_REACHABLE])
 
 ## The exemption, stated as a fact rather than left implicit: an area with one way in loses
-## it if that way is shut, and it is the *invariant* — two other areas with two routes each —
-## that keeps the day winnable, not any promise about this one.
+## it if that way is shut, and it is the *invariant* — two other areas still reachable — that
+## keeps the day winnable, not any promise about this one.
 ##
 ## A courtyard is the case that matters. If this ever stops finding one, the test has stopped
 ## checking anything and wants pointing at whatever replaced hidden calm.
@@ -192,8 +217,8 @@ func _test_a_doorway_is_not_a_route(t) -> void:
 			if area.access.size() != 1:
 				continue
 			checked += 1
-			t.check(StreetNetwork.route_count(home, area.access, map.blocked_segments(), 2) >= 2,
-					"seed %d: the one archway into %s still has two routes to it"
+			t.check(StreetNetwork.route_count(home, area.access, map.blocked_segments(), 1) >= 1,
+					"seed %d: the one archway into %s can be walked to"
 					% [map.seed_used, area.block])
 			var closed := map.blocked_segments()
 			closed[area.access[0].key()] = true
@@ -210,15 +235,14 @@ func _test_every_planned_day_keeps_the_invariant(t) -> void:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var closures := _plan(map, day)
 			var home := ClosurePlanner.home_street(map)
-			var with_a_choice := 0
+			var reachable := 0
 			var closed := map.blocked_segments(_closed_set(closures))
 			for area in ClosurePlanner.calm_areas(map):
-				if StreetNetwork.route_count(home, area.access, closed, 2) >= 2:
-					with_a_choice += 1
-			t.check(with_a_choice >= Tuning.MIN_CALM_AREAS_WITH_TWO_ROUTES,
-					"seed %d day %d: %d calm areas still have a choice of route, need %d"
-					% [map.seed_used, day, with_a_choice,
-					Tuning.MIN_CALM_AREAS_WITH_TWO_ROUTES])
+				if StreetNetwork.route_count(home, area.access, closed, 1) >= 1:
+					reachable += 1
+			t.check(reachable >= Tuning.MIN_CALM_AREAS_REACHABLE,
+					"seed %d day %d: %d calm areas can still be walked to, need %d"
+					% [map.seed_used, day, reachable, Tuning.MIN_CALM_AREAS_REACHABLE])
 
 ## docs/CITY.md's oldest exemption: the home is a notch in a block with one exit, so sealing
 ## the street outside it seals the player in however well connected the rest of the city is.

@@ -109,6 +109,24 @@ And when a decision *is* overturned with agreement, the note says so in the play
 `asked for X · overturned to Y on <date>, because Z`. A status line that cannot name who agreed is
 a silent overturn that has not been noticed yet.
 
+### A parked option comes back as a question, never as a plan
+
+**A future complaint is not advance approval of the fix somebody parked against it.** *(2026-08-31:
+"I want to make very clear that saying 'I'm feeling lost' is not an endorsement of those ideas and
+doesn't count as approval. The most it does is bringing those items back to discussion.")*
+
+The shape is easy to write without noticing, and `docs/TODO.md` had it: an option is rejected for
+now, and the note says *"the thing that would make this right is a playtest sentence about feeling
+lost."* That reads as a **trigger** — hear the sentence, apply the fix — and it is not one. A
+complaint says the design has a problem. It says nothing about which parked option is the answer,
+or whether the answer is any of them, and the player who says the sentence is describing an
+experience rather than picking off a menu they cannot see.
+
+So when parking something, record **what it was and why it was not taken**, and record the symptom
+as *what would make this worth discussing again*. Never as what would authorise it. This is the
+overturn rule pointing the other way: there, the risk is a decision quietly dropped; here, it is a
+rejected option quietly reinstated by a sentence that was never about it.
+
 ## Names are content, never identifiers
 
 The mother and the baby have names — see `docs/NARRATIVE.md`, which is the one place that says
@@ -797,18 +815,34 @@ far side — then the leader's speed answers "will the last 66px have opened up"
 question about road this car is not yet on. **Ask what the number you are crediting is a fact
 about**: a leader inside the box is the obstacle, not evidence about the road beyond it.
 
-**Every day stays winnable, and winnable more than one way.** The scheduler guarantees at
-least one unspoiled park and a walkable route from home to a park. Since M16 the day carries
-a stronger guarantee on top of it: **at least two distinct routes to at least two distinct
-calm areas**, where distinct means sharing no street. `ClosurePlanner` checks it before
-accepting each closure rather than repairing the day afterwards, so a bad set never exists
+**Every day stays winnable, and it always has somewhere else to go.** The scheduler guarantees
+one unspoiled park and a walkable route from home to a park; on top of that, `ClosurePlanner`
+keeps **at least two distinct calm areas reachable** (`Tuning.MIN_CALM_AREAS_REACHABLE`), checked
+before accepting each closure rather than repairing the day afterwards, so a bad set never exists
 even briefly. Anything new that closes a street must go through it — `tests/test_routes.gd`
 will fail the build if it does not.
+
+**It read "two distinct routes to two distinct calm areas" from M16 to 2026-08-31**, where
+distinct meant sharing no street, and the player's clarification is what moved it: *"the two
+routes guarantee is not a hard rule."* Two things to keep straight about the weakening, because
+both are ways it could go quietly wrong:
+
+- **The count did not move, only the strength.** Two *areas* is what stops a day arriving where
+  the only calm left is the one this morning spoiled. Dropping to one reachable area is the
+  unwinnable day the constant has existed to prevent since M16, and it is a different decision
+  from this one.
+- **Edge-disjointness was a stand-in, and what it stood in for now has its own statement.** By
+  Menger, two routes meant *no single street is a cut* — so `tests/test_routes.gd` asserts that
+  sentence directly now, about the city rather than about each area: **no one street cuts off all
+  the calm.** A second route to any given area is an offer the day makes when the map allows one
+  (`RouteTree`, and it managed 241 areas of 241), and under M50 a wall is placed off the day's
+  tree, so what protects the calm is *where a closure goes* rather than how many ways round it
+  there are.
 
 Two exemptions, and they are the same exemption at both ends of the journey: **a doorway is
 not a route.** The street outside the home is never closed (the home is a notch with one
 exit), and an area is reached by arriving at *either end* of a street it opens onto, so a
-courtyard with one archway can still have two routes to it.
+courtyard with one archway is still reachable two ways.
 
 **The words for placement are fixed, and there are three axes rather than one.** *(Adopted from
 the player, 2026-08-31; the full table is `docs/CITY.md`, "The words for it".)* A blocker has a
@@ -1171,10 +1205,20 @@ Do not "fix" these without a reason; each was a decision.
   shape — place N closures, then drop them until the day is legal — has an order-dependent
   answer and a window where the day is illegal. Testing each candidate against the invariant
   before accepting it is the same cost and has neither problem.
+
+  **The same rule applies to events and it took until 2026-08-31 to notice.**
+  `_ensure_one_usable_park` planned the whole day and then deleted whatever had landed on calm
+  ground she had not used — *"why are 7-9 unvisited calm areas spoiled? Just don't place events
+  there!"* Refusing the ground (`EventScheduler._calm_to_leave_alone`) keeps every unvisited area
+  clean on 64 planned days of 64 **and raises the density**, because a repair spends the budget
+  twice. If you find yourself writing a pass that deletes what a previous pass placed, this is
+  the rule you are about to rediscover.
 - **Counting distinct routes is a max flow, not a search for routes.** Two edge-disjoint
   paths is what "two distinct routes" means, and by Menger's theorem it is also "no single
   street cuts this off". Two BFS augmentations on a 64-node graph, not a flood fill over ten
-  thousand tiles — which is why it can run on every candidate closure, every day.
+  thousand tiles — which is why it can run on every candidate closure, every day. Since the
+  guarantee weakened to reachability the flow is usually asked for one path rather than two, and
+  the machinery is the same.
 - **No spatial hash for events.** The budget tops out near 22 concurrent events. A linear
   scan is free and a hash is more code with more ways to be subtly wrong.
 - **No `impulse` field on events.** A sharp spike is a short `duration` at high `intensity`,
