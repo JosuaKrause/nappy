@@ -38,6 +38,34 @@ enum EventKind {
 	SCRIPTED,  ## The scheduler is told exactly which day it fires.
 }
 
+## What a blocker does to a route that meets it. *(docs/CITY.md, "The words for it", adopted from
+## the player 2026-08-31.)*
+##
+## **`LETHAL` is not the top of a scale**, it is a different thing: the other two are prices and it
+## is an ending. And a body is not `IMPASSABLE` — since M34 almost everything that stands still is
+## solid at the width it is drawn, and a café she walks round is `COSTLY` like the dog walker
+## beside it. What is impassable is a thing that takes the **street**, which in this game is a
+## closure and nothing else.
+enum BlockerEffect {
+	LETHAL,      ## Ends the day.
+	IMPASSABLE,  ## Stops passage, does not kill.
+	COSTLY,      ## Passable at a price she can read before committing.
+}
+
+## What the scheduler placed a blocker **for**. *(M50 step 2; the third of the three axes in
+## docs/CITY.md, "The words for it", and the one that did not exist until now.)*
+##
+## The three are stated relative to the day's **corridor**, and none of them means anything without
+## one — which is why they arrived in the same milestone as `RouteTree`. `NONE` is not a fourth
+## kind: it is everything the day puts down for a reason that is not about the route at all, so an
+## ambient playground, a scar the run left and the spoilers of a park she used carry it.
+enum BlockerRole {
+	NONE,       ## Not placed against the corridor.
+	WALL,       ## Placed to bound it: off the routes, ideally on a turning off one.
+	FRICTION,   ## Placed inside it, on the route she is meant to take.
+	SET_PIECE,  ## Placed so that she meets it, whichever way she goes.
+}
+
 enum TileType {
 	BUILDING,
 	SIDEWALK,

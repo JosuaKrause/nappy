@@ -1073,6 +1073,14 @@ event several bodies, and `contribution_at` then sums over them. Reach for it on
 genuinely is a number of creatures, and set `flock_spread` out of `outer_radius` rather than on top
 of it — see the invariant above.
 
+**The role is not a decision either.** *(M50 step 2.)* `EventScheduler._role_for` reads it off the
+def — lethal is a **wall** and goes off the day's corridor, a one-shot is a **set piece** and goes
+where every route touches it, anything else placed on a tile is **friction** and is weighted onto
+the corridor — so a new row is placed against the day's routes without anybody writing a rule for
+it. What *is* a decision is `hard_fail`, which now decides where the thing goes as well as what it
+does. If a new row wants a role its effect does not imply, that is a design conversation and a
+change to `_role_for`, not a field on the def.
+
 `obstructs_radius` is **not** a decision: if it stands still and it is drawn, it is solid at half
 its silhouette (see the invariant above). `pavement_side` usually is not one either — `ANY` is
 right for almost everything, and the two rows that use it do so because a parked vehicle belongs

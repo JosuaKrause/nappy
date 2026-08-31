@@ -527,15 +527,29 @@ scale, it is a different thing:
 | **impassable** | stops passage, does not kill | road closures |
 | **costly** | passable at a price she can read before committing | restaurant, dog walker, yeller |
 
-**Role — what the scheduler is placing it *for*.** This is the axis that does not exist yet, and it
-is the whole of the work:
+**Role — what the scheduler is placing it *for*.** `GameEnums.BlockerRole` since M50 step 2, and
+it is recorded on the thing that was placed rather than derived from it: the same `cyclist` row is
+a wall on a day it is rolled onto a street and nothing at all when the director sites one in front
+of her.
 
 - **wall** — placed to *bound* the corridor. Hard blockers are always walls; lethal soft ones are
-  walls for a day.
+  walls for a day. **Never inside the corridor**, preferentially on the rim — the turnings off it,
+  which is where a wall can be seen from and therefore where it bounds anything
+  (`EVENT_WALL_RIM_WEIGHT`).
 - **friction** — placed *inside* the corridor, on the route she is meant to take, to make the route
-  worth thinking about. Costly blockers.
+  worth thinking about. Costly blockers. A weight (`EVENT_CORRIDOR_WEIGHT`) rather than a rule,
+  because a city whose off-route streets are empty reads as a set.
 - **set piece** — an authored one-shot placed so that she actually **meets** it, rather than so it
   exists somewhere. See the fire engine below.
+- **none** — not placed against the corridor at all, which is the honest answer for an ambient
+  playground, a scar the run left, the spoilers of a park she used, and anything the director sites
+  in front of her. It is not a leftover bin: calling the charging dog a wall would claim a
+  placement nothing made.
+
+The three are stated relative to the corridor and none of them means anything without one, which
+is why they arrived in the same milestone as `RouteTree`. `Corridor` is the one translation from
+the tree's segment keys to the tile a placement actually happens on — *inside*, *rim* or *away* —
+so an event, a closure and the telemetry picture all mean the same thing by the words.
 
 And the thing the roles are stated relative to needs a name too: **the corridor** — the ground
 today's routes run through, from the doorstep to the calm areas that are still worth reaching.

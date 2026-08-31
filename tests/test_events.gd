@@ -50,6 +50,7 @@ func run(t) -> void:
 	_test_nothing_stands_on_the_doorstep_street(t)
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
+	_test_the_day_is_placed_by_role(t)
 
 # ------------------------------------------------------------------ fairness ---
 
@@ -1603,3 +1604,64 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 				"'%s' draws %s, which nothing else draws (else '%s')"
 				% [def.id, path.get_file(), seen.get(path, "")])
 		seen[path] = def.id
+
+# --------------------------------------------------- placement by role (M50) ---
+
+## The two halves of `EventScheduler._role_for`, checked in one pass over the days because each of
+## them costs a whole `build_day` and the suite is already the slowest thing in this project.
+##
+## **A lethal event is a wall, and a wall is never inside the corridor.** *(`docs/CITY.md`: "hard
+## and lethal blockers form the paths — they are the walls… the route is what is left between
+## them.")* This is the one absolute in `_copies_of` and it is what the milestone can most easily
+## get wrong: a lethal row on the route she is being guided down is not a wall in the wrong place,
+## it is the guidance pointing at the thing it exists to point away from.
+##
+## **Friction is aimed at the route**, which is the other half of the same sentence: *"benign
+## blockers go on the route… to make it more challenging."* That one is a **weight** and is
+## asserted as a proportion. About a third of the ground is on the corridor, so an unweighted day
+## lands about a third of its costly rows there — measured at 34% with `EVENT_CORRIDOR_WEIGHT`
+## flattened to 1, against 64% at 4. Half is a floor with room in it rather than a measurement, and
+## the upper bound matters as much: a corridor carrying nearly all of it would mean every street
+## off the route is empty, which reads as a set rather than as a city.
+##
+## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
+## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to
+## be walking, so it is by construction on her route and the scheduler never chose a tile for it.
+## That is why `_role_for` calls it `NONE` — see the note there.
+##
+## Five days rather than fourteen. What is being checked is a property of the construction, and the
+## days are sampled across the acts so that the catalogue's lethal rows (none before day 5) and its
+## late density are both in the sample.
+func _test_the_day_is_placed_by_role(t) -> void:
+	var map := _map()
+	var walls := 0
+	var friction_on_the_route := 0
+	var friction := 0
+	for day in [1, 5, 8, 11, 14]:
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		map.repaint(state)
+		var tree := RouteTree.for_day(map, day)
+		var corridor := Corridor.of(tree)
+		var consumed: Array[String] = []
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+			if not plan.is_placed():
+				continue
+			var where := corridor.where(map.world_to_tile(plan.position))
+			if plan.role == GameEnums.BlockerRole.WALL:
+				walls += 1
+				t.check(plan.def.effect() == GameEnums.BlockerEffect.LETHAL,
+						"day %d: '%s' is a wall because it ends the day" % [day, plan.def.id])
+				t.check(where != Corridor.Where.INSIDE,
+						"day %d: the wall '%s' at %s is off the corridor"
+						% [day, plan.def.id, TelemetryLog.tile(map.world_to_tile(plan.position))])
+			elif plan.role == GameEnums.BlockerRole.FRICTION:
+				friction += 1
+				if where == Corridor.Where.INSIDE:
+					friction_on_the_route += 1
+	# A sample with no walls in it would pass every assertion above and mean nothing.
+	t.check(walls > 20, "the days sampled place walls at all (%d)" % walls)
+	t.check(friction > 0, "and friction at all (%d)" % friction)
+	var share := float(friction_on_the_route) / maxf(1.0, float(friction))
+	t.check(share > 0.45, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
+	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))

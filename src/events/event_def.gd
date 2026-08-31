@@ -297,6 +297,18 @@ enum Pavement {
 ## Narrative act, for palette and audio in M7.
 @export var act_tag := 1
 
+## What this row does to a route that meets it, in the words `docs/CITY.md` fixes.
+##
+## **No row in the catalogue is `IMPASSABLE`**, and that is a statement about the vocabulary rather
+## than a gap in it: impassable means *stops passage without killing*, which in this game is a
+## closure taking a whole street. An event with a body takes part of a pavement, so it is walked
+## round at a price — `costly`, like the dog walker with no body beside it. It would be easy to
+## read `obstructs_radius > 0.0` as impassable and it is the same mistake `CLAUDE.md` warns about
+## on the other side: *if a rule tests `obstructs_radius`, ask whether it means* has a body *or*
+## closes ground.
+func effect() -> GameEnums.BlockerEffect:
+	return GameEnums.BlockerEffect.LETHAL if hard_fail else GameEnums.BlockerEffect.COSTLY
+
 func available_on(day: int) -> bool:
 	if kind == GameEnums.EventKind.SCRIPTED:
 		return scripted_day == day

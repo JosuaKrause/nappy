@@ -196,6 +196,48 @@ Measure what a day *places*, over several seeds; deriving it from the formula ge
 is too small and looks right. Since M27 an `AHEAD_OF_PLAYER` event costs the same budget and
 takes no tile, so a day's `plan` line reads as *n sited, m ahead*.
 
+### Where in the city, and why *(M50 step 2)*
+
+Until M50 a placement was a uniform roll over every tile of the right type, weighted only by
+whether the tile was in a precinct. It is now also weighted by what the day is placing the thing
+**for** — its **role**, in the vocabulary `docs/CITY.md` fixes — against the day's **corridor**,
+which is the ways from the doorstep to the calm areas still worth reaching.
+
+`EventScheduler._role_for` answers it off the def and nothing else has to be written per row:
+
+| kind of row | role | where it may go |
+| --- | --- | --- |
+| lethal (`hard_fail`) | **wall** | never inside the corridor; `EVENT_WALL_RIM_WEIGHT` toward a turning off it |
+| everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
+| a `ONE_SHOT` | **set piece** | a site every route touches |
+| `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler | **none** | wherever its own rule says |
+
+Two things about the mechanism rather than the table. It is **the same weighting the precinct
+already used** — a tile is offered to the roll several times over — so every spacing rule
+downstream keeps working unchanged and nothing new can refuse a placement. And **exactly one of
+these is a rule rather than a weight**: a wall is never inside the corridor. That one can be
+absolute because the rest of the city stays available to it, so it cannot starve a row of ground;
+everything else is a weight for exactly the reason it could.
+
+Measured over six seeds, per day, with both weights flattened to 1 and then at 4. Flattened is the
+honest control: it leaves the *rule* in place and takes only the *preference* away, so what the
+arrows show is what the weighting bought rather than what the whole milestone did.
+
+| | day 1 | day 5 | day 9 | day 14 |
+| --- | --- | --- | --- | --- |
+| placed | 111 → 111 | 145 → 145 | 175 → 175 | 201 → 201 |
+| costly rows on the corridor | 34% → **64%** | 39% → **63%** | 33% → **53%** | 31% → **52%** |
+| lethal rows on the rim | — | 63% → **80%** | 40% → **64%** | 31% → **59%** |
+| lethal rows placed | — | 8.8 → 9.0 | 16.7 → 16.7 | 17.0 → 17.0 |
+
+Three things in it. **The density did not move**, which it must not: the role changes *where* the
+budget is spent and never how much of it there is. **Neither did the lethal count**, which is the
+one the rule could have broken — refusing a quarter of the city to the rows that are hardest to
+place (a `hard_fail` event must clear its whole outer radius of everything else, with no fallback)
+could have quietly stopped placing them, and it did not. And **the share drifts down with the
+day** because the corridor fills up and `EVENT_SPACING_SAME` pushes the overflow outward, which is
+the spacing rule doing its job rather than the weight failing.
+
 ### Danger, and when it arrives *(M31)*
 
 Playtest 05, finding 5: *"day two doesn't feel more difficult than day one. Having day one

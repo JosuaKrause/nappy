@@ -35,6 +35,15 @@ class Planned extends RefCounted:
 	## True for something the *run* left here rather than something today rolled — a burnt-out
 	## shell, a barricade. It is world history and the day may not tidy it away.
 	var permanent := false
+	## What the day placed this **for**, against today's corridor. See `GameEnums.BlockerRole` and
+	## `EventScheduler._role_for`.
+	##
+	## It is recorded rather than re-derived because it is not a function of the def: the same
+	## `cyclist` row is a wall on a day it is rolled and nothing at all when the director sites one
+	## in front of her, and the one picture built to check this milestone's placements has to be
+	## able to say which. Nothing in the game reads it — it decides where the plan went, it does
+	## not decide anything afterwards.
+	var role := GameEnums.BlockerRole.NONE
 	## True once it has been in the world at least once. What it is *for* is the bookkeeping
 	## that must happen exactly once however many times an event is streamed in and out: a
 	## burnt-out shell records the fire that made it the first time it is seen and never again.
@@ -132,9 +141,13 @@ const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 ## `used_calm` is every calm area she has settled in so far this act, most recent first. See
 ## `_spoil_the_park_she_used`, and `GameState.settled_this_act` for why it is an act rather than a
 ## night.
+## `tree` is the day's corridor and it is what every placement below is stated against. The caller
+## passes the one the closures were placed off; a rig with none to hand grows the same tree, since
+## `RouteTree.for_day` is a pure function of the city's seed and the day number and touches no
+## gameplay stream.
 static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
-		used_calm: Array[Vector2i] = []) -> Array[Planned]:
+		used_calm: Array[Vector2i] = [], tree: RouteTree = null) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
@@ -143,21 +156,46 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	# `_ground_for`; it is threaded through rather than kept on the map because its lifetime is
 	# exactly one day and a cache with a shorter life than its invalidation rule is a bug waiting.
 	var ground := {}
+	# Where the day's routes run, as a question about a tile. This is what turns *wall* and
+	# *friction* from words into placements — see `_role_for` and `_ground_for`.
+	var corridor := Corridor.of(tree if tree else RouteTree.for_day(map, day))
 
 	# The calm she has not used yet, which nothing today may be placed near. See `_calm_to_leave_alone`.
 	var leave_alone := _calm_to_leave_alone(map, used_calm)
 
 	planned.append_array(_place_ambient(day, map))
 	planned.append_array(_place_scars(day, scars))
-	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone)
-	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground, leave_alone)
+	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor)
+	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
+			leave_alone, corridor)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm)
-	_fill_with_recurring(day, base, map, planned, ground, leave_alone)
+	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor)
 	_ensure_the_run_is_taught(day, planned)
 
 	_ensure_one_usable_park(map, planned, used_calm)
 	_ensure_the_city_is_still_walkable(map, planned)
 	return planned
+
+## What the day is placing a row **for**, which is the axis M50 added and the only thing that makes
+## *wall* and *friction* mean anything. See `docs/CITY.md`, "The words for it".
+##
+## Three of the four answers come straight off the design: *"hard and lethal blockers form the
+## paths — they are the walls"*, *"benign blockers go on the route"*, and a one-shot is *"an
+## authored set piece placed so that she actually meets it"*. The fourth is the interesting one.
+##
+## **`NONE` is not a leftover bin, it is the honest answer for anything the day did not site
+## against the corridor at all.** An `AHEAD_OF_PLAYER` row is the case that proves it: a charging
+## dog is lethal and is not a wall, because `EventDirector` puts it in front of wherever she turns
+## out to be walking and the scheduler never chooses a tile for it. Calling it a wall would put a
+## mark on the telemetry map claiming a placement that nothing made — which is the exact failure
+## the picture exists to catch, arriving through the legend.
+static func _role_for(def: EventDef) -> GameEnums.BlockerRole:
+	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER \
+			or def.kind == GameEnums.EventKind.AMBIENT:
+		return GameEnums.BlockerRole.NONE
+	if def.kind == GameEnums.EventKind.ONE_SHOT:
+		return GameEnums.BlockerRole.SET_PIECE
+	return GameEnums.BlockerRole.WALL if def.hard_fail else GameEnums.BlockerRole.FRICTION
 
 ## A private RNG for one phase of the day, derived from the day's seed and a salt.
 ##
@@ -434,15 +472,16 @@ static func _place_ambient(day: int, map: CityMap) -> Array[Planned]:
 	return planned
 
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
-		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = []) -> void:
+		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
+		corridor: Corridor = null) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day):
-		var placement := _place_one(def, rng, map, planned, ground, leave_alone)
+		var placement := _place_one(def, rng, map, planned, ground, leave_alone, corridor)
 		if placement:
 			planned.append(placement)
 
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed: Array[String], planned: Array[Planned], ground := {},
-		leave_alone: Array[Rect2] = []) -> void:
+		leave_alone: Array[Rect2] = [], corridor: Corridor = null) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day):
 		if def.id in consumed:
 			continue
@@ -458,7 +497,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today"
 					% [def.id, roll, threshold])
 			continue
-		var placement := _place_one(def, rng, map, planned, ground, leave_alone)
+		var placement := _place_one(def, rng, map, planned, ground, leave_alone, corridor)
 		if not placement:
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
@@ -481,7 +520,8 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## run's own history has changed the ground: a scar still displaces the events it actually stands
 ## on, and every other event is where it was yesterday.
 static func _fill_with_recurring(day: int, base: int, map: CityMap,
-		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = []) -> void:
+		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
+		corridor: Corridor = null) -> void:
 	var eligible := EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day)
 	if eligible.is_empty():
 		return
@@ -501,7 +541,7 @@ static func _fill_with_recurring(day: int, base: int, map: CityMap,
 			break
 		var rng := _stream(base, FILL_SALT + attempt)
 		var def := _pick_weighted(affordable, rng)
-		var placement := _place_one(def, rng, map, planned, ground, leave_alone)
+		var placement := _place_one(def, rng, map, planned, ground, leave_alone, corridor)
 		if not placement:
 			continue
 		planned.append(placement)
@@ -534,7 +574,9 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 ## The fallback is the roomiest candidate offered rather than nothing, because a scripted event
 ## has to happen: on a map with fifty events on it the honest answer is the best spot left.
 static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
-		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = []) -> Planned:
+		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = [],
+		corridor: Corridor = null) -> Planned:
+	var role := _role_for(def)
 	# An `AHEAD_OF_PLAYER` event is budgeted here and sited by `EventDirector` while the player
 	# walks. Costing it here rather than giving the director its own allowance is deliberate:
 	# the cat competes with the café tables and the roadworks for the same day, so making the
@@ -542,7 +584,7 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 		return Planned.new(def, Vector2.INF)
 
-	var open_candidates := _ground_for(def, map, ground)
+	var open_candidates := _ground_for(def, map, ground, corridor, role)
 	if open_candidates.is_empty():
 		return null
 
@@ -553,6 +595,7 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		var candidate := _build_placement(def, map, tile, rng)
 		if not candidate:
 			continue
+		candidate.role = role
 		# Before the spacing, because this one is about the *ground* rather than about what is
 		# already on it, and because it can never bend.
 		if _reaches_any(candidate, leave_alone):
@@ -577,10 +620,43 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 ## repainted at dawn and the day's closures are already on the map.
 ##
 ## The key is the *question* rather than the event, because almost every row in the catalogue asks
-## the same one — a pavement, either side — so one list serves most of the day. The order is exactly
-## the order the two loops used to produce, since the placement roll is an index into it and a day
-## has to be reproducible from its seed.
-static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary) -> Array[Vector2i]:
+## the same one — a pavement, either side, for this role — so one list serves most of the day. The
+## order is exactly the order the two loops used to produce, since the placement roll is an index
+## into it and a day has to be reproducible from its seed.
+##
+## **The role is part of the question since M50 step 2**, and it is answered the way the precinct
+## weight already was: by how many times a tile is *offered*, rather than by a rule downstream.
+## Everything that reads this array — the roll, the spacing, the room measurement — keeps working
+## unchanged, which is the whole reason the precinct weight was built that way and the reason it is
+## worth copying rather than inventing a second mechanism beside it.
+## **The role's list is built out of the roleless one rather than beside it**, and that is a cost
+## decision with a number behind it. The scan itself is the expensive half — two passes over every
+## sidewalk in the city, with a closure test, a doorstep test and a kerb test on each — and doing
+## it once per role made `tests/test_events.gd` twice as slow on its own. The role only ever
+## *re-weights* tiles the scan already accepted, so it is a second pass over a list that is already
+## in memory. `CLAUDE.md`'s note about `_ground_for` applies to the base list unchanged: nothing it
+## depends on can move inside one `build_day`.
+static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
+		corridor: Corridor = null, role := GameEnums.BlockerRole.NONE) -> Array[Vector2i]:
+	var base := _open_ground_for(def, map, ground)
+	if not corridor or role == GameEnums.BlockerRole.NONE:
+		return base
+	var key := "%s|%d|%d" % [def.placement, def.pavement_side, role]
+	if ground.has(key):
+		return ground[key]
+	var aimed: Array[Vector2i] = []
+	for tile in base:
+		for _copy in _copies_of(tile, corridor, role):
+			aimed.append(tile)
+	ground[key] = aimed
+	return aimed
+
+## Every tile of the right kind that anything may stand on today, precinct weighting included.
+##
+## **A precinct is a retail street**, so it carries more of the day than a length of ordinary
+## pavement does. *(Playtest 12, finding 1: "they should have a higher density of events" — a
+## precinct is where the cafés and the market stalls and the buskers are.)*
+static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) -> Array[Vector2i]:
 	var key := "%s|%d" % [def.placement, def.pavement_side]
 	if ground.has(key):
 		return ground[key]
@@ -595,18 +671,31 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary) -> Arra
 					or not _wants_this_side(def, map, candidate):
 				continue
 			open.append(candidate)
-			# **A precinct is a retail street**, so it carries more of the day than a length of
-			# ordinary pavement does. *(Playtest 12, finding 1: "they should have a higher density
-			# of events" — a precinct is where the cafés and the market stalls and the buskers
-			# are.)* Weighting the candidate list rather than adding a placement rule: the roll is
-			# an index into this array, so offering a tile several times *is* the weighting, and
-			# every spacing rule downstream keeps working unchanged.
 			if map.street_kind_at(true, candidate) == GameEnums.StreetKind.PEDESTRIAN \
 					or map.street_kind_at(false, candidate) == GameEnums.StreetKind.PEDESTRIAN:
 				for _extra in Tuning.EVENT_PRECINCT_WEIGHT - 1:
 					open.append(candidate)
 	ground[key] = open
 	return open
+
+## How many more times a tile is offered to the roll because of what the day is placing there.
+##
+## Zero means the tile is not offered at all, and there is exactly one case of it — **a wall is
+## never inside the corridor.** Every other preference here is a weight, because a weight cannot
+## starve a row of ground and a filter can. What makes this one safe to state absolutely is that
+## the rest of the city stays available to it: a wall wants the rim, it settles for anywhere else
+## off the routes, and only the routes themselves are refused.
+static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.BlockerRole) -> int:
+	var where := corridor.where(tile)
+	match role:
+		GameEnums.BlockerRole.WALL:
+			if where == Corridor.Where.INSIDE:
+				return 0
+			return Tuning.EVENT_WALL_RIM_WEIGHT if where == Corridor.Where.RIM else 1
+		GameEnums.BlockerRole.FRICTION:
+			return Tuning.EVENT_CORRIDOR_WEIGHT if where == Corridor.Where.INSIDE else 1
+		_:
+			return 1
 
 ## The street the front door opens onto, which nothing is placed on. *(M43, playtest 11 finding 1:
 ## "events/hazards should not spawn on the home block".)*

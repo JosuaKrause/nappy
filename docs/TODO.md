@@ -2816,11 +2816,46 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
 
 ### Step 2 — placement by role
 
-- [ ] **`EventScheduler.build_day` takes the `RouteTree`.** The phase list stays and gains the tree
+- [x] **`EventScheduler.build_day` takes the `RouteTree`.** The phase list stays and gains the tree
       as an input; each placement phase gets a **role** and asks the tree a different question —
       walls for segments just *outside* a corridor, friction for segments *inside* one, set pieces
       for a covering set. Keep `_stream(base, salt)` per phase; a phase whose consumption changes
       needs its own stream, which is M39's rule and this changes several
+
+      **Built, and the role turned out to be a property of the *row* rather than of the phase.**
+      The item above says "each placement phase gets a role", and written that way it is wrong in
+      the one case that matters: the recurring fill is a single phase and it places both the walls
+      and the friction, because what decides which a thing is is whether it ends the day.
+      `EventScheduler._role_for` is four lines and no row in the catalogue carries a role field.
+      *(The phase salts did not have to move for the same reason — no phase changed how much it
+      draws, only which tiles the array it draws from contains.)*
+
+      Four things worth carrying:
+
+      - **The mechanism is the precinct weight, not a new one.** A tile is offered to the roll
+        several times over, so the roll, the spacing and the room measurement all keep working
+        unchanged and nothing new can refuse a placement. **One thing is a rule and not a weight**
+        — a wall is never inside the corridor — and that one is safe to state absolutely only
+        because the rest of the city stays available to it.
+      - **`Corridor` is the translation, and it had to exist.** `RouteTree` is segment keys and a
+        placement is a **tile**, and sixteen rows of the catalogue stand on alley, park, square or
+        courtyard ground where `segment_containing` returns null. A classification written over
+        segments alone would have made `alley_robbery` unplaceable while the whole suite passed. A
+        block interior answers for the four streets around it; a junction for the streets that meet
+        at it.
+      - **Measured, and the two numbers that had to *not* move did not.** Placed per day is
+        identical (111 / 145 / 175 / 201 over six seeds), and so is the count of lethal rows —
+        which was the real risk, since a `hard_fail` placement must clear its whole outer radius of
+        everything else with no fallback, and refusing it a quarter of the city could have quietly
+        stopped placing it. What moved is where: costly rows on the corridor 34% → 64% on day 1,
+        lethal rows on the rim 63% → 80% on day 5. The table is in `docs/EVENTS.md`.
+      - **And it cost the suite time, which is worth writing down because the first version cost
+        twice as much.** Every `build_day` now grows a tree, and `tests/test_events.gd` plans a lot
+        of days. The first version also keyed the *whole ground scan* by role, so two passes over
+        every sidewalk in the city ran three times a day instead of once — 44s → 88s. The role only
+        ever re-weights tiles the scan already accepted, so it is a second pass over a list already
+        in memory (`_open_ground_for`), and `Corridor` caches its answer per lattice cell rather
+        than allocating an array per tile. 88 → 68s, of which about ten is the new test itself
 - [x] **`ClosurePlanner` places closures as walls, off the tree.** `CLOSURE_ROUTE_BIAS` inverts:
       the weight goes to segments that are *not* on a branch, and preferentially to those leading
       away from calm. Keep the `_invariant_holds` check on each candidate — a wall off the tree
