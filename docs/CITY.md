@@ -507,6 +507,16 @@ It may not be *steered onto her*: `AHEAD_OF_PLAYER` is for moments, and a fire e
 deliberately a **place**. What makes it a place and still unmissable is the candidate set, not a
 director.
 
+**"All routes" is load-bearing and means routes, not destinations.** *(Measured in M50, when
+`RouteTree.covering_sites` was built.)* A covering set that counts an area as met when **either**
+of its two ways in is met comes back as a **single** street on nine planned days out of 32 — the
+one they all share on the way out. Placed there, the set piece is met by a player who takes the
+first way out of everywhere and missed by one who takes the second, which is the "tile she must
+cross" mistake with a covering set drawn round it. Covering every route costs nothing extra and
+cannot go wrong that way: the two routes to one area share no street by construction, so no single
+site can cover both, and *"at least two places"* is arithmetic rather than a rule anybody enforces.
+It comes out at two to six sites against about fifteen routes.
+
 **Two invariants this runs into, and both turned out smaller than a first pass claimed.**
 
 - **Chokepoints and edge-disjointness barely conflict at all.** A first draft read a chokepoint as
