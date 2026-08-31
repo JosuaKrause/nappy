@@ -241,6 +241,19 @@ day — a police car drives north showing its flank, and a car reaches the bridg
 Two of the seven are about the frame rather than the game, and one is a report the player is not
 sure about and is recorded as exactly that.
 
+**Playtest 16 landed live and is `M53`, queued by the player *after* M52's traffic lights.** Three
+findings and one complaint: **the crowd travels a lattice that is not the city** — onto a bridge
+with no footway, off a bulkhead into the sea, through crossroads whose arms are grass, vanishing
+each time where somebody is looking at it. Underneath two of the three is a missing rule: a
+junction is drawn wherever two corridors cross, whether or not its arms are streets. None of it is
+news to this file, and that is the part to read: M41 has carried the T-junction item unbuilt for
+twelve milestones and M51 finding 1 was the same defect on a cul-de-sac. **A finding that arrives
+twice from a player after being written down once by the project is a to-do that was filed and not
+read.**
+
+**So the running order is `M52` then `M53`**, on the player's instruction, and the third of M52's
+three items is the one M53 waits on.
+
 **And the next three are asked for and written down: `M52`.** *"2x2 courtyard and rectangular calm
 zones, calm zone rate adjustments, traffic light placements."* Recorded in the player's own words,
 with this side's reading kept separate from it and four questions that have to go back before any
@@ -3254,6 +3267,54 @@ rather than to move a number.
       a report that the ending was unreadable — three screens deep, in the fiction's own voice,
       dismissed with the same key as everything else. Finding 5 is the fix and this is the evidence
       for it. Reopen it if the counter is ever seen to move with nerves still on the HUD
+
+## M53 — A junction is made of the streets that meet at it · not started, queued after M52's lights
+
+**Ordered by the player: *"queue those fixes after the traffic light fix."*** So M52's third item
+goes first and this follows it, which is the right way round for a reason worth writing down — the
+lights are a decision about **which junctions are junctions at all**, and three of the four items
+below are about what a junction is made of. Building them against a lattice that is about to be
+re-asked the same question would be doing the work twice.
+
+
+Playtest 16, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. Three findings and they are one
+complaint: **the crowd travels a lattice that is not the city.** It walks onto a bridge with no
+footway, off a bulkhead into the sea, and through crossroads whose arms are grass — and in every
+case it then vanishes where somebody is looking at it. Underneath the first two is one missing
+rule: the lattice draws a full crossroads wherever two corridors cross, whether or not the arms of
+it are streets.
+
+**Neither of these is news to the repo, which is the part worth noticing.** M41 has carried
+*"T-intersections everywhere else on the edge — the lattice currently runs into the boundary and
+stops"* as an unbuilt item for twelve milestones, and M51 finding 1 was this exact defect on a
+cul-de-sac, fixed there for the crowd's *view* of the wall and not for the junction that should
+never have been drawn. A finding that arrives twice from a player after being written down once by
+the project is a to-do that was filed and not read.
+
+- [ ] **Cars and people still go off the map** — finding 1, and *"still"* is the word to read.
+      M51's fix was deliberately narrow: overrunning the boundary is for **a car on the main road
+      going north or south**, because outside the map is water, forest and mountainside. Everybody
+      else keeps "the tile of slack they had", and this report is that the slack is visible at an
+      edge with nothing beyond it, for people as well as cars. Two candidate causes and they want
+      different fixes — the agent is **recycled on screen** (M35's *"nothing vanishes while you are
+      looking at it"*, which has never reached the crowd away from the three holes in the border),
+      or the **junction should not be there**, which is finding 2
+- [ ] **A junction between two precinct arms is still asphalt with zebras on it.** A precinct is
+      laid `SIDEWALK` frontage to frontage by `CityGenerator._street_tile`; the junction between two
+      of them was never included, so a pedestrianised stretch has a road crossing in the middle of
+      it
+- [ ] **A junction whose arm is not a street has three arms, not four.** The shore, a park, a calm
+      zone's absorbed corridor — `CityMap.absent_segments` and the map edge already say which arms
+      exist. Nothing that draws a junction asks
+- [ ] **Only cars go over the bridge** — finding 3, and it is M51 finding 7's own sentence read
+      back. A bridge is *"a stretch of carriageway with no pavement beside it"*, which is the whole
+      design and is why she may walk onto it and be run over rather than be stopped by a wall. The
+      **overrun permission** was narrowed to a car on the spine and the **lane** was not, so a
+      walker's lanes still run the length of a corridor that at the boundary is a bridge. Note what
+      is not being asked for: the bridge is not to be made safe
+- [ ] **And the crowd has to agree with the drawing**, which is M51 finding 1's lesson arriving
+      where it was pointing: a T-junction the paint knows about and `CrowdAgent._divert` does not is
+      the same bug in the other direction
 
 ## M52 — The calm has a shape, and the lights have a reason · not started
 
