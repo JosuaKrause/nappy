@@ -3388,7 +3388,7 @@ project now has the instrument to say whether it closed.
 - [x] **The word on the title screen has an outline** *(finding 4)*
 - [x] **Evidence lives in `docs/evidence/`** *(finding 10)*, with the rule in `CLAUDE.md`. Three
       references the docs already carried were found to be dead
-- [ ] **Off the corridor has to cost what it was designed to cost** *(findings 1 and 12)*. **Closed
+- [x] **Off the corridor has to cost what it was designed to cost** *(findings 1 and 12)*. **Closed
       from M50's own entry rather than given a second design** — see "What M50 still owes", which
       already carries the measurement (*day 1 is ~6× denser on the corridor than off it, and only
       16.2 of its 113.6 placements are walls at all*) and the reason (*the expensive rows have low
@@ -3400,9 +3400,39 @@ project now has the instrument to say whether it closed.
       "off-corridor is cheap" but that **the two are the wrong way round**: stepping off the paths
       is a step into quieter ground.
 
-      Now measurable, which it was not when M50 wrote the entry: play or walk a day and read the
-      `path` line. What has to be true afterwards is that a run spending its time off the corridor
-      costs *more* than one on it
+      **Built, and the measurement is the entry.** Cost per tile of street, five seeds, before and
+      after:
+
+      | | on corridor | rim (1 away) | deep (2+) |
+      |---|---:|---:|---:|
+      | day 1, before | **0.231** | 0.164 | 0.235 |
+      | day 1, after | 0.202 | **0.253** | 0.216 |
+      | day 5, before | **0.265** | 0.189 | 0.252 |
+      | day 5, after | 0.211 | 0.263 | **0.263** |
+      | day 9, before | 0.306 | 0.220 | **0.366** |
+      | day 9, after | 0.261 | 0.286 | **0.388** |
+
+      **The corridor is the cheapest ground on every day now, and it was the dearest on two of the
+      three.** Lethal events off the corridor went from ~0 to 13.2 and 19.2 in the deep band on days
+      5 and 9. Walls went from 13% of a day's placements to 24–28%.
+
+      **Two levers, and which one binds is a different answer on different days — that is the part
+      worth carrying.** The *cap* was binding on days 5 and 9: the lethal wall rows were capped at 4
+      and 5 across 121 blocks, so the deep band had nothing deadly in it whatever the budget did.
+      The *weight* binds on day 1, where the caps were never reached: a row is only offered as often
+      as its weight, so walls were 13% of placements however high the ceiling went. Raising a cap
+      the day never reaches is the other half of *"a budget the catalogue cannot spend is not
+      density"*, and M50's entry named only the first half.
+
+      Two costs, both accepted and both worth stating. A day places about six fewer events, because
+      the budget now buys dearer rows. And a leaf blower is as common a sight as a dog walker, which
+      is the price of day 1 having exactly **two** rows a wall can be made out of.
+
+      **And one thing stays false on day 1 by an older decision.** *"Lethal or very expensive"* can
+      only be the second of those on day 1, because day 1 has **no lethal rows at all** — M31 made
+      act I's escalation a change of *kind* (0, 3, 4 lethal events over days 1–3), and that is a
+      deliberate teaching decision, not a gap. Day 1 off-corridor is very costly; deadly starts on
+      day 2. Left as it is rather than quietly overturned
 - [ ] **Something between parallel strands of corridor** *(finding 2)*. Asked back because it
       overlapped `RouteTree`'s recorded instruction — *"the player can walk the beginning of path A
       and then switch to path B without noticing, and that is fine… the constraint is on the graph
