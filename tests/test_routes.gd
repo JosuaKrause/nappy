@@ -81,12 +81,17 @@ func _test_the_lattice_is_the_lattice(t) -> void:
 ## has `2*(w+h)` streets round it, and contains `(w-1)*(h-1)` junctions, which is **none** for a
 ## rectangle. A count written as `2 * CALM_ZONE_BLOCKS * (CALM_ZONE_BLOCKS - 1)` was the square's
 ## answer, and it agreed with the general one for as long as every zone was a square.
+##
+## **The apartment complex is the same mechanism and the opposite ground, so it is skipped here and
+## checked in `tests/test_generator.gd` instead.** Its absorbed streets are absent from the lattice
+## exactly like a zone's and they are *built over*, which is the one sentence in this test that
+## reverses: a zone is walked through, and a complex is walked round.
 func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
 	var zones := 0
 	for map in _maps:
-		t.check(map.zone_rects.size() >= Tuning.MIN_CALM_ZONES,
-				"seed %d has at least one multi-block calm zone" % map.seed_used)
 		for anchor: Vector2i in map.zone_rects:
+			if map.starting_purpose(anchor) == GameEnums.BlockPurpose.COURTYARD:
+				continue
 			zones += 1
 			var footprint: Rect2i = map.zone_rects[anchor]
 			var span := footprint.size

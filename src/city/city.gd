@@ -166,8 +166,8 @@ var _sleepiness_answer := 1.0
 func _sleepiness_on(tile: Vector2i) -> float:
 	if not Tile.is_calm(map.tile_at(tile)):
 		return 1.0
-	var blocks := map.lot_blocks(map.block_at(map.tile_to_world(tile)))
-	return Tuning.sleepiness_calm_multiplier(blocks.size.x * blocks.size.y)
+	return Tuning.sleepiness_calm_multiplier(map.calm_lot_blocks(
+			map.block_at(map.tile_to_world(tile))))
 
 ## What the ground she is standing on does to her recovery: calm, precinct, ordinary, main road,
 ## best to worst. *(M41, playtest 12 finding 8.)*

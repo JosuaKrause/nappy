@@ -103,18 +103,45 @@ static func calm_areas(map: CityMap) -> Array[CalmArea]:
 	return found
 
 ## The streets a calm area can be entered from. A block of open calm opens onto all four sides
-## of its lot; a four-block zone onto eight streets, two to a side; a courtyard onto exactly
-## one, through its archway.
+## of its lot; a zone onto one street per block edge; a courtyard onto exactly one, through its
+## archway.
+##
+## **Every question here is asked of the lot, and one of them was asked of the block.** *(M52.)*
+## The archway is generated against the lot rect, and until apartment complexes existed every
+## courtyard lot was one block, so passing `block_rect` was the same rect and the difference could
+## not show. On a four-block complex it is a different rect on three sides out of four, so the side
+## came out wrong and the street returned was one of the complex's own absorbed streets — a segment
+## that is not in the lattice at all, which reads as *this calm area cannot be reached from the
+## home* and cost about one generation attempt per city until it was found.
 static func _access_streets(map: CityMap, block: Vector2i) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
 	var layout: BlockLayout = map.block_layouts.get(block)
 	if layout and BlockLayout.has(layout.passage):
-		var side := _passage_side(CityMap.block_rect(block), layout.passage)
-		var segment := StreetNetwork.beside_block(block, side)
+		var blocks := map.lot_blocks(block)
+		var side := _passage_side(map.lot_rect(block), layout.passage)
+		var segment := StreetNetwork.beside_block(
+				_passage_block(blocks, layout.passage, side), side)
 		if segment:
 			found.append(segment)
 		return found
 	return StreetNetwork.around_blocks(map.lot_blocks(block))
+
+## Which block of a lot the archway comes out of, which is the one the street beside it belongs
+## to. Identity for a single-block lot; for a complex it is the block the mouth is in.
+static func _passage_block(blocks: Rect2i, passage: Rect2i, side: int) -> Vector2i:
+	if side == StreetNetwork.Side.NORTH or side == StreetNetwork.Side.SOUTH:
+		var row: int = blocks.position.y if side == StreetNetwork.Side.NORTH else blocks.end.y - 1
+		for x in range(blocks.position.x, blocks.end.x):
+			var rect := CityMap.block_rect(Vector2i(x, row))
+			if passage.position.x >= rect.position.x and passage.position.x < rect.end.x:
+				return Vector2i(x, row)
+		return Vector2i(blocks.position.x, row)
+	var column: int = blocks.position.x if side == StreetNetwork.Side.WEST else blocks.end.x - 1
+	for y in range(blocks.position.y, blocks.end.y):
+		var rect := CityMap.block_rect(Vector2i(column, y))
+		if passage.position.y >= rect.position.y and passage.position.y < rect.end.y:
+			return Vector2i(column, y)
+	return Vector2i(column, blocks.position.y)
 
 ## Which edge of the lot an archway comes out on. The passage is generated as a one-tile
 ## channel from the court to one lot edge, so the edge it touches is the answer.

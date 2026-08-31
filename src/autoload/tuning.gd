@@ -484,6 +484,26 @@ const COURTYARD_CHANCE := 0.35
 const MAX_COURTYARD_BLOCKS := 3
 const COURTYARD_SIZE_TILES := 4
 
+## The **apartment complex**: a courtyard lot four blocks across, with the streets between them
+## built over and frontages all the way round. *(M52, from M47's entry, itself quoting a request
+## from long before it: "an inner courtyard (surrounded by buildings) should have a footprint of
+## 2x2 blocks (apartment complex) — this never got implemented".)*
+##
+## **It is M21's mechanism with the opposite ground.** A calm zone absorbs the streets between four
+## blocks and paints park over them; this absorbs them and builds over them, so what comes out is a
+## mass 22 tiles square with a court in the middle and one archway in. That is what makes it calm
+## you have to *find* rather than calm you can see from the street — the courtyard's whole idea, at
+## the size where the block around it is a landmark.
+##
+## The court is ten tiles rather than the four a single-block courtyard gets, because a hole four
+## tiles wide in a mass twenty-two across is a light well rather than somewhere to stand. Ten
+## leaves six tiles of building on every side and crosses in 4.9s against the 5.7s it fills in, so
+## it sits with every other calm area at about one traverse per meter.
+##
+## One per city at most. It is a landmark and a secret, and two of them in a city is neither.
+const APARTMENT_COURT_TILES := 10
+const MAX_APARTMENT_COMPLEXES := 1
+
 ## The hard floor: this many blocks must still be calm on the last day. A day can only be
 ## won on calm ground, so an arc set that takes all of it makes an unwinnable run rather
 ## than a hard one. `CityGenerator.validate()` enforces it.

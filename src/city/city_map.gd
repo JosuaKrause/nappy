@@ -292,11 +292,30 @@ func has_street(key: Vector3i) -> bool:
 
 # ---------------------------------------------------------------------- lots ---
 
-## The rect of *blocks* one lot covers — one block for almost everything, 2x2 for a four-block
-## calm zone. `block` may be any member of the lot; the answer is the same for all of them.
+## The rect of *blocks* one lot covers — one block for almost everything, and a `CALM_ZONE_SHAPES`
+## footprint for a zone. `block` may be any member of the lot; the answer is the same for all of
+## them.
 func lot_blocks(block: Vector2i) -> Rect2i:
 	var anchor := anchor_of(block)
 	return zone_rects.get(anchor, Rect2i(anchor, Vector2i.ONE))
+
+## How many blocks' worth of **calm ground** this lot has, which is what the sleepiness curve is a
+## function of. *(M52.)*
+##
+## It is the lot for open calm and **one** for a courtyard, however big the lot is, because what a
+## courtyard offers is its court: a four-block apartment complex is twenty-two tiles of building
+## with ten tiles of ground in the middle of it, and paying it the rate of a four-block park would
+## make the smallest calm area in the city the slowest one in it.
+##
+## The answer is unchanged for every lot that existed before apartment complexes did — a
+## single-block courtyard's lot is one block either way — so this generalises the old question
+## rather than repricing anything. That is the same move `sleepiness_multiplier` itself was: the new
+## question has to contain the old answer.
+func calm_lot_blocks(block: Vector2i) -> int:
+	if starting_purpose(anchor_of(block)) == GameEnums.BlockPurpose.COURTYARD:
+		return 1
+	var lot := lot_blocks(block)
+	return lot.size.x * lot.size.y
 
 ## The tile rect one lot covers, streets between its blocks included.
 func lot_rect(block: Vector2i) -> Rect2i:

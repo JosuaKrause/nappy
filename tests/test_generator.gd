@@ -166,21 +166,24 @@ func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
 ## shape the catalogue offers, and at least one of them has to be the square — that is M21's own
 ## guarantee, which is about a calm area with a *route* through it rather than about multi-block
 ## calm in general, and the placement pass keeps it by placing the square first.
+##
+## **And `zone_rects` is every multi-block lot, which is not the same thing as every park.** An
+## apartment complex is four blocks of *building* with a court in the middle, so it is one lot with
+## one arc like a zone and its ground is the opposite of a zone's. Everything above the split below
+## is true of both; everything below it is asked of the right kind. Counting the dictionary and
+## calling the answer "calm zones" is the mistake this split exists to stop — it would have let a
+## city satisfy M21 with a thing you cannot walk across.
 func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
 	for i in 12:
 		var map := CityGenerator.generate(_seed(i))
-		t.check(map.zone_rects.size() >= Tuning.MIN_CALM_ZONES
-				and map.zone_rects.size() <= Tuning.MAX_CALM_ZONES,
-				"seed %d has %d calm zones, wanted %d..%d" % [_seed(i), map.zone_rects.size(),
-				Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES])
 		var squares := 0
+		var open_zones := 0
+		var complexes := 0
 		for anchor: Vector2i in map.zone_rects:
 			var footprint: Rect2i = map.zone_rects[anchor]
 			t.check(Tuning.CALM_ZONE_SHAPES.has(footprint.size),
 					"seed %d: zone %s has a shape the city offers (%s)"
 					% [_seed(i), anchor, footprint.size])
-			if footprint.size == Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS:
-				squares += 1
 
 			# One lot: the anchor has the arc and the layout, and the others have neither.
 			var members := 0
@@ -195,6 +198,15 @@ func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
 			t.check(members == footprint.size.x * footprint.size.y,
 					"seed %d: zone %s covers %d blocks" % [_seed(i), anchor, members])
 
+			if map.starting_purpose(anchor) == GameEnums.BlockPurpose.COURTYARD:
+				complexes += 1
+				_check_apartment_complex(t, map, anchor, _seed(i))
+				continue
+
+			open_zones += 1
+			if footprint.size == Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS:
+				squares += 1
+
 			# One piece of ground: every tile of the lot, streets between the blocks included.
 			var kinds := {}
 			for tile in map.rect_tiles(map.lot_rect(anchor)):
@@ -206,8 +218,14 @@ func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
 						"seed %d: zone %s is calm ground and nothing else (found %s)"
 						% [_seed(i), anchor, GameEnums.TileType.keys()[kind]])
 
+		t.check(open_zones >= Tuning.MIN_CALM_ZONES and open_zones <= Tuning.MAX_CALM_ZONES,
+				"seed %d has %d open calm zones, wanted %d..%d" % [_seed(i), open_zones,
+				Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES])
 		t.check(squares >= 1, "seed %d has a %d-block-square calm zone"
 				% [_seed(i), Tuning.CALM_ZONE_BLOCKS])
+		t.check(complexes <= Tuning.MAX_APARTMENT_COMPLEXES,
+				"seed %d has %d apartment complexes, at most %d"
+				% [_seed(i), complexes, Tuning.MAX_APARTMENT_COMPLEXES])
 
 		# The main road is the street the city cannot afford to lose a stretch of: it is the
 		# noise floor, it is the thing that has to be crossed, and it is what a player learns
@@ -221,14 +239,61 @@ func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
 		# map. It is gone from `_zone_fits` and gone from here with it.
 		for key: Vector3i in map.absent_segments:
 			# Zone-absorbed streets only. `absent_segments` stopped being the zone set in M50 —
-			# a dead end is absent too, for the opposite reason — and this sentence is about
-			# zones. Asserting it over the whole set was the identity standing in for the
-			# property, which is a mistake this project has made before and can now name.
+			# a dead end is absent too, for the opposite reason, and so is an apartment complex's
+			# — and this sentence is about zones. Asserting it over the whole set was the identity
+			# standing in for the property, which is a mistake this project can now name.
 			if map.is_hard_blocker(key) or key.z == 0:
 				continue
 			t.check(key.x != map.main_road,
 					"seed %d: no zone swallowed a stretch of the main road (%s did)"
 					% [_seed(i), key])
+
+## The apartment complex, which is the zone mechanism with the opposite ground. *(M52.)*
+##
+## Three things, and each is a way it would stop being what it is for. It is a **mass** — the lot
+## is building apart from its court and the one archway through it, so the calm inside is calm you
+## have to find rather than calm you can see from the street. Its court is **bigger than a
+## single-block courtyard's**, or it is a light well in a building twenty-two tiles across. And the
+## streets it took are **built over**, not painted with grass: absent from the lattice like a
+## zone's, and solid ground, which is what tells the crowd and the telemetry map it is a wall.
+func _check_apartment_complex(t, map: CityMap, anchor: Vector2i, seed_value: int) -> void:
+	var layout: BlockLayout = map.block_layouts[anchor]
+	t.check(layout.open_rect.size.x == Tuning.APARTMENT_COURT_TILES,
+			"seed %d: complex %s has a court %d tiles across, not %d"
+			% [seed_value, anchor, layout.open_rect.size.x, Tuning.APARTMENT_COURT_TILES])
+	t.check(BlockLayout.has(layout.passage),
+			"seed %d: complex %s has an archway into it" % [seed_value, anchor])
+
+	var lot := map.lot_rect(anchor)
+	t.check(lot.encloses(layout.open_rect),
+			"seed %d: complex %s keeps its court inside the mass" % [seed_value, anchor])
+	var walkable := 0
+	for tile in map.rect_tiles(lot):
+		if map.is_walkable(tile):
+			walkable += 1
+	var inside := layout.open_rect.get_area() + layout.passage.get_area()
+	t.check(walkable == inside,
+			"seed %d: complex %s is solid apart from its court and archway (%d walkable of %d)"
+			% [seed_value, anchor, walkable, inside])
+
+	var footprint: Rect2i = map.zone_rects[anchor]
+	var span := footprint.size
+	var absorbed := span.x * (span.y - 1) + span.y * (span.x - 1)
+	var built := 0
+	for key: Vector3i in map.absent_segments:
+		if not CityMap.blocks_tile_rect(footprint).encloses(StreetNetwork.by_key(key).tile_rect()):
+			continue
+		built += 1
+		t.check(map.is_hard_blocker(key),
+				"seed %d: the street %s the complex %s took is built over"
+				% [seed_value, key, anchor])
+		for tile in map.rect_tiles(StreetNetwork.by_key(key).tile_rect()):
+			t.check(not map.is_walkable(tile) or layout.open_rect.has_point(tile)
+					or layout.passage.has_point(tile),
+					"seed %d: %s inside complex %s is solid" % [seed_value, tile, anchor])
+	t.check(built == absorbed,
+			"seed %d complex %s took its %d inside streets (found %d)"
+			% [seed_value, anchor, absorbed, built])
 
 ## The claim M21 exists to make good, as a relationship rather than a number.
 ##

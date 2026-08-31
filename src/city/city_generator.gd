@@ -253,6 +253,7 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 	purposes[home_block()] = GameEnums.BlockPurpose.RESIDENTIAL
 
 	var areas := _place_calm_zones(purposes, zones, shuffled, rng, map.main_road)
+	_place_apartment_complexes(purposes, zones, shuffled, rng, map.main_road)
 
 	var calm_target := rng.randi_range(Tuning.MIN_CALM_BLOCKS, Tuning.MAX_CALM_BLOCKS)
 	for block in shuffled:
@@ -347,6 +348,41 @@ static func _place_one_zone(purposes: Dictionary, zones: Dictionary, shuffled: A
 		return true
 	return false
 
+## The apartment complexes: courtyard lots four blocks across. *(M52, from M47's entry.)*
+##
+## **The same pass as a calm zone and the opposite ground.** A zone absorbs the streets between its
+## blocks and paints park over them; this absorbs them and *builds over* them, so what comes out is
+## a mass twenty-two tiles square with a court in the middle and one archway in. Nothing here is a
+## new mechanism — the footprint test, the absorb, the lot rect and the daily repaint are all M21's
+## — which is why the entry that asked for it says the mechanism is M21's.
+##
+## Three things about it that are decisions rather than consequences:
+##
+## - **It is a `COURTYARD` and not a purpose of its own.** What a block purpose says is what the
+##   ground *is*, and this is a courtyard: buildings with a court cut into them. What is new is the
+##   size of the lot, which is a fact about the footprint, and adding an enum value for it would be
+##   the `EventDef.Look` mistake — a category is a thing you can always put one more row into.
+## - **It does not count toward the calm target.** Like a single-block courtyard, it is *hidden*
+##   calm placed on top of the 5–7 areas the player asked to keep, rather than one of them. Placing
+##   it here rather than in `_cut_courtyards` is only because it needs a whole unclaimed footprint,
+##   which is a thing to ask for before the single blocks are handed out.
+## - **Its absorbed streets are hard blockers.** They are solid ground for the whole run, which is
+##   exactly what `built_over` means, and saying so is what makes the crowd, the telemetry map and
+##   the big-building placement all treat them correctly without any of them learning about
+##   apartment complexes. See `_record_zones`.
+static func _place_apartment_complexes(purposes: Dictionary, zones: Dictionary,
+		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int) -> void:
+	var span := Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS
+	for _made in Tuning.MAX_APARTMENT_COMPLEXES:
+		for anchor in shuffled:
+			var footprint := Rect2i(anchor, span)
+			if not _zone_fits(purposes, footprint, main_road):
+				continue
+			for block in _blocks_in(footprint):
+				purposes[block] = GameEnums.BlockPurpose.COURTYARD
+			zones[anchor] = footprint
+			break
+
 ## The middle of the lattice, which is the home's block. Odd on both axes by constraint, so there
 ## is exactly one — see `Tuning.CITY_BLOCKS`.
 static func home_block() -> Vector2i:
@@ -438,6 +474,11 @@ static func _blocks_in(footprint: Rect2i) -> Array[Vector2i]:
 
 ## Writes the zones onto the map and takes the absorbed blocks out of `purposes`, so that from
 ## here on a lot is one entry however many blocks of ground it owns.
+##
+## **Whether the streets it took are ground or wall is read off the purpose**, which is the one
+## place that decides it: open calm walks over them and an apartment complex is built on them. Two
+## multi-block lots, one absorb, and no caller anywhere else has to know which kind it is looking
+## at — a solid one says so in `built_over` and every rule about hard blockers picks it up for free.
 static func _record_zones(map: CityMap, purposes: Dictionary, zones: Dictionary) -> void:
 	for anchor: Vector2i in zones:
 		var footprint: Rect2i = zones[anchor]
@@ -446,7 +487,8 @@ static func _record_zones(map: CityMap, purposes: Dictionary, zones: Dictionary)
 			map.zone_anchor[block] = anchor
 			if block != anchor:
 				purposes.erase(block)
-		_absorb_streets(map, footprint)
+		_absorb_streets(map, footprint,
+				purposes[anchor] == GameEnums.BlockPurpose.COURTYARD)
 
 ## Turns some residential blocks into courtyard blocks. Never one that touches open calm:
 ## a hidden court is worth finding, and a court across the street from a park is not.
@@ -527,13 +569,17 @@ static func _has_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool
 ## the quarter beyond the crossroads. Getting the turn wrong makes this repaint *look* wrong —
 ## the first build turned late, so cars drove down the spur and stood on the new pavement, which
 ## reads as a bug in the paint rather than as a bug in the turn.
-static func _absorb_streets(map: CityMap, footprint: Rect2i) -> void:
+## `solid` is the apartment complex: the same streets leave the lattice, and the ground where they
+## were is building rather than park. Saying so in `built_over` is what tells every rule about hard
+## blockers — the crowd's walls, the telemetry legend, where a big building may go — that this is
+## not a park to walk across, without any of them learning what an apartment complex is.
+static func _absorb_streets(map: CityMap, footprint: Rect2i, solid := false) -> void:
 	for y in range(footprint.position.y + 1, footprint.end.y):
 		for x in range(footprint.position.x, footprint.end.x):
-			map.absent_segments[Vector3i(x, y, 0)] = true
+			_absorb_one(map, Vector3i(x, y, 0), solid)
 	for x in range(footprint.position.x + 1, footprint.end.x):
 		for y in range(footprint.position.y, footprint.end.y):
-			map.absent_segments[Vector3i(x, y, 1)] = true
+			_absorb_one(map, Vector3i(x, y, 1), solid)
 
 	var zone := CityMap.blocks_tile_rect(footprint)
 	for tile in map.rect_tiles(zone.grow(Tuning.SIDEWALK_WIDTH)):
@@ -541,6 +587,11 @@ static func _absorb_streets(map: CityMap, footprint: Rect2i) -> void:
 			continue
 		if map.tile_at(tile) == GameEnums.TileType.CROSSING:
 			map.set_tile(tile, GameEnums.TileType.SIDEWALK)
+
+static func _absorb_one(map: CityMap, key: Vector3i, solid: bool) -> void:
+	map.absent_segments[key] = true
+	if solid:
+		map.built_over[key] = StreetNetwork.by_key(key).tile_rect()
 
 # --------------------------------------------------------------------- arcs ---
 
@@ -639,7 +690,12 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 	var rects: Array[Rect2i] = [lot]
 
 	if purpose == GameEnums.BlockPurpose.COURTYARD:
-		layout.open_rect = _inset_rect(lot, Tuning.COURTYARD_SIZE_TILES, rng)
+		# The court is sized from the **lot**, not from a constant: a four-block apartment complex
+		# is a mass twenty-two tiles square, and a hole four tiles wide in it is a light well
+		# rather than somewhere to stand. See `Tuning.APARTMENT_COURT_TILES`.
+		var court := Tuning.COURTYARD_SIZE_TILES if lot.size.x <= Tuning.BLOCK_SIZE \
+				else Tuning.APARTMENT_COURT_TILES
+		layout.open_rect = _inset_rect(lot, court, rng)
 		layout.passage = _passage_rect(lot, layout.open_rect, rng)
 		map.fill_rect(layout.open_rect, GameEnums.TileType.COURTYARD)
 		map.fill_rect(layout.passage, GameEnums.TileType.ALLEY)
@@ -1130,22 +1186,28 @@ static func validate(map: CityMap) -> String:
 				return "calm areas %s and %s are in each other's ring" % [
 					owner[member], owner[neighbour]]
 
-	if map.zone_rects.size() < Tuning.MIN_CALM_ZONES:
-		return "only %d multi-block calm zones, need %d" % [
-			map.zone_rects.size(), Tuning.MIN_CALM_ZONES]
-
-	# **And one of them is the square.** *(M52.)* A zone may be a 2x1 now, and M21's guarantee is
-	# not about multi-block calm in general — it is that every city has somewhere with a *route*
-	# through it rather than a lap round it, which is what the four-block footprint is for. The
-	# placement pass makes this true by placing the square first; this is the same sentence asked
-	# of the city that came out, which is the only way it stays true if that ordering ever moves.
+	# **The open ones only, and one of them is the square.** *(M52.)* `zone_rects` is every
+	# multi-block lot, which since apartment complexes is not the same thing as every multi-block
+	# *park* — a complex is four blocks of building — so counting the dictionary would let a city
+	# satisfy M21's guarantee with a thing you cannot walk across. And the guarantee is not
+	# "multi-block calm" in general: it is that every city has somewhere with a *route* through it
+	# rather than a lap round it, which is what the four-block open footprint is for. The placement
+	# pass makes both true by placing the square first; this asks the city that came out, which is
+	# the only way either survives that ordering being changed.
 	var square := Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS
+	var open_zones := 0
 	var squares := 0
 	for anchor: Vector2i in map.zone_rects:
+		if not _OPEN_CALM.has(map.starting_purpose(anchor)):
+			continue
+		open_zones += 1
 		if (map.zone_rects[anchor] as Rect2i).size == square:
 			squares += 1
+	if open_zones < Tuning.MIN_CALM_ZONES:
+		return "only %d open multi-block calm zones, need %d" % [
+			open_zones, Tuning.MIN_CALM_ZONES]
 	if squares < 1:
-		return "no calm zone is %d blocks square" % Tuning.CALM_ZONE_BLOCKS
+		return "no open calm zone is %d blocks square" % Tuning.CALM_ZONE_BLOCKS
 
 	# The arcs are planned for the whole run, so the end of it can be checked here rather
 	# than hoped for. A run that requisitions its way to nothing is unwinnable, not hard.
