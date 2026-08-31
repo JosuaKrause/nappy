@@ -19,6 +19,7 @@ func run(t) -> void:
 	_test_the_home_is_in_the_middle_of_a_city_worth_walking(t)
 	_test_calm_zones_are_four_blocks_of_one_thing(t)
 	_test_a_calm_zone_is_a_route_rather_than_a_lap(t)
+	_test_a_dead_end_is_a_dead_end(t)
 	_test_no_single_street_closure_isolates_the_parks(t)
 
 # ------------------------------------------------------------------- pieces ---
@@ -198,6 +199,12 @@ func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
 		# noise floor, it is the thing that has to be crossed, and it is what a player learns
 		# first. A zone may take any corridor but that one.
 		for key: Vector3i in map.absent_segments:
+			# Zone-absorbed streets only. `absent_segments` stopped being the zone set in M50 —
+			# a dead end is absent too, for the opposite reason — and this sentence is about
+			# zones. Asserting it over the whole set was the identity standing in for the
+			# property, which is a mistake this project has made before and can now name.
+			if map.dead_ends.has(key):
+				continue
 			var corridor: int = key.y if key.z == 0 else key.x
 			# Which corridor that is comes from the **map** since playtest 14, because the spine
 			# is rolled per city rather than always being the middle one. The east-west number is
@@ -284,6 +291,86 @@ func _street_segments(map: CityMap) -> Array[Rect2i]:
 			var block_x := CityMap.block_rect(Vector2i(column, 0)).position.x
 			segments.append(Rect2i(block_x, corridor * period, Tuning.BLOCK_SIZE, width))
 	return segments
+
+## Hard blockers. *(M50 step 1.)*
+##
+## The thing that makes this worth a test of its own is that a dead end is a claim made on the
+## **lattice** and paid for on the **tiles**, and the two can disagree in both directions. A
+## street missing from the graph whose ground still goes through is not a dead end, it is a
+## routing bug the player walks straight past; a street whose ground stops but which the graph
+## still offers is a route into a wall. So every clause below is checked on the tiles, against a
+## fact stated on the graph.
+##
+## The counts are the other half: a city with no dead ends in it silently loses the whole
+## milestone, and every check here would still pass.
+func _test_a_dead_end_is_a_dead_end(t) -> void:
+	var total := 0
+	var seeds := 12
+	for i in seeds:
+		var map := CityGenerator.generate(_seed(i))
+		var home := ClosurePlanner.home_street(map)
+		var calm := {}
+		for anchor in map.calm_blocks:
+			var lot := map.lot_blocks(anchor)
+			for y in range(lot.position.y, lot.end.y):
+				for x in range(lot.position.x, lot.end.x):
+					calm[Vector2i(x, y)] = true
+
+		t.check(not map.dead_ends.is_empty(), "seed %d has dead ends at all" % _seed(i))
+		t.check(map.dead_ends.size() <= Tuning.MAX_CUL_DE_SACS,
+				"seed %d has at most %d of them (%d)"
+				% [_seed(i), Tuning.MAX_CUL_DE_SACS, map.dead_ends.size()])
+		total += map.dead_ends.size()
+
+		for key: Vector3i in map.dead_ends:
+			var segment := StreetNetwork.by_key(key)
+			t.check(map.absent_segments.has(key),
+					"seed %d: dead end %s is out of the lattice too" % [_seed(i), key])
+			t.check(key != home.key(),
+					"seed %d: and is not the street outside the front door" % _seed(i))
+
+			# The ground stops. One strip across the corridor is built over, and it is at an end
+			# rather than in the middle — a wall in the middle would be two dead ends and a street
+			# nobody can see the shape of.
+			var rect := segment.tile_rect()
+			var blocked_rows := 0
+			var along := rect.size.x if segment.horizontal else rect.size.y
+			for step in along:
+				var walkable := 0
+				for across in (rect.size.y if segment.horizontal else rect.size.x):
+					var tile := rect.position + (Vector2i(step, across) if segment.horizontal
+							else Vector2i(across, step))
+					if map.is_walkable(tile):
+						walkable += 1
+				if walkable == 0:
+					blocked_rows += 1
+					t.check(step < Tuning.CUL_DE_SAC_WALL_TILES
+							or step >= along - Tuning.CUL_DE_SAC_WALL_TILES,
+							"seed %d: the wall in %s is at one end of it" % [_seed(i), key])
+			t.check(blocked_rows == Tuning.CUL_DE_SAC_WALL_TILES,
+					"seed %d: dead end %s is walled %d tiles deep (found %d)"
+					% [_seed(i), key, Tuning.CUL_DE_SAC_WALL_TILES, blocked_rows])
+			t.check(blocked_rows < along,
+					"seed %d: and is still a street you can walk into" % _seed(i))
+
+			# And it is none of the three things a dead end would stop being. The spine has to go
+			# through, a precinct is a place rather than a road, and a street with calm down one
+			# side of it is a doorway whatever the graph says.
+			t.check(map.street_kind_at(not segment.horizontal,
+					rect.position + rect.size / 2) == GameEnums.StreetKind.ORDINARY,
+					"seed %d: %s is an ordinary street, not the spine or a precinct"
+					% [_seed(i), key])
+			var block := Vector2i(key.x, key.y)
+			var opposite := block + (Vector2i.UP if segment.horizontal else Vector2i.LEFT)
+			t.check(not calm.has(block) and not calm.has(opposite),
+					"seed %d: %s does not run alongside calm ground" % [_seed(i), key])
+
+	# Measured at 5.9 a city against a rolled 4-8. A floor rather than the number, because the
+	# gate may legitimately refuse one; a city averaging below the minimum means the placement has
+	# stopped working rather than that a seed was unlucky.
+	t.check(float(total) / seeds >= float(Tuning.MIN_CUL_DE_SACS),
+			"a city gets %.1f dead ends, wanting at least %d"
+			% [float(total) / seeds, Tuning.MIN_CUL_DE_SACS])
 
 func _seed(index: int) -> int:
 	# Spread the seeds out; consecutive integers are what generate() retries with.

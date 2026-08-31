@@ -39,6 +39,20 @@ var zone_anchor := {}
 ## half — route counting, the invariant, the doorway exemptions — survives untouched and simply
 ## gets a bigger `closed` set. See `blocked_segments()`.
 var absent_segments := {}
+## The streets that are absent because they are **dead ends**, as segment key -> the tile rect
+## that was built over to stop the ground. A subset of
+## `absent_segments`, kept apart because the two are absent for opposite reasons and anything
+## reasoning about *why* a street is not there needs to tell them apart. *(M50 step 1.)*
+##
+## A calm zone's absorbed corridor is **ground you walk over** — the tiles are park and the lattice
+## losing the street is the whole point of a shortcut. A dead end is the reverse: the lattice loses
+## the street *and the ground stops*, because a hard blocker that could be walked through would not
+## be one. `CityGenerator._wall_off_one_end` is what makes the difference visible on the tiles.
+##
+## Anything asking "can a route go this way" wants `blocked_segments()`, which is both and does not
+## care. This is for the things that do: the telemetry map's legend, and any test whose sentence
+## is about zones.
+var dead_ends := {}
 ## The corridor index of the one main road, which runs north to south. `-1` before generation.
 ##
 ## One of it, and only on this axis. *(Playtest 12, finding 2: "there should be one north to south

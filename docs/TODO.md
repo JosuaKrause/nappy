@@ -2682,7 +2682,7 @@ from the other side, and the two should be settled together
 *"Cul-de-sacs and big buildings don't exist yet — but we need them to implement proper hard
 blockers."*
 
-- [ ] **A cul-de-sac is an `absent_segment` with a dead end at one end.** The mechanism is already
+- [x] **A cul-de-sac is an `absent_segment` with a dead end at one end.** The mechanism is already
       built and proven: M21's calm zones absorb the streets between their blocks, `absent_segments`
       is the set of lattice edges this city does not have, and `blocked_segments()` merges it with
       the day's closures. What is new is **choosing** them for a reason rather than as a
@@ -2690,15 +2690,48 @@ blockers."*
       *ground* — so a cul-de-sac must be a street that genuinely stops, not a park to walk through
 - [ ] **A big building is a block whose lot is solid**, removing the streets around it from the
       lattice. This is a `BlockPurpose` and an arc, per the "Add a block purpose" recipe
-- [ ] **They are placed against a tree, not before one**, in `CityGenerator`, from the city RNG —
+- [x] **They are placed against a tree, not before one**, in `CityGenerator`, from the city RNG —
       so they hold still for the whole run and are what the player learns. Grow a **reference
       tree** on the finished lattice first, then place blockers that leave it intact, *"that way we
       can't block off regions entirely"*. The gate is **reachability**, for every calm area the run
       will ever use including act IV ones — not two routes, which a cul-de-sac would fail by
       definition. The reference tree is the readable sanity check beside it, not the check itself
-- [ ] **`CityGenerator.validate()` gains the new condition** and it runs on every seed, like the
+- [x] **`CityGenerator.validate()` gains the new condition** and it runs on every seed, like the
       rest. `tests/test_blocks.gd` already asserts the walkable set is identical tile-for-tile
       across every block arc — hard blockers must not move a walkable tile after generation
+
+**Dead ends are built. What they came out as, and the three things worth carrying:**
+
+**The gate stayed the strong one and the plan above is why that needed a decision.** *"The gate is
+reachability — not two routes, which a cul-de-sac would fail by definition"* is written just
+above, and it is a **weakening of a guarantee three other things rest on**:
+`MIN_CALM_AREAS_WITH_TWO_ROUTES`, `ClosurePlanner`'s day-level invariant, and
+`tests/test_routes.gd`'s *"an open city has two routes to everywhere calm"* all assume the
+generator hands them a city where it holds. Taking it as a **side effect of adding dead ends** is
+the exact shape of overturn `CLAUDE.md` has a rule about, so the gate still demands two routes.
+And the fear turned out to be unfounded: with candidates already off the reference tree, **99% of
+them pass either gate**, and a city gets **5.9 dead ends against a rolled 4–8**. So the weaker
+gate buys ~nothing today and can be taken when the invariant itself is restated, which is where it
+belongs — see "The two invariant decisions" below.
+
+**A dead end is a claim on the lattice paid for on the tiles, and calm ground beside one breaks
+it.** Found by building it: `tests/test_routes.gd` failed with *"the way in (5, 11, 0) is a real
+street"*, because a dead end had been placed on one of a four-block zone's eight ways in. The
+graph said the street was gone; the player walks on tiles, and a street with a park down one side
+is one you walk into and step **sideways** out of. It is M21's *"an absorbed street is calm ground,
+not a closure"* read backwards, and the fix is a candidate filter: nothing beside calm.
+
+**And `absent_segments` stopped being the zone set, which broke a test's sentence rather than its
+assertion.** `tests/test_generator.gd` asserted *"no zone swallowed a stretch of the arterial"*
+over every absent segment, which was the same set right up until dead ends joined it.
+`CityMap.dead_ends` is the split, and it is worth having for its own sake — the two are absent for
+opposite reasons and the telemetry map needs to draw them differently. The general shape is one
+this project already has a name for: **an identity standing in for the property.**
+
+**The picture had to be fixed too**, and that is a note about tooling rather than about walls: the
+first version left a dead end showing through as ordinary building, which is a dark slab inside a
+dark street and is invisible. A hard blocker nobody can find in the one picture built to check
+placements might as well not have been placed. It has its own colour now.
 
 ### Step 2 — placement by role
 

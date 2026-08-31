@@ -49,6 +49,7 @@ const PRECINCT_MARK := Color("73a6ff")
 const CLOSURE_MARK := Color("ff2626")
 const CORRIDOR_MARK := Color("b366ff")
 const BUNDLE_MARK := Color("ffffff")
+const DEAD_END_MARK := Color("2ee6d0")
 
 ## What a building is drawn as here.
 ##
@@ -89,6 +90,7 @@ static func render(map: CityMap, closures: Array[RoadClosure] = [],
 	# drawn to be read *against* — where it arrives, what it had to go round, where it starts —
 	# and a plan that covers them would be answering its own question.
 	_mark_the_corridor(image, tree)
+	_mark_the_dead_ends(image, map)
 	_mark_the_calm(image, map)
 	_mark_the_closures(image, closures)
 	_mark_the_home(image, map)
@@ -153,6 +155,21 @@ static func _corridor_stroke(segment: StreetNetwork.Segment, wide: bool) -> Rect
 	if segment.horizontal:
 		return Rect2i(Vector2i(from.x, from.y + across), Vector2i(length, thickness))
 	return Rect2i(Vector2i(from.x + across, from.y), Vector2i(thickness, length))
+
+## The wall at the end of every street that stops. *(M50 step 1.)*
+##
+## **Filled, which is the one exception to "outlines, never fills".** That rule exists because a
+## mark that covers the ground stops the picture answering the question it was opened for — and
+## here the ground *is* the mark: the tiles under it were built over, and drawing an outline round
+## a wall would leave the middle of it reading as the street it used to be.
+##
+## It earns its own colour rather than being left to show through as building, which was the first
+## version and was invisible: a two-tile slab of dark building inside a dark street is exactly the
+## thing nobody spots, and a hard blocker nobody can spot in the one picture built to check
+## placements might as well not have been placed.
+static func _mark_the_dead_ends(image: Image, map: CityMap) -> void:
+	for key: Vector3i in map.dead_ends:
+		_fill_tiles(image, map.dead_ends[key] as Rect2i, DEAD_END_MARK)
 
 ## Every calm area, outlined at its lot. Outlined rather than tinted because *how big it is* is
 ## most of what this picture is being asked, and a tint over grass answers that worse than a box.

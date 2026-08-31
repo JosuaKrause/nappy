@@ -197,6 +197,10 @@ func _test_the_map_picture_covers_the_city_and_marks_it(t) -> void:
 	t.check(map.main_road < 0 or seen.has(TelemetryMap.SPINE_MARK), "and the spine is drawn")
 	t.check(map.precinct_spans.is_empty() or seen.has(TelemetryMap.PRECINCT_MARK),
 			"and the precincts are")
+	# A hard blocker nobody can find in the one picture built to check placements might as well
+	# not have been placed. It showed through as building at first, which is invisible.
+	t.check(map.dead_ends.is_empty() or seen.has(TelemetryMap.DEAD_END_MARK),
+			"and every street that stops is marked as stopping")
 	# The ground is under all of it: a picture that is only marks has covered what it describes,
 	# which is the one way a debug overlay lies that nobody notices.
 	t.check(seen.has(TelemetryMap.BUILDING_GROUND), "and the buildings show through")

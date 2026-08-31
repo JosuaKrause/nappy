@@ -59,6 +59,10 @@ static func _attempt(seed_value: int) -> CityMap:
 	# The map starts on day 1, which is every block at step 0 of its arc.
 	var state := CityState.new()
 	map.repaint(state)
+	# **After the repaint, and that is not an ordering detail.** Hard blockers are placed against
+	# where the calm is, which is what `repaint` works out, and they close street ground — which
+	# `repaint` never touches, so no later day can undo one. See `_place_hard_blockers`.
+	_place_hard_blockers(map, rng)
 	return map
 
 # ------------------------------------------------------------------ streets ---
@@ -694,6 +698,138 @@ static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
 	map.home_rect = home
 	map.home_block = block
 	block_rects[block] = _keep_nonempty(_subtract_all(block_rects[block], home))
+
+# ----------------------------------------------------------- hard blockers ---
+
+## The streets this city does not go down, fixed for the whole run. *(M50 step 1.)*
+##
+## **The soft blockers re-cut the map every morning; these are what the player learns.** A route
+## to a calm area is not stable across days and that is the mechanism rather than a side effect —
+## a city worth knowing plus a day worth reading — so the permanent half has to exist before the
+## per-day half can mean anything.
+##
+## **They are placed against a tree, not before one.** *"First construct an example tree from the
+## initial map, then place the hard blockers — that way we can't block off regions entirely."* The
+## reference tree is a **witness**: it reaches every calm area the run will ever use, so a blocker
+## that takes no street off it cannot have made any of them unreachable. That is why the candidate
+## list excludes the tree rather than the gate below merely checking afterwards — a gate that
+## rejects most of what it is offered is a slow way of getting a worse answer.
+##
+## Day 1's calm is *all* the calm, which is worth stating because it is not obvious and it is what
+## makes "every calm area the run will ever use" a thing this function can hold in its hand: arcs
+## only ever take calm ground away (`REQUISITIONED`), never add it, so the set only shrinks.
+static func _place_hard_blockers(map: CityMap, rng: RandomNumberGenerator) -> void:
+	var home := ClosurePlanner.home_street(map)
+	var areas := ClosurePlanner.calm_areas(map)
+	if not home or areas.is_empty():
+		return
+	var reference := RouteTree.for_the_run(map)
+	var wanted := rng.randi_range(Tuning.MIN_CUL_DE_SACS, Tuning.MAX_CUL_DE_SACS)
+	var made := 0
+	for segment in _dead_end_candidates(map, home, reference, rng):
+		if made >= wanted:
+			break
+		map.absent_segments[segment.key()] = true
+		if _the_calm_survives(map, home, areas):
+			map.dead_ends[segment.key()] = _wall_off_one_end(map, segment, rng)
+			made += 1
+		else:
+			map.absent_segments.erase(segment.key())
+
+## Every street a dead end could be made of, in the order this city will try them.
+##
+## Four exclusions, and each is a thing that would stop being itself:
+##
+## - **The street outside the front door**, which is the oldest exemption in the project: the home
+##   is a notch with one exit, so sealing that street seals the player in.
+## - **The main road.** There is one of it, it is the thing that has to be crossed and the first
+##   landmark anybody learns, and a spine with a hole in it is not a spine.
+## - **A precinct**, which is a *place* — three blocks of paving somebody can be told how to find —
+##   rather than a stretch of road, and a dead end in the middle of one is a broken place.
+## - **Anything on the reference tree.** See above: this is what makes the gate a formality rather
+##   than a search.
+## - **Anything running alongside calm ground**, and this one was found by building it. A dead end
+##   is a claim about where you can get to, and the claim is made on the **lattice** while the
+##   player walks on **tiles** — so a street with a park down one side of it is a street you walk
+##   into and then step sideways out of, whatever the graph says. It is M21's rule read backwards:
+##   an absorbed street is calm ground rather than a closure, and calm ground beside a dead end
+##   makes the dead end a doorway. `tests/test_routes.gd` caught it as *"the way in is a real
+##   street"* on a four-block zone, which is exactly what it looked like from the outside.
+static func _dead_end_candidates(map: CityMap, home: StreetNetwork.Segment, reference: RouteTree,
+		rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
+	var calm := {}
+	for anchor in map.calm_blocks:
+		for block in _blocks_in(map.lot_blocks(anchor)):
+			calm[block] = true
+
+	var pool: Array[StreetNetwork.Segment] = []
+	for segment in StreetNetwork.segments():
+		if not map.has_street(segment.key()) or segment.key() == home.key():
+			continue
+		if reference.is_on_the_tree(segment.key()) or _runs_beside_calm(segment, calm):
+			continue
+		var rect := segment.tile_rect()
+		if map.street_kind_at(not segment.horizontal, rect.position + rect.size / 2) \
+				!= GameEnums.StreetKind.ORDINARY:
+			continue
+		pool.append(segment)
+	_shuffle(pool, rng)
+	return pool
+
+## Whether either of the two blocks a street runs between is calm ground.
+##
+## A segment key names the block it runs along the **north or west edge of**, so the other side is
+## one step back along the crossing axis.
+static func _runs_beside_calm(segment: StreetNetwork.Segment, calm: Dictionary) -> bool:
+	var key := segment.key()
+	var block := Vector2i(key.x, key.y)
+	var opposite := block + (Vector2i.UP if segment.horizontal else Vector2i.LEFT)
+	return calm.has(block) or calm.has(opposite)
+
+## The gate, and it is deliberately the **strong** one for now.
+##
+## *(M50. The design permits a weaker one — "hard blockers no longer have to leave two
+## edge-disjoint routes to every calm area, only reachability", because cul-de-sacs are the point
+## and a two-routes rule fights them. That is true, and it is also one of the two invariant
+## decisions M50 says have to be taken deliberately: `MIN_CALM_AREAS_WITH_TWO_ROUTES`, the day-
+## level closure invariant and `tests/test_routes.gd` all rest on the generator handing them a
+## city where every calm area has a choice of ways in. Weakening it as a **side effect** of adding
+## dead ends is exactly the shape of overturn this project has a rule about, so the gate stays
+## where it was until somebody moves it on purpose. See docs/TODO.md, M50.)*
+static func _the_calm_survives(map: CityMap, home: StreetNetwork.Segment,
+		areas: Array[ClosurePlanner.CalmArea]) -> bool:
+	var blocked := map.blocked_segments()
+	for area in areas:
+		if StreetNetwork.route_count(home, area.access, blocked, 2) < 2:
+			return false
+	return true
+
+## Builds the wall that makes an absent street a *dead end* rather than a hole in the map.
+##
+## **The ground has to stop, and that is the whole difference from M21's absorbed streets.** A
+## calm zone's absorbed corridor is park: gone from the lattice and walked over quite happily,
+## which is right for a shortcut and wrong for a hard blocker — *"a cul-de-sac must be a street
+## that genuinely stops, not a park to walk through."* So one end is built over, and the street
+## keeps its pavement, its kerbs and its buildings: you can walk in, and then you have to come
+## back out.
+##
+## Which end is rolled. A dead end that always faced the same way would be a rule the player
+## learns once instead of a city they learn.
+static func _wall_off_one_end(map: CityMap, segment: StreetNetwork.Segment,
+		rng: RandomNumberGenerator) -> Rect2i:
+	var at_a := rng.randf() < 0.5
+	var wall := segment.mouth_rect(at_a)
+	# Grown *into* the street, never into the junction: the crossroads keeps its zebras and its
+	# lights, and what is walled is the road beyond it. A wall inside the junction would take the
+	# crossing with it, which is a pedestrian route that has nothing to do with this street.
+	var into := Tuning.CUL_DE_SAC_WALL_TILES - 1
+	var along := Vector2i.RIGHT if segment.horizontal else Vector2i.DOWN
+	if not at_a:
+		wall.position -= along * into
+	wall.size += along * into
+	map.fill_rect(wall, GameEnums.TileType.BUILDING)
+	map.building_rects.append(wall)
+	return wall
 
 # --------------------------------------------------------------- validation ---
 
