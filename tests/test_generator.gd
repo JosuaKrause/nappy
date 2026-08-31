@@ -226,11 +226,25 @@ func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
 ## to be geometric — the calm has to be big enough that filling the meter is a matter of walking
 ## somewhere rather than of walking round.
 ##
-## So: crossing a zone corner to corner has to be worth a real share of a full meter, and a
-## single block must not be. Both halves matter — if a block were enough, the zone would be
-## decoration; if the zone were enough on its own, arriving would be the whole of it.
+## So: crossing a zone corner to corner has to be worth a real share of a full meter, and it must
+## not be the whole of it — if a traverse filled the meter, arriving would be the whole game.
+##
+## **And the other half of this test was rewritten in M52 rather than repaired.** It used to say a
+## single block is *not* worth that share — "which is why one is a lap" — and that was the right
+## sentence while every calm area filled at one rate. The rate is a curve over the lot's width now
+## (`Tuning.sleepiness_calm_multiplier`), and the whole point of the curve is that **a small area
+## pays about as much per traverse of itself as a big one does**. Restating the old assertion
+## against the new rate would have been asserting the thing that was just deliberately removed, so
+## what is checked instead is the property the curve is *for*: the two sizes are within half of each
+## other in traverses-per-meter, where before the change they were 2.75x apart.
+##
+## Note what did **not** move, because it is the reason M21 exists and the curve does not repeal it:
+## a block is still a lap and a zone is still a route. The curve pays for the lap; it does not make
+## the block bigger.
 func _test_a_calm_zone_is_a_route_rather_than_a_lap(t) -> void:
-	var fill := Tuning.METER_MAX / Tuning.sleepiness_gain_calm()
+	var zone_blocks := Tuning.CALM_ZONE_BLOCKS * Tuning.CALM_ZONE_BLOCKS
+	var fill := Tuning.METER_MAX / Tuning.sleepiness_gain_calm(zone_blocks)
+	var block_fill := Tuning.METER_MAX / Tuning.sleepiness_gain_calm(1)
 	var zone_px := (Tuning.CALM_ZONE_BLOCKS * Tuning.BLOCK_SIZE
 			+ (Tuning.CALM_ZONE_BLOCKS - 1) * Tuning.STREET_WIDTH) * Tuning.TILE_SIZE
 	var block_px := Tuning.BLOCK_SIZE * Tuning.TILE_SIZE
@@ -239,12 +253,20 @@ func _test_a_calm_zone_is_a_route_rather_than_a_lap(t) -> void:
 	t.check(zone_cross > fill * 0.25,
 			"crossing a calm zone (%.1fs) is a quarter of a full meter (%.1fs) or better"
 			% [zone_cross, fill])
-	t.check(block_cross < fill * 0.25,
-			"crossing a single calm block (%.1fs) is not, which is why one is a lap"
-			% block_cross)
 	t.check(zone_cross < fill,
 			"and a zone is still not a whole meter in one traverse (%.1fs of %.1fs)"
 			% [zone_cross, fill])
+
+	# Traverses of itself to fill the meter, for each size. The curve exists to bring these
+	# together; a ratio far from 1 in either direction is a size that is the obviously right or
+	# obviously wrong destination for a reason that is not about what it is.
+	var zone_laps := fill / zone_cross
+	var block_laps := block_fill / block_cross
+	t.check(maxf(zone_laps, block_laps) / minf(zone_laps, block_laps) < 1.5,
+			"a small calm area costs about what a zone does per traverse of itself "
+			+ "(%.1f laps against %.1f)" % [block_laps, zone_laps])
+	t.check(block_laps > 1.0 and zone_laps > 1.0,
+			"and neither size is filled by one traverse (%.1f, %.1f)" % [block_laps, zone_laps])
 
 ## The street lattice is never cut by generation, so closing any one street segment must
 ## still leave a way to a park. This is the property that lets Act IV drop barricades

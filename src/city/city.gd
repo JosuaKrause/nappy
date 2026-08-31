@@ -127,8 +127,47 @@ func set_daylight(fraction: float) -> void:
 
 # ------------------------------------------------------------ WorldContext ---
 
+## Whether this is calm ground at all, for the debug overlay and the telemetry. **Not** a
+## `WorldContext` question any more: `Baby` asks `sleepiness_multiplier` instead, because since M52
+## calm ground is a rate rather than a kind of place.
 func is_calm_zone(world_position: Vector2) -> bool:
 	return Tile.is_calm(map.tile_type_at_world(world_position)) if map else false
+
+## How much faster the sleepiness meter fills on this ground. *(Playtest 14, finding 11: "x1.5 the
+## sleepiness effect of calm zones and double it for 1x1 calm zones", and playtest 16's curve over
+## the sizes between.)*
+##
+## 1.0 off calm ground, and `Tuning.sleepiness_calm_multiplier` on it — which is a function of **how
+## many blocks the lot has**, not of the tile. A single park block and one corner of a four-block
+## zone are the same grass, so this is the one ground question that cannot be answered from the tile
+## type alone, and that is the reason for the cache below.
+func sleepiness_multiplier(world_position: Vector2) -> float:
+	if not map:
+		return 1.0
+	var tile := map.world_to_tile(world_position)
+	if tile != _sleepiness_tile:
+		_sleepiness_tile = tile
+		_sleepiness_answer = _sleepiness_on(tile)
+	return _sleepiness_answer
+
+## The last tile this was asked about and what it answered.
+##
+## **Cached because the question is about a lot and `block_at` is a search.** Every other ground
+## question is a tile lookup; this one walks the block list to find which lot the tile belongs to,
+## and it is asked every physics frame. She covers a tile in about ten frames at a walk, so caching
+## the tile turns a hundred-and-twenty-block scan per frame into one per tile entered.
+##
+## Cleared at dawn rather than never: `map.repaint` can turn a park into `SPOILED` overnight, and a
+## cached answer that outlives the ground it was about is the shape of bug this project keeps
+## finding — see `_ground_for`'s note about a cache with a shorter life than its invalidation rule.
+var _sleepiness_tile := Vector2i(-1, -1)
+var _sleepiness_answer := 1.0
+
+func _sleepiness_on(tile: Vector2i) -> float:
+	if not Tile.is_calm(map.tile_at(tile)):
+		return 1.0
+	var blocks := map.lot_blocks(map.block_at(map.tile_to_world(tile)))
+	return Tuning.sleepiness_calm_multiplier(blocks.size.x * blocks.size.y)
 
 ## What the ground she is standing on does to her recovery: calm, precinct, ordinary, main road,
 ## best to worst. *(M41, playtest 12 finding 8.)*
@@ -236,11 +275,24 @@ func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 ## that approach's right, which is where a driver would look for it and where a person waiting to
 ## cross that road is already standing.
 ##
+## **That paragraph was the intent and the arithmetic did something else.** *(Playtest 16: "the
+## traffic lights are next to the building and not the street.")* The across-offset was
+## `half - inset` — 80px from the centre line of a 192px corridor, which is 2.5 tiles out on a
+## pavement that starts at 1.0 — so every head stood hard against the **frontage**, the full width
+## of the footway away from the road it was talking about. A signal that far from its carriageway
+## has stopped saying which road it means, which is the one job the placement was carrying.
+##
+## It is measured from the **kerb** now rather than from the corridor's edge, because the kerb is
+## the thing the sentence above is about: half the carriageway, plus half a tile of pavement so the
+## post stands on the footway rather than in the gutter. The two ends of a street are different
+## distances from its middle and only one of them is where a light belongs.
+##
 ## Nineteen junctions of a hundred, so this is seventy-six nodes that redraw two or three times a
 ## minute each. Fixed for the run: a light is part of the lattice, not part of the day.
 func _spawn_signal_heads() -> void:
 	var inset := Tuning.TILE_SIZE * 0.5
 	var half := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE) * 0.5
+	var kerb := Tuning.carriageway_width() * 0.5 + inset
 	for x in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		for y in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y):
 			var junction := Vector2i(x, y)
@@ -251,7 +303,7 @@ func _spawn_signal_heads() -> void:
 			var arms: Array[Vector2] = [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]
 			for heading in arms:
 				var right := Vector2(-heading.y, heading.x)
-				var at := centre - heading * (half + inset) + right * (half - inset)
+				var at := centre - heading * (half + inset) + right * kerb
 				if not map.is_walkable(map.world_to_tile(at)):
 					continue
 				var light := TrafficLight.new()
@@ -306,6 +358,8 @@ func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## only way a requisitioned park can stop having swings in it.
 func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	map.repaint(state)
+	# Before anything reads the ground again: a park that burnt down last night is not calm today.
+	_sleepiness_tile = Vector2i(-1, -1)
 	_paint_ground()
 	_dress_blocks(state)
 	# Last, and after the repaint: which blocks are calm is what the closure invariant is

@@ -4,7 +4,7 @@ Played on `main` at M50 — `5d2a276`, seed `374709573` (both screenshots) — w
 findings in the build. Reported mid-run, in five messages, three of them with a screenshot
 attached. The wording below is the player's, verbatim.
 
-**Nine findings, in four groups.**
+**Ten findings, in four groups.**
 
 **Four of them are one complaint**: the city draws a lattice it does not have, and the crowd walks
 it. It goes onto a bridge with no footway, off a bulkhead into the sea, and through crossroads whose
@@ -252,3 +252,35 @@ at her that she answers by **planning a turn** is neither of those, and it may b
 rather than a reassignment of one row. It also may not obstruct — `validate()` refuses an
 `AHEAD_OF_PLAYER` row with a body — which is fine for a moving bike and is a rule to check rather
 than assume.
+
+## 10. The calm rates, and the traffic lights, clarified
+
+> "first, calm zones need to fill up the sleep meter faster in general. second, the size of the
+> calm zone increases the speed even further if it is small. that was exactly what I wrote before.
+> I don't see any ambiguity there. also, what is your problem with understanding the traffic light
+> issue? currently the traffic lights are next to the building and not the street."
+
+> "2x1 calm zones have a proportional multiplier. the base is 2x2"
+
+> "or maybe redefine the base to 1x1 and divide by the number of blocks"
+
+**"That was exactly what I wrote before" is correct**, and the thing it was written in is
+`docs/PLAYTEST-14.md`, finding 11: *"x1.5 the sleepiness effect of calm zones and double it for 1x1
+calm zones."* This is the fourth item in one session that the project had already recorded — see
+finding 4 — and the first where the re-report was caused by this side asking a question the file
+answers.
+
+**The traffic lights were never a design question.** They stand **next to the building instead of
+the street**: `City._spawn_signal_heads` offset each head `half - inset` from the corridor's centre,
+which is 80px of a 192px street, so every one of them stood on the *outer* tile of the footway
+against the frontage. The doc comment above that line already said the head belongs "on the kerb
+beside the carriageway it stops" — the intent was written down and the arithmetic did something
+else.
+
+**And the curve over the sizes had one real ambiguity, which is arithmetic rather than design.** The
+two phrasings do not agree. Three anchors were given — a 2x2 is the base, a 1x1 is double it, a 2x1
+is proportionally between — and dividing by the **number of blocks** cannot hold the first two at
+once: from a 2x2 base it makes a 1x1 four times as fast, and from a 1x1 base it makes a 2x2 half of
+what it is today. Dividing by the **side** holds all three, because a 1x1 against a 2x2 is a factor
+of two in width and four in area while the rate asked for doubles. `1 / sqrt(blocks)` is what
+shipped, and it is also what the design says in words: *a lap is a length, not an area.*

@@ -3504,15 +3504,60 @@ which is likewise recorded there and likewise never built.
       complex, 2x2 blocks.
 - [x] ~~"Rectangular": which rectangles, and how many per city?~~ Answered by M47: **2x1**, and
       *"not all calm areas have to take up multiple blocks but add more that do"*.
-- [ ] **"Rate adjustments": is the rate a property of the *kind* of calm, of its *size*, or a
-      number that moves for all calm at once?** Per-kind is the one that reaches `Baby`'s
-      interface, and M41's rule applies — a fifth question that is a special case of one of the
-      four is what that rule exists to stop, so this wants to generalise `decay_multiplier` rather
-      than sit beside it.
-- [ ] **"Traffic light placements": what decides where a light goes, now that it is not just the
-      spine?** And what it is *for* — M41 states the signals' fairness contract over the side
-      street's green, and lights on an ordinary junction would put that contract on streets the
-      player crosses casually all day.
+- [x] **"Rate adjustments": neither kind nor a flat number — it is a curve over the lot's
+      *size*, and it had already been written down.** *(Playtest 14, finding 11: "x1.5 the
+      sleepiness effect of calm zones and double it for 1x1 calm zones", restated in playtest 16 and
+      then given its middle: "2x1 calm zones have a proportional multiplier, the base is 2x2".)*
+      This side asked the question the file answers, which is the second time in one session.
+
+      **Built: `1 / sqrt(blocks)`, normalised so a 2x2 zone is the base — 21x, 29.7x, 42x for four,
+      two and one blocks, i.e. 11.3s, 8.0s and 5.7s to fill from empty.** The base moved 14 → 21,
+      and one correction travelled with it: `docs/PLAYTEST-14.md` recorded the request against a
+      value of **12**, which had been wrong since M41, so the 1.5 is taken on the 14 that was
+      actually there.
+
+      Three things worth carrying:
+
+      - **The two phrasings of the curve do not agree, and the arithmetic picks.** Dividing by the
+        **number of blocks** cannot hold "a 2x2 is the base" and "a 1x1 is double it" at once —
+        from a 2x2 base it makes a 1x1 *four* times as fast, and from a 1x1 base it makes a 2x2
+        half of what it is today. Dividing by the **side** holds both, because a 1x1 against a 2x2
+        is a factor of two in width and four in area while the rate doubles.
+      - **And that is the design's own sentence: a lap is a length, not an area.** Paying inversely
+        to width pays every size about the same for one traverse of itself — 1.4 traverses for a
+        single block against 1.05 for a zone, where before the curve they were 2.75x apart. So a
+        small calm area stops being the weaker destination for a reason that has nothing to do with
+        what it is, which is what puts *which* calm area to head for back in play.
+      - **`Baby` still asks four questions**, because this generalised one rather than adding a
+        fifth: `WorldContext.is_calm_zone` (a bool) is `sleepiness_multiplier` (a rate). Exactly
+        M41's move on the other half of the same question. `City` keeps an `is_calm_zone` of its own
+        for the debug overlay and the telemetry, which do want the yes/no
+
+      **And `tests/test_generator.gd`'s lap test was rewritten rather than repaired.** It said a
+      single block is *not* worth a quarter of a meter to cross — "which is why one is a lap" —
+      which was right while every calm area filled at one rate and is the thing the curve was
+      built to remove. It asserts the ratio now
+- [x] **"Traffic light placements": it was never a design question.** *(Playtest 16: "what is
+      your problem with understanding the traffic light issue? currently the traffic lights are
+      next to the building and not the street.")* `City._spawn_signal_heads` offset each head
+      `half - inset` from the corridor's centre — 80px of a 192px street — so every one stood on the
+      **outer** tile of the footway, against the frontage, the full width of the pavement from the
+      road it was talking about. The doc comment above that line already said a head belongs *"on
+      the kerb beside the carriageway it stops"*: the intent was written down and the arithmetic did
+      something else. Measured from the kerb now — half the carriageway plus half a tile of pavement
+
+      **What this does *not* answer, and it is left open rather than assumed closed:** whether more
+      junctions should be signalled. M41's sentence that lights are *a property of the street rather
+      than a scattering of them* is untouched, and M53 — which the player queued behind this — is
+      about junctions whose arms are not streets, which is a different question again
+- [ ] **The unasked half, parked rather than pursued: should more junctions be signalled?** Nobody
+      asked for it and this file is not to treat it as implied. Recorded because the cost is real
+      and would otherwise be discovered by building it: every signalled junction stops being a
+      give-way zebra and becomes a **timing** crossing, `Tuning.validate_signals()` is a hard-fail
+      contract so extending lights extends where death-by-timing applies, and M46 measured that
+      arbitrary offsets stop two thirds of the traffic at every junction. It would also repeal
+      M41's *"a property of the street rather than a scattering of them"*, which is a sentence to
+      overturn on purpose or not at all
 
 ## Tooling for the diversion work · `feature/a-map-that-shows-the-plan`
 
