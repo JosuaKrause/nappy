@@ -18,6 +18,7 @@ func run(t) -> void:
 	_test_home_opens_onto_the_street(t)
 	_test_the_home_is_in_the_middle_of_a_city_worth_walking(t)
 	_test_calm_zones_are_four_blocks_of_one_thing(t)
+	_test_no_two_calm_areas_are_in_each_others_ring(t)
 	_test_a_calm_zone_is_a_route_rather_than_a_lap(t)
 	_test_a_dead_end_is_a_dead_end(t)
 	_test_a_big_building_joins_two_blocks(t)
@@ -452,3 +453,43 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 func _seed(index: int) -> int:
 	# Spread the seeds out; consecutive integers are what generate() retries with.
 	return 1000 + index * 7919
+
+## **No two calm areas are anywhere in each other's eight-block ring, corners included, whatever
+## kind of calm they are.** *(Playtest 14 finding 7, and the 2026-08-31 re-report off a telemetry
+## map: "I see two diagonally adjacent parks — that bug is still not fixed?")*
+##
+## Asserted here rather than only inside `CityGenerator.validate()`, and that is the point of it
+## existing at all: validate() was **both** of the things that were wrong. It skipped every lot
+## that was not `_OPEN_CALM`, so a courtyard was not a calm area as far as the guarantee went, and
+## it stepped `RIGHT` and `DOWN` only, so it had never looked at a diagonal — including through
+## M49, which fixed the diagonal in the placement rule and left the guarantee checking the old
+## shape. A test that calls validate() would have agreed with it about both.
+##
+## So this walks the whole ring itself, over `map.calm_blocks` — the list the closure planner, the
+## park rules and the telemetry picture all use, which is the list the player is looking at.
+##
+## Measured before the fix: 10 cities in 40 had at least one pair, 12 side by side and 8 diagonal,
+## and every one of them was courtyard-to-courtyard. It costs one extra generation attempt in
+## forty and takes calm areas per city from 9.22 to 9.18.
+func _test_no_two_calm_areas_are_in_each_others_ring(t) -> void:
+	for i in 24:
+		var map := CityGenerator.generate(_seed(i))
+		var owner := {}
+		for block in map.calm_blocks:
+			var lot := map.lot_blocks(block)
+			for y in range(lot.position.y, lot.end.y):
+				for x in range(lot.position.x, lot.end.x):
+					owner[Vector2i(x, y)] = block
+		for member: Vector2i in owner:
+			for dy in [-1, 0, 1]:
+				for dx in [-1, 0, 1]:
+					var neighbour: Vector2i = member + Vector2i(dx, dy)
+					if not owner.has(neighbour) or owner[neighbour] == owner[member]:
+						continue
+					t.check(false,
+							"seed %d: calm areas %s (%s) and %s (%s) meet at %s"
+							% [_seed(i), owner[member],
+							GameEnums.BlockPurpose.keys()[map.starting_purpose(owner[member])],
+							owner[neighbour],
+							GameEnums.BlockPurpose.keys()[map.starting_purpose(owner[neighbour])],
+							member])

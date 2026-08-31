@@ -169,6 +169,32 @@ M47 had it as an open question — *"probably right — they are a junction apar
 apart — but it is currently an accident of the loop bounds rather than a decision"*. **This is the
 decision.** Fixed: the ring is `footprint.grow(1)`, corners included.
 
+### Re-reported on 2026-08-31, off a telemetry map, and it was half fixed
+
+> "I see two diagonally adjacent parks -- that bug is still not fixed?"
+
+Sent with a `-map-day` picture showing two green lot outlines meeting at a corner. **The report is
+right and the M49 fix was not wrong** — it was narrower than the sentence it came from, in a way
+nothing could have caught:
+
+- `_has_open_calm_neighbour` asks whether anything **open calm** is in the ring — park, forest,
+  quiet square — and a **courtyard** is none of those. So the rule was never about calm areas, it
+  was about three of the four kinds of them.
+- `CityGenerator.validate()` could not catch it either, and for two independent reasons: it skipped
+  every non-open-calm lot, *and* it only stepped `RIGHT` and `DOWN`, so it had never checked a
+  diagonal at all. The generator's placement rule was fixed in M49 and the guarantee that is
+  supposed to hold it was left checking the old thing.
+
+Measured over 40 seeds before the fix: **10 of 40 cities have at least one pair**, 12 side by side
+and 8 diagonal, and **every single one is courtyard-to-courtyard**. No park was ever next to
+anything — that half has worked since M49.
+
+The shape to carry, because this project has now paid for it twice in two milestones: **an
+identity standing in for the property.** `_OPEN_CALM` is the list of purposes that are *laid as
+open ground*, and it was being read as "the calm ones" because for a long time those were the same
+set. `docs/CITY.md` states the guarantee over **calm areas**, and `map.calm_blocks` — which is what
+the picture draws and what the player is looking at — has always included courtyards.
+
 ## 8. A calm area she had never been to was already spoiled
 
 > "I just came to a calm zone that already had events play out (a musician) but I have never been
