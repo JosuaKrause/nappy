@@ -40,6 +40,24 @@ the shared, versioned, reviewable place, and it is already where this project ke
 The same rule one level down: a note long enough to unbalance this file becomes a **rule file of its
 own** rather than a longer `CLAUDE.md`. What must not happen is a note living nowhere.
 
+### A reference to a file outside the repo is not a reference
+
+**Every log, telemetry map or screenshot a doc points at gets copied into `docs/evidence/` in the
+same commit as the sentence that points at it.** *(2026-09-01: "when referencing an image or log
+make sure to copy the files into the repo so the reference doesn't get lost when cleaning up. make
+sure all current references are in the repo so I can clean up the log folder.")*
+
+`user://telemetry/` is a **scratch directory the player has to be able to empty.** It fills with
+every `tools/shot.sh` and `tools/check.sh` this side runs, so tidying it is routine maintenance and
+not carelessness — which means a finding whose evidence lived only in there is a finding that stops
+being checkable on a perfectly ordinary Tuesday.
+
+The cost was already paid when the rule was asked for: of the three telemetry files the docs
+referenced, **none was still on disk**, against 163 runs that were. And they cannot be recovered by
+replaying — **a run log is a record of what a player did, so it is not a function of the seed.**
+Regenerating gives a different run with the same city. Keep the original filename; it carries the
+timestamp, the seed and the commit, which is most of what makes the file worth having.
+
 ### Write the feedback down with all of its detail, before doing anything about it
 
 **Every piece of playtest feedback goes into `docs/PLAYTEST-NN.md` in full — the player's own
@@ -338,6 +356,12 @@ nothing at all and looks like it hung. Write `var scene: PackedScene = load(path
 error — a null `by_id()` result, say — aborts `_ready()` before the quit, so the headless
 process sits there forever printing nothing. A test run with *no output at all* means an
 error in a suite, not a slow suite.
+
+**A *parse* error does the same thing and is easier to cause**, since `_discover` loads every
+suite before running any: a bad indent in one file takes the whole run down with `Failed to load
+script` and then hangs. And the way to see either is to stop piping the run into `tail` — `tail`
+prints nothing until EOF, so a hung run and a silent one look identical. Redirect to a file and
+read it. That cost half an hour on M52; both times the message was sitting on line four.
 
 **`--script` skips autoloads.** The test suite runs as a *scene*
 (`godot --headless --path . res://tests/tests.tscn`) because every test needs `Tuning`.
