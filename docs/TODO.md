@@ -199,6 +199,12 @@ whether she reached it, and there is a **dusk** picture now, because that last o
 anything at dawn. **What is left is step 3, placeholders**, plus the resistance note's alley as a
 set piece.
 
+**And read step 3's own opening before touching it**, because the thing it is for was misread here
+first: *"the role of budget is to provide variety in encounters and make sure to not spam the same
+event over and over again"* — a variety ledger, not a density cap. The count of sites is the
+density; the budget decides what fills them, and the point of resolving late is that **variety gets
+measured over the encounters that happen rather than over a city she never saw.**
+
 Read the M50 entry before picking any of it up: the things that went wrong there are worth more
 than the things that went right, and two of them are the same shape — **a test that was true by
 luck**. The retry guarantee broke and the suite stayed green because seed 4242 happened to
@@ -2971,14 +2977,53 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
 
 ### Step 3 — placeholders
 
-- [ ] **A `Planned` may be unresolved**, and resolves to a concrete row when she comes within
-      range — reusing `EVENT_STREAM_RADIUS`, which is already the "she is about to be able to see
-      this" boundary. *"Budget is not really used up if the player doesn't see it."*
+**What the budget is for was misread here, and the player corrected it before anything was
+built.** *(2026-08-31: "I think you are misunderstanding the role of budget. It is to provide
+variety in encounters and make sure to not spam the same event over and over again. The amount of
+placeholders is almost one per block sometimes multiple per block.")*
+
+The misreading is worth keeping because it is what the three bullets below were about to be built
+from. This side read the budget as a **density cap** — a pot of ground the day is allowed to
+occupy — and from there the quote *"budget is not really used up if the player doesn't see it"*
+can only mean *charge the pot late so the far side of the city is free*, which is order-dependent,
+empties out a day the longer she walks, and contradicts the third bullet. The whole question that
+went back to the player was built on that reading, and it was the wrong question.
+
+**The budget is a variety ledger.** The count of *sites* is the density and it is roughly one per
+block; the budget, the `max_per_day` caps and the weighted pick decide **what fills them**, so that
+what she meets is a city rather than nine dog walkers. Which makes the quote mean something quite
+different and quite simple: **variety should be measured over the encounters that happen, not over
+the whole map.** Fix all ~121 rows at dawn and the twenty she actually walks past can be nine dog
+walkers by chance, with the catalogue's caps perfectly satisfied across a city she never saw.
+
+So a placeholder is a **site with a pool**, not an absence:
+
+- [ ] **A `Planned` carries a pool of interchangeable rows**, chosen at dawn, and resolves to one
+      of them when she comes within `EVENT_STREAM_RADIUS` — which is already the "she is about to
+      be able to see this" boundary. It keeps a **provisional** `def` from the moment it is
+      planned, so the day is fully legal at dawn exactly as it is today: every guarantee, every
+      spacing rule and both culls run against a concrete row and none of them has to learn about
+      pools. Resolution may only *swap* within the pool
+- [ ] **The pool is what is interchangeable at that site**, and it is built from what already
+      decides placements: the same **role** (so a wall never resolves to friction and the lethal
+      spacing rule cannot be broken after the fact), ground that includes the tile, and the same
+      `spawn_mode`. The chosen row is re-checked against the day's room and spacing before it is
+      taken, which is the same check the provisional row passed — and the provisional row is the
+      fallback, so a resolution can never fail
+- [ ] **The caps become caps on what she meets.** Resolution prefers a row she has met least today,
+      which is the whole of *"do not spam the same event over and over again"*, and a row already
+      at its `max_per_day` **in encounters** is not offered
 - [ ] **Resolution draws from the placeholder's own stream** — `_stream(base, salt)` keyed by the
       placeholder's identity, never from a stream shared with the rest of the day. Otherwise where
       she walked moves everything planned after it, which is M39's defect with a longer fuse
-- [ ] **`tests/test_telemetry.gd`'s shape, applied here**: plan a day, resolve every placeholder,
-      and require the result to match planning it with the player walking a different way
+- [ ] **The test's sentence has to move with the correction, and this is the half that changes.**
+      It read *"resolve every placeholder and require the result to match planning it with the
+      player walking a different way"*, and under a variety ledger that is false by design: the
+      ledger is consumed by encounters, so two walks legitimately meet different rows. What must be
+      identical is **the offer** — the sites, the roles, the pools, the paths — which is the M39
+      property and the one `docs/CITY.md` states: *"determinism is a property of the offer, never
+      of what she did with it."* So: plan a day, walk it two ways, require the plan identical
+      placement for placement and require both walks to respect the caps
 
 ### The two invariant decisions, which blocked step 2 — both taken 2026-08-31
 
