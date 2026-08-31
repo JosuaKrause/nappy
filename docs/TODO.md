@@ -3428,11 +3428,16 @@ project now has the instrument to say whether it closed.
       the budget now buys dearer rows. And a leaf blower is as common a sight as a dog walker, which
       is the price of day 1 having exactly **two** rows a wall can be made out of.
 
-      **And one thing stays false on day 1 by an older decision.** *"Lethal or very expensive"* can
-      only be the second of those on day 1, because day 1 has **no lethal rows at all** — M31 made
-      act I's escalation a change of *kind* (0, 3, 4 lethal events over days 1–3), and that is a
-      deliberate teaching decision, not a gap. Day 1 off-corridor is very costly; deadly starts on
-      day 2. Left as it is rather than quietly overturned
+      **Day 1 is very costly and not deadly, and that is inside the design rather than short of
+      it.** *(Confirmed 2026-09-01: "day 1 blocks can be non-lethal. the wording always allowed
+      that.")* Day 1 has **no lethal rows at all** — M31 made act I's escalation a change of *kind*,
+      0, 3, 4 lethal events over days 1–3 — so an off-corridor wall there is `loose_dog` or
+      `leaf_blower` and the deadly end of the range starts on day 2.
+
+      This side raised it as a shortfall; it is not one. *"It ranges from very costly to deadly"* is
+      a **range**, and a day that spends only the cheap end of it is spending the range. Recorded so
+      the next reader does not re-open it: **the escalation across the acts is where "deadly" comes
+      from, and M31's teaching decision and M50's gradient were never in tension**
 - [ ] **Something between parallel strands of corridor** *(finding 2)*. Asked back because it
       overlapped `RouteTree`'s recorded instruction — *"the player can walk the beginning of path A
       and then switch to path B without noticing, and that is fine… the constraint is on the graph

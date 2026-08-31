@@ -260,6 +260,17 @@ last bit of room the reading had. Three things are pinned by it:
 - ***"That is not as we planned"*** — so this is a build that does not match a design already
   agreed, which is the shape M50's own entry admits to. It is not a new decision to take.
 
+**And one clarification came back on the fix rather than on the finding.** This side reported day 1
+as still falling short, because day 1 has no lethal rows in it at all and so can only ever be *very
+costly*:
+
+> "day 1 blocks can be non-lethal. the wording always allowed that"
+
+Which is correct and closes it: *"it ranges from very costly to deadly"* is a **range**, and a day
+spending only its cheap end is spending the range. M31's decision that act I escalates by *kind* —
+0, 3, 4 lethal events across days 1–3 — and M50's gradient were never in tension, and the note this
+side wrote as an open shortfall was not one.
+
 ---
 
 ## One thing this side noticed on the same map, which is not a finding
