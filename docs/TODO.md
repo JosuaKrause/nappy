@@ -251,8 +251,18 @@ twelve milestones and M51 finding 1 was the same defect on a cul-de-sac. **A fin
 twice from a player after being written down once by the project is a to-do that was filed and not
 read.**
 
-**So the running order is `M52` then `M53`**, on the player's instruction, and the third of M52's
-three items is the one M53 waits on.
+**And playtest 16 also carries the first report anybody has ever made about the back half of the
+game: `M54`.** The robber works — *"very good and effective… the timing is good"* — and walks
+through walls, because nothing in the event system has ever collided with the city. The resistance
+is invisible: *"I'm not sure if I ever did the resistance… there was no indication at the end of the
+day or any guidance what to do next."* Both are entries that have sat under "Known-shaky ground"
+waiting for exactly this, and the resistance one is the **deliberate risk** this file has named
+since the beginning — *"a player may finish a run never knowing the good ending existed"* — being
+run and not paying off.
+
+**So the running order is `M52`, then `M53`**, on the player's instruction, and the third of M52's
+three items is the one M53 waits on. `M54` is unordered against them and its robber half is a
+one-line-shaped bug on a row a player has just called good.
 
 **And the next three are asked for and written down: `M52`.** *"2x2 courtyard and rectangular calm
 zones, calm zone rate adjustments, traffic light placements."* Recorded in the player's own words,
@@ -3312,6 +3322,45 @@ rather than to move a number.
       a report that the ending was unreadable — three screens deep, in the fiction's own voice,
       dismissed with the same key as everything else. Finding 5 is the fix and this is the evidence
       for it. Reopen it if the counter is ever seen to move with nerves still on the HUD
+
+## M54 — The resistance says something, and the robber stops at walls · not started
+
+Playtest 16's findings 6, 7 and 8, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. **This is
+the first report anybody has ever made about the back half of the game**, and two of the three are
+entries that have been sitting under "Known-shaky ground" waiting for exactly it.
+
+- [ ] **The resistance never announced itself** — finding 7, and it is the answer to the open
+      question "Things deliberately not done" has carried from the beginning: *"no quest log or
+      marker for the resistance… a player may finish a run never knowing the good ending existed.
+      `docs/TODO.md` lists it as an open question for playtesting."* The answer is that the risk did
+      not pay off — *"I'm not sure if I ever did the resistance. I walked on one chalk symbol once
+      but there was no indication at the end of the day or any guidance what to do next."*
+
+      Four instructions, and they are not one instruction:
+
+      - **The day brief carries the resistance's own words.** *"During the day brief there should be
+        instructions from the chalk marks to tell me what the next task is."* In the fiction's
+        voice, on the between-days screen.
+      - **The first chalk mark is the one exception and it is absolute.** *"Only the first encounter
+        (the chalk mark) should come without hint (yes, no hint even at the bottom left)."* The
+        parenthesis pre-empts the obvious half-measure: today's HUD line does not count as *no
+        hint*, and it goes for that first encounter.
+      - **A chalk mark is placed against a route** — *"placed dynamically alongside a route"* —
+        which is M50 step 2's own open item, the one that says `ResistanceDirector` places a
+        **contact** rather than a `Planned` and so does not simply inherit the covering set. Close
+        the two together
+      - **And the end of a day says whether anything happened**, which is the sentence the finding
+        opens with
+- [ ] **The robber runs through walls** — finding 8, and the rest of that sentence is a verdict:
+      *"the robber is very good and effective… the timing is good."* So M36's "Known-shaky ground"
+      entry closes on everything except this. The bug is precise: a pursuing `EventInstance` moves
+      by setting its own position and **nothing in the event system has ever collided with the
+      city** — harmless while every mobile row travelled a route the scheduler had already checked,
+      and not harmless the moment something steers at the player
+- [ ] **The run hint belongs to the lesson, not to the mechanic** — finding 6, *"hold SHIFT to run
+      randomly shows up sometimes after the running tutorial. it should only show up for the
+      tutorial."* Once day 3 has taught the run, a line telling her to hold shift is the game
+      explaining something she has already been made to do
 
 ## M53 — A junction is made of the streets that meet at it · not started, queued after M52's lights
 

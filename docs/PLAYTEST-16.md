@@ -1,15 +1,22 @@
 # Playtest 16
 
 Played on `main` at M50 — `5d2a276`, seed `374709573` (both screenshots) — with M51's seven
-findings in the build. Reported mid-run, in four messages, three of them with a screenshot
+findings in the build. Reported mid-run, in five messages, three of them with a screenshot
 attached. The wording below is the player's, verbatim.
 
-**Five findings. Four of them are one complaint**: the city draws a lattice it does not have, and
-the crowd walks it. It goes onto a bridge with no footway, off a bulkhead into the sea, and through
-crossroads whose arms are grass or a wall — and in every case it then vanishes where somebody is
-looking at it.
+**Eight findings, in three groups.**
 
-**The fifth is a different kind of finding and the more uncomfortable one**: calm areas at the
+**Four of them are one complaint**: the city draws a lattice it does not have, and the crowd walks
+it. It goes onto a bridge with no footway, off a bulkhead into the sea, and through crossroads whose
+arms are grass or a wall — and in every case it then vanishes where somebody is looking at it.
+
+**Two are the first report anybody has ever made about the back half of the game**, and both are
+`docs/TODO.md` entries that have been sitting under "Known-shaky ground" waiting for exactly this.
+The robber works — *"very good and effective… the timing is good"* — and walks through walls. The
+resistance is invisible: the player reached a chalk mark and could not tell that anything had
+happened, which is the deliberate risk that file has named since the beginning finally being run.
+
+**And the third group is a different kind of finding and the more uncomfortable one**: calm areas at the
 edge of the map, *"which should be impossible"* — and the rule saying so is already written down,
 unbuilt, in `docs/TODO.md`'s M47, along with its measurement. Together with M41's T-junction item
 and M51's cul-de-sac, that is **three findings in one session that the project had recorded and not
@@ -137,3 +144,58 @@ drawn with four arms because the lattice has four entries at that crossing, and 
 paint asks whether the street on the other side exists. A crossing marks *where to cross to*, so a
 zebra onto a wall is the city promising something it does not have — M51's own sentence, in the one
 place M51 was already looking.
+
+## 6. The run hint comes back after the tutorial has taught it
+
+> "hold SHIFT to run randomly shows up sometimes after the running tutorial. it should only show up
+> for the tutorial"
+
+Stated as a rule rather than as a bug, and the rule is the useful half: **the hint belongs to the
+lesson, not to the mechanic.** Once day 3 has taught the run, a line telling her to hold shift is
+the game explaining something she has already been made to do — which is the "a cue that marks
+everything says nothing" problem arriving in the HUD.
+
+## 7. The resistance never announced itself
+
+> "I'm not sure if I ever did the resistance. I walked on one chalk symbol once but there was no
+> indication at the end of the day or any guidance what to do next. during the day brief there
+> should be instructions from the chalk marks to tell me what the next task is. only the first
+> encounter (the chalk mark) should come without hint (yes, no hint even at the bottom left). the
+> chalk mark has to be placed dynamically alongside a route"
+
+**The first playtest ever to reach the resistance, and it reports that reaching it is invisible.**
+`docs/TODO.md` has carried this as a deliberate risk since the beginning — *"no quest log or marker
+for the resistance… this is a deliberate risk: a player may finish a run never knowing the good
+ending existed"* — and listed it as an open question for playtesting. This is the answer to that
+question, and it is that the risk did not pay off.
+
+Four separate instructions, and they are not the same instruction:
+
+1. **The day brief carries the resistance's own words.** *"During the day brief there should be
+   instructions from the chalk marks to tell me what the next task is."* So the between-days screen
+   gains a line, in the fiction's voice, saying what the next step is.
+2. **The first chalk mark is the one exception and it is absolute.** *"Only the first encounter (the
+   chalk mark) should come without hint (yes, no hint even at the bottom left)."* The parenthesis is
+   the player pre-empting the obvious half-measure: the HUD line that exists today does not count as
+   "no hint", and it is to be gone for that first encounter.
+3. **A chalk mark is placed against a route.** *"The chalk mark has to be placed dynamically
+   alongside a route."* This is M50's set-piece machinery applied to the thing `docs/TODO.md`
+   already names as its second caller — the item under step 2 that says `ResistanceDirector` places
+   a contact rather than an event and so does not simply inherit the covering set.
+4. And implicitly: **the end of a day has to say whether anything happened.** *"There was no
+   indication at the end of the day."*
+
+## 8. The robber runs through walls
+
+> "the robber is very good and effective only thing is that he can run through walls other than
+> that the timing is good"
+
+**A verdict and a bug, and the verdict is the rarer thing.** `docs/TODO.md`'s "Known-shaky ground"
+has said since M36 that *"the robber has never been met and act III has never been reached — every
+number on him is a rig's, and the row is now the most mechanically complicated in the catalogue"*.
+He has now been met and the timing is right, so that entry can close on everything except the walls.
+
+The bug is precise: a pursuing `EventInstance` moves by setting its own position, and nothing in the
+event system has ever collided with the city — which was harmless while every mobile row travelled a
+route the scheduler had already checked, and stops being harmless the moment something steers at the
+player.
