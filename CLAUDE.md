@@ -1283,9 +1283,19 @@ Do not "fix" these without a reason; each was a decision.
   which keeps the excitement model a pure query.
 - **Events are defined in code, not `.tres`.** Reviewable in a diff, validated on load,
   assertable as a whole catalogue in a test.
-- **No quest log or marker for the resistance.** It is a chalk mark on an alley wall and one
-  terse HUD line. This is a deliberate risk: a player may finish a run never knowing the good
-  ending existed. `docs/TODO.md` lists it as an open question for playtesting.
+- **No quest log or marker for the resistance** — *asked for X · overturned to Y on 2026-08-31,
+  because the risk was run and did not pay off.* It was a chalk mark on an alley wall and one terse
+  HUD line, and the risk was stated plainly: a player may finish a run never knowing the good ending
+  existed. Playtest 16 is the first run ever to reach a chalk mark and it reports exactly that —
+  *"I'm not sure if I ever did the resistance… there was no indication at the end of the day or any
+  guidance what to do next."*
+
+  **Half of it survives and the half is the point.** The **first** encounter still comes with no
+  hint at all — *"yes, no hint even at the bottom left"*, which is the player pre-empting the
+  half-measure, so today's HUD line goes for that one — because finding the difficulty dial is
+  still meant to be the player's own doing. After that the resistance **speaks**: *"during the day
+  brief there should be instructions from the chalk marks to tell me what the next task is."* See
+  M54, and `docs/HANDOFF.md`'s decision 5, which is where the original was recorded.
 - **The home's doorstep is exempt from the route-redundancy guarantee.** The home is a notch
   with one exit, so sealing that street seals the player in. It is a constraint on where
   Act IV may barricade, not a layout flaw.
