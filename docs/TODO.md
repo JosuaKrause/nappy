@@ -2505,20 +2505,20 @@ depends on comes from the sharing.
 worse: it needed a global cost function, it made the trunk point at whatever calm happened to be
 nearest home on every seed, and it had nothing to say about the second route.)*
 
-- [ ] **Two probes at each calm area, walking in random directions.** Not one probe from home —
+- [x] **Two probes at each calm area, walking in random directions.** Not one probe from home —
       the growth runs **backwards**, from every destination toward the doorstep, and the trunk is
       what is left where they have all come together
-- [ ] **A path carries the colour of its origin**, and both probes from one calm area carry the
+- [x] **A path carries the colour of its origin**, and both probes from one calm area carry the
       same colour
-- [ ] **Same colours may not merge.** The two probes from one area can never become one path, so
+- [x] **Same colours may not merge.** The two probes from one area can never become one path, so
       where a second route exists at all the area is reached **two genuinely distinct ways**. It is
       an offer rather than a guarantee — see below
-- [ ] **Different colours merge, and the colours add up.** A probe that touches a differently
+- [x] **Different colours merge, and the colours add up.** A probe that touches a differently
       coloured path joins it, and the joined path carries the **union** of both colour sets. Which
       is the elegant half: once the `A`+`B` path exists, `A`'s other probe is locked out of it by
       the rule above, so the guarantee maintains itself as the tree grows and nothing has to police
       it
-- [ ] **"Touch" means *merge*, not *be near*.** Non-mergeable paths may run **directly adjacent** —
+- [x] **"Touch" means *merge*, not *be near*.** Non-mergeable paths may run **directly adjacent** —
       *"the player can walk the beginning of path A and then switch to path B without noticing"*,
       and that is fine, because both go to the same place. Optionally they can be separated with a
       road block, *"but that is not a hard requirement"*. So the constraint is on the graph, never
@@ -2598,14 +2598,62 @@ can walk the beginning of path A and then switch to path B without noticing"* �
 stake is only whether the pair **reads** as two options or as one thick one. A map question, for
 the first day this can be drawn, and the answer if it reads badly is a separating road block, which
 the design already offers as optional
-- [ ] **`RouteTree`, in `src/routes/`.** Built from `map`, the day's closed set and the available
+- [x] **`RouteTree`, in `src/routes/`.** Built from `map`, the day's closed set and the available
       calm areas. It holds, per calm area, the **branch** that reaches it; over the whole day, the
       **bundles** — edges carried by two or more branches — and the **fan-out**, meaning the
-      smallest set of sites touching every branch, which is what a set piece needs
-- [ ] **Leave `_streets_on_a_route` alone for now.** It is not `RouteTree`'s constructor and
+      smallest set of sites touching every route, which is what a set piece needs
+- [x] **Leave `_streets_on_a_route` alone for now.** It is not `RouteTree`'s constructor and
       swapping it would change what closures do as a side effect of a refactor. `RouteTree` lands
       beside it; the two converge in step 2, where what a closure is *for* is being decided anyway.
       `StreetNetwork.junction_distances` is the piece that genuinely is shared
+
+**Built, and here is what it came out as.** `src/routes/route_tree.gd` and
+`tests/test_route_tree.gd`, measured with a throwaway probe over 32 planned days (8 seeds × days
+1, 5, 9, 14) and deleted before committing, per the rule in `CLAUDE.md`:
+
+| | |
+|---|---|
+| calm areas per day / branches grown | 7.6 / 7.5 |
+| areas offered a second route | **241 of 241** that the map allowed one to |
+| streets on the tree per day | 68.9, of which **50% carry more than one area** |
+| probe 1 length vs the shortest way | **13.2 streets vs 4.4** |
+| probe 2 length | 6.6 streets |
+| fan-out | 2–6 sites against ~15 routes |
+
+Three things in it are worth carrying, and the first two are corrections to what was written here
+before anything was built.
+
+**The fan-out covers *routes*, not branches — and covering branches is the design's own warning
+arriving through the back door.** The item above said "touching every branch", which reads as the
+obvious meaning of *"make sure all routes touch at least one of them"* and is not it: a branch
+counts as covered when **either** of its routes is, and measured that way nine days out of 32 came
+back with a **single** street. That street is on route one of every area and route two of none, so
+a fire engine placed there is met by a player who takes the first way out of everywhere and missed
+entirely by one who takes the second. It is *"the tile she must cross"* — which this design names
+as its first draft's mistake — restated as a bug. Covering routes gets the right answer for
+nothing, because the two routes of one area share no street by construction, so **no single site
+can ever cover both** and the *"at least two places"* arithmetic falls out rather than being
+enforced.
+
+**A tail is everything hanging off a stretch, not the stretch that was just walked.** The
+same-colour rule is enforced by asking whether a junction's way home already carries this area's
+colour, and the first version marked only the junctions the probe had walked. That under-reports
+transitively — a junction upstream of a merge keeps a tail that does not mention the colour — so
+an area's second probe merged at it and then ran straight back down into the streets its first
+probe had spent. **The two routes shared ground while every explicit check in the construction
+said they could not.** `RouteTree._resettle_the_tails` recomputes the lot from the doorstep
+outwards after each adoption, which is O(the tree) a dozen times a day and is the version whose
+correctness can be read off the definition.
+
+**And one measurement is a question rather than a result: probe 1 is three times the shortest
+way.** 13.2 streets against 4.4, and the corridor is about a quarter of the lattice. That is not
+a bug — *"the paths to some calm zones might not be optimal or short but that is okay"* is
+explicit, and detail 3's random walk is what produces the variety the design wants. But detail 3
+also claims Wilson's *"gives variety without wandering"*, and on a 12×12 junction graph it
+measurably wanders; and the reason given for making probe **B** the shortest — *"reduces the
+overall number of available blocks, which makes the area more approachable — the player feels less
+lost"* — is an argument that points the same way at probe A. **This is a question for the player
+and not a number to quietly bias**, and the map picture below is what it should be asked against.
 
 **And the knob this creates has to be watched, because it cuts against winnability.** Sharing is
 what makes placement cheap, and it is also what makes **one closure decide the day** — a trunk that
