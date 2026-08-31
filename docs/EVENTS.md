@@ -264,6 +264,18 @@ Three things this gets right that choosing a site on her route would not:
   real — where its scar is recorded and its block moves along its arc — so the alternatives stop
   being possible on the same frame rather than when it finishes.
 
+**An offer takes up no room, and that is not a convenience.** Spacing the rest of the day around
+all two-to-six offers reserves ground for events that will not exist — and it broke *"a retried day
+is the same day"* outright, because the day after the set piece fires then has several long routes'
+worth of ground freed rather than one. Measured on seed 4242: `leaf_blower` seven to five and eight
+kinds moving between two attempts at the same day. Since an offer costs nothing, the fill is now
+**identical** between attempts, which is stronger than M39 could promise with a single one-shot.
+
+Two exceptions, both load-bearing. **Siblings space against each other**, because two offers on top
+of one another would be a real overlap on whichever one fires. And **nothing lethal may be planned
+into an offer**: if it does resolve there, she meets a lethal field and a fire engine at once,
+which is exactly the sum M28 refuses.
+
 The three counts this splits apart are worth keeping straight, because two tests moved with it.
 `max_per_day` is a cap on **instances**, and the number of offers is not one — so a one-shot is
 exempt from it in `tests/test_events.gd` and the real count is asserted in

@@ -862,14 +862,29 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 		if not plan.is_placed():
 			continue
 		var gap := _gap_between(candidate, plan)
-		if gap < Tuning.EVENT_SPACING_ANY:
-			return -INF
+		# **An offer is not in the world yet, so it takes up no room.** *(M50 step 2.)* A set piece
+		# is planned at every site of a covering set and exactly one of them ever happens, so
+		# spacing the whole day around all of them reserves ground for events that will not exist —
+		# and it broke M39's guarantee outright, because the day *after* it fires then has two to
+		# six long routes' worth of ground freed rather than one. Measured on seed 4242:
+		# `leaf_blower` seven to five and eight kinds moving between two attempts at the same day.
+		#
+		# The exception is the lethal clause below, and it is the one thing that cannot be deferred:
+		# if the offer does resolve there, she meets a lethal field and a fire engine at once, which
+		# is exactly the sum M28 refuses. Siblings still space against each other — the group is
+		# compared normally against its own — because two offers on top of one another would be a
+		# real overlap on whichever of them fires.
+		var elsewhere := plan.set_piece_group != "" \
+				and plan.set_piece_group != candidate.set_piece_group
+		if not elsewhere:
+			if gap < Tuning.EVENT_SPACING_ANY:
+				return -INF
+			if plan.def.hard_fail and gap < plan.def.outer_radius:
+				return -INF
+			if plan.def.id == candidate.def.id:
+				room_same = minf(room_same, gap)
 		if candidate.def.hard_fail and gap < candidate.def.outer_radius:
 			return -INF
-		if plan.def.hard_fail and gap < plan.def.outer_radius:
-			return -INF
-		if plan.def.id == candidate.def.id:
-			room_same = minf(room_same, gap)
 	return INF if room_same >= Tuning.EVENT_SPACING_SAME else room_same
 
 ## The closest two events come to each other, counting the whole of a route at both ends.

@@ -203,6 +203,15 @@ the park rule *deleted* events off calm she had not used, where the answer was *
 events there"** — which keeps every unvisited area clean and raises the density, because a repair
 spends the budget twice.
 
+**Playtest 15 has landed, mid-M50, and it is `M51`.** Seven things in
+**[docs/PLAYTEST-15.md](PLAYTEST-15.md)** plus a re-report that belongs to playtest 14's finding 7.
+The sentence under it is *the city is drawing things it does not mean*: a cul-de-sac is a wall on
+the graph and nothing on the pavement, the spine has a zebra painted under a traffic light —
+two contradictory promises about who gives way, on the one street where getting it wrong ends the
+day — a police car drives north showing its flank, and a car reaches the bridge and blinks out.
+Two of the seven are about the frame rather than the game, and one is a report the player is not
+sure about and is recorded as exactly that.
+
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
@@ -2914,7 +2923,24 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
       `tests/test_event_manager.gd`, where an instance actually exists. And *"the retry has one
       fewer of a spent one-shot"* became *"none"*, because the whole group goes with it. Both
       tests failed on the first run and both were the test being narrower than the sentence it
-      was written from
+      was written from.
+
+      **And a third thing it broke, which took a second commit and is the one worth reading.** With
+      the offers spacing the rest of the day around all of them, *"a retried day is the same day"*
+      stopped being true — the day after a set piece fires has two to six long routes' worth of
+      ground freed rather than one, so the fill lands differently: `leaf_blower` seven to five and
+      eight kinds moving, on seed 4242. It surfaced a commit late and by luck, because the calm-area
+      fix below changed which city seed 4242 generates; the suite had been green on the old one.
+
+      Two answers were tried and the first was wrong in an instructive way. **Placing the set piece
+      after the fill** makes the fill identical by construction — and it cannot find its own sites:
+      a fire engine's route is 1920px long and `_room_around` refuses anything within 64px of
+      anything, so on a map with 120 events already on it every candidate on every covering site is
+      illegal and only the fallback places. The rule that shipped is the other one: **an offer takes
+      up no room**, because it is not in the world and only one of the group ever will be. That
+      makes the fill *identical* between attempts rather than merely close, which is stronger than
+      M39 could promise with a single one-shot — and it is the direction step 3 is going anyway,
+      *"budget is not really used up if the player doesn't see it."*
 
 - [ ] **The resistance note's alley is a set piece too.** *(Split out of the item above rather
       than left implied.)* `ResistanceDirector` chooses where a chalk mark goes, and it has exactly
@@ -2969,6 +2995,55 @@ to-do list in another is a decision that will be asked again.**
 Presentation, in any form. *"How they are presented is already solved. The issue is that they are
 not placed properly."* No new cue, no new silhouette, no change to what a closure is, no change to
 `City.total_excitement_at`. If this milestone finds itself drawing something, it has gone wrong.
+
+## M51 — The city draws what it means · `feature/draws-what-it-means`
+
+Playtest 15, in full in **[docs/PLAYTEST-15.md](PLAYTEST-15.md)**. Seven findings, and they split
+into three that are the city lying about its own rules, two about the frame around the game, one
+art bug and one report the player is not certain of.
+
+**Nothing here is a balance change**, which is worth saying up front: every one of them is a place
+where what is drawn and what is true have come apart, and the fix is to make the drawing agree
+rather than to move a number.
+
+- [ ] **A cul-de-sac stops the crowd too** — finding 1, *"cars and people go through
+      cul-de-sacs"*. Dead ends are `absent_segments`, which every route search takes through
+      `CityMap.blocked_segments()`; the crowd is the one thing that travels the lattice without
+      asking. Be precise about what is being fixed: a car that drives *down* a dead end and turns
+      round is right, a car that drives out of the end that was built over is not, and neither is
+      one that never diverts because the street it is aiming at is gone from the graph but not
+      from its own view of the map. `CrowdAgent._divert` and `CrowdLanes` are where to look, and
+      M38's rule applies — *a placement is not a separation* — so a recycled car must not be
+      **placed** on a street that is not there either
+- [ ] **The main road has dotted lines, not a zebra** — finding 2, and the design half outranks
+      the art half. *"The main road shouldn't have zebra crossings (since they have traffic
+      lights) it should be two dotted lines demarking the pedestrian safe zone."* A zebra means
+      *traffic gives way to you* and on the spine it does not — what stops the traffic is the
+      light, which is `Tuning.validate_signals`' whole contract — so the paint has been
+      contradicting the rule at every junction of the one street where getting it wrong ends the
+      day. Four places have to agree, per `CLAUDE.md`'s street-hierarchy recipe: `GroundTiles`,
+      `CityGenerator`'s tile choice, whatever `CrowdAgent`'s crossing scan reads (it walks
+      **tiles** and looks for `CROSSING`, which is the M29 invariant — so a new tile type or a
+      changed one has to keep that question answerable), and the traffic's give-way rule, which
+      must **not** start giving way on the spine
+- [ ] **The police car has a rear view** — finding 3, *"the police car only has a sideview even
+      when driving vertically"*. An art gap in the crowd rather than in the catalogue
+- [ ] **Say GAME OVER on the game over screen, in big letters** — finding 5. *"In addition to
+      everything else that is already there"*, so the ending text, the reason and the keys all
+      stay; this adds a heading
+- [ ] **Change the colour of the title on the title screen** — finding 6
+- [ ] **A car on the bridge drives off the map instead of vanishing** — finding 7. This is M35's
+      *"nothing vanishes while you are looking at it"* arriving at the crowd, which has never had
+      it: `Crowd` recycles a car when it leaves the corridor box and the box is smaller than the
+      map, so the three holes in the boundary — the bridge, the tunnel, the road out — are exactly
+      where a recycle is visible. The rule to state is the events' one: past `Tuning.OUT_OF_SIGHT`
+      before it is taken
+- [ ] **Did the day counter reset mid-run?** — finding 4, and it is recorded with the player's own
+      doubt: *"maybe I died fully without noticing."* Read it **with** finding 5 rather than
+      instead of it — if a run can end and restart without the player noticing it has, that is the
+      game-over screen's complaint arriving from the other side, and fixing the screen may be the
+      whole of it. What to check first is whether the ending path can reach the title screen and
+      begin a new run without the ending screen having been readable
 
 ## Tooling for the diversion work · `feature/a-map-that-shows-the-plan`
 

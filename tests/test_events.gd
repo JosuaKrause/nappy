@@ -311,21 +311,24 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent, so
 		# the retry plans **none** of it. *(Since M50 step 2 that is "none" rather than "one fewer":
 		# a set piece is offered at every site of a covering set and the whole group goes with it.)*
-		# Everything else may move by at most one instance, which is what the freed corridor is
-		# worth — a placement that used to fail now fits, so the budget runs out one event earlier
-		# or later. Before M39 this was `homeless_yeller` going from two to eight.
+		#
+		# **And nothing else moves at all**, which is stronger than what M39 could promise. It used
+		# to allow one instance of drift, because the ground a spent one-shot freed let a placement
+		# that had failed now fit; an offer costs no room since M50 step 2 — see `_room_around` —
+		# so the fill is identical between attempts rather than merely close. What is *not* closed
+		# is still not closed: a **scar** genuinely occupies ground and still moves what stood
+		# there, which is the run's own history showing through and is the answer that should.
 		var before := _kinds_in(first)
 		var after := _kinds_in(second)
 		var changed := 0
 		for id: String in before.keys() + after.keys():
 			var expected: int = 0 if id in consumed else int(before.get(id, 0))
-			var drift: int = absi(int(after.get(id, 0)) - expected)
-			t.check(drift <= 1,
+			t.check(int(after.get(id, 0)) == expected,
 					"seed %d: the retry has %d '%s' where the day had %d"
 					% [run_seed, int(after.get(id, 0)), id, expected])
-			changed += 1 if drift > 0 else 0
-		t.check(changed <= 2,
-				"seed %d: and at most a couple of kinds move at all (%d did)" % [run_seed, changed])
+			changed += 1 if int(after.get(id, 0)) != expected else 0
+		t.check(changed == 0,
+				"seed %d: and nothing else moves at all (%d kinds did)" % [run_seed, changed])
 
 ## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
 func _kinds_in(plans: Array[EventScheduler.Planned]) -> Dictionary:
