@@ -3368,6 +3368,84 @@ rather than to move a number.
       dismissed with the same key as everything else. Finding 5 is the fix and this is the evidence
       for it. Reopen it if the counter is ever seen to move with nerves still on the HUD
 
+## M55 — Off the paths is the dangerous place · partly built
+
+Playtest 17, in full in **[docs/PLAYTEST-17.md](PLAYTEST-17.md)**. Twelve findings, four of which
+are already done and are ticked below; the rest are the queue.
+
+**The one sentence is the player's own: *"leaving the path should be lethal or very expensive. right
+now that is not the case… that is not as we planned."*** The design was agreed in M50 and the build
+does not match it, so nothing here is a new decision — it is an admitted gap being closed, and the
+project now has the instrument to say whether it closed.
+
+- [x] **A log says whether anybody was playing it** *(finding 3)*. `run-` when a person is at the
+      controls, `rig-` for a headless boot or anything driven by `--screenshot`, `--walk`, `--flee`
+      or `--press`. The tool's old proxy — anything under 3kB is a boot — could not see a
+      `shot.sh --walk 60`, which is a long busy entirely unplayed log
+- [x] **The trace says whether she was on the corridor** *(finding 6)*. A `path` line each way and a
+      share at dusk, in three states because a park is not "off the corridor". This is the
+      instrument for the two findings below, and it went in first on purpose
+- [x] **The word on the title screen has an outline** *(finding 4)*
+- [x] **Evidence lives in `docs/evidence/`** *(finding 10)*, with the rule in `CLAUDE.md`. Three
+      references the docs already carried were found to be dead
+- [ ] **Off the corridor has to cost what it was designed to cost** *(findings 1 and 12)*. **Closed
+      from M50's own entry rather than given a second design** — see "What M50 still owes", which
+      already carries the measurement (*day 1 is ~6× denser on the corridor than off it, and only
+      16.2 of its 113.6 placements are walls at all*) and the reason (*the expensive rows have low
+      `max_per_day`*, which is *"a budget the catalogue cannot spend is not density"* at the other
+      end of the map).
+
+      What playtest 17 adds is that **the gap is visible from outside** — a player read it off a
+      telemetry map without being told what to look for — and that the observed effect is not merely
+      "off-corridor is cheap" but that **the two are the wrong way round**: stepping off the paths
+      is a step into quieter ground.
+
+      Now measurable, which it was not when M50 wrote the entry: play or walk a day and read the
+      `path` line. What has to be true afterwards is that a run spending its time off the corridor
+      costs *more* than one on it
+- [ ] **Something between parallel strands of corridor** *(finding 2)*. **Blocked on a question that
+      has to go back**, because it overlaps a recorded instruction rather than merely extending one.
+      `RouteTree`'s own doc comment carries the player's earlier words: *"the player can walk the
+      beginning of path A and then switch to path B without noticing, and that is fine, because both
+      go to the same place. The constraint is on the graph and never on spacing; anything here that
+      enforced a distance between branches would have misread it."*
+
+      The two are probably compatible and *probably* is exactly the word `CLAUDE.md` says to stop
+      on: the old rule constrains **tree construction**, and a blocker between two strands is a
+      **placement**, so the tree could go on running branches down adjacent streets while the
+      scheduler puts a wall between them. But that changes *"and that is fine"* into *"and it costs
+      you"*, which is the player's sentence to overturn. Two sub-questions travel with it — how
+      close counts as parallel, and which of `wall` / `friction` / `set piece` goes there
+- [ ] **The corners of the world stop going diagonal** *(finding 11)*. `CityEdge`. Each band simply
+      carries on: mountain stays mountain round the corner, sea stays sea. No new terrain and no
+      corner feature — the player asked for the simpler thing, not a bigger one
+
+### The resistance, which is three findings and one shape
+
+*(Findings 7, 8 and 9. This is design work the player asked for by name — "let's think of more
+tasks like this" — so it is drafted and put back rather than built.)*
+
+**The shape, in the player's own terms: a resistance task is a thing that costs you meter or safety
+on purpose, in exchange for progress on the optional path.** Every other cost in this game is
+avoidable by routing; these are taken deliberately. That is what makes them affordable as an
+optional path at all, and it is why *"pursuing the resistance should make the game harder"* is a
+feature rather than a difficulty complaint.
+
+- [ ] **Give a note to a yeller** *(finding 7, and it comes fully specified)*. *"One task should be
+      giving a note to a yeller. that is a risky move since the yeller causes the same level of
+      excitement and there might be multiple candidates to test before finding the correct one."*
+      Three clauses and each is load-bearing: approaching costs the meter, it costs it *whether or
+      not this is the right man*, and there are several candidates so it is paid repeatedly
+- [ ] **The day brief carries the chalk marks' words, and it is not a quest marker** *(finding 7's
+      first half)*. This is the player **removing** a worry M54 recorded — telling her what the
+      resistance wants next is not a marker on a map. M54's first bullet can proceed without the
+      hedge it was written with
+- [ ] **What guards a chalk mark is the point** *(finding 9)*. *"I did like the robber next to the
+      chalk marking. that made it hard to actually get the chalk marking."* It happened by accident;
+      it becomes deliberate. This is also the answer to M54's open item about siting the note
+      dynamically — what should be near it is something that makes reaching it a decision
+- [ ] **More tasks of that shape**, drafted here and chosen by the player rather than built
+
 ## M54 — The resistance says something, and the robber stops at walls · not started
 
 Playtest 16's findings 6, 7 and 8, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. **This is
