@@ -50,7 +50,7 @@ func _ready() -> void:
 	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
 	# behind a flag is a trace the person playtesting has to remember to turn on.
 	if not "--no-telemetry" in OS.get_cmdline_user_args():
-		Telemetry.begin_run(GameState.run_seed)
+		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
 	GameState.day = _day_override()
 
 	_city = CITY.instantiate()
@@ -444,6 +444,30 @@ func _nearest_event_text() -> String:
 
 func _tile_name(type: GameEnums.TileType) -> String:
 	return GameEnums.TileType.keys()[type].to_lower()
+
+## Whether a **person** is at the controls, which is what decides if this run's log is a playtest.
+## *(Playtest 17, finding 3.)*
+##
+## Two ways it is not, and they are different in kind rather than in degree:
+##
+## - **There is no window.** `check.sh` and the test suite boot the game headless; nobody could be
+##   playing whatever else is true.
+## - **Something else is holding the keys.** `--screenshot` exists to take a picture and quit, and
+##   `--walk`, `--flee` and `--press` are rigs that supply the input themselves. A run driven by one
+##   of them can be long, busy and completely unplayed, which is exactly the case the size heuristic
+##   in `tools/telemetry.sh` could never catch.
+##
+## **`--seed`, `--day`, `--spawn`, `--overview` and the rest are *not* here**, and that is the line:
+## they change what she is looking at, not who is steering. A playtest of act III started with
+## `--day 9` is a playtest.
+func _somebody_is_playing() -> bool:
+	if DisplayServer.get_name() == "headless":
+		return false
+	var args := OS.get_cmdline_user_args()
+	for rig in ["--screenshot", "--walk", "--flee", "--press"]:
+		if rig in args:
+			return false
+	return true
 
 ## Dev flag: `-- --follow <event id>` parks a camera on an event wherever it is. Needed for
 ## anything that does not exist when the day starts — a mobile event mid-route, or the fire
