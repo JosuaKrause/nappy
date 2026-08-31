@@ -209,7 +209,7 @@ which is the ways from the doorstep to the calm areas still worth reaching.
 | --- | --- | --- |
 | lethal (`hard_fail`) | **wall** | never inside the corridor; `EVENT_WALL_RIM_WEIGHT` toward a turning off it |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
-| a `ONE_SHOT` | **set piece** | a site every route touches |
+| a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens |
 | `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler | **none** | wherever its own rule says |
 
 Two things about the mechanism rather than the table. It is **the same weighting the precinct
@@ -237,6 +237,38 @@ place (a `hard_fail` event must clear its whole outer radius of everything else,
 could have quietly stopped placing them, and it did not. And **the share drifts down with the
 day** because the corridor fills up and `EVENT_SPACING_SAME` pushes the overflow outward, which is
 the spacing rule doing its job rather than the weight failing.
+
+### A set piece is offered on every route and happens on one *(M50 step 2)*
+
+*"The fire + fire truck — it should be used in a way that the player actually encounters it on
+their chosen route, so we could dynamically choose it from a candidate set on that day."*
+
+The fire engine is the only one-shot in the catalogue and it used to be placed like everything
+else: a legal spot somewhere on the map, on a day she may never walk that way. An authored set
+piece that fires once per run and is missed is a fairness contract and a silhouette spent on
+nothing.
+
+So the day plans it **at every site of a covering set** — `RouteTree.covering_sites`, the smallest
+set of streets such that every route touches one — and the placements share a `set_piece_group`.
+The first one to enter the world spends the rest, in `EventManager._stream_in`, which is also
+where a scar is recorded: a run gets exactly one fire however many streets were offered.
+
+Three things this gets right that choosing a site on her route would not:
+
+- **Nothing has to predict her.** The guarantee is structural and holds whichever way she goes.
+- **A bundle is not a guarantee.** Two distinct routes to one area share no street by
+  construction, so no single site can ever cover both. The covering set is two to six streets and
+  code that assumed one would be the *"tile she must cross"* the design names as its own first
+  draft's mistake.
+- **The moment of choosing is the moment of walking there.** `_stream_in` is where an event becomes
+  real — where its scar is recorded and its block moves along its arc — so the alternatives stop
+  being possible on the same frame rather than when it finishes.
+
+The three counts this splits apart are worth keeping straight, because two tests moved with it.
+`max_per_day` is a cap on **instances**, and the number of offers is not one — so a one-shot is
+exempt from it in `tests/test_events.gd` and the real count is asserted in
+`tests/test_event_manager.gd`, where an instance exists. And a **retried day plans none** of a
+spent one-shot rather than one fewer, because the whole group goes with it.
 
 ### Danger, and when it arrives *(M31)*
 

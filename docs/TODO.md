@@ -2892,10 +2892,36 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
       **before** `map.repaint(state)`. Which blocks are calm is what a tree grows from, so it was
       comparing against a corridor for yesterday's city — 26 failures that were all the test being
       wrong. A tree is a fact about a *repainted* map, and nothing in the type says so
-- [ ] **Set pieces get a covering set.** Candidate sites such that every corridor touches at least
+- [x] **Set pieces get a covering set.** Candidate sites such that every corridor touches at least
       one — *not* a single site on her chosen route. `fire_truck` first, then the resistance
       note's alley. **A bundle is not a guarantee**: two distinct paths means at least two sites,
       and any code that assumes one is wrong
+
+      **Built for the catalogue's one-shots, which is `fire_truck` and nothing else.** The day
+      plans the row at **every** site and the placements share a `set_piece_group`; the first one
+      to enter the world spends the rest, in `EventManager._stream_in`. That hook is where an
+      event becomes real — it is where the scar is recorded and the block moves along its arc — so
+      the alternatives have to stop being possible on the same frame rather than when it finishes.
+
+      **The resistance note's alley is not done**, and it is deliberately left: `ResistanceDirector`
+      places a contact rather than an event, on its own schedule and with its own expiry, so it is
+      a second caller of this idea rather than a second row of the same one. It is written down as
+      a to-do below rather than folded in silently.
+
+      What it moved that was not obvious: **three counts came apart that used to be one.**
+      `max_per_day` is a cap on *instances*, and the number of offers is not one — so a one-shot is
+      exempt from the cap assertion in `tests/test_events.gd` and the real count moved to
+      `tests/test_event_manager.gd`, where an instance actually exists. And *"the retry has one
+      fewer of a spent one-shot"* became *"none"*, because the whole group goes with it. Both
+      tests failed on the first run and both were the test being narrower than the sentence it
+      was written from
+
+- [ ] **The resistance note's alley is a set piece too.** *(Split out of the item above rather
+      than left implied.)* `ResistanceDirector` chooses where a chalk mark goes, and it has exactly
+      the fire engine's problem — an authored thing placed somewhere she may never walk, with a
+      run's good ending resting on it. What makes it a separate item rather than the same one is
+      that a contact is not an `EventScheduler.Planned`: it has its own schedule, its own expiry
+      and no streaming, so the mutual-exclusion mechanism above does not simply apply to it
 
 ### Step 3 — placeholders
 

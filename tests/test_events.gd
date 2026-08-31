@@ -308,7 +308,9 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 		again.seed = rng.seed
 		var second := EventScheduler.build_day(day, again, map, consumed.duplicate())
 
-		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent.
+		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent, so
+		# the retry plans **none** of it. *(Since M50 step 2 that is "none" rather than "one fewer":
+		# a set piece is offered at every site of a covering set and the whole group goes with it.)*
 		# Everything else may move by at most one instance, which is what the freed corridor is
 		# worth — a placement that used to fail now fits, so the budget runs out one event earlier
 		# or later. Before M39 this was `homeless_yeller` going from two to eight.
@@ -316,7 +318,7 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 		var after := _kinds_in(second)
 		var changed := 0
 		for id: String in before.keys() + after.keys():
-			var expected: int = int(before.get(id, 0)) - (1 if id in consumed else 0)
+			var expected: int = 0 if id in consumed else int(before.get(id, 0))
 			var drift: int = absi(int(after.get(id, 0)) - expected)
 			t.check(drift <= 1,
 					"seed %d: the retry has %d '%s' where the day had %d"
@@ -805,21 +807,44 @@ func _test_scheduler_respects_placement_and_caps(t) -> void:
 					"day %d: '%s' was placed on an allowed tile type" % [day, plan.def.id])
 		for id in counts:
 			var def: EventDef = EventCatalogue.by_id(id)
-			if def.kind != GameEnums.EventKind.AMBIENT:
-				t.check(counts[id] <= def.max_per_day,
-						"day %d: '%s' respects max_per_day" % [day, id])
+			# A one-shot is exempt because since M50 step 2 it is planned at **every** site of a
+			# covering set and only one of them ever happens — so the count here is how many places
+			# the day offered it in, not how many of it there are. `max_per_day` is a cap on
+			# instances and the group is one instance by construction; the count that would break
+			# it is asserted in `tests/test_event_manager.gd`, where an instance actually exists.
+			if def.kind == GameEnums.EventKind.AMBIENT \
+					or def.kind == GameEnums.EventKind.ONE_SHOT:
+				continue
+			t.check(counts[id] <= def.max_per_day,
+					"day %d: '%s' respects max_per_day" % [day, id])
 
+## **A one-shot is planned on at most one day of a run, at a covering set of sites, and exactly one
+## of those sites happens.** *(M50 step 2 split this sentence in two; it used to be one clause.)*
+##
+## The day half is asserted here, over the plan. The *site* half cannot be — a plan is a set of
+## offers and which one is taken is decided by where she walks — so it is asserted where it is
+## decided: `tests/test_event_manager.gd`, against a real `EventManager` with the plans streamed in.
 func _test_one_shots_fire_once_per_run(t) -> void:
 	var map := _map()
 	var consumed: Array[String] = []
 	var seen := {}
 	for day in range(1, 15):
+		var groups := {}
 		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
 			if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 				continue
-			t.check(not seen.has(plan.def.id),
-					"one-shot '%s' fires at most once in a run" % plan.def.id)
+			t.check(int(seen.get(plan.def.id, day)) == day,
+					"one-shot '%s' is planned on one day of a run" % plan.def.id)
 			seen[plan.def.id] = day
+			groups[plan.def.id] = int(groups.get(plan.def.id, 0)) + 1
+			t.check(plan.set_piece_group != "",
+					"one-shot '%s' is planned as one of a group" % plan.def.id)
+		for id: String in groups:
+			# Two, because two distinct routes to one area share no street by construction, so no
+			# single site can ever cover both. One offer means the covering set collapsed and the
+			# fallback fired, which is legal and is not what a normal day looks like.
+			t.check(groups[id] >= 2,
+					"day %d offers '%s' in at least two places (%d)" % [day, id, groups[id]])
 
 ## The rule that keeps a day winnable: however bad it gets, one calm zone stays usable.
 ##

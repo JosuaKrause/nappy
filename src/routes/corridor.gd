@@ -44,6 +44,10 @@ enum Where {
 var _on := {}
 ## Segment key -> true, for the streets that meet one of those and are not one of them.
 var _rim := {}
+## The covering set: the smallest set of streets such that every route touches one of them. Kept in
+## order rather than as a set, because a **set piece** is placed once at each of them.
+var _sites: Array[Vector3i] = []
+
 ## The corridor of a tree. An empty tree gives a corridor that answers `AWAY` everywhere, which
 ## is the right answer rather than a special case: a day with no reachable calm has no route for
 ## anything to be inside or outside of.
@@ -58,7 +62,16 @@ static func of(tree: RouteTree) -> Corridor:
 		corridor._on[key] = true
 	for key in tree.rim():
 		corridor._rim[key] = true
+	corridor._sites = tree.covering_sites()
 	return corridor
+
+## The streets a set piece is placed on: every route touches one of them.
+##
+## *"We can have multiple candidate places and make sure all routes touch at least one of them."*
+## It is deliberately **the whole list** rather than a pick — the guarantee is that she meets one
+## whichever way she goes, and choosing one of them here would throw exactly that away.
+func sites() -> Array[Vector3i]:
+	return _sites
 
 ## The answer for every lattice cell, four to a cell, filled in on demand. `_UNKNOWN` for one not
 ## asked about yet.

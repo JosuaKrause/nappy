@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_an_event_waits_until_she_is_near_it(t)
 	_test_an_event_that_has_run_does_not_run_again(t)
 	_test_a_running_event_comes_back_where_it_got_to(t)
+	_test_a_set_piece_happens_at_exactly_one_of_its_sites(t)
 	_teardown()
 
 func _build_city(t) -> void:
@@ -242,3 +243,37 @@ func _test_a_running_event_comes_back_where_it_got_to(t) -> void:
 		t.check(absf(plan.live.age - aged) < 0.01,
 				"and it is as old as it was, so revisiting cannot restart its clock")
 	_city.events.stream_radius = INF
+
+## **A set piece is offered on every route and happens on one of them.** *(M50 step 2.)*
+##
+## `tests/test_events.gd` can only see the plan, which is a set of offers — *which* one is taken is
+## decided by where she walks, so it has to be checked here, where an instance exists. The rig has
+## no player and `stream_radius` is `INF`, so every offer is reachable at once: the first one the
+## manager streams in must spend the rest, and that is the strongest form of the property.
+##
+## It is the same shape as `_test_an_event_that_has_run_does_not_run_again` one level up. There a
+## plan may not run twice; here a *group* may not.
+func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
+	var offered := 0
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		_start(day)
+		var groups := {}
+		for plan in _city.events.plans():
+			if plan.set_piece_group == "":
+				continue
+			var seen: Array = groups.get(plan.set_piece_group, [] as Array)
+			seen.append(plan)
+			groups[plan.set_piece_group] = seen
+		for group: String in groups:
+			offered += 1
+			var live := 0
+			var spent := 0
+			for plan: EventScheduler.Planned in groups[group]:
+				live += 1 if plan.was_live else 0
+				spent += 1 if plan.spent else 0
+			t.check(live == 1, "day %d: '%s' happened in exactly one place (%d)"
+					% [day, group, live])
+			t.check(spent == (groups[group] as Array).size() - 1,
+					"day %d: and the other %d offers are spent (%d were)"
+					% [day, (groups[group] as Array).size() - 1, spent])
+	t.check(offered > 0, "a run offers a set piece at all (%d groups over fourteen days)" % offered)

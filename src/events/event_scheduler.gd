@@ -44,6 +44,11 @@ class Planned extends RefCounted:
 	## able to say which. Nothing in the game reads it — it decides where the plan went, it does
 	## not decide anything afterwards.
 	var role := GameEnums.BlockerRole.NONE
+	## Which set of mutually exclusive placements this one belongs to, or "" for anything that is
+	## simply itself. A set piece is planned at **every** site of a covering set and the first one
+	## she reaches is the one that happens; `EventManager._stream_in` spends the rest of the group
+	## at that moment. See `EventScheduler._place_a_set_piece`.
+	var set_piece_group := ""
 	## True once it has been in the world at least once. What it is *for* is the bookkeeping
 	## that must happen exactly once however many times an event is streamed in and out: a
 	## burnt-out shell records the fire that made it the first time it is seen and never again.
@@ -497,19 +502,66 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today"
 					% [def.id, roll, threshold])
 			continue
-		var placement := _place_one(def, rng, map, planned, ground, leave_alone, corridor)
-		if not placement:
+		var sited := _place_a_set_piece(day, def, rng, map, planned, ground, leave_alone, corridor)
+		if sited.is_empty():
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
 			# the outside this looks identical to a roll that failed.
 			Telemetry.note("roll", "one-shot %s: %.2f <= %.2f but nowhere to place it"
 					% [def.id, roll, threshold])
 			continue
-		planned.append(placement)
+		planned.append_array(sited)
 		consumed.append(def.id)
-		Telemetry.note("roll", "one-shot %s: %.2f <= %.2f — fires at %s"
-				% [def.id, roll, threshold,
-				TelemetryLog.tile(map.world_to_tile(placement.position))])
+		var where: Array[String] = []
+		for placement in sited:
+			where.append(TelemetryLog.tile(map.world_to_tile(placement.position)))
+		Telemetry.note("roll", "one-shot %s: %.2f <= %.2f — waiting at %s"
+				% [def.id, roll, threshold, ", ".join(where)])
+
+## A set piece, planned at **every** site of a covering set. *(M50 step 2.)*
+##
+## *"The fire + fire truck — it should be used in a way that the player actually encounters it on
+## their chosen route, so we could dynamically choose it from a candidate set on that day."* The
+## shape is the player's, and the important half of it is what it is **not**: the day does not
+## choose a site on the route she took, because that would need to know which route she took. It
+## chooses a set that **every** route touches, and the one she reaches is the one that fires. The
+## guarantee is structural, so nothing has to predict her.
+##
+## **A bundle is not a guarantee, and this is the caller where that bites.** Two distinct routes to
+## one area share no street by construction, so no single site can ever cover both — the covering
+## set is two to six streets, and code here that assumed one would be exactly the *"tile she must
+## cross"* the design names as its first draft's mistake. `RouteTree.covering_sites` carries the
+## arithmetic and the warning.
+##
+## The placements are mutually exclusive rather than several fire engines: they share a
+## `set_piece_group`, and `EventManager._stream_in` spends the rest of the group the moment one of
+## them enters the world. That is also where a scar is recorded, so a run gets exactly one fire
+## however many streets were offered.
+##
+## **The fallback is a placement anywhere**, and it is the honest failure direction: a day with no
+## corridor to speak of — no reachable calm, or a covering set whose streets carry none of this
+## row's ground — should still fire the one authored thing it has. A one-shot that never fires is a
+## fairness contract and a silhouette spent on nothing, which is the complaint this whole item
+## exists to answer.
+static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerator, map: CityMap,
+		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
+		corridor: Corridor) -> Array[Planned]:
+	var made: Array[Planned] = []
+	var sites := corridor.sites() if corridor else ([] as Array[Vector3i])
+	for site in sites:
+		# The ones already made count for spacing like anything else: two of the same row a few
+		# pixels apart is what `EVENT_SPACING_SAME` is for, and two candidate sites can be adjacent.
+		var beside: Array[Planned] = already.duplicate()
+		beside.append_array(made)
+		var placement := _place_one(def, rng, map, beside, ground, leave_alone, corridor, site)
+		if placement:
+			placement.set_piece_group = "%s@%d" % [def.id, day]
+			made.append(placement)
+	if made.is_empty():
+		var anywhere := _place_one(def, rng, map, already, ground, leave_alone, corridor)
+		if anywhere:
+			made.append(anywhere)
+	return made
 
 ## Fills the day's budget, **one stream per attempt**.
 ##
@@ -575,7 +627,7 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 ## has to happen: on a map with fifty events on it the honest answer is the best spot left.
 static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = [],
-		corridor: Corridor = null) -> Planned:
+		corridor: Corridor = null, site := NO_SITE) -> Planned:
 	var role := _role_for(def)
 	# An `AHEAD_OF_PLAYER` event is budgeted here and sited by `EventDirector` while the player
 	# walks. Costing it here rather than giving the director its own allowance is deliberate:
@@ -584,7 +636,7 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 		return Planned.new(def, Vector2.INF)
 
-	var open_candidates := _ground_for(def, map, ground, corridor, role)
+	var open_candidates := _ground_for(def, map, ground, corridor, role, site)
 	if open_candidates.is_empty():
 		return null
 
@@ -637,19 +689,34 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 ## in memory. `CLAUDE.md`'s note about `_ground_for` applies to the base list unchanged: nothing it
 ## depends on can move inside one `build_day`.
 static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
-		corridor: Corridor = null, role := GameEnums.BlockerRole.NONE) -> Array[Vector2i]:
+		corridor: Corridor = null, role := GameEnums.BlockerRole.NONE,
+		site := NO_SITE) -> Array[Vector2i]:
 	var base := _open_ground_for(def, map, ground)
 	if not corridor or role == GameEnums.BlockerRole.NONE:
 		return base
-	var key := "%s|%d|%d" % [def.placement, def.pavement_side, role]
+	var key := "%s|%d|%d|%s" % [def.placement, def.pavement_side, role, site]
 	if ground.has(key):
 		return ground[key]
 	var aimed: Array[Vector2i] = []
+	# **A set piece is placed on one named street**, so this half is containment rather than a
+	# weight. The rect is the street itself and not a radius round it: a street is the unit every
+	# other placement decision in this milestone is stated in, and a set piece has to be something
+	# she walks past on the way through rather than something near where she walked.
+	var named := StreetNetwork.by_key(site) if site != NO_SITE else null
+	var only := named.tile_rect() if named else Rect2i()
 	for tile in base:
+		if site != NO_SITE:
+			if only.has_point(tile):
+				aimed.append(tile)
+			continue
 		for _copy in _copies_of(tile, corridor, role):
 			aimed.append(tile)
 	ground[key] = aimed
 	return aimed
+
+## A placement with no particular street asked for. Not `Vector3i.ZERO`, which is the key of a real
+## street — the one running east out of the north-west corner.
+const NO_SITE := Vector3i(-1, -1, -1)
 
 ## Every tile of the right kind that anything may stand on today, precinct weighting included.
 ##
