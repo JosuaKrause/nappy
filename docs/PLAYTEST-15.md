@@ -58,6 +58,16 @@ that ended on the last nerve and started over — is the likely one, and it is *
 close this: if a lost run restarts without the player noticing it has, that is finding 5's
 complaint arriving from the other side and the two should be read together.
 
+**Checked in the code, and the alternative is the only thing that fits.** `GameState.day` moves in
+exactly two places: `finish_day` increments it on a win, and `start_run` sets it to 1. `start_run`
+is reached only through `_restart_run`, which **reloads the scene**. So a counter reading 1 again
+is a new run and there is no third path.
+
+That is not the same as *nothing happened*. What it says is that the run ended and the ending was
+unreadable — three screens deep, in the fiction's own voice (*"You stop going out."*), dismissed
+with the same key as every other screen in the game. Finding 5 is the fix and this is the evidence
+for it. Left half-open: reopen it if the counter is ever seen to move with nerves still on the HUD.
+
 ## 5. The game over screen has to say game over
 
 > "can we make the game over screen more obvious and also the title screen. clearly say game over

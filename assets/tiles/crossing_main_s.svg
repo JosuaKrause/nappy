@@ -1,0 +1,8 @@
+<!-- A signalled crossing on the main road, south edge. See crossing_main_n. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#3b3b45"/>
+  <rect x="4" y="8" width="3" height="1" fill="#43434e"/>
+  <rect x="1" y="27" width="6" height="3" fill="#b9b087"/>
+  <rect x="13" y="27" width="6" height="3" fill="#b9b087"/>
+  <rect x="25" y="27" width="6" height="3" fill="#b9b087"/>
+</svg>

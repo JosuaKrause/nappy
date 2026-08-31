@@ -42,7 +42,7 @@ and decided before a tile is laid — see `CityGenerator._assign_street_kinds`.
 | Kind | How many | What it is |
 | --- | --- | --- |
 | `ORDINARY` | everything else | Two lanes, a zebra at every junction, and traffic that gives way to somebody standing at the kerb. |
-| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. `CityMap.main_road`. |
+| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. Its crossings are two dotted lines rather than a zebra, because a zebra is a promise it does not make. `CityMap.main_road`. |
 | `PEDESTRIAN` | **two stretches of three blocks** | A retail precinct: paving frontage to frontage, no kerb, no cars, the busiest pavement in the city, and the best ground outside a park to bring a meter down on. `CityMap.precinct_spans`. |
 
 **With one kind of street the only route question is *which way*; with three it is also *which
@@ -851,6 +851,28 @@ is loud, and the reason a park is quiet.
   structural half of "a park is quiet because nobody is in it". `tests/test_crowd.gd`
   asserts the middle of every park is out of earshot.
 
+- **A car leaves the city by the bridge and the tunnel, and nowhere else.** *(M51, playtest 15
+  finding 7: "cars driving over the bridge currently just disappear. they should drive until they
+  leave the visible area".)* This is M35's *"nothing vanishes while you are looking at it"* — the
+  rule written for events — arriving at the crowd, which never had it because a recycle normally
+  happens at the edge of a box that is nowhere near anything she can see. The three holes in the
+  boundary are exactly where it is not. A car on the spine going north or south may now overrun
+  the map by `OUT_OF_SIGHT`; **everybody else keeps a tile**, because outside the map is water,
+  forest and mountainside, and `_paint_outside_the_map` lays carriageway out there at the spine's
+  own width and nowhere else. A general allowance would drive cars into the sea.
+
+- **And nobody walks into a cul-de-sac's wall.** *(M51, playtest 15 finding 1: "cars and people
+  go through cul-de-sacs".)* The crowd is the one thing that travels the lattice without asking
+  `blocked_segments()`, and it does not need to — a dead end is a street with its far end built
+  over, so the *tiles* say so. What it needed was to **look** at them. Avoidance was a single
+  probe fired seven tiles ahead, which answers *is there something coming up* and looks straight
+  past a two-tile wall into the open road behind it: an agent entering the street from the
+  junction beside the wall never saw it. It walks the tiles now, cached per tile — which is both
+  correct and *cheaper* than the probe, because an agent covers a tile in about twenty frames.
+  Measured at a dead end before the fix: **eight agents inside a wall at once, and something in
+  one on 87% of frames**; zero after, and `tests/test_crowd.gd` stands the field at a dead end so
+  it can see it at all.
+
 - **Bodies are solid, and cars are lethal.** *(M19, replacing "agents have no collision: the
   player walks through them".)* Walking into somebody displaces you both and startles them;
   stepping into the carriageway in front of a moving car ends the day; traffic gives way at a
@@ -869,6 +891,18 @@ advances the clock, because that is what a rig steps.
 **A signal is a timing problem where a zebra is a gap-hunting one.** An ordinary crossing is a
 negotiation with a driver who can see you and gets better the longer you look; a signalled one is
 a wait with a known end. Having both is what makes *which street* worth asking about.
+
+**And since M51 the two look different, which they had not.** *(Playtest 15, finding 2: "the main
+road shouldn't have zebra crossings (since they have traffic lights) it should be two dotted lines
+demarking the pedestrian safe zone".)* A zebra says *the traffic gives way to you* and the spine's
+does not, so for ten milestones the paint made the opposite promise at every junction of the one
+street where believing it ends the day. The spine's crossings are two dotted lines now.
+
+**The tile type did not change and that is the point.** M41 considered painting the crossing away
+and rejected it — *"a walker crossing a side street would then be standing on open carriageway,
+and the one thing a zebra is for is saying where a person on a road is meant to be"* — so what
+moved is the picture, in `GroundTiles._crossing_variant`, and nothing that reads `CROSSING` had to
+know. The one thing that did is the trace, which said *"at a zebra"* on a street that has none.
 
 - **The cycle is derived, not authored.** It is `2 × SIGNAL_PROGRESSION_BLOCKS` junction-to-junction
   travelling times. Without a progression, two thirds of the traffic stands still — measured.

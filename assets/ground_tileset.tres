@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" load_steps=73 format=3]
+[gd_resource type="TileSet" load_steps=81 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/tiles/road.svg" id="0_road"]
 [ext_resource type="Texture2D" path="res://assets/tiles/road_line_e.svg" id="1_road_line_e"]
@@ -7,6 +7,10 @@
 [ext_resource type="Texture2D" path="res://assets/tiles/road_line_s.svg" id="4_road_line_s"]
 [ext_resource type="Texture2D" path="res://assets/tiles/crossing_v.svg" id="5_crossing_v"]
 [ext_resource type="Texture2D" path="res://assets/tiles/crossing_h.svg" id="6_crossing_h"]
+[ext_resource type="Texture2D" path="res://assets/tiles/crossing_main_n.svg" id="36_crossing_main_n"]
+[ext_resource type="Texture2D" path="res://assets/tiles/crossing_main_s.svg" id="37_crossing_main_s"]
+[ext_resource type="Texture2D" path="res://assets/tiles/crossing_main_w.svg" id="38_crossing_main_w"]
+[ext_resource type="Texture2D" path="res://assets/tiles/crossing_main_e.svg" id="39_crossing_main_e"]
 [ext_resource type="Texture2D" path="res://assets/tiles/sidewalk.svg" id="7_sidewalk"]
 [ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_n.svg" id="8_sidewalk_kerb_n"]
 [ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_s.svg" id="9_sidewalk_kerb_s"]
@@ -212,6 +216,26 @@ texture = ExtResource("34_mountain")
 texture_region_size = Vector2i(32, 32)
 0:0/0 = 0
 
+[sub_resource type="TileSetAtlasSource" id="atlas_crossing_main_n"]
+texture = ExtResource("36_crossing_main_n")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_crossing_main_s"]
+texture = ExtResource("37_crossing_main_s")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_crossing_main_w"]
+texture = ExtResource("38_crossing_main_w")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="atlas_crossing_main_e"]
+texture = ExtResource("39_crossing_main_e")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
 [sub_resource type="TileSetAtlasSource" id="atlas_scree"]
 texture = ExtResource("35_scree")
 texture_region_size = Vector2i(32, 32)
@@ -255,3 +279,7 @@ sources/32 = SubResource("atlas_bulkhead")
 sources/33 = SubResource("atlas_fence")
 sources/34 = SubResource("atlas_mountain")
 sources/35 = SubResource("atlas_scree")
+sources/36 = SubResource("atlas_crossing_main_n")
+sources/37 = SubResource("atlas_crossing_main_s")
+sources/38 = SubResource("atlas_crossing_main_w")
+sources/39 = SubResource("atlas_crossing_main_e")

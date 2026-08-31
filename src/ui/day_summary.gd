@@ -7,6 +7,7 @@ extends CanvasLayer
 signal continued()
 
 @onready var _root: Control = $Root
+@onready var _heading: Label = $Root/Center/Lines/Heading
 @onready var _title: Label = $Root/Center/Lines/Title
 @onready var _body: Label = $Root/Center/Lines/Body
 @onready var _hint: Label = $Root/Center/Lines/Hint
@@ -22,6 +23,24 @@ const _ENDING_TITLE := {
 	GameEnums.Ending.BAD: "You stop going out.",
 	GameEnums.Ending.NEUTRAL: "The city is quiet now.",
 	GameEnums.Ending.GOOD: "Silence.",
+}
+
+## The one line on the ending screen that is not writing. *(Playtest 15, finding 5: "clearly say
+## game over on the game over screen with big letters (in addition to everything else that is
+## already there)".)*
+##
+## Every ending title in this file is a **sentence out of the fiction** — *"You stop going out."*,
+## *"Silence."* — which is right for what they are and is exactly why the screen did not read as
+## the end of anything. A run that has finished has to say so before it says anything else.
+##
+## **It is not the same word for all three, and that is a decision rather than the request being
+## trimmed.** The screen the complaint came off is the `BAD` one, where the nerves ran out, and
+## `GAME OVER` is what that is. Stamping it over a run somebody *won* would be telling them they
+## lost. `THE END` is the same size, the same weight and the same job on the other two.
+const _ENDING_HEADING := {
+	GameEnums.Ending.BAD: "GAME OVER",
+	GameEnums.Ending.NEUTRAL: "THE END",
+	GameEnums.Ending.GOOD: "THE END",
 }
 
 const _ENDING_BODY := {
@@ -40,9 +59,15 @@ const _ENDING_BODY := {
 func _ready() -> void:
 	# The summary has to keep running while it pauses everything behind it.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Coloured here rather than in the scene so `Palette` stays the one place a runtime colour is
+	# decided — which is what its own class comment asks for.
+	_heading.add_theme_color_override("font_color", Palette.GAME_OVER)
 	_root.hide()
 
 func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int) -> void:
+	# A lost *day* is not the end of a run — there are nerves left, and the screen says so two lines
+	# down. The heading belongs to the screen that ends the run and to nothing else.
+	_heading.hide()
 	_title.text = _DAY_TITLE.get(result, "The day ends.")
 	var lines: Array[String] = ["Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]]
 	if reason != "":
@@ -83,6 +108,8 @@ func _resistance_line() -> String:
 ## that point"*, with closing the window as the only way out. Space already dismisses every other
 ## screen in the game, so it is the key that was missing rather than a new one.
 func show_ending(ending: GameEnums.Ending) -> void:
+	_heading.text = _ENDING_HEADING.get(ending, "THE END")
+	_heading.show()
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
 	_body.text = _ENDING_BODY.get(ending, "")
 	_hint.text = "space to start again"

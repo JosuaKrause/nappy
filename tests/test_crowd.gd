@@ -48,6 +48,7 @@ func run(t) -> void:
 	_test_a_signal_gives_her_time_to_cross(t)
 	_test_a_precinct_has_no_cars_in_it(t)
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
+	_test_nothing_walks_into_a_hard_blocker(t)
 
 	_city.free()
 
@@ -733,6 +734,15 @@ func _test_a_precinct_has_no_cars_in_it(t) -> void:
 	_city.crowd.start_day(1, _rng(1), at)
 	_advance(45.0)
 
+	# **An intruder is a car on ground no axis lets it drive on, not a car whose tile is inside the
+	# span.** *(Corrected under M51.)* A span covers the junctions between its blocks, and a car
+	# crossing the precinct on a north-south street drives through those junctions perfectly
+	# legally — sixteen of them do in this forty-five seconds, measured. Asking `street_kind_at`
+	# about the *precinct's* axis calls every one of them an intruder, and the assertion only
+	# passed because none of them happened to be inside a junction on the frame it sampled. A
+	# change to the crowd's divert rule moved the timing by a few frames and one was, which is a
+	# test that has been true by luck for eleven milestones failing for a reason that has nothing
+	# to do with what it is about.
 	var intruders := 0
 	var walkers := 0
 	for agent in _city.crowd.agents():
@@ -741,11 +751,13 @@ func _test_a_precinct_has_no_cars_in_it(t) -> void:
 			continue
 		if _city.map.street_kind_at(vertical, tile) != GameEnums.StreetKind.PEDESTRIAN:
 			continue
-		if agent.kind == CrowdAgent.Kind.CAR:
-			intruders += 1
-		else:
+		if agent.kind != CrowdAgent.Kind.CAR:
 			walkers += 1
-	t.check(intruders == 0, "no car is standing in a precinct (%d were)" % intruders)
+		elif not _city.map.is_driveable_at(true, tile) \
+				and not _city.map.is_driveable_at(false, tile):
+			intruders += 1
+	t.check(intruders == 0, "no car is standing where no street lets it drive (%d were)"
+			% intruders)
 	t.check(walkers > 0, "and the pavement it replaced the road with has people on it (%d)"
 			% walkers)
 
@@ -1134,3 +1146,55 @@ func _test_the_arterial_is_the_busiest_street(t) -> void:
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y):
 		t.check(CrowdLanes.busyness(_city.map, false, index) < CrowdLanes.ARTERIAL_BUSYNESS,
 				"east-west corridor %d is an ordinary street, not a second spine" % index)
+
+## **Nothing walks into a cul-de-sac's wall.** *(Playtest 15, finding 1: "cars and people go
+## through cul-de-sacs".)*
+##
+## The crowd is the one thing in the game that travels the lattice without consulting
+## `blocked_segments()`, and it did not need to: a dead end is one street with its far end **built
+## over**, so the tiles say so. What it did need was to *look* at them. The avoidance was a single
+## probe fired seven tiles ahead, which answers "is there something coming up" and looks straight
+## past a two-tile wall into the open road behind it — so an agent that entered the street from the
+## junction beside the wall never saw it and walked into the building.
+##
+## Measured before the fix, over forty seconds at a dead end: **eight agents inside a wall at once,
+## and something in one on 87% of frames** across three seeds. Zero after.
+##
+## The field is built **at a dead end** rather than at the doorstep, and that is the whole reason
+## this test can see anything: the crowd is a population of the box around the player, so a wall
+## the box never contains is a wall nothing was ever going to reach. The first version of this
+## probe stood at the front door and reported a clean bill of health on a build that was visibly
+## broken.
+func _test_nothing_walks_into_a_hard_blocker(t) -> void:
+	var walls := {}
+	for key: Vector3i in _city.map.built_over:
+		var rect: Rect2i = _city.map.built_over[key]
+		for y in range(rect.position.y, rect.end.y):
+			for x in range(rect.position.x, rect.end.x):
+				walls[Vector2i(x, y)] = true
+	t.check(not walls.is_empty(), "this city has hard blockers to walk into (%d dead ends)"
+			% _city.map.dead_ends.size())
+
+	var at := _city.map.doorstep_world_position()
+	for key: Vector3i in _city.map.dead_ends:
+		var segment := StreetNetwork.by_key(key)
+		at = _city.map.tile_rect_to_world(segment.tile_rect()).get_center()
+		break
+	_city.crowd.start_day(1, _rng(1), at)
+	_city.crowd.set_focus(at)
+
+	var frames_with_one := 0
+	var worst := 0
+	var frames := int(round(40.0 / STEP))
+	for frame in frames:
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		var inside := 0
+		for agent in _city.crowd.agents():
+			if walls.has(_city.map.world_to_tile(agent.position)):
+				inside += 1
+		frames_with_one += 1 if inside > 0 else 0
+		worst = maxi(worst, inside)
+	t.check(frames_with_one == 0,
+			"nobody is standing inside a hard blocker (%d frames of %d, worst %d at once)"
+			% [frames_with_one, frames, worst])

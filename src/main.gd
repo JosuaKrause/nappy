@@ -124,9 +124,40 @@ func _ready() -> void:
 	# A rig is driving, so it starts the day the way the player would. `--title` is how the screen
 	# itself gets photographed.
 	var args := OS.get_cmdline_user_args()
+	if _show_an_ending_for_a_rig(args):
+		return
 	if (screenshot or "--no-title" in args) and not "--title" in args:
 		return
 	_open_the_title()
+
+## Dev flag: `-- --ending bad|neutral|good` puts the last screen of a run on screen at boot.
+##
+## *(M51, and it exists for the same reason `--press` does: nothing in the suite or in a screenshot
+## has ever reached this screen.)* An ending is at the far end of fourteen days or five spent
+## nerves, so the only way to look at the one thing this milestone changed about it was to play a
+## run out — which is `CLAUDE.md`'s *"where a cue cannot be triggered on demand, relax its
+## condition, look, and put it back"*, except that a flag is the honest version of relaxing it and
+## does not have to be put back.
+##
+## It shows the screen and stops there: the day behind it is running, exactly as it would be under
+## a real ending, and `space` restarts the run like any other finished one. Like every dev flag in
+## this file it ships in the build and belongs behind the debug gate `docs/TODO.md` still owes.
+func _show_an_ending_for_a_rig(args: PackedStringArray) -> bool:
+	var index := args.find("--ending")
+	if index < 0 or index + 1 >= args.size():
+		return false
+	var wanted := {
+		"bad": GameEnums.Ending.BAD,
+		"neutral": GameEnums.Ending.NEUTRAL,
+		"good": GameEnums.Ending.GOOD,
+	}
+	if not wanted.has(args[index + 1]):
+		push_warning("unknown --ending '%s'" % args[index + 1])
+		return false
+	_run_over = true
+	_ending_shown = true
+	_summary.show_ending(wanted[args[index + 1]] as GameEnums.Ending)
+	return true
 
 # --------------------------------------------------------------- the title ---
 

@@ -193,13 +193,20 @@ static func _lay_streets(map: CityMap) -> void:
 ##
 ## - **A pedestrianised corridor has no carriageway**, so its own band is paving all the way
 ##   across and a driveable street crossing it does so over a zebra six tiles deep.
-## - **A main road's zebra is signalled rather than negotiated.** The paint is the same paint and
-##   it stays: what changes is who honours it. Traffic on a main road does not give way to
-##   somebody standing at the kerb — it obeys the light — so the crossing becomes a *timing*
-##   problem where an ordinary one is a gap-hunting problem. See `CrowdAgent._give_way` and
-##   `TrafficSignals`. Painting it away instead was tried and is worse: a walker crossing a side
-##   street would then be standing on open carriageway, and the one thing a zebra is for is
-##   saying where a person on a road is meant to be.
+## - **A main road's crossing is signalled rather than negotiated, and since M51 it is not a
+##   zebra.** *(Playtest 15, finding 2: "the main road shouldn't have zebra crossings (since they
+##   have traffic lights) it should be two dotted lines demarking the pedestrian safe zone".)*
+##   Traffic on a main road does not give way to somebody at the kerb — it obeys the light — so
+##   the crossing is a *timing* problem where an ordinary one is a gap-hunting problem, and a
+##   zebra was the paint promising the wrong one of those at every junction of the one street
+##   where getting it wrong ends the day. See `CrowdAgent._give_way` and `TrafficSignals`.
+##
+##   **The tile type does not change and that is the point.** Painting the crossing away was tried
+##   in M41 and is worse — a walker crossing a side street would then be standing on open
+##   carriageway, and the one thing a crossing is for is saying where a person on a road is meant
+##   to be — so what moved is the picture and nothing else. Every rule that reads `CROSSING`, from
+##   the traffic's give-way scan to where an event may stand, goes on meaning what it meant.
+##   `GroundTiles._crossing_variant` is where the two dotted lines are drawn.
 static func _street_tile(x_offset: int, x_kind: GameEnums.StreetKind,
 		y_offset: int, y_kind: GameEnums.StreetKind) -> GameEnums.TileType:
 	var x_road := x_offset >= 0 and x_kind != GameEnums.StreetKind.PEDESTRIAN \

@@ -48,6 +48,8 @@ const STEER_SPEED := 90.0
 ## day; constant once every four-block calm zone has four dead-end arms on it. Seeing it a
 ## street early and turning in the middle of the junction is what `_can_turn_here` is for.
 const LOOKAHEAD := (Tuning.STREET_WIDTH + 1) * Tuning.TILE_SIZE
+## The same distance in tiles, for the scans that walk rather than probe. See `_way_is_blocked`.
+const LOOKAHEAD_TILES := Tuning.STREET_WIDTH + 1
 ## Where the horn's caret sits over a car, and how big it is. Matched to `EventInstance`'s so
 ## the two carets are the same cue rather than two similar ones, but lower, because a car is
 ## 26px of sprite against a standing figure's 46.
@@ -128,6 +130,13 @@ var _jolt_outer := 0.0
 
 ## A sidestep held for a moment after being walked into: how far across its own corridor, and how
 ## long is left on it. See `step_aside()`.
+## The way ahead, and the state it was worked out for. See `_look_ahead`.
+var _scan_at := Vector2i(-9999, -9999)
+var _scan_vertical := false
+var _scan_direction := 0.0
+## Tiles to the first thing this agent cannot pass, or `LOOKAHEAD_TILES + 1` for a clear road.
+var _blocked_in := LOOKAHEAD_TILES + 1
+
 var _detour := 0.0
 var _detour_left := 0.0
 ## And the same for somebody *crossing* her path rather than sharing it, who has no sidestep to
@@ -221,7 +230,8 @@ func _process(delta: float) -> void:
 	_set_cross(move_toward(_cross(), _lane_centre + _detour, STEER_SPEED * delta))
 	if kind == Kind.WALKER:
 		_consider_turning()
-	if _blocked_ahead(_vertical, _direction, LOOKAHEAD):
+	_look_ahead()
+	if _blocked_in <= LOOKAHEAD_TILES:
 		_divert()
 	if _has_left_the_field():
 		_recycle()
@@ -734,7 +744,11 @@ func _consider_turning() -> void:
 func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 	var offset := Vector2(0.0, direction * distance) if vertical \
 			else Vector2(direction * distance, 0.0)
-	var tile := _map.world_to_tile(position + offset)
+	return _cannot_go_on(vertical, _map.world_to_tile(position + offset))
+
+## Whether a *tile* is somewhere this agent may be. The predicate under both of the questions
+## below, so "the way is shut" means one thing however it is asked.
+func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _map.is_closed(tile):
 		return true
 	if not _map.in_bounds(tile):
@@ -745,6 +759,36 @@ func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 	if kind == Kind.CAR and not _map.is_driveable_at(vertical, tile):
 		return true
 	return not _map.is_street(tile)
+
+## How far the way ahead is clear, in tiles, worked out **once per tile** rather than once per
+## frame. `LOOKAHEAD_TILES + 1` means nothing within reach.
+##
+## *(M29's invariant, arriving at the crowd's other scan: "sampling a tile grid by stepping world
+## points aliases, and it aliases where it matters".)* This used to be one probe fired seven tiles
+## out, which answers *is there something coming up* and cannot answer *is the next tile a wall* —
+## it looks straight **past** a cul-de-sac's two-tile plug into the open road behind it. So an agent
+## that entered a dead-end street from the junction beside the wall never saw the wall at all and
+## walked into the building. Measured at a dead end before this: eight agents inside one at once,
+## and something in one on 87% of frames. *(Playtest 15, finding 1.)*
+##
+## **Caching it by tile is what pays for the walk**, and it is exact rather than an approximation:
+## the answer depends on the agent's tile, its axis and its direction, and on a map that is fixed
+## for the day. An agent covers a tile in about twenty frames at walking pace, so seven lookups per
+## tile is cheaper than the one probe per frame it replaces — and the probe was the version that
+## could not see a wall.
+func _look_ahead() -> void:
+	var here := _map.world_to_tile(position)
+	if here == _scan_at and _vertical == _scan_vertical and _direction == _scan_direction:
+		return
+	_scan_at = here
+	_scan_vertical = _vertical
+	_scan_direction = _direction
+	_blocked_in = LOOKAHEAD_TILES + 1
+	var step := (Vector2i.DOWN if _vertical else Vector2i.RIGHT) * int(signf(_direction))
+	for i in range(1, LOOKAHEAD_TILES + 1):
+		if _cannot_go_on(_vertical, here + step * i):
+			_blocked_in = i
+			return
 
 ## Traffic goes round a closure, and that is half of what makes one legible: the street with
 ## nobody on it is the street that is shut, which reads from a block away — further than the
@@ -757,17 +801,24 @@ func _divert() -> void:
 	var crossing := CrowdLanes.corridor_at(_along())
 	if crossing < 0:
 		# Still in the street, a junction short of where it can turn. Carry on — unless it is
-		# standing *in* the thing it is avoiding, which is a day that started behind a barrier
-		# and is the one case with nowhere to go but back.
-		if not _stands_on_a_street():
-			_direction = -_direction
+		# standing *in* the thing it is avoiding, which is a day that started behind a barrier,
+		# or the thing is the very next tile, which is a **cul-de-sac** and is what the whole of
+		# playtest 15's finding 1 turned out to be. Both have nowhere to go but back.
+		if not _stands_on_a_street() or _blocked_in <= 1:
+			_turn_round()
 		return
 	if not _can_turn_here():
+		# Inside a junction on the wrong band to turn from — a walker on the carriageway strip, a
+		# car on a pavement one — which normally costs a tile of waiting. It costs everything when
+		# the wall is the next tile: an agent leaving a junction straight into a cul-de-sac's plug
+		# has no tile left to wait for the right band in, so it turns round instead.
+		if _blocked_in <= 1:
+			_turn_round()
 		return
 
 	var turning := _pick_an_arm(crossing, 1.0 if _rng.randf() < 0.5 else -1.0)
 	if turning == 0.0:
-		_direction = -_direction   # boxed in on three sides; go back the way it came
+		_turn_round()   # boxed in on three sides; go back the way it came
 		return
 
 	var kept := _corridor
@@ -783,6 +834,21 @@ func _divert() -> void:
 	_lane_centre = _lane_centre_here()
 	_forget_the_detour()
 	_junction = kept
+	_claim_the_road_here()
+
+## Turns an agent round where it stands: a dead end, a barrier at a mouth, a precinct's paving.
+##
+## **A car changes lane with it**, which `_direction = -_direction` on its own did not. A lane is
+## one side of a carriageway and which side depends on the way it is pointing, so a car that only
+## flipped its heading drove the wrong way down its own queue — and `space_out_the_traffic` then had
+## to resolve a head-on overlap the only way it can, by moving a body. It is the same line
+## `_divert` runs after a turn and for the same reason.
+func _turn_round() -> void:
+	_direction = -_direction
+	if kind == Kind.CAR:
+		_lane = CrowdLanes.road_lane(_vertical, _direction)
+		_lane_centre = _lane_centre_here()
+	_forget_the_detour()
 	_claim_the_road_here()
 
 ## Which way to turn out of `crossing`, trying `first` before the other one, or `0.0` for neither.
@@ -860,7 +926,8 @@ func _has_left_the_field() -> bool:
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
 	var at := _along()
-	if at < -Tuning.TILE_SIZE or at > limit + Tuning.TILE_SIZE:
+	var beyond := _room_beyond_the_map()
+	if at < -beyond or at > limit + beyond:
 		return true
 
 	# Across the axis first: a street the box has stopped reaching at all. This is not the rare
@@ -878,10 +945,36 @@ func _has_left_the_field() -> bool:
 	# than the entry band is deep. The second half is not symmetry for its own sake — the player
 	# walks faster than a pedestrian, so anybody going her way is steadily left behind, and
 	# without it the pavement in front of her drains into a crowd standing two streets back.
+	# Past the edge of the map and still inside its allowance: it is *leaving the city*, which is
+	# what the tunnel and the bridge are for. The box's own bounds are clamped to the map, so
+	# asking them here would recycle a car on the deck of the bridge — which is the bug.
+	if at < 0.0 or at > limit:
+		return false
+
 	var bounds := field.along_bounds(_vertical)
 	if _direction > 0.0:
 		return at > bounds.y or at < bounds.x - ENTRY_SPREAD
 	return at < bounds.x or at > bounds.y + ENTRY_SPREAD
+
+## How far past the edge of the map this agent may go before it stops existing.
+##
+## **Nothing vanishes while you are looking at it.** *(Playtest 15, finding 7: "cars driving over
+## the bridge currently just disappear. they should drive until they leave the visible area".)*
+## That is M35's rule, written for events, arriving at the crowd — which has never had it, because
+## a recycle happens at the edge of a box that is normally nowhere near anything the player can
+## see. The three holes in the boundary are exactly where it is: a car reaching the bridge is at
+## the one place in the city that is *about* leaving, and it blinked out.
+##
+## **A tile for everybody else, and that is not stinginess.** Outside the map is water, forest and
+## mountainside — painted ground with no road on it — so a car allowed to overrun anywhere would
+## drive into the sea. The spine is the exception because it is the only place the carriageway
+## carries on through the border: `City._paint_outside_the_map` puts road out there at the spine's
+## own width and nowhere else, and `CityEdge` is the tunnel and the bridge standing over it.
+## Walkers keep the tile for the same reason — the pavements do not carry on, only the road does.
+func _room_beyond_the_map() -> float:
+	if kind != Kind.CAR or not _vertical or _corridor != _map.main_road:
+		return Tuning.TILE_SIZE
+	return Tuning.OUT_OF_SIGHT
 
 ## How far outside the box an agent may enter, in px.
 ##
