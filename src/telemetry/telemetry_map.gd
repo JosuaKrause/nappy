@@ -156,7 +156,8 @@ static func _corridor_stroke(segment: StreetNetwork.Segment, wide: bool) -> Rect
 		return Rect2i(Vector2i(from.x, from.y + across), Vector2i(length, thickness))
 	return Rect2i(Vector2i(from.x + across, from.y), Vector2i(thickness, length))
 
-## The wall at the end of every street that stops. *(M50 step 1.)*
+## Every street a hard blocker built over: the wall at the end of a dead end, and all four sides
+## of a big building. *(M50 step 1.)*
 ##
 ## **Filled, which is the one exception to "outlines, never fills".** That rule exists because a
 ## mark that covers the ground stops the picture answering the question it was opened for — and
@@ -168,8 +169,8 @@ static func _corridor_stroke(segment: StreetNetwork.Segment, wide: bool) -> Rect
 ## thing nobody spots, and a hard blocker nobody can spot in the one picture built to check
 ## placements might as well not have been placed.
 static func _mark_the_dead_ends(image: Image, map: CityMap) -> void:
-	for key: Vector3i in map.dead_ends:
-		_fill_tiles(image, map.dead_ends[key] as Rect2i, DEAD_END_MARK)
+	for key: Vector3i in map.built_over:
+		_fill_tiles(image, map.built_over[key] as Rect2i, DEAD_END_MARK)
 
 ## Every calm area, outlined at its lot. Outlined rather than tinted because *how big it is* is
 ## most of what this picture is being asked, and a tint over grass answers that worse than a box.

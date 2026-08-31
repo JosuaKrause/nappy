@@ -385,6 +385,12 @@ const MAX_CUL_DE_SACS := 8
 ## not go through* rather than *something is painted here*.
 const CUL_DE_SAC_WALL_TILES := 2
 
+## Big buildings: a whole block plus the four streets around it, one solid mass twenty tiles
+## across. One or two, because this is a **landmark** — a thing a player says "past the big grey
+## one" about — and a city with five of them has landmarks the way a forest has notable trees.
+const MIN_BIG_BUILDINGS := 1
+const MAX_BIG_BUILDINGS := 2
+
 ## Per-purpose chance a block is split by a through-alley.
 const ALLEY_CHANCE := {
 	GameEnums.BlockPurpose.RESIDENTIAL: 0.25,
@@ -399,6 +405,11 @@ const ALLEY_CHANCE := {
 	GameEnums.BlockPurpose.PARK: 0.0,
 	GameEnums.BlockPurpose.FOREST: 0.0,
 	GameEnums.BlockPurpose.QUIET_SQUARE: 0.0,
+	# A big building is chosen after the blocks are carved and replaces whatever was cut into
+	# it, so this is never actually read. It is here because the table is a statement about
+	# every purpose, and a purpose missing from it would be a crash rather than a default the
+	# day somebody assigns one earlier.
+	GameEnums.BlockPurpose.BIG_BUILDING: 0.0,
 }
 
 # ---------------------------------------------------- block purposes and arcs ---

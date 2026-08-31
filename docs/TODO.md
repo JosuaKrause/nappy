@@ -2688,7 +2688,7 @@ blockers."*
       the day's closures. What is new is **choosing** them for a reason rather than as a
       side effect of a zone. Note the M21 rule that comes with it: an absorbed street is still
       *ground* — so a cul-de-sac must be a street that genuinely stops, not a park to walk through
-- [ ] **A big building is a block whose lot is solid**, removing the streets around it from the
+- [x] **A big building is a block whose lot is solid**, removing the streets around it from the
       lattice. This is a `BlockPurpose` and an arc, per the "Add a block purpose" recipe
 - [x] **They are placed against a tree, not before one**, in `CityGenerator`, from the city RNG —
       so they hold still for the whole run and are what the player learns. Grow a **reference
@@ -2732,6 +2732,38 @@ this project already has a name for: **an identity standing in for the property.
 first version left a dead end showing through as ordinary building, which is a dark slab inside a
 dark street and is invisible. A hard blocker nobody can find in the one picture built to check
 placements might as well not have been placed. It has its own colour now.
+
+**Big buildings are built too, and the interesting part is what they exposed rather than what they
+are.** One or two per city: a block whose lot is solid with its four streets built over, twenty
+tiles across, junctions at its corners kept so the grid still turns there. Chosen late and
+converted rather than assigned with the other purposes, because the choice needs the reference
+tree, the tree needs the calm areas and those need the block layouts — by the time it can be
+decided the block has already been carved. Two things came out of it:
+
+- **A candidate list is a snapshot; a placement is a change.** The pool was enumerated once and
+  the first big building's four streets were news to the second one's ring check, so two of them
+  shared a street and drew two buildings on the same tiles. The ring is re-checked at placement
+  now. The same shape as M38's *"two placements in the same frame cannot see each other"*, one
+  scale out.
+- **And a density floor failed for a reason that had nothing to do with hard blockers.** Day 1
+  planned 93 events against a floor of 96 on two seeds of eight, and the cause was neither lost
+  ground nor the walkability cull (which drops nothing): it was
+  `EventScheduler._ensure_one_usable_park` **stripping twenty-one events** — the spoilers of every
+  calm area she has not used, removed *after* the fill has spent its budget. So the day plans to
+  target and then falls short of it, and the budget has never accounted for the strip. `69 → 76`
+  per block, agreed with the player, puts a typical day 1 at **121–125 placed — which is the
+  stated one-per-block target it had been sitting 12 under** — and the worst seed at 102. It
+  lifts days 1–7 and leaves day 14 alone, because day 14 is bound by the catalogue's caps rather
+  than by the budget.
+
+**And a defect was found on the way past it that is not M50's to fix.**
+`_ensure_one_usable_park` returns early if **any** calm area happens to come out clean — and the
+rule written underneath that early return is playtest 14's, *"every calm area she has not used
+this act stays clean, not just one of them"*. So the newer, stronger guarantee only fires on days
+where the older one already failed, which is a coin flip: on seed 4242 it strips 21 events and on
+seed 90210 it strips none. That is the **old rule silently defeating the new one written under
+it**, and it is why the density shortfall looked like a hard-blocker problem — a big building
+moves enough placements to tip the coin. Worth its own item; see "Open design questions".
 
 ### Step 2 — placement by role
 
@@ -2954,6 +2986,27 @@ overturn a decision the player took"*.
 ## Open design questions
 
 These need a human playing the game, not more code.
+
+- [ ] **`_ensure_one_usable_park`'s early return defeats the rule written underneath it.**
+      *(Found in M50 while chasing a density floor that had nothing to do with hard blockers.)* The
+      function collects, per calm area, the events whose fields reach it — and **returns as soon as
+      any one area comes out clean**. The rule below that return is playtest 14 finding 8's, and it
+      is stronger: *"every calm area she has not used this act stays clean, not just one of them"*,
+      whose argument is `MIN_CALM_BLOCKS`' own derivation — an act's worth of days plus one, on the
+      assumption that only *going* to an area burns it.
+
+      So the newer guarantee only runs on days where the older one already failed. Measured on day
+      1: seed 4242 strips 21 events across 9 areas, seed 90210 strips none, and which happens is
+      whether one area out of nine happened to come up clean. **This is not a balance question, it
+      is the old rule silently outranking the new one**, and the reason it is here rather than
+      fixed in M50 is that fixing it makes the strip fire on *every* day — which is a density
+      change of about twenty events a day, and that is a number to measure and put to the player
+      rather than to acquire while building landmarks.
+
+      What to check first, because it decides how big the fix is: whether the player's sentence
+      means *no unused calm area may be spoiled at all* (delete the early return, pay the density)
+      or *she must always have an unspoiled one to reach* (the early return is right and the
+      paragraph under it overstates the rule).
 
 - [~] **Is the nerve economy right?** **Half answered by playtest 08: three was too few**, and the
       evidence is a run that ended on day 3 with two nerves spent on the same charging dog. It is

@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_calm_zones_are_four_blocks_of_one_thing(t)
 	_test_a_calm_zone_is_a_route_rather_than_a_lap(t)
 	_test_a_dead_end_is_a_dead_end(t)
+	_test_a_big_building_has_no_street_round_it(t)
 	_test_no_single_street_closure_isolates_the_parks(t)
 
 # ------------------------------------------------------------------- pieces ---
@@ -203,7 +204,7 @@ func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
 			# a dead end is absent too, for the opposite reason — and this sentence is about
 			# zones. Asserting it over the whole set was the identity standing in for the
 			# property, which is a mistake this project has made before and can now name.
-			if map.dead_ends.has(key):
+			if map.is_hard_blocker(key):
 				continue
 			var corridor: int = key.y if key.z == 0 else key.x
 			# Which corridor that is comes from the **map** since playtest 14, because the spine
@@ -371,6 +372,62 @@ func _test_a_dead_end_is_a_dead_end(t) -> void:
 	t.check(float(total) / seeds >= float(Tuning.MIN_CUL_DE_SACS),
 			"a city gets %.1f dead ends, wanting at least %d"
 			% [float(total) / seeds, Tuning.MIN_CUL_DE_SACS])
+
+## The other hard blocker: a block that is one solid mass with its four streets taken. *(M50.)*
+##
+## The two clauses that matter are the ones a picture would not settle. **The mass is solid all the
+## way to the junctions** — a big building with a walkable strip left round it is a building with a
+## pavement, which is every other block in the city. And **the four junctions at its corners
+## survive**, because the thing being removed is the road between them and not the grid around it:
+## a car still turns there and a crossing is still painted there, and a blocker that ate its own
+## corners would be cutting four streets it was never offered.
+##
+## Its lot never re-opens either. `tests/test_blocks.gd` holds that in general — the walkable set
+## is identical tile for tile across every block arc — and here the mechanism is that the block's
+## `BlockLayout` is empty, so a repaint finds nothing to paint back.
+func _test_a_big_building_has_no_street_round_it(t) -> void:
+	var seeds := 12
+	var total := 0
+	for i in seeds:
+		var map := CityGenerator.generate(_seed(i))
+		t.check(not map.big_buildings.is_empty(), "seed %d has a landmark in it" % _seed(i))
+		t.check(map.big_buildings.size() <= Tuning.MAX_BIG_BUILDINGS,
+				"seed %d has at most %d (%d)"
+				% [_seed(i), Tuning.MAX_BIG_BUILDINGS, map.big_buildings.size()])
+		total += map.big_buildings.size()
+
+		for block in map.big_buildings:
+			t.check(map.starting_purpose(block) == GameEnums.BlockPurpose.BIG_BUILDING,
+					"seed %d: block %s is a big building for the whole run" % [_seed(i), block])
+			var layout: BlockLayout = map.block_layouts.get(block)
+			t.check(layout != null and not BlockLayout.has(layout.open_rect),
+					"seed %d: and has nothing carved into it to repaint" % _seed(i))
+
+			# Solid from one junction to the next: the lot, and the four streets round it. Not
+			# the whole grown square — that would include the corner junctions, which stay.
+			var mass: Array[Rect2i] = [CityMap.block_rect(block)]
+			for segment in StreetNetwork.around_blocks(Rect2i(block, Vector2i.ONE)):
+				mass.append(segment.tile_rect())
+				t.check(not map.has_street(segment.key()),
+						"seed %d: %s is out of the lattice" % [_seed(i), segment.key()])
+				t.check(map.is_hard_blocker(segment.key()),
+						"seed %d: and out of it because it was built over" % _seed(i))
+				t.check(not map.dead_ends.has(segment.key()),
+						"seed %d: and is not counted as a dead end" % _seed(i))
+			for rect in mass:
+				for tile in map.rect_tiles(rect):
+					t.check(not map.is_walkable(tile),
+							"seed %d: the mass at %s is solid at %s" % [_seed(i), block, tile])
+
+			# The corners are still crossroads.
+			for corner: Vector2i in [Vector2i.ZERO, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.ONE]:
+				var junction: Vector2i = (block + corner) * CityMap.period()
+				t.check(map.is_street(junction + Vector2i.ONE * (Tuning.STREET_WIDTH / 2)),
+						"seed %d: the junction at %s is still a junction"
+						% [_seed(i), block + corner])
+	t.check(float(total) / seeds >= float(Tuning.MIN_BIG_BUILDINGS),
+			"a city gets %.1f big buildings, wanting at least %d"
+			% [float(total) / seeds, Tuning.MIN_BIG_BUILDINGS])
 
 func _seed(index: int) -> int:
 	# Spread the seeds out; consecutive integers are what generate() retries with.

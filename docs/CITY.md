@@ -416,10 +416,12 @@ effect.** The hard blockers hold still for the whole run — they are what the p
 the soft ones re-cut the map every morning, so the same destination is reached a different way on
 two consecutive days. A city worth knowing plus a day worth reading.
 
-### Dead ends — the first hard blocker *(M50 step 1)*
+### Hard blockers *(M50 step 1)*
 
 *"Cul-de-sacs and big buildings don't exist yet — but we need them to implement proper hard
-blockers."* Dead ends exist now; big buildings do not yet.
+blockers."* Both exist now. A **dead end** is one street with one end built over; a **big
+building** is a block whose lot is solid with all four of its streets built over. They share a
+placement pass, a reference tree and a gate, and differ only in scale.
 
 A dead end is **one street, gone from the lattice, with one end built over**. Four to eight of
 them per city, rolled from the city RNG, so they hold still for the whole run and are what the
@@ -450,6 +452,15 @@ Four kinds of street may not be a dead end, and the last was found by building i
   and the claim is made on the *lattice* while the player walks on *tiles* — so a street with a
   park down one side is a street you walk into and step sideways out of, whatever the graph says.
   It is M21's rule read backwards: calm ground beside a dead end makes the dead end a doorway.
+
+**A big building is the same thing at four times the size, and it is a landmark.** One or two per
+city, twenty tiles across, tall enough to be the tallest thing in the district. The **junctions at
+its corners stay** — a car still turns there and a crossing is still painted there — so what is
+gone is the road between them and not the grid around it. It is a `BlockPurpose` with an empty
+`BlockLayout`, which is what keeps it solid for the whole run: a repaint finds nothing to paint
+back. It obeys the same four exclusions plus two of its own — interior blocks only, since the edge
+of the world is a ring of frontages rather than somewhere to put a wall, and single-block lots
+only, since a four-block zone is already a lot.
 
 **The gate is the strong one, deliberately, and moving it is a decision nobody has taken yet.**
 The design permits a weaker one — *"sealing off a section of the map is allowed, and it is the

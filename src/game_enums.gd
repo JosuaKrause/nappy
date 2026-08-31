@@ -104,6 +104,7 @@ enum BlockPurpose {
 	REQUISITIONED, ## Calm ground taken by the regime. Same ground, no longer calm.
 	BOARDED_UP,    ## A commercial block gone dark. Still built, still not calm.
 	BURNT_OUT,     ## A built block that burned and stayed burnt.
+	BIG_BUILDING,  ## One solid mass with no street around it. A hard blocker and a landmark.
 }
 
 ## Why a block moved to the next purpose in its arc. A step is only taken when its cause
