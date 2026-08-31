@@ -2740,12 +2740,16 @@ tooling did: the thing being built is a *placement*, and a placement is exactly 
 words cannot show. Without this the only way to check that a corridor points anywhere is to play
 the day and form an impression.
 
-- [ ] **Draw the corridor on the telemetry map.** `TelemetryMap` already writes a
+- [x] **Draw the corridor on the telemetry map.** `TelemetryMap` already writes a
       `<stem>-map-day<NN>.png` per day with the home, the calm areas, the spine, the precincts and
       the closures. Add the day's **corridor** — the routes from the doorstep to the calm areas
       that are still worth reaching — as a drawn path over the grid. This is the picture that
       answers *"is anything guiding her"*, which is the open question the whole milestone exists
-      for, and it cannot be answered from a log line
+      for, and it cannot be answered from a log line. **Built**: violet per branch, white and twice
+      as wide for a bundle, junction centre to junction centre so it reads as a path. And it
+      immediately earned itself — the first picture shows the trunk wandering west, north and back
+      east before it arrives anywhere, which is the 13.2-against-4.4 measurement above as something
+      a person can look at
 - [ ] **Mark every placed event with its categorisation.** Not just *where* — **what kind**, in the
       vocabulary in `docs/CITY.md`, "The words for it": its **effect** (lethal / impassable /
       costly) and its **role** (wall / friction / set piece). A wall drawn on the corridor instead

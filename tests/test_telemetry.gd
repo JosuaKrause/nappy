@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_tracing_the_arcs_does_not_change_them(t)
 	_test_a_day_header_opens_a_day(t)
 	_test_the_map_picture_covers_the_city_and_marks_it(t)
+	_test_the_map_picture_draws_the_corridor(t)
 	_test_the_map_picture_reads_the_map_and_nothing_else(t)
 	_test_a_picture_asked_for_by_hand_is_never_capped(t)
 
@@ -201,6 +202,47 @@ func _test_the_map_picture_covers_the_city_and_marks_it(t) -> void:
 	t.check(seen.has(TelemetryMap.BUILDING_GROUND), "and the buildings show through")
 	t.check(seen.has(Tile.ground_colour(GameEnums.TileType.SIDEWALK)), "and so do the pavements")
 	t.check(seen.has(Tile.ground_colour(GameEnums.TileType.ROAD)), "and so do the roads")
+
+## The day's corridor, drawn. *(M50.)*
+##
+## Three things, and the middle one is the reason this is a test rather than a look at a PNG. The
+## marks land at all; the corridor is drawn **only when there is a tree to draw**, because every
+## other mark in the picture is a fact about the ground and this one is a plan, and a picture that
+## invents a plan when it was given none is worse than a picture without one; and a stroke lands
+## on a **street**, since a line drawn a tile off runs along a frontage and reads as a route
+## through a building.
+func _test_the_map_picture_draws_the_corridor(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var tree := RouteTree.for_day(map, 1)
+	t.check(not tree.branches.is_empty(), "the day has a corridor to draw")
+
+	var plain := _colours_in(TelemetryMap.render(map))
+	t.check(not plain.has(TelemetryMap.CORRIDOR_MARK)
+			and not plain.has(TelemetryMap.BUNDLE_MARK),
+			"a picture given no tree draws no corridor")
+
+	var drawn := _colours_in(TelemetryMap.render(map, [], tree))
+	t.check(drawn.has(TelemetryMap.CORRIDOR_MARK), "and one given a tree draws it")
+	t.check(drawn.has(TelemetryMap.BUNDLE_MARK),
+			"and draws the stretches more than one area is reached by")
+
+	# Every stroke is on a street, checked at the one place a stroke could be off by a tile and
+	# still look right in the small: the middle of the street it belongs to.
+	var image := TelemetryMap.render(map, [], tree)
+	for key in tree.streets():
+		var segment := StreetNetwork.by_key(key)
+		var middle := segment.tile_rect().position + segment.tile_rect().size / 2
+		var pixel := image.get_pixel(middle.x * TelemetryMap.SCALE,
+				middle.y * TelemetryMap.SCALE)
+		t.check(pixel == TelemetryMap.CORRIDOR_MARK or pixel == TelemetryMap.BUNDLE_MARK,
+				"the corridor down street %s is drawn on the street" % key)
+
+func _colours_in(image: Image) -> Dictionary:
+	var seen := {}
+	for y in image.get_height():
+		for x in image.get_width():
+			seen[image.get_pixel(x, y)] = true
+	return seen
 
 ## Rendering is a **read**. It takes no RNG and changes nothing about the map, which is the same
 ## promise `_test_tracing_a_day_does_not_change_it` makes about the log — and it is worth its own

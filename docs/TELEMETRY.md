@@ -296,6 +296,27 @@ it. `TelemetryMap` does the drawing.
   Leaning on a fallback whose stated purpose is *this should never be seen* is how a contract
   quietly becomes untrue.
 
+### The corridor
+
+*(M50, and it went before the milestone it serves.)* The picture also carries the day's
+**corridor** — `RouteTree`, the branch from the doorstep to every calm area still worth reaching —
+in **violet**, and in **white and twice as wide** where more than one area is reached that way.
+
+It is the one mark in the picture that is a **plan rather than a fact about the ground**, which is
+why `render` takes it as an argument and draws nothing when there is none: a picture that invented
+a plan when it was given none would be worse than a picture without one. `Telemetry.write_map`
+grows one when the caller has none to hand, and that is safe rather than convenient —
+`RouteTree.for_day` is a pure function of the city's seed, the day and what is shut, so the tree
+drawn is the same tree anything else asking for today's would get, and growing it touches no
+gameplay stream.
+
+Each stroke runs from the middle of one junction to the middle of the next rather than over the
+street alone, so consecutive streets meet and a turn crosses: the picture is a **path** rather
+than a set of dashes, which is the difference between reading a route and inferring one. What to
+look at is the white — where the bundles run is where a wall is cheap and a set piece is worth
+siting, and a picture that is all thin violet is a tree that has quietly become a star, which is
+the one failure the construction is built to avoid and the one nothing else can see.
+
 ## What it deliberately does not do
 
 - **No aggregates, no summary at the end of a run.** Both are computable from the log when
