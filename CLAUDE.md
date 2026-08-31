@@ -129,7 +129,7 @@ Run all three before committing. They are fast and they each catch a different c
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # 122119 headless checks, ~161s
+./tools/test.sh               # 135308 headless checks, ~195s
 ./tools/test.sh crowd events  # just those suites, in seconds — for the inner loop
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order

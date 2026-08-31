@@ -590,9 +590,14 @@ it. Nothing has been implemented since `b7590fb`. M41 and older follow below, ne
 
 ## Where things are
 
-`main` is green and playable. `./tools/test.sh` → **122119 checks, 0 failures** (~161s);
+`main` is green and playable. `./tools/test.sh` → **135308 checks, 0 failures** (~195s);
 `./tools/check.sh` → OK; `./tools/run.sh` plays it; `./tools/telemetry.sh` says what the last
 run actually did.
+
+**M50 is under way**: the day's corridor exists (`RouteTree`), the telemetry map draws it, and the
+city has permanent structure in it (dead ends and big buildings). What is left is placement by
+role — walls off the tree, friction on it, set pieces on the fan-out — plus placeholders and the
+two invariant decisions. See `docs/TODO.md`, M50.
 
 **The count went 74540 → 122119 on M41, and it is the lattice rather than the milestone.** The
 jump is +64% and it wanted checking rather than asserting, because a count that moves by that much
