@@ -2655,6 +2655,19 @@ overall number of available blocks, which makes the area more approachable — t
 lost"* — is an argument that points the same way at probe A. **This is a question for the player
 and not a number to quietly bias**, and the map picture below is what it should be asked against.
 
+**Asked, and decided 2026-08-31: leave it.** *"Let's try it like this for now and keep the other
+options as potential improvements in the future if playtesting shows issues with the design."* So
+the wander ships, and the two answers that were on the table are recorded here rather than
+discarded, because the thing that would make one of them right is a playtest sentence about
+feeling lost — which nobody can have until somebody walks a day of it:
+
+- **Cap the wander, keep the walk.** Re-roll a probe whose route exceeds some multiple of the
+  shortest way. One constant, still deterministic, and detail 3 stays literally true — it is still
+  a loop-erased random walk, it is just rejected when it rambles. The first thing to reach for.
+- **Bias the walk toward home.** Weight each step by whether it closes the distance. Tighter, and
+  it is the *"drift toward home"* detail 3 rules out by name, so it would be an overturn rather
+  than a tuning. Only if the tight map turns out to be worth more than the variety.
+
 **And the knob this creates has to be watched, because it cuts against winnability.** Sharing is
 what makes placement cheap, and it is also what makes **one closure decide the day** — a trunk that
 every branch runs up is a bridge, and cutting it takes all the calm with it. The design already
