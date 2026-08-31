@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_scheduler_respects_placement_and_caps(t)
 	_test_one_shots_fire_once_per_run(t)
 	_test_one_park_stays_usable(t)
+	_test_calm_she_has_not_used_is_left_alone(t)
 	_test_successors_resolve(t)
 	_test_burning_building_is_never_scheduled(t)
 	_test_fire_truck_is_a_day_three_one_shot(t)
@@ -853,6 +854,56 @@ func _test_one_park_stays_usable(t) -> void:
 			if not spoiled:
 				clean += 1
 		t.check(clean >= 1, "day %d leaves at least one park unspoiled" % day)
+
+## **Nothing is placed near calm she has not used this act.** *(2026-08-31: "why are 7-9 unvisited
+## calm areas spoiled? Just don't place events there!")*
+##
+## The stronger half of the rule above, and the one that is easy to lose: `_test_one_park_stays_usable`
+## asks whether *some* area survived the day, which was satisfied for fourteen milestones by one
+## area out of nine coming up clean by luck. This asks whether **every** area she has not settled in
+## is untouched, which is the guarantee playtest 14's arithmetic is stated over — `MIN_CALM_BLOCKS`
+## is an act's worth of days plus one on the assumption that only *going* to an area burns it.
+##
+## Walked over a whole run rather than over a list of days, because the used set is what the rule is
+## stated against and it only exists as a run: it grows through an act, empties at the boundary, and
+## the day after it empties is the day the rule protects the most ground. The exemptions are named
+## rather than inferred — an `AMBIENT` event is a permanent feature of the map and a scar already
+## burnt, and both are why a park can still be *contested*.
+func _test_calm_she_has_not_used_is_left_alone(t) -> void:
+	for run_seed in [4242, 90210, 1234567]:
+		var map := CityGenerator.generate(run_seed)
+		var used_this_act: Array[Vector2i] = []
+		var act := 0
+		var consumed: Array[String] = []
+		for day in range(1, 15):
+			if Tuning.act_for_day(day) != act:
+				act = Tuning.act_for_day(day)
+				used_this_act = []
+			var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [],
+					used_this_act)
+			for block in map.calm_blocks:
+				if used_this_act.has(block):
+					continue
+				var lot := map.tile_rect_to_world(_calm_rect(map, block))
+				for plan in planned:
+					if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
+						continue
+					if plan.permanent:
+						continue
+					t.check(not _reaches(plan, lot),
+							"seed %d day %d: %s is not near the unused calm at %s"
+							% [run_seed, day, plan.def.id, block])
+			used_this_act.append(_quietest_calm_block(map, planned))
+
+## Whether a plan's field reaches a rect — mirrors `EventScheduler._reaches_rect`.
+func _reaches(plan, rect: Rect2) -> bool:
+	var grown := rect.grow(plan.def.outer_radius)
+	if grown.has_point(plan.position):
+		return true
+	for point in plan.path:
+		if grown.has_point(point):
+			return true
+	return false
 
 ## The calm ground of a calm block — mirrors `EventScheduler._calm_rect`, which is the
 ## definition the guarantee is actually written over.

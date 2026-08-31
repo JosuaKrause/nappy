@@ -2825,9 +2825,10 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
       to get it and is stricter than the design needs. `tests/test_routes.gd` is what changes with
       it, and it must not become weaker by accident — the day this rule stops holding is the day a
       run becomes unwinnable and nothing says so
-- [ ] **`_ensure_one_usable_park` versus the tree.** It protects exactly one calm area today; with
-      corridors to *every* available area, the guarantee it makes may want to be stated over the
-      tree instead. Related to the open playtest-14 item about an unvisited calm area being spoiled
+- [x] **`_ensure_one_usable_park` versus the tree.** Answered from the other end on 2026-08-31 and
+      it never needed the tree: the guarantee is stated over **where she has been**, not over where
+      today's corridor goes, and it is enforced at placement now rather than by a strip. See the
+      closed item under "Open design questions"
 
 ### What this does not touch
 
@@ -3024,26 +3025,36 @@ overturn a decision the player took"*.
 
 These need a human playing the game, not more code.
 
-- [ ] **`_ensure_one_usable_park`'s early return defeats the rule written underneath it.**
-      *(Found in M50 while chasing a density floor that had nothing to do with hard blockers.)* The
-      function collects, per calm area, the events whose fields reach it — and **returns as soon as
-      any one area comes out clean**. The rule below that return is playtest 14 finding 8's, and it
-      is stronger: *"every calm area she has not used this act stays clean, not just one of them"*,
-      whose argument is `MIN_CALM_BLOCKS`' own derivation — an act's worth of days plus one, on the
-      assumption that only *going* to an area burns it.
+- [x] **`_ensure_one_usable_park`'s early return defeated the rule written underneath it — and the
+      fix was to stop repairing and start refusing.** *(Found in M50 while chasing a density floor
+      that had nothing to do with hard blockers; answered by the player on 2026-08-31.)*
 
-      So the newer guarantee only runs on days where the older one already failed. Measured on day
-      1: seed 4242 strips 21 events across 9 areas, seed 90210 strips none, and which happens is
-      whether one area out of nine happened to come up clean. **This is not a balance question, it
-      is the old rule silently outranking the new one**, and the reason it is here rather than
-      fixed in M50 is that fixing it makes the strip fire on *every* day — which is a density
-      change of about twenty events a day, and that is a number to measure and put to the player
-      rather than to acquire while building landmarks.
+      The function collected, per calm area, the events whose fields reach it, and **returned as
+      soon as any one area came out clean** — so playtest 14's stronger rule, *"every calm area she
+      has not used this act stays clean, not just one of them"*, only ran on the days the older one
+      had already failed. Measured over 64 planned days: the early return fires on 25–75% of them,
+      and on a raw day **6.4 to 7.6 of the seven-to-nine unvisited areas are spoiled**. So the real
+      promise was *one of the nine is clean and you cannot tell which*.
 
-      What to check first, because it decides how big the fix is: whether the player's sentence
-      means *no unused calm area may be spoiled at all* (delete the early return, pay the density)
-      or *she must always have an unspoiled one to reach* (the early return is right and the
-      paragraph under it overstates the rule).
+      Four ways to price that were measured and put to the player, and every one of them was the
+      wrong question: *"why are 7-9 unvisited calm areas spoiled? Just don't place events there!"*
+      The whole framing was a repair — plan the day, then delete what landed badly — where the rule
+      belongs at **placement**. `EventScheduler._calm_to_leave_alone` is the fix and it is four
+      lines: the calm ground of every area she has not settled in this act is refused to
+      `_place_one`, and the events that would have gone there go somewhere else.
+
+      It is better on both axes at once, which is why the options were worth throwing away. Every
+      unvisited area is clean on **64 days of 64**, and the density went **up** rather than down,
+      because the budget is no longer spent on events that were about to be deleted: day 1 goes
+      118.4 → **124.6** placed and day 14 204.9 → **223.4**. `_ensure_one_usable_park` stays as the
+      last line for the one case placement cannot answer — she has settled in every area there is,
+      so nothing was protected — and `tests/test_events.gd` holds the new rule over a whole run.
+
+      The shape to carry, because this project already has the rule and did not apply it here:
+      **check before accepting rather than repairing afterwards.** `CLAUDE.md` says it about
+      closures, and the argument is identical — a repair spends the budget twice, makes the day's
+      density depend on how many placements happened to land badly, and leaves the guarantee
+      running only when something else has already failed.
 
 - [~] **Is the nerve economy right?** **Half answered by playtest 08: three was too few**, and the
       evidence is a run that ended on day 3 with two nerves spent on the same charging dog. It is

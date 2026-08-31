@@ -822,11 +822,21 @@ as a colour change, the same rule `alert_close.svg` is drawn to.
 
 ## Keeping a day winnable
 
-Two rules run after a day is planned:
+One rule runs while a day is planned and two run after it:
 
-- **At least one park is left unspoiled.** Whichever park has the fewest events reaching it
-  has them removed. Ambient events do not count as spoiling — a playground makes a park
-  *contested*, which is the design, and stripping one out every day would be absurd.
+- **Nothing is placed near calm she has not used this act.** *(2026-08-31: "why are 7-9 unvisited
+  calm areas spoiled? Just don't place events there!")* The calm ground of every area she has not
+  settled in is refused to `_place_one`, so the events that would have landed there go somewhere
+  else. Ambient events and scars are exempt — a playground makes a park *contested*, which is the
+  design, and a scar is something that already burnt.
+
+  It replaced a **repair**: the day used to be planned in full and whatever landed on the calm was
+  then deleted, which spent the budget twice and left the guarantee running only on the days a
+  weaker one had already failed. Refusing the ground keeps every unvisited area clean on 64 planned
+  days of 64 *and* raises the density, because nothing is placed to be thrown away.
+- **At least one park is left unspoiled.** The last line rather than the rule, and it now has
+  work to do in exactly one case: she has settled in every calm area there is, so the placement
+  rule protected nothing. Whichever park has the fewest events reaching it has them removed.
   *(M24: where there is a choice, the park it protects is **not** the one she used yesterday.)*
 - **A park stays reachable on foot.** See "Keeping a late day walkable" below.
 

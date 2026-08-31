@@ -144,12 +144,15 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	# exactly one day and a cache with a shorter life than its invalidation rule is a bug waiting.
 	var ground := {}
 
+	# The calm she has not used yet, which nothing today may be placed near. See `_calm_to_leave_alone`.
+	var leave_alone := _calm_to_leave_alone(map, used_calm)
+
 	planned.append_array(_place_ambient(day, map))
 	planned.append_array(_place_scars(day, scars))
-	_place_scripted(day, _stream(base, 1), map, planned, ground)
-	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground)
+	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone)
+	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground, leave_alone)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm)
-	_fill_with_recurring(day, base, map, planned, ground)
+	_fill_with_recurring(day, base, map, planned, ground, leave_alone)
 	_ensure_the_run_is_taught(day, planned)
 
 	_ensure_one_usable_park(map, planned, used_calm)
@@ -431,14 +434,15 @@ static func _place_ambient(day: int, map: CityMap) -> Array[Planned]:
 	return planned
 
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
-		planned: Array[Planned], ground := {}) -> void:
+		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = []) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day):
-		var placement := _place_one(def, rng, map, planned, ground)
+		var placement := _place_one(def, rng, map, planned, ground, leave_alone)
 		if placement:
 			planned.append(placement)
 
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
-		consumed: Array[String], planned: Array[Planned], ground := {}) -> void:
+		consumed: Array[String], planned: Array[Planned], ground := {},
+		leave_alone: Array[Rect2] = []) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day):
 		if def.id in consumed:
 			continue
@@ -454,7 +458,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today"
 					% [def.id, roll, threshold])
 			continue
-		var placement := _place_one(def, rng, map, planned, ground)
+		var placement := _place_one(def, rng, map, planned, ground, leave_alone)
 		if not placement:
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
@@ -477,7 +481,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## run's own history has changed the ground: a scar still displaces the events it actually stands
 ## on, and every other event is where it was yesterday.
 static func _fill_with_recurring(day: int, base: int, map: CityMap,
-		planned: Array[Planned], ground := {}) -> void:
+		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = []) -> void:
 	var eligible := EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day)
 	if eligible.is_empty():
 		return
@@ -497,7 +501,7 @@ static func _fill_with_recurring(day: int, base: int, map: CityMap,
 			break
 		var rng := _stream(base, FILL_SALT + attempt)
 		var def := _pick_weighted(affordable, rng)
-		var placement := _place_one(def, rng, map, planned, ground)
+		var placement := _place_one(def, rng, map, planned, ground, leave_alone)
 		if not placement:
 			continue
 		planned.append(placement)
@@ -530,7 +534,7 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 ## The fallback is the roomiest candidate offered rather than nothing, because a scripted event
 ## has to happen: on a map with fifty events on it the honest answer is the best spot left.
 static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
-		already: Array[Planned] = [], ground := {}) -> Planned:
+		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = []) -> Planned:
 	# An `AHEAD_OF_PLAYER` event is budgeted here and sited by `EventDirector` while the player
 	# walks. Costing it here rather than giving the director its own allowance is deliberate:
 	# the cat competes with the café tables and the roadworks for the same day, so making the
@@ -548,6 +552,10 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
 		if not candidate:
+			continue
+		# Before the spacing, because this one is about the *ground* rather than about what is
+		# already on it, and because it can never bend.
+		if _reaches_any(candidate, leave_alone):
 			continue
 		var room := _room_around(candidate, already)
 		if room == INF:
@@ -805,8 +813,50 @@ static func _cross_street_path(map: CityMap, tile: Vector2i) -> PackedVector2Arr
 
 # ---------------------------------------------------------------- park rules ---
 
+## The calm ground nothing may be placed near today: every calm area she has not settled in this
+## act. *(2026-08-31: "why are 7-9 unvisited calm areas spoiled? Just don't place events there!")*
+##
+## **This is a placement rule, and it used to be a repair.** `_ensure_one_usable_park` below plans
+## the whole day and then deletes whatever landed on the calm — which spends budget on events the
+## player never sees, makes the day's density depend on how many happened to land badly, and only
+## ran at all on the days its own early return did not fire. Measured over 64 planned days before
+## this existed: **6.4 to 7.6 of the seven-to-nine unvisited calm areas were spoiled on a raw day**,
+## and the strip was throwing away twelve to eighteen events to fix it. Refusing the ground costs
+## nothing and the events go somewhere else instead, which is the same argument `CLAUDE.md` makes
+## about closures — *checked before they are accepted, not repaired afterwards.*
+##
+## The two exemptions are the ones `_ensure_one_usable_park` already had, and they are what keeps a
+## park **contested** rather than sterile: an `AMBIENT` event is a permanent feature of the map (a
+## playground makes a park contested and leaves the far side calm), and a scar is something that
+## already burnt. Neither is placed through `_place_one`, so neither is affected by this at all —
+## which is the reason it goes here rather than in `_ground_for`.
+##
+## And the areas she *has* used are deliberately not in the list: `_spoil_the_parks_she_used` is
+## aimed at exactly those, and this rule would otherwise cancel it.
+static func _calm_to_leave_alone(map: CityMap, used_calm: Array[Vector2i]) -> Array[Rect2]:
+	var leave_alone: Array[Rect2] = []
+	for block in map.calm_blocks:
+		if not used_calm.has(block):
+			leave_alone.append(map.tile_rect_to_world(_calm_rect(map, block)))
+	return leave_alone
+
+## Whether a candidate's field would reach any of them.
+static func _reaches_any(candidate: Planned, rects: Array[Rect2]) -> bool:
+	for rect in rects:
+		if _reaches_rect(candidate, rect):
+			return true
+	return false
+
 ## docs/CITY.md: at least one calm zone stays usable every day, or the day has no safe
 ## ground and the player has no move. Whichever one is least disturbed keeps its quiet.
+##
+## **It is the last line rather than the rule, and since 2026-08-31 it usually finds nothing to
+## do.** What keeps an *unvisited* area clean is `_calm_to_leave_alone`, at placement; this runs
+## afterwards and asks the one question placement cannot answer — has the day ended up with no
+## clean calm ground anywhere, which can only happen once she has settled in every area there is.
+## Two independent mechanisms rather than one, for the reason M50 gives for keeping a reachability
+## check under the corridor: the day a placement rule stops holding is the day a run becomes
+## unwinnable, and nothing else would say so.
 ##
 ## Since M14 this is the difference between a hard day and an impossible one, and since M15
 ## the set of calm zones is whatever the arcs have left — a requisitioned park is not a
@@ -860,21 +910,19 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
 	# The player's arithmetic is the argument and it is right. `MIN_CALM_BLOCKS` is derived as an
 	# act's worth of days **plus one** on the assumption that the only thing which burns an area is
 	# *going* to it — which is what `_spoil_the_parks_she_used` does, deliberately, so that she
-	# cannot go back to the same bench every day. This rule protected exactly **one** area, and
-	# nothing stopped ordinary placement dropping a busker or a market stall into any of the rest:
-	# so an area she had never seen could be spoiled by chance, the pool fell below the derivation,
-	# and the act ran out a day early through no decision she made and with nothing saying so.
+	# cannot go back to the same bench every day.
 	#
-	# Making the guarantee match the derivation costs the catalogue less than it looks. A calm area
-	# is a small part of the map, `_something_to_put_in_a_park` is already a narrow pool, and what
-	# is stripped here was never going to be met by a player who was heading somewhere quiet.
+	# **Since 2026-08-31 that rule is enforced at placement instead** — see `_calm_to_leave_alone`,
+	# and *"just don't place events there"* — so by the time this runs there is normally nothing to
+	# strip. What is left here is the case that placement cannot answer: **she has been to all of
+	# them**, so nothing was protected, and the day could otherwise have no clean ground on it at
+	# all. A winnable day outranks a fresh decision, so the least disturbed area is cleared and the
+	# rest stand.
 	var untouched: Array[Vector2i] = []
 	for block in map.calm_blocks:
 		if not used_calm.has(block):
 			untouched.append(block)
 
-	# If she has been to all of them, a winnable day still outranks a fresh decision: protect the
-	# least disturbed one and let the rest stand.
 	if untouched.is_empty():
 		var least: Vector2i = map.calm_blocks[0]
 		for block in map.calm_blocks:
