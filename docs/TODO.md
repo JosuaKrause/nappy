@@ -186,14 +186,26 @@ came within reach — which should now be a great deal more than playtest 03's z
 time in the carriageway, `ahead` for what the director put in front of her, and `lost` for what
 was around when a day ended.
 
-**M50 is under way and its first half is on `main`.** Step 0 is done — `RouteTree` grows the day's
-corridor by the player's algorithm, and the telemetry map draws it, which is what turns *"is
+**M50's steps 0, 1 and 2 are done and step 3 is what is left.** Step 0 — `RouteTree` grows the
+day's corridor by the player's algorithm, and the telemetry map draws it, which is what turns *"is
 anything guiding her"* from an impression formed while playing into a picture written every
-morning. Step 1 is done — the city has permanent structure in it now, four to eight dead ends and
-one or two big buildings, placed against a reference tree. **The two invariant decisions are taken**
-*(2026-08-31)*, so what is left is **step 2, placement by role**, and step 3. Read the M50 entry
-before picking it up: the things that went wrong there are worth more than the things that went
-right.
+morning. Step 1 — the city has permanent structure in it, four to eight dead ends and one or two
+big buildings, placed against a reference tree. **Step 2 is placement by role**: a closure is a
+**wall** placed off the corridor (the `CLOSURE_ROUTE_BIAS` inversion), a lethal event is a wall
+too, a costly one is **friction** weighted onto the corridor, and a one-shot is a **set piece**
+offered at every site of a covering set with exactly one of them happening. What is left is step 3,
+placeholders, and the one tooling item that draws the roles on the map.
+
+Read the M50 entry before picking any of it up: the things that went wrong there are worth more
+than the things that went right, and two of them are the same shape — **a test that was true by
+luck**. The retry guarantee broke and the suite stayed green because seed 4242 happened to
+generate a different city; a crowd test asserted the wrong predicate for eleven milestones and
+failed on a few frames of timing.
+
+**Playtest 15 landed in the middle of it and is `M51`, and six of its seven are done** — the
+cul-de-sac the crowd walked through, the spine's zebra, the police car's flank, the game-over
+heading, the title colour and the car that vanished on the bridge. The seventh is half-open by
+evidence rather than by neglect; see the entry.
 
 **And the three corrections that came out of the player reading the first telemetry map are the
 ones to read first**, because none of them was a bug report and all three were the session having
@@ -3116,18 +3128,39 @@ rather than to move a number.
       one colour and the name of the game was only the biggest of them. Deliberately **not** one of
       the danger colours, for the reason the signal lamps are not: a title in `MARK_COSTLY` is a
       game named after a warning
-- [ ] **A car on the bridge drives off the map instead of vanishing** — finding 7. This is M35's
+- [x] **A car on the bridge drives off the map instead of vanishing** — finding 7. This is M35's
       *"nothing vanishes while you are looking at it"* arriving at the crowd, which has never had
       it: `Crowd` recycles a car when it leaves the corridor box and the box is smaller than the
       map, so the three holes in the boundary — the bridge, the tunnel, the road out — are exactly
       where a recycle is visible. The rule to state is the events' one: past `Tuning.OUT_OF_SIGHT`
       before it is taken
-- [ ] **Did the day counter reset mid-run?** — finding 4, and it is recorded with the player's own
+
+      **Built, and the interesting half is who is *not* allowed to.** Outside the map is water,
+      forest and mountainside — painted ground with no road on it — so letting every agent overrun
+      the boundary would drive cars into the sea at every corridor. `City._paint_outside_the_map`
+      lays carriageway out there at the spine's own width and nowhere else, and that is exactly the
+      condition: a **car**, on the **main road**, going **north or south**. Everybody else keeps
+      the tile of slack they had. `CrowdField.along_bounds` is clamped to the map, so the second
+      thing that had to move is the box test — asking it about a car on the deck of the bridge
+      recycles the car on the deck of the bridge
+- [~] **Did the day counter reset mid-run?** — finding 4, and it is recorded with the player's own
       doubt: *"maybe I died fully without noticing."* Read it **with** finding 5 rather than
       instead of it — if a run can end and restart without the player noticing it has, that is the
       game-over screen's complaint arriving from the other side, and fixing the screen may be the
       whole of it. What to check first is whether the ending path can reach the title screen and
       begin a new run without the ending screen having been readable
+
+      **Checked, and there is no path that resets the counter inside a run.** `GameState.day` moves
+      in exactly two places: `finish_day` increments it on a win, and `start_run` sets it to 1.
+      `start_run` is only reached through `_restart_run`, which **reloads the scene** — so a day
+      counter that reads 1 again is a new run and nothing else. The player's own alternative is the
+      only explanation the code allows.
+
+      **Left half-open rather than closed, because that is not the same as saying nothing
+      happened.** What it says is that the run ended, and *"I can swear the counter reset"* is then
+      a report that the ending was unreadable — three screens deep, in the fiction's own voice,
+      dismissed with the same key as everything else. Finding 5 is the fix and this is the evidence
+      for it. Reopen it if the counter is ever seen to move with nerves still on the HUD
 
 ## Tooling for the diversion work · `feature/a-map-that-shows-the-plan`
 

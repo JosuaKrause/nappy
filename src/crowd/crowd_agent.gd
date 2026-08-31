@@ -926,7 +926,8 @@ func _has_left_the_field() -> bool:
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
 	var at := _along()
-	if at < -Tuning.TILE_SIZE or at > limit + Tuning.TILE_SIZE:
+	var beyond := _room_beyond_the_map()
+	if at < -beyond or at > limit + beyond:
 		return true
 
 	# Across the axis first: a street the box has stopped reaching at all. This is not the rare
@@ -944,10 +945,36 @@ func _has_left_the_field() -> bool:
 	# than the entry band is deep. The second half is not symmetry for its own sake — the player
 	# walks faster than a pedestrian, so anybody going her way is steadily left behind, and
 	# without it the pavement in front of her drains into a crowd standing two streets back.
+	# Past the edge of the map and still inside its allowance: it is *leaving the city*, which is
+	# what the tunnel and the bridge are for. The box's own bounds are clamped to the map, so
+	# asking them here would recycle a car on the deck of the bridge — which is the bug.
+	if at < 0.0 or at > limit:
+		return false
+
 	var bounds := field.along_bounds(_vertical)
 	if _direction > 0.0:
 		return at > bounds.y or at < bounds.x - ENTRY_SPREAD
 	return at < bounds.x or at > bounds.y + ENTRY_SPREAD
+
+## How far past the edge of the map this agent may go before it stops existing.
+##
+## **Nothing vanishes while you are looking at it.** *(Playtest 15, finding 7: "cars driving over
+## the bridge currently just disappear. they should drive until they leave the visible area".)*
+## That is M35's rule, written for events, arriving at the crowd — which has never had it, because
+## a recycle happens at the edge of a box that is normally nowhere near anything the player can
+## see. The three holes in the boundary are exactly where it is: a car reaching the bridge is at
+## the one place in the city that is *about* leaving, and it blinked out.
+##
+## **A tile for everybody else, and that is not stinginess.** Outside the map is water, forest and
+## mountainside — painted ground with no road on it — so a car allowed to overrun anywhere would
+## drive into the sea. The spine is the exception because it is the only place the carriageway
+## carries on through the border: `City._paint_outside_the_map` puts road out there at the spine's
+## own width and nowhere else, and `CityEdge` is the tunnel and the bridge standing over it.
+## Walkers keep the tile for the same reason — the pavements do not carry on, only the road does.
+func _room_beyond_the_map() -> float:
+	if kind != Kind.CAR or not _vertical or _corridor != _map.main_road:
+		return Tuning.TILE_SIZE
+	return Tuning.OUT_OF_SIGHT
 
 ## How far outside the box an agent may enter, in px.
 ##

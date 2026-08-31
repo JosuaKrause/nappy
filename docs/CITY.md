@@ -851,6 +851,16 @@ is loud, and the reason a park is quiet.
   structural half of "a park is quiet because nobody is in it". `tests/test_crowd.gd`
   asserts the middle of every park is out of earshot.
 
+- **A car leaves the city by the bridge and the tunnel, and nowhere else.** *(M51, playtest 15
+  finding 7: "cars driving over the bridge currently just disappear. they should drive until they
+  leave the visible area".)* This is M35's *"nothing vanishes while you are looking at it"* — the
+  rule written for events — arriving at the crowd, which never had it because a recycle normally
+  happens at the edge of a box that is nowhere near anything she can see. The three holes in the
+  boundary are exactly where it is not. A car on the spine going north or south may now overrun
+  the map by `OUT_OF_SIGHT`; **everybody else keeps a tile**, because outside the map is water,
+  forest and mountainside, and `_paint_outside_the_map` lays carriageway out there at the spine's
+  own width and nowhere else. A general allowance would drive cars into the sea.
+
 - **And nobody walks into a cul-de-sac's wall.** *(M51, playtest 15 finding 1: "cars and people
   go through cul-de-sacs".)* The crowd is the one thing that travels the lattice without asking
   `blocked_segments()`, and it does not need to — a dead end is a street with its far end built
