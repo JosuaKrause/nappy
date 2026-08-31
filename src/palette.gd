@@ -77,6 +77,19 @@ const SIGNAL_RED := Color("e04a3f")
 const SIGNAL_AMBER := Color("f0a92e")
 const SIGNAL_GREEN := Color("5fc46a")
 
+## The two words on the screens either side of a run, and they are the only colours in this file
+## that paint text rather than the world. *(M51, playtest 15 findings 5 and 6.)*
+##
+## **Neither borrows from the danger vocabulary**, for the reason the signal lamps do not borrow
+## from the marks: a caret says *how bad a thing is* and these say *which screen you are on*, and a
+## title in `MARK_COSTLY` would be a game named after a warning. `TITLE_TEXT` is the doorstep — a
+## brighter `HOME_STOOP`, which is the thing the title screen is standing in front of — and it was
+## a warm off-white indistinguishable from its own subtitle until a player said so. `GAME_OVER` is
+## `MARK_LETHAL` opened up until it is readable at 88px on a dark scrim, which is the one place the
+## two vocabularies genuinely mean the same thing.
+const TITLE_TEXT := Color("d2765a")
+const GAME_OVER := Color("b2434a")
+
 const CHALK := Color(0.92, 0.92, 0.88, 0.62)
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")

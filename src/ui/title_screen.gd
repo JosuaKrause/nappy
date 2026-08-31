@@ -28,9 +28,16 @@ extends CanvasLayer
 signal start_requested()
 signal quit_requested()
 
+@onready var _name: Label = $Root/Top/Lines/Title
 @onready var _hint: Label = $Root/Bottom/Lines/Hint
 
 func _ready() -> void:
+	# **The title has a colour of its own.** *(Playtest 15, finding 6: "on the title screen change
+	# up the color of the game title".)* It was the same warm off-white as the line under it and the
+	# controls below that, so the screen was four labels in one colour and the name of the game was
+	# only the biggest of them. `Palette.TITLE_TEXT` is the doorstep it is standing in front of; see
+	# the note there for why it is not one of the danger colours.
+	_name.add_theme_color_override("font_color", Palette.TITLE_TEXT)
 	# Above the pause screen: this is the outermost frame the game runs inside, and nothing should
 	# ever be able to cover it.
 	layer = 95

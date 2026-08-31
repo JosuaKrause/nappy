@@ -3061,12 +3061,42 @@ rather than to move a number.
       **tiles** and looks for `CROSSING`, which is the M29 invariant — so a new tile type or a
       changed one has to keep that question answerable), and the traffic's give-way rule, which
       must **not** start giving way on the spine
-- [ ] **The police car has a rear view** — finding 3, *"the police car only has a sideview even
+- [x] **The police car has a rear view** — finding 3, *"the police car only has a sideview even
       when driving vertically"*. An art gap in the crowd rather than in the catalogue
-- [ ] **Say GAME OVER on the game over screen, in big letters** — finding 5. *"In addition to
+
+      **It is in the catalogue, not the crowd**, and it is three rows rather than one. The crowd's
+      own cars have had an end-on view since M12 — `car_end_body.svg`, with the note that at that
+      angle the front and the back of a car are the same shape — and every vehicle in the
+      *catalogue* was one side-on sprite mirrored east and west. `police_patrol`, `fire_truck` and
+      `military_convoy` are the three mobile ones, so all three got one: answering the complaint
+      and leaving the other two would be this file's own warning about the border brief.
+
+      Each keeps its **own** end-on picture rather than borrowing the crowd's generic car. That is
+      M37's rule and it bites hardest here — the whole content of a vehicle row is *which* vehicle
+      it is, and a police car that becomes a saloon the moment it turns north is the one silhouette
+      the screen-edge badge exists to show, gone at the moment it starts coming towards her. The
+      badge itself keeps the **side** view: an icon is read at 40px against a row of other icons,
+      and a vehicle end-on is a box at any size
+- [x] **Say GAME OVER on the game over screen, in big letters** — finding 5. *"In addition to
       everything else that is already there"*, so the ending text, the reason and the keys all
       stay; this adds a heading
-- [ ] **Change the colour of the title on the title screen** — finding 6
+
+      **It is not the same word for all three endings, and that is a decision rather than the
+      request being trimmed.** The screen the complaint came off is the `BAD` one, where the nerves
+      ran out, and `GAME OVER` is what that is; stamping it over a run somebody *won* would be
+      telling them they lost. `THE END` is the same size, the same weight and the same job on the
+      other two. Say so if that reads wrong — it is one line of a dictionary.
+
+      **And a dev flag came with it, because there was no way to look at the thing being changed.**
+      An ending is at the far end of fourteen days or five spent nerves, so `--ending
+      bad|neutral|good` puts the last screen of a run on screen at boot. It is the same argument
+      `--press` was built on: nothing in the suite or in a screenshot had ever reached that screen.
+- [x] **Change the colour of the title on the title screen** — finding 6. `Palette.TITLE_TEXT`, a
+      brighter version of the doorstep the screen is standing in front of. It was the same warm
+      off-white as the line under it and the controls below that, so the screen was four labels in
+      one colour and the name of the game was only the biggest of them. Deliberately **not** one of
+      the danger colours, for the reason the signal lamps are not: a title in `MARK_COSTLY` is a
+      game named after a warning
 - [ ] **A car on the bridge drives off the map instead of vanishing** — finding 7. This is M35's
       *"nothing vanishes while you are looking at it"* arriving at the crowd, which has never had
       it: `Crowd` recycles a car when it leaves the corridor box and the box is smaller than the
