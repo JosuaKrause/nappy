@@ -71,6 +71,11 @@ var _daylight: CanvasModulate
 var _act := 1
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
+## Today's corridor: the ways from the doorstep to the calm areas still worth reaching, grown
+## before anything is placed. Everything the day sites is sited against **this** tree — the
+## closures as walls off it, the events by role, the telemetry picture that says whether any of
+## it points anywhere — so it is grown once here rather than three times from the same seed.
+var _tree: RouteTree = null
 ## Today's closed streets, and the barriers and wreckage that say so. Also rebuilt daily.
 var _closures: Array[RoadClosure] = []
 var _closure_nodes: Array[Node] = []
@@ -313,13 +318,19 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	for node in _closure_nodes:
 		node.queue_free()
 	_closure_nodes.clear()
-	_closures = ClosurePlanner.plan_day(map, day, rng)
+	# Before the closures, because they are placed off it. See `ClosurePlanner._shuffled_candidates`.
+	_tree = RouteTree.for_day(map, day)
+	_closures = ClosurePlanner.plan_day(map, day, rng, _tree)
 	map.close_streets(_closures)
 	for closure in _closures:
 		_spawn_closure(closure)
 
 func closures() -> Array[RoadClosure]:
 	return _closures
+
+## Today's corridor. Grown in `_close_streets`, so it is only meaningful after `start_day`.
+func route_tree() -> RouteTree:
+	return _tree
 
 func _spawn_closure(closure: RoadClosure) -> void:
 	for mouth in closure.mouth_centres(map):

@@ -22,6 +22,13 @@ extends RefCounted
 ## `Tuning.MIN_CALM_AREAS_REACHABLE` — and under M50 a wall is placed off the day's tree, so what
 ## keeps the calm reachable is where a closure goes rather than how many ways round it there are.
 ##
+## **Since M50 step 2 a closure is a `wall`, in the sense `docs/CITY.md` gives that word**, and the
+## practical difference is which streets it may land on: a closure is placed **off** the day's
+## corridor, preferentially on a turning off it. *"A road block becomes guidance and is not a
+## hindrance. It flips its role."* See `_shuffled_candidates`, which is where the flip lives, and
+## note what it does to the invariant above — a wall off the tree cannot cut the tree, so the check
+## below stopped being the thing that keeps a day winnable and became the second opinion on it.
+##
 ## Everything here is deterministic from the day's RNG. A run is learnable or it is nothing.
 
 ## Somewhere today can be won, and the streets it is entered from.
@@ -37,7 +44,12 @@ class CalmArea extends RefCounted:
 
 ## Plans a day's closures. `map` must already be repainted for the day, because which blocks
 ## are calm is the thing the invariant is stated over and a requisitioned park is not one.
-static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator) -> Array[RoadClosure]:
+##
+## `tree` is the day's corridor, and every closure is placed **off** it. The caller passes the one
+## it is going to plan the rest of the day against; when there is none to hand this grows the same
+## one, because `RouteTree.for_day` is a pure function of the city's seed and the day number.
+static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
+		tree: RouteTree = null) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
 	var wanted := Tuning.closures_for_day(day)
 	if wanted <= 0:
@@ -54,15 +66,22 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator) -> Arra
 	# here is the whole of what M21's holes cost the planner.
 	var closed := map.blocked_segments()
 	var kinds := RoadClosure.kinds_on(day)
-	for segment in _shuffled_candidates(map, home, areas, rng):
+	var corridor := tree if tree else RouteTree.for_day(map, day)
+	for segment in _shuffled_candidates(map, home, corridor, rng):
 		if chosen.size() >= wanted:
 			break
 		closed[segment.key()] = true
 		if _invariant_holds(home, areas, closed):
 			chosen.append(RoadClosure.new(_pick_kind(kinds, rng) as RoadClosure.Kind, segment))
 		else:
-			# Tried and rejected: this street is one of the ones holding the day up.
+			# **A wall off the tree should never fail this**, so a failure is not a near miss to be
+			# skipped quietly — it means the corridor and the wall disagree about where she is
+			# going, which is the one bug this milestone can have that nothing else would show.
+			# `tests/test_routes.gd` asserts it never happens over a run's worth of days; the note
+			# is what would say so in a real run.
 			closed.erase(segment.key())
+			Telemetry.note("plan", "day %d: closing %s off the corridor would have cut the calm"
+					% [day, TelemetryLog.tile(segment.a)])
 	return chosen
 
 ## The street the front door opens onto. Never closable — the home is a notch in a block with
@@ -126,23 +145,40 @@ static func _invariant_holds(home: StreetNetwork.Segment, areas: Array[CalmArea]
 
 # ---------------------------------------------------------------- placement ---
 
-## Every closable street, in the order the day will try them — weighted so that the streets
-## the player would actually have used come up first.
+## Every street the day may shut, in the order it will try them.
 ##
-## A closure in the far corner of a map is not a decision, it is scenery. The bias is what
-## makes the mechanic do its job: a street is *useful* if it lies on a shortest way from the
-## door to some calm ground, give or take a block, and a useful street is several times
-## likelier to be the one that is shut. The invariant is what stops that from being cruel.
+## **This is the inversion, and it is the whole of M50 step 2 on this side.** *"A road block becomes
+## guidance and is not a hindrance. It flips its role."* Until now a closure was biased *onto* the
+## streets the player would have used — `CLOSURE_ROUTE_BIAS`, five to one — because a closure was
+## an obstacle and an obstacle nobody meets is scenery. Under the diversion design a closure is a
+## **wall**: it prunes the ways that lead nowhere she should go, so that the ways that remain are
+## obvious. Placing one across her route is now the defect rather than the point.
+##
+## So the tree is not weighted against, it is **excluded**. A wall that cuts the corridor is not a
+## worse wall, it is the opposite of one, and the guarantee that it cannot happen is what lets the
+## rest of the day be planned against a tree that is still walkable when the barriers go up.
+##
+## What is left splits in two, and the preference between them is `CLOSURE_WALL_BIAS`:
+##
+## - **The rim** — a turning off a street the routes run down. This is what a closure is *for*: it
+##   is read from the junction, where the wrong way is still a choice, which is the same reason
+##   `RoadClosure` seals both mouths rather than putting one sign half way down.
+## - **Everywhere else** — legal, and it is the far corner of the map that the old bias existed to
+##   avoid. Kept in the pool rather than refused, because a day that cannot find its quota of
+##   rim streets should still shut something.
 static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment,
-		areas: Array[CalmArea], rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
-	var useful := _streets_on_a_route(map, home, areas)
+		tree: RouteTree, rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
+	var rim := {}
+	for key in tree.rim():
+		rim[key] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
 	for segment in StreetNetwork.segments():
-		if segment.key() == home.key() or not map.has_street(segment.key()):
+		var key := segment.key()
+		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
 			continue
 		pool.append(segment)
-		weights.append(Tuning.CLOSURE_ROUTE_BIAS if useful.has(segment.key()) else 1.0)
+		weights.append(Tuning.CLOSURE_WALL_BIAS if rim.has(key) else 1.0)
 
 	var order: Array[StreetNetwork.Segment] = []
 	while not pool.is_empty():
@@ -151,47 +187,6 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment,
 		pool.remove_at(index)
 		weights.remove_at(index)
 	return order
-
-## The streets on a near-shortest way from the door to some calm ground, as a set of keys.
-##
-## `from_home[u] + 1 + to_calm[v]` is the length of the best route that goes through this
-## street; comparing it against the best route overall says whether the street is on the way
-## or a detour. The slack is what keeps it from being a single line of tiles: at slack 1
-## every street that costs one extra block still counts, which is roughly "the ways a player
-## would actually consider".
-static func _streets_on_a_route(map: CityMap, home: StreetNetwork.Segment,
-		areas: Array[CalmArea]) -> Dictionary:
-	var useful := {}
-	var absent := map.blocked_segments()
-	var from_home := StreetNetwork.junction_distances([home.a, home.b], absent)
-	for area in areas:
-		var doorsteps: Array[Vector2i] = []
-		for segment in area.access:
-			doorsteps.append(segment.a)
-			doorsteps.append(segment.b)
-		var to_calm := StreetNetwork.junction_distances(doorsteps, absent)
-		var best := INF
-		for junction in doorsteps:
-			var node := StreetNetwork.node_of(junction)
-			if from_home.has(node):
-				best = minf(best, float(from_home[node]))
-		if best == INF:
-			continue
-		for segment in StreetNetwork.segments():
-			if absent.has(segment.key()):
-				continue
-			var u := StreetNetwork.node_of(segment.a)
-			var v := StreetNetwork.node_of(segment.b)
-			var through := minf(_through(from_home, to_calm, u, v),
-					_through(from_home, to_calm, v, u))
-			if through <= best + Tuning.CLOSURE_ROUTE_SLACK:
-				useful[segment.key()] = true
-	return useful
-
-static func _through(from_home: Dictionary, to_calm: Dictionary, u: int, v: int) -> float:
-	if not from_home.has(u) or not to_calm.has(v):
-		return INF
-	return float(from_home[u]) + 1.0 + float(to_calm[v])
 
 static func _pick_weighted(weights: Array[float], rng: RandomNumberGenerator) -> int:
 	var total := 0.0

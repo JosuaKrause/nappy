@@ -460,14 +460,19 @@ const HOME_SIZE_TILES := Vector2i(2, 2)
 ## morning, not a city under siege.
 const CLOSURES_PER_ACT: Array[int] = [1, 2, 3, 4]
 
-## How much likelier a closure is to land on a street the player would actually have used
-## than on one they would not. A closure in the far corner of the map is not a decision, it
-## is scenery; this is what aims the mechanic at the route.
-const CLOSURE_ROUTE_BIAS := 5.0
-## How many blocks longer than the best route a street may be and still count as "on the
-## way". At 0 only the single shortest line counts, which aims every closure at the same few
-## streets; at 1 it is roughly the set of routes a player would consider.
-const CLOSURE_ROUTE_SLACK := 1
+## How much likelier a closure is to land on a turning off the day's corridor than on a street
+## somewhere else entirely. **A closure never lands on the corridor at all** — that is a rule in
+## `ClosurePlanner._shuffled_candidates` rather than a weight, because a wall across the route is
+## not a worse wall, it is the opposite of one.
+##
+## **It replaced `CLOSURE_ROUTE_BIAS`, which was the same number pointing the other way.** *(M50
+## step 2: "a road block becomes guidance and is not a hindrance. It flips its role.")* That one
+## aimed closures **at** the streets the player would have used, five to one, because a closure
+## was an obstacle and an obstacle nobody meets is scenery. A wall's job is to prune the ways that
+## lead nowhere she should go, and a wall nobody can see from the route prunes nothing — so the
+## number survived the inversion and what it is measured against did not. The far corner of the
+## map is still the thing it exists to avoid.
+const CLOSURE_WALL_BIAS := 5.0
 
 ## The day-level invariant, and the whole reason the planner is allowed to close anything:
 ## **at least this many calm areas are still reachable.** Two areas, because a choice of

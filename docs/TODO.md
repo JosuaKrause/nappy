@@ -2821,11 +2821,42 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
       walls for segments just *outside* a corridor, friction for segments *inside* one, set pieces
       for a covering set. Keep `_stream(base, salt)` per phase; a phase whose consumption changes
       needs its own stream, which is M39's rule and this changes several
-- [ ] **`ClosurePlanner` places closures as walls, off the tree.** `CLOSURE_ROUTE_BIAS` inverts:
+- [x] **`ClosurePlanner` places closures as walls, off the tree.** `CLOSURE_ROUTE_BIAS` inverts:
       the weight goes to segments that are *not* on a branch, and preferentially to those leading
       away from calm. Keep the `_invariant_holds` check on each candidate — a wall off the tree
       should never fail it, so a failure means the tree and the wall disagree about where she is
       going, which is worth an assertion rather than a silent skip
+
+      **Built, and it was taken first rather than second.** The bullet above it needs the tree
+      threaded from `City` into the scheduler, and doing that while closures were still biased
+      *onto* the corridor would have left a commit in which friction is aimed at a route that a
+      closure is aimed at cutting. The order is one commit's worth of difference and the transient
+      is the kind of thing that gets shipped.
+
+      Three things came out of it:
+
+      - **The tree is excluded rather than weighted against, and that is what the rest of the
+        milestone rests on.** A wall across the route is not a worse wall, it is the opposite of
+        one — so `City.start_day` grows the corridor *before* the closures and every street on it
+        is refused, which is what makes it still walkable when the barriers go up. It is also why
+        `RouteTree.for_day` stopped taking the day's closures: a tree grown against them would be
+        grown against decisions taken by consulting it.
+      - **The rim is the unit both halves of step 2 needed**, and it is one method. `RouteTree.rim()`
+        is the off-tree streets meeting an on-tree one at a junction, which is exactly *the turning
+        she can see from the corridor*. A wall further out is legal and bounds less; a wall in the
+        far corner of the map is the scenery the old bias existed to avoid, so the constant
+        survived the inversion at the same strength with a different thing to measure against.
+      - **The assertion asked for is a test rather than an `assert`.** A failing `assert` aborts a
+        headless suite, which in this project prints nothing at all and looks exactly like a hang
+        (`CLAUDE.md`). So the planner writes a `plan` line and skips, and `tests/test_routes.gd`
+        proves the branch is dead by trying **every** off-corridor street of every day on four
+        seeds rather than the one or two a day happens to reach.
+
+      And one defect the first version of the test had, which is the same shape as several already
+      in this file: it grew its own tree to check the planner's answer against, and grew it
+      **before** `map.repaint(state)`. Which blocks are calm is what a tree grows from, so it was
+      comparing against a corridor for yesterday's city — 26 failures that were all the test being
+      wrong. A tree is a fact about a *repainted* map, and nothing in the type says so
 - [ ] **Set pieces get a covering set.** Candidate sites such that every corridor touches at least
       one — *not* a single site on her chosen route. `fire_truck` first, then the resistance
       note's alley. **A bundle is not a guarantee**: two distinct paths means at least two sites,

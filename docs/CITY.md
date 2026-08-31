@@ -366,10 +366,11 @@ a shut street is the street with nobody on it, and that is legible from a block 
 **And here is the gap.** *(Playtest 14: "I still don't feel the game guiding me to calm zones via
 obstacles.")*
 
-- **Closures are chosen at random** from a shuffled list of legal candidates. Nothing chooses them
-  to *point* anywhere — a closure is as likely to be behind her, or on a street she was never
-  going to walk, as across the route she is taking. The invariant asks *did this stay winnable*,
-  never *did this say anything*.
+- ~~**Closures are chosen at random** from a shuffled list of legal candidates. Nothing chooses
+  them to *point* anywhere.~~ *(Closed by M50 step 2.)* A closure is a **wall** now: never on the
+  day's corridor, preferentially on a turning off it. See "Where a closure goes" below. What has
+  not been answered is whether that **reads** as guidance to a person — the picture says the walls
+  are where they should be, and nobody has walked past one.
 - **There is no cue of any kind toward calm.** No marker, no map, no HUD line, nothing on the
   ground. "Planning-time legibility" is named a paragraph above as not existing.
 - **The main road as a soft block** — the one thing in the design that would divide the city into
@@ -698,10 +699,35 @@ city that has had a bad morning, not a city under siege, and it is deliberately 
 was drafted as though closures would be the only thing making a route interesting, and
 playtest 02's findings 2 and 3 put route pressure at the scale of a *block* instead.
 
-Closures are aimed rather than scattered. A street is *useful* if it lies on a shortest way
-from the door to some calm ground give or take a block, and a useful street is
-`CLOSURE_ROUTE_BIAS` times likelier to be the one that is shut — because a closure in the far
-corner of the map is not a decision, it is scenery.
+### Where a closure goes — a wall, off the corridor *(M50 step 2)*
+
+**A closure is never placed on the day's corridor**, and preferentially lands on a turning off it
+(`CLOSURE_WALL_BIAS`). That is the flip: *"a road block becomes guidance and is not a hindrance.
+It flips its role."*
+
+It is worth setting the two side by side, because the numbers are identical and the meaning is
+opposite. Until M50 a street was *useful* if it lay on a shortest way from the door to some calm
+ground give or take a block, and a useful street was `CLOSURE_ROUTE_BIAS` = 5 times likelier to be
+shut — because a closure was an **obstacle**, and an obstacle nobody meets is scenery. A closure is
+now a **wall**: it prunes the ways that lead nowhere she should go so that the ways that remain are
+obvious, and putting one across her route is the defect rather than the point. The bias survived
+the inversion at the same strength; what it is measured against turned upside down.
+
+Two consequences, and the first is what makes the rest of the day's placement possible at all:
+
+- **The corridor is still walkable once the barriers are up.** `City.start_day` grows the tree,
+  `ClosurePlanner` excludes every street on it, and the events are then placed against that same
+  tree. Nothing has to re-derive a corridor after the closures, and no closure can cut one.
+- **The invariant became the second opinion rather than the guard.** A wall off the tree cannot
+  cut the tree, so `_invariant_holds` should never refuse a candidate. It is still checked on every
+  one — two independent mechanisms is the point — and a refusal now writes a `plan` line saying the
+  wall and the corridor disagree about where she is going. `tests/test_routes.gd` asserts it never
+  happens, over every off-corridor street of every day of four seeds.
+
+The old bias's own reason survives too, and it is what the rim is for: a closure in the far corner
+of the map is not a decision, it is scenery. A closure at the mouth of a turning is read from the
+junction, which is where the wrong way is still a choice — the same reason `RoadClosure` seals both
+mouths rather than putting one sign half way down a street.
 
 ### Everything else has to know
 

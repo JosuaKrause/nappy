@@ -268,15 +268,18 @@ func _plan(map: CityMap, day: int) -> Day:
 	map.repaint(state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
-	planned.closures = ClosurePlanner.plan_day(map, day, rng)
+	# The tree first and the closures against it, which is the order `City.start_day` uses since M50
+	# step 2 and the reason `planned.blocked` below can still include the closures: a wall is placed
+	# off the corridor, so a corridor grown before the barriers went up is still walkable after.
+	planned.tree = RouteTree.for_day(map, day)
+	planned.again = RouteTree.for_day(map, day)
+	planned.closures = ClosurePlanner.plan_day(map, day, rng, planned.tree)
 	var closed := {}
 	for closure in planned.closures:
 		closed[closure.segment.key()] = true
 	planned.blocked = map.blocked_segments(closed)
 	planned.home = ClosurePlanner.home_street(map)
 	planned.areas = ClosurePlanner.calm_areas(map)
-	planned.tree = RouteTree.for_day(map, day, planned.closures)
-	planned.again = RouteTree.for_day(map, day, planned.closures)
 	return planned
 
 func _nodes_of(segment: StreetNetwork.Segment) -> Array[int]:

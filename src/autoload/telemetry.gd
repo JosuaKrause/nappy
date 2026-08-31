@@ -224,7 +224,7 @@ func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 	if not _log or _log.path == "":
 		return
 	var path := "%s/%s-map-day%02d.png" % [DIRECTORY, _stem, day]
-	var drawn := tree if tree else RouteTree.for_day(map, day, closures)
+	var drawn := tree if tree else RouteTree.for_day(map, day)
 	if TelemetryMap.render(map, closures, drawn).save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
 
