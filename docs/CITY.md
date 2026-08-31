@@ -416,6 +416,61 @@ effect.** The hard blockers hold still for the whole run — they are what the p
 the soft ones re-cut the map every morning, so the same destination is reached a different way on
 two consecutive days. A city worth knowing plus a day worth reading.
 
+### Hard blockers *(M50 step 1)*
+
+*"Cul-de-sacs and big buildings don't exist yet — but we need them to implement proper hard
+blockers."* Both exist now. A **dead end** is one street with one end built over; a **big
+building** is a block whose lot is solid with all four of its streets built over. They share a
+placement pass, a reference tree and a gate, and differ only in scale.
+
+A dead end is **one street, gone from the lattice, with one end built over**. Four to eight of
+them per city, rolled from the city RNG, so they hold still for the whole run and are what the
+player learns while the closures re-cut the map every morning.
+
+**The ground stops, and that is the whole difference from a zone's absorbed street.** M21's rule
+is that an absorbed corridor is *calm ground rather than a closure* — the tiles are park and she
+walks over them, which is exactly right for a shortcut and exactly wrong for a hard blocker.
+`CityMap.dead_ends` is kept separate from `absent_segments` for that reason: the two are absent
+for opposite reasons, and anything reasoning about **why** a street is missing has to tell them
+apart. Anything asking *can a route go this way* wants `blocked_segments()`, which is both and
+does not care.
+
+**They are placed against a tree rather than before one.** *"First construct an example tree from
+the initial map, then place the hard blockers — that way we can't block off regions entirely."*
+`RouteTree.for_the_run` is that example, and it is a **witness**: it reaches every calm area the
+run will ever use, so a blocker that takes no street off it cannot have made any of them
+unreachable. Candidates therefore exclude the tree rather than the reachability gate merely
+rejecting them afterwards — and day 1's calm is all the calm there will ever be, because an arc
+only ever takes calm ground away.
+
+Four kinds of street may not be a dead end, and the last was found by building it:
+
+- **The street outside the front door.** The oldest exemption in the project.
+- **The main road.** There is one of it and a spine with a hole in it is not a spine.
+- **A precinct**, which is a place rather than a road.
+- **Anything running alongside calm ground.** A dead end is a claim about where you can get to,
+  and the claim is made on the *lattice* while the player walks on *tiles* — so a street with a
+  park down one side is a street you walk into and step sideways out of, whatever the graph says.
+  It is M21's rule read backwards: calm ground beside a dead end makes the dead end a doorway.
+
+**A big building is the same thing at four times the size, and it is a landmark.** One or two per
+city, twenty tiles across, tall enough to be the tallest thing in the district. The **junctions at
+its corners stay** — a car still turns there and a crossing is still painted there — so what is
+gone is the road between them and not the grid around it. It is a `BlockPurpose` with an empty
+`BlockLayout`, which is what keeps it solid for the whole run: a repaint finds nothing to paint
+back. It obeys the same four exclusions plus two of its own — interior blocks only, since the edge
+of the world is a ring of frontages rather than somewhere to put a wall, and single-block lots
+only, since a four-block zone is already a lot.
+
+**The gate is the strong one, deliberately, and moving it is a decision nobody has taken yet.**
+The design permits a weaker one — *"sealing off a section of the map is allowed, and it is the
+point"* — and `docs/TODO.md`'s M50 says hard blockers should need only reachability rather than
+two routes. That is coherent, and weakening it as a **side effect** of adding dead ends would be
+an overturn nobody chose, so the gate still demands that every calm area keeps two distinct
+routes. Measured, that costs almost nothing: with candidates already off the reference tree,
+**99% of them pass either gate**, and a city gets 5.9 dead ends against a rolled 4–8. The weaker
+gate is worth taking when the two-routes invariant itself is restated, not before.
+
 ### The words for it
 
 **Adopted 2026-08-31.** *("Like the terminology, let's adopt it consistently.")* These are the

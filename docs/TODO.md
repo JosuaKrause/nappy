@@ -2682,23 +2682,88 @@ from the other side, and the two should be settled together
 *"Cul-de-sacs and big buildings don't exist yet — but we need them to implement proper hard
 blockers."*
 
-- [ ] **A cul-de-sac is an `absent_segment` with a dead end at one end.** The mechanism is already
+- [x] **A cul-de-sac is an `absent_segment` with a dead end at one end.** The mechanism is already
       built and proven: M21's calm zones absorb the streets between their blocks, `absent_segments`
       is the set of lattice edges this city does not have, and `blocked_segments()` merges it with
       the day's closures. What is new is **choosing** them for a reason rather than as a
       side effect of a zone. Note the M21 rule that comes with it: an absorbed street is still
       *ground* — so a cul-de-sac must be a street that genuinely stops, not a park to walk through
-- [ ] **A big building is a block whose lot is solid**, removing the streets around it from the
+- [x] **A big building is a block whose lot is solid**, removing the streets around it from the
       lattice. This is a `BlockPurpose` and an arc, per the "Add a block purpose" recipe
-- [ ] **They are placed against a tree, not before one**, in `CityGenerator`, from the city RNG —
+- [x] **They are placed against a tree, not before one**, in `CityGenerator`, from the city RNG —
       so they hold still for the whole run and are what the player learns. Grow a **reference
       tree** on the finished lattice first, then place blockers that leave it intact, *"that way we
       can't block off regions entirely"*. The gate is **reachability**, for every calm area the run
       will ever use including act IV ones — not two routes, which a cul-de-sac would fail by
       definition. The reference tree is the readable sanity check beside it, not the check itself
-- [ ] **`CityGenerator.validate()` gains the new condition** and it runs on every seed, like the
+- [x] **`CityGenerator.validate()` gains the new condition** and it runs on every seed, like the
       rest. `tests/test_blocks.gd` already asserts the walkable set is identical tile-for-tile
       across every block arc — hard blockers must not move a walkable tile after generation
+
+**Dead ends are built. What they came out as, and the three things worth carrying:**
+
+**The gate stayed the strong one and the plan above is why that needed a decision.** *"The gate is
+reachability — not two routes, which a cul-de-sac would fail by definition"* is written just
+above, and it is a **weakening of a guarantee three other things rest on**:
+`MIN_CALM_AREAS_WITH_TWO_ROUTES`, `ClosurePlanner`'s day-level invariant, and
+`tests/test_routes.gd`'s *"an open city has two routes to everywhere calm"* all assume the
+generator hands them a city where it holds. Taking it as a **side effect of adding dead ends** is
+the exact shape of overturn `CLAUDE.md` has a rule about, so the gate still demands two routes.
+And the fear turned out to be unfounded: with candidates already off the reference tree, **99% of
+them pass either gate**, and a city gets **5.9 dead ends against a rolled 4–8**. So the weaker
+gate buys ~nothing today and can be taken when the invariant itself is restated, which is where it
+belongs — see "The two invariant decisions" below.
+
+**A dead end is a claim on the lattice paid for on the tiles, and calm ground beside one breaks
+it.** Found by building it: `tests/test_routes.gd` failed with *"the way in (5, 11, 0) is a real
+street"*, because a dead end had been placed on one of a four-block zone's eight ways in. The
+graph said the street was gone; the player walks on tiles, and a street with a park down one side
+is one you walk into and step **sideways** out of. It is M21's *"an absorbed street is calm ground,
+not a closure"* read backwards, and the fix is a candidate filter: nothing beside calm.
+
+**And `absent_segments` stopped being the zone set, which broke a test's sentence rather than its
+assertion.** `tests/test_generator.gd` asserted *"no zone swallowed a stretch of the arterial"*
+over every absent segment, which was the same set right up until dead ends joined it.
+`CityMap.dead_ends` is the split, and it is worth having for its own sake — the two are absent for
+opposite reasons and the telemetry map needs to draw them differently. The general shape is one
+this project already has a name for: **an identity standing in for the property.**
+
+**The picture had to be fixed too**, and that is a note about tooling rather than about walls: the
+first version left a dead end showing through as ordinary building, which is a dark slab inside a
+dark street and is invisible. A hard blocker nobody can find in the one picture built to check
+placements might as well not have been placed. It has its own colour now.
+
+**Big buildings are built too, and the interesting part is what they exposed rather than what they
+are.** One or two per city: a block whose lot is solid with its four streets built over, twenty
+tiles across, junctions at its corners kept so the grid still turns there. Chosen late and
+converted rather than assigned with the other purposes, because the choice needs the reference
+tree, the tree needs the calm areas and those need the block layouts — by the time it can be
+decided the block has already been carved. Two things came out of it:
+
+- **A candidate list is a snapshot; a placement is a change.** The pool was enumerated once and
+  the first big building's four streets were news to the second one's ring check, so two of them
+  shared a street and drew two buildings on the same tiles. The ring is re-checked at placement
+  now. The same shape as M38's *"two placements in the same frame cannot see each other"*, one
+  scale out.
+- **And a density floor failed for a reason that had nothing to do with hard blockers.** Day 1
+  planned 93 events against a floor of 96 on two seeds of eight, and the cause was neither lost
+  ground nor the walkability cull (which drops nothing): it was
+  `EventScheduler._ensure_one_usable_park` **stripping twenty-one events** — the spoilers of every
+  calm area she has not used, removed *after* the fill has spent its budget. So the day plans to
+  target and then falls short of it, and the budget has never accounted for the strip. `69 → 76`
+  per block, agreed with the player, puts a typical day 1 at **121–125 placed — which is the
+  stated one-per-block target it had been sitting 12 under** — and the worst seed at 102. It
+  lifts days 1–7 and leaves day 14 alone, because day 14 is bound by the catalogue's caps rather
+  than by the budget.
+
+**And a defect was found on the way past it that is not M50's to fix.**
+`_ensure_one_usable_park` returns early if **any** calm area happens to come out clean — and the
+rule written underneath that early return is playtest 14's, *"every calm area she has not used
+this act stays clean, not just one of them"*. So the newer, stronger guarantee only fires on days
+where the older one already failed, which is a coin flip: on seed 4242 it strips 21 events and on
+seed 90210 it strips none. That is the **old rule silently defeating the new one written under
+it**, and it is why the density shortfall looked like a hard-blocker problem — a big building
+moves enough placements to tip the coin. Worth its own item; see "Open design questions".
 
 ### Step 2 — placement by role
 
@@ -2921,6 +2986,27 @@ overturn a decision the player took"*.
 ## Open design questions
 
 These need a human playing the game, not more code.
+
+- [ ] **`_ensure_one_usable_park`'s early return defeats the rule written underneath it.**
+      *(Found in M50 while chasing a density floor that had nothing to do with hard blockers.)* The
+      function collects, per calm area, the events whose fields reach it — and **returns as soon as
+      any one area comes out clean**. The rule below that return is playtest 14 finding 8's, and it
+      is stronger: *"every calm area she has not used this act stays clean, not just one of them"*,
+      whose argument is `MIN_CALM_BLOCKS`' own derivation — an act's worth of days plus one, on the
+      assumption that only *going* to an area burns it.
+
+      So the newer guarantee only runs on days where the older one already failed. Measured on day
+      1: seed 4242 strips 21 events across 9 areas, seed 90210 strips none, and which happens is
+      whether one area out of nine happened to come up clean. **This is not a balance question, it
+      is the old rule silently outranking the new one**, and the reason it is here rather than
+      fixed in M50 is that fixing it makes the strip fire on *every* day — which is a density
+      change of about twenty events a day, and that is a number to measure and put to the player
+      rather than to acquire while building landmarks.
+
+      What to check first, because it decides how big the fix is: whether the player's sentence
+      means *no unused calm area may be spoiled at all* (delete the early return, pay the density)
+      or *she must always have an unspoiled one to reach* (the early return is right and the
+      paragraph under it overstates the rule).
 
 - [~] **Is the nerve economy right?** **Half answered by playtest 08: three was too few**, and the
       evidence is a run that ended on day 3 with two nerves spent on the same charging dog. It is

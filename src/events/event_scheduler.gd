@@ -110,7 +110,20 @@ static func budget_for(day: int) -> int:
 
 ## Measured, not derived — see the note above. The floor is what day 1 costs and the slope is the
 ## escalation; both are per block of lattice.
-const BUDGET_PER_BLOCK := 69.0 / 49.0
+##
+## **The floor moved in M50, and what moved it was not the hard blockers it was found next to.**
+## Day 1 was planning 110–117 against a stated target of one per block — 121 — and the shortfall
+## was `_ensure_one_usable_park`, which strips the spoilers of **every** calm area she has not
+## used. On a seed where no calm area happens to come out clean that is twenty-one events removed
+## after the fill has already spent its budget, so the day plans to target and then falls short of
+## it. The budget never accounted for the strip.
+##
+## 69 → 76 puts a typical day 1 at 121–125 placed, which is the target, and the worst seed
+## measured at 102 rather than 93. It lifts days 1–7 and leaves day 14 where it was, because day
+## 14 is bound by the catalogue's caps rather than by the budget (216 events costing 370, against
+## a budget of 402) — which is `CLAUDE.md`'s rule about *what a number is per* arriving from the
+## other side: raising a budget only moves the days the budget is actually binding on.
+const BUDGET_PER_BLOCK := 76.0 / 49.0
 const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 
 ## Plans a day. `consumed_one_shots` is read and appended to, so a one-shot fires once

@@ -39,6 +39,30 @@ var zone_anchor := {}
 ## half — route counting, the invariant, the doorway exemptions — survives untouched and simply
 ## gets a bigger `closed` set. See `blocked_segments()`.
 var absent_segments := {}
+## The streets a **hard blocker** built over, as segment key -> the tile rect that is now solid.
+## A subset of `absent_segments`, kept apart because the two are absent for opposite reasons and
+## anything reasoning about *why* a street is not there has to tell them apart. *(M50 step 1.)*
+##
+## A calm zone's absorbed corridor is **ground you walk over** — the tiles are park and the lattice
+## losing the street is the whole point of a shortcut. A hard blocker is the reverse: the lattice
+## loses the street *and the ground stops*, because one that could be walked through would not be
+## one.
+##
+## Anything asking "can a route go this way" wants `blocked_segments()`, which is both and does not
+## care. This is for the things that do: the telemetry map's legend, and any test whose sentence is
+## about zones.
+var built_over := {}
+## Which of `built_over` are **dead ends** — a street with one end walled — as a set of keys. The
+## rest belong to a big building, which took its street whole.
+var dead_ends := {}
+## The blocks that are a single solid building with no street around them. *(M50 step 1.)*
+var big_buildings: Array[Vector2i] = []
+
+## Whether a street is missing because something was built over it rather than because a calm zone
+## painted a park across it. The question every rule about *zones* actually wants to ask, now that
+## `absent_segments` has two kinds of thing in it.
+func is_hard_blocker(key: Vector3i) -> bool:
+	return built_over.has(key)
 ## The corridor index of the one main road, which runs north to south. `-1` before generation.
 ##
 ## One of it, and only on this axis. *(Playtest 12, finding 2: "there should be one north to south

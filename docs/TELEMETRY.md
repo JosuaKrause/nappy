@@ -317,6 +317,19 @@ look at is the white — where the bundles run is where a wall is cheap and a se
 siting, and a picture that is all thin violet is a tree that has quietly become a star, which is
 the one failure the construction is built to avoid and the one nothing else can see.
 
+### The dead ends
+
+Every street that stops has its wall drawn in **teal**, filled. That is the one exception to
+"outlines, never fills" above, and it is not a slip: the rule exists because a mark that covers
+the ground stops the picture answering the question it was opened for, and here the ground *is*
+the mark — the tiles under it were built over, and an outline round a wall leaves the middle of it
+reading as the street it used to be.
+
+It earns a colour rather than being left to show through as building, which was the first version
+and was invisible: a two-tile slab of dark building inside a dark street is exactly the thing
+nobody spots, and **a hard blocker nobody can find in the one picture built to check placements
+might as well not have been placed.**
+
 ## What it deliberately does not do
 
 - **No aggregates, no summary at the end of a run.** Both are computable from the log when

@@ -28,6 +28,10 @@ const _HEIGHT_TILES := {
 	GameEnums.BlockPurpose.COMMERCIAL: Vector2i(2, 3),
 	GameEnums.BlockPurpose.INDUSTRIAL: Vector2i(1, 2),
 	GameEnums.BlockPurpose.CIVIC: Vector2i(3, 4),
+	# The tallest thing in the city, and it is meant to be: a big building is what a player
+	# navigates by. Both ends are above the depth cap on its own lot, so it always renders at
+	# the cap — which is the point, rather than an accident to tidy up.
+	GameEnums.BlockPurpose.BIG_BUILDING: Vector2i(5, 6),
 	GameEnums.BlockPurpose.PARK: Vector2i(1, 1),
 	GameEnums.BlockPurpose.FOREST: Vector2i(1, 1),
 	GameEnums.BlockPurpose.QUIET_SQUARE: Vector2i(1, 1),

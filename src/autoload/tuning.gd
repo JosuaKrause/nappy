@@ -364,6 +364,33 @@ const CALM_ZONE_BLOCKS := 2
 const MIN_CALM_ZONES := 1
 const MAX_CALM_ZONES := 2
 
+# ------------------------------------------------------- hard blockers (M50) ---
+# *"Hard blocker: the layout has pruned edges that cannot be traversed — permanent for the run.
+# Cul-de-sacs, big buildings."* The soft ones re-cut the map every morning; these hold still for
+# the whole run and are therefore the part of the city a player can **learn**. See docs/CITY.md,
+# "Diversions — the design", and docs/TODO.md, M50 step 1.
+
+## How many streets in a city genuinely stop. A handful of 264: enough that a run has a shape
+## somebody could describe, few enough that the lattice is still a lattice — the number is what
+## separates "this city has dead ends in it" from "this city is a maze", and a maze is the thing
+## the two-routes guarantee exists to prevent.
+##
+## Measured rather than derived, like every other count in this file: see docs/TODO.md, M50, for
+## what each gate strength lets a seed actually place.
+const MIN_CUL_DE_SACS := 4
+const MAX_CUL_DE_SACS := 8
+
+## How deep the wall across a dead end is, in tiles. Two rather than one: a one-tile slab is a
+## line rather than a building, and what has to read from the far end of the street is *this does
+## not go through* rather than *something is painted here*.
+const CUL_DE_SAC_WALL_TILES := 2
+
+## Big buildings: a whole block plus the four streets around it, one solid mass twenty tiles
+## across. One or two, because this is a **landmark** — a thing a player says "past the big grey
+## one" about — and a city with five of them has landmarks the way a forest has notable trees.
+const MIN_BIG_BUILDINGS := 1
+const MAX_BIG_BUILDINGS := 2
+
 ## Per-purpose chance a block is split by a through-alley.
 const ALLEY_CHANCE := {
 	GameEnums.BlockPurpose.RESIDENTIAL: 0.25,
@@ -378,6 +405,11 @@ const ALLEY_CHANCE := {
 	GameEnums.BlockPurpose.PARK: 0.0,
 	GameEnums.BlockPurpose.FOREST: 0.0,
 	GameEnums.BlockPurpose.QUIET_SQUARE: 0.0,
+	# A big building is chosen after the blocks are carved and replaces whatever was cut into
+	# it, so this is never actually read. It is here because the table is a statement about
+	# every purpose, and a purpose missing from it would be a crash rather than a default the
+	# day somebody assigns one earlier.
+	GameEnums.BlockPurpose.BIG_BUILDING: 0.0,
 }
 
 # ---------------------------------------------------- block purposes and arcs ---

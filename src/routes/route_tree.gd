@@ -128,6 +128,26 @@ const _EXACT_COVER_ROUTES := 32
 ## `TelemetryMap`, which draws it. They have to get the same tree or the picture is of a plan
 ## nobody used, and telemetry may not touch a gameplay stream to get one. A pure function of
 ## `(seed, day, closed)` is the cheapest way for both to be true at once.
+## The day number the **reference** tree is grown under. Not a day anybody plays: it is the one
+## sample of the construction that generation takes, to place hard blockers against something
+## rather than before anything. Zero, so it can never collide with a real day.
+const REFERENCE_DAY := 0
+
+## One example of a way to everywhere calm, on the finished lattice and with nothing shut.
+##
+## *"First construct an example tree from the initial map, then place the hard blockers — that way
+## we can't block off regions entirely. Then when a day starts we construct a tree for real."*
+##
+## What it is **for** is the thing to keep straight: it is not the corridor and no day uses it. It
+## is a witness. A hard blocker placed off it cannot cut it, and the tree reaches every calm area
+## the run will ever use, so *every one of them is still reachable* — which is the property the
+## gate would otherwise have to search for on every candidate.
+##
+## Named against `for_day` rather than `reference`, which is a method on `RefCounted` and would
+## have been an override that the engine never calls.
+static func for_the_run(map: CityMap) -> RouteTree:
+	return for_day(map, REFERENCE_DAY)
+
 static func for_day(map: CityMap, day: int, closures: Array[RoadClosure] = []) -> RouteTree:
 	var closed := {}
 	for closure in closures:
