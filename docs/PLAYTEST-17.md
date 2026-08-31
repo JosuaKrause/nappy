@@ -72,10 +72,33 @@ It is the same sentence as finding 1 from the inside: finding 1 says the corrido
 more than the ground beside it, and this says two strands of corridor must be worth *different*
 things from each other.
 
-Open, and it goes back to the player rather than being assumed: **how close is parallel** — two
-streets apart, or any two strands with no wall between them for some length — and **which kind of
-blocker** goes there, since the words are fixed (`docs/CITY.md`, "The words for it") and *wall*,
-*friction* and *set piece* are three different answers.
+**Asked, because it overlapped `RouteTree`'s recorded instruction rather than merely extending it,
+and answered on 2026-09-01:**
+
+> "apply nuance here. sometimes put a blocker between (wall or event) and sometimes leave it open --
+> this is not as important as going off the path completely. however, make sure the log notes a path
+> switch correctly if it happens (technically it's leaving a path and entering a new path)"
+
+> "only directly adjacent paths (with a single street connecting both) counts for this case
+> obviously. everything further apart should just naturally be never connectable."
+
+Three things settled, and the third one settles the contradiction rather than choosing a side:
+
+- **Sometimes, not always.** *Wall or event* — either of the two costed words — and sometimes
+  nothing at all. So this is not a rule that closes every gap; it is variety in what a gap between
+  two strands is worth.
+- **It ranks below finding 1.** *"Not as important as going off the path completely"*, which is the
+  ordering for M55: the off-corridor cost first, this after it.
+- **Only directly adjacent**, meaning a single street between the two strands. Everything further
+  apart *"should just naturally be never connectable"* — which is the answer to the old instruction
+  as well: once off-corridor ground costs what M50 designed it to cost, two strands that are not
+  adjacent are separated **by the map** rather than by anything placed between them, and no rule
+  about spacing is needed for them. The old sentence stands where it was about, which is the tree.
+
+**And one thing was asked for that is not about the gap at all**: a switch from one strand to
+another has to appear in the log, *"technically it's leaving a path and entering a new path"*. As
+built, finding 6's `path` entry cannot see it — both strands answer `on` — so the trace calls a
+route change no change at all.
 
 ## 3. Telemetry logs have to say whose run they are
 

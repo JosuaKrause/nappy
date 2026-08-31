@@ -46,6 +46,7 @@ func run(t) -> void:
 	_test_a_route_is_a_walk_from_the_calm_to_the_door(t)
 	_test_the_tree_only_uses_streets_that_are_there(t)
 	_test_the_two_routes_of_one_area_share_no_street(t)
+	_test_a_street_says_which_branches_it_carries(t)
 	_test_different_areas_share_ground(t)
 	_test_every_reachable_calm_area_is_on_the_tree(t)
 	_test_a_second_route_is_offered_where_the_map_allows_one(t)
@@ -119,6 +120,32 @@ func _test_the_two_routes_of_one_area_share_no_street(t) -> void:
 						"seed %d day %d: %s's two routes share no street (%s)"
 						% [planned.map.seed_used, planned.day, branch.area, key])
 	t.check(pairs > 0, "some area was offered a choice (%d)" % pairs)
+
+## **`branches_on` names what `colours_on` counts.** *(Playtest 17.)* The telemetry has to be able
+## to say she left one route and joined another — *"technically it's leaving a path and entering a
+## new path"* — and a count cannot: two streets each carrying one branch look identical whether it
+## is the same branch or not. So the two answers have to agree about how many, and the named one has
+## to be a set of real branch indices, or "she switched" would be reported off a number nobody could
+## check.
+func _test_a_street_says_which_branches_it_carries(t) -> void:
+	var named := 0
+	for planned in _days:
+		for key in planned.tree.streets():
+			var branches := planned.tree.branches_on(key)
+			t.check(branches.size() == planned.tree.colours_on(key),
+					"seed %d day %d: %s names as many branches as it counts (%d, %d)"
+					% [planned.map.seed_used, planned.day, key, branches.size(),
+					planned.tree.colours_on(key)])
+			for colour in branches:
+				t.check(colour >= 0 and colour < planned.tree.branches.size(),
+						"seed %d day %d: %s carries a branch that exists (%d of %d)"
+						% [planned.map.seed_used, planned.day, key, colour,
+						planned.tree.branches.size()])
+			named += 1
+	t.check(named > 0, "there were streets to ask (%d)" % named)
+	# A street off the tree carries nothing, which is what makes an empty answer meaningful.
+	t.check(_days[0].tree.branches_on(Vector3i(-1, -1, 0)).is_empty(),
+			"a street that is not on the tree carries no branch")
 
 ## **Different colours merge, and that is the point.** A tree whose branches share nothing is a
 ## star: no bundles, no chokepoints, and a fan-out as wide as the number of destinations. Every

@@ -109,6 +109,8 @@ var _path_state := ""
 var _path_since := 0.0
 var _path_last := 0.0
 var _path_time := {}
+## Which branches of the corridor the street she is on carries. See `_watch_the_branch`.
+var _path_branches: Array[int] = []
 
 # When a bump was last written down, and how many have gone unwritten since.
 var _last_bump := -1000.0
@@ -201,6 +203,7 @@ func start_day() -> void:
 	_path_state = ""
 	_path_since = 0.0
 	_path_last = 0.0
+	_path_branches.clear()
 	Telemetry.note("start", "doorstep %s, facing %s" % [
 		TelemetryLog.tile(_map.world_to_tile(_player.global_position)),
 		TelemetryLog.compass(_player.facing)])
@@ -266,6 +269,7 @@ func _watch_the_corridor(here: Vector2) -> void:
 	if state == "":
 		_path_since = now
 		return
+	_watch_the_branch(here, state)
 	if _path_state != "" and state != _path_state:
 		Telemetry.note("path", "%s the corridor at %s, after %.1fs %s it" % [
 			"onto" if state == "on" else ("off" if state == "off" else "away from"),
@@ -275,6 +279,43 @@ func _watch_the_corridor(here: Vector2) -> void:
 		_path_time[_path_state] += now - _path_last
 	_path_state = state
 	_path_last = now
+
+## Changing from one branch of the corridor to another. *(Playtest 17, finding 2: "make sure the log
+## notes a path switch correctly if it happens — technically it's leaving a path and entering a new
+## path".)*
+##
+## **`on` / `off` cannot see this and that is why it is here**: two strands of the corridor both
+## answer `on`, so a player who walks the beginning of one route and finishes on another produces a
+## trace in which nothing happened. The tree's branch colours are the only thing that can tell them
+## apart.
+##
+## **A switch is a *disjoint* colour set, not a different one.** Walking out of a bundle that
+## carries A and B onto a street that carries only B is staying on B — it is the trunk separating,
+## which is what a tree does — and calling that a switch would report one at every fork of the day.
+## Sharing nothing is the case the finding means.
+##
+## The memory is cleared when she leaves the tree, so this only ever reports a change she made
+## *between* two strands rather than one she made by going round.
+func _watch_the_branch(here: Vector2, state: String) -> void:
+	if state != "on":
+		_path_branches.clear()
+		return
+	var segment := StreetNetwork.segment_containing(_map.world_to_tile(here))
+	if not segment:
+		return
+	var branches := _tree.branches_on(segment.key())
+	if branches.is_empty() or branches == _path_branches:
+		return
+	if not _path_branches.is_empty() and not _shares_a_branch(branches, _path_branches):
+		Telemetry.note("path", "switched routes at %s, branch %s -> %s" % [
+			TelemetryLog.tile(_map.world_to_tile(here)), str(_path_branches), str(branches)])
+	_path_branches = branches
+
+static func _shares_a_branch(a: Array[int], b: Array[int]) -> bool:
+	for colour in a:
+		if b.has(colour):
+			return true
+	return false
 
 ## `on`, `off`, `away`, or "" for a tile that answers nothing yet — the opening frame, before any
 ## street has been stood on.

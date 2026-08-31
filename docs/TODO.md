@@ -3403,19 +3403,30 @@ project now has the instrument to say whether it closed.
       Now measurable, which it was not when M50 wrote the entry: play or walk a day and read the
       `path` line. What has to be true afterwards is that a run spending its time off the corridor
       costs *more* than one on it
-- [ ] **Something between parallel strands of corridor** *(finding 2)*. **Blocked on a question that
-      has to go back**, because it overlaps a recorded instruction rather than merely extending one.
-      `RouteTree`'s own doc comment carries the player's earlier words: *"the player can walk the
-      beginning of path A and then switch to path B without noticing, and that is fine, because both
-      go to the same place. The constraint is on the graph and never on spacing; anything here that
-      enforced a distance between branches would have misread it."*
+- [ ] **Something between parallel strands of corridor** *(finding 2)*. Asked back because it
+      overlapped `RouteTree`'s recorded instruction — *"the player can walk the beginning of path A
+      and then switch to path B without noticing, and that is fine… the constraint is on the graph
+      and never on spacing"* — and **answered on 2026-09-01**:
 
-      The two are probably compatible and *probably* is exactly the word `CLAUDE.md` says to stop
-      on: the old rule constrains **tree construction**, and a blocker between two strands is a
-      **placement**, so the tree could go on running branches down adjacent streets while the
-      scheduler puts a wall between them. But that changes *"and that is fine"* into *"and it costs
-      you"*, which is the player's sentence to overturn. Two sub-questions travel with it — how
-      close counts as parallel, and which of `wall` / `friction` / `set piece` goes there
+      > *"apply nuance here. sometimes put a blocker between (wall or event) and sometimes leave it
+      > open -- this is not as important as going off the path completely."*
+      > *"only directly adjacent paths (with a single street connecting both) counts for this case
+      > obviously. everything further apart should just naturally be never connectable."*
+
+      **The answer dissolves the contradiction instead of picking a side, and that is the part to
+      carry.** Only *directly adjacent* strands — one street between them — are this rule's
+      business. Anything wider apart is separated **by the map**, because once the item above is
+      built the ground off the corridor is lethal or very costly, so two strands two streets apart
+      already have something between them and nothing has to be placed. The old instruction is about
+      the **tree** and stays exactly true; this is about a **placement** in one specific gap.
+
+      So: *sometimes* a wall, *sometimes* an event, *sometimes* nothing — variety in what one gap is
+      worth rather than a rule that closes them all. And it goes **after** the item above by the
+      player's own ranking
+- [x] **A switch between strands is a switch** *(finding 2's last clause: "make sure the log notes a
+      path switch correctly if it happens — technically it's leaving a path and entering a new
+      path")*. As first built, `path` could not see one: both strands answer `on`, so changing route
+      appeared in the trace as nothing happening. It carries the branch colours now
 - [ ] **The corners of the world stop going diagonal** *(finding 11)*. `CityEdge`. Each band simply
       carries on: mountain stays mountain round the corner, sea stays sea. No new terrain and no
       corner feature — the player asked for the simpler thing, not a bigger one

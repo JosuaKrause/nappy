@@ -435,6 +435,18 @@ func is_on_the_tree(key: Vector3i) -> bool:
 func colours_on(key: Vector3i) -> int:
 	return (_colours[key] as Dictionary).size() if _colours.has(key) else 0
 
+## *Which* branches run down a street, sorted. `colours_on` answers how many, which is all
+## placement ever needed; this is for the telemetry, which has to be able to say that she left one
+## path and joined another — *"technically it's leaving a path and entering a new path"*, playtest
+## 17. Two street sets that share no colour are two different routes, and nothing else can tell.
+func branches_on(key: Vector3i) -> Array[int]:
+	var found: Array[int] = []
+	if _colours.has(key):
+		for colour: int in (_colours[key] as Dictionary):
+			found.append(colour)
+	found.sort()
+	return found
+
 ## The streets carried by two or more branches — the trunk, and any stretch several ways out of
 ## the city share before they separate.
 ##
