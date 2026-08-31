@@ -514,14 +514,20 @@ func _spawn_position() -> Vector2:
 		var mouth: Vector2 = closures[which].mouth_centres(_city.map)[0]
 		var junction := closures[which].cause_centre(_city.map)
 		return _nearest_walkable(mouth + (mouth - junction).normalized() * 64.0)
-	# The north-west corner of a four-block calm zone, a couple of tiles outside it, which is
+	# The north-west corner of a multi-block calm zone, a couple of tiles outside it, which is
 	# where the two things M21 has to get right are both in frame: the T-junction where the
 	# absorbed street used to start, and the twenty-two tiles of calm behind it.
-	if args[index + 1] == "zone":
+	#
+	# `zone:<n>` picks which one, the way `closure:<n>` does, and it is not a convenience. Since
+	# M52 a zone has a **shape**, the square is always placed first, and so `keys()[0]` is always
+	# the square — which meant the one thing the milestone added had no way to be looked at.
+	if args[index + 1].begins_with("zone"):
 		if _city.map.zone_rects.is_empty():
-			push_warning("this city has no four-block calm zone")
+			push_warning("this city has no multi-block calm zone")
 			return _city.map.home_world_position()
-		var anchor: Vector2i = _city.map.zone_rects.keys()[0]
+		var keys := _city.map.zone_rects.keys()
+		var which := clampi(int(args[index + 1].get_slice(":", 1)), 0, keys.size() - 1)
+		var anchor: Vector2i = keys[which]
 		var corner := CityMap.blocks_tile_rect(_city.map.zone_rects[anchor]).position
 		return _nearest_walkable(_city.map.tile_to_world(corner - Vector2i.ONE * 2))
 	# A big building, stood on the street running along the joined side of it, level with the

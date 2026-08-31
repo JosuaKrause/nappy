@@ -46,6 +46,8 @@ other, and they are what makes the walk the game:
 sufficient for a *lap*: progress requires motion, so a calm area smaller than a stretch of
 walking is somewhere you circle rather than somewhere you go. A four-block calm zone is 704px
 square — 10.8s corner to corner against the 11.3s a full meter takes — so the calm is a route.
+A **2×1** zone, added in M52, is the same claim on one axis: 704px long, 7.7s end to end against
+the 8.0s two blocks fill in.
 The margin narrowed when M38 raised the rate and again when M52 did, and it is the relationship
 rather than either number that has to survive: a calm area must be more than one lap wide.
 See `docs/CITY.md`, "Calm zones".

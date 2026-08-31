@@ -17,7 +17,7 @@ func run(t) -> void:
 	_test_buildings_tile_the_blocks(t)
 	_test_home_opens_onto_the_street(t)
 	_test_the_home_is_in_the_middle_of_a_city_worth_walking(t)
-	_test_calm_zones_are_four_blocks_of_one_thing(t)
+	_test_calm_zones_are_one_lot_of_one_thing(t)
 	_test_calm_is_never_at_the_edge_or_beside_the_spine(t)
 	_test_no_two_calm_areas_are_in_each_others_ring(t)
 	_test_a_calm_zone_is_a_route_rather_than_a_lap(t)
@@ -154,27 +154,35 @@ func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
 				"seed %d: and calm ground is still %d tiles away, against the %d asked for"
 				% [_seed(i), distance, Tuning.MIN_HOME_TO_PARK_TILES])
 
-## M21. A four-block calm zone is four blocks of *one* thing — one lot, one arc, one entry in
+## M21. A multi-block calm zone is several blocks of *one* thing — one lot, one arc, one entry in
 ## everything that counts calm areas — and the ground under it is unbroken.
 ##
 ## The failure this is really guarding against is a zone that is four calm blocks that happen to
 ## be adjacent. That would count as four calm areas, so the closure planner would think a day
 ## with two ways into one park had four; `_ensure_one_usable_park` would protect a quarter of it;
 ## and M24 would spoil the corner she settled in and call the job done.
-func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
+##
+## **The shape is a rolled one since M52 and the count is not.** Every zone's footprint has to be a
+## shape the catalogue offers, and at least one of them has to be the square — that is M21's own
+## guarantee, which is about a calm area with a *route* through it rather than about multi-block
+## calm in general, and the placement pass keeps it by placing the square first.
+func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
 	for i in 12:
 		var map := CityGenerator.generate(_seed(i))
 		t.check(map.zone_rects.size() >= Tuning.MIN_CALM_ZONES
 				and map.zone_rects.size() <= Tuning.MAX_CALM_ZONES,
 				"seed %d has %d calm zones, wanted %d..%d" % [_seed(i), map.zone_rects.size(),
 				Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES])
+		var squares := 0
 		for anchor: Vector2i in map.zone_rects:
 			var footprint: Rect2i = map.zone_rects[anchor]
-			t.check(footprint.size == Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS,
-					"seed %d: zone %s is %d blocks square" % [_seed(i), anchor,
-					Tuning.CALM_ZONE_BLOCKS])
+			t.check(Tuning.CALM_ZONE_SHAPES.has(footprint.size),
+					"seed %d: zone %s has a shape the city offers (%s)"
+					% [_seed(i), anchor, footprint.size])
+			if footprint.size == Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS:
+				squares += 1
 
-			# One lot: the anchor has the arc and the layout, and the other three have neither.
+			# One lot: the anchor has the arc and the layout, and the others have neither.
 			var members := 0
 			for y in range(footprint.position.y, footprint.end.y):
 				for x in range(footprint.position.x, footprint.end.x):
@@ -184,7 +192,7 @@ func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
 							"seed %d: block %s belongs to zone %s" % [_seed(i), block, anchor])
 					t.check((block == anchor) == map.block_plans.has(block),
 							"seed %d: only the anchor of zone %s has an arc" % [_seed(i), anchor])
-			t.check(members == Tuning.CALM_ZONE_BLOCKS * Tuning.CALM_ZONE_BLOCKS,
+			t.check(members == footprint.size.x * footprint.size.y,
 					"seed %d: zone %s covers %d blocks" % [_seed(i), anchor, members])
 
 			# One piece of ground: every tile of the lot, streets between the blocks included.
@@ -197,6 +205,9 @@ func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
 				t.check(kind == GameEnums.TileType.PLAYGROUND or Tile.is_calm(kind),
 						"seed %d: zone %s is calm ground and nothing else (found %s)"
 						% [_seed(i), anchor, GameEnums.TileType.keys()[kind]])
+
+		t.check(squares >= 1, "seed %d has a %d-block-square calm zone"
+				% [_seed(i), Tuning.CALM_ZONE_BLOCKS])
 
 		# The main road is the street the city cannot afford to lose a stretch of: it is the
 		# noise floor, it is the thing that has to be crossed, and it is what a player learns
@@ -268,6 +279,17 @@ func _test_a_calm_zone_is_a_route_rather_than_a_lap(t) -> void:
 			+ "(%.1f laps against %.1f)" % [block_laps, zone_laps])
 	t.check(block_laps > 1.0 and zone_laps > 1.0,
 			"and neither size is filled by one traverse (%.1f, %.1f)" % [block_laps, zone_laps])
+
+	# **And the rectangle sits between them, which is the claim M52 added the shape on.** A 2x1 is
+	# a length rather than a diagonal — you walk it end to end — so its traverse is the long side
+	# and nothing else, and the curve pays it for two blocks. If this ever falls outside the two
+	# above, a rectangle has stopped being a calm area of its own and become either the obvious
+	# choice or the one nobody walks to.
+	var strip_fill := Tuning.METER_MAX / Tuning.sleepiness_gain_calm(Tuning.CALM_ZONE_BLOCKS)
+	var strip_laps := strip_fill / (zone_px / Tuning.WALK_SPEED)
+	t.check(strip_laps > 1.0 and strip_laps < maxf(block_laps, zone_laps) * 1.5,
+			"a 2x1 calm zone costs about what the other two do per traverse of itself "
+			+ "(%.1f laps, against %.1f and %.1f)" % [strip_laps, block_laps, zone_laps])
 
 ## The street lattice is never cut by generation, so closing any one street segment must
 ## still leave a way to a park. This is the property that lets Act IV drop barricades

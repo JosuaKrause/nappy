@@ -67,23 +67,30 @@ func _test_the_lattice_is_the_lattice(t) -> void:
 		t.check(walkable == rect.size.x * rect.size.y,
 				"every tile of street %s is walkable" % segment.key())
 
-## M21. A four-block calm zone is painted over the corridors between its own blocks, so the
+## M21. A multi-block calm zone is painted over the corridors between its own blocks, so the
 ## lattice has holes in it and route redundancy stops being true by construction.
 ##
 ## Four things have to hold together for that to be a hole rather than a bug, and each is a
 ## different way it could quietly not be one: the streets have to be **gone from the graph**,
 ## their ground has to be **calm rather than closed** (the player walks over it — that is the
-## whole point), the junction in the middle of the zone has to have **nothing reaching it**, and
-## the four around it have to still be reachable, because they are the ways in.
+## whole point), any junction *inside* the zone has to have **nothing reaching it**, and the ones
+## around it have to still be reachable, because they are the ways in.
+##
+## **Every count here is stated over the footprint since M52**, because a zone may be a 2x1 now: a
+## `w x h` zone absorbs `w*(h-1) + h*(w-1)` streets — four for the square, one for a rectangle —
+## has `2*(w+h)` streets round it, and contains `(w-1)*(h-1)` junctions, which is **none** for a
+## rectangle. A count written as `2 * CALM_ZONE_BLOCKS * (CALM_ZONE_BLOCKS - 1)` was the square's
+## answer, and it agreed with the general one for as long as every zone was a square.
 func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
 	var zones := 0
 	for map in _maps:
 		t.check(map.zone_rects.size() >= Tuning.MIN_CALM_ZONES,
-				"seed %d has at least one four-block calm zone" % map.seed_used)
+				"seed %d has at least one multi-block calm zone" % map.seed_used)
 		for anchor: Vector2i in map.zone_rects:
 			zones += 1
 			var footprint: Rect2i = map.zone_rects[anchor]
-			var absorbed := 2 * Tuning.CALM_ZONE_BLOCKS * (Tuning.CALM_ZONE_BLOCKS - 1)
+			var span := footprint.size
+			var absorbed := span.x * (span.y - 1) + span.y * (span.x - 1)
 			var found := 0
 			for segment in StreetNetwork.segments():
 				if map.has_street(segment.key()):
@@ -103,16 +110,19 @@ func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
 					"seed %d zone %s absorbed its %d inside streets (found %d)"
 					% [map.seed_used, anchor, absorbed, found])
 
-			# The junction in the middle has nothing left reaching it; the four on the edges are
-			# T-junctions, which is what the milestone is for.
-			var middle := footprint.position + Vector2i.ONE
-			t.check(StreetNetwork.junction_distances([middle],
-					map.blocked_segments()).size() == 1,
-					"seed %d: junction %s inside zone %s is cut off from the whole city"
-					% [map.seed_used, middle, anchor])
+			# Any junction inside the zone has nothing left reaching it; the ones on the edges are
+			# T-junctions, which is what the milestone is for. A 2x1 has no interior junction at
+			# all — its one absorbed street runs between two junctions that both survive.
+			for y in range(footprint.position.y + 1, footprint.end.y):
+				for x in range(footprint.position.x + 1, footprint.end.x):
+					var inside := Vector2i(x, y)
+					t.check(StreetNetwork.junction_distances([inside],
+							map.blocked_segments()).size() == 1,
+							"seed %d: junction %s inside zone %s is cut off from the whole city"
+							% [map.seed_used, inside, anchor])
 			var ways_in := StreetNetwork.around_blocks(footprint)
-			t.check(ways_in.size() == 4 * Tuning.CALM_ZONE_BLOCKS,
-					"seed %d zone %s has %d streets round it, two to a side"
+			t.check(ways_in.size() == 2 * (span.x + span.y),
+					"seed %d zone %s has %d streets round it, one per block edge"
 					% [map.seed_used, anchor, ways_in.size()])
 			for segment in ways_in:
 				t.check(map.has_street(segment.key()),

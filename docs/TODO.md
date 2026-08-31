@@ -2280,11 +2280,39 @@ The decision taken on the finding, quoted, because it is not what the analysis e
       middle of them, which is neither that nor M21's open four-block zone. **The mechanism is
       M21's** — absorb the streets between four blocks — with frontages around the outside
       instead of open ground, so it is a calm area you have to find a way *into*
-- [ ] **Calm areas that are not square.** `CALM_ZONE_BLOCKS` is one integer and everything
+- [x] **Calm areas that are not square.** `CALM_ZONE_BLOCKS` is one integer and everything
       downstream is that integer squared — the tile rect, which segments are absorbed, which
       junctions survive. It becomes a `Vector2i`, and `CityMap.anchor_of()` and `lot_rect()` are
       where it is felt. A 2×1 is the case to build first because it is the one that breaks every
       piece of arithmetic that assumed a square
+
+      **Built in M52 as `Tuning.CALM_ZONE_SHAPES` — 2×2, 2×1, 1×2 — with the square placed first.**
+      That ordering is the whole of how the variety arrived without repealing anything: M21's
+      guarantee is not *multi-block calm*, it is that every city has somewhere with a **route**
+      through it rather than a lap round it, and a shape rolled for the first zone would have made
+      that a matter of luck. `validate()` asks the city for a square rather than trusting the
+      ordering, because the ordering is the kind of thing a later change moves quietly.
+
+      **`CALM_ZONE_BLOCKS` stayed**, as the square's side — it is what the sleepiness curve is
+      normalised against and what every relationship test is pitched at. What moved is that counts
+      are stated over the **footprint**: a `w × h` zone absorbs `w(h−1) + h(w−1)` streets (four for
+      the square, **one** for a rectangle), has `2(w + h)` streets round it, and contains
+      `(w−1)(h−1)` junctions, which is **none** for a rectangle. `tests/test_routes.gd` asserted
+      all three as the square's answers, which agreed with the general ones for exactly as long as
+      every zone was a square.
+
+      Three things the shape actually broke, and only one of them was in the generator:
+
+      - **`_inset_rect` rolled both offsets against `lot.size.x`**, which is the same number on both
+        axes only while every lot is square. A playground in a 22×8 lot would have gone up to
+        fourteen tiles south of a lot eight deep.
+      - **`--spawn zone` could not photograph one.** It takes `zone:<n>` now, the way
+        `closure:<n>` does, because `keys()[0]` is always the square and so the one thing the
+        milestone added had no way to be looked at.
+      - **The rate curve needed nothing at all**, which is what M52's item 2 bought: a 2×1 fills in
+        8.0s and pays for about one traverse of its long side, exactly as the square pays for one
+        diagonal. `tests/test_generator.gd` asserts the rectangle sits between the other two rather
+        than restating the number
 - [ ] **More of them are multi-block, and not all of them.** *"Not all calm areas have to take up
       multiple blocks but add more that do."* `MIN_CALM_ZONES` / `MAX_CALM_ZONES` are 1 and 2 and
       were sized for a 49-block city. Re-derive against 121, and keep single-block calm in the

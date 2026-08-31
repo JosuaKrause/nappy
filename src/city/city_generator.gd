@@ -287,8 +287,19 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 
 # ------------------------------------------------------- four-block calm zones ---
 
-## Picks the 2x2 calm zones and marks all four blocks of each. Returns how many calm areas it
+## Picks the multi-block calm zones and marks every block of each. Returns how many calm areas it
 ## made, which is what the single-block pass counts on from.
+##
+## **The first one is the square and the rest are rolled from `Tuning.CALM_ZONE_SHAPES`.** *(M52.)*
+## That ordering is the whole of how variety was added without repealing anything: M21's guarantee
+## is that every city has a four-block zone, because the lap is what it exists to remove, and a
+## shape rolled for the *first* zone would have made that guarantee a matter of luck. So the square
+## is placed first and unconditionally, and every zone after it may be a 2x1 either way up.
+##
+## A shape that fits nowhere falls through to the next one rather than costing the city a zone —
+## the rectangles are two thirds of the list and the square is the hardest thing to fit, so a run of
+## unlucky rolls would otherwise show up as a slower generator, which is the failure mode M47
+## warned about for the placement rules.
 ##
 ## Two constraints beyond "does it fit", and both are the same rules a single calm block obeys,
 ## asked of the whole footprint:
@@ -302,19 +313,39 @@ static func _place_calm_zones(purposes: Dictionary, zones: Dictionary,
 		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int) -> int:
 	var wanted := rng.randi_range(Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES)
 	var made := 0
-	var span := Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS
+	for index in wanted:
+		var shapes := _shapes_to_try(index, rng)
+		for shape in shapes:
+			if _place_one_zone(purposes, zones, shuffled, rng, main_road, shape):
+				made += 1
+				break
+	return made
+
+## The footprints this zone will try, in order. The first zone of a city tries the square and
+## nothing else; every later one tries all of them, starting from a rolled shape.
+static func _shapes_to_try(index: int, rng: RandomNumberGenerator) -> Array[Vector2i]:
+	var square := Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS
+	if index == 0:
+		var only: Array[Vector2i] = [square]
+		return only
+	var shapes := Tuning.CALM_ZONE_SHAPES.duplicate()
+	_shuffle(shapes, rng)
+	return shapes
+
+## Puts one zone of exactly this shape down, at the first anchor that will take it. False when
+## nowhere in the city will.
+static func _place_one_zone(purposes: Dictionary, zones: Dictionary, shuffled: Array[Vector2i],
+		rng: RandomNumberGenerator, main_road: int, shape: Vector2i) -> bool:
 	for anchor in shuffled:
-		if made >= wanted:
-			break
-		var footprint := Rect2i(anchor, span)
+		var footprint := Rect2i(anchor, shape)
 		if not _zone_fits(purposes, footprint, main_road):
 			continue
 		var purpose := _OPEN_CALM[rng.randi_range(0, _OPEN_CALM.size() - 1)]
 		for block in _blocks_in(footprint):
 			purposes[block] = purpose
 		zones[anchor] = footprint
-		made += 1
-	return made
+		return true
+	return false
 
 ## The middle of the lattice, which is the home's block. Odd on both axes by constraint, so there
 ## is exactly one — see `Tuning.CITY_BLOCKS`.
@@ -631,9 +662,14 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 	return _keep_nonempty(rects)
 
 ## A rect of `size` tiles somewhere inside `lot`, never touching its edge.
+##
+## **Both spans are the lot's own, which they were not until M52.** The offset was rolled twice
+## against `lot.size.x`, which is the same number on both axes for as long as every lot is square —
+## and a 2x1 calm zone is 22 tiles by 8, so a playground would have been placed up to fourteen tiles
+## south of a lot eight tiles deep. That is the shape of thing a square-only city hides.
 static func _inset_rect(lot: Rect2i, size: int, rng: RandomNumberGenerator) -> Rect2i:
-	var span := lot.size.x - size - 2
-	var offset := Vector2i(rng.randi_range(1, maxi(1, span)), rng.randi_range(1, maxi(1, span)))
+	var span := lot.size - Vector2i.ONE * (size + 2)
+	var offset := Vector2i(rng.randi_range(1, maxi(1, span.x)), rng.randi_range(1, maxi(1, span.y)))
 	return Rect2i(lot.position + offset, Vector2i.ONE * size)
 
 ## The archway out of a courtyard: one tile wide, from the court to the nearest point on one
@@ -1095,8 +1131,21 @@ static func validate(map: CityMap) -> String:
 					owner[member], owner[neighbour]]
 
 	if map.zone_rects.size() < Tuning.MIN_CALM_ZONES:
-		return "only %d four-block calm zones, need %d" % [
+		return "only %d multi-block calm zones, need %d" % [
 			map.zone_rects.size(), Tuning.MIN_CALM_ZONES]
+
+	# **And one of them is the square.** *(M52.)* A zone may be a 2x1 now, and M21's guarantee is
+	# not about multi-block calm in general — it is that every city has somewhere with a *route*
+	# through it rather than a lap round it, which is what the four-block footprint is for. The
+	# placement pass makes this true by placing the square first; this is the same sentence asked
+	# of the city that came out, which is the only way it stays true if that ordering ever moves.
+	var square := Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS
+	var squares := 0
+	for anchor: Vector2i in map.zone_rects:
+		if (map.zone_rects[anchor] as Rect2i).size == square:
+			squares += 1
+	if squares < 1:
+		return "no calm zone is %d blocks square" % Tuning.CALM_ZONE_BLOCKS
 
 	# The arcs are planned for the whole run, so the end of it can be checked here rather
 	# than hoped for. A run that requisitions its way to nothing is unwinnable, not hard.

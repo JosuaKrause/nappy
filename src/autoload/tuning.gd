@@ -386,17 +386,42 @@ const PARK_SPOIL_CHANCE := 0.35
 # so a stretch of calm is two or three traverses of somewhere with sides to it rather than
 # eight laps of a lawn. See docs/CITY.md, "Calm zones".
 
-## Blocks per side of a four-block calm zone. Two. It is a constant rather than a literal
-## because every piece of arithmetic that follows from it — the tile rect, which segments are
-## absorbed, which junctions survive — is written in terms of it, and a 2 buried in five
-## different files is how the next person changing this discovers the sixth.
+## Blocks per side of the **square** calm zone, which is the size every rate here is pitched
+## against. Two. It is a constant rather than a literal because a great deal of arithmetic follows
+## from it — the normalisation of the sleepiness curve above, and every test that states a
+## relationship in terms of a full-sized zone — and a 2 buried in five different files is how the
+## next person changing this discovers the sixth.
 const CALM_ZONE_BLOCKS := 2
-## How many of a city's calm areas are four-block zones. At least one, because the lap is what
-## the milestone exists to remove and a city with none of them still has it; at most two,
-## because a zone is seven and a half blocks' worth of ground and three of them would be a park
-## with a city in it. The rest of the calm stays single-block, which is what keeps *which* calm
-## area to head for a real question — a small quiet square close by against a big park further
-## out is the decision M24 made matter.
+
+## The footprints a multi-block calm area may have. *(M52, from M47's entry: "add calm varieties
+## that take up 2x1 non-square shapes".)*
+##
+## **A zone stopped being a square and became a shape**, which is the change the arithmetic felt:
+## everything downstream of `CALM_ZONE_BLOCKS` used to be that integer squared. What a footprint
+## costs the lattice is stated over the rect now — a `w x h` zone absorbs `w*(h-1) + h*(w-1)`
+## streets, which is four for the square and **one** for a rectangle — so a 2x1 is a lot of two
+## blocks with the single street between them painted over.
+##
+## Both orientations are here on purpose. A city whose rectangles all run the same way is a rule
+## somebody learns once rather than a place, and the two are genuinely different to walk: a 22x8
+## strip is a length with two ends, and which end you come in at is a route decision.
+##
+## And the rate curve was already waiting for them: `sleepiness_calm_multiplier` is `1 / sqrt` of
+## the block count, so two blocks fill in 8.0s against the square's 11.3s and a 2x1 pays for about
+## one traverse of its long side, exactly as a square pays for one diagonal. Nothing here had to be
+## balanced for the new shape — see M52 in docs/TODO.md.
+const CALM_ZONE_SHAPES: Array[Vector2i] = [
+	Vector2i(CALM_ZONE_BLOCKS, CALM_ZONE_BLOCKS),
+	Vector2i(CALM_ZONE_BLOCKS, 1),
+	Vector2i(1, CALM_ZONE_BLOCKS),
+]
+
+## How many of a city's calm areas are multi-block. At least one, because the lap is what M21
+## exists to remove and a city with none of them still has it; and the first one placed is always
+## the **square**, so *"every city has a big park"* stays true word for word while the rest of them
+## may be rectangles. The remainder of the calm stays single-block, which is what keeps *which* calm
+## area to head for a real question — a small quiet square close by against a big park further out
+## is the decision M24 made matter.
 const MIN_CALM_ZONES := 1
 const MAX_CALM_ZONES := 2
 

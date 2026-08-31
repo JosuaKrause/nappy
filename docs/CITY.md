@@ -134,9 +134,13 @@ test asserts that the building rects cover every `BUILDING` tile exactly once.
 Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 200 seeds:
 
 - Every walkable tile is reachable from the home.
+- Every calm area is somewhere calm ground may go: clear of the home, clear of the map's outer
+  ring of blocks, and clear of the two block columns beside the spine. See "Where calm ground may
+  go".
 - At least **3 calm areas**, no two adjacent (so the calm is spread out). An area is one
-  block or one four-block zone; see below.
-- At least `MIN_CALM_ZONES` (1) of them is a **four-block zone**.
+  block or one multi-block zone; see below.
+- At least `MIN_CALM_ZONES` (1) of them is a **zone**, and at least one zone is the **2×2
+  square** — the shape the lap argument is stated over.
 - The home is in the **middle block**, and is at least `MIN_HOME_TO_PARK_TILES` (30) *walking*
   tiles from the nearest park. Both, together — see "The home".
 - Building rects tile the `BUILDING` tiles exactly, with no overlaps and no gaps.
@@ -183,9 +187,33 @@ assumption.
 
 ## Calm zones
 
-*(M21.)* A calm **area** is one place to go, and it is either a single block or a **four-block
-zone**: 2×2 blocks with the streets between them absorbed, painted as one unbroken piece of
-ground 22 tiles square. Every city has one or two of them.
+*(M21, shapes added in M52.)* A calm **area** is one place to go, and it is either a single block
+or a **zone**: several blocks with the streets between them absorbed, painted as one unbroken
+piece of ground. Every city has one or two zones.
+
+A zone's footprint is one of `Tuning.CALM_ZONE_SHAPES` — **2×2**, **2×1** or **1×2** — and the
+first one a city places is always the square, so M21's guarantee survives the variety word for
+word: every city has somewhere with a route through it rather than a lap round it. *(M47, asked
+for again as M52's item 1: "add calm varieties that take up 2x1 non-square shapes".)*
+
+What a footprint costs the lattice is stated over the rect rather than over a side: a `w × h` zone
+absorbs `w(h−1) + h(w−1)` streets — **four** for the square and **one** for a rectangle — has
+`2(w + h)` streets round it, and contains `(w−1)(h−1)` junctions, which is **none** for a
+rectangle. Anything written as `2 · CALM_ZONE_BLOCKS · (CALM_ZONE_BLOCKS − 1)` was the square's
+answer to the first of those, and agreed with the general one for exactly as long as every zone
+was a square.
+
+| | one block | 2×1 zone | 2×2 zone |
+| --- | --- | --- | --- |
+| ground | 8×8 tiles | 22×8 tiles | 22×22 tiles |
+| a full meter of calm | 5.7 s | 8.0 s | 11.3 s |
+| traverses of itself to fill it | 1.4 | 1.05 | 1.05 |
+
+The rate curve needed nothing adding for the new shape and that is the point of it being a curve:
+`sleepiness_calm_multiplier` is `1 / sqrt(blocks)`, so a two-block lot lands between the other two
+and pays for about one traverse of its long side, exactly as the square pays for one diagonal. A
+rectangle is a *length* rather than a diagonal — you walk it end to end, and which end you come in
+at is a route decision the square does not offer.
 
 The reason is playtest 03, finding 2, asked for again by playtests 04 and 05: the traced player
 spent **twenty seconds walking in a circle** inside a courtyard. That is not a bug and it is not
@@ -194,18 +222,17 @@ progress requires motion; a calm block is eight tiles across; and progress-requi
 small-calm-area is jointly sufficient for a lap. M18's shorter day cut the number of laps and
 could not remove the lap, and no further balance pass will.
 
-The numbers, and `tests/test_generator.gd` asserts them as a relationship rather than as
-values:
+The numbers are the table above, and `tests/test_generator.gd` asserts them as relationships
+rather than as values: a traverse is worth a real share of a full meter and **not** the whole of
+it — if arriving filled the meter, arriving would be the whole game — and the three sizes are
+within half of each other in traverses-per-meter.
 
-| | one block | four-block zone |
-| --- | --- | --- |
-| ground | 8×8 tiles, 256 px | 22×22 tiles, 704 px |
-| corner to corner at `WALK_SPEED` | 3.9 s | 10.8 s |
-| a full meter of calm | 23.8 s | 23.8 s |
-
-So a stretch of calm in a zone is two or three traverses of somewhere with sides to it, and a
-stretch in a block is six laps of a lawn. It is deliberately *not* a whole meter in one crossing
-— arriving must not be the whole of it.
+**That last relationship is M52's and it replaced the older sentence here**, which said a zone was
+two or three traverses and a block was six laps of a lawn. That was true while every calm area
+filled at one rate, and the rate is a curve over the lot's width now: the small ones are paid for
+their size, so *which* calm area to head for is a question about where it is rather than about how
+big it is. What did **not** move is the geometry M21 exists for — a block is still a lap and a zone
+is still a route. The curve pays for the lap; it does not make the block bigger.
 
 The rest of the calm stays single-block on purpose. Which calm area to head for is a real
 question only when they are different from each other: a small quiet square two streets away
@@ -393,8 +420,8 @@ question below:
 | how many | 5–7 areas, derived as an act's worth of days **plus one** |
 | how far | at least `MIN_HOME_TO_PARK_TILES` (30) of **walking** distance from home — the calm is earned |
 | how spread | no two calm areas anywhere in each other's eight-block ring, corners included |
-| where not | never at the map edge, never beside the spine *(M47)* |
-| what shape | mostly single-block, with one or two four-block zones |
+| where not | never at the map edge, never beside the spine *(M47, built in M52)* |
+| what shape | mostly single-block, with one or two zones of 2×2, 2×1 or 1×2 — the first zone is always the square |
 
 **Each day — what is protected:**
 
