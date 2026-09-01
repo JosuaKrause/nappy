@@ -17,6 +17,8 @@ mid-way through.
 1. **M56** — the resistance is noticed.
 2. **M59** — the chatting mother. *Position provisional: the design is the player's (2026-09-01),
    the slot in the order is not — it can move.*
+3. **M60** — ready for a GitHub Pages launch. *(2026-09-01: "can we use github pages to put the
+   game on a page?" and "add a step for preparing for github pages launch.")*
 
 M53's one remaining piece is a question for the player, not a task — see its entry.
 
@@ -124,6 +126,40 @@ mechanic in it is **time under compulsion** — nothing else takes the controls 
       `MECHANICS.md` next to the idle rules it leans on
 - [ ] **Open, deliberately:** whether a chat should ever be *worth seeking out* (a rumour, a hint)
       — parked, because the meters must stay the only currencies until the player asks otherwise
+
+---
+
+## M60 — Ready for a GitHub Pages launch · asked for 2026-09-01
+
+The game becomes a folder of static files a browser runs. Godot's HTML5/WASM export on the
+`gl_compatibility` renderer the project already uses; **threads disabled**, so no
+cross-origin-isolation headers are needed and GitHub Pages serves it as-is. No server: the game has
+no networking. What Pages needs is preparation, not architecture:
+
+- [ ] **Gate the dev flags first — this is the prerequisite, not a polish item.** `--seed`,
+      `--day`, `--spawn`, `--ending` and the rest ship in the build today (M10 records the debug
+      gate as owed). A public build guards every dev flag and the snapshot key behind
+      `OS.is_debug_build()`, and the M10 item to move them into a `DevFlags` helper is naturally
+      the same work
+- [ ] **A tracked Web export preset.** `export_presets.cfg` is gitignored because presets often
+      carry credentials — a Web preset carries none, so track it (adjust the ignore with a comment
+      saying why), configured for threads off. Decide the viewport/canvas policy (the game renders
+      640×360 and scales)
+- [ ] **`tools/export-web.sh`** — headless export (`--headless --export-release Web`) into
+      `build/web/` (already gitignored), with the missing-export-templates failure caught the way
+      the other tools catch a missing Godot binary
+- [ ] **Telemetry on the web decides what it is.** `user://` maps to browser storage in a web
+      build: nobody collects those logs and the folder can grow unbounded on a stranger's machine.
+      Default telemetry off for web exports (an OS feature-tag check), unless a debug build
+- [ ] **The deploy workflow** — GitHub Actions on push to `main`: install Godot + export
+      templates, run the export, publish `build/web/` to Pages (`upload-pages-artifact` +
+      `deploy-pages`). **Blocked on a decision only the player can take: the repo has no GitHub
+      remote today**, and publishing it is theirs to do; the workflow file can sit ready in the
+      repo before the remote exists
+- [ ] **A browser smoke pass** once an export exists: boots, keyboard input works, holds frame
+      rate at the game's scale, and the title screen reads as the front door of a public page.
+      itch.io stays the fallback host (it sets the isolation headers, so a threaded build would
+      also work there)
 
 ---
 
@@ -291,11 +327,7 @@ After the playtest work. There is no point polishing a loop that is about to be 
       baby's breathing as the diegetic version of the meters. Additive by design
 - [ ] Main menu and settings; save/continue a run (`GameState` is already shaped for it, so this is
       serialisation rather than design)
-- [ ] **A web build** *(asked 2026-09-01: "can we use github pages to put the game on a page?")* —
-      Godot's HTML5/WASM export on the `gl_compatibility` renderer the project already uses, hosted
-      as static files on GitHub Pages. Export with threads disabled (or ship the
-      `coi-serviceworker` shim), because Pages cannot set the cross-origin-isolation headers a
-      threaded build needs. No server: the game has no networking
+- [ ] **A web build** — grew into its own milestone: M60, "Ready for a GitHub Pages launch"
 - [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
 - [ ] Controller support
 - [ ] Gate the dev flags behind a debug build, and move `_first_event_position` and friends out of

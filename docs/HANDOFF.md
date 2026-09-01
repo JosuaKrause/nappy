@@ -28,6 +28,9 @@ behind the newest one is in [PLAYTEST-18.md](PLAYTEST-18.md).
 1. **M56** — the resistance is noticed.
 2. **M59 — the chatting mother.** A 5-second conversation that costs 25 excitement awake and only
    time asleep. Position in the order is provisional; the design is the player's.
+3. **M60 — ready for a GitHub Pages launch.** Dev flags behind a debug gate first, then a tracked
+   Web export preset, an export tool, telemetry off for web, and a deploy workflow that waits on
+   the one decision only the player can take — publishing a remote.
 
 M53's remaining piece — the precinct junction — is a **question for the player** (two recorded
 instructions in tension); it is stated in [TODO.md](TODO.md) under M53.
