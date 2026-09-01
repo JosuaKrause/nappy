@@ -15,11 +15,12 @@ mid-way through.
 ## The order
 
 1. **M55's resistance half** — designed, nothing open, needs building.
-2. **M53** — a junction is made of the streets that meet at it.
-3. **M54** — the robber stops at walls, and three rows that never arrive.
-4. **M56** — the resistance is noticed.
-5. **M59** — the chatting mother. *Position provisional: the design is the player's (2026-09-01),
+2. **M54** — the robber stops at walls, and three rows that never arrive.
+3. **M56** — the resistance is noticed.
+4. **M59** — the chatting mother. *Position provisional: the design is the player's (2026-09-01),
    the slot in the order is not — it can move.*
+
+M53's one remaining piece is a question for the player, not a task — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
 
@@ -56,27 +57,18 @@ the guard arithmetic and the six drafts with the one that was not taken.
 
 ---
 
-## M53 — A junction is made of the streets that meet at it
+## M53 — What remains is a question, not a task
 
-**The lattice draws a full crossroads wherever two corridors cross, whether or not the arms are
-streets.** `CityMap.absent_segments`, `built_over` and the map edge already say which arms exist —
-nothing that draws a junction asks.
+The rest of M53 shipped; the record, with the measurements and the not-reproduced claims, is in
+`DECISIONS.md` under M53.
 
-- [ ] **A junction whose arm is not a street has three arms, not four.** The shore, a park, a calm
-      zone's absorbed corridor, a dead end's plug
-- [ ] **No crossing onto a wall** — a zebra with a traffic light beside it is painted onto
-      `built_over` tiles. A crossing marks *where to cross to*; the paint is the promise, so this is
-      worth doing even if the full three-armed junction is not
-- [ ] **A junction between two precinct arms is still asphalt with zebras on it.** A precinct is
-      laid `SIDEWALK` frontage to frontage by `CityGenerator._street_tile`; the junction between two
-      of them was never included
-- [ ] **Cars and people still go off the map.** Two candidate causes wanting different fixes: the
-      agent is recycled on screen, or the junction should not be there
-- [ ] **Only cars go over the bridge.** The overrun permission was narrowed to a car on the spine
-      and the **lane** was not, so a walker's lanes still run the length of a corridor that at the
-      boundary is a bridge. The bridge is **not** to be made safe
-- [ ] **The crowd has to agree with the drawing.** A T-junction the paint knows about and
-      `CrowdAgent._divert` does not is the same bug in the other direction
+- [ ] **The precinct junction — two recorded instructions are in tension, and the player decides.**
+      The queue called the junction between two precinct arms a bug ("still asphalt with zebras");
+      `CityGenerator._street_tile`'s own docstring defends the current behaviour as intentional —
+      a driveable street crossing a precinct does so over a zebra six tiles deep. Measured: no
+      `ROAD` tile is ever produced at an internal precinct junction, only `SIDEWALK`/`CROSSING`.
+      The question: should a real street's carriageway survive through a precinct it merely
+      crosses, or is the six-tile zebra the design and the queue's sentence the stale one?
 
 ---
 

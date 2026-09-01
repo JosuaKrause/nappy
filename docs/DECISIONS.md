@@ -6222,6 +6222,37 @@ entries that have been sitting under "Known-shaky ground" waiting for exactly it
 
 ## M53 — A junction is made of the streets that meet at it · not started, queued after M52's lights
 
+### Built 2026-09-01 · `feature/junctions-ask-their-arms` — four of six, one fork left open
+
+- **The missing-arm crossings.** Measured before touching code: zero `CROSSING` tiles ever landed
+  *inside* a `built_over` rect, but dozens sat in the two-tile band just outside one — for dead
+  ends and big buildings across every sampled seed. Zones already had the fix in
+  `_absorb_streets`'s stub cleanup; the other two placements never got the equivalent. The shared
+  piece became `CityGenerator._seal_stub_crossings()`, stated once over "ground that just stopped
+  being a street", called from all three; a property test walks every zone, dead end and big
+  building of 12 seeds. **The shore/park four-arm claim did not reproduce as a distinct bug** —
+  boundary T/L-junctions are geometrically correct by construction (no tile grid exists past
+  `map.size` for a phantom arm), matching M49's earlier "not reproduced" on a near-identical claim.
+- **Off the map, both candidates checked.** "The junction should not be there" does not reproduce —
+  `StreetNetwork` never enumerates past its own junction count. "The agent is recycled on screen"
+  was real and general, not spine-specific: `_recycle`'s all-rolls-missed fallback used
+  `ENTRY_SPREAD` (420px, a car's own reach) for every kind, so a walker could settle 238px past the
+  true south edge. The fix clamps the settled position to the same room the *exit* side already
+  grants (`_keep_within_the_room_beyond_the_map()`), measured down to one tile; a test at the east
+  edge holds it away from the spine too, and another asserts a car on the spine still overruns by
+  `OUT_OF_SIGHT`, so the bridge stayed lethal.
+- **The crowd already agreed with the drawing** — `CrowdAgent._cannot_go_on` reads
+  `CityMap.is_street()`, the same predicate the paint fix preserves. That was an inference from
+  code, so it got a test: a real day's traffic at a zone, asserting no car ever stands on the
+  absorbed corridor.
+- **The precinct-junction item was not built, deliberately.** Two pieces of current documentation
+  contradict each other: `_street_tile`'s docstring defends "a driveable street crossing [a
+  precinct] does so over a zebra six tiles deep" as intentional, while the queue called the same
+  junction a bug. Empirically (24 internal precinct junctions over 6 seeds) no `ROAD` tile is ever
+  produced there — only `SIDEWALK`/`CROSSING` — so the fix requires deciding whether a real
+  street's carriageway should survive through a precinct it merely crosses. Two recorded
+  instructions in tension go back to the player; the open half stays in `TODO.md`.
+
 **Ordered by the player: *"queue those fixes after the traffic light fix."*** So M52's third item
 goes first and this follows it, which is the right way round for a reason worth writing down — the
 lights are a decision about **which junctions are junctions at all**, and three of the four items
