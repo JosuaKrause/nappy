@@ -15,11 +15,11 @@ var size: Vector2i
 var tiles: PackedByteArray
 ## Block coordinate -> BlockPlan. The arc each block may travel, fixed at generation.
 ##
-## Keyed by the block that **anchors a lot**, which since M21 is not always one block: a
-## four-block calm zone is a single entry whose ground covers all four of its blocks and the
-## streets that used to run between them. The other three appear in `zone_anchor` and nowhere
-## else, so everything stated over `block_plans` — how many calm areas there are, which one is
-## least spoiled, which one she settled in yesterday — counts a zone once, which is what it is.
+## Keyed by the block that **anchors a lot**, which is not always one block: a four-block calm zone
+## is a single entry whose ground covers all four of its blocks and the streets that used to run
+## between them. The other three appear in `zone_anchor` and nowhere else, so everything stated over
+## `block_plans` — how many calm areas there are, which one is least spoiled, which one she settled
+## in yesterday — counts a zone once, which is what it is.
 var block_plans := {}
 ## Block coordinate -> BlockLayout. The carves, also fixed at generation. Anchors only, for the
 ## same reason as `block_plans`: an absorbed block has no ground of its own.
@@ -34,14 +34,13 @@ var zone_anchor := {}
 ## straight over. Fixed for the run, unlike `closed_tiles`, and a fact about the **lattice**
 ## rather than about a day — the tiles are park, and the player walks on them quite happily.
 ##
-## This is what M21 does to `StreetNetwork`, which was written assuming a full grid: the
-## enumeration is still the full grid and this is the set that is not really there, so the graph
-## half — route counting, the invariant, the doorway exemptions — survives untouched and simply
-## gets a bigger `closed` set. See `blocked_segments()`.
+## **`StreetNetwork` assumes a full grid and still enumerates one.** This is the set that is not
+## really there, so the graph half — route counting, the invariant, the doorway exemptions — needs
+## no special case and simply gets a bigger `closed` set. See `blocked_segments()`.
 var absent_segments := {}
 ## The streets a **hard blocker** built over, as segment key -> the tile rect that is now solid.
 ## A subset of `absent_segments`, kept apart because the two are absent for opposite reasons and
-## anything reasoning about *why* a street is not there has to tell them apart. *(M50 step 1.)*
+## anything reasoning about *why* a street is not there has to tell them apart.
 ##
 ## A calm zone's absorbed corridor is **ground you walk over** — the tiles are park and the lattice
 ## losing the street is the whole point of a shortcut. A hard blocker is the reverse: the lattice
@@ -55,9 +54,9 @@ var built_over := {}
 ## Which of `built_over` are **dead ends** — a street with one end walled — as a set of keys. The
 ## rest belong to a big building, which took its street whole.
 var dead_ends := {}
-## The landmarks, each as the **pair of blocks** it joins. *(M50 step 1.)* A big building builds
-## over the one street between two neighbouring blocks and leaves every other street around them
-## alone; a type that closes all four is a different type and does not exist yet. See
+## The landmarks, each as the **pair of blocks** it joins. A big building builds over the one street
+## between two neighbouring blocks and leaves every other street around them alone; a type that
+## closes all four is a different type and does not exist yet. See
 ## `CityGenerator._place_big_buildings`.
 var big_buildings: Array[Rect2i] = []
 
@@ -68,10 +67,8 @@ func is_hard_blocker(key: Vector3i) -> bool:
 	return built_over.has(key)
 ## The corridor index of the one main road, which runs north to south. `-1` before generation.
 ##
-## One of it, and only on this axis. *(Playtest 12, finding 2: "there should be one north to south
-## main road, I had multiple, and there should be no east to west ones at all.")* A spine that
-## crosses itself is two spines; what makes a main road the main road is that there is nowhere
-## else it could be.
+## One of it, and only on this axis. A spine that crosses itself is two spines; what makes a main
+## road the main road is that there is nowhere else it could be.
 var main_road := -1
 
 ## The precincts, as stretches rather than corridors: `(axis, corridor, first block, last block)`
@@ -225,10 +222,9 @@ func is_walkable(tile: Vector2i) -> bool:
 	return Tile.is_walkable(tile_at(tile))
 
 ## Street ground: pavement, carriageway or crossing. Anything that travels the lattice asks
-## this, because since M21 a corridor may simply not be there — a four-block calm zone is
-## painted over the streets between its blocks, and those tiles are park somebody walks on
-## rather than street anybody drives down. A crowd agent that only checked `is_walkable` would
-## drive across the grass.
+## this, because a corridor may simply not be there — a four-block calm zone is painted over the
+## streets between its blocks, and those tiles are park somebody walks on rather than street anybody
+## drives down. A crowd agent that only checked `is_walkable` would drive across the grass.
 func is_street(tile: Vector2i) -> bool:
 	var type := tile_at(tile)
 	return type == GameEnums.TileType.SIDEWALK or type == GameEnums.TileType.ROAD \
@@ -238,7 +234,7 @@ func is_closed(tile: Vector2i) -> bool:
 	return closed_tiles.has(tile)
 
 ## Which way is *away from the carriageway* from a pavement tile, as a unit tile step. Zero
-## where the question has no single answer. *(M34, playtest 07 findings 7 and 15.)*
+## where the question has no single answer.
 ##
 ## A corridor is sidewalk | road | sidewalk across its own axis, so a pavement tile has a kerb on
 ## one side and a frontage on the other, and which is which follows from the offset. Two cases
@@ -247,8 +243,8 @@ func is_closed(tile: Vector2i) -> bool:
 ## - **A junction**, where the tile is in both corridors at once and has a kerb on two sides. A
 ##   van parked in one is wrong whichever way it faces.
 ## - **Anything that is not pavement** — the carriageway itself, a park a calm zone painted over
-##   the street, a closed tile. `is_street()` is not enough here: since M21 a corridor may not be
-##   there at all, and a tile at a pavement offset can be grass.
+##   the street, a closed tile. `is_street()` is not enough here: a corridor may not be there at
+##   all, and a tile at a pavement offset can be grass.
 func pavement_inward(tile: Vector2i) -> Vector2i:
 	if tile_at(tile) != GameEnums.TileType.SIDEWALK:
 		return Vector2i.ZERO
@@ -275,9 +271,8 @@ func is_open(tile: Vector2i) -> bool:
 ##
 ## Every `StreetNetwork` call that takes a `closed` set wants this rather than the day's
 ## closures alone. Passing the closures by themselves lets a route run down the middle of a
-## park, which overstates the redundancy — and route redundancy is the one guarantee that used
-## to be true by construction and is not any more, so overstating it is exactly the failure M21
-## has to avoid.
+## park, which overstates the redundancy — and route redundancy is not true by construction in a
+## lattice with holes in it, so an overstatement is the whole of how it goes wrong.
 func blocked_segments(closed_today: Dictionary = {}) -> Dictionary:
 	if closed_today.is_empty():
 		return absent_segments.duplicate()
@@ -300,7 +295,7 @@ func lot_blocks(block: Vector2i) -> Rect2i:
 	return zone_rects.get(anchor, Rect2i(anchor, Vector2i.ONE))
 
 ## How many blocks' worth of **calm ground** this lot has, which is what the sleepiness curve is a
-## function of. *(M52.)*
+## function of.
 ##
 ## It is the lot for open calm and **one** for a courtyard, however big the lot is, because what a
 ## courtyard offers is its court: a four-block apartment complex is twenty-two tiles of building
@@ -377,9 +372,8 @@ func starting_purpose(block: Vector2i) -> GameEnums.BlockPurpose:
 
 ## The lot nearest a world position, named by its anchor block. Events happen on streets,
 ## between blocks, so "which block did this happen to" is nearest-centre rather than
-## containment — and since M21 it is nearest *lot* centre, so a fire on the edge of a
-## four-block park is attributed to the park rather than to one quarter of it that has no arc
-## of its own.
+## containment — and it is nearest *lot* centre, so a fire on the edge of a four-block park is
+## attributed to the park rather than to one quarter of it that has no arc of its own.
 func block_at(world_position: Vector2) -> Vector2i:
 	var best := Vector2i.ZERO
 	var closest := INF
@@ -394,11 +388,10 @@ func block_at(world_position: Vector2) -> Vector2i:
 ## Repaints every block interior for the purposes `state` currently holds, and re-derives
 ## the things that follow from them.
 ##
-## This is the change M15 makes to the old "the CityMap is immutable for the run" rule. The
-## street lattice, the block boundaries, the carves and the building footprints are all
-## still fixed — this only ever swaps the *ground* inside a block's open rect, so no repaint
-## can disconnect the city or make a wall appear where a route used to be. What changes is
-## what a place is worth walking to.
+## **The one thing about a `CityMap` that is not fixed for the run.** The street lattice, the block
+## boundaries, the carves and the building footprints all are — this only ever swaps the *ground*
+## inside a block's open rect, so no repaint can disconnect the city or make a wall appear where a
+## route used to be. What changes is what a place is worth walking to.
 func repaint(state: CityState) -> void:
 	# Two passes, and the split is what makes a four-block calm zone possible: one lot's ground
 	# now covers blocks that are not its own, so a single pass that cleared each lot immediately
@@ -575,8 +568,8 @@ func count_walkable() -> int:
 		total += _WALKABLE[type]
 	return total
 
-## Every calm tile in the city right now. Since M14 this is the only ground a day can be
-## won on, so it is what "how hard is today" actually means.
+## Every calm tile in the city right now. It is the only ground a day can be won on, so it is what
+## "how hard is today" actually means.
 func calm_tiles() -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	var width := size.x
