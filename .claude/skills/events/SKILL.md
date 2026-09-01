@@ -230,4 +230,5 @@ plumbing one.
 **Events are defined in code, not `.tres`** — reviewable in a diff, validated on load, assertable as
 a whole catalogue in a test.
 
-**No spatial hash.** The budget tops out near 25 concurrent events; a linear scan is free.
+**No spatial hash.** The concurrent count stays a few dozen even on the last day; a linear scan is
+free.

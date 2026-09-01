@@ -180,7 +180,8 @@ Each was a decision. Do not "fix" one without a reason; the reasoning is in `doc
   find yourself writing a pass that deletes what a previous pass placed, this is the rule you are
   about to rediscover.
 - **Counting distinct routes is a max flow, not a search for routes.**
-- **No spatial hash for events.** The budget tops out near 25 concurrent; a linear scan is free.
+- **No spatial hash for events.** The concurrent count stays a few dozen even on the last day, so a
+  linear scan is free.
 - **No `impulse` field on events.** A sharp spike is a short `duration` at high `intensity`.
 - **Events are defined in code, not `.tres`.**
 - **No quest log or marker for the resistance** — *asked for X · overturned to Y on 2026-08-31,
