@@ -2,8 +2,7 @@ class_name RouteTree
 extends RefCounted
 ## The day's corridor: one branch from the doorstep to every calm area still worth reaching.
 ##
-## *(M50. The design is docs/CITY.md, "Diversions — the design" and "How the corridor is built";
-## the construction below is the player's own algorithm.)*
+## The design is docs/CITY.md, "Diversions — the design" and "How the corridor is built".
 ##
 ## **The city permits routes to calm and protects them from becoming impossible. It never
 ## suggests one.** This is the structure that lets it suggest one: a *wall* is a street just
@@ -97,8 +96,8 @@ var _tail := {}
 ## rather than searched because a colour reaches a junction's whole subtree.
 var _children := {}
 ## The two junctions of the home street, which is where every branch ends. The home street itself
-## is not on the tree — a door is not a route, the same exemption both ends of the journey have
-## had since M16.
+## is not on the tree — a door is not a route, which is the same exemption both ends of the
+## journey have.
 var _home := {}
 ## Junction node -> `[[neighbour node, segment key], ...]`, closed and absent streets already
 ## dropped. Built once per tree: a `Dictionary` keyed by `Vector3i` hashes a Variant on every
@@ -148,7 +147,7 @@ const REFERENCE_DAY := 0
 static func for_the_run(map: CityMap) -> RouteTree:
 	return for_day(map, REFERENCE_DAY)
 
-## **It is grown on the permanent lattice, and today's closures are not in it.** *(M50 step 2.)*
+## **It is grown on the permanent lattice, and today's closures are not in it.**
 ## That reads backwards until the order the day is planned in is in view: the corridor comes
 ## **first**, and the closures are then placed off it — so a tree grown against today's barriers
 ## would be a tree grown against decisions that were taken by consulting it. What makes it sound
@@ -437,8 +436,8 @@ func colours_on(key: Vector3i) -> int:
 
 ## *Which* branches run down a street, sorted. `colours_on` answers how many, which is all
 ## placement ever needed; this is for the telemetry, which has to be able to say that she left one
-## path and joined another — *"technically it's leaving a path and entering a new path"*, playtest
-## 17. Two street sets that share no colour are two different routes, and nothing else can tell.
+## path and entered another. Two street sets that share no colour are two different routes, and
+## nothing else can tell.
 func branches_on(key: Vector3i) -> Array[int]:
 	var found: Array[int] = []
 	if _colours.has(key):
@@ -530,10 +529,8 @@ func rim() -> Array[Vector3i]:
 ## The streets that sit **between two adjacent strands of the corridor**: one street of the tree
 ## crossing each end, and nothing of the tree on the street itself.
 ##
-## *(M55, playtest 17 finding 2: "if two paths go parallel add some blocking events between them",
-## and the clarification that settles its scope — "only directly adjacent paths (with a single
-## street connecting both) counts for this case obviously. everything further apart should just
-## naturally be never connectable.")*
+## What it is for: two strands of corridor running parallel with one free street between them are
+## one wide route rather than two, so something goes in that street.
 ##
 ## **This is not the spacing rule the class doc rules out, and the difference is the whole of why
 ## it is allowed to exist.** Nothing here moves a branch, refuses a merge or asks two routes to
@@ -543,9 +540,9 @@ func rim() -> Array[Vector3i]:
 ## switch is made through sometimes cost something, which is a placement and lives downstream.
 ##
 ## **Directly adjacent means one street, and that is the whole definition.** Two strands two
-## turnings apart have off-corridor ground between them, which since M55's first item is lethal or
-## very costly on its own — so they are separated by the map and nothing has to be placed. Asking
-## this question of anything wider would be inventing a rule the player explicitly did not ask for.
+## turnings apart have off-corridor ground between them, which is lethal or very costly on its own
+## — so they are separated by the map and nothing has to be placed. Asking this question of
+## anything wider invents a rule nobody asked for.
 ##
 ## **A strand is a stretch of corridor and not a branch**, so a single branch that runs out along
 ## one street and home along the next one down answers yes here. That is deliberate: the complaint
