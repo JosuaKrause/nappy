@@ -16,6 +16,7 @@ what actually happens to a person playing, and nobody should have to have an opi
 ./tools/telemetry.sh -l       # list them, newest first, with size and commit
 ./tools/telemetry.sh -p       # say what is stale; `-p yes` deletes it
 ./tools/telemetry.sh 3        # print the third-newest
+./tools/stats.sh              # aggregate playtest runs: days won/lost, loss causes, most-met events
 ```
 
 Underneath, one file per run in `user://telemetry/`:
