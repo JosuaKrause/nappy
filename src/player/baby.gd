@@ -21,7 +21,7 @@ signal started_crying()
 ## in the corner of a game whose camera is on the pram asks a person to read a number about the
 ## thing they are looking at from somewhere else on the screen.
 ##
-## The two rules it is built to, both from the standing decision in `CLAUDE.md`:
+## The two rules it is built to, both from the **cues** skill's standing decisions:
 ##
 ## - **Stages, not a gauge.** A meter drawn over her head is the HUD moved. What earns a place
 ##   in the vocabulary is a small number of states, each of which is a different instruction:

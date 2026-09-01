@@ -49,9 +49,9 @@ go through it — `tests/test_routes.gd` fails the build if it does not.
 
 **Two areas is the count; reachability is the strength.** Two *areas* is what stops a day arriving
 where the only calm left is the one this morning spoiled; dropping to one reachable area is an
-unwinnable day. What edge-disjointness used to stand in for now has its own statement: by Menger,
-two routes meant *no single street is a cut*, so `tests/test_routes.gd` asserts that sentence
-directly, about the city rather than about each area — **no one street cuts off all the calm.**
+unwinnable day. **No one street cuts off all the calm** is the guarantee's own statement — by
+Menger, two routes to different areas means no single street is a cut — and `tests/test_routes.gd`
+asserts that sentence directly, about the city rather than about each area.
 
 Two exemptions, and they are the same exemption at both ends of the journey: **a doorway is not a
 route.** The street outside the home is never closed (the home is a notch with one exit), and an

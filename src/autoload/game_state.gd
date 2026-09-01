@@ -115,8 +115,8 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 		EventBus.nerves_changed.emit(nerves)
 		# Which nerve went, and on which day. The nerve economy has never been tested against
 		# a game that bites early, and this is the entry that will say whether it survives it —
-		# a question a retry sharpens rather than settles, since three nerves now buy three
-		# attempts wherever they are needed instead of three days off the calendar.
+		# a question a retry sharpens rather than settles, since five nerves now buy five
+		# attempts wherever they are needed instead of five days off the calendar.
 		Telemetry.note("nerve", "spent a nerve on day %d (act %d); %d left%s"
 				% [day, current_act(), nerves,
 				"" if nerves <= 0 else " — day %d again" % day])

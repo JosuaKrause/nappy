@@ -53,7 +53,7 @@ A **day** is one level: leave home, get the baby asleep, return home.
 | **Day lost** | A hard-fail event fires (e.g. alley robbery, being abducted). |
 | **Day lost** | The day timer runs out (dusk). |
 
-Losing a day is not losing the run. It costs one point of **Nerves** (start of run: 3).
+Losing a day is not losing the run. It costs one point of **Nerves** (start of run: 5).
 
 ### Run-level
 

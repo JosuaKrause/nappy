@@ -281,8 +281,11 @@ enum Pavement {
 ## leaves a burnt-out shell; the shell is still there on day 12.
 @export var scar_id := ""
 
-## Which act the row belongs to, narratively. Nothing reads it yet: it is where a per-act palette
-## or a per-act sound would key off, and `first_day` is what actually decides when a row can appear.
+## Which act the row belongs to, narratively. No game code reads it — `first_day` is what
+## actually decides when a row can appear — but `tests/test_acts.gd` asserts every row's
+## `act_tag` against the act its `first_day` falls in, so it stays consistent with the
+## calendar even though nothing at runtime depends on it. It is where a per-act palette or a
+## per-act sound would key off.
 @export var act_tag := 1
 
 ## What this row does to a route that meets it, in the words `docs/CITY.md` fixes.
@@ -291,9 +294,9 @@ enum Pavement {
 ## than a gap in it: impassable means *stops passage without killing*, which in this game is a
 ## closure taking a whole street. An event with a body takes part of a pavement, so it is walked
 ## round at a price — `costly`, like the dog walker with no body beside it. It would be easy to
-## read `obstructs_radius > 0.0` as impassable and it is the same mistake `CLAUDE.md` warns about
-## on the other side: *if a rule tests `obstructs_radius`, ask whether it means* has a body *or*
-## closes ground.
+## read `obstructs_radius > 0.0` as impassable and it is the same mistake the **events** skill
+## warns about on the other side: if a rule tests `obstructs_radius > 0`, ask whether it means
+## *has a body* or *closes ground*.
 func effect() -> GameEnums.BlockerEffect:
 	return GameEnums.BlockerEffect.LETHAL if hard_fail else GameEnums.BlockerEffect.COSTLY
 

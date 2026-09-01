@@ -800,19 +800,15 @@ static func _subtract(outer: Rect2i, hole: Rect2i) -> Array[Rect2i]:
 
 ## Notches the home into the south edge of the middle block.
 ##
-## **The middle, not the most central block that happens to work.** The home used to be chosen by
-## sorting residential blocks by distance to the centre and taking the first that was
-## `MIN_HOME_TO_PARK_TILES` from calm ground — two rules competing for the same thing, which the
-## walk out settled by walking the home outward until it was far enough. Measured over ten seeds at
-## 7x7 it landed about two blocks off centre and was central in four, which puts the doorstep near
-## the boundary: *"I spawn too often at the edge, leaving only a few ways into the rest of the
-## city."* Half the directions out of a corner block are a wall, and a city you can only leave two
-## ways is a smaller city than the one that was generated.
+## **The middle, not the most central block that happens to work.** A doorstep at the boundary
+## leaves only a few directions into the rest of the city — half the ways out of a corner block are
+## a wall — so the home sits at the centre of the odd-numbered lattice, unconditionally.
 ##
-## The competition is settled in `_assign_purposes` instead, by keeping calm ground away from the
-## middle (`_too_near_the_home`) — so the distance guarantee holds where the home *is* rather than
-## deciding where it goes. `validate()` still checks it, because a clearance stated in blocks is an
-## approximation of a guarantee stated in tiles.
+## The `MIN_HOME_TO_PARK_TILES` distance guarantee is settled in `_assign_purposes` instead, by
+## keeping calm ground away from the middle (`_too_near_the_home`) — so the guarantee holds because
+## of where calm ground is allowed to go, not because of where the home goes. `validate()` still
+## checks it, because a clearance stated in blocks is an approximation of a guarantee stated in
+## tiles.
 static func _place_home(map: CityMap, block_rects: Dictionary) -> void:
 	var block := home_block()
 	_carve_home(map, block_rects, block, _home_rect(map, block))

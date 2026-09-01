@@ -5021,7 +5021,21 @@ moves enough placements to tip the coin. Worth its own item; see "Open design qu
         which was the real risk, since a `hard_fail` placement must clear its whole outer radius of
         everything else with no fallback, and refusing it a quarter of the city could have quietly
         stopped placing it. What moved is where: costly rows on the corridor 34% → 64% on day 1,
-        lethal rows on the rim 63% → 80% on day 5. The table is in `docs/EVENTS.md`.
+        lethal rows on the rim 63% → 80% on day 5. Measured 2026-08-31 over six seeds, per day, with
+        both weights flattened to 1 and then at 4 — flattened is the honest control, since it leaves
+        the *rule* in place and takes only the *preference* away, so what the arrows show is what
+        the weighting buys:
+
+        | | day 1 | day 5 | day 9 | day 14 |
+        | --- | --- | --- | --- | --- |
+        | placed | 111 → 111 | 145 → 145 | 175 → 175 | 201 → 201 |
+        | costly rows on the corridor | 34% → **64%** | 39% → **63%** | 33% → **53%** | 31% → **52%** |
+        | lethal rows on the rim | — | 63% → **80%** | 40% → **64%** | 31% → **59%** |
+        | lethal rows placed | — | 8.8 → 9.0 | 16.7 → 16.7 | 17.0 → 17.0 |
+
+        The share drifting down with the day is the corridor filling up and `EVENT_SPACING_SAME`
+        pushing the overflow outward — the spacing rule doing its job rather than the weight
+        failing.
       - **And it cost the suite time, which is worth writing down because the first version cost
         twice as much.** Every `build_day` now grows a tree, and `tests/test_events.gd` plans a lot
         of days. The first version also keyed the *whole ground scan* by role, so two passes over

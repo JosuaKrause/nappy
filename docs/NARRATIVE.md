@@ -65,9 +65,9 @@ beyond a chalk mark on the wall that the player may or may not notice.
 
 ### Act III — "Vans" (days 8–11)
 
-Cold palette, overcast. Streets are emptier — literally: the crowd drops from 420 people
-and 110 cars to 90 and 22, and the arterial that ran at three times the idle decay in act I
-falls below it. The city gets *quieter*. This is the cruellest joke in the design, and it
+Cold palette, overcast. Streets are emptier — literally: from act I's crowd, the streets
+keep about a fifth of the people and a quarter of the cars, and the arterial that ran at
+three times the idle decay in act I falls below it. The city gets *quieter*. This is the cruellest joke in the design, and it
 is now something the player can see rather than only feel: the pavement she walked down on
 day 1 shoulder to shoulder is empty. The city gets easier to put a baby to sleep in,
 because there is nobody left in it.

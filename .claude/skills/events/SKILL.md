@@ -101,9 +101,10 @@ Three exemptions, each written down in `docs/EVENTS.md`, "Solid things are solid
 **mobile** (a moving wall pins her), anything `AHEAD_OF_PLAYER` (`validate()` refuses it), and
 anything with no silhouette. `tests/test_events.gd` requires everything else to have one.
 
-**A body is a route cost.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` is a rule that used to read
-"nothing that obstructs" restated as what it always meant. **If a rule tests `obstructs_radius > 0`,
-ask whether it means *has a body* or *closes ground*.**
+**A body is a route cost, not a closure.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
+`obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can
+walk around does not close a 704px lot; one you have to route around does. **If a rule tests
+`obstructs_radius > 0`, ask whether it means *has a body* or *closes ground*.**
 
 ## A fixture can move, and `EventDef.paces` is how
 

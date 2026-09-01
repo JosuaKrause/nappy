@@ -529,7 +529,7 @@ static func _leaf_blower() -> EventDef:
 ##   telegraph plus a short burst expires exactly as she reaches it. The telegraph is the flock *on
 ##   the pavement*, long enough to be seen from down the street and walked around, and the burst
 ##   outlasts her arrival rather than ending at it.
-## - It must not be **quiet and small**: 17 over a 110px reach, in a game where a café is 12 over
+## - It must not be **quiet and small**: 42 over a 168px reach, in a game where a café is 12 over
 ##   170, is nothing. A flock going up in a pram's face is one of the loudest things that can happen
 ##   on an ordinary pavement.
 ## - It must not be **deleted at the top of its climb**, which is what `EventDef.departs_at` is for.

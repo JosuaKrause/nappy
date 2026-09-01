@@ -208,9 +208,11 @@ The jolt is pitched against what the *authored* content costs: the crowd is most
 costs and must not be all of it.
 
 **The radius is set by the lane spacing, not by a body's width.** Pedestrian lanes are one tile
-apart, so the only line with no contact on it is the midline between two of them. At 18px there is
-no such line anywhere on a two-tile pavement, and walking the arterial costs eleven bumps in forty
-seconds however carefully it is done — a toll, not a decision. At 14px the same walk is two.
+apart, so the only line with no contact on it is the midline between two of them. Too wide a radius
+closes that line everywhere on a two-tile pavement, so every walk collects a bump every few seconds
+however carefully it is done — a toll, not a decision. At the contact radius above, a lane centre
+still costs bumps for the length of the walk and the midline costs none, which is what makes staying
+on it a real decision.
 
 Three things about it that only show up by walking a rig down a real pavement and reading the
 meter, none of which a data-level test can see:
@@ -316,8 +318,8 @@ car is pointing. It shows up the moment a human watches a junction.
 
 **Walkers have no side convention**, and that is deliberate. They are not mirrored — they are
 unordered, which is a different thing. Giving them one is a design change with a measured cost
-attached: the contact numbers the pavement is balanced on — eleven bumps down a lane centre against
-one on the midline — assume somebody may be coming the other way in any lane.
+attached: the contact numbers the pavement is balanced on — a lane centre costs bumps, the midline
+costs none — assume somebody may be coming the other way in any lane.
 
 ### Traffic queues
 
