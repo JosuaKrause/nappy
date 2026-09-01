@@ -205,24 +205,14 @@ than a weight**: a wall is never inside the corridor. That one can be absolute b
 the city stays available to it, so it cannot starve a row of ground; everything else is a weight for
 exactly the reason it could.
 
-Measured on 2026-08-31 over six seeds, per day, with both weights flattened to 1 and then at 4.
-Flattened is the honest control: it leaves the *rule* in place and takes only the *preference*
-away, so what the arrows show is what the weighting buys.
-
-| | day 1 | day 5 | day 9 | day 14 |
-| --- | --- | --- | --- | --- |
-| placed | 111 → 111 | 145 → 145 | 175 → 175 | 201 → 201 |
-| costly rows on the corridor | 34% → **64%** | 39% → **63%** | 33% → **53%** | 31% → **52%** |
-| lethal rows on the rim | — | 63% → **80%** | 40% → **64%** | 31% → **59%** |
-| lethal rows placed | — | 8.8 → 9.0 | 16.7 → 16.7 | 17.0 → 17.0 |
-
-Three things in it. **The density did not move**, which it must not: the role changes *where* the
-budget is spent and never how much of it there is. **Neither did the lethal count**, which is the
-one the rule could have broken — refusing a quarter of the city to the rows that are hardest to
-place (a `hard_fail` event must clear its whole outer radius of everything else, with no fallback)
-could have quietly stopped placing them, and it did not. And **the share drifts down with the
-day** because the corridor fills up and `EVENT_SPACING_SAME` pushes the overflow outward, which is
-the spacing rule doing its job rather than the weight failing.
+The role weighting moves *where* the budget is spent and never how much of it there is: the density
+placed per day is unaffected by whether the weight is live, and so is the count of lethal rows —
+the one the rule could have broken, since a `hard_fail` event must clear its whole outer radius of
+everything else with no fallback, and refusing it a quarter of the city could have quietly stopped
+placing it. What the weight does move is the split: costly rows land on the corridor far more often
+than off it, and lethal rows land on the rim far more often than elsewhere, with the corridor's
+share drifting down over the run as it fills up and `EVENT_SPACING_SAME` pushes the overflow
+outward. The measurement that established this is in `docs/DECISIONS.md` under M50.
 
 ### A set piece is offered on every route and happens on one
 
