@@ -141,6 +141,23 @@ route is made of.
 
 At `excitement = 100` → **crying** → day lost.
 
+## A conversation
+
+`chatting_mother` is the one row in the catalogue that takes the player's own controls away rather
+than costing a meter: entering `detain_radius` of an instance that has not yet chatted locks her
+movement input for `detain_seconds` (5s) — the run key does nothing, and velocity runs out through
+the ordinary friction rather than stopping her dead, the same as letting go of every key would.
+
+**No new meter rule prices the stop**, because the idle rules above already do: sleepiness drains
+at `SLEEPINESS_DRAIN_IDLE` and excitement decay freezes at `EXCITEMENT_DECAY_IDLE` (zero) for as
+long as she is held still, exactly as they would for a player who stopped on her own. What the
+conversation adds on top is the meter's own content while it runs — `Tuning.CHAT_EXCITEMENT` (25)
+added flat over the capture while the baby is **awake**, and nothing at all while she is **asleep**,
+read off the baby's state rather than scaled through `SLEEPING_SENSITIVITY`: a *pure* time loss
+means the contribution is exactly zero, not merely smaller. Five seconds is a quarter of the lose
+meter outbound and only the clock on the way home, which is why the same body reads as a different
+obstacle in each half of a day. See docs/EVENTS.md for the row itself.
+
 ## Baby state machine
 
 ```
