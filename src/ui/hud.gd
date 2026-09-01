@@ -16,8 +16,6 @@ extends CanvasLayer
 
 var _baby: Baby
 var _contact_step := 0
-var _hold := 0.0
-var _seen_for := 0.0
 var _announcement := ""
 var _announcement_for := 0.0
 ## What is holding a floor under the whole city, or "" for nothing. The only cue for a source with
@@ -49,16 +47,12 @@ func _ready() -> void:
 	EventBus.day_time_changed.connect(_on_day_time_changed)
 	EventBus.resistance_progress_changed.connect(func(_v: int) -> void: _refresh_resistance())
 	EventBus.resistance_contact_available.connect(_on_contact_available)
-	EventBus.resistance_hold_changed.connect(_on_hold_changed)
-	EventBus.resistance_seen.connect(_on_seen)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.city_wide_changed.connect(_on_city_wide_changed)
 	EventBus.event_telegraphed.connect(_on_event_telegraphed)
 	EventBus.day_started.connect(_teach_the_day)
 	EventBus.day_started.connect(func(_d: int) -> void:
 		_contact_step = 0
-		_hold = 0.0
-		_seen_for = 0.0
 		_refresh_resistance())
 
 	_baby = get_tree().get_first_node_in_group("baby") as Baby
@@ -166,9 +160,6 @@ func _process(delta: float) -> void:
 		if _teach_left <= 0.0:
 			_teach.text = ""
 	_refresh_state()
-	if _seen_for > 0.0:
-		_seen_for = maxf(0.0, _seen_for - delta)
-		_refresh_resistance()
 	if _announcement_for > 0.0:
 		_announcement_for = maxf(0.0, _announcement_for - delta)
 
@@ -207,18 +198,8 @@ func _on_contact_available(step: int) -> void:
 	_contact_step = step
 	_refresh_resistance()
 
-func _on_hold_changed(progress: float) -> void:
-	if is_equal_approx(progress, _hold):
-		return
-	_hold = progress
-	_refresh_resistance()
-
-func _on_seen() -> void:
-	_seen_for = 2.5
-	_refresh_resistance()
-
 ## Deliberately terse. There is no quest log — the subquest is chalk on a wall, and the HUD
-## says only how far in you are and, while you are actually holding, how much is left.
+## says only how far in you are.
 func _refresh_resistance() -> void:
 	if not GameState.has_joined_resistance() and _contact_step == 0:
 		_resistance_label.text = ""
@@ -227,11 +208,7 @@ func _refresh_resistance() -> void:
 	var marks := "*".repeat(GameState.resistance_progress) \
 			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - GameState.resistance_progress))
 	var line := "resistance %s" % marks
-	if _seen_for > 0.0:
-		line += "   seen - wait for it to pass"
-	elif _hold > 0.0:
-		line += "   holding %d%%" % roundi(_hold * 100.0)
-	elif _contact_step > 0:
+	if _contact_step > 0:
 		var step := ResistanceSteps.by_index(_contact_step)
 		if step:
 			line += "   somewhere out there: %s" % step.title.to_lower()

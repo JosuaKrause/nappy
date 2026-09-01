@@ -30,6 +30,16 @@ var city_state := CityState.new()
 ## chance at the good ending; this is doing it.
 var sabotage_done := false
 
+## True for the rest of a day once the resistance's package has been picked up. Read by
+## `City.decay_multiplier()` — the pram is heavier for every street after this one. Reset at
+## the start of every attempt at a day, including a retry, since a fresh attempt has not
+## picked it up yet.
+var resistance_carrying_package := false
+
+## The chalk mark's own words, set when a pickup step completes and read out once on the
+## next day brief. "" once read, or when there is nothing to say.
+var pending_resistance_brief := ""
+
 ## The calm block the baby actually went to sleep in, per day: `day -> Vector2i`.
 ##
 ## Run-scoped and gameplay-owned, deliberately *not* read out of the telemetry log even though
@@ -86,6 +96,8 @@ func start_run(seed_value: int = 0) -> void:
 	city_state.reset()
 	settled_in.clear()
 	sabotage_done = false
+	resistance_carrying_package = false
+	pending_resistance_brief = ""
 	print("[GameState] run started, seed=%d" % run_seed)
 
 ## Record the outcome of the day. Returns true if the run continues.
@@ -167,13 +179,19 @@ func sabotage_available() -> bool:
 
 # --------------------------------------------------------------- resistance ---
 
-func complete_resistance_step(step: int) -> void:
+## `counts_toward_goal` is false for a pickup — the note is not the errand, only the perform
+## half is, so `Tuning.RESISTANCE_GOAL` must not see the mark as well as the task it unlocked.
+func complete_resistance_step(step: int, counts_toward_goal: bool = true) -> void:
 	if step in completed_resistance_steps:
 		return
 	completed_resistance_steps.append(step)
-	resistance_progress += 1
+	if counts_toward_goal:
+		resistance_progress += 1
+		EventBus.resistance_progress_changed.emit(resistance_progress)
+	var step_def := ResistanceSteps.by_index(step)
+	if step_def and step_def.is_pickup and step_def.brief != "":
+		pending_resistance_brief = step_def.brief
 	EventBus.resistance_step_completed.emit(step)
-	EventBus.resistance_progress_changed.emit(resistance_progress)
 
 ## A timed step that expired. The contact is gone for the rest of the run.
 func fail_resistance_step(step: int) -> void:

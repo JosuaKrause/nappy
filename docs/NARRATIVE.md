@@ -60,8 +60,9 @@ day gets shorter.
 The burnt building from day 3 is still there, cordoned off, never repaired. Same tile,
 every day, for the rest of the run.
 
-**Day 5:** the first `resistance_contact` appears in an alley. No prompt, no quest marker
-beyond a chalk mark on the wall that the player may or may not notice.
+**Day 4:** the first `resistance_contact` appears in an alley. No prompt, no quest marker
+beyond a chalk mark on the wall that the player may or may not notice, and it is guarded
+from this first appearance on — see "Risk" below.
 
 ### Act III — "Vans" (days 8–11)
 
@@ -74,9 +75,6 @@ because there is nobody left in it.
 
 Abductions begin. Masked men, unmarked vans. Getting close is a hard fail — you and the
 baby are taken, day over, one Nerve gone.
-
-Alleys become genuinely dangerous: the same alleys that carry the resistance contacts also
-now carry `alley_robbery`.
 
 ### Act IV — "Open" (days 12–14)
 
@@ -91,38 +89,40 @@ home (neutral ending).
 ### Design intent
 
 The subquest must *cost the core resource*. Joining the resistance means deliberately
-choosing the worst routes for your baby: alleys, crowds, closed districts. The player
-trades the thing they have spent the whole game protecting.
+choosing the worst routes for your baby: alleys, crowds, closed districts, a stranger's
+own field. The player trades the thing they have spent the whole game protecting, and every
+task is one verb — **get to a guarded place and touch it.**
 
 ### Structure
 
-| Step | Day | Where | What |
-| --- | --- | --- | --- |
-| 1 | 5+ | Alley, chalk mark | Walk to the mark and hold **E** for 3 s. Alley trickle is running the whole time. |
-| 2 | 7+ | Different alley | Contact person. Requires standing in the alley for 6 s. |
-| 3 | 9+ | Civic district | Deliver a package — a route *through* high-excitement streets, because the quiet ones are watched. |
-| 4 | 11+ | Any alley | Warn a contact before a raid. Timed: must arrive before the `night_raid` scripted event fires. |
-| 5 | 13 | Industrial | Pick up the device. |
-| 6 | 14 | Civic | Sabotage. The finale. |
+A task is two beats: pick up the instruction at a chalk mark, then perform it the next day.
+Touching either is instant — there is no key to hold, and no standing still to pay for. Only
+the perform half grants **1 resistance progress**; the mark is the note, not the errand.
+`RESISTANCE_GOAL` is 4 of the 5 perform beats, which lets the player miss one task
+entirely and still reach the good ending.
 
-Each completed step grants **1 resistance progress**. `RESISTANCE_GOAL` is 4 of the first
-5 steps, which lets the player miss one and still reach the good ending.
+| Days | Task | What |
+| --- | --- | --- |
+| 4 / 5 | A note for a stranger | A chalk mark, then touch the right `homeless_yeller` — several are live at once and look alike, so a wrong one costs his field and tells you nothing. |
+| 6 / 7 | The package | A chalk mark, then touch the delivery van's drop. Picking it up makes the pram heavier for the rest of the day. |
+| 8 / 9 | The checkpoint | A chalk mark, then walk through the checkpoint itself rather than round it. |
+| 10 / 11 | The wall | A chalk mark, then reach the poster crew's wall before they finish it — the window closes if the crew moves on first. |
+| 12 / 13 | The protest | A chalk mark, then reach the middle of the densest crowd in the city. |
+| 14 | The last night | The finale, offered only once the goal is met. Sabotage. |
 
 ### Risk
 
-- **The alley roulette.** From Act III (`TRAP_FIRST_DAY` 8), an alley contact has a
-  `TRAP_CHANCE` of 0.3 that an `alley_robbery` is waiting *at* it. The contact is still
-  there; going for it is the gamble. Seeded from the run seed and the day, so the alley
-  that was safe on day 9 of this run is safe on day 9 every time you replay it — the
-  pattern is learnable, which is the difference between risk and a coin flip.
-- **Being seen.** A `police_patrol` within `SEEN_RADIUS` of a contact while you are holding
-  resets the hold to zero. *This is a change from the original plan, which docked a
-  resistance point.* Taking away progress the player has already banked reads as a bug more
-  than a consequence, and it is invisible at the moment it happens. A reset costs the thing
-  the subquest is actually about: more seconds standing still in an alley, with the meter
-  you care about doing the wrong thing. The cost is legible while you are paying it.
-- **The deadline.** Step 4 expires at `deadline_fraction` (0.55) of the day. A warning
-  delivered late is not a warning, and the contact is gone for the rest of the run.
+- **Every mark is guarded**, from the day the first one can appear. A robber waits somewhere
+  between 66px and 176px of it — inside that band touching the mark is death, always; above
+  it he never wakes at all; between them, which side she approaches from decides whether he
+  notices her. Seeded from the run and the day, so the distance that was safe on day 9 of
+  this run is safe on day 9 every time you replay it — the pattern is learnable, which is
+  the difference between risk and a coin flip.
+- **A wrong candidate costs full price and returns nothing.** Approaching the yeller's field
+  is the cost whether or not he is the contact, and there is no way to tell in advance which
+  one is.
+- **The deadline.** The wall's window closes when the poster crew's own instance is gone —
+  paste it over and the contact goes with it, for the rest of the run.
 
 ### The finale
 
@@ -132,10 +132,12 @@ legwork and then walks straight home on the last night gets the neutral ending.
 
 ### Feedback
 
-There is no quest log and no marker. In the world the subquest is a chalk mark on an alley
-wall, drawn *under* everything that stands on it, found by walking past it. The HUD carries
-one terse line — how far in you are, and, while you are actually holding, how much is left
-— and the day summary spells out the tally once. That is the whole of it.
+There is no quest log and no marker. In the world a pickup is a chalk mark on an alley
+wall, drawn *under* everything that stands on it, found by walking past it; a perform's
+contact is invisible, riding silently on the ordinary-looking thing it rides on. The day
+brief is the only channel that ever tells her what is next — touching a mark reads its
+words back to her on the following day's screen — and the HUD carries one terse line, how
+far in you are. That is the whole of it.
 
 ## Endings
 

@@ -143,7 +143,6 @@ var _last_closure_at := -1000.0
 
 # The resistance contact.
 var _contact_seen := false
-var _hold_started := false
 
 # The cues. What was up over her head, since when, and how much of that she spent on the road;
 # and which edge badges are up, each with the clock reading it went up at.
@@ -164,8 +163,6 @@ func setup(city: City, player: Stroller, baby: Baby, day: DayController,
 	_edge = edge
 	EventBus.return_phase_started.connect(_on_asleep)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
-	EventBus.resistance_seen.connect(_on_resistance_seen)
-	EventBus.resistance_hold_changed.connect(_on_hold_changed)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.crowd_bumped.connect(_on_bumped)
 	EventBus.car_near_miss.connect(_on_near_miss)
@@ -191,7 +188,6 @@ func start_day() -> void:
 	_last_closure = ""
 	_last_closure_at = -1000.0
 	_contact_seen = false
-	_hold_started = false
 	_mark = Stroller.Alert.NONE
 	_mark_since = 0.0
 	_mark_on_road = 0.0
@@ -732,15 +728,6 @@ func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 	if state == GameEnums.BabyState.AWAKE:
 		Telemetry.note("woke", "woken on the way home, sleep back to %.0f | near: %s"
 				% [_baby.sleepiness, _nearest()])
-
-func _on_resistance_seen() -> void:
-	Telemetry.note("contact", "a patrol came past mid-handover; the hold reset")
-
-func _on_hold_changed(progress: float) -> void:
-	if _hold_started or progress <= 0.0:
-		return
-	_hold_started = true
-	Telemetry.note("contact", "started the hold")
 
 func _on_city_went_quiet() -> void:
 	Telemetry.note("quiet", "the sabotage went through; every city-wide source is off")
