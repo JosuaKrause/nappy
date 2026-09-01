@@ -283,9 +283,40 @@ can, and neither reads as anything without the other beside it.
 
 It also answers, by construction, the thing that would otherwise sink the idea. A ring of
 impassable structure is exactly the shape of sealing her in, and *the doors are placed at every
-crossing rather than at a chosen few*, so a region can never become unreachable however the lattice
-came out. The winnability check stops being an argument about placement and becomes a count: a
-boundary with no checkpoint on it is a bug.
+crossing rather than at a chosen few*, so a region she has business in can never become unreachable
+however the lattice came out. The winnability check stops being an argument about placement and
+becomes a count.
+
+**The regions partition the map.** *(2026-09-02: "regions should be a partition of the map.")* Every
+tile belongs to exactly one, with no gap between two of them and no tile in both. It is worth
+stating because the alternative — regions as a few marked-off districts in an otherwise open city —
+is what a first implementation drifts into, and it quietly gives back the way round that the
+perimeter exists to remove.
+
+**A region with nothing in it for her gets no doors at all.** *(2026-09-02: "a region that contains
+no accessible calm zone should have no checkpoints / gates. this might sound counter-intuitive from
+a realworld point of view since such a region wouldn't ordinarily make sense but from the game
+perspective there is no reason to ever enter the region so we shouldn't even provide the option —
+the player won't notice the difference.")* Its perimeter is barricade the whole way round and she
+can never enter it.
+
+**This is the game's own rule beating the simulation's**, and it is the same principle as the one
+that keeps a quest marker out of this game: offer a choice only where there is a choice. A door
+into ground with no calm area behind it is a route the player can spend a day's clock discovering
+is worthless, and the discovery teaches nothing, because *there was never anything there* is not a
+fact about the city she can carry to tomorrow. Sealing it costs her nothing she would have wanted
+and removes a way to lose a day to no purpose.
+
+Two things it forces, and neither is optional:
+
+- **The region she starts in always has doors.** If her own region holds no calm area and is sealed,
+  the day is unwinnable from the first frame. This is the doorstep exemption's shape at city scale —
+  the home is a notch with one exit, so sealing that street seals her in — and it lands the same
+  way: the rule is stated over *a region*, and then the one she is standing in is exempt from it.
+- **"Accessible calm zone" is a fact about the city, not about the day.** The regions and their
+  gates stand for the whole run, and a calm area is spoiled or not spoiled per day — so evaluating
+  this against a day's state would move the walls nightly, which is the same failure the paths
+  reading below is guarding against. It has to be answered at generation time, on what is permanent.
 
 - [ ] **The regions are a city-generation question, not an event-placement one.** A perimeter is a
       decision about the map, so what needs designing first is what a region *is* — the quadrants
@@ -314,9 +345,11 @@ boundary with no checkpoint on it is a bug.
       is standing still, and standing still is where `EXCITEMENT_DECAY_IDLE` pays back nothing — so
       a checkpoint charges her twice over unless the intensity is set knowing that
 - [ ] **What the doors cannot fix is the toll on every park.** Reachability is settled by placing a
-      checkpoint at every crossing, and that is not the same as winnable: a region whose calm areas
-      all sit behind a detention is a day priced differently from one that does not, and the
-      difference is a real number. Measure it against a day's clock, do not argue it
+      checkpoint at every crossing of a region worth entering, and that is not the same as winnable:
+      a region whose calm areas all sit behind a detention is a day priced differently from one that
+      does not, and the difference is a real number. Measure it against a day's clock, do not argue
+      it. **The check the tests carry is not "every boundary has a door"** — it is that every region
+      holding a calm area she can use has one, and that the region she starts in always does
 - [ ] **What it does to the corridor.** `RouteTree` grows the day's routes and `Corridor` answers
       *is this tile on one*. A toll is a cost on an edge, and the route tree has never had one —
       check whether it can express "passable, at a price" before assuming it can
