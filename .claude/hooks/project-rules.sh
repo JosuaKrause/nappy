@@ -23,6 +23,14 @@ skills="$root/.claude/skills"
 state="${TMPDIR:-/tmp}/claude-nappy-rules/$session"
 mkdir -p "$state" 2>/dev/null
 
+# The case patterns below match by substring (*/src/events/*, etc.), so without this
+# check a file anywhere on disk under a same-named directory -- /tmp/elsewhere/src/events/x.gd --
+# would receive this project's rules. Only a path under the computed repo root qualifies.
+case "$path" in
+	"$root"/*) ;;
+	*) exit 0 ;;
+esac
+
 # Path -> skills that govern it. A file may match several; all of them fire.
 wanted=()
 case "$path" in
