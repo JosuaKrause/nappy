@@ -40,13 +40,12 @@ const STEER_SPEED := 90.0
 ## checks before turning into one — a corridor's width plus a tile, so a probe fired from
 ## *anywhere* inside a junction clears it and lands on the street beyond.
 ##
-## It was 26px until M21, which is where a turn actually goes wrong. The agent then saw the
-## obstruction with a fifth of a tile to spare, so it turned at the far edge of the junction —
-## and a turn takes the coordinate the agent had *along* its old corridor and makes it the one
-## it has *across* the new one. Turning at the far edge therefore drops a car onto the pavement
-## band and it spends the next three tiles steering back to its lane. Rare with four closures a
-## day; constant once every four-block calm zone has four dead-end arms on it. Seeing it a
-## street early and turning in the middle of the junction is what `_can_turn_here` is for.
+## **A probe that only just clears the obstruction turns at the far edge of the junction**, and a
+## turn takes the coordinate the agent had *along* its old corridor and makes it the one it has
+## *across* the new one — so turning at the far edge drops a car onto the pavement band and it
+## spends the next three tiles steering back to its lane. Rare with a handful of closures a day;
+## constant once every calm zone has four dead-end arms on it. Seeing it a street early and turning
+## in the middle of the junction is what `_can_turn_here` is for.
 const LOOKAHEAD := (Tuning.STREET_WIDTH + 1) * Tuning.TILE_SIZE
 ## The same distance in tiles, for the scans that walk rather than probe. See `_way_is_blocked`.
 const LOOKAHEAD_TILES := Tuning.STREET_WIDTH + 1
@@ -59,8 +58,8 @@ const HORN_MARK_WIDTH := 15.0
 var kind := Kind.WALKER
 var colour := Color.WHITE
 
-## The box this agent lives in, held by reference and moved by `Crowd`. Leaving it is what
-## recycles an agent now; leaving the *map* was what did it before M27. See `CrowdField`.
+## The box this agent lives in, held by reference and moved by `Crowd`. Leaving the box is what
+## recycles an agent — not leaving the map. See `CrowdField`.
 var field: CrowdField
 
 ## Where the other cars are, by lane, so a turn can look before it commits. Held by reference and
@@ -155,14 +154,13 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	# walked to: behind a barrier, which reads as the barrier being fake, or in the middle of a
 	# four-block calm zone, where the corridor it belongs to has been park since generation.
 	#
-	# **And if the whole street is wrong, it picks another street.** *(Playtest 13.)* Re-rolling
-	# only the position along a corridor cannot help a car that was given a corridor with nowhere
-	# drivable in view — a precinct is three blocks of an otherwise ordinary street, so the
-	# corridor keeps its car weight and the *stretch in the field* may be entirely pedestrianised.
-	# Eight position re-rolls all landed among the bollards and the ninth placed it there anyway:
-	# a car standing in a precinct, which `tests/test_crowd.gd` asks about by name. This is M38's
-	# rule one scale out — **a retry is not a guarantee** — and the answer is the same shape:
-	# when re-rolling the small decision keeps failing, re-take the big one.
+	# **And if the whole street is wrong, it picks another street.** Re-rolling only the position
+	# along a corridor cannot help a car that was given a corridor with nowhere drivable in view — a
+	# precinct is three blocks of an otherwise ordinary street, so the corridor keeps its car weight
+	# and the *stretch in the field* may be entirely pedestrianised. Eight position re-rolls then
+	# land among the bollards and the ninth places it there anyway: a car standing in a precinct,
+	# which `tests/test_crowd.gd` asks about by name. **A retry is not a guarantee** — when
+	# re-rolling the small decision keeps failing, re-take the big one.
 	for _street in 4:
 		_choose_lane(axis_roll)
 		var bounds := field.along_bounds(_vertical)
@@ -190,8 +188,7 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 ## the walker cuts the corner onto the nearest pavement and is never on the carriageway. Being
 ## dropped into the middle of one is different: the coordinate is wherever it was placed, which
 ## can be the road band, and the walker then strolls out of the junction and up the middle of
-## the street while it steers back to a pavement. Rare enough that only a reshuffled crowd found
-## it, and it has been possible since M13.
+## the street while it steers back to a pavement. Rare enough that only a reshuffled crowd shows it.
 func _settle_junction() -> void:
 	_junction = CrowdLanes.corridor_at(_along())
 
@@ -209,10 +206,10 @@ func _stands_on_a_street() -> bool:
 	# place is not decided until the along position is rolled.
 	if kind == Kind.CAR and not _map.is_driveable_at(_vertical, tile):
 		return false
-	# And a walker is never placed in a carriageway. It matters since M41 because a precinct's
-	# lanes run the whole width of the corridor, and a lane is chosen before the along position
-	# that decides whether this stretch is a precinct at all — so the re-roll is what keeps the
-	# two in step rather than an ordering assumption that would be wrong once in ten.
+	# And a walker is never placed in a carriageway. It matters because a precinct's lanes run the
+	# whole width of the corridor, and a lane is chosen before the along position that decides
+	# whether this stretch is a precinct at all — so the re-roll is what keeps the two in step
+	# rather than an ordering assumption that would be wrong once in ten.
 	if kind == Kind.WALKER and _map.tile_at(tile) == GameEnums.TileType.ROAD:
 		return false
 	return _map.is_street(tile)
@@ -314,13 +311,13 @@ func travelling_vertically() -> bool:
 	return _vertical
 
 # -------------------------------------------------------------- junctions ---
-# A lane is a queue and a junction is a **box**, and until M41 only the queue was modelled. Two
-# cars on crossing arms each saw a clear lane ahead, both entered, and the M27 positional resolve
-# then did the only thing it can — move a body. Measured over ninety seconds of the arterial:
+# A lane is a queue and a junction is a **box**, and modelling only the queue is not enough. Two
+# cars on crossing arms each see a clear lane ahead, both enter, and the positional resolve then
+# does the only thing it can — move a body. Measured that way over ninety seconds of the arterial:
 # 3,776 overlapping crossing-axis pairs, one in half of all frames, the deepest 39px into a 40px
-# footprint. That is two cars passing through each other's centres, in plain sight, and the queue
-# was legal on every frame — which is why five milestones of "no two cars are inside each other"
-# tests could not see it. Same shape as M38's fix one level along: look before committing.
+# footprint — two cars passing through each other's centres in plain sight, with every lane legal on
+# every frame, which is why a suite full of "no two cars are inside each other" assertions cannot
+# see it. **Look before committing.**
 
 ## Half the length of the body along its own line of travel, which is what actually enters a box
 ## first and leaves it last. Zero for a walker, who is not what a box is rationed between.
@@ -389,12 +386,11 @@ func queue_position() -> float:
 func nudge_back(distance: float) -> void:
 	_set_along(_along() - distance * _direction)
 
-## Somebody she walked into gets out of her way. *(Playtest 07, finding 5.)*
+## Somebody she walked into gets out of her way.
 ##
-## The separation `Crowd._bump` applies is positional and it works — and it is undone on the very
-## next frame by this agent steering back to `_lane_centre`, which is where she is standing. So a
-## bump resolved and re-formed for as long as she stayed there, which is the sticking the player
-## reported and, with a fresh jolt each time, most of the "instant death".
+## **A positional separation alone is undone on the very next frame** by this agent steering back to
+## `_lane_centre`, which is where she is standing — so the bump resolves and re-forms for as long as
+## she stays there, with a fresh jolt each time. That is being stuck to somebody, and it loses days.
 ##
 ## What moves is the agent's own **steering target**, not the player: it aims a lane over for a
 ## couple of seconds and then comes back. That keeps the invariant intact — separation between
@@ -418,10 +414,9 @@ func step_aside(away: Vector2, distance: float, seconds: float) -> void:
 		return
 
 	# **The direction she needs is this walker's own line of travel**, so there is nothing to
-	# steer: it is crossing her path rather than sharing it. *(Playtest 07, finding 17. A probe
-	# says nine to eleven of every twelve contacts on a forty-second walk are with somebody
-	# crossing, which is the whole reason this branch exists — a sidestep alone left the number
-	# exactly where it found it.)*
+	# steer: it is crossing her path rather than sharing it. Measured, nine to eleven of every
+	# twelve contacts on a forty-second walk are with somebody **crossing**, which is why this
+	# branch exists at all — a sidestep alone leaves the contact count exactly where it found it.
 	#
 	# What a person does at a corner is hurry across or wait, and which one depends only on
 	# whether carrying on takes them further from her line. Both are a speed for a moment; neither
@@ -498,13 +493,11 @@ func _set_cross(value: float) -> void:
 ## Picks a corridor, a lane in it and a direction. `roll` decides the axis, so a caller can
 ## spread a crowd evenly across both instead of letting one axis win by chance.
 ##
-## **A car picks its axis by weight, and a walker still splits it evenly.** *(Playtest 13,
-## finding 7: "the main road doesn't really have much traffic I can freely walk over it".)* The
-## even split was applied to both and it silently capped the main road: the axis was decided
-## *before* the corridor, so `busyness` could only ever redistribute cars **within** an axis, and
-## no weight — 5.0, 50, any number — could put more than half the traffic on one north-south
-## street. Measured at act I density the spine held 11.2 cars of forty with a weight five times
-## its neighbours'.
+## **A car picks its axis by weight, and a walker still splits it evenly.** An even split applied to
+## both silently caps the main road: the axis is decided *before* the corridor, so `busyness` can
+## only redistribute cars **within** an axis, and no weight — 5.0, 50, any number — can put more
+## than half the traffic on one north-south street. Measured that way at act I density, the spine
+## holds 11.2 cars of forty with a weight five times its neighbours'.
 ##
 ## So for cars the two decisions become one: pick among the corridors of **both** axes in
 ## proportion to how busy each is, which is what the weight was always supposed to mean. Walkers
@@ -513,9 +506,9 @@ func _set_cross(value: float) -> void:
 ## morning's crowd landing lopsided by chance.
 func _choose_lane(roll: float) -> void:
 	_vertical = roll < 0.5 if kind != Kind.CAR else _pick_axis_by_weight()
-	# Only the corridors the field actually reaches. Picking from the whole city and then
-	# discarding what is out of view is the same crowd spread over ten thousand tiles, which
-	# is the thing M27 stops doing.
+	# Only the corridors the field actually reaches. Picking from the whole city and then discarding
+	# what is out of view is the same crowd spread over ten thousand tiles, which is the density
+	# falling to a third of what the numbers say.
 	_corridor = CrowdLanes.pick_corridor_in_range(_rng, _map, _vertical,
 			field.corridor_range(_vertical), kind == Kind.CAR)
 	if kind == Kind.CAR:
@@ -565,31 +558,27 @@ func _axis_weight(vertical: bool) -> float:
 		total += CrowdLanes.busyness_for(_map, vertical, index, true)
 	return total
 
-## Playtest 02, finding 3: *"cars should stop at crossings when I am close."* A zebra is only
-## the safe way over if the traffic actually honours it — otherwise it is paint, and the
+## **A zebra is only the safe way over if the traffic honours it** — otherwise it is paint, and the
 ## choice between crossing here and jaywalking there has one arm missing.
 ##
-## Braking rather than stopping dead, and from `CAR_ZEBRA_SIGHT` out, because the giving way
-## has to be *visible* from the kerb: a player deciding whether to step off needs to see the
-## car slowing, not discover afterwards that it would have.
+## Braking rather than stopping dead, and from `CAR_ZEBRA_SIGHT` out, because the giving way has to
+## be *visible* from the kerb: a player deciding whether to step off needs to see the car slowing,
+## not discover afterwards that it would have.
 ##
-## Since M27 it is also where a car decides not to drive through the one in front — playtest
-## 04, *"cars still bump into each other"*. The two wants compose by taking the lower, so a
-## queue at a zebra is the car in front stopping and everybody behind it honouring the headway,
-## rather than a special case for queues.
-## Since M41 it is also where a car waits its turn at a junction. The three wants compose by
-## taking the lowest, exactly as the queue and the zebra already did — a car held at a box and a
-## car behind another car are the same behaviour asked for by two different things, and giving
-## the junction its own brake would be a second answer to a question that already has one.
+## It is also where a car decides not to drive through the one in front, and where it waits its turn
+## at a junction. **The three wants compose by taking the lowest**, which is the whole trick: a car
+## held at a box and a car behind another car are the same behaviour asked for by two different
+## things, and giving the junction its own brake would be a second answer to a question that already
+## has one.
 func _give_way(delta: float) -> void:
 	var wanted := _cruise
 	if junction_hold < INF:
 		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * junction_hold))
 	var to_line := _distance_to_stop_line()
 	if to_line < INF:
-		# The speed that runs out exactly at the line at the *approach* rate. Braking toward a
-		# **point** rather than toward zero is the whole of playtest 05's finding 1: aiming at
-		# zero stops the car wherever the curve happens to end, which is most of a block early.
+		# The speed that runs out exactly at the line at the *approach* rate. **Braking toward a
+		# point rather than toward zero** is the whole of it: aiming at zero stops the car wherever
+		# the curve happens to end, which is most of a block early.
 		# The gentle rate is what makes the easing start in sight of the kerb — see
 		# `CAR_ZEBRA_APPROACH_BRAKE` for what shaping it with `CAR_BRAKE` does instead.
 		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * to_line))
@@ -600,9 +589,9 @@ func _give_way(delta: float) -> void:
 ## How far this car has to the stop line of a crossing it should give way at, or `INF` when
 ## there is nothing to give way to — nobody waiting, or **it is already too late to stop**.
 ##
-## The second half is the commit rule, and it is the other half of finding 1. A car that arrives
-## at the paint as the player reaches the kerb used to brake anyway and park on the zebra. There
-## is only one safe thing it can do that late, and it is to clear the crossing: `CAR_ZEBRA_SIGHT`
+## The second half is the **commit rule**. A car that arrives at the paint as the player reaches the
+## kerb and brakes anyway parks on the zebra; there is only one safe thing it can do that late, and
+## it is to clear the crossing. `CAR_ZEBRA_SIGHT`
 ## is nearly four times the distance a car needs to stop, so this only ever fires for somebody
 ## who stepped up *after* the car had committed, and never for a player who was waiting there.
 func _distance_to_stop_line() -> float:
@@ -638,7 +627,7 @@ func _following_speed() -> float:
 ## `pedestrian_ahead` is only ever set for the handful of cars near the player, so this probe
 ## does not run for the other hundred.
 ## **A main road does not give way**, and that is the whole difference between its crossings and
-## an ordinary street's. *(M41.)* The paint is identical and what honours it is not: on an
+## an ordinary street's. The paint is identical and what honours it is not: on an
 ## ordinary street the drivers do, which makes crossing a matter of catching somebody's eye; on
 ## the spine the light does, which makes it a matter of waiting for one. Take this exemption away
 ## and a signal is decoration on top of a courtesy that was already enough.
@@ -702,12 +691,12 @@ func _consider_turning() -> void:
 	if _rng.randf() >= Tuning.PEDESTRIAN_TURN_CHANCE:
 		return
 
-	# A turn is the one move that commits without looking, and until M21 that cost nothing: the
-	# only unwalkable thing a street could turn into was a barrier, and `_divert` picked the
-	# turn up on the next frame. It is not free now — a T-junction on the edge of a four-block
-	# calm zone has one arm that is park, and a walker that turns into it is standing on grass
-	# before anything notices. So the direction is chosen from the ones that go somewhere, and
-	# a junction with no such arm is one this walker carries straight on through.
+	# A turn is the one move that commits without looking, and that is free only while the only
+	# unwalkable thing a street can turn into is a barrier, which `_divert` picks up on the next
+	# frame. It is not free here: a T-junction on the edge of a calm zone has one arm that is park,
+	# and a walker that turns into it is standing on grass before anything notices. So the direction
+	# is chosen from the arms that go somewhere, and a junction with no such arm is one this walker
+	# carries straight on through.
 	var turning := 1.0 if _rng.randf() < 0.5 else -1.0
 	if _blocked_ahead(not _vertical, turning, LOOKAHEAD):
 		turning = -turning
@@ -732,11 +721,11 @@ func _consider_turning() -> void:
 ## Whether the street `distance` ahead along an axis is one this agent cannot travel: shut for
 ## the day, or not a street at all.
 ##
-## The second half is M21. A four-block calm zone is painted straight over the corridors between
-## its own blocks, so a lane that used to run the width of the city now runs into a park — and
-## the tiles are perfectly walkable, which is why `is_closed` alone has nothing to say about
-## them. Diverting is the same move a barricade already produces, and it produces the same good
-## side effect: a street with nobody on it is a street that does not go through.
+## The second half is the calm zones. A zone is painted straight over the corridors between its own
+## blocks, so a lane that would run the width of the city runs into a park instead — and those tiles
+## are perfectly walkable, which is why `is_closed` alone has nothing to say about them. Diverting
+## is the same move a barricade produces, with the same good side effect: a street with nobody on it
+## is a street that does not go through.
 ##
 ## Out of bounds is deliberately **not** blocked. The map edge is what `_has_left_the_field`
 ## handles, and treating it as a wall here would turn agents round at the boundary instead of
@@ -763,13 +752,12 @@ func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 ## How far the way ahead is clear, in tiles, worked out **once per tile** rather than once per
 ## frame. `LOOKAHEAD_TILES + 1` means nothing within reach.
 ##
-## *(M29's invariant, arriving at the crowd's other scan: "sampling a tile grid by stepping world
-## points aliases, and it aliases where it matters".)* This used to be one probe fired seven tiles
-## out, which answers *is there something coming up* and cannot answer *is the next tile a wall* —
-## it looks straight **past** a cul-de-sac's two-tile plug into the open road behind it. So an agent
-## that entered a dead-end street from the junction beside the wall never saw the wall at all and
-## walked into the building. Measured at a dead end before this: eight agents inside one at once,
-## and something in one on 87% of frames. *(Playtest 15, finding 1.)*
+## **Sampling a tile grid by stepping world points aliases, and it aliases where it matters.** A
+## single probe fired seven tiles out answers *is there something coming up* and cannot answer *is
+## the next tile a wall* — it looks straight **past** a cul-de-sac's two-tile plug into the open
+## road behind it, so an agent entering a dead-end street from the junction beside the wall never
+## sees the wall and walks into the building. Measured with the probe: eight agents inside one at
+## once, and something in one on 87% of frames.
 ##
 ## **Caching it by tile is what pays for the walk**, and it is exact rather than an approximation:
 ## the answer depends on the agent's tile, its axis and its direction, and on a map that is fixed
@@ -802,8 +790,8 @@ func _divert() -> void:
 	if crossing < 0:
 		# Still in the street, a junction short of where it can turn. Carry on — unless it is
 		# standing *in* the thing it is avoiding, which is a day that started behind a barrier,
-		# or the thing is the very next tile, which is a **cul-de-sac** and is what the whole of
-		# playtest 15's finding 1 turned out to be. Both have nowhere to go but back.
+		# or the thing is the very next tile, which is a **cul-de-sac**. Both have nowhere to go
+		# but back.
 		if not _stands_on_a_street() or _blocked_in <= 1:
 			_turn_round()
 		return
@@ -827,7 +815,7 @@ func _divert() -> void:
 	_direction = turning
 	if kind == Kind.CAR:
 		# Back onto the correct side of the road for the way it is now pointing — and it is the
-		# *new* axis that decides which side that is, which is what M29 fixed.
+		# **new** axis that decides which side that is. Driving on the right flips with the axis.
 		_lane = CrowdLanes.road_lane(_vertical, turning)
 	else:
 		_lane = CrowdLanes.nearest_sidewalk(_corridor, _cross())
@@ -857,17 +845,17 @@ func _turn_round() -> void:
 ## — shut for the day, or never a street — and an arm that fails it is not an option. **Is there
 ## room** is the other cars, and an arm that fails *that* is a bad option rather than no option.
 ##
-## The second one is M38, and it is the fix for *"when a car turns into an occupied lane the other
-## car just disappears"*. A turn is a **placement**: it takes the coordinate the car had along its
-## old corridor and makes it the one it has across the new one, so the car simply materialises
-## somewhere in another queue. The M27 rule then resolves the overlap the only way it can, by moving
-## a body — front-to-back, so the shortfall cascades down the queue behind it, and a car is jumped
-## backwards by up to six of its own lengths in a single frame. Off screen, at the entry band, that
-## is exactly what it is for; at a junction the player is looking at, it is a car vanishing.
+## **The second one exists because a turn is a placement.** It takes the coordinate the car had
+## along its old corridor and makes it the one it has across the new one, so the car materialises
+## somewhere in another queue — and the separation rule then resolves the overlap the only way it
+## can, by moving a body. Front-to-back, so the shortfall cascades down the queue behind it and a
+## car is jumped backwards by up to six of its own lengths in a single frame. Off screen at the
+## entry band that is exactly what it is for; at a junction the player is looking at, it is a car
+## vanishing.
 ##
 ## Preferring rather than requiring, because a car that refuses to turn drives into the barrier it
 ## was avoiding. When both arms are full it takes the first one anyway and the resolve does what it
-## always did — which leaves the old behaviour as the rare case instead of the usual one.
+## can — which makes the jump the rare case instead of the usual one.
 func _pick_an_arm(crossing: int, first: float) -> float:
 	# A precinct is not an arm a car has. Neither of the two questions below would catch it: it is
 	# paved end to end, so the tile map says it is a street, and there is never a car in it to
@@ -958,12 +946,10 @@ func _has_left_the_field() -> bool:
 
 ## How far past the edge of the map this agent may go before it stops existing.
 ##
-## **Nothing vanishes while you are looking at it.** *(Playtest 15, finding 7: "cars driving over
-## the bridge currently just disappear. they should drive until they leave the visible area".)*
-## That is M35's rule, written for events, arriving at the crowd — which has never had it, because
-## a recycle happens at the edge of a box that is normally nowhere near anything the player can
-## see. The three holes in the boundary are exactly where it is: a car reaching the bridge is at
-## the one place in the city that is *about* leaving, and it blinked out.
+## **Nothing vanishes while you are looking at it** — the rule written for events, arriving at the
+## crowd. A recycle normally happens at the edge of a box nowhere near anything the player can see;
+## the three holes in the boundary are exactly where that is not true, because a car reaching the
+## bridge is at the one place in the city that is *about* leaving.
 ##
 ## **A tile for everybody else, and that is not stinginess.** Outside the map is water, forest and
 ## mountainside — painted ground with no road on it — so a car allowed to overrun anywhere would
@@ -978,11 +964,10 @@ func _room_beyond_the_map() -> float:
 
 ## How far outside the box an agent may enter, in px.
 ##
-## It has to be a band and not a point, and this is the second thing the M27 probe found by
-## printing numbers. Recycling everybody onto the exact edge coordinate puts every car that
-## re-enters a lane on the same pixel — and once cars keep a headway, a pile that used to sort
-## itself out by driving through each other becomes a permanent stationary queue against the
-## boundary. Eight overlapping pairs a frame, on a road nobody could see.
+## **It has to be a band and not a point.** Recycling everybody onto the exact edge coordinate puts
+## every car that re-enters a lane on the same pixel — and once cars keep a headway, a pile that
+## would sort itself out by driving through itself becomes a permanent stationary queue against the
+## boundary. Measured that way: eight overlapping pairs a frame, on a road nobody can see.
 const ENTRY_SPREAD := 420.0
 
 ## Out of the field at one edge and back in at the other. The population is fixed for the day,
@@ -998,14 +983,13 @@ const ENTRY_SPREAD := 420.0
 ## visibly through the boundary before it reaches the street; a lane running the other way, or
 ## on the other axis, almost always has room, so a handful of rolls settles it.
 ##
-## Since M21 the entry *point* is rolled inside the same loop and checked too, because a corridor
-## may be park for two blocks of its length: a car re-entering there would be standing on grass
-## and would divert at the first frame, which is a car appearing in a park and driving out of it.
+## The entry *point* is rolled inside the same loop and checked too, because a corridor may be park
+## for two blocks of its length: a car re-entering there would be standing on grass and would divert
+## on the first frame, which is a car appearing in a park and driving out of it.
 ##
-## And since M38 it also has to be a piece of road nobody is on, which is the case M27 wrote the
-## positional resolve for — *"a car recycled into a lane lands at a point it cannot see"*. It can
-## see it now, so the resolve goes back to being a backstop rather than the way a car enters a
-## street. It is only a preference: after six rolls it takes what it has, because an entry band with
+## And it has to be a piece of road **nobody is on**. A recycled car that cannot see the lane it
+## lands in leaves the positional resolve to sort it out, which is the resolve doing a placement's
+## job. It is only a preference: after six rolls it takes what it has, because an entry band with
 ## nothing free in it must still put the car somewhere.
 func _recycle() -> void:
 	for _attempt in 6:
@@ -1091,20 +1075,20 @@ func _draw() -> void:
 	Sprites.draw_standing(self, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
 	Sprites.draw_standing(self, WALKER_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
 
-## The doubled lethal caret over a car that is sounding its horn. *(M30, playtest 05 finding 3.)*
+## The doubled lethal caret over a car that is sounding its horn.
 ##
-## The vocabulary's first row is *the entity itself carries most of it*, and until M30 the
-## traffic was the one place nothing did: the caret is drawn by `EventInstance` and a car is not
-## an event, so a lethal thing bearing down on the player produced a mark over **her** head and
-## nothing anywhere else. That is the load-bearing cue paying for a warning it should only be
-## adding to, and the horn that was supposed to carry it is silent in a game with no audio —
-## which is *"audio is never the only channel"* failing in the one place the traffic fairness
-## contract depends on it.
+## The vocabulary's first row is *the entity itself carries most of it*, and the traffic is the
+## easiest place to leave that undone: the caret is drawn by `EventInstance` and a car is not an
+## event, so without this a lethal thing bearing down on the player produces a mark over **her**
+## head and nothing anywhere else — the load-bearing cue paying for a warning it should only be
+## adding to. The horn cannot carry it either, being silent in a game with no audio, which is
+## *"audio is never the only channel"* failing in the one place the traffic fairness contract
+## depends on it.
 ##
-## Doubled and in `MARK_LETHAL`, exactly as a `hard_fail` event's caret is, because a car is
-## exactly as lethal and being told apart by hue is what the doubling exists to avoid. It
-## **breathes** with the horn's own decay, which is the one thing the deleted rings did that a
-## discrete symbol does not get for free.
+## Doubled and in `MARK_LETHAL`, exactly as a `hard_fail` event's caret is, because a car is exactly
+## as lethal and being told apart by hue is what the doubling exists to avoid. It **breathes** with
+## the horn's own decay, which is the one thing a ring does that a discrete symbol does not get for
+## free.
 func _draw_horn_mark() -> void:
 	if _jolt <= 0.0:
 		return
