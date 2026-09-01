@@ -70,6 +70,7 @@ static func _build() -> Array[EventDef]:
 		_ice_cream_van(),
 		_reversing_lorry(),
 		_charging_dog(),
+		_chatting_mother(),
 
 		# Act II - notices.
 		_police_patrol(),
@@ -715,6 +716,55 @@ static func _reversing_lorry() -> EventDef:
 	# fill it.
 	def.max_per_day = 12
 	def.cost = 3
+	return def
+
+## Another mother with a pram, on her own beat — asked for by the player 2026-09-01, with her own
+## cost model in the same sentence: *"getting too close one gets caught up in a conversation that
+## takes 5s and consumes 25% excitement. if the baby is already sleeping it's a pure time loss if
+## it's not it bears overstimulation risk."* The readings taken from that sentence are recorded in
+## `docs/PLAYTEST-18.md` finding 4.
+##
+## **A paced pavement fixture, like `homeless_yeller`** — she is *at* a place rather than passing
+## through it, and pacing is what guarantees streaming actually meets her rather than her running
+## her whole beat unobserved. Her ambient field is person-scale (`intensity` near a passer-by's
+## `Tuning.PEDESTRIAN_INTENSITY`, 4.2) and its `outer_radius` is tight, so brushing past her without
+## triggering a conversation costs about what an ordinary close pass does — no more.
+##
+## **The conversation is the new mechanic, and it is a trigger rather than a field**: entering
+## `detain_radius` of an instance that has not yet chatted locks the stroller's own movement input
+## for `detain_seconds` (`Stroller.detain()`), and the meter cost during that lock is priced
+## entirely by `EventInstance.current_intensity()` reading the baby's state, never by anything
+## authored here. `detain_radius` (26px) is chosen under the **32px** spacing between the two lanes
+## of a pavement (`Tuning.TILE_SIZE`, since a lane sits on its own tile centre) — see
+## `EventDef.detain_radius` — so the far lane of a two-tile pavement can never trigger it and
+## distance stays the counterplay it is everywhere else in the catalogue.
+##
+## `first_day` 1: act I is the social act, and `test_balance.gd` still passes with her live on it —
+## she is `SIDEWALK`-only, so she never contests the calm ground the balance suite measures.
+static func _chatting_mother() -> EventDef:
+	var def := EventDef.new()
+	def.id = "chatting_mother"
+	def.display_name = "Another mother"
+	def.look = EventDef.Look.CHATTING_MOTHER
+	def.first_day = 1
+	def.placement = [GameEnums.TileType.SIDEWALK]
+	def.intensity = 4.5
+	def.inner_radius = 34.0
+	def.outer_radius = 70.0
+	# (70-34)/92 = 0.39s required; not hard_fail, so no doubled margin. Generous rather than tight,
+	# since this is the row whose whole point is that the ambient field is nearly nothing next to
+	# what the conversation costs.
+	def.telegraph_time = 1.0
+	def.mobile = true
+	def.paces = true
+	# A pram's pace, slower than an ordinary walk and a touch slower than `dog_walker`'s 32.
+	def.speed = 26.0
+	def.path_mode = EventDef.PathMode.ALONG_STREET
+	def.path_length_tiles = 8
+	def.weight = 2.0
+	def.max_per_day = 2
+	def.detain_seconds = 5.0
+	def.detain_radius = 26.0
 	return def
 
 ## **The one thing in the game you have to run from, and it arrives on day 3.**

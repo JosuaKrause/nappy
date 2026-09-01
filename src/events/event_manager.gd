@@ -238,6 +238,7 @@ func _physics_process(delta: float) -> void:
 		_place_what_is_owed_ahead(delta)
 		_tell_them_where_she_is()
 		_warn_about_the_ground_she_is_on()
+		_check_detentions()
 	_check_hard_fails()
 	_announce_the_city_wide_sources()
 
@@ -425,9 +426,35 @@ func _successor_of(instance: EventInstance) -> EventInstance:
 func _tell_them_where_she_is() -> void:
 	var stroller := _player as Stroller
 	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0
+	var awake: bool = stroller == null or stroller.baby_is_awake()
 	for instance in _instances:
 		instance.player_at = _player.global_position
 		instance.player_running = running
+		instance.baby_awake = awake
+
+## Entering `detain_radius` of an instance that has not yet chatted locks her controls for
+## `detain_seconds` — the one mechanic in the catalogue that takes them away rather than costing a
+## meter. This is the one place that can actually do it: `EventInstance` only ever gets handed a
+## point (`player_at`), never a `Stroller`, and `Stroller.detain()` needs the real thing. See
+## `EventDef.detain_seconds`, `EventInstance.start_chat()`.
+func _check_detentions() -> void:
+	var body := _player as Stroller
+	if not body:
+		return
+	for instance in _instances:
+		if instance.def.detain_seconds <= 0.0 or instance.is_finished or instance.is_leaving:
+			continue
+		if instance.has_chatted() or instance.is_chatting():
+			continue
+		if instance.global_position.distance_to(body.global_position) > instance.def.detain_radius:
+			continue
+		instance.start_chat()
+		body.detain(instance.def.detain_seconds)
+		Telemetry.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
+			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
+			instance.def.detain_seconds,
+			"awake" if instance.baby_awake else "asleep",
+			("+%.0f" % Tuning.CHAT_EXCITEMENT) if instance.baby_awake else "+0 (asleep)"])
 
 func _check_hard_fails() -> void:
 	if _hard_failed or not _find_player():

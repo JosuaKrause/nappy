@@ -82,6 +82,10 @@ enum Alert {
 @onready var _baby: Baby = get_node_or_null("Baby")
 
 var facing := Vector2.DOWN
+## How long her own movement input stays ignored, set by `detain()`. Velocity is not touched here —
+## it runs out through the ordinary friction the same as letting go of every key would, which is
+## what makes a capture look like stopping rather than like being frozen. See `chatting_mother`.
+var _detained_for := 0.0
 var _walk_phase := 0.0
 ## Deflection from being walked into, decaying like any other velocity. Kept apart from
 ## `velocity` so an input frame cannot quietly erase it.
@@ -137,6 +141,11 @@ func step_back_in() -> void:
 
 func _physics_process(delta: float) -> void:
 	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if _detained_for > 0.0:
+		_detained_for = maxf(0.0, _detained_for - delta)
+		# Ignored rather than read: the run key doing nothing during a capture falls out of this
+		# for free, since `top_speed` below is only ever reached through a nonzero `input_dir`.
+		input_dir = Vector2.ZERO
 	var top_speed := Tuning.RUN_SPEED if Input.is_action_pressed("run") else Tuning.WALK_SPEED
 
 	if input_dir != Vector2.ZERO:
@@ -162,6 +171,33 @@ func _physics_process(delta: float) -> void:
 		_alert = Alert.NONE
 	_update_camera(delta)
 	queue_redraw()
+
+## Locks her own movement input for `seconds` — the one mechanic in the catalogue that takes the
+## controls away rather than costing a meter. Called by `EventManager` the frame `chatting_mother`
+## decides a conversation has started.
+##
+## **Takes the longest hold rather than adding them**, the same rule `warn()` uses for the mark: two
+## captures can only ever mean one of them is spent trying to start while the other is already
+## running, and `EventDef.validate()` refuses a second conversation on an instance that has already
+## had one, so this is a defensive maximum rather than something play can actually reach.
+##
+## Velocity is untouched — it runs out through `Tuning.FRICTION` in `_physics_process`, exactly as
+## it would if every key had simply been let go, and the pause menu and the run key are both
+## unaffected: pausing stops physics for everybody, and holding run buys nothing when no direction
+## is ever read.
+func detain(seconds: float) -> void:
+	_detained_for = maxf(_detained_for, seconds)
+
+## Whether her own movement input is currently being ignored. For the telemetry, which has to be
+## able to tell a capture apart from a player who is simply not moving.
+func is_detained() -> bool:
+	return _detained_for > 0.0
+
+## Whether the baby is awake right now — for anything that has to price itself differently by her
+## state without ever writing to her meters. `true` with no baby at all, which is what a test rig
+## built without one gets: the ordinary behaviour, rather than a silent asleep-shaped one.
+func baby_is_awake() -> bool:
+	return _baby == null or _baby.state == GameEnums.BabyState.AWAKE
 
 ## Knocks her off her line. Called by `Crowd` when she walks into somebody: the contact
 ## displaces them both, so a crowd is something she has to steer through rather than walk over.
@@ -294,6 +330,7 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	facing = look.normalized()
 	_walk_phase = 0.0
 	_shove = Vector2.ZERO
+	_detained_for = 0.0
 	_alert = Alert.NONE
 	_alert_left = 0.0
 	_alert_source = &""

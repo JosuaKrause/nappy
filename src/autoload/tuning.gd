@@ -155,6 +155,14 @@ const EXCITEMENT_FROM_RUNNING := 14.0
 ## Constant dread while standing in an alley.
 const EXCITEMENT_FROM_ALLEY := 3.0
 
+## What a `chatting_mother` conversation adds over its whole `detain_seconds`, while the baby is
+## awake — "consumes 25%" in the player's own words (`docs/PLAYTEST-18.md` finding 4, read as
+## *adds 25 points*, because the same sentence calls the awake case an overstimulation risk).
+## Divided by `detain_seconds` for the flat per-second rate a captured player is charged while she
+## is inside the conversation; zero while asleep, which is what makes it a *pure* time loss then —
+## see `EventInstance.current_intensity()`.
+const CHAT_EXCITEMENT := 25.0
+
 # ----------------------------------------------------------------- the mark ---
 
 ## What a row has to cost, in points of the meter, before it earns a caret over its head.

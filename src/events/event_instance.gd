@@ -46,6 +46,8 @@ const PIGEON_DOWN := preload("res://assets/events/pigeon_down.svg")
 const ICE_CREAM_VAN := preload("res://assets/events/ice_cream_van.svg")
 const LORRY := preload("res://assets/events/lorry.svg")
 const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
+const CHATTING_MOTHER_WALKING := preload("res://assets/events/chatting_mother_walking.svg")
+const CHATTING_MOTHER_TALKING := preload("res://assets/events/chatting_mother_talking.svg")
 
 ## The one silhouette that stands for a look, at any size.
 ##
@@ -75,6 +77,7 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.ICE_CREAM_VAN: return ICE_CREAM_VAN
 		EventDef.Look.LORRY: return LORRY
 		EventDef.Look.CHARGING_DOG: return CHARGING_DOG
+		EventDef.Look.CHATTING_MOTHER: return CHATTING_MOTHER_WALKING
 		EventDef.Look.POLICE_CAR: return POLICE_CAR
 		EventDef.Look.POSTER_CREW: return POSTER_CREW
 		EventDef.Look.CHECKPOINT: return CHECKPOINT_BLOCK
@@ -109,6 +112,14 @@ var player_at := Vector2.INF
 ## one thing that reads it asks both together: a pursuer gives up because **she ran**, which is a
 ## fact about her and not about the gap. See `_chase`.
 var player_running := false
+
+## Whether the baby is awake right now. Written once a frame by `EventManager` alongside
+## `player_at`, and read by exactly one row: `chatting_mother`'s conversation is the only thing in
+## the catalogue whose contribution differs by the baby's own state, and this is how it can without
+## ever writing to `Baby.excitement` — the read happens here, in `current_intensity()`, so
+## excitement stays a pure query. `true` with nobody to ask, which is the harmless default a
+## data-level test gets.
+var baby_awake := true
 
 ## Facing, for art with a front and a back. Only a mobile event ever changes it.
 var _heading := Vector2.RIGHT
@@ -167,6 +178,16 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 
+	if is_chatting():
+		# The one thing that runs while she is otherwise frozen. Her own controls are locked by
+		# `Stroller.detain()`, called the frame `start_chat()` fires; here it is only a clock, held
+		# apart from `_has_expired()` because `duration` means something else for every other row.
+		_chat_seconds_left = maxf(0.0, _chat_seconds_left - delta)
+		if _chat_seconds_left <= 0.0:
+			_be_done()
+		queue_redraw()
+		return
+
 	_fly_the_flock(delta)
 	if def.pursues:
 		_chase(delta)
@@ -176,6 +197,37 @@ func _process(delta: float) -> void:
 	if _has_expired():
 		_be_done()
 	queue_redraw()
+
+# ------------------------------------------------------------------- the chat ---
+# `chatting_mother`'s whole mechanic: a trigger rather than a field. `EventManager` decides *when*
+# — it is the one place holding the `Stroller` reference `detain()` needs — and everything about
+# *what happens once it has* lives here, the same split `_chase` draws between "what decides" and
+# "what plays out".
+
+## Whether she has ever had her one conversation. Checked by `EventManager` before it will ever
+## call `start_chat()` again: once true, this instance can never detain a second time, whatever
+## she does — she is spent as a detainer the moment the first one starts.
+var _has_chatted := false
+## Seconds left in the conversation currently running, or `0.0` when none is.
+var _chat_seconds_left := 0.0
+
+## Whether a conversation is running right now. Freezes pacing (see `_process`) and switches the
+## posture from strolling to talking (see `_draw_chatting_mother`) — the only two things about her
+## that a conversation changes, since the lock on the player's own movement lives on `Stroller`.
+func is_chatting() -> bool:
+	return _chat_seconds_left > 0.0
+
+## Whether this instance has ever detained anybody. See `_has_chatted`.
+func has_chatted() -> bool:
+	return _has_chatted
+
+## Starts the one conversation this instance will ever have. Called by `EventManager` the frame it
+## decides the player has entered `def.detain_radius` of an instance that has not chatted yet — see
+## `EventManager._check_detentions()`. Spends the instance as a detainer immediately, before the
+## clock has run a single frame, so a second call before this one finishes can never restart it.
+func start_chat() -> void:
+	_has_chatted = true
+	_chat_seconds_left = def.detain_seconds
 
 ## Whether the chase ended because she shook it off rather than because the clock ran out. Read by
 ## the telemetry, which is the only thing that can tell the two apart from outside.
@@ -658,6 +710,13 @@ func current_intensity() -> float:
 		# On the way out it is scenery. Emitting while it goes would mean the excitement of an
 		# event trailing after her for as long as it took the thing to get off screen.
 		return 0.0
+	if is_chatting():
+		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
+		# by construction (`detain_radius < inner_radius`), so there is no distance left to shape.
+		# Gated on `baby_awake`, read and never written — see the field's own comment — which is
+		# what makes "asleep, it is a pure time loss" true of the meter and not only of the words:
+		# nothing here scales through `Tuning.SLEEPING_SENSITIVITY`, it emits exactly zero.
+		return (Tuning.CHAT_EXCITEMENT / def.detain_seconds) if baby_awake else 0.0
 	var value := def.intensity
 	if not is_equal_approx(def.intensity_ramp, 1.0) and def.duration > 0.0:
 		var through := clampf((age - def.telegraph_time) / def.duration, 0.0, 1.0)
@@ -870,6 +929,8 @@ func _draw_body() -> void:
 			_draw_simple(LORRY, 26.0)
 		EventDef.Look.CHARGING_DOG:
 			_draw_simple(CHARGING_DOG, 13.0)
+		EventDef.Look.CHATTING_MOTHER:
+			_draw_chatting_mother()
 		EventDef.Look.POLICE_CAR:
 			_draw_vehicle(POLICE_CAR, POLICE_CAR_END, 19.0)
 		EventDef.Look.POSTER_CREW:
@@ -1108,6 +1169,16 @@ func _draw_dog_walker() -> void:
 	draw_line(Vector2(0.0, -26.0), to_the_dog + Vector2(0.0, -6.0), Palette.OUTLINE, 2.0)
 	Sprites.draw_standing(self, PERSON, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 	Sprites.draw_standing(self, DOG, to_the_dog, Vector2.ZERO, _heading_is_west())
+
+## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
+## whole of her beat; talking is what she looks like for exactly the `detain_seconds` of a
+## conversation, and it is the only telegraph that mechanic gets — there is no exclamation mark,
+## because she is a cost rather than a threat and that mark is spoken for. See
+## `docs/EVENTS.md`, "The visual vocabulary".
+func _draw_chatting_mother() -> void:
+	Sprites.draw_shadow(self, Vector2.ZERO, 14.0)
+	var texture := CHATTING_MOTHER_TALKING if is_chatting() else CHATTING_MOTHER_WALKING
+	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Which way a mobile event is travelling, for art that has a front and a back. A
 ## stationary event never flips.

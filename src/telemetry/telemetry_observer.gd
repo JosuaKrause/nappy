@@ -581,6 +581,14 @@ func _watch_idling(_delta: float) -> void:
 ## for the same reason — a wall that is still there a second later is one finding continuing,
 ## not a new one.
 func _watch_blocked(here: Vector2) -> void:
+	if _player and _player.is_detained():
+		# A capture holds input the same way a wall does — pressed, going nowhere — and without
+		# this a `chatting_mother` conversation writes itself down twice, once as `chat` and once
+		# as `blocked`, for the same five seconds. The anchor is cleared rather than merely
+		# skipped, so a hold that started **during** the capture does not surface the instant it
+		# ends and read as having been stuck the whole time it was actually a conversation.
+		_blocked_since = -1.0
+		return
 	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if input_dir == Vector2.ZERO:
 		_blocked_since = -1.0
