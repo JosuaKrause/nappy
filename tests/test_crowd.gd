@@ -51,6 +51,7 @@ func run(t) -> void:
 	_test_nothing_walks_into_a_hard_blocker(t)
 	_test_only_cars_go_over_the_bridge(t)
 	_test_the_crowd_agrees_a_zone_absorbed_the_corridor(t)
+	_test_agents_do_not_overrun_an_ordinary_edge(t)
 
 	_city.free()
 
@@ -1263,3 +1264,27 @@ func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t) -> void:
 	t.check(cars_inside == 0,
 			"no car ever stands on the zone's absorbed corridor at %s (%d frames it did)"
 			% [footprint, cars_inside])
+
+## M53: **cars and people still go off the map.** Two candidates: the agent is recycled on screen,
+## or a junction exists somewhere it should not. The generation side was checked directly —
+## `StreetNetwork.segments()` never enumerates a junction or a segment outside `junction_count()`,
+## and every boundary junction is a genuine T or L by construction, since there is no tile grid
+## beyond it for a fourth arm to point into. Not reproduced there.
+##
+## The recycle side was: `_keep_within_the_room_beyond_the_map` (checked at the spine in
+## `_test_only_cars_go_over_the_bridge`) is not spine-specific, so an **ordinary** boundary gets the
+## same guarantee for free. Checked here at the east edge, on a corridor that is not the spine, so
+## the fix is asserted as the general one it is rather than as a property of the bridge alone.
+func _test_agents_do_not_overrun_an_ordinary_edge(t) -> void:
+	var limit := _city.map.world_size().x
+	var at := Vector2(limit - Tuning.TILE_SIZE, _city.map.world_size().y * 0.5)
+	_city.crowd.start_day(1, _rng(2), at)
+
+	var worst := 0.0
+	for frame in int(round(20.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			worst = maxf(worst, agent.position.x - limit)
+	t.check(worst <= Tuning.TILE_SIZE + 1.0,
+			"nobody overruns an ordinary edge by more than a tile (worst %.0fpx)" % worst)
