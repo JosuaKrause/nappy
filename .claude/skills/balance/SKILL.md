@@ -120,8 +120,9 @@ makes a contact mean *walking into somebody*, and buying the same line by shrink
 contact require a near-perfect overlap.
 
 **When two systems price the same choice, check they are not pricing it in opposite directions.**
-Before that change, contacts and ambient noise wanted opposite lines and a player who found one had
-found the other's punishment. That is not a balance error, it is a design that cannot be played.
+Contacts and ambient noise are the pair that can do it: if one rewards the line the other punishes,
+a player who finds either has found the other's punishment. That is not a balance error, it is a
+design that cannot be played.
 
 **Walking an ordinary pavement is free; standing on one is not.** Every line across an ordinary
 footway is net recovery while walking — the crowd charges 55–87 points over forty seconds against a
