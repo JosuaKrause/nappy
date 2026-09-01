@@ -1,0 +1,28 @@
+<!-- Another mother, pushing a pram of her own. Palette-shifted against the player's own rig
+     (sage coat and tan pram rather than her rust coat and navy pram) so the two can never be
+     mistaken for one another at a glance. Walking posture: read against
+     chatting_mother_talking.svg, which is the telegraph that a conversation is running. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="46" viewBox="0 0 54 46" shape-rendering="crispEdges">
+  <!-- the pram -->
+  <path d="M26 20 L31 20 L26 29 L23 29 Z" fill="#4a3f2f"/>
+  <path d="M26 19 A9 9 0 0 1 44 19 L44 24 L26 24 Z" fill="#cbb98f"/>
+  <path d="M28 21 A7 7 0 0 1 42 21 L42 24 L28 24 Z" fill="#b8a67c"/>
+  <rect x="25" y="24" width="27" height="11" fill="#6b5a42"/>
+  <rect x="25" y="32" width="27" height="3" fill="#4a3f2f"/>
+  <circle cx="30" cy="40" r="5" fill="#26232a"/>
+  <circle cx="48" cy="40" r="5" fill="#26232a"/>
+  <circle cx="30" cy="40" r="2" fill="#4a464f"/>
+  <circle cx="48" cy="40" r="2" fill="#4a464f"/>
+  <!-- her, in profile, arm out to the handle -->
+  <rect x="5" y="32" width="5" height="12" fill="#5c5648"/>
+  <rect x="12" y="32" width="5" height="12" fill="#665f50"/>
+  <rect x="3" y="44" width="8" height="2" fill="#2f2a2c"/>
+  <rect x="12" y="44" width="8" height="2" fill="#2f2a2c"/>
+  <rect x="5" y="13" width="13" height="20" fill="#5c7a52"/>
+  <rect x="5" y="27" width="13" height="6" fill="#455e3d"/>
+  <rect x="16" y="18" width="9" height="4" fill="#5c7a52"/>
+  <rect x="23" y="18" width="3" height="4" fill="#d9a878"/>
+  <circle cx="12" cy="8" r="7" fill="#d9a878"/>
+  <path d="M5 8 A7 7 0 0 1 16 3 L16 12 Z" fill="#2f2a20"/>
+  <rect x="15" y="8" width="2" height="2" fill="#221f28"/>
+</svg>
