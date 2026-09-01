@@ -89,4 +89,5 @@ Difficulty rises on three independent axes so later days feel different, not jus
 
 - No combat. The player never fights.
 - No inventory or upgrades. Skill is map knowledge and timing.
-- No dialogue trees. Resistance interactions are one-button, positional.
+- No dialogue trees. Resistance interactions are purely positional — touching a mark completes it;
+  there is no interact button.
