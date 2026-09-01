@@ -27,11 +27,8 @@ it is not.
 | [docs/NARRATIVE.md](docs/NARRATIVE.md) | Act structure, side content, endings — **spoilers** |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Code layout, autoloads, signals |
 | [docs/TELEMETRY.md](docs/TELEMETRY.md) | What a run writes down, and how to read it |
-| [docs/TODO.md](docs/TODO.md) | Milestones and task tracking |
-| [docs/HANDOFF.md](docs/HANDOFF.md) | **Start here** — current state and what to do next |
-| [docs/PLAYTEST-01.md](docs/PLAYTEST-01.md) | First playtest: findings, analysis, current plan |
-| [docs/PLAYTEST-02.md](docs/PLAYTEST-02.md) | Second playtest: twelve findings, planned as M18–M26 |
-| [docs/PLAYTEST-03.md](docs/PLAYTEST-03.md) | Third playtest: the first one read off a run log |
+| [docs/TODO.md](docs/TODO.md) | The queue: open work only |
+| `docs/PLAYTEST-NN.md` | One per playtest, a player's own words on a date. Primary sources, never rewritten |
 
 ## Running
 
