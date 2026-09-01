@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_a_stuck_player_is_logged_once(t)
 	_test_a_free_walk_is_never_logged_as_blocked(t)
 	_test_idling_with_no_input_is_never_logged_as_blocked(t)
+	_test_a_capture_is_never_logged_as_blocked(t)
 	_test_the_map_picture_covers_the_city_and_marks_it(t)
 	_test_the_map_picture_draws_the_corridor(t)
 	_test_the_map_picture_marks_what_the_day_placed(t)
@@ -275,6 +276,36 @@ func _test_idling_with_no_input_is_never_logged_as_blocked(t) -> void:
 
 	t.check(_blocked_lines(t).is_empty(),
 			"standing idle with no direction held is never logged as blocked")
+	observer.free()
+
+## M59's own interaction: `chatting_mother` locks input with `Stroller.detain()`, and a captured
+## player may well be holding a key the whole way through it — which is exactly what
+## `_watch_blocked` reads. Without the gate on `_player.is_detained()` a capture would write
+## itself down twice: once as `chat`, by `EventManager`, and once as `blocked`, by this file, for
+## the same held key. And the gate has to let go the instant the capture ends, or a real stall
+## picked up right after one hides behind a stale anchor.
+func _test_a_capture_is_never_logged_as_blocked(t) -> void:
+	var observer := _blocked_rig()
+	var stroller := Stroller.new()
+	observer._player = stroller
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+
+	# A conversation running: holding a direction the whole way through it must never surface as
+	# a stall, whatever `BLOCKED_HOLD_TIME` says.
+	stroller.detain(2.0)
+	_hold_against_a_wall(observer, "move_right", Vector2(100.0, 100.0), 2.5)
+
+	# The capture is over — `Stroller._physics_process` would have zeroed this by now — and the
+	# same held key against the same wall is a genuine stall again.
+	stroller._detained_for = 0.0
+	_hold_against_a_wall(observer, "move_right", Vector2(100.0, 100.0), 1.5)
+
+	var blocked := _blocked_lines(t)
+	t.check(blocked.size() == 1,
+			"the capture writes nothing, and a real stall right after it is still caught (got %d)"
+			% blocked.size())
+	stroller.free()
 	observer.free()
 
 # ------------------------------------------------------------- the city grid ---
