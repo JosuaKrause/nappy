@@ -11,7 +11,7 @@ history — that is [DECISIONS.md](DECISIONS.md), which is fetched when you need
 `feature/timeless-docs`, which is M40.
 
 ```sh
-./tools/test.sh          # 179912 checks, 0 failures, ~200s
+./tools/test.sh          # the full headless suite, ~200s; must be 0 failures
 ./tools/check.sh         # boots the project, fails on any script error
 ./tools/run.sh           # plays it
 ./tools/telemetry.sh     # what the last run actually did, in order
@@ -28,7 +28,7 @@ restyle is the smaller one: a correctness pass that finds sentences no longer tr
 that puts everything in the present tense with the history moved to `DECISIONS.md`.
 
 **Done:** `DECISIONS.md` exists and holds the history; `HANDOFF.md` and `TODO.md` are the current
-state and the queue; `CLAUDE.md` is a 132-line index over eleven skills in `.claude/skills/`, one
+state and the queue; `CLAUDE.md` is an index over eleven skills in `.claude/skills/`, one
 per operational task, each loaded before that task.
 
 **Left, and this is the next thing to pick up:** the timeless scan of the code comments and the

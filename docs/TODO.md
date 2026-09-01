@@ -36,8 +36,10 @@ in it is wrong about nothing.**
 
 - [x] **`docs/DECISIONS.md` exists** and is the destination for everything the restyle lifts out.
       The test is that every fact removed can be found by searching it for the symbol name
-- [x] **`docs/HANDOFF.md` is the pick-up block alone**, and true — 1833 lines to ~120
-- [x] **`CLAUDE.md` becomes an index**, 1500 lines to 132, with the rules in `.claude/skills/`
+- [x] **`docs/HANDOFF.md` is the pick-up block alone**, and true. Its history tail became the
+      archive in `DECISIONS.md`
+- [x] **`CLAUDE.md` becomes an index** over the skills in `.claude/skills/`, holding only what
+      applies to every task and the rules a hook cannot trigger on
 - [x] **The rules get skills**, one per operational task, each loaded before that task rather than
       carried in context for every task that is not it. Eleven of them, with a trigger table in
       `CLAUDE.md`
@@ -51,7 +53,8 @@ in it is wrong about nothing.**
       repeated on every subsequent edit to the same place. The three that have no file to trigger on
       — `feedback`, `committing`, `session-cleanup` — stay invoked by hand, because they are about a
       *moment* rather than a place
-- [x] **`docs/TODO.md` is a queue again** — 4550 lines to this. Completed entries archived whole
+- [x] **`docs/TODO.md` is a queue again** — open work only, with every completed entry archived
+      whole in `DECISIONS.md`
 ### ← Next step: the timeless scan of the code and the design docs
 
 *(2026-09-01: "also scan the whole codebase to update for the timeless style — not only documents
