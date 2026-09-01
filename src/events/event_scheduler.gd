@@ -15,9 +15,9 @@ class Planned extends RefCounted:
 	var position: Vector2
 	var path := PackedVector2Array()
 	## Which way it is drawn facing, for a stationary event whose siting decided that. A mobile
-	## one gets its facing from the direction it is travelling and ignores this. *(M34: a lorry
-	## backing into a yard has to have its back to the yard, and only the placement knows which
-	## side of the street the yard is on.)*
+	## one gets its facing from the direction it is travelling and ignores this. A lorry backing
+	## into a yard has to have its back to the yard, and only the placement knows which side of the
+	## street the yard is on.
 	var facing := Vector2.RIGHT
 
 	func _init(definition: EventDef, at: Vector2,
@@ -27,8 +27,8 @@ class Planned extends RefCounted:
 		path = route
 
 	## The live instance, while this plan is streamed in. Owned by `EventManager`: a plan is the
-	## day's intention and the instance is the few seconds it exists for, and since M27 those
-	## are no longer the same span of time.
+	## day's intention and the instance is the few seconds it exists for, and those are not the
+	## same span of time.
 	var live: EventInstance = null
 	## True once the event has run its course, so walking back past it does not start it again.
 	var spent := false
@@ -40,9 +40,8 @@ class Planned extends RefCounted:
 	##
 	## It is recorded rather than re-derived because it is not a function of the def: the same
 	## `cyclist` row is a wall on a day it is rolled and nothing at all when the director sites one
-	## in front of her, and the one picture built to check this milestone's placements has to be
-	## able to say which. Nothing in the game reads it — it decides where the plan went, it does
-	## not decide anything afterwards.
+	## in front of her, and the telemetry map has to be able to say which. Nothing in the game reads
+	## it — it decides where the plan went, it does not decide anything afterwards.
 	var role := GameEnums.BlockerRole.NONE
 	## Which set of mutually exclusive placements this one belongs to, or "" for anything that is
 	## simply itself. A set piece is planned at **every** site of a covering set and the first one
@@ -81,62 +80,41 @@ class Planned extends RefCounted:
 					Geometry2D.get_closest_point_to_segment(at, path[i - 1], path[i])))
 		return best
 
-## Budget grows with the day, so late days are denser as well as nastier.
+## Budget grows with the day, so late days are denser as well as nastier. The target is **one event
+## per block**, and the escalation is linear in the day: day 14 carries about half again as many
+## events as day 1, with a larger share of them act III and IV rows rather than more dog walkers.
 ##
-## Playtest 03, finding 1: the old `3 + day * 1.4` gave day 1 **four** events for a 7x7-block
-## city — one per twelve blocks — and the traced day contains zero `near` entries. The player
-## crossed the city, sat in a courtyard, came home, and was never within reach of anything.
-##
-## The number was deliberately not moved on its own. Eleven of eighteen events cost under
-## fifteen points of a hundred-point meter to walk straight through, and three were *negative*,
-## so quadrupling the budget before M19 would have bought four times as much scenery. The
-## consequences land in the same milestone as the density (playtest 03, decision 1): bodies are
-## solid, the carriageway is lethal, and a café or a dog owns the pavement it is on.
-##
-## The shape is kept — the escalation is still roughly linear in the day — and the floor is
-## raised, which is what "the beginning is challenging too" (playtest 02, decision 9) asks for.
-##
-## The budget is not the count and the difference is not small: a part of it is spent on events
-## the day then throws away, because `_ensure_one_usable_park` strips whatever reaches the
-## calmest block and `_ensure_the_city_is_still_walkable` drops obstructions that would seal the
-## city. So the number is set by *measuring what a day places* over several seeds rather than by
-## arithmetic. Re-measure it, do not re-derive it, if the catalogue's costs move.
-##
-## **M28 moved it to playtest 05's stated target: one event per block.** *"I want one event per
-## block. The dog walker decision should happen meaningfully — I want to have to make that
-## decision at least twice on day one."* The city is 7x7 blocks, so that is **49 placed on day
-## 1**, against the 13 the old 18 bought. The budget alone could never have got there — the
-## day-1 pool's `max_per_day` values summed to 18, so a budget of 100 placed the same 13 events
-## — which is what `CLAUDE.md`'s *"a budget the catalogue cannot spend is not density"* is
-## about. The caps moved first; this followed, measured.
-##
-## The escalation is still linear in the day and is now steep enough to be felt as one: day 14
-## carries about half again as many events as day 1, and a larger share of them are act III and
-## IV rows rather than more dog walkers, because those caps rose too.
 ## **It is stated per block, because the target it encodes is per block.** A flat budget is a
-## statement about a 7x7 city and nothing else: grow the lattice and the same events spread thinner,
-## which is the density silently falling while every number in this file still reads as correct.
-## The two constants below reproduce the flat formula exactly at 7x7, so a resize moves the city and
-## nothing else.
+## statement about one lattice size and nothing else: grow the city and the same events spread
+## thinner, which is the density silently falling while every number in this file still reads as
+## correct.
+##
+## **The budget is not the count**, and the difference is not small: part of it is spent on events
+## the day then throws away, because `_ensure_one_usable_park` strips whatever reaches the calm she
+## has not used and `_ensure_the_city_is_still_walkable` drops obstructions that would seal the
+## city. So the number is set by *measuring what a day places* over several seeds. Re-measure it, do
+## not re-derive it, if the catalogue's costs move.
+##
+## **And raising it alone does nothing** when the day's pool cannot spend it: the caps are what bind
+## on an early day, which is *a budget the catalogue cannot spend is not density*. The caps move
+## first and this follows, measured.
 static func budget_for(day: int) -> int:
 	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
 	return floori(blocks * (BUDGET_PER_BLOCK + day * BUDGET_PER_BLOCK_PER_DAY))
 
 ## Measured, not derived — see the note above. The floor is what day 1 costs and the slope is the
-## escalation; both are per block of lattice.
+## escalation; both are per block of lattice, written as a measured whole-city figure over the
+## 49-block lattice it was measured on so the arithmetic stays exact.
 ##
-## **The floor moved in M50, and what moved it was not the hard blockers it was found next to.**
-## Day 1 was planning 110–117 against a stated target of one per block — 121 — and the shortfall
-## was `_ensure_one_usable_park`, which strips the spoilers of **every** calm area she has not
-## used. On a seed where no calm area happens to come out clean that is twenty-one events removed
-## after the fill has already spent its budget, so the day plans to target and then falls short of
-## it. The budget never accounted for the strip.
+## **The floor accounts for the strip, which is the part that is easy to miss.**
+## `_ensure_one_usable_park` removes the spoilers of every calm area she has not used, *after* the
+## fill has already spent its budget — on a seed where no calm area comes out clean that is twenty
+## events gone — so a floor set to the target plans to target and then falls short of it.
 ##
-## 69 → 76 puts a typical day 1 at 121–125 placed, which is the target, and the worst seed
-## measured at 102 rather than 93. It lifts days 1–7 and leaves day 14 where it was, because day
-## 14 is bound by the catalogue's caps rather than by the budget (216 events costing 370, against
-## a budget of 402) — which is `CLAUDE.md`'s rule about *what a number is per* arriving from the
-## other side: raising a budget only moves the days the budget is actually binding on.
+## As set, a typical day 1 places 121–125 against a target of one per block on an 11x11 lattice, and
+## the worst seed measured 102. The floor moves days 1–7 and leaves day 14 alone, because **day 14
+## is bound by the catalogue's caps rather than by the budget** — raising a budget only moves the
+## days the budget is actually binding on.
 const BUDGET_PER_BLOCK := 76.0 / 49.0
 const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 
@@ -181,12 +159,12 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	_ensure_the_city_is_still_walkable(map, planned)
 	return planned
 
-## What the day is placing a row **for**, which is the axis M50 added and the only thing that makes
-## *wall* and *friction* mean anything. See `docs/CITY.md`, "The words for it".
+## What the day is placing a row **for**, which is the only thing that makes *wall* and *friction*
+## mean anything. See `docs/CITY.md`, "The words for it".
 ##
-## Three of the four answers come straight off the design: *"hard and lethal blockers form the
-## paths — they are the walls"*, *"benign blockers go on the route"*, and a one-shot is *"an
-## authored set piece placed so that she actually meets it"*. The fourth is the interesting one.
+## Three of the four answers come straight off the design: lethal and expensive rows are the
+## **walls** that bound the corridor, benign rows are **friction** on the route, and a one-shot is a
+## **set piece** placed so that she actually meets it. The fourth is the interesting one.
 ##
 ## **`NONE` is not a leftover bin, it is the honest answer for anything the day did not site
 ## against the corridor at all.** An `AHEAD_OF_PLAYER` row is the case that proves it: a charging
@@ -195,16 +173,14 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## mark on the telemetry map claiming a placement that nothing made — which is the exact failure
 ## the picture exists to catch, arriving through the legend.
 ##
-## **A wall stopped being only the lethal rows.** *(2026-08-31: "areas that outside the paths should
-## have blocking events all over — we don't want the player to step in those areas and it ranges
-## from very costly to deadly.")* The range is the instruction: what closes the ground off the
-## routes is *very costly* at one end and *deadly* at the other, so an expensive row is a wall too
-## and `Tuning.WALL_WORTH_OF_COST` is where the line falls. Cheap rows stay friction and stay on the
-## corridor, which is what keeps the routes worth walking rather than merely survivable.
+## **A wall is not only the lethal rows.** The ground off the routes *ranges from very costly to
+## deadly*, so an expensive row is a wall too and `Tuning.WALL_WORTH_OF_COST` is where the line
+## falls. Cheap rows stay friction and stay on the corridor, which is what keeps the routes worth
+## walking rather than merely survivable.
 ##
 ## It is stated over `walk_through_cost()` — the same integral `tests/test_danger.gd` orders the
 ## caret by — rather than over a new field, because *how expensive a row is* is a question the
-## catalogue already answers and two answers to it is the `DangerEdge` defect M37 found.
+## catalogue already answers, and a second answer to it is how two tables of one fact drift apart.
 static func _role_for(def: EventDef) -> GameEnums.BlockerRole:
 	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER \
 			or def.kind == GameEnums.EventKind.AMBIENT:
@@ -217,18 +193,14 @@ static func _role_for(def: EventDef) -> GameEnums.BlockerRole:
 
 ## A private RNG for one phase of the day, derived from the day's seed and a salt.
 ##
-## **A retried day has to be the same day, and it was not.** *(M39, playtest 10 finding 5: "the
-## tutorial dog on day 3 only appeared once (I died) then it didn't appear again".)* `docs/TODO.md`
-## has claimed since M32 that *"the retry is the same day — everything about one is deterministic
-## from the seed and the day number"*, and five seeds out of five disprove it. The six phases above
-## ran off **one** stream in sequence, so anything that changed how much an earlier phase drew moved
-## everything after it, and two things change between attempts by design:
+## **A retried day has to be the same day, and one shared stream cannot deliver that.** Run the
+## phases off a single sequence and anything that changes how much an earlier phase draws moves
+## everything after it — and two things change between attempts by design:
 ##
-## - `_place_one_shots` skips a one-shot the run has already spent, and it skipped it with a
-##   `continue` **before** drawing its `randf()`. So the second attempt at day 3 — the day the fire
-##   engine runs — started `_fill_with_recurring` one value earlier and produced a different city's
-##   worth of events. In the trace, `homeless_yeller` goes from two to eight and `cyclist` from none
-##   to three between two consecutive attempts at the same day.
+## - `_place_one_shots` skips a one-shot the run has already spent. Skipping it *before* drawing its
+##   `randf()` starts `_fill_with_recurring` one value earlier on the second attempt and produces a
+##   different city's worth of events: measured on the day the fire engine runs, `homeless_yeller`
+##   goes from two to eight and `cyclist` from none to three between two attempts at the same day.
 ## - `_place_scars` prepends what the run has burnt down, and every scar is one more plan for
 ##   `_room_around` to reject a placement against — and a rejection is a re-roll.
 ##
@@ -243,11 +215,10 @@ static func _stream(base: int, salt: int) -> RandomNumberGenerator:
 
 ## The day the run is taught cannot leave the lesson to a weighted roll.
 ##
-## *(M39, playtest 10 finding 5.)* `EventDirector._teach_the_run` moves a pursuit to the head of the
-## owed list on `RUN_TAUGHT_DAY` and says outright what happens otherwise: *"if the day happened not
-## to buy one, there is nothing to teach and nothing happens."* `charging_dog` is weight 1.4 of a
-## day-3 pool, so whole day 3s with none of them exist — the probe finds them — and a player can
-## therefore reach act II never having been shown the one control the game will later require.
+## `EventDirector._teach_the_run` moves a pursuit to the head of the owed list on `RUN_TAUGHT_DAY`,
+## and if the day happened not to buy one there is nothing to teach. `charging_dog` is weight 1.4 of
+## a day-3 pool, so whole day 3s with none of them exist — and a player can reach act II never
+## having been shown the one control the game will later require.
 ##
 ## It is added **outside** the budget rather than competing for it, and that is the exception being
 ## made honestly: everywhere else in this file the density is the budget, and a lesson that only
@@ -268,13 +239,12 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned]) -> void
 
 # ------------------------------------------------------- the city remembers ---
 
-## Puts something on the calm block she settled in yesterday. *(M24, playtest 05 finding 4:
-## "I was able to go to the same park on day one and two — this shouldn't be possible.")*
+## Puts something on the calm block she settled in yesterday.
 ##
-## The finding is not that repetition is boring. It is that **the game's only verb stopped
-## being a decision on day two**: a player who found a good park on day 1 has no question left
-## to answer, and route planning is the whole game. Playtest 03 found the calm area was a lap
-## rather than a route (M21); this is the same complaint one scale up, about *which* calm area.
+## Not because repetition is boring, but because **the game's only verb stops being a decision on
+## day two**: a player who finds a good park on day 1 has no question left to answer, and route
+## planning is the whole game. It is the same problem as a calm area being a lap rather than a
+## route, one scale up: that one is about the destination, this is about *which* destination.
 ##
 ## Three things keep it from being a punishment for playing well, and all three are load-bearing:
 ##
@@ -287,31 +257,24 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned]) -> void
 ##   and are drawn from the same day's pool, so day 2 is not "day 1 plus a punishment", it is a day
 ##   whose noise happens to be somewhere she was counting on.
 ##
-## **It has to cover the ground, not stand in it.** *(M35, playtest 08 finding 1: "the robber in the
-## park is still ineffective — I can use the same park every day — and there is only one robber".
-## Playtest 07 asked for the same thing first: "blocking a park etc should have multiple robbers so
-## the entire area is dangerous or a full block party or other things that completely block out the
-## space.")*
+## **It has to cover the ground, not stand in it**, and one event does not.
 ##
-## M24 placed exactly one event and the arithmetic was never done. A busker is intensity 9 over a
-## 190px reach, and what actually denies calm ground is holding the meter above
-## `EXCITEMENT_CALM_THRESHOLD` against a decay the calm multiplier has already raised to 7.7/s — so
-## his *useful* radius is 100px, not 190, in a lot that is 704px across. He denied about three
-## percent of a four-block calm zone. The trace says exactly that: day 2 rolls a spoiler for the
-## block she used, and she settles in that same block at 36.1s.
+## What denies calm ground is holding the meter above `EXCITEMENT_CALM_THRESHOLD` against a decay
+## the calm multiplier has raised to 7.7/s — so a busker at intensity 9 has a *useful* radius of
+## 100px whatever his 190px reach says, in a lot 704px across, and denies about three percent of a
+## four-block calm zone. A day that rolls one spoiler for the block she used is a day she settles in
+## that same block.
 ##
-## So the spoiler is a **crowd** now: one thing per cell of a grid laid over the calm ground, sized
-## from what each of them can actually deny, capped by `SPOILERS_TO_DENY_A_PARK`. Each cell rolls
-## its own def rather than repeating one, which is both the fiction — a park that is busy today is
-## busy with several different things — and the honest way round the art gap `CLAUDE.md` has carried
-## since M22: nine copies of the same `person.svg` standing in a field would read as a duplicated
-## sprite, which is exactly what the spacing rule at `_room_around` exists to prevent everywhere
-## else.
+## So a spoiler is a **crowd**: one thing per cell of a grid laid over the calm ground, sized from
+## what each of them can actually deny, capped by `SPOILERS_TO_DENY_A_PARK`. Each cell rolls its own
+## def rather than repeating one — the fiction is that a park which is busy today is busy with
+## several different things, and nine copies of one sprite in a field read as a duplicate, which is
+## exactly what the spacing rule at `_room_around` prevents everywhere else.
 ##
-## **Every area she has used this act, not just last night.** *(Playtest 12, finding 5.)* One
-## night's memory makes day 2 a fresh decision and day 3 the same decision as day 1; an act's
-## memory is what turns "find a different park" into "find your way around the city". The city
-## forgets at the act boundary, which is the only good news a run ever gets.
+## **Every area she has used this act, not just last night.** One night's memory makes day 2 a fresh
+## decision and day 3 the same decision as day 1; an act's memory is what turns *find a different
+## park* into *find your way around the city*. The city forgets at the act boundary, which is the
+## only good news a run ever gets.
 ##
 ## One is always left alone whatever the memory says: the guarantee that a day is winnable outranks
 ## the guarantee that it is a fresh decision, and `MIN_CALM_BLOCKS` is sized so that the two do not
@@ -440,15 +403,15 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## would be a punishment for having settled there, and a barricade would be the ground taken
 ## away rather than made noisy, which is the thing this rule promises not to do.
 ##
-## *(M34.)* The middle test used to be `obstructs_radius > 0`, which meant the same thing right up
-## until everything that stands still acquired a body. A busker is 18px across and a lot is 704px:
-## he is loud and he is walked around, which is the whole job. `OBSTRUCTION_A_PARK_CAN_HOLD` is
-## where that stops being true, and it is the rule this always was rather than a relaxation of it.
+## **The body test is a width, not `obstructs_radius > 0`.** Once everything that stands still has a
+## body the two stop meaning the same thing: a busker is 18px across in a lot 704px wide, so he is
+## loud and he is walked around, which is the whole job. `OBSTRUCTION_A_PARK_CAN_HOLD` is where that
+## stops being true.
 ##
-## *(M35 made that allowance depend on the ground, which is what it always meant.)* A body that is
-## nothing in a four-block calm zone is a wall across a four-tile courtyard, and a fixed number
-## cannot be both — so it is a sixteenth of the shortest side of the calm ground, floored at the old
-## constant. That is what lets a market take over a whole park and keeps it out of a back yard.
+## **And the allowance depends on the ground.** A body that is nothing in a four-block calm zone is
+## a wall across a four-tile courtyard, and a fixed number cannot be both — so it is a sixteenth of
+## the shortest side of the calm ground, floored at that constant. That is what lets a market take
+## over a whole park and keeps it out of a back yard.
 static func _things_to_put_in_a_park(day: int, ground: Rect2) -> Array[EventDef]:
 	var allowed := maxf(Tuning.OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(ground.size.x, ground.size.y) / 16.0)
@@ -531,20 +494,18 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		Telemetry.note("roll", "one-shot %s: %.2f <= %.2f — waiting at %s"
 				% [def.id, roll, threshold, ", ".join(where)])
 
-## A set piece, planned at **every** site of a covering set. *(M50 step 2.)*
+## A set piece, planned at **every** site of a covering set.
 ##
-## *"The fire + fire truck — it should be used in a way that the player actually encounters it on
-## their chosen route, so we could dynamically choose it from a candidate set on that day."* The
-## shape is the player's, and the important half of it is what it is **not**: the day does not
-## choose a site on the route she took, because that would need to know which route she took. It
-## chooses a set that **every** route touches, and the one she reaches is the one that fires. The
-## guarantee is structural, so nothing has to predict her.
+## An authored one-shot has to be *met*, and the important half of how is what this does **not** do:
+## it does not choose a site on the route she took, because that would need to know which route she
+## took. It chooses a set that **every** route touches, and the one she reaches is the one that
+## fires. The guarantee is structural, so nothing has to predict her.
 ##
 ## **A bundle is not a guarantee, and this is the caller where that bites.** Two distinct routes to
 ## one area share no street by construction, so no single site can ever cover both — the covering
-## set is two to six streets, and code here that assumed one would be exactly the *"tile she must
-## cross"* the design names as its first draft's mistake. `RouteTree.covering_sites` carries the
-## arithmetic and the warning.
+## set is two to six streets, and code here that expects one is looking for a *tile she must cross*,
+## which the city is built not to have. `RouteTree.covering_sites` carries the arithmetic and the
+## warning.
 ##
 ## The placements are mutually exclusive rather than several fire engines: they share a
 ## `set_piece_group`, and `EventManager._stream_in` spends the rest of the group the moment one of
@@ -578,7 +539,7 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 
 ## Fills the day's budget, **one stream per attempt**.
 ##
-## *(M39, finding 5.)* The stream is derived from the attempt number rather than shared across the
+## The stream is derived from the attempt number rather than shared across the
 ## whole fill, so how much any one placement draws — `_place_one` re-rolls up to
 ## `EVENT_PLACEMENT_TRIES` times and returns early when a candidate is perfect — cannot move the
 ## placements after it. That is what makes a retried day recognisably the same day even when the
@@ -630,11 +591,11 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 
 ## Picks a tile of an allowed type and builds the path, if the event moves.
 ##
-## `already` is what the day has planned so far, and since M28 it is what keeps the density
-## legible. Placement is a uniform random tile, and until the caps were raised the cap of three
-## was the only reason two dog walkers never landed on the same stretch of pavement. It is a
-## rule of its own now: several candidates are offered and the first that clears
-## `EVENT_SPACING_SAME` from its own kind and `EVENT_SPACING_ANY` from everything else wins.
+## `already` is what the day has planned so far, and it is what keeps the density legible.
+## Placement is a uniform random tile, so without a spacing rule the only thing keeping two dog
+## walkers off one stretch of pavement is a low cap — which is a coincidence rather than a rule.
+## Several candidates are offered and the first that clears `EVENT_SPACING_SAME` from its own kind
+## and `EVENT_SPACING_ANY` from everything else wins.
 ##
 ## The fallback is the roomiest candidate offered rather than nothing, because a scripted event
 ## has to happen: on a map with fifty events on it the honest answer is the best spot left.
@@ -686,21 +647,19 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 ##
 ## The key is the *question* rather than the event, because almost every row in the catalogue asks
 ## the same one — a pavement, either side, for this role — so one list serves most of the day. The
-## order is exactly the order the two loops used to produce, since the placement roll is an index
-## into it and a day has to be reproducible from its seed.
+## order matters: the placement roll is an index into this array and a day has to be reproducible
+## from its seed.
 ##
-## **The role is part of the question since M50 step 2**, and it is answered the way the precinct
-## weight already was: by how many times a tile is *offered*, rather than by a rule downstream.
-## Everything that reads this array — the roll, the spacing, the room measurement — keeps working
-## unchanged, which is the whole reason the precinct weight was built that way and the reason it is
-## worth copying rather than inventing a second mechanism beside it.
+## **The role is part of the question, and it is answered the way the precinct weight is**: by how
+## many times a tile is *offered*, rather than by a rule downstream. Everything that reads this
+## array — the roll, the spacing, the room measurement — keeps working unchanged, which is why this
+## is worth copying rather than inventing a second mechanism beside it.
+##
 ## **The role's list is built out of the roleless one rather than beside it**, and that is a cost
-## decision with a number behind it. The scan itself is the expensive half — two passes over every
-## sidewalk in the city, with a closure test, a doorstep test and a kerb test on each — and doing
-## it once per role made `tests/test_events.gd` twice as slow on its own. The role only ever
-## *re-weights* tiles the scan already accepted, so it is a second pass over a list that is already
-## in memory. `CLAUDE.md`'s note about `_ground_for` applies to the base list unchanged: nothing it
-## depends on can move inside one `build_day`.
+## decision with a number behind it. The scan is the expensive half — two passes over every sidewalk
+## in the city, with a closure test, a doorstep test and a kerb test on each — and doing it once per
+## role doubles the suite's time on its own. The role only ever *re-weights* tiles the scan already
+## accepted, so it is a second pass over a list that is already in memory.
 static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		corridor: Corridor = null, role := GameEnums.BlockerRole.NONE,
 		site := NO_SITE) -> Array[Vector2i]:
@@ -736,8 +695,7 @@ const NO_SITE := Vector3i(-1, -1, -1)
 ## Every tile of the right kind that anything may stand on today, precinct weighting included.
 ##
 ## **A precinct is a retail street**, so it carries more of the day than a length of ordinary
-## pavement does. *(Playtest 12, finding 1: "they should have a higher density of events" — a
-## precinct is where the cafés and the market stalls and the buskers are.)*
+## pavement does: it is where the cafés and the market stalls and the buskers are.
 static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) -> Array[Vector2i]:
 	var key := "%s|%d" % [def.placement, def.pavement_side]
 	if ground.has(key):
@@ -768,34 +726,30 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 ## the rest of the city stays available to it: a wall wants its own band, it settles for anywhere
 ## else off the routes, and only the routes themselves are refused.
 ##
-## **The wall band has a gradient in it now, and the gradient is the instruction.** *(2026-08-31:
-## "areas that outside the paths should have blocking events all over — we don't want the player to
-## step in those areas and it ranges from very costly to deadly.")* Stray one turning and it is
-## expensive; stray further and it ends the day. So a **very costly** wall is pulled to the rim,
+## **The wall band has a gradient in it, and the gradient is the instruction**: the ground off the
+## paths ranges from *very costly* to *deadly*. Stray one turning and it is expensive; stray further
+## and it ends the day. So a **very costly** wall is pulled to the rim,
 ## which is the turning she can see from the junction she is standing at, and a **lethal** one is
 ## pulled past it. Both keep the whole off-corridor city as a weight rather than a filter, so
 ## neither can be starved of ground on a day whose corridor happens to be most of the map.
 ##
-## **And one street inside the rim is worth more than the rest of it.** *(M55, playtest 17 finding
-## 2: "if two paths go parallel add some blocking events between them", nuanced to "sometimes put a
-## blocker between (wall or event) and sometimes leave it open".)* A gap is the single street two
-## adjacent strands of today's corridor are joined by, so it is the one piece of rim that is
+## **And one street inside the rim is worth more than the rest of it.** A gap is the single street
+## two adjacent strands of today's corridor are joined by, so it is the one piece of rim that is
 ## *inside* the day's own plan rather than beside it: with nothing on it the two strands are one
 ## wide easy region and choosing between them is not a choice.
 ##
-## It is a **weight on top of the rim weight** rather than a rule that closes every gap, and that is
-## the player's own "sometimes" — a gap is likelier than an ordinary turning to carry something and
-## is never certain to.
+## It is a **weight on top of the rim weight** rather than a rule that closes every gap: a gap is
+## likelier than an ordinary turning to carry something and never certain to, which is the variety
+## the design asks for.
 ##
-## **It applies to the costly half of the wall band and not to the lethal half**, which was a
-## measured correction and not a nicety. A gap is on the rim by construction, so a lethal row's
+## **It applies to the costly half of the wall band and not to the lethal half**, which is a
+## measured correction rather than a nicety. A gap is on the rim by construction, so a lethal row's
 ## weight there is 1 against `WALL_DEEP_WEIGHT` further out — and multiplying *that* by the gap
-## weight makes a gap the best lethal ground in the city, which pulled the deep band's teeth
-## straight out. Measured over eight seeds of day 9: the deep band went from the dearest ground in
-## the city to level with the corridor, which is M55's first item undone by its second. The
-## gradient's own sentence is the fix: *stray one turning and it is expensive, stray further and it
-## ends the day* — so what stands in a gap is very expensive, and the deadly end stays where it was
-## put.
+## weight makes a gap the best lethal ground in the city, which pulls the deep band's teeth straight
+## out: measured over eight seeds of day 9, the deep band goes from the dearest ground in the city to
+## level with the corridor. The gradient's own sentence is the fix — *stray one turning and it is
+## expensive, stray further and it ends the day* — so what stands in a gap is very expensive, and
+## the deadly end stays where it was put.
 static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.BlockerRole,
 		lethal := false) -> int:
 	var away := corridor.depth(tile)
@@ -814,14 +768,12 @@ static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.Block
 		_:
 			return 1
 
-## The street the front door opens onto, which nothing is placed on. *(M43, playtest 11 finding 1:
-## "events/hazards should not spawn on the home block".)*
+## The street the front door opens onto, which nothing is placed on.
 ##
 ## The home is a notch with one exit, so the walk from the doorstep to the first junction is the
 ## one stretch of a day she does not choose to be on — and a thing standing on it is not a route
-## decision, it is a tax. `ClosurePlanner.home_street` has refused to close this exact segment
-## since M16 for exactly that reason, and this is that exemption applied to the other thing in the
-## game that occupies ground.
+## decision, it is a tax. `ClosurePlanner.home_street` refuses to close this same segment for the
+## same reason; this is that exemption applied to the other thing in the game that occupies ground.
 ##
 ## **It is the segment rather than a radius**, which is the part worth keeping. A radius is a
 ## number somebody has to tune and it stops at an arbitrary distance down a street; a segment is
@@ -834,13 +786,12 @@ static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 	var segment := ClosurePlanner.home_street(map)
 	return segment.tile_rect() if segment else Rect2i()
 
-## Whether a tile is the lane of the pavement this event wants. *(M34, playtest 07 findings 7
-## and 15.)*
+## Whether a tile is the lane of the pavement this event wants.
 ##
-## Almost everything says `ANY` and this is a free `true`. The two rows that do not were both
-## reported as standing somewhere that made no sense of them, and neither is a balance question:
-## a parked van belongs at the kerb rather than in a traffic lane the crowd will drive straight
-## through, and a lorry reversing into a yard belongs with its back to a wall.
+## Almost everything says `ANY` and this is a free `true`. The two rows that do not are placement
+## questions rather than balance ones: a parked van belongs at the kerb rather than in a traffic
+## lane the crowd will drive straight through, and a lorry reversing into a yard belongs with its
+## back to a wall.
 ##
 ## `AGAINST_THE_BUILDING` asks for two things and the second is about the *art*: there has to be
 ## a real building on the far side, and it has to be **east or west**, because the silhouettes
@@ -897,12 +848,11 @@ static func _build_placement(def: EventDef, map: CityMap, tile: Vector2i,
 ##
 ## - `EVENT_SPACING_ANY` — nothing is ever drawn inside anything else. Two tiles, thousands of
 ##   candidates, so refusing costs a re-roll and nothing else.
-## - **Nothing else happens inside a lethal event's field.** This is playtest 05's first named
-##   risk: `Tuning.validate_event()` states the telegraph contract *per event* and the player
-##   experiences the sum, so at one event per block "walk out of this radius" can quietly mean
-##   "walk into the next one". For fifteen of the eighteen rows that is a cost and it is what
-##   the density is *for*; for the three that end the day it is a death arriving out of a field
-##   she was already reading. A `hard_fail` event that cannot find room is not placed at all.
+## - **Nothing else happens inside a lethal event's field.** `Tuning.validate_event()` states the
+##   telegraph contract *per event* and the player experiences the sum, so at one event per block
+##   "walk out of this radius" can quietly mean "walk into the next one". For a row that only costs
+##   points that is what the density is *for*; for one that ends the day it is a death arriving out
+##   of a field she was already reading. A `hard_fail` event that cannot find room is not placed.
 ## - `EVENT_SPACING_SAME` — a second dog walker a few pixels from the first reads as a
 ##   duplicated sprite rather than a second incident. This one bends, because on a full map the
 ##   honest answer is the roomiest spot left rather than no event.
@@ -912,18 +862,19 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 		if not plan.is_placed():
 			continue
 		var gap := _gap_between(candidate, plan)
-		# **An offer is not in the world yet, so it takes up no room.** *(M50 step 2.)* A set piece
-		# is planned at every site of a covering set and exactly one of them ever happens, so
-		# spacing the whole day around all of them reserves ground for events that will not exist —
-		# and it broke M39's guarantee outright, because the day *after* it fires then has two to
-		# six long routes' worth of ground freed rather than one. Measured on seed 4242:
-		# `leaf_blower` seven to five and eight kinds moving between two attempts at the same day.
+		# **An offer is not in the world yet, so it takes up no room.** A set piece is planned at
+		# every site of a covering set and exactly one of them ever happens, so spacing the whole day
+		# around all of them reserves ground for events that will not exist — and it breaks *a
+		# retried day is the same day* outright, because the day *after* it fires then has two to six
+		# long routes' worth of ground freed rather than one. Measured on seed 4242 with offers
+		# spaced against: `leaf_blower` seven to five and eight kinds moving between two attempts at
+		# the same day.
 		#
 		# The exception is the lethal clause below, and it is the one thing that cannot be deferred:
 		# if the offer does resolve there, she meets a lethal field and a fire engine at once, which
-		# is exactly the sum M28 refuses. Siblings still space against each other — the group is
-		# compared normally against its own — because two offers on top of one another would be a
-		# real overlap on whichever of them fires.
+		# is exactly the sum the clearance rule refuses. Siblings still space against each other —
+		# the group is compared normally against its own — because two offers on top of one another
+		# would be a real overlap on whichever of them fires.
 		var elsewhere := plan.set_piece_group != "" \
 				and plan.set_piece_group != candidate.set_piece_group
 		if not elsewhere:
@@ -937,23 +888,20 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 			return -INF
 	return INF if room_same >= Tuning.EVENT_SPACING_SAME else room_same
 
-## Whether M28's clearance rule is about this placement: a lethal event with nothing else inside
+## Whether the clearance rule is about this placement: a lethal event with nothing else inside
 ## its whole `outer_radius`.
 ##
 ## **The rule is now stated over the ground she is being guided along, and off it there is an
-## exemption.** *(2026-08-31, agreed with the player: "areas that outside the paths should have
-## blocking events all over — we don't want the player to step in those areas and it ranges from
-## very costly to deadly", and, asked directly which of the two had to give, "exempt the
-## off-corridor ground from it".)*
+## exemption**, which was the player's own call when the two collided.
 ##
-## Read the rule's own reason and the exemption falls out of it. M28's sentence is *the contract is
-## stated per event and the player experiences the sum* — walking out of one field can mean walking
-## into another, and where that second field ends the day it is a death arriving out of something
-## she was already reading. That is an argument about **a route she is meant to take**. Off the
-## corridor there is no route she is meant to take; the whole point of the ground is that she should
-## not be on it, and a lethal field that overlaps another one is the city saying so rather than a
-## fairness failure. With the rule applied out there, "deadly all over" is not merely hard to
-## achieve — it is arithmetically impossible: six lethal rows capped at three to five, at radii of
+## Read the rule's own reason and the exemption falls out of it. The rule exists because *the
+## contract is stated per event and the player experiences the sum* — walking out of one field can
+## mean walking into another, and where that second field ends the day it is a death arriving out of
+## something she was already reading. That is an argument about **a route she is meant to take**.
+## Off the corridor there is no route she is meant to take; the whole point of the ground is that
+## she should not be on it, and a lethal field overlapping another one is the city saying so rather
+## than a fairness failure. With the rule applied out there, *deadly all over* is not merely hard to
+## achieve — it is arithmetically impossible: six lethal rows capped in single figures, at radii of
 ## 145 to 380px, cannot tile anything.
 ##
 ## **A `WALL` is exactly the off-corridor set and that is by construction, not by coincidence.**
@@ -1025,8 +973,8 @@ static func _along_street_path(map: CityMap, tile: Vector2i, def: EventDef,
 		room = backward_room
 
 	var length := mini(def.path_length_tiles, room)
-	# Stop short of a closed street rather than driving through the barrier at the end of it —
-	# and, since M21, short of a four-block calm zone as well. A corridor that ends in a park is
+	# Stop short of a closed street rather than driving through the barrier at the end of it — and
+	# short of a calm zone's absorbed corridor as well. A corridor that ends in a park is
 	# not a corridor a delivery van can drive down, and unlike a closure there is nothing there
 	# to hit: the route would simply cross the grass.
 	var from_a_street := map.is_street(tile)
@@ -1106,20 +1054,20 @@ static func _reaches_any(candidate: Planned, rects: Array[Rect2]) -> bool:
 ## do.** What keeps an *unvisited* area clean is `_calm_to_leave_alone`, at placement; this runs
 ## afterwards and asks the one question placement cannot answer — has the day ended up with no
 ## clean calm ground anywhere, which can only happen once she has settled in every area there is.
-## Two independent mechanisms rather than one, for the reason M50 gives for keeping a reachability
-## check under the corridor: the day a placement rule stops holding is the day a run becomes
-## unwinnable, and nothing else would say so.
+## Two independent mechanisms rather than one, for the same reason a reachability check is kept
+## under the corridor: the day a placement rule stops holding is the day a run becomes unwinnable,
+## and nothing else would say so.
 ##
-## Since M14 this is the difference between a hard day and an impossible one, and since M15
-## the set of calm zones is whatever the arcs have left — a requisitioned park is not a
-## candidate, because it is not calm any more.
+## A day can only be won on calm ground, so this is the difference between a hard day and an
+## impossible one. The set of calm zones is whatever the arcs have left — a requisitioned park is
+## not a candidate, because it is not calm any more.
 ##
 ## Ambient events do not count as spoiling. A playground is a permanent feature of the map,
 ## not something that went wrong today — it makes a park *contested*, which is the point,
 ## and it leaves the far side of the block calm. Counting it here would mean stripping a
 ## playground out of one park every single day.
-## Since M24 it also takes the block she settled in yesterday, and protects a **different** one
-## where it can. Without that the two halves fight: the day deliberately puts something in her
+## It also takes the block she settled in yesterday, and protects a **different** one where it
+## can. Without that the two halves fight: the day deliberately puts something in her
 ## park, and then this rule, looking for the least disturbed calm ground, finds the block with
 ## exactly one spoiler on it and strips the very event that was the point.
 static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
@@ -1138,7 +1086,7 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
 		for plan in planned:
 			if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
 				continue
-			# **A scar is not today's noise.** *(M36.)* It is exempt for exactly the reason the
+			# **A scar is not today's noise.** It is exempt for exactly the reason the
 			# playground above is: it is a permanent feature of the map, and stripping it would
 			# make a burnt-out building that has been on that corner since day 3 vanish for one
 			# day and come back the next. It was strippable until a day-9 plan happened to make
@@ -1155,21 +1103,15 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
 		return
 
 	# **Every calm area she has not used this act stays clean, not just one of them.**
-	# *(Playtest 14, finding 8: "I just came to a calm zone that already had events play out but I
-	# have never been to it before... this calm zone would make the game hard stop since no calm
-	# zone would be available one day early.")*
+	# `MIN_CALM_BLOCKS` is derived as an act's worth of days **plus one** on the assumption that the
+	# only thing which burns an area is *going* to it — so an area spoiled before she has ever been
+	# there brings the run's hard stop a day closer.
 	#
-	# The player's arithmetic is the argument and it is right. `MIN_CALM_BLOCKS` is derived as an
-	# act's worth of days **plus one** on the assumption that the only thing which burns an area is
-	# *going* to it — which is what `_spoil_the_parks_she_used` does, deliberately, so that she
-	# cannot go back to the same bench every day.
-	#
-	# **Since 2026-08-31 that rule is enforced at placement instead** — see `_calm_to_leave_alone`,
-	# and *"just don't place events there"* — so by the time this runs there is normally nothing to
-	# strip. What is left here is the case that placement cannot answer: **she has been to all of
-	# them**, so nothing was protected, and the day could otherwise have no clean ground on it at
-	# all. A winnable day outranks a fresh decision, so the least disturbed area is cleared and the
-	# rest stand.
+	# That rule is enforced at **placement** (see `_calm_to_leave_alone`), so by the time this runs
+	# there is normally nothing to strip. What is left here is the case placement cannot answer:
+	# **she has been to all of them**, so nothing was protected and the day could have no clean
+	# ground on it at all. A winnable day outranks a fresh decision, so the least disturbed area is
+	# cleared and the rest stand.
 	var untouched: Array[Vector2i] = []
 	for block in map.calm_blocks:
 		if not used_calm.has(block):

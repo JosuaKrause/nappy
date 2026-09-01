@@ -1,18 +1,15 @@
 class_name EventCatalogue
 extends RefCounted
-## Every event in the game, defined in code. See docs/EVENTS.md for the full catalogue and
-## the reasoning behind each one.
-##
-## M4 carries three events, chosen to exercise the whole system rather than to populate a
-## day: a permanent ambient field, a short mobile burst, and a stationary pulsing source.
-## M5 fills in the rest of Act I.
+## Every event in the game, defined in code — reviewable in a diff, validated on load, and
+## assertable over the whole catalogue in a test. See docs/EVENTS.md for the catalogue table and
+## the reasoning behind each row.
 
 # ------------------------------------------------------------------- bodies ---
-# *(M34.)* A body is **half the silhouette**, never a number chosen for how it plays: the rule
-# in `EventDef.obstructs_radius` is that a thing that stands still is solid at the width it is
-# drawn, and a body that disagrees with the art is a lie about where she can walk in one
-# direction or the other. Two of them repeat often enough to be worth a name; the rest are
-# written at the row that uses them, with the sprite they came from.
+# A body is **half the silhouette**, never a number chosen for how it plays: the rule in
+# `EventDef.obstructs_radius` is that a thing that stands still is solid at the width it is drawn,
+# and a body that disagrees with the art is a lie about where she can walk in one direction or the
+# other. Two of them repeat often enough to be worth a name; the rest are written at the row that
+# uses them, with the sprite they came from.
 
 ## `person.svg` is 18px across. A man you edge past on a pavement rather than walk through.
 const PERSON_BODY := 11.0
@@ -64,7 +61,7 @@ static func _build() -> Array[EventDef]:
 		_burning_building(),
 		_burnt_shell(),
 
-		# Act I, M31 - the neighbourhood with things in it, and two that can end the day.
+		# Act I - the neighbourhood with things in it, and two that can end the day.
 		_loose_dog(),
 		_market_stall(),
 		_leaf_blower(),
@@ -96,25 +93,21 @@ static func _build() -> Array[EventDef]:
 ## The reason parks are not a free win. Permanent, wide, and sitting in the middle of the
 ## calmest ground in the city.
 ##
-## **And for twenty milestones it was the calmest ground in the city.** *(M39, playtest 10 finding 2:
-## "playground doesn't increase excitement.")* `PLAYGROUND` is on `Tile._CALM`, so the excitement
-## decay on it is `EXCITEMENT_DECAY_WALKING × EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` — **7.7/s** —
-## and this row emitted **7.0/s at the very peak of its pulse**, with an envelope that spends most of
-## its cycle at a fraction of that. It never once out-emitted the ground it was standing on, at any
-## distance, at any phase of its beat: its denial radius — the distance at which calm ground stops
-## being usable — was its own **inner radius**, 40px of a stated 150. Standing in a playground was a
-## net *benefit*.
+## **This is the one ambient row that lives on calm ground, and that decides its intensity.**
+## `PLAYGROUND` is on `Tile._CALM`, so the decay under it is
+## `EXCITEMENT_DECAY_WALKING × EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` — **7.7/s**. A row that emits
+## less than that at the peak of its pulse never out-emits the ground it stands on, at any distance
+## or any phase of its beat: its denial radius collapses to its own **inner radius**, and standing in
+## a playground is a net *benefit*.
 ##
-## It was right when it was written. In M5 the calm multiplier was 3.5, so the decay under it was
-## 1.5/s and 7.0 was nearly five times that. **M18 took the multiplier to 10 and M38 to 12**, and
-## nobody re-ran the arithmetic on the one ambient row that lives on calm ground — while playtest 08
-## was doing exactly this sum for the busker, one function away, in `EventScheduler._denial_radius`,
-## whose docstring says *"getting this wrong is how one busker was ever thought to spoil a park"*.
+## **So it moves whenever the calm multiplier moves**, and that is the trap — the multiplier is
+## tuned for the park and this row is the only thing in the catalogue that stands in one, so nothing
+## else in the balance goes wrong to point at it. `EventScheduler._denial_radius` is the same
+## arithmetic for spoilers.
 ##
-## The number is set from what it should deny rather than by taste, which is the lesson: at 15 the
-## denial radius is 117px at the top of the beat and 86px at the middle of it, against a park block
-## 256px across. So it dominates the middle of a park and leaves the far side genuinely calm, which
-## is what the comment below has claimed since M5 — and `tests/test_balance.gd` still finds a day
+## Set from what it should deny rather than by taste: at 15 the denial radius is 117px at the top of
+## the beat and 86px at the middle, against a park block 256px across. It dominates the middle of a
+## park and leaves the far side genuinely calm, and `tests/test_balance.gd` still finds a day
 ## winnable, because the ground is contested rather than removed.
 static func _playground() -> EventDef:
 	var def := EventDef.new()
@@ -138,19 +131,16 @@ static func _playground() -> EventDef:
 ## The tutorial obstacle: visible crouching before it bolts, sharp while it crosses, gone
 ## a second later. Small radius, so walking one lane wide of it is enough.
 ##
-## **Playtest 04 found it doing nothing at all, for two separate reasons, and M27 fixed both.**
+## **Two things make a cat happen at all, and without either it is an event nobody meets.**
 ##
-## It was placed on a road tile somewhere in the city at dawn and it ran its two and a half
-## seconds out there, alone. *"The cat is ineffective since it happens when it spawns."* A cat
-## is not a place, it is a moment — so it is the first `AHEAD_OF_PLAYER` event: the director
-## puts it across her line while she is walking, and it happens in front of her every time.
+## It is `AHEAD_OF_PLAYER`, because a cat is not a place: sited on a road tile at dawn it runs its
+## two seconds out somewhere across the city, alone. The director puts it across her line while she
+## is walking, so it happens in front of her every time.
 ##
-## And it had never once been seen to bolt. `EventInstance` starts a mobile event moving when
-## the telegraph does, which is right for a siren approaching from three streets away and wrong
-## for a crouch: the path is one street wide, so at 240px/s the cat finished its whole run
-## *during* the telegraph. It never reached full intensity and the running sprite never drew.
-## `still_while_telegraphing` is the fix, and the duration now covers the crossing it makes
-## afterwards rather than expiring half way over.
+## And it is `still_while_telegraphing`. `EventInstance` starts a mobile event moving when the
+## telegraph does, which is right for a siren approaching from three streets away and wrong for a
+## crouch: the path is one street wide, so at 240px/s the cat finishes its whole run *during* the
+## telegraph — never reaching full intensity, never drawing the running sprite.
 static func _cat_dash() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cat_dash"
@@ -168,38 +158,29 @@ static func _cat_dash() -> EventDef:
 	def.mobile = true
 	def.still_while_telegraphing = true
 	def.speed = 240.0
-	# Lowered in M31, because the cat stopped being the only thing that happens *to* her: the
-	# director now has pigeons too, and two tricks at 3.0 each would have doubled what it spends.
+	# Shared with the other things that happen *to* her rather than being the whole of that budget:
+	# the director also has pigeons and, from day 3, the dog.
 	def.weight = 2.5
-	# The one cap M28 did *not* multiply. A cat is sited by the director while she walks, and
-	# `AHEAD_INTERVAL` spreads them 11-26s apart over a 180s day, so a seventh has nowhere to
-	# happen: raising it would spend budget on cats the day cannot fit.
+	# Deliberately low where the rest of the catalogue's caps are not. A cat is sited by the director
+	# while she walks and `AHEAD_INTERVAL` spreads them 11-26s apart over a 180s day, so past this
+	# there is nowhere left for one to happen and the budget goes on cats the day cannot fit.
 	def.max_per_day = 8
 	return def
 
 ## Stationary, loud, and *pulsing* — the intensity envelope means the counterplay is timing
 ## a pass between yells, which is a different skill from routing around a hazard.
 ##
-## He is also the man playtest 07 walked up to and walked *through*: *"there was a person right
-## on the home block but walking up to them didn't do anything"*, and *"I can walk over the
-## robber and he doesn't do anything"*. Both are this row — the traces have nineteen `near
-## homeless_yeller` entries and never reach the day an actual robber exists.
+## He **paces**, which is what `EventDef.paces` is for, and it is a design decision rather than
+## polish: a stationary source is a fixed price on a fixed patch of pavement, so the answer to it is
+## a line you draw once and never think about again. A man walking up and down two hundred and fifty
+## pixels of footway is a *timing* problem on top of a routing one — the same thing his pulse asks
+## for, at a larger scale.
 ##
-## **And he is the man who killed playtest 09's third attempt at day 1 by standing still.** *"Who is
-## the person killing me? It didn't move and it took a long time to have any effect. If it's the
-## homeless person it needs to walk up and down the sidewalk."* Both halves are here.
-##
-## He **paces** now — a beat rather than a journey, which is what `EventDef.paces` is for. That is a
-## design change and not a polish one: a stationary source is a fixed price on a fixed patch of
-## pavement, so the answer to it is a line you draw once and never think about again. A man walking
-## up and down two hundred and fifty pixels of footway is a *timing* problem on top of a routing
-## one, which is the same thing his pulse already asks for at a smaller scale.
-##
-## The cost of pacing is the body. M34 gave him `PERSON_BODY` for the "walk over the robber"
-## complaint and the invariant takes it straight back off: **anything mobile is exempt**, because a
-## moving wall on a two-tile pavement pins her against a building. That is the `dog_walker` decision
-## and it has not changed. What stops you walking through him is the meter, and 14 over 210px is a
-## real wall — it was 10, which is where *"it took a long time to have any effect"* came from.
+## **The cost of pacing is the body.** Anything mobile is exempt from *solid things are solid*,
+## because a moving wall on a two-tile pavement pins her against a building. So what stops you
+## walking through him is the meter alone, which is why he is 14 over 210px: he is one of the two
+## rows on day 1 that a player is most likely to walk *into* rather than around, and a quiet one
+## reads as a man who does nothing.
 static func _homeless_yeller() -> EventDef:
 	var def := EventDef.new()
 	def.id = "homeless_yeller"
@@ -226,12 +207,10 @@ static func _homeless_yeller() -> EventDef:
 
 ## Slow, and it owns the pavement it is on.
 ##
-## This was the clearest measured failure in the whole catalogue: at intensity 7 walking
-## *through* a dog walker beat walking around it by 0.1 of a point, because the 3.5/s walking
-## decay outran what it emitted. An obstacle that is cheaper to walk into than to avoid is not
-## an obstacle. Playtest 02, finding 3, asked for the opposite — *"dog walkers that are a fast
-## loss if I get too close; if I see one ahead I might have to turn around and cross at the
-## zebra"* — so the intensity is now the wall.
+## **The intensity is the wall, and it has to beat the walking decay.** At 7 it does not: walking
+## *through* a dog walker beats walking around it by 0.1 of a point, because 3.5/s of decay outruns
+## what it emits. An obstacle that is cheaper to walk into than to avoid is not an obstacle, and
+## what this row is for is being worth turning round and crossing at the zebra for.
 ##
 ## Deliberately **not** given an `obstructs_radius`: a mobile static body wide enough to matter
 ## on a two-tile pavement can pin the player against a building, and being pinned by something
@@ -253,15 +232,14 @@ static func _dog_walker() -> EventDef:
 	def.speed = 32.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 30
-	# The heaviest weight in act I, and M31 *raised* it while adding seven rows around it. The
-	# density is a fixed number of events, so every new type takes a share of it — and the two
-	# rows playtest 05 named by name are the two that cannot be allowed to thin out. Dog walkers
-	# and café frontages are what an ordinary street is mostly made of; a loose dog and an ice
-	# cream van are punctuation.
+	# The heaviest weight in act I, and it goes **up** whenever rows are added around it. The density
+	# is a fixed number of events, so every new type takes a share of it, and this is one of the two
+	# that cannot be allowed to thin out: dog walkers and café frontages are what an ordinary street
+	# is mostly made of, where a loose dog and an ice cream van are punctuation.
 	def.weight = 4.5
-	# Playtest 05, finding 6, in the player's own words: *"the dog walker decision should happen
-	# meaningfully — I want to have to make that decision at least twice on day one."* Three on a
-	# forty-nine-block city made that a coin flip she lost. Repeats are explicitly fine.
+	# **The dog-walker decision has to happen at least twice on day one**, which is the density
+	# target stated as one row. A cap in single figures makes it a coin flip. Repeats are fine — the
+	# objection is to two of them thirty pixels apart, and `EVENT_SPACING_SAME` is what answers that.
 	def.max_per_day = 26
 	def.cost = 2
 	return def
@@ -269,12 +247,10 @@ static func _dog_walker() -> EventDef:
 ## The pavement, taken. A café spilling out of its frontage: chairs, tables, conversation, and
 ## no way past on this side.
 ##
-## The act I half of playtest 02's finding 3 — *"there should be things that force me to cross
-## the street"* — and the first event in the game that is available on **day one** and cannot
-## be walked through. `construction` does the same job from day 2 and is the loud version of
-## it; this one is pleasant, which is worse: nothing about it looks like a hazard and it still
-## costs the street. Stationary, so it can never pin the player the way a moving obstruction
-## could.
+## **The first event available on day one that cannot be walked through**, and the thing that forces
+## a crossing. `construction` does the same job from day 2 and is the loud version of it; this one is
+## pleasant, which is worse: nothing about it looks like a hazard and it still costs the street.
+## Stationary, so it can never pin the player the way a moving obstruction could.
 static func _cafe_tables() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cafe_tables"
@@ -289,10 +265,9 @@ static func _cafe_tables() -> EventDef:
 	def.obstructs_radius = 24.0
 	# Raised with `dog_walker` and for the same reason — see the note there.
 	def.weight = 4.0
-	# *"Also the same with a restaurant — I never saw one."* At three on a forty-nine-block city,
-	# with only the ~23% of the map near her ever instantiated, the expected number of cafés she
-	# could see in a day was under one — so the day-1 event built to force a crossing was in
-	# practice absent from most day ones.
+	# Only what is inside `EVENT_STREAM_RADIUS` ever exists, which is a fraction of the map — so a
+	# cap in single figures puts the expected number of cafés she *sees* in a day under one, and the
+	# day-1 event built to force a crossing is absent from most day ones.
 	def.max_per_day = 24
 	def.cost = 2
 	return def
@@ -300,15 +275,10 @@ static func _cafe_tables() -> EventDef:
 ## Parked at the kerb, hazards going, half unloaded. Constant and stationary — the plain
 ## obstacle the route planning is practised on.
 ##
-## **It was the thing playtest 07 called scenery**: *"there is also a car obstacle on the road
-## that is basically a still car standing on the road doing nothing"*, and it was doing nothing
-## for two reasons at once. It had no body, so she walked through it; and it was placed on a
-## `ROAD` tile, where it stood in a traffic lane that the crowd knows nothing about and drove
-## straight through, blocking a route nobody takes on foot anyway.
-##
-## Both halves are the same fix: a parked van belongs **at the kerb**. There it is on the
-## pavement she is actually walking down, it takes that pavement — 48px of van across a 64px
-## footway, so the answer is the other side of the street — and no car drives through it.
+## **A parked van belongs at the kerb**, and on a `ROAD` tile it is scenery twice over: it stands in
+## a traffic lane the crowd knows nothing about and drives straight through, blocking a route nobody
+## walks. At the kerb it is on the pavement she is actually using and it takes it — `VEHICLE_BODY` is
+## 22px, so 44px of van across a 64px footway, and the answer is the other side of the street.
 static func _delivery_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "delivery_van"
@@ -417,12 +387,11 @@ static func _burning_building() -> EventDef:
 ## Almost silent — it is a reminder rather than a hazard, and it is on the same corner on
 ## day 12 as it was on day 4.
 ##
-## *(M34.)* "Not an obstacle" used to mean it had no body either, which is how a burnt-out
-## building came to be a thing you could stand inside — playtest 07 named it in the list of
-## things it could walk over. It is silent **and** solid now, and the two were never the same
-## claim: what it costs the meter is 2.5/s and what it costs the route is a corner.
-## `_draw_spread` draws the cordon at exactly the width of the body, so this number is also how
-## wide it looks; at 36 it is a shell rather than the two-barrier sliver 11px was drawing.
+## **Silent and solid are not the same claim**, and reading "not an obstacle" as "no body" is how a
+## burnt-out building becomes a thing you can stand inside. What it costs the meter is 2.5/s and
+## what it costs the route is a corner. `_draw_spread` draws the cordon at exactly the width of the
+## body, so this number is also how wide it looks: at 36 it is a shell, where a person's 11 would
+## draw a two-barrier sliver.
 static func _burnt_shell() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burnt_shell"
@@ -437,25 +406,19 @@ static func _burnt_shell() -> EventDef:
 	def.obstructs_radius = 36.0
 	return def
 
-# ------------------------------------------- Act I, M31: variety, and two with teeth ---
-# Playtest 05, finding 5: *"day two doesn't feel more difficult than day one. Having day one
-# relatively easy is okay if the difficulty increases. But right now there is never any
-# danger."* True by construction — every `hard_fail` event started on day 8 or later, so for
-# half a run the only lethal thing in the game was a car the player is never obliged to step in
-# front of.
+# ----------------------------------------- Act I: variety, and two with teeth ---
+# **Act I has to escalate, and its danger is the neighbourhood's own.** With every `hard_fail` row
+# starting on day 8 or later, half a run has nothing lethal in it but a car the player is never
+# obliged to step in front of.
 #
-# The shape of the fix was a decision rather than a derivation, and it was taken against a
-# patrol: *"patrol shouldn't be there for act I"*. Act I is a nice neighbourhood, and a police
-# patrol in it on day 2 tells a story the game tells in act II. So the danger comes from the
-# neighbourhood itself — **a kid on a bike and a lorry reversing across a pavement**, which are
-# what a person pushing a pram is actually frightened of, and which arrive on days 2 and 3.
+# The shape of that is a decision rather than a derivation, and it is taken **against a patrol**:
+# act I is a nice neighbourhood, and a police patrol in it on day 2 tells a story the game tells in
+# act II. So the two lethal rows are **a kid on a bike and a lorry reversing across a pavement** —
+# what a person pushing a pram is actually frightened of — arriving on days 2 and 3.
 #
-# The rest is variety, asked for in the same breath: *"try to come up with more variety. we
-# need more events/entities in general."* Seven rows, five of them on day 1, each with its own
-# silhouette — see the note on `EventDef.Look`.
+# The rest is variety, and each row owes a silhouette of its own; see the note on `EventDef.Look`.
 
-## The leash slipped. *(The player's own idea: "a dog where the owner drops the leash and it
-## starts running".)*
+## The leash slipped, and the dog is running.
 ##
 ## The counterpart to `dog_walker` and the reason both exist: that one is a *span* you decide
 ## whether to cross the street to avoid, this one is a *thing coming down the pavement* that you
@@ -491,9 +454,9 @@ static func _loose_dog() -> EventDef:
 
 ## A market trestle taking the pavement, and the second thing on day 1 that forces a crossing.
 ##
-## `cafe_tables` has been the only one since M19, and M28 made it common — but one obstacle
-## repeated eighteen times is a rule, not a decision. This one is louder and wider and it is on
-## the other side of pleasant: a café you squeeze past is a nuisance, a market is a crowd.
+## **One obstacle repeated eighteen times is a rule, not a decision**, which is why day 1 needs a
+## second one. This is louder and wider than `cafe_tables` and on the other side of pleasant: a café
+## you squeeze past is a nuisance, a market is a crowd.
 static func _market_stall() -> EventDef:
 	var def := EventDef.new()
 	def.id = "market_stall"
@@ -513,8 +476,8 @@ static func _market_stall() -> EventDef:
 
 ## The loudest thing in act I, and it is a man tidying a park.
 ##
-## Deliberately allowed on `PARK`: a calm block with a leaf blower in it is calm ground she
-## cannot use, which is the shape M24 needs more of — somewhere to walk to that turns out to be
+## Deliberately allowed on `PARK`: a calm block with a leaf blower in it is calm ground she cannot
+## use, which is what a spoiled park is made of — somewhere to walk to that turns out to be
 ## occupied. Pitched above `busker` because a two-stroke engine is not a violin.
 static func _leaf_blower() -> EventDef:
 	var def := EventDef.new()
@@ -532,23 +495,21 @@ static func _leaf_blower() -> EventDef:
 	def.pulse_period = 4.0
 	def.obstructs_radius = PERSON_BODY
 	# **A wall row, and on day 1 it is half of the entire wall pool** — so its weight and its cap are
-	# what *"leaving the path should be lethal or very expensive"* is built out of. *(M55, playtest
-	# 17 findings 1 and 12.)*
+	# most of what *"leaving the path should be lethal or very expensive"* is built out of on the one
+	# day with nothing lethal in it.
 	#
-	# Both moved, and which one binds is a different answer on different days, which is the part
-	# worth carrying. The **cap** was binding on days 5 and 9: the lethal wall rows were capped at 4
-	# and 5 across 121 blocks, so the deep band had nothing deadly in it whatever the budget did. The
-	# **weight** is what binds on day 1, where the caps were never reached — a wall row is only ever
-	# *offered* as often as its weight, so 13% of a day's placements were walls no matter how high
-	# the ceiling went. Raising a cap the day never reaches is the other half of "a budget the
-	# catalogue cannot spend is not density".
+	# **Which of the two binds is a different answer on different days**, and that is the part worth
+	# carrying. A **cap** binds on the middle days, where the lethal wall rows are capped in single
+	# figures across 121 blocks and the deep band has nothing deadly in it whatever the budget does.
+	# A **weight** binds on day 1, where no cap is ever reached: a row is only *offered* as often as
+	# its weight, so the wall share is fixed however high the ceiling goes. Raising a cap the day
+	# never reaches is the other half of *a budget the catalogue cannot spend is not density*.
 	#
-	# 1.2 → 3.0 and 10 → 24, measured over five seeds: day 1 goes from 16 walls to 29, and the cost
-	# per tile of street reorders from **corridor 0.231 / rim 0.164 / deep 0.235** to **corridor
-	# 0.202 / rim 0.253 / deep 0.216** — which is M50's stated gradient, *stray one turning and it is
-	# expensive*, arriving for the first time. It costs six placements a day, because the budget now
-	# buys dearer rows, and it makes a leaf blower as common a sight as a dog walker. That is the
-	# price of day 1 having exactly two rows a wall can be made of.
+	# At 3.0 and 24, measured over five seeds, day 1 places 29 walls and the cost per tile of street
+	# runs **corridor 0.202 / rim 0.253 / deep 0.216** — the gradient the design asks for, *stray one
+	# turning and it is expensive*. It costs about six placements a day, because the budget buys
+	# dearer rows, and it makes a leaf blower as common a sight as a dog walker: the price of day 1
+	# having exactly two rows a wall can be made of.
 	def.weight = 3.0
 	def.max_per_day = 24
 	def.cost = 2
@@ -561,28 +522,23 @@ static func _leaf_blower() -> EventDef:
 ## possible version of the same idea and it is the one that makes the director read as a
 ## director rather than as a cat dispenser.
 ##
-## **It did nothing at all for two milestones and was reported twice.** *(Playtest 07, finding 9:
-## "birds just disappear if I get close and do nothing." Playtest 08, finding 2: "pigeons are also
-## completely ineffective.")* Three separate reasons, and the numbers here are two of them:
+## **Four things have to be true for a flock to be an event at all**, and each of them is a way this
+## row has been ineffective:
 ##
-## - It was **over before she arrived**. Sited two seconds of walking ahead with a 0.9s telegraph
-##   and a 2.4s burst, it expired as she reached it. The telegraph is the flock *on the pavement*
-##   now, which is long enough to be seen from down the street and to be walked around, and the
-##   burst outlasts her arrival instead of ending at it.
-## - It was **quiet and small**: 17 over a 110px reach, in a game where a café is 12 over 170. A
-##   flock going up in a pram's face is one of the loudest things that can happen on an ordinary
-##   pavement, and it is now priced like it.
-## - And it was **deleted at the top of its climb**, which is `EventDef.departs_at` and the reason
-##   that field exists. They fly off.
+## - It must not be **over before she arrives**. Sited two seconds of walking ahead, a short
+##   telegraph plus a short burst expires exactly as she reaches it. The telegraph is the flock *on
+##   the pavement*, long enough to be seen from down the street and walked around, and the burst
+##   outlasts her arrival rather than ending at it.
+## - It must not be **quiet and small**: 17 over a 110px reach, in a game where a café is 12 over
+##   170, is nothing. A flock going up in a pram's face is one of the loudest things that can happen
+##   on an ordinary pavement.
+## - It must not be **deleted at the top of its climb**, which is what `EventDef.departs_at` is for.
+##   They fly off.
+## - And the **birds** have to move, not just the event. Copies of one sprite at fixed offsets
+##   sharing a single `rise` term go up in one movement and hang in the air for the whole burst,
+##   which is what a player looks at and calls broken however correct the field is.
 ##
-## **And it was still ineffective, because it froze.** *(M38: "the birds are broken — they start the
-## flying animation but then freeze. Turn them into individual entities and let each fly and make
-## them dangerous.")* All three fixes above are about the *event*, and none of them touched the one
-## thing a player actually looks at: seven copies of one sprite, at seven offsets derived from the
-## instance's own position, sharing a single `rise` term that reached 1.0 at the end of the telegraph
-## and then held. The flock went up in one movement and hung in the air for the whole burst.
-##
-## It is `flock_size` birds now, each with its own heading, speed, height and wingbeat, each an
+## So it is `flock_size` birds, each with its own heading, speed, height and wingbeat, each an
 ## emitter in its own right — see `EventInstance`, "the flock". The numbers here follow from that:
 ##
 ## - **The intensity is a total to be shared out**, so it buys eleven overlapping fields rather than
@@ -624,10 +580,9 @@ static func _pigeon_flock() -> EventDef:
 
 ## **The first thing in the game that can end your day, and it arrives on day 2.**
 ##
-## A kid on a bike on the pavement, bell going. Everything about it is ordinary, which is the
-## point: the answer to *"there is never any danger"* should not be that act I becomes sinister,
-## it should be that act I is a real street. A pram and a bicycle at speed is what a person
-## pushing one is actually frightened of.
+## A kid on a bike on the pavement, bell going. Everything about it is ordinary, which is the point:
+## act I acquiring danger must not mean act I becoming sinister, it means act I being a real street.
+## A pram and a bicycle at speed is what a person pushing one is actually frightened of.
 ##
 ## The fairness contract does the work and it is expensive here — `hard_fail` doubles the margin
 ## and the speed means the whole radius counts, so the bell has to ring for (145/92) x 2 = 3.15s
@@ -635,9 +590,9 @@ static func _pigeon_flock() -> EventDef:
 ## and one step to make, and stepping off a pavement is a step. It is also why the radius is
 ## small — a wider one would need a bell you could hear across the district.
 ##
-## Day 2 rather than day 1 on purpose. *"Having day one relatively easy is okay if the
-## difficulty increases"* — so the escalation the player could not feel is now the plainest
-## possible thing: the day the streets acquire something that can take the day off you.
+## Day 2 rather than day 1 on purpose. Day 1 is allowed to be easy as long as the difficulty then
+## climbs, and this is the plainest possible way to say it climbed: day 2 is the day the streets
+## acquire something that can take the day off you.
 static func _cyclist() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cyclist"
@@ -656,16 +611,15 @@ static func _cyclist() -> EventDef:
 	def.path_length_tiles = 26
 	def.hard_fail = true
 	def.weight = 1.5
-	# Half the cap of the ordinary act I rows, and a third of `dog_walker`'s. At one event per
-	# block a lethal thing at full density would be a minefield rather than a street — and M28's
-	# rule that nothing else shares a lethal field means each one also quietly empties 145px of
-	# pavement around it.
+	# Well under the ordinary act I rows. At one event per block a lethal thing at full density is a
+	# minefield rather than a street — and *nothing else happens inside a lethal field* means each
+	# one also quietly empties 145px of pavement around it.
 	#
-	# **That last clause stopped being true off the corridor in M50, which is what lets this rise.**
-	# A wall is exempt from M28's clearance rule, and a lethal wall is offered `WALL_DEEP_WEIGHT`
-	# copies of the ground two turnings out — so 5 → 14 is the *deep* band getting the deadly half of
-	# *"very costly to deadly"*, not fourteen more cyclists on the route. **On the corridor it changes
-	# nothing at all**, because a wall gets zero copies there. *(M55, playtest 17.)*
+	# **What lets a lethal cap be this high at all is that a wall is exempt from that clearance rule
+	# off the corridor**, and a lethal wall is offered `WALL_DEEP_WEIGHT` copies of the ground two
+	# turnings out. So the cap buys the *deep* band the deadly half of *very costly to deadly*, not
+	# more cyclists on the route: **on the corridor it changes nothing**, because a wall gets zero
+	# copies there.
 	def.max_per_day = 14
 	def.cost = 3
 	return def
@@ -676,9 +630,9 @@ static func _cyclist() -> EventDef:
 ## simply interesting. Stationary, with the widest ordinary radius in act I — it is the act I
 ## answer to *"what makes a whole area unusable without anything being wrong"*.
 ##
-## At the kerb since M34, for the same reason as the delivery van: a van parked in a traffic lane
-## is a van the crowd drives through, and an ice cream van is a thing children cross a road to
-## reach rather than a thing standing in one.
+## At the kerb, for the same reason as the delivery van: a van parked in a traffic lane is a van the
+## crowd drives through, and an ice cream van is a thing children cross a road to reach rather than
+## a thing standing in one.
 static func _ice_cream_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "ice_cream_van"
@@ -710,14 +664,13 @@ static func _ice_cream_van() -> EventDef:
 ##
 ## Day 3, which puts one new lethal thing on each of the first act's last two days.
 ##
-## **The yard it is backing into has to be there.** *(M34, playtest 07 finding 15: "the backing
-## out lorry does not connect to the building making it hard to visually read".)* It was sited on
-## any pavement tile at all and drawn facing east, so most of them were a lorry parked in the
-## middle of a footway pointing along it — which is a parked lorry, and a parked lorry is not a
-## thing whose danger is *behind* it. `AGAINST_THE_BUILDING` gives it a wall to reverse into and
-## turns it to face out of that wall, so the 62px silhouette has its box end buried in the
-## frontage and its cab on the pavement. The lesson the event teaches is the shape of the
-## picture: what you must not walk into is the gap between the metal and the wall.
+## **The yard it is backing into has to be there.** Sited on any pavement tile and drawn facing
+## east, it is mostly a lorry parked in the middle of a footway pointing along it — which is a
+## parked lorry, and a parked lorry is not a thing whose danger is *behind* it.
+## `AGAINST_THE_BUILDING` gives it a wall to reverse into and turns it to face out of that wall, so
+## the 62px silhouette has its box end buried in the frontage and its cab on the pavement. **The
+## lesson the event teaches is the shape of the picture**: what you must not walk into is the gap
+## between the metal and the wall.
 static func _reversing_lorry() -> EventDef:
 	var def := EventDef.new()
 	def.id = "reversing_lorry"
@@ -739,50 +692,47 @@ static func _reversing_lorry() -> EventDef:
 	def.obstructs_radius = 28.0
 	def.hard_fail = true
 	def.weight = 1.2
-	# A lethal wall row, raised with `cyclist` and for the same reason: the deep band off the
-	# corridor is where the deadly end of the gradient lives, and four of these across 121 blocks
-	# could not fill it. *(M55, playtest 17.)*
+	# A lethal wall row, capped like `cyclist` and for the same reason: the deep band off the
+	# corridor is where the deadly end of the gradient lives, and a handful across 121 blocks cannot
+	# fill it.
 	def.max_per_day = 12
 	def.cost = 3
 	return def
 
 ## **The one thing in the game you have to run from, and it arrives on day 3.**
 ##
-## *(Playtest 07: "the run button is a trap shouldn't be an invariant — there should be legitimate
-## cases where running is required." And, in the same breath, when: "can we make it so those cases
-## only start appearing on day 3", with "an incident at the start to force running".)*
-##
-## Everything in the catalogue until now is something you route **around**, and against all of it
-## running is strictly worse than walking — `EXCITEMENT_FROM_RUNNING` outweighs the shorter
-## exposure every time, which `tests/test_events.gd` asserts row by row. That was a deliberate trap
-## and it is still the rule; this is the exception the rule was waiting for. A pursuer cannot be
-## routed around, because it goes where she goes, so the only question it asks is *how fast*.
+## Everything else in the catalogue is something you route **around**, and against all of it running
+## is strictly worse than walking — `EXCITEMENT_FROM_RUNNING` outweighs the shorter exposure every
+## time, which `tests/test_events.gd` asserts row by row. That is the rule, and this is the
+## exception it needs in order not to be a trap: a pursuer cannot be routed around, because it goes
+## where she goes, so the only question it asks is *how fast*.
 ##
 ## The arithmetic is the design, and every number in it is doing one job:
 ##
 ## - **130px/s** sits between a walk (92) and a run (168), and sits there *symmetrically*: walking
 ##   loses 38px a second and running gains 38. So the two answers give opposite outcomes rather than
 ##   the same outcome at different costs — and they give them at the same rate, which is the version
-##   of this a player can feel. It was 148 until M35, where the second half of the contract was
-##   written down: at 148 running gains only 20px a second, so shaking it off takes longer than the
-##   chase lasts and the price of doing the right thing is set by the clock instead of by the escape.
+##   of this a player can feel. **Asymmetry is the trap**: at 148 running gains only 20px a second,
+##   so shaking it off takes longer than the chase lasts and the price of doing the right thing is
+##   set by the clock instead of by the escape.
 ## - **It comes through its own telegraph, and stops short.** A pursuer that waits politely hands
 ##   her more ground in two seconds than the whole chase can take back, so the notice is the sight
-##   of it closing — but the sight of it closing *onto her*, which is what playtest 08 was killed
-##   by, is not notice at all. `Tuning.pursuit_standoff()` is where it stops: 104px, six tenths of a
-##   second of its own speed outside the radius that ends the day.
-## - **Three seconds of doing nothing, or 0.8s of being outrun.** A run is fourteen points a second,
-##   so the chase needs a cap, but the cap is not what prices the answer — `Tuning.PURSUIT_SHAKEN_OFF`
-##   is, which is why reacting early is worth something. About 17 points given promptly: the most
-##   expensive moment in act I and much cheaper than the day it buys.
-## - **Intensity 12, not 22.** It is lethal; it does not also need to be the loudest thing in act I.
-##   At 22 the correct play — run, at 14 points a second, for as long as it takes — cost more than
-##   the meter had, and playtest 08's trace has her doing exactly that and losing the day to
-##   excitement with the dog still 87px behind her. What ends the day here is the dog, not the noise.
+##   of it closing — but the sight of it closing *onto her* is not notice at all.
+##   `Tuning.pursuit_standoff()` is where it stops: 104px, six tenths of a second of its own speed
+##   outside the radius that ends the day.
+## - **A capped chase, and a break-off that pays for reacting early.** A run is fourteen points a
+##   second, so the chase needs a cap — but the cap is not what prices the answer;
+##   `Tuning.PURSUIT_SHAKEN_OFF` is. About 17 points given promptly: the most expensive moment in
+##   act I and much cheaper than the day it buys.
+## - **Intensity 12.** It is lethal; it does not also need to be the loudest thing in act I. Much
+##   above this the correct play — run, at 14 points a second, for as long as it takes — costs more
+##   than the meter has, and the day ends in crying with the dog still well behind her. What ends
+##   the day here has to be the dog, not the noise.
 ##
-## Day 3 because that is the day act I stops being a nice neighbourhood — `cyclist` lands on day 2
-## and `reversing_lorry` on day 3 — and because two days of paying for the run button is what makes
-## being made to press it read as the rules changing rather than as the rules finally arriving.
+## `RUN_TAUGHT_DAY` because that is the day act I stops being a nice neighbourhood — `cyclist` lands
+## on day 2 and `reversing_lorry` on day 3 — and because two days of paying for the run button is
+## what makes being made to press it read as the rules changing rather than as the rules finally
+## arriving.
 ## `EventDirector` puts the first one in front of her early on that day; see `Tuning.RUN_TAUGHT_DAY`.
 static func _charging_dog() -> EventDef:
 	var def := EventDef.new()
@@ -808,8 +758,8 @@ static func _charging_dog() -> EventDef:
 	def.telegraph_time = 2.4
 	def.pursues = true
 	def.pursue_speed = 130.0
-	# And it trots off rather than blinking out, which is the other half of M35: a dog that gives up
-	# in front of her and then is not there says the chase was never real.
+	# And it trots off rather than blinking out — *nothing vanishes while you are looking at it*, and
+	# a dog that gives up in front of her and then is not there says the chase was never real.
 	def.departs_at = 110.0
 	def.hard_fail = true
 	def.weight = 1.4
@@ -951,30 +901,25 @@ static func _abduction() -> EventDef:
 
 ## **A man in an alley who is worth crossing the road for, and who comes after you if you do not.**
 ##
-## *(M36, playtest 09: "a robber should increase excitement on sight and getting close to them
-## should be day ending", and, in the next breath, "if you get close they should start moving
-## towards you".)*
+## **A tiny field on the argument that *the alley itself is the warning* goes nowhere**: a lethal
+## radius of 30 inside a field of 42 is a thing that does nothing at all until it does everything,
+## which is the one row in the catalogue where that is fatal rather than merely dull. And a robber
+## who never moves is avoidable by walking two tiles wide of him for ever.
 ##
-## It was a 42px field: alleys only, deliberately tiny, on the argument that *the alley itself is the
-## warning*. That argument was fine as far as it went and it went nowhere — a lethal radius of 30
-## inside a field of 42 is a thing that does nothing at all until it does everything, which is
-## playtest 07's whole complaint about the catalogue arriving at the one row where it is fatal. And
-## it never moved, so it was avoidable by walking two tiles wide of it for ever.
-##
-## The three numbers are the three sentences the player used, in order:
+## Three numbers for three sentences, in order:
 ##
 ## - **On sight.** 16 over a 200px field, so the far end of an alley is already expensive and the
 ##   meter is what tells you he is there. This is the *only* warning the design will give: a robbery
 ##   has no telegraph you could see coming, and it never did.
-## - **Getting close is day ending.** Unchanged — `hard_fail` inside 30px — except that it can now
-##   actually be reached. The `PERSON_BODY` M34 gave him comes back off, because a pursuer with a
-##   body is a moving wall and the M19 `dog_walker` decision says no.
+## - **Getting close is day ending.** `hard_fail` inside 30px, and it has to be **reachable**: he
+##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
+##   the inner radius means the kill can never fire.
 ## - **Get close and he comes at you.** `pursues_within` 140: inside that he stands up, takes 1.8s
 ##   of visibly coming — the notice `Tuning.PURSUIT_MIN_NOTICE` owes her — and then chases at
 ##   130px/s until she has shaken him off. Walking away does not work and running away does, which
 ##   is exactly `charging_dog`'s contract arriving in act III as a *place* rather than a moment.
 ##
-## The alley is still the warning; it is just no longer the only one.
+## The alley is the warning, and it is not the only one.
 static func _alley_robbery() -> EventDef:
 	var def := EventDef.new()
 	def.id = "alley_robbery"
@@ -1001,11 +946,11 @@ static func _alley_robbery() -> EventDef:
 	# the row: far enough out that the notice is not spent standing still, near enough that she has
 	# felt him for a while before he decides anything about her.
 	#
-	# The trap this once fell into, and the reason it is worth a comment rather than a number: the
-	# chase used to end at a *distance*, so a trigger at or past that distance was a pursuit that
-	# lost interest the instant it started — she was already standing where it means "it has lost
-	# her" — and the rig strolled away from him every time. `Tuning.PURSUIT_SHAKEN_OFF` ends a chase
-	# at a rate now, so no trigger distance can reproduce it.
+	# The trap, and the reason this is worth a comment rather than a number: with a chase that ends
+	# at a *distance*, a trigger at or past that distance is a pursuit that loses interest the
+	# instant it starts — she is already standing where it means "it has lost her", and she can
+	# stroll away from him every time. `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a rate instead, so
+	# no trigger distance can reproduce it.
 	def.pursues_within = 140.0
 	# And he walks off when he has lost her, rather than being deleted where he stood.
 	def.departs_at = 100.0
@@ -1093,19 +1038,18 @@ static func _protest() -> EventDef:
 	def.telegraph_time = 2.6
 	def.intensity_ramp = 1.9
 	def.pulse_period = 8.0
-	# *(M37.)* One person's worth until there was a picture of more than one person. This was the
-	# clearest case in the catalogue of art deciding a gameplay number: the body may not claim
-	# ground the picture does not, which is `_draw_spread`'s rule in the other direction, so a
-	# protest that fills a square obstructed 11px because `Look.PERSON` drew one man with no
-	# placard. `_draw_protest` draws two ranks across exactly this width now.
+	# The clearest case in the catalogue of the picture deciding a gameplay number: a body may not
+	# claim ground the drawing does not, which is `_draw_spread`'s rule in the other direction — so a
+	# protest drawn as one man obstructs one man's width however much of a square it is supposed to
+	# fill. `_draw_protest` draws two ranks across exactly this width.
 	#
 	# Under the 70px inner radius on purpose: the loudest part of a protest is still something you
 	# stand in rather than bump into, and being stopped at the edge of it would take the choice of
 	# how close to cut past away from the player.
 	def.obstructs_radius = 55.0
 	def.weight = 2.5
-	# A wall row, raised with the rest for M55. Act IV only, so this is the late city's share of
-	# *"blocking events all over"* off the paths.
+	# A wall row, capped with the rest of them. Act IV only, so this is the late city's share of the
+	# blocking events that make the ground off the paths expensive.
 	def.max_per_day = 6
 	def.cost = 3
 	return def
