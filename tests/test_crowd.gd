@@ -50,6 +50,7 @@ func run(t) -> void:
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
 	_test_only_cars_go_over_the_bridge(t)
+	_test_the_crowd_agrees_a_zone_absorbed_the_corridor(t)
 
 	_city.free()
 
@@ -1231,3 +1232,34 @@ func _test_only_cars_go_over_the_bridge(t) -> void:
 	t.check(worst_car > Tuning.TILE_SIZE * 2.0,
 			"and a car on the spine still overruns it — the bridge is not made safe (worst %.0fpx)"
 			% worst_car)
+
+## M53: **the crowd has to agree with the drawing.** A T-junction the paint knows about and
+## `CrowdAgent._divert` does not is the same bug in the other direction — so this checks the
+## crowd's own notion of a street (`CityMap.is_street`, which is what `_cannot_go_on` reads) against
+## a calm zone's absorbed corridor the same way `tests/test_generator.gd` checks the paint.
+##
+## A car never belongs on a zone's absorbed corridor — `is_street()` is false there, park or not,
+## which is the one check `_cannot_go_on` makes that does not care *why* a tile stopped being a
+## street. A walker legitimately does: a zone is calm ground as well as a shortcut, and standing on
+## it is correct rather than a leak. So the property is asked only of cars, over a real zone with
+## real traffic around it rather than by re-deriving what `_cannot_go_on` already computes.
+func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t) -> void:
+	if _city.map.zone_rects.is_empty():
+		return
+	var anchor: Vector2i = _city.map.zone_rects.keys()[0]
+	var footprint := CityMap.blocks_tile_rect(_city.map.zone_rects[anchor])
+	var at := _city.map.tile_rect_to_world(footprint).get_center()
+	_city.crowd.start_day(1, _rng(1), at)
+
+	var cars_inside := 0
+	for frame in int(round(30.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.CAR:
+				continue
+			if footprint.has_point(_city.map.world_to_tile(agent.position)):
+				cars_inside += 1
+	t.check(cars_inside == 0,
+			"no car ever stands on the zone's absorbed corridor at %s (%d frames it did)"
+			% [footprint, cars_inside])
