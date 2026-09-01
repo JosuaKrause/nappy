@@ -2585,6 +2585,10 @@ See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
       to **3.3**. **The caps moved first and the budget followed**: the day-1 pool's `max_per_day`
       values summed to 18, so no budget alone could ever have reached 49 — three dog walkers
       became twenty and three cafés eighteen. Repeats being fine meant no new catalogue rows.
+      The rest of that measurement, over five seeds at 7×7, since `docs/EVENTS.md` no longer
+      carries the before-and-after table: placed on day 14 **25 → 97**; on screen at once while
+      walking **~1 → 3.3**, and 6.9 on day 14; met on a short errand out and back **1.0 → 2.0**,
+      of which 0.8 were dog walkers; café tables seen on that errand **~0.2 → 3.2**.
       Two rules had to be invented to replace what the caps were quietly doing: a **spacing rule**
       at placement (`EVENT_SPACING_SAME` between two of a kind, `EVENT_SPACING_ANY` between any
       two), and **nothing else happens inside a lethal event's field**, which is playtest 05's
@@ -2638,7 +2642,10 @@ See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
       lorry** from day 3, both `hard_fail` with the doubled telegraph the contract demands and
       teaching opposite lessons (one comes at you, one is static with the danger behind it).
       Lethal events per day now run **0, 3, 4** over days 1–3, so the escalation is a change of
-      *kind* rather than of count and a person can feel it on day 2.
+      *kind* rather than of count and a person can feel it on day 2. Measured at 7×7 alongside it,
+      and no longer carried in `docs/EVENTS.md`: events placed on days 1, 2, 3, 8 and 14 were
+      **48, 49, 52, 69, 88**, of which **0, 3, 4, 11, 11** were lethal — day 2 places about one
+      more event than day 1, which nobody could feel, and that is the point of the pair.
       Two bugs came out of it that no test could see: a re-streamed event was rebuilt from the
       tile the day chose at dawn, so a **dog walker teleported back to the top of its street**
       every time the player left its radius and returned; and an `EventInstance` had no gait at
