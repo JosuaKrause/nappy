@@ -1,0 +1,45 @@
+# The same three gates a local commit rests on, in order of cost:
+# lint.sh needs nothing, check.sh boots the project, test.sh is the full suite.
+# The tools all honour GODOT=..., which is how CI points them at the
+# downloaded Linux binary instead of the macOS default path.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint the docs
+        run: ./tools/lint.sh
+
+      - name: Cache Godot
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
+
+      - name: Download Godot
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          curl -sSL -o ~/godot/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q ~/godot/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot-bin
+          chmod +x ~/godot/godot-bin
+
+      - name: Boot check
+        run: GODOT="$HOME/godot/godot-bin" ./tools/check.sh
+
+      - name: Full test suite
+        run: GODOT="$HOME/godot/godot-bin" ./tools/test.sh
