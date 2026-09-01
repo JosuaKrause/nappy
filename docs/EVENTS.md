@@ -372,7 +372,10 @@ neighbourhood's own rather than a patrol's.
 | `barricade` | — | — | Never scheduled directly. Left where a convoy stopped, and — via `scar_id` — left there for the rest of the **run**. |
 | `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. **Solid at 55px**, and `_draw_protest` draws two ranks across exactly that width — the clearest case in the catalogue of the picture deciding a gameplay number, because a body may not claim ground the drawing does not. Under its own 70px inner radius on purpose — the loudest part of a protest is something you stand in rather than bump into. |
 | `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. Solid at the width of its cover. Its picture is **people** doing this, not a street on fire — that is a burning building's picture, and the two rows are not the same event. |
-| `sabotage_run` | SCRIPTED | 14 | The good-ending finale route. |
+
+The day-14 sabotage is not a catalogue row: it is `GameState` logic (`sabotage_done`,
+`sabotage_available()`), gated on the resistance goal rather than sited or scheduled like an
+`EventDef`. `docs/NARRATIVE.md` and `docs/DESIGN.md` describe what completing it does.
 
 ## Permanent marks
 
