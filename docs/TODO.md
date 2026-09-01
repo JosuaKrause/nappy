@@ -313,27 +313,45 @@ Two things it forces, and neither is optional:
   the day is unwinnable from the first frame. This is the doorstep exemption's shape at city scale —
   the home is a notch with one exit, so sealing that street seals her in — and it lands the same
   way: the rule is stated over *a region*, and then the one she is standing in is exempt from it.
-- **"Accessible calm zone" is a fact about the city, not about the day.** The regions and their
-  gates stand for the whole run, and a calm area is spoiled or not spoiled per day — so evaluating
-  this against a day's state would move the walls nightly, which is the same failure the paths
-  reading below is guarding against. It has to be answered at generation time, on what is permanent.
+- **"Accessible calm zone" is asked of the city or of the day, and which one is open.** A region's
+  *boundary* stands for the run; its *doors* are re-cut daily off the day's paths (see below). So
+  the sealing rule could be a permanent fact — this region never has anything in it, wall it for the
+  whole run — or a daily one, where a region whose calm areas are all spoiled today gets no doors
+  today. The first makes a sealed district a landmark she learns once; the second makes the sealing
+  part of the day's steering, and puts it in the same hands as the door placement. Answer it with
+  the door placement rather than separately, because they are the same decision asked twice.
 
 - [ ] **The regions are a city-generation question, not an event-placement one.** A perimeter is a
       decision about the map, so what needs designing first is what a region *is* — the quadrants
       either side of the spine, a growth from the home block, or something the lattice already
       knows about. This is the largest piece and everything else waits on it
-- [ ] **Both are structure, and the machinery for it is already queued.** Neither can stay a
-      recurring event rolled onto a tile by the scheduler: a perimeter is a fact about the city, so
-      it is generated with the city and stands for the run — which is what makes it *learnable*,
-      the same reason the city is fixed for a run at all. M45's first item is **permanent
-      impassable structure, reusing `absent_segments` rather than reinventing it**, and that is
-      this. Build them together or build that one first
-- [ ] **"Where the paths cross" needs its meaning fixed before anything is placed.** The reading
-      taken here is **every walkable crossing of the boundary** — every street and footway that
-      meets it — rather than only where the day's corridor happens to cross. `RouteTree` grows a
-      *day's* routes, so siting the doors off it would move them nightly, and a city whose walls
-      rearrange themselves is the one thing this city has never done. Confirm before building; the
-      cost of getting it wrong is the run's central promise
+- [ ] **The barricade is structure; the checkpoint is placed by the day.** Neither is a recurring
+      event rolled onto a tile by weight. A perimeter is a fact about the city, generated with it
+      and standing for the run, and M45's first item is **permanent impassable structure, reusing
+      `absent_segments` rather than reinventing it** — that is this, so build them together or build
+      that one first. The doors are the day's, and the thing that already places per-day openings
+      and closings on a fixed map is `ClosurePlanner`, which is where their planning belongs rather
+      than in the event scheduler
+- [ ] **The wall stands for the run and the doors are re-cut every morning.** *(2026-09-02: "it is
+      okay to move checkpoints on a daily basis — reassess where to put them depending on the paths
+      of the current day.")* So the boundary is permanent and *which* of its crossings are gated is
+      a decision the day takes, off `RouteTree.for_day(map, day)` — the day's corridor, a pure
+      function of the city's seed and the day number. A crossing that is a checkpoint today is
+      barricade tomorrow.
+
+      **This makes the gate the sharpest routing instrument in the game, and it is M45's open item
+      arriving with a mechanism.** M45 wants *"a closure that points"* — not *does this lengthen
+      the route* but *does this stop her committing to a direction that cannot win today* — and
+      records the trap beside it: **a nudge that removes the decision is worse than a closure that
+      does nothing.** Choosing which doors are open is exactly that instrument, and it is exactly
+      that trap, at full strength. Two doors is a choice; one door is a corridor with a toll booth
+
+      **Ordering, because it can go circular.** The tree is grown first and the day is planned
+      against it, so gates sited where the tree crosses a boundary are consistent by construction —
+      the routes go through the doors because the doors were put where the routes went. What is
+      *not* in the tree is what a door costs: `RouteTree` has never priced an edge, so a route
+      through three checkpoints and one through none look identical to it. See the M45 item on
+      whether the tree can express "passable, at a price" at all
 - [ ] **The detention is `chatting_mother`'s mechanism.** *"Reuse the other woman with baby logic"*:
       `EventDef.detain_seconds` locks her movement on first contact inside `detain_radius`, and
       `Stroller.detain()` runs the lock out through the ordinary friction rather than stopping her
