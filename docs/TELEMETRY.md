@@ -177,7 +177,7 @@ meter up is the whole question, and it is one subtraction.
 
 ## Three constraints on the implementation
 
-All three are non-negotiable, and the first is an invariant in `CLAUDE.md`.
+All three are non-negotiable, and the first is an invariant in the **telemetry** skill.
 
 **It must not touch gameplay.** No RNG, no `day_rng()` stream, nothing that changes a
 placement or a roll. Where a system logs a random outcome it hoists the *existing* roll into

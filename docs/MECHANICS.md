@@ -246,7 +246,7 @@ meter, none of which a data-level test can see:
 **Excitement stays a pure query.** A contact does not touch `Baby.excitement`; it *startles
 the person she walked into*, and `Crowd` sums that agent like it sums every other one. So
 contacts still compose by plain addition, there is still no ordering to get wrong, and
-`City.total_excitement_at` still adds exactly two things. See the invariant in `CLAUDE.md`.
+`City.total_excitement_at` still adds exactly two things. See the **events** skill.
 
 ### A car is lethal
 
@@ -349,7 +349,7 @@ a gap that already exists and cannot open one that does not: two cars inside eac
 choose zero and stay there forever, and recycling puts a car into a lane at a point it cannot
 see. `Crowd.space_out_the_traffic()` resolves each lane from the front backwards, so a whole
 chain comes apart in one pass. It is the same shape as the player's bump, for the same reason —
-see the invariant in `CLAUDE.md`.
+see the **events** skill.
 
 The relationship, rather than the numbers: **the headway has to outlast the time it takes to
 brake from cruise**, or a car cannot physically honour the gap it is keeping and the queue

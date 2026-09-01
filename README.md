@@ -17,7 +17,9 @@ it is not.
 
 | Doc | Contents |
 | --- | --- |
-| [CLAUDE.md](CLAUDE.md) | How to work on this repo: workflow, engine gotchas, invariants |
+| [CLAUDE.md](CLAUDE.md) | How to work on this repo — an index; the rules are in `.claude/skills/` |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | Where to pick up: the state of the tree and what is queued |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | The history — decisions taken, options rejected, what changed and why |
 | [docs/DESIGN.md](docs/DESIGN.md) | Pillars, core loop, win/lose conditions |
 | [docs/MECHANICS.md](docs/MECHANICS.md) | Meters, movement, tuning constants |
 | [docs/CITY.md](docs/CITY.md) | City generation, tile types, calm zones |

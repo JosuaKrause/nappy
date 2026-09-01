@@ -333,7 +333,7 @@ The original measurement, over five seeds at 7×7:
 
 **The budget was never the binding constraint, and raising it alone does nothing.** The day-1
 pool's `max_per_day` values summed to 18, so a budget of 100 placed the same 13 events — which
-is what `CLAUDE.md`'s *"a budget the catalogue cannot spend is not density"* is about. The caps
+is what the **balance** skill's *"a budget the catalogue cannot spend is not density"* is about. The caps
 moved first, several times over, and the budget followed. Repeats are explicitly fine
 (*"it's fine if the same event happens multiple times"*), so **no new catalogue rows were
 needed**: three dog walkers became twenty, three cafés eighteen.
@@ -527,7 +527,7 @@ here. Two things follow, and both matter to anyone reading the table:
   of eleven sources rather than one.
 
 **M46 moved no row at all, and that is the result rather than the absence of one.** The milestone
-rebalanced the crowd and the traffic, and `CLAUDE.md` says to re-measure this table whenever a rate
+rebalanced the crowd and the traffic, and the **balance** skill says to re-measure this table whenever a rate
 moves — so it was regenerated from `EventDef.walk_through_cost()` and compared row for row.
 Identical, because nothing in it touched an intensity, a radius, `Tuning.falloff` or a decay. The
 table is a property of the **catalogue**, and M46 was a milestone about the street.

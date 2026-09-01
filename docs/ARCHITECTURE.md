@@ -245,5 +245,5 @@ a commit still rests on the unfiltered run.
 **A rig that steps the parts is not running the whole.** Several suites walk the crowd by hand so
 that a minute of traffic does not take a minute; what that skips is the frame *around* the agents,
 which is where the traffic queue is resolved and the `TrafficIndex` emptied. `Crowd.step()` is that
-frame, and it is what a rig calls — see `CLAUDE.md`'s verification loop for what stepping only the
+frame, and it is what a rig calls — see the **verify** skill for what stepping only the
 agents cost, in both time and truth.

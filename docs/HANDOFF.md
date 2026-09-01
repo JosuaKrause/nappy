@@ -27,11 +27,17 @@ A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not 
 restyle is the smaller one: a correctness pass that finds sentences no longer true, and a style pass
 that puts everything in the present tense with the history moved to `DECISIONS.md`.
 
-The order is in `TODO.md`'s M40 entry and is by where a reader lands: `DECISIONS.md`, then this
-file, then `CLAUDE.md`, then the design docs, then the docstrings, then `TODO.md`.
+**Done:** `DECISIONS.md` exists and holds the history; `HANDOFF.md` and `TODO.md` are the current
+state and the queue; `CLAUDE.md` is a 132-line index over eleven skills in `.claude/skills/`, one
+per operational task, each loaded before that task.
 
-The size, measured: 590 history references across 45 of 56 source files, 141 in `CLAUDE.md`, 528 in
-the design docs, about a thousand in `TODO.md`.
+**Left:** the design docs — `CITY` (55 history references), `EVENTS` (103), `MECHANICS` (52),
+`TELEMETRY` (28), `ARCHITECTURE`, `DESIGN`, `NARRATIVE` — and then **590 references across 45 of 56
+source files**, worst first: `tuning.gd` (113), `event_catalogue.gd` (50), `event_scheduler.gd`
+(45), `city_generator.gd` (35).
+
+**And re-audit the numbers afterwards.** `SLEEPINESS_CALM_ZONE_MULTIPLIER` was carried as 12 in
+`CLAUDE.md`, 14 in a `TODO.md` audit entry, and is **21** in the code. Assume there are more.
 
 ### 2. M55's resistance half — designed, not built
 
