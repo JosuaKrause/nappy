@@ -489,6 +489,16 @@ event's field.** A `hard_fail` event keeps its whole `outer_radius` clear of eve
 and it is the one spacing rule with no fallback — an abduction that cannot find room is simply
 not placed. `tests/test_events.gd` asserts it across a whole run.
 
+Two cases are exempt, and both are about the field having no fixed place to keep clear of
+anything. **Off the day's corridor**, where the whole point of the ground is that she should not
+be on it, so an overlapping lethal field there is the city saying so rather than a fairness
+failure — `EventScheduler._role_for` gives such a placement the `WALL` role, and
+`_keeps_its_field_clear` reads that role directly. **A pursuer**, because it follows her rather
+than sitting on a tile the day chose, so there is no ground for the rule to be stated about —
+`charging_dog` and `alley_robbery` both carry a lethal radius with them wherever she is, and
+`EventScheduler._keeps_its_field_clear` now says so by name rather than leaving it to follow from
+the `WALL` case by coincidence.
+
 ## What an event actually costs
 
 Each figure integrates the real falloff along a straight line through the centre of the field and

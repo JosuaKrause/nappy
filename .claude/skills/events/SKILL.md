@@ -84,6 +84,12 @@ any tile inside the corridor, so a lethal placement carrying that role is off th
 not exist. `EventScheduler._keeps_its_field_clear` is the one place that decides. **The telegraph
 contract is untouched by this** — that one is about a single event's own geometry.
 
+**A pursuer is the third exemption, for the same reason as a wall: it has no place to be kept
+clear of anything** — it follows her rather than sitting on a tile the day chose.
+`_keeps_its_field_clear` excludes anything with `pursues` set, which `charging_dog` and
+`alley_robbery` both already needed and now get by name rather than by accident of the `WALL`
+classification.
+
 ## A lethal radius and a solid body are the same mechanism
 
 The player is stopped with her centre `obstructs_radius + PLAYER_BODY_RADIUS` from the centre of a

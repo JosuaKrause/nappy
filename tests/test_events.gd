@@ -43,6 +43,7 @@ func run(t) -> void:
 	_test_the_named_decisions_arrive(t)
 	_test_two_of_a_kind_are_not_the_same_incident(t)
 	_test_nothing_happens_inside_a_lethal_field(t)
+	_test_a_pursuer_keeps_no_field_clear(t)
 	_test_the_city_remembers_where_she_went(t)
 	_test_everything_that_stands_still_is_solid(t)
 	_test_a_lethal_thing_can_still_be_reached(t)
@@ -1468,6 +1469,32 @@ func _test_nothing_happens_inside_a_lethal_field(t) -> void:
 	# both kinds, or this test passes on a day with no lethal rows in it at all.
 	t.check(exempt > 0, "a run places lethal walls, which are the exempt ones (%d)" % exempt)
 	t.check(lethal_days >= 0, "and the rest are checked (%d)" % lethal_days)
+
+## **The third case of the clearance rule, pinned over `pursues` rather than over either row that
+## carries it today.** A lethal field that follows her is neither on the corridor nor off it, so
+## placement cannot keep it clear of anything — `charging_dog` never reaches `_room_around` at
+## all (it is `AHEAD_OF_PLAYER`, sited with no tile) and `alley_robbery` is exempt today only
+## because `hard_fail` always classifies a `MAP`-placed `RECURRING`/`SCRIPTED` row `WALL` before
+## `_role_for` ever asks whether it pursues. Forcing the role off `WALL` here is what tells the two
+## reasons apart, and it is why a third pursuer — one a future `_role_for` change routes through
+## `SET_PIECE` or `FRICTION` instead — inherits the exemption without anybody adding a case for it.
+func _test_a_pursuer_keeps_no_field_clear(t) -> void:
+	var pursuer := EventCatalogue.by_id("alley_robbery")
+	t.check(pursuer.hard_fail and pursuer.pursues, "alley_robbery is lethal and pursues")
+	var off_wall := EventScheduler.Planned.new(pursuer, Vector2.ZERO)
+	off_wall.role = GameEnums.BlockerRole.FRICTION
+	t.check(not EventScheduler._keeps_its_field_clear(off_wall),
+			"a lethal pursuer keeps nothing clear even when it is not classified a wall")
+
+	# The control: an otherwise identical lethal row that does not pursue still owes the rule off
+	# the `WALL` role — the exemption is `pursues`, not "the role happens not to be WALL".
+	var stationary := EventCatalogue.by_id("reversing_lorry")
+	t.check(stationary.hard_fail and not stationary.pursues,
+			"reversing_lorry is lethal and does not pursue, the contrast this needs")
+	var off_wall_stationary := EventScheduler.Planned.new(stationary, Vector2.ZERO)
+	off_wall_stationary.role = GameEnums.BlockerRole.FRICTION
+	t.check(EventScheduler._keeps_its_field_clear(off_wall_stationary),
+			"and a lethal row that does not pursue keeps its field clear off the WALL role too")
 
 ## Playtest 05, finding 4: *"I was able to go to the same park on day one and two — this
 ## shouldn't be possible."* The complaint is not about repetition, it is that the game's only
