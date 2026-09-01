@@ -46,6 +46,7 @@ enum Look {
 	ICE_CREAM_VAN,
 	LORRY,        ## A box lorry: the biggest silhouette in act I, and a wall.
 	CHARGING_DOG, ## Stretched out flat and coming at you. The one thing running is for.
+	CHATTING_MOTHER, ## Another mother with a pram, palette-shifted. Strolling, then talking.
 	# ---- acts II-IV ----
 	POLICE_CAR,   ## Low and pale where everything else in act II is a tall dark box.
 	POSTER_CREW,  ## The poster is the event; the man holding it is scenery.
@@ -275,6 +276,25 @@ enum Pavement {
 ## Event id to spawn where this one ends. How a fire engine leaves a fire behind it.
 @export var spawns_on_finish := ""
 
+## Seconds the player's movement input is locked for, on first contact within `detain_radius`.
+## `0.0` means never — the default, and true of every row but `chatting_mother`.
+##
+## **The one mechanic in the catalogue that takes the controls away rather than costing a meter.**
+## Everything else that stops her is a choice — walk into it or do not — and this is the exception,
+## which is why `validate()` refuses it on anything `hard_fail` or `pursues`: a thing that can also
+## kill her or chase her has no business also deciding she cannot move. See `Stroller.detain()` for
+## the lock itself, which runs out through the ordinary friction rather than stopping her dead.
+@export var detain_seconds := 0.0
+## How close she has to come before a conversation starts, in px.
+##
+## Checked by `validate()` against `inner_radius`: it has to sit strictly inside the field she is
+## already fully charged for, so "she is captured" and "she is outside the ambient field" can never
+## both be true of the same instant. `chatting_mother`'s own value is chosen against the **32px**
+## spacing between the two lanes of a pavement (`Tuning.TILE_SIZE`, since a lane sits on its tile
+## centre) — under that, the far lane of a two-tile pavement is never inside it, whatever `paces`
+## does, and distance stays the counterplay it is everywhere else in the catalogue.
+@export var detain_radius := 0.0
+
 ## Entering the inner radius ends the day immediately.
 @export var hard_fail := false
 
@@ -360,6 +380,18 @@ func validate() -> bool:
 				% [id, inner_radius, obstructs_radius, Tuning.PLAYER_BODY_RADIUS]
 				+ "she is stopped before she can ever reach it")
 		return false
+	# A conversation is a cost, never a threat: it takes her controls rather than her body or her
+	# distance, and a row that could also kill or chase her would be able to do both at once.
+	if detain_seconds > 0.0:
+		if hard_fail or pursues:
+			push_error("event '%s' detains and is also %s: a conversation may not also be a threat"
+					% [id, "hard_fail" if hard_fail else "a pursuer"])
+			return false
+		if not (detain_radius < inner_radius and inner_radius <= outer_radius):
+			push_error(("event '%s' detains at %.0fpx, which does not sit inside its own field "
+					% [id, detain_radius])
+					+ ("(inner %.0f <= outer %.0f)" % [inner_radius, outer_radius]))
+			return false
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, inner_radius,
 			telegraph_time, pursues_within, outer_radius):
 		return false
