@@ -3237,6 +3237,22 @@ six-step resistance calendar) and `HANDOFF`. The audit also found the same sessi
 mapping correct on all nine rows, all eleven skills' ~90 cited symbols resolving, and the
 `PARTIAL RUN` marker working as documented.
 
+### The finishing pass, built 2026-09-01 · `feature/numbers-against-the-code`
+
+All of the re-audit's findings fixed, one commit each, suite green throughout. The outcomes worth
+keeping: NARRATIVE's crowd drop and MECHANICS' contact measurement became relationships rather than
+figures; ARCHITECTURE's concurrency literal was dropped entirely after **three sources gave three
+different figures for the same formula** (22, 25, ~32) — the linear-scan argument never needed the
+number, and `CLAUDE.md`'s and the events skill's copies were fixed in the same session; DESIGN's
+nerves went 3 → 5 and CITY's calm-area floor 3 → 5 to match `STARTING_NERVES` and
+`MIN_CALM_BLOCKS`; the phantom `sabotage_run` row left `EVENTS.md` (the day-14 sabotage is
+`GameState` logic, not an `EventDef`); `act_tag`'s true sentence is now "no game code reads it; one
+test holds it consistent with the calendar"; three docstrings that cited `CLAUDE.md` for rules that
+had moved into skills now state the rule or name the skill; EVENTS' dated six-seed role-weighting
+table moved here (M50's section); the city and events skills' "used to" narrations were restated in
+the present tense; `_place_home`'s superseded sort-by-distance story (already here under M42) left
+the docstring; and `evidence/README.md`'s rows now name the document that actually cites each file.
+
 ### Reassessed on 2026-09-01, and closed
 
 - **The pending calm-ground multiplier is planned against a stale base** — *done.*
@@ -3254,6 +3270,61 @@ mapping correct on all nine rows, all eleven skills' ~90 cited symbols resolving
   `docs/CITY.md` states it as a gap rather than papering over it.
 - **M52's "should more junctions be signalled?"** — parked, unasked-for, and it would repeal *"a
   property of the street rather than a scattering of them"*.
+
+## M57 — The docs cannot go stale · `feature/the-docs-cannot-go-stale`
+
+Asked for on 2026-09-01 (playtest 18, findings 1–3): *"can we enforce that documentation is written
+in a way that it cannot easily become stale? for example we don't need to state how many tests are
+green in the claude docs"*, *"there should be no quest logs outside of decisions.md"*, and the
+approvals *"drift guard sounds good. stats.sh sounds good."* The rules already existed in
+`CLAUDE.md`; this milestone built the machinery, because a rule somebody has to remember is not a
+rule. Built same-day, four commits:
+
+- **`tools/lint.sh`** — flags, in the governed docs (everything but `DECISIONS.md`, the playtests
+  and `evidence/README.md`), the five sentence shapes that go stale on their own: a backticked
+  commit hash, a branch name, a check count, a ticked box, a status word after `·` in a heading.
+  `lint-allow` in an HTML comment suppresses a deliberate hit. Tuned against the real tree until
+  its output was only true positives — `CLAUDE.md`'s self-referential forbidden-style examples and
+  `TODO.md`'s milestone identifiers and dated player quotes must not fire it.
+- **A `PostToolUse` hook** (`.claude/hooks/lint-docs.sh`) runs the linter on a governed doc the
+  moment it is edited and surfaces hits in the same turn — enforcement at the sentence, not at the
+  commit. PostToolUse cannot block, so the committing skill carries the stop: a lint hit before a
+  commit is a stop.
+- **The drift guard**, session-cleanup step: if `tuning.gd` or `event_catalogue.gd` changed this
+  session, grep the governed docs for what moved — the number re-audit found all of its drift
+  around retuned constants whose doc sentences stood still.
+- First run over the tree: **zero hits** — the linter's shapes and the re-audit's findings turned
+  out disjoint (wrong figures and stale narration in prose are a different staleness than hashes
+  and status markers), which is why both exist.
+
+## M58 — The tooling tells the truth · `feature/the-tooling-tells-the-truth`
+
+The 2026-09-01 audit's mechanical findings, built same-day, seven commits, each verified in
+isolation and the full suite green after the sweep:
+
+- The rules hook's matcher covered `NotebookEdit` (which sends `notebook_path`, so it could never
+  match) and missed `MultiEdit` (which sends `file_path`, so batched edits silently skipped the
+  rules). Now `Edit|Write|MultiEdit`. The hook also matched paths by substring anywhere on disk;
+  it now exits early for anything outside the repo root — verified by feeding it literal hook JSON
+  for `/tmp/elsewhere/src/events/x.gd` (silent) against an in-repo path (injects).
+- `shot.sh` and `test.sh` gained the missing-Godot guard the other tools had; `test.sh`'s
+  `/dev/null` import pass had been swallowing exactly that failure. `check.sh` now checks both its
+  invocations' exit statuses — it could print `OK` over a crash that printed no error string.
+- `README.md` documents `--ending bad|neutral|good`.
+- **`tools/stats.sh`** — the consumer for playtest 17 finding 3's run tagging. Splits `run-*.log`
+  (playtest) from `rig-*.log` (headless), defaults to playtest runs only, and counts only
+  documented log entries: runs, days won/lost, loss causes, most-met events. First real output over
+  the folder: 49 playtest runs, 14 days won / 20 lost (9 crying, 8 hard fails, 3 timeouts), the
+  yeller, the cat and the dog the most-met events — against 55 rig runs that would have drowned
+  those numbers, which is the skew the player named.
+- **The dead-code sweep**, every symbol re-grepped over `src/` and `tests/` at deletion time, none
+  skipped: `EventBus.day_ended`, `EventBus.event_finished`, `EventInstance.finished`,
+  `Baby.fell_asleep`/`woke_up`/`started_crying` (all emitted, zero listeners —
+  `EventBus.baby_state_changed` and `DayController.day_finished` carry the load),
+  `DayController.stop()`, `Corridor`'s `Where` enum with `where()`/`is_inside()`/`holds_street()`
+  (superseded by `depth()`), `TrafficIndex.lane_count()`, `BlockPlan.final_purpose()`,
+  `Building.roof_depth()`. `GameState.finish_day()` now calls `is_final_day()` instead of inlining
+  the same comparison three lines below the query it ignored.
 
 ## M41 — The shape of the city: a spine, and an edge you can walk to · `feature/the-shape-of-the-city`
 

@@ -23,20 +23,14 @@ A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not 
 ## What to do next
 
 The order, set on 2026-09-01. Each entry's full brief is in [TODO.md](TODO.md); the design work
-behind the new ones is in [PLAYTEST-18.md](PLAYTEST-18.md).
+behind the newest one is in [PLAYTEST-18.md](PLAYTEST-18.md).
 
-1. **M40's finishing pass** — the number re-audit ran; its findings are itemized fixes: stale
-   figures, pointers to rules that moved into skills, history that outlived the restyle.
-2. **M57 — the docs cannot go stale.** A volatile-fact linter (`tools/lint.sh`), wired into the
-   hook, the committing pass and the session cleanup, plus the drift guard for retuned constants.
-3. **M58 — the tooling tells the truth.** The rules hook misses `MultiEdit`; two tools fail raw
-   without Godot; `check.sh` can print OK over a crash; `stats.sh` gets built; the dead code goes.
-4. **M55's resistance half** — designed, nothing open. The hold goes, a task becomes two steps,
+1. **M55's resistance half** — designed, nothing open. The hold goes, a task becomes two steps,
    five tasks, every mark guarded.
-5. **M53** — a junction is made of the streets that meet at it.
-6. **M54** — the robber stops at walls, and three rows that never arrive.
-7. **M56** — the resistance is noticed.
-8. **M59 — the chatting mother.** A 5-second conversation that costs 25 excitement awake and only
+2. **M53** — a junction is made of the streets that meet at it.
+3. **M54** — the robber stops at walls, and three rows that never arrive.
+4. **M56** — the resistance is noticed.
+5. **M59 — the chatting mother.** A 5-second conversation that costs 25 excitement awake and only
    time asleep. Position in the order is provisional; the design is the player's.
 
 ## Open beyond the order
