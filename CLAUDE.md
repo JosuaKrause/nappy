@@ -57,6 +57,13 @@ If a skill turns out not to cover something it should, add it there rather than 
 too long for one file becomes a file of its own, and this one does not grow.** If a new area of the
 tree needs rules, add the path to the hook script as well, or the rule is only a suggestion.
 
+Two things to know before extending the mapping. **A path may match several skills** and all of them
+fire together, so a `.gd` file under `src/events/` brings both `events` and `godot` — keep an eye on
+the combined size, because a large injection is written to a file and summarised rather than placed
+inline. And **the hook cannot reach a rule about a conversation**: anything that governs what you
+*say* rather than what you *edit* has to live in this file, because there is no tool call to hang it
+on.
+
 ---
 
 ## Documentation is written in the present tense
@@ -86,6 +93,25 @@ rather than by milestone.
 
 ---
 
+## Explain; never reference something only you have read
+
+**When citing a rule, constant, function, file or line, say what it does in the same sentence.**
+Anything read out of a file is information only this side has seen. A bare name — "the
+`police_patrol` rule", "`SEEN_RADIUS`", "see `hud.gd:237`" — is not a reference the player can
+follow; it is a claim with the evidence withheld.
+
+- Give the **value or the behaviour** inline: "`SEEN_RADIUS` (190px, measured from the mark, not
+  from her)".
+- Say **what is at** a `file:line` rather than pointing at it.
+- Quote the code comment or doc sentence that carries the reasoning rather than paraphrasing it as
+  settled fact.
+- If a name was invented for the conversation rather than found in the repo, say so. Half the
+  confusion is a label that sounds official and is not.
+
+**This rule is about conversation, so nothing can trigger it but you.** It lives here rather than in
+a skill because no file edit precedes it — it applies to the first sentence of a turn as much as the
+last.
+
 ## Editing files
 
 **Use the Read, Edit and Write tools.** Not `cat`, `head`, `sed -n`, heredocs, or inline
@@ -100,6 +126,18 @@ committed alongside the code, a doc edit that quietly did nothing is a lie in th
 a missing change.
 
 Bash keeps what it is for: running `tools/*.sh`, git, and directory inspection.
+
+**One exception, and it is narrow: moving a file whole.** Splitting a document by `cp` or appending
+one to another (`cat a >> b`) is a *structural* operation that changes no content, and the reason
+the rule exists — a silently non-matching replacement looking exactly like a success — does not
+apply. Retyping four thousand lines through `Write` to move them is its own risk.
+
+**It is only allowed when the move is verified**: line counts before and after, and a `grep` for a
+heading that must have survived. Anything that changes what a line *says* still goes through `Edit`.
+
+**And grep for what pointed at it before you move anything.** Six documents in this repo referred to
+`CLAUDE.md` sections by name, and all six were wrong within the hour of those sections moving into
+skills. A reference is not visible from the file being moved.
 
 ---
 

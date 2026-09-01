@@ -31,13 +31,17 @@ that puts everything in the present tense with the history moved to `DECISIONS.m
 state and the queue; `CLAUDE.md` is a 132-line index over eleven skills in `.claude/skills/`, one
 per operational task, each loaded before that task.
 
-**Left:** the design docs — `CITY` (55 history references), `EVENTS` (103), `MECHANICS` (52),
-`TELEMETRY` (28), `ARCHITECTURE`, `DESIGN`, `NARRATIVE` — and then **590 references across 45 of 56
-source files**, worst first: `tuning.gd` (113), `event_catalogue.gd` (50), `event_scheduler.gd`
-(45), `city_generator.gd` (35).
+**Left, and this is the next thing to pick up:** the timeless scan of the code comments and the
+design docs. `tuning.gd` is done as the worked example (113 → 79 references); **556 references
+across 45 source files** and about 240 across `EVENTS`, `CITY`, `MECHANICS` and `TELEMETRY` remain.
+The file-by-file counts and the method are in `TODO.md` under M40, "Next step".
 
-**And re-audit the numbers afterwards.** `SLEEPINESS_CALM_ZONE_MULTIPLIER` was carried as 12 in
-`CLAUDE.md`, 14 in a `TODO.md` audit entry, and is **21** in the code. Assume there are more.
+It is a judgment call per block rather than a find-and-replace: **keep the reason a thing is the way
+it is and the trap that makes it easy to get wrong; drop the milestone number, the former value and
+the narration of the fix.**
+
+**And re-audit the numbers separately afterwards** — a stale claim survives a rewrite perfectly well
+if nobody checks it against the code.
 
 ### 2. M55's resistance half — designed, not built
 

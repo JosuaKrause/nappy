@@ -52,18 +52,48 @@ in it is wrong about nothing.**
       — `feedback`, `committing`, `session-cleanup` — stay invoked by hand, because they are about a
       *moment* rather than a place
 - [x] **`docs/TODO.md` is a queue again** — 4550 lines to this. Completed entries archived whole
-- [ ] **The design docs** — `CITY` (1166 lines, 55 history refs), `EVENTS` (1035, 103), `MECHANICS`
-      (713, 52), `TELEMETRY` (423, 28), `ARCHITECTURE`, `DESIGN`, `NARRATIVE`, `README`. These are
+### ← Next step: the timeless scan of the code and the design docs
+
+*(2026-09-01: "also scan the whole codebase to update for the timeless style — not only documents
+but also code docs/comments.")* **This is where to pick up.** The structural half is done; what is
+left is a long, careful read of every comment and every design doc.
+
+**Do it worst-first, one commit per file or small group, `./tools/check.sh` between.** The
+method is in the `godot` skill under "Comments are written in the present tense", and it is a
+judgment call per block rather than a find-and-replace: **keep the reason a thing is the way it is
+and the trap that makes it easy to get wrong; drop the milestone number, the former value, and the
+narration of the fix.**
+
+- [~] **The docstrings.** `tuning.gd` is **113 → 79** and committed as the worked example — its
+      `SLEEPINESS_CALM_ZONE_MULTIPLIER` block shows the shape, four paragraphs of value history down
+      to the rule plus the reason the number moves. Remaining, worst first:
+
+      | file | refs | | file | refs |
+      |---|---:|---|---|---:|
+      | `autoload/tuning.gd` | 79 | | `events/event_manager.gd` | 18 |
+      | `events/event_catalogue.gd` | 50 | | `events/event_def.gd` | 18 |
+      | `events/event_scheduler.gd` | 45 | | `city/city.gd` | 17 |
+      | `city/city_generator.gd` | 35 | | `crowd/crowd_lanes.gd` | 14 |
+      | `events/event_instance.gd` | 33 | | `city/city_map.gd` | 13 |
+      | `crowd/crowd_agent.gd` | 33 | | `crowd/crowd.gd` | 12 |
+      | `main.gd` | 26 | | `autoload/telemetry.gd` | 11 |
+      | `telemetry/telemetry_observer.gd` | 25 | | *33 more files* | 1–9 each |
+      | `player/stroller.gd` | 19 | | **total** | **556** |
+
+      Count them again with
+      `grep -rcE '(M[0-9]{1,2}\b|playtest|Playtest)' src --include='*.gd' | sort -t: -k2 -rn`
+- [ ] **The design docs** — `EVENTS` (1035 lines, 103 refs), `CITY` (1166, 55), `MECHANICS` (713,
+      52), `TELEMETRY` (423, 28), plus `ARCHITECTURE`, `DESIGN`, `NARRATIVE`, `README`. These are
       what a person reads to learn what the game *is*, and where a stale sentence is
-      indistinguishable from a design
-- [ ] **Restyle every docstring** — 590 history references across 45 of 56 source files, worst
-      first: `tuning.gd` (113), `event_catalogue.gd` (50), `event_scheduler.gd` (45),
-      `city_generator.gd` (35), `event_instance.gd` (33), `crowd_agent.gd` (33). Say what the thing
-      is, why it is that way, and what the edge cases are. Do not restate the implementation and do
-      not narrate the milestones it passed through
-- [ ] **Then re-audit the numbers.** `SLEEPINESS_CALM_ZONE_MULTIPLIER` was carried as 12 in
-      `CLAUDE.md`, 14 in an audit entry and is **21** in the code — three wrong answers to one
-      question. Assume there are more
+      indistinguishable from a design. **Arguably do these before the docstrings** — a reader
+      reaches them first
+- [ ] **Then re-audit the numbers, separately from the restyle.** A stale claim survives a rewrite
+      perfectly well if nobody checks it against the code.
+      `SLEEPINESS_CALM_ZONE_MULTIPLIER` was carried as 12 in `CLAUDE.md`, 14 in an audit entry, and
+      is **21** in `tuning.gd` — three wrong answers to a question with one, and the note built on
+      the wrong one ("the park is 20% faster, 20s rather than 24") was wrong about the constant that
+      decides whether a day is winnable once the park is reached. **Assume there are more.** Any
+      number a doc quotes is a candidate: radii, costs, counts, densities, timings
 
 ---
 

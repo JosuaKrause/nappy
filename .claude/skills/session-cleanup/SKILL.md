@@ -47,6 +47,17 @@ it prints. This repo once carried three different answers to "how many checks do
 Where a measurement *is* the point — a density, a cost, a ratio — say what it was measured over and
 when, and put it in `docs/DECISIONS.md` rather than in a rule.
 
+### 2a. Grep for what pointed at anything you moved
+
+**A reference is not visible from the file being moved.** If this session renamed, split or
+relocated anything, search the repo for its old name before finishing. Six documents pointed at
+`CLAUDE.md` sections by name and all six were wrong within the hour of those sections becoming
+skills — correct when written, stale immediately, and invisible from the diff that caused it.
+
+```sh
+grep -rn "<old name>" --include='*.md' --include='*.gd' . | grep -v DECISIONS.md
+```
+
 ### 3. Move what is now history
 
 Anything that stopped being current this session goes to **`docs/DECISIONS.md`**: decisions taken
