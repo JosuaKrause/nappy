@@ -43,6 +43,14 @@ in it is wrong about nothing.**
       `CLAUDE.md`
 - [x] **`session-cleanup` is a skill and runs at the end of every session.** This pass is short
       when it is done every time and a milestone when it is not
+- [x] **The path-triggered rules are a hook, not an instruction.** *(2026-09-01: "if they are
+      triggered by files then make them rules that trigger on those files.")* A skill somebody has
+      to remember to load is not a rule. `.claude/hooks/project-rules.sh` fires on every
+      `Edit`/`Write`, maps the path to the skills that govern it, and injects them **before the edit
+      is made** — once per area per session, keyed on the session id, so the same rules are not
+      repeated on every subsequent edit to the same place. The three that have no file to trigger on
+      — `feedback`, `committing`, `session-cleanup` — stay invoked by hand, because they are about a
+      *moment* rather than a place
 - [x] **`docs/TODO.md` is a queue again** — 4550 lines to this. Completed entries archived whole
 - [ ] **The design docs** — `CITY` (1166 lines, 55 history refs), `EVENTS` (1035, 103), `MECHANICS`
       (713, 52), `TELEMETRY` (423, 28), `ARCHITECTURE`, `DESIGN`, `NARRATIVE`, `README`. These are

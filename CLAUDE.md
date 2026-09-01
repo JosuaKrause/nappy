@@ -19,30 +19,43 @@ does to the route decision. If the answer is "nothing", it is decoration.
 
 ---
 
-## Load the skill before you start the task
+## The rules load themselves
 
-The rules live in `.claude/skills/`, one per kind of work. **They are not optional reading and they
-are not a reference to consult when stuck — load the matching skill before the first edit**, because
-every one of them exists to stop a mistake that has already been made here at least once and that
-nothing in the code or the engine warns about.
+The rules live in `.claude/skills/`, one per kind of work. **Most of them arrive on their own.** A
+`PreToolUse` hook (`.claude/hooks/project-rules.sh`, wired in `.claude/settings.json`) fires on every
+`Edit`/`Write`, maps the path to the skills that govern it, and puts their text into context
+**before the edit is made** — once per area per session, so the same rules are not repeated on every
+subsequent edit to the same place.
+
+**A rule you have to remember to load is not a rule.** That is why the path-triggered ones are a
+hook rather than an instruction: every skill exists to stop a mistake that has already been made
+here at least once and that nothing in the code or the engine warns about, and the moment it matters
+is the moment somebody is about to touch the file.
+
+| Path | Rules that arrive |
+|---|---|
+| `src/events/**` | **events** |
+| `src/city/**` | **city** |
+| `src/crowd/**` | **crowd-traffic** |
+| `src/ui/**`, `sprites.gd`, `palette.gd` | **cues** |
+| `src/telemetry/**` | **telemetry** |
+| `src/autoload/tuning.gd` | **balance** |
+| `tests/**` | **verify** |
+| `docs/PLAYTEST-*.md`, `docs/TODO.md` | **feedback** |
+| any `*.gd` | **godot** |
+
+**Three have no file to trigger on and are yours to invoke**, because they are about a *moment*
+rather than a place:
 
 | Before you… | Load |
 |---|---|
-| respond to a playtest, or to any instruction that changes what the game does | **feedback** |
-| add or change a catalogue event, a telegraph, a pursuit, a lethal radius, event placement | **events** |
-| touch `src/autoload/tuning.gd`, `max_per_day`, `budget_for`, or any number a player can feel | **balance** |
-| touch `src/city/`, the lattice, blocks, tiles, closures, calm areas, the street hierarchy | **city** |
-| touch `src/crowd/`, pedestrians, cars, lanes, junctions, signals, zebras | **crowd-traffic** |
-| add or change a danger cue, a caret, the screen-edge badge, the HUD, anything in `src/ui/` | **cues** |
-| touch `src/telemetry/` or add logging to a gameplay class | **telemetry** |
-| write or debug any GDScript | **godot** |
-| write or change a test, or verify anything before committing | **verify** |
+| respond to a playtest or a design instruction, *before* any file is touched | **feedback** |
 | commit, branch, merge, or write a commit message | **committing** |
 | **end a session** | **session-cleanup** |
 
-If a task spans two, load both. If a skill turns out not to cover something it should, add it there
-rather than here — **anything too long for one file becomes a file of its own, and this one does not
-grow.**
+If a skill turns out not to cover something it should, add it there rather than here — **anything
+too long for one file becomes a file of its own, and this one does not grow.** If a new area of the
+tree needs rules, add the path to the hook script as well, or the rule is only a suggestion.
 
 ---
 

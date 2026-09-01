@@ -107,12 +107,30 @@ the arithmetic it guards.
 
 ## Code style
 
+### Comments are written in the present tense
+
+**This applies to every `##` docstring and every `#` comment, exactly as it applies to the docs.**
+A comment states what the thing **is** and **why**, never where it came from.
+
+- **No milestone numbers.** Not `(M39, playtest 10 finding 13: …)`, not "since M33", not "for twelve
+  milestones this was wrong".
+- **No former values.** Not "it was 148 until M35", not "this used to be `(1−t)²`". Keep the
+  *relationship* that makes the current number right — "above the 7.7/s decay on the ground it
+  stands on" — and let `docs/DECISIONS.md` hold the story.
+- **No narration of the fix.** "The first version parked every route against the city wall" belongs
+  in the commit message and in `DECISIONS.md`, not above the function.
+- **Keep the trap.** A comment warning that a rule is easy to get backwards, or that a value is
+  load-bearing for something non-obvious, is *current* and stays. The test is whether the sentence
+  is still true if you know nothing about this project's history.
+
+**Why:** a reader cannot tell which half of a paragraph is still true. A docstring that opens with a
+milestone number costs every future reader the archaeology before they reach the rule, and the rule
+is the only part that governs the code in front of them.
+
 - Tabs for indentation. Wrap at ~96 columns.
 - `##` doc comments on every class and on any function whose purpose is not obvious from its name.
   Class doc comments say what the thing is **for**, not what it contains.
 - **Document the why and the edge cases; do not restate the implementation.** The code is right
-  there. Where a number was tuned against something, keep the *relationship* — "above the 7.7/s
-  decay on the ground it stands on" — and let `docs/DECISIONS.md` hold the story of how it got
   there.
 - Section dividers inside longer files:
   `# ---------------------------------------------------------------- drawing ---`
