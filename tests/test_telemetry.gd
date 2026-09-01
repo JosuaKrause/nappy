@@ -24,6 +24,9 @@ func run(t) -> void:
 	_test_tracing_a_day_does_not_change_it(t)
 	_test_tracing_the_arcs_does_not_change_them(t)
 	_test_a_day_header_opens_a_day(t)
+	_test_a_stuck_player_is_logged_once(t)
+	_test_a_free_walk_is_never_logged_as_blocked(t)
+	_test_idling_with_no_input_is_never_logged_as_blocked(t)
 	_test_the_map_picture_covers_the_city_and_marks_it(t)
 	_test_the_map_picture_draws_the_corridor(t)
 	_test_the_map_picture_marks_what_the_day_placed(t)
@@ -172,6 +175,107 @@ func _test_a_day_header_opens_a_day(t) -> void:
 	t.check(lines[3].begins_with("  11.3  turn"), "an entry is timestamped from dawn")
 	t.check(lines[4].begins_with("  11.3  nerve"),
 			"and what happens after dusk keeps the time the day ended at (got '%s')" % lines[4])
+
+# --------------------------------------------------------------- being stuck ---
+# *(`docs/TODO.md`, "The log says when she is stuck": a `--walk` rig that never left the
+# doorstep currently reads as a run, because standing still emits nothing else — no crossing,
+# no turn, no contact. `TelemetryObserver._watch_blocked` is the fix, and it is exercised
+# directly, the way `test_danger.gd` drives `EventManager._warn_about_the_ground_she_is_on()`
+# by hand: it is a per-frame poll with no signal of its own to trigger from outside.)*
+
+## A bare observer with only the one field `_watch_blocked` reads: `_map`, for the tile in the
+## sentence. `CityMap.new()` is a real map with nothing generated onto it — `world_to_tile` is
+## arithmetic on `Tuning.TILE_SIZE` and asks the generator for nothing.
+func _blocked_rig() -> TelemetryObserver:
+	var observer := TelemetryObserver.new()
+	observer._map = CityMap.new()
+	return observer
+
+## Simulates `hold` seconds of a real held key — `Input.action_press`, the same call
+## `src/dev/auto_screenshot.gd` uses for `--walk`, so this is the polled state `Stroller` itself
+## reads and not a shortcut invented for the test. `here` is fixed throughout, which is the
+## rig's stand-in for a wall: displacement is exactly zero rather than merely small.
+func _hold_against_a_wall(observer: TelemetryObserver, action: String, here: Vector2,
+		hold: float) -> void:
+	const STEP := 1.0 / 60.0
+	Input.action_press(action)
+	var clock := Telemetry.clock()
+	var steps := int(round(hold / STEP))
+	for i in steps:
+		clock += STEP
+		Telemetry.set_clock(clock)
+		observer._watch_blocked(here)
+	Input.action_release(action)
+
+func _blocked_lines(t) -> Array:
+	var lines: Array = Telemetry.current_log().lines
+	Telemetry.end_run()
+	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
+	var blocked: Array = []
+	for line in lines:
+		if line.contains("blocked"):
+			blocked.append(line)
+	return blocked
+
+## Held for a couple of seconds against a wall that never gives: one line, not one a frame, and
+## it is not written until the hold has actually run past `BLOCKED_HOLD_TIME`.
+func _test_a_stuck_player_is_logged_once(t) -> void:
+	var observer := _blocked_rig()
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+
+	_hold_against_a_wall(observer, "move_right", Vector2(100.0, 100.0), 2.0)
+
+	var blocked := _blocked_lines(t)
+	t.check(blocked.size() == 1,
+			"pressing into a wall for 2s writes exactly one blocked entry (got %d)"
+			% blocked.size())
+	if not blocked.is_empty():
+		t.check(blocked[0].contains("east"),
+				"and it names the direction pressed (got '%s')" % blocked[0])
+	observer.free()
+
+## The same held key, but she is actually covering ground — `here` advances every step by more
+## than `TelemetryObserver.BLOCKED_DRIFT` before the hold ever reaches
+## `TelemetryObserver.BLOCKED_HOLD_TIME`. A run this ordinary must never read as stuck.
+func _test_a_free_walk_is_never_logged_as_blocked(t) -> void:
+	var observer := _blocked_rig()
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+
+	const STEP := 1.0 / 60.0
+	Input.action_press("move_right")
+	var here := Vector2(100.0, 100.0)
+	var clock := 0.0
+	for i in int(round(3.0 / STEP)):
+		clock += STEP
+		Telemetry.set_clock(clock)
+		here.x += Tuning.WALK_SPEED * STEP
+		observer._watch_blocked(here)
+	Input.action_release("move_right")
+
+	t.check(_blocked_lines(t).is_empty(), "walking freely for 3s is never logged as blocked")
+	observer.free()
+
+## `is_idle()` elsewhere in this file is the legitimate stand-still, and it is a different
+## condition from this one on purpose: idling asks nothing about input at all, so a player who
+## simply lets go of every key must never be told she is blocked.
+func _test_idling_with_no_input_is_never_logged_as_blocked(t) -> void:
+	var observer := _blocked_rig()
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+
+	const STEP := 1.0 / 60.0
+	var here := Vector2(100.0, 100.0)
+	var clock := 0.0
+	for i in int(round(3.0 / STEP)):
+		clock += STEP
+		Telemetry.set_clock(clock)
+		observer._watch_blocked(here)
+
+	t.check(_blocked_lines(t).is_empty(),
+			"standing idle with no direction held is never logged as blocked")
+	observer.free()
 
 # ------------------------------------------------------------- the city grid ---
 # *(Playtest 13, finding 4.)* What a test can hold about a picture is its geometry and its
