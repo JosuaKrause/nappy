@@ -73,11 +73,44 @@ The city gets more dangerous the further into the subquest you are. **A task may
       and is_waiting()`, so investigating needs no field of its own. The contract to watch is that
       every clause of `Tuning.validate_pursuit` is written about a *lethal* chase ("running opens
       more than the radius that ends the day"), and this is the first pursuer that never kills
-- [ ] **The abduction van takes somebody, and then it takes you.** `abduction` today does neither —
-      a static idling van, 250px field, `hard_fail` inside 54px. **"Normally just abduct people" is
-      the first authored event with a victim**; nothing in the catalogue has ever acted on the
-      crowd. And a hunting van inherits `pursue_speed` under `RUN_SPEED`, so it creeps at a fast
-      walk — a screenshot question, not an arithmetic one
+- [ ] **The abduction van takes somebody, and then it takes you.** *(2026-09-01: "we need abduction
+      vans that normally just abduct people but start trying to abduct the player if she is part of
+      the resistance.")* `abduction` today does neither: an unmarked van that **idles**, static,
+      250px field, `hard_fail` inside 54px, a 4.6s telegraph, `first_day` 8, up to four a day. It
+      never moves and nothing is ever taken — the abduction is entirely in the name and in what
+      happens to *her*.
+
+      **The second half is the small one.** `heat_response = HUNTS` and the van gains `pursues`,
+      which the machinery already supports; it keeps `hard_fail`, since a pursuer is exempt from
+      the clearance rule. Two things are not arithmetic. A van cannot chase at van speed —
+      `Tuning.validate_pursuit` allows 112 to 148px/s against a 168px/s run, so a hunting van
+      creeps after her at about a fast walk, and whether that reads as menacing or as comic is a
+      **screenshot question**. And at *what* progress it starts hunting is a separate number from
+      the patrol's `HEAT_INVESTIGATES_LEVEL` (2) and should not be assumed to be the same one.
+
+      **The first half is the one with a precedent in it, and the crowd's shape constrains it.**
+      Nothing in the catalogue has ever acted on the crowd: events never push, the world sums
+      `contribution_at()`, and the one existing coupling is a *modifier* rather than a command —
+      `CrowdAgent.startle()`, which a bump or a car horn uses to raise what that body emits. And
+      the crowd is a population of **the field around the player** rather than of the city, spawned
+      and recycled as she moves, so a pedestrian is not a persistent individual and an abduction
+      can never be a lasting fact about the world. It is a **scene**, and it only means anything
+      where she can see it happen.
+
+      **Decided on 2026-09-02: the van draws its own victim** — a scripted figure belonging to the
+      event, with no crowd coupling at all. It reads identically from the street, it works on an
+      empty one (act III's streets are deliberately empty), it is testable headless, and it leaves
+      untouched the rule that events never push at the world. *Rejected: taking a real `CrowdAgent`
+      and removing it. It is closer to the instruction's own words — the crowd would be the thing
+      in danger, and she is one of the crowd — but it would be the first event in the game to delete
+      a body, it needs an answer for the street with nobody on it, and no headless test could rely
+      on a walker being there to take.* The cost taken with it is that the victim is scenery, and
+      scenery cannot also be you.
+
+      **And it hunts from 3 of 4.** *(2026-09-02: "after the patrol but still early enough to
+      happen more than just once".)* So the ladder has three steps a player can name — denser, then
+      interested, then hunted — with the last one arriving on its own rung rather than alongside
+      the patrol's, and with days left to be met in more than once.
 - [ ] **Write the pursuer exemption down.** M28's rule is that nothing else happens inside a lethal
       event's field, and M50 exempts only the off-corridor `WALL` role. The clearance rule is about
       *places*, and a pursuer has no place — which is already true and unwritten of `charging_dog`
