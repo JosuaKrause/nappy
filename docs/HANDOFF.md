@@ -31,9 +31,12 @@ that puts everything in the present tense with the history moved to `DECISIONS.m
 state and the queue; `CLAUDE.md` is an index over eleven skills in `.claude/skills/`, one
 per operational task, each loaded before that task.
 
-**Left, and this is the next thing to pick up:** the timeless scan of the code comments and the
-design docs. `tuning.gd` is done as the worked example (113 → 79 references); **556 references
-across 45 source files** and about 240 across `EVENTS`, `CITY`, `MECHANICS` and `TELEMETRY` remain.
+**The design docs are done** — `EVENTS`, `CITY`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `DESIGN`,
+`NARRATIVE` and `README` are at zero history references, one commit each, and the pass caught nine
+stale claims and a catalogue row that was missing entirely.
+
+**Left, and this is the next thing to pick up:** the same scan over the code comments. `tuning.gd`
+is the worked example (113 → 79 references) and **556 references across 45 source files** remain.
 The file-by-file counts and the method are in `TODO.md` under M40, "Next step".
 
 It is a judgment call per block rather than a find-and-replace: **keep the reason a thing is the way

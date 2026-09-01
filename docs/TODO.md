@@ -55,11 +55,11 @@ in it is wrong about nothing.**
       *moment* rather than a place
 - [x] **`docs/TODO.md` is a queue again** — open work only, with every completed entry archived
       whole in `DECISIONS.md`
-### ← Next step: the timeless scan of the code and the design docs
+### ← Next step: the timeless scan of the code
 
 *(2026-09-01: "also scan the whole codebase to update for the timeless style — not only documents
-but also code docs/comments.")* **This is where to pick up.** The structural half is done; what is
-left is a long, careful read of every comment and every design doc.
+but also code docs/comments.")* **This is where to pick up.** The structural half and the design
+docs are done; what is left is a long, careful read of every comment in `src/`.
 
 **Do it worst-first, one commit per file or small group, `./tools/check.sh` between.** The
 method is in the `godot` skill under "Comments are written in the present tense", and it is a
@@ -67,7 +67,8 @@ judgment call per block rather than a find-and-replace: **keep the reason a thin
 and the trap that makes it easy to get wrong; drop the milestone number, the former value, and the
 narration of the fix.**
 
-- [~] **The docstrings.** `tuning.gd` is **113 → 79** and committed as the worked example — its
+- [~] **The docstrings**, and the last piece of M40. `tuning.gd` is **113 → 79** as the worked
+      example — its
       `SLEEPINESS_CALM_ZONE_MULTIPLIER` block shows the shape, four paragraphs of value history down
       to the rule plus the reason the number moves. Remaining, worst first:
 
@@ -85,18 +86,26 @@ narration of the fix.**
 
       Count them again with
       `grep -rcE '(M[0-9]{1,2}\b|playtest|Playtest)' src --include='*.gd' | sort -t: -k2 -rn`
-- [ ] **The design docs** — `EVENTS` (1035 lines, 103 refs), `CITY` (1166, 55), `MECHANICS` (713,
-      52), `TELEMETRY` (423, 28), plus `ARCHITECTURE`, `DESIGN`, `NARRATIVE`, `README`. These are
-      what a person reads to learn what the game *is*, and where a stale sentence is
-      indistinguishable from a design. **Arguably do these before the docstrings** — a reader
-      reaches them first
+- [x] **The design docs** — `EVENTS`, `CITY`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `DESIGN`,
+      `NARRATIVE`, `README` are all at **zero** history references, one commit each. Done before
+      the docstrings because a reader reaches them first.
+
+      **The style pass found nine stale claims, which is the argument for doing both passes at
+      once**: `AHEAD_OF_PLAYER` "is the cat" (it is three rows), the pre-per-block event budget
+      formula, `construction` as "the only act I event in the way", `cat_dash`'s duration, an 8×8
+      junction lattice and 112 streets, "nineteen of a hundred" signalled junctions, `PARK`'s
+      sleepiness and decay multipliers, a 104×104 city, and a car population of thirty.
+      **`charging_dog` had no row in the catalogue table at all.** Two obsolete measured tables
+      moved to `DECISIONS.md` rather than being restyled in place
 - [ ] **Then re-audit the numbers, separately from the restyle.** A stale claim survives a rewrite
-      perfectly well if nobody checks it against the code.
-      `SLEEPINESS_CALM_ZONE_MULTIPLIER` was carried as 12 in `CLAUDE.md`, 14 in an audit entry, and
-      is **21** in `tuning.gd` — three wrong answers to a question with one, and the note built on
-      the wrong one ("the park is 20% faster, 20s rather than 24") was wrong about the constant that
-      decides whether a day is winnable once the park is reached. **Assume there are more.** Any
-      number a doc quotes is a candidate: radii, costs, counts, densities, timings
+      perfectly well if nobody checks it against the code — the design-doc pass caught nine only
+      because rewriting a sentence forces you to read what it says. **Assume there are more.** Any
+      number a doc quotes is a candidate: radii, costs, counts, densities, timings.
+
+      Two known shapes to look for. **A number stated per something that has since been resized** —
+      the lattice went to 11×11 and every count over blocks, junctions or streets moved with it.
+      And **a measured table that was a before-and-after**: those are history, and they belong in
+      `DECISIONS.md` with their date rather than being restyled into the present tense
 
 ---
 
