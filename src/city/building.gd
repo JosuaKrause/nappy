@@ -124,10 +124,6 @@ func wall_tiles() -> int:
 func roof_tiles() -> int:
 	return rows() - wall_tiles()
 
-## Depth of the visible roof in px.
-func roof_depth() -> float:
-	return roof_tiles() * TILE
-
 ## Whether a window is showing a light. Only a lived-in block ever does: a boarded street is
 ## the same street with nobody in it, and that reads at a glance where a colour shift alone
 ## would not.

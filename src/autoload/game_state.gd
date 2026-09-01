@@ -109,7 +109,6 @@ func start_run(seed_value: int = 0) -> void:
 ## The run can no longer end by running out of days while nerves remain, so the bad ending is
 ## the only way to lose and the fourteen days become a promise rather than a budget.
 func finish_day(result: GameEnums.DayResult) -> bool:
-	EventBus.day_ended.emit(result)
 	if result != GameEnums.DayResult.WON:
 		nerves -= 1
 		EventBus.nerves_changed.emit(nerves)
@@ -125,7 +124,7 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 			return false
 		settled_in.erase(day)
 		return true
-	if day >= Tuning.RUN_LENGTH_DAYS:
+	if is_final_day():
 		_end_run(GameEnums.Ending.GOOD if earned_good_ending() else GameEnums.Ending.NEUTRAL)
 		return false
 	day += 1

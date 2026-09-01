@@ -34,9 +34,6 @@ func start(length: float) -> void:
 	failure_reason = ""
 	EventBus.day_time_changed.emit(time_remaining, time_total)
 
-func stop() -> void:
-	phase = GameEnums.DayPhase.OVER
-
 ## 1.0 at dawn, 0.0 at dusk. Drives the light.
 func fraction_remaining() -> float:
 	if time_total <= 0.0:

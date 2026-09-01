@@ -7,8 +7,6 @@ extends Node2D
 ## at the baby, so there is no ordering to get wrong, events compose by simple addition, and
 ## the whole thing is testable without a scene.
 
-signal finished(instance: EventInstance)
-
 const CAT_CROUCHED := preload("res://assets/events/cat_crouched.svg")
 const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
@@ -582,8 +580,6 @@ func _finish() -> void:
 	if is_finished:
 		return
 	is_finished = true
-	EventBus.event_finished.emit(self)
-	finished.emit(self)
 
 # ------------------------------------------------------------------ emission ---
 

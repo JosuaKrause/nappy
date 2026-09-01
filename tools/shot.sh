@@ -15,6 +15,14 @@ set -euo pipefail
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [[ ! -x "$GODOT" ]]; then
+    echo "godot not found at $GODOT" >&2
+    echo "install Godot 4.7, or point GODOT at your binary:" >&2
+    echo "  GODOT=/path/to/Godot tools/shot.sh" >&2
+    exit 127
+fi
+
 OUT="${1:?usage: shot.sh out.png [seconds] [dev flags...]}"
 SECONDS_TO_WAIT="${2:-1.5}"
 shift $(( $# > 2 ? 2 : $# ))

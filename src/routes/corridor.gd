@@ -47,12 +47,6 @@ extends RefCounted
 ## meant to walk* and the rim is defined as what is beside it: a street on the tree is on the tree
 ## however many turnings run off it.
 
-enum Where {
-	AWAY,    ## Two turnings off the corridor or more — `depth()` is what says how far.
-	INSIDE,  ## On a street the day's routes run down.
-	RIM,     ## On a street that meets one of those at a junction.
-}
-
 ## Segment key -> how many turnings off the corridor it is. Zero for a street on the tree, one for
 ## the rim, upwards from there; a street the day cannot reach at all is absent. See
 ## `RouteTree.depths()`, and note that this replaced two sets — `_on` and `_rim` were the same
@@ -103,13 +97,6 @@ var _answers := PackedByteArray()
 ## rather than a second copy of `_slot_for`'s arithmetic.
 var _gap_answers := PackedByteArray()
 const _UNKNOWN := 255
-
-## Where a tile stands in relation to the day's routes.
-func where(tile: Vector2i) -> Where:
-	var away := depth(tile)
-	if away == 0:
-		return Where.INSIDE
-	return Where.RIM if away == 1 else Where.AWAY
 
 ## How many turnings off the corridor a tile is. Zero is on it, one is the rim, and it counts
 ## outwards; `DEEP` is the answer for ground the day's routes cannot reach at all.
@@ -176,9 +163,6 @@ func _cell_of(slot: int) -> Vector2i:
 ## As far off the corridor as this answers. Anything at or past it is simply *elsewhere*.
 const DEEP := 3
 
-func is_inside(tile: Vector2i) -> bool:
-	return depth(tile) == 0
-
 func _work_out(cell: Vector2i, across_x: bool, across_y: bool) -> int:
 	var answer := DEEP
 	for key in _streets_at(cell, across_x, across_y):
@@ -188,10 +172,6 @@ func _work_out(cell: Vector2i, across_x: bool, across_y: bool) -> int:
 		if answer == 0:
 			break
 	return answer
-
-## Whether this street is one of the ones the day's routes run down.
-func holds_street(key: Vector3i) -> bool:
-	return _depths.get(key, DEEP) == 0
 
 ## The streets a tile answers for.
 ##
