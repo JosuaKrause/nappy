@@ -77,6 +77,48 @@ her**, which is the one shape M28's spacing rule cannot be stated about.
   need a played run.
 - **M48**, **M10** (polish), and M50's step 3 (placeholders as a variety ledger).
 
+## What to distrust
+
+What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
+
+- **The difficulty has been felt by a human once**, and that was a verdict on one density pass and
+  one act I. The sleepiness numbers, the nerve economy, and whether the arterial is crossable are
+  all still arithmetic checked by `tests/test_balance.gd` and unfelt. **Nobody has ever got past day
+  4**, so the whole of acts II–IV is seen by nobody.
+- **Five nerves is a number nobody has played against.** It was raised from three after a run ended
+  on day 3 — but two of those nerves went on a **defect**, so the number was raised against a
+  difficulty that no longer exists.
+- **A spoiled park is nine things and nobody has stood in one.** The coverage is measured — 91% of a
+  courtyard, 99% of a four-block zone — and what is not measured is whether it reads as *the park is
+  busy today* or as somebody having tipped an event budget into a field. It is also the one place
+  where `EVENT_SPACING_SAME` does not apply.
+- **The robber and the pacing man have never been met by a person.** The robber is the most
+  mechanically complicated row in the catalogue — a field, a trigger, a notice, a stand-off and a
+  break-off — and every number on him is a rig's. The pacing man is a man with no body on a 64px
+  footway, avoided by the meter alone.
+- **A street that is solid has been walked by a rig and by nobody.** About two thirds of the
+  catalogue has a body. The open question is not density but whether being stopped reads as *cross
+  the street* or as an obstacle course. The gap between a kerbed van and the frontage is smaller
+  than the pram, which is intended and is also the exact shape of *"no line to walk"*.
+- **Most of the silhouettes have never been seen in play.** Only five are reachable before day 4.
+  The two to distrust are the ones that are more than a picture: the **robber's two postures**,
+  where the whole claim is that *waiting* and *coming* are told apart at an alley's length, and the
+  **protest**, a 110px wall of bodies on a crossing.
+- **A flock has been walked through by a rig and by nobody.** The gradient is measured — +35 through
+  the middle, +8 eighty pixels off it, nothing at the rim — and it is the only row where the cost
+  table and the thing the player meets are computed differently.
+- **The park is 20% faster and nobody has felt it.** Calm ground fills the meter in 20s rather than
+  24, which narrows the "a calm area is more than one lap" margin in `docs/MECHANICS.md` to 19.8s
+  against a 10.8s lap.
+- **There is no audio at all.** Less urgent than it sounds: audio is redundancy, so the game must
+  already be fully playable without it.
+- **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters`, `--overview`,
+  `--day-length`, `--screenshot`, `--after`, `--walk`, `--flee`, `--press` ship in the build. They
+  should be gated behind a debug build before release.
+- **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
+  running behind it, `space` to begin — but it is a title, three lines of controls and two keys: no
+  options, no seed box, no load game.
+
 ## The rule that matters most before starting anything
 
 **The first tool call of a design task is a search for the words, not a plan.** Grep `TODO.md` and
