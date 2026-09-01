@@ -271,10 +271,38 @@ you can pass at a price, are only a decision when the city contains both.
 - **Both directions, the same cost each time.** So it is a toll rather than a puzzle: nothing about
   it is learnable except that it is there, which is what makes it a *routing* fact.
 
+**How the two are placed, and it is one rule for both.** *(2026-09-02: "for the barricade and
+checkpoint placement divide the map into regions and create barricades along the full perimeters —
+add checkpoints instead of barricades only where the paths cross the region boundaries.")*
+
+**The perimeter is a wall with doors in it.** Barricade every tile of a region's boundary; wherever
+a walkable route crosses that boundary, put a checkpoint there instead. So the wall is complete —
+there is no gap to find and no way round — and every way through is a toll. That is what makes both
+rows mean something: the barricade is what you cannot pass, the checkpoint is the only place you
+can, and neither reads as anything without the other beside it.
+
+It also answers, by construction, the thing that would otherwise sink the idea. A ring of
+impassable structure is exactly the shape of sealing her in, and *the doors are placed at every
+crossing rather than at a chosen few*, so a region can never become unreachable however the lattice
+came out. The winnability check stops being an argument about placement and becomes a count: a
+boundary with no checkpoint on it is a bug.
+
 - [ ] **The regions are a city-generation question, not an event-placement one.** A perimeter is a
       decision about the map, so what needs designing first is what a region *is* — the quadrants
       either side of the spine, a growth from the home block, or something the lattice already
       knows about. This is the largest piece and everything else waits on it
+- [ ] **Both are structure, and the machinery for it is already queued.** Neither can stay a
+      recurring event rolled onto a tile by the scheduler: a perimeter is a fact about the city, so
+      it is generated with the city and stands for the run — which is what makes it *learnable*,
+      the same reason the city is fixed for a run at all. M45's first item is **permanent
+      impassable structure, reusing `absent_segments` rather than reinventing it**, and that is
+      this. Build them together or build that one first
+- [ ] **"Where the paths cross" needs its meaning fixed before anything is placed.** The reading
+      taken here is **every walkable crossing of the boundary** — every street and footway that
+      meets it — rather than only where the day's corridor happens to cross. `RouteTree` grows a
+      *day's* routes, so siting the doors off it would move them nightly, and a city whose walls
+      rearrange themselves is the one thing this city has never done. Confirm before building; the
+      cost of getting it wrong is the run's central promise
 - [ ] **The detention is `chatting_mother`'s mechanism.** *"Reuse the other woman with baby logic"*:
       `EventDef.detain_seconds` locks her movement on first contact inside `detain_radius`, and
       `Stroller.detain()` runs the lock out through the ordinary friction rather than stopping her
@@ -285,10 +313,10 @@ you can pass at a price, are only a decision when the city contains both.
 - [ ] **"A bit of excitement" is the second half, and it is not the detention.** A detained player
       is standing still, and standing still is where `EXCITEMENT_DECAY_IDLE` pays back nothing — so
       a checkpoint charges her twice over unless the intensity is set knowing that
-- [ ] **The winnability guarantee has to survive it.** Every day must leave a route to a calm area.
-      A crossing that is always possible cannot seal the city the way a closure can, which is the
-      good news; what it can do is make every calm area cost a toll, which is the same problem
-      wearing a different hat. Measure it, do not argue it
+- [ ] **What the doors cannot fix is the toll on every park.** Reachability is settled by placing a
+      checkpoint at every crossing, and that is not the same as winnable: a region whose calm areas
+      all sit behind a detention is a day priced differently from one that does not, and the
+      difference is a real number. Measure it against a day's clock, do not argue it
 - [ ] **What it does to the corridor.** `RouteTree` grows the day's routes and `Corridor` answers
       *is this tile on one*. A toll is a cost on an edge, and the route tree has never had one —
       check whether it can express "passable, at a price" before assuming it can
