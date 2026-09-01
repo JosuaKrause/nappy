@@ -22,72 +22,47 @@ const IDLE_SPEED_THRESHOLD := 12.0
 
 const METER_MAX := 100.0
 
-## The pitch these three make together is the whole loop, and it is the answer to findings
-## 2 and 4 from the first playtest: a day used to be winnable by circling the starting block,
-## which made the city decoration.
+## The pitch these three make together is the whole loop: **an ordinary street makes real
+## progress and never enough.** A whole day of clean street walking reaches about three quarters
+## of the meter, so the walk out is worth something and the walk out alone can never finish.
+## Only calm ground can, which is what stops a day being winnable by circling the doorstep and
+## the city being decoration.
 ##
-## An ordinary street makes real progress and never enough. A whole day of clean street
-## walking reaches about three quarters of the meter, so the walk out is worth something and
-## the walk out alone can never finish; only calm ground can. `tests/test_meters.gd` holds
-## both halves of that, in terms of `day_length()` rather than in numbers, so a change to
-## the day cannot quietly make the street sufficient again — which is what kept them honest
-## when M18 cut the day from 330s to 180s.
+## `tests/test_meters.gd` holds both halves in terms of `day_length()` rather than in numbers,
+## so a change to the length of a day cannot quietly make the street sufficient again.
 const SLEEPINESS_GAIN_WALKING := 0.42
 ## Standing still has to be strictly worse than walking, or waiting is a strategy. It also
 ## has to stay cheaper than a calm zone gives, because stopping is the counterplay to a loud
 ## event and pricing it above the park's own rate would take that move away.
 const SLEEPINESS_DRAIN_IDLE := 1.0
-## Playtest 02, finding 1: *"the difference of a park is barely noticeable... I don't want to
-## circle in a park for two minutes just to fill up the bar."* At M14's 3.5x a calm stretch
-## ran 119s, which is not a reward, it is a wait — and at three and a half times a rate you
-## cannot see, it did not even read as faster than the pavement.
+## How much faster calm ground fills the meter than an ordinary street. A four-block zone is
+## **11.3s from empty**, against a whole day of clean pavement reaching three quarters of the bar.
 ##
-## At 10x it was 24s from empty, and a second in a park was worth ten on the street. That makes
-## a day comfortably winnable *once calm ground is reached*, which is the point: the day is
-## meant to be lost on the way there, not in it. See docs/PLAYTEST-02.md, decision 1.
+## Deliberately generous once the park is reached, because **the day is meant to be lost on the
+## way there and not in it.** That makes this the constant that decides whether a day is winnable
+## at all once she arrives, and it is why it moves whenever the walk out gets harder: leaving the
+## reward the same length while adding to the journey turns a park from a reward into a wait, and
+## a calm stretch that reads as a wait is the failure this number exists to prevent.
 ##
-## **12x since M38**, which is the same decision taken one notch further: 20s from empty rather
-## than 24. Every milestone since M28 has put more between the doorstep and the park — a solid
-## catalogue, a crowd that bites, a pacing man, a robber — and all of that is spent on the way
-## there, which is where the day is *supposed* to be lost. Making the walk out harder and leaving
-## the reward at the end of it the same length quietly turns the park from a reward into a wait,
-## which is playtest 02's finding 1 coming back by a different road.
-## **14x since M41** — *"let's increase the sleepiness speed for calm zones again"* — which is the
-## same argument a third time: 17s from empty rather than 20. What went between the doorstep and
-## the park this time is a main road that is bad ground to recover on and a lattice a fifth wider.
-## **21x since M52**, and this one was asked for twice before it was built: *"x1.5 the sleepiness
-## effect of calm zones and double it for 1x1 calm zones"* (playtest 14, finding 11), restated as
-## *"calm zones need to fill up the sleep meter faster in general"*. 11.3s from empty.
-##
-## One correction travelled with it. `docs/PLAYTEST-14.md` recorded the request against a value of
-## **12**, which had been wrong since M41 — so the 1.5 is taken on the 14 that is actually here.
+## It also has to be visibly faster than the pavement, not merely faster. A small multiple of a
+## rate nobody can see does not read as a reward at all.
 const SLEEPINESS_CALM_ZONE_MULTIPLIER := 21.0
 
 ## How much faster again a **small** calm area fills it, as a curve over the lot's size.
 ##
-## *(Playtest 14, finding 11: "double it for 1x1 calm zones". Playtest 16: "the size of the calm
-## zone increases the speed even further if it is small", then "2x1 calm zones have a proportional
-## multiplier, the base is 2x2 — or maybe redefine the base to 1x1 and divide by the number of
-## blocks".)*
+## The rate goes as `1 / sqrt(blocks)`, normalised so a `CALM_ZONE_BLOCKS`-square zone is the base:
+## **21x for four blocks (11.3s from empty), 29.7x for two (8.0s), 42x for one (5.7s)**.
 ##
-## **The two phrasings of the curve give different answers and the arithmetic is why one was
-## picked.** Three anchors were asked for: a 2x2 zone is the base, a 1x1 is **double** it, and a 2x1
-## sits proportionally between. Dividing by the **number of blocks** cannot hold the first two at
-## once — from a 2x2 base of 21 it makes a 1x1 *four* times as fast, and from a 1x1 base of 42 it
-## makes a 2x2 half of what it is today. Dividing by the **side** holds both exactly, because a 1x1
-## against a 2x2 is a factor of two in width and a factor of four in area, and the rate asked for
-## doubles rather than quadrupling.
+## **It divides by the side and not by the area, because a lap is a length.** A four-block zone is
+## 22 tiles square and has a route through it; a single block is eight tiles across and has a lap
+## round it. Paying inversely to the *width* of a lot pays each of them about the same for a lap, so
+## a small area stops being the weaker destination for a reason that has nothing to do with what it
+## is for, and *which* calm area to head for stays a real question — which is `docs/CITY.md`'s own
+## argument for keeping single-block calm in the mix.
 ##
-## So the rate goes as `1 / sqrt(blocks)`, normalised so a `CALM_ZONE_BLOCKS`-square zone is the
-## base: **21x for four blocks (11.3s from empty), 29.7x for two (8.0s), 42x for one (5.7s)**.
-##
-## And that is the same thing the design says in words, which is the reason to trust it over the
-## simpler formula: **a lap is a length, not an area.** A four-block zone is 22 tiles square and has
-## a route through it; a single block is eight tiles across and has a lap round it, which is what
-## M21 exists to remove. Paying inversely to the *width* of a lot pays each of them about the same
-## for a lap of it — so the small ones stop being the weaker destination for a reason that has
-## nothing to do with what they are for, and *which* calm area to head for goes back to being a real
-## question. That is `docs/CITY.md`'s own argument for keeping single-block calm in the mix.
+## The trap, since the two formulas look equally reasonable: dividing by the **block count** makes a
+## single block *four* times a four-block zone rather than twice it, because a factor of two in
+## width is a factor of four in area.
 func sleepiness_calm_multiplier(blocks: int) -> float:
 	var side := sqrt(float(maxi(blocks, 1)))
 	return SLEEPINESS_CALM_ZONE_MULTIPLIER * float(CALM_ZONE_BLOCKS) / side
@@ -108,13 +83,10 @@ const EXCITEMENT_CALM_THRESHOLD := 35.0
 ## A sleeping baby woken above this goes back to AWAKE.
 const EXCITEMENT_WAKE_THRESHOLD := 60.0
 
-## The two the *pram* says out loud. *(Playtest 06, finding 5: "can you add a visual for when
-## the excitement bar is almost full, and the same for when the sleep bar is fully full.")*
-##
-## Both are stated as **states with an instruction attached** rather than as points on a gauge,
-## which is the whole difference between a cue and the HUD moved over the player's head. The
-## other two the pram shows need no constant at all, because the game already has them: the calm
-## threshold, where the day stops progressing, and asleep, which is a state.
+## The two the *pram* says out loud, stated as **states with an instruction attached** rather than
+## as points on a gauge — which is the whole difference between a cue and the HUD moved over the
+## player's head. The other two states the pram shows need no constant at all, because the game
+## already has them: the calm threshold, where the day stops progressing, and asleep.
 ##
 ## Nearly crying is the last band before `METER_MAX` ends the day. Far enough up that it is not
 ## a second name for "loud street" — a pavement sits under the calm threshold and a bad moment
@@ -123,41 +95,35 @@ const EXCITEMENT_WAKE_THRESHOLD := 60.0
 const EXCITEMENT_NEARLY_CRYING := 80.0
 ## And how far below the wake threshold a sleeping baby starts to stir. Waking costs
 ## `WAKE_SLEEPINESS_PENALTY` — half the bar — so this is the most expensive thing in the return
-## phase and the only warning of it was the excitement bar climbing in the corner of the screen.
+## phase, and without a cue at the pram the only warning is a bar climbing in a corner.
 const EXCITEMENT_STIR_MARGIN := 12.0
 ## Incoming excitement multiplier while the baby is asleep.
 const SLEEPING_SENSITIVITY := 0.55
 
-## **What settles a baby is being pushed.** *(Playtest 07, finding 3: "not walking at all
-## shouldn't reduce excitement either — otherwise I can just stop in the middle of the street and
-## wait until everything is good.")*
+## **What settles a baby is being pushed.** The pram is a rocking chair with wheels on, and
+## rocking it is the only thing that calms her.
 ##
-## It was 6.0, which was the **fastest** of the three, and that made standing still the strongest
-## move in the game: a full meter cleared in seventeen seconds for seventeen points of sleepiness,
-## anywhere, including the middle of a street she had no business being on. Two runs in the
-## playtest 07 traces have a seventy-four-second gap with no entry in them at all.
+## **Zero and not merely low**, because standing still must *freeze* the excitement rather than
+## clear it: the day then stops moving in both directions at once, which is the honest version of
+## "waiting is not a plan". Any positive idle decay makes standing the strongest move in the game
+## — a full meter cleared for a few points of sleepiness, anywhere, including the middle of a
+## street she has no business being on.
 ##
-## Zero rather than merely lower, because the model it states is worth stating exactly: the pram
-## is a rocking chair with wheels on, and rocking it is the only thing that calms her. Standing
-## still now *freezes* the excitement instead of clearing it — the day stops moving in both
-## directions at once, which is the honest version of "waiting is not a plan". The counterplay it
-## takes away has a replacement that was always the better one: **walk somewhere quiet**, which is
-## what `EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` is for and what the whole route is about.
+## The counterplay this removes has a better replacement: **walk somewhere quiet**, which is what
+## `EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` is for and what the whole route is about.
 ##
 ## Running still decays, barely — it is motion, and `EXCITEMENT_FROM_RUNNING` is what makes it a
-## bad idea. The ordering is now motion-shaped rather than arbitrary: walking calms most, running
-## calms a little, standing calms nothing.
+## bad idea. The ordering is motion-shaped rather than arbitrary: walking calms most, running calms
+## a little, standing calms nothing.
 const EXCITEMENT_DECAY_IDLE := 0.0
 const EXCITEMENT_DECAY_WALKING := 3.5
 const EXCITEMENT_DECAY_RUNNING := 0.5
-## What the **ground** does to the decay, best to worst. *(Playtest 12, finding 8: "excitement
-## decay — best: calm, then pedestrian, then side road, then main road, worst.")*
+## What the **ground** does to the decay, best to worst: calm, then precinct, then ordinary
+## street, then main road.
 ##
-## This is the first time since M14 that the ground under her feet has done anything except be
-## calm or not, and it is the change that makes a route a **recovery rate** rather than only a set
-## of things to walk past. It is also what makes a precinct worth walking to although it is loud:
-## a retail street is busy, and it is still the best place in the city that is not a park to bring
-## a meter down.
+## This is what makes a route a **recovery rate** rather than only a set of things to walk past,
+## and what makes a precinct worth walking to although it is loud: a retail street is busy, and it
+## is still the best place in the city that is not a park to bring a meter down.
 ##
 ## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
 ## the excitement visibly falling away as she walks in under the trees. The main road is the same
@@ -169,17 +135,15 @@ const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.6
 
 ## Excitement per second at full sprint, scaled by how far above walk speed we are.
 ##
-## **9.0 → 14.0 in playtest 07, to keep a standing decision standing.** The run button is a trap
-## by design — `CLAUDE.md`'s second measured fact about the catalogue is that running is the wrong
-## move against *every* event in the game, and M25 is where that is supposed to change, by
-## building a mechanic and a fairness contract rather than by moving a constant.
+## **The run button is a trap by design**: running is the wrong move against every row that merely
+## emits, and the right move only against the things that follow you. This constant is what keeps
+## that ordering true across the whole catalogue.
 ##
-## `falloff`'s new shoulder broke it as a side effect. A fatter field makes time-in-field matter
-## more, so running out of the four widest ones — `dog_walker`, `fire_truck`, `night_raid`,
-## `firefight` — became a point or two cheaper than walking. Not "running works" but "running is a
-## coin flip", which is the worst of the two and was nobody's decision. This is the number that
-## restores the ordering across the whole catalogue, and `tests/test_events.gd` now asserts it
-## rather than leaving it in a document, which is how it broke silently in the first place.
+## It is sensitive to the shape of `falloff` and not only to the radii. A fatter field makes
+## time-in-field matter more, so a shoulder that is too generous makes running *out* of the widest
+## rows cheaper than walking — which is not "running works" but "running is a coin flip", the worst
+## of the two. `tests/test_events.gd` asserts the ordering row by row rather than leaving it in a
+## document, because that is how it can break silently.
 const EXCITEMENT_FROM_RUNNING := 14.0
 ## Constant dread while standing in an alley.
 const EXCITEMENT_FROM_ALLEY := 3.0
@@ -188,14 +152,8 @@ const EXCITEMENT_FROM_ALLEY := 3.0
 
 ## What a row has to cost, in points of the meter, before it earns a caret over its head.
 ##
-## *(M39, playtest 10 finding 9: "I would kind of expect for more dangerous entities to have danger
-## indicators but it feels like some dangerous ones don't have indicators and some really benign
-## ones do have indicators.")*
-##
-## The rule it replaces asked whether a danger *changes over time*, which is a true statement about
-## a thing and not a statement about how bad it is — so a fire engine at +115 carried nothing and a
-## burning building at +56 carried a caret, and the most expensive ordinary row in act I had none.
-## See `EventInstance.wants_a_mark()`.
+## The rule is about **cost**, not about whether a danger changes over time — asking the latter
+## marks a burning building and not the fire engine that made it. See `EventInstance.wants_a_mark()`.
 ##
 ## **A quarter of the meter**, and it is a taste call stated rather than derived: one of these is a
 ## quarter of the bar and a route has three or four on it. What makes it a *safe* taste call is
@@ -203,9 +161,9 @@ const EXCITEMENT_FROM_ALLEY := 3.0
 ## `construction` (+20.3), so the line sits in open ground rather than slicing a cluster, and a
 ## small rebalance cannot flip a row across it by accident.
 ##
-## The number does not decide *which* rows are marked so much as *how many*: the ordering is the
-## invariant, and `tests/test_danger.gd` holds it — if A is marked and B is not, A costs more than
-## B, over the whole catalogue.
+## The number decides *how many* rows are marked rather than which: the ordering is the invariant,
+## and `tests/test_danger.gd` holds it — if A is marked and B is not, A costs more than B, over the
+## whole catalogue.
 const MARK_WORTH_A_DETOUR := METER_MAX * 0.25
 
 # ---------------------------------------------------------------- telegraph ---
@@ -219,29 +177,23 @@ const TELEGRAPH_HARD_FAIL_MARGIN := 2.0
 # ---------------------------------------------------------------------- run ---
 
 const RUN_LENGTH_DAYS := 14
-## How many days a run may lose before it is over. *(Playtest 08: "we need more nerves let's try
-## 5?")*
+## How many days a run may lose before it is over.
 ##
-## Three was the number from M6, when a lost day also *advanced the calendar* — so a nerve was a
-## day of the fourteen thrown away as well as a life, and three of them was already a hard cap on
-## how much of the run a player would ever see. M32 took that half away: a lost day is retried, so
-## a nerve now costs only the time it took to lose. Three of those against an act I that grew teeth
-## in M31 is what ended playtest 08's run on **day 3** — two of them spent on the same charging dog,
-## which is the milestone's other half.
+## **A nerve is an attempt, not a day thrown away.** A lost day is retried and the calendar does
+## not advance, so a nerve costs only the time it took to lose — which is why the number can be
+## this generous. It is the budget for *learning* a day, and a run that ends before act II ends
+## before the game has shown what it is.
 ##
-## Five is a number to be measured rather than derived, and the thing to read is `docs/TODO.md`'s
-## open question: three nerves were never enough attempts to *learn* a day, and a run that ends
-## before act II ends before the game has shown what it is. The run log's `nerve` entries say where
-## they went.
+## Asked for rather than derived, and still unmeasured: the run log's `nerve` entries say where
+## they went. See `docs/TODO.md`'s open question.
 const STARTING_NERVES := 5
 ## A day is aimed at **about a minute of play, with a grace of three**. Dusk is the grace,
 ## not the target: a day walked well is over in a minute, and the three minutes are there for
 ## a day that goes wrong — a bad route, a park that turned out to be spoiled, a baby woken on
 ## the way home.
 ##
-## It was 330s until M18, which made the outer bound the *typical* length and the meter the
-## thing standing between you and it. Cutting it was the other half of finding 1: two minutes
-## of standing in a park inside a five and a half minute day is a game about waiting.
+## **Dusk must not become the typical length.** A day long enough that the clock is what stands
+## between the player and the end of it is a game about waiting rather than about routing.
 const DAY_LENGTH_SECONDS := 180.0
 ## Curfew (day 6+) shortens the day by this fraction.
 const CURFEW_DAY_LENGTH_MULTIPLIER := 0.8
@@ -276,21 +228,16 @@ const SIDEWALK_WIDTH := 2
 const CITY_BLOCKS := Vector2i(11, 11)
 
 # -------------------------------------------------------- the street hierarchy ---
-# Playtest 11, finding 7: *"we need a separation between easy-to-navigate road and heavily
-# trafficked and pedestrianised road — there should be a visual difference and traffic lights."*
-# Until M41 the city had **one kind of street**; the arterials differed from the rest only by how
-# many cars were on them, so the only route question a junction ever asked was *which way*. With
-# three kinds it also asks *which kind*, and that is the trade this game is made of.
+# Three kinds of street: a main road, two retail precincts, and ordinary streets everywhere else.
+# With one kind, the only route question a junction asks is *which way*; with three it also asks
+# *which kind*, and that is the trade this game is made of.
 #
 # The lattice itself does not move. Every corridor is still `sidewalk | road | sidewalk` and the
 # layout maths is still a modulo — see the note on `STREET_WIDTH`.
 
-## How long a precinct is, in blocks. *(Playtest 12, finding 7: "a stretch of three blocks at the
-## shore, like a coney island beach walk, and three blocks in the city somewhere — no more.")*
-##
-## The first version made a whole corridor of each axis pedestrianised, and the report on it was
-## *"there are way too many pedestrian only zones"*. A kind of street you meet every third block is
-## what a street is; three blocks with an end you can see is a place.
+## How long a precinct is, in blocks. **Three, with an end you can see, because a precinct has to
+## be a place rather than a kind of street.** A whole corridor of it is not a precinct — a kind of
+## street you meet every third block is simply what a street is.
 const PRECINCT_BLOCKS := 3
 
 ## How busy a precinct's pavement is against an ordinary street's. It is the other end of the same
@@ -329,44 +276,38 @@ const SIGNAL_AMBER_SECONDS := 2.0
 ## arterial was a quarter of a cruise. What fixes it is a *progression* — each junction's cycle
 ## starts one junction's travelling time after the last.
 ##
-## **The wave serves one direction, not two, and M41 claimed otherwise.** *(M46.)* The old note
-## here said a car going against the wave "arrives two travel times after the one going with it,
-## so both are in step exactly when the cycle is an even multiple of the travel time", and that is
-## the wrong condition. Walk it: with offsets `j·travel`, a car passing junctions `j0 + d·h` at
-## `t0 + h·travel` sees phase `t0 + j0·travel + h·travel·(1 + d)`. Going **with** the wave (`d =
-## -1`) the `h` term vanishes and the phase never moves — a perfect progression. Going **against**
-## it the phase advances `2·travel` per junction, which is constant only if the cycle *divides*
-## `2·travel`. "An even multiple" is that condition upside down, and it is only true at
+## **The wave serves one direction, not two, and no setting of this constant changes that.** With
+## offsets `j·travel`, a car passing junctions `j0 + d·h` at `t0 + h·travel` sees phase
+## `t0 + j0·travel + h·travel·(1 + d)`. Going **with** the wave (`d = -1`) the `h` term vanishes and
+## the phase never moves — a perfect progression. Going **against** it the phase advances `2·travel`
+## per junction, which is constant only if the cycle *divides* `2·travel`, and that is true only at
 ## `blocks = 1`.
 ##
 ## Measured on the wave alone, twenty departures spread across a cycle, no traffic in it:
 ## **93% of arrivals green with the wave, 51% against it** — and 51% is chance, because the main
 ## green is 47% of the cycle.
 ##
-## **A two-way wave is impossible here, which is why this is a note and not a fix.** It needs
-## `cycle = 2·travel` = 5.7s, and the side green plus its two ambers is 9.0s before the main road
-## gets a second. Widening `travel` instead means a spine cruise under 100px/s, which is barely
-## above a walk. No offset scheme does better on average either: `θ = travel` buys one direction
-## a perfect run and leaves the other at chance (72% overall), while `θ = cycle/2` puts *both*
-## directions on a three-phase sweep at 47% each. The asymmetric answer is the good one.
+## **A two-way wave is not available at any price here.** It needs `cycle = 2·travel` = 5.7s, and
+## the side green plus its two ambers is 9.0s before the main road gets a second. Widening `travel`
+## instead means a spine cruise under 100px/s, barely above a walk. Nor does another offset scheme
+## do better on average: `θ = travel` buys one direction a perfect run and leaves the other at
+## chance (72% overall), while `θ = cycle/2` puts *both* directions on a three-phase sweep at 47%
+## each. **The asymmetric answer is the best one, not a compromise.**
 ##
-## Three is what makes the cycle come out near a quarter of a minute: shorter and the side
-## street's share stops being long enough to cross on, longer and a red is a wait a player will
-## not spend — see M46 in `docs/TODO.md` for what a longer one costs her, measured.
+## Three is what makes the cycle come out near a quarter of a minute: shorter and the side street's
+## share stops being long enough to cross on, longer and a red is a wait a player will not spend.
 const SIGNAL_PROGRESSION_BLOCKS := 3
 
-## Calm **areas**, not calm blocks: since M21 an area may be a single block or a four-block
-## zone, and what these count is places to go rather than lots. `MIN_CALM_BLOCKS` keeps its
-## name because it is what `calm_blocks` returns — one entry per area — and renaming it would
-## touch every guarantee that is stated over it without changing what any of them mean.
+## Calm **areas**, not calm blocks: an area may be a single block or a multi-block zone, and what
+## these count is places to go rather than lots. The name is what `calm_blocks` returns — one entry
+## per area — and renaming it would touch every guarantee stated over it without changing what any
+## of them mean.
 ##
-## **The floor is an act's worth plus one.** *(Playtest 12, finding 5: "since each day one gets
-## removed we need as many as days in an act, plus one more as backup. That forces exploration.")*
-## M24 spoils the calm area she settled in, and since M41 it spoils every one she has used *so far
-## this act* — so an act of four days burns four, and the plus one is what stops the last day of
-## an act being unwinnable rather than merely hard. It is derived from the act lengths below
-## rather than authored beside them, because the two would otherwise drift the first time either
-## moved: `calm_areas_needed()`.
+## **The floor is an act's worth plus one.** A day spoils every calm area she has used so far this
+## act, so an act of four days burns four, and the plus one is what stops the last day of an act
+## being unwinnable rather than merely hard. It is derived from the act lengths below rather than
+## authored beside them, because the two would otherwise drift the first time either moved:
+## `calm_areas_needed()`.
 const MIN_CALM_BLOCKS := 5
 const MAX_CALM_BLOCKS := 7
 ## Walking distance in tiles, not straight-line: the calm has to be earned.
