@@ -293,6 +293,30 @@ stating because the alternative — regions as a few marked-off districts in an 
 is what a first implementation drifts into, and it quietly gives back the way round that the
 perimeter exists to remove.
 
+**The regions are decided when the city is generated, and a region edge can never affect a path.**
+*(2026-09-02: "what the regions are is determined at initial city creation and paths planning and
+boundary placement are 100% orthogonal. a region edge can never affect a path — note this implies
+the region boundaries cannot be through calm zones etc.")*
+
+**This is the constraint the rest of the milestone hangs off, and it is stronger than it looks.**
+The two systems never negotiate: `RouteTree` grows a day's routes knowing nothing about regions, and
+the boundaries were drawn before any of them existed. There is no ordering problem, no feedback
+loop, and no case where a wall makes a route worse — a boundary is laid where a wall changes nothing
+about where anybody can get to, and the doors are then cut wherever the day's paths happen to cross
+it.
+
+**And it decides where a boundary may run.** A boundary through a park would wall off half of a
+destination, which is a region edge affecting a path — so **no boundary crosses calm ground**, and
+every calm area belongs wholly to one region. That is also what makes *"the region contains an
+accessible calm zone"* a question with an answer: nothing is ever half in. The same reasoning
+applies to anything else a route has to be able to reach or use as a whole, and the home is the
+sharpest case — it is a notch with one exit, so a boundary anywhere near it is the doorstep problem
+by another route.
+
+The honest form of the rule is therefore a **generation guarantee, checked like the other ones**:
+a boundary runs on ground where sealing it removes no destination and shortens no route. That is a
+test over many seeds, not an argument.
+
 **A region with nothing in it for her gets no doors at all.** *(2026-09-02: "a region that contains
 no accessible calm zone should have no checkpoints / gates. this might sound counter-intuitive from
 a realworld point of view since such a region wouldn't ordinarily make sense but from the game
@@ -313,13 +337,12 @@ Two things it forces, and neither is optional:
   the day is unwinnable from the first frame. This is the doorstep exemption's shape at city scale —
   the home is a notch with one exit, so sealing that street seals her in — and it lands the same
   way: the rule is stated over *a region*, and then the one she is standing in is exempt from it.
-- **"Accessible calm zone" is asked of the city or of the day, and which one is open.** A region's
-  *boundary* stands for the run; its *doors* are re-cut daily off the day's paths (see below). So
-  the sealing rule could be a permanent fact — this region never has anything in it, wall it for the
-  whole run — or a daily one, where a region whose calm areas are all spoiled today gets no doors
-  today. The first makes a sealed district a landmark she learns once; the second makes the sealing
-  part of the day's steering, and puts it in the same hands as the door placement. Answer it with
-  the door placement rather than separately, because they are the same decision asked twice.
+- **"Contains a calm zone" is settled at generation; "accessible today" is not.** No boundary
+  crosses calm ground, so which region a calm area is in is a permanent fact and a region with none
+  at all is sealed for the whole run — a district she learns once and never has reason to enter.
+  What is left open is the softer case: a region whose calm areas are all *spoiled* today has
+  nothing in it today either. Sealing on that is the day's steering rather than the city's shape, so
+  it belongs with the door placement and is answered there, not here.
 
 - [ ] **The regions are a city-generation question, not an event-placement one.** A perimeter is a
       decision about the map, so what needs designing first is what a region *is* — the quadrants
@@ -346,12 +369,12 @@ Two things it forces, and neither is optional:
       does nothing.** Choosing which doors are open is exactly that instrument, and it is exactly
       that trap, at full strength. Two doors is a choice; one door is a corridor with a toll booth
 
-      **Ordering, because it can go circular.** The tree is grown first and the day is planned
-      against it, so gates sited where the tree crosses a boundary are consistent by construction —
-      the routes go through the doors because the doors were put where the routes went. What is
-      *not* in the tree is what a door costs: `RouteTree` has never priced an edge, so a route
-      through three checkpoints and one through none look identical to it. See the M45 item on
-      whether the tree can express "passable, at a price" at all
+      **No ordering problem, because the two are orthogonal by decree** — see the constraint above.
+      The tree is grown knowing nothing about regions, the boundary was drawn before it, and the
+      doors go wherever the two happen to meet. What is *not* in the tree is what a door costs:
+      `RouteTree` has never priced an edge, so a route through three checkpoints and one through
+      none look identical to it. That is a real gap and it is M45's open item — whether the tree
+      can express "passable, at a price" at all
 - [ ] **The detention is `chatting_mother`'s mechanism.** *"Reuse the other woman with baby logic"*:
       `EventDef.detain_seconds` locks her movement on first contact inside `detain_radius`, and
       `Stroller.detain()` runs the lock out through the ordinary friction rather than stopping her
