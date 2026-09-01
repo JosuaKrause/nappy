@@ -28,51 +28,43 @@ At `sleepiness = 100` the baby falls asleep and the day enters its **return phas
 other, and they are what makes the walk the game:
 
 - A whole day of undisturbed street walking reaches about **76** of 100. The street is real
-  progress and can never be enough — so circling the starting block, which used to win a
-  day outright, now cannot win one at all.
+  progress and can never be enough, so circling the starting block cannot win a day.
 - A calm stretch clears the meter in **11.3s** in a four-block zone and **5.7s** in a single
   block, and the walk out has already contributed. A second in a park is worth twenty-one on the
-  pavement, which is the whole of what playtest 02's finding 1 asked for: the park has to be
-  *obviously* the answer. *(24s and ten until M38, 17s and fourteen until M52. Every milestone
-  since M28 has put more between the doorstep and the park — a solid catalogue, a crowd that
-  bites, a pacing man, a robber — and all of it is spent on the way there, which is where the day
-  is meant to be lost. Leaving the reward at the far end the same length while the walk to it got
-  longer turns the park back into a wait.)*
+  pavement, because the park has to be *obviously* the answer. **The reward moves whenever the walk
+  to it gets harder**: everything between the doorstep and the park — a solid catalogue, a crowd
+  that bites, a pacing man, a robber — is spent on the way there, which is where the day is meant
+  to be lost, and a reward left the same length while the journey grows turns the park into a wait.
 - Standing still drains faster than walking fills, so waiting is never a strategy — but it
   drains *slower* than a calm zone fills, so stopping to let something pass stays a move
   worth making.
 
-**And the calm has to be big enough to walk in.** *(M21.)* The three rates above are jointly
-sufficient for a *lap*: progress requires motion, so a calm area smaller than a stretch of
-walking is somewhere you circle rather than somewhere you go. A four-block calm zone is 704px
-square — 10.8s corner to corner against the 11.3s a full meter takes — so the calm is a route.
-A **2×1** zone, added in M52, is the same claim on one axis: 704px long, 7.7s end to end against
-the 8.0s two blocks fill in.
-The margin narrowed when M38 raised the rate and again when M52 did, and it is the relationship
-rather than either number that has to survive: a calm area must be more than one lap wide.
-See `docs/CITY.md`, "Calm zones".
+**And the calm has to be big enough to walk in.** The three rates above are jointly sufficient for
+a *lap*: progress requires motion, so a calm area smaller than a stretch of walking is somewhere you
+circle rather than somewhere you go. A four-block calm zone is 704px square — 10.8s corner to corner
+against the 11.3s a full meter takes — so the calm is a route. A **2×1** zone is the same claim on
+one axis: 704px long, 7.7s end to end against the 8.0s two blocks fill in. Both margins are narrow
+and it is the relationship rather than either number that has to survive: **a calm area must be more
+than one lap wide.** See `docs/CITY.md`, "Calm zones".
 
-**Since M52 the rate is a curve over the lot's size, and it exists to pay for that lap rather than
-to be generous.** *(Playtest 14, finding 11: "x1.5 the sleepiness effect of calm zones and double
-it for 1x1 calm zones", with playtest 16 settling the sizes between.)* It goes as
-`1 / sqrt(blocks)`, normalised so a 2x2 zone is the base — **21x for four blocks, 29.7x for two,
-42x for one.**
+**The rate is a curve over the lot's size, and it exists to pay for that lap rather than to be
+generous.** It goes as `1 / sqrt(blocks)`, normalised so a 2x2 zone is the base — **21x for four
+blocks, 29.7x for two, 42x for one.**
 
-The reason to divide by the **side** rather than by the block count is that the two anchors the
-player gave cannot both hold otherwise: a 1x1 against a 2x2 is a factor of two in width and four in
-area, and the rate asked for **doubles**. And it is the same thing the design says in words: *a lap
-is a length, not an area.* Paying inversely to width pays every size about the same for one
-traverse of itself — **1.4 traverses for a single block against 1.05 for a zone**, where before the
-curve they were 2.75x apart — so a small calm area stops being the weaker destination for a reason
-that has nothing to do with what it is, and *which* calm area to head for goes back to being a real
-question. `tests/test_generator.gd` holds that ratio rather than either number.
+**It divides by the side rather than by the block count**, and that is the trap in it: a 1x1
+against a 2x2 is a factor of two in width and *four* in area, so dividing by blocks makes a single
+block four times a zone where twice is what the design wants. It is also what the design says in
+words — *a lap is a length, not an area.* Paying inversely to width pays every size about the same
+for one traverse of itself — **1.4 traverses for a single block against 1.05 for a zone**, against
+2.75x apart at a flat rate — so a small calm area is not the weaker destination for a reason that
+has nothing to do with what it is, and *which* calm area to head for stays a real question.
+`tests/test_generator.gd` holds that ratio rather than either number.
 
-**A day is aimed at a minute of play, with a grace of three.** Dusk at 180s is the outer
-bound, not the target. That is deliberate after M18: a day walked well is over in about a
-minute, and the rest of the clock is there for a day that goes wrong. It also means the day
-is not lost to the *meter* — once calm ground is reached the meter is a formality — so the
-difficulty has to live in the walk. Making it live there is what playtest 02's findings 2
-and 3 are for.
+**A day is aimed at a minute of play, with a grace of three.** Dusk at 180s is the outer bound, not
+the target: a day walked well is over in about a minute, and the rest of the clock is there for a
+day that goes wrong. It also means the day is not lost to the *meter* — once calm ground is reached
+the meter is a formality — so **the difficulty has to live in the walk**, which is what every
+obstacle between the doorstep and the park is for.
 
 The first two are asserted in terms of `day_length()` rather than as numbers
 (`tests/test_meters.gd`), so lengthening the day cannot quietly make the street sufficient
@@ -112,12 +104,11 @@ Excitement moves at the **net** rate, `incoming − decay`:
 on: what settles a baby is being pushed. Walking settles her most, running is still motion and
 settles a little, and standing still settles nothing at all.
 
-*(Idle was `6.0` — the **fastest** of the three — until M33. That made standing still the
-strongest move in the game: a full meter cleared in seventeen seconds for seventeen points of
-sleepiness, anywhere, including the middle of a street she had no business being on. Playtest 07,
-finding 3: "not walking at all shouldn't reduce excitement either — otherwise I can just stop in
-the middle of the street and wait until everything is good." Two runs in that playtest's traces
-have a seventy-four-second gap in them with no entry at all.)*
+**An idle decay faster than walking is the trap here**, and it is the ordering a physical reading
+of "resting calms her" produces: it makes standing still the strongest move in the game — a full
+meter cleared in seventeen seconds for seventeen points of sleepiness, anywhere, including the
+middle of a street she has no business being on. A trace of that reads as a minute or more with no
+entry in it at all.
 
 Netting rather than "decay only when nothing is happening" is what makes the decay column
 matter. Two consequences fall out of it, and both are wanted:
@@ -144,10 +135,9 @@ mean load sits between one and three times the **walking** decay. Above three it
 faster than the street can be crossed, which is a street nobody can use rather than a route
 decision; `tests/test_crowd.gd` holds both ends of that.
 
-*(Stated against the walking decay since M33. It was the idle decay, which was the fastest of the
-three rates and was therefore the right reference for "she stops here and waits". Standing still
-settles nothing now, so the only question a street has to answer is what it costs to walk down —
-which is what a route is made of.)*
+**Every one of those comparisons is against the *walking* decay**, because standing still settles
+nothing: the only question a street has to answer is what it costs to walk down, which is what a
+route is made of.
 
 At `excitement = 100` → **crying** → day lost.
 
@@ -197,13 +187,10 @@ player can read direction at a glance.
 
 ## The street has physics
 
-*(M19. Playtest 02, findings 2 and 3; playtest 03, finding 1.)*
-
-Until M19 the crowd was a **field with a picture attached**. You could walk through a person,
-through a car, through a queue at a bus stop, and the only thing that happened was that a
-number moved. That is why the route was never a decision: every pavement was identical and
-none of them could hurt you, and the traced day of playtest 03 crossed the whole city without
-meeting anything.
+**A crowd that is a field with a picture attached is not a street.** If you can walk through a
+person, through a car, through a queue at a bus stop, and the only thing that happens is that a
+number moves, then the route is never a decision: every pavement is identical, none of them can
+hurt you, and a day can cross the whole city without meeting anything.
 
 Four mechanisms, all of them in `src/crowd/crowd.gd`, all of them about the *player* — which
 is why they live there rather than in `CrowdAgent`, which has no business knowing she exists.
@@ -217,22 +204,21 @@ is why they live there rather than in `CrowdAgent`, which has no business knowin
 | Deflection | `55 px/s`, decayed by `FRICTION` |
 | Cost | one jolt: `18/s` fading over `1.2 s`, so **~10.8 points** |
 
-The cost row is playtest 07's: it was `26/s` and ~15.6 points until M33, when the authored
-content finally started carrying the share the crowd had been carrying alone.
+The jolt is pitched against what the *authored* content costs: the crowd is most of what a street
+costs and must not be all of it.
 
-**The radius is set by the lane spacing, not by a body's width.** Pedestrian lanes are one
-tile apart, so the only line with no contact on it is the midline between two of them. At
-18px there was no such line anywhere on a two-tile pavement, and walking the arterial cost
-eleven bumps in forty seconds however carefully it was done — a toll, not a decision. At 14px
-holding that line takes the same walk down to two.
+**The radius is set by the lane spacing, not by a body's width.** Pedestrian lanes are one tile
+apart, so the only line with no contact on it is the midline between two of them. At 18px there is
+no such line anywhere on a two-tile pavement, and walking the arterial costs eleven bumps in forty
+seconds however carefully it is done — a toll, not a decision. At 14px the same walk is two.
 
-Three things about it that were found by walking a rig down a real pavement and reading the
+Three things about it that only show up by walking a rig down a real pavement and reading the
 meter, none of which a data-level test can see:
 
 - **Somebody bumped along their own line of travel steps aside**, rather than being pushed
   further along it. She walks at 92 and they walk at 60, so pushing them straight ahead
-  separates nobody: the first version ploughed a wedge of pedestrians down the pavement in
-  front of her, all of them permanently in contact and permanently loud.
+  separates nobody: it ploughs a wedge of pedestrians down the pavement in front of her, all of
+  them permanently in contact and permanently loud.
 - **A contact startles once, not once per frame.** `CrowdAgent.touching` is the hysteresis.
 - **The separation is positional and the deflection is not.** Resolving position means two
   bodies can never end up inside each other however fast she is going; the velocity kick on
@@ -270,8 +256,8 @@ A car is not an event: it has no telegraph, it is not in the catalogue, and
    hard fail is owed: `64px × 2 / 92 = 1.39 s`. The horn is itself a jolt (~8 points), so a
    near miss costs something even when it stays a near miss.
 
-The horn also raises the **exclamation mark over the player** — the load-bearing cue of the
-M22 vocabulary, built here because M19 is what creates the danger. See docs/EVENTS.md.
+The horn also raises the **exclamation mark over the player**, the load-bearing cue of the visual
+vocabulary. See docs/EVENTS.md.
 
 Belt and braces: the strike box is geometrically incapable of reaching over the kerb. A car
 sits half a tile off the middle of the carriageway, so its far edge is `16 + 14 = 30 px` out
@@ -286,16 +272,15 @@ margin is the point — the slowing has to be *visible from the kerb*, because a
 whether to step off needs to see the car slowing rather than discover afterwards that it would
 have.
 
-So the crossing is the safe way over and jaywalking is the fast way over, which is the choice
-finding 3 asked for.
+So the crossing is the safe way over and jaywalking is the fast way over, which is the choice the
+zebra exists to offer.
 
-**A car gives way *at a place*** *(M29, playtest 05 finding 1: "the cars stop at weird positions
-for the zebra crossing. Sometimes half a block away, sometimes **on** the crosswalk.")*. Both
-halves of that are the same missing thing. Until M29 a car braked toward **zero speed** from
-wherever it noticed, so it came to rest wherever the curve ran out — and with four times the
-room it needed, that was most of a block short. Nothing said *do not stop on the paint* either.
+**A car gives way *at a place*.** Braking toward **zero speed** from wherever it noticed leaves a
+car stopped wherever the curve ran out — with four times the room it needs, most of a block short —
+and says nothing about not stopping on the paint. Both halves of that are the same missing thing:
+somewhere to stop.
 
-Three rules now, and they are separable:
+Three rules, and they are separable:
 
 - **The target is the stop line**, `CAR_STOP_LINE_SETBACK` before the near edge of the zebra.
   Measured to the car's centre, so its nose ends up a few pixels clear of the paint.
@@ -315,29 +300,26 @@ for a telegraph in the traffic fairness contract. A car halted on the zebra cann
 — it is under `CAR_STRIKE_MIN_SPEED` — but it is *unreadable* scenery parked on the one place
 the game has told the player is the safe way across.
 
-### Which side of the road *(M29)*
+### Which side of the road
 
 **The city drives on the right**, and that is a rule about the side of the road relative to
-travel — so it flips with the axis, and until M29 it did not. `CrowdLanes` stated the
-convention over the lane *offset*: offset 3 runs the positive way along the axis. On an
-east-west street that is eastbound in the southern lane, which is right-hand traffic. On a
-north-south street it is southbound in the eastern lane, which is left-hand traffic.
+*travel*, so it flips with the axis. **Stating it over the lane offset is the trap**: "offset 3
+runs the positive way along the axis" is eastbound in the southern lane on an east-west street,
+which is right-hand traffic, and southbound in the eastern lane on a north-south street, which is
+left-hand traffic. `road_direction()` and `road_lane()` are a pair that both take the axis, and
+`tests/test_crowd.gd` asserts it for both axes and both directions: the lane a car is in is the one
+on its own right.
 
-Playtest 05, finding 2: *"the cars are not consistently driving on the right side."* It was
-invisible to the whole suite, because separation, headway, capacity and noise are all true
-whichever side anybody drives on, and invisible in a screenshot, because a stopped frame does
-not say which way a car is pointing. It shows up the moment a human watches a junction.
-`road_direction()` and `road_lane()` are now a pair that both take the axis, and
-`tests/test_crowd.gd` asserts the thing that was never asserted: for both axes and both
-directions, the lane a car is in is the one on its own right.
+**Nothing in a suite or a screenshot can see that going wrong.** Separation, headway, capacity and
+noise are all true whichever side anybody drives on, and a stopped frame does not say which way a
+car is pointing. It shows up the moment a human watches a junction.
 
-**Walkers have no side convention**, which was checked at the same time and is deliberately
-left alone. They are not mirrored — they are unordered, which is a different thing. Giving them
-one is a design change with a measured cost attached: M19's contact numbers, eleven bumps down
-a lane centre against one on the midline, are what the pavement is balanced on and they assume
-somebody may be coming the other way in any lane.
+**Walkers have no side convention**, and that is deliberate. They are not mirrored — they are
+unordered, which is a different thing. Giving them one is a design change with a measured cost
+attached: the contact numbers the pavement is balanced on — eleven bumps down a lane centre against
+one on the midline — assume somebody may be coming the other way in any lane.
 
-### Traffic queues *(M27)*
+### Traffic queues
 
 A car keeps `CAR_HEADWAY_TIME` seconds of clear road in front of it and never closes to less
 than `CAR_GAP_MIN`, which is a car's own length plus a nose. The two wants compose by taking
@@ -355,16 +337,16 @@ The relationship, rather than the numbers: **the headway has to outlast the time
 brake from cruise**, or a car cannot physically honour the gap it is keeping and the queue
 resolves by interpenetration again however good the controller is.
 
-## The world near you *(M27)*
+## The world near you
 
-Playtest 04, and the instruction it was emphasised in: *"don't load everything upfront — only
-load / spawn things in the surrounding few blocks of the player when needed; consistency is not
-that important, nobody can run after cars anyway to confirm they are still there off screen."*
+Nothing is loaded upfront: the crowd and the events exist in the few blocks around the player and
+nowhere else.
 
-The city is 104×104 tiles and the screen is 40×22 of them — **0.8% of it**. Every population
-number was being divided by that, which is why 110 cars read as a street you could ignore. The
-second clause is the licence: continuity of a car you cannot see is unobservable, so it is free
-to give away, and density where somebody is looking is not.
+**The city is 160×160 tiles and the visible world is 640×360 px — about 20×11 tiles, well under one
+percent of it.** A city-wide population is divided by that before any of it reaches the player,
+which is how a hundred cars read as a street you can ignore. The licence for spending the budget
+locally is that continuity of a car you cannot see is unobservable, so it is free to give away, and
+density where somebody is looking is not.
 
 **The crowd is a field.** `CrowdField` is a `CROWD_FIELD_RADIUS` box centred on the player.
 Agents that pass the edge they are heading for — or fall further behind the edge they came in
@@ -390,7 +372,7 @@ streaming an event legal rather than a way of dropping things on people: it is w
 widest field in the catalogue, so an event is outside its own outer radius at the moment it
 becomes visible.
 
-The gameplay consequence is larger than the frames. Playtest 03 traced a day with **zero**
+The gameplay consequence is larger than the frames. Without streaming a day can pass with **zero**
 events ever coming within reach: a twenty-second event planted across the city at dawn is over
 before the player could have reached it. An event that waits for her is an event she meets.
 
@@ -399,25 +381,19 @@ budgeted by the day and sited by `EventDirector`, which puts them across her lin
 `AHEAD_LEAD_DISTANCE` in front of her while she is walking. See docs/EVENTS.md, "Where an event
 happens", for which events earn that and what the contract on them is.
 
-## One event per block *(M28)*
+## One event per block
 
-Playtest 05, finding 6, and it is the number M27 left open. Streaming made the density
-*computable* — a 900px radius is about 23% of the map, so what she is standing in is a knowable
-fraction of what the day planned — and the answer came back embarrassing: **1.8 events live
-around her, one met on a whole day's walking.** The player asked for one event per block, the
-dog-walker decision to arrive at least twice on day 1, and to be able to find a café at all.
+**The density target is one event per block**, and streaming is what makes it computable: the
+stream radius is a knowable fraction of the map, so what she is standing in is a knowable fraction
+of what the day planned. `EventScheduler.budget_for()` is stated per block for the same reason, and
+the caps have to move before the budget — see docs/EVENTS.md, "The density, and why it is caps
+before budget".
 
-Day 1 now plans **50 events across 49 blocks**, of which about eleven are instantiated at any
-moment and **3.3 are on screen**. Day 14 plans 97. The full before-and-after table, and the
-reason the caps had to move before the budget, are in docs/EVENTS.md, "The density, and why it
-is caps before budget".
-
-What this does to the game is a change of kind, not of degree. A street with one event every
-four blocks is a street with an event *on* it — you see it, you route around it, and the rest of
-the walk is empty. A street with one event per block has no empty stretch to route into, so the
-question stops being *"can I avoid this"* and becomes **"which of these is cheapest to walk
-through"**. That is the route decision the whole game is about, and until M28 the city was too
-sparse to ask it.
+What the density does to the game is a change of kind, not of degree. A street with one event every
+four blocks is a street with an event *on* it — you see it, you route around it, and the rest of the
+walk is empty. A street with one event per block has no empty stretch to route into, so the question
+stops being *"can I avoid this"* and becomes **"which of these is cheapest to walk through"**. That
+is the route decision the whole game is about, and a sparse city cannot ask it.
 
 ## Excitement falloff
 
@@ -431,30 +407,26 @@ contribution(d) = intensity                              , d <= inner_radius
 ```
 
 **The shape has a shoulder on it, and that is a design decision rather than an implementation
-detail.** *(M33, playtest 07 finding 18: "the excitement should go substantially up from
-relatively far away — I shouldn't have to get actual contact to get penalized.")*
+detail.** The meter has to go substantially up from some way off rather than waiting for contact.
 
-It was `(1 − t)²` for thirty-two milestones, which puts a **quarter** of the intensity at the
-midpoint of the falloff band and six percent three quarters of the way out. A café at 12/s was
-therefore under the 3.5/s walking decay across the whole outer 60% of its own field, and the run
-logs said so in as many words: every `near` entry written at an event's own outer radius read
-`events 0.0`. An event you are not charged for until you touch it is not something to route
-around, it is something to bump into — which inverts the whole game.
+**`(1 − t)²` is the shape that looks equally reasonable and inverts the game.** It puts a
+**quarter** of the intensity at the midpoint of the falloff band and six percent three quarters of
+the way out, so a café at 12/s sits under the 3.5/s walking decay across the whole outer 60% of its
+own field — and a run log written at an event's own outer radius reads `events 0.0`. An event you
+are not charged for until you touch it is not something to route around, it is something to bump
+into.
 
 `1 − t²` holds **three quarters** of the intensity at the midpoint and reaches zero only at the
 outer edge. Two consequences worth knowing before touching it again:
 
 - **The telegraph contract is unaffected.** It is stated over *distance* — how far she has to walk
   to be outside the radius — and no radius moved.
-- **It applies to the crowd too, and the crowd compensates in radius.** A field that bites from
-  a distance is right for an authored event and wrong for one of two hundred and forty bodies. The
-  pedestrian and car outer radii came in (88 → 55, 170 → 104) so that a close pass costs exactly
-  what it did and the summed street floor lands where it was.
+- **It applies to the crowd too, and the crowd compensates in radius.** A field that bites from a
+  distance is right for an authored event and wrong for one of a couple of hundred bodies, so the
+  pedestrian and car outer radii are tight (55 and 104) — a close pass costs what it should and the
+  summed street floor lands where the balance wants it.
 
 ## Running that matters
-
-*(M33, playtest 07: "the run button is a trap shouldn't be an invariant — there should be
-legitimate cases where running is required.")*
 
 Running is deliberately the wrong move against every event you route **around**. The numbers above
 are why: `EXCITEMENT_FROM_RUNNING` (14/s) plus the collapsed decay outweighs the shorter exposure
@@ -477,43 +449,38 @@ telegraphs hands her more ground in two seconds than the entire chase can take b
 owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
 
-### The stand-off, and what a contract in seconds cannot say *(M35)*
+### The stand-off, and what a contract in seconds cannot say
 
-> *"I like the running tutorial on day 3 but I don't know how to solve it yet — I died every
-> time."* — playtest 08, finding 4.
+**A contract stated entirely in speeds and durations can pass every line of itself while the dog is
+killing people, because a pursuit is played out in distances.** A pursuer sited across her line a
+couple of hundred pixels ahead — *where she was already walking* — closes that gap in under a second
+and then stands **inside its own lethal radius** for the rest of a telegraph that is not yet allowed
+to kill her. The instant it is, it does, from a standing start, with nothing she could have done
+after the first second.
 
-The contract above passed every line of itself while the dog was killing people, and the reason is
-worth carrying: **it was stated entirely in speeds and durations, and a pursuit is played out in
-distances.** The trace says where the notice went. `EventDirector` sites what the day owes across
-her line 184px ahead — which is *where she was already walking* — so the dog closed at 148px/s
-against her 92, covered the gap in three quarters of a second, and then stood **inside its own
-lethal radius** for the remaining 1.7 seconds of a telegraph that was not yet allowed to kill her.
-The instant it was, it did: 12px, from a standing start, with nothing she could have done after the
-first second.
-
-Two changes, and they are the same change twice — the contract restated as geometry:
+Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
 - **`Tuning.pursuit_standoff()`.** The telegraph is spent closing to `inner_radius + speed ×
   PURSUIT_REACTION` and *holding* it, backing off if she walks in, because she will: it is sited in
-  front of her and forward is where she was going. Clamping the approach at zero instead would have
-  left the contract true of the dog and false of the encounter — it would stand politely still
-  while she closed the gap herself.
+  front of her and forward is where she was going. Clamping the approach at zero instead leaves the
+  contract true of the dog and false of the encounter — it stands politely still while she closes
+  the gap herself.
 - **`Tuning.PURSUIT_SHAKEN_OFF`.** It gives up once the gap has been **opening** for that long.
   Without a break-off at all, the price of the *right* answer is set by the clock rather than by the
-  escape — forty points whether she reacted on the first frame or the last — and playtest 08's trace
-  has her running, doing exactly what the HUD asked, and losing the day to the meter at 100 with the
-  dog 87px behind her.
+  escape — the same forty points whether she reacted on the first frame or the last, which is a
+  player doing exactly what the HUD asked and losing the day to the meter with the dog well behind
+  her.
 
-The dog also came down from 148px/s to 130 and from intensity 22 to 12. 130 is *symmetric*: walking
-loses 38px a second and running gains 38, which is the version of "opposite outcomes" a player can
-feel. And it is lethal — it does not also need to be the loudest thing in act I.
+`charging_dog` is 130px/s and intensity 12 for two reasons worth keeping. 130 is *symmetric*:
+walking loses 38px a second and running gains 38, which is the version of "opposite outcomes" a
+player can feel. And it is lethal — it does not also need to be the loudest thing in act I.
 
 ### Why the break-off is a rate and not a distance
 
 A break-off stated as a distance needs two inequalities to be safe — walking must not reach it
 inside the chase, running must — and they pull against each other in the same three numbers. That is
-how a stand-off widened to buy reaction time silently ate the escape from the other end, and how a
-robber's trigger, which has to fit *between* the two, once had an eleven-pixel window to live in.
+how a stand-off widened to buy reaction time eats the escape from the other end, and how a robber's
+trigger, which has to fit *between* the two, ends up with an eleven-pixel window to live in.
 
 Stated as a rate, both facts come free from the speed clauses that were already there. A pursuer is
 faster than a walk and slower than a run, so the gap can only open while she is running and must
@@ -548,10 +515,7 @@ expected one — but the worst case is what a contract is for. Widening it means
 stand-off, and a stand-off much past 180px is a dog that visibly reverses away from her through its
 own telegraph, which a player has watched and called nonsense. See `docs/PLAYTEST-10.md`, section C.
 
-### A pursuer can be a place before it is a moment *(M36)*
-
-> *"A robber should increase excitement on sight and getting close to them should be day ending."*
-> *"And if you get close they should start moving towards you."* — playtest 09.
+### A pursuer can be a place before it is a moment
 
 `charging_dog` is a **moment**: the director sites it in front of her and the chase is the whole of
 it. `EventDef.pursues_within` is the other shape — a thing that is **somewhere**, that you can see
@@ -576,9 +540,10 @@ felt it; and from **inside its break-off** — which is the one that bit. At a t
 a break-off of 170 the rig strolled away from the robber every time, because she was already
 standing at the distance that means it has lost her.
 
-*(M39 moved all three of those numbers without changing a clause, which is the point of stating a
-contract over derived quantities: the robber's trigger went 140 → 195 because the stand-off went
-under it, and his field 200 → 240 so that "on sight" still comes before "he has seen you".)*
+**All three clauses are stated over derived quantities**, which is what lets the robber's trigger
+and field move — as the stand-off changes, the trigger has to stay outside it and the field outside
+the trigger, so *on sight* keeps coming before *he has seen you* — without any clause being
+rewritten.
 
 | she | outcome | cost |
 | --- | --- | ---: |
@@ -588,19 +553,18 @@ under it, and his field 200 → 240 so that "on sight" still comes before "he ha
 | runs when he stands up | shakes him off in 1.5s | 21 points |
 | dithers a second, then runs | shakes him off in 1.6s | 22 points |
 
-### A beat rather than a journey *(M36)*
+### A beat rather than a journey
 
 `EventDef.paces` walks a route and turns round at the ends, for ever. It is the difference between
 a `dog_walker`, which is *going somewhere* and is gone at the end of thirty tiles, and a man
-shouting, who is **at** a place — and until M36 the only way to say the second thing was to make him
-stationary. Playtest 09 is what that cost: *"who is the person killing me? It didn't move and it
-took a long time to have any effect."*
+shouting, who is **at** a place. Without it the only way to say the second thing is to make him
+stationary, and a stationary source on a fixed patch is a line you draw once rather than something
+to time.
 
 A paced event never reaches the end of its path, so it never departs and never expires: it is a
 fixture that moves. The price is its body — anything mobile is exempt from "solid things are solid",
-because a moving wall on a two-tile pavement pins her against a building, which is the M19
-`dog_walker` decision and is unchanged. What stops you walking through a man shouting is the meter,
-and he is 14 over 210px now rather than 10.
+because a moving wall on a two-tile pavement pins her against a building. What stops you walking
+through a man shouting is the meter: intensity 14 over 210px.
 
 **Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 teaches the arrow keys and says nothing
 about running; day 3 is when something comes after the pram, and the HUD says *Hold SHIFT to run*
@@ -648,11 +612,12 @@ the whole catalogue, so an unfair event fails loudly rather than quietly ruining
 
 Parks, quiet squares, forests and courtyards are `CALM` tiles. Inside them:
 
-- Sleepiness gain ×`14` — a second in a park is worth fourteen on the street. Only calm ground
-  fills the sleepiness bar at all, which is why that half stays a threshold rather than a rate.
+- Sleepiness gain ×`21` in a four-block zone, more in a smaller one — a second in a park is worth
+  twenty-one on the street. Only calm ground fills the sleepiness bar at all, which is why that half
+  stays a threshold rather than a rate.
 - Excitement decay ×`2.2`, so the park reads on **both** bars.
 
-**And the excitement half is a rate everywhere now.** *(M41.)* The ground is no longer calm-or-not:
+**And the excitement half is a rate everywhere**, not calm-or-not:
 `WorldContext.decay_multiplier()` answers with what this ground does, and the order is
 
     calm 2.2  >  precinct 1.5  >  ordinary street 1.0  >  main road 0.6
@@ -661,13 +626,13 @@ so a route is a **recovery rate** and not only a set of things to walk past. Two
 holding on to. A precinct is worth walking to although it is loud — a retail street is busy, and it
 is still the best ground outside a park to bring a meter down on. And the main road is the same
 sentence inverted: it is the one ground in the city that is actively bad at letting her recover,
-which is most of what *"a main road is crossed, not walked"* now means arithmetically. Walking its
+which is what *"a main road is crossed, not walked"* means arithmetically. Walking its
 length loses a day in about fifteen seconds; that is the intent, measured.
 
-But calm zones are contested — see `docs/CITY.md` (spoiling) and `docs/EVENTS.md`. Since M41 the
-spoiling remembers a whole **act** rather than a night, and the city has one calm area per day of
-the longest act plus one in reserve (`Tuning.calm_areas_needed()`), so finding a new one is the
-work of an act and the parks go quiet again when it turns.
+But calm zones are contested — see `docs/CITY.md` (spoiling) and `docs/EVENTS.md`. The spoiling
+remembers a whole **act** rather than a night, and the city has one calm area per day of the longest
+act plus one in reserve (`Tuning.calm_areas_needed()`), so finding a new one is the work of an act
+and the parks go quiet again when it turns.
 
 ## Alleys
 
@@ -687,19 +652,16 @@ with an explicit clock in the HUD corner.
 The run-level health bar. Starts at 5. Every lost day costs one. At 0 the run ends with the
 bad ending. Nerves never regenerate — this is what makes an early bad day matter.
 
-**Five since M35**, and it was three from M6 to M34. *(Playtest 08: "we need more nerves let's try
-5?")* Three was set when a lost day also advanced the calendar, so a nerve cost a day of the
-fourteen as well as a life; M32 took that half away and left the number. Three attempts against an
-act I that grew teeth in M31 is what ended playtest 08's run on **day 3**, two of them on the same
-charging dog — a run that ends before act II ends before the game has shown what it is. Five is a
-number to be measured, not derived: the run log's `nerve` entries say where they went.
+**Five is a number to be measured, not derived**, and nobody has played a run against it: the run
+log's `nerve` entries are what say where they went. What makes it hard to reason about from first
+principles is that a nerve is worth more now that it buys only a retry — three attempts were set
+when a lost day *also* advanced the calendar, so a nerve cost a day of the fourteen as well as a
+life. A run that ends on day 3 ends before the game has shown what it is.
 
-**A nerve buys a retry of the same day.** *(Playtest 06, finding 4, closing a design question
-open since M6: "what happens if we fail — do we repeat the same day? We shouldn't advance the
-day, that's for sure.")* The calendar moves only when a day is **won**, so the nerves are
-failed attempts spread wherever they are needed and the fourteen days are fourteen days
-the player actually plays. Before this, a lost day cost a nerve *and* a day — which punished
-twice for one mistake and hid act I from the player who needed act I most.
+**A nerve buys a retry of the same day.** The calendar moves only when a day is **won**, so the
+nerves are failed attempts spread wherever they are needed and the fourteen days are fourteen days
+the player actually plays. A lost day costing a nerve *and* a day punishes twice for one mistake and
+hides act I from the player who needs act I most.
 
 Three consequences, all of them chosen:
 
