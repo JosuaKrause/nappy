@@ -11,9 +11,9 @@ signal finished(instance: EventInstance)
 
 const CAT_CROUCHED := preload("res://assets/events/cat_crouched.svg")
 const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
-## The only generic left, and it is not a look: it is the *walker* half of a dog walker, which is
-## a picture of somebody holding a lead rather than a picture of nobody in particular. Every event
-## that used to reach for it has its own drawing since M37.
+## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
+## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
+## something of its own.
 const PERSON := preload("res://assets/events/person.svg")
 const YELLER := preload("res://assets/events/yeller.svg")
 const BUSKER := preload("res://assets/events/busker.svg")
@@ -51,7 +51,7 @@ const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
 
 ## The one silhouette that stands for a look, at any size.
 ##
-## It lives here rather than in `DangerEdge` for the reason M30 moved the caret into `Sprites`: a
+## It lives here rather than in `DangerEdge` for the same reason the caret lives in `Sprites`: a
 ## cue that belongs to the vocabulary does not belong to a class, and the screen-edge badge's whole
 ## job is to draw *the thing's own picture* — a second table of which picture that is, kept in the
 ## UI, is how a badge ends up showing a generic van for a fire engine. `tests/test_events.gd`
@@ -184,27 +184,23 @@ var _last_range := INF
 ## measured from here rather than from birth. See `is_waiting()`.
 var _noticed_at := INF
 ## True once she has come inside the stand-off during the telegraph, which ends the telegraph
-## there and then. *(M43, playtest 11 finding 3: "the pursuing dog still moves backwards before
-## charging. it should be still.")*
+## there and then.
 ##
-## **The lunge was fired by a clock and it should be fired by her.** A pursuer reaches its
-## stand-off in about a third of a second and then has the rest of a 2.4s telegraph to spend
-## while she keeps walking into it — so *holding a distance* meant backing away from her, and a
-## dog that reverses down the street in front of you is not a dog that is about to charge.
+## **The lunge is fired by her, not by a clock**, and the two alternatives each fail in their own
+## way. A pursuer reaches its stand-off in about a third of a second and then has the rest of a
+## 2.4s telegraph to spend while she keeps walking into it — so *holding a distance* means backing
+## away from her, and a dog that reverses down the street in front of you is not a dog that is
+## about to charge. **Standing still instead** is worse: she closes the last hundred pixels
+## herself, reaches it **before** the clock lets it fire, and it kills her from a standing start on
+## the first lethal frame.
 ##
-## Standing still instead is the thing M35 rejected, and the rejection was right for the build it
-## was made in: a dog that holds its ground while she closes the last hundred pixels herself is a
-## dog she reaches **before** the clock lets it fire, and it then kills her from a standing start
-## on the first lethal frame. That is M35's defect exactly, and it is only a defect because the
-## clock is what says when the lunge may happen.
-##
-## Firing on proximity gives both halves at once: it never reverses, and the chase always starts
-## at the stand-off however she approached it — which is the whole content of the contract, since
+## Firing on proximity gives both halves at once: it never reverses, and the chase always starts at
+## the stand-off however she approached it — which is the whole content of the contract, since
 ## `Tuning.pursuit_standoff()` is the distance that leaves her `PURSUIT_REACTION` to answer.
 var _lunged := false
 
-## Comes after her. *(Playtest 07: running has to be right sometimes, and this is the shape of
-## "sometimes".)* See `EventDef.pursues` and `Tuning.validate_pursuit`.
+## Comes after her — the one kind of thing running is the answer to. See `EventDef.pursues` and
+## `Tuning.validate_pursuit`.
 ##
 ## **It comes through its own telegraph**, the way a fire engine does, and that is the whole of
 ## why a pursuer can force a run at all. A telegraph it spends standing still is a head start she
@@ -213,18 +209,16 @@ var _lunged := false
 ## back. The notice is *the sight of it coming*, and `Tuning.PURSUIT_MIN_NOTICE` is how much of
 ## that she is owed before it is allowed to end her day.
 ##
-## **But it closes to a stand-off and holds it, rather than arriving.** *(M35, playtest 08 finding
-## 4: "I like the running tutorial on day 3 but I don't know how to solve it yet — I died every
-## time.")* The paragraph above bought the notice in seconds and never asked *where* the dog spends
-## them, and the trace answers that: sited across her line 184px ahead — which is where she was
-## already walking — it closed the gap in three quarters of a second and then stood **inside its own
-## lethal radius** for the remaining 1.7s of a telegraph that was not yet allowed to kill her. The
-## moment it was, it did, from a standing start at 12px. Every line of `validate_pursuit` passed
-## while that happened, because every line of it was about speeds and durations and a pursuit is
-## played out in distances.
+## **But it closes to a stand-off and holds it, rather than arriving.** The paragraph above buys the
+## notice in seconds and says nothing about *where* the pursuer spends them: sited across her line a
+## couple of hundred pixels ahead — which is where she was already walking — it closes the gap in
+## three quarters of a second and then stands **inside its own lethal radius** for the rest of a
+## telegraph it is not yet allowed to kill her during. The moment it is, it does, from a standing
+## start. Every line of `validate_pursuit` passes while that happens, because every line of it is
+## about speeds and durations and a pursuit is played out in distances.
 ##
-## `Tuning.pursuit_standoff()` is the same contract restated as one, and holding it is what makes
-## the notice real from *any* approach geometry — including the one the director actually produces.
+## `Tuning.pursuit_standoff()` is the same contract restated as a distance, and holding it is what
+## makes the notice real from *any* approach geometry — including the one the director produces.
 ##
 ## **And it gives up when it is being outrun, not when a gap has reached a size.** The pursuer is
 ## faster than a walk and slower than a run by construction, so "the gap is opening" is a statement
@@ -232,8 +226,8 @@ var _lunged := false
 ## away cannot end a chase at any distance, and running away always ends one in
 ## `Tuning.PURSUIT_SHAKEN_OFF` seconds regardless of how big the thing chasing her is.
 ##
-## A pursuer may also be a **place** before it is a moment. *(M36, playtest 09: "a robber should
-## increase excitement on sight… and if you get close they should start moving towards you".)* While
+## A pursuer may also be a **place** before it is a moment: something that raises the meter on
+## sight, and comes for her if she gets close. While
 ## it is waiting it emits at full strength, is not lethal and does not move; `pursues_within` is
 ## where that stops. Everything below then runs exactly as it does for a dog sited in front of her,
 ## started later.
@@ -253,12 +247,12 @@ func _chase(delta: float) -> void:
 		return
 	_heading = toward.normalized()
 	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-	# **She ran, so it backs off.** *(Playtest 14.)* This used to count seconds of the *gap actually
-	# opening*, which is the same sentence said about the geometry instead of about the player — and
-	# in play it was a different rule. A run opens the gap at 38px/s against the day-3 dog, a fifth
-	# of a pixel a frame, so a corner, a kerb, a body in the way or the 0.37s it takes to reverse a
-	# walk all reset the timer, and the dog kept coming while she was plainly running from it. The
-	# rule now is the one a player can state and therefore learn: **run and it gives up.**
+	# **She ran, so it backs off.** Counting seconds of the *gap actually opening* is the same
+	# sentence said about the geometry instead of about the player, and in play it is a different
+	# rule: a run opens the gap at 38px/s against the day-3 dog, a fifth of a pixel a frame, so a
+	# corner, a kerb, a body in the way or the 0.37s it takes to reverse a walk all reset the timer
+	# and the dog keeps coming while she is plainly running from it. The rule here is the one a
+	# player can state and therefore learn: **run and it gives up.**
 	#
 	# `_last_range` is still tracked because the leaving phase reads it; nothing decides on it.
 	if player_running:
@@ -295,10 +289,9 @@ func path_travelled() -> float:
 
 ## How fast and which way this thing is actually travelling, in px/s.
 ##
-## *(M39, playtest 10 finding 11: "when I'm walking orthogonally away from the biker the double !!
-## shouldn't show anymore since there is no way it can affect me".)* Asked by
-## `EventManager._warn_about_the_ground_she_is_on`, which has to know whether a lethal thing is
-## coming *at her* rather than merely near her.
+## Asked by `EventManager._warn_about_the_ground_she_is_on`, which has to know whether a lethal
+## thing is coming *at her* rather than merely near her — walking orthogonally away from a cyclist
+## must take the mark down, because there is no way it can reach her.
 ##
 ## Zero while a pursuer is telegraphing, and that is the interesting case rather than an omission:
 ## it is holding its stand-off, so it is not closing, and a mark that said otherwise would be
@@ -327,19 +320,13 @@ func resume(from_age: float, from_travelled: float) -> void:
 		_advance_along_path(0.0)
 
 # ------------------------------------------------------------------ the flock ---
-# *(M38: "the birds are broken. They start the flying animation but then freeze. Turn them into
-# individual entities and let each fly and make them dangerous.")*
+# **A flock drawn as one picture repeated is a flock that freezes.** Offsets derived from the
+# instance's own position keep the shape from boiling between frames, which is right for a still and
+# is exactly what stops the birds ever moving apart; a single `rise` term that reaches 1.0 at the
+# end of the telegraph and then holds sends the flock up in one movement and hangs it in the air,
+# motionless, for the whole burst that is supposed to *be* the event.
 #
-# **A flock was one picture drawn seven times and one number.** The offsets came from the instance's
-# own position so the shape would not boil between frames, which is right for a still and is exactly
-# what stops the birds ever moving apart; the animation was a single `rise` term that reached 1.0
-# at the end of the telegraph and then held. So the flock went up in one movement and hung in the
-# air, motionless, for the whole three seconds that were supposed to *be* the event — the freeze the
-# report is about, and the third and last reason this row has been ineffective since it was added.
-# (M35 fixed the other two: it was over before she arrived, and it was deleted at the top of its
-# climb. Neither of those was the reason it looked broken.)
-#
-# Each bird is its own body now: its own place on the pavement, its own heading, its own speed, its
+# So each bird is its own body: its own place on the pavement, its own heading, its own speed, its
 # own height, its own wingbeat, and its own contribution to the excitement. Three things follow and
 # each is load-bearing:
 #
@@ -355,8 +342,8 @@ func resume(from_age: float, from_travelled: float) -> void:
 #   is a subset of the one disc `Tuning.validate_event` checked. Widening the wheel without shrinking
 #   the per-bird radius would quietly move the field the contract was written about.
 # - **They wheel rather than fly straight.** A bird that flies straight leaves, and a flock that
-#   leaves is a flock that is over — which is the M35 rule from the other side. What is over is said
-#   with `is_leaving`, and only then do they all pick the same direction.
+#   leaves is a flock that is over — so being over is said with `is_leaving`, and only then do they
+#   all pick the same direction.
 
 ## One bird. Deliberately not a node: eleven Node2Ds per flock, y-sorted against a city, to draw
 ## eleven 18px sprites that are always within 60px of each other, is a great deal of tree for a
@@ -492,15 +479,10 @@ func _bird_outer() -> float:
 	return maxf(def.inner_radius + 1.0, def.outer_radius - def.flock_spread)
 
 # --------------------------------------------------------------- going away ---
-# *(M35, playtest 08 findings 2 and 3: "running dog events etc — things that move disappear on
-# screen; they should at least run offscreen before despawning", and "pigeons are also completely
-# ineffective".)*
-#
-# **Nothing vanishes while you are looking at it.** An event's end was `_finish()` wherever it
-# happened to be standing, which for the two shortest-lived rows in the game is directly in front
-# of her: the cat's route is one street wide and ends in the open, and the pigeons hang in the air
-# for a fifth of a second and are deleted. Both were reported as the same thing, and both are the
-# same fix — the end of an event is a **departure**, not a deletion.
+# **Nothing vanishes while you are looking at it.** An event that ends by `_finish()` wherever it
+# happens to be standing ends, for the two shortest-lived rows in the game, directly in front of
+# her: the cat's route is one street wide and ends in the open, and the pigeons hang in the air for
+# a fifth of a second. The end of an event is a **departure**, not a deletion.
 #
 # What is deliberately *not* here: a fade. A thing that fades out is still a thing that disappears,
 # and it disappears in a way nothing in the world could explain. The cat runs on, the flock climbs
@@ -550,7 +532,7 @@ func _advance_along_path(delta: float) -> void:
 	# visible while it is still far away — which is what makes the warning usable.
 	_path_travelled += def.speed * delta
 	var remaining := _path_travelled
-	# **A beat rather than a journey.** *(M36.)* The distance covered is folded back and forth over
+	# **A beat rather than a journey.** The distance covered is folded back and forth over
 	# the route, so the same walk up and down happens for ever and the end of the path is never
 	# reached — which is what stops a fixture that moves from departing like something that was
 	# passing through. Folded rather than reset, so streaming it out and back in resumes it mid-beat
@@ -608,7 +590,7 @@ func _finish() -> void:
 ## True while the event is visible but has not yet reached full strength.
 ##
 ## A pursuer has a second way out of it, and it is the one that usually happens: `_lunged`, when
-## she walked up to the stand-off before the clock ran out. *(M43, finding 3.)*
+## she walked up to the stand-off before the clock ran out.
 func is_telegraphing() -> bool:
 	if is_waiting():
 		return false
@@ -665,7 +647,7 @@ func contribution_at(world_position: Vector2) -> float:
 	return Tuning.falloff(global_position.distance_to(world_position),
 			current_intensity(), def.inner_radius, def.outer_radius)
 
-## A flock is its birds, summed. *(M38.)*
+## A flock is its birds, summed.
 ##
 ## The same shape as `City.total_excitement_at` one level down: nothing is pushed anywhere, the
 ## sources compose by plain addition, and there is no ordering to get wrong. Each bird carries an
@@ -695,14 +677,13 @@ func is_lethal_at(world_position: Vector2) -> bool:
 func _draw() -> void:
 	if is_finished:
 		return
-	# **A moving event has to look like it is moving.** *(M31.)* Every crowd agent has a
-	# two-frame stride; an `EventInstance` has never had one, so a dog walker at 32px/s — a tile
-	# a second, against the player's three — slid along without a leg moving and read as parked.
-	# It was reported as *"dog walkers are not moving?"*, and it was not the movement.
+	# **A moving event has to look like it is moving.** Without a gait a dog walker at 32px/s — a
+	# tile a second, against the player's three — slides along without a leg moving and reads as
+	# parked, which gets reported as *the dog walkers are not moving* when the movement is fine.
 	#
-	# A bob rather than a gait, because the art has legs drawn into it and a sprite cannot swing
-	# its own (the M12c note). Driven by **distance covered**, not by time, so it is the movement
-	# itself that shows: something stopped is still, and something fast bobs faster.
+	# A bob rather than a stride, because the art has legs drawn into it and a sprite cannot swing
+	# its own. Driven by **distance covered**, not by time, so it is the movement itself that shows:
+	# something stopped is still, and something fast bobs faster.
 	var bob := 0.0
 	if def.pursues or is_leaving:
 		bob = -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
@@ -723,9 +704,9 @@ const BOB_PER_PX := PI / 34.0
 const BOB_HEIGHT := 2.5
 
 # ------------------------------------------------------------------ the mark ---
-# M22, playtest 02 finding 8 and playtest 04 finding 2. The aura rings are gone: a ring
-# communicates a falloff radius, which is a number, and a number is not a threat. What replaces
-# it over an entity is a small mark, and it earns its place by three rules.
+# **Nothing draws a field.** A ring communicates a falloff radius, which is a number, and a number
+# is not a threat. What stands over an entity instead is a small mark, and it earns its place by
+# three rules.
 
 ## How far above the entity the mark floats, and how big it is at full strength.
 const MARK_HEIGHT := 44.0
@@ -734,32 +715,22 @@ const MARK_FLASHES_PER_SECOND := 3.0
 
 ## Whether this event is worth a mark at all.
 ##
-## **The mark is raised by what a thing costs.** *(M39, playtest 10 findings 1, 8 and 9: "there is
-## no danger indicator over the homeless person", "I don't understand the difference between yellow
-## and red", and "some dangerous ones don't have indicators and some really benign ones do".)*
+## **The mark is raised by what a thing costs, and by nothing else.** The rule is the player's own
+## expectation, stated so a test can hold it: **if A is marked and B is not, A costs more than B.**
+## `EventDef.walk_through_cost()` is the order and `Tuning.MARK_WORTH_A_DETOUR` is where the line
+## falls; `tests/test_danger.gd` asserts the monotonicity over the whole catalogue, so a row cannot
+## earn a mark by pulsing.
 ##
-## The rule was *danger that changes over time* — lethal, telegraphing, swelling, or pulsing fast
-## enough to be timed. Every clause of that is a true statement about a thing and **none of them is
-## a statement about how bad it is**, so the marked set and the danger came apart completely:
+## **The trap is a rule like *danger that changes over time*** — lethal, telegraphing, swelling, or
+## pulsing fast enough to be timed. Every clause of that is a true statement about a thing and
+## **none of them is a statement about how bad it is**, so the marked set and the danger come apart:
+## a fire engine (+115 to walk through) carries nothing while a burning building at half the price
+## carries a caret, because one has a pulse and one does not; and a leaf blower is marked over the
+## dog walker beside it because its beat is 4.0s rather than 8.0s.
 ##
-## - A **fire engine** (+115 to walk through, the second most expensive row in the game) carried
-##   nothing, and a **burning building** (+56) carried a caret, because one has a pulse and one
-##   does not.
-## - The most expensive ordinary row in act I — a **dog walker** at +36, the row two playtests have
-##   been about — carried nothing, and the **leaf blower** beside it carried one, because its beat
-##   is 4.0s rather than 8.0s.
-## - **`homeless_yeller`** (+31), the man who ends day 1 in three separate traces, missed the pulse
-##   rule by four tenths of a second. That is finding 1, exactly.
-##
-## So the rule is the player's own expectation, stated so a test can hold it: **if A is marked and
-## B is not, A costs more than B.** `EventDef.walk_through_cost()` is the order and
-## `Tuning.MARK_WORTH_A_DETOUR` is where the line falls; `tests/test_danger.gd` asserts the
-## monotonicity over the whole catalogue, so a new row can no longer earn a mark by pulsing.
-##
-## What is kept, because M22 was right about it: **a cue that marks everything says nothing.** Five
-## of the eleven day-1 rows are marked, and the six that are not are the cheap ones — a café, a
-## delivery van, a poster crew, a burnt-out shell, a notice board. And the mark still **breathes**
-## with current emission, which is the one thing the ring did that a symbol does not get for free.
+## **A cue that marks everything says nothing**, so the cheap end of the street is left alone — a
+## café, a delivery van, a poster crew, a burnt-out shell. And the mark **breathes** with current
+## emission, which is the one thing a ring does that a symbol does not get for free.
 ##
 ## What is given up, and it is a decision rather than an oversight: **a crouching cat (+20) loses
 ## its caret.** The crouch is its own silhouette and the vocabulary's first rule is that the entity
@@ -785,37 +756,30 @@ func mark_swell() -> float:
 		return 1.0
 	return clampf(current_intensity() / def.intensity, 0.0, 1.0)
 
-## What colour the mark is, and it now means exactly one thing.
+## What colour the mark is, and it means exactly one thing: **how bad this is.**
 ##
-## *(M39, playtest 10 finding 8: "I don't understand the difference between yellow and red warning
-## indicators above entities — it looks like it's red further away?")*
+## **Colour is the wrong channel for a *phase*.** Amber while telegraphing and red once live is a
+## good sentence and a cue nobody can read, because of **streaming**: `EVENT_STREAM_RADIUS` is 900px
+## and no telegraph in the catalogue is longer than four seconds, so all but the `AHEAD_OF_PLAYER`
+## rows finish telegraphing before they are anywhere near the screen. In play that makes amber mean
+## *near* and red mean *far*, which is a colour carrying no information and being read as something
+## else.
 ##
-## It was amber while telegraphing and red once live, which is a good sentence and a cue nobody
-## could ever read, because of **streaming**: `EVENT_STREAM_RADIUS` is 900px and no telegraph in the
-## catalogue is longer than four seconds, so all but two rows finish telegraphing before they are
-## anywhere near the screen. The only amber carets a player ever saw belonged to the two
-## `AHEAD_OF_PLAYER` rows, which appear 184px in front of her — so in play, **amber meant *near* and
-## red meant *far***, which is what the player observed with the sign flipped, and it is the correct
-## reading of a colour that carries no information.
-##
-## Colour is the wrong channel for a *phase* and the right one for a *scale*, so the two swap jobs:
-## the colour is now how bad it is, and the **flash** — which is visible whether or not she was
-## there when it started — is what says it has not happened yet. See `_draw_mark`.
+## So the colour is the scale and the **flash** — visible whether or not she was there when the
+## event started — is what says it has not happened yet. See `_draw_mark`.
 func mark_colour() -> Color:
 	return Palette.MARK_LETHAL if def.hard_fail else Palette.MARK_COSTLY
 
 ## A caret over anything worth looking at, breathing with what it is currently emitting.
 ##
-## What is deliberately *not* here: any drawing of where the danger reaches. That is the ring,
-## and its absence is the milestone.
+## What is deliberately *not* here: any drawing of where the danger reaches. Nothing draws a field.
 func _draw_mark() -> void:
 	if not wants_a_mark():
 		return
-	# **The flash is the phase.** *(M39.)* It flashes while telegraphing — *this has not happened
-	# yet* — and is steady once it has, and since M39 that is the only channel saying so: the colour
-	# was carrying it and could not, because a telegraph is over before the event is on screen. A
-	# flash has no such problem, because it is a property of the mark rather than of a moment she
-	# had to be present for.
+	# **The flash is the phase**, and the only channel that can carry it: it flashes while
+	# telegraphing — *this has not happened yet* — and is steady once it has. The colour cannot do
+	# this, because a telegraph is usually over before the event is on screen; a flash is a property
+	# of the mark rather than of a moment she had to be present for.
 	if is_telegraphing() and fmod(age * MARK_FLASHES_PER_SECOND, 1.0) > 0.55:
 		return
 
@@ -891,20 +855,19 @@ func _draw_body() -> void:
 		EventDef.Look.NONE:
 			pass
 
-## A shadow and a sprite, facing the way it is going. What most of M31's new looks are, and
-## having it once is what stopped seven near-identical three-line functions.
+## A shadow and a sprite, facing the way it is going. What most looks are, and having it once is
+## what keeps a dozen near-identical three-line functions from existing.
 ## A vehicle, drawn from whichever of its four sides is facing the camera.
 ##
-## *(M51, playtest 15 finding 3: "the police car only has a sideview even when driving
-## vertically".)* Every vehicle in the catalogue was one side-on sprite mirrored east and west, so
-## a patrol car heading north drove up the street showing its flank. The crowd's own cars have had
-## an end-on view since M12 — `car_end_body.svg`, with the note that at that angle the front and
-## the back of a car are the same shape — and the catalogue never got one.
+## **One side-on sprite mirrored east and west is not enough**: a patrol car heading north drives up
+## the street showing its flank. The crowd's cars have an end-on view for the same reason
+## (`car_end_body.svg`, with the note that at that angle the front and the back of a car are the
+## same shape).
 ##
-## **Each row keeps its own end-on picture rather than borrowing the crowd's.** That is M37's rule
-## and it bites hardest here: the whole content of a vehicle row is *which* vehicle it is, and a
-## police car that becomes a generic saloon the moment it turns north is the one silhouette the
-## screen-edge badge exists to show, gone at the moment it starts coming towards her.
+## **Each row keeps its own end-on picture rather than borrowing the crowd's.** One picture per row
+## bites hardest here: the whole content of a vehicle row is *which* vehicle it is, and a police car
+## that becomes a generic saloon the moment it turns north loses the one silhouette the screen-edge
+## badge exists to show, at the moment it starts coming towards her.
 ##
 ## The badge itself keeps the **side** view, which is deliberate: an icon is read at 40px against a
 ## row of other icons, and a vehicle end-on is a box at any size.
@@ -931,7 +894,7 @@ func _draw_loose_dog() -> void:
 	draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
 	Sprites.draw_standing(self, DOG, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
-## Every bird, drawn where it actually is. *(M38.)*
+## Every bird, drawn where it actually is.
 ##
 ## There is no `rise` term and no shared phase any more — see "the flock" above. What is left here
 ## is only the picture: each bird on its own beat, each with a shadow on the pavement under it that
@@ -1011,17 +974,16 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null) -> void:
 	for side in [-1.0, 1.0]:
 		Sprites.draw_standing(self, cap, Vector2(side * half, 0.0))
 
-## The tables, and the people at them. *(M37, playtest 07 finding 11: "the café has no people at
-## it".)*
+## The tables, and the people at them.
 ##
-## The tables were always what obstructs and the conversation was always what it emits, and only
-## the first of the two was drawn — so the loudest pleasant thing in act I looked like furniture
-## somebody had left out. The spread is `_draw_spread`'s, so the width is still exactly the width
-## in the way; the sitters are drawn *first* and a little behind, because the table is the part
-## she cannot walk through and the picture has to agree with that.
+## **Both halves have to be drawn**: the tables are what obstructs and the conversation is what it
+## emits, so a café drawn as furniture alone is the loudest pleasant thing in act I looking like
+## something somebody left out. The spread is `_draw_spread`'s, so the width is exactly the width in
+## the way; the sitters are drawn *first* and a little behind, because the table is the part she
+## cannot walk through and the picture has to agree with that.
 ##
 ## Alternate tables are mirrored, which turns a rank of clones into pairs facing each other — the
-## same problem M35's park spoiler had, at a smaller scale and with the same answer.
+## same reason a spoiled park rolls a different def per cell.
 func _draw_cafe() -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.9)
@@ -1089,9 +1051,9 @@ func _draw_firefight() -> void:
 		draw_circle(muzzle, 3.0 + 4.0 * flare, MUZZLE_FLASH)
 		draw_circle(muzzle, 1.5 + 2.0 * flare, Color.WHITE)
 
-## A muzzle flash is a *light*, and it had been borrowing the amber the danger vocabulary uses for
-## its marks. Two things that mean different things must not share a constant, or a rebalance of one
-## silently repaints the other — the `DangerEdge` mistake M37 found, in the other direction.
+## A muzzle flash is a *light*, and it must not borrow the amber the danger vocabulary uses for its
+## marks. Two things that mean different things must not share a constant, or a rebalance of one
+## silently repaints the other.
 const MUZZLE_FLASH := Color("e8b64a")
 
 ## The person, the dog, and the lead between them.

@@ -4,14 +4,15 @@ extends RefCounted
 ##
 ## Pure data, no nodes, so a test can hammer it across hundreds of seeds headlessly.
 ##
-## The street lattice is cut in exactly two places and both are deliberate: a calm zone absorbs
-## the streets between its own blocks (M21), and a hard blocker takes one (M50). Everything else —
-## alleys, plazas, the home — is carved *inside* a block, so the grid a player learns is the grid.
+## The street lattice is cut in exactly two places and both are deliberate: a calm zone absorbs the
+## streets between its own blocks, and a hard blocker takes one. Everything else — alleys, plazas,
+## the home — is carved *inside* a block, so the grid a player learns is the grid.
 ##
-## That used to guarantee *"at least two distinct routes to every park"* by construction, because a
-## full lattice cannot be disconnected by removing any single corridor. It is checked by search
-## now, and what is checked is weaker on purpose: **every calm area stays reachable**, with the
-## second route an offer rather than a promise. See `Tuning.MIN_CALM_AREAS_REACHABLE`.
+## **A full lattice guarantees two distinct routes to every park by construction**, because it
+## cannot be disconnected by removing any single corridor — and the two cuts above are what take
+## that guarantee away, so it is checked by search instead. What is checked is deliberately weaker:
+## **every calm area stays reachable**, with the second route an offer rather than a promise. See
+## `Tuning.MIN_CALM_AREAS_REACHABLE`.
 
 ## How many seeds to try before accepting a map that fails the soft guarantees.
 const MAX_ATTEMPTS := 64
@@ -36,13 +37,12 @@ const _OPEN_CALM: Array[GameEnums.BlockPurpose] = [
 ## Every purpose that makes a block a **calm area**, which is what the spread guarantee is stated
 ## over and what `map.calm_blocks` contains.
 ##
-## **It is not `_OPEN_CALM`, and reading one for the other is a bug this project has now shipped.**
-## *(2026-08-31: "I see two diagonally adjacent parks — that bug is still not fixed?", off a
-## telemetry map. See `docs/PLAYTEST-14.md`, finding 7.)* `_OPEN_CALM` is the list of purposes laid
-## as *open ground*, which is a fact about what a generator paints; the spread rule is about what
-## the player can see from a pavement, and a courtyard is calm she can settle in like any other. So
-## the M49 fix that added the corners to the ring was checking three of the four kinds of calm, and
-## 10 cities in 40 had a pair of courtyards touching — 12 side by side and 8 diagonal.
+## **It is not `_OPEN_CALM`, and reading one for the other is a bug this project has shipped.**
+## `_OPEN_CALM` is the list of purposes laid as *open ground*, which is a fact about what a
+## generator paints; the spread rule is about what the player can see from a pavement, and a
+## courtyard is calm she can settle in like any other. A spread rule stated over `_OPEN_CALM`
+## checks three of the four kinds of calm and lets a quarter of cities come out with a pair of
+## courtyards touching.
 const _CALM_PURPOSES: Array[GameEnums.BlockPurpose] = [
 	GameEnums.BlockPurpose.PARK,
 	GameEnums.BlockPurpose.FOREST,
@@ -95,30 +95,29 @@ static func _attempt(seed_value: int) -> CityMap:
 ## same trick `CrowdLanes.busyness` uses: the hierarchy is a property of the city, and taking it
 ## out of the shared stream means adding it moves nothing else that a seed already decided.
 ##
-## There is **only** one main road and it is the north-south one. *(Playtest 12, finding 2.)*
+## There is **only** one main road and it is the north-south one.
 ##
-## **Where it runs is rolled, and until playtest 14 it was always the middle corridor.** It was
-## `CrowdLanes.arterial_index` — the centre of the map, on every seed — so the one landmark the
-## city has stood in the same place relative to the home in every run anybody had ever played:
-## *"I have the feeling the main road is now always left to home. It should move around more."*
-## A fixed city is worth learning; a city that is the same city every time is not, and the spine
-## is the largest single thing a player navigates by.
+## **Where it runs is rolled.** Fixing it to the centre of the map puts the one landmark the city
+## has in the same place relative to the home in every run anybody plays — a fixed city is worth
+## learning, a city that is the same city every time is not, and the spine is the largest single
+## thing a player navigates by.
 ##
-## Kept **three corridors clear of either boundary**, which is the one constraint that is not
-## taste. The spine divides the city in two and both halves have to be worth being in — M47 makes
-## crossing it a soft block — so a main road near the edge is a wall with a corner behind it rather
-## than a division. It also cannot be a boundary corridor at all: those have buildings on one side
-## only, and the tunnel and the bridge are holes punched through the ring of frontages.
+## Kept **three corridors clear of either boundary**, which is the one constraint here that is not
+## taste. The spine divides the city in two and both halves have to be worth being in, so a main
+## road near the edge is a wall with a corner behind it rather than a division. It also cannot be a
+## boundary corridor at all: those have buildings on one side only, and the tunnel and the bridge
+## are holes punched through the ring of frontages.
 ##
-## Two was tried first and is too near. At corridor 9 of eleven the city east of the spine is two
-## block-columns, and `tests/test_crowd.gd` saw it before a player could: 256 overlapping
-## crossing-axis pairs in a junction box over a minute against a tolerance of 180, where the same
-## city with a central spine gives well under it. A sliver has the spine's whole traffic funnelling
-## through junctions that have nowhere to spread to.
+## **Two corridors of clearance is too near**, measured rather than judged: at corridor 9 of eleven
+## the city east of the spine is two block-columns, and `tests/test_crowd.gd` sees it before a
+## player could — 256 overlapping crossing-axis pairs in a junction box over a minute against a
+## tolerance of 180, where a central spine gives well under it. A sliver has the spine's whole
+## traffic funnelling through junctions that have nowhere to spread to.
 ##
-## `map.main_road` is the answer everywhere. `CrowdLanes.arterial_index` is now only the *default*
-## the map is built from, and anything asking "which corridor is the main road" that reaches for it
-## instead is the M46 defect — a fact about a city answered from a constant.
+## `map.main_road` is the answer everywhere. `CrowdLanes.arterial_index` is only the *default* the
+## map is built from, and **asking it which corridor is the main road is a fact about a city
+## answered from a constant** — it answers for both axes, which is how a phantom east-west arterial
+## gets into a busyness curve.
 static func _assign_street_kinds(map: CityMap) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("street:%d" % map.seed_used)
@@ -126,9 +125,8 @@ static func _assign_street_kinds(map: CityMap) -> void:
 	map.main_road = rng.randi_range(3, corridors - 4)
 	_place_precincts(map, rng)
 
-## The two precincts, three blocks each. *(Playtest 12, findings 1 and 7: "a stretch of three
-## blocks at the shore, like a coney island beach walk, and three blocks in the city somewhere —
-## no more.")*
+## The two precincts, three blocks each: one at the shore, like a seaside promenade, and one inland.
+## Three blocks and no more, because a precinct has to be a **place** rather than a kind of street.
 ##
 ## One is always the **shore**: the southern boundary street, which is the one corridor in the
 ## city with buildings on a single side, so a promenade there has a front and a back the way a
@@ -193,19 +191,18 @@ static func _lay_streets(map: CityMap) -> void:
 ##
 ## - **A pedestrianised corridor has no carriageway**, so its own band is paving all the way
 ##   across and a driveable street crossing it does so over a zebra six tiles deep.
-## - **A main road's crossing is signalled rather than negotiated, and since M51 it is not a
-##   zebra.** *(Playtest 15, finding 2: "the main road shouldn't have zebra crossings (since they
-##   have traffic lights) it should be two dotted lines demarking the pedestrian safe zone".)*
-##   Traffic on a main road does not give way to somebody at the kerb — it obeys the light — so
-##   the crossing is a *timing* problem where an ordinary one is a gap-hunting problem, and a
-##   zebra was the paint promising the wrong one of those at every junction of the one street
-##   where getting it wrong ends the day. See `CrowdAgent._give_way` and `TrafficSignals`.
+## - **A main road's crossing is signalled rather than negotiated, and it is not a zebra** — it is
+##   two dotted lines marking the pedestrian safe zone. Traffic on a main road does not give way to
+##   somebody at the kerb, it obeys the light, so the crossing is a *timing* problem where an
+##   ordinary one is a gap-hunting problem. A zebra there is paint promising the wrong one of those
+##   at every junction of the one street where getting it wrong ends the day. See
+##   `CrowdAgent._give_way` and `TrafficSignals`.
 ##
-##   **The tile type does not change and that is the point.** Painting the crossing away was tried
-##   in M41 and is worse — a walker crossing a side street would then be standing on open
-##   carriageway, and the one thing a crossing is for is saying where a person on a road is meant
-##   to be — so what moved is the picture and nothing else. Every rule that reads `CROSSING`, from
-##   the traffic's give-way scan to where an event may stand, goes on meaning what it meant.
+##   **The tile type does not change and that is the point.** Painting the crossing away entirely is
+##   worse — a walker crossing a side street would then be standing on open carriageway, and the one
+##   thing a crossing is for is saying where a person on a road is meant to be — so what differs is
+##   the picture and nothing else. Every rule that reads `CROSSING`, from the traffic's give-way scan
+##   to where an event may stand, means what it means on both.
 ##   `GroundTiles._crossing_variant` is where the two dotted lines are drawn.
 static func _street_tile(x_offset: int, x_kind: GameEnums.StreetKind,
 		y_offset: int, y_kind: GameEnums.StreetKind) -> GameEnums.TileType:
@@ -291,16 +288,15 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 ## Picks the multi-block calm zones and marks every block of each. Returns how many calm areas it
 ## made, which is what the single-block pass counts on from.
 ##
-## **The first one is the square and the rest are rolled from `Tuning.CALM_ZONE_SHAPES`.** *(M52.)*
-## That ordering is the whole of how variety was added without repealing anything: M21's guarantee
-## is that every city has a four-block zone, because the lap is what it exists to remove, and a
-## shape rolled for the *first* zone would have made that guarantee a matter of luck. So the square
-## is placed first and unconditionally, and every zone after it may be a 2x1 either way up.
+## **The first one is the square and the rest are rolled from `Tuning.CALM_ZONE_SHAPES`.** That
+## ordering is what lets the shapes exist without weakening anything: every city has a four-block
+## zone, because the lap is what a zone exists to remove, and **rolling a shape for the *first* zone
+## makes that guarantee a matter of luck**. So the square is placed first and unconditionally, and
+## every zone after it may be a 2x1 either way up.
 ##
-## A shape that fits nowhere falls through to the next one rather than costing the city a zone —
-## the rectangles are two thirds of the list and the square is the hardest thing to fit, so a run of
-## unlucky rolls would otherwise show up as a slower generator, which is the failure mode M47
-## warned about for the placement rules.
+## A shape that fits nowhere falls through to the next one rather than costing the city a zone — the
+## rectangles are two thirds of the list and the square is the hardest thing to fit, so a run of
+## unlucky rolls would otherwise show up as a slower generator.
 ##
 ## Two constraints beyond "does it fit", and both are the same rules a single calm block obeys,
 ## asked of the whole footprint:
@@ -348,13 +344,13 @@ static func _place_one_zone(purposes: Dictionary, zones: Dictionary, shuffled: A
 		return true
 	return false
 
-## The apartment complexes: courtyard lots four blocks across. *(M52, from M47's entry.)*
+## The apartment complexes: courtyard lots four blocks across.
 ##
 ## **The same pass as a calm zone and the opposite ground.** A zone absorbs the streets between its
 ## blocks and paints park over them; this absorbs them and *builds over* them, so what comes out is
 ## a mass twenty-two tiles square with a court in the middle and one archway in. Nothing here is a
-## new mechanism — the footprint test, the absorb, the lot rect and the daily repaint are all M21's
-## — which is why the entry that asked for it says the mechanism is M21's.
+## new mechanism: the footprint test, the absorb, the lot rect and the daily repaint are a calm
+## zone's.
 ##
 ## Three things about it that are decisions rather than consequences:
 ##
@@ -415,33 +411,29 @@ static func _too_near_the_home(footprint: Rect2i) -> bool:
 	return false
 
 ## Where calm ground may go, as one question asked of a **footprint**, so a single block, a
-## multi-block zone and a courtyard obey one rule rather than three that drift apart. *(M52, built
-## from M47's entry; playtest 16, finding 4: "this map shows multiple calm zones at the edge of the
-## map which should be impossible".)*
+## multi-block zone and a courtyard obey one rule rather than three that drift apart.
 ##
-## Three clauses, and the first is older than the other two:
+## Three clauses:
 ##
 ## - **Never near the home**, which is the walk out being worth walking. See `_too_near_the_home`.
-## - **Never in the outer ring of blocks.** *"Another way to get density is to make a rule to not
-##   have a calm area at the edge of the map or next to the main road."* A calm area against the
-##   boundary has the ring of frontages behind it and half its approaches are a wall, so it is a
-##   destination you can only arrive at from one side — and the density argument is almost all this
-##   clause: the ring is 40 of the lattice's 121 blocks.
+## - **Never in the outer ring of blocks.** A calm area against the boundary has the ring of
+##   frontages behind it and half its approaches are a wall, so it is a destination you can only
+##   arrive at from one side — and the density argument is almost all this clause: the ring is 40 of
+##   the lattice's 121 blocks.
 ## - **Never in either block column beside the main road.** This one is not about density — it adds
 ##   only eight blocks on top of the ring, because the spine runs down the middle where the home
 ##   clearance has already taken a 5x5 out. It is about what crossing the spine is *for*:
 ##   `decay_multiplier` is 0.6 there, so a park you can hear the main road from is not calm ground,
 ##   and if calm never sits beside it then **crossing it always leads somewhere worth crossing
-##   for**, which is what makes it a soft block rather than a wall. It is also the expendable one by
-##   the player's own words — *"the not next to main road rule is not that important, you can remove
-##   it if it loses too much freedom"* — so if the field ever gets too tight this is what comes out,
+##   for**, which is what makes it a soft block rather than a wall. It is also **the expendable
+##   clause**, by the player's decision: if the eligible field ever gets too tight, this comes out
 ##   before `MIN_CALM_BLOCKS` or the non-adjacency rule are touched.
 ##
 ## The spine clause is stated over **`map.main_road`**, which is the only thing that knows where the
 ## spine is. `CrowdLanes.arterial_index` is a *default* a map is built from, and reaching for it to
-## answer a question about a city is the M46 defect — the one that put a phantom east-west arterial
-## in `CrowdLanes.busyness`. `_zone_fits` used to carry a copy of it for exactly that reason and
-## does not any more.
+## answer a question about a city answers for both axes — which is how a phantom east-west arterial
+## gets into a busyness curve, and how a zone that would absorb the middle east-west corridor gets
+## refused for no reason.
 static func _calm_may_sit_here(footprint: Rect2i, main_road: int) -> bool:
 	if _too_near_the_home(footprint):
 		return false
@@ -493,14 +485,12 @@ static func _record_zones(map: CityMap, purposes: Dictionary, zones: Dictionary)
 ## Turns some residential blocks into courtyard blocks. Never one that touches open calm:
 ## a hidden court is worth finding, and a court across the street from a park is not.
 ##
-## **And it obeys `_calm_may_sit_here` like every other calm area.** *(M52.)* M47 left this open —
-## *"decide courtyards separately: a courtyard is hidden calm you have to know about, and an argument
-## can be made either way for one against the boundary"* — and the answer is the finding's own
-## evidence: the map the player marked up outlines `calm_blocks`, which is where a courtyard appears,
-## so a court in the outer ring is one of the green outlines the complaint was about. The home
-## clearance comes with it, and that half was never a decision at all: a courtyard is calm ground, so
-## `validate()`'s `MIN_HOME_TO_PARK_TILES` check has always been able to fail a city for one cut
-## beside the front door — this refuses the block rather than rolling the whole map again.
+## **And it obeys `_calm_may_sit_here` like every other calm area**, boundary ring included: a
+## courtyard is hidden calm, but it is still one of the outlines on the map and still somewhere she
+## can settle, so a court in the outer ring is a calm area at the edge of the map. The home
+## clearance comes with it for a plainer reason: a courtyard is calm ground, so
+## `validate()`'s `MIN_HOME_TO_PARK_TILES` check can fail a whole city for one cut beside the front
+## door — refusing the block is cheaper than rolling the map again.
 static func _cut_courtyards(purposes: Dictionary, remaining: Array[Vector2i],
 		rng: RandomNumberGenerator, main_road: int) -> void:
 	var cut := 0
@@ -522,22 +512,18 @@ static func _cut_courtyards(purposes: Dictionary, remaining: Array[Vector2i],
 ## than one block so that a single block and a four-block zone are the same question asked twice,
 ## rather than one rule and one special case.
 ##
-## **The whole ring, corners included.** *(Playtest 14: "calm zones shouldn't be possible diagonal
-## from each other — we said they should not be next to each other, this includes the entire
-## surrounding".)* It used to walk the four edges and skip the four corners, so two calm areas
-## could meet at a junction: not across a street from each other but across a *crossroads*, which
-## from the pavement is the same sight and is exactly what the rule exists to stop. `docs/TODO.md`
-## had it as an open question in M47 — *"probably right, but it is currently an accident of the
-## loop bounds rather than a decision"* — and this is the decision.
+## **The whole ring, corners included.** Walking the four edges and skipping the four corners lets
+## two calm areas meet at a junction — not across a street from each other but across a
+## *crossroads*, which from the pavement is the same sight and is exactly what the rule exists to
+## stop.
 ##
 ## Grown by one and tested by containment, rather than by four loops with the corners bolted on:
 ## the shape being asked about is a ring, and a ring is what `grow(1)` makes.
 ##
-## **And every calm purpose, which is the half M49 left out.** It asked about `_OPEN_CALM` and was
-## named for it, so a courtyard was invisible to it and two courtyards could meet at a corner — the
-## same sight from the pavement, reported off a telemetry map on 2026-08-31. The only caller this
-## changes is `_cut_courtyards`: zones and open calm are placed before a courtyard exists, so for
-## them the two lists are the same list.
+## **And every calm purpose, which is the half that is easy to leave out.** Asked over `_OPEN_CALM`
+## a courtyard is invisible to it, and two courtyards can meet at a corner — the same sight from the
+## pavement. The only caller that distinguishes them is `_cut_courtyards`: zones and open calm are
+## placed before a courtyard exists, so for them the two lists are the same list.
 static func _has_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool:
 	var ring := footprint.grow(1)
 	for y in range(ring.position.y, ring.end.y):
@@ -598,7 +584,7 @@ static func _absorb_one(map: CityMap, key: Vector3i, solid: bool) -> void:
 ## Plans every block's arc, up front, for the whole run.
 ##
 ## The one hard rule: at least `MIN_CALM_BLOCKS_AT_END` blocks must still be calm on the
-## last day. A day can only be won on calm ground (M14), so an arc set that requisitions
+## last day. A day can only be won on calm ground, so an arc set that requisitions
 ## everything is not a hard run, it is an unwinnable one — and because arcs are planned here
 ## rather than rolled day by day, that is a property this function can simply guarantee
 ## instead of a property the scheduler has to keep rescuing.
@@ -719,10 +705,9 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 
 ## A rect of `size` tiles somewhere inside `lot`, never touching its edge.
 ##
-## **Both spans are the lot's own, which they were not until M52.** The offset was rolled twice
-## against `lot.size.x`, which is the same number on both axes for as long as every lot is square —
-## and a 2x1 calm zone is 22 tiles by 8, so a playground would have been placed up to fourteen tiles
-## south of a lot eight tiles deep. That is the shape of thing a square-only city hides.
+## **Both spans are the lot's own**, and rolling the offset twice against `lot.size.x` is the trap:
+## it is the same number on both axes for exactly as long as every lot is square. A 2x1 calm zone is
+## 22 tiles by 8, so a playground would land up to fourteen tiles south of a lot eight tiles deep.
 static func _inset_rect(lot: Rect2i, size: int, rng: RandomNumberGenerator) -> Rect2i:
 	var span := lot.size - Vector2i.ONE * (size + 2)
 	var offset := Vector2i(rng.randi_range(1, maxi(1, span.x)), rng.randi_range(1, maxi(1, span.y)))
@@ -863,15 +848,15 @@ static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
 
 # ----------------------------------------------------------- hard blockers ---
 
-## The streets this city does not go down, fixed for the whole run. *(M50 step 1.)*
+## The streets this city does not go down, fixed for the whole run.
 ##
 ## **The soft blockers re-cut the map every morning; these are what the player learns.** A route
 ## to a calm area is not stable across days and that is the mechanism rather than a side effect —
 ## a city worth knowing plus a day worth reading — so the permanent half has to exist before the
 ## per-day half can mean anything.
 ##
-## **They are placed against a tree, not before one.** *"First construct an example tree from the
-## initial map, then place the hard blockers — that way we can't block off regions entirely."* The
+## **They are placed against a tree, not before one**, so that no combination of them can seal a
+## region off. The
 ## reference tree is a **witness**: it reaches every calm area the run will ever use, so a blocker
 ## that takes no street off it cannot have made any of them unreachable. That is why the candidate
 ## list excludes the tree rather than the gate below merely checking afterwards — a gate that
@@ -934,10 +919,10 @@ static func _place_dead_ends(map: CityMap, home: StreetNetwork.Segment,
 ## - **Anything running alongside calm ground**, and this one was found by building it. A dead end
 ##   is a claim about where you can get to, and the claim is made on the **lattice** while the
 ##   player walks on **tiles** — so a street with a park down one side of it is a street you walk
-##   into and then step sideways out of, whatever the graph says. It is M21's rule read backwards:
-##   an absorbed street is calm ground rather than a closure, and calm ground beside a dead end
-##   makes the dead end a doorway. `tests/test_routes.gd` caught it as *"the way in is a real
-##   street"* on a four-block zone, which is exactly what it looked like from the outside.
+##   into and then step sideways out of, whatever the graph says. It is the absorbed-street rule
+##   read backwards: an absorbed street is calm ground rather than a closure, so calm ground beside
+##   a dead end makes the dead end a doorway. `tests/test_routes.gd` states it as *"the way in is a
+##   real street"*.
 static func _dead_end_candidates(map: CityMap, home: StreetNetwork.Segment, reference: RouteTree,
 		calm: Dictionary, rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
 	var pool: Array[StreetNetwork.Segment] = []
@@ -964,7 +949,7 @@ static func _runs_beside_calm(segment: StreetNetwork.Segment, calm: Dictionary) 
 	var opposite := block + (Vector2i.UP if segment.horizontal else Vector2i.LEFT)
 	return calm.has(block) or calm.has(opposite)
 
-## Two blocks built together as one mass, with the street between them gone. *(M50 step 1.)*
+## Two blocks built together as one mass, with the street between them gone.
 ##
 ## **The bigger of the two hard blockers, and the one that is a landmark.** A dead end takes a
 ## street out of the lattice and walls one end of it; this takes one out and builds over the whole
@@ -972,12 +957,9 @@ static func _runs_beside_calm(segment: StreetNetwork.Segment, calm: Dictionary) 
 ## by and walks round. Everything else about the grid there is untouched: the four streets round
 ## each block, and every junction, still exist and still turn.
 ##
-## **It joins two blocks, and a building that closes all four of its streets would be a different
-## kind of thing.** *(2026-08-31: "why do big buildings close off four streets each? a big building
-## just connects two blocks… we can add a building type with all four roads closed but that's a
-## different building type. but I want one that just connects two blocks (closes one road)".)* The
-## first version took the whole ring, which made every one of them an island in the lattice and put
-## four streets' worth of hard blocking behind a single roll. The four-sided one is recorded in
+## **It joins two blocks, and a building that closes all four of its streets is a different kind of
+## thing.** Taking the whole ring makes every landmark an island in the lattice and puts four
+## streets' worth of hard blocking behind a single roll. The four-sided one is recorded in
 ## `docs/TODO.md` as its own type and is not this one.
 ##
 ## It is a `BlockPurpose` so that the blocks stay solid for the whole run: an empty `BlockLayout`
@@ -1044,8 +1026,8 @@ static func _big_building_candidates(map: CityMap, purposes: Dictionary,
 ## The "nothing beside calm" rule applies here too, and for a *different* reason than it does to a
 ## dead end. There the worry is that the blocker is a lie — you step sideways into the park. Here
 ## the ground really is solid, and what a big building beside a zone would do is take one of the
-## zone's ways in **away**, frontage and all. That is legitimate city and it is also a deliberate
-## narrowing of an M21 guarantee, so it is not something to acquire while adding landmarks.
+## zone's ways in **away**, frontage and all. That is legitimate city and it is also a narrowing of
+## the route guarantee, so it is not something to acquire by accident while placing landmarks.
 ## `tests/test_routes.gd` says so out loud: *"the way in is a real street."*
 static func _the_pair_is_free(map: CityMap, purposes: Dictionary, pair: Rect2i,
 		home: StreetNetwork.Segment, reference: RouteTree, calm: Dictionary) -> bool:
@@ -1105,17 +1087,12 @@ static func _make_the_pair_solid(map: CityMap, purposes: Dictionary, block_rects
 
 ## The gate: **every calm area the run will ever use can still be walked to.**
 ##
-## *(M50 built this as the strong gate — two edge-disjoint routes to every area — deliberately,
-## because weakening a winnability guarantee as a side effect of adding dead ends is the shape of
-## overturn this project has a rule about. It was moved on purpose on 2026-08-31: "I already
-## clarified that the two routes guarantee is not a hard rule." See
-## `Tuning.MIN_CALM_AREAS_REACHABLE`.)*
-##
-## **Reachability rather than redundancy is the right gate here for a reason of its own**, and it
-## is the one the design gives: cul-de-sacs are the *point* of a hard blocker, and a two-routes
-## rule fights them — every dead end takes one of an area's ways in, so the strong gate refused
-## exactly the interesting ones. What it may never do is make a calm area unreachable, because a
-## hard blocker holds for the whole run: a day can be bad, a run cannot be dead.
+## **Reachability rather than redundancy, and that is a decision with a reason of its own**:
+## cul-de-sacs are the *point* of a hard blocker, and a two-routes gate fights them, because every
+## dead end takes one of an area's ways in — the strong gate refuses exactly the interesting
+## candidates. What a hard blocker may never do is make a calm area unreachable, because it holds
+## for the whole run: a day can be bad, a run cannot be dead. See
+## `Tuning.MIN_CALM_AREAS_REACHABLE` for the day-level half.
 ##
 ## It stays stated over **every** area rather than over a count, unlike the day-level invariant,
 ## for the same reason: a closure is gone tomorrow and this is not.
@@ -1129,10 +1106,10 @@ static func _the_calm_survives(map: CityMap, home: StreetNetwork.Segment,
 
 ## Builds the wall that makes an absent street a *dead end* rather than a hole in the map.
 ##
-## **The ground has to stop, and that is the whole difference from M21's absorbed streets.** A
-## calm zone's absorbed corridor is park: gone from the lattice and walked over quite happily,
-## which is right for a shortcut and wrong for a hard blocker — *"a cul-de-sac must be a street
-## that genuinely stops, not a park to walk through."* So one end is built over, and the street
+## **The ground has to stop, and that is the whole difference from an absorbed street.** A calm
+## zone's absorbed corridor is park: gone from the lattice and walked over quite happily, which is
+## right for a shortcut and wrong for a hard blocker — a cul-de-sac must be a street that genuinely
+## stops, not a park to walk through. So one end is built over, and the street
 ## keeps its pavement, its kerbs and its buildings: you can walk in, and then you have to come
 ## back out.
 ##
@@ -1168,13 +1145,11 @@ static func validate(map: CityMap) -> String:
 	# Stated over every block of every calm lot, not over the anchors: two four-block zones whose
 	# anchors are three apart can still have their footprints touching.
 	#
-	# **Two things about it were wrong until 2026-08-31 and neither could have been caught by this
-	# check, because this check was both of them.** It skipped every lot that was not `_OPEN_CALM`,
-	# so a courtyard was not a calm area as far as the guarantee was concerned; and it stepped
-	# `RIGHT` and `DOWN` only, so it had never once looked at a diagonal — including through M49,
-	# which fixed the diagonal in the *placement* rule and left the thing that is supposed to hold
-	# it checking the old shape. A guarantee that is narrower than the rule it guards will agree
-	# with the rule for as long as the rule is right and say nothing on the day it is not.
+	# **It asks about every calm purpose and about all eight neighbours**, and both halves are easy
+	# to get narrower than the rule they guard: skipping lots that are not `_OPEN_CALM` makes a
+	# courtyard invisible to the guarantee, and stepping `RIGHT` and `DOWN` only never looks at a
+	# diagonal. **A guarantee narrower than its rule agrees with the rule for exactly as long as the
+	# rule is right, and says nothing on the day it is not.**
 	var owner := {}
 	for block in map.calm_blocks:
 		for member in _blocks_in(map.lot_blocks(block)):
@@ -1186,11 +1161,11 @@ static func validate(map: CityMap) -> String:
 				return "calm areas %s and %s are in each other's ring" % [
 					owner[member], owner[neighbour]]
 
-	# **The open ones only, and one of them is the square.** *(M52.)* `zone_rects` is every
-	# multi-block lot, which since apartment complexes is not the same thing as every multi-block
-	# *park* — a complex is four blocks of building — so counting the dictionary would let a city
-	# satisfy M21's guarantee with a thing you cannot walk across. And the guarantee is not
-	# "multi-block calm" in general: it is that every city has somewhere with a *route* through it
+	# **The open ones only, and one of them is the square.** `zone_rects` is every multi-block lot,
+	# which is not the same thing as every multi-block *park* — an apartment complex is four blocks
+	# of building — so counting the dictionary lets a city satisfy the guarantee with a thing you
+	# cannot walk across. And the guarantee is not "multi-block calm" in general: it is that every
+	# city has somewhere with a *route* through it
 	# rather than a lap round it, which is what the four-block open footprint is for. The placement
 	# pass makes both true by placing the square first; this asks the city that came out, which is
 	# the only way either survives that ordering being changed.
@@ -1233,7 +1208,7 @@ static func validate(map: CityMap) -> String:
 		return "home is only %d tiles from calm ground, need %d" % [
 			calm_distance, Tuning.MIN_HOME_TO_PARK_TILES]
 
-	# The hard blockers' own condition. *(M50 step 1.)* They are the only thing in generation that
+	# The hard blockers' own condition. They are the only thing in generation that
 	# takes a street out of the lattice for a reason of its own, and the placement gate is what
 	# stops one cutting the calm off — so this is the same guarantee asked a second time, by
 	# something that did not place it. A gate is a promise about each candidate; this is a
