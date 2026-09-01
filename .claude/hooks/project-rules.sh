@@ -13,15 +13,35 @@
 set -uo pipefail
 
 input=$(cat)
+tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
 path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 session=$(printf '%s' "$input" | jq -r '.session_id // "nosession"' 2>/dev/null)
-[ -z "$path" ] && exit 0
 
 # Repo root: this script lives at <root>/.claude/hooks/
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 skills="$root/.claude/skills"
 state="${TMPDIR:-/tmp}/claude-nappy-rules/$session"
 mkdir -p "$state" 2>/dev/null
+
+# One rule triggers on a tool rather than a path: spawning a sub-agent is an Agent/Task
+# call with no file_path, and the orchestrating rules must arrive before the prompt is
+# written, not after the agent comes back wrong.
+if [ "$tool" = "Agent" ] || [ "$tool" = "Task" ]; then
+	file="$skills/orchestrating/SKILL.md"
+	if [ -f "$file" ] && [ ! -f "$state/orchestrating" ]; then
+		: > "$state/orchestrating"
+		printf '%s' "$(cat "$file")" | jq -Rs '{
+		  hookSpecificOutput: {
+		    hookEventName: "PreToolUse",
+		    additionalContext: ("These project rules govern delegating work to sub-agents and are binding for this spawn. They are injected automatically, once per session.\n\n===== project rule: orchestrating =====\n" + .)
+		  },
+		  suppressOutput: true
+		}'
+	fi
+	exit 0
+fi
+
+[ -z "$path" ] && exit 0
 
 # The case patterns below match by substring (*/src/events/*, etc.), so without this
 # check a file anywhere on disk under a same-named directory -- /tmp/elsewhere/src/events/x.gd --

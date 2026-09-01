@@ -43,6 +43,7 @@ is the moment somebody is about to touch the file.
 | `tests/**` | **verify** |
 | `docs/PLAYTEST-*.md`, `docs/TODO.md` | **feedback** |
 | any `*.gd` | **godot** |
+| spawning a sub-agent (the `Agent`/`Task` tool — a tool, not a path) | **orchestrating** |
 
 **Three have no file to trigger on and are yours to invoke**, because they are about a *moment*
 rather than a place:
