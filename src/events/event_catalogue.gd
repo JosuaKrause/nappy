@@ -868,6 +868,11 @@ static func _charging_dog() -> EventDef:
 
 ## Mobile, unhurried, and it stops. Not dangerous yet — the danger is that you start
 ## planning around it, which is the point.
+##
+## **The non-lethal rung of the resistance's ladder.** `heat_response = PRESSES`: past
+## `GameState.resistance_progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
+## it stops merely patrolling and starts investigating — see `EventDef.at_heat()`. It never gains
+## `hard_fail`, whatever the heat; the van is the rung that kills.
 static func _police_patrol() -> EventDef:
 	var def := EventDef.new()
 	def.id = "police_patrol"
@@ -886,6 +891,7 @@ static func _police_patrol() -> EventDef:
 	def.path_length_tiles = 40
 	def.weight = 3.0
 	def.max_per_day = 12
+	def.heat_response = EventDef.HeatResponse.PRESSES
 	return def
 
 ## Cosmetic dread. Barely moves the meter; it is here so the walls change.

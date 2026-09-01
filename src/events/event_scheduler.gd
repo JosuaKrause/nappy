@@ -919,8 +919,24 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 ## The telegraph contract is untouched by this and must not be "fixed" alongside it. That one is
 ## stated over a single event's own geometry, `Tuning.validate_event()` checks it on load, and
 ## nothing here changes what any event owes the player who sees it coming.
+##
+## **A pursuer is the third exemption, and the reason is the same one the `WALL` case is stated
+## over: the rule is about a *place* being kept clear, and a pursuer has no place.** It goes
+## wherever she goes, so placement can never keep anything clear of it — the argument the `WALL`
+## case makes about the corridor does not even apply, because there is no ground to be off of in
+## the first place.
+##
+## This was already true for every lethal pursuer in the catalogue, but by accident rather than by
+## name: `_role_for` gives any placed `hard_fail` row that is not a `ONE_SHOT` the `WALL` role
+## before it ever asks whether the row pursues, so `charging_dog` (never placed at all — it is
+## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about) and
+## `alley_robbery` (placed, `hard_fail`, therefore always `WALL`) were both exempt without this
+## line doing anything. Stating it over `plan.def.pursues` rather than leaving the exemption to
+## follow from the `WALL` classification is what makes it survive a future pursuer the role logic
+## does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer, say, which `_role_for`
+## would classify ahead of the `hard_fail` check.
 static func _keeps_its_field_clear(plan: Planned) -> bool:
-	return plan.def.hard_fail and plan.role != GameEnums.BlockerRole.WALL
+	return plan.def.hard_fail and plan.role != GameEnums.BlockerRole.WALL and not plan.def.pursues
 
 ## The closest two events come to each other, counting the whole of a route at both ends.
 ##

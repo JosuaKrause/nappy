@@ -190,6 +190,14 @@ func _process(delta: float) -> void:
 
 	_fly_the_flock(delta)
 	if def.pursues:
+		# **A pursuer that has a route runs it until it notices her.** No field says so — see
+		# `EventDef.at_heat()`'s own note on `PRESSES` — it is read off the two flags a mobile
+		# pursuer already carries: while it is only `is_waiting()` it has not decided anything about
+		# her yet, so it patrols its path exactly as a plain mobile row would; `_chase` below is what
+		# turns it round the frame it notices. A stationary pursuer (`alley_robbery`) has no path to
+		# run and this is simply never true of it.
+		if is_waiting() and def.mobile and path.size() > 1:
+			_advance_along_path(delta)
 		_chase(delta)
 	elif def.mobile and path.size() > 1 and not is_telegraphing_still():
 		_advance_along_path(delta)
