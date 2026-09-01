@@ -3,10 +3,9 @@ extends Node2D
 ## Where the main road leaves the map: a tunnel at the north end of the spine, a bridge at its
 ## south end, and the east-west spine simply carrying on.
 ##
-## Playtest 11 gave this as a design rather than as a finding, and the sentence in it is the whole
-## brief: *"the player should be able to walk into those, which would be certain death once a car
-## comes — that way it's not an artificial end but an emergent end."* A wall says *the game stops
-## here*. A tunnel and a bridge say *the city goes on and this is how you would leave it*, and
+## **She can walk into one, and a car will kill her there.** That is the point: it makes the end of
+## the map an emergent end rather than an artificial one. A wall says *the game stops here*; a
+## tunnel and a bridge say *the city goes on and this is how you would leave it*, and
 ## they are lethal for the reason every other stretch of carriageway is lethal, which the player
 ## has already learnt. Nothing new was needed for the danger; only for the sentence.
 ##
@@ -54,8 +53,7 @@ func _draw() -> void:
 		_:
 			_blit(ROAD_ON, Vector2(-1.0, -0.5))
 
-## The carriageway darkening a step at a time as it runs under the mountain. *(Playtest 14: "the
-## tunnel needs the street to continue with a slight darkening of the tiles each step".)*
+## The carriageway darkening a step at a time as it runs under the mountain.
 ##
 ## `City._paint_outside_the_map` carries the spine's road through the border rather than burying it
 ## in rock, and this is what turns that stretch into a tunnel rather than a road with a picture at

@@ -35,9 +35,9 @@ static func draw_standing(canvas: CanvasItem, texture: Texture2D, at: Vector2,
 ## Deliberately not an exclamation mark: that shape is spoken for, it means *this is about you*,
 ## and it lives over the player's head and nowhere else.
 ##
-## Lives here rather than in `EventInstance` since M30, because a car needed one and a car is
-## not an event. Two hand-drawn chevrons that slowly stop being the same chevron is exactly how
-## a short vocabulary turns into a long one.
+## Lives here rather than on `EventInstance`, because a car needs one and a car is not an event.
+## Two hand-drawn chevrons that slowly stop being the same chevron is exactly how a short
+## vocabulary turns into a long one.
 static func draw_caret(canvas: CanvasItem, at: Vector2, width: float, colour: Color) -> void:
 	var points := PackedVector2Array([
 		at + Vector2(-width, -width * 0.8),

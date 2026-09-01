@@ -58,8 +58,8 @@ func apply_cause(plans: Dictionary, block: Vector2i, cause: GameEnums.BlockCause
 	_advance(plans, block, day, cause)
 	return true
 
-## Blocks that are calm ground right now. Since M14 a day can only be won on calm ground, so
-## this is the list the scheduler and the route map both care about.
+## Blocks that are calm ground right now. A day can only be won on calm ground, so this is the list
+## the scheduler and anything drawing the city both care about.
 func calm_blocks(plans: Dictionary) -> Array[Vector2i]:
 	var calm: Array[Vector2i] = []
 	for block: Vector2i in plans:

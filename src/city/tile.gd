@@ -5,8 +5,8 @@ extends RefCounted
 static func is_walkable(type: GameEnums.TileType) -> bool:
 	return type != GameEnums.TileType.BUILDING
 
-## Calm ground: sleepiness fills faster, excitement fades faster. Since M14 this is the
-## only ground a day can be won on, so what is on this list is the whole difficulty curve.
+## Calm ground: sleepiness fills faster, excitement fades faster. It is the only ground a day can
+## be won on, so what is on this list is the whole difficulty curve.
 ##
 ## `SQUARE` is deliberately absent and `QUIET_SQUARE` deliberately present: a market plaza
 ## and an empty one are the same paving and not the same place. `SPOILED` is what calm
@@ -31,7 +31,8 @@ static func is_road(type: GameEnums.TileType) -> bool:
 	return type == GameEnums.TileType.ROAD or type == GameEnums.TileType.CROSSING
 
 ## The flat colour of a surface, for anything that has to represent the ground without
-## drawing it — the route map M17 adds. The world itself is painted from the tileset.
+## drawing it — `TelemetryMap`, which is a tile to a pixel. The world itself is painted from the
+## tileset.
 static func ground_colour(type: GameEnums.TileType) -> Color:
 	match type:
 		GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING:

@@ -24,7 +24,7 @@ extends RefCounted
 ## makes the spine a road rather than a car park. Arbitrary offsets stop a car at every junction it
 ## comes to: measured at act I density, two thirds of the traffic was stationary at any instant.
 ##
-## **The wave runs one way.** *(M46.)* Northbound traffic — the way the offsets count down — meets
+## **The wave runs one way.** Northbound traffic — the way the offsets count down — meets
 ## a green at 93% of junctions; southbound meets one at 51%, which is chance. That is not a bug to
 ## be fixed but an arithmetic fact about this geometry, and `Tuning.SIGNAL_PROGRESSION_BLOCKS`
 ## carries the derivation and the two alternatives that are worse.

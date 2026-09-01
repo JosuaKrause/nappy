@@ -3,11 +3,10 @@ extends RefCounted
 ## Where the cars are, lane by lane, so that one of them can ask whether there is room in a lane
 ## before it turns into it.
 ##
-## **A turn is a placement, and until M38 it was the one placement nothing checked.** *(Reported
-## as "when a car turns into an occupied lane the other car just disappears.")* `_divert()` picks
-## an arm at a junction out of the tile map alone, so a car diverting round a closure lands wherever
-## the lane happens to be occupied — and the M27 rule that separation between bodies is positional
-## then resolves it by *moving* one of them. Resolving a queue front-to-back cascades, so the car
+## **A turn is a placement, and a placement nothing checks is how a car disappears.** `_divert()`
+## picks an arm at a junction out of the tile map alone, so a car diverting round a closure lands
+## wherever the lane happens to be occupied — and separation between bodies is positional, so it is
+## resolved by *moving* one of them. Resolving a queue front-to-back cascades, so the car
 ## behind is teleported back by the shortfall plus everything ahead of it. A probe parked at a
 ## closure measured a turn landing 66px from another car 152px from the player, and — over ninety
 ## seconds, ignoring the frame the day is built in and the recycles, which are teleports by design —
