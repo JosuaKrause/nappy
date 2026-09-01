@@ -1,6 +1,6 @@
 ---
 name: orchestrating
-description: How implementation work is delegated to sub-agents — delegating is the default, Sonnet agents in isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Injected automatically by the rules hook on any Agent/Task spawn and on the first edit to src/ or tests/; also worth loading when deciding whether to implement directly or delegate.
+description: How implementation work is delegated to sub-agents — delegating is the default, Sonnet agents in isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Injected automatically at the start of every session, because who does the work is decided before the first tool call.
 ---
 
 # Orchestrating sub-agents
@@ -16,10 +16,12 @@ authority to merge.
 *(2026-09-02: "make more use of sub-agents — you write plans, sub-agents implement etc." and "make
 sure this is properly triggered automatically".)*
 
-**So this file arrives on the first edit to `src/` or `tests/`, not only on an `Agent` spawn.** A
-rule that fired only when a sub-agent was spawned could never say *this should have been delegated*
-— by then the decision has already gone the other way. The moment it matters is the moment somebody
-starts typing the implementation themselves.
+**So this file arrives at the start of the session, before any tool call.** *(2026-09-02: "firing
+on src / test edits is still too late. how about making it a rule that loads at the beginning?")*
+Every later trigger is too late in one direction or the other: an `Agent` spawn is the decision
+already going the right way, and a first edit to `src/` is it already going the wrong one. Who does
+the work is settled before anything is touched, so this is the one rule in the project that cannot
+be hung on a file.
 
 **Before writing code in `src/` or `tests/`, the question is not "can I do this" but "is this
 specified enough to hand over".** If it is, hand it over.

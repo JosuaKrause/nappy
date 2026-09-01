@@ -80,11 +80,10 @@ esac
 case "$path" in
 	*.gd)                      wanted+=(godot) ;;
 esac
-# The moment implementation starts is the moment the rule about *who implements* matters, and it
-# is the first edit to the game rather than the sub-agent spawn: an Agent call is already the
-# decision to delegate, so a rule that only fires there can never say "this should have been
-# delegated". Shares its one-shot marker with the Agent/Task branch above, so whichever comes
-# first in a session is the one that fires.
+# A backstop, and it should never fire: session-rules.sh loads the orchestrating rules at the
+# start of the session and writes the same marker, because *who implements this* is decided
+# before any file is touched and both an Agent spawn and a first edit to src/ are already too
+# late to ask it. This case exists only for a session that somehow started without that hook.
 case "$path" in
 	*/src/*|*/tests/*)         wanted+=(orchestrating) ;;
 esac

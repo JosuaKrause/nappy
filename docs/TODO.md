@@ -238,11 +238,20 @@ so. **A checkpoint never removes a route; it prices one, and the price is the sa
 both directions.** It is a crossing you can always make and never make for free, which is a thing
 the game does not have yet: every other cost in it is either avoidable by routing or fatal.
 
-That also changes what the existing row is. `checkpoint` today is a recurring event rolled onto
-`ROAD`/`CROSSING` tiles up to six times a day from day 7, and its own docstring calls it *"the first
-event that takes a route away rather than making it expensive"* — which is precisely what this says
-it is not. Whether the new checkpoint replaces that row, or is a separate structure that borrows its
-picture, is the first thing to settle.
+**Both survive, and they are two different things.** *(2026-09-02: "let's keep both the checkpoint
+and a barrier around.")* The existing row — a recurring event rolled onto `ROAD`/`CROSSING` tiles up
+to six times a day from day 7, whose own docstring calls it *"the first event that takes a route
+away rather than making it expensive"* — is **the barrier**, and it keeps doing exactly that. The
+new structure is **the checkpoint**, and it never takes a route away. Having both is what makes
+either legible: a street held by soldiers that you cannot pass, and a street held by soldiers that
+you can pass at a price, are only a decision when the city contains both.
+
+- [ ] **The barrier needs its own name, because the new thing has taken `checkpoint`.** Two rows
+      that draw armed men across a street and mean opposite things about whether you can get
+      through, sharing a word, is the *one picture per row* rule failing at the name instead of at
+      the drawing. `barricade` already exists in act IV and is something else — whatever was
+      stacked there by somebody — so this is a third name, not a merge. Its picture stays: poured
+      concrete and a hazard stripe is a street being **held**, which is still true of it
 
 **Its anatomy, in the player's words, and each part lands on a different system:**
 
