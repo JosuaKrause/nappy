@@ -107,9 +107,11 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 - **A flock has been walked through by a rig and by nobody.** The gradient is measured — +35 through
   the middle, +8 eighty pixels off it, nothing at the rim — and it is the only row where the cost
   table and the thing the player meets are computed differently.
-- **The park is 20% faster and nobody has felt it.** Calm ground fills the meter in 20s rather than
-  24, which narrows the "a calm area is more than one lap" margin in `docs/MECHANICS.md` to 19.8s
-  against a 10.8s lap.
+- **Calm ground is more than twice as fast as anybody has played it.**
+  `SLEEPINESS_CALM_ZONE_MULTIPLIER` is 21 and a four-block zone fills the meter in **11.3s from
+  empty**, against a 10.8s lap of one. That margin is what decides whether a day is winnable once
+  the park is reached, and the last human verdict on the difficulty was given when the same
+  constant was 12.
 - **There is no audio at all.** Less urgent than it sounds: audio is redundancy, so the game must
   already be fully playable without it.
 - **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters`, `--overview`,
