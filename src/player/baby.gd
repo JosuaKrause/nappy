@@ -6,10 +6,6 @@ extends Node
 ## WorldContext (for how loud it is here). It has no idea what an event or a tile is, so a new
 ## kind of event never requires touching this file.
 
-signal fell_asleep()
-signal woke_up()
-signal started_crying()
-
 ## Debug affordance: lets the debug world start a session mid-way for UI checks.
 @export_range(0.0, 100.0) var starting_sleepiness := 0.0
 
@@ -76,7 +72,6 @@ func force_sleep() -> void:
 	sleepiness = Tuning.METER_MAX
 	EventBus.sleepiness_changed.emit(sleepiness)
 	_set_state(GameEnums.BabyState.ASLEEP)
-	fell_asleep.emit()
 	EventBus.return_phase_started.emit()
 
 func _physics_process(delta: float) -> void:
@@ -157,21 +152,18 @@ func _update_sleepiness(delta: float, calm_gain: float) -> void:
 func _update_state() -> void:
 	if excitement >= Tuning.METER_MAX:
 		_set_state(GameEnums.BabyState.CRYING)
-		started_crying.emit()
 		return
 
 	match state:
 		GameEnums.BabyState.AWAKE:
 			if sleepiness >= Tuning.METER_MAX:
 				_set_state(GameEnums.BabyState.ASLEEP)
-				fell_asleep.emit()
 				EventBus.return_phase_started.emit()
 		GameEnums.BabyState.ASLEEP:
 			if excitement >= Tuning.EXCITEMENT_WAKE_THRESHOLD:
 				sleepiness = Tuning.WAKE_SLEEPINESS_PENALTY
 				EventBus.sleepiness_changed.emit(sleepiness)
 				_set_state(GameEnums.BabyState.AWAKE)
-				woke_up.emit()
 
 func _set_state(next: GameEnums.BabyState) -> void:
 	if state == next:

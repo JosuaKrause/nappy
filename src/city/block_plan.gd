@@ -52,9 +52,6 @@ func then(purpose: GameEnums.BlockPurpose, from_day: int,
 func starting_purpose() -> GameEnums.BlockPurpose:
 	return steps[0].purpose
 
-func final_purpose() -> GameEnums.BlockPurpose:
-	return steps[steps.size() - 1].purpose
-
 ## True if this block is calm ground at every step of its arc — a piece of the city that can
 ## be relied on for the whole run.
 func stays_calm() -> bool:

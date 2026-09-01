@@ -13,7 +13,6 @@ signal baby_state_changed(state: GameEnums.BabyState)
 # ---------------------------------------------------------------- day / run ---
 
 signal day_started(day: int)
-signal day_ended(result: GameEnums.DayResult)
 signal day_time_changed(remaining: float, total: float)
 signal return_phase_started() ## Baby is asleep; walk home.
 signal nerves_changed(nerves: int)
@@ -24,7 +23,6 @@ signal run_ended(ending: GameEnums.Ending)
 
 signal event_telegraphed(instance)
 signal event_activated(instance)
-signal event_finished(instance)
 signal hard_fail_triggered(reason: String)
 
 ## What is currently holding a floor under the whole city, by display name, or "" for nothing.
