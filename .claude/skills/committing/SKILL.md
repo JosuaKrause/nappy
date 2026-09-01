@@ -61,6 +61,10 @@ Run the verification loop — see the **verify** skill. `./tools/check.sh`, `./t
 unfiltered, and a screenshot if you touched anything visual. **A filtered test run prints
 `PARTIAL RUN` and is not a green build.**
 
+Run `./tools/lint.sh` too if the commit touches a governed doc (`CLAUDE.md`, a skill, `README.md`
+or anything under `docs/` besides `DECISIONS.md` and the `PLAYTEST-NN.md` files). A hit is a stop:
+fix the sentence or commit nothing.
+
 ## Never commit
 
 - **`.godot/`.** It is gitignored, which means a fresh clone has no `class_name` registry and every

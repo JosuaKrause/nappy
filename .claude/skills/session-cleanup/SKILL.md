@@ -44,6 +44,10 @@ Check what the session touched, then check what claims things about it. The usua
 into a doc unless the doc's job is to record that measurement.** Say what the command is, not what
 it prints. This repo once carried three different answers to "how many checks does the suite run".
 
+Run `./tools/lint.sh` rather than relying on the eye to catch this — it scans the governed docs for
+exactly these shapes (a commit hash, a branch name, a check count, a ticked box, a status word in a
+heading) and fails loudly on a hit.
+
 Where a measurement *is* the point — a density, a cost, a ratio — say what it was measured over and
 when, and put it in `docs/DECISIONS.md` rather than in a rule.
 
