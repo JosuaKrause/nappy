@@ -12,6 +12,7 @@ func run(t) -> void:
 	_test_the_answer_is_priced_by_how_soon_it_is_given(t)
 	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
 	_test_a_pursuer_can_wait(t)
+	_test_a_pursuer_stops_at_walls(t)
 	_test_a_retried_day_is_the_same_day(t)
 	_test_the_run_is_always_taught(t)
 	_test_a_paced_event_walks_a_beat(t)
@@ -511,6 +512,69 @@ func _test_a_pursuer_can_wait(t) -> void:
 	_advance(instance, def.telegraph_time + 0.1)
 	t.check(not instance.is_telegraphing(), "then the notice is over")
 	instance.free()
+
+## **The robber stops at walls.** A pursuing `EventInstance` moves by setting its own position, and
+## nothing in the event system has ever collided with the city — harmless while every mobile row
+## travelled a route the scheduler had already checked, and not harmless the moment something
+## steers freely at the player.
+##
+## A real building corner, chased round: she walks from its north face to its east face, and a dog
+## aimed straight at wherever she currently is would cut across the building itself to follow her —
+## exactly the shape of the bug. `EventInstance._walkable_step` is the fix, and this is what it
+## has to hold true of every frame regardless of the geometry, which is why the check runs the
+## whole walk rather than sampling the end of it.
+func _test_a_pursuer_stops_at_walls(t) -> void:
+	var map := _map()
+	var corner := _a_building_corner(map)
+	t.check(not corner.is_empty(), "the sampled map has a building corner to chase round")
+	if corner.is_empty():
+		return
+	var north: Vector2i = corner["north"]
+	var east: Vector2i = corner["east"]
+
+	var def := EventCatalogue.by_id("charging_dog")
+	var instance := EventInstance.new()
+	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0))
+	t.add_child(instance)
+	instance.set_process(false)
+	instance._map = map
+
+	# Clear the telegraph with her held far off, so what follows is about the wall and not about
+	# the stand-off.
+	instance.player_at = map.tile_to_world(north) + Vector2(-4000.0, 0.0)
+	_advance(instance, def.telegraph_time + 0.1)
+	t.check(not instance.is_telegraphing(), "the dog is chasing by the time she rounds the corner")
+
+	# She walks from the building's north face round to its east face — the corner a straight
+	# line to her would cut across — and the dog is told to chase wherever she currently is,
+	# every frame, the way `EventManager` actually drives it.
+	var her := map.tile_to_world(north)
+	var target := map.tile_to_world(east)
+	var elapsed := 0.0
+	var checked := 0
+	while her.distance_to(target) > 4.0 and elapsed < 15.0:
+		her = her.move_toward(target, Tuning.WALK_SPEED * STEP)
+		instance.player_at = her
+		instance._process(STEP)
+		elapsed += STEP
+		var tile := map.world_to_tile(instance.global_position)
+		checked += 1
+		t.check(map.is_walkable(tile),
+				"the pursuer never stands on the building at %s (t=%.2fs)" % [tile, elapsed])
+	t.check(checked > 0, "the walk round the corner actually ran")
+	instance.free()
+
+## A real building tile with open pavement on two adjacent sides — the outward corner every
+## rectangular building has at least one of. `{}` would mean the generator changed shape rather
+## than that the test picked badly.
+func _a_building_corner(map: CityMap) -> Dictionary:
+	for tile in map.tiles_of_type(GameEnums.TileType.BUILDING):
+		var north := tile + Vector2i(0, -1)
+		var east := tile + Vector2i(1, 0)
+		if map.in_bounds(north) and map.in_bounds(east) \
+				and map.is_walkable(north) and map.is_walkable(east):
+			return {"building": tile, "north": north, "east": east}
+	return {}
 
 func _test_duration_and_finish(t) -> void:
 	# An event that was a *place* is simply over. Nothing to leave, and nowhere to go.

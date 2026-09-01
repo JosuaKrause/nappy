@@ -451,6 +451,14 @@ telegraphs hands her more ground in two seconds than the entire chase can take b
 owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
 
+**And it stops at walls.** A chase is a straight line at whatever is chasing her, and nothing about
+that line asks the city anything — so `EventInstance._walkable_step()` clamps every step of it to
+ground `CityMap.is_walkable()` agrees with, sliding along whichever single axis is still open when
+the direct line is not, rather than cutting the corner of a building the way an unclamped chase
+would. It is not a body — a pursuer stays exempt from `obstructs_radius` for the same reason
+`dog_walker` is, a moving wall on a two-tile pavement pins her against a building — it is only ever
+a question about the one tile the next step would land on.
+
 ### The stand-off, and what a contract in seconds cannot say
 
 **A contract stated entirely in speeds and durations can pass every line of itself while the dog is

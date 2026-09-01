@@ -145,7 +145,7 @@ func _spawn_unplanned(def: EventDef, at: Vector2,
 func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_scar := true,
 		facing := Vector2.RIGHT) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path, facing)
+	instance.setup(def, at, path, facing, _map)
 	_city.add_entity(instance)
 	if def.scar_id != "" and record_scar:
 		# A scar is where the city stopped being recomputable: it exists because of what
