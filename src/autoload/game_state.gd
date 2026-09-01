@@ -30,7 +30,7 @@ var city_state := CityState.new()
 ## chance at the good ending; this is doing it.
 var sabotage_done := false
 
-## The calm block the baby actually went to sleep in, per day: `day -> Vector2i`. *(M24.)*
+## The calm block the baby actually went to sleep in, per day: `day -> Vector2i`.
 ##
 ## Run-scoped and gameplay-owned, deliberately *not* read out of the telemetry log even though
 ## the `calm` entries say the same thing. Telemetry never touches gameplay, and a rule that
@@ -44,12 +44,11 @@ func settled_yesterday() -> Vector2i:
 
 ## Every calm area she has used **so far this act**, most recent first, today excluded.
 ##
-## *(Playtest 12, finding 5: "since each day one gets removed we need as many as days in an act,
-## plus one more as backup. That forces exploration. At the end of an act we can reset the used up
-## status.")* M24 remembered one night and spoiled one park, which makes day 2 a fresh decision and
-## day 3 the same decision as day 1. Remembering the act is what turns "find a different park" into
-## "find your way around the city", and forgetting at the act boundary is what stops it becoming
-## "there is nowhere left".
+## **The act, not last night.** Remembering one night spoils one park, which makes day 2 a fresh
+## decision and day 3 the same decision as day 1. Remembering the act is what turns "find a
+## different park" into "find your way around the city" — an act needs as many calm areas as it has
+## days, plus one — and forgetting at the act boundary is what stops it becoming "there is nowhere
+## left".
 ##
 ## The reset is the act's, not the calendar's: an act is where the city changes character anyway,
 ## so the parks going quiet again is the one piece of good news in a run that has none.
@@ -91,9 +90,7 @@ func start_run(seed_value: int = 0) -> void:
 
 ## Record the outcome of the day. Returns true if the run continues.
 ##
-## **A lost day is retried, not skipped.** *(Playtest 06, finding 4, which closes an open
-## question carried since M6: "what happens if we fail — do we repeat the same day? We shouldn't
-## advance the day, that's for sure.")* A nerve buys another attempt at the same day, and the
+## **A lost day is retried, not skipped.** A nerve buys another attempt at the same day, and the
 ## calendar moves only when a day is won.
 ##
 ## Three things follow, and all three are chosen rather than fallen into:
@@ -104,9 +101,10 @@ func start_run(seed_value: int = 0) -> void:
 ## - **What the run has spent stays spent.** The one-shots it consumed and the block arcs it
 ##   advanced are run history, not day content: a fire that burnt a block down did happen.
 ## - **Except where she settled.** That is a fact about the attempt rather than about the run,
-##   and M24 reads it to decide what tomorrow spoils. Left in place, an attempt that reached a
-##   park and then lost the day would send tomorrow's loud event to a park she never actually
-##   used — and the winning attempt could not overwrite it, because the record is written once.
+##   and `settled_in` is read to decide what tomorrow spoils. Left in place, an attempt that
+##   reached a park and then lost the day would send tomorrow's loud event to a park she never
+##   actually used — and the winning attempt could not overwrite it, because the record is written
+##   once.
 ##
 ## The run can no longer end by running out of days while nerves remain, so the bad ending is
 ## the only way to lose and the fourteen days become a promise rather than a budget.

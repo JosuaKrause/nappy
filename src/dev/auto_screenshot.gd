@@ -12,20 +12,20 @@ extends Node
 ## useless for checking anything time-based: a windowed run here draws ~110fps, so waiting
 ## "240 frames" for a 2.6s telegraph to end still caught it mid-telegraph.
 ##
-## `--walk` holds a direction down for the whole run, and M27 is what made it necessary. Since
-## the crowd and the events are built around the player and the director only puts something in
-## front of her while she is *going somewhere*, a tool that can only photograph a standing
-## player had stopped being able to photograph the game: no cat ever crosses her path, nothing
-## ever streams in, and nothing at the screen edge is ever closing. It presses the real input
+## `--walk` holds a direction down for the whole run. The crowd and the events are built around the
+## player and the director only puts something in front of her while she is *going somewhere*, so a
+## tool that can only photograph a standing player cannot photograph the game: no cat ever crosses
+## her path, nothing ever streams in, and nothing at the screen edge is ever closing. It presses the
+## real input
 ## actions rather than writing to the rig, so everything downstream — the gait, the run excess,
 ## the baby — behaves exactly as it does for a person holding the key.
 ##
 ## `--flee` turns round and runs **when something starts chasing her**, and it exists for exactly
-## one thing. *(M35, playtest 08 finding 4.)* Since M33 the game has one encounter with a **right
-## answer**, and a rig that can only hold a direction can only ever demonstrate the wrong one: every
-## trace of the day-3 dog taken with `--walk` ends in a hard fail, which is the mechanic working and
-## says nothing about whether the answer is affordable. It presses the real actions too, so the run
-## costs what a player's run costs.
+## one thing: the game has one encounter with a **right answer**, and a rig that can only hold a
+## direction can only ever demonstrate the wrong one. Every trace of the day-3 dog taken with
+## `--walk` ends in a hard fail, which is the mechanic working and says nothing about whether the
+## answer is affordable. It presses the real actions too, so the run costs what a player's run
+## costs.
 ##
 ## It waits for the pursuit rather than taking a timestamp, and the first version did take one. That
 ## is worth writing down, because the failure was not a bad reading, it was a *reversed* one: the
@@ -37,20 +37,18 @@ extends Node
 ## An optional delay in seconds is how long she dithers first, which is the axis worth measuring:
 ## the price of the right answer is what it costs to give it late.
 ##
-## `--press <action> <seconds>` taps one input action once, and it exists because of the bug that
-## made it necessary. *(M36, playtest 09: "esc doesn't work".)* The pause screen shipped in M33,
-## passed a green suite and a screenshot, and **never opened once** — its guard read `visible` on a
-## `CanvasLayer`, which is true from the moment the node is added. Neither the suite nor a
-## screenshot could have caught it, because nothing in either of them has ever *pressed a key*. Now
-## something can:
+## `--press <action> <seconds>` taps one input action once, and it exists for the class of bug
+## nothing else here can see. A pause screen can pass a green suite and a screenshot and **never
+## open once** — a guard reading `visible` on a `CanvasLayer` is true from the moment the node is
+## added — because nothing in either has ever *pressed a key*. This can:
 ##
 ##     tools/shot.sh pause.png 4 --press pause 3
 ##
 ## It may be given more than once, and it takes a **bare key** as `key:<name>` as well as an input
-## action. Both are M38 and both were found the same way the flag itself was: one tap can only ever
-## photograph one screen, and the keys a screen's own shortcuts are made of — `q` to quit, `r` to
-## start the run again — are keycodes rather than actions, so `--press` could not reach the two keys
-## the pause screen is mostly made of.
+## action. Both for the same reason as the flag itself: one tap can only ever photograph one screen,
+## and the keys a screen's own shortcuts are made of — `q` to quit, `r` to start the run again — are
+## keycodes rather than actions, so an action-only `--press` cannot reach the two keys the pause
+## screen is mostly made of.
 ##
 ##     tools/shot.sh restart.png 6 --press pause 2 --press key:r 3.5
 
@@ -155,12 +153,10 @@ func _process(delta: float) -> void:
 ## `--press` used `action_press` and produced a screenshot of the game carrying on, which looks
 ## exactly like the bug it was written to check.
 ##
-## **And a bare key is not an action, which is the same lesson one level down.** *(M38.)* `Q` has
-## quit the game from the pause screen since M33 and `R` restarts the run now, and neither is in the
-## input map — they are read as keycodes, the way a screen's own shortcuts usually are. So no rig
-## could reach either of them: `--press` existed precisely because nothing in the suite or a
-## screenshot has ever pressed a key, and it still could not press the two keys the pause screen is
-## made of. `key:r` can.
+## **And a bare key is not an action, which is the same lesson one level down.** `Q` quits from the
+## pause screen and `R` restarts the run, and neither is in the input map — they are read as
+## keycodes, the way a screen's own shortcuts usually are. Without `key:`, a rig can reach no screen
+## whose shortcuts are keycodes, which is the pause screen entirely.
 func _tap(what: String) -> void:
 	for pressed in [true, false]:
 		var event: InputEvent
