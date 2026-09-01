@@ -40,10 +40,10 @@ var _in_the_title := false
 func _ready() -> void:
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
-	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT would
-	# inherit ALWAYS from here, which is exactly how the pause stopped working: the summary set
-	# `get_tree().paused`, and the player kept walking, the crowd kept driving and the
-	# resistance deadline kept running out behind the screen saying the day was over.
+	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits
+	# ALWAYS from here, and then the pause does nothing to it: the summary sets
+	# `get_tree().paused` while the player walks, the crowd drives and the resistance deadline
+	# runs out behind a screen saying the day is over.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	GameState.start_run(_seed_override())
 	# After the run seed is settled and before anything is generated, so the log opens on the
@@ -119,8 +119,8 @@ func _ready() -> void:
 		add_child(screenshot)
 
 	# **Except under a rig.** A screenshot tool that opened onto the title screen would photograph
-	# the title screen, which is every `tools/shot.sh` recipe in `CLAUDE.md` quietly answering the
-	# wrong question, and `--press` and `--walk` would hold keys against a game that has not begun.
+	# the title screen, which is every `tools/shot.sh` recipe quietly answering the wrong
+	# question, and `--press` and `--walk` would hold keys against a game that has not begun.
 	# A rig is driving, so it starts the day the way the player would. `--title` is how the screen
 	# itself gets photographed.
 	var args := OS.get_cmdline_user_args()
@@ -132,12 +132,11 @@ func _ready() -> void:
 
 ## Dev flag: `-- --ending bad|neutral|good` puts the last screen of a run on screen at boot.
 ##
-## *(M51, and it exists for the same reason `--press` does: nothing in the suite or in a screenshot
-## has ever reached this screen.)* An ending is at the far end of fourteen days or five spent
-## nerves, so the only way to look at the one thing this milestone changed about it was to play a
-## run out — which is `CLAUDE.md`'s *"where a cue cannot be triggered on demand, relax its
-## condition, look, and put it back"*, except that a flag is the honest version of relaxing it and
-## does not have to be put back.
+## It exists for the same reason `--press` does: nothing in the suite or in a screenshot reaches
+## this screen on its own. An ending is at the far end of fourteen days or five spent nerves, so
+## looking at one otherwise means playing a run out — which is the `verify` skill's *"where a cue
+## cannot be triggered on demand, relax its condition, look, and put it back"*, except that a flag
+## is the honest version of relaxing it and does not have to be put back.
 ##
 ## It shows the screen and stops there: the day behind it is running, exactly as it would be under
 ## a real ending, and `space` restarts the run like any other finished one. Like every dev flag in
@@ -161,9 +160,8 @@ func _show_an_ending_for_a_rig(args: PackedStringArray) -> bool:
 
 # --------------------------------------------------------------- the title ---
 
-## Puts the game behind the title screen and keeps the *city* running while it is there.
-## *(M38: "as title screen just use the home and street in front without player and let act I events
-## play out like the dog running across the street etc.")*
+## Puts the game behind the title screen and keeps the *city* running while it is there, so the
+## screen is the home and the street in front of it with the act I events playing out on it.
 ##
 ## The day is planned and built either way, so what is behind the screen is a real first morning
 ## rather than a menu with nothing under it — and `space` then starts a day that already exists.
@@ -172,11 +170,11 @@ func _show_an_ending_for_a_rig(args: PackedStringArray) -> bool:
 ##
 ## - `get_tree().paused` stops everything `_pauses_with_the_game()` reaches — the clock, the
 ##   resistance deadline, the telemetry observer. Nothing about the run may advance behind a screen
-##   the player has not dismissed; that is the M33 bug this project spent six milestones on.
+##   the player has not dismissed.
 ## - `_city` is put back to `ALWAYS`, so the traffic drives and the events play out. It is the one
 ##   thing on the pausable list that is scenery as well as gameplay.
 ## - `_player` is pinned back to `PAUSABLE` — she is a child of the city and would otherwise inherit
-##   the exemption, which is exactly how the M33 bug worked — and then **stands aside**, which takes
+##   the exemption, and walk on behind the screen — and then **stands aside**, which takes
 ##   her out of the `player` group and with it every way the world can touch her. See
 ##   `Stroller.stand_aside()`.
 ##
@@ -204,7 +202,7 @@ func _on_title_start() -> void:
 	_status.visible = true
 	get_tree().paused = false
 
-## The screen-edge half of M22's danger vocabulary, in its own layer.
+## The screen-edge half of the danger vocabulary, in its own layer.
 ##
 ## Built here rather than inside the HUD scene because it has to ask the world where things are
 ## every frame, and the HUD's rule is that it listens to `EventBus` and holds no reference to
@@ -251,8 +249,8 @@ func _start_day() -> void:
 	_city.start_day(GameState.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"))
 	# The day is planned around the doorstep first, because `--spawn event` needs a plan to
-	# find an event in. Since M27 the plan is the whole day and the *world* is only what is
-	# within reach, so where she actually starts decides what exists on the first frame —
+	# find an event in. The plan is the whole day and the *world* is only what is within
+	# reach, so where she actually starts decides what exists on the first frame —
 	# which is why the crowd is populated after the spawn position is settled rather than
 	# before it, and why the events are streamed a second time once it is known.
 	var doorstep := _city.map.doorstep_world_position()
@@ -320,12 +318,12 @@ func _closure_summary() -> String:
 			TelemetryLog.tile(closure.segment.a)])
 	return ", ".join(parts) if not parts.is_empty() else "none"
 
-## Today's events by id. Counted rather than listed one per line: which of eighteen kinds are
-## out is what makes a day, and where each instance stands is only interesting for the ones
+## Today's events by id. Counted rather than listed one per line: which of the catalogue's kinds
+## are out is what makes a day, and where each instance stands is only interesting for the ones
 ## the player actually walked into — which the `near` entries cover, at the moment it matters.
 ##
-## The *plan*, not what is live. Since M27 what is live is a fact about where the player is
-## standing this frame, and the question this line answers is what the day contains.
+## The *plan*, not what is live. What is live is a fact about where the player is standing this
+## frame, and the question this line answers is what the day contains.
 func _event_summary() -> String:
 	var counts := {}
 	for plan in _city.events.plans():
@@ -360,9 +358,8 @@ func _on_summary_continued() -> void:
 		_ending_shown = true
 		_summary.show_ending(GameState.ending)
 		return
-	# A run that is over goes back to where a run begins. *(M38: "the lost screen doesn't allow for
-	# restarting the game", and "with a game open screen then just go back to that after the loss
-	# screen".)*
+	# A run that is over goes back to where a run begins, which is the title screen: an ending is
+	# not a dead end the player has to quit out of.
 	_restart_run()
 
 ## Back to the title, with everything about the run thrown away.
@@ -446,7 +443,6 @@ func _tile_name(type: GameEnums.TileType) -> String:
 	return GameEnums.TileType.keys()[type].to_lower()
 
 ## Whether a **person** is at the controls, which is what decides if this run's log is a playtest.
-## *(Playtest 17, finding 3.)*
 ##
 ## Two ways it is not, and they are different in kind rather than in degree:
 ##
@@ -538,13 +534,13 @@ func _spawn_position() -> Vector2:
 		var mouth: Vector2 = closures[which].mouth_centres(_city.map)[0]
 		var junction := closures[which].cause_centre(_city.map)
 		return _nearest_walkable(mouth + (mouth - junction).normalized() * 64.0)
-	# The north-west corner of a multi-block calm zone, a couple of tiles outside it, which is
-	# where the two things M21 has to get right are both in frame: the T-junction where the
-	# absorbed street used to start, and the twenty-two tiles of calm behind it.
+	# The north-west corner of a multi-block calm zone, a couple of tiles outside it, which puts
+	# both of the things a zone has to get right in one frame: the T-junction where the absorbed
+	# street stops, and the calm behind it.
 	#
-	# `zone:<n>` picks which one, the way `closure:<n>` does, and it is not a convenience. Since
-	# M52 a zone has a **shape**, the square is always placed first, and so `keys()[0]` is always
-	# the square — which meant the one thing the milestone added had no way to be looked at.
+	# `zone:<n>` picks which one, the way `closure:<n>` does, and it is not a convenience. A zone
+	# has a **shape** and the square is always placed first, so `keys()[0]` is always the square
+	# and no other shape can be looked at without the index.
 	if args[index + 1].begins_with("zone"):
 		if _city.map.zone_rects.is_empty():
 			push_warning("this city has no multi-block calm zone")
@@ -555,10 +551,9 @@ func _spawn_position() -> Vector2:
 		var corner := CityMap.blocks_tile_rect(_city.map.zone_rects[anchor]).position
 		return _nearest_walkable(_city.map.tile_to_world(corner - Vector2i.ONE * 2))
 	# A big building, stood on the street running along the joined side of it, level with the
-	# street it was built over. *(2026-08-31.)* The whole claim of a landmark is that it reads as
-	# **one mass** rather than as two blocks with the road missing between them, and until this
-	# existed there was no way to point a camera at one: the two hard blockers shipped in M50 with
-	# a picture of the grid and no picture of the city.
+	# street it was built over. The whole claim of a landmark is that it reads as **one mass**
+	# rather than as two blocks with the road missing between them, and this flag is the only way
+	# to point a camera at one.
 	if args[index + 1] == "landmark":
 		if _city.map.big_buildings.is_empty():
 			push_warning("this city has no big building")
@@ -569,7 +564,7 @@ func _spawn_position() -> Vector2:
 		# blocks wide is looked at from the north, a mass two blocks deep from the west. Two tiles
 		# out and not three, because a corridor is `sidewalk | road | sidewalk` and three tiles off
 		# a frontage is the carriageway — `_nearest_walkable` will happily leave her standing on it,
-		# and the first shot taken with this flag ended the day before it was taken.
+		# and a shot taken from there is a shot of the day ending.
 		# And a little off the middle of that side, because the middle of the mass is where the
 		# built-over street was, so the tile facing it across the corridor is a junction — which is
 		# somewhere a camera may stand and a pram should not.
@@ -578,7 +573,7 @@ func _spawn_position() -> Vector2:
 				else Vector2i(mass.position.x - 2, mass.get_center().y - Tuning.STREET_WIDTH)
 		return _nearest_walkable(_city.map.tile_to_world(beside))
 	# A signalled junction on the spine, stood a little back down the side street, so that the
-	# main road, its lights and one of its zebras are all in the same frame. *(M41.)* The lights
+	# main road, its lights and one of its zebras are all in the same frame. The lights
 	# are the only cue in the game whose whole content is *when*, so they cannot be judged from a
 	# still of one — take several seconds apart, or use `--walk` and watch the cycle.
 	if args[index + 1] == "signal":
@@ -615,19 +610,18 @@ func _spawn_position() -> Vector2:
 		return _nearest_walkable(_city.map.tile_to_world(
 				Vector2i(across, along) if span.x == 1 else Vector2i(along, across)))
 	# A corner of the map, stood a couple of tiles inside it, so that two of the border's four
-	# bands and the join between them are in the same frame. *(M55, playtest 17 finding 11: "at
-	# the corner of the map the mountain and sea textures should just continue not become
-	# diagonal".)* `corner:nw` is the default and `ne`, `sw`, `se` are the other three.
+	# bands and the join between them are in the same frame — the seam is where the mountain and
+	# the sea have to go on being themselves rather than turning diagonal. `corner:nw` is the
+	# default and `ne`, `sw`, `se` are the other three.
 	#
-	# It exists for the same reason `landmark` does: the border shipped in M41 and was redesigned
-	# in M49, and there has never been a way to point a camera at the place where two of its bands
-	# meet. The player found the seam by playing; nothing in this repo could have.
+	# It exists for the same reason `landmark` does: it is the only way to point a camera at the
+	# place where two bands meet, and nothing in the suite looks there.
 	if args[index + 1].begins_with("corner"):
 		var which := args[index + 1].get_slice(":", 1)
 		# The outermost pavement and not the outermost tile: the corridor is `sidewalk | road |
 		# sidewalk`, so anything past `SIDEWALK_WIDTH` is the carriageway of the boundary street
-		# and `_nearest_walkable` will happily leave her standing on it — the first shot taken
-		# with this flag was of the day ending, which is the `landmark` flag's own first mistake.
+		# and `_nearest_walkable` will happily leave her standing on it — a shot taken from there
+		# is a shot of the day ending, which is the trap the `landmark` target has too.
 		var near := Tuning.SIDEWALK_WIDTH - 1
 		var far := _city.map.size - Vector2i.ONE * Tuning.SIDEWALK_WIDTH
 		var at := Vector2i(near, near)
@@ -664,8 +658,8 @@ func _spawn_position() -> Vector2:
 ## Just outside a planned event, on the nearest walkable tile — an offset straight down its
 ## radius lands inside a block as often as not.
 ##
-## Reads the day's *plan* rather than what is live: since M27 nothing is live until the player
-## is near it, so the whole point of this flag is to go and stand where one is going to be.
+## Reads the day's *plan* rather than what is live: nothing is live until the player is near it,
+## so the whole point of this flag is to go and stand where one is going to be.
 func _first_event_position(wanted_id: String = "") -> Vector2:
 	for plan in _city.events.plans():
 		if not plan.is_placed():
@@ -693,9 +687,9 @@ func _nearest_walkable(near: Vector2) -> Vector2:
 ## shows up at map scale (a walled-off quarter, parks bunched together) is visible.
 func _make_overview_camera() -> void:
 	var camera := Camera2D.new()
-	# The frontages outside the map included, since M41: the ring is what makes the boundary a
+	# The frontages outside the map are in frame too: the ring is what makes the boundary a
 	# street with two sides, and an overview that framed the walkable tiles alone would be a
-	# picture of the thing this was supposed to have stopped looking like.
+	# picture of a grid stopping at a wall rather than of a city.
 	var bounds := _city.camera_bounds()
 	var viewport := get_viewport_rect().size
 	camera.position = bounds.get_center()
@@ -729,23 +723,19 @@ func _apply_meter_override() -> void:
 	if _baby.sleepiness >= Tuning.METER_MAX:
 		_baby.force_sleep()
 
-## `Esc` opens the pause. *(Playtest 07: "how can I pause the game?")*
+## `Esc` opens the pause. Quitting is a key one step further in: the pause screen owns `Q`.
 ##
-## It quit outright until then, which is the entry `CLAUDE.md` has carried under known-shaky
-## ground since M6. Quitting keeps a key, one step further in: the pause screen owns `Q`.
+## **Never guard this on a `CanvasLayer`'s `visible`.** `_summary` is a `CanvasLayer`, and its
+## `visible` is `true` from the moment it is added to the tree — what the summary hides and shows is
+## the `Control` *inside* it, which is what `is_showing()` answers. A guard on the layer is true on
+## every frame of every day, so the pause screen never opens at all, and both a green suite and a
+## screenshot pass it: nothing in either presses a key. `--press` is how a rig can.
 ##
-## **This did nothing at all from M33 until M36, and the reason is worth keeping.** The guard read
-## `_summary.visible`, and `_summary` is a `CanvasLayer` whose `visible` is `true` from the moment
-## it is added to the tree — what the summary hides and shows is the `Control` *inside* it, which is
-## what `is_showing()` answers. So the guard was true on every frame of every day and the pause
-## screen was never opened once. A green suite and a screenshot both passed it, because nothing in
-## either of them has ever pressed a key; `--press` exists now so that they can.
-##
-## It opens **over** the summary too, which the first version refused on the grounds that two things
-## fighting over `get_tree().paused` is how a pause stops meaning anything. That is true and it is
-## not an argument for refusing — `PauseScreen` puts back the paused state it found rather than
-## setting `false`, so the two compose. Somebody who has just lost a day and wants out of the game
-## should not have to find the one screen where the key works.
+## It opens **over** the summary too. Two things fighting over `get_tree().paused` is how a pause
+## stops meaning anything, which is an argument for care rather than for refusing — `PauseScreen`
+## puts back the paused state it found rather than setting `false`, so the two compose. Somebody who
+## has just lost a day and wants out of the game should not have to find the one screen where the
+## key works.
 ## It does **not** open over the title screen, which is the one screen with nothing behind it to
 ## pause: the game has not started, `Esc` would stop a stopped tree, and the way out of the title is
 ## the two keys it already offers. See `TitleScreen`.
@@ -761,9 +751,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 	_pause.open()
 
-## `P` (or `F9`) writes a screenshot and a line of trace beside it. *(Playtest 13, finding 5:
-## "allow creating a screenshot via key press that saves into the telemetry folder and writes a
-## telemetry note for context — this is to help debugging; not a game feature".)*
+## `P` (or `F9`) writes a screenshot into the telemetry folder and a line of trace beside it. It is
+## a debugging aid rather than a game feature.
 ##
 ## **It works on every screen, including the pause and the title**, which is why it is answered
 ## before the pause guard rather than after it: the frames worth photographing by hand are
@@ -772,9 +761,9 @@ func _unhandled_input(event: InputEvent) -> void:
 ##
 ## The context is assembled here rather than in `Telemetry`, for the reason the whole of that file
 ## is written that way: the telemetry asks the world no questions, so it can never be the thing
-## that changed one. It is the four things a picture cannot carry and a reader always wants —
-## where she is in tiles, what the meters read, and what is nearest — and it takes nothing that is
-## not already on screen.
+## that changed one. It is the three things a picture cannot carry and a reader always wants —
+## where she is in tiles, what the meters read, and which screen is up — and it takes nothing that
+## is not already on screen.
 ## Every field is guarded, because the one screen this is most likely to be pressed on is the one
 ## where the world is least finished — a title screen, or a boot that went wrong.
 func _snapshot_now() -> void:
