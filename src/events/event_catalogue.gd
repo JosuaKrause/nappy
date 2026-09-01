@@ -141,6 +141,14 @@ static func _playground() -> EventDef:
 ## telegraph does, which is right for a siren approaching from three streets away and wrong for a
 ## crouch: the path is one street wide, so at 240px/s the cat finishes its whole run *during* the
 ## telegraph — never reaching full intensity, never drawing the running sprite.
+##
+## **That held-still telegraph is also why it needs its own siting distance rather than the flat
+## `AHEAD_LEAD_DISTANCE` every other crossing row uses.** A cat sited two seconds of walking ahead
+## and then held still for `telegraph_time` is still two seconds ahead when it finally moves —
+## measuring where she *was*, not where the telegraph's own hold has let her get to — so by the
+## time it crosses the middle of the road it is reliably behind her rather than in front.
+## `EventDef.ahead_of_player_lead()` prices the hold in as walking distance instead, so the siting
+## is where she will actually be when the cat is.
 static func _cat_dash() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cat_dash"
@@ -418,12 +426,18 @@ static func _burnt_shell() -> EventDef:
 #
 # The rest is variety, and each row owes a silhouette of its own; see the note on `EventDef.Look`.
 
-## The leash slipped, and the dog is running.
+## The leash slipped, and the dog is running — down the pavement she is on, toward her.
 ##
 ## The counterpart to `dog_walker` and the reason both exist: that one is a *span* you decide
 ## whether to cross the street to avoid, this one is a *thing coming down the pavement* that you
 ## cannot out-walk. Faster than `WALK_SPEED`, so it earns a badge at the screen edge and the
 ## fairness contract makes it pay for the whole radius rather than the falloff band.
+##
+## `TOWARD_PLAYER`, sited by `EventDirector` on her own line when she gets close rather than on a
+## street the day chose at dawn — a dog sited before the day knows where she walks is a dog she may
+## never pass, and the whole content of the row is meeting it. It is not `pursues`: it does not
+## adjust to her or stop at a stand-off, it is a straight line down the pavement that she answers by
+## crossing the street or turning, the same way a real dog running loose does not know she is there.
 ##
 ## Not lethal, deliberately. Act I gets exactly two things that end the day and this is not one
 ## of them: a loose dog is loud and it is chaos, and the day it ruins is ruined through the
@@ -434,6 +448,7 @@ static func _loose_dog() -> EventDef:
 	def.display_name = "Loose dog"
 	def.look = EventDef.Look.LOOSE_DOG
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	def.intensity = 24.0
 	def.inner_radius = 30.0
 	def.outer_radius = 140.0
@@ -442,8 +457,6 @@ static func _loose_dog() -> EventDef:
 	def.pulse_period = 2.2
 	def.mobile = true
 	def.speed = 132.0
-	def.path_mode = EventDef.PathMode.ALONG_STREET
-	def.path_length_tiles = 24
 	# The other half of day 1's wall pool; see `leaf_blower` for the measurement both numbers came
 	# out of. Between them they are the whole of what *"leaving the path should be lethal or very
 	# expensive"* can be built from on the one day the game has nothing lethal in it at all.
@@ -580,15 +593,23 @@ static func _pigeon_flock() -> EventDef:
 
 ## **The first thing in the game that can end your day, and it arrives on day 2.**
 ##
-## A kid on a bike on the pavement, bell going. Everything about it is ordinary, which is the point:
-## act I acquiring danger must not mean act I becoming sinister, it means act I being a real street.
-## A pram and a bicycle at speed is what a person pushing one is actually frightened of.
+## A kid on a bike on the pavement she is walking, bell going, coming toward her. Everything about
+## it is ordinary, which is the point: act I acquiring danger must not mean act I becoming sinister,
+## it means act I being a real street. A pram and a bicycle at speed is what a person pushing one is
+## actually frightened of.
+##
+## `TOWARD_PLAYER`: `EventDirector` sites it on her own line when she gets close, coming the other
+## way, so she has to answer with a route decision — cross to the other side, or turn — rather than
+## meeting it on a street the day chose at dawn, before it knew whether she would ever walk down it.
+## It does not `pursue`: a bike does not chase, it rides straight through wherever she was standing.
 ##
 ## The fairness contract does the work and it is expensive here — `hard_fail` doubles the margin
 ## and the speed means the whole radius counts, so the bell has to ring for (145/92) x 2 = 3.15s
 ## before it arrives. That is right: it is audible from down the street, she has three seconds
 ## and one step to make, and stepping off a pavement is a step. It is also why the radius is
-## small — a wider one would need a bell you could hear across the district.
+## small — a wider one would need a bell you could hear across the district. The same distance
+## is why it can be sited only `Tuning.SIGHT_AHEAD` (200px) in front of her rather than further —
+## `EventDef.validate()` refuses a `TOWARD_PLAYER` row whose own field would already reach that far.
 ##
 ## Day 2 rather than day 1 on purpose. Day 1 is allowed to be easy as long as the difficulty then
 ## climbs, and this is the plainest possible way to say it climbed: day 2 is the day the streets
@@ -600,6 +621,7 @@ static func _cyclist() -> EventDef:
 	def.look = EventDef.Look.CYCLIST
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	def.intensity = 18.0
 	def.inner_radius = 26.0
 	def.outer_radius = 145.0
@@ -607,19 +629,15 @@ static func _cyclist() -> EventDef:
 	def.telegraph_time = 3.3
 	def.mobile = true
 	def.speed = 165.0
-	def.path_mode = EventDef.PathMode.ALONG_STREET
-	def.path_length_tiles = 26
 	def.hard_fail = true
 	def.weight = 1.5
-	# Well under the ordinary act I rows. At one event per block a lethal thing at full density is a
-	# minefield rather than a street — and *nothing else happens inside a lethal field* means each
-	# one also quietly empties 145px of pavement around it.
-	#
-	# **What lets a lethal cap be this high at all is that a wall is exempt from that clearance rule
-	# off the corridor**, and a lethal wall is offered `WALL_DEEP_WEIGHT` copies of the ground two
-	# turnings out. So the cap buys the *deep* band the deadly half of *very costly to deadly*, not
-	# more cyclists on the route: **on the corridor it changes nothing**, because a wall gets zero
-	# copies there.
+	# Well under the ordinary act I rows, and the cap now does different work than its number
+	# suggests: `TOWARD_PLAYER` never puts it on a tile, so it cannot tile a street the way a `MAP`
+	# row could. What the cap still bounds is how much of the day's budget — `cost` 3 each — goes to
+	# cyclists rather than to cafés and construction, and `Tuning.AHEAD_INTERVAL` (11-26s apart)
+	# throttles the rest: the director draws one owed row at a time from a shared queue with the
+	# cat and the dog, so how many of fourteen she could ever actually meet is bounded by the day's
+	# own length long before the cap is.
 	def.max_per_day = 14
 	def.cost = 3
 	return def

@@ -171,7 +171,8 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## dog is lethal and is not a wall, because `EventDirector` puts it in front of wherever she turns
 ## out to be walking and the scheduler never chooses a tile for it. Calling it a wall would put a
 ## mark on the telemetry map claiming a placement that nothing made — which is the exact failure
-## the picture exists to catch, arriving through the legend.
+## the picture exists to catch, arriving through the legend. `TOWARD_PLAYER` is sited by the same
+## director for the same reason and gets the same answer.
 ##
 ## **A wall is not only the lethal rows.** The ground off the routes *ranges from very costly to
 ## deadly*, so an expensive row is a wall too and `Tuning.WALL_WORTH_OF_COST` is where the line
@@ -182,8 +183,7 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## caret by — rather than over a new field, because *how expensive a row is* is a question the
 ## catalogue already answers, and a second answer to it is how two tables of one fact drift apart.
 static func _role_for(def: EventDef) -> GameEnums.BlockerRole:
-	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER \
-			or def.kind == GameEnums.EventKind.AMBIENT:
+	if def.spawn_mode != EventDef.SpawnMode.MAP or def.kind == GameEnums.EventKind.AMBIENT:
 		return GameEnums.BlockerRole.NONE
 	if def.kind == GameEnums.EventKind.ONE_SHOT:
 		return GameEnums.BlockerRole.SET_PIECE
@@ -603,11 +603,11 @@ static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, site := NO_SITE) -> Planned:
 	var role := _role_for(def)
-	# An `AHEAD_OF_PLAYER` event is budgeted here and sited by `EventDirector` while the player
-	# walks. Costing it here rather than giving the director its own allowance is deliberate:
-	# the cat competes with the café tables and the roadworks for the same day, so making the
-	# cat matter cannot quietly make the day denser as well.
-	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
+	# An `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` event is budgeted here and sited by `EventDirector`
+	# while the player walks. Costing it here rather than giving the director its own allowance is
+	# deliberate: the cat competes with the café tables and the roadworks for the same day, so
+	# making the cat matter cannot quietly make the day denser as well.
+	if def.spawn_mode != EventDef.SpawnMode.MAP:
 		return Planned.new(def, Vector2.INF)
 
 	var open_candidates := _ground_for(def, map, ground, corridor, role, site)

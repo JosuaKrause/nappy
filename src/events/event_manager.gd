@@ -352,8 +352,10 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	var crossing_point: Vector2 = path[0] if path.size() < 2 \
 			else (path[0] + path[path.size() - 1]) * 0.5
 	var lead := crossing_point.distance_to(body.global_position)
+	var verb := "comes at her from" \
+			if def.pursues or def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER else "crosses"
 	Telemetry.note("ahead", "%s %s %.0fpx in front of her at %s" % [
-		def.id, "comes at her from" if def.pursues else "crosses", lead,
+		def.id, verb, lead,
 		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
 
 func _find_player() -> bool:

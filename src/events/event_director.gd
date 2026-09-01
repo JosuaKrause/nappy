@@ -38,14 +38,17 @@ var _next_in := 0.0
 func _init(map: CityMap) -> void:
 	_map = map
 
-## Takes over the day's `AHEAD_OF_PLAYER` plans. Called with the same plan list the manager
-## streams the sited events from, so the two halves of a day cannot disagree about what is owed.
+## Takes over the day's `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` plans — everything the scheduler
+## budgeted but left for the director to site while she walks. Called with the same plan list the
+## manager streams the sited events from, so the two halves of a day cannot disagree about what is
+## owed.
 func start_day(day: int, plans: Array[EventScheduler.Planned],
 		rng: RandomNumberGenerator) -> void:
 	_owed.clear()
 	_rng = rng
 	for plan in plans:
-		if plan.def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
+		if plan.def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER \
+				or plan.def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
 			_owed.append(plan.def)
 	# The first one is not free: a cat on the doorstep before she has taken a step reads as the
 	# game starting badly rather than as something happening.
@@ -105,9 +108,13 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 		return []
 
 	# Peeked rather than popped, because what it wants sited depends on what it is: a pursuer is
-	# put *in her way* rather than across it, and a placement that fails must not spend the event.
+	# put *in her way* rather than across it, a `TOWARD_PLAYER` row is put *down* her own line, and
+	# a placement that fails must not spend the event.
 	var next := _owed[0] as EventDef
-	var path := _crossing_ahead_of(at, velocity / speed, next)
+	var heading := velocity / speed
+	var path := _toward_her(at, heading, next) \
+			if next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER \
+			else _crossing_ahead_of(at, heading, next)
 	if path.is_empty():
 		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
 		# again shortly rather than burning the allowance on a place that would not read.
@@ -148,9 +155,8 @@ func _roll_interval() -> float:
 ## telegraphing off the top of the screen has no telegraph at all.
 func _crossing_ahead_of(at: Vector2, heading: Vector2,
 		def: EventDef = null) -> PackedVector2Array:
-	var lead := Tuning.AHEAD_LEAD_DISTANCE
-	if def and def.pursues:
-		lead = Tuning.SIGHT_AHEAD
+	var lead := Tuning.SIGHT_AHEAD if def and def.pursues \
+			else (def.ahead_of_player_lead() if def else Tuning.AHEAD_LEAD_DISTANCE)
 	var centre := at + heading * lead
 	if not _map.is_walkable(_map.world_to_tile(centre)):
 		return PackedVector2Array()
@@ -165,3 +171,28 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 	if not _map.in_bounds(_map.world_to_tile(from)) or not _map.in_bounds(_map.world_to_tile(to)):
 		return PackedVector2Array()
 	return PackedVector2Array([from, to])
+
+## A run straight *down* her own line rather than across it: `TOWARD_PLAYER`'s whole point. Sited
+## `Tuning.SIGHT_AHEAD` in front of her — outside every current row's own reach, which
+## `EventDef.validate()` requires — and travelling back down the same line she is walking, so
+## a rig that keeps going meets it on a genuine collision course rather than a near miss that
+## depends on nobody moving.
+##
+## The far end of the route runs the same distance **behind** her rather than stopping where she
+## is standing: it has to still be going somewhere when it reaches her, or `EventInstance` reads
+## the end of its path as *arrived* and leaves right where it met her, which is exactly the
+## "flickers past and is gone" complaint the badge already answers for a fast mover the other way.
+##
+## Empty when either end is not somewhere anybody could stand — the map's edge, or the geometry of
+## a bend putting the far point inside a building. The caller waits and asks again; it does not
+## retry the near point only, because a route that starts on the pavement and ends in a wall is not
+## a route either.
+func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
+	var lead := Tuning.SIGHT_AHEAD
+	var far := at + heading * lead
+	if not _map.is_walkable(_map.world_to_tile(far)):
+		return PackedVector2Array()
+	var behind := at - heading * lead
+	if not _map.in_bounds(_map.world_to_tile(behind)):
+		return PackedVector2Array()
+	return PackedVector2Array([far, behind])
