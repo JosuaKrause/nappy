@@ -83,6 +83,7 @@ godot --path . -- --seed 12345 --day 9 --overview
 | `--press <action\|key:name> <seconds>` | Tap an action or a bare key, so a rig can press one. May be given more than once — `--press pause 2 --press key:r 3.5` |
 | `--title` | Open on the title screen even under a screenshot rig, which otherwise skips it |
 | `--no-title` | Skip the title screen |
+| `--ending bad\|neutral\|good` | Put the given ending screen up at boot, to screenshot one without playing a run out to reach it |
 | `--no-telemetry` | Do not write a run log |
 
 ## Run logs
