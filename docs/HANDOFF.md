@@ -1,14 +1,15 @@
 # Handoff
 
 **Where to pick up.** This file says what is true right now and what to do next. It holds no
-history — that is [DECISIONS.md](DECISIONS.md), which is fetched when you need to know *why*.
+history — that is [DECISIONS.md](DECISIONS.md), fetched when you need to know *why* — and no
+progress-tracking, which lives there too.
 
 **Read this, then [TODO.md](TODO.md).**
 
 ## The state of the tree
 
-`main` is `f17db54`, green and playable. Nothing is half-built. One branch is open —
-`feature/timeless-docs`, which is M40.
+`main` is green and playable; no branches are open; nothing is half-built. Trust the tools over any
+sentence here:
 
 ```sh
 ./tools/test.sh          # the full headless suite, ~200s; must be 0 failures
@@ -21,72 +22,33 @@ A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not 
 
 ## What to do next
 
-### 1. M40 — the docs say only what is true · in progress, `feature/timeless-docs`
+The order, set on 2026-09-01. Each entry's full brief is in [TODO.md](TODO.md); the design work
+behind the new ones is in [PLAYTEST-18.md](PLAYTEST-18.md).
 
-**The player's instruction is that this comes before any other implementation.** Two jobs, and the
-restyle is the smaller one: a correctness pass that finds sentences no longer true, and a style pass
-that puts everything in the present tense with the history moved to `DECISIONS.md`.
+1. **M40's finishing pass** — the number re-audit ran; its findings are itemized fixes: stale
+   figures, pointers to rules that moved into skills, history that outlived the restyle.
+2. **M57 — the docs cannot go stale.** A volatile-fact linter (`tools/lint.sh`), wired into the
+   hook, the committing pass and the session cleanup, plus the drift guard for retuned constants.
+3. **M58 — the tooling tells the truth.** The rules hook misses `MultiEdit`; two tools fail raw
+   without Godot; `check.sh` can print OK over a crash; `stats.sh` gets built; the dead code goes.
+4. **M55's resistance half** — designed, nothing open. The hold goes, a task becomes two steps,
+   five tasks, every mark guarded.
+5. **M53** — a junction is made of the streets that meet at it.
+6. **M54** — the robber stops at walls, and three rows that never arrive.
+7. **M56** — the resistance is noticed.
+8. **M59 — the chatting mother.** A 5-second conversation that costs 25 excitement awake and only
+   time asleep. Position in the order is provisional; the design is the player's.
 
-**Done:** `DECISIONS.md` exists and holds the history; `HANDOFF.md` and `TODO.md` are the current
-state and the queue; `CLAUDE.md` is an index over eleven skills in `.claude/skills/`, one
-per operational task, each loaded before that task.
+## Open beyond the order
 
-**The design docs are done** — `EVENTS`, `CITY`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `DESIGN`,
-`NARRATIVE` and `README` are at zero history references, one commit each, and the pass caught nine
-stale claims and a catalogue row that was missing entirely.
-
-**The docstrings are done too.** Every `.gd` file in `src/` is at zero history references —
-`grep -rcE '(M[0-9]{1,2}\b|playtest|Playtest)' src --include='*.gd'` leaves four hits, all in
-`main.gd` and all the ordinary word, in the function that decides whether a run's log is a playtest.
-That pass caught five stale claims and one field nothing reads.
-
-**Left, and this is the next thing to pick up: the number re-audit**, which is deliberately a pass
-of its own — a stale claim survives a rewrite perfectly well if nobody checks it against the code.
-`TODO.md` under M40 has the two shapes to look for.
-
-### 2. M55's resistance half — designed, not built
-
-Everything else in M55 is done. The resistance work is fully specified and has nothing open:
-
-- **The hold is gone.** Touching a mark completes it. `E` comes out of `project.godot`,
-  `contact_point.gd`, `tests/test_resistance.gd`, `docs/MECHANICS.md` and `docs/ARCHITECTURE.md`.
-- **A task is two steps** — pick up the instruction, perform it the next day — so the day brief
-  carries the resistance's words and is the mechanism rather than a courtesy. The first mark is day
-  4; the calendar in the entry is exact.
-- **Five tasks**: the yeller, the package carried home, the checkpoint, the poster crew's wall, the
-  protest. All five need one shared piece of plumbing — a contact that rides on an `EventInstance`
-  rather than on a tile.
-- **Every mark is guarded** by an `alley_robbery` standing 66–176px off it, which is the band its
-  own radii fix. Which side she approaches from decides whether he wakes.
-
-### 3. M53 — a junction is made of the streets that meet at it
-
-The lattice draws a full crossroads wherever two corridors cross, whether or not the arms are
-streets. One arm is the sea; others open onto precinct paving and park grass. The crowd walks all of
-it and vanishes where somebody is looking. `CityMap.absent_segments`, `built_over` and the map edge
-already say which arms exist — nothing that draws a junction asks.
-
-### 4. M54 — the robber stops at walls, and three rows that never arrive
-
-A pursuing `EventInstance` moves by setting its own position, and nothing in the event system
-collides with the city. Plus `cyclist`, `loose_dog` and `cat_dash`, whose whole content is a moving
-thing meeting her, and which never do. Its resistance bullet is absorbed by M55.
-
-### 5. M56 — the resistance is noticed
-
-The city gets more dangerous the further into the subquest you are. Two rungs: `police_patrol`
-escalates without ever killing, the abduction van escalates and does. Two precedents it sets and
-does not resolve — the first authored event with a **victim**, and a lethal field that **follows
-her**, which is the one shape M28's spacing rule cannot be stated about.
-
-## Older items still open
-
-- **M25** — patrols for acts III and IV, where the streets are deliberately empty and the threat
-  should follow rather than sit.
-- **M26** — teaching the controls. Its first half (deleting the interact key) is M55's.
-- **M43's last two** — the pursuit cool-off and dying at high excitement on a quiet street. Both
-  need a played run.
-- **M48**, **M10** (polish), and M50's step 3 (placeholders as a variety ledger).
+Unordered, reassessed 2026-09-01, full entries in [TODO.md](TODO.md): **M50** (the corridor's
+density is a catalogue question; placeholders step 3; the four-street building), **M47** (the 2×2
+courtyard complex; calm-area adjacency; multi-block calm re-derived for 121 blocks; the main road
+as a soft block), **M45** (closures that point), **M48** (bodies drawn wider than their pavement),
+**M43** (the tutorial dog after day 3; the one-contact cliff at 90; `RUN_TAUGHT_DAY` 3 → 2),
+**M49** (the fence, the vanishing border-walkers), **M25** (patrols for the empty acts), **M26**
+(teaching the controls), a shortlist of small items, and **M10** (polish, now including a web
+build).
 
 ## What to distrust
 
@@ -126,8 +88,8 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 - **There is no audio at all.** Less urgent than it sounds: audio is redundancy, so the game must
   already be fully playable without it.
 - **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters`, `--overview`,
-  `--day-length`, `--screenshot`, `--after`, `--walk`, `--flee`, `--press` ship in the build. They
-  should be gated behind a debug build before release.
+  `--day-length`, `--screenshot`, `--after`, `--walk`, `--flee`, `--press`, `--ending` ship in the
+  build. They should be gated behind a debug build before release.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
   running behind it, `space` to begin — but it is a title, three lines of controls and two keys: no
   options, no seed box, no load game.
