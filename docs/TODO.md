@@ -1195,6 +1195,60 @@ The fix is not to delete any of it. It is to **split by question**: *what is thi
 this* stays with the code; *what was tried, what was rejected, and when it changed* moves to one
 file that is read on demand.
 
+**Sharpened on 2026-09-01, and the second half is new work rather than a restatement.** *"Before we
+start implementing anything else we need to bring the codebase up to date with the decisions we
+made. There is a lot of stale information where notes are outdated. Let's focus on that and the
+timeless writing style so that reading outdated information as current information can never happen
+again — all information should **only** reflect the current state **never** past states with
+caveats."*
+
+So M40 is **two jobs, and the restyle is the smaller one**:
+
+- **A correctness pass.** Find and fix sentences that are no longer true. This is not a side effect
+  of restyling — a stale claim survives a rewrite perfectly well if nobody checks it against the
+  code. `docs/HANDOFF.md` opens with *"`main` is `c82bcbb`… 175380 checks"* against a suite that is
+  at 202075, which is the failure in its purest form: the file whose whole job is *where to pick up*
+  is the file most confidently wrong about where things are.
+- **A style pass.** Present tense, current state only. **No "used to be", no "since M33", no "this
+  was wrong for twelve milestones", no caveats about what a sentence meant before.** Where the story
+  is worth keeping — and this project's whole bet is that it usually is — it goes to
+  `DECISIONS.md`, which is *the* place the reader goes for it.
+
+**The test is a reader, not a diff:** somebody who opens any single file and believes every sentence
+in it is wrong about nothing.
+
+**The size of it, measured rather than guessed** — `grep -rE '(M[0-9]{1,2}\b|playtest)'`:
+
+| | files | history references |
+|---|---:|---:|
+| `src/**/*.gd` | 45 of 56 | 590 |
+| `CLAUDE.md` | 1 | 141 |
+| `docs/` minus the playtests and `TODO` | 8 | 528 |
+| `docs/TODO.md` | 1 | ~1000 |
+
+`src/autoload/tuning.gd` alone has 113, `event_catalogue.gd` 50, `event_scheduler.gd` 45. **This is a
+multi-session milestone**, and the order below is by where a reader lands first, so that stopping
+part way still leaves the project better rather than half-converted.
+
+**Two calls taken here rather than asked, because M40's own text implies both.**
+
+- **`docs/HANDOFF.md` splits along a line it already draws itself.** Its header says *"everything
+  below the pick-up block is older history, newest first"* — so the pick-up block **is** the
+  current-state document and the tail **is** `DECISIONS.md` in session order rather than decision
+  order. HANDOFF keeps the block and nothing else; the tail is the first thing merged into
+  `DECISIONS.md`. A third file would be a third place to go stale.
+- **What timeless means for a to-do list**, which is the one document that is legitimately about
+  time. An **open** item is current state and gets the full treatment. A **ticked** item is history
+  the moment it is ticked — so it moves to `DECISIONS.md` with its measurement and its rejected
+  options intact, and `TODO.md` keeps the queue. That is what takes 4550 lines back to something a
+  person reads before starting work, which is what the file is for and has not been for some time.
+
+**And M40 has been sitting unbuilt since before M41** — about fifteen milestones. It is the third
+thing this session found filed-and-not-read, after the interact key (playtest 02, twenty milestones)
+and the alley roulette. **Three in one session is not three oversights, it is the symptom this
+milestone exists to cure**: the project writes things down faultlessly and cannot find them again,
+because everything ever decided is interleaved with everything currently true.
+
 - [ ] **`docs/DECISIONS.md`, the retrievable half.** One file, three kinds of entry, each dated and
       each linking to the milestone and the playtest that produced it: **decisions taken** with the
       options that were rejected and why; **ideas rejected** outright; and **changes that happened**,
@@ -1217,6 +1271,30 @@ file that is read on demand.
 - [ ] **And notes live in the repo, not in a session's memory.** Anything worth remembering about how
       to work on this project goes in `CLAUDE.md` or a rule/skill file beside it — a note that exists
       only in an assistant's memory is a note that gets lost
+
+### The order, and why it is this one
+
+By where a reader lands, so that stopping part way leaves the project better rather than
+half-converted. Each is its own commit.
+
+1. **`docs/DECISIONS.md` exists and takes `HANDOFF.md`'s tail.** Nothing can move out of a file
+   until there is somewhere to move it to.
+2. **`docs/HANDOFF.md` becomes the pick-up block alone, and is made true.** It is the first file the
+   next session opens and it is currently the most wrong.
+3. **`CLAUDE.md`.** Read every session by everybody, 1500 lines, 141 history references. Rules and
+   invariants stay in the present tense; the war stories go. Anything that unbalances the file
+   becomes a rule file beside it, which this file already says.
+4. **The design docs** — `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `DESIGN`,
+   `NARRATIVE`, `README`. These are the ones a person reads to learn what the game *is*, and the
+   ones where a stale sentence is indistinguishable from a design.
+5. **The docstrings**, 45 files, worst first: `tuning.gd`, `event_catalogue.gd`,
+   `event_scheduler.gd`, `city_generator.gd`, `event_instance.gd`, `crowd_agent.gd`.
+6. **`docs/TODO.md`.** Ticked items out to `DECISIONS.md`, queue stays. Last because it is the
+   biggest and because every earlier step tells you what belongs in it.
+
+**The playtest files are not touched.** They are primary sources — a player's words on a date — and
+rewriting one into the present tense would be destroying the only record of what was actually said.
+`DECISIONS.md` cites them; it does not absorb them.
 
 ## M41 — The shape of the city: a spine, and an edge you can walk to · `feature/the-shape-of-the-city`
 
@@ -3417,9 +3495,32 @@ a guard beside every mark. This answers it **in the city**: the further in you a
 place gets.
 
 - [ ] **Danger scales with resistance progress.** `GameState.resistance_progress` is already the
-      number; what it may move is the open question. Three candidates, and the constraint on all of
-      them is `CLAUDE.md`'s M50 rule — *the role is not a decision*, it is read off the def — so heat
-      must not become a per-row switch somebody sets by hand
+      number; what it may move is the open question. The constraint is `CLAUDE.md`'s M50 rule — *the
+      role is not a decision*, it is read off the def — so heat must not become a per-row switch
+      somebody sets by hand
+- [ ] **The patrol is the non-lethal rung of the ladder.** *(2026-09-01: "and the robber is a guard
+      now — the patrol should be more dangerous when you're part of the resistance but not lethal
+      like the van.")* Two instructions in one sentence, and the first explains the second.
+
+      **The robber has been reassigned.** M55 makes `alley_robbery` the guard standing beside every
+      chalk mark, which is a *fixed* cost attached to a *place*. So it is no longer available as the
+      thing that gets worse as you go, and `police_patrol` takes that job.
+
+      **And the ladder has two rungs on purpose: the patrol escalates but never kills, the van
+      escalates and does.** That is the range the escalation is spent over — it is the same shape as
+      M50's *"ranges from very costly to deadly"*, applied to progress instead of to ground.
+
+      What `police_patrol` is today, so the escalation has a floor to be stated against: mobile at
+      74px/s along roads and crossings, intensity 10, inner radius 44, outer 185, up to 12 a day,
+      from day 4, and **not** `hard_fail`. Its own docstring is the design — *"not dangerous yet —
+      the danger is that you start planning around it, which is the point."* The axes an escalation
+      could move are intensity, radius, population, and whether it investigates rather than patrols;
+      which of those, and how they read, is design work to draft and put back, and `hard_fail` is
+      ruled out by the instruction
+
+      **Not to be confused with the patrol rule M55 deletes.** That one is `ContactPoint`'s
+      hold-reset, and it goes because there is no hold left to reset. This is a different mechanism
+      on the same row, and it arrives *after* M55 rather than surviving it
 - [ ] **The abduction van takes somebody, and then it takes you.** *"Vans that normally just abduct
       people but start trying to abduct the player if she is part of the resistance."* Two halves and
       the first is not the small one:
