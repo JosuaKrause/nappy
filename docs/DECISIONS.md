@@ -3321,7 +3321,8 @@ park. Both rules are about the same thing — the walk out has to be long enough
 - [ ] **And check what a wheel does to the return phase**, which playtest 03 already called a
       formality. Four ways out is four ways back
 
-**Measured, ten seeds** (`docs/CITY.md`, "The home", carries the table). Home offset from centre
+**Measured, ten seeds** — and this is the only copy of the table, since `docs/CITY.md` keeps the
+rule rather than the 7×7-versus-9×9 comparison. Home offset from centre
 1.97 blocks → **0.00**, central in 4/10 → **10/10**, calm areas lying in 2.9 of 4 directions → **3.7
 of 4**, and directions with real city behind them 3.4 of 4 → **4.0 of 4**. The 30-tile guarantee got
 *better* rather than worse — 32.0 tiles at 9/10 seeds → 39.4 at 10/10 — because the clearance rule
