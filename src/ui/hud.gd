@@ -90,6 +90,8 @@ var _walked_today := false
 var _stood_for := 0.0
 ## Once per **run**, not once per day. See `_teach_the_pause()`.
 var _taught_pause := false
+## Once per **run**, and only on `Tuning.RUN_TAUGHT_DAY`. See `_on_event_telegraphed()`.
+var _taught_run := false
 
 ## Day 1 says how to walk, and nothing else. Every later day says nothing at all until something
 ## on the street asks for a key she has not needed yet.
@@ -135,16 +137,23 @@ func _teach_the_pause(delta: float) -> void:
 	_taught_pause = true
 	_say("Esc to pause", TEACH_SECONDS)
 
-## The run is taught by the thing that requires it, at the moment it requires it.
+## The run is taught by the thing that requires it, at the moment it requires it — and only for
+## that one lesson.
 ##
 ## Hung off the telegraph rather than off the day, so the prompt and the dog arrive together: a
 ## line of text at dawn saying "you can run" is a control list, and a line of text over a dog
-## coming at the pram is an instruction. It fires for every pursuit rather than only the first,
-## because there is no state worth keeping to make it fire once and the second one is just as
-## much the answer as the first.
+## coming at the pram is an instruction. But it is a lesson about the mechanic, not a running
+## commentary on it — once `Tuning.RUN_TAUGHT_DAY` has taught the key, a line telling her to hold
+## shift explains something she has already been made to do, every time something later in the run
+## pursues her. So it fires once, for the first pursuit of the day the run is taught, and never
+## again this run: the same "once per run" shape as `_teach_the_pause()`, for the same reason —
+## it is a keybinding, not a warning, and a cue that keeps coming back is one that gets read once
+## and then ignored.
 func _on_event_telegraphed(instance: EventInstance) -> void:
-	if instance.def.pursues:
-		_say("Hold SHIFT to run", instance.def.telegraph_time + TEACH_RUN_SECONDS)
+	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
+		return
+	_taught_run = true
+	_say("Hold SHIFT to run", instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
 func _say(line: String, seconds: float) -> void:
 	_teach.text = line

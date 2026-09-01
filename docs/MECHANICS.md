@@ -578,9 +578,12 @@ through a man shouting is the meter: intensity 14 over 210px.
 
 **Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 teaches the arrow keys and says nothing
 about running; day 3 is when something comes after the pram, and the HUD says *Hold SHIFT to run*
-on the frame it telegraphs rather than at dawn — a line of text at dawn is a control list, and the
-same line over a dog at the pram is an instruction. `EventDirector` moves the first pursuit of that
-day to the head of its queue, so the lesson is not left to a weight of 1.4.
+on the frame the **first** pursuit of that day telegraphs, rather than at dawn — a line of text at
+dawn is a control list, and the same line over a dog at the pram is an instruction.
+`EventDirector` moves that first pursuit to the head of its queue, so the lesson is not left to a
+weight of 1.4. The hint says nothing again for the rest of the run: it is the lesson, not a running
+commentary on the mechanic, so every later pursuit — a second dog the same day, `alley_robbery`
+from day 8 — telegraphs in silence.
 
 ## Telegraphing
 
