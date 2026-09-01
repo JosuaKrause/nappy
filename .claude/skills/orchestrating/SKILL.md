@@ -1,6 +1,6 @@
 ---
 name: orchestrating
-description: How implementation work is delegated to sub-agents — Sonnet agents in isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Injected automatically by the rules hook on any Agent/Task spawn; also worth loading when deciding whether to implement directly or delegate.
+description: How implementation work is delegated to sub-agents — delegating is the default, Sonnet agents in isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Injected automatically by the rules hook on any Agent/Task spawn and on the first edit to src/ or tests/; also worth loading when deciding whether to implement directly or delegate.
 ---
 
 # Orchestrating sub-agents
@@ -10,6 +10,33 @@ worktree; the orchestrating session designs, specifies, merges and maintains the
 on 2026-09-01. The split holds because the two jobs want different things: implementation wants
 fresh context and a fenced scope; orchestration wants the whole queue, the player's words, and the
 authority to merge.
+
+## Delegating is the default, and implementing by hand is the decision
+
+*(2026-09-02: "make more use of sub-agents — you write plans, sub-agents implement etc." and "make
+sure this is properly triggered automatically".)*
+
+**So this file arrives on the first edit to `src/` or `tests/`, not only on an `Agent` spawn.** A
+rule that fired only when a sub-agent was spawned could never say *this should have been delegated*
+— by then the decision has already gone the other way. The moment it matters is the moment somebody
+starts typing the implementation themselves.
+
+**Before writing code in `src/` or `tests/`, the question is not "can I do this" but "is this
+specified enough to hand over".** If it is, hand it over.
+
+The three cases where the orchestrating session implements directly, and they are narrow:
+
+- **The design is still moving.** An open fork, a "draft and put back" item, or anything where the
+  next decision is the player's — an agent cannot hold a conversation with them.
+- **The change is a sentence.** A stale line in a doc, a constant, a one-line fix. Specifying it
+  costs more than doing it, and a prompt long enough to be unambiguous is longer than the diff.
+- **It is the queue or the archive.** `TODO.md`, `HANDOFF.md`, `DECISIONS.md` and the playtests are
+  the orchestrator's, always — see "What the orchestrator keeps".
+
+**Everything else is an agent's**, and a milestone that is not ready for one is a milestone whose
+`TODO.md` entry is not finished yet. That is the same test the feedback rules already impose:
+*somebody opening the repo cold could build the thing that was asked for.* Writing the brief until
+an agent can take it is not overhead on top of the work — it **is** the orchestrating half of it.
 
 **Delegate only what is specified.** A milestone whose `TODO.md` entry an implementer could build
 from cold — the test the feedback rules already impose — is ready for an agent. A milestone with an

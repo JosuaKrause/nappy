@@ -111,9 +111,30 @@ no networking. What Pages needs is preparation, not architecture:
 - [ ] **`tools/export-web.sh`** — headless export (`--headless --export-release Web`) into
       `build/web/` (already gitignored), with the missing-export-templates failure caught the way
       the other tools catch a missing Godot binary
-- [ ] **Telemetry on the web decides what it is.** `user://` maps to browser storage in a web
-      build: nobody collects those logs and the folder can grow unbounded on a stranger's machine.
-      Default telemetry off for web exports (an OS feature-tag check), unless a debug build
+- [ ] **Telemetry on the web is off.** *(2026-09-02: "the github pages version should not emit
+      telemetry".)* `user://` maps to browser storage in a web build: nobody collects those logs and
+      the folder can grow unbounded on a stranger's machine. Off for web exports, by an OS
+      feature-tag check
+- [ ] **The day's HUD loses everything that is not the day.** *(2026-09-02: "the on-screen info
+      should be minimal (only timer + bars + status line) but even status line I think we should be
+      able to drop — the status is visible on the entity. only maybe the current optional goal
+      should be visible. the day / nerve / etc info should not be there — it is already shown
+      between days — during the day this info is just noise and the player can pause to see it.")*
+
+      What the HUD shows today, so the cut has a floor: a **header** reading
+      `day N / 14   act N   nerves ***`, the **clock**, the two **meter bars**, a **status line**
+      (the baby's state, why she is not settling, and a city-wide source when one is running), and
+      a **resistance line** (`resistance *...` plus the current step's title). Kept: the clock, the
+      bars, and the optional goal. Cut: the header. **The status line is the interesting one** —
+      it goes because the pram already carries four states of the baby, which is the same claim as
+      the open question about turning the meter bars off entirely, and the two should be answered
+      together. What has no home once it goes: `stall_reason()`'s *"not settling: …"* and the
+      *"nowhere is quiet"* note for a city-wide source, neither of which the pram draws.
+
+      **The scope is a question and it is not answered here.** The instruction was given about the
+      Pages build, and its reason — *during the day this info is noise* — is about the game rather
+      than about the host. Ask before building it web-only, because two HUDs is a maintenance cost
+      taken on a guess
 - [ ] **The deploy workflow** — GitHub Actions on push to `main`: install Godot + export
       templates, run the export, publish `build/web/` to Pages (`upload-pages-artifact` +
       `deploy-pages`). **Blocked on a decision only the player can take: the repo has no GitHub
@@ -125,6 +146,73 @@ no networking. What Pages needs is preparation, not architecture:
       also work there)
 
 ---
+
+## M61 — A field is an ellipse · asked for 2026-09-02
+
+> "fields should be ellipses, not circles. the excentricity should be determined by movement speed.
+> the rationale is that an entity moving towards you has more of an effect than if it moves away or
+> orthogonal. the entity itself lives in one of the focus points"
+
+**A change to the emission model itself, and it is the first one since the falloff shape.** Today
+every field is a disc: `Tuning.falloff(distance, intensity, inner, outer)` prices being near a thing
+by distance alone, so a fire engine bearing down on her and one that has just gone past cost exactly
+the same at the same range. The instruction says the direction of travel is part of the price, and
+gives the geometry to say it with — an ellipse whose eccentricity is a function of speed, with the
+entity standing at a focus rather than at the centre, so the field reaches further ahead of a moving
+thing than behind it.
+
+- [ ] **Where the shape lives.** `contribution_at()` on `EventInstance` is one function and the
+      falloff is one function in `Tuning`, so the arithmetic has one home. What has more than one
+      home is everything that *reasons* about a radius — the telegraph contract
+      (`Tuning.required_telegraph_time`, stated over the gap between the inner and outer radii),
+      the placement spacing (`EVENT_SPACING_ANY` / `EVENT_SPACING_SAME`), the clearance a lethal
+      row keeps, the streaming radius, and the denial radius a park spoiler is measured by. **Each
+      of those is a question about "how far", and an ellipse has two answers.** Decide per rule
+      whether it takes the long axis (safe, and it widens every clearance in the game) or the short
+      one, before writing any of it
+- [ ] **The contract has to be restated over the worst direction.** A player who starts walking away
+      the instant an event becomes visible must get clear before it hurts. Against an ellipse
+      pointed at her that is a different sum, and a version stated over the mean radius would pass
+      while the encounter it describes is unfair — the same failure `Tuning.pursuit_standoff()`
+      exists to stop, one system over
+- [ ] **A stationary thing keeps its circle**, by construction: eccentricity from speed means zero
+      speed is a disc. So the change is *only* about the mobile rows, which is a much smaller blast
+      radius than it first reads as — and the pursuers are where it will be felt
+- [ ] **And it has to be visible.** The falloff is invisible today and that is fine because it is
+      symmetric; a field that is stronger in front of a van is a routing fact the player can only
+      learn by being told or by dying. Ask what draws it before deciding it is free
+
+## M62 — Checkpoints that divide the map · asked for 2026-09-02
+
+> "checkpoints in the later acts should divide the map into segments/areas. that is the player
+> should be forced to cross checkpoints to reach parts of the map and the checkpoints live alongside
+> the full perimeter of each region. checkpoints can reuse the other woman with baby logic. the cost
+> can be time (and a bit of excitement) while being detained until released"
+
+**This is M45's answer arriving from the other side.** M45 measured that a closure cannot change a
+route while there are nine destinations and a full grid — 350 closures across ten seeds moved the
+best route once — and concluded that a closure's job is direction rather than distance. A checkpoint
+ring is the version that *does* change distance, because it is not one barrier on one street: it is
+the whole perimeter of a region, so there is no way round, only a way through at a price. It is also
+M47's "main road as a soft block" generalised from one street to a boundary.
+
+- [ ] **The regions are a city-generation question, not an event-placement one.** `checkpoint`
+      today is a recurring row rolled onto `ROAD`/`CROSSING` tiles up to six times a day from day 7.
+      A perimeter is a decision about the map, so what needs designing first is what a region *is*
+      — the quadrants either side of the spine, a growth from the home block, or something the
+      lattice already knows about
+- [ ] **The cost is a detention, and the mechanism already exists.** *"Reuse the other woman with
+      baby logic"* is `chatting_mother`: `EventDef.detain_seconds` locks her movement on first
+      contact inside `detain_radius`, and `Stroller.detain()` runs the lock out through the ordinary
+      friction rather than stopping her dead. **`EventDef.validate()` currently refuses `detain` on
+      anything `hard_fail` or that `pursues`** — a conversation is a cost, never a threat — which a
+      checkpoint satisfies, since being held up is exactly a cost
+- [ ] **"A bit of excitement" is the second half and it is not the detention.** A detained player
+      is standing still, and standing still is where `EXCITEMENT_DECAY_IDLE` pays back nothing —
+      so a checkpoint charges her twice over unless the intensity is set knowing that
+- [ ] **The winnability guarantee has to survive it.** Every day must leave a route to a calm area,
+      and a ring of checkpoints around the region the home is in is the exact shape of sealing her
+      in. It is the doorstep exemption's problem at city scale
 
 ## M50 — What the corridor still owes
 

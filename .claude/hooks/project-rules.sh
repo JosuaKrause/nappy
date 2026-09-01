@@ -80,6 +80,14 @@ esac
 case "$path" in
 	*.gd)                      wanted+=(godot) ;;
 esac
+# The moment implementation starts is the moment the rule about *who implements* matters, and it
+# is the first edit to the game rather than the sub-agent spawn: an Agent call is already the
+# decision to delegate, so a rule that only fires there can never say "this should have been
+# delegated". Shares its one-shot marker with the Agent/Task branch above, so whichever comes
+# first in a session is the one that fires.
+case "$path" in
+	*/src/*|*/tests/*)         wanted+=(orchestrating) ;;
+esac
 
 [ ${#wanted[@]} -eq 0 ] && exit 0
 
