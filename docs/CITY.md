@@ -136,7 +136,7 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
 - Every calm area is somewhere calm ground may go: clear of the home, clear of the map's outer
   ring of blocks, and clear of the two block columns beside the spine. See "Where calm ground may
   go".
-- At least **3 calm areas**, no two adjacent (so the calm is spread out). An area is one
+- At least **5 calm areas**, no two adjacent (so the calm is spread out). An area is one
   block or one multi-block zone; see below.
 - At least `MIN_CALM_ZONES` (1) of them is a **zone**, and at least one zone is the **2×2
   square** — the shape the lap argument is stated over.
