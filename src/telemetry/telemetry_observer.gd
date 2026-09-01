@@ -71,6 +71,19 @@ const BUMP_QUIET_TIME := 1.5
 ## being answered is "did the player ever go near a contact", not "did they use it".
 const CONTACT_SIGHT := 130.0
 
+## How long movement input must be held while she goes nowhere before it counts as *blocked*
+## rather than a footstep settling at a kerb. About a second — the same order as
+## `TURN_COMMIT_TIME`'s read on "held long enough to be a decision" rather than a stumble.
+const BLOCKED_HOLD_TIME := 1.0
+## How far she may still drift and count as not moving — a few px of push-back off a wall or a
+## body in the crowd, not a stall. Smaller than `NEAR_FLOOR`: this is noise in a stopped body,
+## not a distance an event's own radius sets.
+const BLOCKED_DRIFT := 6.0
+## While the stall persists, how often to say so again rather than staying silent until she lets
+## go. Same reasoning as `BUMP_QUIET_TIME`: a thing that keeps being true is one finding
+## repeated, not a finding every frame.
+const BLOCKED_REPORT_INTERVAL := 3.0
+
 var _city: City
 var _map: CityMap
 var _player: Stroller
@@ -132,6 +145,12 @@ var _idle_since := 0.0
 var _idle_excitement := 0.0
 var _idle_sleepiness := 0.0
 
+# Movement input held while she goes nowhere. `-1.0` means no hold is in progress.
+var _blocked_since := -1.0
+var _blocked_from := Vector2.ZERO
+var _blocked_dir := Vector2.ZERO
+var _blocked_last_report := -1000.0
+
 # Encounters: instance id -> the distance at which it was last written down. Ids rather than
 # references, so this can never keep a freed event alive.
 var _near := {}
@@ -182,6 +201,8 @@ func start_day() -> void:
 	_committed_for = 0.0
 	_against = 0.0
 	_running = false
+	_blocked_since = -1.0
+	_blocked_last_report = -1000.0
 	_near.clear()
 	_chases.clear()
 	_seen_closures.clear()
@@ -233,6 +254,7 @@ func _process(delta: float) -> void:
 	_watch_the_meters()
 	_watch_running()
 	_watch_idling(delta)
+	_watch_blocked(here)
 	_watch_direction(delta)
 	_watch_what_is_near(here)
 	_watch_the_chase(here, delta)
@@ -536,6 +558,46 @@ func _watch_idling(_delta: float) -> void:
 	Telemetry.note("idle", "stood still %.1fs on %s, exc %.0f -> %.0f, sleep %.0f -> %.0f" % [
 		duration, TelemetryLog.tile_type(_map.tile_type_at_world(_player.global_position)),
 		_idle_excitement, _baby.excitement, _idle_sleepiness, _baby.sleepiness])
+
+## Movement input held while she goes nowhere — the trace's own line for a player who is
+## *stuck* rather than one who has stopped. `idle` already covers the legitimate stand-still:
+## no direction held, and the `is_idle()` check it reads never sees an input at all. This is
+## the other case, where the controls are being worked and nothing happens, which without a
+## line of its own reads in an unwatched log exactly like a run that never left the doorstep —
+## and gives a person pressing into an invisible blocker a trace of having done it.
+##
+## Read the same way `Stroller._physics_process` reads a direction, straight off `Input`,
+## because nothing on the rig exposes "what is currently held" as gameplay state — this is a
+## poll, the same one she makes, not a call into anything that decides things.
+##
+## The anchor resets whenever she actually moves past `BLOCKED_DRIFT`, so the held time is
+## always "how long since she last made progress" rather than a clock that starts once at the
+## first key and never lets go. A frame the tree is paused on never reaches this at all —
+## `_process` returns before it while `_day.is_running()` is false — so a stand at the pause
+## screen is not a hold either.
+##
+## Written on the frame the hold first crosses `BLOCKED_HOLD_TIME`, and at most every
+## `BLOCKED_REPORT_INTERVAL` after that while it persists: the same throttle `_on_bumped` uses,
+## for the same reason — a wall that is still there a second later is one finding continuing,
+## not a new one.
+func _watch_blocked(here: Vector2) -> void:
+	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if input_dir == Vector2.ZERO:
+		_blocked_since = -1.0
+		return
+	var now := Telemetry.clock()
+	if _blocked_since < 0.0 or here.distance_to(_blocked_from) > BLOCKED_DRIFT:
+		_blocked_since = now
+		_blocked_from = here
+		_blocked_dir = input_dir
+		return
+	_blocked_dir = input_dir
+	var held := now - _blocked_since
+	if held < BLOCKED_HOLD_TIME or now - _blocked_last_report < BLOCKED_REPORT_INTERVAL:
+		return
+	_blocked_last_report = now
+	Telemetry.note("blocked", "pressed %s for %.1fs at %s without moving" % [
+		TelemetryLog.compass(_blocked_dir), held, TelemetryLog.tile(_map.world_to_tile(here))])
 
 ## Today the answer should always be "it made things worse". The day a threat follows her rather
 ## than sitting where it was placed, that stops being true, and this entry is how running gets
