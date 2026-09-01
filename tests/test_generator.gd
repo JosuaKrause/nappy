@@ -24,6 +24,7 @@ func run(t) -> void:
 	_test_a_dead_end_is_a_dead_end(t)
 	_test_a_big_building_joins_two_blocks(t)
 	_test_no_single_street_closure_isolates_the_parks(t)
+	_test_a_missing_arm_has_no_crossing_on_it(t)
 
 # ------------------------------------------------------------------- pieces ---
 
@@ -559,6 +560,33 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 	t.check(float(total) / seeds >= float(Tuning.MIN_BIG_BUILDINGS),
 			"a city gets %.1f big buildings, wanting at least %d"
 			% [float(total) / seeds, Tuning.MIN_BIG_BUILDINGS])
+
+## M53: **the lattice draws a full crossroads wherever two corridors cross, whether or not the
+## arms of it are streets.** Stated once over "ground that stopped being a street" — a zone's
+## absorbed corridor, a dead end's plug and a big building's mass — rather than three times, this
+## checks the one visible promise a crossing makes: no zebra leads to ground that is not a street.
+##
+## `CityGenerator._seal_stub_crossings` is the fix, called from all three placements over the
+## footprint that just stopped being a street. Checked here over every one of them rather than by
+## re-deriving which junctions are affected, because the set of "ground that stopped being a
+## street" is exactly `zone_rects` (as tile rects) plus `built_over` (which already includes the
+## zones that are apartment complexes) plus every dead end and big building's own wall or mass.
+func _test_a_missing_arm_has_no_crossing_on_it(t) -> void:
+	var seeds := 12
+	for i in seeds:
+		var map := CityGenerator.generate(_seed(i))
+		var footprints: Array[Rect2i] = []
+		for anchor: Vector2i in map.zone_rects:
+			footprints.append(CityMap.blocks_tile_rect(map.zone_rects[anchor]))
+		for key: Vector3i in map.built_over:
+			footprints.append(map.built_over[key])
+		for footprint in footprints:
+			for tile in map.rect_tiles(footprint.grow(Tuning.SIDEWALK_WIDTH)):
+				if footprint.has_point(tile) or not map.in_bounds(tile):
+					continue
+				t.check(map.tile_at(tile) != GameEnums.TileType.CROSSING,
+						"seed %d: a crossing at %s leads into ground %s that stopped being a street"
+						% [_seed(i), tile, footprint])
 
 func _seed(index: int) -> int:
 	# Spread the seeds out; consecutive integers are what generate() retries with.

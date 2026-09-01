@@ -309,6 +309,12 @@ and the road is there, and only the arm of the junction beyond has gone. What do
 diverting turns on the junction's own road band, a tile earlier) and nothing has to cross. That
 becomes pavement, so the road visibly ends at the junction instead of poking into the park.
 
+**A dead end's plug and a big building's mass leave the same stub**, and `CityGenerator` seals it
+the same way — over "ground that just stopped being a street" rather than three times, once for a
+zone, once for a wall built right at a junction's mouth, and once for a mass that swallows a whole
+street. `_seal_stub_crossings` is the one function every hard blocker calls after it takes its
+street: no zebra leads to ground that is no longer a street, whatever took it.
+
 ### Route redundancy
 
 The design **wants** at least two distinct routes from home to every calm area, so that a spoiled

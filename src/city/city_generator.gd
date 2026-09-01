@@ -543,18 +543,9 @@ static func _has_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool
 ## around the removed cross become T-junctions for free, and the one in the middle of the zone
 ## is left with nothing reaching it at all.
 ##
-## Then the **stub**. Each of the four surviving junctions on the zone's edge is a T now, and
-## the quarter of it on the zone's side is a two-tile spur of carriageway and zebra that leads
-## out of the junction and stops in the grass. Nothing drives there — a car diverting turns on
-## the junction's own road band, a whole tile before it — and nothing has to be crossed there
-## either, so it becomes pavement and the road visibly ends at the junction rather than poking
-## into the park.
+## Then the **stub**, which every hard blocker shares and states once: see
+## `_seal_stub_crossings`.
 ##
-## `grow(SIDEWALK_WIDTH)` is exactly that spur and nothing else: the band it adds is one
-## pavement deep, which alongside a block is pavement already and inside a junction is precisely
-## the quarter beyond the crossroads. Getting the turn wrong makes this repaint *look* wrong —
-## the first build turned late, so cars drove down the spur and stood on the new pavement, which
-## reads as a bug in the paint rather than as a bug in the turn.
 ## `solid` is the apartment complex: the same streets leave the lattice, and the ground where they
 ## were is building rather than park. Saying so in `built_over` is what tells every rule about hard
 ## blockers — the crowd's walls, the telemetry legend, where a big building may go — that this is
@@ -567,17 +558,34 @@ static func _absorb_streets(map: CityMap, footprint: Rect2i, solid := false) -> 
 		for y in range(footprint.position.y, footprint.end.y):
 			_absorb_one(map, Vector3i(x, y, 1), solid)
 
-	var zone := CityMap.blocks_tile_rect(footprint)
-	for tile in map.rect_tiles(zone.grow(Tuning.SIDEWALK_WIDTH)):
-		if zone.has_point(tile):
-			continue
-		if map.tile_at(tile) == GameEnums.TileType.CROSSING:
-			map.set_tile(tile, GameEnums.TileType.SIDEWALK)
+	_seal_stub_crossings(map, CityMap.blocks_tile_rect(footprint))
 
 static func _absorb_one(map: CityMap, key: Vector3i, solid: bool) -> void:
 	map.absent_segments[key] = true
 	if solid:
 		map.built_over[key] = StreetNetwork.by_key(key).tile_rect()
+
+## Seals the **stub** an arm leaves behind wherever it stops being a street: a zone's absorbed
+## corridor, a dead end's plug and a big building's mass all call this over `gone` — the ground
+## that just stopped being a street — rather than each restating it for its own case.
+##
+## The surviving junction next to `gone` is a T now, and the quarter of it on `gone`'s side is a
+## two-tile spur of carriageway and zebra that leads out of the junction and stops at a wall or in
+## the grass. Nothing drives there — a car diverting turns on the junction's own road band, a whole
+## tile before it — and nothing has to be crossed there either, so it becomes pavement and the road
+## visibly ends at the junction rather than poking into ground that is no longer a street.
+##
+## `grow(SIDEWALK_WIDTH)` is exactly that spur and nothing else: the band it adds is one pavement
+## deep, which alongside a block is pavement already and inside a junction is precisely the quarter
+## beyond the crossroads. It only ever turns a **crossing** to pavement — never a road tile, because
+## the stub is always the surviving corridor's own sidewalk band crossed by the vanished corridor's
+## road, and a sidewalk band is never typed `ROAD`.
+static func _seal_stub_crossings(map: CityMap, gone: Rect2i) -> void:
+	for tile in map.rect_tiles(gone.grow(Tuning.SIDEWALK_WIDTH)):
+		if gone.has_point(tile):
+			continue
+		if map.tile_at(tile) == GameEnums.TileType.CROSSING:
+			map.set_tile(tile, GameEnums.TileType.SIDEWALK)
 
 # --------------------------------------------------------------------- arcs ---
 
@@ -1080,6 +1088,8 @@ static func _make_the_pair_solid(map: CityMap, purposes: Dictionary, block_rects
 	var solid: Array[Rect2i] = [mass]
 	block_rects[pair.position] = solid
 	map.built_over[between.key()] = between.tile_rect()
+	# Every junction round the mass keeps three of its arms — see `_seal_stub_crossings`.
+	_seal_stub_crossings(map, mass)
 
 ## The gate: **every calm area the run will ever use can still be walked to.**
 ##
@@ -1125,6 +1135,9 @@ static func _wall_off_one_end(map: CityMap, segment: StreetNetwork.Segment,
 	wall.size += along * into
 	map.fill_rect(wall, GameEnums.TileType.BUILDING)
 	map.building_rects.append(wall)
+	# The wall sits right at the junction's mouth, so the junction beside it loses an arm the
+	# same way a zone's edge does — see `_seal_stub_crossings`.
+	_seal_stub_crossings(map, wall)
 	return wall
 
 # --------------------------------------------------------------- validation ---
