@@ -35,9 +35,11 @@ per operational task, each loaded before that task.
 `NARRATIVE` and `README` are at zero history references, one commit each, and the pass caught nine
 stale claims and a catalogue row that was missing entirely.
 
-**Left, and this is the next thing to pick up:** the same scan over the code comments. `tuning.gd`
-is the worked example (113 → 79 references) and **556 references across 45 source files** remain.
-The file-by-file counts and the method are in `TODO.md` under M40, "Next step".
+**Left, and this is the next thing to pick up:** the same scan over the code comments. The six worst
+files are done — `tuning.gd`, `event_catalogue.gd`, `event_scheduler.gd`, `city_generator.gd`,
+`event_instance.gd`, `crowd_agent.gd` — and **281 references across 39 files** remain, worst first
+from `main.gd` at 26. The file-by-file counts and the method are in `TODO.md` under M40, "Next
+step".
 
 It is a judgment call per block rather than a find-and-replace: **keep the reason a thing is the way
 it is and the trap that makes it easy to get wrong; drop the milestone number, the former value and

@@ -67,25 +67,29 @@ judgment call per block rather than a find-and-replace: **keep the reason a thin
 and the trap that makes it easy to get wrong; drop the milestone number, the former value, and the
 narration of the fix.**
 
-- [~] **The docstrings**, and the last piece of M40. `tuning.gd` is **113 → 79** as the worked
-      example — its
-      `SLEEPINESS_CALM_ZONE_MULTIPLIER` block shows the shape, four paragraphs of value history down
-      to the rule plus the reason the number moves. Remaining, worst first:
+- [~] **The docstrings**, and the last piece of M40. **The six worst files are done and are at
+      zero** — `tuning.gd`, `event_catalogue.gd`, `event_scheduler.gd`, `city_generator.gd`,
+      `event_instance.gd`, `crowd_agent.gd` — which is 275 of the original 556. Remaining, worst
+      first:
 
       | file | refs | | file | refs |
       |---|---:|---|---|---:|
-      | `autoload/tuning.gd` | 79 | | `events/event_manager.gd` | 18 |
-      | `events/event_catalogue.gd` | 50 | | `events/event_def.gd` | 18 |
-      | `events/event_scheduler.gd` | 45 | | `city/city.gd` | 17 |
-      | `city/city_generator.gd` | 35 | | `crowd/crowd_lanes.gd` | 14 |
-      | `events/event_instance.gd` | 33 | | `city/city_map.gd` | 13 |
-      | `crowd/crowd_agent.gd` | 33 | | `crowd/crowd.gd` | 12 |
-      | `main.gd` | 26 | | `autoload/telemetry.gd` | 11 |
-      | `telemetry/telemetry_observer.gd` | 25 | | *33 more files* | 1–9 each |
-      | `player/stroller.gd` | 19 | | **total** | **556** |
+      | `main.gd` | 26 | | `crowd/crowd.gd` | 12 |
+      | `telemetry/telemetry_observer.gd` | 25 | | `autoload/telemetry.gd` | 11 |
+      | `player/stroller.gd` | 19 | | `ui/danger_edge.gd` | 9 |
+      | `events/event_manager.gd` | 18 | | `routes/closure_planner.gd` | 9 |
+      | `events/event_def.gd` | 18 | | *25 more files* | 1–6 each |
+      | `city/city.gd` | 17 | | | |
+      | `crowd/crowd_lanes.gd` | 14 | | | |
+      | `city/city_map.gd` | 13 | | **total** | **281** |
 
       Count them again with
-      `grep -rcE '(M[0-9]{1,2}\b|playtest|Playtest)' src --include='*.gd' | sort -t: -k2 -rn`
+      `grep -rcE '(M[0-9]{1,2}\b|playtest|Playtest)' src --include='*.gd' | sort -t: -k2 -rn`.
+      **The rewrite that works** is turning a narrated fix into the mistake a reader could still
+      make: *a contract in seconds cannot describe a pursuit played out in distances*, *a guarantee
+      narrower than its rule says nothing on the day the rule is wrong*, *a weighting inside a fixed
+      split cannot cross it*. Where a paragraph does not survive that test it is history and belongs
+      in `DECISIONS.md`
 - [x] **The design docs** — `EVENTS`, `CITY`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `DESIGN`,
       `NARRATIVE`, `README` are all at **zero** history references, one commit each. Done before
       the docstrings because a reader reaches them first.
