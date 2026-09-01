@@ -57,15 +57,15 @@ src/
 	contact_point.gd        touch to complete — a chalk mark, or a task's own event instance
   telemetry/
 	telemetry_log.gd      one run's ordered lines, and the file they go to
-    telemetry_observer.gd watches the player: turns, runs, crossings, encounters
+	telemetry_observer.gd watches the player: turns, runs, crossings, encounters
   world/
-    world_context.gd      the only three questions the baby may ask the world
+	world_context.gd      the only three questions the baby may ask the world
   ui/
-    hud.gd
-    meter_bar.gd
-    home_arrow.gd
+	hud.gd
+	meter_bar.gd
+	home_arrow.gd
   dev/
-    auto_screenshot.gd    render N frames, save a PNG, quit
+	auto_screenshot.gd    render N frames, save a PNG, quit
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
 assets/
@@ -146,10 +146,10 @@ code, and the meters can be unit-tested against a fake world.
 ```gdscript
 # EventManager keeps a list of active EventInstances
 func total_excitement_at(pos: Vector2) -> float:
-    var sum := 0.0
-    for inst in _active:
-        sum += inst.contribution_at(pos)
-    return sum
+	var sum := 0.0
+	for inst in _active:
+		sum += inst.contribution_at(pos)
+	return sum
 ```
 
 `EventInstance.contribution_at()` implements the falloff from `docs/MECHANICS.md` and
