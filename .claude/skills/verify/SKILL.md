@@ -40,6 +40,12 @@ play, and the numbers it prints are how a balance constant gets **set** rather t
 the only thing that catches a pedestrian being ploughed along the pavement in permanent contact, or
 a contact radius that leaves **no line to walk** on a two-tile pavement.
 
+**A hand-built rig object can pass vacuously, three known ways.** A bare `Stroller.new()` has no
+`CollisionShape2D`, so `move_and_slide()` never moves it — assert on `velocity`, not on position.
+Its baby lookup is by child name, so a test's `Baby.new()` needs `name = "Baby"` set explicitly or
+the awake query silently answers its no-baby default. And hand-built nodes want explicit `.free()`
+calls, or the suite reports leaked instances under a green check count.
+
 **A rig that steps the parts is not running the whole, and the gap is silent both ways.** When a rig
 drives a subsystem by hand, ask what the engine was doing around it — and if the answer is "keeping
 something bounded", the rig is not slow, it is wrong.

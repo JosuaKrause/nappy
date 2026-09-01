@@ -15,9 +15,7 @@ mid-way through.
 ## The order
 
 1. **M56** — the resistance is noticed.
-2. **M59** — the chatting mother. *Position provisional: the design is the player's (2026-09-01),
-   the slot in the order is not — it can move.*
-3. **M60** — ready for a GitHub Pages launch. *(2026-09-01: "can we use github pages to put the
+2. **M60** — ready for a GitHub Pages launch. *(2026-09-01: "can we use github pages to put the
    game on a page?" and "add a step for preparing for github pages launch.")*
 
 M53's one remaining piece is a question for the player, not a task — see its entry.
@@ -65,67 +63,6 @@ The city gets more dangerous the further into the subquest you are. **A task may
       are where the precedent gets set
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
-
----
-
-## M59 — The chatting mother · asked for 2026-09-01
-
-*(Player: "I have an idea for a new entity -- another mother with child. when getting too close one
-gets caught up in a conversation that takes 5s and consumes 25% excitement. if the baby is already
-sleeping it's a pure time loss if it's not it bears overstimulation risk.")* The readings taken —
-"consumes 25%" means **adds 25 points to the meter when the baby is awake**, and "pure time loss"
-means **asleep, the chat emits nothing at all** (a `SLEEPING_SENSITIVITY`-scaled dose could wake
-the baby, which would not be pure) — are recorded in `docs/PLAYTEST-18.md` finding 4 and can be
-corrected from there.
-
-**Why it is a route decision:** the cost flips sign with the baby's state. Outbound-awake she is a
-quarter of the lose meter; homebound-asleep she is only five seconds of clock, on the leg where the
-clock is the resource. No other row changes meaning across the day like that. The first new
-mechanic in it is **time under compulsion** — nothing else takes the controls away.
-
-- [ ] **The row.** `event_catalogue.gd` gains `chatting_mother` (named for what she is — nothing
-      in `src/` carries a narrative name): a paced pavement fixture like the yeller — `paces`
-      along a short sidewalk beat, so she is *at* a place and streaming guarantees she is met —
-      with a small ambient field (person-scale: intensity near the passer-by's 4.2, outer radius
-      tight) so brushing past her costs a normal close pass when no conversation triggers.
-      `first_day` 1 if the balance suite still passes — act I is the social act — else 2;
-      `max_per_day` 2; not `hard_fail`, does not pursue
-- [ ] **The trigger.** Two new `EventDef` fields, `detain_seconds` (default 0 = never) and
-      `detain_radius`. `validate_event()` gains: if `detain_seconds > 0` then
-      `detain_radius < inner_radius <= outer_radius`, and the row must not be `hard_fail` or
-      pursue. Default `detain_radius` for the row: small enough that the far lane of a two-tile
-      pavement (lanes one tile apart) can never trigger it — under 32px, start at 26. The
-      counterplay is distance, exactly like everything else that is not a pursuer
-- [ ] **The capture.** When the player enters `detain_radius` of an instance that has not yet
-      chatted: the stroller's movement input is ignored for `detain_seconds` (velocity runs out
-      through the existing friction; pause still works; the run key does nothing). The existing
-      idle rules price the stop — idle drains sleepiness and freezes excitement decay — so no new
-      meter rule is needed for the time cost. **One conversation per instance**: after it, she is
-      spent as a detainer and departs (walks off like a `dog_walker`), so nobody is trapped twice
-      by the same body
-- [ ] **The meter.** While the conversation runs and the baby is **awake**, the instance emits
-      25/`detain_seconds` per second (5/s at full strength inside its inner radius; the player is
-      inside it by construction) — net +25, since idle decay is zero. While the baby is **asleep**
-      it emits nothing: the contribution is gated on the baby's state, read, never written —
-      excitement stays a pure query and `City.total_excitement_at` still adds exactly two things
-- [ ] **The drawing.** One picture per row: an adult with a pram, palette-shifted so she cannot be
-      mistaken for the player, with two postures — strolling and talking. The talking posture is
-      the telegraph that a capture is running. **No exclamation mark** — that cue is reserved for
-      danger, and she is a cost, not a threat; the cues skill governs anything drawn
-- [ ] **Telemetry.** A `chat` entry when a conversation starts: position, duration, the baby's
-      state, and what the meter did — it answers this milestone's own open question, which is
-      whether a forced +25 reads as fair
-- [ ] **The tests** (`tests/test_events.gd`, alongside the other per-row rigs): walking a rig into
-      `detain_radius` locks it for `detain_seconds` (position delta near zero) and releases it;
-      awake, the meter gains 25 within tolerance; asleep, excitement is unchanged and sleepiness
-      stays pinned at 100; a pass outside `detain_radius` on the same pavement never triggers; a
-      second approach to the same instance never re-triggers; the whole catalogue still passes
-      `validate_event()`, and `tests/test_balance.gd` still passes with the row live on its
-      `first_day`
-- [ ] **The docs.** An `EVENTS.md` row in the catalogue table; a short "conversation" paragraph in
-      `MECHANICS.md` next to the idle rules it leans on
-- [ ] **Open, deliberately:** whether a chat should ever be *worth seeking out* (a rumour, a hint)
-      — parked, because the meters must stay the only currencies until the player asks otherwise
 
 ---
 
