@@ -44,23 +44,49 @@ The rest of M53 shipped; the record, with the measurements and the not-reproduce
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**
 — a nerve is a rewind, not a resource, so there is nothing to trade.
 
-- [ ] **Danger scales with `GameState.resistance_progress`.** What it may move is open. The
-      constraint is that a role is read off the def, so heat must not become a per-row switch
-- [ ] **The patrol is the non-lethal rung; the van is the lethal one.** `police_patrol` today is
-      mobile at 74px/s, intensity 10, radii 44/185, up to 12 a day, from day 4, and not `hard_fail`
-      — which the instruction keeps. The axes an escalation could move are intensity, radius,
-      population, and whether it investigates rather than patrols: **draft and put back**
+**The three forks were put back and answered on 2026-09-02.** What they settled:
+
+- **Heat is a declarative field on `EventDef`**, not a per-row switch and not extra days. A row
+  states *that* it answers to heat and `Tuning` holds what each answer costs, so it is read off the
+  def exactly the way the blocking role is (`EventScheduler._role_for` derives the role from the def
+  rather than anyone setting it per placement). *Rejected: adding progress to the day number — it
+  reuses `budget_for` for free but also moves `first_day`, so act III vans reach act II and the
+  calendar in `docs/EVENTS.md` stops meaning what it says.*
+- **The patrol's escalation moves population, intensity and whether it investigates.** Not its outer
+  radius: widening the 185px field also widens what the telegraph has to buy, since
+  `Tuning.required_telegraph_time` is stated over the gap between the two radii.
+- **A pursuer is exempt from the clearance rule**, and the exemption is the third case rather than
+  the van losing `hard_fail`.
+
+- [ ] **Danger scales with `GameState.resistance_progress`.** `EventDef` gains a `heat_response` —
+      `NONE`, `PRESSES`, `HUNTS` — and the catalogue derives a **heated copy** of a row per progress
+      level, so nothing downstream of the day's plan has to know heat exists. Progress is an integer
+      0..`RESISTANCE_GOAL`, so the set of shapes is **finite and every one of them is validated on
+      boot** — which is the answer to the load-time contract problem: `Tuning.validate_event` and
+      `validate_pursuit` check the catalogue in the shape it booted in, so a def that changed
+      mid-run would be validated only in its harmless shape
+- [ ] **The patrol presses.** `police_patrol` today is mobile at 74px/s along roads and crossings,
+      intensity 10, radii 44/185, up to 12 a day, from day 4, and not `hard_fail` — which the
+      instruction keeps. Heated it is more numerous, costs more to stand near, and past a threshold
+      **investigates**: it runs its route until she comes close, then turns and follows.
+      **A pursuer that has a route runs it until it notices her** — derived from `pursues and mobile
+      and is_waiting()`, so investigating needs no field of its own. The contract to watch is that
+      every clause of `Tuning.validate_pursuit` is written about a *lethal* chase ("running opens
+      more than the radius that ends the day"), and this is the first pursuer that never kills
 - [ ] **The abduction van takes somebody, and then it takes you.** `abduction` today does neither —
       a static idling van, 250px field, `hard_fail` inside 54px. **"Normally just abduct people" is
       the first authored event with a victim**; nothing in the catalogue has ever acted on the
       crowd. And a hunting van inherits `pursue_speed` under `RUN_SPEED`, so it creeps at a fast
       walk — a screenshot question, not an arithmetic one
-- [ ] **A lethal field that follows her** is neither M28's clearance rule nor M50's off-corridor
-      exemption. Either the rule gains a third case for pursuers — which `charging_dog` and
-      `alley_robbery` have quietly needed without anybody writing it down — or a hunting van is not
-      a `hard_fail`
+- [ ] **Write the pursuer exemption down.** M28's rule is that nothing else happens inside a lethal
+      event's field, and M50 exempts only the off-corridor `WALL` role. The clearance rule is about
+      *places*, and a pursuer has no place — which is already true and unwritten of `charging_dog`
+      (day 3, sited in front of her) and `alley_robbery` (day 8, lethal inside 30px, chases at
+      130px/s), both of which carry a lethal radius around with them today with nothing checking
+      their clearance
 - [ ] **"And other dangers like this"** — drafted and put back, after the vans, because the vans
-      are where the precedent gets set
+      are where the precedent gets set. The candidates already in the catalogue are `checkpoint`
+      (day 7, closes a street) and `night_raid`
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
 
