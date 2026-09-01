@@ -36,6 +36,10 @@ var sabotage_done := false
 ## picked it up yet.
 var resistance_carrying_package := false
 
+## The chalk mark's own words, set when a pickup step completes and read out once on the
+## next day brief. "" once read, or when there is nothing to say.
+var pending_resistance_brief := ""
+
 ## The calm block the baby actually went to sleep in, per day: `day -> Vector2i`.
 ##
 ## Run-scoped and gameplay-owned, deliberately *not* read out of the telemetry log even though
@@ -93,6 +97,7 @@ func start_run(seed_value: int = 0) -> void:
 	settled_in.clear()
 	sabotage_done = false
 	resistance_carrying_package = false
+	pending_resistance_brief = ""
 	print("[GameState] run started, seed=%d" % run_seed)
 
 ## Record the outcome of the day. Returns true if the run continues.
@@ -183,6 +188,9 @@ func complete_resistance_step(step: int, counts_toward_goal: bool = true) -> voi
 	if counts_toward_goal:
 		resistance_progress += 1
 		EventBus.resistance_progress_changed.emit(resistance_progress)
+	var step_def := ResistanceSteps.by_index(step)
+	if step_def and step_def.is_pickup and step_def.brief != "":
+		pending_resistance_brief = step_def.brief
 	EventBus.resistance_step_completed.emit(step)
 
 ## A timed step that expired. The contact is gone for the rest of the run.

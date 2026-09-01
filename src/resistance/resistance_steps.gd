@@ -33,6 +33,9 @@ class Step extends RefCounted:
 	var deadline_fraction := 0.0
 	## Only offered once the goal is already met — the finale.
 	var needs_goal := false
+	## The chalk mark's own words, read out on the day brief once this pickup is touched.
+	## "" for anything that is not a pickup.
+	var brief := ""
 	## True for the one perform step that makes the pram heavier for the rest of the day.
 	var applies_package_weight := false
 
@@ -65,7 +68,7 @@ static func by_index(index: int) -> Step:
 ## `set(key, value)` from a Dictionary, and `set()` silently DROPS a value whose type does
 ## not match — so every `Array[int]` placement list came out empty and three of the six
 ## steps had nowhere to go, with no error anywhere.
-static func _mark(index: int, title: String, first_day: int) -> Step:
+static func _mark(index: int, title: String, first_day: int, brief: String) -> Step:
 	var step := Step.new()
 	step.index = index
 	step.title = title
@@ -73,6 +76,7 @@ static func _mark(index: int, title: String, first_day: int) -> Step:
 	step.is_pickup = true
 	step.grants_progress = false
 	step.placement.assign([GameEnums.TileType.ALLEY])
+	step.brief = brief
 	return step
 
 static func _perform(index: int, title: String, first_day: int, task_event_id: String,
@@ -102,26 +106,27 @@ static func _build() -> Array[Step]:
 		# A · give a note to a yeller. The cost is the approach and it is paid whether or
 		# not this is the right man — several homeless_yeller rows are already live, and
 		# the one carrying the contact looks exactly like the rest of them.
-		_mark(1, "A chalk mark", 4),
+		_mark(1, "A chalk mark", 4, "Give it to the one who won't stop shouting. Any of "
+				+ "them might be him."),
 		_perform(2, "A note for a stranger", 5, "homeless_yeller",
 				[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]),
 		# E · carry the package home. Picking it up is instant; the cost is deferred — the
 		# pram is heavier for every street after this one, for the rest of the day.
-		_mark(3, "Another mark", 6),
+		_mark(3, "Another mark", 6, "A van will be waiting. Don't come home light."),
 		_perform(4, "The package", 7, "delivery_van", [GameEnums.TileType.SIDEWALK],
 				0.0, true),
 		# D · walk through the checkpoint. Not round it — through.
-		_mark(5, "Another mark", 8),
+		_mark(5, "Another mark", 8, "Don't go around it this time. Go through."),
 		_perform(6, "The checkpoint", 9, "checkpoint",
 				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]),
 		# B · beat the poster crew to the wall. Keeps the old step 4's deadline fraction —
 		# a window that closes rather than a clock she can watch.
-		_mark(7, "Another mark", 10),
+		_mark(7, "Another mark", 10, "Get to the wall before they paste over it."),
 		_perform(8, "The wall", 11, "poster_crew",
 				[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], 0.55),
 		# C · stand in the protest. No uncertainty about which one — the cost is the 110px
 		# of bodies, paid going in and coming out.
-		_mark(9, "Another mark", 12),
+		_mark(9, "Another mark", 12, "Stand where they're standing. That's the whole of it."),
 		_perform(10, "The protest", 13, "protest",
 				[GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING]),
 		# The finale, offered only to a player who already did the work.

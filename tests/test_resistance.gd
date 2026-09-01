@@ -10,6 +10,7 @@ func run(t) -> void:
 	_test_step_table(t)
 	_test_step_selection(t)
 	_test_the_finale_needs_the_legwork(t)
+	_test_completing_a_pickup_sets_the_day_briefs_words(t)
 	_test_touching_completes_a_pickup(t)
 	_test_walking_away_leaves_it_untouched(t)
 	_test_a_perform_contact_rides_on_its_instance(t)
@@ -82,6 +83,25 @@ func _test_the_finale_needs_the_legwork(t) -> void:
 			"the finale is not offered to a player who has not earned it")
 	var finale := ResistanceSteps.for_day(Tuning.RUN_LENGTH_DAYS, done, none, true)
 	t.check(finale != null and finale.needs_goal, "and is offered to one who has")
+
+## The day brief is the mechanism now, not a courtesy: miss the mark and there is nothing to
+## read, because nothing else in the game ever says what a task wants.
+func _test_completing_a_pickup_sets_the_day_briefs_words(t) -> void:
+	_with_clean_run(func() -> void:
+		var mark := ResistanceSteps.by_index(1)
+		t.check(mark.is_pickup and mark.brief != "", "the first mark has words to give")
+
+		GameState.complete_resistance_step(1, mark.grants_progress)
+		t.check(GameState.pending_resistance_brief == mark.brief,
+				"completing the pickup queues its words for the next day brief")
+
+		GameState.pending_resistance_brief = ""
+		var perform := ResistanceSteps.by_index(2)
+		t.check(not perform.is_pickup and perform.brief == "",
+				"a perform step has nothing further to say")
+		GameState.complete_resistance_step(2, perform.grants_progress)
+		t.check(GameState.pending_resistance_brief == "",
+				"completing a perform does not queue anything"))
 
 # --------------------------------------------------------------------- touch ---
 
@@ -201,15 +221,18 @@ func _with_clean_run(action: Callable) -> void:
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
 	var saved_progress := GameState.resistance_progress
 	var saved_package := GameState.resistance_carrying_package
+	var saved_brief := GameState.pending_resistance_brief
 	GameState.completed_resistance_steps = []
 	GameState.failed_resistance_steps = []
 	GameState.resistance_progress = 0
 	GameState.resistance_carrying_package = false
+	GameState.pending_resistance_brief = ""
 	action.call()
 	GameState.completed_resistance_steps = saved_completed
 	GameState.failed_resistance_steps = saved_failed
 	GameState.resistance_progress = saved_progress
 	GameState.resistance_carrying_package = saved_package
+	GameState.pending_resistance_brief = saved_brief
 
 func _completed_through(last_index: int) -> Array[int]:
 	var done: Array[int] = []

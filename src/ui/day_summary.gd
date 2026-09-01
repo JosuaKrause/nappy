@@ -89,15 +89,24 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 	_hint.text = "space to try again" if retrying else "space to go on"
 	_present()
 
+## The tally, and — the mechanism rather than a courtesy — the chalk mark's own words once a
+## pickup has just been touched. Read once and cleared: `GameState.pending_resistance_brief` is
+## how she learns what tomorrow wants, since there is no marker anywhere else that would.
 func _resistance_line() -> String:
-	var done := GameState.resistance_progress
+	var lines: Array[String] = []
 	if GameState.sabotage_available():
-		return "You have done enough. There is one more night."
-	var lost := GameState.failed_resistance_steps.size()
-	var line := "Errands run: %d of %d" % [done, Tuning.RESISTANCE_GOAL]
-	if lost > 0:
-		line += "   (%d contact%s lost)" % [lost, "" if lost == 1 else "s"]
-	return line
+		lines.append("You have done enough. There is one more night.")
+	else:
+		var done := GameState.resistance_progress
+		var lost := GameState.failed_resistance_steps.size()
+		var line := "Errands run: %d of %d" % [done, Tuning.RESISTANCE_GOAL]
+		if lost > 0:
+			line += "   (%d contact%s lost)" % [lost, "" if lost == 1 else "s"]
+		lines.append(line)
+	if GameState.pending_resistance_brief != "":
+		lines.append(GameState.pending_resistance_brief)
+		GameState.pending_resistance_brief = ""
+	return "\n".join(lines)
 
 ## The last screen of a run. `space` goes back to the title, which is where the next one begins.
 ##
