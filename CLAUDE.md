@@ -85,6 +85,14 @@ in it is wrong about nothing.**
 unless recording that measurement is the document's job. Say what the command is, not what it
 prints.
 
+**No quest logs outside `DECISIONS.md`.** *(2026-09-01: "there should be no quest logs outside of
+decisions.md — that information is rarely relevant when working on the codebase. it only ever comes
+in to play when planning things out, so we don't attempt approaches again that we already ruled
+out.")* A ticked box, a "Done:" paragraph, a branch name or a status word in a heading is a quest
+log wherever it stands: `TODO.md` holds open work only, `HANDOFF.md` holds the pick-up state only,
+and what was done — with its measurement and its rejected options — is retrievable on demand from
+`DECISIONS.md` and nowhere else.
+
 The playtest files are the exception and are never rewritten. `docs/PLAYTEST-NN.md` are primary
 sources: a player's own words on a date.
 
