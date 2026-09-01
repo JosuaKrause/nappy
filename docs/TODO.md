@@ -14,9 +14,8 @@ mid-way through.
 
 ## The order
 
-1. **M54** — the robber stops at walls, and three rows that never arrive.
-2. **M56** — the resistance is noticed.
-3. **M59** — the chatting mother. *Position provisional: the design is the player's (2026-09-01),
+1. **M56** — the resistance is noticed.
+2. **M59** — the chatting mother. *Position provisional: the design is the player's (2026-09-01),
    the slot in the order is not — it can move.*
 
 M53's one remaining piece is a question for the player, not a task — see its entry.
@@ -37,29 +36,6 @@ The rest of M53 shipped; the record, with the measurements and the not-reproduce
       `ROAD` tile is ever produced at an internal precinct junction, only `SIDEWALK`/`CROSSING`.
       The question: should a real street's carriageway survive through a precinct it merely
       crosses, or is the six-tile zebra the design and the queue's sentence the stale one?
-
----
-
-## M54 — The robber stops at walls, and three rows that never arrive
-
-Its resistance bullet is absorbed into M55.
-
-- [ ] **The robber runs through walls.** A pursuing `EventInstance` moves by setting its own
-      position and nothing in the event system has ever collided with the city — harmless while
-      every mobile row travelled a route the scheduler had checked, and not harmless the moment
-      something steers at the player
-- [ ] **The bike, the loose dog and the cat never have an impact.** Three rows whose whole content
-      is a moving thing meeting her. `cyclist` and `loose_dog` are `MAP` rows sited at dawn, so the
-      day chose where they go before it knew where she goes; `cat_dash` is `AHEAD_OF_PLAYER` and
-      aimed **late**, crossing behind her because the lead is measured from where she is rather
-      than where she will be.
-
-      The design: place them when she gets close, the biker on the pavement she is walking on
-      coming toward her, so she has to answer by changing side or turning. **What it collides
-      with:** a bike she answers by *planning a turn* is neither `MAP` nor `AHEAD_OF_PLAYER`, so
-      this may want a **third spawn mode**
-- [ ] **The run hint belongs to the lesson, not the mechanic.** Once the run is taught, a line
-      telling her to hold shift explains something she has already been made to do
 
 ---
 
@@ -157,6 +133,11 @@ mechanic in it is **time under compulsion** — nothing else takes the controls 
       built and measured, and the corridor is the cheapest ground on every day. What is not true is
       the density: raising the caps on the expensive rows is a real balance change and wants its own
       measurement
+- [ ] **`cyclist` and `loose_dog`'s caps no longer mean what they say.** Both rows now arrive via
+      the director's single queue and its 11–26s pacing rather than being map-placed, so a day
+      fields far fewer than `max_per_day` (14 and 24) reads as promising — the caps' meaning
+      changed while the numbers stood still. Whether the encounter rate is right is a measurement,
+      not an inference; the record is in `DECISIONS.md` under M54
 - [ ] **Placeholders — step 3.** The budget is a **variety ledger, not a density cap**: the count of
       sites is the density, the budget decides what fills them, and resolving late means variety is
       measured over the encounters that happen rather than over a city she never saw. Read the

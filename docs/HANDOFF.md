@@ -25,9 +25,8 @@ A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not 
 The order, set on 2026-09-01. Each entry's full brief is in [TODO.md](TODO.md); the design work
 behind the newest one is in [PLAYTEST-18.md](PLAYTEST-18.md).
 
-1. **M54** — the robber stops at walls, and three rows that never arrive.
-2. **M56** — the resistance is noticed.
-3. **M59 — the chatting mother.** A 5-second conversation that costs 25 excitement awake and only
+1. **M56** — the resistance is noticed.
+2. **M59 — the chatting mother.** A 5-second conversation that costs 25 excitement awake and only
    time asleep. Position in the order is provisional; the design is the player's.
 
 M53's remaining piece — the precinct junction — is a **question for the player** (two recorded

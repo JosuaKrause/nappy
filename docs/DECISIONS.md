@@ -6194,6 +6194,35 @@ choice offered and a question whose answer changed the question is worth being a
 
 ## M54 — The resistance says something, and the robber stops at walls · not started
 
+### Built 2026-09-01 · `feature/things-that-arrive` — all three items
+
+- **The wall clamp.** A pursuer's chase step now goes through `_walkable_step()` against a
+  `CityMap` handed to `EventInstance.setup()`: an unwalkable landing tile falls back to the step's
+  x-only or y-only component (larger first), so it slides along a wall rather than stopping dead,
+  and zero if neither opens. Deliberately not a physics body — `obstructs_radius` stays off
+  pursuers. The map is null in the data-level rigs, so the pursuit contract's stand-off and
+  break-off tests were untouched; a new test chases a rig around a real generated building corner
+  and asserts the pursuer's tile stays walkable every frame.
+- **The third spawn mode exists: `TOWARD_PLAYER`.** Sited on her own line 200px ahead
+  (`SIGHT_AHEAD`), travelling back down it toward and past her — a collision course, not an ambush:
+  no stand-off, no giving up, traffic rather than a pursuer. `cyclist` and `loose_dog` moved onto
+  it (their MAP-only path fields deleted); the scheduler treats it like `AHEAD_OF_PLAYER` for role
+  and budget; validation refuses one with a body or with an `outer_radius` reaching the siting
+  distance (it would already be on her when it appeared). The screen-edge badge keeps announcing
+  it — the fix to "the badge announces things that never arrive" is that they arrive.
+  **`cat_dash`'s own defect was separate**: its telegraph crouch meant the flat lead undercounted
+  her walking; `ahead_of_player_lead()` now prices the crouch in (~221px for the cat against the
+  flat 184), and the siting test asserts the computed lead. A new encounter test drives a rig
+  through the real director and asserts each of the three rows comes within its own outer radius.
+- **The run hint is the lesson's**: once per run, first pursuit of `RUN_TAUGHT_DAY` only, same
+  shape as the pause teaching line; a new HUD suite instantiates the real scene and holds it to
+  that.
+- **A balance question raised and deliberately not answered** (per "don't retune what the item
+  does not require"): `cyclist` (`max_per_day` 14) and `loose_dog` (24) now share the director's
+  single FIFO and its 11–26s pacing instead of being map-placed, so a day fields far fewer of them
+  than the caps read as promising — the caps' meaning changed while their numbers did not. The
+  suite is green under it; retuning wants its own measurement. Filed under M50's density entry.
+
 Playtest 16's findings 6, 7 and 8, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. **This is
 the first report anybody has ever made about the back half of the game**, and two of the three are
 entries that have been sitting under "Known-shaky ground" waiting for exactly it.
