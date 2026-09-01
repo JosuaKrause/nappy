@@ -269,6 +269,21 @@ zones, calm zone rate adjustments, traffic light placements."* Recorded in the p
 with this side's reading kept separate from it and four questions that have to go back before any
 of it is built — see the entry. Nothing is started.
 
+**M55's resistance half is designed and unblocked as of 2026-09-01**, and two of its decisions reach
+further than the milestone. **The hold is gone** — every step of the subquest was `E` pressed for
+three to eight seconds against a key the game never once mentions, and it becomes *touch the mark*,
+so the whole optional path is one verb: get to a guarded place. And **a task is two steps now** —
+pick up the instruction, perform it the next day — which turns M54's day brief from a courtesy into
+the mechanism that tells her what the task is. Five tasks were chosen from six drafts; the calendar
+they sit on is exact and starts on day 4.
+
+**And `M56` exists because the fourth question was answered with a system.** A resistance task may
+not cost a nerve — *"a nerve is a rewind, not a resource"* — and what replaces it is the city getting
+worse the further in you are, starting with abduction vans that take somebody else until you join
+and then come for you. Read its entry before M55's, if only for the two things it names and does not
+resolve: the first authored event with a **victim**, and a lethal field that **follows her**, which
+is the one shape M28's spacing rule cannot be stated about.
+
 M10 (polish) still stands but now sits *after* the playtest work — there is no point
 polishing a loop that is about to be re-pitched.
 
@@ -3368,14 +3383,92 @@ rather than to move a number.
       dismissed with the same key as everything else. Finding 5 is the fix and this is the evidence
       for it. Reopen it if the counter is ever seen to move with nerves still on the HUD
 
+## M56 — The resistance is noticed · not started
+
+**Given on 2026-09-01, as the answer to M55's fourth question rather than as a finding.** The
+question was whether a resistance task may cost a nerve. The answer is no, and the second half of it
+is a system this game does not have:
+
+> **"how would that work? losing a nerve means repeating the day with the failed day erased. so no it
+> cannot cost a nerve. but what should happen is that the more resistance tasks are completed the
+> more dangerous the environment becomes. we need abduction vans that normally just abduct people
+> but start trying to abduct the player if she is part of the resistance. and other dangers like
+> this"**
+
+**The refusal is better argued than this side's recommendation was**, and the difference is worth
+keeping. M55 argued *not yet, because five nerves are five attempts and a step that spends one can
+end a run for an optional reward* — a caution. The player's reason is structural: **a nerve is not a
+resource, it is a rewind.** Losing one replays the day with the failure erased, so "spend a nerve"
+does not mean *pay*, it means *have this day not have happened*. There is nothing to trade. Nothing
+in the design should offer it, at any difficulty.
+
+**And what replaces it is the same instruction as playtest 17's finding 9, one scale up.** Finding 9
+is *pursuing the resistance should make the game harder*, and M55 answers it **at the chalk mark** —
+a guard beside every mark. This answers it **in the city**: the further in you are, the worse the
+place gets.
+
+- [ ] **Danger scales with resistance progress.** `GameState.resistance_progress` is already the
+      number; what it may move is the open question. Three candidates, and the constraint on all of
+      them is `CLAUDE.md`'s M50 rule — *the role is not a decision*, it is read off the def — so heat
+      must not become a per-row switch somebody sets by hand
+- [ ] **The abduction van takes somebody, and then it takes you.** *"Vans that normally just abduct
+      people but start trying to abduct the player if she is part of the resistance."* Two halves and
+      the first is not the small one:
+
+      **`abduction` today does neither** (`event_catalogue.gd:926`). It is an unmarked van that
+      **idles** — static, 250px field, `hard_fail` inside 54px, a 4.6s telegraph, `first_day` 8. It
+      never moves and nothing is ever taken; the abduction is entirely in the name and in what
+      happens to *her* if she walks into it.
+
+      - **"Normally just abduct people" is a first for this game.** Nothing in the catalogue has ever
+        acted on the crowd. The one existing coupling runs the other way — M19's bump, where *she*
+        startles an agent — and the excitement invariant is why: events never push, the world sums
+        `contribution_at()`. A van that takes a pedestrian is the first authored event with a
+        **victim**, and it is a precedent worth taking deliberately rather than as a side effect of
+        a two-word phrase. It is also what makes the second half legible: a van you have watched take
+        somebody is a van you understand is coming for you.
+      - **"Starts trying to abduct the player" is `pursues`, conditioned on run state**, and that
+        collides with a load-time contract. `Tuning.validate_event()` and `validate_pursuit()` check
+        the whole catalogue **on boot**, from data. A def that changes shape mid-run is validated in
+        the shape it booted in, so **both shapes have to be validated or only the harmless one is** —
+        this is the M35 lesson (*a contract stated in seconds is not stated at all*) arriving as a
+        contract stated about the wrong object.
+      - **A van cannot chase at van speed.** `validate_pursuit` is stated over `RUN_SPEED`, and the
+        two things that pursue both move at 130px/s — slower than a run, faster than a walk, by
+        construction, because that is what makes running the right answer. A hunting van inherits
+        that, which means an unmarked van creeping after her at a fast walk. Whether that reads as
+        menacing or as comic is a **screenshot question**, not an arithmetic one
+- [ ] **What it collides with, named rather than resolved.** M28's rule is that **nothing else
+      happens inside a lethal event's field**, and M50 exempts only the off-corridor `WALL` role. A
+      lethal field that *follows her* is neither: it goes wherever she goes, so it cannot be kept
+      clear of anything by placement. Either the rule gains a third case for pursuers — which
+      `charging_dog` and `alley_robbery` have quietly needed since M35 and M36 without anybody
+      writing it down — or a hunting van is not a `hard_fail` and takes something else off her
+- [ ] **"And other dangers like this"** — the same brief as playtest 17's finding 8, one level up:
+      more rows of this shape, **drafted and put back** rather than built. The obvious candidates
+      already in the catalogue are `police_patrol` (which already knows about the resistance, via
+      `ContactPoint`'s patrol rule), `checkpoint` and `night_raid`. Do the drafting after the vans,
+      because the vans are where the precedent gets set
+- [ ] **And measure it against the nerves before believing it.** Five nerves are five attempts at a
+      fourteen-day run, and this milestone makes the back half harder *precisely for the player who
+      is doing well at the optional path*. The last human verdict on the difficulty is playtest 06's,
+      and **nobody has ever reached act III**. A throwaway probe over a full run at each progress
+      level, not an argument
+
 ## M55 — Off the paths is the dangerous place · partly built
 
 Playtest 17, in full in **[docs/PLAYTEST-17.md](PLAYTEST-17.md)**. Twelve findings, and everything
 that is a change to the build is done and ticked below — the off-corridor cost, what goes between
 two strands of corridor that run alongside each other, and the corners of the world. What is left is
-the four resistance items. Three of those are builds and one is design work the player asked for by
-name — **that one is drafted below and is waiting on four answers**, and drafting it turned up half
-of a second item already built and never read back.
+the four resistance items, and drafting them turned up half of a second item already built and never
+read back.
+
+**The design work is finished and nothing in the resistance half is open any more.** The six drafts
+went back, five were taken, and the four questions came back on **2026-09-01** with two answers that
+changed their own questions — see "The answers" below. **The largest of them is that the hold is
+gone**: every step in the subquest was `E` held for three to eight seconds, and the whole thing
+becomes *touch it*. The cost moves out of the standing and into the approach, which is where the
+player's own task design had already put it. What is left is a build.
 
 **The one sentence is the player's own: *"leaving the path should be lethal or very expensive. right
 now that is not the case… that is not as we planned."*** The design was agreed in M50 and the build
@@ -3578,6 +3671,132 @@ avoidable by routing; these are taken deliberately. That is what makes them affo
 optional path at all, and it is why *"pursuing the resistance should make the game harder"* is a
 feature rather than a difficulty complaint.
 
+#### The answers, 2026-09-01 — and one of them is a correction to the verb itself
+
+The four questions at the bottom of this entry went back and came back with more than yes and no.
+**The player's own words first, because three of the four are new design rather than an answer.**
+
+> *(on "steps 1, 2 and 4 are the same alley hold three times")* **"not sure what you mean by 'same
+> alley hold'? do you mean it is picking up instructions in an alley with a robber close by? let's
+> keep them so the progression is (pick up instruction -> perform task the next day -> repeat) so I
+> guess that would mean extend the list?"**
+>
+> *(on which drafts to build — all four offered were taken, plus)* **"let's also make sure the chalk
+> mark is always guarded by a robber"**
+>
+> *(on this side's description of the existing steps)* **"'mark on an alley tile, hold interact for
+> 3–6s,' this is incorrect in two ways: 1) there is no 'hold interact' button and 2) it should be
+> instant when touching the mark. that should explain how the guard works"**
+>
+> *(on whether a task may cost a nerve)* **"how would that work? losing a nerve means repeating the
+> day with the failed day erased. so no it cannot cost a nerve. but what should happen is that the
+> more resistance tasks are completed the more dangerous the environment becomes. we need abduction
+> vans that normally just abduct people but start trying to abduct the player if she is part of the
+> resistance. and other dangers like this"**
+
+Plus two straight answers: the **first mark moves to day 4** so the calendar fits, and the guard ramp
+is **fixed both ways** — the trap starts at the first step rather than on day 8, and the
+district-placed steps stop being exempt from it.
+
+**The last answer is a milestone of its own and is written up as [M56](#m56--the-resistance-is-noticed--not-started).**
+Nothing of it is dropped or narrowed; it is sequenced, because M55 already has five tasks and a new
+verb in it.
+
+##### The hold is gone, and that is the load-bearing change
+
+**Every one of the six existing steps is `Input.is_action_pressed("interact")` held for 3–8
+seconds** (`contact_point.gd:44`, `resistance_steps.gd:16`). That is the verb the whole subquest was
+built on and it is being **removed**: touching the mark completes the pick-up, instantly.
+
+**One correction this side owes, because "there is no interact button" is not quite what is on
+disk and the difference is the interesting part.** `interact` *is* bound — `E`, `project.godot:64`
+— and `ContactPoint` has been reading it since the subquest shipped. What is true is that
+**nothing in the game has ever mentioned it**: `hud.gd:237` prints `holding N%` only *while she is
+already holding*, so the one place that could teach the key appears exclusively to a player who has
+already guessed it. Which is very likely the mechanism behind playtest 16's *"I walked on one chalk
+symbol once but there was no indication"* — a verb gated behind an unnamed key reads, from the
+outside, as a mark that does nothing. **The player's sentence is right about the game even where it
+is wrong about the code, and that is the sense in which it counts.**
+
+What goes with the hold, listed because each is a thing somebody could otherwise put back by
+accident:
+
+- `ResistanceSteps.Step.hold_seconds`, and with it the only variation the six steps had besides
+  *where* — 3.0, 6.0, 4.0, 3.0, 5.0, 8.0 seconds. The variation moves to the guard and to the task.
+- `ContactPoint.progress`, `DECAY_RATE`, the progress arc in `_draw`,
+  `EventBus.resistance_hold_changed`, and the HUD's `holding N%`.
+- **And a recorded design becomes moot rather than wrong**: *"a reset rather than a deduction"* — a
+  `police_patrol` inside `SEEN_RADIUS` resets the hold instead of taking a banked point, because
+  *"taking away progress the player has already banked reads as a bug more than a consequence"*.
+  With nothing banked there is nothing to reset. **This side's proposal, which is a judgment call
+  and is flagged as one:** keep the patrol as a *block* rather than a reset — a mark under a
+  patrol's eye cannot be picked up until it has passed, so the cost is standing in an alley waiting,
+  which is the same sentence in the new grammar and one line of code. Say if it should simply go.
+
+##### The guard, worked out from the numbers rather than chosen
+
+*"Always guarded"* cannot mean what the trap does today. `ResistanceDirector._maybe_set_a_trap`
+calls `spawn_extra(robbery, at)` — the robber is spawned **at** the contact, which is inside
+`alley_robbery`'s 30px `hard_fail` radius, so at `TRAP_CHANCE` 1.0 every chalk mark in the game would
+be a guaranteed lost day. What the finding actually liked was *"the robber **next to** the chalk
+marking — that made it **hard**"*.
+
+Three numbers on the row and one on the contact fix the band exactly, and this is where *"that should
+explain how the guard works"* lands: **because the pick-up is instant, the guard cannot be priced in
+standing time, so it has to be priced in geometry.**
+
+| | |
+|---|---:|
+| `alley_robbery.inner_radius` — ends the day | 30 |
+| `alley_robbery.pursues_within` — he stands up and comes | 140 |
+| `alley_robbery.outer_radius` — his field, the meter cost | 200 |
+| `ContactPoint.REACH` — how near she must get | 36 |
+
+- Below **66** (`30 + 36`) touching the mark is death, always. Out of bounds.
+- Above **176** (`140 + 36`) the pick-up can never wake him, from any direction. He is scenery.
+- Between them, **which way she comes in decides whether he wakes**, because her distance to him is
+  her distance to the mark plus or minus his offset. At ~120px, arriving from the far side she is
+  156px from him when she touches the mark — *just* outside the trigger — and any lazier line trips
+  it, buys her the 1.8s notice, and makes her run. That is the day-3 lesson arriving in act II
+  because she chose to.
+- The whole approach is inside his 200px field either way, so the meter is charged regardless. **The
+  cost survives losing the hold**; only the risk moved from a clock to a bearing.
+
+**So the alley roulette survives, on a different axis.** It was *whether* there is a robber (0.3,
+seeded, learnable). It becomes *how near he stands* — a distance drawn in the 66–176 band from
+`GameState.day_rng(day, "resistance")`, so 176 is a nuisance and 90 is nasty and the pattern is still
+learnable across replays, which is the line this project has drawn between risk and a coin flip.
+`docs/NARRATIVE.md` carries the name and needs the sentence under it changed, not removed.
+
+##### The calendar, and why the day brief is now load-bearing
+
+*"pick up instruction -> perform task the next day -> repeat"* is **two beats per task**, so the list
+extends rather than replaces. The mark moves to **day 4** — which is where act II starts, so the
+resistance opens on the day the city changes character — and the fourteen days come out exact:
+
+| days | step | |
+|---|---|---|
+| 4 / 5 | mark → **A · give a note to a yeller** | act I row, so it works this early |
+| 6 / 7 | mark → **E · carry the package home** | the existing step 3 is already called "A package" |
+| 8 / 9 | mark → **D · walk through the checkpoint** | `checkpoint` is day 7+ |
+| 10 / 11 | mark → **B · beat the poster crew to the wall** | keeps step 4's deadline, restated over a thing |
+| 12 / 13 | mark → **C · stand in the protest** | `protest` is day 12+, so this is its only slot |
+| 14 | **the last night** | the finale, unchanged, `needs_goal` |
+
+Two consequences, and the first is the reason M54's day-brief item stopped being a convenience:
+
+- **Miss the mark and there is no task tomorrow.** The brief is how she learns what the resistance
+  wants, so *"during the day brief there should be instructions from the chalk marks"* is now the
+  **mechanism** rather than a courtesy. The first mark keeps its absolute exemption — no hint — and
+  that is free: `day_summary.gd:87` already gates the whole resistance line on
+  `has_joined_resistance()`, which is `progress > 0`.
+- **`RESISTANCE_GOAL` counts the perform half only**, so 4-of-5 keeps meaning exactly what it meant
+  and the good ending's arithmetic does not move. This side's call, stated rather than asked.
+
+**What is deliberately not decided here**: whether a picked-up-but-unperformed instruction expires
+at the end of its day or waits. Step 4's `deadline_fraction` is the existing machinery for the first
+answer and B's own design wants it. Left until the pairs are built and can be walked.
+
 - [ ] **Give a note to a yeller** *(finding 7, and it comes fully specified)*. *"One task should be
       giving a note to a yeller. that is a risky move since the yeller causes the same level of
       excitement and there might be multiple candidates to test before finding the correct one."*
@@ -3598,13 +3817,22 @@ feature rather than a difficulty complaint.
       *design a guard*, it is **two smaller things**: the trap starts on `TRAP_FIRST_DAY` 8 and the
       first chalk mark is day 5, so the three steps a player is most likely to reach have no guard at
       all; and the district-placed steps are exempt (`_step.district >= 0`), so half the subquest is
-      outside the mechanism entirely. Whether either of those is a bug or a deliberate ramp is a
-      question for the player, and it is a much smaller question than the one this item was written
-      as
-- [~] **More tasks of that shape**, drafted here and chosen by the player rather than built. **The
-      draft is below and nothing in it is decided.** Written after reading what the subquest already
-      is — `docs/NARRATIVE.md`, "The resistance subquest", and `src/resistance/resistance_steps.gd`
-      — because the first thing this asked for turned out to be half-answered there already
+      outside the mechanism entirely.
+
+      **Answered 2026-09-01: both, and the guard is now unconditional.** *"Let's also make sure the
+      chalk mark is always guarded by a robber."* `TRAP_FIRST_DAY` goes to the first step's own day
+      and the `_step.district >= 0` exemption comes out, so no mark is ever unguarded and no half of
+      the subquest sits outside the mechanism. `TRAP_CHANCE` stops being a probability and becomes a
+      **distance** — see "The guard, worked out from the numbers" above, which is where the arithmetic
+      that makes *always* survivable is. `docs/NARRATIVE.md`'s "alley roulette" paragraph changes
+      axis rather than being deleted
+- [ ] **More tasks of that shape** — *drafted, put back, and answered.* **All four offered were
+      taken**, so with the player's own yeller the set is five: A, E, D, B and C, one per pick-up/
+      perform pair, on the calendar above. F (follow the van) is the one draft **not** taken and the
+      reason is recorded with it. The counter-example below stands. Written after reading what the
+      subquest already is — `docs/NARRATIVE.md`, "The resistance subquest", and
+      `src/resistance/resistance_steps.gd` — because the first thing this asked for turned out to be
+      half-answered there already
 
 #### What the six steps already are, before anything is added to them
 
@@ -3698,29 +3926,50 @@ day is *cheap*. It reads like a resistance task and is the opposite of one: a st
 cost is a step that is not a decision, and the subquest's whole design intent is that joining it
 costs the core resource.
 
-#### Four questions that have to go back, because each one changes what gets built
+**Taken: A, B, C, D and E. Not taken: F**, on its own drafted reasoning — it is the only one that
+would make the resistance grow a second interaction model. It stays written down rather than
+deleted, because a rejected option with its reason attached is a decision somebody can overturn.
 
-Recorded rather than answered. **This side's recommendation is on each, so that answering is a yes
-or a no rather than a design session.**
+**And every "hold" in the six bullets above is superseded**, by the answer at the top of this entry:
+*"it should be instant when touching the mark."* It applies to the tasks as well as to the marks,
+and it makes the whole subquest **one verb — get to a guarded place and touch it** — which is a
+better design than the one the drafts were written against, not merely a simpler one. What each
+draft becomes:
 
-1. **Do these replace the six steps or extend them?** `RESISTANCE_GOAL` is 4 of the first 5, which
-   *"lets the player miss one and still reach the good ending"* — so adding steps changes the
-   arithmetic of the good ending and not just the content. *Recommendation: replace. Steps 1, 2 and
-   4 are the same alley hold three times, and turning two of them into C and D costs no arithmetic
-   at all.*
-2. **What does a wrong candidate cost — the meter only, or the day's clock too?** A day is 180
-   seconds and three wrong yellers is a real fraction of it. *Recommendation: the meter only, and
-   let the clock be whatever the walking costs. A task that can lose the day by running it out is a
-   task nobody will risk twice.*
-3. **Is the right candidate learnable on a replay?** The alley roulette is deliberately seeded so it
-   is. *Recommendation: yes, the same way — `GameState.day_rng(day, "resistance")` already gives it
-   for free, and "learnable across replays" is the line this project has drawn between risk and a
-   coin flip.*
-4. **May a task cost a nerve on purpose?** The brief says *"costs you meter **or safety**"*, and
-   nothing in the game currently lets you spend safety deliberately — a nerve is only ever taken
-   from you. *Recommendation: not yet. Five nerves are five attempts at the whole run, and a step
-   that can spend one is a step that can end a run for an optional reward. Ask again once somebody
-   has actually reached act III.*
+- **A** — touch the right yeller. A wrong one costs his field and returns nothing, which is the
+  player's clause 2 with no timer needed.
+- **B** — touch the wall before the crew paste over it. The deadline is the thing rather than the
+  clock, exactly as drafted.
+- **C** — reach the middle of the protest. The 110px of bodies is the cost, paid going in and coming
+  out; standing in it was never what made it expensive.
+- **D** — touch the far side of the checkpoint. A traversal is already instant at the moment it
+  completes, so this draft loses nothing at all. Its "a hold that survives being inside an
+  obstructing body" requirement simply evaporates.
+- **E** — touch the package, then the rest of the day is the task. The only one whose cost was never
+  in the contact.
+
+#### The four questions, answered on 2026-09-01
+
+**Kept with the answers under them**, because two of the four came back as something other than the
+choice offered and a question whose answer changed the question is worth being able to read twice.
+
+1. **Do these replace the six steps or extend them?** *Recommended: replace.* **Answered: extend,
+   and for a reason the question did not anticipate** — *"let's keep them so the progression is
+   (pick up instruction -> perform task the next day -> repeat)"*. So a task is **two** steps, the
+   list roughly doubles, and `RESISTANCE_GOAL` survives untouched by counting the perform half only.
+   The recommendation was arguing about which content to cut; the answer changed the unit.
+2. **What does a wrong candidate cost — the meter only, or the day's clock too?** *Recommended: the
+   meter only.* **Not contested, taken as read.** A wrong yeller costs his field and whatever the
+   walking cost; nothing takes the day off you for guessing.
+3. **Is the right candidate learnable on a replay?** *Recommended: yes, via
+   `GameState.day_rng(day, "resistance")`.* **Not contested, taken as read** — and it gained a second
+   job, since the guard's *distance* is now drawn from the same stream.
+4. **May a task cost a nerve on purpose?** *Recommended: not yet.* **Answered: no, and here is what
+   should happen instead** — *"losing a nerve means repeating the day with the failed day erased. so
+   no it cannot cost a nerve."* Which is a better reason than the one this side gave: a nerve is not
+   a resource you can spend, it is a **rewind**, so spending one deliberately is incoherent rather
+   than merely dangerous. The replacement — the world getting more dangerous the further in you are
+   — is **M56**.
 
 ## M54 — The resistance says something, and the robber stops at walls · not started
 

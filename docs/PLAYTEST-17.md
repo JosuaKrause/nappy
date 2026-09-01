@@ -198,6 +198,12 @@ for progress on the optional path.** Finding 7 is the worked example and finding
 arriving from the other direction. It wants a list drafted and put back to the player rather than
 built.
 
+**Closed on 2026-09-01.** Six were drafted and put back; five were taken (the yeller, the package
+carried home, the checkpoint, the poster crew's wall, the protest) and one was not. The design that
+came back with them is larger than the list: **the hold is gone** — a step is *touching* a mark
+rather than pressing `E` at it — and **a task is two steps**, pick up the instruction and perform it
+the next day. See M55's "The answers" in [TODO.md](TODO.md).
+
 ## 9. The robber beside the chalk mark was good
 
 > "I did like the robber next to the chalk marking. that made it hard to actually get the chalk
@@ -222,6 +228,14 @@ scheduler — a chalk mark is a day-5 step and the trap starts on day 8 — but 
 and this paragraph treated it as new. `CLAUDE.md`: **the first tool call of a design task is a
 search, not a plan.** What is left is smaller and is in M55: days 5–7 have no guard, and the
 district-placed steps are exempt from the mechanism altogether.
+
+**Answered on 2026-09-01, and the answer is stronger than the finding asked for**: *"let's also make
+sure the chalk mark is always guarded by a robber."* Both gaps close and the guard becomes
+unconditional. The roulette is not deleted — it changes axis, from *whether* there is a robber to
+*how near he stands*, in a band the row's own numbers fix at 66–176px, and it stays seeded so the
+pattern is still learnable. **This finding also has a second answer at a larger scale**, given in the
+same session and written up as **M56**: *"the more resistance tasks are completed the more dangerous
+the environment becomes."* Finding 9 is answered at the chalk mark by M55 and in the city by M56.
 
 ## 10. Evidence lives in the repo
 
