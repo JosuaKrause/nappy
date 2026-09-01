@@ -4749,6 +4749,67 @@ yet"*) and under the `CLAUDE.md` rule the first round produced.
       map: the first border pass wrote four sides four times, which is one bug per side waiting to
       happen, and this is it happening
 
+## M56 — The resistance is noticed · `feature/the-city-notices`, partly built
+
+Three of the six items shipped on 2026-09-02. The van, "other dangers like this" and the
+measurement against the nerves are still queued; the design for all three is in `TODO.md`.
+
+**The three forks that were put back to the player, and what each rejected.**
+
+- **Heat is a declarative field on `EventDef` rather than extra days.** Adding
+  `resistance_progress` to the day number the scheduler plans against would have reused
+  `budget_for(day)` — the linear growth in the event budget — for nothing. Rejected because it also
+  moves `first_day`: a player doing well at the optional path would meet act III's vans in act II,
+  and the calendar `docs/EVENTS.md` publishes would stop being what the game does. A third option,
+  heat raising only how many dangerous rows a day places, was rejected as unable to express "the
+  van comes for you" at all.
+- **The patrol's escalation moves population, intensity and whether it investigates — not its outer
+  radius.** Widening the 185px field is the axis that most obviously changes routing and also the
+  one that costs something invisible: `Tuning.required_telegraph_time` is stated over the gap
+  between the inner and outer radii, so a wider field silently owes a longer telegraph than the
+  1.7s the row ships with.
+- **A pursuer is exempt from M28's clearance rule**, rather than the hunting van losing `hard_fail`.
+  The alternative kept a rule intact by contradicting the instruction that produced the van.
+
+**Why the heated row is a derived copy rather than a mutation**, which is the load-bearing
+implementation choice. Mutating a row in place is fewer lines and breaks the one thing this project
+checks on boot: `EventDef.validate()` and `Tuning.validate_pursuit()` run once, over the catalogue,
+from data. A def that changed shape mid-run would be validated in the shape it booted in — the
+harmless one — and the fairness contract would be stated about a version of the event that no
+longer exists. Progress is a bounded integer, so the set of shapes is finite and all of them are
+checked.
+
+**What the pursuer exemption turned out to be, which is neither of the two answers expected.** The
+clearance rule is `EventScheduler._keeps_its_field_clear`, and it read
+`plan.def.hard_fail and plan.role != WALL`. Because `_role_for` routes *any* placed `hard_fail` row
+that is not a `ONE_SHOT` to `WALL` before it ever asks whether the row pursues, every lethal pursuer
+in the catalogue was **already exempt by accident of that classification** — `charging_dog` because
+it is `AHEAD_OF_PLAYER` and never reaches the check at all, `alley_robbery` because `hard_fail`
+always routes it to `WALL`. So the answer to "was it already true or did it need fixing" is both: it
+held, and it held for a reason nobody had named, and a lethal `SET_PIECE` pursuer would have fallen
+straight through it, since kind is checked before `hard_fail` in `_role_for`. The rule is now stated
+over `pursues` directly, and `tests/test_events.gd` pins it by forcing a pursuer into a non-`WALL`
+role, with a lethal non-pursuing row in the identical forced role as the control.
+
+**Two things the implementing agent chose where the design was silent, and they are open to
+overturn.** `is_telegraphing_still()`'s guard was left off the new patrol-while-waiting branch,
+because `is_waiting()` implies `not is_telegraphing()` by construction and the check would be dead
+code. And `docs/EVENTS.md`'s clearance paragraph had never documented the `WALL` exemption at all —
+the agent filled that gap in the same edit rather than adding a third case beside two undocumented
+ones, which is slightly more than the brief asked for.
+
+**The finding carried forward rather than fixed**, and it is in `TODO.md`'s small items:
+`EventInstance.resume()` restores age and travelled distance but not `_noticed_at`, so a
+`pursues_within` row streamed out mid-chase comes back `is_waiting()`, having forgotten it. Shared
+with `alley_robbery` since the mechanic was built and never reachable before, because a stationary
+pursuer's field never moves far from where the day planted it. `tests/test_heat.gd` pins the actual
+behaviour so a fix fails there first.
+
+**Measured, not derived:** a day 9 planned at full heat places more `police_patrol` instances than
+the same day cold, from the same seed. Asserted as a relationship rather than as a count, because
+the population multiplier raising the cap does not by itself guarantee more of them get rolled
+against everything else competing for the budget.
+
 ## Delegating is the default, and the rule that says so loads at `SessionStart`
 
 Asked for on 2026-09-02: *"make more use of sub-agents — you write plans, sub-agents implement
@@ -5579,7 +5640,11 @@ rather than to move a number.
       dismissed with the same key as everything else. Finding 5 is the fix and this is the evidence
       for it. Reopen it if the counter is ever seen to move with nerves still on the HUD
 
-## M56 — The resistance is noticed · not started
+## M56 — The resistance is noticed · the brief as it was drafted, before the forks came back
+
+*(The outcome, and what the three forks settled, is under "M56 — The resistance is noticed ·
+`feature/the-city-notices`" earlier in this file. This is the drafting that preceded it, kept for
+the questions it raised rather than for the answers it guessed at.)*
 
 **Given on 2026-09-01, as the answer to M55's fourth question rather than as a finding.** The
 question was whether a resistance task may cost a nerve. The answer is no, and the second half of it

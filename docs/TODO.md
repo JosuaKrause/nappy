@@ -44,35 +44,13 @@ The rest of M53 shipped; the record, with the measurements and the not-reproduce
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**
 — a nerve is a rewind, not a resource, so there is nothing to trade.
 
-**The three forks were put back and answered on 2026-09-02.** What they settled:
+**What the remaining items are stated against**, since the machinery under them exists:
+`EventDef.heat_response` is `NONE`, `PRESSES` or `HUNTS`, `EventCatalogue.heated()` derives a row's
+shape at a progress level, and every one of those shapes is validated on boot. `police_patrol`
+carries `PRESSES` and is the non-lethal rung. A pursuer is exempt from the rule that nothing else
+happens inside a lethal event's field — `docs/EVENTS.md` states it. The reasoning, and what was
+rejected on the way, is in `DECISIONS.md` under M56.
 
-- **Heat is a declarative field on `EventDef`**, not a per-row switch and not extra days. A row
-  states *that* it answers to heat and `Tuning` holds what each answer costs, so it is read off the
-  def exactly the way the blocking role is (`EventScheduler._role_for` derives the role from the def
-  rather than anyone setting it per placement). *Rejected: adding progress to the day number — it
-  reuses `budget_for` for free but also moves `first_day`, so act III vans reach act II and the
-  calendar in `docs/EVENTS.md` stops meaning what it says.*
-- **The patrol's escalation moves population, intensity and whether it investigates.** Not its outer
-  radius: widening the 185px field also widens what the telegraph has to buy, since
-  `Tuning.required_telegraph_time` is stated over the gap between the two radii.
-- **A pursuer is exempt from the clearance rule**, and the exemption is the third case rather than
-  the van losing `hard_fail`.
-
-- [ ] **Danger scales with `GameState.resistance_progress`.** `EventDef` gains a `heat_response` —
-      `NONE`, `PRESSES`, `HUNTS` — and the catalogue derives a **heated copy** of a row per progress
-      level, so nothing downstream of the day's plan has to know heat exists. Progress is an integer
-      0..`RESISTANCE_GOAL`, so the set of shapes is **finite and every one of them is validated on
-      boot** — which is the answer to the load-time contract problem: `Tuning.validate_event` and
-      `validate_pursuit` check the catalogue in the shape it booted in, so a def that changed
-      mid-run would be validated only in its harmless shape
-- [ ] **The patrol presses.** `police_patrol` today is mobile at 74px/s along roads and crossings,
-      intensity 10, radii 44/185, up to 12 a day, from day 4, and not `hard_fail` — which the
-      instruction keeps. Heated it is more numerous, costs more to stand near, and past a threshold
-      **investigates**: it runs its route until she comes close, then turns and follows.
-      **A pursuer that has a route runs it until it notices her** — derived from `pursues and mobile
-      and is_waiting()`, so investigating needs no field of its own. The contract to watch is that
-      every clause of `Tuning.validate_pursuit` is written about a *lethal* chase ("running opens
-      more than the radius that ends the day"), and this is the first pursuer that never kills
 - [ ] **The abduction van takes somebody, and then it takes you.** *(2026-09-01: "we need abduction
       vans that normally just abduct people but start trying to abduct the player if she is part of
       the resistance.")* `abduction` today does neither: an unmarked van that **idles**, static,
@@ -111,12 +89,6 @@ The city gets more dangerous the further into the subquest you are. **A task may
       happen more than just once".)* So the ladder has three steps a player can name — denser, then
       interested, then hunted — with the last one arriving on its own rung rather than alongside
       the patrol's, and with days left to be met in more than once.
-- [ ] **Write the pursuer exemption down.** M28's rule is that nothing else happens inside a lethal
-      event's field, and M50 exempts only the off-corridor `WALL` role. The clearance rule is about
-      *places*, and a pursuer has no place — which is already true and unwritten of `charging_dog`
-      (day 3, sited in front of her) and `alley_robbery` (day 8, lethal inside 30px, chases at
-      130px/s), both of which carry a lethal radius around with them today with nothing checking
-      their clearance
 - [ ] **"And other dangers like this"** — drafted and put back, after the vans, because the vans
       are where the precedent gets set. The candidates already in the catalogue are `checkpoint`
       (day 7, closes a street) and `night_raid`
@@ -539,6 +511,15 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
 - [ ] **`generate()` retries with `seed + 1`**, so a run's city is the first nearby seed that
       passes rather than `run_seed` itself. Not a bug; worth remembering when reproducing from a
       seed
+- [ ] **A pursuer streamed out mid-chase comes back having forgotten it.** `EventInstance.resume()`
+      restores the age and the distance travelled but not `_noticed_at`, and a fresh instance starts
+      with that at `INF` — so a `pursues_within` row streamed out after it has noticed her returns
+      `is_waiting()`, standing where the day planted it. It is not new and it is not currently
+      dangerous: `alley_robbery` has had it since the mechanic was built, and the heated patrol that
+      surfaced it can never be `hard_fail`. **`tests/test_heat.gd` pins the behaviour rather than the
+      one the field name implies**, so a fix fails there first. The fix is `resume()` carrying the
+      notice, and it has to be checked against every `pursues_within` row rather than the one that
+      found it
 - [ ] **The log says when she is stuck** *(asked 2026-09-01: "put a note in the telemetry when the
       player doesn't move even though they press something")*. A throttled `blocked` entry from
       `TelemetryObserver` — movement input held for about a second while displacement stays near
