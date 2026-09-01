@@ -1005,6 +1005,24 @@ func _recycle() -> void:
 	_claim_the_road_here()
 	gap_ahead = INF
 	junction_hold = INF
+	_keep_within_the_room_beyond_the_map()
+
+## However the rolls above landed, an entry point may not sit further past the map's true edge
+## than this agent is allowed to travel before it is recycled again — the same room
+## `_room_beyond_the_map` grants the far end of a journey, asked of the near end too.
+##
+## **`ENTRY_SPREAD` is a car's-length band and every kind shares it**, because the *normal* job of
+## a spread is an off-screen buffer inside the box, which every kind wants the same amount of. The
+## fallback below it is the trap: when six rolls near a boundary all miss — likely exactly where
+## the arterial's own weight keeps re-offering the spine — the entry point can land `ENTRY_SPREAD`
+## past the edge regardless of kind, because nothing here knew a walker's own overrun is a single
+## tile where a car's on the spine is the length of the bridge. Without this a walker can appear
+## already standing on the crossing, which is the one thing only a car may do.
+func _keep_within_the_room_beyond_the_map() -> void:
+	var extent := _map.world_size()
+	var limit: float = extent.y if _vertical else extent.x
+	var beyond := _room_beyond_the_map()
+	_set_along(clampf(_along(), -beyond, limit + beyond))
 
 ## Drops the car in behind whatever is already in its lane, when the rolls above could not find a
 ## gap. Nothing at all if it landed somewhere free, which is almost always.

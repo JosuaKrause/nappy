@@ -49,6 +49,9 @@ func run(t) -> void:
 	_test_a_precinct_has_no_cars_in_it(t)
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
+	_test_only_cars_go_over_the_bridge(t)
+	_test_the_crowd_agrees_a_zone_absorbed_the_corridor(t)
+	_test_agents_do_not_overrun_an_ordinary_edge(t)
 
 	_city.free()
 
@@ -1198,3 +1201,90 @@ func _test_nothing_walks_into_a_hard_blocker(t) -> void:
 	t.check(frames_with_one == 0,
 			"nobody is standing inside a hard blocker (%d frames of %d, worst %d at once)"
 			% [frames_with_one, frames, worst])
+
+## M53: **the overrun permission was narrowed to a car on the spine, and the lane was not** — the
+## entry-side fallback (`CrowdAgent._keep_within_the_room_beyond_the_map`) used to hand every kind
+## the same `ENTRY_SPREAD` reach past the true edge, so a walker whose six recycle rolls all missed
+## could appear already standing on the bridge. The bridge is not made safe by this: a car on the
+## spine still overruns the map by `Tuning.OUT_OF_SIGHT`, which is the whole of how it looks like it
+## drives across rather than stopping dead at the kerb.
+func _test_only_cars_go_over_the_bridge(t) -> void:
+	var spine_x := (_city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
+			* float(Tuning.TILE_SIZE)
+	var limit := _city.map.world_size().y
+	var at := Vector2(spine_x, limit - Tuning.TILE_SIZE)
+	_city.crowd.start_day(1, _rng(1), at)
+
+	var worst_walker := 0.0
+	var worst_car := 0.0
+	for frame in int(round(30.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			var overrun: float = agent.position.y - limit
+			if agent.kind == CrowdAgent.Kind.WALKER:
+				worst_walker = maxf(worst_walker, overrun)
+			else:
+				worst_car = maxf(worst_car, overrun)
+
+	t.check(worst_walker <= Tuning.TILE_SIZE + 1.0,
+			"no walker overruns the map's south edge by more than a tile (worst %.0fpx)"
+			% worst_walker)
+	t.check(worst_car > Tuning.TILE_SIZE * 2.0,
+			"and a car on the spine still overruns it — the bridge is not made safe (worst %.0fpx)"
+			% worst_car)
+
+## M53: **the crowd has to agree with the drawing.** A T-junction the paint knows about and
+## `CrowdAgent._divert` does not is the same bug in the other direction — so this checks the
+## crowd's own notion of a street (`CityMap.is_street`, which is what `_cannot_go_on` reads) against
+## a calm zone's absorbed corridor the same way `tests/test_generator.gd` checks the paint.
+##
+## A car never belongs on a zone's absorbed corridor — `is_street()` is false there, park or not,
+## which is the one check `_cannot_go_on` makes that does not care *why* a tile stopped being a
+## street. A walker legitimately does: a zone is calm ground as well as a shortcut, and standing on
+## it is correct rather than a leak. So the property is asked only of cars, over a real zone with
+## real traffic around it rather than by re-deriving what `_cannot_go_on` already computes.
+func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t) -> void:
+	if _city.map.zone_rects.is_empty():
+		return
+	var anchor: Vector2i = _city.map.zone_rects.keys()[0]
+	var footprint := CityMap.blocks_tile_rect(_city.map.zone_rects[anchor])
+	var at := _city.map.tile_rect_to_world(footprint).get_center()
+	_city.crowd.start_day(1, _rng(1), at)
+
+	var cars_inside := 0
+	for frame in int(round(30.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.CAR:
+				continue
+			if footprint.has_point(_city.map.world_to_tile(agent.position)):
+				cars_inside += 1
+	t.check(cars_inside == 0,
+			"no car ever stands on the zone's absorbed corridor at %s (%d frames it did)"
+			% [footprint, cars_inside])
+
+## M53: **cars and people still go off the map.** Two candidates: the agent is recycled on screen,
+## or a junction exists somewhere it should not. The generation side was checked directly —
+## `StreetNetwork.segments()` never enumerates a junction or a segment outside `junction_count()`,
+## and every boundary junction is a genuine T or L by construction, since there is no tile grid
+## beyond it for a fourth arm to point into. Not reproduced there.
+##
+## The recycle side was: `_keep_within_the_room_beyond_the_map` (checked at the spine in
+## `_test_only_cars_go_over_the_bridge`) is not spine-specific, so an **ordinary** boundary gets the
+## same guarantee for free. Checked here at the east edge, on a corridor that is not the spine, so
+## the fix is asserted as the general one it is rather than as a property of the bridge alone.
+func _test_agents_do_not_overrun_an_ordinary_edge(t) -> void:
+	var limit := _city.map.world_size().x
+	var at := Vector2(limit - Tuning.TILE_SIZE, _city.map.world_size().y * 0.5)
+	_city.crowd.start_day(1, _rng(2), at)
+
+	var worst := 0.0
+	for frame in int(round(20.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			worst = maxf(worst, agent.position.x - limit)
+	t.check(worst <= Tuning.TILE_SIZE + 1.0,
+			"nobody overruns an ordinary edge by more than a tile (worst %.0fpx)" % worst)

@@ -309,6 +309,12 @@ and the road is there, and only the arm of the junction beyond has gone. What do
 diverting turns on the junction's own road band, a tile earlier) and nothing has to cross. That
 becomes pavement, so the road visibly ends at the junction instead of poking into the park.
 
+**A dead end's plug and a big building's mass leave the same stub**, and `CityGenerator` seals it
+the same way — over "ground that just stopped being a street" rather than three times, once for a
+zone, once for a wall built right at a junction's mouth, and once for a mass that swallows a whole
+street. `_seal_stub_crossings` is the one function every hard blocker calls after it takes its
+street: no zebra leads to ground that is no longer a street, whatever took it.
+
 ### Route redundancy
 
 The design **wants** at least two distinct routes from home to every calm area, so that a spoiled
@@ -938,7 +944,11 @@ is loud, and the reason a park is quiet.
   spine going north or south may overrun the map by `OUT_OF_SIGHT`; **everybody else keeps a
   tile**, because outside the map is water, forest and mountainside, and `_paint_outside_the_map`
   lays carriageway out there at the spine's own width and nowhere else. A general allowance would
-  drive cars into the sea.
+  drive cars into the sea. The rule holds at both ends of a journey: `CrowdAgent.
+  _keep_within_the_room_beyond_the_map` clamps a freshly recycled agent to the same tile (or the
+  same `OUT_OF_SIGHT`, for a car on the spine) that a departing one is held to, so the entry-side
+  fallback that only fires when every recycle roll misses cannot hand a walker the reach that
+  belongs to a car on the bridge.
 
 - **And nobody walks into a cul-de-sac's wall.** The crowd is the one thing that travels the
   lattice without asking `blocked_segments()`, and it does not need to — a dead end is a street
