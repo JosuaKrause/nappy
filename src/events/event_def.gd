@@ -294,9 +294,9 @@ enum Pavement {
 ## than a gap in it: impassable means *stops passage without killing*, which in this game is a
 ## closure taking a whole street. An event with a body takes part of a pavement, so it is walked
 ## round at a price — `costly`, like the dog walker with no body beside it. It would be easy to
-## read `obstructs_radius > 0.0` as impassable and it is the same mistake `CLAUDE.md` warns about
-## on the other side: *if a rule tests `obstructs_radius`, ask whether it means* has a body *or*
-## closes ground.
+## read `obstructs_radius > 0.0` as impassable and it is the same mistake the **events** skill
+## warns about on the other side: if a rule tests `obstructs_radius > 0`, ask whether it means
+## *has a body* or *closes ground*.
 func effect() -> GameEnums.BlockerEffect:
 	return GameEnums.BlockerEffect.LETHAL if hard_fail else GameEnums.BlockerEffect.COSTLY
 

@@ -718,7 +718,8 @@ const CROWD_YIELD_LEAD := 1.4
 const BUMP_SHOVE_SPEED := 55.0
 
 ## A contact is not a write to `Baby.excitement` — it agitates the *person* she walked into, and
-## the crowd sums them like any other body. See the invariant in CLAUDE.md.
+## the crowd sums them like any other body. Excitement stays a pure query; a bump startles the
+## agent, never the meter — the invariant the **events** skill and `docs/MECHANICS.md` hold.
 ##
 ## **A contact is about eleven points of a hundred-point meter**, so four or five of them lose a day
 ## on the crowd alone. It is the single most expensive instant on a pavement and it must not be the
