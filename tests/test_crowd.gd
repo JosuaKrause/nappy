@@ -49,6 +49,7 @@ func run(t) -> void:
 	_test_a_precinct_has_no_cars_in_it(t)
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
+	_test_only_cars_go_over_the_bridge(t)
 
 	_city.free()
 
@@ -1198,3 +1199,35 @@ func _test_nothing_walks_into_a_hard_blocker(t) -> void:
 	t.check(frames_with_one == 0,
 			"nobody is standing inside a hard blocker (%d frames of %d, worst %d at once)"
 			% [frames_with_one, frames, worst])
+
+## M53: **the overrun permission was narrowed to a car on the spine, and the lane was not** — the
+## entry-side fallback (`CrowdAgent._keep_within_the_room_beyond_the_map`) used to hand every kind
+## the same `ENTRY_SPREAD` reach past the true edge, so a walker whose six recycle rolls all missed
+## could appear already standing on the bridge. The bridge is not made safe by this: a car on the
+## spine still overruns the map by `Tuning.OUT_OF_SIGHT`, which is the whole of how it looks like it
+## drives across rather than stopping dead at the kerb.
+func _test_only_cars_go_over_the_bridge(t) -> void:
+	var spine_x := (_city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
+			* float(Tuning.TILE_SIZE)
+	var limit := _city.map.world_size().y
+	var at := Vector2(spine_x, limit - Tuning.TILE_SIZE)
+	_city.crowd.start_day(1, _rng(1), at)
+
+	var worst_walker := 0.0
+	var worst_car := 0.0
+	for frame in int(round(30.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			var overrun: float = agent.position.y - limit
+			if agent.kind == CrowdAgent.Kind.WALKER:
+				worst_walker = maxf(worst_walker, overrun)
+			else:
+				worst_car = maxf(worst_car, overrun)
+
+	t.check(worst_walker <= Tuning.TILE_SIZE + 1.0,
+			"no walker overruns the map's south edge by more than a tile (worst %.0fpx)"
+			% worst_walker)
+	t.check(worst_car > Tuning.TILE_SIZE * 2.0,
+			"and a car on the spine still overruns it — the bridge is not made safe (worst %.0fpx)"
+			% worst_car)
