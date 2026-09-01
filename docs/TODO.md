@@ -645,7 +645,16 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
       (`contact_point.gd`), so the resistance hold becomes automatic on proximity. Nothing is
       lost — the cost was always standing still in an alley while a patrol might pass, not
       the keypress — and a player who wanders down an alley now discovers the difficulty dial
-      by walking near it. **Teach the two that remain:** arrows/WASD at the start of day 1,
+      by walking near it.
+
+      **This half is M55's, and it stood unbuilt for twenty milestones because nobody read it
+      back.** *(2026-09-01: "why are you still talking about holding E? we removed E early on in
+      the development.")* The gate was M25, M25's own gate was a mechanic where running is the
+      right answer, and that shipped in **M33** — after which this simply was not picked up, and a
+      session designing the resistance in M55 read `contact_point.gd`, found the key, and reported
+      it to the player as though it were the current design. Tick it from M55, which goes **further
+      than this asked**: not automatic-on-proximity but instant-on-touch, so the hold goes as well
+      as the key. **Teach the two that remain:** arrows/WASD at the start of day 1,
       then shift, then a scripted day-1-only event that requires a short run after the first
       block. **Comes after M25, for correctness not scheduling**: forcing a run before running
       is ever the right answer teaches a move that is never correct again
@@ -3708,15 +3717,41 @@ verb in it.
 seconds** (`contact_point.gd:44`, `resistance_steps.gd:16`). That is the verb the whole subquest was
 built on and it is being **removed**: touching the mark completes the pick-up, instantly.
 
-**One correction this side owes, because "there is no interact button" is not quite what is on
-disk and the difference is the interesting part.** `interact` *is* bound — `E`, `project.godot:64`
-— and `ContactPoint` has been reading it since the subquest shipped. What is true is that
-**nothing in the game has ever mentioned it**: `hud.gd:237` prints `holding N%` only *while she is
-already holding*, so the one place that could teach the key appears exclusively to a player who has
-already guessed it. Which is very likely the mechanism behind playtest 16's *"I walked on one chalk
-symbol once but there was no indication"* — a verb gated behind an unnamed key reads, from the
-outside, as a mark that does nothing. **The player's sentence is right about the game even where it
-is wrong about the code, and that is the sense in which it counts.**
+**And "there is no interact button" is not a mistake about the code, which is what this side said
+first and had to be corrected on.** *(2026-09-01: "why are you still talking about holding E? we
+removed E early on in the development.")* The key is still bound — `E`, `project.godot:64`, added in
+M0 and never touched since — but **the decision to delete it was taken in playtest 02 and was never
+built**. `docs/PLAYTEST-02.md`, under *"Teach the controls; do not teach a key that exists once"*:
+
+> **Delete the interact key.** The resistance contact is held with `E`, and `E` is used in **exactly
+> one place in the entire game** — `contact_point.gd`, one line. A key that appears once is a key
+> that has to be taught, and teaching it costs more than it is worth. Make the hold **automatic on
+> proximity**: standing near the mark is the hold.
+
+It is the first half of **M26**, which is still `[ ]` here. M26 waits on M25, M25 waited on *a
+mechanic where running is the right answer*, and that shipped in **M33** — so the gate cleared
+around twenty milestones ago and neither was picked up. **The player was remembering the decision;
+the code is what is out of date.** M55 closes M26's first half as a side effect, and that is where
+it should be ticked from.
+
+**This is `CLAUDE.md`'s own rule missed for the second time in one entry** — *the first tool call of
+a design task is a search, not a plan*. The alley-roulette correction three bullets down is the same
+mistake found the same way. Both times the search that would have caught it was **grep the playtest
+files for the noun**, and both times this side searched `src/` instead and treated what the code does
+as what the project decided. **The code is evidence of what was built, never of what was agreed.**
+
+Two things follow that are not just bookkeeping:
+
+- **Playtest 02 went less far than the 2026-09-01 instruction, and the gap is the patrol.** It
+  removed the *keypress* and kept the *hold* — "standing near the mark is the hold" — on the
+  explicit argument that *"nothing is lost… the cost was always standing still in an alley while a
+  patrol might pass, not the keypress."* Instant-on-touch removes the standing as well, so the thing
+  playtest 02 named as the real cost goes too, and the guard's geometry is what replaces it. **That
+  settles the patrol question below: delete it.** There is nothing left for a patrol to interrupt.
+- **`E` lives in five places and the build has to take all five**: `project.godot:64` (the binding),
+  `contact_point.gd:44` (the read), `tests/test_resistance.gd:98–108` (which presses it),
+  `docs/MECHANICS.md:192` (which lists it in the controls) and `docs/ARCHITECTURE.md:57` ("a chalk
+  mark, and hold-to-interact"). The last two are the ones a code-only change leaves lying.
 
 What goes with the hold, listed because each is a thing somebody could otherwise put back by
 accident:
@@ -3728,10 +3763,18 @@ accident:
 - **And a recorded design becomes moot rather than wrong**: *"a reset rather than a deduction"* — a
   `police_patrol` inside `SEEN_RADIUS` resets the hold instead of taking a banked point, because
   *"taking away progress the player has already banked reads as a bug more than a consequence"*.
-  With nothing banked there is nothing to reset. **This side's proposal, which is a judgment call
-  and is flagged as one:** keep the patrol as a *block* rather than a reset — a mark under a
-  patrol's eye cannot be picked up until it has passed, so the cost is standing in an alley waiting,
-  which is the same sentence in the new grammar and one line of code. Say if it should simply go.
+  With nothing banked there is nothing to reset.
+
+  **It goes, and playtest 02 is what decides it rather than a preference.** This side first proposed
+  keeping it as a *block* — a mark under a patrol's eye cannot be picked up until it has passed — on
+  the grounds that waiting in an alley is the same sentence in a new grammar. Two things are wrong
+  with that. Playtest 02's argument for automatic-on-proximity was that *the cost was always standing
+  still in an alley while a patrol might pass*, and instant-on-touch removes the standing, so the
+  patrol has nothing to interrupt: it would be an invisible refusal rather than a cost. And a blocked
+  *hold* showed a bar that would not fill, where a blocked *touch* shows nothing at all — so keeping
+  it would put a silent no-op on the one mechanic playtest 16 already failed to notice existed.
+  `SEEN_RADIUS`, `_patrol_is_watching()`, `was_seen`, `EventBus.resistance_seen` and the HUD's
+  `seen - wait for it to pass` all come out with the hold.
 
 ##### The guard, worked out from the numbers rather than chosen
 
