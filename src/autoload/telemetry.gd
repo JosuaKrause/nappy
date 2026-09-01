@@ -45,12 +45,10 @@ func is_active() -> bool:
 ## traced calls `note()` and lets this decide whether anyone is listening.
 ##
 ## **`played` says whether a person was at the controls, and it is the caller's answer rather than
-## something guessed here.** *(Playtest 17, finding 3: "can you make telemetry logs be
-## distinguishable whether they are from real playtests or your tests? otherwise it looks like a lot
-## of plays happened when they were just regular tests. this skew statistics and muddies inferences
-## we can do".)* A rig's log opens with the stem `rig-` instead of `run-`, so the question is
-## answered by a directory listing — the same argument M39 made for putting the commit in the name,
-## and for the same reason: it is always asked of a listing.
+## something guessed here.** A pile of logs that does not say which of them a person played reads as
+## a great many plays that never happened, and every inference drawn from it is skewed. A rig's log
+## opens with the stem `rig-` instead of `run-`, so the question is answered by a directory listing
+## — the same reason the commit is in the name.
 ##
 ## **The tool already had a proxy for this and the proxy is why it had to be said out loud.**
 ## `tools/telemetry.sh` calls anything under 3kB "a boot that never became a run", which catches
@@ -63,12 +61,10 @@ func begin_run(run_seed: int, played := true) -> void:
 	if not _prepare_directory():
 		return
 	var stamp := Time.get_datetime_string_from_system(false, false).replace(":", "").replace(" ", "-")
-	# **The commit is in the name, not only on line 1.** *(M39, playtest 10 finding 14: "maybe
-	# include the abbreviated commit hash in the file name too so we can quickly delete sessions from
-	# old commits".)* It has been on the first line of every log since M23, which is no help at all
-	# when the question is asked of a directory listing — and it is always asked of a directory
-	# listing, because what a reader wants to know first is *which of these is still about this
-	# build*. `tools/telemetry.sh -p` is the other half.
+	# **The commit is in the name, not only on line 1.** On the first line it is no help when the
+	# question is asked of a directory listing — and it is always asked of a listing, because what
+	# a reader wants to know first is *which of these is still about this build*, in order to
+	# delete the rest. `tools/telemetry.sh -p` is the other half.
 	# The tag goes **last**, and that is not a cosmetic choice: the timestamp has dashes in it and so
 	# does `abc1234-dirty`, so a tag in the middle cannot be parsed back out by anything simpler than
 	# a real parser — and the thing that has to parse it is a bash script old enough to run on
@@ -143,14 +139,10 @@ func current_log() -> TelemetryLog:
 	return _log
 
 # ---------------------------------------------------------------- snapshots ---
-# *(M39, playtest 10 finding 12: "would it make sense to create screenshots for reference in
-# addition to normal telemetry? doesn't have to be a fixed frequency but could try to heuristically
-# capture key instances.")*
-#
 # A trace says what happened and a screenshot says what it **looked like**, and the second question
-# is the one this project keeps having to answer with a rig. Four of the last five milestones fixed
-# something a log could not see: birds that froze in the air, a cat drawn running backwards, a zzz a
-# body's width off the pram, a caret over the wrong things.
+# is the one this project keeps having to answer with a rig. The defects a log cannot see are a
+# whole class: birds that freeze in the air, a cat drawn running backwards, a zzz a body's width
+# off the pram, a caret over the wrong things.
 #
 # Three constraints, and the first is the one the whole file is built on:
 #
@@ -190,11 +182,8 @@ func snapshot(kind: String) -> void:
 	_last_shot = _clock
 	_capture("%s/%s-%03.0fs-%s.png" % [DIRECTORY, _stem, _clock, kind])
 
-## The same picture, asked for by a person rather than by a heuristic.
-##
-## *(Playtest 13, finding 5: "allow creating a screenshot via key press that saves into the
-## telemetry folder and writes a telemetry note for context — this is to help debugging; not a game
-## feature".)*
+## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
+## a game feature.
 ##
 ## **It bypasses `SHOTS_PER_DAY` and `SHOT_SPACING`, and that is the whole difference.** Those two
 ## exist because a heuristic firing on a condition that stays true for two seconds would write a
@@ -221,7 +210,7 @@ func snapshot_now(context: String) -> void:
 
 # --------------------------------------------------------------- the city grid ---
 
-## Writes a picture of the whole tile grid beside the log. *(Playtest 13, finding 4.)*
+## Writes a picture of the whole tile grid beside the log.
 ##
 ## Called once per day rather than once per run, because the lattice is fixed and **what a block is
 ## is not**: an arc requisitions a park, a fire leaves a shell, and today's closures are down. See
@@ -230,7 +219,7 @@ func snapshot_now(context: String) -> void:
 ## It takes the day rather than reading `GameState`, for the reason everything in this file takes
 ## what it needs: the telemetry asks the world no questions, so it can never be the thing that
 ## changed one.
-## Since M50 it also draws the day's **corridor**. The tree is grown here when the caller has none
+## It also draws the day's **corridor**. The tree is grown here when the caller has none
 ## to hand, and that is safe rather than convenient: `RouteTree.for_day` is a pure function of the
 ## city's seed, the day and what is shut, so the tree drawn is the same tree anything else that
 ## asks for today's would get. Growing one touches no gameplay stream and cannot move a placement,
@@ -296,7 +285,7 @@ static func source_version() -> String:
 		return commit
 	return commit + ("*" if ("\n".join(status)).strip_edges() != "" else "")
 
-## The same thing in a form a filename can carry, and a shell script can match on. *(M39.)*
+## The same thing in a form a filename can carry, and a shell script can match on.
 ##
 ## `*` is the dirty marker on line 1 of the log and is a glob character everywhere else, so it
 ## becomes a word: `tools/telemetry.sh -p` compares the tag against `git rev-parse --short HEAD` and
@@ -332,7 +321,7 @@ func _prune() -> void:
 	for i in ours.size() - KEEP_LOGS + 1:
 		_remove_run(dir, ours[i].trim_suffix(".log"))
 
-## Deletes a log and the snapshots taken during it. *(M39.)* They are one artefact — a line and the
+## Deletes a log and the snapshots taken during it. They are one artefact — a line and the
 ## picture of it — so a pruned run must not leave its images behind, which would otherwise be the
 ## only thing in the directory nothing ever cleans up.
 func _remove_run(dir: DirAccess, stem: String) -> void:
