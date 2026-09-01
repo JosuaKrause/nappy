@@ -435,6 +435,18 @@ func is_on_the_tree(key: Vector3i) -> bool:
 func colours_on(key: Vector3i) -> int:
 	return (_colours[key] as Dictionary).size() if _colours.has(key) else 0
 
+## *Which* branches run down a street, sorted. `colours_on` answers how many, which is all
+## placement ever needed; this is for the telemetry, which has to be able to say that she left one
+## path and joined another — *"technically it's leaving a path and entering a new path"*, playtest
+## 17. Two street sets that share no colour are two different routes, and nothing else can tell.
+func branches_on(key: Vector3i) -> Array[int]:
+	var found: Array[int] = []
+	if _colours.has(key):
+		for colour: int in (_colours[key] as Dictionary):
+			found.append(colour)
+	found.sort()
+	return found
+
 ## The streets carried by two or more branches — the trunk, and any stretch several ways out of
 ## the city share before they separate.
 ##
@@ -514,6 +526,58 @@ func rim() -> Array[Vector3i]:
 				seen[beside] = true
 				found.append(beside)
 	return found
+
+## The streets that sit **between two adjacent strands of the corridor**: one street of the tree
+## crossing each end, and nothing of the tree on the street itself.
+##
+## *(M55, playtest 17 finding 2: "if two paths go parallel add some blocking events between them",
+## and the clarification that settles its scope — "only directly adjacent paths (with a single
+## street connecting both) counts for this case obviously. everything further apart should just
+## naturally be never connectable.")*
+##
+## **This is not the spacing rule the class doc rules out, and the difference is the whole of why
+## it is allowed to exist.** Nothing here moves a branch, refuses a merge or asks two routes to
+## keep apart — the tree is grown exactly as it was and this is a question asked of the finished
+## thing. *"The player can walk the beginning of path A and then switch to path B without
+## noticing"* stays true of the **graph**; what the player asked for is that the one street the
+## switch is made through sometimes cost something, which is a placement and lives downstream.
+##
+## **Directly adjacent means one street, and that is the whole definition.** Two strands two
+## turnings apart have off-corridor ground between them, which since M55's first item is lethal or
+## very costly on its own — so they are separated by the map and nothing has to be placed. Asking
+## this question of anything wider would be inventing a rule the player explicitly did not ask for.
+##
+## **A strand is a stretch of corridor and not a branch**, so a single branch that runs out along
+## one street and home along the next one down answers yes here. That is deliberate: the complaint
+## is about the *shape on the ground* — two parallel lines with a free step between them — and a
+## player switching between them cannot see, and has no reason to care, whether the two lines are
+## coloured the same. `branches_on()` is what tells two routes apart, and it is the telemetry's
+## question rather than this one.
+##
+## Every answer is on the rim by construction: a street with a tree street at each end is one
+## turning off the corridor and never further. Kept as its own question anyway, because *the rim*
+## is a band round the whole corridor and this is a **gap in the middle of it**.
+func gaps() -> Array[Vector3i]:
+	var found: Array[Vector3i] = []
+	for segment in StreetNetwork.segments():
+		var key := segment.key()
+		if _colours.has(key) or not _is_a_real_street(segment):
+			continue
+		if _crossed_by_the_tree(segment.a, key.z) and _crossed_by_the_tree(segment.b, key.z):
+			found.append(key)
+	return found
+
+## Whether a street of the tree runs across this junction at right angles to `along`.
+##
+## At right angles is what makes the two strands **parallel**. A tree street collinear with the
+## connector is the corridor carrying straight on through the junction, which is one strand rather
+## than two, and counting it would call every dead end off a route a gap.
+func _crossed_by_the_tree(junction: Vector2i, along: int) -> bool:
+	for link: Array in _links[StreetNetwork.node_of(junction)]:
+		var beside := link[1] as Vector3i
+		if beside.z != along and _colours.has(beside):
+			return true
+	return false
 
 func branch_for(area: Vector2i) -> Branch:
 	for branch in branches:

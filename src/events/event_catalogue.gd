@@ -481,8 +481,11 @@ static func _loose_dog() -> EventDef:
 	def.speed = 132.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 24
-	def.weight = 1.2
-	def.max_per_day = 10
+	# The other half of day 1's wall pool; see `leaf_blower` for the measurement both numbers came
+	# out of. Between them they are the whole of what *"leaving the path should be lethal or very
+	# expensive"* can be built from on the one day the game has nothing lethal in it at all.
+	def.weight = 3.0
+	def.max_per_day = 24
 	def.cost = 2
 	return def
 
@@ -528,8 +531,26 @@ static func _leaf_blower() -> EventDef:
 	# counterplay `homeless_yeller` has, at a scale that makes a whole corner of a park unusable.
 	def.pulse_period = 4.0
 	def.obstructs_radius = PERSON_BODY
-	def.weight = 1.2
-	def.max_per_day = 10
+	# **A wall row, and on day 1 it is half of the entire wall pool** — so its weight and its cap are
+	# what *"leaving the path should be lethal or very expensive"* is built out of. *(M55, playtest
+	# 17 findings 1 and 12.)*
+	#
+	# Both moved, and which one binds is a different answer on different days, which is the part
+	# worth carrying. The **cap** was binding on days 5 and 9: the lethal wall rows were capped at 4
+	# and 5 across 121 blocks, so the deep band had nothing deadly in it whatever the budget did. The
+	# **weight** is what binds on day 1, where the caps were never reached — a wall row is only ever
+	# *offered* as often as its weight, so 13% of a day's placements were walls no matter how high
+	# the ceiling went. Raising a cap the day never reaches is the other half of "a budget the
+	# catalogue cannot spend is not density".
+	#
+	# 1.2 → 3.0 and 10 → 24, measured over five seeds: day 1 goes from 16 walls to 29, and the cost
+	# per tile of street reorders from **corridor 0.231 / rim 0.164 / deep 0.235** to **corridor
+	# 0.202 / rim 0.253 / deep 0.216** — which is M50's stated gradient, *stray one turning and it is
+	# expensive*, arriving for the first time. It costs six placements a day, because the budget now
+	# buys dearer rows, and it makes a leaf blower as common a sight as a dog walker. That is the
+	# price of day 1 having exactly two rows a wall can be made of.
+	def.weight = 3.0
+	def.max_per_day = 24
 	def.cost = 2
 	return def
 
@@ -639,7 +660,13 @@ static func _cyclist() -> EventDef:
 	# block a lethal thing at full density would be a minefield rather than a street — and M28's
 	# rule that nothing else shares a lethal field means each one also quietly empties 145px of
 	# pavement around it.
-	def.max_per_day = 5
+	#
+	# **That last clause stopped being true off the corridor in M50, which is what lets this rise.**
+	# A wall is exempt from M28's clearance rule, and a lethal wall is offered `WALL_DEEP_WEIGHT`
+	# copies of the ground two turnings out — so 5 → 14 is the *deep* band getting the deadly half of
+	# *"very costly to deadly"*, not fourteen more cyclists on the route. **On the corridor it changes
+	# nothing at all**, because a wall gets zero copies there. *(M55, playtest 17.)*
+	def.max_per_day = 14
 	def.cost = 3
 	return def
 
@@ -712,7 +739,10 @@ static func _reversing_lorry() -> EventDef:
 	def.obstructs_radius = 28.0
 	def.hard_fail = true
 	def.weight = 1.2
-	def.max_per_day = 4
+	# A lethal wall row, raised with `cyclist` and for the same reason: the deep band off the
+	# corridor is where the deadly end of the gradient lives, and four of these across 121 blocks
+	# could not fill it. *(M55, playtest 17.)*
+	def.max_per_day = 12
 	def.cost = 3
 	return def
 
@@ -1074,7 +1104,9 @@ static func _protest() -> EventDef:
 	# how close to cut past away from the player.
 	def.obstructs_radius = 55.0
 	def.weight = 2.5
-	def.max_per_day = 3
+	# A wall row, raised with the rest for M55. Act IV only, so this is the late city's share of
+	# *"blocking events all over"* off the paths.
+	def.max_per_day = 6
 	def.cost = 3
 	return def
 

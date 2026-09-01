@@ -9,6 +9,12 @@
 #   tools/telemetry.sh -p           # say what is stale; -p yes actually deletes it
 #   tools/telemetry.sh 3            # print the third-newest run
 #
+# **A log says whether anybody was playing it.** *(Playtest 17, finding 3: "otherwise it looks like
+# a lot of plays happened when they were just regular tests. this skew statistics and muddies
+# inferences we can do".)* The game names its own log `run-` when a person is at the controls and
+# `rig-` when it is headless or driven by --screenshot, --walk, --flee or --press. So `ls run-*` is
+# the playtests, `-l` prints the kind, and `-p` treats every rig but the newest as stale.
+#
 # `-p` is playtest 10, finding 14: *"is there a mechanism to delete old outdated sessions?"* Since
 # M39 the abbreviated commit is in every filename, so "stale" is a question the directory listing
 # can answer on its own — a log from a commit that is not the one checked out describes a build that
@@ -47,7 +53,7 @@ fi
 LOGS=()
 while IFS= read -r line; do
     LOGS+=("$line")
-done < <(ls -t "$DIR"/run-*.log 2>/dev/null || true)
+done < <(ls -t "$DIR"/run-*.log "$DIR"/rig-*.log 2>/dev/null || true)
 if [[ ${#LOGS[@]} -eq 0 ]]; then
     echo "no run logs in $DIR" >&2
     exit 1
@@ -64,9 +70,20 @@ TINY_BYTES=3000
 commit_of() {
     local stem tag
     stem="$(basename "$1" .log)"
-    tag="$(echo "$stem" | sed -E 's/^run-.*-seed[0-9]+-(.+)$/\1/')"
+    tag="$(echo "$stem" | sed -E 's/^(run|rig)-.*-seed[0-9]+-(.+)$/\2/')"
     # No match leaves the whole stem, which is how a pre-M39 name (`run-<stamp>-seed<n>`) answers.
     if [[ "$tag" == "$stem" ]]; then echo "older"; else echo "$tag"; fi
+}
+
+# Whether a person was at the controls, read out of the name. The game writes it there itself:
+# `run-` for a playtest, `rig-` for a headless boot or anything driven by --screenshot, --walk,
+# --flee or --press.
+#
+# Logs from before that are all named `run-` and there is no way to tell — the header line is the
+# same for both, and no heuristic over the contents can see the case that matters (a `--walk` rig
+# writes a long busy log). They claim to be plays and some of them are lying; `-p` is how they go.
+kind_of() {
+    case "$(basename "$1")" in rig-*) echo "rig" ;; *) echo "play" ;; esac
 }
 
 size_of() { wc -c < "$1" | tr -d ' '; }
@@ -74,18 +91,23 @@ size_of() { wc -c < "$1" | tr -d ' '; }
 case "${1:-}" in
     -l)
         for i in "${!LOGS[@]}"; do
-            printf '%3d  %7s  %-14s  %s\n' "$((i + 1))" \
-                "$(size_of "${LOGS[$i]}")" "$(commit_of "${LOGS[$i]}")" \
-                "$(basename "${LOGS[$i]}")"
+            printf '%3d  %7s  %-5s  %-14s  %s\n' "$((i + 1))" \
+                "$(size_of "${LOGS[$i]}")" "$(kind_of "${LOGS[$i]}")" \
+                "$(commit_of "${LOGS[$i]}")" "$(basename "${LOGS[$i]}")"
         done
-        echo "     bytes   commit          (HEAD is $HEAD_COMMIT)" >&2
+        echo "     bytes   kind   commit          (HEAD is $HEAD_COMMIT)" >&2
         ;;
     -p)
         DOOMED=()
         for i in "${!LOGS[@]}"; do
             [[ $i -eq 0 ]] && continue          # never the newest
             LOG_COMMIT="$(commit_of "${LOGS[$i]}")"
-            if [[ "$LOG_COMMIT" != "$HEAD_COMMIT" && "$LOG_COMMIT" != "$HEAD_COMMIT-dirty" ]]; then
+            # A rig is stale as soon as it is not the newest thing here. It is a screenshot or a
+            # headless boot: it was read once, if at all, and keeping it is what made the folder
+            # look like a hundred and sixty playtests.
+            if [[ "$(kind_of "${LOGS[$i]}")" == "rig" ]]; then
+                DOOMED+=("${LOGS[$i]}")
+            elif [[ "$LOG_COMMIT" != "$HEAD_COMMIT" && "$LOG_COMMIT" != "$HEAD_COMMIT-dirty" ]]; then
                 DOOMED+=("${LOGS[$i]}")
             elif [[ "$(size_of "${LOGS[$i]}")" -lt $TINY_BYTES ]]; then
                 DOOMED+=("${LOGS[$i]}")

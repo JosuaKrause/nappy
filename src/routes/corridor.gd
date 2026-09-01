@@ -31,6 +31,12 @@ extends RefCounted
 ## everything else, kept because they are what the design is written in; the number is what the
 ## *range* is stated over, and one cache answers both.
 ##
+## **And one place inside the rim is asked about by name.** *(M55, playtest 17 finding 2: "if two
+## paths go parallel add some blocking events between them".)* `is_in_a_gap()` is the street a
+## player switches strands through — the rim is a band round the whole corridor, and a gap is a
+## hole in the middle of it. It is a *further* preference inside the rim rather than a fourth band,
+## which is why it is a question of its own and not another value of `depth()`.
+##
 ## **A tile that is on no street still has an answer**, which is the part that had to be got right
 ## rather than assumed. Sixteen rows of the catalogue stand on alley, park, square or courtyard
 ## ground, and `StreetNetwork.segment_containing` returns null for every one of them — so a
@@ -56,6 +62,8 @@ var _depths := {}
 ## The covering set: the smallest set of streets such that every route touches one of them. Kept in
 ## order rather than as a set, because a **set piece** is placed once at each of them.
 var _sites: Array[Vector3i] = []
+## The streets between two adjacent strands of corridor, as a set. See `RouteTree.gaps()`.
+var _gaps := {}
 
 ## The corridor of a tree. An empty tree gives a corridor that answers `AWAY` everywhere, which
 ## is the right answer rather than a special case: a day with no reachable calm has no route for
@@ -65,10 +73,14 @@ static func of(tree: RouteTree) -> Corridor:
 	var cells := StreetNetwork.junction_count()
 	corridor._answers.resize(cells.x * cells.y * 4)
 	corridor._answers.fill(_UNKNOWN)
+	corridor._gap_answers.resize(corridor._answers.size())
+	corridor._gap_answers.fill(_UNKNOWN)
 	if not tree:
 		return corridor
 	corridor._depths = tree.depths()
 	corridor._sites = tree.covering_sites()
+	for key in tree.gaps():
+		corridor._gaps[key] = true
 	return corridor
 
 ## The streets a set piece is placed on: every route touches one of them.
@@ -88,6 +100,9 @@ func sites() -> Array[Vector3i]:
 ## per role. Without this the scan allocated an `Array[Vector3i]` and did four `by_key` lookups per
 ## tile per role, and it doubled the run time of `tests/test_events.gd` on its own.
 var _answers := PackedByteArray()
+## The same, for `is_in_a_gap`. A second question over the same slots is a second byte array
+## rather than a second copy of `_slot_for`'s arithmetic.
+var _gap_answers := PackedByteArray()
 const _UNKNOWN := 255
 
 ## Where a tile stands in relation to the day's routes.
@@ -105,6 +120,46 @@ func where(tile: Vector2i) -> Where:
 ## the third would be a gradient nobody can feel — so the range saturates and the constant says
 ## where.
 func depth(tile: Vector2i) -> int:
+	var slot := _slot_for(tile)
+	if slot < 0:
+		return DEEP   # off the lattice entirely: the frontages beyond the boundary
+	if _answers[slot] == _UNKNOWN:
+		var kind := slot % 4
+		_answers[slot] = _work_out(_cell_of(slot), kind >= 2, kind % 2 == 1)
+	return _answers[slot]
+
+## Whether a tile is on one of the streets that run **between two adjacent strands of the
+## corridor** — the single street a player switches routes through. *(M55, playtest 17 finding 2.)*
+##
+## `RouteTree.gaps()` is what it means and why; this is that question asked about a tile, which is
+## what a placement is stated in. Every gap is on the rim, so this is a refinement of `depth() == 1`
+## rather than a fourth band — what a caller does with it is a *further* preference inside the rim.
+func is_in_a_gap(tile: Vector2i) -> bool:
+	if _gaps.is_empty():
+		return false
+	var slot := _slot_for(tile)
+	if slot < 0:
+		return false
+	if _gap_answers[slot] == _UNKNOWN:
+		var kind := slot % 4
+		_gap_answers[slot] = 1 if _is_a_gap_street(_cell_of(slot), kind >= 2, kind % 2 == 1) else 0
+	return _gap_answers[slot] == 1
+
+## A gap is a **street**, so only a tile on one answers yes. A junction at either mouth of a gap is
+## on the corridor by the definition of a gap, and a block interior is reached from the four streets
+## round its block rather than through the one the switch is made in.
+func _is_a_gap_street(cell: Vector2i, across_x: bool, across_y: bool) -> bool:
+	if across_x == across_y:
+		return false
+	var segment := StreetNetwork.by_key(Vector3i(cell.x, cell.y, 1 if across_x else 0))
+	return segment != null and _gaps.has(segment.key())
+
+## The cache slot a tile answers in, or -1 for a tile off the lattice entirely.
+##
+## Every question this class answers depends on the same two things and on nothing else: which cell
+## of the lattice the tile is in, and which of the four kinds of place it is within that cell. So
+## the slot is shared and each question is its own array of answers.
+func _slot_for(tile: Vector2i) -> int:
 	var period := CityMap.period()
 	var across_x := CityMap.corridor_offset(tile.x) >= 0
 	var across_y := CityMap.corridor_offset(tile.y) >= 0
@@ -112,11 +167,12 @@ func depth(tile: Vector2i) -> int:
 	var cell := Vector2i(floori(float(tile.x) / period), floori(float(tile.y) / period))
 	var kind := (2 if across_x else 0) + (1 if across_y else 0)
 	var slot := (cell.y * count.x + cell.x) * 4 + kind
-	if slot < 0 or slot >= _answers.size():
-		return DEEP   # off the lattice entirely: the frontages beyond the boundary
-	if _answers[slot] == _UNKNOWN:
-		_answers[slot] = _work_out(cell, across_x, across_y)
-	return _answers[slot]
+	return slot if slot >= 0 and slot < _answers.size() else -1
+
+func _cell_of(slot: int) -> Vector2i:
+	var index := slot / 4
+	var count := StreetNetwork.junction_count()
+	return Vector2i(index % count.x, index / count.x)
 
 ## As far off the corridor as this answers. Anything at or past it is simply *elsewhere*.
 const DEEP := 3

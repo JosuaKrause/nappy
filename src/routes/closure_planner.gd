@@ -103,18 +103,45 @@ static func calm_areas(map: CityMap) -> Array[CalmArea]:
 	return found
 
 ## The streets a calm area can be entered from. A block of open calm opens onto all four sides
-## of its lot; a four-block zone onto eight streets, two to a side; a courtyard onto exactly
-## one, through its archway.
+## of its lot; a zone onto one street per block edge; a courtyard onto exactly one, through its
+## archway.
+##
+## **Every question here is asked of the lot, and one of them was asked of the block.** *(M52.)*
+## The archway is generated against the lot rect, and until apartment complexes existed every
+## courtyard lot was one block, so passing `block_rect` was the same rect and the difference could
+## not show. On a four-block complex it is a different rect on three sides out of four, so the side
+## came out wrong and the street returned was one of the complex's own absorbed streets — a segment
+## that is not in the lattice at all, which reads as *this calm area cannot be reached from the
+## home* and cost about one generation attempt per city until it was found.
 static func _access_streets(map: CityMap, block: Vector2i) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
 	var layout: BlockLayout = map.block_layouts.get(block)
 	if layout and BlockLayout.has(layout.passage):
-		var side := _passage_side(CityMap.block_rect(block), layout.passage)
-		var segment := StreetNetwork.beside_block(block, side)
+		var blocks := map.lot_blocks(block)
+		var side := _passage_side(map.lot_rect(block), layout.passage)
+		var segment := StreetNetwork.beside_block(
+				_passage_block(blocks, layout.passage, side), side)
 		if segment:
 			found.append(segment)
 		return found
 	return StreetNetwork.around_blocks(map.lot_blocks(block))
+
+## Which block of a lot the archway comes out of, which is the one the street beside it belongs
+## to. Identity for a single-block lot; for a complex it is the block the mouth is in.
+static func _passage_block(blocks: Rect2i, passage: Rect2i, side: int) -> Vector2i:
+	if side == StreetNetwork.Side.NORTH or side == StreetNetwork.Side.SOUTH:
+		var row: int = blocks.position.y if side == StreetNetwork.Side.NORTH else blocks.end.y - 1
+		for x in range(blocks.position.x, blocks.end.x):
+			var rect := CityMap.block_rect(Vector2i(x, row))
+			if passage.position.x >= rect.position.x and passage.position.x < rect.end.x:
+				return Vector2i(x, row)
+		return Vector2i(blocks.position.x, row)
+	var column: int = blocks.position.x if side == StreetNetwork.Side.WEST else blocks.end.x - 1
+	for y in range(blocks.position.y, blocks.end.y):
+		var rect := CityMap.block_rect(Vector2i(column, y))
+		if passage.position.y >= rect.position.y and passage.position.y < rect.end.y:
+			return Vector2i(column, y)
+	return Vector2i(column, blocks.position.y)
 
 ## Which edge of the lot an archway comes out on. The passage is generated as a one-tile
 ## channel from the court to one lot edge, so the edge it touches is the answer.
@@ -166,11 +193,26 @@ static func _invariant_holds(home: StreetNetwork.Segment, areas: Array[CalmArea]
 ## - **Everywhere else** — legal, and it is the far corner of the map that the old bias existed to
 ##   avoid. Kept in the pool rather than refused, because a day that cannot find its quota of
 ##   rim streets should still shut something.
+##
+## **And one part of the rim is worth more than the rest of it.** *(M55, playtest 17 finding 2: "if
+## two paths go parallel add some blocking events between them", and "sometimes put a blocker
+## between (wall or event) and sometimes leave it open".)* A **gap** is the single street two
+## adjacent strands of today's corridor are joined by — see `RouteTree.gaps()` — and a closure is
+## the *impassable* half of the answer, where a wall event is the costly half. `CLOSURE_GAP_BIAS`
+## is the preference, and the day's quota is what keeps it a "sometimes": one street shut in act I
+## and four in act IV cannot close fifteen gaps however hard it aims at them.
+##
+## The invariant below is unmoved and still does the deciding. A gap is off the tree like every
+## other candidate, so nothing here can cut the corridor; what the check catches is the same thing
+## it always did.
 static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment,
 		tree: RouteTree, rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
 	var rim := {}
 	for key in tree.rim():
 		rim[key] = true
+	var gaps := {}
+	for key in tree.gaps():
+		gaps[key] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
 	for segment in StreetNetwork.segments():
@@ -178,7 +220,8 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment,
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
 			continue
 		pool.append(segment)
-		weights.append(Tuning.CLOSURE_WALL_BIAS if rim.has(key) else 1.0)
+		var weight := Tuning.CLOSURE_WALL_BIAS if rim.has(key) else 1.0
+		weights.append(weight * Tuning.CLOSURE_GAP_BIAS if gaps.has(key) else weight)
 
 	var order: Array[StreetNetwork.Segment] = []
 	while not pool.is_empty():

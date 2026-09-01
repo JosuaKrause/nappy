@@ -91,6 +91,27 @@ var _road_since := 0.0
 var _road_from := Vector2i.ZERO
 var _carriageway := 0.0
 
+## The day's corridor, grown here so that a trace can say whether she was on it. *(Playtest 17,
+## finding 6: "make the telemetry record whether the player is on a path or not".)*
+##
+## Growing one touches no gameplay: `RouteTree.for_day` is a pure function of the city's seed, the
+## day and what is shut, so this is the same tree anything else asking for today's would get, and
+## `Telemetry.write_map` has grown one the same way since M50. The determinism invariant is safe
+## because nothing here draws from a `day_rng()` stream.
+var _tree: RouteTree
+## `on` the corridor, `off` it, or `away` from the streets entirely — in a park, an alley or a
+## plaza, which is neither. Held across a junction rather than answered there: a junction belongs to
+## no street on purpose (`StreetNetwork`), so asking one gives `away` for a body-width of pavement
+## and would put most of a day's corners in the wrong column.
+var _path_state := ""
+## When the current state began, for the transition line, and when it was last totalled, for the
+## share. They are different numbers: one spans a stretch and the other spans a frame.
+var _path_since := 0.0
+var _path_last := 0.0
+var _path_time := {}
+## Which branches of the corridor the street she is on carries. See `_watch_the_branch`.
+var _path_branches: Array[int] = []
+
 # When a bump was last written down, and how many have gone unwritten since.
 var _last_bump := -1000.0
 var _bumps_dropped := 0
@@ -177,6 +198,12 @@ func start_day() -> void:
 	_mark_on_road = 0.0
 	_mark_why = ""
 	_badges.clear()
+	_tree = RouteTree.for_day(_map, GameState.day)
+	_path_time = {"on": 0.0, "off": 0.0, "away": 0.0}
+	_path_state = ""
+	_path_since = 0.0
+	_path_last = 0.0
+	_path_branches.clear()
 	Telemetry.note("start", "doorstep %s, facing %s" % [
 		TelemetryLog.tile(_map.world_to_tile(_player.global_position)),
 		TelemetryLog.compass(_player.facing)])
@@ -186,6 +213,7 @@ func start_day() -> void:
 func day_finished(result: GameEnums.DayResult) -> void:
 	# Above the outcome, because it is part of how the day got there.
 	_flush_road(_player.global_position)
+	_flush_corridor()
 	var name: String = GameEnums.DayResult.keys()[result]
 	if result == GameEnums.DayResult.WON:
 		Telemetry.note("home", "WON, %.1fs to spare" % _day.time_remaining)
@@ -204,6 +232,7 @@ func _process(delta: float) -> void:
 		return
 	Telemetry.set_clock(_day.time_total - _day.time_remaining)
 	var here := _player.global_position
+	_watch_the_corridor(here)
 	_watch_the_ground(here, delta)
 	_watch_the_cues(delta)
 	_watch_the_meters()
@@ -214,6 +243,92 @@ func _process(delta: float) -> void:
 	_watch_the_chase(here, delta)
 	_watch_closures(here)
 	_watch_the_contact(here)
+
+## Whether she is walking the day's corridor. *(Playtest 17, finding 6.)*
+##
+## **It is the instrument for finding 1** — *"going off the paths let's me skip events and is safer
+## than going on the path"* — and until it existed that sentence could be argued about and not
+## measured. The corridor is where the day put its friction and its set pieces, so *how much of the
+## day she spent on it* is the number that says whether the placement is reaching her at all.
+##
+## A transition each way, plus the three totals at dusk, and the totals are the point: a transition
+## count says how often she crossed the line and only the durations say which side she lived on.
+##
+## The third state is not padding. Time in a park, an alley or a plaza is not *off* the corridor in
+## the sense the finding means — the corridor is made of streets, and the destination is not one —
+## so folding it into `off` would credit every won day with a long safe stretch off the paths.
+## **Timed off `Telemetry.clock()` rather than off `delta`**, and that is not a tidiness choice. The
+## two are different clocks: the day's is what every other line in the log is stamped with, and the
+## frame's keeps running through anything that leaves the day standing still. Measured on the first
+## rig walked past this code, a day the log calls 11.9 seconds long had **23.5 seconds** of frames
+## in it — so a share taken over deltas would have been a percentage of a number the reader cannot
+## see, sitting one line above the one they can.
+func _watch_the_corridor(here: Vector2) -> void:
+	var now := Telemetry.clock()
+	var state := _corridor_state(here)
+	if state == "":
+		_path_since = now
+		return
+	_watch_the_branch(here, state)
+	if _path_state != "" and state != _path_state:
+		Telemetry.note("path", "%s the corridor at %s, after %.1fs %s it" % [
+			"onto" if state == "on" else ("off" if state == "off" else "away from"),
+			TelemetryLog.tile(_map.world_to_tile(here)), now - _path_since, _path_state])
+		_path_since = now
+	if _path_state != "":
+		_path_time[_path_state] += now - _path_last
+	_path_state = state
+	_path_last = now
+
+## Changing from one branch of the corridor to another. *(Playtest 17, finding 2: "make sure the log
+## notes a path switch correctly if it happens — technically it's leaving a path and entering a new
+## path".)*
+##
+## **`on` / `off` cannot see this and that is why it is here**: two strands of the corridor both
+## answer `on`, so a player who walks the beginning of one route and finishes on another produces a
+## trace in which nothing happened. The tree's branch colours are the only thing that can tell them
+## apart.
+##
+## **A switch is a *disjoint* colour set, not a different one.** Walking out of a bundle that
+## carries A and B onto a street that carries only B is staying on B — it is the trunk separating,
+## which is what a tree does — and calling that a switch would report one at every fork of the day.
+## Sharing nothing is the case the finding means.
+##
+## The memory is cleared when she leaves the tree, so this only ever reports a change she made
+## *between* two strands rather than one she made by going round.
+func _watch_the_branch(here: Vector2, state: String) -> void:
+	if state != "on":
+		_path_branches.clear()
+		return
+	var segment := StreetNetwork.segment_containing(_map.world_to_tile(here))
+	if not segment:
+		return
+	var branches := _tree.branches_on(segment.key())
+	if branches.is_empty() or branches == _path_branches:
+		return
+	if not _path_branches.is_empty() and not _shares_a_branch(branches, _path_branches):
+		Telemetry.note("path", "switched routes at %s, branch %s -> %s" % [
+			TelemetryLog.tile(_map.world_to_tile(here)), str(_path_branches), str(branches)])
+	_path_branches = branches
+
+static func _shares_a_branch(a: Array[int], b: Array[int]) -> bool:
+	for colour in a:
+		if b.has(colour):
+			return true
+	return false
+
+## `on`, `off`, `away`, or "" for a tile that answers nothing yet — the opening frame, before any
+## street has been stood on.
+func _corridor_state(here: Vector2) -> String:
+	var tile := _map.world_to_tile(here)
+	var segment := StreetNetwork.segment_containing(tile)
+	if segment:
+		return "on" if _tree.is_on_the_tree(segment.key()) else "off"
+	# A junction, or the doorstep notch: street ground that belongs to no segment. Hold whatever
+	# she was doing rather than inventing a state for four tiles of tarmac.
+	if _map.is_street(tile):
+		return _path_state
+	return "away"
 
 ## Crossing into the road, and arriving on or leaving calm ground. Both are transitions, so
 ## both are one line each rather than a state the reader has to infer from a gap.
@@ -250,6 +365,22 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 		_flush_road(here)
 	_was_road = road
 
+	# **Arriving on and leaving calm ground, and it used to live inside `_flush_road`.** *(Playtest
+	# 17.)* Behind that function's two early returns, which means it only ran when she had just
+	# stepped off a road stretch that lasted longer than `ROAD_LINGER` — so walking from a pavement
+	# into a park wrote nothing at all, and `_was_calm` went stale with it. `docs/TELEMETRY.md` has
+	# `calm` / `left` down as the entry that answers *"same park every day?"*, and it was answering
+	# for the subset of arrivals that happened to follow a walk down the middle of a road.
+	var calm := _city.is_calm_zone(here)
+	if calm != _was_calm:
+		var block := _map.block_at(here)
+		var what := TelemetryLog.purpose(
+				GameState.city_state.purpose_of(_map.block_plans, block))
+		Telemetry.note("calm" if calm else "left", "%s %s %s, sleep %.0f" % [
+			"entered" if calm else "left", what, TelemetryLog.tile(block),
+			_baby.sleepiness])
+	_was_calm = calm
+
 ## Writes down a stretch on the road, if it lasted longer than crossing one takes.
 ##
 ## Called when the player steps off — and again when the day ends, because a day that ends
@@ -267,15 +398,24 @@ func _flush_road(here: Vector2) -> void:
 		TelemetryLog.tile(_map.world_to_tile(here))])
 	_was_road = false
 
-	var calm := _city.is_calm_zone(here)
-	if calm != _was_calm:
-		var block := _map.block_at(here)
-		var what := TelemetryLog.purpose(
-				GameState.city_state.purpose_of(_map.block_plans, block))
-		Telemetry.note("calm" if calm else "left", "%s %s %s, sleep %.0f" % [
-			"entered" if calm else "left", what, TelemetryLog.tile(block),
-			_baby.sleepiness])
-	_was_calm = calm
+## Where the day was spent, in one line, at the end of it. *(Playtest 17, finding 6.)*
+##
+## The transitions above say how often she crossed the line; this says which side she lived on,
+## which is the half the corridor question is actually about. The share is taken over the time she
+## was **on a street**, because the third state is a destination rather than a choice about routes —
+## a won day is a long stretch in a park, and counting that as "off the corridor" would make every
+## win look like an evasion.
+func _flush_corridor() -> void:
+	if _path_state != "":
+		_path_time[_path_state] += Telemetry.clock() - _path_last
+		_path_last = Telemetry.clock()
+	var on: float = _path_time.get("on", 0.0)
+	var off: float = _path_time.get("off", 0.0)
+	var away: float = _path_time.get("away", 0.0)
+	var streets := on + off
+	Telemetry.note("path", "%.0f%% of her street time on the corridor (%.1fs on, %.1fs off, "
+			% [100.0 * on / maxf(streets, 0.001), on, off]
+			+ "%.1fs off the streets)" % away)
 
 ## What she was warned about, and for how long. *(Playtest 06.)*
 ##

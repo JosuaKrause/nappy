@@ -775,6 +775,27 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 ## which is the turning she can see from the junction she is standing at, and a **lethal** one is
 ## pulled past it. Both keep the whole off-corridor city as a weight rather than a filter, so
 ## neither can be starved of ground on a day whose corridor happens to be most of the map.
+##
+## **And one street inside the rim is worth more than the rest of it.** *(M55, playtest 17 finding
+## 2: "if two paths go parallel add some blocking events between them", nuanced to "sometimes put a
+## blocker between (wall or event) and sometimes leave it open".)* A gap is the single street two
+## adjacent strands of today's corridor are joined by, so it is the one piece of rim that is
+## *inside* the day's own plan rather than beside it: with nothing on it the two strands are one
+## wide easy region and choosing between them is not a choice.
+##
+## It is a **weight on top of the rim weight** rather than a rule that closes every gap, and that is
+## the player's own "sometimes" — a gap is likelier than an ordinary turning to carry something and
+## is never certain to.
+##
+## **It applies to the costly half of the wall band and not to the lethal half**, which was a
+## measured correction and not a nicety. A gap is on the rim by construction, so a lethal row's
+## weight there is 1 against `WALL_DEEP_WEIGHT` further out — and multiplying *that* by the gap
+## weight makes a gap the best lethal ground in the city, which pulled the deep band's teeth
+## straight out. Measured over eight seeds of day 9: the deep band went from the dearest ground in
+## the city to level with the corridor, which is M55's first item undone by its second. The
+## gradient's own sentence is the fix: *stray one turning and it is expensive, stray further and it
+## ends the day* — so what stands in a gap is very expensive, and the deadly end stays where it was
+## put.
 static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.BlockerRole,
 		lethal := false) -> int:
 	var away := corridor.depth(tile)
@@ -784,7 +805,10 @@ static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.Block
 				return 0
 			if lethal:
 				return Tuning.WALL_DEEP_WEIGHT if away >= 2 else 1
-			return Tuning.EVENT_WALL_RIM_WEIGHT if away == 1 else 1
+			if away != 1:
+				return 1
+			return Tuning.EVENT_WALL_RIM_WEIGHT \
+					* (Tuning.EVENT_WALL_GAP_WEIGHT if corridor.is_in_a_gap(tile) else 1)
 		GameEnums.BlockerRole.FRICTION:
 			return Tuning.EVENT_CORRIDOR_WEIGHT if away == 0 else 1
 		_:

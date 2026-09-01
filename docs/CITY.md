@@ -134,9 +134,13 @@ test asserts that the building rects cover every `BUILDING` tile exactly once.
 Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 200 seeds:
 
 - Every walkable tile is reachable from the home.
+- Every calm area is somewhere calm ground may go: clear of the home, clear of the map's outer
+  ring of blocks, and clear of the two block columns beside the spine. See "Where calm ground may
+  go".
 - At least **3 calm areas**, no two adjacent (so the calm is spread out). An area is one
-  block or one four-block zone; see below.
-- At least `MIN_CALM_ZONES` (1) of them is a **four-block zone**.
+  block or one multi-block zone; see below.
+- At least `MIN_CALM_ZONES` (1) of them is a **zone**, and at least one zone is the **2×2
+  square** — the shape the lap argument is stated over.
 - The home is in the **middle block**, and is at least `MIN_HOME_TO_PARK_TILES` (30) *walking*
   tiles from the nearest park. Both, together — see "The home".
 - Building rects tile the `BUILDING` tiles exactly, with no overlaps and no gaps.
@@ -183,9 +187,33 @@ assumption.
 
 ## Calm zones
 
-*(M21.)* A calm **area** is one place to go, and it is either a single block or a **four-block
-zone**: 2×2 blocks with the streets between them absorbed, painted as one unbroken piece of
-ground 22 tiles square. Every city has one or two of them.
+*(M21, shapes added in M52.)* A calm **area** is one place to go, and it is either a single block
+or a **zone**: several blocks with the streets between them absorbed, painted as one unbroken
+piece of ground. Every city has one or two zones.
+
+A zone's footprint is one of `Tuning.CALM_ZONE_SHAPES` — **2×2**, **2×1** or **1×2** — and the
+first one a city places is always the square, so M21's guarantee survives the variety word for
+word: every city has somewhere with a route through it rather than a lap round it. *(M47, asked
+for again as M52's item 1: "add calm varieties that take up 2x1 non-square shapes".)*
+
+What a footprint costs the lattice is stated over the rect rather than over a side: a `w × h` zone
+absorbs `w(h−1) + h(w−1)` streets — **four** for the square and **one** for a rectangle — has
+`2(w + h)` streets round it, and contains `(w−1)(h−1)` junctions, which is **none** for a
+rectangle. Anything written as `2 · CALM_ZONE_BLOCKS · (CALM_ZONE_BLOCKS − 1)` was the square's
+answer to the first of those, and agreed with the general one for exactly as long as every zone
+was a square.
+
+| | one block | 2×1 zone | 2×2 zone |
+| --- | --- | --- | --- |
+| ground | 8×8 tiles | 22×8 tiles | 22×22 tiles |
+| a full meter of calm | 5.7 s | 8.0 s | 11.3 s |
+| traverses of itself to fill it | 1.4 | 1.05 | 1.05 |
+
+The rate curve needed nothing adding for the new shape and that is the point of it being a curve:
+`sleepiness_calm_multiplier` is `1 / sqrt(blocks)`, so a two-block lot lands between the other two
+and pays for about one traverse of its long side, exactly as the square pays for one diagonal. A
+rectangle is a *length* rather than a diagonal — you walk it end to end, and which end you come in
+at is a route decision the square does not offer.
 
 The reason is playtest 03, finding 2, asked for again by playtests 04 and 05: the traced player
 spent **twenty seconds walking in a circle** inside a courtyard. That is not a bug and it is not
@@ -194,23 +222,69 @@ progress requires motion; a calm block is eight tiles across; and progress-requi
 small-calm-area is jointly sufficient for a lap. M18's shorter day cut the number of laps and
 could not remove the lap, and no further balance pass will.
 
-The numbers, and `tests/test_generator.gd` asserts them as a relationship rather than as
-values:
+The numbers are the table above, and `tests/test_generator.gd` asserts them as relationships
+rather than as values: a traverse is worth a real share of a full meter and **not** the whole of
+it — if arriving filled the meter, arriving would be the whole game — and the three sizes are
+within half of each other in traverses-per-meter.
 
-| | one block | four-block zone |
-| --- | --- | --- |
-| ground | 8×8 tiles, 256 px | 22×22 tiles, 704 px |
-| corner to corner at `WALK_SPEED` | 3.9 s | 10.8 s |
-| a full meter of calm | 23.8 s | 23.8 s |
-
-So a stretch of calm in a zone is two or three traverses of somewhere with sides to it, and a
-stretch in a block is six laps of a lawn. It is deliberately *not* a whole meter in one crossing
-— arriving must not be the whole of it.
+**That last relationship is M52's and it replaced the older sentence here**, which said a zone was
+two or three traverses and a block was six laps of a lawn. That was true while every calm area
+filled at one rate, and the rate is a curve over the lot's width now: the small ones are paid for
+their size, so *which* calm area to head for is a question about where it is rather than about how
+big it is. What did **not** move is the geometry M21 exists for — a block is still a lap and a zone
+is still a route. The curve pays for the lap; it does not make the block bigger.
 
 The rest of the calm stays single-block on purpose. Which calm area to head for is a real
 question only when they are different from each other: a small quiet square two streets away
 against a big park across the city is the decision M24 made matter, and a city of nothing but
 zones would flatten it again.
+
+### Where calm ground may go
+
+*(M52, built from M47's entry. Playtest 16, finding 4: "this map shows multiple calm zones at the
+edge of the map which should be impossible".)*
+
+**One question, asked of a footprint**, so a single block, a zone and a courtyard obey one rule
+rather than three that drift apart — `CityGenerator._calm_may_sit_here`. Three clauses:
+
+- **Never near the home.** The oldest of the three: the walk out has to be worth walking, and with
+  the home pinned to the middle block this is where that is settled. See "The home".
+- **Never in the outer ring of blocks.** *"Another way to get density is to make a rule to not have
+  a calm area at the edge of the map or next to the main road."* A calm area against the boundary
+  has the ring of frontages behind it, so half its approaches are a wall and it is a destination
+  you can only arrive at from one side. This clause is also almost all of the density argument:
+  the ring is **40 of the lattice's 121 blocks**.
+- **Never in either block column beside the main road.** Worth only **eight** blocks on top of the
+  ring, because the spine runs down the middle where the home clearance has already taken a 5×5
+  out — so this one is justified on design rather than on density. `decay_multiplier` is 0.6 on
+  the spine, so a park you can hear the main road from is not calm ground; and if calm never sits
+  beside it, **crossing it always leads somewhere worth crossing for**, which is what makes it a
+  soft block rather than a wall. It is the expendable clause by the player's own words — *"the not
+  next to main road rule is not that important, you can remove it if it loses too much freedom"* —
+  so if the field ever gets too tight, this comes out before `MIN_CALM_BLOCKS` or the
+  non-adjacency rule are touched.
+
+The eligible field, on the 11×11 lattice, for a single calm area:
+
+| eligible blocks | count |
+| --- | ---: |
+| the lattice minus the 5×5 home clearance | 96 |
+| + no calm in the outer ring | 56 |
+| + no calm in the two columns beside the spine | **48** |
+
+**Measured over 40 seeds, and the room is there.** Calm areas touching the edge went **4.42 per
+city to zero** and areas beside the spine **1.50 to zero**, with the count the player asked to keep
+unmoved — 8.85 areas of which 3.00 courtyards, against 8.43 of which 2.55, open calm inside its 5–7
+band throughout. Generation retries per city fell **0.50 → 0.00**: a courtyard cut beside the front
+door used to fail the home-distance guarantee and roll the whole map again, and the home clearance
+now refuses the block instead.
+
+**The spine clause is stated over `map.main_road`** and nothing else. `CrowdLanes.arterial_index`
+is the *default* a map is built from, and asking it where the spine is is the M46 defect — the one
+that put a phantom east-west arterial in `CrowdLanes.busyness()` for five milestones. `_zone_fits`
+carried a copy of that same mistake, refusing a zone that would absorb the middle east-west
+corridor, and it is gone: there is one main road, it runs north to south, and the guard on the
+other axis was written for city exits playtest 14 deleted.
 
 ### What a zone does to the lattice
 
@@ -224,12 +298,13 @@ rows and the two vertical ones between its columns, so:
 - **Route redundancy stops being true by construction** and has to be checked by search. See
   below.
 
-Two rules keep a zone from taking something the city cannot spare:
+Two rules keep a zone from taking something the city cannot spare, and both are the rules every
+calm area obeys, asked of the whole footprint:
 
-- **Never the arterial.** A zone may absorb any corridor but the main road, which is the noise
-  floor, the thing that has to be crossed, and the street a player learns first.
-- **Never beside other calm**, the same rule a single calm block obeys, stated over the whole
-  2×2 footprint.
+- **Somewhere calm ground may go at all** — see "Where calm ground may go" below. The clause that
+  keeps the spine off the two columns beside it is also what stops a zone absorbing a stretch of
+  it, which used to be a guard of its own here.
+- **Never beside other calm**, the same rule a single calm block obeys.
 
 The streets it absorbed live in `CityMap.absent_segments`, and `CityMap.blocked_segments()` adds
 them to whatever a day has closed. Every route search takes that set, so the graph half of
@@ -345,8 +420,8 @@ question below:
 | how many | 5–7 areas, derived as an act's worth of days **plus one** |
 | how far | at least `MIN_HOME_TO_PARK_TILES` (30) of **walking** distance from home — the calm is earned |
 | how spread | no two calm areas anywhere in each other's eight-block ring, corners included |
-| where not | never at the map edge, never beside the spine *(M47)* |
-| what shape | mostly single-block, with one or two four-block zones |
+| where not | never at the map edge, never beside the spine *(M47, built in M52)* |
+| what shape | mostly single-block, with one or two zones of 2×2, 2×1 or 1×2 — the first zone is always the square |
 
 **Each day — what is protected:**
 
@@ -584,6 +659,53 @@ user. If we cannot construct a path B at all, let's not try."* An area with one 
 legitimate area; the second route is an offer the day makes when the ground allows one. What must
 still hold absolutely is only that **some** calm is reachable. See `docs/TODO.md`, M50, for the
 construction and for the one thing this trades away.
+
+### Two strands side by side, and the street between them *(M55, playtest 17 finding 2)*
+
+> *"Also if two paths go parallel add some blocking events between them."*
+
+Two strands of corridor running down neighbouring streets with nothing between them are not two
+routes she chooses between; they are **one wide easy region**, and the choice they were supposed to
+create is not there. The finding is about the corridor's *shape on the ground* rather than about
+what a catalogue row costs.
+
+It looked at first like a contradiction of the section above — *"the player can walk the beginning
+of path A and then switch to path B without noticing, and that is fine… the constraint is on the
+graph and never on spacing"* — so it went back, and the answer dissolves it rather than choosing a
+side:
+
+> *"Apply nuance here. Sometimes put a blocker between (wall or event) and sometimes leave it open
+> — this is not as important as going off the path completely."*
+> *"Only directly adjacent paths (with a single street connecting both) counts for this case
+> obviously. Everything further apart should just naturally be never connectable."*
+
+Three things, and the third is the one that resolves it:
+
+- **Sometimes, not always.** Either of the two costed things — a **closure**, which makes the
+  switch impossible, or an **event**, which makes it expensive — and sometimes nothing at all. It is
+  variety in what one gap is worth, not a rule that closes every gap. A day that closed them all
+  would have turned one corridor into several separate ones, which is exactly the star this design
+  refuses to grow.
+- **It ranks below "off the corridor has to cost".** *"Not as important as going off the path
+  completely"*, and that was the build order.
+- **Only directly adjacent.** A **gap** is one street with a strand of corridor crossing each of its
+  two ends. Two strands further apart have off-corridor ground between them, which is lethal or very
+  costly on its own since M55's first item — so they are separated *by the map*, and nothing has to
+  be placed. The old instruction is about the **tree** and is untouched; this is about a
+  **placement** in one specific street.
+
+Nothing here changes how the tree is grown. `RouteTree.gaps()` is a question asked of the finished
+thing, and both answers to it are weights on placements that already existed: `CLOSURE_GAP_BIAS`
+aims the day's closure quota at a gap, and `EVENT_WALL_GAP_WEIGHT` offers a gap's pavement more
+often to a **very costly** wall. Not to a lethal one — a gap is on the rim, which is the costly end
+of the range, and a thing that ends the day one turning off a route she is being guided down is the
+gradient inverted. See `docs/TODO.md`, M55, for the measurement.
+
+**And a strand is a stretch of corridor rather than a branch.** A single branch that runs out along
+one street and home along the next one down is two parallel lines with a free step between them, and
+the player switching between them cannot see — and has no reason to care — that they are the same
+colour. What tells two *routes* apart is `RouteTree.branches_on()`, and that is the telemetry's
+question: the trace has to be able to say she left one path and joined another.
 
 **Placement follows the tree, not a budget.** Plan the tree first and place from it — possibly with
 a budget *per role and per region*, but not a single per-block number that the whole city competes
@@ -962,6 +1084,14 @@ one side and the map stopped at an invisible wall.
   mountainside. Built to the player's brief in playtest 14, and it replaced M41's ring of
   frontages rather than dressing it. `City._paint_outside_the_map` is the whole of it — ground
   rather than objects, outside the map, where no tile, route or event can reach.
+- **A band runs the full width of the map, and there is nothing at a corner.** *(M55, playtest 17
+  finding 11: "at the corner of the map the mountain and sea textures should just continue not
+  become diagonal — diagonal doesn't really make sense in this context".)* A corner used to belong
+  to whichever side it was further out of, which sounds reasonable and **is** the diagonal: the
+  place where two distances are equal is a 45° line. North and south own the corners outright now,
+  so the mountain and the water run the whole way across and the fence, grass and forest are what
+  is left in between. Deliberately no headland, no bay and no new terrain — the player asked for
+  the simpler thing, and `--spawn corner:nw|ne|sw|se` is how it is looked at.
 - **The camera may see past the boundary.** It was clamped to the last walkable tile, which is why
   the edge would have gone on looking like a wall however much was built out there.
 - **The spine leaves by a tunnel north and a bridge south.** *"That way it's not an artificial end

@@ -166,8 +166,8 @@ var _sleepiness_answer := 1.0
 func _sleepiness_on(tile: Vector2i) -> float:
 	if not Tile.is_calm(map.tile_at(tile)):
 		return 1.0
-	var blocks := map.lot_blocks(map.block_at(map.tile_to_world(tile)))
-	return Tuning.sleepiness_calm_multiplier(blocks.size.x * blocks.size.y)
+	return Tuning.sleepiness_calm_multiplier(map.calm_lot_blocks(
+			map.block_at(map.tile_to_world(tile))))
 
 ## What the ground she is standing on does to her recovery: calm, precinct, ordinary, main road,
 ## best to worst. *(M41, playtest 12 finding 8.)*
@@ -597,28 +597,43 @@ func _paint_outside_the_map() -> void:
 			if source >= 0:
 				_ground.set_cell(Vector2i(x, y), source, Vector2i.ZERO)
 
-## Which border tile belongs at an outside cell. `step` is how far out of the city it is, so each
-## side is written as *what you meet, in order, walking away from the last kerb*.
+## Which border tile belongs at an outside cell. Each side is written as *what you meet, in order,
+## walking away from the last kerb*, and how far out of the city a tile is is what indexes it.
 ##
-## A corner belongs to whichever side it is further out of, and ties go to north or south, because
-## those are the two that read as continuous bands — a strip of water that stopped short of the
-## corner would be a lake with a square end.
+## **The north and south bands own the corners outright, and each one keeps its own step.** *(M55,
+## playtest 17 finding 11: "at the corner of the map the mountain and sea textures should just
+## continue not become diagonal — diagonal doesn't really make sense in this context".)*
+##
+## The corner used to belong to whichever side it was further out of, with ties going to north or
+## south. That reads as reasonable and is the diagonal: *further out of* is a comparison between
+## two distances, and the place where two distances are equal is a 45° line, so every corner of the
+## map had a stepped seam running out of it with mountain on one side and forest on the other.
+## Nothing is out there to make sense of a diagonal — there is no cliff face, no coastline and no
+## reason for the woods to end at an angle.
+##
+## So the answer is the simpler one the player asked for: **a band runs the full width of the map**,
+## and the east and west bands are what is left in between. A mountain that carries on past the last
+## street is a mountain; a fence that stops where the scree starts is a fence meeting a hillside,
+## which is what a fence does. What this cannot do — and what was deliberately not built, because
+## nobody asked for it — is anything *at* the corner: no headland, no bay, no new terrain.
+##
+## The order below is the whole rule. North first, then south, then whatever is left.
 func _border_source(x: int, y: int, depth: int) -> int:
 	var north := -y
 	var south := y - (map.size.y - 1)
 	var west := -x
 	var east := x - (map.size.x - 1)
-	var step := maxi(maxi(north, south), maxi(west, east))
 
 	if _leaves_by_the_spine(x) and (north > 0 or south > 0) and north <= depth and south <= depth:
 		return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)))
-	if north == step:
-		return GroundTiles.SCREE if step == 1 else GroundTiles.MOUNTAIN
-	if south == step:
-		return GroundTiles.BULKHEAD if step == 1 else GroundTiles.WATER
-	if step == 1:
+	if north > 0:
+		return GroundTiles.SCREE if north == 1 else GroundTiles.MOUNTAIN
+	if south > 0:
+		return GroundTiles.BULKHEAD if south == 1 else GroundTiles.WATER
+	var out := maxi(west, east)
+	if out == 1:
 		return GroundTiles.FENCE
-	return GroundTiles.GRASS if step <= 3 else GroundTiles.FOREST
+	return GroundTiles.GRASS if out <= 3 else GroundTiles.FOREST
 
 ## Whether this column is the carriageway of the spine, which is the one thing that crosses the
 ## border rather than stopping at it. The kerbs either side stop with the city: a pavement running

@@ -43,7 +43,22 @@ func is_active() -> bool:
 
 ## Opens a log for a run. Called by `main.gd` and by nothing else — a system that wants to be
 ## traced calls `note()` and lets this decide whether anyone is listening.
-func begin_run(run_seed: int) -> void:
+##
+## **`played` says whether a person was at the controls, and it is the caller's answer rather than
+## something guessed here.** *(Playtest 17, finding 3: "can you make telemetry logs be
+## distinguishable whether they are from real playtests or your tests? otherwise it looks like a lot
+## of plays happened when they were just regular tests. this skew statistics and muddies inferences
+## we can do".)* A rig's log opens with the stem `rig-` instead of `run-`, so the question is
+## answered by a directory listing — the same argument M39 made for putting the commit in the name,
+## and for the same reason: it is always asked of a listing.
+##
+## **The tool already had a proxy for this and the proxy is why it had to be said out loud.**
+## `tools/telemetry.sh` calls anything under 3kB "a boot that never became a run", which catches
+## `check.sh` and a doorstep screenshot and misses the case that matters most — a
+## `shot.sh --walk 60` writes a large, busy, entirely unplayed log. That is this project's own
+## recurring mistake in miniature: **a proxy that is equivalent in the ideal case is not equivalent
+## in a street**, and every measurement taken of the proxy agrees with it.
+func begin_run(run_seed: int, played := true) -> void:
 	end_run()
 	if not _prepare_directory():
 		return
@@ -58,14 +73,15 @@ func begin_run(run_seed: int) -> void:
 	# does `abc1234-dirty`, so a tag in the middle cannot be parsed back out by anything simpler than
 	# a real parser — and the thing that has to parse it is a bash script old enough to run on
 	# macOS's bash 3.2. At the end it is "everything after `-seed<digits>-`".
-	_stem = "run-%s-seed%d-%s" % [stamp, run_seed, _file_tag()]
+	_stem = "%s-%s-seed%d-%s" % ["run" if played else "rig", stamp, run_seed, _file_tag()]
 	_log = TelemetryLog.new("%s/%s.log" % [DIRECTORY, _stem])
 	_clock = 0.0
 	_day_open = false
 	_shots_today = 0
 	_last_shot = -INF
-	_log.header("nappy run log  %s  commit %s"
-			% [Time.get_datetime_string_from_system(), source_version()])
+	_log.header("nappy %s log  %s  commit %s"
+			% ["run" if played else "rig", Time.get_datetime_string_from_system(),
+			source_version()])
 	if _log.path != "":
 		print("[Telemetry] %s" % ProjectSettings.globalize_path(_log.path))
 

@@ -386,17 +386,42 @@ const PARK_SPOIL_CHANCE := 0.35
 # so a stretch of calm is two or three traverses of somewhere with sides to it rather than
 # eight laps of a lawn. See docs/CITY.md, "Calm zones".
 
-## Blocks per side of a four-block calm zone. Two. It is a constant rather than a literal
-## because every piece of arithmetic that follows from it — the tile rect, which segments are
-## absorbed, which junctions survive — is written in terms of it, and a 2 buried in five
-## different files is how the next person changing this discovers the sixth.
+## Blocks per side of the **square** calm zone, which is the size every rate here is pitched
+## against. Two. It is a constant rather than a literal because a great deal of arithmetic follows
+## from it — the normalisation of the sleepiness curve above, and every test that states a
+## relationship in terms of a full-sized zone — and a 2 buried in five different files is how the
+## next person changing this discovers the sixth.
 const CALM_ZONE_BLOCKS := 2
-## How many of a city's calm areas are four-block zones. At least one, because the lap is what
-## the milestone exists to remove and a city with none of them still has it; at most two,
-## because a zone is seven and a half blocks' worth of ground and three of them would be a park
-## with a city in it. The rest of the calm stays single-block, which is what keeps *which* calm
-## area to head for a real question — a small quiet square close by against a big park further
-## out is the decision M24 made matter.
+
+## The footprints a multi-block calm area may have. *(M52, from M47's entry: "add calm varieties
+## that take up 2x1 non-square shapes".)*
+##
+## **A zone stopped being a square and became a shape**, which is the change the arithmetic felt:
+## everything downstream of `CALM_ZONE_BLOCKS` used to be that integer squared. What a footprint
+## costs the lattice is stated over the rect now — a `w x h` zone absorbs `w*(h-1) + h*(w-1)`
+## streets, which is four for the square and **one** for a rectangle — so a 2x1 is a lot of two
+## blocks with the single street between them painted over.
+##
+## Both orientations are here on purpose. A city whose rectangles all run the same way is a rule
+## somebody learns once rather than a place, and the two are genuinely different to walk: a 22x8
+## strip is a length with two ends, and which end you come in at is a route decision.
+##
+## And the rate curve was already waiting for them: `sleepiness_calm_multiplier` is `1 / sqrt` of
+## the block count, so two blocks fill in 8.0s against the square's 11.3s and a 2x1 pays for about
+## one traverse of its long side, exactly as a square pays for one diagonal. Nothing here had to be
+## balanced for the new shape — see M52 in docs/TODO.md.
+const CALM_ZONE_SHAPES: Array[Vector2i] = [
+	Vector2i(CALM_ZONE_BLOCKS, CALM_ZONE_BLOCKS),
+	Vector2i(CALM_ZONE_BLOCKS, 1),
+	Vector2i(1, CALM_ZONE_BLOCKS),
+]
+
+## How many of a city's calm areas are multi-block. At least one, because the lap is what M21
+## exists to remove and a city with none of them still has it; and the first one placed is always
+## the **square**, so *"every city has a big park"* stays true word for word while the rest of them
+## may be rectangles. The remainder of the calm stays single-block, which is what keeps *which* calm
+## area to head for a real question — a small quiet square close by against a big park further out
+## is the decision M24 made matter.
 const MIN_CALM_ZONES := 1
 const MAX_CALM_ZONES := 2
 
@@ -458,6 +483,26 @@ const ALLEY_CHANCE := {
 const COURTYARD_CHANCE := 0.35
 const MAX_COURTYARD_BLOCKS := 3
 const COURTYARD_SIZE_TILES := 4
+
+## The **apartment complex**: a courtyard lot four blocks across, with the streets between them
+## built over and frontages all the way round. *(M52, from M47's entry, itself quoting a request
+## from long before it: "an inner courtyard (surrounded by buildings) should have a footprint of
+## 2x2 blocks (apartment complex) — this never got implemented".)*
+##
+## **It is M21's mechanism with the opposite ground.** A calm zone absorbs the streets between four
+## blocks and paints park over them; this absorbs them and builds over them, so what comes out is a
+## mass 22 tiles square with a court in the middle and one archway in. That is what makes it calm
+## you have to *find* rather than calm you can see from the street — the courtyard's whole idea, at
+## the size where the block around it is a landmark.
+##
+## The court is ten tiles rather than the four a single-block courtyard gets, because a hole four
+## tiles wide in a mass twenty-two across is a light well rather than somewhere to stand. Ten
+## leaves six tiles of building on every side and crosses in 4.9s against the 5.7s it fills in, so
+## it sits with every other calm area at about one traverse per meter.
+##
+## One per city at most. It is a landmark and a secret, and two of them in a city is neither.
+const APARTMENT_COURT_TILES := 10
+const MAX_APARTMENT_COMPLEXES := 1
 
 ## The hard floor: this many blocks must still be calm on the last day. A day can only be
 ## won on calm ground, so an arc set that takes all of it makes an unwinnable run rather
@@ -1028,6 +1073,37 @@ const EVENT_WALL_RIM_WEIGHT := 4
 ## rather than a preference for one band, and giving deadly a stronger pull than very costly would
 ## make the rim the quiet part of the off-corridor city, which inverts the sentence.
 const WALL_DEEP_WEIGHT := 4
+
+## How many times over the street **between two adjacent strands of the day's corridor** is offered
+## to a wall, against the rest of the band it is in.
+##
+## *(M55, playtest 17 finding 2: "if two paths go parallel add some blocking events between them" —
+## nuanced on 2026-09-01 to "sometimes put a blocker between (wall or event) and sometimes leave it
+## open… this is not as important as going off the path completely".)* `RouteTree.gaps()` is what a
+## gap is; the placement is `EventScheduler._copies_of`, where this multiplies the band weight
+## rather than replacing it.
+##
+## **Set to leave about half of them open, which is the instruction rather than a compromise.** The
+## complaint is that two parallel strands with a free step between them are one wide region instead
+## of two routes; the answer asked for is *variety in what a gap is worth*, so a number that closed
+## every gap would be as wrong as the zero it replaced — it would turn the corridor back into a set
+## of separate corridors, which is the shape `RouteTree` deliberately does not grow.
+##
+## It is also the reason this is a weight and not the per-gap roll that reads more directly. A roll
+## needs a phase, a stream, a budget of its own and a share of the caps; a weight rides on the day's
+## existing budget, spacing and per-row caps unchanged, and *cannot place more than the day can
+## afford*. The measurement is in `docs/TODO.md`, M55.
+const EVENT_WALL_GAP_WEIGHT := 6
+
+## How much likelier a closure is to land in a gap between two adjacent strands than on the rest of
+## the rim it is already biased toward.
+##
+## The other half of *"wall or event"*, and it is the **impassable** half: an event in a gap makes
+## switching strands expensive and a closure makes it impossible, which is the variety the finding
+## asks for rather than two names for the same thing. There is at most one closure a day in act I
+## and four in act IV, so this can be strong without closing many gaps — the quota is the limit and
+## it has not moved.
+const CLOSURE_GAP_BIAS := 4.0
 
 ## Where the line between *friction* and a *very costly* wall falls, in points of the meter it costs
 ## to walk through the middle of a row.

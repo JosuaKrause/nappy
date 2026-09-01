@@ -67,23 +67,35 @@ func _test_the_lattice_is_the_lattice(t) -> void:
 		t.check(walkable == rect.size.x * rect.size.y,
 				"every tile of street %s is walkable" % segment.key())
 
-## M21. A four-block calm zone is painted over the corridors between its own blocks, so the
+## M21. A multi-block calm zone is painted over the corridors between its own blocks, so the
 ## lattice has holes in it and route redundancy stops being true by construction.
 ##
 ## Four things have to hold together for that to be a hole rather than a bug, and each is a
 ## different way it could quietly not be one: the streets have to be **gone from the graph**,
 ## their ground has to be **calm rather than closed** (the player walks over it — that is the
-## whole point), the junction in the middle of the zone has to have **nothing reaching it**, and
-## the four around it have to still be reachable, because they are the ways in.
+## whole point), any junction *inside* the zone has to have **nothing reaching it**, and the ones
+## around it have to still be reachable, because they are the ways in.
+##
+## **Every count here is stated over the footprint since M52**, because a zone may be a 2x1 now: a
+## `w x h` zone absorbs `w*(h-1) + h*(w-1)` streets — four for the square, one for a rectangle —
+## has `2*(w+h)` streets round it, and contains `(w-1)*(h-1)` junctions, which is **none** for a
+## rectangle. A count written as `2 * CALM_ZONE_BLOCKS * (CALM_ZONE_BLOCKS - 1)` was the square's
+## answer, and it agreed with the general one for as long as every zone was a square.
+##
+## **The apartment complex is the same mechanism and the opposite ground, so it is skipped here and
+## checked in `tests/test_generator.gd` instead.** Its absorbed streets are absent from the lattice
+## exactly like a zone's and they are *built over*, which is the one sentence in this test that
+## reverses: a zone is walked through, and a complex is walked round.
 func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
 	var zones := 0
 	for map in _maps:
-		t.check(map.zone_rects.size() >= Tuning.MIN_CALM_ZONES,
-				"seed %d has at least one four-block calm zone" % map.seed_used)
 		for anchor: Vector2i in map.zone_rects:
+			if map.starting_purpose(anchor) == GameEnums.BlockPurpose.COURTYARD:
+				continue
 			zones += 1
 			var footprint: Rect2i = map.zone_rects[anchor]
-			var absorbed := 2 * Tuning.CALM_ZONE_BLOCKS * (Tuning.CALM_ZONE_BLOCKS - 1)
+			var span := footprint.size
+			var absorbed := span.x * (span.y - 1) + span.y * (span.x - 1)
 			var found := 0
 			for segment in StreetNetwork.segments():
 				if map.has_street(segment.key()):
@@ -103,16 +115,19 @@ func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
 					"seed %d zone %s absorbed its %d inside streets (found %d)"
 					% [map.seed_used, anchor, absorbed, found])
 
-			# The junction in the middle has nothing left reaching it; the four on the edges are
-			# T-junctions, which is what the milestone is for.
-			var middle := footprint.position + Vector2i.ONE
-			t.check(StreetNetwork.junction_distances([middle],
-					map.blocked_segments()).size() == 1,
-					"seed %d: junction %s inside zone %s is cut off from the whole city"
-					% [map.seed_used, middle, anchor])
+			# Any junction inside the zone has nothing left reaching it; the ones on the edges are
+			# T-junctions, which is what the milestone is for. A 2x1 has no interior junction at
+			# all — its one absorbed street runs between two junctions that both survive.
+			for y in range(footprint.position.y + 1, footprint.end.y):
+				for x in range(footprint.position.x + 1, footprint.end.x):
+					var inside := Vector2i(x, y)
+					t.check(StreetNetwork.junction_distances([inside],
+							map.blocked_segments()).size() == 1,
+							"seed %d: junction %s inside zone %s is cut off from the whole city"
+							% [map.seed_used, inside, anchor])
 			var ways_in := StreetNetwork.around_blocks(footprint)
-			t.check(ways_in.size() == 4 * Tuning.CALM_ZONE_BLOCKS,
-					"seed %d zone %s has %d streets round it, two to a side"
+			t.check(ways_in.size() == 2 * (span.x + span.y),
+					"seed %d zone %s has %d streets round it, one per block edge"
 					% [map.seed_used, anchor, ways_in.size()])
 			for segment in ways_in:
 				t.check(map.has_street(segment.key()),
@@ -335,6 +350,8 @@ func _test_calm_ground_is_still_walkable_to(t) -> void:
 ## one of the places the design is written down.
 func _test_closures_land_where_a_wall_belongs(t) -> void:
 	var on_the_rim := 0
+	var in_a_gap := 0
+	var gaps := 0
 	var total := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -345,6 +362,10 @@ func _test_closures_land_where_a_wall_belongs(t) -> void:
 			var rim := {}
 			for key in tree.rim():
 				rim[key] = true
+			var gap := {}
+			for key in tree.gaps():
+				gap[key] = true
+			gaps += gap.size()
 			for closure in _plan(map, day):
 				total += 1
 				t.check(not tree.is_on_the_tree(closure.segment.key()),
@@ -352,12 +373,28 @@ func _test_closures_land_where_a_wall_belongs(t) -> void:
 						% [map.seed_used, day, closure.segment.key()])
 				if rim.has(closure.segment.key()):
 					on_the_rim += 1
+				if gap.has(closure.segment.key()):
+					in_a_gap += 1
 	t.check(total > 0, "the planner shuts streets at all (%d over %d seeds)" % [total, SEEDS])
 	# The rim is a minority of the off-tree lattice — measured at about a third of it — so an
 	# unweighted planner would land there about a third of the time. Half is a floor with room in
 	# it rather than a measurement, which is the same shape the old assertion had.
 	t.check(float(on_the_rim) / maxf(1.0, float(total)) > 0.5,
 			"%d of %d closures landed on a turning off the corridor" % [on_the_rim, total])
+
+	# **A gap gets the impassable half of *"wall or event"*, and the quota is what keeps it a
+	# "sometimes".** *(M55, playtest 17 finding 2.)* `CLOSURE_GAP_BIAS` aims a closure at the one
+	# street two adjacent strands are joined by; a day shuts one street in act I and four in act IV,
+	# so it can never shut the fifteen a day has. Both bounds are the instruction: an unweighted
+	# planner lands in a gap about a twelfth of the time, and a planner that only ever shut gaps
+	# would have stopped being a wall round the corridor and become a fence down the middle of it.
+	var gap_share := float(in_a_gap) / maxf(1.0, float(total))
+	t.check(gaps > total * 4,
+			"a day has many more gaps than it has closures to spend (%d against %d)"
+			% [gaps, total])
+	t.check(gap_share > 0.15, "%d of %d closures landed in one of them" % [in_a_gap, total])
+	t.check(gap_share < 0.7, "and most of the rim is still ordinary ground (%.0f%% in a gap)"
+			% (gap_share * 100.0))
 
 ## **A closure never cuts the corridor, so the day-level invariant should never have to refuse
 ## one.** `ClosurePlanner` still checks each candidate and still skips a failure, because two

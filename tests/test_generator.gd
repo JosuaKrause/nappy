@@ -17,7 +17,8 @@ func run(t) -> void:
 	_test_buildings_tile_the_blocks(t)
 	_test_home_opens_onto_the_street(t)
 	_test_the_home_is_in_the_middle_of_a_city_worth_walking(t)
-	_test_calm_zones_are_four_blocks_of_one_thing(t)
+	_test_calm_zones_are_one_lot_of_one_thing(t)
+	_test_calm_is_never_at_the_edge_or_beside_the_spine(t)
 	_test_no_two_calm_areas_are_in_each_others_ring(t)
 	_test_a_calm_zone_is_a_route_rather_than_a_lap(t)
 	_test_a_dead_end_is_a_dead_end(t)
@@ -153,27 +154,38 @@ func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
 				"seed %d: and calm ground is still %d tiles away, against the %d asked for"
 				% [_seed(i), distance, Tuning.MIN_HOME_TO_PARK_TILES])
 
-## M21. A four-block calm zone is four blocks of *one* thing — one lot, one arc, one entry in
+## M21. A multi-block calm zone is several blocks of *one* thing — one lot, one arc, one entry in
 ## everything that counts calm areas — and the ground under it is unbroken.
 ##
 ## The failure this is really guarding against is a zone that is four calm blocks that happen to
 ## be adjacent. That would count as four calm areas, so the closure planner would think a day
 ## with two ways into one park had four; `_ensure_one_usable_park` would protect a quarter of it;
 ## and M24 would spoil the corner she settled in and call the job done.
-func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
+##
+## **The shape is a rolled one since M52 and the count is not.** Every zone's footprint has to be a
+## shape the catalogue offers, and at least one of them has to be the square — that is M21's own
+## guarantee, which is about a calm area with a *route* through it rather than about multi-block
+## calm in general, and the placement pass keeps it by placing the square first.
+##
+## **And `zone_rects` is every multi-block lot, which is not the same thing as every park.** An
+## apartment complex is four blocks of *building* with a court in the middle, so it is one lot with
+## one arc like a zone and its ground is the opposite of a zone's. Everything above the split below
+## is true of both; everything below it is asked of the right kind. Counting the dictionary and
+## calling the answer "calm zones" is the mistake this split exists to stop — it would have let a
+## city satisfy M21 with a thing you cannot walk across.
+func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
 	for i in 12:
 		var map := CityGenerator.generate(_seed(i))
-		t.check(map.zone_rects.size() >= Tuning.MIN_CALM_ZONES
-				and map.zone_rects.size() <= Tuning.MAX_CALM_ZONES,
-				"seed %d has %d calm zones, wanted %d..%d" % [_seed(i), map.zone_rects.size(),
-				Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES])
+		var squares := 0
+		var open_zones := 0
+		var complexes := 0
 		for anchor: Vector2i in map.zone_rects:
 			var footprint: Rect2i = map.zone_rects[anchor]
-			t.check(footprint.size == Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS,
-					"seed %d: zone %s is %d blocks square" % [_seed(i), anchor,
-					Tuning.CALM_ZONE_BLOCKS])
+			t.check(Tuning.CALM_ZONE_SHAPES.has(footprint.size),
+					"seed %d: zone %s has a shape the city offers (%s)"
+					% [_seed(i), anchor, footprint.size])
 
-			# One lot: the anchor has the arc and the layout, and the other three have neither.
+			# One lot: the anchor has the arc and the layout, and the others have neither.
 			var members := 0
 			for y in range(footprint.position.y, footprint.end.y):
 				for x in range(footprint.position.x, footprint.end.x):
@@ -183,8 +195,17 @@ func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
 							"seed %d: block %s belongs to zone %s" % [_seed(i), block, anchor])
 					t.check((block == anchor) == map.block_plans.has(block),
 							"seed %d: only the anchor of zone %s has an arc" % [_seed(i), anchor])
-			t.check(members == Tuning.CALM_ZONE_BLOCKS * Tuning.CALM_ZONE_BLOCKS,
+			t.check(members == footprint.size.x * footprint.size.y,
 					"seed %d: zone %s covers %d blocks" % [_seed(i), anchor, members])
+
+			if map.starting_purpose(anchor) == GameEnums.BlockPurpose.COURTYARD:
+				complexes += 1
+				_check_apartment_complex(t, map, anchor, _seed(i))
+				continue
+
+			open_zones += 1
+			if footprint.size == Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS:
+				squares += 1
 
 			# One piece of ground: every tile of the lot, streets between the blocks included.
 			var kinds := {}
@@ -197,26 +218,82 @@ func _test_calm_zones_are_four_blocks_of_one_thing(t) -> void:
 						"seed %d: zone %s is calm ground and nothing else (found %s)"
 						% [_seed(i), anchor, GameEnums.TileType.keys()[kind]])
 
-		# The arterial is the street the city cannot afford to lose a stretch of: it is the
+		t.check(open_zones >= Tuning.MIN_CALM_ZONES and open_zones <= Tuning.MAX_CALM_ZONES,
+				"seed %d has %d open calm zones, wanted %d..%d" % [_seed(i), open_zones,
+				Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES])
+		t.check(squares >= 1, "seed %d has a %d-block-square calm zone"
+				% [_seed(i), Tuning.CALM_ZONE_BLOCKS])
+		t.check(complexes <= Tuning.MAX_APARTMENT_COMPLEXES,
+				"seed %d has %d apartment complexes, at most %d"
+				% [_seed(i), complexes, Tuning.MAX_APARTMENT_COMPLEXES])
+
+		# The main road is the street the city cannot afford to lose a stretch of: it is the
 		# noise floor, it is the thing that has to be crossed, and it is what a player learns
 		# first. A zone may take any corridor but that one.
+		#
+		# **It is one street and one axis, which is the half this used to get wrong.** Until M52 it
+		# also protected `CrowdLanes.arterial_index` on the east-west axis, which is not an arterial
+		# — there is one main road and it runs north to south. That guard was written when the city
+		# had east and west exits opening onto that corridor; playtest 14 deleted them, and what was
+		# left was a rule nobody had taken, asserted here against a constant rather than against the
+		# map. It is gone from `_zone_fits` and gone from here with it.
 		for key: Vector3i in map.absent_segments:
 			# Zone-absorbed streets only. `absent_segments` stopped being the zone set in M50 —
-			# a dead end is absent too, for the opposite reason — and this sentence is about
-			# zones. Asserting it over the whole set was the identity standing in for the
-			# property, which is a mistake this project has made before and can now name.
-			if map.is_hard_blocker(key):
+			# a dead end is absent too, for the opposite reason, and so is an apartment complex's
+			# — and this sentence is about zones. Asserting it over the whole set was the identity
+			# standing in for the property, which is a mistake this project can now name.
+			if map.is_hard_blocker(key) or key.z == 0:
 				continue
-			var corridor: int = key.y if key.z == 0 else key.x
-			# Which corridor that is comes from the **map** since playtest 14, because the spine
-			# is rolled per city rather than always being the middle one. The east-west number is
-			# still a constant and is not an arterial — it is the corridor the city's east and
-			# west exits open onto. See `CityGenerator._zone_fits`.
-			var protected: int = map.main_road if key.z != 0 \
-					else CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y)
-			t.check(corridor != protected,
-					"seed %d: no zone swallowed a stretch of the arterial (%s did)"
+			t.check(key.x != map.main_road,
+					"seed %d: no zone swallowed a stretch of the main road (%s did)"
 					% [_seed(i), key])
+
+## The apartment complex, which is the zone mechanism with the opposite ground. *(M52.)*
+##
+## Three things, and each is a way it would stop being what it is for. It is a **mass** — the lot
+## is building apart from its court and the one archway through it, so the calm inside is calm you
+## have to find rather than calm you can see from the street. Its court is **bigger than a
+## single-block courtyard's**, or it is a light well in a building twenty-two tiles across. And the
+## streets it took are **built over**, not painted with grass: absent from the lattice like a
+## zone's, and solid ground, which is what tells the crowd and the telemetry map it is a wall.
+func _check_apartment_complex(t, map: CityMap, anchor: Vector2i, seed_value: int) -> void:
+	var layout: BlockLayout = map.block_layouts[anchor]
+	t.check(layout.open_rect.size.x == Tuning.APARTMENT_COURT_TILES,
+			"seed %d: complex %s has a court %d tiles across, not %d"
+			% [seed_value, anchor, layout.open_rect.size.x, Tuning.APARTMENT_COURT_TILES])
+	t.check(BlockLayout.has(layout.passage),
+			"seed %d: complex %s has an archway into it" % [seed_value, anchor])
+
+	var lot := map.lot_rect(anchor)
+	t.check(lot.encloses(layout.open_rect),
+			"seed %d: complex %s keeps its court inside the mass" % [seed_value, anchor])
+	var walkable := 0
+	for tile in map.rect_tiles(lot):
+		if map.is_walkable(tile):
+			walkable += 1
+	var inside := layout.open_rect.get_area() + layout.passage.get_area()
+	t.check(walkable == inside,
+			"seed %d: complex %s is solid apart from its court and archway (%d walkable of %d)"
+			% [seed_value, anchor, walkable, inside])
+
+	var footprint: Rect2i = map.zone_rects[anchor]
+	var span := footprint.size
+	var absorbed := span.x * (span.y - 1) + span.y * (span.x - 1)
+	var built := 0
+	for key: Vector3i in map.absent_segments:
+		if not CityMap.blocks_tile_rect(footprint).encloses(StreetNetwork.by_key(key).tile_rect()):
+			continue
+		built += 1
+		t.check(map.is_hard_blocker(key),
+				"seed %d: the street %s the complex %s took is built over"
+				% [seed_value, key, anchor])
+		for tile in map.rect_tiles(StreetNetwork.by_key(key).tile_rect()):
+			t.check(not map.is_walkable(tile) or layout.open_rect.has_point(tile)
+					or layout.passage.has_point(tile),
+					"seed %d: %s inside complex %s is solid" % [seed_value, tile, anchor])
+	t.check(built == absorbed,
+			"seed %d complex %s took its %d inside streets (found %d)"
+			% [seed_value, anchor, absorbed, built])
 
 ## The claim M21 exists to make good, as a relationship rather than a number.
 ##
@@ -267,6 +344,17 @@ func _test_a_calm_zone_is_a_route_rather_than_a_lap(t) -> void:
 			+ "(%.1f laps against %.1f)" % [block_laps, zone_laps])
 	t.check(block_laps > 1.0 and zone_laps > 1.0,
 			"and neither size is filled by one traverse (%.1f, %.1f)" % [block_laps, zone_laps])
+
+	# **And the rectangle sits between them, which is the claim M52 added the shape on.** A 2x1 is
+	# a length rather than a diagonal — you walk it end to end — so its traverse is the long side
+	# and nothing else, and the curve pays it for two blocks. If this ever falls outside the two
+	# above, a rectangle has stopped being a calm area of its own and become either the obvious
+	# choice or the one nobody walks to.
+	var strip_fill := Tuning.METER_MAX / Tuning.sleepiness_gain_calm(Tuning.CALM_ZONE_BLOCKS)
+	var strip_laps := strip_fill / (zone_px / Tuning.WALK_SPEED)
+	t.check(strip_laps > 1.0 and strip_laps < maxf(block_laps, zone_laps) * 1.5,
+			"a 2x1 calm zone costs about what the other two do per traverse of itself "
+			+ "(%.1f laps, against %.1f and %.1f)" % [strip_laps, block_laps, zone_laps])
 
 ## The street lattice is never cut by generation, so closing any one street segment must
 ## still leave a way to a park. This is the property that lets Act IV drop barricades
@@ -475,6 +563,35 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 func _seed(index: int) -> int:
 	# Spread the seeds out; consecutive integers are what generate() retries with.
 	return 1000 + index * 7919
+
+## **No calm area touches the outer ring of blocks, and none sits in either block column beside the
+## main road.** *(M52, built from M47's entry; playtest 16 finding 4: "this map shows multiple calm
+## zones at the edge of the map which should be impossible".)*
+##
+## Stated over `map.calm_blocks` and every block of every lot, for the same reason the ring test
+## below is: that list is what the telemetry map outlines, and the outlines in the outer column are
+## what the player was looking at when they said it. A rule checked over the *placement* path would
+## have agreed with the placement path — three of them place calm and it took one shared question
+## over a footprint to stop them drifting.
+##
+## Measured over 40 seeds: **4.42 calm areas per city touched the edge and 1.50 sat beside the
+## spine** before the rule, both zero after, with open calm per city unmoved inside its 5–7 band
+## (8.85 areas of which 3.00 courtyards → 8.43 of which 2.55) and generation retries per city
+## falling 0.50 → 0.00 — because a courtyard beside the front door used to fail the home-distance
+## guarantee and roll the whole map again.
+func _test_calm_is_never_at_the_edge_or_beside_the_spine(t) -> void:
+	var last := Tuning.CITY_BLOCKS - Vector2i.ONE
+	for i in 24:
+		var map := CityGenerator.generate(_seed(i))
+		for anchor in map.calm_blocks:
+			var lot := map.lot_blocks(anchor)
+			for block in CityGenerator._blocks_in(lot):
+				t.check(block.x > 0 and block.y > 0 and block.x < last.x and block.y < last.y,
+						"seed %d: calm area %s has a block at the map edge (%s)"
+						% [_seed(i), anchor, block])
+				t.check(block.x != map.main_road and block.x != map.main_road - 1,
+						"seed %d: calm area %s has a block beside the main road (%s, spine %d)"
+						% [_seed(i), anchor, block, map.main_road])
 
 ## **No two calm areas are anywhere in each other's eight-block ring, corners included, whatever
 ## kind of calm they are.** *(Playtest 14 finding 7, and the 2026-08-31 re-report off a telemetry
