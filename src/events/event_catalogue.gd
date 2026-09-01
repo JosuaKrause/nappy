@@ -17,13 +17,40 @@ const PERSON_BODY := 11.0
 const VEHICLE_BODY := 22.0
 
 static var _all: Array[EventDef] = []
+## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
+static var _hot: Dictionary[String, EventDef] = {}
+
+## Every heat level a run can reach. Progress runs 0..`RESISTANCE_GOAL`; a fifth completed task
+## adds nothing, because full heat is the qualification rather than the last errand. A function
+## rather than a `const`, because an autoload's constant is not available at parse time.
+static func heat_levels() -> int:
+	return Tuning.RESISTANCE_GOAL + 1
 
 static func all() -> Array[EventDef]:
 	if _all.is_empty():
 		_all = _build()
+		# **Every shape of every row, not only the cold one.** The fairness contracts are checked
+		# once, on load, from data — so a row that got worse with the resistance and was validated
+		# only at heat zero would have its contract stated about precisely the harmless version of
+		# itself. The set of shapes is finite because progress is a bounded integer, which is what
+		# makes checking all of them possible at all.
 		for def in _all:
-			def.validate()
+			for level in heat_levels():
+				heated(def, level).validate()
 	return _all
+
+## This row at a resistance level, derived once per run and kept.
+##
+## The derivation itself is `EventDef.at_heat()`; this is the cache in front of it, because a day
+## asks for the same heated row once per candidate placement and a duplicate per candidate would be
+## thousands of `Resource`s per day.
+static func heated(def: EventDef, level: int) -> EventDef:
+	if def.heat_response == EventDef.HeatResponse.NONE or level <= 0:
+		return def
+	var key := "%s|%d" % [def.id, level]
+	if not _hot.has(key):
+		_hot[key] = def.at_heat(level)
+	return _hot[key]
 
 static func by_id(id: String) -> EventDef:
 	for def in all():
@@ -31,17 +58,17 @@ static func by_id(id: String) -> EventDef:
 			return def
 	return null
 
-## Every def that may appear on this day, in catalogue order.
-static func available_on(day: int) -> Array[EventDef]:
+## Every def that may appear on this day, in catalogue order, in the shape `heat` puts them in.
+static func available_on(day: int, heat: int = 0) -> Array[EventDef]:
 	var found: Array[EventDef] = []
 	for def in all():
 		if def.available_on(day):
-			found.append(def)
+			found.append(heated(def, heat))
 	return found
 
-static func of_kind(kind: GameEnums.EventKind, day: int) -> Array[EventDef]:
+static func of_kind(kind: GameEnums.EventKind, day: int, heat: int = 0) -> Array[EventDef]:
 	var found: Array[EventDef] = []
-	for def in available_on(day):
+	for def in available_on(day, heat):
 		if def.kind == kind:
 			found.append(def)
 	return found

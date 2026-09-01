@@ -51,7 +51,8 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# tree; `RouteTree.for_day` would give the same answer, and two places agreeing by arithmetic
 	# is a thing that stops being true the first time one of them takes an argument.
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
-			GameState.settled_this_act(), _city.route_tree() if _city else null)
+			GameState.settled_this_act(), _city.route_tree() if _city else null,
+			GameState.resistance_progress)
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
 	stream_around(focus)
 

@@ -128,9 +128,15 @@ const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 ## passes the one the closures were placed off; a rig with none to hand grows the same tree, since
 ## `RouteTree.for_day` is a pure function of the city's seed and the day number and touches no
 ## gameplay stream.
+##
+## `heat` is `GameState.resistance_progress`, and it is threaded through rather than read off the
+## autoload so that a day is a pure function of its arguments: a rig that plans day 9 twice gets the
+## same day twice whatever a run happens to have done. Every def below arrives already in the shape
+## that heat puts it in — see `EventCatalogue.heated()` — so nothing in this file tests for it.
 static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
-		used_calm: Array[Vector2i] = [], tree: RouteTree = null) -> Array[Planned]:
+		used_calm: Array[Vector2i] = [], tree: RouteTree = null,
+		heat: int = 0) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
@@ -146,14 +152,14 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	# The calm she has not used yet, which nothing today may be placed near. See `_calm_to_leave_alone`.
 	var leave_alone := _calm_to_leave_alone(map, used_calm)
 
-	planned.append_array(_place_ambient(day, map))
-	planned.append_array(_place_scars(day, scars))
-	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor)
+	planned.append_array(_place_ambient(day, map, heat))
+	planned.append_array(_place_scars(day, scars, heat))
+	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
-			leave_alone, corridor)
-	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm)
-	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor)
-	_ensure_the_run_is_taught(day, planned)
+			leave_alone, corridor, heat)
+	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm, heat)
+	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat)
+	_ensure_the_run_is_taught(day, planned, heat)
 
 	_ensure_one_usable_park(map, planned, used_calm)
 	_ensure_the_city_is_still_walkable(map, planned)
@@ -223,13 +229,13 @@ static func _stream(base: int, salt: int) -> RandomNumberGenerator:
 ## It is added **outside** the budget rather than competing for it, and that is the exception being
 ## made honestly: everywhere else in this file the density is the budget, and a lesson that only
 ## happens when the dice agree is not a lesson. One event on one day of fourteen.
-static func _ensure_the_run_is_taught(day: int, planned: Array[Planned]) -> void:
+static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: int = 0) -> void:
 	if day != Tuning.RUN_TAUGHT_DAY:
 		return
 	for plan in planned:
 		if plan.def.pursues:
 			return
-	for def in EventCatalogue.available_on(day):
+	for def in EventCatalogue.available_on(day, heat):
 		if not def.pursues or def.spawn_mode != EventDef.SpawnMode.AHEAD_OF_PLAYER:
 			continue
 		planned.append(Planned.new(def, Vector2.INF))
@@ -282,17 +288,17 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned]) -> void
 ##
 ## Silent for anywhere she did not settle, or that is no longer calm.
 static func _spoil_the_parks_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
-		planned: Array[Planned], used: Array[Vector2i]) -> void:
+		planned: Array[Planned], used: Array[Vector2i], heat: int = 0) -> void:
 	var spoilable := map.calm_blocks.size() - 1
 	for block in used:
 		if spoilable <= 0:
 			return
 		if block.x >= 0 and block in map.calm_blocks:
 			spoilable -= 1
-			_spoil_one_park(day, rng, map, planned, block)
+			_spoil_one_park(day, rng, map, planned, block, heat)
 
 static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
-		planned: Array[Planned], block: Vector2i) -> void:
+		planned: Array[Planned], block: Vector2i, heat: int = 0) -> void:
 
 	var lot := _calm_rect(map, block)
 	var open: Array[Vector2i] = []
@@ -303,7 +309,7 @@ static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
 		return
 
 	var ground := map.tile_rect_to_world(lot)
-	var pool := _things_to_put_in_a_park(day, ground)
+	var pool := _things_to_put_in_a_park(day, ground, heat)
 	if pool.is_empty():
 		return
 
@@ -412,11 +418,11 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## a wall across a four-tile courtyard, and a fixed number cannot be both — so it is a sixteenth of
 ## the shortest side of the calm ground, floored at that constant. That is what lets a market take
 ## over a whole park and keeps it out of a back yard.
-static func _things_to_put_in_a_park(day: int, ground: Rect2) -> Array[EventDef]:
+static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> Array[EventDef]:
 	var allowed := maxf(Tuning.OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(ground.size.x, ground.size.y) / 16.0)
 	var suitable: Array[EventDef] = []
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day):
+	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
 		if def.hard_fail or def.mobile:
 			continue
 		if def.obstructs_radius > allowed:
@@ -427,23 +433,23 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2) -> Array[EventDef]
 	return suitable
 
 ## Permanent marks left by earlier days, placed again exactly where they happened.
-static func _place_scars(day: int, scars: Array[Dictionary]) -> Array[Planned]:
+static func _place_scars(day: int, scars: Array[Dictionary], heat: int = 0) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	for scar in scars:
 		if int(scar["since_day"]) >= day:
 			continue
 		var def := EventCatalogue.by_id(String(scar["id"]))
 		if def:
-			var plan := Planned.new(def, scar["position"])
+			var plan := Planned.new(EventCatalogue.heated(def, heat), scar["position"])
 			plan.permanent = true
 			planned.append(plan)
 	return planned
 
 # ----------------------------------------------------------------- placement ---
 
-static func _place_ambient(day: int, map: CityMap) -> Array[Planned]:
+static func _place_ambient(day: int, map: CityMap, heat: int = 0) -> Array[Planned]:
 	var planned: Array[Planned] = []
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.AMBIENT, day):
+	for def in EventCatalogue.of_kind(GameEnums.EventKind.AMBIENT, day, heat):
 		match def.ambient_source:
 			EventDef.AmbientSource.PLAYGROUND:
 				for rect in map.playgrounds:
@@ -454,16 +460,16 @@ static func _place_ambient(day: int, map: CityMap) -> Array[Planned]:
 
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
 		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
-		corridor: Corridor = null) -> void:
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day):
+		corridor: Corridor = null, heat: int = 0) -> void:
+	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, heat):
 		var placement := _place_one(def, rng, map, planned, ground, leave_alone, corridor)
 		if placement:
 			planned.append(placement)
 
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed: Array[String], planned: Array[Planned], ground := {},
-		leave_alone: Array[Rect2] = [], corridor: Corridor = null) -> void:
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day):
+		leave_alone: Array[Rect2] = [], corridor: Corridor = null, heat: int = 0) -> void:
+	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
 		# Spread a one-shot over the days it is eligible for rather than always firing it
@@ -547,8 +553,8 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 ## on, and every other event is where it was yesterday.
 static func _fill_with_recurring(day: int, base: int, map: CityMap,
 		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
-		corridor: Corridor = null) -> void:
-	var eligible := EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day)
+		corridor: Corridor = null, heat: int = 0) -> void:
+	var eligible := EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat)
 	if eligible.is_empty():
 		return
 

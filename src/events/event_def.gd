@@ -234,6 +234,36 @@ func departure_speed() -> float:
 ## that spends its telegraph at dawn, four streets away, has no notice left in it at all.
 @export var pursues_within := 0.0
 
+## How this row answers to the resistance.
+##
+## **The city gets worse the further into the subquest you are**, and this is the whole of how a row
+## says so. `GameState.resistance_progress` is an integer 0..`Tuning.RESISTANCE_GOAL`, and
+## `at_heat()` below turns a level into a **derived copy** of the row with its numbers moved — so
+## nothing downstream of the day's plan has to know that heat exists at all. An `EventInstance`
+## holds whichever copy the day handed it and reads `intensity`, `pursues` and the rest exactly as
+## it always has.
+##
+## **It is a field rather than a switch somebody sets per placement**, which is the same rule the
+## blocking role follows: `EventScheduler._role_for` derives a role from the def, so no two
+## placements of one row can disagree about what it is. Heat that could be set by hand would be a
+## difficulty dial hidden inside the placement code.
+##
+## **And the set of shapes is finite on purpose.** Progress is an integer with a known ceiling, so
+## every heated shape of every row exists at boot and `EventCatalogue.all()` validates all of them.
+## A def that *mutated* mid-run would be checked by `validate()` in the shape it booted in — the
+## harmless one — and the fairness contract would simply not be stated about the dangerous one.
+enum HeatResponse {
+	## Answers to nothing. Everything in act I, and the default: a cat does not care who you know.
+	NONE,
+	## **More of them, and more expensive to stand near, and past a threshold it comes over.**
+	## The non-lethal rung: it never gains `hard_fail`, whatever the heat.
+	PRESSES,
+	## **It stops being a place and starts being a hunter.** The lethal rung.
+	HUNTS,
+}
+
+@export var heat_response := HeatResponse.NONE
+
 ## Radius of solid obstruction, in px. 0 for events you can walk through. Scaffolding does
 ## not politely step aside, and being *forced* to reroute is a different pressure from
 ## choosing to.
@@ -328,6 +358,46 @@ enum Pavement {
 ## *has a body* or *closes ground*.
 func effect() -> GameEnums.BlockerEffect:
 	return GameEnums.BlockerEffect.LETHAL if hard_fail else GameEnums.BlockerEffect.COSTLY
+
+## This row as it is at a given resistance level, which is `self` for almost everything.
+##
+## `level` is `GameState.resistance_progress`, clamped here rather than by the caller — it can reach
+## five over the five tasks while `Tuning.RESISTANCE_GOAL` is the four that qualify, and full heat is
+## the qualification rather than the last errand.
+##
+## **A derived copy, never a mutation.** The catalogue's own rows are shared by every day of the run
+## and validated once at boot; a row that changed shape underneath them would be a fairness contract
+## checked about a thing that no longer exists. `EventCatalogue.at_heat()` caches these, so a level
+## costs one duplicate per row per run rather than one per placement.
+func at_heat(level: int) -> EventDef:
+	if heat_response == HeatResponse.NONE or level <= 0:
+		return self
+	var through := clampf(float(level) / float(Tuning.RESISTANCE_GOAL), 0.0, 1.0)
+	var hot := duplicate() as EventDef
+	match heat_response:
+		HeatResponse.PRESSES:
+			# More of them, and more expensive to be near. Population is the axis that changes the
+			# *route* — this row's whole design is that you start planning around it — and intensity
+			# is what makes one of them worth planning around in the first place.
+			hot.max_per_day = maxi(max_per_day,
+					roundi(max_per_day * lerpf(1.0, Tuning.HEAT_PRESSES_POPULATION, through)))
+			hot.intensity = intensity * lerpf(1.0, Tuning.HEAT_PRESSES_INTENSITY, through)
+			if level >= Tuning.HEAT_INVESTIGATES_LEVEL:
+				# **It runs its route until it notices her, and then it comes over.** No field says
+				# so: a pursuer that is also `mobile` with a path patrols it while it waits, which
+				# `EventInstance._process` reads off the two flags it already has.
+				hot.pursues = true
+				hot.pursue_speed = Tuning.HEAT_INVESTIGATE_SPEED
+				hot.pursues_within = Tuning.HEAT_INVESTIGATE_WITHIN
+				# For a pursuer `duration` is the length of the chase, measured from the moment it
+				# notices her rather than from dawn. Cold, this row has none and simply drives to
+				# the end of its route.
+				hot.duration = Tuning.HEAT_INVESTIGATE_SECONDS
+			# The non-lethal rung stays non-lethal at every level. Stated rather than assumed,
+			# because the whole instruction this milestone came from is that the ladder has two
+			# rungs and only the top one kills.
+			hot.hard_fail = false
+	return hot
 
 func available_on(day: int) -> bool:
 	if kind == GameEnums.EventKind.SCRIPTED:

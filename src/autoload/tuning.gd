@@ -215,6 +215,47 @@ const CURFEW_DAY_LENGTH_MULTIPLIER := 0.8
 
 const RESISTANCE_GOAL := 4
 
+# ---------------------------------------------------------------- the heat ---
+# **How much worse the city gets for a player who is doing well at the optional path.** A row says
+# *that* it answers to the resistance with `EventDef.heat_response`; these say what answering costs.
+# Keeping the numbers here rather than on the rows is what stops heat becoming a per-row difficulty
+# dial — there is one ladder and every row that climbs it climbs the same one.
+#
+# **All of it is spent between progress 0 and `RESISTANCE_GOAL`**, so the escalation is finished at
+# the moment the subquest qualifies rather than trailing past it.
+
+## What the population of a pressing row is multiplied by at full heat. `police_patrol` is capped at
+## twelve a day cold, so nineteen hot — on an 11x11 lattice that is a patrol on one block in six
+## rather than one in ten.
+##
+## **Population is the axis that changes a route rather than a meter.** The row's own design is that
+## it is not dangerous and the danger is that you start planning around it; more of them is more
+## ground being planned around, and it costs nothing in fairness because each individual patrol is
+## exactly the event it was.
+const HEAT_PRESSES_POPULATION := 1.6
+## What the intensity of a pressing row is multiplied by at full heat: the patrol's 10/s at the
+## centre becomes 13.5/s. Deliberately the smaller of the two multipliers — an intensity rise is the
+## one the player feels without seeing anything change, so it is the seasoning rather than the meal.
+const HEAT_PRESSES_INTENSITY := 1.35
+## The progress at which a pressing row stops merely running its route and starts coming over. Half
+## way, so the first half of the subquest is the city being *denser* and the second is it being
+## *interested* — two escalations rather than one continuous number nobody can name the moment of.
+const HEAT_INVESTIGATES_LEVEL := 2
+## How fast it follows, and it is the same 130px/s every other pursuer in the game moves at.
+## `validate_pursuit` allows the band `WALK_SPEED + PURSUIT_MIN_MARGIN` to
+## `RUN_SPEED - PURSUIT_MIN_MARGIN` — 112 to 148 — and a second speed inside it would be a second
+## answer to "can I outrun this", which is the one question a pursuit is allowed to ask.
+const HEAT_INVESTIGATE_SPEED := 130.0
+## How close she has to come before it takes an interest, in px. It has to sit **outside** the
+## stand-off the contract computes (122px against a 44px inner radius at the speed above) or the
+## whole notice is spent standing still, and **inside** the row's own 185px outer radius or it
+## decides about her before she can feel it. `validate_pursuit` refuses both ends.
+const HEAT_INVESTIGATE_WITHIN := 150.0
+## How long it follows for once it has noticed, in seconds. Under `PURSUIT_TIME * 2`, and long
+## enough that running opens (`RUN_SPEED` - 130) x 4 = 152px — more than three times the 44px it is
+## expensive inside, so the answer to being investigated is legible as *leave*.
+const HEAT_INVESTIGATE_SECONDS := 4.0
+
 # --------------------------------------------------------------------- city ---
 
 const TILE_SIZE := 32

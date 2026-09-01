@@ -37,6 +37,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `obstructs_radius` | Radius of solid body (px). **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
+| `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it comes over), `HUNTS` (it stops being a place and starts being a hunter) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
 | `act_tag` | Narrative act it belongs to. No game code reads it; `tests/test_acts.gd` holds it consistent with the calendar `first_day` actually gates |
 
@@ -292,6 +293,36 @@ is *behind* it.
 
 Patrols belong to acts III and IV, where the streets are deliberately empty and the threat should
 follow rather than sit; that is queued in `docs/TODO.md`.
+
+### The heat
+
+**The city gets worse the further into the resistance you are.** The subquest is optional and it is
+also the difficulty dial, so the price of pursuing it is that the place you are pushing a pram
+through starts paying attention to you.
+
+`GameState.resistance_progress` is the number — an integer from 0 to `Tuning.RESISTANCE_GOAL`, the
+four completed tasks that qualify for the good ending — and `EventDef.heat_response` is the whole of
+how a row says whether it cares. `EventCatalogue.heated()` turns a row and a level into a **derived
+copy** with its numbers moved, so nothing downstream of the day's plan has to know heat exists: an
+`EventInstance` holds whichever copy the day handed it and reads `intensity`, `pursues` and the rest
+exactly as it always has.
+
+Three things about that shape are the design rather than the implementation:
+
+- **It is a field, not a switch set per placement.** The same rule the blocking role follows —
+  `EventScheduler._role_for` derives a role from the def, so no two placements of one row can
+  disagree about what it is. Heat that could be set by hand would be a difficulty dial hidden inside
+  the placement code, where nothing could see it.
+- **Every shape is validated on load, not just the cold one.** Progress is a bounded integer, so the
+  set of shapes is finite and `EventCatalogue.all()` runs the fairness contract over all of them. A
+  row that *mutated* mid-run would be checked by `EventDef.validate()` in the shape it booted in —
+  the harmless one — and the contract would simply not be stated about the dangerous one.
+- **The heat is an argument to the day, not a global it reads.** `EventScheduler.build_day()` takes
+  it, so planning a hot day is something a rig can do without a run having happened.
+
+**The ladder has two rungs and only the top one kills.** `PRESSES` never gains `hard_fail` at any
+level, and `tests/test_heat.gd` asserts that over the response rather than over the row that
+currently carries it.
 
 ### The density, and why it is caps before budget
 
