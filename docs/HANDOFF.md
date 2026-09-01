@@ -35,18 +35,14 @@ per operational task, each loaded before that task.
 `NARRATIVE` and `README` are at zero history references, one commit each, and the pass caught nine
 stale claims and a catalogue row that was missing entirely.
 
-**Left, and this is the next thing to pick up:** the same scan over the code comments. The six worst
-files are done — `tuning.gd`, `event_catalogue.gd`, `event_scheduler.gd`, `city_generator.gd`,
-`event_instance.gd`, `crowd_agent.gd` — and **281 references across 39 files** remain, worst first
-from `main.gd` at 26. The file-by-file counts and the method are in `TODO.md` under M40, "Next
-step".
+**The docstrings are done too.** Every `.gd` file in `src/` is at zero history references —
+`grep -rcE '(M[0-9]{1,2}\b|playtest|Playtest)' src --include='*.gd'` leaves four hits, all in
+`main.gd` and all the ordinary word, in the function that decides whether a run's log is a playtest.
+That pass caught five stale claims and one field nothing reads.
 
-It is a judgment call per block rather than a find-and-replace: **keep the reason a thing is the way
-it is and the trap that makes it easy to get wrong; drop the milestone number, the former value and
-the narration of the fix.**
-
-**And re-audit the numbers separately afterwards** — a stale claim survives a rewrite perfectly well
-if nobody checks it against the code.
+**Left, and this is the next thing to pick up: the number re-audit**, which is deliberately a pass
+of its own — a stale claim survives a rewrite perfectly well if nobody checks it against the code.
+`TODO.md` under M40 has the two shapes to look for.
 
 ### 2. M55's resistance half — designed, not built
 

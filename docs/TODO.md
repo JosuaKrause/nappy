@@ -55,41 +55,28 @@ in it is wrong about nothing.**
       *moment* rather than a place
 - [x] **`docs/TODO.md` is a queue again** — open work only, with every completed entry archived
       whole in `DECISIONS.md`
-### ← Next step: the timeless scan of the code
-
 *(2026-09-01: "also scan the whole codebase to update for the timeless style — not only documents
-but also code docs/comments.")* **This is where to pick up.** The structural half and the design
-docs are done; what is left is a long, careful read of every comment in `src/`.
+but also code docs/comments.")* Done. The method is in the `godot` skill under "Comments are written
+in the present tense": **keep the reason a thing is the way it is and the trap that makes it easy to
+get wrong; drop the milestone number, the former value, and the narration of the fix.**
 
-**Do it worst-first, one commit per file or small group, `./tools/check.sh` between.** The
-method is in the `godot` skill under "Comments are written in the present tense", and it is a
-judgment call per block rather than a find-and-replace: **keep the reason a thing is the way it is
-and the trap that makes it easy to get wrong; drop the milestone number, the former value, and the
-narration of the fix.**
+- [x] **The docstrings.** Every `.gd` file in `src/` is at zero, checked with
+      `grep -rcE '(M[0-9]{1,2}\b|playtest|Playtest)' src --include='*.gd'` — the four hits left are
+      in `main.gd` and are all the ordinary word, in the function that decides whether a run's log
+      is a playtest.
 
-- [~] **The docstrings**, and the last piece of M40. **The six worst files are done and are at
-      zero** — `tuning.gd`, `event_catalogue.gd`, `event_scheduler.gd`, `city_generator.gd`,
-      `event_instance.gd`, `crowd_agent.gd` — which is 275 of the original 556. Remaining, worst
-      first:
-
-      | file | refs | | file | refs |
-      |---|---:|---|---|---:|
-      | `main.gd` | 26 | | `crowd/crowd.gd` | 12 |
-      | `telemetry/telemetry_observer.gd` | 25 | | `autoload/telemetry.gd` | 11 |
-      | `player/stroller.gd` | 19 | | `ui/danger_edge.gd` | 9 |
-      | `events/event_manager.gd` | 18 | | `routes/closure_planner.gd` | 9 |
-      | `events/event_def.gd` | 18 | | *25 more files* | 1–6 each |
-      | `city/city.gd` | 17 | | | |
-      | `crowd/crowd_lanes.gd` | 14 | | | |
-      | `city/city_map.gd` | 13 | | **total** | **281** |
-
-      Count them again with
-      `grep -rcE '(M[0-9]{1,2}\b|playtest|Playtest)' src --include='*.gd' | sort -t: -k2 -rn`.
       **The rewrite that works** is turning a narrated fix into the mistake a reader could still
-      make: *a contract in seconds cannot describe a pursuit played out in distances*, *a guarantee
-      narrower than its rule says nothing on the day the rule is wrong*, *a weighting inside a fixed
-      split cannot cross it*. Where a paragraph does not survive that test it is history and belongs
-      in `DECISIONS.md`
+      make: *a contract in seconds cannot describe a pursuit played out in distances*, *never guard
+      on a `CanvasLayer`'s `visible`*, *a category in an enum is a list waiting to happen*. Where a
+      paragraph did not survive that test it was history and went to `DECISIONS.md`.
+
+      **The pass found five stale claims and one dead field**, which is the argument for doing both
+      passes at once holding for the code as well as for the docs: the mark docstring's "fifteen of
+      the eighteen rows" (the catalogue has thirty-one, six of them lethal) and its "no lethal
+      events in acts I and II" (the cyclist is day 2), `street_network`'s "64 junctions and 112
+      segments" (144 and 264), `main`'s "eighteen kinds" and its list of "four things a picture
+      cannot carry" that names three, two crowd sizes quoted as four and five hundred against a cap
+      of 200, and `EventDef.act_tag`, which is set on eleven rows and read by nothing
 - [x] **The design docs** — `EVENTS`, `CITY`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `DESIGN`,
       `NARRATIVE`, `README` are all at **zero** history references, one commit each. Done before
       the docstrings because a reader reaches them first.
@@ -101,15 +88,22 @@ narration of the fix.**
       sleepiness and decay multipliers, a 104×104 city, and a car population of thirty.
       **`charging_dog` had no row in the catalogue table at all.** Two obsolete measured tables
       moved to `DECISIONS.md` rather than being restyled in place
-- [ ] **Then re-audit the numbers, separately from the restyle.** A stale claim survives a rewrite
-      perfectly well if nobody checks it against the code — the design-doc pass caught nine only
-      because rewriting a sentence forces you to read what it says. **Assume there are more.** Any
-      number a doc quotes is a candidate: radii, costs, counts, densities, timings.
+### ← Next step: re-audit the numbers, separately from the restyle
+
+- [ ] **A stale claim survives a rewrite perfectly well if nobody checks it against the code.** The
+      two restyle passes caught fourteen between them, and only because rewriting a sentence forces
+      you to read what it says — a pass that goes looking will find more. Any number a doc or a
+      docstring quotes is a candidate: radii, costs, counts, densities, timings.
 
       Two known shapes to look for. **A number stated per something that has since been resized** —
-      the lattice went to 11×11 and every count over blocks, junctions or streets moved with it.
-      And **a measured table that was a before-and-after**: those are history, and they belong in
-      `DECISIONS.md` with their date rather than being restyled into the present tense
+      the lattice is 11×11 and every count over blocks, junctions or streets moves with it; two of
+      the fourteen were exactly this. And **a measured table that was a before-and-after**: those
+      are history, and they belong in `DECISIONS.md` with their date rather than being restyled into
+      the present tense.
+
+      Where a number is load-bearing but fragile, the fix is usually to **state the relationship
+      instead of the figure** — "only the spine's junctions are signalled" rather than "nineteen of
+      a hundred" — and to leave the figure to the code
 
 ---
 
