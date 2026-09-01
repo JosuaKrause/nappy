@@ -15,14 +15,28 @@ fi
 
 echo "== import =="
 "$GODOT" --headless --import --path "$PROJECT_DIR" >/dev/null 2>&1
+import_status=$?
 
 echo "== boot =="
 output=$("$GODOT" --headless --quit-after 60 --path "$PROJECT_DIR" 2>&1)
+boot_status=$?
 echo "$output"
 
 if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" <<<"$output"; then
     echo
     echo "FAILED: errors during boot" >&2
+    exit 1
+fi
+
+if [[ $import_status -ne 0 ]]; then
+    echo
+    echo "FAILED: import pass exited $import_status" >&2
+    exit 1
+fi
+
+if [[ $boot_status -ne 0 ]]; then
+    echo
+    echo "FAILED: boot exited $boot_status" >&2
     exit 1
 fi
 
