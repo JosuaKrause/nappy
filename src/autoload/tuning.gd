@@ -312,7 +312,6 @@ const MIN_CALM_BLOCKS := 5
 const MAX_CALM_BLOCKS := 7
 ## Walking distance in tiles, not straight-line: the calm has to be earned.
 const MIN_HOME_TO_PARK_TILES := 30
-const PARK_SPOIL_CHANCE := 0.35
 
 # ------------------------------------------------ four-block calm zones (M21) ---
 # Playtest 03, finding 2, restated by playtest 04 and again by playtest 05's finding 4: the
