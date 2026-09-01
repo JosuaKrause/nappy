@@ -132,11 +132,12 @@ The game becomes a folder of static files a browser runs. Godot's HTML5/WASM exp
 cross-origin-isolation headers are needed and GitHub Pages serves it as-is. No server: the game has
 no networking. What Pages needs is preparation, not architecture:
 
-- [ ] **Gate the dev flags first — this is the prerequisite, not a polish item.** `--seed`,
-      `--day`, `--spawn`, `--ending` and the rest ship in the build today (M10 records the debug
-      gate as owed). A public build guards every dev flag and the snapshot key behind
-      `OS.is_debug_build()`, and the M10 item to move them into a `DevFlags` helper is naturally
-      the same work
+- [ ] **Gate the developer's furniture first — this is the prerequisite, not a polish item.**
+      `--seed`, `--day`, `--spawn`, `--ending` and the rest ship in the build today (M10 records the
+      debug gate as owed). A public build guards every dev flag and the snapshot key behind
+      `OS.is_debug_build()`, and the M10 item to move them into a `DevFlags` helper is naturally the
+      same work. **The HUD's header and status line are the same category** and go behind the same
+      gate — see the entry below
 - [ ] **A tracked Web export preset.** `export_presets.cfg` is gitignored because presets often
       carry credentials — a Web preset carries none, so track it (adjust the ignore with a comment
       saying why), configured for threads off. Decide the viewport/canvas policy (the game renders
@@ -164,10 +165,12 @@ no networking. What Pages needs is preparation, not architecture:
       together. What has no home once it goes: `stall_reason()`'s *"not settling: …"* and the
       *"nowhere is quiet"* note for a city-wide source, neither of which the pram draws.
 
-      **The scope is a question and it is not answered here.** The instruction was given about the
-      Pages build, and its reason — *during the day this info is noise* — is about the game rather
-      than about the host. Ask before building it web-only, because two HUDs is a maintenance cost
-      taken on a guess
+      **The scope is answered, and it is not "two HUDs".** *(2026-09-02: "the current HUD is for
+      debugging — for the real game (the web version) it must be minimal.")* The header, the status
+      line and everything else being cut is **debug output that has been shipping as if it were the
+      game**, so this is the same work as gating the dev flags: the minimal HUD is the game, and
+      what is left goes behind `OS.is_debug_build()` with the rest of the developer's furniture.
+      That also decides where it lives — beside the `DevFlags` helper, not in a web-only branch
 - [ ] **The deploy workflow** — GitHub Actions on push to `main`: install Godot + export
       templates, run the export, publish `build/web/` to Pages (`upload-pages-artifact` +
       `deploy-pages`). **Blocked on a decision only the player can take: the repo has no GitHub
@@ -222,30 +225,64 @@ thing than behind it.
 > the full perimeter of each region. checkpoints can reuse the other woman with baby logic. the cost
 > can be time (and a bit of excitement) while being detained until released"
 
-**This is M45's answer arriving from the other side.** M45 measured that a closure cannot change a
-route while there are nine destinations and a full grid — 350 closures across ten seeds moved the
-best route once — and concluded that a closure's job is direction rather than distance. A checkpoint
-ring is the version that *does* change distance, because it is not one barrier on one street: it is
-the whole perimeter of a region, so there is no way round, only a way through at a price. It is also
-M47's "main road as a soft block" generalised from one street to a boundary.
+> "checkpoints are not the same as closures. closures are eg construction sites where the road is
+> fully closed. a checkpoint is a barrier across the street where there are guards on the side-walks
+> with a hut and a gate over the roadway to let cars through (cars need to slow down to a full stop
+> before the gate opens and they can go ahead again). the player walks to a hut gets detained inside
+> and then spawns on the other side afterwards. it works in both directions with the same cost each
+> time"
 
-- [ ] **The regions are a city-generation question, not an event-placement one.** `checkpoint`
-      today is a recurring row rolled onto `ROAD`/`CROSSING` tiles up to six times a day from day 7.
-      A perimeter is a decision about the map, so what needs designing first is what a region *is*
-      — the quadrants either side of the spine, a growth from the home block, or something the
-      lattice already knows about
-- [ ] **The cost is a detention, and the mechanism already exists.** *"Reuse the other woman with
-      baby logic"* is `chatting_mother`: `EventDef.detain_seconds` locks her movement on first
-      contact inside `detain_radius`, and `Stroller.detain()` runs the lock out through the ordinary
-      friction rather than stopping her dead. **`EventDef.validate()` currently refuses `detain` on
-      anything `hard_fail` or that `pursues`** — a conversation is a cost, never a threat — which a
-      checkpoint satisfies, since being held up is exactly a cost
-- [ ] **"A bit of excitement" is the second half and it is not the detention.** A detained player
-      is standing still, and standing still is where `EXCITEMENT_DECAY_IDLE` pays back nothing —
-      so a checkpoint charges her twice over unless the intensity is set knowing that
-- [ ] **The winnability guarantee has to survive it.** Every day must leave a route to a calm area,
-      and a ring of checkpoints around the region the home is in is the exact shape of sealing her
-      in. It is the doorstep exemption's problem at city scale
+**A checkpoint is not a closure and the difference is the whole design.** A closure — roadworks, a
+construction site — takes a street away, and `docs/CITY.md`'s `absent_segments` is how the city says
+so. **A checkpoint never removes a route; it prices one, and the price is the same every time in
+both directions.** It is a crossing you can always make and never make for free, which is a thing
+the game does not have yet: every other cost in it is either avoidable by routing or fatal.
+
+That also changes what the existing row is. `checkpoint` today is a recurring event rolled onto
+`ROAD`/`CROSSING` tiles up to six times a day from day 7, and its own docstring calls it *"the first
+event that takes a route away rather than making it expensive"* — which is precisely what this says
+it is not. Whether the new checkpoint replaces that row, or is a separate structure that borrows its
+picture, is the first thing to settle.
+
+**Its anatomy, in the player's words, and each part lands on a different system:**
+
+- **A barrier across the street**, with **guards on the sidewalks** and a **hut**. So it is not one
+  body on one tile — it spans the full width of a street, footway to footway, which nothing in the
+  catalogue does. `EventDef.obstructs_radius` is a *circle* whose radius is half a silhouette, and
+  half a street is not a silhouette.
+- **A gate over the roadway.** Cars come to a **full stop**, the gate opens, they go on. The
+  machinery for making traffic stop and start at a place already exists and is not in the crowd —
+  `src/city/traffic_signals.gd` and `traffic_light.gd` hold the cycle, `src/crowd/crowd_lanes.gd`
+  and `crowd.gd` are what obeys it. A gate is a signal with a different rule and a different
+  drawing, which is a much smaller thing to build than it sounds.
+- **She walks to the hut, is detained inside, and comes out the other side.** A **teleport**, and
+  nothing in this game has ever moved the player. It is also the answer to the question a barrier
+  spanning a street would otherwise raise — how does a pram get past a thing with no gap in it —
+  and it means the crossing is never a matter of finding a way through the geometry.
+- **Both directions, the same cost each time.** So it is a toll rather than a puzzle: nothing about
+  it is learnable except that it is there, which is what makes it a *routing* fact.
+
+- [ ] **The regions are a city-generation question, not an event-placement one.** A perimeter is a
+      decision about the map, so what needs designing first is what a region *is* — the quadrants
+      either side of the spine, a growth from the home block, or something the lattice already
+      knows about. This is the largest piece and everything else waits on it
+- [ ] **The detention is `chatting_mother`'s mechanism.** *"Reuse the other woman with baby logic"*:
+      `EventDef.detain_seconds` locks her movement on first contact inside `detain_radius`, and
+      `Stroller.detain()` runs the lock out through the ordinary friction rather than stopping her
+      dead. **`EventDef.validate()` currently refuses `detain` on anything `hard_fail` or that
+      `pursues`** — a conversation is a cost, never a threat — which a checkpoint satisfies, since
+      being held up is exactly a cost. What it does not cover is the teleport at the end of the
+      lock, which is new
+- [ ] **"A bit of excitement" is the second half, and it is not the detention.** A detained player
+      is standing still, and standing still is where `EXCITEMENT_DECAY_IDLE` pays back nothing — so
+      a checkpoint charges her twice over unless the intensity is set knowing that
+- [ ] **The winnability guarantee has to survive it.** Every day must leave a route to a calm area.
+      A crossing that is always possible cannot seal the city the way a closure can, which is the
+      good news; what it can do is make every calm area cost a toll, which is the same problem
+      wearing a different hat. Measure it, do not argue it
+- [ ] **What it does to the corridor.** `RouteTree` grows the day's routes and `Corridor` answers
+      *is this tile on one*. A toll is a cost on an edge, and the route tree has never had one —
+      check whether it can express "passable, at a price" before assuming it can
 
 ## M50 — What the corridor still owes
 
