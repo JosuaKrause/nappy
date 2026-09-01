@@ -38,7 +38,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
-| `act_tag` | Narrative act it belongs to, for palette/audio |
+| `act_tag` | Narrative act it belongs to. No game code reads it; `tests/test_acts.gd` holds it consistent with the calendar `first_day` actually gates |
 
 There is no `impulse` field. A "sharp spike" is just a short `duration` at high `intensity`
 — which is exactly what a cat crossing the road *is* — and expressing it that way keeps the

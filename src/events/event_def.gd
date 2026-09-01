@@ -281,8 +281,11 @@ enum Pavement {
 ## leaves a burnt-out shell; the shell is still there on day 12.
 @export var scar_id := ""
 
-## Which act the row belongs to, narratively. Nothing reads it yet: it is where a per-act palette
-## or a per-act sound would key off, and `first_day` is what actually decides when a row can appear.
+## Which act the row belongs to, narratively. No game code reads it — `first_day` is what
+## actually decides when a row can appear — but `tests/test_acts.gd` asserts every row's
+## `act_tag` against the act its `first_day` falls in, so it stays consistent with the
+## calendar even though nothing at runtime depends on it. It is where a per-act palette or a
+## per-act sound would key off.
 @export var act_tag := 1
 
 ## What this row does to a route that meets it, in the words `docs/CITY.md` fixes.
