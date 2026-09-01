@@ -290,6 +290,13 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
 - [ ] **`generate()` retries with `seed + 1`**, so a run's city is the first nearby seed that
       passes rather than `run_seed` itself. Not a bug; worth remembering when reproducing from a
       seed
+- [ ] **The log says when she is stuck** *(asked 2026-09-01: "put a note in the telemetry when the
+      player doesn't move even though they press something")*. A throttled `blocked` entry from
+      `TelemetryObserver` — movement input held for about a second while displacement stays near
+      zero → one entry with position, direction and duration, throttled like the bump entries, not
+      per frame. It makes an immobile rig visible in its own log (a `--walk` run that never left
+      the doorstep currently reads as a run) and gives a human pressing into an invisible blocker
+      a trace. Observer-only; gameplay untouched
 
 ---
 
