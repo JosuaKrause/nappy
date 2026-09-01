@@ -15,3 +15,6 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# Agent worktrees (full checkouts; never content of the repo itself)
+.claude/worktrees/
