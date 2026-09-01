@@ -102,3 +102,10 @@ any script error:
 ```sh
 ./tools/check.sh
 ```
+
+## License
+
+The **code** — `src/`, `tests/`, `tools/`, the project configuration — is [MIT](LICENSE). The
+**game** is not: the art under `assets/`, the documents under `docs/`, the title, the narrative and
+its characters are all rights reserved — see [LICENSE-ASSETS.md](LICENSE-ASSETS.md). Build with the
+code freely; do not re-publish the game.
