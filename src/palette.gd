@@ -2,8 +2,8 @@ class_name Palette
 extends RefCounted
 ## The colours the *code* still decides.
 ##
-## Since M12 the art is authored SVG under `assets/`, and a tree's green or a pram's navy
-## lives in the file that draws it. What is left here is everything chosen at runtime: the
+## The art is authored SVG under `assets/`, so a tree's green or a pram's navy lives in the file
+## that draws it. What is left here is everything chosen at runtime: the
 ## light, the act cast, the excitement fields, the chalk, and the per-variant building
 ## colour that one asset set is multiplied by. A colour that no longer paints anything does
 ## not belong in this file — a constant that looks authoritative and controls nothing is
@@ -14,8 +14,7 @@ extends RefCounted
 
 const OUTLINE := Color("221f28")
 
-## Daylight over the whole city canvas, from midday to dusk. Act tinting multiplies into
-## this in M7.
+## Daylight over the whole city canvas, from midday to dusk. The act cast below multiplies into it.
 const LIGHT_MIDDAY := Color(1.0, 1.0, 1.0)
 const LIGHT_DUSK := Color(0.52, 0.54, 0.74)
 
@@ -35,7 +34,7 @@ static func act_tint(act: int) -> Color:
 # ------------------------------------------------------------------ ground ---
 # The ground itself is tiles now (assets/ground_tileset.tres). These are the *flat* colour
 # of each surface, which is what a map has to draw when it cannot draw the art — see
-# `Tile.ground_colour` and M17's route map.
+# `Tile.ground_colour`, and `TelemetryMap`, which draws the city a tile to a pixel.
 
 const ASPHALT := Color("46464f")
 const SIDEWALK := Color("8b8478")
@@ -55,17 +54,15 @@ const SPOILED_GROUND := Color("6b6357")
 ## The danger marks. **Two colours, and they are a scale rather than a sequence**: amber for
 ## something worth going round, deep red for something that ends the day.
 ##
-## These used to paint the aura rings, which M22 deleted: a ring communicates a falloff radius,
-## which is a number, where a mark over the thing communicates a threat.
+## Nothing here paints an aura ring: a ring communicates a falloff radius, which is a number, where
+## a mark over the thing communicates a threat.
 ##
-## *(M39, playtest 10 finding 8: "I don't understand the difference between yellow and red warning
-## indicators above entities".)* There were three, and they were the three *phases* of an event —
-## amber telegraphing, red live, deep red lethal. Two things were wrong with that at once. A
-## telegraph is almost always over before the event is on screen, so the amber was only ever seen on
-## the two rows sited in front of the player and read as "near"; and `MARK_ACTIVE` and `MARK_LETHAL`
-## were two reds a player is asked to tell apart on a 15px caret. Phase is carried by the **flash**
-## now, which is what a flash is for, and the colour carries the only thing a colour is good at:
-## how bad. See `EventInstance.mark_colour()`.
+## **Two, and they are not phases.** Three colours for amber telegraphing, red live and deep red
+## lethal is wrong twice over: a telegraph is almost always over before the event is on screen, so
+## the amber is only ever seen on the rows sited in front of the player and reads as "near"; and two
+## reds is a distinction a player is asked to make on a 15px caret. Phase is carried by the
+## **flash**, which is what a flash is for, and the colour carries the only thing a colour is good
+## at: how bad. See `EventInstance.mark_colour()`.
 const MARK_COSTLY := Color("e8b64a")
 const MARK_LETHAL := Color("8f2f38")
 
@@ -78,13 +75,13 @@ const SIGNAL_AMBER := Color("f0a92e")
 const SIGNAL_GREEN := Color("5fc46a")
 
 ## The two words on the screens either side of a run, and they are the only colours in this file
-## that paint text rather than the world. *(M51, playtest 15 findings 5 and 6.)*
+## that paint text rather than the world.
 ##
 ## **Neither borrows from the danger vocabulary**, for the reason the signal lamps do not borrow
 ## from the marks: a caret says *how bad a thing is* and these say *which screen you are on*, and a
 ## title in `MARK_COSTLY` would be a game named after a warning. `TITLE_TEXT` is the doorstep — a
-## brighter `HOME_STOOP`, which is the thing the title screen is standing in front of — and it was
-## a warm off-white indistinguishable from its own subtitle until a player said so. `GAME_OVER` is
+## brighter `HOME_STOOP`, which is the thing the title screen is standing in front of, and it has to
+## be a colour rather than an off-white indistinguishable from its own subtitle. `GAME_OVER` is
 ## `MARK_LETHAL` opened up until it is readable at 88px on a dark scrim, which is the one place the
 ## two vocabularies genuinely mean the same thing.
 const TITLE_TEXT := Color("d2765a")

@@ -25,13 +25,11 @@ const _ENDING_TITLE := {
 	GameEnums.Ending.GOOD: "Silence.",
 }
 
-## The one line on the ending screen that is not writing. *(Playtest 15, finding 5: "clearly say
-## game over on the game over screen with big letters (in addition to everything else that is
-## already there)".)*
+## The one line on the ending screen that is not writing.
 ##
 ## Every ending title in this file is a **sentence out of the fiction** — *"You stop going out."*,
-## *"Silence."* — which is right for what they are and is exactly why the screen did not read as
-## the end of anything. A run that has finished has to say so before it says anything else.
+## *"Silence."* — which is right for what they are and is exactly why they do not read as the end
+## of anything on their own. A run that has finished has to say so before it says anything else.
 ##
 ## **It is not the same word for all three, and that is a decision rather than the request being
 ## trimmed.** The screen the complaint came off is the `BAD` one, where the nerves ran out, and
@@ -80,7 +78,7 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 	else:
 		lines.append("Nerves left: %s" % ("*".repeat(nerves) if nerves > 0 else "none"))
 	# The calendar does not move on a loss, so the screen says so rather than leaving the player
-	# to notice tomorrow that it is still today. *(Playtest 06, finding 4.)*
+	# to notice tomorrow that it is still today.
 	if retrying:
 		lines.append("You try day %d again." % day)
 	# The only place the subquest is ever spelled out. In the world it is chalk on a wall.
@@ -103,10 +101,10 @@ func _resistance_line() -> String:
 
 ## The last screen of a run. `space` goes back to the title, which is where the next one begins.
 ##
-## It said `esc to quit` until M38, and it was not true: `Esc` opens the pause, and the pause offered
-## `Esc` and `Q` — so a finished run was *"you can just cycle between pause screen and loss screen at
-## that point"*, with closing the window as the only way out. Space already dismisses every other
-## screen in the game, so it is the key that was missing rather than a new one.
+## **Not `esc to quit`**, which is not true from here: `Esc` opens the pause, and the pause offers
+## `Esc` and `Q`, so a finished run becomes a cycle between two screens with closing the window as
+## the only way out. Space dismisses every other screen in the game, so it is the key this one owes
+## rather than a new one.
 func show_ending(ending: GameEnums.Ending) -> void:
 	_heading.text = _ENDING_HEADING.get(ending, "THE END")
 	_heading.show()

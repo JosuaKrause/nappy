@@ -20,9 +20,9 @@ var _hold := 0.0
 var _seen_for := 0.0
 var _announcement := ""
 var _announcement_for := 0.0
-## What is holding a floor under the whole city, or "" for nothing. M22: this is the only cue
-## for a source with no position, and until it existed the loudspeaker masts held the meter up
-## from day 5 with nothing on screen to say why.
+## What is holding a floor under the whole city, or "" for nothing. The only cue for a source with
+## no position: without it the loudspeaker masts hold the meter up from day 5 with nothing on
+## screen to say why.
 var _city_wide := ""
 
 const _STATE_TEXT := {
@@ -70,13 +70,12 @@ func _ready() -> void:
 	_refresh_resistance()
 
 # ---------------------------------------------------------------- teaching ---
-# Playtest 07: *"so on day 1 we only introduce arrow keys"*, and *"on day 3 we introduce the
-# running key (it is possible to run before but not required)"*.
+# Day 1 introduces the arrow keys; day 3 introduces running, which is possible before then and
+# never required.
 #
-# Two lines of text and no tutorial, for the reason `docs/TODO.md` gives under M26: teaching a
-# move before it is ever correct teaches a move that is never correct again. Running has been
-# available and wrong since M1, so the game says nothing about it for two days — and then says it
-# on the frame it becomes the answer.
+# Two lines of text and no tutorial, because **teaching a move before it is ever correct teaches a
+# move that is never correct again.** Running is available and wrong from the first morning, so the
+# game says nothing about it for two days — and then says it on the frame it becomes the answer.
 
 ## How long the day-1 line stays up. Long enough to be read while walking off the doorstep.
 const TEACH_SECONDS := 7.0
@@ -111,10 +110,6 @@ func _teach_the_day(day: int) -> void:
 
 ## The pause exists, and the moment to say so is the first time she stops of her own accord.
 ##
-## *(Playtest 07: "bring up the pause tutorial if the user idles — only after the walking tutorial
-## has been finished, and only the first time the user idles in a session, after the initial idle
-## when starting the game before starting to walk for the first time in a day.")*
-##
 ## Three conditions, and each one is a way this would otherwise be noise:
 ##
 ## - **Not before she has walked today.** Standing on the doorstep at dawn is not somebody who has
@@ -124,9 +119,9 @@ func _teach_the_day(day: int) -> void:
 ## - **Once per run.** It is a keybinding, not a warning. A cue that comes back is a cue that gets
 ##   read once and then ignored — which is the rings' mistake in the smallest possible shape.
 ##
-## It is also, incidentally, the moment the answer is most useful: since playtest 07 standing still
-## settles nothing, so somebody who has stopped either wants the game to stop with them, or is
-## about to find out that waiting is not a plan.
+## It is also, incidentally, the moment the answer is most useful: standing still settles nothing,
+## so somebody who has stopped either wants the game to stop with them, or is about to find out
+## that waiting is not a plan.
 func _teach_the_pause(delta: float) -> void:
 	if _taught_pause:
 		return

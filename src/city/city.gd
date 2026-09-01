@@ -6,8 +6,8 @@ extends WorldContext
 ## Ground is drawn by this node itself, so it lands behind the y-sorted `Entities` child
 ## without needing a z_index fight.
 ##
-## **Buildings are a layer of their own, underneath the entities.** *(M37, playtest 07 finding 4:
-## "the warning indicators render below roofs".)* A `Building`'s origin is the south edge of its
+## **Buildings are a layer of their own, underneath the entities**, or the warning indicators
+## render below roofs. A `Building`'s origin is the south edge of its
 ## lot and its drawn mass extends a whole block north of there, so y-sorting against it draws it
 ## in front of everything on the pavement running up the side of that block — which shows
 ## wherever the two also overlap in x, and that is anything wider than the 16px from a tile
@@ -47,7 +47,7 @@ const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 ## more trees in it and no swings, which is most of what the difference between them is on the
 ## ground.
 ##
-## Per block rather than per lot since M21: a four-block calm zone is seven and a half blocks'
+## Per block rather than per lot: a four-block calm zone is seven and a half blocks'
 ## worth of ground once the absorbed streets are counted, and ten trees spread over that is a
 ## field with some shrubs in it rather than a park. `_dress_block` scales by the lot's area.
 const _TREES := {
@@ -128,14 +128,12 @@ func set_daylight(fraction: float) -> void:
 # ------------------------------------------------------------ WorldContext ---
 
 ## Whether this is calm ground at all, for the debug overlay and the telemetry. **Not** a
-## `WorldContext` question any more: `Baby` asks `sleepiness_multiplier` instead, because since M52
-## calm ground is a rate rather than a kind of place.
+## `WorldContext` question: `Baby` asks `sleepiness_multiplier` instead, because calm ground is a
+## rate rather than a kind of place.
 func is_calm_zone(world_position: Vector2) -> bool:
 	return Tile.is_calm(map.tile_type_at_world(world_position)) if map else false
 
-## How much faster the sleepiness meter fills on this ground. *(Playtest 14, finding 11: "x1.5 the
-## sleepiness effect of calm zones and double it for 1x1 calm zones", and playtest 16's curve over
-## the sizes between.)*
+## How much faster the sleepiness meter fills on this ground.
 ##
 ## 1.0 off calm ground, and `Tuning.sleepiness_calm_multiplier` on it — which is a function of **how
 ## many blocks the lot has**, not of the tile. A single park block and one corner of a four-block
@@ -170,7 +168,7 @@ func _sleepiness_on(tile: Vector2i) -> float:
 			map.block_at(map.tile_to_world(tile))))
 
 ## What the ground she is standing on does to her recovery: calm, precinct, ordinary, main road,
-## best to worst. *(M41, playtest 12 finding 8.)*
+## best to worst.
 ##
 ## A precinct beats a main road even where the two cross, and that is not an oversight: standing
 ## on brick is standing on brick, and the tile she is on is the whole of what this question is
@@ -214,8 +212,8 @@ func _spawn_home() -> void:
 	# Feet-anchored like everything else: the NODE sits on the ground plane at the back of
 	# the notch and the art is offset upward from there. Putting the node at the sprite's
 	# top instead makes y-sort compare the wrong edge, and the player walks in front of a
-	# door she is standing north of. *(It used to be the building above the doorway that won
-	# and hid it; since M37 a building cannot occlude anything in this layer at all.)*
+	# door she is standing north of. (Buildings cannot occlude it: they are a layer of their own,
+	# underneath the entities.)
 	door.centered = false
 	door.offset = Vector2(-DOOR_TEXTURE.get_width() * 0.5, -DOOR_TEXTURE.get_height())
 	door.position = Vector2(stoop.get_center().x, stoop.position.y)
@@ -223,34 +221,32 @@ func _spawn_home() -> void:
 
 ## What is on the far side of the streets that run along the boundary.
 ##
-## **M41 answered this with a ring of frontages and playtest 14 replaced it with the land.** The
-## finding M41 fixed was real — the outermost corridor is a whole street, every interior street
-## runs into it and stops, and with nothing beyond its far pavement the edge read as a road with a
-## void along one side. What a row of buildings said, though, was *more city, going on for ever*,
-## which is the one thing the edge of the map must not say. A city with no end to it has no shape,
-## and the boundary wall then has nothing to be.
+## **Something has to be**: the outermost corridor is a whole street, every interior street runs
+## into it and stops, and with nothing beyond its far pavement the edge reads as a road with a void
+## along one side.
+##
+## **And it may not be a row of buildings.** A frontage out there says *more city, going on for
+## ever*, which is the one thing the edge of the map must not say: a city with no end to it has no
+## shape, and the boundary wall then has nothing to be.
 ##
 ## The land says it instead, and says something different on each side: water to the south, open
-## country east and west, a mountain to the north. See `_paint_outside_the_map`, which is now the
-## whole of the border — it is ground rather than objects, so this function has nothing left to do
-## except put the exits in.
+## country east and west, a mountain to the north. See `_paint_outside_the_map`, which is the whole
+## of the border — it is ground rather than objects, so this function has nothing to do except put
+## the exits in.
 func _spawn_the_edge_of_the_city() -> void:
 	_spawn_spine_exits()
 
 ## The two ways the spine leaves: a tunnel under the mountain to the north, a bridge over the water
 ## to the south.
 ##
-## **It was four until playtest 14**, and the two that went were the east-west road simply carrying
-## on — *"the side-to-side main road just going towards east/west in one space"*, playtest 11. They
-## made sense while the border was a ring of frontages and every exit was a gap in it; they make
-## none now that east and west are a fence, grass and forest. *"The only exception is the tunnel
-## and the bridge in the south."* A carriageway running out into a wood is a road to nowhere, and
-## it was never a main road anyway: there is one spine and it runs north to south, so those two
-## were sited on a corridor that is an arterial in no other part of the game.
+## **Two, and not four.** An east-west exit would be a carriageway running out into a wood, which
+## is a road to nowhere now that east and west are a fence, grass and forest — and it would not be
+## a main road anyway: there is one spine, it runs north to south, so an east-west exit sits on a
+## corridor that is an arterial in no other part of the game.
 ##
-## What they leave behind is the thing that makes them worth having, and it is unchanged: the exits
-## are the last stretch of the spine as it already exists, lethal for the same reason every other
-## carriageway is. See `CityEdge` — *the city goes on and this is how you would leave it*.
+## What makes them worth having: the exits are the last stretch of the spine as it already exists,
+## lethal for the same reason every other carriageway is. See `CityEdge` — *the city goes on and
+## this is how you would leave it*.
 func _spawn_spine_exits() -> void:
 	var down := (map.main_road * CityMap.period()
 			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
@@ -275,20 +271,15 @@ func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 ## that approach's right, which is where a driver would look for it and where a person waiting to
 ## cross that road is already standing.
 ##
-## **That paragraph was the intent and the arithmetic did something else.** *(Playtest 16: "the
-## traffic lights are next to the building and not the street.")* The across-offset was
-## `half - inset` — 80px from the centre line of a 192px corridor, which is 2.5 tiles out on a
-## pavement that starts at 1.0 — so every head stood hard against the **frontage**, the full width
-## of the footway away from the road it was talking about. A signal that far from its carriageway
-## has stopped saying which road it means, which is the one job the placement was carrying.
+## **The across-offset is measured from the kerb, not from the corridor's edge**, and that is the
+## trap: `half - inset` is 80px from the centre line of a 192px corridor, 2.5 tiles out on a
+## pavement that starts at 1.0, so every head stands hard against the **frontage** — the full width
+## of the footway away from the road it is talking about, which is a light that has stopped saying
+## which road it means. From the kerb it is half the carriageway plus half a tile of pavement, so
+## the post stands on the footway rather than in the gutter.
 ##
-## It is measured from the **kerb** now rather than from the corridor's edge, because the kerb is
-## the thing the sentence above is about: half the carriageway, plus half a tile of pavement so the
-## post stands on the footway rather than in the gutter. The two ends of a street are different
-## distances from its middle and only one of them is where a light belongs.
-##
-## Nineteen junctions of a hundred, so this is seventy-six nodes that redraw two or three times a
-## minute each. Fixed for the run: a light is part of the lattice, not part of the day.
+## Only the spine's junctions are signalled, so this is a few dozen nodes that redraw two or three
+## times a minute each. Fixed for the run: a light is part of the lattice, not part of the day.
 func _spawn_signal_heads() -> void:
 	var inset := Tuning.TILE_SIZE * 0.5
 	var half := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE) * 0.5
@@ -504,13 +495,12 @@ func _add_prop(prop: Node2D) -> void:
 	_props.append(prop)
 	_entities.add_child(prop)
 
-## How far the camera may see. The map, plus the ring of frontages outside it. *(M41.)*
+## How far the camera may see. The map, plus the band of land painted outside it.
 ##
-## It used to be the map exactly, which is the reason the boundary looked like a wall and would
-## have gone on looking like one however much was built out there: the camera stopped at the last
-## walkable tile, so the far side of a boundary street — and the tunnel the spine leaves by — were
-## drawn every frame and never once on screen. She still cannot *walk* past the boundary; what
-## changed is that she can see there is something past it.
+## **Not the map exactly**, or the boundary looks like a wall however much is built out there: the
+## camera would stop at the last walkable tile, so the far side of a boundary street — and the
+## tunnel the spine leaves by — would be drawn every frame and never once on screen. She still
+## cannot *walk* past the boundary; she can see that there is something past it.
 func camera_bounds() -> Rect2:
 	return Rect2(Vector2.ZERO, map.world_size()).grow(
 			OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE))
@@ -557,16 +547,14 @@ func _paint_ground() -> void:
 				_ground.set_cell(tile, source, Vector2i.ZERO)
 	_paint_outside_the_map()
 
-## What the city stops at, on each of its four sides. *(Playtest 14: "did you do the border yet?
-## It's just black", and then the brief for what should be there instead.)*
+## What the city stops at, on each of its four sides.
 ##
-## M41 built a ring of **frontages** out here and `camera_bounds()` opened the camera onto it, and
-## neither put anything on the floor — the tilemap has only ever been painted over `map.size`, so
-## the frontages stood on the clear colour. The first fix painted ground by continuing the edge
-## outward, which cured the black and left the wrong answer standing: more city, receding into a
-## camera limit, on every side.
+## The tilemap is painted over `map.size` and no further, so without this everything the camera can
+## see outside the map stands on the clear colour. Painting it by continuing the edge outward cures
+## the black and leaves the wrong answer standing: more city, receding into a camera limit, on
+## every side.
 ##
-## **The border is now the land, and each side says a different thing about why the city ends:**
+## **The border is the land, and each side says a different thing about why the city ends:**
 ##
 ## - **South — a bulkhead, then open water.** The southern boundary street is already the *shore*
 ##   (`CityGenerator._place_precincts` puts a promenade there and says so), and this is the half of
@@ -600,22 +588,18 @@ func _paint_outside_the_map() -> void:
 ## Which border tile belongs at an outside cell. Each side is written as *what you meet, in order,
 ## walking away from the last kerb*, and how far out of the city a tile is is what indexes it.
 ##
-## **The north and south bands own the corners outright, and each one keeps its own step.** *(M55,
-## playtest 17 finding 11: "at the corner of the map the mountain and sea textures should just
-## continue not become diagonal — diagonal doesn't really make sense in this context".)*
+## **The north and south bands own the corners outright, and each one keeps its own step.**
 ##
-## The corner used to belong to whichever side it was further out of, with ties going to north or
-## south. That reads as reasonable and is the diagonal: *further out of* is a comparison between
-## two distances, and the place where two distances are equal is a 45° line, so every corner of the
-## map had a stepped seam running out of it with mountain on one side and forest on the other.
-## Nothing is out there to make sense of a diagonal — there is no cliff face, no coastline and no
-## reason for the woods to end at an angle.
+## **Giving a corner to whichever side it is further out of is the trap.** It reads as reasonable
+## and it is a diagonal: *further out of* is a comparison between two distances, and the place where
+## two distances are equal is a 45° line, so every corner of the map grows a stepped seam with
+## mountain on one side and forest on the other. Nothing out there makes sense of a diagonal — there
+## is no cliff face, no coastline and no reason for the woods to end at an angle.
 ##
-## So the answer is the simpler one the player asked for: **a band runs the full width of the map**,
-## and the east and west bands are what is left in between. A mountain that carries on past the last
-## street is a mountain; a fence that stops where the scree starts is a fence meeting a hillside,
-## which is what a fence does. What this cannot do — and what was deliberately not built, because
-## nobody asked for it — is anything *at* the corner: no headland, no bay, no new terrain.
+## So **a band runs the full width of the map**, and the east and west bands are what is left in
+## between. A mountain that carries on past the last street is a mountain; a fence that stops where
+## the scree starts is a fence meeting a hillside, which is what a fence does. What this cannot do,
+## and deliberately does not, is anything *at* the corner: no headland, no bay, no new terrain.
 ##
 ## The order below is the whole rule. North first, then south, then whatever is left.
 func _border_source(x: int, y: int, depth: int) -> int:

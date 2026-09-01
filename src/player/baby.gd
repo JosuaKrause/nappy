@@ -3,8 +3,8 @@ extends Node
 ## The two meters and the sleep state machine. See docs/MECHANICS.md.
 ##
 ## This node knows about exactly two things: the rig it rides in (for speed) and the
-## WorldContext (for how loud it is here). It has no idea what an event or a tile is, so
-## new event types in M4-M7 never require touching this file.
+## WorldContext (for how loud it is here). It has no idea what an event or a tile is, so a new
+## kind of event never requires touching this file.
 
 signal fell_asleep()
 signal woke_up()
@@ -13,11 +13,11 @@ signal started_crying()
 ## Debug affordance: lets the debug world start a session mid-way for UI checks.
 @export_range(0.0, 100.0) var starting_sleepiness := 0.0
 
-## What the pram is saying about her. *(Playtest 06, finding 5.)*
+## What the pram is saying about her.
 ##
-## Four states and no gauge. Every cue in `docs/EVENTS.md` says something about the *world* —
-## a thing is dangerous, something is coming, this spot is about to be bad — and none of them
-## said anything about the baby, who is the only thing the player is trying to change. Two bars
+## Four states and no gauge. Every other cue in `docs/EVENTS.md` says something about the *world* —
+## a thing is dangerous, something is coming, this spot is about to be bad — and none of them says
+## anything about the baby, who is the only thing the player is trying to change. Two bars
 ## in the corner of a game whose camera is on the pram asks a person to read a number about the
 ## thing they are looking at from somewhere else on the screen.
 ##
@@ -27,9 +27,9 @@ signal started_crying()
 ##   in the vocabulary is a small number of states, each of which is a different instruction:
 ##   *the day has stopped progressing*, *the day is about to end*, *you are on the way home*,
 ##   *she is about to wake and it will cost you half the bar*.
-## - **It is not the exclamation mark.** That one means "this will end your day" and M30 spent a
-##   milestone making it mean only that. Different shape, different anchor — the pram, not her
-##   head — and `Stroller` keeps them out of each other's way when the pram is behind her.
+## - **It is not the exclamation mark.** That one means "this will end your day" and means only
+##   that. Different shape, different anchor — the pram, not her head — and `Stroller` keeps them
+##   out of each other's way when the pram is behind her.
 enum Cue {
 	NONE,
 	## Over the calm threshold and awake: sleepiness is frozen, so the day is not progressing.
@@ -115,10 +115,10 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 
 ## How fast the meter falls: what she is doing, times what she is standing on.
 ##
-## The ground half used to be `in_calm_zone`, a bool, and is a rate the world answers with since
-## M41 — calm, precinct, ordinary street, main road, best to worst. The two halves multiply
-## rather than adding, so *walking somewhere better* is always worth something and running is
-## always worth little, whichever ground she does it on.
+## The ground half is a **rate** the world answers with rather than a bool — calm, precinct,
+## ordinary street, main road, best to worst. The two halves multiply rather than adding, so
+## *walking somewhere better* is always worth something and running is always worth little,
+## whichever ground she does it on.
 func _decay_rate() -> float:
 	var rate := Tuning.EXCITEMENT_DECAY_WALKING
 	if _stroller.is_idle():
@@ -143,7 +143,7 @@ func _update_sleepiness(delta: float, calm_gain: float) -> void:
 		# Never fills while running, at any excitement level.
 		pass
 	else:
-		# One multiplier rather than a branch: since M52 the ground answers with a **rate** —
+		# One multiplier rather than a branch: the ground answers with a **rate** —
 		# 1.0 anywhere ordinary, more on calm, more again on a calm area that is one block — so
 		# there is nothing here to ask about what kind of place she is standing in.
 		sleepiness += Tuning.SLEEPINESS_GAIN_WALKING * calm_gain * delta

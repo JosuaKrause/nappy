@@ -2,10 +2,10 @@ class_name StreetNetwork
 extends RefCounted
 ## The street lattice as a graph: junctions, and the segments of street between them.
 ##
-## The tile grid answers "may I stand here". This answers "can I get there, and is there
-## more than one way" — which is the question M16 exists to make interesting. It is 64
-## junctions and 112 segments rather than ten thousand tiles, so validating a whole day's
-## closures costs less than a single tile-level flood fill.
+## The tile grid answers "may I stand here". This answers "can I get there, and is there more than
+## one way" — the question a day's closures are validated against. It is a couple of hundred
+## junctions and segments rather than ten thousand tiles, so validating a whole day costs less than
+## a single tile-level flood fill.
 ##
 ## Nothing here knows what is closed or what is calm. The lattice is fixed for the run; what
 ## today has done to it arrives as a set of segment keys.

@@ -2,14 +2,11 @@ class_name TelemetryMap
 extends RefCounted
 ## A picture of the whole tile grid, written beside the run log.
 ##
-## *(Playtest 13, finding 4: "for telemetry render out the entire city grid into a picture in the
-## telemetry folder".)*
-##
-## **A trace says where she was and cannot say what she was walking around.** Every question this
-## project has asked of a log in the last five milestones has been a question about the layout —
-## how far the nearest calm area is, whether a closure cut anything, which street the spine is,
-## why a park was never reached — and answering any of them from a list of tile coordinates is a
-## thing nobody does twice. It is a `Vector2i` in the log and a place in the picture.
+## **A trace says where she was and cannot say what she was walking around.** Most of what gets
+## asked of a log is a question about the layout — how far the nearest calm area is, whether a
+## closure cut anything, which street the spine is, why a park was never reached — and answering any
+## of them from a list of tile coordinates is a thing nobody does twice. It is a `Vector2i` in the
+## log and a place in the picture.
 ##
 ## It is **not** `--overview`, which is a dev flag on a run somebody has to take and which
 ## photographs the *rendered* city — buildings, props, dusk, an act's colour cast. This is the grid
@@ -57,11 +54,11 @@ const CLOSURE_MARK := Color("ff2626")
 const CORRIDOR_MARK := Color("b366ff")
 const DEAD_END_MARK := Color("2ee6d0")
 
-## What the day placed a thing **for**, as a colour. *(M50; `GameEnums.BlockerRole`, and
-## `docs/CITY.md`, "The words for it".)*
+## What the day placed a thing **for**, as a colour. See `GameEnums.BlockerRole` and `docs/CITY.md`,
+## "The words for it".
 ##
 ## **The role is the colour and not the shape, because the role is the question.** A wall drawn on
-## the corridor instead of beside it is the central defect this milestone can have, and it is one
+## the corridor instead of beside it is the central defect a placement can have, and it is one
 ## glance to see in a picture and invisible in every other tool — so it gets the channel the eye
 ## reads first, and the effect below gets the weaker one.
 ##
@@ -180,9 +177,8 @@ static func _mark_the_spine(image: Image, map: CityMap) -> void:
 ## The day's corridor, as the path it is: one translucent line down the middle of every street on
 ## the tree.
 ##
-## *(M50, and the reason this tooling went first: the thing being built is a **placement**, and a
-## placement is exactly what a trace in words cannot show. "Is anything guiding her" is the open
-## question the whole milestone exists for, and it cannot be answered from a log line.)*
+## A **placement** is exactly what a trace in words cannot show, and *is anything guiding her* is
+## the question the corridor exists to answer — so it is answered here or nowhere.
 ##
 ## Each stroke runs from the middle of one junction to the middle of the next rather than over the
 ## street alone, so consecutive streets meet and a turn crosses — the picture is a **path** rather
@@ -215,8 +211,7 @@ static func _corridor_stroke(segment: StreetNetwork.Segment) -> Rect2i:
 	return Rect2i(Vector2i(from.x + across, from.y), Vector2i(1, length))
 
 ## Everything the day sited, each carrying what it is: **colour is the role, shape is the effect,
-## and a white pip is whether she ever got to it.** *(M50, and it is the picture the milestone is
-## checked against rather than a decoration on one.)*
+## and a white pip is whether she ever got to it.**
 ##
 ## Three channels because the vocabulary has three axes and reading two of them off a log means
 ## joining a `plan` line to a `near` line by hand, which is the thing nobody does twice. The
@@ -296,7 +291,7 @@ static func _route_stroke(map: CityMap, path: PackedVector2Array) -> Rect2i:
 	return Rect2i(low, high - low + Vector2i.ONE)
 
 ## Every street a hard blocker built over: the wall at the end of a dead end, and all four sides
-## of a big building. *(M50 step 1.)*
+## of a big building.
 ##
 ## **Filled, which is the one exception to "outlines, never fills".** That rule exists because a
 ## mark that covers the ground stops the picture answering the question it was opened for — and

@@ -41,7 +41,7 @@ const SIDEWALK_KERB_MAIN_E := 28
 const SIDEWALK_KERB_MAIN_W := 29
 const PRECINCT := 30
 
-## The land the city stops at. *(Playtest 14.)* These five are the **only** sources no
+## The land the city stops at. These five are the **only** sources no
 ## `GameEnums.TileType` maps to, and that is deliberate: they are painted outside `map.size` by
 ## `City._paint_outside_the_map` and nothing in the game can stand on them, so giving them tile
 ## types would put five entries nobody can reach into every `match` that walks the enum — and into
@@ -157,17 +157,14 @@ static func _road_variant(map: CityMap, tile: Vector2i) -> int:
 ## A crossing is where a carriageway passes over the *other* corridor's pavement, so the
 ## road's axis is whichever of the two offsets is on the carriageway.
 ##
-## **On the main road it is not a zebra**, and that is a rule rather than a decoration.
-## *(M51, playtest 15 finding 2: "the main road shouldn't have zebra crossings (since they have
-## traffic lights) it should be two dotted lines demarking the pedestrian safe zone".)* A zebra
+## **On the main road it is not a zebra**, and that is a rule rather than a decoration. A zebra
 ## means *the traffic gives way to you*, and on the spine it does not — what stops it is the light,
-## which is `Tuning.validate_signals`' whole contract. So the paint had been contradicting the rule
-## at every junction of the one street where getting it wrong ends the day.
+## which is `Tuning.validate_signals`' whole contract. Zebra paint there contradicts the rule at
+## every junction of the one street where getting it wrong ends the day.
 ##
-## What replaces it is **two dotted lines** and not nothing, which is the distinction M41 already
-## drew when it considered painting the crossing away and rejected it: *"a walker crossing a side
-## street would then be standing on open carriageway, and the one thing a zebra is for is saying
-## where a person on a road is meant to be."* The tile type is unchanged for exactly that reason —
+## What stands in its place is **two dotted lines** and not nothing: paint the crossing away and a
+## walker crossing a side street is standing on open carriageway, when the one thing a zebra is for
+## is saying where a person on a road is meant to be. The tile type is unchanged for that reason —
 ## every rule that reads `CROSSING`, from the traffic's give-way scan to where an event may stand,
 ## goes on meaning what it meant. Only the picture moved.
 ##

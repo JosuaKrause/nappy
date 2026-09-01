@@ -137,9 +137,9 @@ Handles day transitions and ending selection. Serialisable for save/continue.
 
 `Baby` never learns what a tile or an event is. It asks a `WorldContext` three questions —
 `is_calm_zone()`, `is_alley()`, `total_excitement_at()` — and that is the entire surface
-between the meters and the world. The debug world answers with hand-placed test data; M3's
-generated city and M4's event manager answer for real. Adding an event type therefore never
-touches the meter code, and the meters can be unit-tested against a fake world.
+between the meters and the world. The debug world answers with hand-placed test data; the generated
+city and the event manager answer for real. Adding an event type therefore never touches the meter
+code, and the meters can be unit-tested against a fake world.
 
 ## Excitement aggregation
 
@@ -245,5 +245,5 @@ a commit still rests on the unfiltered run.
 **A rig that steps the parts is not running the whole.** Several suites walk the crowd by hand so
 that a minute of traffic does not take a minute; what that skips is the frame *around* the agents,
 which is where the traffic queue is resolved and the `TrafficIndex` emptied. `Crowd.step()` is that
-frame, and it is what a rig calls — see `CLAUDE.md`'s verification loop for what stepping only the
+frame, and it is what a rig calls — see the **verify** skill for what stepping only the
 agents cost, in both time and truth.

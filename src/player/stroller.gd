@@ -50,13 +50,13 @@ const CLOSE_FLASHES_PER_SECOND := 7.0
 
 ## How far above the pram the baby's own cue floats, and how far to one side when the pram is on
 ## her own axis — walking towards or away from the viewer, where "above the pram" is also over
-## her legs or over her head. The second of those is where the exclamation mark lives, and two
-## cues in one column is the collision playtest 06's finding 5 names by name: the mark means
-## *this will end your day*, and a cue about the meter that can be read as part of it undoes M30.
+## her legs or over her head. The second of those is where the exclamation mark lives, and **two
+## cues in one column collide**: the mark means *this will end your day*, and a cue about the meter
+## that can be read as part of it takes that meaning away from it.
 ##
-## The lift clears the pram's own art, which is 30px tall from its ground point. Both numbers
-## were set by looking: at 18 the cue was inside the hood and read as clutter on the pram, and
-## with no lateral step it was over her chest walking south and over her head walking north.
+## The lift clears the pram's own art, which is 30px tall from its ground point. Both numbers are
+## set by looking: any less and the cue is inside the hood and reads as clutter on the pram, and
+## with no lateral step it is over her chest walking south and over her head walking north.
 const BABY_CUE_LIFT := 36.0
 const BABY_CUE_ASIDE := 34.0
 ## Slow, because it is a state rather than an alarm; the two urgent ones flash and the two
@@ -64,7 +64,7 @@ const BABY_CUE_ASIDE := 34.0
 const BABY_CUE_FLASHES_PER_SECOND := 2.0
 const BABY_CUE_BREATH := 2.0
 
-## The two things that can be true about the ground she is standing on. M22's vocabulary has
+## The two things that can be true about the ground she is standing on. The danger vocabulary has
 ## exactly these and no more — a third level would be a number again.
 enum Alert {
 	NONE,
@@ -101,7 +101,7 @@ func _ready() -> void:
 	add_to_group("player")
 
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
-## mode. *(M38: "as title screen just use the home and street in front without player".)*
+## mode: the home and the street in front of it, with nobody in it.
 ##
 ## **Leaving the `player` group is the whole of it**, and it is worth being explicit about why that
 ## is the right switch rather than one more flag. Everything that happens *to* her is reached
@@ -114,10 +114,10 @@ func _ready() -> void:
 ## **Her camera stays behind, and it has to keep running.** The view is hers, and the shot the title
 ## screen wants is the one she would be looking at on the first morning — but the title stops the
 ## day, which stops her, and `position_smoothing_enabled` is applied in the **camera's own** process
-## callback. A paused camera therefore never travels to the thing it is following: it sat at the
-## world origin, clamped to the corner of the boundary wall, while ninety-five crowd agents walked
-## about the doorstep a thousand pixels off-camera. An empty title screen, with nothing whatever
-## wrong with the thing it was supposed to be showing.
+## callback. A paused camera therefore never travels to the thing it is following: it stays at the
+## world origin, clamped to the corner of the boundary wall, while the whole crowd walks about the
+## doorstep a thousand pixels off-camera — an empty title screen, with nothing whatever wrong with
+## the thing it is supposed to be showing.
 ##
 ## What is *not* the reason, having been checked rather than assumed: hiding a `Node2D` does not
 ## deactivate a `Camera2D` under it. `visible` is all this needs to be.
@@ -134,10 +134,6 @@ func step_back_in() -> void:
 		add_to_group("player")
 	visible = true
 	_camera.process_mode = Node.PROCESS_MODE_INHERIT
-
-## Whether she is out of the world for the title screen: still here, still carrying the camera,
-## simply not drawn. See `stand_aside()`.
-var _stood_aside := false
 
 func _physics_process(delta: float) -> void:
 	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -168,7 +164,7 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 ## Knocks her off her line. Called by `Crowd` when she walks into somebody: the contact
-## displaces them both, which is finding 2 of playtest 02.
+## displaces them both, so a crowd is something she has to steer through rather than walk over.
 func shove(impulse: Vector2) -> void:
 	# The strongest contact of the frame wins rather than the sum of them, or being caught
 	# between two people would fire her out of the crowd.
@@ -205,8 +201,8 @@ func warn(level: Alert, seconds: float, source: StringName = &"") -> void:
 ## keeps this from being the setter the rule above exists to prevent, because a caller that has
 ## been outbid by something louder finds nothing of its own to take down.
 ##
-## *(Playtest 06, finding 3: "I get the flashing exclamation marks after the fact, at which point
-## they're not useful.")*
+## A mark that stays up after the thing it warns about has gone is not useful; it is the complaint
+## about getting the exclamation marks after the fact, one step later.
 func stand_down(source: StringName) -> void:
 	if _alert_left > 0.0 and _alert_source == source:
 		_alert = Alert.NONE
@@ -219,23 +215,18 @@ func alert_level() -> Alert:
 
 ## How far to one side the baby's cue is stepped, and why it is a function rather than four lines
 ## inside `_draw`: this is a claim about a *moment*, and nothing that only exists inside a `_draw`
-## can be asked about one. *(The M32 lesson — the badge's own two questions are static functions
-## for the same reason — arriving at the cue M32 itself added.)*
+## can be asked about one. The badge's own two questions are static functions for the same reason.
 ##
 ## **There is one reason to step aside and it is conditional**, on the two facings that put the
-## pram in her column. Walking due towards or away from the viewer, "above the pram" is also the
-## exclamation mark's column — and that column is only occupied while there is a mark in it.
-## *(M37, playtest 07 finding 14; the column question is `_pram_shares_her_column()` since M43.)*
+## pram in her column — `_pram_shares_her_column()`. Walking due towards or away from the viewer,
+## "above the pram" is also the exclamation mark's column, and that column is only occupied while
+## there is a mark in it.
 ##
-## *(M39, playtest 10 finding 3: "when walking downwards the zzz is still left of the stroller while
-## walking in any other direction it has the correct position.")* M37 made the **north** case
-## conditional and left the south one unconditional, on the argument that walking south "above the
-## pram" is over her own chest and nothing about that depends on what else is on screen. That is a
-## true observation and the wrong conclusion: it is an argument for lifting the cue over her head,
-## which is `baby_cue_lift()`, and not for shoving it sideways off the thing it is about. So the
-## rule is one rule now — *dodge the mark, and only the mark* — and the screenshot that made M37's
-## own case makes this one: a sleeping baby, nothing else happening, and a zzz a full body's width
-## to the right of the pram.
+## The rule is one rule: *dodge the mark, and only the mark*. Walking south, "above the pram" is
+## over her own chest and nothing about that depends on what else is on screen — which is an
+## argument for lifting the cue over her head, and that is `baby_cue_lift()`, not for shoving it
+## sideways off the thing it is about. Made unconditional it produces the picture nobody wants: a
+## sleeping baby, nothing else happening, and a zzz a full body's width to the right of the pram.
 ##
 ## It reads `alert_level()` rather than the flash phase: the mark blinks and the cue beside it
 ## must not hop back and forth in time with it.
@@ -248,10 +239,9 @@ func baby_cue_aside() -> float:
 
 ## Whether the pram is drawn in her own column, which is the one question both cues below turn on.
 ##
-## *(M43, playtest 11 finding 9: "the diagonal zzz got moved up like the downward zzz. Let's move
-## them down to the stroller again.")* Both cues had been asking it as *which axis is she mostly
-## facing*, and that answer puts a **diagonal** on the vertical side of the line — so a diagonal
-## walk got the southward lift, over a pram that was never behind her to begin with.
+## **Not *which axis is she mostly facing*.** That answer puts a **diagonal** on the vertical side
+## of the line, so a diagonal walk takes the southward lift, over a pram that was never behind her
+## to begin with.
 ##
 ## Asked as geometry instead, because it is a question about geometry: `pram_offset` carries
 ## `facing.x` at full `PRAM_DISTANCE`, so the pram is 24px to one side on a diagonal and 34px on
@@ -260,24 +250,24 @@ func baby_cue_aside() -> float:
 ##
 ## It is a distance rather than `absf(facing.x) > absf(facing.y)` for a second reason worth
 ## keeping: `_turn_toward` rotates by an angle and normalises, so on a diagonal the two components
-## are equal only to within float noise, and a strict comparison between them would have let the
-## cue flicker between two positions while she walked in a straight line. This cue has been
-## adjusted three times; a fourth report of it moving on its own is not worth 10px of margin.
+## are equal only to within float noise, and a strict comparison between them lets the cue flicker
+## between two positions while she walks in a straight line. A report of the cue moving on its own
+## is not worth saving 10px of margin over.
 func _pram_shares_her_column() -> bool:
 	return absf(facing.x) * PRAM_DISTANCE < Tuning.PLAYER_BODY_RADIUS
 
 ## How far above the pram the cue floats, which is more on exactly one of the eight facings.
 ##
-## *(M39, finding 3.)* `BABY_CUE_LIFT` clears the pram's own art, which is all it has to do when the
+## `BABY_CUE_LIFT` clears the pram's own art, which is all it has to do when the
 ## pram is the topmost thing under the cue. Walking **due south** it is not: the pram is in front of
 ## her and therefore *lower* on the screen, so a cue lifted off the pram alone lands over her chest.
 ## Clearing her as well is what puts it above the pair of them, over the pram's own column, which is
 ## where a cue about the baby belongs — and it is why the step aside above could stop being
 ## unconditional.
 ##
-## *(M43, finding 9.)* South**-east** and south-west are not that facing, whatever they have in
-## common with it: the pram is already 24px to one side, nothing is behind anything, and the extra
-## `FIGURE_HEIGHT` was lifting the cue off a pram it was supposed to be sitting on.
+## South**-east** and south-west are not that facing, whatever they have in common with it: the
+## pram is already 24px to one side, nothing is behind anything, and the extra `FIGURE_HEIGHT`
+## would lift the cue off a pram it is supposed to be sitting on.
 func baby_cue_lift() -> float:
 	if _pram_shares_her_column() and facing.y > 0.0:
 		return BABY_CUE_LIFT + FIGURE_HEIGHT
@@ -320,7 +310,7 @@ func set_camera_limits(bounds: Rect2) -> void:
 	_camera.limit_bottom = int(bounds.end.y)
 
 # ------------------------------------------------------------------ queries ---
-# Consumed by Baby (M2) to decide how the meters move.
+# Consumed by `Baby` to decide how the meters move.
 
 func current_speed() -> float:
 	return velocity.length()
@@ -357,9 +347,9 @@ func _draw() -> void:
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
 
-## How the baby is, drawn where the player is already looking. *(Playtest 06, finding 5:
-## "having something above the player might be better — like a zzz above the stroller when the
-## baby is fully asleep — and warnings when the excitement is about to be full.")*
+## How the baby is, drawn where the player is already looking — a zzz above the stroller when the
+## baby is asleep, and something louder as the excitement approaches full, rather than a number
+## she has to look away from the street to read.
 ##
 ## Four states, no gauge, and the reasoning for both is on `Baby.Cue`. What is decided *here* is
 ## only where it goes: over the pram, and stepped aside when the pram is behind her, so that the
@@ -396,10 +386,9 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 ## information and "you are standing in front of it" is an instruction, and only the second one
 ## is a move.
 ##
-## This is the load-bearing cue of M22's vocabulary. Every other mark says *a thing exists*;
-## this one says the fairness contract is now about you and the clock has started. It shipped
-## early, in M19, because a lethal car has no telegraph phase to ring — M22 only had to give it
-## a second level and let the events raise it too.
+## This is the load-bearing cue of the danger vocabulary. Every other mark says *a thing exists*;
+## this one says the fairness contract is now about you and the clock has started. The traffic
+## needs it as much as the events do, because a lethal car has no telegraph phase to ring.
 ##
 ## Flashing rather than steady: a mark that is always there stops being read, and the flash is
 ## also what distinguishes it from the props she walks past. See docs/EVENTS.md, "The visual

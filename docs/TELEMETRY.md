@@ -2,10 +2,9 @@
 
 What a run writes down, why each line is there, and how to read one.
 
-Implemented in M23. The short version: **a run log is a chronological plain-text file that
-records what the code cannot recompute.** It exists because several open questions in
-`docs/TODO.md` and `docs/PLAYTEST-02.md` are questions about what actually happens to a
-person playing, and nobody should have to have an opinion about those.
+The short version: **a run log is a chronological plain-text file that records what the code
+cannot recompute.** It exists because most open questions about the balance are questions about
+what actually happens to a person playing, and nobody should have to have an opinion about those.
 
 ---
 
@@ -34,19 +33,15 @@ Logs are named `run-<timestamp>-seed<N>-<commit>.log`. The newest fifty are kept
 pruned automatically — `check.sh` and `shot.sh` boot the game too, and the directory would otherwise
 fill with two-line traces of runs that never started.
 
-**The commit is in the name since M39** *(playtest 10, finding 14: "is there a mechanism to delete
-old outdated sessions? maybe include the abbreviated commit hash in the file name too")*. It has
-been on the first line of every log since M23, which is no help at all when the question is being
-asked of a directory listing — and it always is, because what a reader wants to know first is which
-of these still describes the build in front of them. `-p` is the other half: it treats a log from
-another commit, or one too short to have been a run, as stale, never touches the newest, and prints
-what it would delete unless told `yes`. It is at the end of the name and not the middle because a
-timestamp has dashes in it and so does `abc1234-dirty`.
+**The commit is in the name as well as on the first line**, because the question *which of these
+still describes the build in front of me* is asked of a directory listing. `-p` is the other half:
+it treats a log from another commit, or one too short to have been a run, as stale, never touches
+the newest, and prints what it would delete unless told `yes`. The commit goes at the end of the
+name rather than the middle, because a timestamp has dashes in it and so does `abc1234-dirty`.
 
-**One sitting is often several logs, and that is correct.** Since M38 both `R` on the pause screen
-and a finished run restart the game, which reloads the scene and opens a new log — so a file is one
-*run*, not one session. *(Playtest 10: "oh I see the long session actually got split into multiple
-files.")*
+**One sitting is often several logs, and that is correct.** Both `R` on the pause screen and a
+finished run restart the game, which reloads the scene and opens a new log — so a file is one *run*,
+not one session.
 
 **It is on by default.** `-- --no-telemetry` turns it off. A trace behind a flag is a trace
 the person playtesting has to remember to turn on, which means the interesting run is the one
@@ -108,13 +103,13 @@ back.
 | What the world did to them: what came within range and how close, when sleep froze and what was near, which closure they saw | Which tiles are calm, which streets exist — recomputable |
 | The outcome and its cause: result, elapsed, margin, what was nearby at the moment of a loss, which nerve went and on which day | — |
 
-**M24 is the one place a rule was tempted to read this file, and it does not.** The city
-remembers which calm block the baby actually went to sleep in and spoils it the next day —
-which is exactly what the `calm` entries already say. Reading them back would have been a
-smaller change and it would have broken the invariant in the loudest possible way: the game
-would play differently with `--no-telemetry`. So `GameState.settled_in` is its own run-scoped
-record, written by `DayController` at the moment she settles, and the log merely *also* mentions
-it. Where a trace and a rule want the same fact, the rule keeps its own copy.
+**Spoiling is the one place a rule was tempted to read this file, and it does not.** The city
+remembers which calm block the baby actually went to sleep in and spoils it the next day — which is
+exactly what the `calm` entries say. Reading them back is the smaller change and it breaks the
+invariant in the loudest possible way: the game would play differently with `--no-telemetry`. So
+`GameState.settled_in` is its own run-scoped record, written by `DayController` at the moment she
+settles, and the log merely *also* mentions it. **Where a trace and a rule want the same fact, the
+rule keeps its own copy.**
 
 Random outcomes are the important half, and the reason is specific to this project: rolls
 that depend on **run history** — a one-shot already consumed, a fire that only burns a block
@@ -124,8 +119,8 @@ are the story of the run and they have to be written down as they happen.
 
 ## The entry kinds
 
-Each one answers a question that is open in `docs/PLAYTEST-02.md` or `docs/TODO.md`. A new
-kind has to be able to name the question it answers, or it is a metric and does not belong.
+**Each one answers a question somebody actually asked about a run.** A new kind has to be able to
+name the question it answers, or it is a metric and does not belong.
 
 | Kind | Written by | Answers |
 | --- | --- | --- |
@@ -133,28 +128,28 @@ kind has to be able to name the question it answers, or it is a metric and does 
 | `roll` | `EventScheduler`, `ResistanceDirector` | Which way a run-branching roll went, with the number and the threshold |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager` | Where the city stopped being recomputable |
-| `ahead` | `EventManager` | When the director put something across her line, and where she was — the only record of an event that has no place on the map *(M27)* |
-| `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial *(decision 10)* |
+| `ahead` | `EventManager` | When the director put something across her line, and where she was — the only record of an event that has no place on the map |
+| `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial |
 | `start` | observer | Where the day began |
-| `cross` | observer | Did the player have to cross the street, and at a zebra? *(finding 3, and M21 later)* |
+| `cross` | observer | Did the player have to cross the street, and at a zebra? |
 | `road` | observer | Did they *walk down* the road rather than across it? Only written when a stretch outlasts a crossing, so the entry existing is the answer |
-| `path` | observer | **Was she on the day's corridor?** A line each way as she crosses on or off it, and one at dusk with the share of her street time she spent on it. It is the instrument for playtest 17's finding 1 — *"going off the paths let's me skip events and is safer than going on the path"* — which until this existed was a sentence that could be argued about and not measured. Time in a park or an alley is counted separately from "off it": the corridor is made of streets and the destination is not one, so folding them together would credit every won day with a long safe stretch off the paths *(playtest 17, finding 6)* |
-| `crowd` | `Crowd` → observer | Contact with the street: somebody she walked into, or a car that had to sound its horn at her standing in the road — findings 2 and 3 of playtest 02 with a timestamp on them |
-| `calm` / `left` | observer, `GameState` | Same park every day? *(M24 is built and the answer is "no longer"; the entry now also says which block she settled in, so the log can show what tomorrow's plan was reacting to)* |
-| `near` | observer | How many entities were nearby, which, and how close — the cost table under finding 7 as what happened to a person |
-| `closure` | observer | Are M16's closures a decision or scenery? |
+| `path` | observer | **Was she on the day's corridor?** A line each way as she crosses on or off it, and one at dusk with the share of her street time she spent on it. It is what makes *"going off the paths lets me skip events and is safer than going on the path"* a measurement rather than an argument. Time in a park or an alley is counted separately from "off it": the corridor is made of streets and the destination is not one, so folding them together would credit every won day with a long safe stretch off the paths |
+| `crowd` | `Crowd` → observer | Contact with the street: somebody she walked into, or a car that had to sound its horn at her standing in the road, with a timestamp on it |
+| `calm` / `left` | observer, `GameState` | Same park every day? It also says which block she settled in, so the log shows what tomorrow's plan is reacting to |
+| `near` | observer | How many entities were nearby, which, and how close — the cost table as what happened to a person |
+| `closure` | observer | Are the closures a decision or scenery? |
 | `turn` | observer | Did the player double back — and was it because of a barrier they had just seen? |
-| `run` | observer | Did running help? Against everything you route around the answer is still "it made things worse", by design — but since M33 there is one kind of thing running is the *only* answer to, so a `run` immediately after a `charging_dog` telegraph is the lesson landing rather than a mistake |
-| `chase` | observer | **The one encounter with a right answer, and whether she played it** — two lines per pursuit: it came for her, and how it ended. How close it actually got, how long of it she spent running, and which of the two ways a chase can end it ended in. Playtest 08 asked *"is there enough telemetry to tell what happened?"* about the day-3 dog and the answer was no: the log had an event being sited, four distances, and a death, all of them about the **world**, while the question is about the **exchange** *(playtest 08, finding 4)* |
-| `idle` | observer | **Standing still, and what it bought** — how long, on what ground, and what the two meters did across it. Written when the stand ends, like `cue`, because the duration is the point. It exists because the strongest move in the game used to show up in a trace as a *gap between two lines*: standing still emits nothing, and one playtest 07 run has a seventy-four-second one *(playtest 07, finding 3)* |
-| `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. Playtest 06's two cue findings were both invisible to a trace: a cue is a claim about a moment, and nothing wrote the moment down *(playtest 06, findings 1 and 3)* |
+| `run` | observer | Did running help? Against everything you route around the answer is "it made things worse", by design — but there is one kind of thing running is the *only* answer to, so a `run` immediately after a `charging_dog` telegraph is the lesson landing rather than a mistake |
+| `chase` | observer | **The one encounter with a right answer, and whether she played it** — two lines per pursuit: it came for her, and how it ended. How close it actually got, how long of it she spent running, and which of the two ways a chase can end it ended in. Without it a trace has an event being sited, four distances and a death, all of them about the **world**, when the question is about the **exchange** |
+| `idle` | observer | **Standing still, and what it bought** — how long, on what ground, and what the two meters did across it. Written when the stand ends, like `cue`, because the duration is the point. Standing still emits nothing, so without this entry it shows up in a trace as a *gap between two lines* |
+| `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. A cue is a claim about a moment, and a complaint about a cue's *timing* is invisible to a trace that writes only what was marked |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |
 | `home` / `lost` | observer | The outcome, the margin, and what was around when it happened |
-| `nerve` | `GameState` | Where the nerves went — which day, which act *(decisions 9, 11)* |
+| `nerve` | `GameState` | Where the nerves went — which day, which act |
 | `ending` | `GameState` | How the run finished |
-| `shot` | `main.gd` | **A person pressed `P` and said *look at this*** — where she was, what the meters read, which screen was up, and a PNG beside it. The only entry in the table that is not about the game: it is about somebody watching it *(playtest 13, finding 5)* |
+| `shot` | `main.gd` | **A person pressed `P` and said *look at this*** — where she was, what the meters read, which screen was up, and a PNG beside it. The only entry in the table that is not about the game: it is about somebody watching it |
 
 ### Reading the meter breakdown
 
@@ -165,19 +160,19 @@ exc 35, in 15.4/s (crowd 0.0, events 6.1), sleep 5
 ```
 
 `in` is the baby's **whole** incoming rate; `crowd` and `events` are the two spatial sources.
-Whatever `in` exceeds them by came from the player — running, or standing in an alley. The
-first version printed only the two sources, and a meter climbing on an empty street read as
-`crowd 0.0, events 0.0`, which is true and hides that the player was doing it to themselves
-with the run button. The three numbers are printed together so they always add up.
+Whatever `in` exceeds them by came from the player — running, or standing in an alley. **Printing
+only the two sources is the trap**: a meter climbing on an empty street then reads as `crowd 0.0,
+events 0.0`, which is true and hides that the player was doing it to themselves with the run button.
+The three numbers are printed together so they always add up.
 
-The crowd is ~530 agents and cannot be named one at a time. Which of the two is holding the
-meter up is the whole question, and it is one subtraction.
+The crowd cannot be named one agent at a time. Which of the two is holding the meter up is the whole
+question, and it is one subtraction.
 
 ---
 
 ## Three constraints on the implementation
 
-All three are non-negotiable, and the first is an invariant in `CLAUDE.md`.
+All three are non-negotiable, and the first is an invariant in the **telemetry** skill.
 
 **It must not touch gameplay.** No RNG, no `day_rng()` stream, nothing that changes a
 placement or a roll. Where a system logs a random outcome it hoists the *existing* roll into
@@ -221,14 +216,10 @@ second.
 
 ## Snapshots
 
-> *"Would it make sense to create screenshots for reference in addition to normal telemetry?
-> Doesn't have to be a fixed frequency but could try to heuristically capture key instances."*
-> — playtest 10, finding 12.
-
 A trace says what happened; a screenshot says what it **looked like**, and the second question is
-the one this project keeps having to answer with a rig. Four of the last five milestones fixed
-something no log could see: birds that froze in the air, a cat drawn running backwards, a zzz a
-body's width off the pram, a caret over the wrong things.
+the one this project keeps having to answer with a rig. The defects no log can see are the ordinary
+kind here: birds that freeze in the air, a cat drawn running backwards, a zzz a body's width off the
+pram, a caret over the wrong things.
 
 So a run writes PNGs beside its log, named `<log stem>-<clock>s-<what>.png`, and they are pruned
 with it. Three rules:
@@ -248,10 +239,6 @@ with it. Three rules:
 
 ### And one a person asks for
 
-> *"Allow creating a screenshot via key press that saves into the telemetry folder and writes a
-> telemetry note for context — this is to help debugging; not a game feature."*
-> — playtest 13, finding 5.
-
 `P` (or `F9`) writes `<log stem>-<clock>s-asked.png` and a `shot` entry beside it.
 `Telemetry.snapshot_now()` is the heuristic one with the two limits taken off, and that is the
 whole difference: `SHOTS_PER_DAY` and `SHOT_SPACING` exist because a condition that stays true for
@@ -268,13 +255,10 @@ telemetry asks the world no questions, so it can never be the thing that changed
 
 ## The city grid
 
-> *"For telemetry render out the entire city grid into a picture in the telemetry folder."*
-> — playtest 13, finding 4.
-
-**A trace says where she was and cannot say what she was walking around.** Nearly every question
-asked of a log in the last five milestones has been a question about the layout — how far the
-nearest calm area is, whether a closure cut anything, which street the spine is, why a park was
-never reached — and answering one from a list of tile coordinates is a thing nobody does twice.
+**A trace says where she was and cannot say what she was walking around.** Most questions asked of
+a log turn out to be questions about the layout — how far the nearest calm area is, whether a
+closure cut anything, which street the spine is, why a park was never reached — and answering one
+from a list of tile coordinates is a thing nobody does twice.
 
 So a run writes `<log stem>-map-day<NN>.png`: one four-pixel square per tile, coloured by tile
 type, with the home, the calm areas, the main road, today's closures, the day's corridor and every
@@ -285,7 +269,7 @@ event the day placed marked over it. `TelemetryMap` does the drawing.
   the generator decided rather than what the renderer drew, and it is written without being asked.
 - **Per day, not per run.** The lattice is fixed for a run and **what a block is is not**: an arc
   requisitions a park, a fire leaves a shell, and today's closures are down. A single map taken at
-  dawn on day 1 would be a lie by day 12. Since M50 it is twice a day — see "What the day placed".
+  dawn on day 1 would be a lie by day 12. It is written twice a day — see "What the day placed".
 - **Marks are outlines, lines and crosses, never fills**, so nothing can hide the ground it is
   describing — the commonest way a debug overlay lies is by covering the thing that was going to
   answer the question. Three things are filled and each is bounded rather than argued: the home,
@@ -299,18 +283,16 @@ event the day placed marked over it. `TelemetryMap` does the drawing.
   `_:` arm returns `Palette.OUTLINE` under a comment saying the case only shows through bugs.
   Leaning on a fallback whose stated purpose is *this should never be seen* is how a contract
   quietly becomes untrue.
-- **A precinct has no mark, and that is the correction rather than the omission.** *(2026-08-31:
-  "why blue? why not just take the sidewalk colour and use it for those road segments.")* A
-  pedestrianised corridor is laid `SIDEWALK` all the way across, so the ground pass already draws
-  it as an unbroken pale band where every other street has a stripe of asphalt down its middle.
-  The blue line was an overlay repeating something the picture was already saying, which is the
-  one kind of mark that can go out of date without anybody noticing. `tests/test_telemetry.gd`
-  asserts the paving across the corridor now, which is the fact rather than the overlay.
+- **A precinct has no mark, and that is a correction rather than an omission.** A pedestrianised
+  corridor is laid `SIDEWALK` all the way across, so the ground pass draws it as an unbroken pale
+  band where every other street has a stripe of asphalt down its middle. An overlay on top of that
+  repeats what the picture already says, which is the one kind of mark that can go out of date
+  without anybody noticing. `tests/test_telemetry.gd` asserts the paving across the corridor, which
+  is the fact rather than the overlay.
 
 ### The corridor
 
-*(M50, and it went before the milestone it serves.)* The picture also carries the day's
-**corridor** — `RouteTree`, the branch from the doorstep to every calm area still worth reaching —
+The picture also carries the day's **corridor** — `RouteTree`, the branch from the doorstep to every calm area still worth reaching —
 as one **translucent violet** line down the middle of every street on the tree.
 
 It is the one mark in the picture that is a **plan rather than a fact about the ground**, which is
@@ -326,19 +308,16 @@ street alone, so consecutive streets meet and a turn crosses: the picture is a *
 than a set of dashes, which is the difference between reading a route and inferring one.
 
 **Every street on the tree is drawn the same, and the stroke is mixed into the ground rather than
-laid over it.** *(2026-08-31: "keep the violet lines transparent and don't draw the bundles white —
-don't make a distinction between path and bundle.")* The first version drew a bundled street solid
-white and two tiles wide, which put a third of the map under a colour that hides everything beneath
-it and made the shared trunk read as the subject of the picture rather than as a property of it.
-Transparency is a mix rather than an alpha, because the image is `FORMAT_RGB8` — chosen so the file
-sits in a directory listing — and a colour with an alpha component written into one is simply
-stored opaque.
+laid over it.** Drawing a bundled street solid white and two tiles wide puts a third of the map
+under a colour that hides everything beneath it, and makes the shared trunk read as the subject of
+the picture rather than as a property of it. Transparency is a **mix** rather than an alpha, because
+the image is `FORMAT_RGB8` — chosen so the file previews in a directory listing — and a colour with
+an alpha component written into one is simply stored opaque.
 
-What that costs is a diagnostic, and it is recorded here rather than argued away: *a picture in
-which nothing is shared is a tree that has quietly become a star* used to be readable at a glance
-and now is not. It is asserted directly instead, by `RouteTree.bundles()` and
-`tests/test_route_tree.gd`, which is the stronger place for it — but it is no longer something a
-person notices without looking for it.
+What that costs is a diagnostic, recorded here rather than argued away: *a picture in which nothing
+is shared is a tree that has quietly become a star* is not readable at a glance from this picture.
+It is asserted directly instead, by `RouteTree.bundles()` and `tests/test_route_tree.gd`, which is
+the stronger place for it — but it is not something a person notices without looking for it.
 
 ### The hard blockers
 
@@ -351,14 +330,12 @@ the ground stops the picture answering the question it was opened for, and here 
 the mark — the tiles under it were built over, and an outline round a wall leaves the middle of it
 reading as the street it used to be.
 
-It earns a colour rather than being left to show through as building, which was the first version
-and was invisible: a two-tile slab of dark building inside a dark street is exactly the thing
-nobody spots, and **a hard blocker nobody can find in the one picture built to check placements
-might as well not have been placed.**
+It earns a colour rather than being left to show through as building, which is invisible: a two-tile
+slab of dark building inside a dark street is exactly the thing nobody spots, and **a hard blocker
+nobody can find in the one picture built to check placements might as well not have been placed.**
 
 ### What the day placed
 
-*(M50, and it is the picture the milestone is checked against rather than a decoration on one.)*
 Every **sited** event is drawn where the day put it, carrying the three things `docs/CITY.md`,
 "The words for it", says about a placement:
 
@@ -369,9 +346,9 @@ Every **sited** event is drawn where the day put it, carrying the three things `
 | a white pip in the middle | whether she ever reached it | drawn only once it has been in the world |
 
 - **The role gets the colour because the role is the question.** A wall drawn *on* the corridor
-  instead of beside it is the central defect M50 can have, and it is one glance to see here and
-  invisible in every other tool. Reading it off a log means joining a `plan` line to a `near` line
-  by hand, which is the thing nobody does twice.
+  instead of beside it is the central defect a placement pass can have, and it is one glance to see
+  here and invisible in every other tool. Reading it off a log means joining a `plan` line to a
+  `near` line by hand, which is the thing nobody does twice.
 - **`NONE` is deliberately the dullest thing in the picture.** It is not a fourth kind of
   placement, it is everything the day put down for a reason that is not about the route — an
   ambient playground, a scar the run left, a cat the director will site in front of her later.
@@ -391,33 +368,32 @@ the same picture with the placements she actually walked up to burnt into it. Ne
 from the other and neither is the more useful one — a wall in the wrong place is visible in the
 first, and *a corridor with nothing on it ever met* is visible only in the second.
 
-**The pip is a mark added rather than strength taken away, and the first version was the other way
-round.** Fading what she never reached is the obvious design and it answers the wrong question: a
-wall in the far corner of a map she never walked into is still a wall in the wrong place, and it is
-the placement no trace can report — so the picture would have whispered exactly the thing it exists
-to shout. Drawn instead, the pips also give the picture something nobody asked for and worth
-keeping: **a trail of where she actually went, against the corridor the day planned for her.**
+**The pip is a mark added rather than strength taken away.** Fading what she never reached is the
+obvious design and it answers the wrong question: a wall in the far corner of a map she never walked
+into is still a wall in the wrong place, and it is the placement no trace can report — so the
+picture would whisper exactly the thing it exists to shout. Drawn instead, the pips also give the
+picture **a trail of where she actually went, against the corridor the day planned for her.**
 
 ## What it deliberately does not do
 
 - **No aggregates, no summary at the end of a run.** Both are computable from the log when
   reading it, and neither can be un-computed back into an order.
-- **No per-agent crowd entries, except on contact.** Five hundred and thirty agents would bury
-  everything else, so the crowd is otherwise only its share of the meter. The exception is the
-  one thing about it worth a line each — since M19 a contact is something the game *decides*
-  rather than a state to be noticed, so `Crowd` reports it on `EventBus` and the observer
-  writes it down. That split is deliberate: the rate limiting belongs with the rest of what
-  keeps the log readable, and the telemetry stays out of the file that decides things.
+- **No per-agent crowd entries, except on contact.** A few hundred agents would bury everything
+  else, so the crowd is otherwise only its share of the meter. The exception is the one thing about
+  it worth a line each: a contact is something the game *decides* rather than a state to be noticed,
+  so `Crowd` reports it on `EventBus` and the observer writes it down. That split is deliberate —
+  the rate limiting belongs with the rest of what keeps the log readable, and the telemetry stays
+  out of the file that decides things.
 
   Bumps are rate-limited to one line every 1.5s, and the **dropped count is printed rather
   than swallowed** — "she bumped somebody at 0:14" and "she ploughed through fourteen people
   between 0:12 and 0:14" are very different days and without the number they are the same
   line. **Horns are never dropped**: whether the carriageway is a decision or a place people
-  wander into is the question M19 exists to answer, and the horn is the last entry before a
+  wander into is the question the traffic exists to pose, and the horn is the last entry before a
   `lost` line when the answer is the second one.
 - **No `near` entries for `city_wide` sources.** A field with no edge cannot be approached.
-  What the loudspeaker masts are doing shows up in every meter breakdown instead — which is
-  also the most misleading gap in the game today, and `docs/TODO.md` has it under M10.
+  What the loudspeaker masts are doing shows up in every meter breakdown instead — which is also
+  the most misleading gap in the trace today; the fix is queued in `docs/TODO.md`.
 - **No sampling of the player's position on a timer.** Where they were is reconstructable
   from the entries, and a position every half second would be a metrics dump wearing a log's
   clothes.

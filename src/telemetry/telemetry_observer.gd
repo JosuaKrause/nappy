@@ -50,7 +50,7 @@ const RUN_MIN_TIME := 0.25
 ## And how long standing still stops being a pause at a kerb and starts being a plan.
 ##
 ## Two seconds is roughly what waiting for one car to pass costs, so anything past it was waiting
-## for something slower than the traffic — which since playtest 07 can only be the clock.
+## for something slower than the traffic — which can only be the clock.
 const IDLE_MIN_TIME := 2.0
 
 ## How long on the road stops being a crossing and starts being a walk down it.
@@ -61,10 +61,10 @@ const IDLE_MIN_TIME := 2.0
 ## reader does not have to judge a duration to see it.
 const ROAD_LINGER := 2.5
 
-## A packed pavement is four hundred walkers, and since M19 walking into one is a thing that
-## can happen several times a second. This is the floor on how often a *bump* may say anything;
-## a horn is exempt, because a car that had to sound its horn at her is the whole question M19
-## exists to answer and must never be dropped for being one of several.
+## A packed pavement is a couple of hundred walkers, so walking into one is a thing that can
+## happen several times a second. This is the floor on how often a *bump* may say anything; a
+## horn is exempt, because a car that had to sound its horn at her is the whole question of
+## whether the carriageway is a decision, and must never be dropped for being one of several.
 const BUMP_QUIET_TIME := 1.5
 
 ## How close to the chalk mark counts as having found it. Generous on purpose — the question
@@ -91,13 +91,12 @@ var _road_since := 0.0
 var _road_from := Vector2i.ZERO
 var _carriageway := 0.0
 
-## The day's corridor, grown here so that a trace can say whether she was on it. *(Playtest 17,
-## finding 6: "make the telemetry record whether the player is on a path or not".)*
+## The day's corridor, grown here so that a trace can say whether she was on a path or off it.
 ##
 ## Growing one touches no gameplay: `RouteTree.for_day` is a pure function of the city's seed, the
 ## day and what is shut, so this is the same tree anything else asking for today's would get, and
-## `Telemetry.write_map` has grown one the same way since M50. The determinism invariant is safe
-## because nothing here draws from a `day_rng()` stream.
+## `Telemetry.write_map` grows one the same way. The determinism invariant is safe because nothing
+## here draws from a `day_rng()` stream.
 var _tree: RouteTree
 ## `on` the corridor, `off` it, or `away` from the streets entirely — in a park, an alley or a
 ## plaza, which is neither. Held across a junction rather than answered there: a junction belongs to
@@ -222,7 +221,7 @@ func day_finished(result: GameEnums.DayResult) -> void:
 		name.to_lower(), _day.time_total - _day.time_remaining,
 		_day.failure_reason, _meters(), _nearest()])
 	# The single most useful frame in a run, and the only one that is always worth the file: what
-	# the street looked like at the moment the day ended. *(M39, finding 12.)*
+	# the street looked like at the moment the day ended.
 	Telemetry.snapshot("lost-%s" % name.to_lower())
 
 # ------------------------------------------------------------------- watching ---
@@ -244,12 +243,12 @@ func _process(delta: float) -> void:
 	_watch_closures(here)
 	_watch_the_contact(here)
 
-## Whether she is walking the day's corridor. *(Playtest 17, finding 6.)*
+## Whether she is walking the day's corridor.
 ##
-## **It is the instrument for finding 1** — *"going off the paths let's me skip events and is safer
-## than going on the path"* — and until it existed that sentence could be argued about and not
-## measured. The corridor is where the day put its friction and its set pieces, so *how much of the
-## day she spent on it* is the number that says whether the placement is reaching her at all.
+## **It is the instrument for the claim that *going off the paths skips the events and is safer than
+## going on them***, which without a measurement can only be argued about. The corridor is where the
+## day put its friction and its set pieces, so *how much of the day she spent on it* is the number
+## that says whether the placement is reaching her at all.
 ##
 ## A transition each way, plus the three totals at dusk, and the totals are the point: a transition
 ## count says how often she crossed the line and only the durations say which side she lived on.
@@ -259,10 +258,9 @@ func _process(delta: float) -> void:
 ## so folding it into `off` would credit every won day with a long safe stretch off the paths.
 ## **Timed off `Telemetry.clock()` rather than off `delta`**, and that is not a tidiness choice. The
 ## two are different clocks: the day's is what every other line in the log is stamped with, and the
-## frame's keeps running through anything that leaves the day standing still. Measured on the first
-## rig walked past this code, a day the log calls 11.9 seconds long had **23.5 seconds** of frames
-## in it — so a share taken over deltas would have been a percentage of a number the reader cannot
-## see, sitting one line above the one they can.
+## frame's keeps running through anything that leaves the day standing still. A rig day the log
+## calls 11.9 seconds long has **23.5 seconds** of frames in it — so a share taken over deltas is a
+## percentage of a number the reader cannot see, sitting one line above the one they can.
 func _watch_the_corridor(here: Vector2) -> void:
 	var now := Telemetry.clock()
 	var state := _corridor_state(here)
@@ -280,9 +278,8 @@ func _watch_the_corridor(here: Vector2) -> void:
 	_path_state = state
 	_path_last = now
 
-## Changing from one branch of the corridor to another. *(Playtest 17, finding 2: "make sure the log
-## notes a path switch correctly if it happens — technically it's leaving a path and entering a new
-## path".)*
+## Changing from one branch of the corridor to another, which is leaving a path and entering a new
+## one rather than leaving the corridor at all.
 ##
 ## **`on` / `off` cannot see this and that is why it is here**: two strands of the corridor both
 ## answer `on`, so a player who walks the beginning of one route and finishes on another produces a
@@ -292,7 +289,7 @@ func _watch_the_corridor(here: Vector2) -> void:
 ## **A switch is a *disjoint* colour set, not a different one.** Walking out of a bundle that
 ## carries A and B onto a street that carries only B is staying on B — it is the trunk separating,
 ## which is what a tree does — and calling that a switch would report one at every fork of the day.
-## Sharing nothing is the case the finding means.
+## Sharing nothing is what a switch is.
 ##
 ## The memory is cleared when she leaves the tree, so this only ever reports a change she made
 ## *between* two strands rather than one she made by going round.
@@ -333,11 +330,11 @@ func _corridor_state(here: Vector2) -> String:
 ## Crossing into the road, and arriving on or leaving calm ground. Both are transitions, so
 ## both are one line each rather than a state the reader has to infer from a gap.
 ##
-## The road half is a transition *and* a duration. The first version logged only the step onto
-## the road, and a player walking a mile down the middle of the carriageway produced exactly
-## the same entries as one crossing at every junction — five `cross` lines either way. The
-## question "did they walk down the road" could only be answered by comparing coordinates by
-## hand, which is the sort of inference this format exists to make unnecessary.
+## The road half is a transition *and* a duration, and it needs both. The step onto the road alone
+## gives a player walking a mile down the middle of the carriageway exactly the entries of one
+## crossing at every junction — five `cross` lines either way — and leaves "did they walk down the
+## road" answerable only by comparing coordinates by hand, which is the sort of inference this
+## format exists to make unnecessary.
 func _watch_the_ground(here: Vector2, delta: float) -> void:
 	var type := _map.tile_type_at_world(here)
 
@@ -351,7 +348,7 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 			# two are different bargains: a zebra is a negotiation with a driver who can see you
 			# and a signalled crossing is a wait with a known end. A line reading "at a zebra" on
 			# the one street where traffic does not give way is a trace that would send the next
-			# reader looking for the wrong bug. *(M51, playtest 15 finding 2.)*
+			# reader looking for the wrong bug.
 			var where := "mid-block"
 			if type == GameEnums.TileType.CROSSING:
 				where = "at a signalled crossing" if _map.street_kind_at(
@@ -365,12 +362,11 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 		_flush_road(here)
 	_was_road = road
 
-	# **Arriving on and leaving calm ground, and it used to live inside `_flush_road`.** *(Playtest
-	# 17.)* Behind that function's two early returns, which means it only ran when she had just
-	# stepped off a road stretch that lasted longer than `ROAD_LINGER` — so walking from a pavement
-	# into a park wrote nothing at all, and `_was_calm` went stale with it. `docs/TELEMETRY.md` has
-	# `calm` / `left` down as the entry that answers *"same park every day?"*, and it was answering
-	# for the subset of arrivals that happened to follow a walk down the middle of a road.
+	# **Arriving on and leaving calm ground, and it may not live inside `_flush_road`.** That
+	# function returns early unless she has just stepped off a road stretch longer than
+	# `ROAD_LINGER`, so from in there a walk from a pavement into a park writes nothing at all and
+	# `_was_calm` goes stale with it. `docs/TELEMETRY.md` has `calm` / `left` down as the entry that
+	# answers *"same park every day?"*, which it can only do if every arrival counts.
 	var calm := _city.is_calm_zone(here)
 	if calm != _was_calm:
 		var block := _map.block_at(here)
@@ -383,10 +379,10 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 
 ## Writes down a stretch on the road, if it lasted longer than crossing one takes.
 ##
-## Called when the player steps off — and again when the day ends, because a day that ends
-## *while* she is in the carriageway is the most interesting case there is and the first
-## version silently dropped it: a player killed by the traffic they were walking among got no
-## `road` entry at all, having never left it.
+## Called when the player steps off — **and again when the day ends**, because a day that ends
+## *while* she is in the carriageway is the most interesting case there is and nothing else would
+## write it: a player killed by the traffic she was walking among never leaves the road, so without
+## the second call there is no `road` entry at all.
 func _flush_road(here: Vector2) -> void:
 	if not _was_road:
 		return
@@ -398,7 +394,7 @@ func _flush_road(here: Vector2) -> void:
 		TelemetryLog.tile(_map.world_to_tile(here))])
 	_was_road = false
 
-## Where the day was spent, in one line, at the end of it. *(Playtest 17, finding 6.)*
+## Where the day was spent, in one line, at the end of it.
 ##
 ## The transitions above say how often she crossed the line; this says which side she lived on,
 ## which is the half the corridor question is actually about. The share is taken over the time she
@@ -417,13 +413,12 @@ func _flush_corridor() -> void:
 			% [100.0 * on / maxf(streets, 0.001), on, off]
 			+ "%.1fs off the streets)" % away)
 
-## What she was warned about, and for how long. *(Playtest 06.)*
+## What she was warned about, and for how long.
 ##
-## The gap playtest 05 named and 06 walked straight into: every other entry says what the world
-## did, and nothing said what the **game told her about it** — so *"the offscreen indicators show
-## events far away"* and *"I get the exclamation marks after the fact"* were both invisible to a
-## trace and could only be found by a person looking at a screen. A cue is a claim about a
-## moment, and until now nothing wrote the moment down.
+## Every other entry says what the world did; this is the only one that says what the **game told
+## her about it**. Without it, *"the offscreen indicators show events far away"* and *"I get the
+## exclamation marks after the fact"* are invisible to a trace and can only be found by a person
+## looking at a screen — a cue is a claim about a moment, and a moment has to be written down.
 ##
 ## Two spans, and both are written when they **end**, carrying how long they lasted: a cue that
 ## is up too long is the whole complaint, and a duration is the only form of it that can be read.
@@ -437,7 +432,8 @@ func _watch_the_cues(delta: float) -> void:
 	if level != _mark:
 		if _mark != Stroller.Alert.NONE:
 			# How much of it she spent somewhere the danger could actually reach her. A mark that
-			# is up on the pavement after a car has gone past is finding 3, with a number on it.
+			# is up on the pavement after a car has gone past is a cue outliving what it warns
+			# about, with a number on it.
 			Telemetry.note("cue", "the mark over her head: %s for %.1fs (%.1fs of it on the "
 					% [Stroller.Alert.keys()[_mark].to_lower(),
 					Telemetry.clock() - _mark_since, _mark_on_road]
@@ -446,10 +442,10 @@ func _watch_the_cues(delta: float) -> void:
 			_mark_since = Telemetry.clock()
 			_mark_on_road = 0.0
 			_mark_why = " | %s" % _what_raised_the_mark()
-			# Only the doubled one, and only as it goes up. *(M39, finding 12.)* `NOW` is the one cue
-			# in the game that gives an instruction, and every complaint about it — playtest 06's
-			# *"after the fact"*, playtest 10's *"there is no way it can affect me"* — has been about
-			# **when** it appears, which is a question a line of text has never been able to settle.
+			# Only the doubled one, and only as it goes up. `NOW` is the one cue in the game that
+			# gives an instruction, and every complaint about it — *"after the fact"*, *"there is no
+			# way it can affect me"* — is about **when** it appears, which is a question a line of
+			# text cannot settle and a picture can.
 			if level == Stroller.Alert.NOW:
 				Telemetry.snapshot("mark-now")
 		_mark = level
@@ -486,11 +482,10 @@ func _where_is(id: String) -> String:
 
 ## What put the mark over her head, rather than what merely happened to be nearest.
 ##
-## Since M30 exactly two things can: a `hard_fail` event whose radius covers her, and a car
-## closing on the lane she is standing in. `_nearest()` answers a different question and answers
-## it misleadingly here — the first version of this entry blamed an ice cream van 513px away for
-## a car's horn, which is precisely the *"unattributable"* complaint playtest 05 made about the
-## mark itself, reproduced in the log that was meant to settle it.
+## Exactly two things can: a `hard_fail` event whose radius covers her, and a car closing on the
+## lane she is standing in. **`_nearest()` answers a different question and answers it misleadingly
+## here** — it will blame an ice cream van five hundred pixels away for a car's horn, which is the
+## *"unattributable"* mark this entry exists to explain, reproduced in the log meant to settle it.
 func _what_raised_the_mark() -> String:
 	var here := _player.global_position
 	for instance in _city.events.instances():
@@ -518,15 +513,12 @@ func _watch_the_meters() -> void:
 	else:
 		Telemetry.note("thaw", "settling again | %s" % _meters())
 
-## Standing still, and what it bought. *(Playtest 07, finding 3: "not walking at all shouldn't
-## reduce excitement either — otherwise I can just stop in the middle of the street and wait until
-## everything is good. Is that info captured in the telemetry as well?")*
+## Standing still, and what it bought.
 ##
-## It was not, and that is the whole reason the entry exists. Standing still emits nothing: no
-## crossing, no turn, no contact, no event coming near. So the strongest move in the game showed
-## up in a trace as a **gap between two lines** — a day-2 run in the playtest 07 logs has a
-## seventy-four-second one — and a gap is exactly what a reader skips over. Two runs were being
-## won by waiting and the log said nothing at all.
+## Standing still emits nothing else: no crossing, no turn, no contact, no event coming near. So
+## without this entry the strongest move in the game — stopping in the middle of the street and
+## waiting until everything is good — shows up in a trace as a **gap between two lines**, and a gap
+## is exactly what a reader skips over. A day can be won that way and the log say nothing at all.
 ##
 ## Written when the stand *ends*, like the `cue` spans and for the same reason: the duration is
 ## the complaint. It carries what the meters did across it, because that is the question — a stand
@@ -549,8 +541,9 @@ func _watch_idling(_delta: float) -> void:
 		duration, TelemetryLog.tile_type(_map.tile_type_at_world(_player.global_position)),
 		_idle_excitement, _baby.excitement, _idle_sleepiness, _baby.sleepiness])
 
-## Today the answer should always be "it made things worse". When that stops being true, M25
-## has landed and this entry is how it will be judged.
+## Today the answer should always be "it made things worse". The day a threat follows her rather
+## than sitting where it was placed, that stops being true, and this entry is how running gets
+## judged.
 func _watch_running() -> void:
 	var running := _player.run_excess_ratio() > 0.0
 	if running == _running:
@@ -635,16 +628,14 @@ func _watch_what_is_near(here: Vector2) -> void:
 		if not live.has(id):
 			_near.erase(id)
 
-## The one encounter in the game with a right answer, and whether she played it. *(M35, playtest 08
-## finding 4: "I like the running tutorial on day 3 but I don't know how to solve it yet — I died
-## every time (is there enough telemetry to tell what happened?)".)*
+## The one encounter in the game with a right answer, and whether she played it — the day-3 dog
+## somebody dies to without being able to say why.
 ##
-## There was not, and the shape of the gap is worth keeping: the log had an `ahead` line saying a dog
-## was sited, four `near` lines saying it got closer, and a `lost` line saying she died. Every one of
-## them was about the **world**, and the question is about the **exchange** — how close it actually
-## got, whether she ran, and which of the two ways a chase can end it ended in. Reconstructing that
-## from four distances and a separate `run` span is exactly the inference the format exists to make
-## unnecessary, and it is guesswork when the run span outlives the chase.
+## Every other entry about it is about the **world**: an `ahead` line saying a dog was sited, `near`
+## lines saying it got closer, a `lost` line saying she died. The question is about the **exchange**
+## — how close it actually got, whether she ran, and which of the two ways a chase can end it ended
+## in. Reconstructing that from four distances and a separate `run` span is exactly the inference
+## the format exists to make unnecessary, and it is guesswork when the run span outlives the chase.
 ##
 ## One line per pursuit, written when it ends, which is the same rule as the `cue` and `idle` spans:
 ## the duration and the outcome are the finding, and neither exists until it is over.
@@ -664,7 +655,7 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 					TelemetryLog.tile(_map.world_to_tile(instance.global_position)), _meters()])
 			# The one encounter in the game with a right answer, and the open question about it is
 			# whether a dog that stops short and barks *reads* as "go now". A picture of the frame
-			# it starts on is the only thing that can say. *(M39, finding 12.)*
+			# it starts on is the only thing that can say.
 			Telemetry.snapshot("chase-%s" % instance.def.id)
 		var chase: Dictionary = _chases[id]
 		if chase["over"]:
@@ -698,8 +689,8 @@ func _write_the_chase(chase: Dictionary) -> void:
 var _chases := {}
 
 ## A barrier coming into view. Recorded from where it was seen, because "the player found out
-## two junctions later" and "the player could see it from the corner" are different days and
-## the map screen M17 adds exists to change which one this is.
+## two junctions later" and "the player could see it from the corner" are different days, and
+## which of the two a closure produces is what decides whether it is a decision or an ambush.
 func _watch_closures(here: Vector2) -> void:
 	for closure in _city.closures():
 		var key := closure.segment.key()
@@ -754,9 +745,9 @@ func _on_hold_changed(progress: float) -> void:
 func _on_city_went_quiet() -> void:
 	Telemetry.note("quiet", "the sabotage went through; every city-wide source is off")
 
-## Walking into somebody. Reported by `Crowd` rather than watched from here, because since M19
-## the contact is a decision the game makes rather than a state to be noticed — but the *rate
-## limiting* stays here, with the rest of what keeps the log readable.
+## Walking into somebody. Reported by `Crowd` rather than watched from here, because the contact is
+## a decision the game makes rather than a state to be noticed — but the *rate limiting* stays here,
+## with the rest of what keeps the log readable.
 ##
 ## The dropped count is printed rather than silently swallowed: "she bumped somebody at 0:14"
 ## and "she ploughed through fourteen people between 0:12 and 0:14" are very different days,
@@ -785,15 +776,14 @@ func _on_near_miss(at: Vector2) -> void:
 
 # ------------------------------------------------------------------ readouts ---
 
-## Where the excitement is coming from. The crowd is five hundred agents and the events are a
+## Where the excitement is coming from. The crowd is a couple of hundred agents and the events a
 ## couple of dozen, so naming them individually is hopeless — but which of the two is holding
 ## the meter up is the whole question, and it is one subtraction.
 ##
-## `in` is the baby's own incoming rate, and it is here so that the breakdown always adds up.
-## The first version printed only the two spatial sources, and a meter climbing on an empty
-## street read as `crowd 0.0, events 0.0` — which is true, and hid the fact that the player
-## was doing it to themselves with the run button. Whatever `in` exceeds the two named terms
-## by came from the player: running, or standing in an alley.
+## `in` is the baby's own incoming rate, and it is here so that the breakdown always adds up. The
+## two spatial sources alone print `crowd 0.0, events 0.0` for a meter climbing on an empty street
+## — true, and it hides the player doing it to herself with the run button. Whatever `in` exceeds
+## the two named terms by came from her: running, or standing in an alley.
 func _meters() -> String:
 	var here := _player.global_position
 	var from_events := _city.events.total_excitement_at(here) if _city.events else 0.0

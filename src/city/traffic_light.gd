@@ -18,9 +18,9 @@ const HEAD_SIDE := preload("res://assets/props/signal_head_side.svg")
 ## is. Matched by hand to the two drawings: both are 42 tall with the lamps at y 2, 8 and 14 from
 ## the top, and the side view shows a cone under a visor rather than a full disc.
 ##
-## **The two views are the cue.** *(Playtest 12, finding 4: "it's not clear which one belongs to
-## which roadway".)* Four identical heads on one junction say nothing about which road each is
-## stopping, and from directly above a head has no face to point with. So the ones facing up and
+## **The two views are the cue.** Four identical heads on one junction say nothing about which road
+## each is stopping, and from directly above a head has no face to point with. So the ones facing up
+## and
 ## down the screen are drawn face-on and the ones facing across it are drawn edge-on: what you can
 ## see of the lamp *is* which street it means.
 const LAMP_HEIGHTS := [-38.0, -32.0, -26.0]

@@ -75,10 +75,9 @@ func _on_baby_asleep() -> void:
 		if _is_home():
 			_end(GameEnums.DayResult.WON)
 
-## *(M24, playtest 05 finding 4: "I was able to go to the same park on day one and two — this
-## shouldn't be possible.")* The one thing the city learns about how the player actually played,
-## recorded at the only moment that means anything: where she was standing when the baby went
-## under.
+## The one thing the city learns about how the player actually played, recorded at the only moment
+## that means anything: where she was standing when the baby went under. It is what stops the same
+## park being the answer two days running.
 ##
 ## It lives here rather than in `Baby`, and that is the invariant rather than a preference —
 ## the baby's entire interface to the world is three questions and none of them is about
@@ -119,7 +118,7 @@ const _HARD_FAIL_TEXT := {
 	"firefight": "You walked into the middle of it.",
 	# Not an event, and the only hard fail the player can walk into rather than be caught by.
 	"car_strike": "It never slowed down. You were in the road.",
-	# M31. Act I's two, and they are deliberately the most ordinary sentences in this table:
+	# Act I's two, and they are deliberately the most ordinary sentences in this table:
 	# the danger act I was missing is not sinister, it is a street.
 	"cyclist": "The bell, and then the bike. She is screaming.",
 	"reversing_lorry": "It never saw you. Nobody was looking behind it.",

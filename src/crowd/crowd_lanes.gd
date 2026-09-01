@@ -11,23 +11,20 @@ extends RefCounted
 ## per corridor is what makes a busy street look busy rather than look like a queue.
 ##
 ## Walkers have **no side convention**: a pedestrian picks any of the four and either direction.
-## That was checked in M29 while the road was being fixed, because playtest 05 asked whether the
-## pavements were mirrored the same way the carriageway was. They are not mirrored — they are
-## simply unordered, which is a different thing and not a bug. Giving them one would be a design
-## change with a measured cost: M19's contact numbers (eleven bumps down a lane centre against
-## one on the midline) are what the pavement is balanced on, and they assume a walker may be
-## coming the other way in any lane.
+## They are not mirrored the way the carriageway is — they are simply unordered, which is a
+## different thing and not a bug. Giving them one would be a design change with a measured cost:
+## the contact numbers the pavement is balanced on (eleven bumps down a lane centre against one on
+## the midline) assume a walker may be coming the other way in any lane.
 const SIDEWALK_OFFSETS: Array[int] = [0, 1, 4, 5]
 
 ## How far each footway lane is pushed away from the middle of its own footway, in px.
 ##
-## **The careful line has to be wide enough to aim at.** *(M46, playtest 13 finding 1.)* A contact
-## fires inside `BUMP_RADIUS` of a lane centre, so the line with no contact on it is
-## `TILE_SIZE - 2 * BUMP_RADIUS` wide — and at tile centres that is **four pixels**. M19 built the
-## crowd on "careless is expensive and careful is free" and the careful half was a line nobody
-## could aim at, only occasionally be on: measured over three seeds, forty seconds down an
-## arterial lane centre costs 13.7 contacts and the midline costs 0.0, which is 148 points of a
-## 100 meter riding on four pixels.
+## **The careful line has to be wide enough to aim at.** A contact fires inside `BUMP_RADIUS` of a
+## lane centre, so the line with no contact on it is `TILE_SIZE - 2 * BUMP_RADIUS` wide — at tile
+## centres, **four pixels**. The crowd is built on "careless is expensive and careful is free", and
+## a careful half nobody can aim at is one they can only occasionally be on: measured over three
+## seeds, forty seconds down an arterial lane centre costs 13.7 contacts and the midline costs 0.0,
+## which is 148 points of a 100 meter riding on those pixels.
 ##
 ## Pushing the two lanes of a footway apart widens that line without touching `BUMP_RADIUS`, which
 ## is the honest direction: the body stays the size it is drawn and the *street* is what changes.
@@ -39,9 +36,9 @@ const SIDEWALK_OFFSETS: Array[int] = [0, 1, 4, 5]
 ## spread would make are arbitrary. `walker_lane_centre` takes the lane list for that reason.
 const SIDEWALK_LANE_SPREAD := 8.0
 ## And the same for a precinct, which has no carriageway between its two footways: every tile
-## across it is somewhere a person may be. *(Playtest 12, finding 1: "people seem to not go in the
-## middle.")* They were right and it was not a steering bug — the middle two offsets are the
-## carriageway on every other street, so nothing had ever been placed there.
+## across it is somewhere a person may be. Without its own list it inherits the street's, and the
+## middle of a pedestrianised street is then empty — not a steering bug, simply nowhere anything
+## was ever placed, because those two offsets are the carriageway on every other street.
 const PRECINCT_OFFSETS: Array[int] = [0, 1, 2, 3, 4, 5]
 
 ## The lanes a walker may use in a corridor: the whole width of a precinct, the two footways of
@@ -55,20 +52,18 @@ static func walkable_offsets(map: CityMap, vertical: bool, index: int,
 ## cross-axis coordinate. Which way each runs depends on the **axis** — see `road_direction()`.
 const ROAD_OFFSETS: Array[int] = [2, 3]
 
-## How much busier the arterial is than an ordinary street. This file is now the only place
-## that says which corridor is the main road; before M13 an invisible ambient band said it
-## too, and two answers to that question is one too many.
+## How much busier the arterial is than an ordinary street. This file is the only place that says
+## which corridor is the main road; two answers to that question is one too many.
 ##
-## It was 5.5 until M27. When the crowd stopped being spread over the whole city, the share
-## this number takes stopped being a share of sixteen corridors and became a share of the three
-## or four the player can see — so the *same* weight put half again as much traffic on the
-## arterial, and at act I density there was a safe gap in it **0.6% of the time**, with a mean
-## wait at the kerb of twenty-two seconds of a hundred and eighty second day.
+## **The share is taken over the streets the player can see, not over the city**, because the crowd
+## is populated around her — so this weight buys much more traffic than the same number would over
+## sixteen corridors. Push it and the arterial has a safe gap in it under one percent of the time,
+## with a mean wait at the kerb of twenty-two seconds out of a hundred and eighty.
 ##
-## A road you have to wait for is the hazard playtest 04 asked for. A road that can only be
-## crossed at a zebra is *also* fine, and is the M19 design — traffic gives way there, and the
-## generator puts one at every junction, so nowhere on a street is more than seven tiles from
-## one. What is not fine is a road that cannot be crossed at all and does not say so.
+## A road you have to wait for is the hazard it is meant to be. A road that can only be crossed at
+## a zebra is *also* fine — traffic gives way there, and the generator puts one at every junction,
+## so nowhere on a street is more than seven tiles from one. What is not fine is a road that cannot
+## be crossed at all and does not say so.
 ##
 ## At 5.0 the arterial keeps the noise floor it has to keep (see `tests/test_crowd.gd`, "a busy
 ## street never lets the meter fall") and jaywalking it is a real gamble rather than an
@@ -123,13 +118,11 @@ static func nearest_sidewalk(index: int, world_coordinate: float) -> int:
 ## Which way traffic runs in a carriageway lane: +1 along the axis, -1 against it.
 ##
 ## **The city drives on the right, and that is a rule about the side of the road relative to
-## travel, not about the offset.** It flips with the axis, and until M29 it did not: the whole
-## crowd used `offset == 3 means positive`, which is right-hand traffic on the east-west streets
-## and left-hand traffic on the north-south ones. Playtest 05, finding 2 — *"the cars are not
-## consistently driving on the right side"* — and it is invisible to every other test in the
-## suite, because separation, headway, capacity and noise are all true either way, and invisible
-## in a still, because a stopped frame does not say which way a car is pointing. It shows up the
-## moment a human watches a junction.
+## travel, not about the offset.** It flips with the axis. A fixed rule like `offset == 3 means
+## positive` is right-hand traffic on the east-west streets and left-hand traffic on the
+## north-south ones, and **nothing in the suite can see it**: separation, headway, capacity and
+## noise are all true either way, and a still frame does not say which way a car is pointing. It
+## shows up the moment a human watches a junction.
 ##
 ## Screen coordinates have Y pointing down, so along a **vertical** corridor +1 is south and the
 ## driver's right is west — the *smaller* cross coordinate. Along a **horizontal** one +1 is east
@@ -153,23 +146,20 @@ static func arterial_index(axis_blocks: int) -> int:
 ## the day, because it is a property of the city: the same street is busy every morning, and
 ## learning which ones are quiet is most of what a fixed city is *for*.
 ##
-## The plain form is what it always was and is the pavement's answer. `busyness_for` is the one
-## anything placing an agent should ask, because since M41 the two populations do not want the
-## same streets: a precinct is the busiest pavement in the city and has no cars on it at all.
+## The plain form is the pavement's answer. `busyness_for` is the one anything placing an agent
+## should ask, because the two populations do not want the same streets: a precinct is the busiest
+## pavement in the city and has no cars on it at all.
 ##
-## **It takes the map now, because "which corridor is the main road" is a fact about a city and
-## not about an axis.** *(Playtest 13, finding 7: "the main road doesn't really have much traffic
-## I can freely walk over it".)* This used to compute the answer itself, as
-## `index == arterial_index(blocks)` — with `blocks` taken from whichever axis it was asked about,
-## so the middle corridor of **each** axis was weighted at `ARTERIAL_BUSYNESS`. M41's correction
-## is that there is *one* main road and it runs north to south; it reached `street_kind`,
-## `GroundTiles`, `TrafficSignals` and `decay_multiplier`, and it never reached here. So the city
-## had one main road you could see and two the traffic believed in, and the weighting measured for
-## one street was being spent on two.
+## **It takes the map, because "which corridor is the main road" is a fact about a city and not
+## about an axis.** Answering it as `index == arterial_index(blocks)` — with `blocks` from whichever
+## axis is being asked about — weights the middle corridor of **each** axis at `ARTERIAL_BUSYNESS`,
+## and the city then has one main road you can see and two the traffic believes in, with the
+## weighting measured for one street spent on two. Measured that way over five seeds, the phantom
+## east-west arterial held **14.6 cars against the spine's 11.2**: more traffic on the street with
+## no lights, no dark asphalt and no clearway than on the one that has all three.
 ##
-## Measured before the fix, five seeds, thirty seconds of act I: the phantom east-west arterial
-## held **14.6 cars against the spine's 11.2** — more traffic on the street with no lights, no
-## dark asphalt and no clearway than on the one that has all three.
+## `street_kind`, `GroundTiles`, `TrafficSignals` and `decay_multiplier` all ask the map. This is
+## the fourth place that has to agree with them and the easiest one to leave behind.
 static func busyness(map: CityMap, vertical: bool, index: int) -> float:
 	if vertical and index == map.main_road:
 		return ARTERIAL_BUSYNESS

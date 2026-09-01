@@ -20,7 +20,7 @@ signal nerves_changed(nerves: int)
 signal run_ended(ending: GameEnums.Ending)
 
 # ------------------------------------------------------------------- events ---
-# `instance` is an EventInstance; left untyped until M4 defines the class.
+# `instance` is an `EventInstance`, left untyped: this autoload is loaded before the class is.
 
 signal event_telegraphed(instance)
 signal event_activated(instance)
@@ -29,16 +29,15 @@ signal hard_fail_triggered(reason: String)
 
 ## What is currently holding a floor under the whole city, by display name, or "" for nothing.
 ##
-## M22. A `city_wide` source has no position, so it is the one thing in the game that cannot be
-## drawn *over* — the aura layer skipped it, correctly, because a field with no edge cannot be a
-## ring, and nothing took over. From day 5 the loudspeaker masts held a floor under the meter
-## with nothing on screen to say so, and the player saw excitement refusing to drain and no
-## reason why. That was the most misleading thing in the game.
+## A `city_wide` source has no position, so it is the one thing in the game that cannot be drawn
+## *over*: there is nothing to put a mark above. Without this signal the loudspeaker masts hold a
+## floor under the meter from day 5 with nothing on screen to say so, and a player watching
+## excitement refuse to drain has no way at all to find out why.
 signal city_wide_changed(what: String)
 
 # ------------------------------------------------------------------- bodies ---
-# M19. Reported rather than logged where they happen: the crowd is a gameplay file and the
-# telemetry stays out of the files that decide things.
+# Reported rather than logged where they happen: the crowd is a gameplay file and the telemetry
+# stays out of the files that decide things.
 
 ## The player walked into somebody and shoved them aside.
 signal crowd_bumped(at: Vector2)

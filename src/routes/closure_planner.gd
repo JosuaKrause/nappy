@@ -3,12 +3,10 @@ extends RefCounted
 ## Chooses which streets are closed today, and refuses to close so many that the day stops
 ## being a choice.
 ##
-## Playtest 01, finding 12: *prune the road network per day with blockers, so the route is a
-## real decision — avoidable, but clearly "not that way"*. The clarification that came out of
-## planning it is the part that matters here: **a pruned network is not a corridor.** A
-## single forced path is not a decision, and it would make a fixed city pointless because
-## there would be nothing worth learning. So the day-level invariant is a floor, not a
-## ceiling:
+## The network is pruned per day so that the route is a real decision — avoidable, but clearly
+## *not that way*. **A pruned network is not a corridor**, and that is the part to keep hold of: a
+## single forced path is not a decision, and it would make a fixed city pointless because there
+## would be nothing worth learning. So the day-level invariant is a floor, not a ceiling:
 ##
 ##     at least two distinct calm areas can still be walked to.
 ##
@@ -16,18 +14,17 @@ extends RefCounted
 ## comes out of here always satisfies it, and there is no order-dependent unwinding to reason
 ## about.
 ##
-## **It read "two distinct routes to two distinct calm areas" from M16 to 2026-08-31**, and the
-## player's clarification is what changed it: *"the two routes guarantee is not a hard rule."*
-## Edge-disjointness was standing in for winnability rather than being it — see
-## `Tuning.MIN_CALM_AREAS_REACHABLE` — and under M50 a wall is placed off the day's tree, so what
-## keeps the calm reachable is where a closure goes rather than how many ways round it there are.
+## **Not "two distinct routes to two distinct calm areas".** Edge-disjointness stands in for
+## winnability rather than being it — see `Tuning.MIN_CALM_AREAS_REACHABLE` — and a wall is placed
+## off the day's tree anyway, so what keeps the calm reachable is where a closure goes rather than
+## how many ways round it there are.
 ##
-## **Since M50 step 2 a closure is a `wall`, in the sense `docs/CITY.md` gives that word**, and the
-## practical difference is which streets it may land on: a closure is placed **off** the day's
-## corridor, preferentially on a turning off it. *"A road block becomes guidance and is not a
-## hindrance. It flips its role."* See `_shuffled_candidates`, which is where the flip lives, and
-## note what it does to the invariant above — a wall off the tree cannot cut the tree, so the check
-## below stopped being the thing that keeps a day winnable and became the second opinion on it.
+## **A closure is a `wall`, in the sense `docs/CITY.md` gives that word**, and the practical
+## difference is which streets it may land on: it is placed **off** the day's corridor,
+## preferentially on a turning off it, so that a road block is guidance rather than a hindrance.
+## See `_shuffled_candidates`, which is where that lives, and note what it does to the invariant
+## above — a wall off the tree cannot cut the tree, so the check below is the second opinion on
+## winnability rather than the thing that keeps it.
 ##
 ## Everything here is deterministic from the day's RNG. A run is learnable or it is nothing.
 
@@ -63,7 +60,7 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 
 	# The streets a four-block calm zone absorbed start out "closed" and stay that way. They are
 	# not there to be shut and they are not there to be routed down either, and folding them in
-	# here is the whole of what M21's holes cost the planner.
+	# here is the whole of what a lattice with holes in it costs the planner.
 	var closed := map.blocked_segments()
 	var kinds := RoadClosure.kinds_on(day)
 	var corridor := tree if tree else RouteTree.for_day(map, day)
@@ -85,8 +82,8 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 	return chosen
 
 ## The street the front door opens onto. Never closable — the home is a notch in a block with
-## one exit, so sealing it seals the player in. docs/CITY.md has carried that exemption since
-## M3; this is where it is enforced.
+## one exit, so sealing it seals the player in. docs/CITY.md states that exemption; this is where
+## it is enforced.
 static func home_street(map: CityMap) -> StreetNetwork.Segment:
 	return StreetNetwork.segment_containing(
 			map.world_to_tile(map.doorstep_world_position()))
@@ -106,13 +103,13 @@ static func calm_areas(map: CityMap) -> Array[CalmArea]:
 ## of its lot; a zone onto one street per block edge; a courtyard onto exactly one, through its
 ## archway.
 ##
-## **Every question here is asked of the lot, and one of them was asked of the block.** *(M52.)*
-## The archway is generated against the lot rect, and until apartment complexes existed every
-## courtyard lot was one block, so passing `block_rect` was the same rect and the difference could
-## not show. On a four-block complex it is a different rect on three sides out of four, so the side
-## came out wrong and the street returned was one of the complex's own absorbed streets — a segment
-## that is not in the lattice at all, which reads as *this calm area cannot be reached from the
-## home* and cost about one generation attempt per city until it was found.
+## **Every question here is asked of the lot, and asking one of them of the block is the trap.**
+## The archway is generated against the lot rect, and for a one-block courtyard `block_rect` is the
+## same rect, so the difference cannot show. On a four-block complex it is a different rect on
+## three sides out of four: the side comes out wrong and the street returned is one of the
+## complex's own absorbed streets — a segment that is not in the lattice at all, which reads as
+## *this calm area cannot be reached from the home* and costs about one generation attempt per
+## city.
 static func _access_streets(map: CityMap, block: Vector2i) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
 	var layout: BlockLayout = map.block_layouts.get(block)
@@ -174,12 +171,11 @@ static func _invariant_holds(home: StreetNetwork.Segment, areas: Array[CalmArea]
 
 ## Every street the day may shut, in the order it will try them.
 ##
-## **This is the inversion, and it is the whole of M50 step 2 on this side.** *"A road block becomes
-## guidance and is not a hindrance. It flips its role."* Until now a closure was biased *onto* the
-## streets the player would have used — `CLOSURE_ROUTE_BIAS`, five to one — because a closure was
-## an obstacle and an obstacle nobody meets is scenery. Under the diversion design a closure is a
-## **wall**: it prunes the ways that lead nowhere she should go, so that the ways that remain are
-## obvious. Placing one across her route is now the defect rather than the point.
+## **A closure is guidance rather than a hindrance, and this is where that is decided.** Biasing one
+## *onto* the streets the player would have used treats it as an obstacle, on the argument that an
+## obstacle nobody meets is scenery. It is a **wall** instead: it prunes the ways that lead nowhere
+## she should go, so that the ways that remain are obvious. Placing one across her route is the
+## defect, not the point.
 ##
 ## So the tree is not weighted against, it is **excluded**. A wall that cuts the corridor is not a
 ## worse wall, it is the opposite of one, and the guarantee that it cannot happen is what lets the
@@ -194,13 +190,12 @@ static func _invariant_holds(home: StreetNetwork.Segment, areas: Array[CalmArea]
 ##   avoid. Kept in the pool rather than refused, because a day that cannot find its quota of
 ##   rim streets should still shut something.
 ##
-## **And one part of the rim is worth more than the rest of it.** *(M55, playtest 17 finding 2: "if
-## two paths go parallel add some blocking events between them", and "sometimes put a blocker
-## between (wall or event) and sometimes leave it open".)* A **gap** is the single street two
-## adjacent strands of today's corridor are joined by — see `RouteTree.gaps()` — and a closure is
-## the *impassable* half of the answer, where a wall event is the costly half. `CLOSURE_GAP_BIAS`
-## is the preference, and the day's quota is what keeps it a "sometimes": one street shut in act I
-## and four in act IV cannot close fifteen gaps however hard it aims at them.
+## **And one part of the rim is worth more than the rest of it.** A **gap** is the single street two
+## adjacent strands of today's corridor are joined by — see `RouteTree.gaps()` — and shutting some
+## of them is what stops two parallel routes from being one wide one. A closure is the *impassable*
+## half of that, where a wall event is the costly half. `CLOSURE_GAP_BIAS` is the preference, and
+## the day's quota is what keeps it a *sometimes*: one street shut in act I and four in act IV
+## cannot close fifteen gaps however hard it aims at them.
 ##
 ## The invariant below is unmoved and still does the deciding. A gap is off the tree like every
 ## other candidate, so nothing here can cut the corridor; what the check catches is the same thing

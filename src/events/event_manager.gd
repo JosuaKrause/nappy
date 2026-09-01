@@ -8,17 +8,15 @@ extends Node
 ## checks per physics frame is nothing, and a hash would be more code with more ways to be
 ## subtly wrong. Revisit if an act ever wants hundreds of sources at once.
 ##
-## **Since M27 a day's plan and a day's live events are different things.** Playtest 04:
-## *"don't load everything upfront — only load / spawn things in the surrounding few blocks of
-## the player when needed."* The scheduler still plans the whole city at dawn, which is what
-## keeps every invariant that is stated over a day (one usable park, a walkable route to it,
-## determinism); what changed is that a plan becomes an `EventInstance` when the player comes
+## **A day's plan and a day's live events are different things.** The scheduler plans the whole
+## city at dawn, which is what keeps every invariant that is stated over a day (one usable park, a
+## walkable route to it, determinism); a plan becomes an `EventInstance` only when the player comes
 ## within `EVENT_STREAM_RADIUS` of it, and goes away again when she leaves.
 ##
-## The gameplay half of that is bigger than the frames it saves. Playtest 03 traced a whole day
-## with **zero** events ever coming within reach: a twenty-second event planted across the city
-## fires and finishes at dawn, unobserved, and the budget bought nothing. An event that waits
-## for her is an event she meets.
+## The gameplay half of that is bigger than the frames it saves. Loading the day upfront gives days
+## in which **zero** events ever come within reach: a twenty-second event planted across the city
+## fires and finishes at dawn, unobserved, and the budget bought nothing. An event that waits for
+## her is an event she meets.
 
 var _instances: Array[EventInstance] = []
 ## Today's whole plan, sited and unsited, spent and unspent. See `EventScheduler.Planned`.
@@ -87,16 +85,15 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# The scar is recorded the first time the event is put in the world and never again: walking
 	# back past a burnt-out shell must not re-report the fire that made it.
 	plan.live = _create(plan.def, plan.position, plan.path, not plan.was_live, plan.facing)
-	# **An event that has already run picks up where it left off.** *(M31.)* Without this a
-	# streamed-out event is rebuilt from `plan.position`, which is the tile the *day* chose at
-	# dawn — so a dog walker that had covered three hundred pixels teleported back to the top of
-	# its street every time the player left its radius and returned, and at 32px/s against her
-	# 92 that is most times. From outside it reads as an event that never goes anywhere, which
-	# is what it had become.
+	# **An event that has already run picks up where it left off.** Without this a streamed-out
+	# event is rebuilt from `plan.position`, which is the tile the *day* chose at dawn — so a dog
+	# walker that has covered three hundred pixels teleports back to the top of its street every
+	# time the player leaves its radius and returns, and at 32px/s against her 92 that is most
+	# times. From outside it reads as an event that never goes anywhere.
 	#
-	# It resumes rather than catching up on lost time, and that is M27's own design: the day is
-	# planned across the whole city but an event **waits** for her. Ageing it in absentia would
-	# put back exactly the thing streaming was built to fix — a twenty-second event that is over
+	# It resumes rather than catching up on lost time, which is the whole design of streaming: the
+	# day is planned across the whole city but an event **waits** for her. Ageing it in absentia
+	# would put back exactly the thing streaming exists to fix — a twenty-second event that is over
 	# before anybody could reach it.
 	plan.live.resume(plan.age, plan.travelled)
 	plan.was_live = true
@@ -104,7 +101,7 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	_spend_the_rest_of_the_group(plan)
 
 ## A set piece is planned at **every** site of a covering set and happens at exactly one of them:
-## the one she reaches. *(M50 step 2.)*
+## the one she reaches.
 ##
 ## This is where "the one she reaches" is decided, and it has to be here rather than anywhere
 ## later. The moment an event enters the world it is real — `_create` records its scar and moves
@@ -197,8 +194,8 @@ func silence_city_wide() -> int:
 			silenced += 1
 	return silenced
 
-## How many events are in the world right now. Since M27 this is *what is around the player*
-## rather than what the day contains — see `planned_count()` for the other question.
+## How many events are in the world right now — *what is around the player* rather than what the
+## day contains; see `planned_count()` for the other question.
 func active_count() -> int:
 	return _instances.size()
 
@@ -262,9 +259,9 @@ func _announce_the_city_wide_sources() -> void:
 var _announced_city_wide := ""
 
 # ------------------------------------------------------- the mark over her head ---
-# M22. The rings are gone, and this is the half of what replaces them that is about the player
-# rather than about the thing. `Crowd` has done the same for traffic since M19; the two compose
-# because `Stroller.warn()` keeps the loudest level rather than the last caller's opinion.
+# There are no rings around dangerous things. This is the half of what replaces them that is about
+# the player rather than about the thing; `Crowd` does the same for the traffic, and the two
+# compose because `Stroller.warn()` keeps the loudest level rather than the last caller's opinion.
 
 ## Raises the exclamation mark when the ground she is standing on is the problem.
 ##
@@ -274,35 +271,29 @@ var _announced_city_wide := ""
 ## promises her time to do. `NOW` is one of them live with her inside its reach: one step left
 ## between her and the end of the day.
 ##
-## *(M30, playtest 05 finding 3.)* It used to be raised for **any** telegraphing event whose
-## radius reached her, and the player's verdict was *"it doesn't actually have an effect on
-## gameplay — I can just keep doing what I was doing."* That reading was correct for fifteen of
-## the eighteen rows in the catalogue: for anything that is not a `hard_fail` the mark meant *a
-## number is about to move faster*, which the meter already says continuously and
-## proportionally. The caret over an entity got this right first time and the rule is the same
-## one — **a cue that marks everything says nothing** — except that this is the one cue in the
-## game that cannot afford it, because it is the only one that gives an *instruction*.
+## **Raising it for any telegraphing event whose radius reaches her is the mistake to avoid.** Most
+## of the catalogue is not a `hard_fail`, and for those the mark would mean *a number is about to
+## move faster*, which the meter already says continuously and proportionally — a mark a player can
+## correctly ignore, *"I can just keep doing what I was doing"*. The caret over an entity follows
+## the same rule — **a cue that marks everything says nothing** — except that this is the one cue in
+## the game that cannot afford it, because it is the only one that gives an *instruction*.
 ##
-## The cost of the narrowing is real and is the right cost: in acts I and II the catalogue has
-## no lethal events at all, so the mark almost never appears before day 8. That is not the cue
-## being broken, it is the cue being honest about a game where nothing is dangerous yet — which
-## is finding 5, and a different milestone.
-## **And `NOW` is about the pair of them, not about the disc.** *(M39, playtest 10 finding 11: "when
-## I'm walking orthogonally away from the biker the double !! shouldn't show anymore since there is
-## no way it can affect me — the danger has been avoided".)*
+## The cost of that narrowness is real and is the right cost: six rows in the whole catalogue are
+## lethal, so the mark is rare, and it is rarest early. That is not the cue being broken, it is the
+## cue being honest about a game whose first days are barely dangerous.
 ##
-## `NOW` was raised for any live lethal event whose **outer** radius covered her. A cyclist ends the
-## day inside 26px and reaches 145, so the strongest cue in the game was up across more than
-## thirty times the area that could hurt her, and it stayed up while the bike rode away — which is
-## playtest 06's *"I get the flashing exclamation marks after the fact"* at the half M32 did not
-## fix. M32 gave the traffic a `stand_down()`; the events kept "inside the radius".
+## **And `NOW` is about the pair of them, not about the disc.** Raised for any live lethal event
+## whose **outer** radius covers her, it is up across more than thirty times the area that could
+## hurt her — a cyclist ends the day inside 26px and reaches 145 — and it stays up while the bike
+## rides away, which is *"the flashing exclamation marks after the fact"* on the events' side of a
+## fix the traffic already has in `stand_down()`.
 ##
 ## So it is two conditions: she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the
 ## day, **and** the gap is actually shrinking at the speeds in play.
 ##
 ## The closing rate is **relative** — her velocity is in it — and that is deliberately the opposite
-## of what M32 did to the screen-edge badge, which measures the event's own approach with the player
-## held still. The two cues say different sentences. A badge says *a thing exists and is coming*, so
+## of the screen-edge badge, which measures the event's own approach with the player held still.
+## The two cues say different sentences. A badge says *a thing exists and is coming*, so
 ## her walking towards it must not raise one; this mark says *the contract is now about you*, which
 ## is a statement about the pair of them and is false the moment she is opening the gap. It is also
 ## what makes the mark work for something that never moves: a reversing lorry cannot come to her, so
@@ -317,9 +308,9 @@ func _warn_about_the_ground_she_is_on() -> void:
 			continue
 		var gap := instance.global_position.distance_to(here) - instance.def.inner_radius
 		# `SOON` is anything that cannot kill her *yet* — a telegraph running, or a pursuer that has
-		# not noticed her. *(M36.)* Without the second half a man standing in an alley would raise
-		# `NOW` — one step from the end of the day — from two hundred pixels away, which is the
-		# marks-everything mistake arriving at the one cue that cannot afford it.
+		# not noticed her. Without the second half a man standing in an alley raises `NOW` — one
+		# step from the end of the day — from two hundred pixels away, which is the marks-everything
+		# mistake arriving at the one cue that cannot afford it.
 		#
 		# It keeps the whole outer radius, because that is exactly what the fairness contract
 		# promises her time to walk out of. Only `NOW` is about a moment.
@@ -355,9 +346,9 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
 	_spawn_unplanned(def, path[0], path)
-	# The distance it was actually sited at rather than the constant. *(M39.)* A pursuer is sited
-	# beyond its own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant would
-	# have made every `ahead` line for the one row a chase is about say the wrong number.
+	# The distance it was actually sited at rather than the constant. A pursuer is sited beyond its
+	# own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant makes every
+	# `ahead` line for the one row a chase is about say the wrong number.
 	var crossing_point: Vector2 = path[0] if path.size() < 2 \
 			else (path[0] + path[path.size() - 1]) * 0.5
 	var lead := crossing_point.distance_to(body.global_position)
@@ -413,21 +404,22 @@ func _successor_of(instance: EventInstance) -> EventInstance:
 		return null
 	return _create(def, instance.global_position)
 
-## Hands every instance her position. *(Playtest 07: running has to be right sometimes.)*
+## Hands every instance her position.
 ##
 ## Here rather than in the instance for the same reason `Crowd` writes `pedestrian_ahead` rather
 ## than letting each car look: the player is found once a frame in one place, and an
 ## `EventInstance` has never had to know she exists. It is handed a point, and everything it does
 ## with the point is a distance.
 ##
-## *(M35 widened it from the pursuers to everything, because "am I out of sight yet" is the same
-## question asked by anything that is **leaving** — see `EventInstance._be_done`.)*
-## *(Playtest 14 added the second fact, and `_player` is deliberately a `Node2D` — the cast is
-## here rather than on the field so that "an instance is handed a point" stays true of everything
-## except the one row that has to know whether she is running. A `Node2D` has no
-## `run_excess_ratio`, and reading it off the untyped field is a per-frame runtime error that
-## aborts this whole callback and stops the day dead — which is what it did, and which `check.sh`
-## cannot see because nothing there is wrong until it runs.)*
+## Everything gets it, not only the pursuers: *"am I out of sight yet"* is the same question asked
+## by anything that is **leaving** — see `EventInstance._be_done`.
+##
+## The second fact handed over is whether she is running, and **`_player` is deliberately a
+## `Node2D`**: the cast is here rather than on the field so that "an instance is handed a point"
+## stays true of everything except the one row that has to know. A `Node2D` has no
+## `run_excess_ratio`, so reading it off the untyped field is a per-frame runtime error that aborts
+## this whole callback and stops the day dead — and `check.sh` cannot see it, because nothing is
+## wrong until it runs.
 func _tell_them_where_she_is() -> void:
 	var stroller := _player as Stroller
 	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0

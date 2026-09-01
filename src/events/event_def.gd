@@ -9,24 +9,22 @@ extends Resource
 ## How the instance is drawn. Data rather than a script per event, since most events differ
 ## only in their numbers.
 ##
-## **One look per row, and every look is a thing rather than a category.** *(M37, playtest 07
-## finding 2: "not sure what that person was supposed to be".)* This used to open with `ANIMAL`,
-## `PERSON`, `VEHICLE`, `OBJECT` and `FIRE`, and those five names were doing the damage all by
-## themselves: a category is something you can always put one more row into, so sixteen of the
-## twenty-eight visible rows in the catalogue drew five pictures between them. A man shouting, a
-## busker, a poster crew, a protest and the robbery that ends the day were one `person.svg`; a
-## delivery van, a fire engine, a police car, a riot van, an army truck and the unmarked van that
-## takes the baby were one van.
+## **One look per row, and every look is a thing rather than a category.** Names like `ANIMAL`,
+## `PERSON`, `VEHICLE`, `OBJECT` and `FIRE` do the damage all by themselves: a category is
+## something you can always put one more row into, and then a man shouting, a busker, a poster
+## crew, a protest and the robbery that ends the day are one `person.svg`, while a delivery van, a
+## fire engine, a police car, a riot van, an army truck and the unmarked van that takes the baby
+## are one van.
 ##
-## That is not a missing art pass, it is the first row of the visual vocabulary failing —
-## *the entity itself carries most of it* — and it had already cost a finding: M34 spent a
-## milestone fixing `alley_robbery` for a complaint about `homeless_yeller`, because the player
-## could only say "the robber" and the two draw the same man. It cost a second one in playtest 09,
-## where *"who is the person killing me?"* is a question the screen should have answered.
+## That is not a missing art pass, it is the first row of the visual vocabulary failing — *the
+## entity itself carries most of it* — and the cost lands on the player as *"not sure what that
+## person was supposed to be"* and *"who is the person killing me?"*. It lands on this side too: a
+## complaint about the man who shouts and a complaint about the robber are indistinguishable when
+## the two draw the same man.
 ##
-## So a look is now the name of one picture, and `tests/test_events.gd` holds both halves of the
-## rule: **no two rows share a look**, and **no two looks share a silhouette**. There is
-## deliberately no generic left to reach for — the cost of adding an event is a drawing.
+## So a look is the name of one picture, and `tests/test_events.gd` holds both halves of the rule:
+## **no two rows share a look**, and **no two looks share a silhouette**. There is deliberately no
+## generic left to reach for — the cost of adding an event is a drawing.
 enum Look {
 	NONE,     ## Invisible — something else already draws it (a park's playground frame).
 	# ---- act I ----
@@ -40,8 +38,6 @@ enum Look {
 	FIRE_ENGINE,  ## The longest silhouette in the game, and the only red one.
 	BURNING_BUILDING, ## Flames that scale with what it is emitting.
 	BURNT_SHELL,  ## Charred brick and window holes with nothing behind them.
-	# M31. Each of these earned its own row rather than reusing `PERSON` or `VEHICLE` — which is
-	# the rule above being kept one milestone before it was written down.
 	LOOSE_DOG,    ## A dog running with the lead still trailing behind it.
 	STALL,        ## A market trestle, repeated across the pavement it takes.
 	LEAF_BLOWER,  ## A groundskeeper and the nozzle that makes the noise.
@@ -76,7 +72,7 @@ enum PathMode {
 	ALONG_STREET,  ## Down the corridor it starts on.
 }
 
-## Where an instance comes from. *(M27, playtest 04.)*
+## Where an instance comes from.
 enum SpawnMode {
 	## Placed on a tile when the day is planned, and streamed into the world when the player
 	## comes near it. Almost everything: an event that is *somewhere* is half of what makes a
@@ -134,14 +130,13 @@ enum SpawnMode {
 ## Route length for ALONG_STREET, in tiles.
 @export var path_length_tiles := 24
 
-## Walks its route and turns round at the ends, for ever. *(M36, playtest 09: "if it's the homeless
-## person it needs to walk up and down the sidewalk".)*
+## Walks its route and turns round at the ends, for ever.
 ##
 ## The difference between a **journey** and a **beat**, and it is the difference between two kinds
 ## of event. A dog walker is going somewhere: its route is thirty tiles, it is gone at the end of
 ## them, and what it costs you is the stretch of pavement it happens to own while you are there. A
-## man shouting is not going anywhere — he is *at* a place — and until now the only way to say that
-## was to make him stationary, which is what got him reported as "it didn't move".
+## man shouting is not going anywhere — he is *at* a place — and without this the only way to say
+## so is to make him stationary, which reads from the street as "it didn't move".
 ##
 ## A paced event never reaches the end of its path, so it never departs and never expires: it is a
 ## fixture that moves, which is exactly what it looks like from the street.
@@ -153,36 +148,33 @@ enum SpawnMode {
 ## to cover those three streets to arrive.
 ##
 ## It is wrong for anything whose telegraph is a *posture*. The cat crouches and then bolts,
-## and a crouch that is already travelling at 240px/s is not a crouch. Worse, it made the cat
-## silent: its path is one street wide, so at full speed the whole run was over by the time the
-## telegraph ended — it never reached full intensity, and the running sprite never drew once.
+## and a crouch that is already travelling at 240px/s is not a crouch. Worse, it makes the cat
+## silent: its path is one street wide, so at full speed the whole run is over by the time the
+## telegraph ends — it never reaches full intensity, and the running sprite never draws once.
 @export var still_while_telegraphing := false
 
-## How fast it removes itself from the scene when it is over, in px/s. *(M35, playtest 08 findings
-## 2 and 3.)*
+## How fast it removes itself from the scene when it is over, in px/s.
 ##
-## **Nothing vanishes while you are looking at it.** The end of an event used to be a deletion
-## wherever it stood, which for the two shortest-lived rows in the game is directly in front of her:
-## *"running dog events etc — things that move disappear on screen; they should at least run
-## offscreen before despawning"*, and *"pigeons are also completely ineffective"*, which is the same
-## sentence about a flock that hangs in the air for a fifth of a second and is then not there.
+## **Nothing vanishes while you are looking at it.** Ending an event by deleting it where it stands
+## puts the deletion directly in front of her for the two shortest-lived rows in the game — a dog
+## that should at least run offscreen first, and a flock that hangs in the air for a fifth of a
+## second and is then not there, which is most of what makes pigeons read as ineffective.
 ##
-## Anything **mobile** already has somewhere to go and leaves at its own `speed` — that is the whole
-## of finding 3 and it costs no data. This field is for the rest: a flock that has to fly off, a dog
-## that has lost interest and trots away. Zero means it simply ends, which is right for anything
-## that was a *place* rather than a moment — a café does not walk home.
+## Anything **mobile** already has somewhere to go and leaves at its own `speed`, which costs no
+## data. This field is for the rest: a flock that has to fly off, a dog that has lost interest and
+## trots away. Zero means it simply ends, which is right for anything that was a *place* rather
+## than a moment — a café does not walk home.
 @export var departs_at := 0.0
 
 ## How many individual creatures this event is, rather than one thing drawn several times.
-## 0 for everything that is one body. *(M38: "the birds are broken — they start the flying
-## animation but then freeze. Turn them into individual entities and let each fly.")*
+## 0 for everything that is one body.
 ##
-## **A flock was one sprite drawn seven times at seven fixed offsets**, and the offsets were derived
-## from the instance's own position so they would not boil — which is the right trick for a *static*
-## picture and the wrong one for a moving one, because it means the seven birds can only ever move
-## together. The whole animation was a single `rise` term that ramped to 1.0 at the end of the
-## telegraph and then sat there: the flock went up in one movement and hung motionless in the air
-## for the three seconds that were supposed to be the event.
+## **A flock may not be one sprite drawn seven times at fixed offsets.** Deriving the offsets from
+## the instance's own position keeps them from boiling, which is the right trick for a *static*
+## picture and the wrong one for a moving one: the seven birds can then only ever move together,
+## and the animation collapses to a single `rise` term that ramps at the end of the telegraph and
+## sits there — the flock goes up in one movement and hangs motionless for the three seconds that
+## are supposed to be the event.
 ##
 ## With this set, `EventInstance` gives every bird its own position, its own heading, its own speed,
 ## its own height and its own wingbeat, and steps them one at a time. There is nothing generic about
@@ -201,50 +193,46 @@ func departure_speed() -> float:
 		return departs_at
 	return speed if mobile else 0.0
 
-## Comes after **her**, rather than along a path. *(Playtest 07: "the run button is a trap
-## shouldn't be an invariant — there should be legitimate cases where running is required.")*
+## Comes after **her**, rather than along a path.
 ##
-## This is the mechanic M25 said had to exist before running could ever be correct, and the reason
+## This is the mechanic that has to exist before running can ever be the right move, and the reason
 ## it is a mechanic rather than a number: running is worse than walking against everything that
 ## merely *emits*, because `EXCITEMENT_FROM_RUNNING` outweighs the shorter exposure every time.
 ## The only way it can be right is if the alternative is losing the day — so a pursuer is lethal,
 ## it is faster than a walk, and it is slower than a run. Those three together mean walking away
 ## does not work and running away does, which is the whole lesson.
 ##
-## Its fairness contract is `Tuning.validate_pursuit()` and is stated over `RUN_SPEED`, exactly as
-## `docs/TODO.md` said it would have to be.
+## Its fairness contract is `Tuning.validate_pursuit()`, and it is stated over `RUN_SPEED`: a
+## pursuit that cannot be outrun is not a lesson about running.
 @export var pursues := false
 ## How fast it comes. Must sit strictly between `WALK_SPEED` and `RUN_SPEED`.
 @export var pursue_speed := 0.0
 
-## How close she has to come before it takes an interest. 0 means *immediately*. *(M36, playtest 09:
-## "a robber should increase excitement on sight and getting close to them should be day ending",
-## and "if you get close they should start moving towards you".)*
+## How close she has to come before it takes an interest. 0 means *immediately*.
 ##
 ## A pursuer with no trigger is a **moment**: `charging_dog` is sited in front of her by the
 ## director and the chase is the whole of it. A pursuer with one is a **place** that becomes a
 ## moment — a man in an alley who is standing there, who is worth avoiding from the far end of it,
 ## and who comes after you if you walk up to him. That is a different thing from both an obstacle
-## and an ambush, and it is the shape the player asked for.
+## and an ambush.
 ##
-## Three states rather than two, and the middle one is new: **waiting** (standing there, emitting at
-## full strength, not lethal and not moving), **noticing** (`telegraph_time` of visibly coming, the
+## Three states rather than two, and the middle one is the load-bearing one: **waiting** (standing
+## there, emitting at full strength, not lethal and not moving), **noticing** (`telegraph_time` of
+## visibly coming, the
 ## notice the fairness contract owes), then the chase. `telegraph_time` and `duration` are both
-## measured from the moment it notices, not from the moment it was put in the world — a robbery that
-## spent its telegraph at dawn, four streets away, would have no notice in it at all.
+## measured from the moment it notices, not from the moment it was put in the world — a robbery
+## that spends its telegraph at dawn, four streets away, has no notice left in it at all.
 @export var pursues_within := 0.0
 
 ## Radius of solid obstruction, in px. 0 for events you can walk through. Scaffolding does
 ## not politely step aside, and being *forced* to reroute is a different pressure from
 ## choosing to.
 ##
-## **Anything that stands still is solid at the width it is drawn.** *(M34, playtest 07 finding
-## 16: "none of the non-moving obstacles do anything — I can freely walk over them", and finding
-## 13: "I can walk over the robber and he doesn't do anything".)* This was a list of five rows
-## out of thirty for six milestones, which is why a delivery van was scenery and a man standing
-## in a courtyard could be occupied rather than walked around. It is a rule now, and the number
-## is not a balance value: it is half of the silhouette, because `_draw_spread` draws a blocking
-## object at exactly the width it obstructs and anything else is a lie about where she can walk.
+## **Anything that stands still is solid at the width it is drawn.** It is a rule rather than a
+## list, because the moment it is a list a delivery van is scenery and a man standing in a
+## courtyard can be walked through. And the number is not a balance value: it is half of the
+## silhouette, because `_draw_spread` draws a blocking object at exactly the width it obstructs,
+## and anything else is a lie about where she can walk.
 ##
 ## Three things are exempt and each for its own reason:
 ##
@@ -259,13 +247,12 @@ func departure_speed() -> float:
 ## event's body has to fit *inside* its lethal radius with her own body to spare.
 @export var obstructs_radius := 0.0
 
-## Which lane of a two-tile pavement an event wants. *(M34, playtest 07 findings 7 and 15.)*
+## Which lane of a two-tile pavement an event wants.
 ##
 ## Almost nothing cares, and `ANY` is the honest default: a café spills out of whichever frontage
-## it has and a shouting man stands where he likes. Two things do care, and in both cases the
-## complaint was that the thing was standing somewhere that made no sense of it — a parked van
-## *in a traffic lane* ("a still car standing on the road doing nothing"), and a lorry reversing
-## into a yard that "does not connect to the building".
+## it has and a shouting man stands where he likes. Two things do care, and in both cases the lane
+## is what makes sense of the thing — a parked van belongs at the kerb rather than *in a traffic
+## lane*, and a lorry reversing into a yard has to be backing into a building.
 enum Pavement {
 	ANY,
 	## Against the kerb, with the carriageway on the other side of it. Where a vehicle parks.
@@ -294,7 +281,8 @@ enum Pavement {
 ## leaves a burnt-out shell; the shell is still there on day 12.
 @export var scar_id := ""
 
-## Narrative act, for palette and audio in M7.
+## Which act the row belongs to, narratively. Nothing reads it yet: it is where a per-act palette
+## or a per-act sound would key off, and `first_day` is what actually decides when a row can appear.
 @export var act_tag := 1
 
 ## What this row does to a route that meets it, in the words `docs/CITY.md` fixes.
@@ -374,15 +362,13 @@ func minimum_telegraph() -> float:
 			speed if mobile else 0.0)
 
 # ------------------------------------------------------------ what a row costs ---
-# *(M39, playtest 10 findings 1, 8 and 9: "some dangerous ones don't have indicators and some
-# really benign ones do".)*
+# The integral behind the cost table in `docs/EVENTS.md` and behind the assertion that nothing is
+# cheaper to walk through than around.
 #
-# This integral has existed since M19 and lived in `tests/test_events.gd`, where it produced the
-# cost table in `docs/EVENTS.md` and asserted that nothing is cheaper to walk through than around.
-# It moves here because the **game** now asks the question: the danger caret is raised by what a
-# row costs rather than by whether its danger changes over time, and a second copy of a number the
-# vocabulary depends on is exactly the mistake M37 found in `DangerEdge` — two tables of which
-# picture a look meant, and a fire engine drawn as a delivery van.
+# **It lives here rather than in `tests/test_events.gd`, because the game asks it too**: the danger
+# caret is raised by what a row costs rather than by whether its danger changes over time, and a
+# second copy of a number the visual vocabulary depends on is how a fire engine ends up drawn as a
+# delivery van — two tables of which picture a look means, disagreeing.
 
 ## What walking straight through the middle of one costs, in points of a hundred-point meter:
 ## the field integrated along the line, less the walking decay over the same time.
@@ -415,7 +401,7 @@ func mean_emission_along_the_line() -> float:
 ## One disc for almost everything, and it is the assumption the whole table rests on: all of
 ## `intensity` is at the centre and it falls away from there.
 ##
-## **That assumption is false for a flock.** *(M38.)* A flock is `flock_size` birds sharing the same
+## **That assumption is false for a flock.** A flock is `flock_size` birds sharing the same
 ## intensity between them and wheeling inside `flock_spread`, so the same number buys a field that is
 ## tighter and, crucially, *quieter along a line through it* — the disc model reads `pigeon_flock` at
 ## +97 where the instance itself, walked and integrated, costs +35. The birds are placed evenly round

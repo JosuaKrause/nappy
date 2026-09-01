@@ -3,9 +3,8 @@ extends RefCounted
 ## Places the events whose content is *the moment they happen to you* rather than *where they
 ## are*: the ones the day budgets and the player's own walk sites.
 ##
-## Playtest 04: *"the cat is ineffective since it happens when it spawns — the cat should get
-## spawned in in front of the player while they walk, so it happens directly in front of them
-## every time."*
+## A cat that happens where it spawns is a cat nobody meets; it has to arrive in front of her
+## while she walks, every time.
 ##
 ## That is a real distinction and not just a placement trick. A café spilling across a pavement
 ## is a *place*: it is worth putting on a map because knowing it is there changes the route you
@@ -53,9 +52,8 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	_next_in = _roll_interval()
 	_teach_the_run(day)
 
-## Puts the day-3 lesson at the front of the queue. *(Playtest 07: "on day 3 we introduce the
-## running key (it is possible to run before but not required)" and "have an incident at the start
-## to force running".)*
+## Puts the day-3 lesson at the front of the queue: the day running becomes the answer opens with
+## an incident that requires it.
 ##
 ## Running is a trap against every other row in the catalogue and is meant to be — so the day the
 ## exception arrives, the game cannot leave finding it to chance. `charging_dog` is `weight 1.4`
@@ -130,19 +128,18 @@ func _roll_interval() -> float:
 ## Empty when the crossing point is not somewhere anybody could walk — the lead lands inside a
 ## building, or outside the map. The caller waits and asks again.
 ##
-## **A pursuer is sited at the lead point itself and given no route.** *(M35, playtest 08 finding
-## 4.)* It does not cross her line, it comes down it, so a path is the wrong shape for it entirely
-## — and building one anyway is what put the day-3 dog a street's width off to one side of the
-## place this function had just checked, 266px away and diagonal, which on a 640x360 view is at the
-## corner of the screen or past it. What she is owed is the sight of it coming, and it has to be
-## sited where that can be seen.
+## **A pursuer is sited at the lead point itself and given no route.** It does not cross her line,
+## it comes down it, so a path is the wrong shape for it entirely — and building one anyway puts
+## the day-3 dog a street's width off to one side of the place this function has just checked,
+## 266px away and diagonal, which on a 640x360 view is at the corner of the screen or past it. What
+## she is owed is the sight of it coming, and it has to be sited where that can be seen.
 ##
-## **And a pursuer is sited as far ahead as it can be seen from.** *(M43, playtest 11 finding 3.)*
-## That is `Tuning.SIGHT_AHEAD` flat, rather than the clamp it used to be: `AHEAD_LEAD_DISTANCE` is
-## a *cat's* reaction window and has nothing to do with a chase, and everything between the siting
-## and the stand-off is the only notice a pursuit has left to give.
+## **And a pursuer is sited as far ahead as it can be seen from**, which is `Tuning.SIGHT_AHEAD`
+## flat rather than a clamp against `AHEAD_LEAD_DISTANCE`: that is a *cat's* reaction window and has
+## nothing to do with a chase, and everything between the siting and the stand-off is the only
+## notice a pursuit has left to give.
 ##
-## The arithmetic is why it is the cap rather than a choice. Since M43 the lunge is fired by
+## The arithmetic is why it is the cap rather than a choice. The lunge is fired by
 ## **proximity** — see `EventInstance._lunged` — so the notice a player gets is the time it takes
 ## the gap to fall from the lead to `Tuning.pursuit_standoff()`, and she is usually walking *into*
 ## it, so that gap closes at her speed plus its own. There are 96px of it at 200px of lead and

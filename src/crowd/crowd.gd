@@ -12,9 +12,9 @@ extends Node
 ## larger (around 120 rather than 22) and it is still one distance check each, once per
 ## physics frame, for the single query the baby makes.
 ##
-## **Since M27 the crowd lives in a box that travels with the player** rather than being spread
-## across the whole map — see `CrowdField` for why, and `Tuning.CROWD_PEDESTRIANS_PER_ACT` for
-## what it did to the numbers.
+## **The crowd lives in a box that travels with the player** rather than being spread across the
+## whole map — see `CrowdField` for why, and `Tuning.CROWD_PEDESTRIANS_PER_ACT` for the population
+## that box is stated over.
 
 ## The traffic's name on the mark over the player's head, so it can take its own down again and
 ## nobody else's. See `Stroller.stand_down()`.
@@ -32,7 +32,7 @@ var _field: CrowdField
 var _traffic := TrafficIndex.new()
 ## The lights on the spine. Owned by `City`; the clock is advanced here because this is the class
 ## a rig steps, and a rig that runs the traffic without running the signals is running a
-## different city — see `step()` and the M44 note above it.
+## different city — see `step()`.
 var _signals: TrafficSignals
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
@@ -104,10 +104,9 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 		_agents.append(agent)
 
 # ----------------------------------------------------------------- traffic ---
-# Playtest 04: *"cars still bump into each other."* Until M27 a car knew about the player and
-# about zebras and about nothing else on the road, so two cars in the same lane at different
-# speeds simply passed through one another — which, at M27's density, stops being an
-# occasional glitch and becomes what the road looks like.
+# A car that knows about the player and about zebras and about nothing else on the road passes
+# straight through the car in front of it whenever the two are at different speeds — which at this
+# density is not an occasional glitch, it is what the road looks like.
 #
 # The decision is one pass over the crowd here rather than a probe per car, for the same reason
 # `pedestrian_ahead` is written here: the agents are already being walked once a frame, and a
@@ -145,8 +144,8 @@ func step(delta: float) -> void:
 ## **The separation is positional, like the player's bump and for the same reason.** A brake is
 ## a *tendency*: it keeps a gap that already exists and it cannot open one that does not, so two
 ## cars that start inside each other both choose zero and stay there forever. Recycling puts a
-## car into a lane at a point it cannot see, so that case is not hypothetical — it was most of
-## the overlap the M27 probe measured. Resolving the queue from the front backwards fixes a
+## car into a lane at a point it cannot see, so that case is not hypothetical — it is most of the
+## overlap a probe finds. Resolving the queue from the front backwards fixes a
 ## whole chain in one pass, and the correction is a few pixels except in the case it exists for.
 func space_out_the_traffic() -> void:
 	var lanes := {}
@@ -297,7 +296,7 @@ func _can_clear_the_box(agent: CrowdAgent) -> bool:
 ## What happens when it does is deliberately **not** a new catalogue row. An event nobody sees in a
 ## run is a silhouette, a docs table and a fairness contract spent on decoration, and the rule this
 ## project opens with is that a thing which changes no route decision is decoration. It is the
-## mechanism M19 already established instead: the collision **startles the bodies it happened to**,
+## mechanism the crowd already has instead: the collision **startles the bodies it happened to**,
 ## so it is loud exactly where it happened, it composes with everything else by plain addition, and
 ## nothing writes to the meter from outside. They stop dead and pull away again, which is what two
 ## drivers who have just hit each other do.
@@ -339,10 +338,10 @@ func _is_to_the_right_of(a: CrowdAgent, b: CrowdAgent) -> bool:
 	return (a.global_position - b.global_position).dot(right) > 0.0
 
 # ----------------------------------------------------------------- contact ---
-# Playtest 02, findings 2 and 3. Until M19 the crowd was a field with a picture attached: you
-# could walk through a person, through a car, through a queue at a bus stop, and the only
-# thing that happened was that a number moved. That is why the route was never a decision —
-# every pavement was identical and none of them could hurt you.
+# Without these three the crowd is a field with a picture attached: you could walk through a
+# person, through a car, through a queue at a bus stop, and the only thing that would happen is
+# that a number moves. That is a game where the route is never a decision — every pavement is
+# identical and none of them can hurt you.
 #
 # All three mechanisms live here rather than in `CrowdAgent` because all three are about the
 # *player*, and an agent has no business knowing the player exists. One linear scan, the same
@@ -352,8 +351,8 @@ func _physics_process(delta: float) -> void:
 	if _signals:
 		_signals.advance(delta)
 	# Before the player check, because traffic has to queue whether or not anybody is watching:
-	# a car driving through another one at the far end of the street is still the thing playtest
-	# 04 saw, and a test rig has no player in it.
+	# a car driving through another one at the far end of the street is still a car driving
+	# through another one, and a test rig has no player in it.
 	space_out_the_traffic()
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as Stroller
@@ -389,30 +388,29 @@ func _physics_process(delta: float) -> void:
 	if shove != Vector2.ZERO:
 		_player.shove(shove.normalized() * Tuning.BUMP_SHOVE_SPEED)
 	# The exclamation mark says *the fairness contract is now about you and the clock has
-	# started* — the load-bearing cue of M22's vocabulary, built here because M19 is what
-	# creates the danger it warns about. See docs/EVENTS.md, "The visual vocabulary".
+	# started* — the load-bearing cue of the danger vocabulary, raised here because this is
+	# where the danger it warns about is created. See docs/EVENTS.md, "The visual vocabulary".
 	#
 	# `SOON` rather than `NOW`: standing in the carriageway with a car coming is a spot that is
 	# about to be bad, and the whole contract is that there is time to walk off it. The mark is
 	# raised for the rest of the hold rather than for this frame, so it survives the gap between
 	# two cars in the same lane instead of strobing.
 	#
-	# And it comes down the instant she is off the carriageway. *(Playtest 06, finding 3: "when I
-	# cross and they honk at me, I get the flashing exclamation marks **after** the fact, at which
-	# point they're not useful.")* The hold is doing a real job and is not the bug — a car cannot
-	# strike her on the pavement at all, so the two cases the hold could not tell apart are
-	# *between two cars* and *over the kerb*, and the kerb is a fact this loop already has in
-	# hand. Only the warning the traffic itself raised is taken down; see `Stroller.stand_down`.
+	# And it comes down the instant she is off the carriageway, or the marks arrive after the fact
+	# and are no use. The hold is doing a real job and is not what to remove — a car cannot strike
+	# her on the pavement at all, so the two cases the hold cannot tell apart are *between two
+	# cars* and *over the kerb*, and the kerb is a fact this loop already has in hand. Only the
+	# warning the traffic itself raised is taken down; see `Stroller.stand_down`.
 	if closing:
 		_player.warn(Stroller.Alert.SOON, Tuning.CAR_WARNING_HOLD, WARNING_SOURCE)
 	elif not on_the_road:
 		_player.stand_down(WARNING_SOURCE)
 
-## Somebody standing in the way of where she is going moves over. *(Playtest 07, finding 17.)*
+## Somebody standing in the way of where she is going moves over.
 ##
 ## The counterpart to `_bump`, and the reason the pair of them is the whole answer: a bump is what
-## happens when this fails. See `Tuning.CROWD_YIELD_DISTANCE` for why a *behaviour* replaced the
-## two-pixel line the crowd's "careful is free" half used to rest on.
+## happens when this fails. See `Tuning.CROWD_YIELD_DISTANCE` for why the crowd's "careful is free"
+## half is a *behaviour* rather than a two-pixel line to aim at.
 ##
 ## Three things keep it from being a crowd that simply evaporates in front of her:
 ##
@@ -471,24 +469,21 @@ func _make_way(agent: CrowdAgent, here: Vector2, velocity: Vector2) -> void:
 ##
 ## - **Somebody bumped along their own line of travel steps aside.** Pushing them straight
 ##   down it separates nobody: she walks at 92 and they walk at 60, so a person bumped from
-##   behind is ploughed along the pavement in front of her indefinitely. The first version did
-##   that and a forty-second walk arrived at the far end pushing a wedge of pedestrians and
-##   taking 150 excitement per second.
+##   behind is ploughed along the pavement in front of her indefinitely — a forty-second walk
+##   arrives at the far end pushing a wedge of pedestrians and taking 150 excitement per second.
 ## - **A contact startles once, not once per frame.** `touching` is the hysteresis. Otherwise
 ##   one person held in contact for half a second costs what walking through a crowd should.
-## - **And a contact has to be able to end.** *(Playtest 07, finding 5.)* Both halves of that
-##   sentence were broken and each on its own is enough to trap her:
+## - **And a contact has to be able to end.** Two ways it cannot, and each on its own traps her in
+##   a jolt that fires for as long as she stands there:
 ##
-##   The separation resolved to exactly `BUMP_RADIUS`, which is the same number `touching` is
-##   released at — so a resolved pair sits on its own threshold, crosses it every other frame, and
-##   fires a fresh jolt each time. The hysteresis existed and was one number wide. It is a band
-##   now: pushed apart to `BUMP_CLEAR_RADIUS`, released past it.
+##   **A separation that resolves to exactly the radius `touching` is released at** leaves the pair
+##   sitting on its own threshold, crossing it every other frame. A hysteresis one number wide is
+##   not one; this is a band — pushed apart to `BUMP_CLEAR_RADIUS`, released past it.
 ##
-##   And a walker steers back to its lane centre. If she is *standing on* that centre it comes
-##   straight back into her, so the contact resolves and re-forms for as long as she is there. The
-##   fix is the thing a person actually does: `step_aside`, which moves the walker's steering
-##   target a lane over for a couple of seconds. Still positional, still nothing pushed at the
-##   player — only what the walker is aiming for changed.
+##   **A walker steers back to its lane centre.** If she is *standing on* that centre it comes
+##   straight back into her, so the contact resolves and re-forms. `step_aside` is the thing a
+##   person actually does: it moves the walker's steering target a lane over for a couple of
+##   seconds. Still positional, still nothing pushed at the player — only what the walker aims for.
 func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	var away := agent.global_position - here
 	var distance := away.length()

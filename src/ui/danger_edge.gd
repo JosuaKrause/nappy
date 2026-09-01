@@ -2,13 +2,13 @@ class_name DangerEdge
 extends Control
 ## What is coming, drawn at the edge of the screen while it is still off it.
 ##
-## M22, and playtest 02's finding 8 is only half of why it exists. The other half is a gap the
-## rings never covered and could not: `fire_truck` (190px/s, 340px radius) and `military_convoy`
-## are both *designed* around a long telegraph that the player spends getting off that street —
-## and a ring is only useful once it is on screen, which at 190px/s is most of the warning gone.
-## The fairness contract was being met by the geometry and missed by the player.
+## **Anything drawn in the world can only warn her once it is on screen**, and that is not soon
+## enough for the rows designed around a long telegraph she is meant to spend getting off the
+## street: `fire_truck` (190px/s, 340px radius) and `military_convoy` both arrive with most of
+## their warning already spent. The fairness contract is met by the geometry and missed by the
+## player.
 ##
-## Two rules it is built to, both from the standing decision in `CLAUDE.md`:
+## Two rules it is built to, both from the danger vocabulary:
 ##
 ## - **It says what is coming, not that something is.** The event's own silhouette rides in the
 ##   chevron. "A fire engine is about to come down this street" is a route decision; "something
@@ -36,12 +36,11 @@ const MOST_AT_ONCE := 3
 ## approach, with the player held still.** Anything slower she can simply walk away from, which
 ## is the same line `required_telegraph_time()` draws.
 ##
-## *(Playtest 06, finding 1.)* Until then this was measured as the rate the *gap* was shrinking,
-## which is her speed plus its speed, and she walks at 92 against a threshold of 20. So walking
-## towards anything lethal raised its badge, whether or not the thing was coming — and all three
-## halves of *"they show events far away, they disappear when you walk towards them, they
-## flicker"* fall out of that one line. Her own velocity is hers to control and does not need
-## announcing at the edge of the screen.
+## **Not the rate the *gap* is shrinking.** That is her speed plus its speed, and she walks at 92
+## against a threshold of 20 — so walking towards anything lethal raises its badge whether or not
+## the thing is coming, and *"they show events far away"*, *"they disappear when you walk towards
+## them"* and *"they flicker"* all fall out of that one line. Her own velocity is hers to control
+## and does not need announcing at the edge of the screen.
 const CLOSING_SPEED := 20.0
 ## The range cap, stated as time rather than as pixels: something is announced once it would
 ## reach her within this many seconds at its current approach.
@@ -52,9 +51,9 @@ const CLOSING_SPEED := 20.0
 ## cyclist's pace about half of it, and a 60px/s mover has to be within 300px. It is the same
 ## quantity the fairness contract is written in — how long she has to get out of the way.
 const LEAD_TIME := 5.0
-## Once raised, a badge stays up this long after its condition lapses. The hysteresis playtest 06
-## asked for: the test is a derivative against a threshold, and anything hovering near the
-## threshold toggles every frame without it.
+## Once raised, a badge stays up this long after its condition lapses. The test is a derivative
+## against a threshold, and anything hovering near the threshold toggles every frame without a
+## hysteresis.
 const HOLD := 0.8
 ## How fast the measured approach follows the raw frame-to-frame one, per second. A single
 ## frame's difference is mostly noise at these distances; this is the same smoothing the badge
@@ -139,7 +138,7 @@ func _measure(delta: float) -> void:
 ## How fast something at `was`, now at `now`, is closing on a player standing at `player`.
 ##
 ## Static and takes one player position on purpose: passing the same point for both distances is
-## what "with the player held still" *means*, and it is the whole of playtest 06's finding 1.
+## what "with the player held still" *means*, and it is the whole of the rule above.
 static func approach_speed(was: Vector2, now: Vector2, player: Vector2, delta: float) -> float:
 	if delta <= 0.0:
 		return 0.0
@@ -158,8 +157,7 @@ func _is_on_screen(world_position: Vector2, margin: float) -> bool:
 
 ## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
 ## arrival first. For the telemetry observer, which has to be able to say what she was warned
-## about and whether she then did anything about it — the one question playtest 05 asked of the
-## log and it could not answer.
+## about and whether she then did anything about it, which nothing else in the log can say.
 func announcing() -> Array[Dictionary]:
 	var badges: Array[Dictionary] = []
 	for i in mini(MOST_AT_ONCE, _coming.size()):
@@ -195,9 +193,9 @@ func _is_worth_an_arrow(instance: EventInstance) -> bool:
 		return false
 	# An `AHEAD_OF_PLAYER` event is sited across her line by the director, a fixed lead ahead of
 	# her, and its entire content is *the moment it happens to you* — three seconds of cat is not
-	# a place. Announcing it from the edge of the screen before it arrives is the same mistake
-	# M27 fixed from the other end, and in practice it was a badge that appeared and vanished in
-	# the same second as the thing walked into view. Its fairness is paid in geometry.
+	# a place. Announcing it from the edge of the screen before it arrives gives a badge that
+	# appears and vanishes in the same second as the thing walks into view — and takes away the
+	# moment, which is the whole row. Its fairness is paid in geometry.
 	if instance.def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 		return false
 	if instance.def.hard_fail:
@@ -214,7 +212,7 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 	var direction := offset.normalized()
 	var at := centre + direction * _distance_to_edge(bounds, centre, direction)
 
-	# The same two colours the caret over the entity uses, meaning the same two things. *(M39.)*
+	# The same two colours the caret over the entity uses, meaning the same two things.
 	# A badge and a caret that disagreed about what red meant would be two vocabularies.
 	var colour := Palette.MARK_LETHAL if instance.def.hard_fail else Palette.MARK_COSTLY
 	# A disc under the whole thing, so the icon and the number read over a pale pavement and a
@@ -245,12 +243,11 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 
 ## The silhouette that stands for a kind of event at icon size.
 ##
-## **The table lives on `EventInstance`, not here.** *(M37.)* It used to be a `match` of its own
-## with eight rows in it, which is one table too many for a rule that says *the entity carries its
-## own picture* — and it went wrong in exactly the way a second copy does: `VEHICLE` returned the
-## generic van, so the badge for a fire engine, an army truck and the unmarked van that takes the
-## baby was a picture of a delivery van. An arrow that says the wrong thing is worse than the arrow
-## that could only say "something", which is what M22 built this to replace.
+## **The table lives on `EventInstance`, not here.** A `match` of its own is one table too many for
+## a rule that says *the entity carries its own picture*, and it goes wrong the way a second copy
+## does: a category row returns the generic van, so the badge for a fire engine, an army truck and
+## the unmarked van that takes the baby is a picture of a delivery van. An arrow that says the wrong
+## thing is worse than an arrow that can only say "something".
 func _icon_for(look: EventDef.Look) -> Texture2D:
 	return EventInstance.icon_for(look)
 

@@ -1,29 +1,25 @@
 class_name TitleScreen
 extends CanvasLayer
-## The screen the game opens on, and the screen a finished run goes back to. *(M38.)*
+## The screen the game opens on, and the screen a finished run goes back to.
 ##
-## Two complaints, and they are the same one from both ends. *"The lost screen doesn't allow for
-## restarting the game — you can just cycle between pause screen and loss screen at that point"*:
-## the ending said `esc to quit`, `Esc` opened the pause, and the pause offered `Esc` and `Q`, so the
-## only way out of a finished run was to close the window. And *"start on the pause screen, or
-## create a game open screen"*: the game began mid-stride, on the doorstep, with the day already
-## running and no moment to read the two lines that say what the controls are.
+## It answers the same problem from both ends. Without somewhere for a finished run to go, the only
+## way out is to close the window — the ending offers `Esc`, `Esc` opens the pause, and the pause
+## offers `Esc` and `Q`. And without it the game begins mid-stride, on the doorstep, with the day
+## already running and no moment to read the two lines that say what the controls are.
 ##
 ## One screen answers both, because a run that is over goes back to where a run begins. There is
 ## deliberately no separate "restart" screen and no menu: this is a title, three lines of controls
 ## and a key.
 ##
-## **What is behind it is the game, running.** *("As title screen just use the home and street in
-## front without player and let act I events play out.")* Not a still, not a menu over black: the
+## **What is behind it is the game, running.** Not a still, not a menu over black: the
 ## doorstep the run starts on, with the traffic driving and the events playing out on it and nobody
 ## pushing a pram through them. The screen itself is therefore only two scrims and four labels — the
 ## title across the top half, the controls across the bottom, and the street visible through both.
 ## `main._open_the_title()` is the half that makes the city keep moving while everything that is a
 ## *day* stops; this class owns two keys and nothing else.
 ##
-## What it is not is a main menu. `docs/TODO.md` has carried "there is no main menu" under
-## known-shaky ground since M6 and it still does — options, a seed box and a load game are all still
-## missing, and none of them is what either complaint was about.
+## What it is not is a main menu. There are no options, no seed box and no load game, and none of
+## those is what this screen exists for.
 
 signal start_requested()
 signal quit_requested()
@@ -32,11 +28,9 @@ signal quit_requested()
 @onready var _hint: Label = $Root/Bottom/Lines/Hint
 
 func _ready() -> void:
-	# **The title has a colour of its own.** *(Playtest 15, finding 6: "on the title screen change
-	# up the color of the game title".)* It was the same warm off-white as the line under it and the
-	# controls below that, so the screen was four labels in one colour and the name of the game was
-	# only the biggest of them. `Palette.TITLE_TEXT` is the doorstep it is standing in front of; see
-	# the note there for why it is not one of the danger colours.
+	# **The title has a colour of its own**, or the screen is four labels in one warm off-white and
+	# the name of the game is only the biggest of them. `Palette.TITLE_TEXT` is the doorstep it is
+	# standing in front of; see the note there for why it is not one of the danger colours.
 	_name.add_theme_color_override("font_color", Palette.TITLE_TEXT)
 	# Above the pause screen: this is the outermost frame the game runs inside, and nothing should
 	# ever be able to cover it.
