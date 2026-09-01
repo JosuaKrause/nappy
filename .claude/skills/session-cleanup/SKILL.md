@@ -62,6 +62,14 @@ skills — correct when written, stale immediately, and invisible from the diff 
 grep -rn "<old name>" --include='*.md' --include='*.gd' . | grep -v DECISIONS.md
 ```
 
+### 2b. The drift guard
+
+**If `src/autoload/tuning.gd` or `src/events/event_catalogue.gd` changed this session**, grep the
+governed docs for the name of every constant or row that moved and re-check every quoted figure
+against it. The number re-audit that produced M40's finishing pass found all of its drift around
+retuned constants whose doc sentences stood still — the code changed and nothing reread the
+sentence that quoted its old value.
+
 ### 3. Move what is now history
 
 Anything that stopped being current this session goes to **`docs/DECISIONS.md`**: decisions taken
