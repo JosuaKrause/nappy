@@ -159,9 +159,9 @@ applies the telegraph fraction if the instance is still in its telegraph phase. 
 event type never requires touching `Baby`.
 
 The scan is linear. An earlier draft of this document called for a uniform spatial hash;
-the budget formula tops out near 22 concurrent events, so that would have been more code
-and more ways to be wrong in exchange for nothing measurable. Revisit if an act ever wants
-hundreds of sources.
+the day's live event count never grows past a few dozen, so a hash would have been more
+code and more ways to be wrong in exchange for nothing measurable. Revisit if an act ever
+wants hundreds of sources.
 
 ## Determinism
 
