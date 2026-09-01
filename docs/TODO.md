@@ -3373,8 +3373,9 @@ rather than to move a number.
 Playtest 17, in full in **[docs/PLAYTEST-17.md](PLAYTEST-17.md)**. Twelve findings, and everything
 that is a change to the build is done and ticked below — the off-corridor cost, what goes between
 two strands of corridor that run alongside each other, and the corners of the world. What is left is
-the four resistance items, which are design work the player asked for by name and which are drafted
-and put back rather than built.
+the four resistance items. Three of those are builds and one is design work the player asked for by
+name — **that one is drafted below and is waiting on four answers**, and drafting it turned up half
+of a second item already built and never read back.
 
 **The one sentence is the player's own: *"leaving the path should be lethal or very expensive. right
 now that is not the case… that is not as we planned."*** The design was agreed in M50 and the build
@@ -3589,8 +3590,137 @@ feature rather than a difficulty complaint.
 - [ ] **What guards a chalk mark is the point** *(finding 9)*. *"I did like the robber next to the
       chalk marking. that made it hard to actually get the chalk marking."* It happened by accident;
       it becomes deliberate. This is also the answer to M54's open item about siting the note
-      dynamically — what should be near it is something that makes reaching it a decision
-- [ ] **More tasks of that shape**, drafted here and chosen by the player rather than built
+      dynamically — what should be near it is something that makes reaching it a decision.
+
+      **Half of it is already built and this entry said it was not.** `ResistanceDirector.TRAP_CHANCE`
+      puts an `alley_robbery` at an alley contact one time in three from day 8, seeded so the pattern
+      is learnable, and `docs/NARRATIVE.md` calls it *"the alley roulette"*. So the work here is not
+      *design a guard*, it is **two smaller things**: the trap starts on `TRAP_FIRST_DAY` 8 and the
+      first chalk mark is day 5, so the three steps a player is most likely to reach have no guard at
+      all; and the district-placed steps are exempt (`_step.district >= 0`), so half the subquest is
+      outside the mechanism entirely. Whether either of those is a bug or a deliberate ramp is a
+      question for the player, and it is a much smaller question than the one this item was written
+      as
+- [~] **More tasks of that shape**, drafted here and chosen by the player rather than built. **The
+      draft is below and nothing in it is decided.** Written after reading what the subquest already
+      is — `docs/NARRATIVE.md`, "The resistance subquest", and `src/resistance/resistance_steps.gd`
+      — because the first thing this asked for turned out to be half-answered there already
+
+#### What the six steps already are, before anything is added to them
+
+Worth stating first, because the brief reads differently once it is in view. **All six existing
+steps are the same verb**: walk somewhere the routing game teaches you to avoid, then *stand still*
+for three to eight seconds. The cost is the standing — an alley trickles, and standing is
+`EXCITEMENT_DECAY_IDLE` rather than the walking decay, so the meter climbs while you hold. The
+variation between them is *where* (alley, civic, industrial) and *how long*.
+
+Two things already in there that the brief did not have to invent, and both should be reused rather
+than re-designed:
+
+- **The alley roulette** — from `TRAP_FIRST_DAY` 8, an alley-placed contact has a `TRAP_CHANCE` of
+  0.3 of an `alley_robbery` waiting **at** it, seeded from the run and the day so that *the pattern
+  is learnable*. `ResistanceDirector` is where it lives and `docs/NARRATIVE.md` has carried it since
+  the subquest was written.
+
+  **Which means finding 9 is a re-report and this file did not notice.** *"I did like the robber
+  next to the chalk marking… pursuing the resistance should make the game harder"* is the mechanism
+  above, and the analysis in `docs/PLAYTEST-17.md` says *"it happened by accident — the scheduler
+  placed a robbery where the chalk mark was"* without looking. Both can be true — the trap starts on
+  day 8 and a chalk mark is a day-5 step, so what the player met was probably the scheduler — but
+  *the design was already on disk* and the item was written as though it were new. That is
+  `CLAUDE.md`'s own rule, missed one milestone after it was written down: **the first tool call of a
+  design task is a search, not a plan.** Corrected in the item below rather than quietly.
+- **A reset rather than a deduction** — a `police_patrol` inside `SEEN_RADIUS` resets the hold
+  instead of taking a banked point, because *"taking away progress the player has already banked
+  reads as a bug more than a consequence"*. Any new task's failure mode should be this shape.
+
+So what the brief is actually asking for is **a second verb**, not a seventh place to stand.
+
+#### The pattern the yeller task establishes
+
+Three clauses, and they are the test a drafted task has to pass:
+
+1. **The cost is the approach**, not the destination. You pay to get *near* something loud.
+2. **It is paid whether or not it worked.** A wrong candidate costs full price and returns nothing.
+3. **There are several candidates**, so it is paid repeatedly and you cannot tell in advance which
+   payment was wasted.
+
+Note what clause 2 and 3 together add that nothing in the game has: **a cost with no route around
+it and no way to price it in advance.** Every other decision in this game is legible before you
+commit — that is the fairness contract — and this one deliberately is not, which is affordable
+*only* because the whole path is optional. That is the line the drafts below must not cross:
+uncertainty is the price of an optional reward, and it must never reach anything the run depends on.
+
+#### Six drafts, cheapest to build first
+
+Each says what it is, what it costs, where the uncertainty lives, what guards it, and what it needs
+that does not exist yet. **A. is the player's own and is here for comparison rather than as a
+proposal.**
+
+- **A · Give a note to a yeller** *(the player's, finding 7)*. Several `homeless_yeller` rows are
+  live; one is the contact. Approach and hold. **Cost:** the yeller's own field, paid per candidate.
+  **Uncertainty:** which man. **Guard:** the man himself — he is +31 and the loudest ordinary row in
+  act I. **Needs:** a contact that rides on an *event instance* rather than on a tile, which is the
+  one piece of plumbing every draft below shares.
+- **B · Read the wall before the poster crew reach it.** The chalk points at a stretch of frontage
+  the `poster_crew` are working along; the message is under the next poster they paste. **Cost:** a
+  clock — you have to cross the city rather than fold it into today's route — plus standing beside a
+  paced, expensive row. **Uncertainty:** which of several walls, and how far along the crew already
+  are. **Guard:** the crew. **Needs:** the shared plumbing, and a contact whose window closes when
+  a specific instance passes a point, which is `deadline_fraction` stated over a thing instead of
+  over the clock.
+- **C · Stand in the protest.** The contact is *inside* a `protest` — a 110px wall of bodies, the
+  densest thing in the city. **Cost:** the largest single field in the game, for the full hold.
+  **Uncertainty:** none, deliberately. **Guard:** the protest. **Needs:** only the shared plumbing.
+  This is the pattern at its purest and the cheapest of the six to build, and it is the one to build
+  first if only one is taken.
+- **D · Walk through the checkpoint.** Not round it — through. The one thing the whole routing game
+  teaches you never to do. **Cost:** a `checkpoint`'s field taken head-on. **Uncertainty:** which of
+  the day's checkpoints, and `police_patrol` already resets a hold, so being early is worse than
+  being late. **Guard:** the patrol. **Needs:** the shared plumbing plus a hold that survives being
+  *inside* an obstructing body, which today's holds have never had to.
+- **E · Carry it home.** Picking the package up makes the pram heavier: `decay_multiplier` is
+  reduced for the **rest of the day**. **Cost:** deferred and total rather than local — every street
+  after this one is dearer, so it changes the afternoon's routing rather than one minute of it.
+  **Uncertainty:** none; the price is known and enormous. **Guard:** the clock, since a day you
+  cannot finish is a day you lose. **Needs:** a per-day modifier on `City.decay_multiplier`, which is
+  a **new kind of thing** — every cost in this game is currently a field at a place. Flagged as the
+  most interesting and the most dangerous of the six for exactly that reason.
+- **F · Follow the van.** Stay within a radius of a moving `delivery_van` or `military_convoy` for a
+  stretch. **Cost:** you walk where it goes, at its speed, and it goes down main roads. **Guard:**
+  the carriageway. **Needs:** a *proximity-over-time* verb rather than a hold, which is the largest
+  new mechanic in the list. Drafted for completeness and **not** recommended: it is the only one
+  that would need the resistance to grow a second interaction model.
+
+**And one counter-example, recorded because it is the way to get this wrong.** A contact in a
+`burnt_shell` — the one row in the catalogue with a negative walk-through cost — is somewhere the
+day is *cheap*. It reads like a resistance task and is the opposite of one: a step that does not
+cost is a step that is not a decision, and the subquest's whole design intent is that joining it
+costs the core resource.
+
+#### Four questions that have to go back, because each one changes what gets built
+
+Recorded rather than answered. **This side's recommendation is on each, so that answering is a yes
+or a no rather than a design session.**
+
+1. **Do these replace the six steps or extend them?** `RESISTANCE_GOAL` is 4 of the first 5, which
+   *"lets the player miss one and still reach the good ending"* — so adding steps changes the
+   arithmetic of the good ending and not just the content. *Recommendation: replace. Steps 1, 2 and
+   4 are the same alley hold three times, and turning two of them into C and D costs no arithmetic
+   at all.*
+2. **What does a wrong candidate cost — the meter only, or the day's clock too?** A day is 180
+   seconds and three wrong yellers is a real fraction of it. *Recommendation: the meter only, and
+   let the clock be whatever the walking costs. A task that can lose the day by running it out is a
+   task nobody will risk twice.*
+3. **Is the right candidate learnable on a replay?** The alley roulette is deliberately seeded so it
+   is. *Recommendation: yes, the same way — `GameState.day_rng(day, "resistance")` already gives it
+   for free, and "learnable across replays" is the line this project has drawn between risk and a
+   coin flip.*
+4. **May a task cost a nerve on purpose?** The brief says *"costs you meter **or safety**"*, and
+   nothing in the game currently lets you spend safety deliberately — a nerve is only ever taken
+   from you. *Recommendation: not yet. Five nerves are five attempts at the whole run, and a step
+   that can spend one is a step that can end a run for an optional reward. Ask again once somebody
+   has actually reached act III.*
 
 ## M54 — The resistance says something, and the robber stops at walls · not started
 

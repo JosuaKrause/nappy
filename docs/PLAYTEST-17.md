@@ -213,6 +213,16 @@ It is also the answer to a question M54 has open. The resistance note is to be *
 alongside a route"*, and what was unsaid is what should be near it. This says: something that makes
 reaching it a decision.
 
+**Correction, made while drafting M55's resistance items: "it happened by accident" was written
+without looking, and half of this is already built.** `ResistanceDirector.TRAP_CHANCE` puts an
+`alley_robbery` **at** an alley contact one time in three from `TRAP_FIRST_DAY` 8, seeded from the
+run and the day so the pattern is learnable across replays, and `docs/NARRATIVE.md` has called it
+*"the alley roulette"* since the subquest was written. What the player met was probably still the
+scheduler — a chalk mark is a day-5 step and the trap starts on day 8 — but the *design* was on disk
+and this paragraph treated it as new. `CLAUDE.md`: **the first tool call of a design task is a
+search, not a plan.** What is left is smaller and is in M55: days 5–7 have no guard, and the
+district-placed steps are exempt from the mechanism altogether.
+
 ## 10. Evidence lives in the repo
 
 > "when referencing an image or log make sure to copy the files into the repo so the reference
