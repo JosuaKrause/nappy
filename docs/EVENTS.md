@@ -53,7 +53,7 @@ entire excitement model a pure query with nothing pushing values at the baby.
 
 ## Where an event happens
 
-`kind` says *when* an event may happen. `spawn_mode` says **where**, and there are two answers.
+`kind` says *when* an event may happen. `spawn_mode` says **where**, and there are three answers.
 
 **`MAP`, which is nearly everything.** The scheduler puts it on a tile when the day is planned,
 and `EventManager` puts it in the world when the player comes within `EVENT_STREAM_RADIUS` of it
@@ -87,6 +87,23 @@ Three rules on it, in the order they matter:
    leaves a route to a park. `EventDef.validate()` refuses one that does. Emitting is fine, and
    so is being lethal — it is in front of her and gone in three seconds, so it can never seal a
    street.
+
+**`TOWARD_PLAYER`, which is the cyclist and the loose dog.** Also no tile, also sited by
+`EventDirector` while she walks — but *down* her own line instead of across it, `SIGHT_AHEAD`
+(200px) ahead of her and coming the other way, so she meets it by continuing to walk rather than by
+being crossed. It is neither of the other two: `MAP` sites it at dawn, on a street the day has no
+way of knowing she will ever walk, so a bike sited that way is a bike she may never see; and an
+`AHEAD_OF_PLAYER` crossing is gone in three seconds and asks her to react, not to plan. A bike on
+her own pavement is a road, and the answer to a road is a route decision — cross to the other side,
+or turn — made with the warning the screen-edge badge already gives anything faster than a walk.
+
+It does not adjust to her the way a pursuer does. `pursues` backs off, holds a stand-off and gives
+up if she runs; `TOWARD_PLAYER` is traffic, not an ambush — it travels the straight line it was
+sited on, at its own `speed`, whether or not she is in it. The same two rules bind it as bind
+`AHEAD_OF_PLAYER`: the clock only runs while she is walking, and `EventDef.validate()` refuses one
+whose `obstructs_radius` is nonzero, or whose `outer_radius` reaches all the way to `SIGHT_AHEAD` —
+a field that wide would already be on her the moment it appeared, which is the one thing "she gets
+close and it arrives" cannot mean.
 
 ## Solid things are solid
 
@@ -312,7 +329,7 @@ All implemented.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
-| `cat_dash` | RECURRING | 1 | Crouches (telegraph), then bolts across the traffic. High intensity, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of. The tutorial obstacle. |
+| `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. High intensity, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the thing that forces a crossing. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits. |
 | `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
@@ -327,11 +344,11 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `loose_dog` | RECURRING | 1 | A dog whose owner has dropped the leash. The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal, which is what separates it from `charging_dog`: this one is answered by getting out of the way. |
+| `loose_dog` | RECURRING (`TOWARD_PLAYER`) | 1 | A dog whose owner has dropped the leash, sited on her own pavement when she gets close and running straight down it toward her. The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal, which is what separates it from `charging_dog`: this one is answered by getting out of the way, not by running. |
 | `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. |
 | `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use. Swept in bursts, so there is a rhythm to time a pass through. |
 | `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that a director with a single trick makes every moment a cat. It is on the pavement for its whole telegraph, then up, then *away* — and it is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one. The only row in the game that is more than one source. |
-| `cyclist` **`hard_fail`** | RECURRING | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement, bell going. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 3.3s, which is what the doubled margin costs at 165px/s. |
+| `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 3.3s, which is what the doubled margin costs at 165px/s. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. It stands `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
 | `charging_dog` **`hard_fail`** | RECURRING (`AHEAD_OF_PLAYER`) | `RUN_TAUGHT_DAY` | **The one thing running is the answer to**, and the day the run is taught. It is sited in front of her, spends `telegraph_time` 2.4s visibly closing at the stand-off, then chases at 130px/s for `Tuning.PURSUIT_TIME`. Its 150px field is **wider than the stand-off** — a narrower one is a field the pursuer is never inside, so the warning would emit nothing at her and the `!` over her head would never go up; `validate_pursuit` refuses that. `max_per_day` 3, because a street with three of them turns the run button from an answer into a second walk speed. It trots off at 110px/s rather than blinking out: a dog that gives up in front of her and is then not there says the chase was never real. |
@@ -877,8 +894,9 @@ Defs live in code, not in `.tres` files — see "Where events are defined".
    section, and list it in `_build()`.
 2. Add a row to the catalogue table above. The docs are the design; a def with no row is an
    event nobody decided on.
-3. Decide `spawn_mode` deliberately — `MAP` unless the entire content of the thing is *the
-   moment it happens to you*.
+3. Decide `spawn_mode` deliberately — `MAP` unless the entire content of the thing is *the moment
+   it happens to you* (`AHEAD_OF_PLAYER`) or *a road she has to answer with a route decision*
+   (`TOWARD_PLAYER`).
 4. If it stands still and is drawn, give it an `obstructs_radius` of half its silhouette. That
    is a rule rather than a choice; see "Solid things are solid".
 5. **Draw it.** A new `EventDef.Look`, a new SVG in `assets/events/`, a `_draw_*` in

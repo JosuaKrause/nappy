@@ -196,6 +196,10 @@ func _is_worth_an_arrow(instance: EventInstance) -> bool:
 	# a place. Announcing it from the edge of the screen before it arrives gives a badge that
 	# appears and vanishes in the same second as the thing walks into view — and takes away the
 	# moment, which is the whole row. Its fairness is paid in geometry.
+	#
+	# **`TOWARD_PLAYER` is the opposite case and falls through on purpose.** It is a road, not an
+	# ambush — she is meant to see it coming and choose a side or a turn before it arrives — so the
+	# badge is exactly the warning the row is designed around rather than a spoiler of it.
 	if instance.def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 		return false
 	if instance.def.hard_fail:

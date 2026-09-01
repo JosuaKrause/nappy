@@ -83,6 +83,15 @@ enum SpawnMode {
 	## doorway is nothing at all if it does it two blocks away and you arrive at an empty road.
 	## The day still budgets it: the scheduler counts one instead of placing one.
 	AHEAD_OF_PLAYER,
+	## Sited on her own line, ahead of her, by `EventDirector` — the same way `AHEAD_OF_PLAYER` is
+	## — but travelling *down* that line toward her rather than crossing it: a bike on the pavement
+	## she is walking, coming the other way. Neither of the other two answers this. `MAP` sites it
+	## at dawn, before the day knows where she goes, which is a route she may never walk down; a
+	## crossing `AHEAD_OF_PLAYER` row is gone in three seconds and asks her to react, not to plan.
+	## This one is a road she has to answer with a route decision — cross to the other side, or
+	## turn — which is why it does not stop or steer for her the way a pursuer does: it is traffic,
+	## not an ambush.
+	TOWARD_PLAYER,
 }
 
 @export var id := ""
@@ -320,14 +329,23 @@ func validate() -> bool:
 	# meaningless for it. It is never a hazard on its own — see the loudspeaker.
 	if city_wide:
 		return true
-	# An `AHEAD_OF_PLAYER` event has no tile, so `_ensure_the_city_is_still_walkable` never sees
-	# it and cannot check that what it blocks leaves a route to a park. Anything that stands in
-	# the way therefore has to be sited on the map, where the day can reason about it. A
-	# transient one that merely *emits* is fine, and so is a lethal one — it appears in front of
-	# her and it is gone in three seconds, so it can never seal a street.
-	if spawn_mode == SpawnMode.AHEAD_OF_PLAYER and obstructs_radius > 0.0:
-		push_error("event '%s' spawns ahead of the player and obstructs %.0fpx: nothing checks "
+	# Neither `AHEAD_OF_PLAYER` nor `TOWARD_PLAYER` has a tile, so `_ensure_the_city_is_still_
+	# walkable` never sees either and cannot check that what it blocks leaves a route to a park.
+	# Anything that stands in the way therefore has to be sited on the map, where the day can
+	# reason about it. A transient one that merely *emits* is fine, and so is a lethal one — it
+	# appears in front of her and is gone shortly after, so it can never seal a street.
+	if spawn_mode != SpawnMode.MAP and obstructs_radius > 0.0:
+		push_error("event '%s' is director-sited and obstructs %.0fpx: nothing checks "
 				% [id, obstructs_radius] + "that it leaves a route to a park")
+		return false
+	# `EventDirector` sites a `TOWARD_PLAYER` row `Tuning.SIGHT_AHEAD` in front of her — the same
+	# distance a pursuer is sited at, because that is what "as far ahead as it can be seen from"
+	# means — so a row whose own field already reaches that far would appear already inside its
+	# own outer radius, which is the one thing "she gets close and it arrives" cannot mean.
+	if spawn_mode == SpawnMode.TOWARD_PLAYER and outer_radius >= Tuning.SIGHT_AHEAD:
+		push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
+				% [id, outer_radius] + "%.0fpx it is sited at: it would arrive already inside "
+				% Tuning.SIGHT_AHEAD + "its own reach")
 		return false
 	# **A lethal radius and a solid body are the same mechanism**, and putting both on one event
 	# is a way of turning the first one off. She is stopped with her centre `obstructs_radius +
@@ -363,6 +381,26 @@ func minimum_telegraph() -> float:
 		return Tuning.PURSUIT_MIN_NOTICE
 	return Tuning.required_telegraph_time(inner_radius, outer_radius, hard_fail,
 			speed if mobile else 0.0)
+
+## How far ahead of her line `EventDirector` has to site a crossing `AHEAD_OF_PLAYER` row so it
+## actually reaches the middle of its run at the moment she reaches it, rather than at whatever
+## moment `Tuning.AHEAD_LEAD_DISTANCE` — a flat two seconds of walking — happens to land it.
+##
+## That flat lead is right for anything that starts moving the instant it is sited. It is wrong for
+## anything `still_while_telegraphing`: the whole telegraph is spent held in place, so the crossing
+## itself only starts once it is over, and a fixed lead measures where she is *now* rather than
+## where the extra `telegraph_time` of walking puts her — which is why a cat sited two seconds
+## ahead was reliably crossing behind her by the time it moved at all. Predicting **how long until
+## it is at the middle of its own run** and pricing that in walking distance is the same idea
+## `AHEAD_LEAD_DISTANCE` already is, generalised to a row whose approach is not its whole telegraph.
+func ahead_of_player_lead() -> float:
+	if not mobile or speed <= 0.0:
+		return Tuning.AHEAD_LEAD_DISTANCE
+	var half_crossing := float(Tuning.STREET_WIDTH) * Tuning.TILE_SIZE
+	var time_to_middle := half_crossing / speed
+	if still_while_telegraphing:
+		time_to_middle += telegraph_time
+	return maxf(Tuning.AHEAD_LEAD_DISTANCE, time_to_middle * Tuning.WALK_SPEED)
 
 # ------------------------------------------------------------ what a row costs ---
 # The integral behind the cost table in `docs/EVENTS.md` and behind the assertion that nothing is

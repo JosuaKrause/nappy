@@ -451,6 +451,14 @@ telegraphs hands her more ground in two seconds than the entire chase can take b
 owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
 
+**And it stops at walls.** A chase is a straight line at whatever is chasing her, and nothing about
+that line asks the city anything — so `EventInstance._walkable_step()` clamps every step of it to
+ground `CityMap.is_walkable()` agrees with, sliding along whichever single axis is still open when
+the direct line is not, rather than cutting the corner of a building the way an unclamped chase
+would. It is not a body — a pursuer stays exempt from `obstructs_radius` for the same reason
+`dog_walker` is, a moving wall on a two-tile pavement pins her against a building — it is only ever
+a question about the one tile the next step would land on.
+
 ### The stand-off, and what a contract in seconds cannot say
 
 **A contract stated entirely in speeds and durations can pass every line of itself while the dog is
@@ -570,9 +578,12 @@ through a man shouting is the meter: intensity 14 over 210px.
 
 **Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 teaches the arrow keys and says nothing
 about running; day 3 is when something comes after the pram, and the HUD says *Hold SHIFT to run*
-on the frame it telegraphs rather than at dawn — a line of text at dawn is a control list, and the
-same line over a dog at the pram is an instruction. `EventDirector` moves the first pursuit of that
-day to the head of its queue, so the lesson is not left to a weight of 1.4.
+on the frame the **first** pursuit of that day telegraphs, rather than at dawn — a line of text at
+dawn is a control list, and the same line over a dog at the pram is an instruction.
+`EventDirector` moves that first pursuit to the head of its queue, so the lesson is not left to a
+weight of 1.4. The hint says nothing again for the rest of the run: it is the lesson, not a running
+commentary on the mechanic, so every later pursuit — a second dog the same day, `alley_robbery`
+from day 8 — telegraphs in silence.
 
 ## Telegraphing
 

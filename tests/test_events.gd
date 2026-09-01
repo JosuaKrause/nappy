@@ -12,6 +12,7 @@ func run(t) -> void:
 	_test_the_answer_is_priced_by_how_soon_it_is_given(t)
 	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
 	_test_a_pursuer_can_wait(t)
+	_test_a_pursuer_stops_at_walls(t)
 	_test_a_retried_day_is_the_same_day(t)
 	_test_the_run_is_always_taught(t)
 	_test_a_paced_event_walks_a_beat(t)
@@ -21,6 +22,7 @@ func run(t) -> void:
 	_test_mobile_follows_its_path(t)
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
 	_test_the_director_puts_it_in_front_of_her(t)
+	_test_a_rig_meets_the_three_things_that_arrive(t)
 	_test_hard_fail_only_when_active(t)
 	_test_scheduler_is_deterministic(t)
 	_test_scheduler_respects_placement_and_caps(t)
@@ -289,8 +291,9 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 ## `EVENT_SPACING_ANY` clear of. With it gone, the long mobile rows whose own routes brushed that
 ## corridor now fit where they did not, so they start a few tiles along the street they were always
 ## going to be on. Measured over three seeds: the multiset of event **kinds** is identical every
-## time, and the number of *positions* that move is 0, 5 and 14 — all of them `dog_walker`,
-## `cyclist`, `reversing_lorry` and `loose_dog`, all of them route rows.
+## time, and the positions that move are `dog_walker` and `reversing_lorry` — the sited, route rows
+## still left. `cyclist` and `loose_dog` are `TOWARD_PLAYER` now: the scheduler never gives either a
+## coordinate at all, so neither can appear in that count regardless of what a spent one-shot frees.
 ##
 ## A dog walker starting three tiles further up the same street is not a different day. Eight
 ## shouting men where there were two is, and that is what this stops.
@@ -512,6 +515,69 @@ func _test_a_pursuer_can_wait(t) -> void:
 	t.check(not instance.is_telegraphing(), "then the notice is over")
 	instance.free()
 
+## **The robber stops at walls.** A pursuing `EventInstance` moves by setting its own position, and
+## nothing in the event system has ever collided with the city — harmless while every mobile row
+## travelled a route the scheduler had already checked, and not harmless the moment something
+## steers freely at the player.
+##
+## A real building corner, chased round: she walks from its north face to its east face, and a dog
+## aimed straight at wherever she currently is would cut across the building itself to follow her —
+## exactly the shape of the bug. `EventInstance._walkable_step` is the fix, and this is what it
+## has to hold true of every frame regardless of the geometry, which is why the check runs the
+## whole walk rather than sampling the end of it.
+func _test_a_pursuer_stops_at_walls(t) -> void:
+	var map := _map()
+	var corner := _a_building_corner(map)
+	t.check(not corner.is_empty(), "the sampled map has a building corner to chase round")
+	if corner.is_empty():
+		return
+	var north: Vector2i = corner["north"]
+	var east: Vector2i = corner["east"]
+
+	var def := EventCatalogue.by_id("charging_dog")
+	var instance := EventInstance.new()
+	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0))
+	t.add_child(instance)
+	instance.set_process(false)
+	instance._map = map
+
+	# Clear the telegraph with her held far off, so what follows is about the wall and not about
+	# the stand-off.
+	instance.player_at = map.tile_to_world(north) + Vector2(-4000.0, 0.0)
+	_advance(instance, def.telegraph_time + 0.1)
+	t.check(not instance.is_telegraphing(), "the dog is chasing by the time she rounds the corner")
+
+	# She walks from the building's north face round to its east face — the corner a straight
+	# line to her would cut across — and the dog is told to chase wherever she currently is,
+	# every frame, the way `EventManager` actually drives it.
+	var her := map.tile_to_world(north)
+	var target := map.tile_to_world(east)
+	var elapsed := 0.0
+	var checked := 0
+	while her.distance_to(target) > 4.0 and elapsed < 15.0:
+		her = her.move_toward(target, Tuning.WALK_SPEED * STEP)
+		instance.player_at = her
+		instance._process(STEP)
+		elapsed += STEP
+		var tile := map.world_to_tile(instance.global_position)
+		checked += 1
+		t.check(map.is_walkable(tile),
+				"the pursuer never stands on the building at %s (t=%.2fs)" % [tile, elapsed])
+	t.check(checked > 0, "the walk round the corner actually ran")
+	instance.free()
+
+## A real building tile with open pavement on two adjacent sides — the outward corner every
+## rectangular building has at least one of. `{}` would mean the generator changed shape rather
+## than that the test picked badly.
+func _a_building_corner(map: CityMap) -> Dictionary:
+	for tile in map.tiles_of_type(GameEnums.TileType.BUILDING):
+		var north := tile + Vector2i(0, -1)
+		var east := tile + Vector2i(1, 0)
+		if map.in_bounds(north) and map.in_bounds(east) \
+				and map.is_walkable(north) and map.is_walkable(east):
+			return {"building": tile, "north": north, "east": east}
+	return {}
+
 func _test_duration_and_finish(t) -> void:
 	# An event that was a *place* is simply over. Nothing to leave, and nowhere to go.
 	var def := EventCatalogue.by_id("abduction")
@@ -713,8 +779,16 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 
 	var path := due[1] as PackedVector2Array
 	t.check(path.size() == 2, "it is given a route across her line")
+	var def := due[0] as EventDef
+	# The cat is `still_while_telegraphing`, so its lead is `EventDef.ahead_of_player_lead()` —
+	# longer than the flat `AHEAD_LEAD_DISTANCE` by exactly the ground she covers while it holds
+	# its crouch — rather than the constant every other crossing row is sited at.
+	var lead := def.ahead_of_player_lead()
+	t.check(lead > Tuning.AHEAD_LEAD_DISTANCE,
+			"the cat's own lead (%.0fpx) accounts for its held crouch, not just a flat reaction "
+			% lead + "window (%.0fpx)" % Tuning.AHEAD_LEAD_DISTANCE)
 	var crossing := (path[0] + path[1]) * 0.5
-	t.close_to(crossing.distance_to(at), Tuning.AHEAD_LEAD_DISTANCE,
+	t.close_to(crossing.distance_to(at), lead,
 			"it crosses where she is about to be, not where she is", 1.0)
 	t.check((crossing - at).normalized().dot(north.normalized()) > 0.99,
 			"and that is in front of her rather than beside or behind her")
@@ -724,15 +798,69 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 	# The fairness half. It starts at one end of that run, and both ends are further from her
 	# than the field it will emit — so she is outside it the whole time it is telegraphing, and
 	# the reaction window is real rather than nominal.
-	var def := due[0] as EventDef
 	for end in [path[0], path[1]]:
 		t.check(at.distance_to(end) > def.outer_radius,
 				"she is outside its reach (%.0fpx) when it appears (%.0fpx away)"
 				% [def.outer_radius, at.distance_to(end)])
-	t.check(Tuning.AHEAD_LEAD_DISTANCE / Tuning.WALK_SPEED >= 1.5,
+	t.check(lead / Tuning.WALK_SPEED >= 1.5,
 			"and the lead is %.1fs of walking, which is time to do something about it"
-			% (Tuning.AHEAD_LEAD_DISTANCE / Tuning.WALK_SPEED))
+			% (lead / Tuning.WALK_SPEED))
 	t.check(director.owed() == 1, "and the day is one cat poorer")
+
+## **The three rows that never had an impact, meeting the rig they were designed for.** The bike,
+## the loose dog and the cat were each sited in a way that meant she could walk the whole day
+## without ever crossing paths with one — `cyclist` and `loose_dog` on a street the day chose at
+## dawn, `cat_dash` aimed at where she was rather than where she would be. This is the point of
+## fixing all three: not that the siting geometry is fair on paper, but that a rig walking a real
+## street actually **meets** each of them — comes within its own `outer_radius`, the same measure
+## the fairness contract and the cost table are both stated over.
+##
+## Driven through `EventDirector` exactly as `EventManager` drives it in play, on a real generated
+## map, walking continuously the way `due()` requires before it will ever site anything.
+func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
+	for id in ["cat_dash", "cyclist", "loose_dog"]:
+		var def := EventCatalogue.by_id(id)
+		var map := _map()
+		var director := EventDirector.new(map)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 7
+		var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(def, Vector2.INF)]
+		director.start_day(def.first_day, plans, rng)
+
+		# Somewhere on a street, walking north — the same rig `_test_the_director_puts_it_in_front_
+		# of_her` walks, so a real street is guaranteed long enough for this.
+		var at := CrowdLanes.arterial_pavement(map)
+		at.y = map.world_size().y * 0.5
+		var north := Vector2(0.0, -Tuning.WALK_SPEED)
+
+		var due: Array = []
+		for i in int(round(Tuning.AHEAD_INTERVAL.y * 2.0 / STEP)):
+			due = director.due(STEP, at, north)
+			at += north * STEP
+			if not due.is_empty():
+				break
+		t.check(not due.is_empty(), "'%s' is sited while she walks a real street" % id)
+		if due.is_empty():
+			continue
+
+		var path := due[1] as PackedVector2Array
+		var instance := EventInstance.new()
+		instance.setup(def, path[0], path)
+		t.add_child(instance)
+		instance.set_process(false)
+
+		var closest := INF
+		for i in int(round(15.0 / STEP)):
+			at += north * STEP
+			instance.player_at = at
+			instance._process(STEP)
+			closest = minf(closest, instance.global_position.distance_to(at))
+			if instance.is_finished:
+				break
+		t.check(closest <= def.outer_radius,
+				"'%s' actually meets the rig (closest %.0fpx of a %.0fpx reach)"
+				% [id, closest, def.outer_radius])
+		instance.free()
 
 func _test_hard_fail_only_when_active(t) -> void:
 	var def := EventDef.new()

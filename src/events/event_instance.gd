@@ -116,14 +116,22 @@ var _path_travelled := 0.0
 var _telegraph_announced := false
 var _activation_announced := false
 
+## The city, for the one question a chase needs answered that nothing here ever asked before:
+## whether the ground a step would land on is somewhere anybody can stand. `null` in every
+## data-level test that builds an instance without one — a rig that walks a straight line on
+## purpose gets exactly the unclamped movement it always has — and always set by
+## `EventManager._create`, the only real caller. See `_walkable_step`.
+var _map: CityMap
+
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
-		face := Vector2.RIGHT) -> void:
+		face := Vector2.RIGHT, map: CityMap = null) -> void:
 	def = definition
 	path = route
 	position = route[0] if route.size() > 0 else at
 	_heading = face
+	_map = map
 
 func _ready() -> void:
 	EventBus.event_telegraphed.emit(self)
@@ -275,10 +283,44 @@ func _chase(delta: float) -> void:
 			_lunged = true
 		else:
 			step = minf(step, range_to_her - standoff)
-	position += _heading * step
+	var moved := _walkable_step(_heading * step)
+	position += moved
 	# Ground covered, not ground gained: backing off is still moving, and the bob is driven by
 	# distance so that a thing holding its ground still reads as alive.
-	_path_travelled += absf(step)
+	_path_travelled += moved.length()
+
+## Clamps a chase's own step so it can never end standing on ground the city says nobody can. A
+## pursuing instance moves by setting its own position, and nothing above this function has ever
+## asked the map anything — harmless while every mobile row travelled a route the scheduler had
+## already checked, and not harmless the moment something steers freely at the player. Everything
+## above this function decides *how far and which way* to move; this is the one place that gets to
+## say no.
+##
+## **Not a body.** `obstructs_radius` is for something that stands still — see "Solid things are
+## solid" in docs/EVENTS.md — and giving a pursuer one would let a moving wall pin her against a
+## building on a two-tile pavement, exactly what `dog_walker`'s own exemption exists to avoid. What
+## was missing here is smaller than a body: the position `_chase` sets every frame never asked the
+## map anything at all, so a straight line toward her cut through whatever stood between the two of
+## them.
+##
+## **Slides along whichever single axis is still open** rather than stopping dead the instant it
+## grazes a corner, because a chase that gives up meters before the wall does is not one that was
+## ever really following her round it. Tried larger component first, so a pursuer coming at a wall
+## nearly square-on slides along it rather than snagging on whichever axis happens to be smaller.
+func _walkable_step(delta_pos: Vector2) -> Vector2:
+	if not _map or delta_pos.is_zero_approx():
+		return delta_pos
+	if _map.is_walkable(_map.world_to_tile(global_position + delta_pos)):
+		return delta_pos
+	var along_x := Vector2(delta_pos.x, 0.0)
+	var along_y := Vector2(0.0, delta_pos.y)
+	var first := along_x if absf(delta_pos.x) >= absf(delta_pos.y) else along_y
+	var second := along_y if first == along_x else along_x
+	for candidate in [first, second]:
+		if not candidate.is_zero_approx() \
+				and _map.is_walkable(_map.world_to_tile(global_position + candidate)):
+			return candidate
+	return Vector2.ZERO
 
 ## How far along its route this instance has got, so streaming it out and back in can resume it
 ## instead of rewinding it. See `EventManager._stream_in`.
