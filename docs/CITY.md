@@ -1084,6 +1084,14 @@ one side and the map stopped at an invisible wall.
   mountainside. Built to the player's brief in playtest 14, and it replaced M41's ring of
   frontages rather than dressing it. `City._paint_outside_the_map` is the whole of it — ground
   rather than objects, outside the map, where no tile, route or event can reach.
+- **A band runs the full width of the map, and there is nothing at a corner.** *(M55, playtest 17
+  finding 11: "at the corner of the map the mountain and sea textures should just continue not
+  become diagonal — diagonal doesn't really make sense in this context".)* A corner used to belong
+  to whichever side it was further out of, which sounds reasonable and **is** the diagonal: the
+  place where two distances are equal is a 45° line. North and south own the corners outright now,
+  so the mountain and the water run the whole way across and the fence, grass and forest are what
+  is left in between. Deliberately no headland, no bay and no new terrain — the player asked for
+  the simpler thing, and `--spawn corner:nw|ne|sw|se` is how it is looked at.
 - **The camera may see past the boundary.** It was clamped to the last walkable tile, which is why
   the edge would have gone on looking like a wall however much was built out there.
 - **The spine leaves by a tunnel north and a bridge south.** *"That way it's not an artificial end

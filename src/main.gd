@@ -614,6 +614,28 @@ func _spawn_position() -> Vector2:
 		var along := (span.z + span.w) / 2 * CityMap.period() + Tuning.STREET_WIDTH
 		return _nearest_walkable(_city.map.tile_to_world(
 				Vector2i(across, along) if span.x == 1 else Vector2i(along, across)))
+	# A corner of the map, stood a couple of tiles inside it, so that two of the border's four
+	# bands and the join between them are in the same frame. *(M55, playtest 17 finding 11: "at
+	# the corner of the map the mountain and sea textures should just continue not become
+	# diagonal".)* `corner:nw` is the default and `ne`, `sw`, `se` are the other three.
+	#
+	# It exists for the same reason `landmark` does: the border shipped in M41 and was redesigned
+	# in M49, and there has never been a way to point a camera at the place where two of its bands
+	# meet. The player found the seam by playing; nothing in this repo could have.
+	if args[index + 1].begins_with("corner"):
+		var which := args[index + 1].get_slice(":", 1)
+		# The outermost pavement and not the outermost tile: the corridor is `sidewalk | road |
+		# sidewalk`, so anything past `SIDEWALK_WIDTH` is the carriageway of the boundary street
+		# and `_nearest_walkable` will happily leave her standing on it — the first shot taken
+		# with this flag was of the day ending, which is the `landmark` flag's own first mistake.
+		var near := Tuning.SIDEWALK_WIDTH - 1
+		var far := _city.map.size - Vector2i.ONE * Tuning.SIDEWALK_WIDTH
+		var at := Vector2i(near, near)
+		match which:
+			"ne": at = Vector2i(far.x, near)
+			"sw": at = Vector2i(near, far.y)
+			"se": at = far
+		return _nearest_walkable(_city.map.tile_to_world(at))
 	if args[index + 1] == "contact":
 		var contact := _resistance.contact_position()
 		if contact == Vector2.INF:

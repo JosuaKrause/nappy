@@ -3370,10 +3370,11 @@ rather than to move a number.
 
 ## M55 — Off the paths is the dangerous place · partly built
 
-Playtest 17, in full in **[docs/PLAYTEST-17.md](PLAYTEST-17.md)**. Twelve findings. Everything the
-player ranked first is done and ticked below — the off-corridor cost, and then what goes between two
-strands of corridor that run alongside each other. What is left is the corners of the world and the
-four items of resistance design, which is drafted rather than built.
+Playtest 17, in full in **[docs/PLAYTEST-17.md](PLAYTEST-17.md)**. Twelve findings, and everything
+that is a change to the build is done and ticked below — the off-corridor cost, what goes between
+two strands of corridor that run alongside each other, and the corners of the world. What is left is
+the four resistance items, which are design work the player asked for by name and which are drafted
+and put back rather than built.
 
 **The one sentence is the player's own: *"leaving the path should be lethal or very expensive. right
 now that is not the case… that is not as we planned."*** The design was agreed in M50 and the build
@@ -3534,9 +3535,36 @@ project now has the instrument to say whether it closed.
       path switch correctly if it happens — technically it's leaving a path and entering a new
       path")*. As first built, `path` could not see one: both strands answer `on`, so changing route
       appeared in the trace as nothing happening. It carries the branch colours now
-- [ ] **The corners of the world stop going diagonal** *(finding 11)*. `CityEdge`. Each band simply
-      carries on: mountain stays mountain round the corner, sea stays sea. No new terrain and no
-      corner feature — the player asked for the simpler thing, not a bigger one
+- [x] **The corners of the world stop going diagonal** *(finding 11)*. Each band simply carries on:
+      mountain stays mountain round the corner, sea stays sea. No new terrain and no corner feature
+      — the player asked for the simpler thing, not a bigger one.
+
+      **It is `City._border_source` and not `CityEdge`**, which this entry said until it was
+      opened: `CityEdge` is the tunnel, the bridge and the road going into the dark, and the four
+      bands are painted in `City`. Worth the correction rather than a silent fix — a to-do item
+      that names the wrong file is a to-do item somebody starts by reading the wrong file.
+
+      **One line, and the cause is worth more than the fix.** A corner belonged to *whichever side
+      it was further out of*, ties to north or south. That reads as a sensible tie-break and it
+      **is** the diagonal, spelled differently: the place where two distances are equal is a 45°
+      line, so every corner had a stepped seam running out of it. North and south take the corners
+      outright now and keep their own step, so a band runs the full width of the map and the east
+      and west bands are what is left between them. The general shape: **a rule written as a
+      comparison between two distances has a diagonal in it whether or not anybody drew one.**
+
+      Checked by eye, which is this project's own policy for layout and colour, and the pictures
+      are in `docs/evidence/`:
+      [before](evidence/shot-2026-09-01-seed4242-d69631a-corner-nw-before.png) and
+      [after](evidence/shot-2026-09-01-seed4242-d69631a-corner-nw-after.png) at the north-west
+      corner, and [the south-east](evidence/shot-2026-09-01-seed4242-d69631a-corner-se-after.png)
+      for the other pair of bands.
+
+      **`--spawn corner:nw|ne|sw|se` is new and is half of why this was found by a player rather
+      than here.** The border shipped in M41, was redesigned in M49 and there has never been a way
+      to point a camera at the place where two of its bands meet — the same gap the `landmark` flag
+      was added to close. It stands a couple of tiles inside the corner, on the pavement: the first
+      shot taken with it was of the day ending, because `_nearest_walkable` will happily leave her
+      on the boundary carriageway
 
 ### The resistance, which is three findings and one shape
 

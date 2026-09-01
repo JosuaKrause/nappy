@@ -246,6 +246,13 @@ texture simply carries on.
 Worth noting what it is *not* asking for: no new terrain, no corner feature. It is the simpler
 answer — the mountain keeps being mountain round the corner and the sea keeps being sea.
 
+**Done in M55**, and it is `City._border_source` rather than `CityEdge`. A corner belonged to
+whichever side it was further out of, and *further out of* is a comparison between two distances,
+so the tie ran down a 45° line — the diagonal was the tie-break rather than a decision anybody
+took. North and south own the corners now, so each band runs the full width of the map. Pictures
+either side of it are in [evidence/README.md](evidence/README.md), taken with the `--spawn corner`
+flag this needed and did not have.
+
 ## 12. Leaving the path is supposed to be lethal, and it is the opposite
 
 > "also just to clarify the comment about leaving the path -- leaving the path should be lethal or
