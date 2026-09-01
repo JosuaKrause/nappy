@@ -5612,6 +5612,38 @@ place gets.
 
 ## M55 — Off the paths is the dangerous place · partly built
 
+### The resistance half, built 2026-09-01 · `feature/the-mark-is-touched`
+
+All six decided items, three commits, suite green. The hold went whole — `interact` out of
+`project.godot`, `ContactPoint` touch-completes, and `hold_seconds`, `progress`, `DECAY_RATE`,
+`resistance_hold_changed`, the HUD's holding line and the patrol watch (`SEEN_RADIUS`,
+`_patrol_is_watching`, `was_seen`, `resistance_seen`) all deleted. The calendar became eleven
+steps — five tasks × (mark, perform) on days 4/5 through 12/13 plus the day-14 finale — with
+`grants_progress` false on a mark, so `RESISTANCE_GOAL` stays 4-of-5 over the performs. The shared
+plumbing is `ContactPoint.ride(step, instance, offset)`: a perform contact follows an
+`EventInstance` and draws nothing, so it is indistinguishable from the ordinary row it rides on.
+The guard became a **distance**: `TRAP_FIRST_DAY` 4, the district exemption out, the robber stood
+in the 66–176px band computed live from `alley_robbery`'s own radii plus `ContactPoint.REACH`
+(never hardcoded), seeded from the day so the pattern is learnable. The brief carries the
+resistance's words via `GameState.pending_resistance_brief`, read once and cleared by the day
+summary; the first encounter's no-hint exemption cost nothing because a pickup grants no progress.
+
+**Three choices the design was silent on, taken by the implementer and open to overturn:**
+
+- The package task's "the pram is heavier" got a number the design never gave:
+  `Tuning.RESISTANCE_PACKAGE_DECAY_MULTIPLIER` (0.5) layered onto `City.decay_multiplier()` via a
+  `GameState.resistance_carrying_package` flag, reset on every fresh attempt at a day.
+- The package rides a spawned `delivery_van` — the closest existing row to "a package she picks
+  up"; the design named no row.
+- The poster wall's deadline runs on `deadline_fraction` (0.55) against the day clock rather than
+  the crew's own progress, because `poster_crew` never finishes on its own today; the generic
+  rider-finished expiry exists and will bite the moment the row can finish.
+
+**Left open by decision, and the code's current behaviour recorded:** whether a
+picked-up-but-unperformed instruction expires at the end of its day — **the code waits**: an
+incomplete perform step is re-offered every subsequent day, and the only expiries are the poster
+deadline and the rider finishing, both inside one day. Moved to the open design questions.
+
 Playtest 17, in full in **[docs/PLAYTEST-17.md](PLAYTEST-17.md)**. Twelve findings, and everything
 that is a change to the build is done and ticked below — the off-corridor cost, what goes between
 two strands of corridor that run alongside each other, and the corners of the world. What is left is

@@ -14,46 +14,14 @@ mid-way through.
 
 ## The order
 
-1. **M55's resistance half** — designed, nothing open, needs building.
-2. **M54** — the robber stops at walls, and three rows that never arrive.
-3. **M56** — the resistance is noticed.
-4. **M59** — the chatting mother. *Position provisional: the design is the player's (2026-09-01),
+1. **M54** — the robber stops at walls, and three rows that never arrive.
+2. **M56** — the resistance is noticed.
+3. **M59** — the chatting mother. *Position provisional: the design is the player's (2026-09-01),
    the slot in the order is not — it can move.*
 
 M53's one remaining piece is a question for the player, not a task — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
-
----
-
-## M55 — The resistance is a place you reach · designed, needs building
-
-Everything else in M55 is merged. The design has nothing open; `DECISIONS.md` carries the calendar,
-the guard arithmetic and the six drafts with the one that was not taken.
-
-- [ ] **The hold goes; touching a mark completes it.** `E` comes out of `project.godot`,
-      `contact_point.gd`, `tests/test_resistance.gd`, `docs/MECHANICS.md` and
-      `docs/ARCHITECTURE.md`. With it go `hold_seconds`, `progress`, `DECAY_RATE`,
-      `resistance_hold_changed`, the HUD's `holding N%`, and the patrol hold-reset
-      (`SEEN_RADIUS`, `_patrol_is_watching`, `was_seen`, `resistance_seen`)
-- [ ] **A task is two steps** — pick up the instruction, perform it the next day. The first mark
-      moves to day 4; the calendar is exact through day 14. `RESISTANCE_GOAL` counts the perform
-      half only, so 4-of-5 is untouched
-- [ ] **The day brief carries the resistance's own words**, which is now the mechanism rather than
-      a courtesy: miss the mark and there is no task tomorrow. The first encounter keeps its
-      absolute no-hint exemption, which is free — `day_summary.gd` already gates on
-      `has_joined_resistance()`
-- [ ] **The shared plumbing**: a contact that rides on an `EventInstance` rather than on a tile,
-      with several candidates. Every task needs it and nothing else is common to them
-- [ ] **Five tasks** — the yeller, the package carried home, the checkpoint, the poster crew's
-      wall, the protest
-- [ ] **Every mark is guarded.** `TRAP_FIRST_DAY` goes to the first step's day, the
-      `_step.district >= 0` exemption comes out, and `TRAP_CHANCE` becomes a **distance** in the
-      66–176px band the robber's own radii fix. Which side she approaches from decides whether he
-      wakes
-- [ ] **Open, deliberately:** whether a picked-up-but-unperformed instruction expires at the end of
-      its day or waits. `deadline_fraction` is the machinery for the first. Left until the pairs
-      can be walked
 
 ---
 
@@ -350,6 +318,10 @@ After the playtest work. There is no point polishing a loop that is about to be 
 
 ## Open design questions
 
+- [ ] **Does a picked-up-but-unperformed resistance instruction expire at the end of its day, or
+      wait?** Left open by decision until the pairs can be walked. The code currently **waits** —
+      an incomplete perform step is re-offered each subsequent day; the only expiries are the
+      poster wall's `deadline_fraction` and a rider event finishing, both inside one day
 - [ ] **Is the nerve economy right?** Five since M35, and **asked for rather than derived** — the
       thing that made three too few was a defect rather than a difficulty, so if act I now reads as
       fair, five may be generous. The other side is still open: with five attempts and a retry
