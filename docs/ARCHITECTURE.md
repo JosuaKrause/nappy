@@ -52,9 +52,9 @@ src/
   day/
     day_controller.gd     the clock, the two phases, the four ways a day ends
   resistance/
-	resistance_director.gd  places the day's contact; the alley roulette and the deadline
-	resistance_steps.gd     the six steps, as a data table
-	contact_point.gd        a chalk mark, and hold-to-interact
+	resistance_director.gd  places the day's contact; the guard and the deadline
+	resistance_steps.gd     the eleven steps (five tasks, two beats each, plus the finale)
+	contact_point.gd        touch to complete — a chalk mark, or a task's own event instance
   telemetry/
 	telemetry_log.gd      one run's ordered lines, and the file they go to
     telemetry_observer.gd watches the player: turns, runs, crossings, encounters
@@ -226,8 +226,8 @@ non-zero on any failure.
 - `test_acts.gd` — act gating, city-wide sources, protest growth,
   scar persistence, and walkability under accumulated street closures.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
-- `test_resistance.gd` — the step table, the hold (driven through simulated input), the
-  seeded alley roulette, the expiring step, and the sabotage silencing the city.
+- `test_resistance.gd` — the step table, touch-completion, a perform step riding on an
+  `EventInstance`, the seeded guard, the expiring step, and the sabotage silencing the city.
 - `test_full_run.gd` — three seeds played through all 14 days with the real City,
   EventManager and ResistanceDirector, with time actually advancing. This is the check
   that catches "day 12 throws", which no amount of unit coverage does.

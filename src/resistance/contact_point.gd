@@ -1,94 +1,79 @@
 class_name ContactPoint
 extends Node2D
-## A place in the city where the player can hold `interact` to advance the subquest.
+## A place in the city where touching completes a step of the resistance subquest.
 ##
-## Deliberately quiet: a chalk mark on the ground, no quest marker, no arrow. It is found
-## by walking past it, which is the only way anything in this game is found.
+## Deliberately quiet: no quest marker, no arrow. A pickup is a chalk mark on the ground,
+## found by walking past it, which is the only way anything in this game is found. A
+## perform's contact rides on the `EventInstance` its task is built around and draws
+## nothing of its own — it must look exactly like the ordinary version of the same row, or
+## "several candidates to test before finding the correct one" is not actually true.
 
 signal completed(step: int)
 
-## How close the player must be for the hold to count.
+## How close the player must be for a touch to complete the step.
 const REACH := 36.0
-## How fast held progress unwinds when she steps away or lets go.
-const DECAY_RATE := 1.6
-## A patrol this close mid-handover resets the hold.
-const SEEN_RADIUS := 190.0
 
 var step: ResistanceSteps.Step
-var progress := 0.0
 var is_done := false
-var was_seen := false
 
 var _player: Stroller
-var _events: EventManager
 var _pulse := 0.0
+## Set only for a perform step: the instance this contact rides on, and the fixed offset
+## from it — drawn once, in a direction the day's own RNG chose, so a contact that has to
+## clear an obstruction sits at a learnable spot rather than a re-rolled one.
+var _rider: EventInstance
+var _rider_offset := Vector2.ZERO
 
-func setup(which: ResistanceSteps.Step, at: Vector2, events: EventManager) -> void:
+## A pickup: a bare chalk mark at a fixed point.
+func setup(which: ResistanceSteps.Step, at: Vector2) -> void:
 	step = which
 	position = at
-	_events = events
 	# A mark on the ground belongs under everything that stands on it, including the
 	# player who is standing on it to read it.
 	z_index = -1
+
+## A perform: the contact follows `instance`, offset so a solid body between them never
+## makes it unreachable.
+func ride(which: ResistanceSteps.Step, instance: EventInstance, offset: Vector2) -> void:
+	step = which
+	_rider = instance
+	_rider_offset = offset
+	position = instance.global_position + offset
+	z_index = -1
+
+## Whether the thing this rides on is still there to be touched.
+func rider_alive() -> bool:
+	return not _rider or (is_instance_valid(_rider) and not _rider.is_finished)
 
 func _physics_process(delta: float) -> void:
 	if is_done:
 		return
 	_pulse += delta
+	if _rider:
+		if not rider_alive():
+			return
+		global_position = _rider.global_position + _rider_offset
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 		if not _player:
 			return
-
-	var within := global_position.distance_to(_player.global_position) <= REACH
-	var holding := within and Input.is_action_pressed("interact")
-
-	if holding and _patrol_is_watching():
-		# Not a permanent loss — the cost is having to wait for it to pass, standing in an
-		# alley, while the meter you care about does the wrong thing.
-		if progress > 0.0:
-			was_seen = true
-			EventBus.resistance_seen.emit()
-		progress = 0.0
-		holding = false
-
-	if holding:
-		progress += delta / step.hold_seconds
-	else:
-		progress = maxf(0.0, progress - DECAY_RATE * delta / step.hold_seconds)
-
-	EventBus.resistance_hold_changed.emit(clampf(progress, 0.0, 1.0) if within else 0.0)
-	if progress >= 1.0:
+	if global_position.distance_to(_player.global_position) <= REACH:
 		_complete()
 	queue_redraw()
 
-func _patrol_is_watching() -> bool:
-	if not _events:
-		return false
-	for instance in _events.instances():
-		if instance.def.id != "police_patrol" or instance.is_telegraphing():
-			continue
-		if instance.global_position.distance_to(global_position) <= SEEN_RADIUS:
-			return true
-	return false
-
 func _complete() -> void:
 	is_done = true
-	progress = 1.0
-	EventBus.resistance_hold_changed.emit(0.0)
 	completed.emit(step.index)
 	queue_redraw()
 
 # ------------------------------------------------------------------ drawing ---
 
 func _draw() -> void:
-	if is_done:
-		_draw_chalk(Palette.CHALK_DONE)
+	# A perform's contact is invisible — it has to look exactly like the ordinary row it
+	# rides on, or approaching it would already answer "is this the one".
+	if _rider:
 		return
-	_draw_chalk(Palette.CHALK)
-	if progress > 0.0:
-		draw_arc(Vector2(0.0, -2.0), REACH * 0.6, -PI * 0.5,
-				-PI * 0.5 + TAU * clampf(progress, 0.0, 1.0), 40, Palette.CHALK_DONE, 3.0)
+	_draw_chalk(Palette.CHALK_DONE if is_done else Palette.CHALK)
 
 ## Three strokes and a circle — the sort of mark you would walk past a hundred times.
 func _draw_chalk(colour: Color) -> void:

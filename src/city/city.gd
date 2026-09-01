@@ -168,13 +168,23 @@ func _sleepiness_on(tile: Vector2i) -> float:
 			map.block_at(map.tile_to_world(tile))))
 
 ## What the ground she is standing on does to her recovery: calm, precinct, ordinary, main road,
-## best to worst.
+## best to worst — and then, for the rest of a day she is carrying the resistance's package, worse
+## again.
 ##
 ## A precinct beats a main road even where the two cross, and that is not an oversight: standing
 ## on brick is standing on brick, and the tile she is on is the whole of what this question is
 ## about. A main road's *pavement* is main road, though — the thing that makes it bad ground is
 ## the road beside it, not the surface under her.
 func decay_multiplier(world_position: Vector2) -> float:
+	var ground := _ground_decay_multiplier(world_position)
+	if GameState.resistance_carrying_package:
+		# The one cost in the game that is not a field at a place: picking the package up makes
+		# every street after it dearer for the rest of the day, rather than the street it was
+		# picked up on.
+		ground *= Tuning.RESISTANCE_PACKAGE_DECAY_MULTIPLIER
+	return ground
+
+func _ground_decay_multiplier(world_position: Vector2) -> float:
 	if not map:
 		return 1.0
 	if Tile.is_calm(map.tile_type_at_world(world_position)):

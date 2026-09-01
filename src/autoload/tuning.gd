@@ -133,6 +133,13 @@ const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.2
 const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
 const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.6
 
+## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
+## package is picked up (`GameState.resistance_carrying_package`) — the one cost in the subquest
+## that is deferred and total rather than local, so it changes the afternoon's routing rather than
+## one minute of it. Chosen on the same severity as a main road's own 0.6, on the harsher side of
+## it: this is a decision she made, not ground she has to cross.
+const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
+
 ## Excitement per second at full sprint, scaled by how far above walk speed we are.
 ##
 ## **The run button is a trap by design**: running is the wrong move against every row that merely

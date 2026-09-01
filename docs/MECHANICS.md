@@ -179,8 +179,8 @@ This makes the walk home a real second act rather than a victory lap.
 | Friction (deceleration) | `900 px/s²` |
 | Idle threshold | speed `< 12 px/s` counts as idle |
 
-Controls: arrow keys or WASD to walk, hold **Shift** to run, **E** to interact,
-**Esc** to pause.
+Controls: arrow keys or WASD to walk, hold **Shift** to run, **Esc** to pause. There is no
+interact key — touching a resistance chalk mark or a task's own contact is what completes it.
 
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.
