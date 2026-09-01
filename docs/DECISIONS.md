@@ -3182,6 +3182,79 @@ half-converted. Each is its own commit.
 rewriting one into the present tense would be destroying the only record of what was actually said.
 `DECISIONS.md` cites them; it does not absorb them.
 
+### Completed 2026-09-01, merged to `main` from `feature/timeless-docs`
+
+Everything above shipped except the number re-audit, which stayed open as M40's finishing pass in
+`TODO.md`. What each part found, with the measurements:
+
+- **`DECISIONS.md` exists** and took `HANDOFF.md`'s history tail; the test held — every fact lifted
+  out is findable here by its symbol name.
+- **`CLAUDE.md` became an index** over eleven skills in `.claude/skills/`, one per operational
+  task, holding only what applies to every task and the rules a hook cannot trigger on.
+- **The path-triggered rules became a hook, not an instruction.** *(2026-09-01: "if they are
+  triggered by files then make them rules that trigger on those files.")* A skill somebody has to
+  remember to load is not a rule. `.claude/hooks/project-rules.sh` fires on every `Edit`/`Write`,
+  maps the path to the skills that govern it, and injects them before the edit is made — once per
+  area per session, keyed on the session id. The three with no file to trigger on — `feedback`,
+  `committing`, `session-cleanup` — stay invoked by hand, being about a *moment* rather than a
+  place.
+- **The design docs pass** — `EVENTS`, `CITY`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `DESIGN`,
+  `NARRATIVE`, `README` to zero history references, one commit each. **The style pass found nine
+  stale claims, which is the argument for doing both passes at once**: `AHEAD_OF_PLAYER` "is the
+  cat" (it was three rows), the pre-per-block event budget formula, `construction` as "the only act
+  I event in the way", `cat_dash`'s duration, an 8×8 junction lattice and 112 streets, "nineteen of
+  a hundred" signalled junctions, `PARK`'s sleepiness and decay multipliers, a 104×104 city, and a
+  car population of thirty. **`charging_dog` had no row in the catalogue table at all.** Two
+  obsolete measured tables moved here rather than being restyled in place.
+- **The docstring pass** — every `.gd` file in `src/` to zero history references
+  (`grep -rcE '(M[0-9]{1,2}\b|playtest|Playtest)' src --include='*.gd'` left four hits, all the
+  ordinary word in `main.gd`'s is-this-log-a-playtest function). **The rewrite that works is
+  turning a narrated fix into the mistake a reader could still make**: *a contract in seconds
+  cannot describe a pursuit played out in distances*, *never guard on a `CanvasLayer`'s `visible`*,
+  *a category in an enum is a list waiting to happen*. **The pass found five stale claims and one
+  dead field**: the mark docstring's "fifteen of the eighteen rows" (the catalogue had thirty-one,
+  six lethal) and its "no lethal events in acts I and II" (the cyclist is day 2),
+  `street_network`'s "64 junctions and 112 segments" (144 and 264), `main`'s "eighteen kinds" and
+  its list of "four things a picture cannot carry" that named three, two crowd sizes quoted as four
+  and five hundred against a cap of 200, and `EventDef.act_tag`, set on eleven rows and read by no
+  game code.
+- **`TODO.md` became a queue again** — open work only, completed entries archived here whole.
+
+### The number re-audit, run 2026-09-01
+
+Run as its own pass, as designed — a stale claim survives a rewrite perfectly well if nobody checks
+it against the code. Four audit agents checked every quoted number in the governed docs and
+docstrings against `tuning.gd`, `event_catalogue.gd` and the code they describe, the tooling
+against its own documentation, and the docs against each other, on a tree where the full suite was
+green. **Found: eight wrong numbers, three docstrings pointing at `CLAUDE.md` sections that had
+moved into skills, four pieces of history that outlived the restyle, and stale evidence
+attributions** — filed as M40's finishing pass in `TODO.md`. **Verified correct, row by row**:
+every other quoted figure in `CITY`, `EVENTS` (all 31 catalogue rows' intensities, radii,
+telegraphs, speeds, durations, day windows, weights and caps), `MECHANICS` (the meter rates, the
+contact and car geometry, the falloff, the pursuit tables), `ARCHITECTURE`, `NARRATIVE` (the
+six-step resistance calendar) and `HANDOFF`. The audit also found the same session's tooling gaps
+(M58's items) and the dead-code list (M58's sweep), and confirmed the rules hook's path→skill
+mapping correct on all nine rows, all eleven skills' ~90 cited symbols resolving, and the
+`PARTIAL RUN` marker working as documented.
+
+### Reassessed on 2026-09-01, and closed
+
+- **The pending calm-ground multiplier is planned against a stale base** — *done.*
+  `SLEEPINESS_CALM_ZONE_MULTIPLIER` is 21, which is the 1.5× taken on the correct base, and the
+  correction travelled with it.
+- **A bug closed inside a design finding was never closed out** — *done.*
+  `CrowdLanes.PRECINCT_OFFSETS` is six lanes across the whole width. The shape is worth watching:
+  **a finding with two halves gets closed when the louder half is done.**
+- **M41's eight open boxes** — the milestone is merged and its work shipped; the boxes were never
+  ticked. What genuinely remains is in M53 (T-junctions at the edge) and M49 (judged by eye).
+- **M27's "nobody has played it"** — superseded. Seven playtests have happened since.
+- **M20's overtaking, eight-way driving and the crash event** — **parked with the player's
+  agreement**, as *a conversation that is owed*, not as a thing nobody wanted.
+- **M17, the route map** — **backlogged by the player's decision.** The gap it closes is real and
+  `docs/CITY.md` states it as a gap rather than papering over it.
+- **M52's "should more junctions be signalled?"** — parked, unasked-for, and it would repeal *"a
+  property of the street rather than a scattering of them"*.
+
 ## M41 — The shape of the city: a spine, and an edge you can walk to · `feature/the-shape-of-the-city`
 
 See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**, section C, and **[docs/PLAYTEST-12.md](PLAYTEST-12.md)**,

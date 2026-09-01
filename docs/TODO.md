@@ -2,114 +2,192 @@
 
 **The queue. Open work only.** A ticked item is history the moment it is ticked, so completed
 entries live in [DECISIONS.md](DECISIONS.md) with their measurements and rejected options intact —
-search it for the noun before designing anything.
+search it for the noun before designing anything. Progress-tracking lives only there: no ticked
+boxes, no "Done:" paragraphs, no branch names or status words in headings here.
 
 Read [HANDOFF.md](HANDOFF.md) first for the state of the tree.
 
-Status legend: `[ ]` todo · `[~]` in progress. Each milestone is one git branch, merged to `main`
-with `--no-ff`.
+Each milestone is one git branch, merged to `main` with `--no-ff`. `[~]` marks an item somebody is
+mid-way through.
 
 ---
 
 ## The order
 
-1. **M40** — the docs say only what is true. *In progress.* The player's instruction is that this
-   comes before any other implementation.
-2. **M55's resistance half** — designed, nothing open, needs building.
-3. **M53** — a junction is made of the streets that meet at it.
-4. **M54** — the robber stops at walls, and three rows that never arrive.
-5. **M56** — the resistance is noticed.
+1. **M40's finishing pass** — the number re-audit ran on 2026-09-01; its findings are the items.
+2. **M57** — the docs cannot go stale. *(2026-09-01: "can we enforce that documentation is written
+   in a way that it cannot easily become stale?")*
+3. **M58** — the tooling tells the truth. Small fixes the same audit found, plus `stats.sh`.
+4. **M55's resistance half** — designed, nothing open, needs building.
+5. **M53** — a junction is made of the streets that meet at it.
+6. **M54** — the robber stops at walls, and three rows that never arrive.
+7. **M56** — the resistance is noticed.
+8. **M59** — the chatting mother. *Position provisional: the design is the player's (2026-09-01),
+   the slot in the order is not — it can move.*
 
 Everything below that is unordered and reassessed on 2026-09-01.
 
 ---
 
-## M40 — The docs say only what is true · `feature/timeless-docs` · in progress
+## M40 — The docs say only what is true · the finishing pass
 
-Two jobs. A **correctness pass** that finds sentences no longer true, and a **style pass** that puts
-everything in the present tense with the history moved to `DECISIONS.md`. A stale claim survives a
-rewrite perfectly well if nobody checks it against the code, so the first is not a side effect of
-the second.
+The restyle is merged. What remains is the number re-audit's findings — every quoted number in the
+governed docs was checked against the code on 2026-09-01 (the verified-correct list is archived in
+`DECISIONS.md` under M40). Each item below is one small fix. The rule for choosing the fix: correct
+the figure only where it is load-bearing; otherwise **state the relationship and leave the figure to
+the code**; a before-and-after table moves to `DECISIONS.md` with its date.
 
-The test is a reader, not a diff: **somebody who opens any single file and believes every sentence
-in it is wrong about nothing.**
+Wrong numbers:
 
-- [x] **`docs/DECISIONS.md` exists** and is the destination for everything the restyle lifts out.
-      The test is that every fact removed can be found by searching it for the symbol name
-- [x] **`docs/HANDOFF.md` is the pick-up block alone**, and true. Its history tail became the
-      archive in `DECISIONS.md`
-- [x] **`CLAUDE.md` becomes an index** over the skills in `.claude/skills/`, holding only what
-      applies to every task and the rules a hook cannot trigger on
-- [x] **The rules get skills**, one per operational task, each loaded before that task rather than
-      carried in context for every task that is not it. Eleven of them, with a trigger table in
-      `CLAUDE.md`
-- [x] **`session-cleanup` is a skill and runs at the end of every session.** This pass is short
-      when it is done every time and a milestone when it is not
-- [x] **The path-triggered rules are a hook, not an instruction.** *(2026-09-01: "if they are
-      triggered by files then make them rules that trigger on those files.")* A skill somebody has
-      to remember to load is not a rule. `.claude/hooks/project-rules.sh` fires on every
-      `Edit`/`Write`, maps the path to the skills that govern it, and injects them **before the edit
-      is made** — once per area per session, keyed on the session id, so the same rules are not
-      repeated on every subsequent edit to the same place. The three that have no file to trigger on
-      — `feedback`, `committing`, `session-cleanup` — stay invoked by hand, because they are about a
-      *moment* rather than a place
-- [x] **`docs/TODO.md` is a queue again** — open work only, with every completed entry archived
-      whole in `DECISIONS.md`
-*(2026-09-01: "also scan the whole codebase to update for the timeless style — not only documents
-but also code docs/comments.")* Done. The method is in the `godot` skill under "Comments are written
-in the present tense": **keep the reason a thing is the way it is and the trap that makes it easy to
-get wrong; drop the milestone number, the former value, and the narration of the fix.**
+- [ ] **`docs/NARRATIVE.md` (act III paragraph) quotes crowd populations that never existed** —
+      "420 people and 110 cars to 90 and 22". `Tuning.CROWD_PEDESTRIANS_PER_ACT` is
+      `[200, 150, 42, 70]` and `CROWD_CARS_PER_ACT` is `[34, 26, 8, 16]`, so the act I → act III
+      drop is 200/34 → 42/8. Prefer the relationship: the streets keep about a fifth of their
+      people and a quarter of their cars
+- [ ] **`docs/DESIGN.md` says nerves start at 3** ("start of run: 3") and a comment at
+      `src/autoload/game_state.gd:118` says "three nerves". `Tuning.STARTING_NERVES` is 5. Correct
+      both
+- [ ] **`docs/CITY.md` guarantee list says "at least 3 calm areas"** — `Tuning.MIN_CALM_BLOCKS` is
+      5, asserted in `CityGenerator.validate()`, and the same doc's calm-zone section already says
+      5–7. Correct the guarantee line
+- [ ] **`docs/ARCHITECTURE.md` says the event budget "tops out near 22 concurrent"** while the
+      comment on the code it describes (`src/events/event_manager.gd:7`) says around 32. Agree on
+      what the formula actually yields on day 14, or drop the literal and state why the linear scan
+      is safe (the count stays small)
+- [ ] **`docs/MECHANICS.md` "Which side of the road" quotes the old contact measurement** — "eleven
+      bumps down a lane centre against one on the midline" was measured at an 18px contact radius.
+      At the current `BUMP_RADIUS` 14 the measurement (`tests/test_crowd.gd`) is 15.3 against
+      none. Use the current figures or state the relationship (a lane centre costs bumps, the
+      midline costs none)
+- [ ] **`pigeon_flock`'s docstring quotes stale numbers for itself** — `event_catalogue.gd` (the
+      paragraph above `_pigeon_flock()`) says "17 over a 110px reach"; the row five lines down is
+      intensity 42 over 168px. Correct the docstring
+- [ ] **`docs/EVENTS.md` lists a `sabotage_run` catalogue row that does not exist.** The catalogue
+      has 31 rows and none is `sabotage_run`; the day-14 sabotage is `GameState` logic
+      (`sabotage_done` / `sabotage_available()`), not an `EventDef`. Remove the row; if the finale
+      is worth describing there, describe it under the resistance section as game-state, not as a
+      row
+- [ ] **`act_tag` is described as read by nothing** in `event_def.gd`'s docstring and
+      `docs/EVENTS.md`'s field table — but `tests/test_acts.gd` asserts every row's `act_tag`
+      against the act its `first_day` falls in. The true sentence: no game code reads it; one test
+      holds it consistent with the calendar
 
-- [x] **The docstrings.** Every `.gd` file in `src/` is at zero, checked with
-      `grep -rcE '(M[0-9]{1,2}\b|playtest|Playtest)' src --include='*.gd'` — the four hits left are
-      in `main.gd` and are all the ordinary word, in the function that decides whether a run's log
-      is a playtest.
+Pointers to rules that moved out of `CLAUDE.md` into skills:
 
-      **The rewrite that works** is turning a narrated fix into the mistake a reader could still
-      make: *a contract in seconds cannot describe a pursuit played out in distances*, *never guard
-      on a `CanvasLayer`'s `visible`*, *a category in an enum is a list waiting to happen*. Where a
-      paragraph did not survive that test it was history and went to `DECISIONS.md`.
+- [ ] **`src/autoload/tuning.gd:721`** says "see the invariant in CLAUDE.md" about contacts not
+      writing `Baby.excitement` — the invariant (excitement stays a pure query; a bump startles the
+      agent, never writes the meter) lives in the **events** skill and `docs/MECHANICS.md`. Point
+      at what exists, or better, state the invariant in the sentence
+- [ ] **`src/events/event_def.gd:294`** cites "the same mistake CLAUDE.md warns about" for reading
+      `obstructs_radius > 0` as impassable — that warning lives in the **events** skill now
+- [ ] **`src/player/baby.gd:24`** cites "the standing decision in CLAUDE.md" for the cue rules
+      (stages not a gauge; the exclamation mark) — those live in the **cues** skill now
 
-      **The pass found five stale claims and one dead field**, which is the argument for doing both
-      passes at once holding for the code as well as for the docs: the mark docstring's "fifteen of
-      the eighteen rows" (the catalogue has thirty-one, six of them lethal) and its "no lethal
-      events in acts I and II" (the cyclist is day 2), `street_network`'s "64 junctions and 112
-      segments" (144 and 264), `main`'s "eighteen kinds" and its list of "four things a picture
-      cannot carry" that names three, two crowd sizes quoted as four and five hundred against a cap
-      of 200, and `EventDef.act_tag`, which is set on eleven rows and read by nothing
-- [x] **The design docs** — `EVENTS`, `CITY`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `DESIGN`,
-      `NARRATIVE`, `README` are all at **zero** history references, one commit each. Done before
-      the docstrings because a reader reaches them first.
+History that outlived the restyle:
 
-      **The style pass found nine stale claims, which is the argument for doing both passes at
-      once**: `AHEAD_OF_PLAYER` "is the cat" (it is three rows), the pre-per-block event budget
-      formula, `construction` as "the only act I event in the way", `cat_dash`'s duration, an 8×8
-      junction lattice and 112 streets, "nineteen of a hundred" signalled junctions, `PARK`'s
-      sleepiness and decay multipliers, a 104×104 city, and a car population of thirty.
-      **`charging_dog` had no row in the catalogue table at all.** Two obsolete measured tables
-      moved to `DECISIONS.md` rather than being restyled in place
-### ← Next step: re-audit the numbers, separately from the restyle
-
-- [ ] **A stale claim survives a rewrite perfectly well if nobody checks it against the code.** The
-      two restyle passes caught fourteen between them, and only because rewriting a sentence forces
-      you to read what it says — a pass that goes looking will find more. Any number a doc or a
-      docstring quotes is a candidate: radii, costs, counts, densities, timings.
-
-      Two known shapes to look for. **A number stated per something that has since been resized** —
-      the lattice is 11×11 and every count over blocks, junctions or streets moves with it; two of
-      the fourteen were exactly this. And **a measured table that was a before-and-after**: those
-      are history, and they belong in `DECISIONS.md` with their date rather than being restyled into
-      the present tense.
-
-      Where a number is load-bearing but fragile, the fix is usually to **state the relationship
-      instead of the figure** — "only the spine's junctions are signalled" rather than "nineteen of
-      a hundred" — and to leave the figure to the code
+- [ ] **`docs/EVENTS.md` carries a dated before-and-after table** (the 2026-08-31 six-seed
+      measurement, "flattened to 1 and then at 4") — exactly the shape this pass moves to
+      `DECISIONS.md` with its date
+- [ ] **Two skills narrate former states**: the **city** skill's "What edge-disjointness used to
+      stand in for", and the **events** skill's "a rule that used to read 'nothing that
+      obstructs'". Restate both in the present tense; the former reading goes to `DECISIONS.md` if
+      it is not already there
+- [ ] **`src/city/city_generator.gd` (above `_place_home`)** narrates the superseded
+      sort-by-distance placement with its 7×7-lattice measurement and a playtest quote —
+      `DECISIONS.md` already holds that history. Keep only the present-tense reason the home is the
+      middle block
+- [ ] **`docs/evidence/README.md` attributes three evidence files to `TODO.md`** — the references
+      live in `DECISIONS.md`'s M55 section, and one older row's `TODO.md` attribution is also
+      stale. Point each row at the document that actually cites it
 
 ---
 
-## M55 — The resistance is a place you reach · designed, not built
+## M57 — The docs cannot go stale · asked for 2026-09-01
 
-Everything else in M55 is done. The design has nothing open; `DECISIONS.md` carries the calendar,
+*(Player: "can we enforce that documentation is written in a way that it cannot easily become
+stale? for example we don't need to state how many tests are green in the claude docs." And: "there
+should be no quest logs outside of decisions.md.")* The rules exist in `CLAUDE.md`; this milestone
+is the **machinery**, because a rule somebody has to remember is not a rule.
+
+- [ ] **`tools/lint.sh` — the volatile-fact linter.** Scans `CLAUDE.md`, `.claude/skills/**/*.md`,
+      `README.md` and `docs/*.md` **excluding** `docs/DECISIONS.md` and `docs/PLAYTEST-*.md` (and
+      `docs/evidence/README.md`, whose job is filenames that embed hashes). Flags, with `file:line`
+      and a nonzero exit:
+      - a backticked 7–40 digit hex string (a commit hash);
+      - a branch name (`feature/[a-z0-9-]+`);
+      - a check count (`[0-9]+ checks` or `checks, [0-9]+ failures`);
+      - a ticked box (`- [x]`);
+      - a status word in a heading (`in progress`, `not started`, `partly built`, `done` after a
+        `·` in a `#`–`####` line).
+      An escape hatch for a deliberate hit: the marker `lint-allow` in an HTML comment on the same
+      line skips it. Keep the patterns conservative — a linter that cries wolf gets deleted; when
+      in doubt, do not flag. Written in bash 3.2-safe idioms like the other tools, `set -uo
+      pipefail`, no dependencies beyond grep/sed/awk
+- [ ] **Wire it into the hook.** A `PostToolUse` hook on `Edit|Write|MultiEdit` in
+      `.claude/settings.json` (alongside the existing `PreToolUse` rules hook): when the edited
+      path is one of the governed docs, run `tools/lint.sh` on that file and emit any hits as hook
+      feedback, so the writer sees the violation in the same turn as the edit. Follow the existing
+      `project-rules.sh` structure — path from `.tool_input.file_path`, quoted everywhere, scoped
+      to this repo's root
+- [ ] **Wire it into the skills.** The **committing** skill gains a line: run `tools/lint.sh`
+      before committing, and a hit is a stop. The **session-cleanup** skill's "never quote a number
+      with a short shelf life" step points at the tool instead of relying on the eye
+- [ ] **The drift guard** *(2026-09-01: "drift guard sounds good")* — a new session-cleanup step:
+      if `src/autoload/tuning.gd` or `src/events/event_catalogue.gd` changed this session, grep the
+      governed docs for the names of the constants and rows that moved and re-check every quoted
+      figure. The number re-audit found all of its drift around retuned constants whose doc
+      sentences stood still
+- [ ] **Then run the linter over the tree and fix what it finds** — it should come up empty after
+      M40's finishing pass; if it does not, the hits are M40 items that were missed
+
+---
+
+## M58 — The tooling tells the truth
+
+Small, mechanical, each verified by the 2026-09-01 audit. One commit each.
+
+- [ ] **The rules hook misses batched edits.** `.claude/settings.json`'s matcher is
+      `Edit|Write|NotebookEdit`; a `MultiEdit` call (same `file_path` input shape) never fires the
+      hook, so the skill rules for the touched area are silently skipped. Change the matcher to
+      `Edit|Write|MultiEdit`. Drop `NotebookEdit`: the hook reads `.tool_input.file_path` and
+      `NotebookEdit` sends `notebook_path`, so it can never match — and the repo has no notebooks
+- [ ] **The rules hook fires for files outside the repo.** `project-rules.sh` computes the repo
+      root but matches paths by substring, so any file on disk under a `/src/events/` directory
+      would receive this project's rules. Exit early unless the path is under the computed root
+- [ ] **`tools/shot.sh` and `tools/test.sh` fail raw when Godot is missing.** Both lack the
+      `[[ -x "$GODOT" ]]` guard that `check.sh` and `run.sh` have — and `test.sh` redirects its
+      import pass to `/dev/null`, so the failure is swallowed entirely before the second invocation
+      errors. Copy the guard block
+- [ ] **`tools/check.sh` can print OK over a crash.** It greps the boot output for error strings
+      but never inspects the exit status, so a hard crash that prints none of them passes; the
+      import pass's exit code is discarded the same way. Check both exit codes
+- [ ] **`README.md` omits the `--ending` dev flag** (`--ending bad|neutral|good`, implemented in
+      `main.gd`, forces an ending screen for screenshotting). Add it to the dev-flags table
+- [ ] **`tools/stats.sh`** *(2026-09-01: "stats.sh sounds good")* — the consumer for playtest 17
+      finding 3's tagging. Reads the run logs (locate the folder the way `telemetry.sh` does,
+      macOS/Linux both), splits **playtest runs from rig runs** using the naming/tagging that
+      `Telemetry` writes and `main.gd`'s is-somebody-playing check decides, and prints per group:
+      run count, days won/lost, loss causes, and which events were met most. Default to playtest
+      runs only — the folder is mostly three-second rig runs, and counting those is the exact skew
+      the player named; `--all` and `--rigs` widen it. Read `docs/TELEMETRY.md` first and print
+      only what the log entries actually carry
+- [ ] **The dead-code sweep.** Each verified unreferenced on 2026-09-01; re-verify each with a grep
+      before deleting, then run the full suite. Delete: `EventBus.day_ended` and
+      `EventBus.event_finished` (emitted, zero listeners — `DayController.day_finished` and
+      polling carry the load), `EventInstance.finished` (same event, emitted as a local signal,
+      also unconnected), `Baby.fell_asleep`/`woke_up`/`started_crying` (three signals emitted
+      beside the `EventBus.baby_state_changed` that everything actually listens to),
+      `DayController.stop()` (never called; `_end()` is the real path), `Corridor`'s `Where` enum
+      with `where()`, `is_inside()` and `holds_street()` (every caller uses `depth()`),
+      `TrafficIndex.lane_count()`, `BlockPlan.final_purpose()`, `Building.roof_depth()`. And make
+      `GameState.finish_day()` call `is_final_day()` instead of inlining the same comparison three
+      lines below the query
+
+---
+
+## M55 — The resistance is a place you reach · designed, needs building
+
+Everything else in M55 is merged. The design has nothing open; `DECISIONS.md` carries the calendar,
 the guard arithmetic and the six drafts with the one that was not taken.
 
 - [ ] **The hold goes; touching a mark completes it.** `E` comes out of `project.godot`,
@@ -209,6 +287,67 @@ The city gets more dangerous the further into the subquest you are. **A task may
       are where the precedent gets set
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
+
+---
+
+## M59 — The chatting mother · asked for 2026-09-01
+
+*(Player: "I have an idea for a new entity -- another mother with child. when getting too close one
+gets caught up in a conversation that takes 5s and consumes 25% excitement. if the baby is already
+sleeping it's a pure time loss if it's not it bears overstimulation risk.")* The readings taken —
+"consumes 25%" means **adds 25 points to the meter when the baby is awake**, and "pure time loss"
+means **asleep, the chat emits nothing at all** (a `SLEEPING_SENSITIVITY`-scaled dose could wake
+the baby, which would not be pure) — are recorded in `docs/PLAYTEST-18.md` finding 4 and can be
+corrected from there.
+
+**Why it is a route decision:** the cost flips sign with the baby's state. Outbound-awake she is a
+quarter of the lose meter; homebound-asleep she is only five seconds of clock, on the leg where the
+clock is the resource. No other row changes meaning across the day like that. The first new
+mechanic in it is **time under compulsion** — nothing else takes the controls away.
+
+- [ ] **The row.** `event_catalogue.gd` gains `chatting_mother` (named for what she is — nothing
+      in `src/` carries a narrative name): a paced pavement fixture like the yeller — `paces`
+      along a short sidewalk beat, so she is *at* a place and streaming guarantees she is met —
+      with a small ambient field (person-scale: intensity near the passer-by's 4.2, outer radius
+      tight) so brushing past her costs a normal close pass when no conversation triggers.
+      `first_day` 1 if the balance suite still passes — act I is the social act — else 2;
+      `max_per_day` 2; not `hard_fail`, does not pursue
+- [ ] **The trigger.** Two new `EventDef` fields, `detain_seconds` (default 0 = never) and
+      `detain_radius`. `validate_event()` gains: if `detain_seconds > 0` then
+      `detain_radius < inner_radius <= outer_radius`, and the row must not be `hard_fail` or
+      pursue. Default `detain_radius` for the row: small enough that the far lane of a two-tile
+      pavement (lanes one tile apart) can never trigger it — under 32px, start at 26. The
+      counterplay is distance, exactly like everything else that is not a pursuer
+- [ ] **The capture.** When the player enters `detain_radius` of an instance that has not yet
+      chatted: the stroller's movement input is ignored for `detain_seconds` (velocity runs out
+      through the existing friction; pause still works; the run key does nothing). The existing
+      idle rules price the stop — idle drains sleepiness and freezes excitement decay — so no new
+      meter rule is needed for the time cost. **One conversation per instance**: after it, she is
+      spent as a detainer and departs (walks off like a `dog_walker`), so nobody is trapped twice
+      by the same body
+- [ ] **The meter.** While the conversation runs and the baby is **awake**, the instance emits
+      25/`detain_seconds` per second (5/s at full strength inside its inner radius; the player is
+      inside it by construction) — net +25, since idle decay is zero. While the baby is **asleep**
+      it emits nothing: the contribution is gated on the baby's state, read, never written —
+      excitement stays a pure query and `City.total_excitement_at` still adds exactly two things
+- [ ] **The drawing.** One picture per row: an adult with a pram, palette-shifted so she cannot be
+      mistaken for the player, with two postures — strolling and talking. The talking posture is
+      the telegraph that a capture is running. **No exclamation mark** — that cue is reserved for
+      danger, and she is a cost, not a threat; the cues skill governs anything drawn
+- [ ] **Telemetry.** A `chat` entry when a conversation starts: position, duration, the baby's
+      state, and what the meter did — it answers this milestone's own open question, which is
+      whether a forced +25 reads as fair
+- [ ] **The tests** (`tests/test_events.gd`, alongside the other per-row rigs): walking a rig into
+      `detain_radius` locks it for `detain_seconds` (position delta near zero) and releases it;
+      awake, the meter gains 25 within tolerance; asleep, excitement is unchanged and sleepiness
+      stays pinned at 100; a pass outside `detain_radius` on the same pavement never triggers; a
+      second approach to the same instance never re-triggers; the whole catalogue still passes
+      `validate_event()`, and `tests/test_balance.gd` still passes with the row live on its
+      `first_day`
+- [ ] **The docs.** An `EVENTS.md` row in the catalogue table; a short "conversation" paragraph in
+      `MECHANICS.md` next to the idle rules it leans on
+- [ ] **Open, deliberately:** whether a chat should ever be *worth seeking out* (a rumour, a hint)
+      — parked, because the meters must stay the only currencies until the player asks otherwise
 
 ---
 
@@ -352,24 +491,6 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       passes rather than `run_seed` itself. Not a bug; worth remembering when reproducing from a
       seed
 
-## Reassessed on 2026-09-01, and closed
-
-- **The pending calm-ground multiplier is planned against a stale base** — *done.*
-  `SLEEPINESS_CALM_ZONE_MULTIPLIER` is 21, which is the 1.5× taken on the correct base, and the
-  correction travelled with it
-- **A bug closed inside a design finding was never closed out** — *done.*
-  `CrowdLanes.PRECINCT_OFFSETS` is six lanes across the whole width. The shape is worth watching:
-  **a finding with two halves gets closed when the louder half is done**
-- **M41's eight open boxes** — the milestone is merged and its work shipped; the boxes were never
-  ticked. What genuinely remains is in M53 (T-junctions at the edge) and M49 (judged by eye)
-- **M27's "nobody has played it"** — superseded. Seven playtests have happened since
-- **M20's overtaking, eight-way driving and the crash event** — **parked with the player's
-  agreement**, as *a conversation that is owed*, not as a thing nobody wanted
-- **M17, the route map** — **backlogged by the player's decision.** The gap it closes is real and
-  `docs/CITY.md` states it as a gap rather than papering over it
-- **M52's "should more junctions be signalled?"** — parked, unasked-for, and it would repeal *"a
-  property of the street rather than a scattering of them"*
-
 ---
 
 ## M10 — Polish
@@ -382,10 +503,16 @@ After the playtest work. There is no point polishing a loop that is about to be 
       baby's breathing as the diegetic version of the meters. Additive by design
 - [ ] Main menu and settings; save/continue a run (`GameState` is already shaped for it, so this is
       serialisation rather than design)
+- [ ] **A web build** *(asked 2026-09-01: "can we use github pages to put the game on a page?")* —
+      Godot's HTML5/WASM export on the `gl_compatibility` renderer the project already uses, hosted
+      as static files on GitHub Pages. Export with threads disabled (or ship the
+      `coi-serviceworker` shim), because Pages cannot set the cross-origin-isolation headers a
+      threaded build needs. No server: the game has no networking
 - [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
 - [ ] Controller support
 - [ ] Gate the dev flags behind a debug build, and move `_first_event_position` and friends out of
-      `main.gd` into a `DevFlags` helper
+      `main.gd` into a `DevFlags` helper — the audit measured the dev-only code at roughly a third
+      of `main.gd`, so the helper is worth doing before the file is next touched
 
 ---
 
