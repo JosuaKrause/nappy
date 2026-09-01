@@ -51,7 +51,10 @@ are built around her, and the director only puts something in front of her while
 somewhere.
 
 - **`--walk north|south|east|west`** holds a direction down for the whole run. `tools/shot.sh`
-  forwards every dev flag.
+  forwards every dev flag. **From the doorstep, only south moves at all**: the home is a notch with
+  one exit, cut into the south edge of its lot, so a rig walking any other way stands against the
+  notch wall for the whole run — and its log looks exactly like a run. If a `--walk` rig is meant
+  to meet something, check it actually travelled before reading anything else off the run.
 - **`--flee [delay]`** turns round and runs when something starts chasing her. A rig that can only
   hold a direction can only ever demonstrate the *wrong* answer to a pursuit; the delay is the axis
   worth measuring — what the right answer costs when it is given late.
