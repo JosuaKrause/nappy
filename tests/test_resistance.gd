@@ -15,7 +15,7 @@ func run(t) -> void:
 	_test_a_perform_contact_rides_on_its_instance(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	_test_placement_is_deterministic(t)
-	_test_the_alley_roulette_is_seeded(t)
+	_test_the_guard_is_seeded(t)
 	_test_a_perform_step_expires_when_its_rider_is_gone(t)
 	_test_a_timed_step_expires(t)
 	_test_completing_the_package_makes_the_pram_heavier(t)
@@ -246,46 +246,62 @@ func _test_placement_is_deterministic(t) -> void:
 		second.free()
 		perform.free())
 
-## The whole design rests on the run being learnable: which alleys are a trap is seeded, so
-## replaying the same day rolls it the same way.
-func _test_the_alley_roulette_is_seeded(t) -> void:
+## *Always guarded* has to mean a survivable band, not a guaranteed lost day: a robber sits
+## somewhere between 66px (30 + `ContactPoint.REACH`) and 176px (140 + `ContactPoint.REACH`)
+## of every mark, seeded so the distance is the same every time this day is replayed.
+func _test_the_guard_is_seeded(t) -> void:
+	_seen_guard_distances = []
 	_with_clean_run(func() -> void:
-		# Before act III an alley contact is never a trap.
-		var early := _director(t)
-		early.start_day(7, _rng(7, "resistance"), 300.0)
-		t.check(not _has_robbery_at(early.contact_position()),
-				"alleys are not yet lethal in act II")
-		early.free()
+		var before := _director(t)
+		before.start_day(1, _rng(1, "resistance"), 300.0)
+		t.check(before.current_step() == null, "nothing is offered before day 4")
+		before.free()
 
-		var trapped_days := 0
-		for day in range(8, Tuning.RUN_LENGTH_DAYS + 1):
-			GameState.completed_resistance_steps = []
-			GameState.failed_resistance_steps = []
-			var a := _director(t)
-			a.start_day(day, _rng(day, "resistance"), 300.0)
-			var at := a.contact_position()
-			var trapped := _has_robbery_at(at)
-			a.free()
+		var robbery := EventCatalogue.by_id("alley_robbery")
+		var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+		var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+		var search := max_distance + 40.0
 
-			var b := _director(t)
-			b.start_day(day, _rng(day, "resistance"), 300.0)
-			t.check(_has_robbery_at(b.contact_position()) == trapped,
-					"day %d rolls the trap the same way every replay" % day)
-			b.free()
-			if trapped:
-				trapped_days += 1
-		t.check(trapped_days < Tuning.RUN_LENGTH_DAYS - 7,
-				"not every alley is a trap, or there would be no gamble"))
+		for day in [4, 5, 6, 7]:
+			GameState.completed_resistance_steps = _completed_through(day - 4)
+			var director := _director(t)
+			director.start_day(day, _rng(day, "resistance"), 300.0)
+			var at := director.contact_position()
+			var guard := _find_robbery_near(at, search)
+			t.check(guard != null, "day %d's mark is guarded" % day)
+			var distance := guard.global_position.distance_to(at) if guard else -1.0
+			if guard:
+				t.check(distance >= min_distance - 0.5 and distance <= max_distance + 0.5,
+						"day %d's guard sits in the 66-176px band" % day)
+				_seen_guard_distances.append(distance)
+			director.free()
 
-func _has_robbery_at(where: Vector2) -> bool:
-	if where == Vector2.INF:
-		return false
+			var replay := _director(t)
+			replay.start_day(day, _rng(day, "resistance"), 300.0)
+			var replay_guard := _find_robbery_near(replay.contact_position(), search)
+			if guard and replay_guard:
+				t.close_to(replay_guard.global_position.distance_to(replay.contact_position()),
+						distance, "day %d's guard distance replays the same way" % day, 0.5)
+			replay.free())
+
+	var all_equal := true
+	for distance in _seen_guard_distances:
+		if not is_equal_approx(distance, _seen_guard_distances[0]):
+			all_equal = false
+	t.check(_seen_guard_distances.size() >= 2 and not all_equal,
+			"the guard distance is not the same every day")
+
+var _seen_guard_distances: Array[float] = []
+
+func _find_robbery_near(at: Vector2, within: float) -> EventInstance:
+	if at == Vector2.INF:
+		return null
 	for instance in _city.events.instances():
 		if instance.def.id != "alley_robbery":
 			continue
-		if instance.global_position.distance_to(where) < 1.0:
-			return true
-	return false
+		if instance.global_position.distance_to(at) <= within:
+			return instance
+	return null
 
 func _test_a_perform_step_expires_when_its_rider_is_gone(t) -> void:
 	_with_clean_run(func() -> void:

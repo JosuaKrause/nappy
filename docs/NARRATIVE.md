@@ -61,7 +61,8 @@ The burnt building from day 3 is still there, cordoned off, never repaired. Same
 every day, for the rest of the run.
 
 **Day 4:** the first `resistance_contact` appears in an alley. No prompt, no quest marker
-beyond a chalk mark on the wall that the player may or may not notice.
+beyond a chalk mark on the wall that the player may or may not notice, and it is guarded
+from this first appearance on — see "Risk" below.
 
 ### Act III — "Vans" (days 8–11)
 
@@ -74,9 +75,6 @@ because there is nobody left in it.
 
 Abductions begin. Masked men, unmarked vans. Getting close is a hard fail — you and the
 baby are taken, day over, one Nerve gone.
-
-Alleys become genuinely dangerous: the same alleys that carry the resistance's chalk marks
-also now carry `alley_robbery`.
 
 ### Act IV — "Open" (days 12–14)
 
@@ -114,11 +112,12 @@ entirely and still reach the good ending.
 
 ### Risk
 
-- **The alley roulette.** From Act III (`TRAP_FIRST_DAY` 8), an alley contact has a
-  `TRAP_CHANCE` of 0.3 that an `alley_robbery` is waiting *at* it. The contact is still
-  there; going for it is the gamble. Seeded from the run seed and the day, so the alley
-  that was safe on day 9 of this run is safe on day 9 every time you replay it — the
-  pattern is learnable, which is the difference between risk and a coin flip.
+- **Every mark is guarded**, from the day the first one can appear. A robber waits somewhere
+  between 66px and 176px of it — inside that band touching the mark is death, always; above
+  it he never wakes at all; between them, which side she approaches from decides whether he
+  notices her. Seeded from the run and the day, so the distance that was safe on day 9 of
+  this run is safe on day 9 every time you replay it — the pattern is learnable, which is
+  the difference between risk and a coin flip.
 - **A wrong candidate costs full price and returns nothing.** Approaching the yeller's field
   is the cost whether or not he is the contact, and there is no way to tell in advance which
   one is.

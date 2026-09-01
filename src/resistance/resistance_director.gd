@@ -1,16 +1,15 @@
 class_name ResistanceDirector
 extends Node
 ## Places the day's resistance contact, and enforces the two things that make the subquest
-## cost something: the alleys are sometimes a trap, and a timed step expires.
+## cost something: every mark is guarded, and a timed step expires.
 ##
 ## Deterministic from the run seed and the day, like everything else, so an alley that was
 ## safe on day 9 of this run is safe on day 9 of this run every time you replay it. The
 ## pattern is learnable; that is the difference between risk and a coin flip.
 
-## Chance that an alley contact has a robbery waiting at it instead of a friend.
-## Only from Act III, when alleys stop being merely unpleasant.
-const TRAP_CHANCE := 0.3
-const TRAP_FIRST_DAY := 8
+## The day the first chalk mark can appear. Nothing is guarded before it, because nothing is
+## offered before it.
+const TRAP_FIRST_DAY := 4
 
 var _city: City
 var _map: CityMap
@@ -70,25 +69,27 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 
 	_maybe_set_a_trap(day, rng, at)
 
-## The alley roulette. The contact is still there — the robbery is waiting at it. Going for
-## the step is the gamble, which is the point: the resistance costs you the thing you are
-## trying to protect.
+## The guard. From `TRAP_FIRST_DAY` no contact is ever placed without one — a robber drawn
+## from the band `alley_robbery`'s own numbers fix, so *always guarded* stays survivable
+## instead of a guaranteed lost day. See docs/DECISIONS.md, "the guard, worked out from the
+## numbers rather than chosen": below the band touching the mark is death, always; above it
+## he is scenery; between them which side she approaches from decides whether he wakes.
 func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2) -> void:
-	if day < TRAP_FIRST_DAY or _step.district >= 0:
-		return
-	# Hoisted so the roll can be written down. Which alleys were a trap is the third of the
-	# random outcomes that branch a run, and the only one whose consequence — the day the
-	# player lost to a robbery — otherwise looks like bad luck with the event scheduler.
-	var roll := rng.randf()
-	if roll >= TRAP_CHANCE:
-		Telemetry.note("roll", "alley trap: %.2f >= %.2f — the contact is a friend"
-				% [roll, TRAP_CHANCE])
+	if day < TRAP_FIRST_DAY:
 		return
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	if robbery:
-		Telemetry.note("roll", "alley trap: %.2f < %.2f — a robbery is waiting at the contact"
-				% [roll, TRAP_CHANCE])
-		_city.events.spawn_extra(robbery, at)
+	if not robbery:
+		return
+	var min_distance := robbery.inner_radius + ContactPoint.REACH
+	var max_distance := robbery.pursues_within + ContactPoint.REACH
+	# Hoisted so the draw can be written down. Which distance a mark got is the one random
+	# outcome that decides a run without a route around it, and the only one whose
+	# consequence otherwise looks like bad luck with the event scheduler.
+	var distance := rng.randf_range(min_distance, max_distance)
+	var guard_at := at + Vector2.RIGHT.rotated(rng.randf() * TAU) * distance
+	Telemetry.note("roll", "chalk mark guarded: robber %.0fpx away (band %.0f-%.0f)"
+			% [distance, min_distance, max_distance])
+	_city.events.spawn_extra(robbery, guard_at)
 
 ## Clear of any obstruction the rider carries, in a direction the day's own RNG chose — a
 ## fixed offset rather than a re-rolled one, so a contact that has to clear a body sits at a
