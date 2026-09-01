@@ -72,6 +72,10 @@ merging is what collides — so parallelism is planned at the file level, before
   the merged tree before the next merge, then remove the worktree
   (`git worktree unlock` first if the harness locked it) and delete the branch. Two green branches
   can still be wrong together; the gate after each merge is what catches it.
+- **Sweep the harness's own branches at the end.** Each spawn also leaves a `worktree-agent-*`
+  branch pointing at the worktree's base; after the feature branches are merged, `git worktree
+  prune` and delete them with `git branch -d` (never `-D` — a refusal is a branch worth looking
+  at).
 - **Tell each agent who else is alive** and which files those agents own, so a scope fence is a
   sentence in the prompt rather than a discovery in the diff.
 
