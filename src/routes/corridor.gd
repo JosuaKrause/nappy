@@ -2,14 +2,14 @@ class_name Corridor
 extends RefCounted
 ## The ground today's routes run through, as a question that can be asked about a **tile**.
 ##
-## *(M50 step 2. The words are `docs/CITY.md`, "The words for it"; the tree they are stated
-## against is `RouteTree`.)*
+## The words are `docs/CITY.md`, "The words for it"; the tree they are stated against is
+## `RouteTree`.
 ##
 ## `RouteTree` is a graph — a set of segment keys — and every placement decision in this game is
 ## about a tile. This is the one translation between the two, so that *inside the corridor* and
 ## *just outside it* mean exactly the same thing to an event, to a closure and to anything that
-## draws either. Two copies of that translation is the `DangerEdge` defect M37 found, one
-## milestone earlier and one system over.
+## draws either. Two copies of a translation is how a badge ends up drawing a delivery van for a
+## fire engine — the same defect, one system over.
 ##
 ## Three answers, and the middle one is the one the design is built on:
 ##
@@ -31,8 +31,7 @@ extends RefCounted
 ## everything else, kept because they are what the design is written in; the number is what the
 ## *range* is stated over, and one cache answers both.
 ##
-## **And one place inside the rim is asked about by name.** *(M55, playtest 17 finding 2: "if two
-## paths go parallel add some blocking events between them".)* `is_in_a_gap()` is the street a
+## **And one place inside the rim is asked about by name.** `is_in_a_gap()` is the street a
 ## player switches strands through — the rim is a band round the whole corridor, and a gap is a
 ## hole in the middle of it. It is a *further* preference inside the rim rather than a fourth band,
 ## which is why it is a question of its own and not another value of `depth()`.
@@ -129,7 +128,7 @@ func depth(tile: Vector2i) -> int:
 	return _answers[slot]
 
 ## Whether a tile is on one of the streets that run **between two adjacent strands of the
-## corridor** — the single street a player switches routes through. *(M55, playtest 17 finding 2.)*
+## corridor** — the single street a player switches routes through.
 ##
 ## `RouteTree.gaps()` is what it means and why; this is that question asked about a tile, which is
 ## what a placement is stated in. Every gap is on the rim, so this is a refinement of `depth() == 1`

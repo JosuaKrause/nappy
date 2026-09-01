@@ -1,10 +1,7 @@
 class_name PauseScreen
 extends CanvasLayer
-## The pause. *(Playtest 07: "how can I pause the game?" — you could not.)*
-##
-## `Esc` quit the game outright for thirty-three milestones, which `CLAUDE.md` has listed under
-## known-shaky ground for most of them. The only pause in the game was the between-days summary,
-## which is a screen you cannot ask for.
+## The pause, and the only one a player can ask for — the between-days summary stops the tree too,
+## but nobody chooses when it appears.
 ##
 ## It reuses the machinery `main` already built rather than inventing a second kind of paused: the
 ## tree's own `paused` flag, and `main._pauses_with_the_game()` deciding what that reaches. That
@@ -43,9 +40,8 @@ var _was_paused := false
 
 ## Where the run stands, at the top and in the largest type after the title.
 ##
-## *(M39, playtest 10 finding 7: "in the pause screen the day and nerves should show prominently as
-## well".)* Both numbers are in the HUD, behind a screen that covers the HUD — and the pause is
-## exactly when somebody stops to ask *how far in am I and how much of this can I still get wrong*.
+## Both numbers are in the HUD, which this screen covers — and the pause is exactly when somebody
+## stops to ask *how far in am I and how much of this can I still get wrong*.
 ##
 ## Read at `open()` rather than kept in step with `EventBus`, because a screen that is only ever
 ## looked at while the game is stopped cannot go stale, and a listener that has to be kept correct
@@ -75,17 +71,15 @@ func close() -> void:
 ## here rather than in `main` so that the screen owns its own keys while it is up, and `main` only
 ## owns the one that opens it.
 ##
-## **`space` is M39.** *(Playtest 10, finding 6: "from pause space should also let you continue".)*
-## It is the key the title screen and the between-days summary already mean *carry on* with, and the
-## pause was the one screen in the game that did not take it — so the player learned a verb on two
-## screens out of three and found it missing on the third. `Esc` keeps working, because it is also
-## the key that opened this and a toggle should untoggle.
+## **`space` continues**, because it is the key the title screen and the between-days summary mean
+## *carry on* with: a verb learned on two screens out of three and missing on the third is a verb
+## the player has to unlearn. `Esc` keeps working too, because it is the key that opened this and a
+## toggle should untoggle.
 ##
-## **`R` is M38**, and it is the other half of the dead end the title screen fixes. *("The lost
-## screen doesn't allow for restarting the game — you can just cycle between pause screen and loss
-## screen at that point.")* The ending offered `Esc`, `Esc` opened this, and this offered `Esc` and
-## `Q`: two screens, four keys, and no way to play again. A run is also abandonable long before it
-## has ended — a day gone wrong on a city you do not want to walk any more is exactly when somebody
+## **`R` restarts the run**, and it is the other half of the dead end the title screen closes. With
+## the ending offering `Esc`, `Esc` opening this, and this offering `Esc` and `Q`, there are two
+## screens and four keys and no way to play again. A run is also abandonable long before it has
+## ended — a day gone wrong on a city you do not want to walk any more is exactly when somebody
 ## reaches for the pause — so the key belongs here and not only on the ending.
 ##
 ## It is deliberately not confirmed. Everything a run holds is a fourteen-day walk with no save in

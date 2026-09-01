@@ -42,8 +42,8 @@ enum EventKind {
 ## the player 2026-08-31.)*
 ##
 ## **`LETHAL` is not the top of a scale**, it is a different thing: the other two are prices and it
-## is an ending. And a body is not `IMPASSABLE` — since M34 almost everything that stands still is
-## solid at the width it is drawn, and a café she walks round is `COSTLY` like the dog walker
+## is an ending. And a body is not `IMPASSABLE` — almost everything that stands still is solid at
+## the width it is drawn, and a café she walks round is `COSTLY` like the dog walker
 ## beside it. What is impassable is a thing that takes the **street**, which in this game is a
 ## closure and nothing else.
 enum BlockerEffect {
@@ -52,11 +52,11 @@ enum BlockerEffect {
 	COSTLY,      ## Passable at a price she can read before committing.
 }
 
-## What the scheduler placed a blocker **for**. *(M50 step 2; the third of the three axes in
-## docs/CITY.md, "The words for it", and the one that did not exist until now.)*
+## What the scheduler placed a blocker **for** — the third of the three axes in docs/CITY.md,
+## "The words for it".
 ##
-## The three are stated relative to the day's **corridor**, and none of them means anything without
-## one — which is why they arrived in the same milestone as `RouteTree`. `NONE` is not a fourth
+## The three are stated relative to the day's **corridor** and none of them means anything without
+## one, so they only make sense alongside `RouteTree`. `NONE` is not a fourth
 ## kind: it is everything the day puts down for a reason that is not about the route at all, so an
 ## ambient playground, a scar the run left and the spoilers of a park she used carry it.
 enum BlockerRole {
@@ -92,7 +92,7 @@ enum TileType {
 ## Fixed for the run, like everything else about the lattice. A player learns where the spine is
 ## on day 1 and it is still there on day 14.
 ##
-## **Two of the three are places rather than classes.** *(Playtest 12.)* There is one main road,
+## **Two of the three are places rather than classes.** There is one main road,
 ## running north to south, and there are two precincts of three blocks each — not a kind every
 ## corridor is asked to be. A spine that crosses itself is two spines and a precinct on every
 ## third street is what a street is, and either way the hierarchy this exists to build is gone.
@@ -117,9 +117,8 @@ enum District {
 ## and presents whichever one the run's history has brought it to. See docs/CITY.md,
 ## "Block purposes", and `CityState`.
 ##
-## The four calm purposes are the reason the route is a choice: a day can only be won on
-## calm ground (M14), so which kinds of calm are left, and where, is the run's real
-## difficulty curve.
+## The four calm purposes are the reason the route is a choice: a day can only be won on calm
+## ground, so which kinds of calm are left, and where, is the run's real difficulty curve.
 enum BlockPurpose {
 	PARK,          ## Grass, trees, a playground. Contested calm.
 	FOREST,        ## Denser trees, no playground. The quietest ground in the city.

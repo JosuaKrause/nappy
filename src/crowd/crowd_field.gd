@@ -2,10 +2,9 @@ class_name CrowdField
 extends RefCounted
 ## The patch of city the crowd is actually simulated in: a box that travels with the player.
 ##
-## Playtest 04, and the one instruction in it that was emphasised: *"don't load everything
-## upfront — only load / spawn things in the surrounding few blocks of the player when needed;
-## consistency is not that important, nobody can run after cars anyway to confirm they are
-## still there off screen."*
+## Nothing is loaded upfront: the crowd exists in the few blocks around the player and nowhere
+## else. **Consistency off screen does not matter, because nobody can run after a car to check it
+## is still there.**
 ##
 ## That last clause is the licence for everything here. A city-wide crowd spends its population
 ## on pavement nobody is looking at, and the density that reaches the player is whatever is left
@@ -37,11 +36,11 @@ func _init(city_map: CityMap, at := Vector2.ZERO) -> void:
 
 ## Half-extent that keeps the amount of **city** in the box the same wherever she is standing.
 ##
-## *(M46.)* The population is a fixed number per act and the box near the boundary is half wall,
-## so the same two hundred people were spread over half the ground: against the west wall the box
-## is 53% city and still put 67 walkers on screen — the same count as mid-map, in half the
-## streets — and the corridors beside the wall read as 1.6x an ordinary middle one, loud enough
-## that on two of five seeds one of them beat the main road.
+## The population is a fixed number per act and a box near the boundary is half wall, so a box of
+## fixed size spreads the same two hundred people over half the ground: against the west wall it is
+## 53% city and still puts 67 walkers on screen — the same count as mid-map, in half the streets —
+## and the corridors beside the wall read as 1.6x an ordinary middle one, loud enough that on two
+## of five seeds one of them beats the main road.
 ##
 ## The fix is a property of the box rather than of the population, which is why it is here and is
 ## nine lines: everything downstream already reads `radius`, so `contains`, `along_bounds` and
@@ -96,7 +95,7 @@ func along_bounds(vertical: bool) -> Vector2:
 ## This used to claim the clamp is *why* the crowd thins out in the corner of the map instead of
 ## bunching against the wall, "because there are simply fewer streets to put anybody on". On its
 ## own it does the opposite: fewer streets and the same two hundred people is more people per
-## street, and M46 measured 1.6x an ordinary corridor beside the wall. What makes the sentence
+## street, which measures 1.6x an ordinary corridor beside the wall. What makes the sentence
 ## true is `_grown_for` — the range still clamps, and the box it clamps is now big enough that
 ## the streets left in it hold the population at the density they hold it at mid-map.
 func corridor_range(vertical: bool) -> Vector2i:
