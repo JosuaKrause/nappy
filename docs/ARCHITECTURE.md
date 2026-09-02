@@ -131,7 +131,9 @@ signal resistance_progress_changed(value: int)
 ### `Telemetry`
 The run log: one plain-text file per run, written as it happens. **Inert until
 `begin_run()`**, which only `main.gd` calls — so the test suite, which never calls it, writes
-no files and pays nothing. See `docs/TELEMETRY.md` for the format and what belongs in it.
+no files and pays nothing. `begin_run()` is also inert on a web export
+(`OS.has_feature("web")`), since `user://` there is a stranger's browser storage that nothing
+ever prunes. See `docs/TELEMETRY.md` for the format and what belongs in it.
 
 The rule that governs it is one line long: **telemetry must not touch gameplay.** No RNG, no
 `day_rng()` stream, nothing that changes a placement or a roll. Where a system logs a random
