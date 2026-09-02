@@ -413,6 +413,20 @@ the picture existing — where she actually went, held next to where the day exp
 marks are blended into the ground rather than painted over it for the same reason: a trail solid
 enough to hide the corridor underneath it would answer only half the question.
 
+**`docs/evidence/rig-2026-09-02T233549-seed4242-3c6d4b4-dirty-map-day01-dusk.png`** is the trail
+reading rather than being argued for: day 1 of seed 4242, walked from the real doorstep with
+`AutoScreenshot`'s `--walk 3s15e` — three seconds of south to clear the notch, then fifteen of east
+along the pavement. The trail turns once, south into east, and runs continuously for about forty
+tiles before the script lets go and she stands where it left her; every tile of it is verified
+against that run's own dawn map, pixel for pixel, so what differs between the two pictures is the
+trail and nothing else. It crosses two zebras and a signalled crossing cleanly, which a single held
+direction never could show: a bare `--walk south` from the same doorstep meets this city's traffic
+within the first half-dozen tiles and comes back a speck, which is what every dusk map taken before
+the scripted walk existed showed. It carries no `MET_MARK` pip — the only thing she came close
+enough to, `cat_dash`, was sited ahead of her by the director rather than placed at dawn, so it has
+no dawn position for a glyph to sit on. The pip itself is proven against a plan placed by
+construction, in `tests/test_telemetry.gd`'s `_check_a_glyph_says_what_it_is`.
+
 ## What it deliberately does not do
 
 - **No aggregates, no summary at the end of a run.** Both are computable from the log when
