@@ -189,8 +189,14 @@ static func _lay_streets(map: CityMap) -> void:
 ## Two kinds change what that produces, and both changes are the kind saying what the street is
 ## rather than a new rule about geometry:
 ##
-## - **A pedestrianised corridor has no carriageway**, so its own band is paving all the way
-##   across and a driveable street crossing it does so over a zebra six tiles deep.
+## - **A pedestrianised corridor has no carriageway anywhere on it, box included.** A precinct's own
+##   band is paving all the way across, and a street crossing it gets no zebra either — the whole
+##   junction box is paving, not only the crossing street's own road band, because the box is ground
+##   the precinct owns and nothing there is asphalt. What a driveable street meets is the precinct's
+##   edge rather than a crossing: the box reads as a T, its third arm the precinct's pavement
+##   continuing past it, and the road resumes wherever the precinct's own band ends. **Which
+##   corridor asked does not matter** — the pedestrian flag below is true whenever *either* side of
+##   the box is a precinct, so a main road stops at one exactly as an ordinary street does.
 ## - **A main road's crossing is signalled rather than negotiated, and it is not a zebra** — it is
 ##   two dotted lines marking the pedestrian safe zone. Traffic on a main road does not give way to
 ##   somebody at the kerb, it obeys the light, so the crossing is a *timing* problem where an
@@ -206,10 +212,13 @@ static func _lay_streets(map: CityMap) -> void:
 ##   `GroundTiles._crossing_variant` is where the two dotted lines are drawn.
 static func _street_tile(x_offset: int, x_kind: GameEnums.StreetKind,
 		y_offset: int, y_kind: GameEnums.StreetKind) -> GameEnums.TileType:
-	var x_road := x_offset >= 0 and x_kind != GameEnums.StreetKind.PEDESTRIAN \
-			and CityMap.is_road_offset(x_offset)
-	var y_road := y_offset >= 0 and y_kind != GameEnums.StreetKind.PEDESTRIAN \
-			and CityMap.is_road_offset(y_offset)
+	# Either corridor being a precinct removes the carriageway from the **whole** box, not only
+	# from its own band — a junction belongs to both corridors at once, and a precinct is ground
+	# with no asphalt on it whichever axis you ask from.
+	var pedestrian := (x_offset >= 0 and x_kind == GameEnums.StreetKind.PEDESTRIAN) \
+			or (y_offset >= 0 and y_kind == GameEnums.StreetKind.PEDESTRIAN)
+	var x_road := x_offset >= 0 and not pedestrian and CityMap.is_road_offset(x_offset)
+	var y_road := y_offset >= 0 and not pedestrian and CityMap.is_road_offset(y_offset)
 
 	if x_offset >= 0 and y_offset >= 0:
 		if x_road and y_road:

@@ -47,6 +47,7 @@ func run(t) -> void:
 	_test_a_main_road_is_kept_by_its_lights(t)
 	_test_a_signal_gives_her_time_to_cross(t)
 	_test_a_precinct_has_no_cars_in_it(t)
+	_test_a_precinct_stops_the_street_that_crosses_it(t)
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
 	_test_only_cars_go_over_the_bridge(t)
@@ -763,6 +764,52 @@ func _test_a_precinct_has_no_cars_in_it(t) -> void:
 			% intruders)
 	t.check(walkers > 0, "and the pavement it replaced the road with has people on it (%d)"
 			% walkers)
+
+## **A precinct stops the street that only crosses it, too.** `CityMap.is_driveable_at` used to
+## ask only the axis a car was travelling on, so a car on an *ordinary* street that crosses a
+## precinct's corridor internally was told the crossing was open — the box read as carriageway to
+## the crossing street even though the precinct's own axis had already refused it.
+##
+## Found rather than assumed: the first internal junction inside a span whose crossing corridor is
+## not itself a precinct (two precincts crossing is the M53 case already shipped, and a different
+## box). Skips cleanly if this seed has none, but `SEED` is fixed for the whole suite and is known
+## to have one — see `docs/DECISIONS.md` if that ever stops being true.
+func _test_a_precinct_stops_the_street_that_crosses_it(t) -> void:
+	var map := _city.map
+	var box := Rect2i()
+	var found := false
+	for span in map.precinct_spans:
+		var vertical: bool = span.x == 1
+		for block in range(span.z, span.w):
+			var along := (block + 1) * CityMap.period()
+			var crossing_index := CityMap.junction_index(along)
+			var crossing_kind := map.street_kind(not vertical, crossing_index,
+					span.y * CityMap.period() + Tuning.STREET_WIDTH / 2)
+			if crossing_kind == GameEnums.StreetKind.PEDESTRIAN:
+				continue
+			var band := span.y * CityMap.period()
+			box = Rect2i(Vector2i(band, along), Vector2i.ONE * Tuning.STREET_WIDTH) if vertical \
+					else Rect2i(Vector2i(along, band), Vector2i.ONE * Tuning.STREET_WIDTH)
+			found = true
+			break
+		if found:
+			break
+	t.check(found, "this city has an ordinary street crossing a precinct internally")
+	if not found:
+		return
+
+	_city.crowd.start_day(1, _rng(1), map.tile_to_world(box.get_center()))
+	var intruders := 0
+	for _tick in 45:
+		_advance(1.0)
+		for agent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.CAR:
+				continue
+			if box.has_point(map.world_to_tile(agent.position)):
+				intruders += 1
+	t.check(intruders == 0,
+			"no car ever stands in the box where an ordinary street meets a precinct (%d did)"
+			% intruders)
 
 ## **Cars do not enter a junction they cannot leave.** *(Playtest 11, finding 7: "cars overlap on
 ## intersections — they should not go somewhere if they will run into another car.")*
