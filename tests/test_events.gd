@@ -1915,9 +1915,20 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	# and the exact share moves with the catalogue — what may not move is that neither end is empty.
 	# A day that walled every gap would have turned one corridor into several separate ones, which
 	# is the shape `RouteTree` deliberately does not grow; a day that walled none is the finding.
+	#
+	# **The floor is 0.2 because a precinct is safe ground and a wall is danger.** A precinct's box
+	# carries no `ROAD` or `CROSSING` tile, so the rows that place on a carriageway — the patrol, the
+	# checkpoint — cannot sit in a gap that runs through one. The `SIDEWALK`-placed rows still can,
+	# which is why this is a smaller pool of candidates rather than a gap nothing may ever wall, and
+	# why the denominator is still every gap: measured over the same map and the same sampled days,
+	# 26 of 89 gaps carried a wall before the precinct's box was paved and 21 of 89 after it — the
+	# count of gaps itself does not move, because which segments qualify is `RouteTree`'s business
+	# and nothing here touches it. Five gaps, all of them through the one stretch of the city whose
+	# design is that it is the safest ground in it. The band is what the check is for; the exact
+	# share moves with the catalogue.
 	t.check(gaps.size() > 20, "the days sampled have gaps between adjacent strands (%d)" % gaps.size())
 	var walled_share := float(gaps_walled.size()) / maxf(1.0, float(gaps.size()))
-	t.check(walled_share > 0.25, "%d of %d gaps carry a wall" % [gaps_walled.size(), gaps.size()])
+	t.check(walled_share > 0.2, "%d of %d gaps carry a wall" % [gaps_walled.size(), gaps.size()])
 	t.check(walled_share < 0.85,
 			"and the rest are left open (%.0f%% walled)" % (walled_share * 100.0))
 

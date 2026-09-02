@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_a_big_building_joins_two_blocks(t)
 	_test_no_single_street_closure_isolates_the_parks(t)
 	_test_a_missing_arm_has_no_crossing_on_it(t)
+	_test_nothing_goes_into_a_precinct(t)
 
 # ------------------------------------------------------------------- pieces ---
 
@@ -587,6 +588,48 @@ func _test_a_missing_arm_has_no_crossing_on_it(t) -> void:
 				t.check(map.tile_at(tile) != GameEnums.TileType.CROSSING,
 						"seed %d: a crossing at %s leads into ground %s that stopped being a street"
 						% [_seed(i), tile, footprint])
+
+## **Nothing goes into a precinct.** *(Playtest 16, finding 2, restated 2026-09-02: "there should
+## be no zebra cross markings or cars in a pedestrianized precinct… nothing should go in.")* A
+## precinct's own band is paving by construction; what this checks is the band a street crossing
+## it internally used to zebra across for the whole six-tile width of the precinct's corridor.
+##
+## Stated over the **rect a span owns** — the same bounds `CityMap.street_kind` tests, so a
+## corridor that crosses the span anywhere inside it, on either axis, is inside this rect too —
+## rather than over one seed's junction, which is the shape that let the original bug hide behind
+## whichever axis a test happened to look from.
+func _test_nothing_goes_into_a_precinct(t) -> void:
+	var seeds := 25
+	for i in seeds:
+		var map := CityGenerator.generate(_seed(i))
+		t.check(not map.precinct_spans.is_empty(),
+				"seed %d: a city has at least one precinct" % _seed(i))
+		for span in map.precinct_spans:
+			var vertical := span.x == 1
+			var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH
+			var hi := (span.w + 1) * CityMap.period()
+			var band := span.y * CityMap.period()
+			var rect := Rect2i(Vector2i(band, lo), Vector2i(Tuning.STREET_WIDTH, hi - lo)) \
+					if vertical \
+					else Rect2i(Vector2i(lo, band), Vector2i(hi - lo, Tuning.STREET_WIDTH))
+			for tile in map.rect_tiles(rect):
+				var type := map.tile_at(tile)
+				t.check(type != GameEnums.TileType.ROAD and type != GameEnums.TileType.CROSSING,
+						"seed %d: %s in precinct %s has no carriageway on it (found %s)"
+						% [_seed(i), tile, span, type])
+				# A hard blocker is allowed to take the ground under it anywhere in the lattice —
+				# that is what "built over" means — and one landing on a precinct's own corridor is
+				# a separate, pre-existing gap in where a big building or a zone may sit rather than
+				# anything this fix touches. Walkability is asserted everywhere else in the band.
+				if not _tile_is_hard_blocked(map, tile):
+					t.check(map.is_walkable(tile),
+							"seed %d: %s in precinct %s is still walkable" % [_seed(i), tile, span])
+
+func _tile_is_hard_blocked(map: CityMap, tile: Vector2i) -> bool:
+	for key: Vector3i in map.built_over:
+		if (map.built_over[key] as Rect2i).has_point(tile):
+			return true
+	return false
 
 func _seed(index: int) -> int:
 	# Spread the seeds out; consecutive integers are what generate() retries with.

@@ -168,9 +168,13 @@ func street_kind_at(vertical: bool, tile: Vector2i) -> GameEnums.StreetKind:
 func is_driveable(vertical: bool, index: int, along_tile: int) -> bool:
 	return street_kind(vertical, index, along_tile) != GameEnums.StreetKind.PEDESTRIAN
 
-## The same for a world tile, asked about whichever corridor it is travelling along.
+## The same for a world tile, checked against **both** corridors that meet there. A junction box
+## belongs to two corridors at once, and a precinct on either one paves the whole box — so a car
+## travelling an ordinary street that happens to cross a precinct is told the truth about the tile
+## it is on rather than only about the street it is following.
 func is_driveable_at(vertical: bool, tile: Vector2i) -> bool:
-	return street_kind_at(vertical, tile) != GameEnums.StreetKind.PEDESTRIAN
+	return street_kind_at(vertical, tile) != GameEnums.StreetKind.PEDESTRIAN \
+			and street_kind_at(not vertical, tile) != GameEnums.StreetKind.PEDESTRIAN
 
 ## The junction a tile stands in — the pair of corridor indices whose bands cross there — or
 ## `(-1, -1)` where it is not inside one.

@@ -41,7 +41,7 @@ and decided before a tile is laid — see `CityGenerator._assign_street_kinds`.
 
 | Kind | How many | What it is |
 | --- | --- | --- |
-| `ORDINARY` | everything else | Two lanes, a zebra at every junction, and traffic that gives way to somebody standing at the kerb. |
+| `ORDINARY` | everything else | Two lanes, a zebra at every junction with a carriageway on the far side, and traffic that gives way to somebody standing at the kerb. Where the far side is a precinct there is no carriageway to zebra: the street ends at the precinct's edge instead, a T rather than a crossroads. |
 | `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. Its crossings are two dotted lines rather than a zebra, because a zebra is a promise it does not make. `CityMap.main_road`. |
 | `PEDESTRIAN` | **two stretches of three blocks** | A retail precinct: paving frontage to frontage, no kerb, no cars, the busiest pavement in the city, and the best ground outside a park to bring a meter down on. `CityMap.precinct_spans`. |
 
@@ -56,7 +56,10 @@ itself is two spines, and a precinct you meet on every third street is what a st
 one main road because there is nowhere else it could be,
 and a precinct is three blocks with an end you can see — one along the southern shore, one inland.
 A span covers its blocks and the junctions between them and stops short of the crossroads at either
-end, which is where the bollards are.
+end, which is where the bollards are. **Nothing drives on the span itself, on either axis.** A
+street crossing it internally meets paving rather than a carriageway and gets no zebra — the box is
+brick from edge to edge — so what would be a crossroads elsewhere is a T at a precinct's edge, the
+precinct's own pavement continuing past it as the third arm.
 
 The lattice itself does not move. Every corridor is still `sidewalk | road | sidewalk` and the
 layout arithmetic is still a modulo, which is why a kind can never disconnect the city or shift a
