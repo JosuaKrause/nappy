@@ -205,6 +205,12 @@ learns the difference. The button is never a threshold on the stick's own deflec
 one deliberate, held press, exactly as **Shift** is, so a partly-pushed stick stays what it always
 was, a slower walk.
 
+A third element, top right, sends the pause: a real `InputEventAction` for `pause` through
+`Input.parse_input_event()` rather than held state, since `main` reads the pause off the
+propagated event and would hear nothing from `Input.action_press()` alone. It fires on release
+rather than on touch-down, and only when the release is still over the button, so a thumb that
+lands wrong can slide off without stopping the day.
+
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.
 
