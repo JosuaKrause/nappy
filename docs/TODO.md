@@ -45,15 +45,22 @@ The rest of M53 shipped; the record, with the measurements and the not-reproduce
 
       **What it takes, and it is three systems rather than a palette change:**
 
-      - **The tiles.** No `CROSSING` inside a precinct band: the crossing street's carriageway ends
-        at the precinct's kerb line and the band is `SIDEWALK` across its whole width. The rule to
-        write it as is playtest 16's — *what a junction is made of is decided by the streets that
-        actually meet at it* — rather than a special case for precincts.
-      - **The traffic.** Removing those tiles removes the through-links a car uses, so the street
-        network has to terminate at the precinct edge and turn. The turning behaviour exists — every
-        agent, car and walker alike, already runs a T-junction rule — so this is about what the
-        lanes and the street index say is connected, in `src/crowd/crowd_lanes.gd` (which lane
-        joins which) and `src/city/traffic_index.gd` (what the traffic thinks the network is).
+      - **The tiles, and it is one condition.** `CityGenerator._street_tile` decides a junction tile
+        by asking whether each of the two corridors has a carriageway at that point; a precinct
+        answers no on its own axis, so the crossing street's yes is what produces the zebra. Where
+        either corridor is a precinct the junction is paving across its whole width, and no
+        `CROSSING` is laid there at all. The rule to write it as is playtest 16's — *what a junction
+        is made of is decided by the streets that actually meet at it* — rather than a special case
+        for precincts.
+      - **The traffic, and the hole in it is one function.** `CityMap.is_driveable_at(vertical,
+        tile)` answers *is there a carriageway here* by asking the kind of **the corridor the car is
+        travelling along** — so a car heading north up an ordinary street is told yes at every tile
+        of it, including the six that lie inside an east–west precinct. The three places a car asks
+        (`CrowdAgent`, at placement, at each step, and when checking the arm it is crossing) are
+        already in place and already refuse a precinct on their own axis. What is missing is that a
+        tile inside *either* corridor's precinct has no carriageway on it at all. Check what that
+        does to `src/crowd/traffic_index.gd`, which is what the traffic uses as its picture of the
+        network, and to the lane joins in `src/crowd/crowd_lanes.gd`.
       - **The drawing.** A junction with three arms drawn with four is the *other* half of playtest
         16's finding, and M49's open item — *junctions are four-way where an arm dead-ends*, filed
         as **not reproduced** because two checked candidates came out correct — has been looking for
