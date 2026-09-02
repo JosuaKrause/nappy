@@ -974,6 +974,13 @@ static func _checkpoint() -> EventDef:
 
 ## An unmarked van idles first — that idling IS the telegraph, and it runs long because
 ## the inner radius ends the day. Getting close does not excite the baby; it takes you.
+##
+## **And it takes somebody else first.** While she is close enough to watch (`outer_radius`), it
+## draws its own bystander walked to it and taken — `EventInstance._update_the_take()`. A scripted
+## figure that belongs to the event, never a real `CrowdAgent`: the crowd is a population of the
+## field around the player rather than of the city, recycled as she moves, so a taken pedestrian
+## could never be a lasting fact about the world either way. Drawing and telemetry only — nothing
+## here changes `contribution_at()`, spawns a body, or reaches into the crowd.
 static func _abduction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "abduction"
