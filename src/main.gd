@@ -1,7 +1,9 @@
 extends Node2D
 ## Boot scene: generate the city, drop the player on the doorstep, then the HUD.
 ##
-## The right-hand overlay is a developer readout, not part of the game's UI.
+## The right-hand overlay is a developer readout, not part of the game's UI, and it is gated by
+## `_debug` (`DevFlags.enabled()`) the same as every other piece of developer furniture: outside
+## a debug build the string is never assembled, not merely hidden behind an invisible label.
 
 const CITY := preload("res://scenes/world/city.tscn")
 const STROLLER := preload("res://scenes/player/stroller.tscn")
@@ -11,6 +13,11 @@ const PAUSE_SCREEN := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE_SCREEN := preload("res://scenes/ui/title_screen.tscn")
 
 @onready var _status: Label = $CanvasLayer/Status
+
+## Whether the developer readout runs at all. Read once from `DevFlags.enabled()` into a member
+## — rather than asked of `OS.is_debug_build()` inside `_process()` — so a test can set it and
+## check the release shape, the way `hud._debug` already does for the HUD's own gate.
+var _debug := DevFlags.enabled()
 
 var _city: City
 var _player: Stroller
@@ -45,6 +52,10 @@ func _ready() -> void:
 	# `get_tree().paused` while the player walks, the crowd drives and the resistance deadline
 	# runs out behind a screen saying the day is over.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Starts in the shape it should have on this build rather than trusting the scene file's own
+	# default (`true`): every later flip of it is relative to whichever screen is up, and a boot
+	# path that never reaches one of them should still open with the right answer.
+	_status.visible = _debug
 	GameState.start_run(DevFlags.seed_override())
 	# After the run seed is settled and before anything is generated, so the log opens on the
 	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
@@ -203,7 +214,10 @@ func _on_title_start() -> void:
 	_pauses_with_the_game(_city)
 	_hud.visible = true
 	_edge_layer.visible = true
-	_status.visible = true
+	# Not an unconditional `true`: this is the one place the readout was coming back regardless
+	# of build, since `_open_the_title()` always turns it off and this was the only place that
+	# turned it back on.
+	_status.visible = _debug
 	get_tree().paused = false
 
 ## The screen-edge half of the danger vocabulary, in its own layer.
@@ -396,6 +410,11 @@ func _process(_delta: float) -> void:
 	_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_day.phase == GameEnums.DayPhase.RETURNING,
 			_city.map.home_world_position())
+	# The developer readout, gated rather than merely hidden: it is a seed, a frame rate and a
+	# meter breakdown, which a released build has no business assembling every frame even behind
+	# a label nobody can see — and `_nearest_event_text()` below is a scan of every live event.
+	if not _debug:
+		return
 	var tile := _city.map.world_to_tile(_player.global_position)
 	_status.text = "\n".join([
 		"seed  %d   day %d" % [GameState.run_seed, GameState.day],
