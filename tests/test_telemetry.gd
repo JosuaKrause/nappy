@@ -34,6 +34,12 @@ func run(t) -> void:
 	_test_every_routed_event_is_a_straight_line(t)
 	_test_the_map_picture_reads_the_map_and_nothing_else(t)
 	_test_a_picture_asked_for_by_hand_is_never_capped(t)
+	_test_the_trail_is_sampled_by_distance_not_by_frame(t)
+	_test_the_trail_carries_whether_she_was_running(t)
+	_test_a_lost_day_restarts_the_trail(t)
+	_test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t)
+	_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t)
+	_test_the_map_picture_draws_the_trail_and_distinguishes_running(t)
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -308,6 +314,207 @@ func _test_a_capture_is_never_logged_as_blocked(t) -> void:
 	stroller.free()
 	observer.free()
 
+# ------------------------------------------------------------ the trail and the meets ---
+# *(`docs/TODO.md`, M66, "the dusk map shows what the player did": a trail belongs in
+# `TelemetryObserver`, sampled by distance rather than by frame so it stays bounded and
+# framerate-independent, and "met" means she came within an event's own outer radius — the field
+# she can actually feel — rather than merely close enough for the plan to have been streamed into
+# the world.)*
+
+## A bare observer with only `_player` set, the one field `_watch_the_trail` reads besides the
+## position it is handed directly.
+func _trail_rig() -> TelemetryObserver:
+	var observer := TelemetryObserver.new()
+	observer._player = Stroller.new()
+	return observer
+
+## Distance sampling, not frame sampling: many small steps inside one tile must leave the trail
+## alone, and the first step to cross a tile of distance — however many frames it took — must add
+## exactly one point.
+func _test_the_trail_is_sampled_by_distance_not_by_frame(t) -> void:
+	var observer := _trail_rig()
+	var here := Vector2(100.0, 100.0)
+
+	observer._watch_the_trail(here)
+	t.check(observer.trail().size() == 1, "the very first sample always leaves a point")
+
+	for i in 20:
+		here.x += 1.0
+		observer._watch_the_trail(here)
+	t.check(observer.trail().size() == 1,
+			"twenty one-pixel steps inside a tile leave the trail at one point (got %d)"
+			% observer.trail().size())
+
+	here.x += TelemetryObserver.TRAIL_SAMPLE_DISTANCE
+	observer._watch_the_trail(here)
+	t.check(observer.trail().size() == 2,
+			"crossing a tile of distance writes exactly one more point, however many frames it took")
+
+	observer._player.free()
+	observer.free()
+
+## The third component of a sample is `Stroller.run_excess_ratio()` at the moment it was taken —
+## 0.0 at a walk, above 0.0 the instant she is running faster than a walk — so the dusk map can
+## colour a run stretch differently from a walked one without a second trail to keep in step.
+func _test_the_trail_carries_whether_she_was_running(t) -> void:
+	var observer := _trail_rig()
+	observer._player.velocity = Vector2.ZERO
+	observer._watch_the_trail(Vector2.ZERO)
+	t.check(observer.trail()[0].z == 0.0, "a sample taken at a walk carries no run ratio")
+
+	observer._player.velocity = Vector2(Tuning.RUN_SPEED, 0.0)
+	observer._watch_the_trail(Vector2(TelemetryObserver.TRAIL_SAMPLE_DISTANCE, 0.0))
+	t.check(observer.trail()[1].z > 0.0,
+			"and a sample taken at a sprint carries its run_excess_ratio (got %.2f)"
+			% observer.trail()[1].z)
+
+	observer._player.free()
+	observer.free()
+
+## `start_day()` resets everything else about yesterday, and the trail is no exception: a rewound
+## day was not walked, so the picture of it must start from nothing rather than carrying the
+## abandoned attempt's trail into the retry.
+func _test_a_lost_day_restarts_the_trail(t) -> void:
+	var saved_day := GameState.day
+	GameState.day = 1
+	var map := CityGenerator.generate(4242)
+	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	t.add_child(city)
+	city.build(map)
+	# Not added to the tree: a bare `Stroller.new()` has no `Camera2D` child, which only the scene
+	# it is normally instanced from provides, and `start_day()` reads nothing that needs one.
+	var player := Stroller.new()
+	player.global_position = city.map.home_world_position()
+	player.facing = Vector2.DOWN
+
+	var observer := TelemetryObserver.new()
+	observer._city = city
+	observer._map = city.map
+	observer._player = player
+
+	observer.start_day()
+	observer._watch_the_trail(player.global_position + Vector2(200.0, 0.0))
+	t.check(not observer.trail().is_empty(), "the trail records a point during the day")
+
+	observer.start_day()
+	t.check(observer.trail().is_empty(),
+			"a new day's start — including a rewound day's — starts the trail over from nothing")
+
+	GameState.day = saved_day
+	observer.free()
+	player.free()
+	city.free()
+
+## The dusk map's whole reason to exist: `was_live` marks a plan the moment
+## `EventManager.stream_around` loads it at `Tuning.EVENT_STREAM_RADIUS` (900px), which is more
+## than twice the reach (`def.outer_radius`, typically 150px) of a row that has not telegraphed
+## anything yet. "Met" has to be the narrower, honest question — did the field that actually costs
+## her something ever reach her — or a day that met eight of forty events would read as forty.
+func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	t.add_child(city)
+	city.build(map)
+	var consumed: Array[String] = []
+	city.events.start_day(3, _rng(3), consumed)
+
+	var plan: EventScheduler.Planned = null
+	for candidate in city.events.plans():
+		if candidate.is_placed() and not candidate.def.city_wide:
+			plan = candidate
+			break
+	t.check(plan != null, "day 3 places something sited and not city-wide to test against")
+	if plan == null:
+		city.free()
+		return
+
+	city.events.stream_around(plan.position)
+	t.check(plan.live != null, "streaming in from right on top of it brings it live")
+
+	var observer := TelemetryObserver.new()
+	observer._city = city
+
+	# Asserted about `plan` specifically rather than "the dict is empty": `stream_around` from right
+	# on top of it may well have streamed in a neighbour too, and a neighbour being met at `far` is
+	# not what this test is about.
+	var far := plan.live.global_position + Vector2(plan.def.outer_radius + 200.0, 0.0)
+	observer._watch_met_events(far)
+	t.check(not observer.met_events().has(plan),
+			"being streamed in is not being met — she has not come within the outer radius yet")
+	t.check(plan.was_live, "the plan is 'was_live' regardless, which answers the looser question")
+
+	var close := plan.live.global_position + Vector2(plan.def.outer_radius - 10.0, 0.0)
+	observer._watch_met_events(close)
+	t.check(observer.met_events().has(plan),
+			"entering the outer radius — the field she can actually feel — is what counts as met")
+
+	observer.free()
+	city.free()
+
+## `_test_tracing_a_day_does_not_change_it` is the invariant's own test, and it does not reach
+## either of these two: it calls `EventScheduler.build_day` directly and never instantiates an
+## observer at all, so it says nothing about `_watch_the_trail` or `_watch_met_events` — the two
+## per-frame watchers M66 added, both of which run every frame the observer is alive and both of
+## which read live gameplay objects (the player's position; every event instance's
+## `global_position`). Neither takes a `RandomNumberGenerator` — there is no `rng` parameter to
+## consume from, unlike the hoisted-roll systems the invariant's comment warns about — and neither
+## writes anywhere but the observer's own `_trail` and `_met_events`. That is a claim about the
+## code, and this is the test that would catch it being wrong: it drives both across four hundred
+## frames of a real day, with the log on, and requires the day after to plan exactly as it would
+## have if the drive had never happened — the only way that can hold is if nothing either watcher
+## did reached `map`, `city.events` or a `day_rng()` stream.
+func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	t.add_child(city)
+	city.build(map)
+	var consumed: Array[String] = []
+	city.events.start_day(3, _rng(3), consumed)
+
+	var plan: EventScheduler.Planned = null
+	for candidate in city.events.plans():
+		if candidate.is_placed() and not candidate.def.city_wide:
+			plan = candidate
+			break
+	t.check(plan != null, "day 3 places something sited and not city-wide to walk near")
+	if plan == null:
+		city.free()
+		return
+	city.events.stream_around(plan.position)
+
+	# What day 4 plans, computed before the trail is ever walked.
+	var quiet := _plan_signature(map, 4)
+
+	var observer := TelemetryObserver.new()
+	observer._city = city
+	observer._player = Stroller.new()
+	observer._player.global_position = plan.live.global_position \
+			+ Vector2(plan.def.outer_radius + 200.0, 0.0)
+
+	Telemetry.begin_memory_log()
+	var here: Vector2 = observer._player.global_position
+	var towards := (plan.live.global_position - here).normalized()
+	for i in 400:
+		here += towards * TelemetryObserver.TRAIL_SAMPLE_DISTANCE
+		observer._player.global_position = here
+		observer._watch_the_trail(here)
+		observer._watch_met_events(here)
+	Telemetry.end_run()
+
+	t.check(observer.trail().size() > 300,
+			"the drive actually sampled the trail, not a vacuous pass (got %d points)"
+			% observer.trail().size())
+	t.check(not observer.met_events().is_empty(),
+			"and walked close enough to mark the plan met, so the scan actually ran")
+
+	var traced := _plan_signature(map, 4)
+	t.check(quiet == traced, "four hundred frames of trail sampling and met-events scanning, "
+			+ "with the log on, leave what day 4 plans untouched")
+
+	observer._player.free()
+	observer.free()
+	city.free()
+
 # ------------------------------------------------------------- the city grid ---
 # *(Playtest 13, finding 4.)* What a test can hold about a picture is its geometry and its
 # innocence; whether it is *legible* is a thing to open the PNG and look at, which is the
@@ -453,9 +660,10 @@ func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
 ##
 ## Three claims, and the middle one is the one a whole-picture check cannot make: a lethal row
 ## **fills** its three tiles and a costly one is a **cross**, so the corners are the difference and
-## a corner is where the two would be confused. The third is `was_live`, which is the only thing the
-## dusk picture says that the dawn one does not — and it is checked by flipping the flag rather than
-## by playing a day, because what is being tested is the drawing.
+## a corner is where the two would be confused. The third is the `met` pip, which is the only thing
+## the dusk picture says that the dawn one does not — and it is checked by handing `render` a `met`
+## dictionary directly rather than by playing a day, because what is being tested is the drawing and
+## not `TelemetryObserver._watch_met_events`, which has its own test.
 func _check_a_glyph_says_what_it_is(t, map: CityMap,
 		plans: Array[EventScheduler.Planned]) -> void:
 	var lethal: EventScheduler.Planned = null
@@ -489,13 +697,32 @@ func _check_a_glyph_says_what_it_is(t, map: CityMap,
 		# map she never walked into is exactly the placement worth seeing.
 		t.check(_tile_colour(image, at) != TelemetryMap.MET_MARK,
 				"and nothing she has not reached carries a pip")
-		plan.was_live = true
-		var met := TelemetryMap.render(map, [], null, only)
-		plan.was_live = false
-		t.check(_tile_colour(met, at) == TelemetryMap.MET_MARK,
+		var met_image := TelemetryMap.render(map, [], null, only, [], {plan: true})
+		t.check(_tile_colour(met_image, at) == TelemetryMap.MET_MARK,
 				"while one she reached does, in the middle of the same mark")
-		t.check(_tile_colour(met, at + Vector2i(1, 0)) == colour,
+		t.check(_tile_colour(met_image, at + Vector2i(1, 0)) == colour,
 				"and the pip does not change the glyph around it")
+
+## The trail draws at all, and a point taken while running reads differently from one taken at a
+## walk — the two claims `TelemetryObserver._watch_the_trail` makes about a sample, checked the way
+## the corridor's own stroke is: by whether the pixel changed, since both are blended into the
+## ground rather than painted over it.
+func _test_the_map_picture_draws_the_trail_and_distinguishes_running(t) -> void:
+	var map := CityGenerator.generate(4242)
+	# The middle of the map rather than the home or a calm area: both are drawn *after* the trail
+	# on purpose (they are the picture's fixed points) and would silently paint over a trail point
+	# placed on top of them, which is a fact about draw order and not about the trail.
+	var at := map.tile_to_world(map.size / 2)
+
+	var plain := TelemetryMap.render(map)
+	var walked: Array[Vector3] = [Vector3(at.x, at.y, 0.0)]
+	var walked_image := TelemetryMap.render(map, [], null, [], walked)
+	t.check(plain.get_data() != walked_image.get_data(), "a trail with one point on it is drawn")
+
+	var ran: Array[Vector3] = [Vector3(at.x, at.y, 1.0)]
+	var ran_image := TelemetryMap.render(map, [], null, [], ran)
+	t.check(ran_image.get_data() != walked_image.get_data(),
+			"a point taken while running reads differently from the same point taken at a walk")
 
 ## `_route_stroke` draws the band between a route's two ends, which **is** the route only while
 ## every route in the catalogue is two axis-aligned points.

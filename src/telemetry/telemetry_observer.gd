@@ -10,7 +10,11 @@ extends Node
 ## It lives in one node on purpose. The alternative is a telemetry branch in `_physics_process`
 ## of every gameplay class, and the invariant that matters most here — **telemetry must not
 ## touch gameplay** — is much easier to keep when the telemetry is not in the gameplay files.
-## Nothing below writes to anything. It reads positions and meters and emits lines.
+## Nothing below writes to anything outside itself. It reads positions and meters, emits lines,
+## and — for the dusk map — keeps two lists in memory: the trail she actually walked and which
+## planned events she came close enough to for them to have cost her anything. Neither is written
+## to the log; `main.gd` hands both to `Telemetry.write_map` at dusk, the same way it already hands
+## the day's route tree.
 ##
 ## It is only added to the tree when a run is being traced, so when telemetry is off this
 ## costs nothing at all rather than costing a disabled check per frame.
@@ -52,6 +56,13 @@ const RUN_MIN_TIME := 0.25
 ## Two seconds is roughly what waiting for one car to pass costs, so anything past it was waiting
 ## for something slower than the traffic — which can only be the clock.
 const IDLE_MIN_TIME := 2.0
+
+## How far she must move before the trail gets another point — one tile, so the picture is one
+## point per tile of ground actually covered rather than one per frame, which is what keeps it
+## bounded and framerate-independent: a slow machine and a fast one produce the same trail. At
+## `Tuning.WALK_SPEED` a 180-second day covers a few hundred tiles, which is the "a few hundred
+## points" the picture is sized against.
+const TRAIL_SAMPLE_DISTANCE := float(Tuning.TILE_SIZE)
 
 ## How long on the road stops being a crossing and starts being a walk down it.
 ##
@@ -123,6 +134,23 @@ var _path_last := 0.0
 var _path_time := {}
 ## Which branches of the corridor the street she is on carries. See `_watch_the_branch`.
 var _path_branches: Array[int] = []
+
+## Where she actually went today, for the dusk map to draw against the corridor above. Each point
+## is `(x, y, run_excess_ratio)` — a third component on the one trail rather than a second trail to
+## keep in step with it, since running is a property of a stretch of the walk and not a separate
+## picture. Sampled by distance (`TRAIL_SAMPLE_DISTANCE`), not by frame; see `_watch_the_trail`.
+## Cleared in `start_day()`, same as everything else below it: a rewound day was not walked.
+var _trail: Array[Vector3] = []
+## The last point actually recorded, so the next one can be measured against it. `_trail` is not
+## read back for this because `is_empty()` already has to be checked to write the first point at
+## all, and a stray sentinel value would be one more thing to keep in sync with it.
+var _trail_last := Vector2.ZERO
+
+## Which planned events she actually met today — came within `def.outer_radius` of, the field she
+## can feel — keyed by the `EventScheduler.Planned` itself so the dusk map can ask "was this one of
+## them" with no second identifier to keep in sync with the plan list it is already drawing. See
+## `_watch_met_events`.
+var _met_events := {}
 
 # When a bump was last written down, and how many have gone unwritten since.
 var _last_bump := -1000.0
@@ -220,6 +248,9 @@ func start_day() -> void:
 	_path_since = 0.0
 	_path_last = 0.0
 	_path_branches.clear()
+	_trail.clear()
+	_trail_last = Vector2.ZERO
+	_met_events.clear()
 	Telemetry.note("start", "doorstep %s, facing %s" % [
 		TelemetryLog.tile(_map.world_to_tile(_player.global_position)),
 		TelemetryLog.compass(_player.facing)])
@@ -260,6 +291,8 @@ func _process(delta: float) -> void:
 	_watch_the_chase(here, delta)
 	_watch_closures(here)
 	_watch_the_contact(here)
+	_watch_the_trail(here)
+	_watch_met_events(here)
 
 ## Whether she is walking the day's corridor.
 ##
@@ -786,6 +819,55 @@ func _watch_the_contact(here: Vector2) -> void:
 	_contact_seen = true
 	Telemetry.note("contact", "walked within %.0fpx of the chalk mark at %s"
 			% [at.distance_to(here), TelemetryLog.tile(_map.world_to_tile(at))])
+
+## Where she went, one point at a time — the answer to *"what did she actually do"* that neither
+## the log nor the dawn map can give, since the log only holds a position at the moments something
+## happened and the dawn map is drawn before she has taken a step.
+##
+## Sampled by **distance rather than by frame**, which is what keeps it bounded and
+## framerate-independent: a slow frame and a fast one covering the same ground write the same
+## trail. The alternative — a point every `_process` call — would make the picture a function of
+## how long a machine took to render the day rather than of the day itself, and would grow without
+## bound on a rig left running.
+##
+## The point carries `Stroller.run_excess_ratio()` as its third component rather than a second
+## trail, because running is a property of a stretch of the one walk, not a separate walk of its
+## own — the same reasoning `_watch_running` uses for the `run` entry, one attribute richer.
+func _watch_the_trail(here: Vector2) -> void:
+	if not _trail.is_empty() and here.distance_to(_trail_last) < TRAIL_SAMPLE_DISTANCE:
+		return
+	_trail.append(Vector3(here.x, here.y, _player.run_excess_ratio()))
+	_trail_last = here
+
+## Which planned events she actually met — came within `def.outer_radius`, the field she can
+## actually feel, rather than merely close enough for `EventManager.stream_around` to have loaded
+## them into the world at `Tuning.EVENT_STREAM_RADIUS` (900px, more than twice the field of a
+## typical row). `plan.was_live` answers the looser, streaming question; the dusk map wants the one
+## that says whether a placement did anything to her, which is what decides whether it was a wall
+## or decoration. See `docs/TODO.md`, M66, "Which events she actually met".
+##
+## A `city_wide` source has no edge to enter — the same reasoning `_watch_what_is_near` gives for
+## excluding it there — so it can never be "met" and is skipped rather than answered `false`
+## forever.
+##
+## Once a plan is met it stays met for the rest of the day: the dictionary is never cleared except
+## in `start_day()`, so streaming an event back out and in again does not un-meet it.
+func _watch_met_events(here: Vector2) -> void:
+	for plan in _city.events.plans():
+		if _met_events.has(plan) or not plan.is_placed() or not plan.live or plan.def.city_wide:
+			continue
+		if plan.live.global_position.distance_to(here) <= plan.def.outer_radius:
+			_met_events[plan] = true
+
+## The trail and the met events, for `main.gd` to hand to `Telemetry.write_map` at dusk alongside
+## the route tree it already passes. Empty before a day has been walked — before `start_day()` and
+## on the dawn map, which is the correct answer rather than a gap: there is no walk yet, and a
+## picture that invented one would be worse than a picture with none.
+func trail() -> Array[Vector3]:
+	return _trail
+
+func met_events() -> Dictionary:
+	return _met_events
 
 # ------------------------------------------------------------------- signals ---
 

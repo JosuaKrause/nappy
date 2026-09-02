@@ -234,20 +234,25 @@ func snapshot_now(context: String) -> void:
 ## which is the invariant this whole file is built on.
 ## It also draws what the day **placed**, and that is why it is written twice.
 ##
-## `at_dusk` is only the filename, and the difference between the two pictures is entirely in the
-## plans: at dawn nothing has been reached, so every mark is drawn faint and the picture is purely
-## *what the day intended*; at dusk the ones she actually walked up to have burnt in, so the same
-## picture also says **which of it happened**. Neither is derivable from the other and neither is
-## the more useful one — a wall in the wrong place is visible in the first, and a corridor nothing
-## on it was ever met is visible only in the second.
+## `at_dusk` is only the filename, and the difference between the two pictures is entirely in
+## `trail` and `met`: at dawn there is no walk yet, so both are left at their empty default and the
+## picture is purely *what the day intended*; at dusk `TelemetryObserver` hands over where she
+## actually went and which of `plans` she came close enough to for it to have cost her anything, so
+## the same picture also says **what she did about it**. Neither picture is derivable from the
+## other and neither is the more useful one — a wall in the wrong place is visible in the first, and
+## a corridor nothing on it was ever met is visible only in the second.
+##
+## `trail` and `met` are `TelemetryObserver`'s own lists — see `TelemetryObserver.trail()` and
+## `.met_events()` — passed through untouched. Reading them here takes no RNG and changes nothing
+## about either list, the same promise every other argument to this function already keeps.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
-		at_dusk := false) -> void:
+		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
 	if not _log or _log.path == "":
 		return
 	var path := "%s/%s-map-day%02d%s.png" % [DIRECTORY, _stem, day, "-dusk" if at_dusk else ""]
 	var drawn := tree if tree else RouteTree.for_day(map, day)
-	if TelemetryMap.render(map, closures, drawn, plans).save_png(path) != OK:
+	if TelemetryMap.render(map, closures, drawn, plans, trail, met).save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
 
 ## The capture itself, split out because it is the only thing here that has to wait for a frame.
