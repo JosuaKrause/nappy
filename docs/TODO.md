@@ -731,18 +731,6 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       sited, **every step he tries is refused**. His lethal radius still travels with him, which
       makes an invisible fatal spot inside a wall. Fix it where he is placed, not by letting a
       pursuer walk through buildings
-- [ ] **She flickers between two drawings when she walks diagonally.** *(2026-09-02: "when going
-      diagonally the graphic flickers — only change the graphic once it goes over 50 degrees or
-      below 40 degrees and stick with the previous graphic otherwise; this should prevent
-      flickering.")* Both `Stroller._draw_mother()` and `_draw_pram()` choose the side view over the
-      front or back one with the same test — whether the facing's horizontal part is larger than its
-      vertical part — which is a hard switch **exactly on the diagonal**. Walking at 45° the facing
-      wobbles across that line frame by frame, so the drawing does too. The fix is the hysteresis
-      the instruction gives: measure the facing's angle off the horizontal, go side-on only when it
-      falls **below 40°**, go front-or-back only when it rises **above 50°**, and between the two
-      keep whatever was drawn last. **It is one decision, not two** — the mother and the pram must
-      agree, or she faces one way and the pram another — so it belongs in a single member computed
-      once a frame and read by both
 - [ ] **The `burning_building` spawns in the road** rather than in a building — it spawns exactly
       where the engine stopped. A few lines to nudge it to the nearest `BUILDING` tile
 - [ ] **The pram has no collision of its own**, so it clips into walls when she hugs a corner. A
