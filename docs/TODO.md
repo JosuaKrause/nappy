@@ -434,24 +434,23 @@ direction, not distance.**
 - [ ] **The run lesson does not show, and it must.** *(2026-09-02, from play: "the run lesson
       doesn't show at all anymore — it should always show for the day 3 lesson.")*
 
-      **What is established, so a diagnosis does not start from nothing.** The teaching code and its
-      signal connection are intact and `tests/test_hud.gd` passes when `_on_event_telegraphed()` is
-      called by hand, so the handler works. What is suspect is *when* it is called: the
-      `event_telegraphed` signal is emitted from `EventInstance._ready()` — **the moment an instance
-      is created, not the moment she meets it** — and the handler spends `_taught_run`, which is
-      once per run, on the first pursuing instance of day 3 wherever in the city it happens to be
-      born. A dog created two streets away, or streamed out before she ever reaches it, would burn
-      the lesson on nothing. That is a hypothesis with the mechanism named, not a finding.
+      **The cause, given by the player and confirmed by reading the retry path:** *"when I die the
+      next time it won't show — you need to reset the flag when the player dies on day 3."*
+      `_taught_run` in the HUD is once per **run**, and a lost day is not a new run: losing a nerve
+      calls `_start_day()` again on the same HUD instance, which is never rebuilt. `_teach_the_day()`
+      already resets the line, its timer and the walked-today state on every day start, and
+      deliberately does not reset the once-per-run flags — so the second attempt at day 3 is the
+      first one that has already spent its lesson.
 
-      **Not reproduced by hand, and how far it got**: two rigs on day 3 of seed 4242, one walking
-      south for 22s that never had a dog placed in front of it at all, and one that lost the day to
-      excitement at about 23s. Both are the rig's fault rather than the game's, and both are why
-      this wants a **headless rig that forces the encounter** rather than more screenshots.
+      **The fix is that the flag belongs to the attempt, not to the run**, which is the game's own
+      rule about nerves arriving in the HUD: a nerve is a rewind, and a rewound day should not
+      remember what it taught. Reset it whenever the day being started is `Tuning.RUN_TAUGHT_DAY`,
+      so the lesson fires on every attempt at that day including the first.
 
-      **The instruction is the second half and it is the design part**: the lesson should be tied to
-      the encounter she actually has. *"It should always show for the day 3 lesson"* — so whatever
-      the cause turns out to be, spending it on an instance she never meets is wrong even when it is
-      working as written
+      **And the neighbouring case is a question, not part of the fix.** `_taught_pause` — the *"Esc
+      to pause"* line, also once per run — has the same shape but is not tied to a day at all: it
+      fires the first time she stops of her own accord. Whether a rewind should erase that too is
+      the player's call, and nothing should reset it unasked
 - [ ] **The tutorial dog is not a tutorial after day 3.** `charging_dog` is `first_day 3`,
       `AHEAD_OF_PLAYER`, no last day, so it is still sited in front of her on day 4. **Decided: it
       recurs but is not sited ahead of her** — it becomes a thing that is *somewhere*, like
