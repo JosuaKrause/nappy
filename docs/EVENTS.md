@@ -324,6 +324,19 @@ Three things about that shape are the design rather than the implementation:
 level, and `tests/test_heat.gd` asserts that over the response rather than over the row that
 currently carries it.
 
+`abduction` carries `HUNTS`. Below its own threshold, `Tuning.HEAT_HUNTS_LEVEL`, it is untouched —
+population and intensity are `PRESSES`'s axes, not this one's, so the van neither multiplies nor
+gets louder as the resistance progresses. At and above it, the derived copy gains `pursues`, a
+stand-off inside its own field, and a chase-length `duration` in place of its idling one, and it
+keeps `hard_fail` throughout: a pursuer is exempt from the rule that nothing else happens inside a
+lethal event's field — see "The contract is per event" below.
+
+**A hunting van is briefly less dangerous than a cold one, and that is the escalation working
+rather than a bug.** `EventInstance.is_lethal_at()` returns false for the whole time a
+`pursues_within` row is only `is_waiting()`, so a heated van standing at the kerb can be brushed
+past for free until she comes inside its own trigger — the same shape `alley_robbery` already has,
+arriving in `abduction` now that a second row carries it.
+
 ### The density, and why it is caps before budget
 
 The target is **one event per block**, which is why `EventScheduler.budget_for()` is stated *per
@@ -399,7 +412,7 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `abduction` | RECURRING | 8 | An unmarked van idles first — that idling *is* the telegraph, and it runs 4.6s because the inner radius is a `hard_fail`. Getting close does not excite the baby; it takes you. Solid at 22px, comfortably inside the 54 that takes her, so the metal is metal and touching it is still fatal. |
+| `abduction` **`heat_response HUNTS`** | RECURRING | 8 | An unmarked van idles first — that idling *is* the telegraph, and it runs 4.6s because the inner radius is a `hard_fail`. Getting close does not excite the baby; it takes you. Solid at 22px, comfortably inside the 54 that takes her, so the metal is metal and touching it is still fatal. While she is close enough to watch (`outer_radius`), it draws its own bystander walked to it and taken — a scripted figure rather than a `CrowdAgent`, since the crowd is recycled as she moves and could never be a lasting fact about the world. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it, it stops idling for a stranger and starts hunting her instead — 130px/s once she comes within 180px, for the length of the chase rather than the length of the idle, `hard_fail` throughout. |
 | `alley_robbery` **`hard_fail`** | RECURRING | 8 | **A man who is worth crossing the road for, and who comes after you if you do not.** Three numbers for three sentences: intensity 16 over a **200px** field, so the far end of an alley is already expensive and the meter is the only warning a robbery will ever give; `hard_fail` inside 30px; and `pursues_within` 140, inside which he takes 1.8s of visibly coming and then chases at 130px/s. The alley is the warning and it is not the only one — a lethal thing that does nothing at all until it does everything is a thing with no telegraph. |
 | `night_raid` | SCRIPTED | 10 | Enormous, static, pulsing, and it closes the block (`obstructs_radius` 44). |
 
@@ -495,9 +508,9 @@ be on it, so an overlapping lethal field there is the city saying so rather than
 failure — `EventScheduler._role_for` gives such a placement the `WALL` role, and
 `_keeps_its_field_clear` reads that role directly. **A pursuer**, because it follows her rather
 than sitting on a tile the day chose, so there is no ground for the rule to be stated about —
-`charging_dog` and `alley_robbery` both carry a lethal radius with them wherever she is, and
-`EventScheduler._keeps_its_field_clear` now says so by name rather than leaving it to follow from
-the `WALL` case by coincidence.
+`charging_dog`, `alley_robbery` and a hunting `abduction` all carry a lethal radius with them
+wherever she is, and `EventScheduler._keeps_its_field_clear` says so by name rather than leaving it
+to follow from the `WALL` case by coincidence.
 
 ## What an event actually costs
 
@@ -754,14 +767,17 @@ Three rules underneath the table, in the order they matter:
    `obstructs_radius` from the silhouette, on the other half of the vocabulary: a field that is
    only ever *reached for* is a list wearing a rule's clothes.
 
-   **A mobile vehicle needs two pictures.** One side-on sprite mirrored east and west shows a
-   patrol car heading north its own flank. The three mobile rows — `police_patrol`, `fire_truck`,
-   `military_convoy` — have an `_end` picture each, and *their own* rather than the crowd's
-   (whose cars are end-on because at that angle the front and the back of a car are the same
-   shape): the whole content of a vehicle row is which vehicle it is, and a police car that
-   becomes a generic saloon the moment it turns north loses the one silhouette the badge exists to
-   show at the moment it starts coming towards her. The **badge keeps the side view**, because an
-   icon is read at 40px against a row of other icons and a vehicle end-on is a box at any size.
+   **A vehicle needs two pictures the moment it can face more than one way.** One side-on sprite
+   mirrored east and west shows a patrol car heading north its own flank. `police_patrol`,
+   `fire_truck` and `military_convoy` travel from the moment they are placed and have an `_end`
+   picture each; `abduction` earns its own the same way once it hunts, since a pursuer steers
+   straight at her and a parked van never had to face anything but the kerb. Each is *its own*
+   picture rather than the crowd's (whose cars are end-on because at that angle the front and the
+   back of a car are the same shape): the whole content of a vehicle row is which vehicle it is,
+   and a van that becomes a generic box the moment it turns north loses the one silhouette the
+   badge exists to show at the moment it starts coming towards her. The **badge keeps the side
+   view**, because an icon is read at 40px against a row of other icons and a vehicle end-on is a
+   box at any size.
 
 **The traffic pays for its own warning.** The vocabulary's first row is *the entity itself carries
 most of it*, and the traffic is the place that is easiest to miss: the caret is drawn by

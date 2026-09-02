@@ -397,6 +397,24 @@ func at_heat(level: int) -> EventDef:
 			# because the whole instruction this milestone came from is that the ladder has two
 			# rungs and only the top one kills.
 			hot.hard_fail = false
+		HeatResponse.HUNTS:
+			# Below its own threshold a `HUNTS` row is untouched. Population and intensity are
+			# `PRESSES`'s axes — "more of them, more expensive" — and this rung answers a
+			# different question: not *how much does it cost to be near*, but *can I still be
+			# near it at all*.
+			if level >= Tuning.HEAT_HUNTS_LEVEL:
+				hot.pursues = true
+				hot.pursue_speed = Tuning.HEAT_HUNTS_SPEED
+				hot.pursues_within = Tuning.HEAT_HUNTS_WITHIN
+				# For a pursuer `duration` is the length of the chase, not the length of the idle
+				# — see `pursues_within` above. Cold, this row simply sits for `duration` seconds
+				# and is done.
+				hot.duration = Tuning.PURSUIT_TIME
+				# Stated explicitly rather than left to the copy, the way `PRESSES` states the
+				# opposite above: a pursuer is exempt from the rule that nothing else happens
+				# inside a lethal event's field (`EventScheduler._keeps_its_field_clear`), so this
+				# rung stays `hard_fail` rather than losing it to stay inside that rule.
+				hot.hard_fail = true
 	return hot
 
 func available_on(day: int) -> bool:

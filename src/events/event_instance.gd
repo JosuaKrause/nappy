@@ -26,6 +26,8 @@ const FIRE_ENGINE_END := preload("res://assets/events/fire_engine_end.svg")
 const POLICE_CAR := preload("res://assets/events/police_car.svg")
 const POLICE_CAR_END := preload("res://assets/events/police_car_end.svg")
 const UNMARKED_VAN := preload("res://assets/events/unmarked_van.svg")
+const UNMARKED_VAN_END := preload("res://assets/events/unmarked_van_end.svg")
+const VAN_VICTIM := preload("res://assets/events/van_victim.svg")
 const RIOT_VAN := preload("res://assets/events/riot_van.svg")
 const ARMY_TRUCK := preload("res://assets/events/army_truck.svg")
 const ARMY_TRUCK_END := preload("res://assets/events/army_truck_end.svg")
@@ -134,6 +136,10 @@ var _activation_announced := false
 ## `EventManager._create`, the only real caller. See `_walkable_step`.
 var _map: CityMap
 
+## The solid body `_build_obstruction()` made, or `null` before it exists and after
+## `_process()` has dropped it. See `is_solid()`.
+var _obstruction: StaticBody2D
+
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
@@ -162,6 +168,12 @@ func _build_obstruction() -> void:
 	shape.shape = circle
 	body.add_child(shape)
 	add_child(body)
+	_obstruction = body
+
+## Whether this instance is solid right now. True from `_ready()` for anything with
+## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()`.
+func is_solid() -> bool:
+	return _obstruction != null
 
 func _process(delta: float) -> void:
 	if is_finished:
@@ -201,6 +213,18 @@ func _process(delta: float) -> void:
 		_chase(delta)
 	elif def.mobile and path.size() > 1 and not is_telegraphing_still():
 		_advance_along_path(delta)
+
+	if _obstruction and def.pursues and not is_waiting():
+		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
+		# `_walkable_step`'s own note says why a moving pursuer may not keep a body: "giving a
+		# pursuer one would let a moving wall pin her against a building on a two-tile pavement."
+		# A hunting `abduction` is solid exactly while it is parked — the instant it stops waiting
+		# it is coming for her, and the body comes down the same frame.
+		_obstruction.queue_free()
+		_obstruction = null
+
+	if def.look == EventDef.Look.UNMARKED_VAN:
+		_update_the_take()
 
 	if _has_expired():
 		_be_done()
@@ -418,6 +442,67 @@ func resume(from_age: float, from_travelled: float) -> void:
 	_path_travelled = from_travelled
 	if def.mobile and path.size() > 1:
 		_advance_along_path(0.0)
+
+# ------------------------------------------------------------------- the take ---
+# `abduction`'s own scene: a bystander walked to the van and taken, the first time she comes close
+# enough to see it happen. Drawing and telemetry only — nothing here reaches into the crowd, and
+# nothing here changes `contribution_at()`. See docs/TODO.md, M56, "the van draws its own victim".
+
+## How long the walk to the van takes, once it starts.
+const VICTIM_TAKEN_OVER := 2.5
+## How far to the side of the van the victim stands before the walk begins.
+const VICTIM_STANDING_OFFSET := 32.0
+
+## Age the take began, or `INF` before it has and after a hunting van abandons one mid-walk. Not
+## restored by `resume()` — the same gap `_noticed_at` carries, and unreachable for the same reason
+## it is harmless there: the whole scene is under three seconds, far short of anything that gets an
+## instance streamed out and back in.
+var _victim_taken_at := INF
+## Whether the one telemetry entry for this take has already been written, so a frame that finds
+## the walk finished twice in a row cannot log it twice.
+var _victim_logged := false
+
+## How long this instance has left before it is simply gone, or `INF` where the question does not
+## yet apply. A pursuer that is still only waiting has no expiry of its own — `_has_expired()`
+## returns false for the whole time — so its life is unbounded until she gives it a reason to end.
+func _victim_time_left() -> float:
+	if is_waiting() or def.duration <= 0.0:
+		return INF
+	return (def.telegraph_time + def.duration) - chase_age()
+
+## Runs the scene: starts it, times it, and tells the log when it finishes.
+##
+## **Begins the first time she can see it happen.** `def.outer_radius` rather than some smaller
+## trigger, because the design's own sentence is that the take "only means anything where she can
+## see it happen" — a van she never came near never runs it. `player_at` is the same write
+## `_chase` reads, which is what lets a data-level rig drive this scene by hand.
+##
+## **Never starts without enough of the van's own life left to finish in.** A take cut short by the
+## van disappearing mid-walk would read as a bug rather than as an abduction.
+##
+## **A hunting van has other business.** The instant it stops waiting it is coming for her rather
+## than idling at the kerb, so an in-progress take is abandoned rather than finished: no victim is
+## drawn again, taken or not, and nothing is logged for a take that never completed.
+func _update_the_take() -> void:
+	if def.pursues and not is_waiting():
+		_victim_taken_at = INF
+		return
+	if _victim_taken_at == INF:
+		if player_at == Vector2.INF \
+				or global_position.distance_to(player_at) > def.outer_radius \
+				or _victim_time_left() < VICTIM_TAKEN_OVER:
+			return
+		_victim_taken_at = age
+		return
+	if _victim_logged or age - _victim_taken_at < VICTIM_TAKEN_OVER:
+		return
+	_victim_logged = true
+	Telemetry.note("taken", "'%s' takes a bystander" % def.id)
+
+## Whether the scene is running right now, for `_draw_abduction` and for a test to drive by hand
+## without reaching into a private field.
+func is_taking_a_victim() -> bool:
+	return _victim_taken_at != INF and (age - _victim_taken_at) < VICTIM_TAKEN_OVER
 
 # ------------------------------------------------------------------ the flock ---
 # **A flock drawn as one picture repeated is a flock that freezes.** Offsets derived from the
@@ -946,7 +1031,7 @@ func _draw_body() -> void:
 		EventDef.Look.CHECKPOINT:
 			_draw_spread(CHECKPOINT_BLOCK)
 		EventDef.Look.UNMARKED_VAN:
-			_draw_simple(UNMARKED_VAN, 21.0)
+			_draw_abduction()
 		EventDef.Look.ROBBER:
 			_draw_robber()
 		EventDef.Look.RIOT_VAN:
@@ -1177,6 +1262,28 @@ func _draw_dog_walker() -> void:
 	draw_line(Vector2(0.0, -26.0), to_the_dog + Vector2(0.0, -6.0), Palette.OUTLINE, 2.0)
 	Sprites.draw_standing(self, PERSON, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 	Sprites.draw_standing(self, DOG, to_the_dog, Vector2.ZERO, _heading_is_west())
+
+## The van, and the bystander it is taking while there is one to draw.
+##
+## `_draw_dog_walker` above is the precedent for a second figure with its own offset; here the
+## second figure has a scene rather than a fixed span, sliding from `VICTIM_STANDING_OFFSET` to
+## the van's own position over `VICTIM_TAKEN_OVER` — see `_update_the_take()`, the only place that
+## ever sets `_victim_taken_at`. Drawn first so the van's own silhouette is what she is left
+## looking at once the walk ends, the same order `_draw_cafe` draws its sitters before its tables.
+##
+## The van itself goes through `_draw_vehicle` rather than `_draw_simple`: a parked van never
+## needed an end-on picture, but a hunting one steers straight at her and that is not always down
+## a pavement — `_draw_vehicle`'s own note is that one side-on sprite mirrored east and west shows
+## a patrol car heading north its own flank, and the same is true of a van.
+func _draw_abduction() -> void:
+	if is_taking_a_victim():
+		var through := (age - _victim_taken_at) / VICTIM_TAKEN_OVER
+		var standing := Vector2(
+				-VICTIM_STANDING_OFFSET if _heading_is_west() else VICTIM_STANDING_OFFSET, 0.0)
+		var at := standing.lerp(Vector2.ZERO, through)
+		Sprites.draw_shadow(self, at, 8.0)
+		Sprites.draw_standing(self, VAN_VICTIM, at, Vector2.ZERO, _heading_is_west())
+	_draw_vehicle(UNMARKED_VAN, UNMARKED_VAN_END, 21.0)
 
 ## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
 ## whole of her beat; talking is what she looks like for exactly the `detain_seconds` of a
