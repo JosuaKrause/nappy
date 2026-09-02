@@ -15,6 +15,7 @@ func run(t) -> void:
 	_test_the_run_hint_never_fires_off_the_teaching_day(t)
 	_test_the_run_hint_fires_again_on_a_retried_teaching_day(t)
 	_test_the_run_hint_names_the_touch_button_on_a_touch_device(t)
+	_test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t)
 	_test_the_pause_hint_waits_out_a_detention(t)
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
@@ -81,6 +82,20 @@ func _test_the_run_hint_names_the_touch_button_on_a_touch_device(t) -> void:
 	first.free()
 	hud.free()
 	GameState.day = saved_day
+
+## **The day-1 walk lesson has the same defect the run lesson had, and the same fix.** `hud._touch`
+## drives both: a touch device gets "Drag the stick to walk", the exact wording `TitleScreen` and
+## `PauseScreen` already use for the same control, rather than "Arrow keys or WASD to walk", which
+## names two things it does not have.
+func _test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t) -> void:
+	var hud := _hud(t)
+	hud._touch = true
+
+	hud._teach_the_day(1)
+	t.check(hud._teach.text == "Drag the stick to walk",
+			"day 1 tells a touch device to drag the stick, not press a key it has not got")
+
+	hud.free()
 
 ## **A lost nerve rewinds the day, not the run.** *(Player, of the deployed build: "the run lesson
 ## doesn't show at all anymore — it should always show for the day 3 lesson", diagnosed as "you

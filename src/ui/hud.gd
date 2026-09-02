@@ -118,7 +118,8 @@ func _teach_the_day(day: int) -> void:
 	_walked_today = false
 	_stood_for = 0.0
 	if day == 1:
-		_say("Arrow keys or WASD to walk", TEACH_SECONDS)
+		var line := "Drag the stick to walk" if _touch else "Arrow keys or WASD to walk"
+		_say(line, TEACH_SECONDS)
 	# A nerve is a rewind, not a resource, and a rewound day has not been taught anything: this
 	# flag belongs to the *attempt* at the teaching day rather than to the run, and only on this
 	# one day, so a lost nerve on `RUN_TAUGHT_DAY` gets the lesson again instead of a HUD that
