@@ -13,6 +13,8 @@ const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 func run(t) -> void:
 	_test_the_run_hint_fires_once_on_the_teaching_day(t)
 	_test_the_run_hint_never_fires_off_the_teaching_day(t)
+	_test_the_run_hint_fires_again_on_a_retried_teaching_day(t)
+	_test_the_pause_hint_waits_out_a_detention(t)
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
 	_test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots(t)
@@ -59,6 +61,74 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 	second.free()
 	hud.free()
 	GameState.day = saved_day
+
+## **A lost nerve rewinds the day, not the run.** *(Player, of the deployed build: "the run lesson
+## doesn't show at all anymore — it should always show for the day 3 lesson", diagnosed as "you
+## need to reset the flag when the player dies on day 3.")* `main._start_day()` calls
+## `_teach_the_day()` again on the same HUD instance when a nerve is spent, so the first retry of
+## `RUN_TAUGHT_DAY` is already marked taught by an attempt the player never got to finish — and
+## every attempt after that stays silent. The flag has to belong to the attempt on this one day.
+func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
+	var saved_day := GameState.day
+	GameState.day = Tuning.RUN_TAUGHT_DAY
+	var hud := _hud(t)
+
+	var first := _pursuer()
+	hud._on_event_telegraphed(first)
+	t.check(hud._taught_run, "the first attempt teaches the run")
+
+	# The day restarts on the same HUD, exactly as a spent nerve does.
+	hud._teach_the_day(Tuning.RUN_TAUGHT_DAY)
+	t.check(not hud._taught_run, "a fresh attempt at the teaching day has not been taught yet")
+
+	var second := _pursuer()
+	hud._on_event_telegraphed(second)
+	t.check(hud._teach.text == "Hold SHIFT to run",
+			"and the lesson fires again on the second attempt")
+
+	# Still only once within that attempt — the gate is the attempt, not "has this run seen it".
+	hud._teach.text = ""
+	var third := _pursuer()
+	hud._on_event_telegraphed(third)
+	t.check(hud._teach.text == "", "and still only once within one attempt")
+
+	first.free()
+	second.free()
+	third.free()
+	hud.free()
+	GameState.day = saved_day
+
+## **Being held is not stopping.** *(Player: "the pause tutorial comes up when being detained
+## (since you're not moving)".)* `chatting_mother`'s `detain()` locks her input and lets friction
+## settle her to idle, which used to read exactly like a stop of her own accord. The lesson has to
+## wait for release, and the time spent held must not count toward the stand a released player
+## still has to earn.
+func _test_the_pause_hint_waits_out_a_detention(t) -> void:
+	var stroller := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+
+	var hud := _hud(t)
+	hud._rig = stroller
+	hud._walked_today = true
+
+	stroller.detain(10.0)
+	for _i in 40: # 4s of held stillness, past TEACH_PAUSE_AFTER
+		hud._teach_the_pause(0.1)
+	t.check(not hud._taught_pause, "held past the usual wait teaches nothing")
+	t.check(hud._stood_for == 0.0, "and none of the held time is banked towards the lesson")
+
+	stroller._detained_for = 0.0
+	for _i in 40:
+		hud._teach_the_pause(0.1)
+	t.check(hud._taught_pause, "released, she still earns the lesson on her own stand")
+	t.check(hud._teach.text == "Esc to pause", "and says the actual line")
+
+	stroller.free()
+	hud.free()
 
 ## Every pursuit after the teaching day is the mechanic working, not the lesson repeating —
 ## `alley_robbery` from day 8 pursues exactly like `charging_dog` does, and none of it is a

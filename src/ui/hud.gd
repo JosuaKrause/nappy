@@ -114,14 +114,29 @@ func _teach_the_day(day: int) -> void:
 	_stood_for = 0.0
 	if day == 1:
 		_say("Arrow keys or WASD to walk", TEACH_SECONDS)
+	# A nerve is a rewind, not a resource, and a rewound day has not been taught anything: this
+	# flag belongs to the *attempt* at the teaching day rather than to the run, and only on this
+	# one day, so a lost nerve on `RUN_TAUGHT_DAY` gets the lesson again instead of a HUD that
+	# remembers a lesson the player never actually reached. `_taught_pause` keeps the once-per-run
+	# shape the comment above it argues for — it is not tied to a day, so whether a rewind should
+	# clear it too is a different question and not this one's to answer.
+	if day == Tuning.RUN_TAUGHT_DAY:
+		_taught_run = false
 
 
-## The pause exists, and the moment to say so is the first time she stops of her own accord.
+## The pause exists, and the moment to say so is the first time she stops **of her own accord**.
 ##
-## Three conditions, and each one is a way this would otherwise be noise:
+## Four conditions, and each one is a way this would otherwise be noise:
 ##
 ## - **Not before she has walked today.** Standing on the doorstep at dawn is not somebody who has
 ##   stopped, it is somebody who has not started, and every single day would open with it.
+## - **Not while something is holding her still.** A zero velocity is not the same claim as "she
+##   has stopped": `chatting_mother`'s `detain()` locks her input and lets friction carry her to a
+##   standstill, and `HUD` itself keeps running behind the title, the pause and the between-days
+##   summary — all three set `get_tree().paused` — so standing behind any of them for
+##   `TEACH_PAUSE_AFTER` looks identical to standing on a calm pavement unless this is asked apart
+##   from it. Offering the pause key at the exact moment her controls were taken away, or while she
+##   is already looking at a screen that has one, is the worst possible reading of "she stopped".
 ## - **Not over the walking lesson.** One line at a time; the `Teach` label is one label, and a
 ##   prompt that replaces the instruction she is still following teaches neither.
 ## - **Once per run.** It is a keybinding, not a warning. A cue that comes back is a cue that gets
@@ -139,6 +154,11 @@ func _teach_the_pause(delta: float) -> void:
 			return
 	if not _rig.is_idle():
 		_walked_today = true
+		_stood_for = 0.0
+		return
+	# Held rather than stopped: reset, don't merely stop adding, so a conversation does not leave
+	# her three-quarters of the way to a lesson she never earned.
+	if _rig.is_detained() or get_tree().paused:
 		_stood_for = 0.0
 		return
 	if not _walked_today or _teach_left > 0.0:
