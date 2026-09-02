@@ -143,11 +143,11 @@ no networking. What Pages needs is preparation, not architecture:
       game**, so this is the same work as gating the dev flags: the minimal HUD is the game, and
       what is left goes behind `OS.is_debug_build()` with the rest of the developer's furniture.
       That also decides where it lives — beside the `DevFlags` helper, not in a web-only branch
-- [ ] **The deploy workflow** — GitHub Actions on push to `main`: install Godot + export
-      templates, run the export, publish `build/web/` to Pages (`upload-pages-artifact` +
-      `deploy-pages`). **Blocked on a decision only the player can take: the repo has no GitHub
-      remote today**, and publishing it is theirs to do; the workflow file can sit ready in the
-      repo before the remote exists
+- [ ] **The deploy workflow** — GitHub Actions on push to `main`: install Godot + export templates,
+      run the export, publish `build/web/` to Pages (`upload-pages-artifact` + `deploy-pages`).
+      **Unblocked: the repo has a GitHub remote**, so the workflow can be written and will run.
+      What is still the player's alone is turning Pages on for the repository and choosing whether
+      it is public — neither is a thing a workflow file can do for them
 - [ ] **A browser smoke pass** once an export exists: boots, keyboard input works, holds frame
       rate at the game's scale, and the title screen reads as the front door of a public page.
       itch.io stays the fallback host (it sets the isolation headers, so a threaded build would

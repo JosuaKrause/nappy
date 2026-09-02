@@ -8,6 +8,20 @@ description: The git workflow for this repo — one branch per milestone, one co
 **The local repository is this side's to manage — branch, commit and merge without asking each
 time.**
 
+## Pushing
+
+**Completed work may be pushed to `origin` without asking each time.** *Finished* is the whole of
+the permission: a milestone merged to `main` with its gate green, or a branch whose items are done
+and archived. It is not a licence to push a branch mid-item to see what happens.
+
+Everything else about the local repository is unchanged — branch, commit and merge freely — and the
+gate before a push is the same one as before a commit: `./tools/check.sh`, the **full**
+`./tools/test.sh`, and `./tools/lint.sh` if a governed doc moved.
+
+**A half-built milestone's branch may be pushed as a branch**, which is backup rather than a claim.
+What may not happen is `main` carrying an unfinished milestone: `main` is the thing a fresh clone
+gets, and this project's own handoff tells that reader to trust the tools over any sentence.
+
 ## Branches
 
 **One branch per milestone**, named `feature/<thing>`, merged to `main` with `--no-ff`. The merge
