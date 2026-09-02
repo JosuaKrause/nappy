@@ -17,8 +17,8 @@ func run(t) -> void:
 	_test_the_run_button_holds_run_independently_of_the_stick(t)
 	_test_hiding_the_controls_releases_the_run_button_too(t)
 	_test_the_pause_button_sends_a_real_action_event(t)
-	_test_the_pause_button_fires_on_release_inside(t)
-	_test_the_pause_button_is_cancelled_by_sliding_off(t)
+	_test_the_pause_button_fires_on_release_inside_and_not_outside(t)
+	_test_the_pause_button_tracks_its_own_touch_index(t)
 	t.get_tree().paused = was_paused
 	_release_actions()
 
@@ -165,40 +165,40 @@ func _test_the_pause_button_sends_a_real_action_event(t) -> void:
 	Input.action_release(&"pause")
 	controls.queue_free()
 
-## **Fires on a clean tap, not on touch-down.** The stick and RUN commit the instant a thumb
-## lands; the pause button waits for the matching release. Asserted on `Input.is_action_pressed`,
-## the one externally-visible thing `Input.parse_input_event()` sets alongside propagating the
-## event — `_send_pause_action()`'s own test above is what proves that event is shaped correctly.
-func _test_the_pause_button_fires_on_release_inside(t) -> void:
+## **Fires on a clean tap, not on touch-down — and a thumb that lands wrong can slide off and lift
+## for free.** The stick and RUN commit the instant a thumb lands; the pause button waits for the
+## matching release, and only counts one still over the button, the opposite of the stick and RUN
+## on purpose — pressed once a day at most, a false fire costs more than a missed one.
+##
+## Asserted on `_pause_fires()` directly, the pure geometry question `_on_touch()`'s release branch
+## asks before ever touching `Input`. **A first version of this test asserted
+## `Input.is_action_pressed("pause")` after driving a real press/release sequence and failed**:
+## `Input.parse_input_event()` queues the event for the engine's own next flush rather than
+## updating anything a test can poll synchronously, so that was never a safe way to ask this
+## question — `_send_pause_action()`'s own test above is what proves the event it eventually sends
+## is shaped correctly, and this is kept to the one thing that is safe to assert synchronously.
+func _test_the_pause_button_fires_on_release_inside_and_not_outside(t) -> void:
+	t.check(TouchControls._pause_fires(TouchControls.PAUSE_CENTRE),
+			"releasing on the button fires it")
+	t.check(not TouchControls._pause_fires(TouchControls.PAUSE_CENTRE + Vector2(500.0, 0.0)),
+			"and releasing well outside it cancels rather than firing")
+
+## **The touch index is grabbed on press and let go on release, whichever way the release
+## resolves.** A synchronous check on the node's own state rather than on anything `Input`
+## propagates or polls, for the same reason the geometry test above is.
+func _test_the_pause_button_tracks_its_own_touch_index(t) -> void:
 	var controls := _controls(t)
-	controls._touch = true
-	t.get_tree().paused = false
-	controls._process(0.0)
-	Input.action_release(&"pause")
+	controls.visible = true
+	t.check(controls._pause_touch == -1, "nothing held at first")
 
 	controls._input(_touch_event(0, TouchControls.PAUSE_CENTRE, true))
-	t.check(not Input.is_action_pressed("pause"), "landing on the button does not fire it yet")
+	t.check(controls._pause_touch == 0, "landing on the button grabs its touch index")
 
-	controls._input(_touch_event(0, TouchControls.PAUSE_CENTRE, false))
-	t.check(Input.is_action_pressed("pause"), "and releasing on it does")
-
-	Input.action_release(&"pause")
-	controls.queue_free()
-
-## **A thumb that lands wrong can slide off and lift for free.** The opposite of the stick and
-## RUN, on purpose — a button pressed once a day at most is one where a false fire costs more than
-## a missed one.
-func _test_the_pause_button_is_cancelled_by_sliding_off(t) -> void:
-	var controls := _controls(t)
-	controls._touch = true
-	t.get_tree().paused = false
-	controls._process(0.0)
-	Input.action_release(&"pause")
-
-	controls._input(_touch_event(0, TouchControls.PAUSE_CENTRE, true))
 	controls._input(_touch_event(0, TouchControls.PAUSE_CENTRE + Vector2(500.0, 0.0), false))
-	t.check(not Input.is_action_pressed("pause"),
-			"releasing well outside the button cancels rather than firing")
+	t.check(controls._pause_touch == -1,
+			"and releasing lets go of the index again, whether it fired or not")
+
+	controls.queue_free()
 
 	Input.action_release(&"pause")
 	controls.queue_free()

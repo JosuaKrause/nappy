@@ -142,7 +142,7 @@ func _on_touch(event: InputEventScreenTouch) -> void:
 		# Fires on release rather than on touch-down, and only when the release itself is still
 		# over the button: a thumb that lands wrong can slide off and lift without stopping the
 		# day, the opposite of the stick and RUN, which commit the moment a thumb lands.
-		if event.position.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS:
+		if _pause_fires(event.position):
 			_send_pause_action()
 
 func _on_drag(event: InputEventScreenDrag) -> void:
@@ -194,6 +194,15 @@ func _release_all() -> void:
 	Input.action_release(&"move_down")
 	Input.action_release(&"run")
 
+## Whether a release at `at` lands the pause, or a slide-off cancels it. Pulled out to a pure,
+## static function so a test can ask the geometry question on its own — `Input.parse_input_event()`
+## queues the event for the engine's own next flush rather than updating anything a test can poll
+## synchronously (`Input.is_action_pressed("pause")` read right after sending one is not reliable;
+## a first version of this test asserted it and failed for exactly that reason), so nothing about
+## whether this decides to fire is asserted through `Input` at all.
+static func _pause_fires(at: Vector2) -> bool:
+	return at.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS
+
 ## Sends the pause exactly the way a real `Esc` arrives: an `InputEventAction` pushed through
 ## `Input.parse_input_event()`, which propagates to `main._unhandled_input()` the same way a key
 ## does, rather than `Input.action_press(&"pause")`, which only sets polled state and is heard by
@@ -201,8 +210,7 @@ func _release_all() -> void:
 ## fix is the same fix here.
 ##
 ## Returns the event it sent, so a test can inspect its shape directly rather than depend on when
-## the tree gets around to propagating it — nothing else in this file's test suite relies on that
-## timing either.
+## the tree gets around to propagating or polling it.
 func _send_pause_action() -> InputEventAction:
 	var event := InputEventAction.new()
 	event.action = &"pause"
