@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="assets/logo.png" alt="Nappy" width="640">
+  <a href="https://nappy.josuakrause.com/">
+    <img src="assets/logo.png" alt="Nappy — play it in a browser" width="640">
+  </a>
 </p>
 
 A 2.5D top-down game about a mother pushing a stroller through a city, trying to get her
