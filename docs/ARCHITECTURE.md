@@ -66,6 +66,7 @@ src/
 	home_arrow.gd
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
+	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
 assets/
@@ -94,6 +95,17 @@ live in `src/game_enums.gd` rather than on `GameState`.
 A headless run never calls `_draw()`, so `tools/check.sh` passing says nothing about
 whether the game renders correctly. `tools/shot.sh out.png [frames]` runs the game
 windowed, saves the viewport after N frames and quits.
+
+### Dev flags and release builds
+
+`DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
+`--overview`, `--day-length` and `--ending`; `src/dev/auto_screenshot.gd` parses `--screenshot`
+and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`) itself, and gates its own
+entry point the same way rather than moving that parsing out. Both read `OS.is_debug_build()`,
+which is `false` for an exported release template, so none of this furniture — nor the snapshot
+key `main.gd` reads directly — can be reached from a public build regardless of what is on the
+command line. `--no-telemetry` is not part of this: it is a documented player-facing opt-out (see
+docs/TELEMETRY.md), not developer furniture, and stays live in every build.
 
 ## Autoloads
 

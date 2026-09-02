@@ -45,13 +45,14 @@ func _ready() -> void:
 	# `get_tree().paused` while the player walks, the crowd drives and the resistance deadline
 	# runs out behind a screen saying the day is over.
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	GameState.start_run(_seed_override())
+	GameState.start_run(DevFlags.seed_override())
 	# After the run seed is settled and before anything is generated, so the log opens on the
 	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
-	# behind a flag is a trace the person playtesting has to remember to turn on.
+	# behind a flag is a trace the person playtesting has to remember to turn on. This is a
+	# player-facing opt-out rather than developer furniture, so it is not gated by `DevFlags`.
 	if not "--no-telemetry" in OS.get_cmdline_user_args():
 		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
-	GameState.day = _day_override()
+	GameState.day = DevFlags.day_override()
 
 	_city = CITY.instantiate()
 	add_child(_city)
@@ -110,7 +111,7 @@ func _ready() -> void:
 
 	_start_day()
 
-	if "--overview" in OS.get_cmdline_user_args():
+	if DevFlags.overview_requested():
 		_make_overview_camera()
 	_setup_follow_camera()
 
@@ -124,7 +125,7 @@ func _ready() -> void:
 	# A rig is driving, so it starts the day the way the player would. `--title` is how the screen
 	# itself gets photographed.
 	var args := OS.get_cmdline_user_args()
-	if _show_an_ending_for_a_rig(args):
+	if _show_an_ending_for_a_rig():
 		return
 	if (screenshot or "--no-title" in args) and not "--title" in args:
 		return
@@ -139,23 +140,23 @@ func _ready() -> void:
 ## is the honest version of relaxing it and does not have to be put back.
 ##
 ## It shows the screen and stops there: the day behind it is running, exactly as it would be under
-## a real ending, and `space` restarts the run like any other finished one. Like every dev flag in
-## this file it ships in the build and belongs behind the debug gate `docs/TODO.md` still owes.
-func _show_an_ending_for_a_rig(args: PackedStringArray) -> bool:
-	var index := args.find("--ending")
-	if index < 0 or index + 1 >= args.size():
+## a real ending, and `space` restarts the run like any other finished one. `DevFlags` answers ""
+## outside a debug build, so this can never fire in an exported release.
+func _show_an_ending_for_a_rig() -> bool:
+	var wanted_arg := DevFlags.ending_override()
+	if wanted_arg == "":
 		return false
 	var wanted := {
 		"bad": GameEnums.Ending.BAD,
 		"neutral": GameEnums.Ending.NEUTRAL,
 		"good": GameEnums.Ending.GOOD,
 	}
-	if not wanted.has(args[index + 1]):
-		push_warning("unknown --ending '%s'" % args[index + 1])
+	if not wanted.has(wanted_arg):
+		push_warning("unknown --ending '%s'" % wanted_arg)
 		return false
 	_run_over = true
 	_ending_shown = true
-	_summary.show_ending(wanted[args[index + 1]] as GameEnums.Ending)
+	_summary.show_ending(wanted[wanted_arg] as GameEnums.Ending)
 	return true
 
 # --------------------------------------------------------------- the title ---
@@ -456,10 +457,14 @@ func _tile_name(type: GameEnums.TileType) -> String:
 ## **`--seed`, `--day`, `--spawn`, `--overview` and the rest are *not* here**, and that is the line:
 ## they change what she is looking at, not who is steering. A playtest of act III started with
 ## `--day 9` is a playtest.
+##
+## Reads `DevFlags.active_args()` rather than the command line directly, so a release export —
+## where none of the four rig flags below can do anything anyway — never misreads an ordinary
+## player for one.
 func _somebody_is_playing() -> bool:
 	if DisplayServer.get_name() == "headless":
 		return false
-	var args := OS.get_cmdline_user_args()
+	var args := DevFlags.active_args()
 	for rig in ["--screenshot", "--walk", "--flee", "--press"]:
 		if rig in args:
 			return false
@@ -469,11 +474,9 @@ func _somebody_is_playing() -> bool:
 ## anything that does not exist when the day starts — a mobile event mid-route, or the fire
 ## a fire engine leaves behind when it stops.
 func _setup_follow_camera() -> void:
-	var args := OS.get_cmdline_user_args()
-	var index := args.find("--follow")
-	if index == -1 or index + 1 >= args.size():
+	_follow_id = DevFlags.follow_target()
+	if _follow_id == "":
 		return
-	_follow_id = args[index + 1]
 	_follow_camera = Camera2D.new()
 	add_child(_follow_camera)
 	_follow_camera.make_current()
@@ -489,48 +492,35 @@ func _update_follow_camera() -> void:
 ## Dev flag: `-- --day-length N` compresses the day, so dusk and the timeout loss can be
 ## looked at without sitting through the whole three minutes.
 func _day_length() -> float:
-	var args := OS.get_cmdline_user_args()
-	var index := args.find("--day-length")
-	if index == -1 or index + 1 >= args.size():
-		return Tuning.day_length(GameState.day)
-	return maxf(1.0, float(args[index + 1]))
-
-## Dev flag: `-- --day N` starts on a later day, so an act's events can be looked at
-## without playing up to them.
-func _day_override() -> int:
-	var args := OS.get_cmdline_user_args()
-	var index := args.find("--day")
-	if index == -1 or index + 1 >= args.size():
-		return 1
-	return clampi(int(args[index + 1]), 1, Tuning.RUN_LENGTH_DAYS)
+	var override := DevFlags.day_length_override()
+	return override if override > 0.0 else Tuning.day_length(GameState.day)
 
 ## Dev flag: `-- --spawn park|alley|square|arterial|closure|event` drops the player onto a
 ## tile type or next to something live, so the WorldContext answers can be checked without
 ## walking across the city to find one.
 func _spawn_position() -> Vector2:
-	var args := OS.get_cmdline_user_args()
-	var index := args.find("--spawn")
-	if index == -1 or index + 1 >= args.size():
+	var target := DevFlags.spawn_target()
+	if target == "":
 		return _city.map.doorstep_world_position()
 
 	# `event` takes the first non-ambient event; `event:<id>` targets a specific one.
-	if args[index + 1].begins_with("event"):
-		return _first_event_position(args[index + 1].get_slice(":", 1))
+	if target.begins_with("event"):
+		return _first_event_position(target.get_slice(":", 1))
 	# The busiest pavement in the city, for looking at the crowd's noise floor without
 	# walking there. The arterial is where the floor is highest, so it is where the
 	# question "can a day be won on an ordinary street" is actually answered.
-	if args[index + 1] == "arterial":
+	if target == "arterial":
 		return _nearest_walkable(CrowdLanes.arterial_pavement(_city.map))
 	# A closed street, from the junction outside its barrier — the place the closure is
 	# supposed to be readable from, which is the thing worth looking at.
 	# `closure:<n>` picks one of the day's closures, since only one of them is a street
 	# running the way you wanted to look at.
-	if args[index + 1].begins_with("closure"):
+	if target.begins_with("closure"):
 		var closures := _city.closures()
 		if closures.is_empty():
 			push_warning("no streets are closed on day %d" % GameState.day)
 			return _city.map.home_world_position()
-		var which := clampi(int(args[index + 1].get_slice(":", 1)), 0, closures.size() - 1)
+		var which := clampi(int(target.get_slice(":", 1)), 0, closures.size() - 1)
 		var mouth: Vector2 = closures[which].mouth_centres(_city.map)[0]
 		var junction := closures[which].cause_centre(_city.map)
 		return _nearest_walkable(mouth + (mouth - junction).normalized() * 64.0)
@@ -541,12 +531,12 @@ func _spawn_position() -> Vector2:
 	# `zone:<n>` picks which one, the way `closure:<n>` does, and it is not a convenience. A zone
 	# has a **shape** and the square is always placed first, so `keys()[0]` is always the square
 	# and no other shape can be looked at without the index.
-	if args[index + 1].begins_with("zone"):
+	if target.begins_with("zone"):
 		if _city.map.zone_rects.is_empty():
 			push_warning("this city has no multi-block calm zone")
 			return _city.map.home_world_position()
 		var keys := _city.map.zone_rects.keys()
-		var which := clampi(int(args[index + 1].get_slice(":", 1)), 0, keys.size() - 1)
+		var which := clampi(int(target.get_slice(":", 1)), 0, keys.size() - 1)
 		var anchor: Vector2i = keys[which]
 		var corner := CityMap.blocks_tile_rect(_city.map.zone_rects[anchor]).position
 		return _nearest_walkable(_city.map.tile_to_world(corner - Vector2i.ONE * 2))
@@ -554,7 +544,7 @@ func _spawn_position() -> Vector2:
 	# street it was built over. The whole claim of a landmark is that it reads as **one mass**
 	# rather than as two blocks with the road missing between them, and this flag is the only way
 	# to point a camera at one.
-	if args[index + 1] == "landmark":
+	if target == "landmark":
 		if _city.map.big_buildings.is_empty():
 			push_warning("this city has no big building")
 			return _city.map.home_world_position()
@@ -576,7 +566,7 @@ func _spawn_position() -> Vector2:
 	# main road, its lights and one of its zebras are all in the same frame. The lights
 	# are the only cue in the game whose whole content is *when*, so they cannot be judged from a
 	# still of one — take several seconds apart, or use `--walk` and watch the cycle.
-	if args[index + 1] == "signal":
+	if target == "signal":
 		var spine := _city.map.main_road
 		var down := clampi(Tuning.CITY_BLOCKS.y / 2, 1, Tuning.CITY_BLOCKS.y - 1)
 		# On the side street's own pavement, a couple of tiles east of the junction: the block
@@ -586,8 +576,8 @@ func _spawn_position() -> Vector2:
 		return _nearest_walkable(_city.map.tile_to_world(corner))
 	# The mouth of the tunnel the main road leaves by, from a few tiles down the spine. `edge:s`
 	# is the bridge at the other end and `edge:e` / `edge:w` the road simply running out.
-	if args[index + 1].begins_with("edge"):
-		var side := args[index + 1].get_slice(":", 1)
+	if target.begins_with("edge"):
+		var side := target.get_slice(":", 1)
 		var spine_x := _city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH / 2
 		var spine_y := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y) * CityMap.period() \
 				+ Tuning.STREET_WIDTH / 2
@@ -600,7 +590,7 @@ func _spawn_position() -> Vector2:
 		return _nearest_walkable(_city.map.tile_to_world(at))
 	# The middle of a pedestrianised street, which is the other end of the same trade: paving
 	# frontage to frontage, no kerb, no asphalt and nothing on it that can kill you.
-	if args[index + 1] == "precinct":
+	if target == "precinct":
 		if _city.map.precinct_spans.is_empty():
 			push_warning("this city has no precinct")
 			return _city.map.home_world_position()
@@ -616,8 +606,8 @@ func _spawn_position() -> Vector2:
 	#
 	# It exists for the same reason `landmark` does: it is the only way to point a camera at the
 	# place where two bands meet, and nothing in the suite looks there.
-	if args[index + 1].begins_with("corner"):
-		var which := args[index + 1].get_slice(":", 1)
+	if target.begins_with("corner"):
+		var which := target.get_slice(":", 1)
 		# The outermost pavement and not the outermost tile: the corridor is `sidewalk | road |
 		# sidewalk`, so anything past `SIDEWALK_WIDTH` is the carriageway of the boundary street
 		# and `_nearest_walkable` will happily leave her standing on it — a shot taken from there
@@ -630,7 +620,7 @@ func _spawn_position() -> Vector2:
 			"sw": at = Vector2i(near, far.y)
 			"se": at = far
 		return _nearest_walkable(_city.map.tile_to_world(at))
-	if args[index + 1] == "contact":
+	if target == "contact":
 		var contact := _resistance.contact_position()
 		if contact == Vector2.INF:
 			push_warning("no resistance contact on day %d" % GameState.day)
@@ -643,16 +633,16 @@ func _spawn_position() -> Vector2:
 		"alley": GameEnums.TileType.ALLEY,
 		"square": GameEnums.TileType.SQUARE,
 		"playground": GameEnums.TileType.PLAYGROUND,
-	}.get(args[index + 1], -1)
+	}.get(target, -1)
 	if wanted == -1:
-		push_warning("unknown --spawn target '%s'" % args[index + 1])
+		push_warning("unknown --spawn target '%s'" % target)
 		return _city.map.home_world_position()
 
 	for y in _city.map.size.y:
 		for x in _city.map.size.x:
 			if _city.map.tile_at(Vector2i(x, y)) == wanted:
 				return _city.map.tile_to_world(Vector2i(x, y))
-	push_warning("no %s tile in this city" % args[index + 1])
+	push_warning("no %s tile in this city" % target)
 	return _city.map.home_world_position()
 
 ## Just outside a planned event, on the nearest walkable tile — an offset straight down its
@@ -697,27 +687,17 @@ func _make_overview_camera() -> void:
 	add_child(camera)
 	camera.make_current()
 
-## Dev flag: `-- --seed N` regenerates a specific city, so a layout bug can be looked at
-## twice. Without it every run gets a fresh city, which is the game's actual behaviour.
-func _seed_override() -> int:
-	var args := OS.get_cmdline_user_args()
-	var index := args.find("--seed")
-	if index == -1 or index + 1 >= args.size():
-		return 0
-	return int(args[index + 1])
-
 ## Dev flag: `-- --meters <sleepiness> <excitement>` seeds the bars, so a UI state can be
 ## screenshotted without having to play all the way to it. Applied before the HUD is
 ## created, which reads the starting values.
 func _apply_meter_override() -> void:
 	if not _baby:
 		return
-	var args := OS.get_cmdline_user_args()
-	var index := args.find("--meters")
-	if index == -1 or index + 2 >= args.size():
+	var override := DevFlags.meters_override()
+	if override.x < 0.0:
 		return
-	_baby.sleepiness = clampf(float(args[index + 1]), 0.0, Tuning.METER_MAX)
-	_baby.excitement = clampf(float(args[index + 2]), 0.0, Tuning.METER_MAX)
+	_baby.sleepiness = override.x
+	_baby.excitement = override.y
 	# A full meter means "show me the walk home". Left to settle on its own it never would:
 	# a stationary player drains sleepiness faster than the state check can fire.
 	if _baby.sleepiness >= Tuning.METER_MAX:
@@ -740,7 +720,7 @@ func _apply_meter_override() -> void:
 ## pause: the game has not started, `Esc` would stop a stopped tree, and the way out of the title is
 ## the two keys it already offers. See `TitleScreen`.
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("snapshot"):
+	if DevFlags.enabled() and event.is_action_pressed("snapshot"):
 		get_viewport().set_input_as_handled()
 		_snapshot_now()
 		return
