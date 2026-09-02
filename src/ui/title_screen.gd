@@ -59,15 +59,18 @@ func open(again := false) -> void:
 func close() -> void:
 	visible = false
 
-## `Space` starts. `Q` leaves, **except on the web**, where `QuitOption.available()` is false and
-## the key is not offered or handled at all — pressing it on a platform where quitting is
-## impossible would be a key the hint never even mentions doing nothing. `Esc` is deliberately not
-## handled: `main` will not open the pause over this, because a pause over a game that has not
-## started is a screen with nothing behind it to stop.
+## `Space` starts, and so does a tap — handled as the touch event itself rather than as a synthetic
+## click, so a mouse is not taught a gesture nobody asked it to have and the desktop is unchanged.
+## `Q` leaves, **except on the web**, where `QuitOption.available()` is false and the key is not
+## offered or handled at all — pressing it on a platform where quitting is impossible would be a
+## key the hint never even mentions doing nothing. `Esc` is deliberately not handled: `main` will
+## not open the pause over this, because a pause over a game that has not started is a screen with
+## nothing behind it to stop.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if event.is_action_pressed("ui_accept"):
+	if event.is_action_pressed("ui_accept") \
+			or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed):
 		get_viewport().set_input_as_handled()
 		start_requested.emit()
 	elif _can_quit and event is InputEventKey and event.pressed \

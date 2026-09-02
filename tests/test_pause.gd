@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_the_title_screen_does_not_stop_the_city(t)
 	_test_the_title_quit_key_matches_the_platform(t)
 	_test_the_pause_quit_key_matches_the_platform(t)
+	_test_a_tap_advances_every_screen(t)
 	t.get_tree().paused = was_paused
 
 ## The trap, stated as an assertion so that reaching for `.visible` again fails loudly.
@@ -250,6 +251,45 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	t.get_tree().paused = false
 	pause.queue_free()
 
+## **Every screen advances on a tap**, handled as the touch event itself rather than as a
+## synthetic mouse click — a phone has no `space`, and nothing before this fired anything for a
+## touch at all. Checked on all three screens the game can come to rest on, the same shape
+## `_test_space_carries_on_from_every_screen` already checks for the key, and a release is checked
+## to do nothing so a finger lifted off the stick elsewhere cannot be read as a dismissal.
+func _test_a_tap_advances_every_screen(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var started := [0]
+	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.open()
+	title._unhandled_input(_touch(false))
+	t.check(started[0] == 0, "lifting a finger does nothing on the title")
+	title._unhandled_input(_touch(true))
+	t.check(started[0] == 1, "and pressing one starts the run")
+	title.close()
+	title.queue_free()
+
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var resumed := [0]
+	pause.resumed.connect(func() -> void: resumed[0] += 1)
+	t.get_tree().paused = false
+	pause.open()
+	pause._unhandled_input(_touch(true))
+	t.check(resumed[0] == 1 and not pause.is_open(), "and a tap carries on from the pause")
+	t.get_tree().paused = false
+	pause.queue_free()
+
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	var carried_on := [0]
+	summary.continued.connect(func() -> void: carried_on[0] += 1)
+	summary._unhandled_input(_touch(true))
+	t.check(carried_on[0] == 1, "and a tap goes on from the between-days summary")
+	t.get_tree().paused = false
+	summary.queue_free()
+
 func _key(code: Key) -> InputEventKey:
 	var event := InputEventKey.new()
 	event.keycode = code
@@ -263,4 +303,9 @@ func _action(name: StringName) -> InputEventAction:
 	var event := InputEventAction.new()
 	event.action = name
 	event.pressed = true
+	return event
+
+func _touch(pressed: bool) -> InputEventScreenTouch:
+	var event := InputEventScreenTouch.new()
+	event.pressed = pressed
 	return event

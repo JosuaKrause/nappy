@@ -104,7 +104,10 @@ func close() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if event.is_action_pressed("pause") or event.is_action_pressed("ui_accept"):
+	# A tap carries on exactly as space does — the touch event itself, not a synthetic click, so
+	# the desktop keeps behaving as it always has.
+	if event.is_action_pressed("pause") or event.is_action_pressed("ui_accept") \
+			or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed):
 		get_viewport().set_input_as_handled()
 		close()
 		resumed.emit()

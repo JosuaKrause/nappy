@@ -133,7 +133,13 @@ func dismiss() -> void:
 func is_showing() -> bool:
 	return _root.visible
 
+## Space or a tap moves on. The touch event is handled directly rather than turned into a
+## synthetic click, so a stray mouse press elsewhere on the desktop still cannot skip a summary a
+## player has not read.
 func _unhandled_input(event: InputEvent) -> void:
-	if is_showing() and event.is_action_pressed("ui_accept"):
+	if not is_showing():
+		return
+	if event.is_action_pressed("ui_accept") \
+			or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed):
 		get_viewport().set_input_as_handled()
 		continued.emit()
