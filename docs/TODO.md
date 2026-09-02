@@ -431,6 +431,21 @@ direction, not distance.**
 
 ## M43 — Two that need a played run
 
+- [ ] **The pause lesson fires while she is being held.** *(2026-09-02, from play: "the pause
+      tutorial comes up when being detained (since you're not moving).")* `_teach_the_pause()`
+      decides she has stopped by asking `Stroller.is_idle()`, which is velocity under 12px/s, so a
+      `chatting_mother` conversation — which locks her movement input — reads as her choosing to
+      stand still, and three seconds later the HUD offers her the pause key.
+
+      **Wrong in the function's own terms**: it already teaches the pause at *"the first time she
+      stops of her own accord"* and already excludes somebody who has not started. Being held is
+      the third case in that list and the sharpest, since it offers her a key at the moment her
+      controls were taken away.
+
+      **And it has a second instance, so the rule is stated over the class.** The HUD has no
+      `process_mode` of its own and inherits `ALWAYS` from `Main`, so it keeps counting while the
+      tree is paused — behind the day summary, the pause screen and the title. The rule is *idle
+      **and** nothing is holding her still*: not detained, and the tree not paused
 - [ ] **The run lesson does not show, and it must.** *(2026-09-02, from play: "the run lesson
       doesn't show at all anymore — it should always show for the day 3 lesson.")*
 
