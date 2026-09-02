@@ -236,9 +236,30 @@ player sees the same 640×360 of world. All three are in `DECISIONS.md` under M6
       summary and the pause screen already use: read `TouchInput.available()` once and say *tap*
       where a keyboard says *space*. `docs/MECHANICS.md` states the keyboard wording as *the*
       wording and is wrong in the same way, so it changes in the same commit
-- [ ] **A pause a thumb can reach.** `pause` is bound to a key alone, so on a touch-only device the
-      pause screen arrives only when the between-days summary brings it. Every screen takes a tap
-      now; what is missing is something on screen to tap for it
+- [ ] **The day-1 walk lesson names keys a phone has not got.** *(2026-09-02: "check all tutorial
+      lines for mobile versions.")* The same defect as the run lesson, two days earlier: the HUD
+      says *Arrow keys or WASD to walk* for the first few seconds of day 1, and the string is the
+      same whatever the device. What walks on a phone is the stick the touch layer draws at the
+      lower left, and the title and pause screens already have the words for it — *"Drag the stick
+      to walk."*
+
+      **The audit behind this cleared everything else.** Every other player-facing line that names
+      a control already has a touch form: the three-line body on the title and the pause screen,
+      and the *space* / *tap* hints on the title, the pause screen and the between-days summary,
+      all choose their wording from `TouchInput.available()`; *q to quit* is offered only where
+      `QuitOption.available()` says quitting does something, which on the web is nowhere. The two
+      HUD lessons were the only lines with no touch form at all.
+- [ ] **A pause a thumb can reach, and a lesson that does not name `Esc`.** `pause` is bound to a
+      key alone, so on a touch-only device the pause screen arrives only when the between-days
+      summary brings it. Every screen takes a tap now; what is missing is something on screen to
+      tap for it.
+
+      **The HUD teaches it by name.** Once per run, after she has walked and then stood still for a
+      few seconds, it says *Esc to pause* — on a phone, a key that does not exist. It cannot be
+      fixed the way the walk and run lessons are, because there is no touch control to name
+      instead: **this item is the one that would build it.** So the button and the wording are one
+      piece of work, and the fork is what the touch build says in the meantime — nothing at all, or
+      nothing until the button lands
 - [ ] **Landscape is declared where nothing reads it.** `export_presets.cfg` carries
       `progressive_web_app/orientation=1`, and the manifest that would carry it is not written
       unless the full PWA export is enabled — a larger change with unset icon paths. So an ordinary
