@@ -1886,10 +1886,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	# is the shape `RouteTree` deliberately does not grow; a day that walled none is the finding.
 	t.check(gaps.size() > 20, "the days sampled have gaps between adjacent strands (%d)" % gaps.size())
 	var walled_share := float(gaps_walled.size()) / maxf(1.0, float(gaps.size()))
-	# A precinct crossing offers no ROAD or CROSSING tile to a wall-eligible row, so a gap that runs
-	# through one can never carry a wall — measured at 24%, a real floor rather than 25%'s, since
-	# the sample still has to show closure happening on most of the gaps that can host it at all.
-	t.check(walled_share > 0.2, "%d of %d gaps carry a wall" % [gaps_walled.size(), gaps.size()])
+	t.check(walled_share > 0.25, "%d of %d gaps carry a wall" % [gaps_walled.size(), gaps.size()])
 	t.check(walled_share < 0.85,
 			"and the rest are left open (%.0f%% walled)" % (walled_share * 100.0))
 
