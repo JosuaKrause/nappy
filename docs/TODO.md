@@ -89,11 +89,52 @@ every day.
 place them.** This is a catalogue design problem before it is a placement one, and playtest 19
 carries the map that shows it.
 
-- [ ] **Design the rows that mean *not this way*.** Nothing in the catalogue does. The constraint is
-      M45's, recorded there with its own trap: **a nudge that removes the decision is worse than a
-      closure that does nothing** — the game's one verb is *where do I walk*, and a signpost that
-      answers the question is worse than no signpost
-- [ ] **Then place them, and give the corridor a price.** A choice needs a cost on both branches
+**And then it stopped being a gradient at all.** *(2026-09-02: "maybe let's not make it a gradient
+but instead always have it fully closed everywhere off the path just not necessarily with a full
+road closure like a tree or car accident.")* **This overturns M50's central idea**, which is that
+the corridor is the *cheapest* ground and everything else is merely dearer. Off the path is now
+**closed**, and what varies is the picture rather than the price — a fallen tree, a car accident, a
+skip, not one barrier row repeated.
+
+**The city becomes a maze rather than a weighted grid**, and the route decision changes with it:
+not *which way is cheaper* but *which of the open ways do I take*. That only remains a decision if
+what stays open is the day's **route tree** rather than a single line, which is what
+`RouteTree.for_day()` already grows — several strands, with the redundancy guarantee counted as a
+max flow. So the policy is: the tree is open, everything off it is closed.
+
+**Four things it collides with, none of them fatal and all of them to be answered before building:**
+
+- **M45's trap, restated at full strength.** *A nudge that removes the decision is worse than a
+  closure that does nothing.* Sealing everything off the tree is the largest possible nudge, so the
+  number of strands the tree keeps open **is** the difficulty dial, and it stops being a placement
+  detail.
+- **The doorstep exemption.** The home is a notch with one exit; that street can never be sealed.
+- **The winnability check becomes load-bearing.** `EventScheduler._ensure_the_city_is_still_walkable`
+  already reasons over the **whole set** of blockers at once rather than one at a time — it asks
+  `_park_is_reachable` with all of them standing and drops the widest until it is — so a pair that
+  seals a street between them is seen today. What is new is how much weight that check will carry
+  once sealing is the intent rather than the accident.
+- **A fixed city is knowledge you earn.** The lattice does not move, so what a player learns still
+  pays; what changes daily is which ways through are open. Worth checking that it still *feels* like
+  earned knowledge rather than a new maze each morning.
+
+**Two obstacles facing each other are already a closure, and that is the cheap way to build this.**
+*(2026-09-02: "placing an obstacle that would force you to switch sides on both sides (eg restaurant
+on one side and yeller on the other) is effectively a full closure and can be used to demarkate
+paths.")* Every obstacle in the catalogue is *walk around it at a price*, and the price is paid by
+crossing to the other side — so **two of them, one per side, leave no line to walk**. No new row is
+needed for the mechanism; the catalogue already contains the wall, split in half and never yet
+placed as one.
+
+- [ ] **Decide how many ways through the tree keeps open**, because under a policy of *closed
+      everywhere off the path* that number is the difficulty of the whole game and not a placement
+      detail. It is also M45's trap in its sharpest form
+- [ ] **The pictures, which are the part that needs inventing.** The mechanism is a pair of
+      ordinary obstacles facing each other; what is missing is enough *kinds* of them that a sealed
+      street does not read as the same barrier every time. A fallen tree and a car accident are the
+      player's own two examples, and neither exists
+- [ ] **Then place them off the tree**, and check the winnability guarantee still holds when sealing
+      is the intent rather than the accident
 - [ ] **Nothing arrives from off screen, and everything should.** *(2026-09-02: "the charging dog
       doesn't have an offscreen indication it should start further away and appear first as
       offscreen indicator", and "bikers / unleashed dogs all pop in in front of the player instead
@@ -438,10 +479,17 @@ Two things it forces, and neither is optional:
 
 ## M50 — What the corridor still owes
 
+**M64 supersedes the gradient this milestone built.** *(2026-09-02: "let's not make it a gradient
+but instead always have it fully closed everywhere off the path.")* Read M64 before picking up
+anything here — the corridor being *cheapest* is the thing that is being replaced by the corridor
+being *the only way through*, and an item below that tunes the gradient may be tuning something
+about to be removed.
+
 - [ ] **"Blocking events all over" is a catalogue question, not a placement one.** The gradient is
       built and measured, and the corridor is the cheapest ground on every day. What is not true is
       the density: raising the caps on the expensive rows is a real balance change and wants its own
-      measurement
+      measurement. **Check this against M64 first** — under a closed-off-path policy the question
+      changes shape
 - [ ] **`cyclist` and `loose_dog`'s caps no longer mean what they say.** Both rows now arrive via
       the director's single queue and its 11–26s pacing rather than being map-placed, so a day
       fields far fewer than `max_per_day` (14 and 24) reads as promising — the caps' meaning
