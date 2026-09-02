@@ -79,58 +79,25 @@ milestone now has to hold — a custom domain is stored as a repository setting 
 artifact, so the deploy must not overwrite it and nothing in the export may assume a `/nappy/`
 path prefix.
 
-- [ ] **Gate the developer's furniture first — this is the prerequisite, not a polish item.**
-      `--seed`, `--day`, `--spawn`, `--ending` and the rest ship in the build today (M10 records the
-      debug gate as owed). A public build guards every dev flag and the snapshot key behind
-      `OS.is_debug_build()`, and the M10 item to move them into a `DevFlags` helper is naturally the
-      same work. **The HUD's header and status line are the same category** and go behind the same
-      gate — see the entry below
-- [ ] **A tracked Web export preset.** `export_presets.cfg` is gitignored because presets often
-      carry credentials — a Web preset carries none, so track it (adjust the ignore with a comment
-      saying why), configured for threads off. Decide the viewport/canvas policy (the game renders
-      640×360 and scales)
-- [ ] **`tools/export-web.sh`** — headless export (`--headless --export-release Web`) into
-      `build/web/` (already gitignored), with the missing-export-templates failure caught the way
-      the other tools catch a missing Godot binary
-- [ ] **Telemetry on the web is off.** *(2026-09-02: "the github pages version should not emit
-      telemetry".)* `user://` maps to browser storage in a web build: nobody collects those logs and
-      the folder can grow unbounded on a stranger's machine. Off for web exports, by an OS
-      feature-tag check
-- [ ] **The day's HUD loses everything that is not the day.** *(2026-09-02: "the on-screen info
-      should be minimal (only timer + bars + status line) but even status line I think we should be
-      able to drop — the status is visible on the entity. only maybe the current optional goal
-      should be visible. the day / nerve / etc info should not be there — it is already shown
-      between days — during the day this info is just noise and the player can pause to see it.")*
+**What is built, so what is left has a floor.** Every dev flag and the snapshot key answer "not
+given" outside a debug build, with the parsing in `DevFlags` rather than woven through `main.gd`;
+the day's HUD is the clock, the two bars and the optional goal, with the header and status line
+behind the same gate; `export_presets.cfg` is tracked with one Web preset on `gl_compatibility` and
+threads off; `tools/export-web.sh` builds into `build/web/`; the run log is silent on a web build;
+and `.github/workflows/deploy.yml` gates, exports and publishes on a push to `main`. The record is
+in `DECISIONS.md` under M60.
 
-      What the HUD shows today, so the cut has a floor: a **header** reading
-      `day N / 14   act N   nerves ***`, the **clock**, the two **meter bars**, a **status line**
-      (the baby's state, why she is not settling, and a city-wide source when one is running), and
-      a **resistance line** (`resistance *...` plus the current step's title).
+**Neither of the two things that matter has been proven, and both need the same event: a push to
+`main`.** The export has never run to completion — the templates are not installed on the machine
+it was built on, so what was verified is that the tool reports their absence correctly. And a
+workflow only proves itself by running.
 
-      **Decided on 2026-09-02: the clock, the two bars and the optional goal, and nothing else.** The
-      header goes and the status line goes with it; the bars stay. So the game's HUD is the clock,
-      `SLEEPINESS`, `EXCITEMENT`, and the current optional goal on one line.
-
-      **Two sentences stop being said anywhere, and nothing replaces them.** `stall_reason()`'s
-      *"not settling: …"* — the reason the baby will not go down — and the *"nowhere is quiet"* note
-      when a city-wide source is running. Neither is drawn by the pram, so this is a real loss taken
-      knowingly rather than an oversight, and **it is not authority to invent a cue for them**: if
-      the loss is felt, it comes back as its own question from somebody who has played without them.
-
-      **The scope is answered, and it is not "two HUDs".** *(2026-09-02: "the current HUD is for
-      debugging — for the real game (the web version) it must be minimal.")* The header, the status
-      line and everything else being cut is **debug output that has been shipping as if it were the
-      game**, so this is the same work as gating the dev flags: the minimal HUD is the game, and
-      what is left goes behind `OS.is_debug_build()` with the rest of the developer's furniture.
-      That also decides where it lives — beside the `DevFlags` helper, not in a web-only branch
-- [ ] **The deploy workflow** — GitHub Actions on push to `main`: install Godot and the matching
-      export templates, run the export, publish `build/web/` to Pages (`upload-pages-artifact` +
-      `deploy-pages`, with the `pages: write` and `id-token: write` permissions that pairing needs).
-      **Nothing is blocking it**: the repo has a GitHub remote, Pages is on, and the domain is set.
-      Two things to get right rather than discover — the Godot version the workflow installs has to
-      be the one the project is built with, or the export fails on a template mismatch; and the run
-      has to be reproducible from a clean checkout, which is the same requirement `check.sh` already
-      has of a fresh clone
+- [ ] **The first deploy, which is a merge to `main` and nothing else.** The workflow fires on a
+      push there, so the way this milestone finishes is the way any milestone finishes. Two
+      failures to expect the first time and neither is a defect in the game: the export templates
+      download is the largest step and the one most likely to be wrong about a URL, and a Godot
+      binary whose version does not match its templates fails in a way that reads like a broken
+      export. Both are read off the run's own log
 - [ ] **A browser smoke pass** once it is deployed, at the real address: boots, keyboard input
       works, holds frame rate at the game's scale, and the title screen reads as the front door of a
       public page. itch.io stays the fallback host (it sets the isolation headers, so a threaded
@@ -541,9 +508,10 @@ After the playtest work. There is no point polishing a loop that is about to be 
 - [ ] **A web build** — grew into its own milestone: M60, "Ready for a GitHub Pages launch"
 - [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
 - [ ] Controller support
-- [ ] Gate the dev flags behind a debug build, and move `_first_event_position` and friends out of
-      `main.gd` into a `DevFlags` helper — the audit measured the dev-only code at roughly a third
-      of `main.gd`, so the helper is worth doing before the file is next touched
+- [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag *parsing* out; what
+      stayed is the code that acts on it — `_first_event_position` and the `--spawn` target lookup,
+      both of which read the live city and would have made the move a rewrite rather than a
+      relocation. Worth finishing the next time the file is opened for another reason
 
 ---
 

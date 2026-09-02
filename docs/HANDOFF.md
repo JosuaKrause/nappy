@@ -50,11 +50,13 @@ the exemption is stated over `pursues` rather than holding by accident of the `W
 
 ## What to do next
 
-1. **Finish M56** — "other dangers like this", then the measurement against the nerves. The vans
+1. **Merge to `main` and watch the deploy.** M60 is built except for the two things that can only
+   be proven by running: the Web export has never completed on a machine with templates installed,
+   and `.github/workflows/deploy.yml` fires on a push to `main`. The site is
+   `https://nappy.josuakrause.com/`, already on with its custom domain set as a repository setting.
+   **This publishes the game**, so it is the player's call rather than a routine merge.
+2. **Finish M56** — "other dangers like this", then the measurement against the nerves. The vans
    have set the precedent the first of those was waiting on.
-2. **M60 — ready for a GitHub Pages launch.** The dev flags and the debug HUD behind
-   `OS.is_debug_build()` first, then a tracked Web export preset, an export tool, telemetry off for
-   web, and the deploy workflow.
 
 M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
 bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.
@@ -123,10 +125,9 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   constant was 12.
 - **There is no audio at all.** Less urgent than it sounds: audio is redundancy, so the game must
   already be fully playable without it.
-- **Dev flags are always on, and so is the debug HUD.** `--seed`, `--day`, `--spawn`, `--follow`,
-  `--meters`, `--overview`, `--day-length`, `--screenshot`, `--after`, `--walk`, `--flee`,
-  `--press`, `--ending` ship in the build, and so do the HUD's header and status line, which are
-  developer's furniture rather than the game. All of it goes behind a debug build in M60.
+- **The web build has never been built.** Every flag is gated, the preset is tracked and the
+  workflow is written, and no export has run to completion anywhere: the templates are not
+  installed on the machine it was built on. What is verified is that the tool says so clearly.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
   running behind it, `space` to begin — but it is a title, three lines of controls and two keys: no
   options, no seed box, no load game.
