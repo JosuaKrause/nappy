@@ -98,6 +98,21 @@ workflow only proves itself by running.
       download is the largest step and the one most likely to be wrong about a URL, and a Godot
       binary whose version does not match its templates fails in a way that reads like a broken
       export. Both are read off the run's own log
+- [~] **Two things the smoke pass found.** *(2026-09-02, on the deployed build: "the debug info on
+      the right side of the screen (fps, seed, etc.) is still showing. also for the web version
+      remove Q (quit) and its mentions since it doesn't have any effect", and "**only** for the
+      online version, for the local version Q needs to exist still".)*
+
+      The **developer's readout** — the right-hand panel with the seed, the frame rate, the tile,
+      the event counts and the meter's arithmetic — is a `Label` in `main.gd` rebuilt every frame,
+      and the dev-flag gate never reached it. It goes behind `DevFlags.enabled()` with the rest of
+      the furniture.
+
+      **`Q` quits, except on the web, where `SceneTree.quit()` does nothing at all** — the page is
+      still there and the player has pressed a key a screen told them to press and watched it fail.
+      The key is not offered and not handled on the web, and **stays exactly as it is everywhere
+      else**. The axis is the platform rather than the build, the same one the run log already uses
+      to stay silent on the web: a debug web build must lose the key too
 - [ ] **A browser smoke pass** once it is deployed, at the real address: boots, keyboard input
       works, holds frame rate at the game's scale, and the title screen reads as the front door of a
       public page. itch.io stays the fallback host (it sets the isolation headers, so a threaded

@@ -21,6 +21,17 @@ The three cases where the orchestrating session implements directly, and they ar
   next decision is the player's — an agent cannot hold a conversation with them.
 - **The change is a sentence.** A stale line in a doc, a constant, a one-line fix. Specifying it
   costs more than doing it, and a prompt long enough to be unambiguous is longer than the diff.
+
+  **This one drifts, and it drifts while the work is going well.** It is claimed for a change that
+  turns out to touch four files, want a test, and need a decision about where a new helper lives —
+  by which point the prompt would have been shorter than the diff, and the argument for doing it by
+  hand was made before any of that was known. Two checks, either of which fails it: **is it more
+  than one file**, and **does it need a test**. A fix that needs a test is a fix somebody has to
+  verify, and verification is exactly what an agent's report is for.
+
+  The tell is the phrase *"while I'm in here"*. The cost is not the diff — it is that the
+  orchestrator's context fills with implementation detail that an agent would have held instead,
+  and the next design decision is taken with less room to take it in.
 - **It is the queue or the archive.** `TODO.md`, `HANDOFF.md`, `DECISIONS.md` and the playtests are
   the orchestrator's, always — see "What the orchestrator keeps".
 
