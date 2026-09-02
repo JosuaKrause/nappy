@@ -85,6 +85,13 @@ jobs:
       - name: Export the Web build
         run: GODOT="$HOME/godot/godot-bin" ./tools/export-web.sh
 
+      # The Web export packs everything under assets/ into the .pck, so nothing there is served
+      # as a loose file. og:image in export_presets.cfg's html/head_include points at
+      # social-card.png beside index.html, and this is what puts it there — the wordmark at
+      # assets/logo.png, published under the name the head markup already expects.
+      - name: Publish the social card image
+        run: cp assets/logo.png build/web/social-card.png
+
       - name: Upload the Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
