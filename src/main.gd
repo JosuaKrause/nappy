@@ -124,7 +124,10 @@ func _ready() -> void:
 	# question, and `--press` and `--walk` would hold keys against a game that has not begun.
 	# A rig is driving, so it starts the day the way the player would. `--title` is how the screen
 	# itself gets photographed.
-	var args := OS.get_cmdline_user_args()
+	# Through `DevFlags`, which answers with nothing outside a debug build, so a release export
+	# cannot be told to skip its own front door: `--no-title` is a rig's convenience like every
+	# other flag here, and the title screen is the game's first screen.
+	var args := DevFlags.active_args()
 	if _show_an_ending_for_a_rig():
 		return
 	if (screenshot or "--no-title" in args) and not "--title" in args:

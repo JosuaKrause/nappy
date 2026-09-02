@@ -71,6 +71,17 @@ jobs:
           mv /tmp/templates/templates \
             "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
 
+      # **The gate runs here rather than being inherited from `ci.yml`.** Both workflows fire on
+      # the same push and neither waits for the other, so a deploy that trusted CI would publish
+      # a red build to a public address as often as not. Running it again costs a few minutes on
+      # the rare push that reaches `main`, and it is the same gate this project requires before a
+      # commit: the project boots, and the full suite is green.
+      - name: Check
+        run: GODOT="$HOME/godot/godot-bin" ./tools/check.sh
+
+      - name: Test
+        run: GODOT="$HOME/godot/godot-bin" ./tools/test.sh
+
       - name: Export the Web build
         run: GODOT="$HOME/godot/godot-bin" ./tools/export-web.sh
 
