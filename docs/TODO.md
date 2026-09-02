@@ -569,3 +569,33 @@ After the playtest work. There is no point polishing a loop that is about to be 
       the meters"*. A face would be that in the visual channel — the meter read off the baby rather
       than off a strip at the bottom of the screen. Not designed, and it needs the playing that the
       status-line cut is about to produce
+- [ ] **Could it be played on a phone?** **Asked about on 2026-09-02, not asked for** — the
+      reasoning is kept here because it is worth more than the question was, and none of it is a
+      commission.
+
+      **The plumbing is nearly free.** Movement is one call —
+      `Input.get_vector("move_left", "move_right", "move_up", "move_down")` in `Stroller`, which
+      already returns an analogue vector with a 0.2 deadzone — so a virtual stick feeding those
+      actions needs no gameplay change at all, and running is one boolean. Godot has no built-in
+      stick, so that is the thing to write, plus taps for the four keys the screens use.
+
+      **What is not free is the twenty pixels.** `CrowdLanes` pushes the two walking lanes of a
+      pavement 8px apart precisely so there is a clear line between them wide enough to aim at, and
+      it carries the measurement: forty seconds down an arterial lane centre costs 13.7 contacts and
+      the midline costs 0.0, which is **148 points of a hundred-point meter riding on those pixels**.
+      Arrow keys hit that line and a thumb does not. Mobile is therefore a question about whether
+      the careful/careless economy survives a blunter instrument, rather than a question about input.
+
+      **And running may not become a gradient.** The obvious mobile idiom — push the stick past a
+      threshold to run — is wrong here, and the code says why: `Stroller` moves toward
+      `input_dir * top_speed` with the *raw* vector, so partial deflection is already partial speed,
+      and running would become the far end of one continuous push. This game's run is the opposite
+      of that: the title screen calls it *"rarely worth it"*, day 3 exists to teach it, and every
+      pursuit contract is stated over the gap between a walk and a run. It stays a held button, so
+      it stays a decision.
+
+      **Landscape only.** Letterboxed to 16:9 a portrait phone would be a strip; the Web export
+      preset can declare the orientation. And if the controls are ever to sit *beside* the city
+      rather than on top of it, that is not the letterbox — a letterboxed bar is outside the
+      drawable viewport, so drawable margins mean fixing the world view with the camera instead,
+      which is a larger change than a project setting
