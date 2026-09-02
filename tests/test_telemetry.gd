@@ -34,6 +34,10 @@ func run(t) -> void:
 	_test_every_routed_event_is_a_straight_line(t)
 	_test_the_map_picture_reads_the_map_and_nothing_else(t)
 	_test_a_picture_asked_for_by_hand_is_never_capped(t)
+	_test_the_trail_is_sampled_by_distance_not_by_frame(t)
+	_test_the_trail_carries_whether_she_was_running(t)
+	_test_a_lost_day_restarts_the_trail(t)
+	_test_the_map_picture_draws_the_trail_and_distinguishes_running(t)
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -308,6 +312,95 @@ func _test_a_capture_is_never_logged_as_blocked(t) -> void:
 	stroller.free()
 	observer.free()
 
+# ------------------------------------------------------------------------ the trail ---
+# *(`docs/TODO.md`, M66, "the dusk map shows what the player did": a trail belongs in
+# `TelemetryObserver`, sampled by distance rather than by frame so it stays bounded and
+# framerate-independent.)*
+
+## A bare observer with only `_player` set, the one field `_watch_the_trail` reads besides the
+## position it is handed directly.
+func _trail_rig() -> TelemetryObserver:
+	var observer := TelemetryObserver.new()
+	observer._player = Stroller.new()
+	return observer
+
+## Distance sampling, not frame sampling: many small steps inside one tile must leave the trail
+## alone, and the first step to cross a tile of distance — however many frames it took — must add
+## exactly one point.
+func _test_the_trail_is_sampled_by_distance_not_by_frame(t) -> void:
+	var observer := _trail_rig()
+	var here := Vector2(100.0, 100.0)
+
+	observer._watch_the_trail(here)
+	t.check(observer.trail().size() == 1, "the very first sample always leaves a point")
+
+	for i in 20:
+		here.x += 1.0
+		observer._watch_the_trail(here)
+	t.check(observer.trail().size() == 1,
+			"twenty one-pixel steps inside a tile leave the trail at one point (got %d)"
+			% observer.trail().size())
+
+	here.x += TelemetryObserver.TRAIL_SAMPLE_DISTANCE
+	observer._watch_the_trail(here)
+	t.check(observer.trail().size() == 2,
+			"crossing a tile of distance writes exactly one more point, however many frames it took")
+
+	observer._player.free()
+	observer.free()
+
+## The third component of a sample is `Stroller.run_excess_ratio()` at the moment it was taken —
+## 0.0 at a walk, above 0.0 the instant she is running faster than a walk — so the dusk map can
+## colour a run stretch differently from a walked one without a second trail to keep in step.
+func _test_the_trail_carries_whether_she_was_running(t) -> void:
+	var observer := _trail_rig()
+	observer._player.velocity = Vector2.ZERO
+	observer._watch_the_trail(Vector2.ZERO)
+	t.check(observer.trail()[0].z == 0.0, "a sample taken at a walk carries no run ratio")
+
+	observer._player.velocity = Vector2(Tuning.RUN_SPEED, 0.0)
+	observer._watch_the_trail(Vector2(TelemetryObserver.TRAIL_SAMPLE_DISTANCE, 0.0))
+	t.check(observer.trail()[1].z > 0.0,
+			"and a sample taken at a sprint carries its run_excess_ratio (got %.2f)"
+			% observer.trail()[1].z)
+
+	observer._player.free()
+	observer.free()
+
+## `start_day()` resets everything else about yesterday, and the trail is no exception: a rewound
+## day was not walked, so the picture of it must start from nothing rather than carrying the
+## abandoned attempt's trail into the retry.
+func _test_a_lost_day_restarts_the_trail(t) -> void:
+	var saved_day := GameState.day
+	GameState.day = 1
+	var map := CityGenerator.generate(4242)
+	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	t.add_child(city)
+	city.build(map)
+	# Not added to the tree: a bare `Stroller.new()` has no `Camera2D` child, which only the scene
+	# it is normally instanced from provides, and `start_day()` reads nothing that needs one.
+	var player := Stroller.new()
+	player.global_position = city.map.home_world_position()
+	player.facing = Vector2.DOWN
+
+	var observer := TelemetryObserver.new()
+	observer._city = city
+	observer._map = city.map
+	observer._player = player
+
+	observer.start_day()
+	observer._watch_the_trail(player.global_position + Vector2(200.0, 0.0))
+	t.check(not observer.trail().is_empty(), "the trail records a point during the day")
+
+	observer.start_day()
+	t.check(observer.trail().is_empty(),
+			"a new day's start — including a rewound day's — starts the trail over from nothing")
+
+	GameState.day = saved_day
+	observer.free()
+	player.free()
+	city.free()
+
 # ------------------------------------------------------------- the city grid ---
 # *(Playtest 13, finding 4.)* What a test can hold about a picture is its geometry and its
 # innocence; whether it is *legible* is a thing to open the PNG and look at, which is the
@@ -496,6 +589,27 @@ func _check_a_glyph_says_what_it_is(t, map: CityMap,
 				"while one she reached does, in the middle of the same mark")
 		t.check(_tile_colour(met, at + Vector2i(1, 0)) == colour,
 				"and the pip does not change the glyph around it")
+
+## The trail draws at all, and a point taken while running reads differently from one taken at a
+## walk — the two claims `TelemetryObserver._watch_the_trail` makes about a sample, checked the way
+## the corridor's own stroke is: by whether the pixel changed, since both are blended into the
+## ground rather than painted over it.
+func _test_the_map_picture_draws_the_trail_and_distinguishes_running(t) -> void:
+	var map := CityGenerator.generate(4242)
+	# The middle of the map rather than the home or a calm area: both are drawn *after* the trail
+	# on purpose (they are the picture's fixed points) and would silently paint over a trail point
+	# placed on top of them, which is a fact about draw order and not about the trail.
+	var at := map.tile_to_world(map.size / 2)
+
+	var plain := TelemetryMap.render(map)
+	var walked: Array[Vector3] = [Vector3(at.x, at.y, 0.0)]
+	var walked_image := TelemetryMap.render(map, [], null, [], walked)
+	t.check(plain.get_data() != walked_image.get_data(), "a trail with one point on it is drawn")
+
+	var ran: Array[Vector3] = [Vector3(at.x, at.y, 1.0)]
+	var ran_image := TelemetryMap.render(map, [], null, [], ran)
+	t.check(ran_image.get_data() != walked_image.get_data(),
+			"a point taken while running reads differently from the same point taken at a walk")
 
 ## `_route_stroke` draws the band between a route's two ends, which **is** the route only while
 ## every route in the catalogue is two axis-aligned points.

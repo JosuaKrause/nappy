@@ -87,10 +87,27 @@ const CORRIDOR_ALPHA := 0.55
 ## a wall placed in the far corner of a map she never walked into is still a wall in the wrong
 ## place, and it is the placement no trace can report — so the picture would have whispered exactly
 ## the thing it exists to shout. Drawn instead, every mark stays at full strength and the ones she
-## met carry a white pip, which also gives the picture something it was not asked for and is worth
-## keeping: the pips are a trail of **where she actually went**, against the corridor the day
-## planned for her.
+## met carry a white pip.
 const MET_MARK := Color("ffffff")
+
+## The trail itself: what colour a sampled point is drawn in while she was walking, and while she
+## was running. Two colours on the one mark rather than a second trail, because
+## `TelemetryObserver._watch_the_trail` already carries the run/walk answer as a third component of
+## the same point.
+##
+## Chosen away from every colour already in the legend above and below: it must not read as a
+## fourth role, as the corridor's violet, or as a closure's red. `TRAIL_RUN_MARK` is the hotter of
+## the two on purpose — running is the game's one deliberate act, and the busiest colour in the
+## picture is where the reader's eye should land first.
+const TRAIL_MARK := Color("ffd166")
+const TRAIL_RUN_MARK := Color("ff3b30")
+
+## How much of the ground a trail point lets through. Blended, like the corridor and the routed
+## bands, and for the same reason: the trail has to be read *against* the corridor it may or may
+## not be following, and a trail solid enough to hide the plan underneath it would answer only half
+## of the question it exists to settle. Lower than `CORRIDOR_ALPHA` so a stretch that is on the
+## corridor still shows the corridor underneath it rather than replacing it.
+const TRAIL_ALPHA := 0.45
 
 ## How much of the ground the line of a routed event lets through.
 ##
@@ -127,8 +144,14 @@ const BUILDING_GROUND := Color("211f26")
 ## `plans` is what the day placed, and it is the corridor's other half: a corridor with nothing
 ## drawn against it says where the routes went and not whether anything was placed *for* them. See
 ## `_mark_the_events`.
+##
+## `trail` is `TelemetryObserver`'s own list of where she actually went, sampled by distance rather
+## than by frame, and it is what turns the dusk picture into an answer rather than a repeat of the
+## dawn one. Optional and empty by default — on the dawn map there is no walk yet, and a picture
+## that invented one would be worse than a picture with none.
 static func render(map: CityMap, closures: Array[RoadClosure] = [],
-		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = []) -> Image:
+		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
+		trail: Array[Vector3] = []) -> Image:
 	var image := Image.create_empty(map.size.x * SCALE, map.size.y * SCALE, false, Image.FORMAT_RGB8)
 	for y in map.size.y:
 		for x in map.size.x:
@@ -153,6 +176,12 @@ static func render(map: CityMap, closures: Array[RoadClosure] = [],
 	# was shut and where she starts are the picture's fixed points, and a hundred and twenty event
 	# marks laid over them would bury the frame everything else is measured in.
 	_mark_the_events(image, map, plans)
+	# Over the corridor and the events, for the reason the milestone exists: seeing where she went
+	# against where the day expected her to is the entire value, so both have to already be on the
+	# picture. Under the same four fixed points as the events, for the same reason — a few hundred
+	# trail dots laid over the home or a calm area's outline would bury exactly the things a reader
+	# orients the rest of the picture from.
+	_mark_the_trail(image, map, trail)
 	_mark_the_dead_ends(image, map)
 	_mark_the_calm(image, map)
 	_mark_the_closures(image, closures)
@@ -289,6 +318,22 @@ static func _route_stroke(map: CityMap, path: PackedVector2Array) -> Rect2i:
 	var low := Vector2i(mini(from.x, to.x), mini(from.y, to.y))
 	var high := Vector2i(maxi(from.x, to.x), maxi(from.y, to.y))
 	return Rect2i(low, high - low + Vector2i.ONE)
+
+## Where she actually went, one blended tile per sample.
+##
+## `TelemetryObserver._watch_the_trail` samples one point per `TRAIL_SAMPLE_DISTANCE` (a tile), so
+## consecutive points are on adjacent or near-adjacent tiles and the dots read as a line without
+## needing one drawn between them — the same reason the corridor's own stroke does not need
+## anti-aliasing at this scale.
+##
+## Coloured per point rather than per stretch: a point's own `run_excess_ratio` (its third
+## component) says whether it was taken at a walk or a run, so a day that ran for three seconds in
+## the middle of an otherwise walked street shows exactly that stretch and no more.
+static func _mark_the_trail(image: Image, map: CityMap, trail: Array[Vector3]) -> void:
+	for point in trail:
+		var tile := map.world_to_tile(Vector2(point.x, point.y))
+		var colour := TRAIL_RUN_MARK if point.z > 0.0 else TRAIL_MARK
+		_blend_tiles(image, Rect2i(tile, Vector2i.ONE), colour, TRAIL_ALPHA)
 
 ## Every street a hard blocker built over: the wall at the end of a dead end, and all four sides
 ## of a big building.

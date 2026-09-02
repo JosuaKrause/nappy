@@ -377,11 +377,14 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# before `end_day()` stops the clock, so it is timestamped where it happened.
 	if _observer:
 		_observer.day_finished(result)
-	# The same picture again, now that the day has been walked: the marks she reached are opaque and
-	# the rest are not, which is the one thing the dawn map cannot say. Before `end_day()`, so it
-	# belongs to the day it is of. See `Telemetry.write_map`.
+	# The same picture again, now that the day has been walked: the trail she actually left is drawn
+	# against the corridor the day planned for her, which is the one thing the dawn map cannot say.
+	# `_observer` is only in the tree while a run is being traced, so the trail is empty rather than
+	# missing when it is not — see `Telemetry.write_map`. Before `end_day()`, so it belongs to the
+	# day it is of.
+	var trail: Array[Vector3] = _observer.trail() if _observer else []
 	Telemetry.write_map(_city.map, finished_day, _city.closures(), _city.route_tree(),
-			_city.events.plans(), true)
+			_city.events.plans(), true, trail)
 	Telemetry.end_day()
 	_run_over = not GameState.finish_day(result)
 	_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves)

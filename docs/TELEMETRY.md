@@ -269,8 +269,9 @@ closure cut anything, which street the spine is, why a park was never reached �
 from a list of tile coordinates is a thing nobody does twice.
 
 So a run writes `<log stem>-map-day<NN>.png`: one four-pixel square per tile, coloured by tile
-type, with the home, the calm areas, the main road, today's closures, the day's corridor and every
-event the day placed marked over it. `TelemetryMap` does the drawing.
+type, with the home, the calm areas, the main road, today's closures, the day's corridor, every
+event the day placed and — at dusk — the trail she actually walked marked over it. `TelemetryMap`
+does the drawing.
 
 - **It is not `--overview`.** That flag frames the *rendered* city — buildings, props, dusk, an
   act's colour cast — on a run somebody has to take deliberately. This is the grid, so it says what
@@ -379,8 +380,32 @@ first, and *a corridor with nothing on it ever met* is visible only in the secon
 **The pip is a mark added rather than strength taken away.** Fading what she never reached is the
 obvious design and it answers the wrong question: a wall in the far corner of a map she never walked
 into is still a wall in the wrong place, and it is the placement no trace can report — so the
-picture would whisper exactly the thing it exists to shout. Drawn instead, the pips also give the
-picture **a trail of where she actually went, against the corridor the day planned for her.**
+picture would whisper exactly the thing it exists to shout. Drawn instead, every mark stays at full
+strength and the ones she met carry the pip on top of it — see "The trail" below for the other half
+of what the dusk map now says about where she went.
+
+### The trail
+
+The dusk picture also carries **where she actually went**: one blended dot per sample, drawn in a
+warm colour where she was walking and a hot red where she was running —
+`Stroller.run_excess_ratio()`, read off the same sample rather than kept as a second trail.
+
+`TelemetryObserver` accumulates the trail as a list in memory while the day runs and hands it to
+`Telemetry.write_map` at dusk, the same way it already hands the day's corridor. **Sampled by
+distance, not by frame** — one point roughly every tile (`TelemetryObserver.TRAIL_SAMPLE_DISTANCE`,
+32px) — so a fast machine and a slow one produce the same trail and a 180-second day is a few
+hundred points rather than growing with how long a frame took. Nothing is written to the log for
+it: the trail is drawn, never logged, the same as the corridor.
+
+**The dawn map keeps drawing no trail.** There is no walk yet, and a picture that invented one
+would be worse than a picture without one — the same reasoning that keeps the corridor off a
+picture given no tree. **A lost day restarts the trail**, in the same `start_day()` reset that
+clears everything else about yesterday: a rewound day was not walked.
+
+**It has to be read *against* the corridor the day planned for her**, which is the entire value of
+the picture existing — where she actually went, held next to where the day expected her to. Both
+marks are blended into the ground rather than painted over it for the same reason: a trail solid
+enough to hide the corridor underneath it would answer only half the question.
 
 ## What it deliberately does not do
 
@@ -402,6 +427,8 @@ picture **a trail of where she actually went, against the corridor the day plann
 - **No `near` entries for `city_wide` sources.** A field with no edge cannot be approached.
   What the loudspeaker masts are doing shows up in every meter breakdown instead — which is also
   the most misleading gap in the trace today; the fix is queued in `docs/TODO.md`.
-- **No sampling of the player's position on a timer.** Where they were is reconstructable
-  from the entries, and a position every half second would be a metrics dump wearing a log's
-  clothes.
+- **No sampling of the player's position on a timer, in the log.** Where they were is
+  reconstructable from the entries, and a position every half second would be a metrics dump
+  wearing a log's clothes. The dusk map's trail (see "The trail" above) is not an exception to
+  this: it is sampled by distance rather than by timer, it is never written to the log, and it
+  lives only in memory for the length of one day.
