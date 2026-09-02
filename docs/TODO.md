@@ -14,19 +14,25 @@ mid-way through.
 
 ## The order
 
-1. **M64** — off the path is closed, not dear. Design the rows first, then place them.
-2. **M65** — the chalk mark is findable, and silent until it is found.
-3. **M56** — the resistance is noticed.
+1. **M69** — reachability is asked of an opening, not a block.
+2. **M64** — off the path is closed, not dear. Design the rows first, then place them.
+3. **M65** — the chalk mark is findable, and silent until it is found.
+4. **M56** — the resistance is noticed.
 
 **The instrument they are read with now exists.** The dusk map draws the walk over the plan — where
 she went, where she ran, and which events actually reached her — so *did the corridor have to be
 walked* and *what did a day cost* are questions a picture can answer. See `DECISIONS.md` under M66,
-and `docs/TELEMETRY.md` for what the map draws.
+and `docs/TELEMETRY.md` for what the map draws. This is also the instrument playtest 20 was read
+with — a full seven-day run's fourteen maps, copied into `docs/evidence/`.
 
-**Playtest 19 is the freshest thing in this file** and its nine findings are filed against the
-milestones that own them — M64 and M65 are new, and the rest went to M48 (barriers), M49 (the north
-edge, the junction paint) and the small items (the robber in a building). Read it before picking
-anything up.
+**Playtest 20 is the freshest thing in this file.** Its four findings: a reachability gap now filed
+as M69, a chalk-mark idea folded into M65, a calm-area spoiling inconsistency added to M47, and a
+measured lead-time gap on the post-tutorial `charging_dog` added to M43's existing item on that row.
+Read it before picking anything up.
+
+**Playtest 19's nine findings are filed against the milestones that own them** — M64 and M65 are
+new, and the rest went to M48 (barriers), M49 (the north edge, the junction paint) and the small
+items (the robber in a building).
 
 M53's one remaining piece is specified and unordered — see its entry.
 
@@ -153,6 +159,39 @@ that meets one ends at its edge. What remains is that the ending is not *drawn* 
 
 ---
 
+## M69 — Reachability is asked of an opening, not a block · asked for 2026-09-03
+
+> "barriers don't take into a account that parks can be entered where normally buildings would be
+> making them ineffective. (at the same time a courtyard can be completely sealed off by a barrier
+> because it blocks the entrance alley). the same applies to alleys. the reachability checks need to
+> take alleys and parks properly into account. it's not enough to reach a block."
+
+Two shapes of one gap, seen in the same run (playtest 20, seed 4070543669). A barrier meant to seal
+a street off does nothing if the park behind it can still be walked into from a side with no street
+or alley against it — the dusk maps show the walked line cutting straight across a park's interior
+rather than following any drawn opening, on day 1
+(`docs/evidence/run-2026-09-03T002310-seed4070543669-5d342c9-map-day01-dusk.png`, the top-left
+forest block) and again on day 4 as a diagonal line straight through the big park's interior. And
+the reverse: a single barrier across a courtyard's one access alley seals the whole courtyard, seen
+on the same run's days 5 through 7, where the narrow forest strip at the top of the map gets a
+barrier drawn against its only opening and the walked line — which had reached that block on four
+of the run's first six days — never goes near it again.
+
+- [ ] **State the check over an opening, not a block.** `EventScheduler._ensure_the_city_is_still_
+      walkable`'s `_park_is_reachable` (also relied on by M45) currently asks whether a block is
+      reachable at all; a park or courtyard has to be asked through however many openings it
+      actually has, so that a barrier against one opening does not falsely pass a park still walkable
+      through another, and does not falsely fail to notice it has sealed the only one a courtyard has
+- [ ] **The same question for alleys.** The player's sentence extends the fix to alleys explicitly —
+      an alley's own reachability wants the same per-opening treatment as a park or courtyard's,
+      not folded in as a special case of either
+- [ ] **Then re-check every barrier-placing milestone against it.** M45's closures, M48's barrier
+      drawing and M62's checkpoint perimeter all place barriers assuming a block-level reachability
+      check backs them; each wants confirming against the corrected check once it exists, rather than
+      assumed clean
+
+---
+
 ## M65 — The chalk mark is findable, and silent until it is found · asked for 2026-09-02
 
 Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
@@ -176,6 +215,23 @@ should not be, and it cannot be found when it should be.
 
       It is also what makes finding 1's silence fair: a first encounter with no hint is only
       reasonable if the thing can actually be come across
+- [ ] **A protester points at the objective, and there are more of them.** *(2026-09-03, playtest
+      20: "the chalk is currently unfindable I spent almost a full day searching for it. let's make
+      the protesters point into the direction (with their arms or something) of the current
+      objectives (not only chalk marks). and make the protesters more common. they're not really an
+      obstacle/event anyway so they can be placed independently.")* Still the same complaint as the
+      two items above it — the mark cannot be found — with a mechanism attached rather than only a
+      placement fix: give the `protest` row (`EventDef.Look.PROTEST`, drawn in
+      `src/events/event_instance.gd:91` from `protester.svg`) a pointing pose aimed at whatever the
+      current objective is, and raise how often it appears. The player's own reason the density
+      change is cheap: a protester obstructs nothing and pursues nothing, so it does not compete
+      with the rest of the catalogue's placement budget the way raising an obstacle's density would.
+
+      **Measured, the same run:** a chalk mark is rolled and guarded by a nearby robber on every one
+      of the four days it becomes eligible
+      (`docs/evidence/run-2026-09-03T002310-seed4070543669-5d342c9.log:240`, `:364`, `:546`, `:602`),
+      and the run ends *"bad on day 7 — resistance 0/4, sabotage not done"* (`:701`) — not found once
+      across the whole run, on every day one existed to find
 
 ---
 
@@ -536,6 +592,18 @@ about to be removed.
 
 ## M47 — Calm areas that are places
 
+- [ ] **Spoiling a returned-to calm area is not consistently effective.** *(2026-09-03, playtest 20:
+      "the spoilage of a clam area is not always effective I went to the same park 4 times and only
+      the last time had a high enough density of events to actually prevent me from using it. the
+      previous time I could just walk at the edge of it. and the time before that didn't have any
+      spoilage at all even though it was the second visit.")* `docs/PLAYTEST-02.md` records the
+      intended shape — *"the scheduler biases a spoiling event toward a calm area the player settled
+      in on day N−1"* — a bias toward, not a guaranteed minimum, which is consistent with a roll
+      landing low enough some days to leave a walkable edge and high enough on others to deny the
+      area outright. The run attached to playtest 20 does not carry the exact four-visit sequence
+      the player describes — its own biased parks (`(1,1)` and `(4,8)`) were dense on every biased
+      day the log shows — so what wants measuring first is a run that reproduces a zero-density
+      biased visit, before deciding whether the bias roll's spread is the cause or something else is
 - [ ] **The 2×2 inner courtyard — an apartment complex.** Asked for three times. M21's mechanism —
       absorb the streets between four blocks — with frontages around the outside instead of open
       ground, so it is a calm area you have to find a way *into*. The largest remaining piece
@@ -637,6 +705,20 @@ direction, not distance.**
       recurs but is not sited ahead of her** — it becomes a thing that is *somewhere*, like
       `alley_robbery`. Day 3 keeps the placement it has, because the lesson depends on being
       unavoidable
+
+      **Measured, playtest 20** *(2026-09-03: "for some reason pursuing dogs after the run tutorial
+      have a shorter lead up time making them much harder to react to.")*: across five
+      `charging_dog` encounters in one seven-day run
+      (`docs/evidence/run-2026-09-03T002310-seed4070543669-5d342c9.log`), the day 3 tutorial
+      encounter and every encounter afterward that ended in evasion all ran **1.5 seconds** from the
+      `chase` starting to the dog giving up. The two encounters that instead killed her — one on day
+      4, one on a day 5 retry — ran **0.8 and 0.9 seconds**, roughly half, with the dog closing
+      distance far faster once its telegraph appeared: the tutorial encounter's telegraph closed 20px
+      in 1.1s, the day 4 encounter's closed roughly 70px in 0.3s. The row's own definition
+      (`src/events/event_catalogue.gd:832-849`) carries one `inner_radius` and one `outer_radius` for
+      every day, so nothing in the row itself shortens the lead time — whatever produced this gap is
+      most likely a placement effect, and the item directly above this one, if it has landed
+      partway, is the first thing to check before treating this as a separate row-tuning question
 - [ ] **Dying at high excitement on a quiet street.** The crowd half closed into M46. Two cheap
       checks remain: whether the pram's `EXCITEMENT_NEARLY_CRYING` cue is shown and not read, and
       whether **one contact at 90 is a cliff** — a bump is ~10.8 points, so above 89 a single one
