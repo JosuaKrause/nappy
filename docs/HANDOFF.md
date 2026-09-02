@@ -46,6 +46,14 @@ milestones that own them.
    announced. Two halves of one thing.
 3. **Finish M56** — "other dangers like this", then the measurement against the nerves.
 
+**And the instrument to judge any of it with now exists.** The dusk map draws the walk over the
+plan: where she went, which stretches she ran, and which events actually reached her, against the
+corridor the day expected her to take. `docs/TELEMETRY.md` says what it draws and
+`docs/evidence/rig-2026-09-02T233549-seed4242-3c6d4b4-dirty-map-day01-dusk.png` is one. **A rig can
+walk a route now**, so a picture of a specific route is cheap: `--walk` takes a script of timed
+presses — `--walk 3s15e` is three seconds south then fifteen east — and the same script on the same
+seed walks the same way every time.
+
 M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
 bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.
 
@@ -57,8 +65,9 @@ from movement speed), **M62** (checkpoints and barricades dividing the map into 
 complex; calm-area adjacency; multi-block calm re-derived for 121 blocks; the main road as a soft
 block), **M45** (closures that point), **M48** (bodies drawn wider than their pavement), **M43**
 (the tutorial dog after day 3; the one-contact cliff at 90; `RUN_TAUGHT_DAY` 3 → 2), **M49** (the
-fence, the vanishing border-walkers), **M25** (patrols for the empty acts), **M26** (teaching the
-controls), a shortlist of small items, and **M10** (polish).
+fence, the vanishing border-walkers), **M68** (tap to walk as a switchable experiment), **M60**'s
+last two (the home arrow under a thumb, the browser smoke pass), **M25** (patrols for the empty
+acts), **M26** (teaching the controls), a shortlist of small items, and **M10** (polish).
 
 ## What to distrust
 
@@ -116,15 +125,16 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 - **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
   address; what has not been checked is frame rate at the game's scale on a machine that is not the
   one it was built on, and whether a stranger arriving at the page understands what it is.
-- **The touch controls have never been touched.** The stick and the run button are built, tested and
-  screenshotted on a desktop — which proves only that they stay *off* where they should. Whether a
-  thumb can hold the 20px line between two pavement lanes, whether the catch radii feel right, and
-  whether `RUN` is legible at phone DPI are all unknown. The landscape declaration is inert in an
-  ordinary browser tab: it lives in a PWA manifest that is not written unless the full PWA export is
-  turned on.
-- **There is no way to open the pause on a touch-only device.** `pause` is bound to a key alone, and
-  nothing draws an on-screen button for it, so a phone player reaches the pause screen only when the
-  between-days summary brings it.
+- **The touch controls have been played once, briefly.** One phone session on the deployed build
+  produced one finding — the run lesson named a key the device has not got — and everything else
+  about them is still unknown: whether a thumb can hold the 20px line between two pavement lanes,
+  whether the catch radii feel right, whether `RUN` is legible at phone DPI, and whether the new
+  pause button at the top right is reachable without covering something. The rotate prompt has never
+  been seen on a phone either: it is a CSS overlay plus a best-effort `screen.orientation.lock`,
+  and iOS Safari has no such API at all.
+- **The social card has never been unfurled.** The Open Graph tags and the image copy into
+  `build/web` are correct as far as a local check can tell, and nothing has pasted the address into
+  a chat client to see what comes back.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
   running behind it, `space` or a tap to begin — but it is a title, three lines of controls and one
   key on the web (two on the desktop, where `q` also quits): no options, no seed box, no load game.

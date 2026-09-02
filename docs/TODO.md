@@ -14,15 +14,14 @@ mid-way through.
 
 ## The order
 
-1. **M66** — the dusk map shows what the player actually did.
-2. **M64** — off the path is closed, not dear.
-3. **M65** — the chalk mark is findable, and silent until it is found.
-4. **M56** — the resistance is noticed.
+1. **M64** — off the path is closed, not dear. Design the rows first, then place them.
+2. **M65** — the chalk mark is findable, and silent until it is found.
+3. **M56** — the resistance is noticed.
 
-**M66 is first because everything after it is a judgement about a run, and nothing can currently
-see one.** M64 asks whether the corridor is the only sane way; M56's last item is a measurement
-against the nerves; the balance questions all end in *needs a run and a trace, not more arithmetic*.
-A picture of where she actually went is the instrument those are read with.
+**The instrument they are read with now exists.** The dusk map draws the walk over the plan — where
+she went, where she ran, and which events actually reached her — so *did the corridor have to be
+walked* and *what did a day cost* are questions a picture can answer. See `DECISIONS.md` under M66,
+and `docs/TELEMETRY.md` for what the map draws.
 
 **Playtest 19 is the freshest thing in this file** and its nine findings are filed against the
 milestones that own them — M64 and M65 are new, and the rest went to M48 (barriers), M49 (the north
@@ -32,83 +31,6 @@ anything up.
 M53's one remaining piece is specified and unordered — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
-
----
-
-## M66 — The dusk map shows what the player did · asked for 2026-09-02
-
-*(2026-09-02: "the dusk picture should contain the entire route a player took", and "prioritize the
-telemetry update to show what the player actually did during the play on the second day picture —
-where they went, which events they activated, where they ran.")*
-
-**Two maps are written per day and they differ in almost nothing.** The dawn one is the city as
-planned; the dusk one is the same city with the resistance marks she reached drawn opaque and the
-rest faded. So the one picture that could answer *what did she actually do* shows the city she
-walked into rather than the walk.
-
-**The pattern to extend already lives in that picture.** `main._on_day_finished()` writes the dusk
-map with the note that *"the marks she reached are opaque and the rest are not, which is the one
-thing the dawn map cannot say"*. That is exactly the shape all three layers below want: **the plan,
-with what happened to it drawn over the top.**
-
-- [ ] **Where she went.** Nothing records it. `TelemetryMap.render()` takes the map, the closures,
-      the day's route tree and the event plans; the log holds positions only at the moments
-      something happened. A trail belongs in `TelemetryObserver`, which already holds the player and
-      reads her position every frame, and it is sampled **by distance rather than by frame** so it
-      is bounded and framerate-independent — at one point per tile a 180-second day is a few hundred
-      points
-- [ ] **Where she ran.** The same trail with a second attribute per sample, not a second trail:
-      `Stroller.run_excess_ratio()` is 0.0 at a walk and 1.0 at a full sprint and is already read by
-      the HUD, so the sample carries it and the drawing distinguishes those stretches. Running is
-      the game's one deliberate act and the most interesting thing a route can say about a day
-- [ ] **Which events she actually met.** The dusk map already draws every planned event; what it
-      cannot say is which ones did anything. **Met means her entering the outer radius** — the field
-      she can feel is the point at which a row starts costing her — so the ones she came inside are
-      drawn solid and the rest faded, exactly as the resistance marks already are. That difference
-      *is* the answer to M64's question: a day where she met eight of forty events is a day where
-      thirty-two of them were decoration
-- [ ] **And it may not touch gameplay.** The run log's one invariant. No RNG, no consumed values,
-      nothing in a gameplay class learning it is watched — `tests/test_telemetry.gd` plans all
-      fourteen days with the log off and again with it on and requires the plans to be identical
-- [ ] **A rig that walks a route, because one that holds a key walks into a wall.** *(2026-09-02:
-      "why not allow for a sequence of button presses? like 1s5e meaning 1 second south then press 5
-      seconds east — that way you get a guaranteed path that is not stuck.")* `--walk
-      north|south|east|west` holds **one** direction down for the whole run, so a rig meets the
-      first building on that heading and stays there — which is why every dusk map taken so far
-      shows a speck where a trail should be, and why the one feature this milestone exists to draw
-      has never been photographed.
-
-      **A script of timed presses**: `1s5e` is one second of south then five of east, pressing the
-      same `move_*` actions `--walk` already presses, so everything downstream — the gait, the run
-      excess, the crowd, the director — behaves exactly as it does for a person holding a key.
-      Directions are the initials the flag already uses (`n`, `s`, `e`, `w`), a number is seconds,
-      and the sequence runs in order and then stops. **Backwards compatible**: a bare direction word
-      still means what it means today.
-
-      It is a **deterministic** path, which is the point — the same script over the same seed walks
-      the same route, so a picture of it is reproducible evidence rather than one run that happened
-      to go somewhere. It also gives the run-excess layer something to draw, since a script can hold
-      `run` for part of its length
-
-**It is a list in memory, not a new kind of log entry.** *(2026-09-02: "just keep a list during the
-play session of that information if telemetry is active and then draw it on the picture for the
-evening picture.")* The observer accumulates it as the day runs and hands it to the renderer at
-dusk; nothing is written per sample and the run log's format does not change. *If telemetry is
-active* is already true by construction — `main` only puts a `TelemetryObserver` in the tree when
-`Telemetry.is_active()`, so with the log off there is no list and no cost.
-
-**And it answers the stuck question for free.** *(2026-09-02: "that will also help with stuck tests
-which will show that the player didn't walk far.")* The small item below — *the log says when she is
-stuck* — exists because a `--walk` rig that never left the doorstep reads in the log as a run that
-happened. **A trail is a picture of that**: a rig that walked into a wall for three minutes is a
-dot, and no reader has to know what to look for. The two are worth building together, since one is
-the number and the other is the thing anybody can see.
-
-**Three things stated so they are not discovered.** The **dawn** map keeps drawing no trail, since
-there is no walk yet and a picture that lied about which route it showed would be worse than none. A
-**lost day** restarts the trail, because a rewound day was not walked. And the trail has to read
-*against* the route tree the map already draws — seeing where she went versus where the day expected
-her to is the entire value.
 
 ---
 
@@ -845,13 +767,6 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       has no row for it — so a reader of a run log meets a kind the documentation does not admit
       exists. One row, and the check that would have caught it is whether anything asserts the two
       lists agree
-- [ ] **The log says when she is stuck** *(asked 2026-09-01: "put a note in the telemetry when the
-      player doesn't move even though they press something")*. A throttled `blocked` entry from
-      `TelemetryObserver` — movement input held for about a second while displacement stays near
-      zero → one entry with position, direction and duration, throttled like the bump entries, not
-      per frame. It makes an immobile rig visible in its own log (a `--walk` run that never left
-      the doorstep currently reads as a run) and gives a human pressing into an invisible blocker
-      a trace. Observer-only; gameplay untouched
 
 ---
 

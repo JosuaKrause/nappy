@@ -58,7 +58,7 @@ src/
   telemetry/
 	telemetry_log.gd      one run's ordered lines, and the file they go to
 	telemetry_observer.gd watches the player: turns, runs, crossings, encounters, where she
-	                      went and which events she met
+						  went and which events she met
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
   world/
 	world_context.gd      the only three questions the baby may ask the world
