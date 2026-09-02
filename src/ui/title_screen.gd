@@ -27,6 +27,10 @@ signal quit_requested()
 @onready var _name: Label = $Root/Top/Lines/Title
 @onready var _hint: Label = $Root/Bottom/Lines/Hint
 
+## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
+## each use site, so a test — never itself a web export — can set this and drive both shapes.
+var _can_quit := QuitOption.available()
+
 func _ready() -> void:
 	# **The title has a colour of its own**, or the screen is four labels in one warm off-white and
 	# the name of the game is only the biggest of them. `Palette.TITLE_TEXT` is the doorstep it is
@@ -49,20 +53,24 @@ func is_open() -> bool:
 ## behind the scrims, is `main`'s decision — see `main._open_the_title()`.
 func open(again := false) -> void:
 	visible = true
-	_hint.text = "space to walk again     ·     q to quit" if again \
-			else "space to begin     ·     q to quit"
+	var start := "space to walk again" if again else "space to begin"
+	_hint.text = "%s     ·     q to quit" % start if _can_quit else start
 
 func close() -> void:
 	visible = false
 
-## `Space` starts, `Q` leaves. `Esc` is deliberately not handled: `main` will not open the pause over
-## this, because a pause over a game that has not started is a screen with nothing behind it to stop.
+## `Space` starts. `Q` leaves, **except on the web**, where `QuitOption.available()` is false and
+## the key is not offered or handled at all — pressing it on a platform where quitting is
+## impossible would be a key the hint never even mentions doing nothing. `Esc` is deliberately not
+## handled: `main` will not open the pause over this, because a pause over a game that has not
+## started is a screen with nothing behind it to stop.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
 	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		start_requested.emit()
-	elif event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_Q:
+	elif _can_quit and event is InputEventKey and event.pressed \
+			and (event as InputEventKey).keycode == KEY_Q:
 		get_viewport().set_input_as_handled()
 		quit_requested.emit()

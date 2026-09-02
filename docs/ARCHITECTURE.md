@@ -106,7 +106,21 @@ entry point the same way rather than moving that parsing out. Both read `OS.is_d
 which is `false` for an exported release template, so none of this furniture — nor the snapshot
 key `main.gd` reads directly — can be reached from a public build regardless of what is on the
 command line. `--no-telemetry` is not part of this: it is a documented player-facing opt-out (see
-docs/TELEMETRY.md), not developer furniture, and stays live in every build.
+docs/TELEMETRY.md), not developer furniture, and stays live in every build. `main.gd`'s own
+right-hand readout (seed, frame rate, the meter's incoming/decay/net arithmetic) is gated the same
+way, into a member (`_debug`) rather than asked of the OS inside `_process()` every frame, so the
+string is never assembled outside a debug build rather than merely hidden behind an invisible
+label.
+
+### Quitting on the web
+
+`SceneTree.quit()` does nothing on a Web export — the tab stays open — so `Q` is only offered
+where it works. `QuitOption` (`src/ui/quit_option.gd`) answers with `OS.has_feature("web")`, the
+platform axis rather than the build one, since a debug Web build has the same dead quit as a
+release one — the same axis `Telemetry.begin_run()` already uses to stay silent on the web.
+`TitleScreen` and `PauseScreen` each read it once into their own `_can_quit`, so their hint text
+and their `Q` handler always agree, and so a test — never itself a web export — can set the member
+and drive both platform shapes.
 
 ## Autoloads
 

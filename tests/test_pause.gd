@@ -24,6 +24,8 @@ func run(t) -> void:
 	_test_the_pause_says_where_the_run_stands(t)
 	_test_there_is_a_way_out_of_a_finished_run(t)
 	_test_the_title_screen_does_not_stop_the_city(t)
+	_test_the_title_quit_key_matches_the_platform(t)
+	_test_the_pause_quit_key_matches_the_platform(t)
 	t.get_tree().paused = was_paused
 
 ## The trap, stated as an assertion so that reaching for `.visible` again fails loudly.
@@ -189,6 +191,64 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 	title._unhandled_input(_accept())
 	t.check(started[0] == 1, "a closed title screen answers nothing")
 	title.queue_free()
+
+## **"For the web version remove Q (quit) and its mentions since it doesn't have any effect. Only
+## for the online version, for the local version Q needs to exist still."** `SceneTree.quit()` is
+## a no-op on a Web export, so the hint and the key have to agree in both platform shapes rather
+## than each asking `OS.has_feature("web")` on its own — `title._can_quit` is read once so a test
+## can drive both. Both directions are checked: the key must fire where the hint offers it, and
+## must emit nothing where the hint does not.
+func _test_the_title_quit_key_matches_the_platform(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var quit := [0]
+	title.quit_requested.connect(func() -> void: quit[0] += 1)
+
+	title._can_quit = true
+	title.open()
+	t.check("q to quit" in title._hint.text, "the hint offers q where quitting works")
+	title._unhandled_input(_key(KEY_Q))
+	t.check(quit[0] == 1, "and the key does something there")
+
+	title._can_quit = false
+	title.open()
+	t.check(not "q to quit" in title._hint.text,
+			"and the hint drops it where quitting is impossible ('%s')" % title._hint.text)
+	title._unhandled_input(_key(KEY_Q))
+	t.check(quit[0] == 1, "pressing it there emits nothing at all")
+
+	title.close()
+	title.queue_free()
+
+## The same agreement, one screen further in. Unlike the title, the pause screen's hint was never
+## rebuilt on open — `_refresh_hint()` is what a test can call after flipping `_can_quit` to reach
+## the shape `_ready()` would have produced on the other platform.
+func _test_the_pause_quit_key_matches_the_platform(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var quit := [0]
+	pause.quit_requested.connect(func() -> void: quit[0] += 1)
+	t.get_tree().paused = false
+
+	pause._can_quit = true
+	pause._refresh_hint()
+	pause.open()
+	t.check("q to quit" in pause._hint.text, "the hint offers q where quitting works")
+	pause._unhandled_input(_key(KEY_Q))
+	t.check(quit[0] == 1, "and the key does something there")
+	pause.close()
+
+	pause._can_quit = false
+	pause._refresh_hint()
+	pause.open()
+	t.check(not "q to quit" in pause._hint.text,
+			"and the hint drops it where quitting is impossible ('%s')" % pause._hint.text)
+	pause._unhandled_input(_key(KEY_Q))
+	t.check(quit[0] == 1, "pressing it there emits nothing at all")
+
+	pause.close()
+	t.get_tree().paused = false
+	pause.queue_free()
 
 func _key(code: Key) -> InputEventKey:
 	var event := InputEventKey.new()
