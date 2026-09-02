@@ -666,6 +666,26 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       has no row for it — so a reader of a run log meets a kind the documentation does not admit
       exists. One row, and the check that would have caught it is whether anything asserts the two
       lists agree
+- [ ] **The dusk map draws the route she actually walked.** *(2026-09-02: "the dusk picture should
+      contain the entire route a player took.")* Two maps are written per day — one at dawn and one
+      at dusk — and today they differ only in which resistance marks are opaque. **Nothing anywhere
+      records where she went**: `TelemetryMap.render()` takes the map, the closures, the day's route
+      tree and the event plans, and the log holds positions only at the moments something happened
+      (a tile, a road crossing, a contact). So the one picture that could answer *what did she
+      actually do* shows the same city as the one drawn before she left the house.
+
+      **Where it goes is decided by the telemetry rules**: a per-frame read belongs in
+      `TelemetryObserver`, which already holds the player and looks at her position every frame, and
+      **nothing about this may touch gameplay** — no RNG, no consumed values, no gameplay class
+      learning that it is being watched. Sample by **distance rather than by frame** so the trail is
+      bounded and framerate-independent: at one point per tile a 180-second day is a few hundred
+      points.
+
+      Three things to get right rather than discover. The **dawn** map keeps drawing nothing, since
+      there is no route yet and a picture that lies about which one it is would be worse than no
+      picture. A **lost day** restarts the trail, because a rewound day was not walked. And the
+      trail has to read *against* the corridor the map already draws — the whole value is seeing
+      where she went versus where the day expected her to
 - [ ] **The log says when she is stuck** *(asked 2026-09-01: "put a note in the telemetry when the
       player doesn't move even though they press something")*. A throttled `blocked` entry from
       `TelemetryObserver` — movement input held for about a second while displacement stays near
