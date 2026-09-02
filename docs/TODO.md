@@ -82,54 +82,18 @@ The rest of M53 shipped; the record, with the measurements and the not-reproduce
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**
 — a nerve is a rewind, not a resource, so there is nothing to trade.
 
-**What the remaining items are stated against**, since the machinery under them exists:
-`EventDef.heat_response` is `NONE`, `PRESSES` or `HUNTS`, `EventCatalogue.heated()` derives a row's
-shape at a progress level, and every one of those shapes is validated on boot. `police_patrol`
-carries `PRESSES` and is the non-lethal rung. A pursuer is exempt from the rule that nothing else
-happens inside a lethal event's field — `docs/EVENTS.md` states it. The reasoning, and what was
-rejected on the way, is in `DECISIONS.md` under M56.
+**What the remaining items are stated against**, since the machinery under them exists: a row says
+how it answers to the resistance with `EventDef.heat_response` — `NONE`, `PRESSES` or `HUNTS` —
+`EventCatalogue.heated()` derives that row's shape at a progress level, and every one of those
+shapes is validated on boot. The ladder has three rungs a player can name and both its upper ones
+are built: `police_patrol` is **denser and then interested**, and `abduction` is **hunted**, taking
+a bystander of its own while she watches and coming after her instead past three of four. The
+reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
 
-- [ ] **The abduction van takes somebody, and then it takes you.** *(2026-09-01: "we need abduction
-      vans that normally just abduct people but start trying to abduct the player if she is part of
-      the resistance.")* `abduction` today does neither: an unmarked van that **idles**, static,
-      250px field, `hard_fail` inside 54px, a 4.6s telegraph, `first_day` 8, up to four a day. It
-      never moves and nothing is ever taken — the abduction is entirely in the name and in what
-      happens to *her*.
-
-      **The second half is the small one.** `heat_response = HUNTS` and the van gains `pursues`,
-      which the machinery already supports; it keeps `hard_fail`, since a pursuer is exempt from
-      the clearance rule. Two things are not arithmetic. A van cannot chase at van speed —
-      `Tuning.validate_pursuit` allows 112 to 148px/s against a 168px/s run, so a hunting van
-      creeps after her at about a fast walk, and whether that reads as menacing or as comic is a
-      **screenshot question**. And at *what* progress it starts hunting is a separate number from
-      the patrol's `HEAT_INVESTIGATES_LEVEL` (2) and should not be assumed to be the same one.
-
-      **The first half is the one with a precedent in it, and the crowd's shape constrains it.**
-      Nothing in the catalogue has ever acted on the crowd: events never push, the world sums
-      `contribution_at()`, and the one existing coupling is a *modifier* rather than a command —
-      `CrowdAgent.startle()`, which a bump or a car horn uses to raise what that body emits. And
-      the crowd is a population of **the field around the player** rather than of the city, spawned
-      and recycled as she moves, so a pedestrian is not a persistent individual and an abduction
-      can never be a lasting fact about the world. It is a **scene**, and it only means anything
-      where she can see it happen.
-
-      **Decided on 2026-09-02: the van draws its own victim** — a scripted figure belonging to the
-      event, with no crowd coupling at all. It reads identically from the street, it works on an
-      empty one (act III's streets are deliberately empty), it is testable headless, and it leaves
-      untouched the rule that events never push at the world. *Rejected: taking a real `CrowdAgent`
-      and removing it. It is closer to the instruction's own words — the crowd would be the thing
-      in danger, and she is one of the crowd — but it would be the first event in the game to delete
-      a body, it needs an answer for the street with nobody on it, and no headless test could rely
-      on a walker being there to take.* The cost taken with it is that the victim is scenery, and
-      scenery cannot also be you.
-
-      **And it hunts from 3 of 4.** *(2026-09-02: "after the patrol but still early enough to
-      happen more than just once".)* So the ladder has three steps a player can name — denser, then
-      interested, then hunted — with the last one arriving on its own rung rather than alongside
-      the patrol's, and with days left to be met in more than once.
-- [ ] **"And other dangers like this"** — drafted and put back, after the vans, because the vans
-      are where the precedent gets set. The candidates already in the catalogue are `checkpoint`
-      (day 7, closes a street) and `night_raid`
+- [ ] **"And other dangers like this"** — drafted and put back, and the vans have now set the
+      precedent it was waiting on: a `HUNTS` row keeps `hard_fail`, moves neither population nor
+      intensity, and gains its own threshold rather than sharing the patrol's. The candidates
+      already in the catalogue are `checkpoint` (day 7, closes a street) and `night_raid`
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
 
@@ -561,6 +525,11 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       one the field name implies**, so a fix fails there first. The fix is `resume()` carrying the
       notice, and it has to be checked against every `pursues_within` row rather than the one that
       found it
+- [ ] **`chat` is written and undocumented.** `EventManager` logs a `chat` entry when
+      `chatting_mother` starts a conversation, and the table of entry kinds in `docs/TELEMETRY.md`
+      has no row for it — so a reader of a run log meets a kind the documentation does not admit
+      exists. One row, and the check that would have caught it is whether anything asserts the two
+      lists agree
 - [ ] **The log says when she is stuck** *(asked 2026-09-01: "put a note in the telemetry when the
       player doesn't move even though they press something")*. A throttled `blocked` entry from
       `TelemetryObserver` — movement input held for about a second while displacement stays near

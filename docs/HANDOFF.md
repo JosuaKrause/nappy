@@ -37,19 +37,21 @@ contracts can be about the dangerous version of an event rather than the harmles
 `EventScheduler.build_day()` takes the heat as an argument, so a rig can plan a fully heated day
 without a run having happened.
 
-`police_patrol` carries `PRESSES`: more of them, more expensive to stand near, and from half
-progress it **investigates** — a pursuer that also has a route runs the route until it notices her,
-then follows. It never becomes lethal at any heat, and `tests/test_heat.gd` asserts that over the
-response rather than over the one row that carries it.
+**Both upper rungs of the ladder are built.** `police_patrol` carries `PRESSES`: more of them, more
+expensive to stand near, and from half progress it **investigates** — a pursuer that also has a
+route runs the route until it notices her, then follows. It never becomes lethal at any heat.
+`abduction` carries `HUNTS`: while she is close enough to watch, it takes a bystander of its own —
+a scripted figure the event draws, never a `CrowdAgent` — and past three of four it stops idling for
+strangers and comes after her instead, at 130px/s from a 180px trigger, still `hard_fail`.
+`tests/test_heat.gd` asserts both over the response rather than over the rows that carry them.
 
 **A pursuer is exempt from the rule that nothing else happens inside a lethal event's field**, and
-the exemption is now stated over `pursues` rather than holding by accident of the `WALL` role.
+the exemption is stated over `pursues` rather than holding by accident of the `WALL` role.
 
 ## What to do next
 
-1. **Finish M56** — the abduction van, then "other dangers like this", then the measurement against
-   the nerves. The van is specified from end to end and ready to hand to an agent: its victim is
-   the event's own scripted figure rather than a `CrowdAgent`, and it hunts from 3 of 4.
+1. **Finish M56** — "other dangers like this", then the measurement against the nerves. The vans
+   have set the precedent the first of those was waiting on.
 2. **M60 — ready for a GitHub Pages launch.** The dev flags and the debug HUD behind
    `OS.is_debug_build()` first, then a tracked Web export preset, an export tool, telemetry off for
    web, and the deploy workflow.
@@ -81,6 +83,14 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 - **An investigating patrol has never been seen.** The claim is that a police car breaking off its
   route to follow her reads as *being noticed*. That is a screenshot question and no screenshot has
   been taken.
+- **The van's victim reads as a man standing next to a van.** A screenshot of the scene is in
+  `docs/evidence/` and it is the weaker of the two taken: the figure is upright and unheld, so the
+  whole of *being taken* is carried by it walking in and disappearing over 2.5 seconds, which a
+  still cannot show and nobody has watched. The hunting half came out better — end-on, closing,
+  and not comic.
+- **A hunting van drives along the footway.** A pursuer steers straight at her over any walkable
+  tile, which every pursuer in this game already does; this is the first time the thing doing it is
+  a van. Whether that reads as menace or as a bug is a question for somebody watching it.
 - **The difficulty has been felt by a human once**, and that was a verdict on one density pass and
   one act I. The sleepiness numbers, the nerve economy, and whether the arterial is crossable are
   all still arithmetic checked by `tests/test_balance.gd` and unfelt. **Nobody has ever got past day

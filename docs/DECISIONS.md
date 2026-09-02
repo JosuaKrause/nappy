@@ -4751,8 +4751,62 @@ yet"*) and under the `CLAUDE.md` rule the first round produced.
 
 ## M56 — The resistance is noticed · `feature/the-city-notices`, partly built
 
-Three of the six items shipped on 2026-09-02. The van, "other dangers like this" and the
-measurement against the nerves are still queued; the design for all three is in `TODO.md`.
+Four of the six items shipped on 2026-09-02. "Other dangers like this" and the measurement against
+the nerves are still queued; the design for both is in `TODO.md`.
+
+### The van takes somebody, and then it takes you · built 2026-09-02
+
+Two commits. `HEAT_HUNTS_LEVEL` is **3** of four, on the player's own instruction — *"after the
+patrol but still early enough to happen more than just once"* — so the ladder's three steps land in
+three separate moments rather than two of them arriving together.
+
+**The victim is the event's own scripted figure and the precedent that matters is what it did not
+do.** Nothing in the catalogue has ever acted on the crowd; the van still has not. The take is
+drawing and one telemetry entry, it begins the first time she comes inside the van's own 250px
+field — the design's sentence was *it only means anything where she can see it happen*, so a van she
+never approaches takes nobody — and it refuses to start without enough of the van's remaining life
+to finish in, because a take cut short by the van expiring mid-walk reads as a bug rather than as an
+abduction.
+
+**The heated shape moves only what the rung is about.** Population and intensity are `PRESSES`'s
+axes and `HUNTS` touches neither; the test states that at *every* level rather than only below the
+threshold. At and above it the derived copy gains `pursues`, 130px/s (the one speed everything in
+this game pursues at), a 180px trigger sitting between its 132px stand-off and its 250px field, and
+`Tuning.PURSUIT_TIME` as the chase length in place of the 34s idle. The 4.6s telegraph is unchanged
+and that is deliberate: for a pursuer a telegraph buys the *notice of it coming* rather than an
+escape distance, and 4.6 is comfortably over the 1.5s floor.
+
+**The body is there exactly while it stands still**, which is the existing rule rather than a new
+one. A heated van waiting at the kerb is solid at 22px like any parked vehicle; the frame it stops
+waiting, the obstruction is freed, because a moving pursuer with a body is a wall that can pin her
+against a building on a two-tile pavement.
+
+**A consequence documented rather than fixed:** a heated van is *briefly less dangerous* than a cold
+one. Nothing is lethal while it is only `is_waiting()`, so a van at the kerb can be brushed past for
+free until she comes inside its trigger — the same shape `alley_robbery` has always had, now that a
+second row carries it.
+
+**The screenshots, and one of the two questions came back weaker than the report claimed.**
+The hunting shot in `docs/evidence/` (`shot-2026-09-02-seed2422590514-5fa7bd8-abduction-hunting.png`)
+answers the menacing-or-comic question well: the van end-on, closing, with the caret over her at a
+zebra — it reads as a thing coming for you rather than as a van at a fast walk. The victim shot
+(`shot-2026-09-02-seed2422590514-5fa7bd8-abduction-victim.png`) is the weaker one. It reads as
+*a person standing beside a van*, not as a person being taken: the figure is upright and unheld,
+and the whole of the
+"taken" is carried by it walking in and vanishing over 2.5s, which a still cannot show. Worth a
+second look from somebody watching it happen before deciding the posture is enough.
+
+**And the hunting van drives on the footway.** A pursuer steers straight at her over any walkable
+tile, so a van chasing her along a pavement is what the mechanic produces. It is what every pursuer
+in the game already does and it is the first time the thing doing it is four metres of metal.
+
+**Three choices open to overturn**, made where the design was silent. The walk takes **2.5s** from a
+**32px** standing offset — both picked by the implementer, neither derived. The `taken` entry is
+written by `EventInstance` itself rather than by `EventManager`, which is a new precedent for who
+writes the log: the argument for it is that the scene needs nothing the instance does not already
+carry, which is what lets a rig assert it with no map or city behind it. And the four copies of
+`130.0` across the pursuing rows were deliberately *not* collapsed into one shared constant, being a
+separate change from this one.
 
 **The three forks that were put back to the player, and what each rejected.**
 
