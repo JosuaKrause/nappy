@@ -1,0 +1,91 @@
+# Builds the Web export and publishes it to GitHub Pages, which is already on for this repo with
+# the custom domain https://nappy.josuakrause.com/ set as a repository setting — nothing here
+# may write to that setting, and nothing in the export may assume a `/nappy/` path prefix, since
+# the site is served from the domain's root rather than from a project-pages subpath.
+#
+# The Godot binary is installed and cached the same way tools/ci.yml does it, so there is one
+# recipe for "get this exact Godot onto a runner" rather than two. Export templates are the
+# second half of the same version pin: a template set that does not match the binary's own
+# version is the failure that looks like a broken export rather than like a missing download.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+# The two permissions actions/deploy-pages needs; contents: read is the checkout's own default
+# made explicit rather than inherited.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# A deploy that starts before the last one finished would race it for the same Pages slot; queue
+# rather than cancel, since a half-published site is worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
+
+      - name: Download Godot
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          curl -sSL -o ~/godot/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q ~/godot/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot-bin
+          chmod +x ~/godot/godot-bin
+
+      - name: Cache export templates
+        id: templates-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+          key: godot-templates-${{ env.GODOT_VERSION }}
+
+      - name: Download export templates
+        if: steps.templates-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates
+          curl -sSL -o /tmp/templates.tpz \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          rm -rf /tmp/templates
+          unzip -q /tmp/templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates \
+            "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+
+      - name: Export the Web build
+        run: GODOT="$HOME/godot/godot-bin" ./tools/export-web.sh
+
+      - name: Upload the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
