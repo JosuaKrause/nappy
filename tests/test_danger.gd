@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
 	_test_only_what_she_cannot_outwalk_earns_an_arrow(t)
+	_test_the_screen_edge_is_the_same_size_for_everyone(t)
 	_test_the_badge_measures_the_things_own_speed(t)
 	_test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
 	_test_the_pram_says_how_the_baby_is(t)
@@ -358,6 +359,15 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 	t.check(DangerEdge.MOST_AT_ONCE <= 3,
 			"and at most a handful at once, or the edge of the screen becomes wallpaper")
 	edge.free()
+
+## `MARGIN` and `SCREEN_MARGIN` are screen px, which is only a fair unit if every player's screen
+## shows the same slice of world. `"expand"` would let a wide monitor see more city than a laptop
+## before the same margin fires, buying it more warning for nothing the player did — `"keep"` holds
+## the viewport at a fixed 1280×720 and bars the rest, so this is the setting the badge's whole
+## unit of measurement depends on.
+func _test_the_screen_edge_is_the_same_size_for_everyone(t) -> void:
+	t.check(ProjectSettings.get_setting("display/window/stretch/aspect") == "keep",
+			"the window letterboxes instead of showing more or less city on a different screen")
 
 ## **The badge measures the event's speed, not the gap's.** *(Playtest 06, finding 1: "they show
 ## events far away, and if you walk towards them they sometimes disappear; also they flicker a
