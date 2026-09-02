@@ -981,6 +981,12 @@ static func _checkpoint() -> EventDef:
 ## field around the player rather than of the city, recycled as she moves, so a taken pedestrian
 ## could never be a lasting fact about the world either way. Drawing and telemetry only — nothing
 ## here changes `contribution_at()`, spawns a body, or reaches into the crowd.
+##
+## **`heat_response = HUNTS`, the lethal rung of the resistance's ladder.** Below
+## `Tuning.HEAT_HUNTS_LEVEL` it is untouched — population and intensity are `PRESSES`'s axes, not
+## this one's. At and above it, the derived copy stops idling for a stranger and starts hunting
+## her instead: see `EventDef.at_heat()`. It keeps `hard_fail` throughout, because a pursuer is
+## exempt from the rule that nothing else happens inside a lethal event's field.
 static func _abduction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "abduction"
@@ -993,10 +999,14 @@ static func _abduction() -> EventDef:
 	def.inner_radius = 54.0
 	def.outer_radius = 250.0
 	def.duration = 34.0
-	# hard_fail doubles the required margin: (250-54)/92 * 2 = 4.26s.
+	# hard_fail doubles the required margin: (250-54)/92 * 2 = 4.26s. It stays exactly this long
+	# once the van hunts, too: a pursuer's telegraph buys the notice of it coming rather than an
+	# escape distance (`Tuning.PURSUIT_MIN_NOTICE`, 1.5s), and 4.6s is comfortably over it.
 	def.telegraph_time = 4.6
 	# A van is a van: 22 + her own 14 leaves the 54 that takes her comfortably reachable, so the
 	# body only ever stops her during the idling, which is the phase where it has not happened yet.
+	# Once it hunts, `EventInstance` drops this body the moment it stops waiting — a moving wall on
+	# a two-tile pavement pins her against a building, the same reason a pursuer never carries one.
 	def.obstructs_radius = VEHICLE_BODY
 	def.hard_fail = true
 	def.weight = 2.0
@@ -1005,6 +1015,7 @@ static func _abduction() -> EventDef:
 	# blocks is one every twelve; twelve of them would be a difficulty setting nobody asked for.
 	def.max_per_day = 4
 	def.cost = 3
+	def.heat_response = EventDef.HeatResponse.HUNTS
 	return def
 
 ## **A man in an alley who is worth crossing the road for, and who comes after you if you do not.**

@@ -18,6 +18,7 @@ func run(t) -> void:
 	_test_a_row_that_answers_to_nothing_is_untouched(t)
 	_test_heat_is_derived_once_and_kept(t)
 	_test_the_ladder_has_a_top(t)
+	_test_a_hunts_row_wakes_up_at_its_own_threshold(t)
 	_test_a_day_is_a_function_of_its_heat(t)
 	_test_the_patrol_presses_more_and_louder(t)
 	_test_the_patrol_investigates_past_the_threshold(t)
@@ -58,6 +59,39 @@ func _test_the_ladder_has_a_top(t) -> void:
 		for level in EventCatalogue.heat_levels():
 			t.check(not EventCatalogue.heated(def, level).hard_fail,
 					"'%s' presses without ever becoming lethal (heat %d)" % [def.id, level])
+
+## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
+## pursues, keeps `hard_fail`, and its derived numbers satisfy the pursuit contract measured from
+## its own data. Checked over the response rather than over the one row that carries it, the same
+## shape `_test_the_ladder_has_a_top` uses, so a second `HUNTS` row added later inherits the promise
+## without anybody having to remember to extend this loop.
+func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
+	var checked := 0
+	for def in EventCatalogue.all():
+		if def.heat_response != EventDef.HeatResponse.HUNTS:
+			continue
+		checked += 1
+		for level in EventCatalogue.heat_levels():
+			var hot := EventCatalogue.heated(def, level)
+			var should_hunt := level >= Tuning.HEAT_HUNTS_LEVEL
+			t.check(hot.pursues == should_hunt,
+					"'%s' heat %d: it hunts iff at or past its own threshold" % [def.id, level])
+			# Population and intensity are `PRESSES`'s axes, never this one's — at every level,
+			# not only below the threshold, since a `HUNTS` row has nothing else to move.
+			t.check(hot.max_per_day == def.max_per_day and hot.intensity == def.intensity,
+					"'%s' heat %d: hunting moves neither population nor intensity"
+					% [def.id, level])
+			if not should_hunt:
+				continue
+			t.check(hot.hard_fail, "'%s' heat %d: the lethal rung stays lethal" % [def.id, level])
+			# The pursuit contract restated as the distances it is actually played over: the
+			# stand-off she is owed, then the trigger, then the edge of the field — each strictly
+			# inside the next, which is what `Tuning.validate_pursuit` also checks at boot.
+			var standoff := Tuning.pursuit_standoff(hot.pursue_speed, hot.inner_radius)
+			t.check(standoff < hot.pursues_within and hot.pursues_within <= hot.outer_radius,
+					"'%s' heat %d: stand-off %.0f < trigger %.0f <= field %.0f"
+					% [def.id, level, standoff, hot.pursues_within, hot.outer_radius])
+	t.check(checked > 0, "and there is a HUNTS row to check")
 
 # ------------------------------------------------------------- the derivation ---
 

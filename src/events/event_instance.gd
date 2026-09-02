@@ -26,6 +26,7 @@ const FIRE_ENGINE_END := preload("res://assets/events/fire_engine_end.svg")
 const POLICE_CAR := preload("res://assets/events/police_car.svg")
 const POLICE_CAR_END := preload("res://assets/events/police_car_end.svg")
 const UNMARKED_VAN := preload("res://assets/events/unmarked_van.svg")
+const UNMARKED_VAN_END := preload("res://assets/events/unmarked_van_end.svg")
 const VAN_VICTIM := preload("res://assets/events/van_victim.svg")
 const RIOT_VAN := preload("res://assets/events/riot_van.svg")
 const ARMY_TRUCK := preload("res://assets/events/army_truck.svg")
@@ -135,6 +136,10 @@ var _activation_announced := false
 ## `EventManager._create`, the only real caller. See `_walkable_step`.
 var _map: CityMap
 
+## The solid body `_build_obstruction()` made, or `null` before it exists and after
+## `_process()` has dropped it. See `is_solid()`.
+var _obstruction: StaticBody2D
+
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
@@ -163,6 +168,12 @@ func _build_obstruction() -> void:
 	shape.shape = circle
 	body.add_child(shape)
 	add_child(body)
+	_obstruction = body
+
+## Whether this instance is solid right now. True from `_ready()` for anything with
+## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()`.
+func is_solid() -> bool:
+	return _obstruction != null
 
 func _process(delta: float) -> void:
 	if is_finished:
@@ -202,6 +213,15 @@ func _process(delta: float) -> void:
 		_chase(delta)
 	elif def.mobile and path.size() > 1 and not is_telegraphing_still():
 		_advance_along_path(delta)
+
+	if _obstruction and def.pursues and not is_waiting():
+		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
+		# `_walkable_step`'s own note says why a moving pursuer may not keep a body: "giving a
+		# pursuer one would let a moving wall pin her against a building on a two-tile pavement."
+		# A hunting `abduction` is solid exactly while it is parked — the instant it stops waiting
+		# it is coming for her, and the body comes down the same frame.
+		_obstruction.queue_free()
+		_obstruction = null
 
 	if def.look == EventDef.Look.UNMARKED_VAN:
 		_update_the_take()
@@ -1250,6 +1270,11 @@ func _draw_dog_walker() -> void:
 ## the van's own position over `VICTIM_TAKEN_OVER` — see `_update_the_take()`, the only place that
 ## ever sets `_victim_taken_at`. Drawn first so the van's own silhouette is what she is left
 ## looking at once the walk ends, the same order `_draw_cafe` draws its sitters before its tables.
+##
+## The van itself goes through `_draw_vehicle` rather than `_draw_simple`: a parked van never
+## needed an end-on picture, but a hunting one steers straight at her and that is not always down
+## a pavement — `_draw_vehicle`'s own note is that one side-on sprite mirrored east and west shows
+## a patrol car heading north its own flank, and the same is true of a van.
 func _draw_abduction() -> void:
 	if is_taking_a_victim():
 		var through := (age - _victim_taken_at) / VICTIM_TAKEN_OVER
@@ -1258,8 +1283,7 @@ func _draw_abduction() -> void:
 		var at := standing.lerp(Vector2.ZERO, through)
 		Sprites.draw_shadow(self, at, 8.0)
 		Sprites.draw_standing(self, VAN_VICTIM, at, Vector2.ZERO, _heading_is_west())
-	Sprites.draw_shadow(self, Vector2.ZERO, 21.0)
-	Sprites.draw_standing(self, UNMARKED_VAN, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	_draw_vehicle(UNMARKED_VAN, UNMARKED_VAN_END, 21.0)
 
 ## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
 ## whole of her beat; talking is what she looks like for exactly the `detain_seconds` of a

@@ -256,6 +256,24 @@ const HEAT_INVESTIGATE_WITHIN := 150.0
 ## expensive inside, so the answer to being investigated is legible as *leave*.
 const HEAT_INVESTIGATE_SECONDS := 4.0
 
+## The progress at which a `HUNTS` row stops being a place and starts being a hunter. Its own
+## number rather than the patrol's `HEAT_INVESTIGATES_LEVEL`, deliberately: sharing one would put
+## both rungs of the ladder in the same moment, where neither reads as its own step. *(Player,
+## 2026-09-02, on when the van should start hunting: "after the patrol but still early enough to
+## happen more than just once".)*
+const HEAT_HUNTS_LEVEL := 3
+## How fast it hunts once it starts — the same 130px/s every other pursuer in the game moves at
+## (`charging_dog`, `alley_robbery`, the investigating patrol). `validate_pursuit` allows the band
+## `WALK_SPEED + PURSUIT_MIN_MARGIN` to `RUN_SPEED - PURSUIT_MIN_MARGIN` — 112 to 148 — and a
+## second speed inside it would be a second answer to "can I outrun this", which is the one
+## question a pursuit is allowed to ask.
+const HEAT_HUNTS_SPEED := 130.0
+## How close she has to come before it takes an interest, in px. Has to sit strictly between
+## `pursuit_standoff(HEAT_HUNTS_SPEED, 54)` (132px, against the van's own inner radius) and its
+## 250px field — under the stand-off the whole notice is spent standing still, over the field it
+## decides about her before she can feel it. 180 leaves room on both sides.
+const HEAT_HUNTS_WITHIN := 180.0
+
 # --------------------------------------------------------------------- city ---
 
 const TILE_SIZE := 32
