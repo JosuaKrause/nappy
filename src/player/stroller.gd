@@ -16,6 +16,16 @@ const FACING_TURN_SPEED := 12.0
 ## How far the camera leads the player, in px.
 const CAMERA_LOOK_AHEAD := 46.0
 
+## The hysteresis band `_update_view()` holds `_side_view` across. Below this many degrees off
+## the horizontal axis she is drawn side-on; above `FRONT_OR_BACK_VIEW_ABOVE_DEGREES` she is
+## drawn front-or-back; in between, whatever was drawn last frame stands. A single switching
+## angle sits exactly on the diagonal, where the facing's two components are equal to within
+## float noise as she turns through it, so a straight 45° walk flips the drawing every frame a
+## strict comparison is asked. Forty and fifty are wide enough apart that a facing crossing the
+## band takes several frames at `FACING_TURN_SPEED`, not one.
+const SIDE_VIEW_BELOW_DEGREES := 40.0
+const FRONT_OR_BACK_VIEW_ABOVE_DEGREES := 50.0
+
 ## Two frames per direction: mid-stride, then feet passing.
 const MOTHER_FRONT: Array[Texture2D] = [
 	preload("res://assets/rig/mother_front_a.svg"),
@@ -82,6 +92,13 @@ enum Alert {
 @onready var _baby: Baby = get_node_or_null("Baby")
 
 var facing := Vector2.DOWN
+## Which family of drawing `_draw_mother()` and `_draw_pram()` show: side-on when `true`,
+## front-or-back when `false`. Computed once a frame by `_update_view()` into this single member
+## rather than asked separately by each draw function, so the two can never disagree about which
+## way she faces. Starts `false` to match the default `facing` of `Vector2.DOWN` — squarely in
+## the front-or-back band, not near the diagonal, so there is nothing to settle before she has
+## moved.
+var _side_view := false
 ## How long her own movement input stays ignored, set by `detain()`. Velocity is not touched here —
 ## it runs out through the ordinary friction the same as letting go of every key would, which is
 ## what makes a capture look like stopping rather than like being frozen. See `chatting_mother`.
@@ -153,6 +170,7 @@ func _physics_process(delta: float) -> void:
 		_turn_toward(input_dir.normalized(), delta)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
+	_update_view()
 
 	move_and_slide()
 
@@ -319,6 +337,22 @@ func _turn_toward(target: Vector2, delta: float) -> void:
 	var diff := angle_difference(facing.angle(), target.angle())
 	facing = facing.rotated(clampf(diff, -step, step)).normalized()
 
+## Decides `_side_view` for this frame, with hysteresis rather than a single switching angle. See
+## `SIDE_VIEW_BELOW_DEGREES`.
+##
+## The east/west mirror the side view picks by the sign of `facing.x` needs no hysteresis of its
+## own: turning between facing mostly-east and mostly-west at `FACING_TURN_SPEED` sweeps through
+## facing mostly-north-or-south on the way, which is deep in the front-or-back band, not near
+## either switching angle — so `_side_view` has already dropped to `false` and settled back to
+## `true` with the new sign already decided by the time either draw function reads it.
+func _update_view() -> void:
+	var degrees_off_horizontal := rad_to_deg(atan2(absf(facing.y), absf(facing.x)))
+	if degrees_off_horizontal < SIDE_VIEW_BELOW_DEGREES:
+		_side_view = true
+	elif degrees_off_horizontal > FRONT_OR_BACK_VIEW_ABOVE_DEGREES:
+		_side_view = false
+	# Between the two: keep whatever was drawn last frame.
+
 func _update_camera(delta: float) -> void:
 	var lead := Vector2(facing.x, facing.y * OBLIQUE_Y) * CAMERA_LOOK_AHEAD
 	_camera.offset = _camera.offset.lerp(lead, clampf(delta * 3.0, 0.0, 1.0))
@@ -328,6 +362,11 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	global_position = where
 	velocity = Vector2.ZERO
 	facing = look.normalized()
+	# Not left to hold across the reset: a rewound or new day did not walk here, so there is no
+	# "last frame" of hysteresis worth keeping, and `look`'s default of `Vector2.DOWN` is squarely
+	# in the front-or-back band regardless.
+	_side_view = false
+	_update_view()
 	_walk_phase = 0.0
 	_shove = Vector2.ZERO
 	_detained_for = 0.0
@@ -447,7 +486,7 @@ func _draw_mother(gait: float) -> void:
 	var frame := 1 if stepping else 0
 	var flip := false
 	var texture: Texture2D
-	if absf(facing.x) > absf(facing.y):
+	if _side_view:
 		texture = MOTHER_SIDE[frame]
 		flip = facing.x < 0.0
 	elif facing.y > 0.0:
@@ -461,7 +500,7 @@ func _draw_mother(gait: float) -> void:
 ## what "the canopy is offset going sideways" was: the hood was drawn at the rear, but the
 ## basket underneath it never changed shape, so the two stopped agreeing.
 func _draw_pram(at: Vector2) -> void:
-	if absf(facing.x) > absf(facing.y):
+	if _side_view:
 		# Authored travelling east, hood at the rear; mirrored to travel west.
 		Sprites.draw_standing(self, PRAM_SIDE, at, Vector2.ZERO, facing.x < 0.0)
 	elif facing.y > 0.0:
