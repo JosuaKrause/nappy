@@ -1,13 +1,20 @@
 class_name TouchControls
 extends Control
-## The on-screen stick and run button that make the game playable with a thumb.
+## The on-screen stick, run button and pause button that make the game playable with a thumb.
 ##
-## Both press the same actions a keyboard does — `Input.action_press("move_left", strength)` and
-## its three siblings for the stick, `"run"` held for the button — so `Stroller`'s own
+## The stick and the run button press the same actions a keyboard does —
+## `Input.action_press("move_left", strength)` and its three siblings for the stick, `"run"` held
+## for the button — so `Stroller`'s own
 ## `Input.get_vector("move_left", "move_right", "move_up", "move_down")` and
 ## `Input.is_action_pressed("run")` never have to learn where either came from. The stick is
 ## already analogue with a 0.2 deadzone in the input map, so a partial deflection is a slower walk
 ## exactly the way a half-pressed key never was and a half-tilted stick already is.
+##
+## **The pause button is not that kind of control**, and it is the one exception in this file:
+## `main._unhandled_input()` reads `event.is_action_pressed("pause")` off the propagated *event*,
+## not off polled state, so `Input.action_press(&"pause")` would set the state and be heard by
+## nothing — the same trap `AutoScreenshot._tap()` already names in its own comment for exactly
+## this action. See `_send_pause_action()`.
 ##
 ## **Running is never the far end of the stick's own push, on purpose.** `Stroller` moves toward
 ## `input_dir * top_speed` with the *raw* vector, so a stick threshold would make the one
@@ -53,6 +60,20 @@ const RUN_CATCH_RADIUS := 76.0
 ## walking lesson nor the optional-goal line ever falls under it.
 const RUN_CENTRE := Vector2(1150.0, 500.0)
 
+## Smaller than the stick or `RUN`: it is pressed once a day at most, so it does not want either
+## one's reach into the walking hand's own space.
+const PAUSE_RADIUS := 26.0
+## As generous as the stick's and `RUN`'s own catch radii, for the same reason — and also the
+## radius a *release* has to land inside to fire, so a thumb that lands wrong can slide off and
+## lift without stopping the day. See `_on_touch()`.
+const PAUSE_CATCH_RADIUS := 46.0
+## Top right, deep in the corner both `DangerEdge` and `HomeArrow` keep clear on purpose rather
+## than in front of them: `DangerEdge.MARGIN` (104/116/104/148, left/top/right/bottom) never draws
+## a chevron closer to this corner than (1176, 116), and `HomeArrow.MARGIN` (74px, uniform) never
+## draws its own arrow closer than (1206, 74) — both well outside `PAUSE_RADIUS` of this point, so
+## nothing else is ever asked to share these pixels with the button.
+const PAUSE_CENTRE := Vector2(1250.0, 30.0)
+
 var _touch := TouchInput.available()
 
 ## The touch index currently driving the stick, or -1 when nothing is.
@@ -63,6 +84,10 @@ var _stick_vector := Vector2.ZERO
 ## of the stick's own index, since the whole point of a separate button is that both can be down
 ## together.
 var _run_touch := -1
+## The touch index currently down on the pause button, or -1 when nothing is. Unlike the stick and
+## `RUN`, going down does not press anything — see `_on_touch()` for why the action only fires on
+## release, and only if that release is still over the button.
+var _pause_touch := -1
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -95,6 +120,12 @@ func _on_touch(event: InputEventScreenTouch) -> void:
 			_run_touch = event.index
 			Input.action_press(&"run", 1.0)
 			queue_redraw()
+		elif _pause_touch == -1 \
+				and event.position.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS:
+			# Only grabs the touch index here — see `_send_pause_action()`'s doc for why nothing
+			# fires until the matching release.
+			_pause_touch = event.index
+			queue_redraw()
 		return
 	if event.index == _stick_touch:
 		_stick_touch = -1
@@ -105,6 +136,14 @@ func _on_touch(event: InputEventScreenTouch) -> void:
 		_run_touch = -1
 		Input.action_release(&"run")
 		queue_redraw()
+	elif event.index == _pause_touch:
+		_pause_touch = -1
+		queue_redraw()
+		# Fires on release rather than on touch-down, and only when the release itself is still
+		# over the button: a thumb that lands wrong can slide off and lift without stopping the
+		# day, the opposite of the stick and RUN, which commit the moment a thumb lands.
+		if _pause_fires(event.position):
+			_send_pause_action()
 
 func _on_drag(event: InputEventScreenDrag) -> void:
 	if event.index == _stick_touch:
@@ -138,21 +177,53 @@ func _set_axis(negative: StringName, positive: StringName, value: float) -> void
 ## Lets go of everything this node might be holding down. Called whenever the controls go
 ## invisible, for whatever reason, so a finger caught mid-gesture by a pause or a day ending never
 ## leaves a direction — or the run key — pressed into the day that follows.
+##
+## `_pause_touch` only needs resetting here, not releasing: nothing was ever pressed for it, since
+## the pause fires once on a clean release rather than holding a state — see
+## `_send_pause_action()`. A pause opening is one of the ways the controls go invisible in the
+## first place, so a finger still down on the button when that happens must not fire it a second
+## time on whatever it lands on next.
 func _release_all() -> void:
 	_stick_touch = -1
 	_stick_vector = Vector2.ZERO
 	_run_touch = -1
+	_pause_touch = -1
 	Input.action_release(&"move_left")
 	Input.action_release(&"move_right")
 	Input.action_release(&"move_up")
 	Input.action_release(&"move_down")
 	Input.action_release(&"run")
 
+## Whether a release at `at` lands the pause, or a slide-off cancels it. Pulled out to a pure,
+## static function so a test can ask the geometry question on its own — `Input.parse_input_event()`
+## queues the event for the engine's own next flush rather than updating anything a test can poll
+## synchronously (`Input.is_action_pressed("pause")` read right after sending one is not reliable;
+## a first version of this test asserted it and failed for exactly that reason), so nothing about
+## whether this decides to fire is asserted through `Input` at all.
+static func _pause_fires(at: Vector2) -> bool:
+	return at.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS
+
+## Sends the pause exactly the way a real `Esc` arrives: an `InputEventAction` pushed through
+## `Input.parse_input_event()`, which propagates to `main._unhandled_input()` the same way a key
+## does, rather than `Input.action_press(&"pause")`, which only sets polled state and is heard by
+## nothing — `AutoScreenshot._tap()`'s own comment names this exact trap for `--press`, and the
+## fix is the same fix here.
+##
+## Returns the event it sent, so a test can inspect its shape directly rather than depend on when
+## the tree gets around to propagating or polling it.
+func _send_pause_action() -> InputEventAction:
+	var event := InputEventAction.new()
+	event.action = &"pause"
+	event.pressed = true
+	Input.parse_input_event(event)
+	return event
+
 func _draw() -> void:
 	if not visible:
 		return
 	_draw_stick()
 	_draw_run_button()
+	_draw_pause_button()
 
 func _draw_stick() -> void:
 	draw_circle(STICK_CENTRE, STICK_RADIUS, Color(1.0, 1.0, 1.0, 0.16))
@@ -171,3 +242,20 @@ func _draw_run_button() -> void:
 	var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 	draw_string(font, RUN_CENTRE + Vector2(-width * 0.5, font_size * 0.35), label,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1.0, 1.0, 1.0, 0.8))
+
+## Two bars, the same shape `hud.gd`'s touch teach line then names in words — drawn rather than
+## set in a font glyph, because a vector shape always renders and a Unicode pause glyph is not
+## guaranteed to be in `ThemeDB.fallback_font` at all. `RUN`'s own label is plain text and safe for
+## the same reason text always is; this is one step more careful for a symbol that has no ASCII
+## spelling.
+func _draw_pause_button() -> void:
+	var held := _pause_touch != -1
+	draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Color(1.0, 1.0, 1.0, 0.32 if held else 0.16))
+	draw_arc(PAUSE_CENTRE, PAUSE_RADIUS, 0.0, TAU, 24, Color(1.0, 1.0, 1.0, 0.4), 2.0)
+	var bar_height := PAUSE_RADIUS * 0.8
+	var bar_width := PAUSE_RADIUS * 0.22
+	var gap := PAUSE_RADIUS * 0.22
+	for side in [-1.0, 1.0]:
+		var bar_centre := PAUSE_CENTRE + Vector2(side * (gap * 0.5 + bar_width * 0.5), 0.0)
+		draw_rect(Rect2(bar_centre - Vector2(bar_width, bar_height) * 0.5,
+				Vector2(bar_width, bar_height)), Color(1.0, 1.0, 1.0, 0.8))

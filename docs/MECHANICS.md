@@ -205,6 +205,12 @@ learns the difference. The button is never a threshold on the stick's own deflec
 one deliberate, held press, exactly as **Shift** is, so a partly-pushed stick stays what it always
 was, a slower walk.
 
+A third element, top right, sends the pause: a real `InputEventAction` for `pause` through
+`Input.parse_input_event()` rather than held state, since `main` reads the pause off the
+propagated event and would hear nothing from `Input.action_press()` alone. It fires on release
+rather than on touch-down, and only when the release is still over the button, so a thumb that
+lands wrong can slide off without stopping the day.
+
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.
 
@@ -603,8 +609,10 @@ through a man shouting is the meter: intensity 14 over 210px.
 
 **Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 teaches the arrow keys and says nothing
 about running; day 3 is when something comes after the pram, and the HUD says *Hold SHIFT to run*
-on the frame the **first** pursuit of that day telegraphs, rather than at dawn — a line of text at
-dawn is a control list, and the same line over a dog at the pram is an instruction.
+— or, on a touch device, *Hold RUN to run*, naming the held `RUN` circle the touch layer draws
+instead of a key that device does not have — on the frame the **first** pursuit of that day
+telegraphs, rather than at dawn — a line of text at dawn is a control list, and the same line over
+a dog at the pram is an instruction.
 `EventDirector` moves that first pursuit to the head of its queue, so the lesson is not left to a
 weight of 1.4. The hint says nothing again for the rest of the run: it is the lesson, not a running
 commentary on the mechanic, so every later pursuit — a second dog the same day, `alley_robbery`

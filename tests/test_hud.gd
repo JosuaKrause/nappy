@@ -14,6 +14,10 @@ func run(t) -> void:
 	_test_the_run_hint_fires_once_on_the_teaching_day(t)
 	_test_the_run_hint_never_fires_off_the_teaching_day(t)
 	_test_the_run_hint_fires_again_on_a_retried_teaching_day(t)
+	_test_the_run_hint_names_the_touch_button_on_a_touch_device(t)
+	_test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t)
+	_test_the_meters_move_to_the_top_on_a_touch_device(t)
+	_test_the_pause_hint_names_the_touch_button_on_a_touch_device(t)
 	_test_the_pause_hint_waits_out_a_detention(t)
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
@@ -62,6 +66,39 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 	hud.free()
 	GameState.day = saved_day
 
+## **The lesson names the control that is actually there.** *(Filed from a phone play of the
+## deployed build: "the run tutorial says hold 'SHIFT' on mobile.")* `hud._touch` is read once
+## from `TouchInput`, the same pattern `DaySummary` and `PauseScreen` use, so a touch device gets
+## the held `RUN` circle `TouchControls` draws rather than a key it has not got.
+func _test_the_run_hint_names_the_touch_button_on_a_touch_device(t) -> void:
+	var saved_day := GameState.day
+	GameState.day = Tuning.RUN_TAUGHT_DAY
+	var hud := _hud(t)
+	hud._touch = true
+
+	var first := _pursuer()
+	hud._on_event_telegraphed(first)
+	t.check(hud._teach.text == "Hold RUN to run",
+			"a touch device is told to hold the on-screen RUN button, not a keyboard key")
+
+	first.free()
+	hud.free()
+	GameState.day = saved_day
+
+## **The day-1 walk lesson has the same defect the run lesson had, and the same fix.** `hud._touch`
+## drives both: a touch device gets "Drag the stick to walk", the exact wording `TitleScreen` and
+## `PauseScreen` already use for the same control, rather than "Arrow keys or WASD to walk", which
+## names two things it does not have.
+func _test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t) -> void:
+	var hud := _hud(t)
+	hud._touch = true
+
+	hud._teach_the_day(1)
+	t.check(hud._teach.text == "Drag the stick to walk",
+			"day 1 tells a touch device to drag the stick, not press a key it has not got")
+
+	hud.free()
+
 ## **A lost nerve rewinds the day, not the run.** *(Player, of the deployed build: "the run lesson
 ## doesn't show at all anymore — it should always show for the day 3 lesson", diagnosed as "you
 ## need to reset the flag when the player dies on day 3.")* `main._start_day()` calls
@@ -97,6 +134,63 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
 	third.free()
 	hud.free()
 	GameState.day = saved_day
+
+## **The meters move to the top on a touch build, so a walking thumb never rests on the one
+## reading that may never be occluded.** *(2026-09-02: "let's also move the progress bars to the
+## top for mobile so they're not hidden by the finger.")* `hud._touch` picks the anchors on
+## `_reposition_meters_for_touch()`; desktop keeps the original bottom-left column untouched.
+##
+## Called directly a second time after flipping `_touch`, the same way `_teach_the_day()` is
+## called again elsewhere in this file: `_touch` is read once at `_ready()`, which has already run
+## by the time a test can reach it, so the repositioning has to be re-triggered explicitly to see
+## the other shape.
+func _test_the_meters_move_to_the_top_on_a_touch_device(t) -> void:
+	var hud := _hud(t)
+	t.check(hud._meters.anchor_top == 1.0 and hud._meters.anchor_bottom == 1.0,
+			"desktop keeps the bottom-anchored column")
+
+	hud._touch = true
+	hud._reposition_meters_for_touch()
+	t.check(hud._meters.anchor_top == 0.0 and hud._meters.anchor_bottom == 0.0,
+			"a touch device anchors the column to the top instead")
+	t.check(hud._meters.offset_top > hud._header.offset_bottom,
+			"and starts below where the day header ends, rather than under it")
+	t.check(hud._meters.offset_right - hud._meters.offset_left == 280.0
+			and hud._meters.offset_bottom - hud._meters.offset_top == 114.0,
+			"the column keeps its own size — only where it sits changes")
+
+	hud.free()
+
+## **The pause lesson names the button that now exists, in plain words rather than a label that
+## is not there.** Same defect the walk and run lessons had, filed by the same audit — `hud._touch`
+## picks the wording, and `TouchControls._draw_pause_button()` draws an icon (two bars), not a
+## word, so the touch line describes the control rather than naming a label it does not have, the
+## same shape "Drag the stick to walk" already uses for the stick.
+func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t) -> void:
+	var stroller := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+
+	var hud := _hud(t)
+	hud._touch = true
+	hud._rig = stroller
+	hud._walked_today = true
+
+	for _i in 40: # 4s of stillness, past TEACH_PAUSE_AFTER
+		hud._teach_the_pause(0.1)
+	t.check(hud._teach.text == "Tap the pause button to pause",
+			"a touch device is told to tap the button, not press a key it has not got")
+
+	# `.free()`, not `queue_free()`: `Stroller._exit_tree()` removes it from the "player" group
+	# synchronously, and this suite never yields a frame for a deferred deletion to catch up —
+	# `stroller.gd:105` puts every instance into that group, and `ContactPoint` (test_resistance.gd)
+	# looks it up by group later in the same run, so a queued deletion here is a stale Stroller
+	# another suite's lookup can pick up instead of its own.
+	stroller.free()
+	hud.free()
 
 ## **Being held is not stopping.** *(Player: "the pause tutorial comes up when being detained
 ## (since you're not moving)".)* `chatting_mother`'s `detain()` locks her input and lets friction

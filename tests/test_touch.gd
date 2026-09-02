@@ -16,6 +16,9 @@ func run(t) -> void:
 	_test_hiding_the_stick_releases_everything_it_held(t)
 	_test_the_run_button_holds_run_independently_of_the_stick(t)
 	_test_hiding_the_controls_releases_the_run_button_too(t)
+	_test_the_pause_button_sends_a_real_action_event(t)
+	_test_the_pause_button_fires_on_release_inside_and_not_outside(t)
+	_test_the_pause_button_tracks_its_own_touch_index(t)
 	t.get_tree().paused = was_paused
 	_release_actions()
 
@@ -146,6 +149,60 @@ func _test_hiding_the_controls_releases_the_run_button_too(t) -> void:
 
 	controls.queue_free()
 
+## **The pause is not a held action, and firing it needs a real propagated event, not polled
+## state.** `main._unhandled_input()` reads `event.is_action_pressed("pause")` off the event
+## itself, so `Input.action_press(&"pause")` — the mechanism the stick and RUN use — would set
+## polled state and be heard by nothing, the same trap `AutoScreenshot._tap()`'s own comment names
+## for `--press`. Checked directly on `_send_pause_action()`'s own returned event, so this does not
+## depend on when the tree gets around to propagating anything — nothing else in this suite does
+## either.
+func _test_the_pause_button_sends_a_real_action_event(t) -> void:
+	var controls := _controls(t)
+	var event := controls._send_pause_action()
+	t.check(event is InputEventAction, "a real InputEventAction, not bare polled state")
+	t.check(event.action == &"pause" and event.pressed,
+			"shaped exactly as main._unhandled_input reads a press")
+	Input.action_release(&"pause")
+	controls.queue_free()
+
+## **Fires on a clean tap, not on touch-down — and a thumb that lands wrong can slide off and lift
+## for free.** The stick and RUN commit the instant a thumb lands; the pause button waits for the
+## matching release, and only counts one still over the button, the opposite of the stick and RUN
+## on purpose — pressed once a day at most, a false fire costs more than a missed one.
+##
+## Asserted on `_pause_fires()` directly, the pure geometry question `_on_touch()`'s release branch
+## asks before ever touching `Input`. **A first version of this test asserted
+## `Input.is_action_pressed("pause")` after driving a real press/release sequence and failed**:
+## `Input.parse_input_event()` queues the event for the engine's own next flush rather than
+## updating anything a test can poll synchronously, so that was never a safe way to ask this
+## question — `_send_pause_action()`'s own test above is what proves the event it eventually sends
+## is shaped correctly, and this is kept to the one thing that is safe to assert synchronously.
+func _test_the_pause_button_fires_on_release_inside_and_not_outside(t) -> void:
+	t.check(TouchControls._pause_fires(TouchControls.PAUSE_CENTRE),
+			"releasing on the button fires it")
+	t.check(not TouchControls._pause_fires(TouchControls.PAUSE_CENTRE + Vector2(500.0, 0.0)),
+			"and releasing well outside it cancels rather than firing")
+
+## **The touch index is grabbed on press and let go on release, whichever way the release
+## resolves.** A synchronous check on the node's own state rather than on anything `Input`
+## propagates or polls, for the same reason the geometry test above is.
+func _test_the_pause_button_tracks_its_own_touch_index(t) -> void:
+	var controls := _controls(t)
+	controls.visible = true
+	t.check(controls._pause_touch == -1, "nothing held at first")
+
+	controls._input(_touch_event(0, TouchControls.PAUSE_CENTRE, true))
+	t.check(controls._pause_touch == 0, "landing on the button grabs its touch index")
+
+	controls._input(_touch_event(0, TouchControls.PAUSE_CENTRE + Vector2(500.0, 0.0), false))
+	t.check(controls._pause_touch == -1,
+			"and releasing lets go of the index again, whether it fired or not")
+
+	controls.queue_free()
+
+	Input.action_release(&"pause")
+	controls.queue_free()
+
 func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()
 	event.index = index
@@ -159,12 +216,13 @@ func _drag_event(index: int, position: Vector2) -> InputEventScreenDrag:
 	event.position = position
 	return event
 
-## However a check above failed or passed, the movement actions and `run` are global `Input`
-## state — nothing about them is scoped to this suite's own nodes — so a failure that returns
-## early must not leave one pressed for whatever test runs next.
+## However a check above failed or passed, the movement actions, `run` and `pause` are global
+## `Input` state — nothing about them is scoped to this suite's own nodes — so a failure that
+## returns early must not leave one pressed for whatever test runs next.
 func _release_actions() -> void:
 	Input.action_release(&"move_left")
 	Input.action_release(&"move_right")
 	Input.action_release(&"move_up")
 	Input.action_release(&"move_down")
 	Input.action_release(&"run")
+	Input.action_release(&"pause")

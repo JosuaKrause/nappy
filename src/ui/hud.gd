@@ -11,6 +11,7 @@ extends CanvasLayer
 ## build, because the rigs and `tools/shot.sh` read them, and the release build drops them
 ## silently rather than replacing them with anything.
 
+@onready var _meters: Control = $Meters
 @onready var _sleepiness: MeterBar = $Meters/Sleepiness
 @onready var _excitement: MeterBar = $Meters/Excitement
 @onready var _state_label: Label = $Meters/State
@@ -25,6 +26,11 @@ extends CanvasLayer
 ## `OS.is_debug_build()` from inside `_refresh_header()` et al. would leave the release shape
 ## covered by nothing.
 var _debug := OS.is_debug_build()
+
+## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
+## `DaySummary` and `PauseScreen` use, so the run lesson names the held `RUN` circle the touch
+## layer draws instead of a `SHIFT` key a touch device does not have.
+var _touch := TouchInput.available()
 
 var _baby: Baby
 var _contact_step := 0
@@ -50,6 +56,7 @@ func _ready() -> void:
 	_excitement.fill_colour = Color("d9a648")
 	_excitement.full_colour = Color("cf4436")
 	_excitement.markers = [Tuning.EXCITEMENT_CALM_THRESHOLD, Tuning.EXCITEMENT_WAKE_THRESHOLD]
+	_reposition_meters_for_touch()
 
 	EventBus.sleepiness_changed.connect(_on_sleepiness_changed)
 	EventBus.excitement_changed.connect(_on_excitement_changed)
@@ -74,6 +81,39 @@ func _ready() -> void:
 	_refresh_header()
 	_refresh_state()
 	_refresh_resistance()
+
+## *("let's also move the progress bars to the top for mobile so they're not hidden by the
+## finger.")* The two meter bars, the resistance line and the baby's state sit in `hud.tscn`'s
+## `Meters` column, anchored bottom-left ending 18px above the bottom edge — under a walking
+## thumb on a phone, where `TouchControls.STICK_CENTRE` (130, 500) sits right above it. **The
+## baby's state may never be occluded: it is what the whole route decision is read off.**
+##
+## Touch only, moving the anchors on the one node rather than keeping a second HUD scene that has
+## to be changed twice forever — the same shape every other touch difference in this game takes.
+## Top left, under the day header (`$Header`, 20px tall from `offset_top=14` to `34`): same 18px
+## left inset and the same 280×114 box the bottom column used, just measured from the top instead
+## of the bottom, so nothing about the column's own contents changes, only where it sits.
+##
+## **This does not clear `DangerEdge`.** Its own `MARGIN` (104/116/104/148,
+## left/top/right/bottom) was tuned for a HUD with nothing at the top left — "the clock and the
+## run header are along the top" is that file's own reasoning for why the *bottom* margin is
+## generous instead. Its chevrons ride the edge of a bounds rect starting at `(104, 116)`, so on a
+## touch device this column (x 18–298, y 40–154) crosses both edges that meet at that corner: the
+## top one along `y=116` for `x` 104–298, and the left one along `x=104` for `y` 116–154. Real
+## overlap, not a near miss. `DangerEdge` is `main`'s own layer and out of this item's scope; left
+## as a fork for whoever tunes it next — see the report for the full reasoning.
+func _reposition_meters_for_touch() -> void:
+	if not _touch:
+		return
+	_meters.anchor_left = 0.0
+	_meters.anchor_top = 0.0
+	_meters.anchor_right = 0.0
+	_meters.anchor_bottom = 0.0
+	_meters.offset_left = 18.0
+	_meters.offset_top = 40.0
+	_meters.offset_right = 298.0
+	_meters.offset_bottom = 154.0
+	_meters.grow_vertical = Control.GROW_DIRECTION_END
 
 # ---------------------------------------------------------------- teaching ---
 # Day 1 introduces the arrow keys; day 3 introduces running, which is possible before then and
@@ -113,7 +153,8 @@ func _teach_the_day(day: int) -> void:
 	_walked_today = false
 	_stood_for = 0.0
 	if day == 1:
-		_say("Arrow keys or WASD to walk", TEACH_SECONDS)
+		var line := "Drag the stick to walk" if _touch else "Arrow keys or WASD to walk"
+		_say(line, TEACH_SECONDS)
 	# A nerve is a rewind, not a resource, and a rewound day has not been taught anything: this
 	# flag belongs to the *attempt* at the teaching day rather than to the run, and only on this
 	# one day, so a lost nerve on `RUN_TAUGHT_DAY` gets the lesson again instead of a HUD that
@@ -167,7 +208,11 @@ func _teach_the_pause(delta: float) -> void:
 	if _stood_for < TEACH_PAUSE_AFTER:
 		return
 	_taught_pause = true
-	_say("Esc to pause", TEACH_SECONDS)
+	# "the pause button" rather than any drawn label: `TouchControls._draw_pause_button()` draws
+	# an icon, two bars, not a word — naming a label that is not there would be the same defect
+	# this line exists to fix on the other lessons.
+	var line := "Tap the pause button to pause" if _touch else "Esc to pause"
+	_say(line, TEACH_SECONDS)
 
 ## The run is taught by the thing that requires it, at the moment it requires it — and only for
 ## that one lesson.
@@ -175,17 +220,20 @@ func _teach_the_pause(delta: float) -> void:
 ## Hung off the telegraph rather than off the day, so the prompt and the dog arrive together: a
 ## line of text at dawn saying "you can run" is a control list, and a line of text over a dog
 ## coming at the pram is an instruction. But it is a lesson about the mechanic, not a running
-## commentary on it — once `Tuning.RUN_TAUGHT_DAY` has taught the key, a line telling her to hold
-## shift explains something she has already been made to do, every time something later in the run
+## commentary on it — once `Tuning.RUN_TAUGHT_DAY` has taught the control, a line naming it again
+## explains something she has already been made to do, every time something later in the run
 ## pursues her. So it fires once, for the first pursuit of the day the run is taught, and never
 ## again this run: the same "once per run" shape as `_teach_the_pause()`, for the same reason —
 ## it is a keybinding, not a warning, and a cue that keeps coming back is one that gets read once
-## and then ignored.
+## and then ignored. The control it names is `_touch`'s: `SHIFT` on a keyboard, the held `RUN`
+## circle `TouchControls` draws on a touch device — same pattern `DaySummary` and `PauseScreen`
+## read `TouchInput.available()` for.
 func _on_event_telegraphed(instance: EventInstance) -> void:
 	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
-	_say("Hold SHIFT to run", instance.def.telegraph_time + TEACH_RUN_SECONDS)
+	var line := "Hold RUN to run" if _touch else "Hold SHIFT to run"
+	_say(line, instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
 func _say(line: String, seconds: float) -> void:
 	_teach.text = line

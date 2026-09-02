@@ -19,6 +19,15 @@ extends RefCounted
 ## device: a gate asked of the OS directly at every call site would leave the touch shape asserted
 ## by nothing at all. `QuitOption.available()` and `hud._debug` follow the same pattern for their
 ## own platform questions.
-
+##
+## `--touch` forces this true, gated the same way every other dev-only capability in this project
+## is (`DevFlags.enabled()`, `AutoScreenshot.from_command_line()`'s own independent gate) — nothing
+## on the machine that runs `tools/test.sh` or an exported build has a real touchscreen, so without
+## this a touch-only screen could be edited, reviewed and merged for milestones without ever once
+## being rendered. `tools/shot.sh out.png 3 --touch --walk north` is how M60's touch HUD elements
+## (the on-screen stick, `RUN` and pause buttons, the top-anchored meter column) were actually
+## looked at rather than only reasoned about.
 static func available() -> bool:
+	if OS.is_debug_build() and "--touch" in OS.get_cmdline_user_args():
+		return true
 	return DisplayServer.is_touchscreen_available()
