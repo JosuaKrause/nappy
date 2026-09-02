@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_the_run_hint_fires_again_on_a_retried_teaching_day(t)
 	_test_the_run_hint_names_the_touch_button_on_a_touch_device(t)
 	_test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t)
+	_test_the_meters_move_to_the_top_on_a_touch_device(t)
 	_test_the_pause_hint_waits_out_a_detention(t)
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
@@ -132,6 +133,32 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
 	third.free()
 	hud.free()
 	GameState.day = saved_day
+
+## **The meters move to the top on a touch build, so a walking thumb never rests on the one
+## reading that may never be occluded.** *(2026-09-02: "let's also move the progress bars to the
+## top for mobile so they're not hidden by the finger.")* `hud._touch` picks the anchors on
+## `_reposition_meters_for_touch()`; desktop keeps the original bottom-left column untouched.
+##
+## Called directly a second time after flipping `_touch`, the same way `_teach_the_day()` is
+## called again elsewhere in this file: `_touch` is read once at `_ready()`, which has already run
+## by the time a test can reach it, so the repositioning has to be re-triggered explicitly to see
+## the other shape.
+func _test_the_meters_move_to_the_top_on_a_touch_device(t) -> void:
+	var hud := _hud(t)
+	t.check(hud._meters.anchor_top == 1.0 and hud._meters.anchor_bottom == 1.0,
+			"desktop keeps the bottom-anchored column")
+
+	hud._touch = true
+	hud._reposition_meters_for_touch()
+	t.check(hud._meters.anchor_top == 0.0 and hud._meters.anchor_bottom == 0.0,
+			"a touch device anchors the column to the top instead")
+	t.check(hud._meters.offset_top > hud._header.offset_bottom,
+			"and starts below where the day header ends, rather than under it")
+	t.check(hud._meters.offset_right - hud._meters.offset_left == 280.0
+			and hud._meters.offset_bottom - hud._meters.offset_top == 114.0,
+			"the column keeps its own size — only where it sits changes")
+
+	hud.free()
 
 ## **Being held is not stopping.** *(Player: "the pause tutorial comes up when being detained
 ## (since you're not moving)".)* `chatting_mother`'s `detain()` locks her input and lets friction
