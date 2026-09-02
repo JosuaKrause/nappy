@@ -18,24 +18,55 @@ mid-way through.
 2. **M60** — ready for a GitHub Pages launch. *(2026-09-01: "can we use github pages to put the
    game on a page?" and "add a step for preparing for github pages launch.")*
 
-M53's one remaining piece is a question for the player, not a task — see its entry.
+M53's one remaining piece is specified and unordered — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
 
 ---
 
-## M53 — What remains is a question, not a task
+## M53 — The precinct is for walking
 
 The rest of M53 shipped; the record, with the measurements and the not-reproduced claims, is in
 `DECISIONS.md` under M53.
 
-- [ ] **The precinct junction — two recorded instructions are in tension, and the player decides.**
-      The queue called the junction between two precinct arms a bug ("still asphalt with zebras");
-      `CityGenerator._street_tile`'s own docstring defends the current behaviour as intentional —
-      a driveable street crossing a precinct does so over a zebra six tiles deep. Measured: no
-      `ROAD` tile is ever produced at an internal precinct junction, only `SIDEWALK`/`CROSSING`.
-      The question: should a real street's carriageway survive through a precinct it merely
-      crosses, or is the six-tile zebra the design and the queue's sentence the stale one?
+- [ ] **Nothing goes into a precinct, and every road into one ends at its edge.** *(2026-09-02:
+      "there should be no zebra cross markings or cars in a pedestrianized precinct — all roads
+      leading up to a precinct should be t-junctions at the edge nothing should go in.")* This is
+      playtest 16's finding 2 with the ambiguity taken out of it, and it settles both halves at
+      once: the junction between two precinct arms is paving, and a driveable street that meets a
+      precinct **stops there** rather than crossing it.
+
+      **What happens today.** `CityGenerator._street_tile` lays a precinct's own band as paving from
+      frontage to frontage, and where a driveable street crosses one it produces `CROSSING` for the
+      full six-tile depth of that band — never `ROAD`, so there is no asphalt, but there is zebra
+      paint the whole way across. And a `CROSSING` **is carriageway to the traffic**: cars drive
+      through the precinct over that paint, giving way as they go. So both things the instruction
+      names are true of the generator right now.
+
+      **What it takes, and it is three systems rather than a palette change:**
+
+      - **The tiles.** No `CROSSING` inside a precinct band: the crossing street's carriageway ends
+        at the precinct's kerb line and the band is `SIDEWALK` across its whole width. The rule to
+        write it as is playtest 16's — *what a junction is made of is decided by the streets that
+        actually meet at it* — rather than a special case for precincts.
+      - **The traffic.** Removing those tiles removes the through-links a car uses, so the street
+        network has to terminate at the precinct edge and turn. The turning behaviour exists — every
+        agent, car and walker alike, already runs a T-junction rule — so this is about what the
+        lanes and the street index say is connected, in `src/crowd/crowd_lanes.gd` (which lane
+        joins which) and `src/city/traffic_index.gd` (what the traffic thinks the network is).
+      - **The drawing.** A junction with three arms drawn with four is the *other* half of playtest
+        16's finding, and M49's open item — *junctions are four-way where an arm dead-ends*, filed
+        as **not reproduced** because two checked candidates came out correct — has been looking for
+        a location this whole time. **Every precinct edge is one.** Check it there before treating
+        that item as anything separate.
+
+      **It cannot make a day unwinnable and that is worth stating**, because the change only ever
+      *removes carriageway*: the precinct band stays walkable end to end, so no route through it
+      gets longer and one class of lethal ground goes away.
+
+      **And two things quietly stop being placeable there.** Event rows sited on `ROAD`/`CROSSING`
+      tiles — the patrol, the checkpoint — lose the sites inside a precinct band, which is the
+      intended consequence rather than a regression to work around.
 
 ---
 
@@ -470,8 +501,11 @@ direction, not distance.**
       against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
 - [ ] **Whatever fixes one border has to be stated over *a border*.** The first pass wrote four
       sides four times, which is one bug per side waiting to happen
-- [ ] **Junctions are four-way where an arm dead-ends** — **not reproduced.** Two candidates checked
-      and correct. Needs a location from the player, or a third candidate
+- [ ] **Junctions are four-way where an arm dead-ends** — **not reproduced**, but it now has a
+      location to look in. Two candidates were checked and came out correct; the third is **every
+      precinct edge**, where a driveable street meets a pedestrianised band and today crosses it
+      instead of ending in a T-junction. Check it there, under M53's entry, before treating this as
+      a separate finding
 - [ ] **Restate the main-road pacing question.** The design says she exhausts her own side of the
       spine before being forced across. **Is that emergent** — calm areas exist on both sides and
       spoiling burns the near ones over an act — **or does something have to withhold the far side

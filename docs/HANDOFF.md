@@ -54,8 +54,9 @@ the exemption is now stated over `pursues` rather than holding by accident of th
    `OS.is_debug_build()` first, then a tracked Web export preset, an export tool, telemetry off for
    web, and the deploy workflow.
 
-M53's remaining piece — the precinct junction — is a **question for the player** (two recorded
-instructions in tension); it is stated in [TODO.md](TODO.md) under M53.
+M53's remaining piece — **nothing goes into a precinct, and every road into one ends at its edge** —
+is specified and unordered; it is stated in [TODO.md](TODO.md) under M53, and the drawing half of it
+is where M49's never-reproduced *four-way junction with a dead-end arm* should be looked for.
 
 ## Open beyond the order
 
