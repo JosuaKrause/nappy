@@ -1,7 +1,9 @@
-# Nappy
+<p align="center">
+  <img src="assets/logo.png" alt="Nappy" width="640">
+</p>
 
 A 2.5D top-down game about a mother pushing a stroller through a city, trying to get her
-baby to sleep.
+baby to sleep. **[Play it in a browser.](https://nappy.josuakrause.com/)**
 
 - **Engine:** Godot 4.7
 - **Genre:** Roguelike / route-planning
