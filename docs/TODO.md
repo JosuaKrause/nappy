@@ -14,13 +14,54 @@ mid-way through.
 
 ## The order
 
-1. **M56** — the resistance is noticed.
-2. **M60** — ready for a GitHub Pages launch. *(2026-09-01: "can we use github pages to put the
+1. **M63** — it plays on a phone. The site is live and a phone cannot start it.
+2. **M56** — the resistance is noticed.
+3. **M60** — ready for a GitHub Pages launch. *(2026-09-01: "can we use github pages to put the
    game on a page?" and "add a step for preparing for github pages launch.")*
 
 M53's one remaining piece is specified and unordered — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
+
+---
+
+## M63 — It plays on a phone · asked for 2026-09-02
+
+*(2026-09-02, of the live site: "I can't start the game on mobile — there is no space", "the title
+screen requires me to press space". Asked whether that should become playable or become an honest
+"needs a keyboard": **playable**.)*
+
+**The page is published and a phone can do nothing with it.** Three screens are gated on
+`ui_accept`, which is space or enter — the title, the between-days summary, and the pause — and
+nothing anywhere in the game handles a touch or a click. Past them there would be no way to walk
+either: movement is the four `move_*` actions and they are bound to keys alone.
+
+- [ ] **Every screen advances on a tap.** The title, the day summary and the pause. Handle the
+      touch event itself rather than adding a click, so the desktop is untouched and a stray mouse
+      press cannot skip a day summary
+- [ ] **A virtual stick, and it costs the game nothing.** Movement is one call —
+      `Input.get_vector("move_left", "move_right", "move_up", "move_down")` in `Stroller`, already
+      an analogue vector with a 0.2 deadzone — so a stick that presses those actions with a
+      strength needs no gameplay change at all
+- [ ] **A held run button, and never a stick threshold.** *(2026-09-02: "is it possible to have a
+      separate button on mobile for running?")* Yes, and it is also the only correct answer.
+      `Stroller` moves toward `input_dir * top_speed` with the **raw** vector, so a partly
+      deflected stick is already a slower walk; making running the far end of that same push would
+      turn the one deliberate act in the game into a gradient. Running is *"rarely worth it"* in
+      the title screen's own words, day 3 exists to teach it, and every pursuit contract is stated
+      over the gap between a walk and a run. A separate button held under the other thumb is what
+      `Shift` already is
+- [ ] **The controls appear only where they are used**, and every hint agrees with them: a screen
+      that says *space to begin* on a device with no space is the same defect as the `q` that
+      quit nothing
+- [ ] **Landscape.** Letterboxed to 16:9 a portrait phone is a strip. The Web export preset can
+      declare the orientation
+- [ ] **Then measure the thing that might sink it.** `CrowdLanes` pushes the two walking lanes of a
+      pavement 8px apart so there is a clear line between them worth aiming at, and it carries the
+      measurement: forty seconds down an arterial lane centre costs 13.7 contacts and the midline
+      costs 0.0 — **148 points of a hundred-point meter riding on those pixels**. Arrow keys hit
+      that line and a thumb may not. **This is a question about whether careful-versus-careless
+      survives a blunter instrument, and it is answered by playing it rather than by arguing it**
 
 ---
 
@@ -536,33 +577,3 @@ After the playtest work. There is no point polishing a loop that is about to be 
       the meters"*. A face would be that in the visual channel — the meter read off the baby rather
       than off a strip at the bottom of the screen. Not designed, and it needs the playing that the
       status-line cut is about to produce
-- [ ] **Could it be played on a phone?** **Asked about on 2026-09-02, not asked for** — the
-      reasoning is kept here because it is worth more than the question was, and none of it is a
-      commission.
-
-      **The plumbing is nearly free.** Movement is one call —
-      `Input.get_vector("move_left", "move_right", "move_up", "move_down")` in `Stroller`, which
-      already returns an analogue vector with a 0.2 deadzone — so a virtual stick feeding those
-      actions needs no gameplay change at all, and running is one boolean. Godot has no built-in
-      stick, so that is the thing to write, plus taps for the four keys the screens use.
-
-      **What is not free is the twenty pixels.** `CrowdLanes` pushes the two walking lanes of a
-      pavement 8px apart precisely so there is a clear line between them wide enough to aim at, and
-      it carries the measurement: forty seconds down an arterial lane centre costs 13.7 contacts and
-      the midline costs 0.0, which is **148 points of a hundred-point meter riding on those pixels**.
-      Arrow keys hit that line and a thumb does not. Mobile is therefore a question about whether
-      the careful/careless economy survives a blunter instrument, rather than a question about input.
-
-      **And running may not become a gradient.** The obvious mobile idiom — push the stick past a
-      threshold to run — is wrong here, and the code says why: `Stroller` moves toward
-      `input_dir * top_speed` with the *raw* vector, so partial deflection is already partial speed,
-      and running would become the far end of one continuous push. This game's run is the opposite
-      of that: the title screen calls it *"rarely worth it"*, day 3 exists to teach it, and every
-      pursuit contract is stated over the gap between a walk and a run. It stays a held button, so
-      it stays a decision.
-
-      **Landscape only.** Letterboxed to 16:9 a portrait phone would be a strip; the Web export
-      preset can declare the orientation. And if the controls are ever to sit *beside* the city
-      rather than on top of it, that is not the letterbox — a letterboxed bar is outside the
-      drawable viewport, so drawable margins mean fixing the world view with the camera instead,
-      which is a larger change than a project setting
