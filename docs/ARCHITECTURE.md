@@ -122,6 +122,25 @@ release one — the same axis `Telemetry.begin_run()` already uses to stay silen
 and their `Q` handler always agree, and so a test — never itself a web export — can set the member
 and drive both platform shapes.
 
+### Playing on a touch device
+
+`TouchInput` (`src/ui/touch_input.gd`) answers `DisplayServer.is_touchscreen_available()` rather
+than `OS.has_feature("mobile")`, because the game ships as one Web export that runs unchanged on a
+phone browser and a desktop browser — `has_feature("mobile")` is a tag baked in at export time and
+cannot vary with the device that opens the page, while `is_touchscreen_available()` asks the
+browser what the visiting device actually has. `TitleScreen`, `PauseScreen`, `DaySummary` and
+`TouchControls` each read it once into their own `_touch`, the same shape `_can_quit` uses, so a
+test can drive both platform shapes.
+
+`TouchControls` (`src/ui/touch_controls.gd`) is a stick and a held run button drawn over the city,
+each pressing the actions a keyboard already presses — `Input.action_press("move_left", strength)`
+and its three siblings for the stick, `"run"` held for the button — so nothing downstream learns a
+thumb was involved. It shows only when `TouchInput.available()` and `get_tree().paused` is false,
+which keeps it off the title, the pause and the between-days summary without a wire from `main`
+telling it so on each: that flag is the one thing all three already set. The three screens also
+handle `InputEventScreenTouch` directly alongside `ui_accept`, so a tap advances each of them the
+way `space` does, without teaching the desktop a click it never asked for.
+
 ## Autoloads
 
 ### `Tuning`

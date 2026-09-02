@@ -199,6 +199,12 @@ This makes the walk home a real second act rather than a victory lap.
 Controls: arrow keys or WASD to walk, hold **Shift** to run, **Esc** to pause. There is no
 interact key — touching a resistance chalk mark or a task's own contact is what completes it.
 
+On a touch device (`TouchInput.available()`), a virtual stick and a separate held run button
+overlay the city and press the same `move_*` and `run` actions a keyboard does — `Stroller` never
+learns the difference. The button is never a threshold on the stick's own deflection: running is
+one deliberate, held press, exactly as **Shift** is, so a partly-pushed stick stays what it always
+was, a slower walk.
+
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.
 

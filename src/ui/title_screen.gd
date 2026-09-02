@@ -25,22 +25,42 @@ signal start_requested()
 signal quit_requested()
 
 @onready var _name: Label = $Root/Top/Lines/Title
+@onready var _body: Label = $Root/Bottom/Lines/Body
 @onready var _hint: Label = $Root/Bottom/Lines/Hint
 
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
 ## each use site, so a test — never itself a web export — can set this and drive both shapes.
 var _can_quit := QuitOption.available()
+## Whether this device has a touchscreen. Read once from `TouchInput`, for the same reason
+## `_can_quit` is: a test process is never a touch device, and the body and the hint both have to
+## agree with whatever drew — or did not draw — the stick and the run button.
+var _touch := TouchInput.available()
+
+const _BODY_KEYBOARD := "Arrows or WASD to walk.\n" \
+		+ "Hold Shift to run — it wakes her, so it is rarely worth it.\n" \
+		+ "Walk to calm ground and stay moving; standing still settles nothing."
+const _BODY_TOUCH := "Drag the stick to walk.\n" \
+		+ "Hold RUN to run — it wakes her, so it is rarely worth it.\n" \
+		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:
 	# **The title has a colour of its own**, or the screen is four labels in one warm off-white and
 	# the name of the game is only the biggest of them. `Palette.TITLE_TEXT` is the doorstep it is
 	# standing in front of; see the note there for why it is not one of the danger colours.
 	_name.add_theme_color_override("font_color", Palette.TITLE_TEXT)
+	_refresh_body()
 	# Above the pause screen: this is the outermost frame the game runs inside, and nothing should
 	# ever be able to cover it.
 	layer = 95
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
+
+## A screen that names a key with no space is the same defect `QuitOption` exists to close for
+## `Q` — the body baked into the scene is the keyboard's own three lines, and this is the one
+## other shape it can be. Its own function, rather than inline in `_ready()`, so a test can flip
+## `_touch` and call this again the way `PauseScreen._refresh_hint()` already does for its hint.
+func _refresh_body() -> void:
+	_body.text = _BODY_TOUCH if _touch else _BODY_KEYBOARD
 
 func is_open() -> bool:
 	return visible
@@ -53,7 +73,8 @@ func is_open() -> bool:
 ## behind the scrims, is `main`'s decision — see `main._open_the_title()`.
 func open(again := false) -> void:
 	visible = true
-	var start := "space to walk again" if again else "space to begin"
+	var verb := "tap" if _touch else "space"
+	var start := "%s to walk again" % verb if again else "%s to begin" % verb
 	_hint.text = "%s     ·     q to quit" % start if _can_quit else start
 
 func close() -> void:

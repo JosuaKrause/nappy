@@ -21,25 +21,46 @@ signal quit_requested()
 @onready var _root: Control = $Root
 @onready var _dim: ColorRect = $Root/Dim
 @onready var _standing: Label = $Root/Center/Lines/Standing
+@onready var _body: Label = $Root/Center/Lines/Body
 @onready var _hint: Label = $Root/Center/Lines/Hint
 
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
 ## each use site, so a test — never itself a web export — can set this and drive both shapes.
 var _can_quit := QuitOption.available()
+## Whether this device has a touchscreen. Read once from `TouchInput`, for the same reason
+## `_can_quit` is: a test process is never a touch device, and the body and the hint both have to
+## agree with whatever drew — or did not draw — the stick and the run button.
+var _touch := TouchInput.available()
+
+const _BODY_KEYBOARD := "Arrows or WASD to walk.\n" \
+		+ "Hold Shift to run — it wakes her, so it is rarely worth it.\n" \
+		+ "Walk to calm ground and stay moving; standing still settles nothing."
+const _BODY_TOUCH := "Drag the stick to walk.\n" \
+		+ "Hold RUN to run — it wakes her, so it is rarely worth it.\n" \
+		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:
 	# Above the world and above the HUD, and it must keep running while everything else stops.
 	layer = 90
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
+	_refresh_body()
 	_refresh_hint()
 
-## Baked into the scene is only the part that is always true; `q to quit` is added here, since
-## whether it belongs depends on `_can_quit` rather than on anything the scene file can say.
-## Its own function, rather than inline in `_ready()`, so a test can flip `_can_quit` and call
-## this again to check the two platform shapes agree with `_unhandled_input`'s own gate.
+## The keyboard's own three lines, or the one other shape they can be. Its own function for the
+## same reason `_refresh_hint()` is one: so a test can flip `_touch` and call this again rather
+## than reaching for a fresh scene.
+func _refresh_body() -> void:
+	_body.text = _BODY_TOUCH if _touch else _BODY_KEYBOARD
+
+## Baked into the scene is only the part that is always true; the rest depends on `_can_quit` and
+## `_touch` rather than on anything the scene file can say. `R` restarts and `Esc` is a second way
+## to carry on, and neither exists on a device with no keyboard, so the touch hint drops both
+## rather than naming a key that is not there — the same defect class `q to quit` was.
+## Its own function, rather than inline in `_ready()`, so a test can flip either flag and call
+## this again to check the platform shapes agree with `_unhandled_input`'s own gate.
 func _refresh_hint() -> void:
-	_hint.text = "space or esc to carry on     ·     r to start again"
+	_hint.text = "tap to carry on" if _touch else "space or esc to carry on     ·     r to start again"
 	if _can_quit:
 		_hint.text += "     ·     q to quit"
 
