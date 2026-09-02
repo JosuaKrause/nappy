@@ -105,12 +105,17 @@ path prefix.
       What the HUD shows today, so the cut has a floor: a **header** reading
       `day N / 14   act N   nerves ***`, the **clock**, the two **meter bars**, a **status line**
       (the baby's state, why she is not settling, and a city-wide source when one is running), and
-      a **resistance line** (`resistance *...` plus the current step's title). Kept: the clock, the
-      bars, and the optional goal. Cut: the header. **The status line is the interesting one** —
-      it goes because the pram already carries four states of the baby, which is the same claim as
-      the open question about turning the meter bars off entirely, and the two should be answered
-      together. What has no home once it goes: `stall_reason()`'s *"not settling: …"* and the
-      *"nowhere is quiet"* note for a city-wide source, neither of which the pram draws.
+      a **resistance line** (`resistance *...` plus the current step's title).
+
+      **Decided on 2026-09-02: the clock, the two bars and the optional goal, and nothing else.** The
+      header goes and the status line goes with it; the bars stay. So the game's HUD is the clock,
+      `SLEEPINESS`, `EXCITEMENT`, and the current optional goal on one line.
+
+      **Two sentences stop being said anywhere, and nothing replaces them.** `stall_reason()`'s
+      *"not settling: …"* — the reason the baby will not go down — and the *"nowhere is quiet"* note
+      when a city-wide source is running. Neither is drawn by the pram, so this is a real loss taken
+      knowingly rather than an oversight, and **it is not authority to invent a cue for them**: if
+      the loss is felt, it comes back as its own question from somebody who has played without them.
 
       **The scope is answered, and it is not "two HUDs".** *(2026-09-02: "the current HUD is for
       debugging — for the real game (the web version) it must be minimal.")* The header, the status
@@ -556,5 +561,13 @@ After the playtest work. There is no point polishing a loop that is about to be 
       crossing"* is still a claim about a player rather than about a probe
 - [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little time to
       learn a city before it starts changing
-- [ ] **Could the meter bars be turned off entirely**, now that the pram carries four states of the
-      baby? A question for somebody playing with them hidden rather than for more code
+- [ ] **Could the meter bars be turned off entirely** — deferred, not open. *(2026-09-02: "we can
+      keep the bar for now and think about the diegetic face later on.")* The minimal HUD keeps the
+      bars and drops the status line beside them, so what gets tested first is whether the pram
+      alone can carry the baby's state on the half that was cut.
+
+      **What comes back with it is a face**, which is a bigger idea than hiding a bar: the same
+      shape M10 already records for audio, where the baby's breathing is *"the diegetic version of
+      the meters"*. A face would be that in the visual channel — the meter read off the baby rather
+      than off a strip at the bottom of the screen. Not designed, and it needs the playing that the
+      status-line cut is about to produce
