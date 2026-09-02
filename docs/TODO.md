@@ -585,9 +585,13 @@ she takes through the thing the whole design is about.
 
 - [ ] **What a tap means: a straight line, and nothing cleverer.** *(2026-09-02: "the tap should
       just be a straight path — no collision avoiding path.")* A single tap walks to the point, a
-      double tap runs to it, and she goes **straight at it** — the direction of the point pressed
-      as the same `move_*` actions the stick presses, re-aimed each frame, stopping on arrival.
-      Nothing routes around what is in the way. **That is the whole reason it may exist at all**:
+      double tap runs to it, and she goes **straight at it**. *(2026-09-02: "calculate the direction
+      and press that direction until it reaches the target.")* The direction is worked out **once,
+      at the tap**, and pressed as the same `move_*` actions the stick presses until she arrives —
+      not re-aimed every frame. So a shove that knocks her off the line does not silently correct
+      itself, and that is the honest version: what she is doing stays exactly as legible as a held
+      key, and the player taps again. Nothing routes around what is in the way. **That is the whole
+      reason it may exist at all**:
       the game's only verb is *where do I walk*, and a tap that pathfinds hands the route decision
       to the game. Walking into a wall and stopping is the player's mistake to make, exactly as it
       is with the stick
