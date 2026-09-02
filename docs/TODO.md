@@ -26,54 +26,19 @@ Everything below that is unordered and reassessed on 2026-09-01.
 
 ## M53 — The precinct is for walking
 
-The rest of M53 shipped; the record, with the measurements and the not-reproduced claims, is in
-`DECISIONS.md` under M53.
+A precinct is paving frontage to frontage with nothing driving on it, on either axis, and a street
+that meets one ends at its edge. What remains is that the ending is not *drawn* as anything.
 
-- [ ] **Nothing goes into a precinct, and every road into one ends at its edge.** *(2026-09-02:
-      "there should be no zebra cross markings or cars in a pedestrianized precinct — all roads
-      leading up to a precinct should be t-junctions at the edge nothing should go in.")* This is
-      playtest 16's finding 2 with the ambiguity taken out of it, and it settles both halves at
-      once: the junction between two precinct arms is paving, and a driveable street that meets a
-      precinct **stops there** rather than crossing it.
-
-      **What happens today.** `CityGenerator._street_tile` lays a precinct's own band as paving from
-      frontage to frontage, and where a driveable street crosses one it produces `CROSSING` for the
-      full six-tile depth of that band — never `ROAD`, so there is no asphalt, but there is zebra
-      paint the whole way across. And a `CROSSING` **is carriageway to the traffic**: cars drive
-      through the precinct over that paint, giving way as they go. So both things the instruction
-      names are true of the generator right now.
-
-      **What it takes, and it is three systems rather than a palette change:**
-
-      - **The tiles, and it is one condition.** `CityGenerator._street_tile` decides a junction tile
-        by asking whether each of the two corridors has a carriageway at that point; a precinct
-        answers no on its own axis, so the crossing street's yes is what produces the zebra. Where
-        either corridor is a precinct the junction is paving across its whole width, and no
-        `CROSSING` is laid there at all. The rule to write it as is playtest 16's — *what a junction
-        is made of is decided by the streets that actually meet at it* — rather than a special case
-        for precincts.
-      - **The traffic, and the hole in it is one function.** `CityMap.is_driveable_at(vertical,
-        tile)` answers *is there a carriageway here* by asking the kind of **the corridor the car is
-        travelling along** — so a car heading north up an ordinary street is told yes at every tile
-        of it, including the six that lie inside an east–west precinct. The three places a car asks
-        (`CrowdAgent`, at placement, at each step, and when checking the arm it is crossing) are
-        already in place and already refuse a precinct on their own axis. What is missing is that a
-        tile inside *either* corridor's precinct has no carriageway on it at all. Check what that
-        does to `src/crowd/traffic_index.gd`, which is what the traffic uses as its picture of the
-        network, and to the lane joins in `src/crowd/crowd_lanes.gd`.
-      - **The drawing.** A junction with three arms drawn with four is the *other* half of playtest
-        16's finding, and M49's open item — *junctions are four-way where an arm dead-ends*, filed
-        as **not reproduced** because two checked candidates came out correct — has been looking for
-        a location this whole time. **Every precinct edge is one.** Check it there before treating
-        that item as anything separate.
-
-      **It cannot make a day unwinnable and that is worth stating**, because the change only ever
-      *removes carriageway*: the precinct band stays walkable end to end, so no route through it
-      gets longer and one class of lethal ground goes away.
-
-      **And two things quietly stop being placeable there.** Event rows sited on `ROAD`/`CROSSING`
-      tiles — the patrol, the checkpoint — lose the sites inside a precinct band, which is the
-      intended consequence rather than a regression to work around.
+- [ ] **Nothing draws a bollard, and the street just stops.** Six comments across the city and the
+      crowd explain a precinct by saying a driver *"meeting a bollarded street"* diverts, and
+      `docs/CITY.md` says a span stops short of the crossroads at either end *"which is where the
+      bollards are"*. **There is no bollard anywhere in the game** — no sprite, no tile, no prop. The
+      carriageway simply ends flush against the paving, which reads as the road running out rather
+      than as a street that was closed on purpose. It is the same gap M48 names for the barrier that
+      is blue-grey with no hazard marking: one picture per row passes and the picture still says
+      nothing. What it wants is the smallest thing that says *this was done deliberately* — a line
+      of posts across the mouth is the real-world answer and it is also the cheapest drawing in the
+      list
 
 ---
 
@@ -105,6 +70,14 @@ The game becomes a folder of static files a browser runs. Godot's HTML5/WASM exp
 `gl_compatibility` renderer the project already uses; **threads disabled**, so no
 cross-origin-isolation headers are needed and GitHub Pages serves it as-is. No server: the game has
 no networking. What Pages needs is preparation, not architecture:
+
+**The site exists and it has an address.** *(2026-09-02: "I set up the website for the gh-page —
+needs to be deployed via CI / gh-action — it's https://nappy.josuakrause.com/".)* So the two things
+a workflow file could never do for itself are done: Pages is on for the repository and the custom
+domain is set. **What is left is a build and a deploy**, and the address is a fact the rest of this
+milestone now has to hold — a custom domain is stored as a repository setting rather than in the
+artifact, so the deploy must not overwrite it and nothing in the export may assume a `/nappy/`
+path prefix.
 
 - [ ] **Gate the developer's furniture first — this is the prerequisite, not a polish item.**
       `--seed`, `--day`, `--spawn`, `--ending` and the rest ship in the build today (M10 records the
@@ -145,15 +118,18 @@ no networking. What Pages needs is preparation, not architecture:
       game**, so this is the same work as gating the dev flags: the minimal HUD is the game, and
       what is left goes behind `OS.is_debug_build()` with the rest of the developer's furniture.
       That also decides where it lives — beside the `DevFlags` helper, not in a web-only branch
-- [ ] **The deploy workflow** — GitHub Actions on push to `main`: install Godot + export templates,
-      run the export, publish `build/web/` to Pages (`upload-pages-artifact` + `deploy-pages`).
-      **Unblocked: the repo has a GitHub remote**, so the workflow can be written and will run.
-      What is still the player's alone is turning Pages on for the repository and choosing whether
-      it is public — neither is a thing a workflow file can do for them
-- [ ] **A browser smoke pass** once an export exists: boots, keyboard input works, holds frame
-      rate at the game's scale, and the title screen reads as the front door of a public page.
-      itch.io stays the fallback host (it sets the isolation headers, so a threaded build would
-      also work there)
+- [ ] **The deploy workflow** — GitHub Actions on push to `main`: install Godot and the matching
+      export templates, run the export, publish `build/web/` to Pages (`upload-pages-artifact` +
+      `deploy-pages`, with the `pages: write` and `id-token: write` permissions that pairing needs).
+      **Nothing is blocking it**: the repo has a GitHub remote, Pages is on, and the domain is set.
+      Two things to get right rather than discover — the Godot version the workflow installs has to
+      be the one the project is built with, or the export fails on a template mismatch; and the run
+      has to be reproducible from a clean checkout, which is the same requirement `check.sh` already
+      has of a fresh clone
+- [ ] **A browser smoke pass** once it is deployed, at the real address: boots, keyboard input
+      works, holds frame rate at the game's scale, and the title screen reads as the front door of a
+      public page. itch.io stays the fallback host (it sets the isolation headers, so a threaded
+      build would also work there)
 
 ---
 
@@ -472,11 +448,11 @@ direction, not distance.**
       against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
 - [ ] **Whatever fixes one border has to be stated over *a border*.** The first pass wrote four
       sides four times, which is one bug per side waiting to happen
-- [ ] **Junctions are four-way where an arm dead-ends** — **not reproduced**, but it now has a
-      location to look in. Two candidates were checked and came out correct; the third is **every
-      precinct edge**, where a driveable street meets a pedestrianised band and today crosses it
-      instead of ending in a T-junction. Check it there, under M53's entry, before treating this as
-      a separate finding
+- [ ] **Junctions are four-way where an arm dead-ends** — **not reproduced**, and three candidates
+      are now ruled out rather than two. The third was every precinct edge, and it cannot be the
+      place: where either corridor is a precinct the whole junction box is one flat sheet of paving
+      with no per-arm kerb or line art on it at all, so there is no directional drawing left to get
+      wrong. Still needs a location from the player, or a fourth candidate
 - [ ] **Restate the main-road pacing question.** The design says she exhausts her own side of the
       spine before being forced across. **Is that emergent** — calm areas exist on both sides and
       spoiling burns the near ones over an act — **or does something have to withhold the far side

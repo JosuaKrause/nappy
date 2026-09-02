@@ -9,9 +9,9 @@ progress-tracking, which lives there too.
 ## The state of the tree
 
 **`main` is green and playable, and one feature branch is open with M56 half-built on it** —
-`git branch` names it. Nothing is broken and nothing is half-written: the branch's items are each
-finished and committed, and the milestone simply has items left. Trust the tools over any sentence
-here:
+`git branch` names it, and M53's carriageway work has landed on the same branch. Nothing is broken
+and nothing is half-written: the branch's items are each finished and committed, and the milestone
+simply has items left. Trust the tools over any sentence here:
 
 ```sh
 ./tools/test.sh          # the full headless suite, ~200s; must be 0 failures
@@ -56,9 +56,8 @@ the exemption is stated over `pursues` rather than holding by accident of the `W
    `OS.is_debug_build()` first, then a tracked Web export preset, an export tool, telemetry off for
    web, and the deploy workflow.
 
-M53's remaining piece — **nothing goes into a precinct, and every road into one ends at its edge** —
-is specified and unordered; it is stated in [TODO.md](TODO.md) under M53, and the drawing half of it
-is where M49's never-reproduced *four-way junction with a dead-end arm* should be looked for.
+M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
+bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.
 
 ## Open beyond the order
 
