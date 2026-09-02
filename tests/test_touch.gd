@@ -1,7 +1,7 @@
 extends RefCounted
-## The on-screen stick, and the two things a screenshot cannot show: that it disappears on the
-## platforms and the screens it must, and that a finger on it presses the same actions a keyboard
-## does.
+## The on-screen stick and run button, and the two things a screenshot cannot show: that they
+## disappear on the platforms and the screens they must, and that a finger on either presses the
+## same actions a keyboard does.
 ##
 ## `_touch` is read once into a member exactly the way `QuitOption.available()` and `hud._debug`
 ## are — a headless test process is never a touch device, so a gate asked of `TouchInput` at each
@@ -14,8 +14,10 @@ func run(t) -> void:
 	_test_the_stick_shows_only_on_a_touch_device_with_a_day_running(t)
 	_test_the_stick_presses_the_move_actions(t)
 	_test_hiding_the_stick_releases_everything_it_held(t)
+	_test_the_run_button_holds_run_independently_of_the_stick(t)
+	_test_hiding_the_controls_releases_the_run_button_too(t)
 	t.get_tree().paused = was_paused
-	_release_move_actions()
+	_release_actions()
 
 func _controls(t) -> TouchControls:
 	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
@@ -100,6 +102,50 @@ func _test_hiding_the_stick_releases_everything_it_held(t) -> void:
 
 	controls.queue_free()
 
+## **Never the far end of the stick's own push.** The button is a separate touch index on the
+## opposite side of the screen, so both this and a full stick deflection can be held at once,
+## exactly as `Shift` and an arrow key can — which is the whole reason a stick threshold was
+## rejected: `Stroller` reads the stick's raw deflection, and a threshold on it would have made
+## the one deliberate act in the game a gradient a thumb could cross by accident.
+func _test_the_run_button_holds_run_independently_of_the_stick(t) -> void:
+	var controls := _controls(t)
+	controls.visible = true
+
+	controls._input(_touch_event(0,
+			TouchControls.STICK_CENTRE + Vector2(0.0, -TouchControls.STICK_RADIUS), true))
+	t.check(Input.is_action_pressed("move_up") and not Input.is_action_pressed("run"),
+			"the stick alone does not hold run")
+
+	controls._input(_touch_event(1, TouchControls.RUN_CENTRE, true))
+	t.check(Input.is_action_pressed("run") and Input.is_action_pressed("move_up"),
+			"a second finger on the button holds run alongside the stick's own direction")
+
+	controls._input(_touch_event(1, Vector2.ZERO, false))
+	t.check(not Input.is_action_pressed("run") and Input.is_action_pressed("move_up"),
+			"letting go of the button releases run and leaves the stick alone")
+
+	controls._input(_touch_event(0, Vector2.ZERO, false))
+	controls.queue_free()
+
+## The same guarantee the stick gets, extended to the button: a thumb still holding it down when a
+## day ends must not run the whole of tomorrow's opening stride for free.
+func _test_hiding_the_controls_releases_the_run_button_too(t) -> void:
+	var controls := _controls(t)
+	controls._touch = true
+	t.get_tree().paused = false
+	controls._process(0.0)
+
+	controls._input(_touch_event(0, TouchControls.RUN_CENTRE, true))
+	t.check(Input.is_action_pressed("run"), "the button is holding run")
+
+	t.get_tree().paused = true
+	controls._process(0.0)
+	t.check(not controls.visible, "the controls disappear with the tree paused")
+	t.check(not Input.is_action_pressed("run"),
+			"and run is let go of rather than carried into tomorrow")
+
+	controls.queue_free()
+
 func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()
 	event.index = index
@@ -113,11 +159,12 @@ func _drag_event(index: int, position: Vector2) -> InputEventScreenDrag:
 	event.position = position
 	return event
 
-## However a check above failed or passed, the four movement actions are global `Input` state —
-## nothing about them is scoped to this suite's own nodes — so a failure that returns early must
-## not leave a direction pressed for whatever test runs next.
-func _release_move_actions() -> void:
+## However a check above failed or passed, the movement actions and `run` are global `Input`
+## state — nothing about them is scoped to this suite's own nodes — so a failure that returns
+## early must not leave one pressed for whatever test runs next.
+func _release_actions() -> void:
 	Input.action_release(&"move_left")
 	Input.action_release(&"move_right")
 	Input.action_release(&"move_up")
 	Input.action_release(&"move_down")
+	Input.action_release(&"run")
