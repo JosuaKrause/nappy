@@ -227,16 +227,19 @@ func _on_contact_available(step: int) -> void:
 
 ## Deliberately terse. There is no quest log — the subquest is chalk on a wall.
 ##
-## The release line is the current optional goal's title alone, with no progress dots: the dots
-## are a count of how far in you are, the same category as the header's `nerves ***` and shown
-## between days rather than during one. A debug build keeps the `resistance ***..` prefix the rigs
-## and `tools/shot.sh` were built against.
+## The release line is the current optional goal and no count: the progress dots are how far in you
+## are, the same category as the header's `nerves ***` and read between days rather than during one.
+## A debug build keeps the `resistance ***..` prefix the rigs and `tools/shot.sh` were built against.
+##
+## **`somewhere out there:` stays**, because it is what makes a title a goal. Without it the line is
+## a bare fragment — `a chalk mark` — which says a noun rather than *go and find this*, and the
+## whole of what survives the cut is that one instruction.
 func _refresh_resistance() -> void:
 	if not _debug:
 		var step: ResistanceSteps.Step = null
 		if _contact_step > 0:
 			step = ResistanceSteps.by_index(_contact_step)
-		_resistance_label.text = step.title.to_lower() if step else ""
+		_resistance_label.text = "somewhere out there: %s" % step.title.to_lower() if step else ""
 		return
 
 	if not GameState.has_joined_resistance() and _contact_step == 0:

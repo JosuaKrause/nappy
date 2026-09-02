@@ -148,8 +148,9 @@ func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t) -> v
 
 ## Decided by the orchestrator, not the design, because the design was silent on this one detail:
 ## `resistance ***..` is a progress count, the same category as the header's `nerves ***`, so it
-## is cut with the rest of the debug readout. The goal's own title is kept — it is "the current
-## optional goal" the decision names as staying — with no dots beside it.
+## is cut with the rest of the debug readout. The goal itself is kept — it is "the current optional
+## goal" the decision names as staying — with no dots beside it, and with the `somewhere out there:`
+## that makes a title an instruction rather than a noun.
 func _test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots(t) -> void:
 	var hud := _hud(t)
 	hud._debug = false
@@ -161,8 +162,8 @@ func _test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots
 	hud._contact_step = 1
 	hud._refresh_resistance()
 	var step := ResistanceSteps.by_index(1)
-	t.check(hud._resistance_label.text == step.title.to_lower(),
-			"the release line is the goal's title alone")
+	t.check(hud._resistance_label.text == "somewhere out there: %s" % step.title.to_lower(),
+			"the release line is the goal, said as an instruction rather than as a noun")
 	t.check(not "resistance" in hud._resistance_label.text,
 			"and carries no 'resistance ***..' progress count")
 
