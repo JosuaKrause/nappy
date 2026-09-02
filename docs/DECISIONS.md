@@ -4726,8 +4726,7 @@ yet"*) and under the `CLAUDE.md` rule the first round produced.
       the front but rotated sideways, which doesn't make sense."* Both attempts have been a side
       view — palings with a rail across them. The game looks straight down, where a fence is a thin
       line with post-heads and a shadow. Rotating an elevation does not make it a top-down drawing
-- [ ] **The eastern border, four faults in one screenshot.**
-      `run-2026-08-30T233248-seed3225216943-834423d-dirty-069s-asked.png`, seed 3225216943, day 2,
+- [ ] **The eastern border, four faults in one screenshot.** Seed 3225216943, day 2,
       tile (152,103):
       **a)** a calm area sits directly against the border, although M47 shipped *"calm ground is
       never at the edge"* — check `_zone_fits` and the single-block calm placement separately,

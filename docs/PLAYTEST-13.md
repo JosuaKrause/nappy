@@ -18,8 +18,8 @@ five nerves rediscovering things already written down, because the milestone tha
 changed them had not been built. **A playtest is a scarce resource and it was spent on a build
 that was known to be incomplete.**
 
-The trace is `run-2026-08-30T031851-seed3251793152-b7590fb.log`. Every number below is read off
-it or off the code it was played on; nothing here is a probe.
+Every number below is read off the run's own trace or off the code it was played on; nothing here
+is a probe.
 
 ---
 
