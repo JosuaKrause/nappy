@@ -6,8 +6,12 @@
        doorstep) and the stroller keeps icon.svg's cream (#e8dcc8) and its slate outline
        (#2b3a4a) — read against a dark page, which is what the game itself is. -->
 
-  <g transform="translate(453 34) scale(2.6)">
-    <!-- The stroller, drawn as in icon.svg with the rounded plate removed. -->
+  <g transform="translate(492.8 30) scale(2.3)">
+    <!-- icon.svg exactly: the rounded slate plate and the stroller on it. The plate is what the
+         stroller is drawn against — the cream reads as cream because of it — so the transparency
+         is the page showing through the plate's own rounded corners and around it, not through
+         the icon itself. -->
+    <rect width="128" height="128" rx="24" fill="#2b3a4a"/>
     <path d="M34 74 A30 30 0 0 1 94 74 Z" fill="#e8dcc8"/>
     <rect x="34" y="74" width="60" height="10" rx="4" fill="#c9b99b"/>
     <path d="M94 74 L110 44" stroke="#e8dcc8" stroke-width="7" stroke-linecap="round" fill="none"/>
