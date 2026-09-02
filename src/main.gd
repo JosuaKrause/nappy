@@ -11,6 +11,7 @@ const HUD := preload("res://scenes/ui/hud.tscn")
 const DAY_SUMMARY := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCREEN := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE_SCREEN := preload("res://scenes/ui/title_screen.tscn")
+const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 
 @onready var _status: Label = $CanvasLayer/Status
 
@@ -31,6 +32,9 @@ var _hud: CanvasLayer
 ## is kept only so the title screen can take it off the street.
 var _edge: DangerEdge
 var _edge_layer: CanvasLayer
+## The on-screen stick, on its own layer for the same reason the danger edge is: it has to sit
+## above the world it is drawn over.
+var _touch_controls: TouchControls
 var _summary: CanvasLayer
 var _pause: PauseScreen
 var _title: TitleScreen
@@ -81,6 +85,7 @@ func _ready() -> void:
 	_hud = HUD.instantiate()
 	add_child(_hud)
 	_add_danger_edge()
+	_add_touch_controls()
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 	_summary.continued.connect(_on_summary_continued)
@@ -235,6 +240,20 @@ func _add_danger_edge() -> void:
 	_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_edge.setup(_city.events, _player)
 	layer.add_child(_edge)
+	add_child(layer)
+
+## The stick, in its own layer for the same reason the danger edge gets one: it has to sit above
+## the world it overlays.
+##
+## Nothing here decides whether it is *shown* — `TouchControls` answers that itself, off
+## `TouchInput.available()` and `get_tree().paused`, which is what a title screen, the pause and
+## the between-days summary all set. That is one fact main already produces for other reasons
+## rather than a second wire main would have to remember to pull on every one of those screens.
+func _add_touch_controls() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "TouchControls"
+	_touch_controls = TOUCH_CONTROLS.instantiate()
+	layer.add_child(_touch_controls)
 	add_child(layer)
 
 ## Marks a node as part of the game rather than part of the frame around it, so the summary

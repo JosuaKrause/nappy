@@ -1,0 +1,23 @@
+<svg width="640" height="640" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- `icon.svg` at a usable size: the rounded slate plate and the stroller on it.
+
+       The plate stays, because the stroller is drawn against it — the cream reads as cream because
+       of the slate behind it, and on a light page without it the mark disappears. What is
+       transparent is only what falls outside the plate's own rounded corners, so this drops onto
+       any background as a badge rather than as a square. -->
+  <rect width="128" height="128" rx="24" fill="#2b3a4a"/>
+  <g>
+    <path d="M34 74 A30 30 0 0 1 94 74 Z" fill="#e8dcc8"/>
+    <rect x="34" y="74" width="60" height="10" rx="4" fill="#c9b99b"/>
+    <path d="M94 74 L110 44" stroke="#e8dcc8" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <circle cx="46" cy="98" r="11" fill="#e8dcc8"/>
+    <circle cx="46" cy="98" r="4" fill="#2b3a4a"/>
+    <circle cx="86" cy="98" r="11" fill="#e8dcc8"/>
+    <circle cx="86" cy="98" r="4" fill="#2b3a4a"/>
+    <g fill="#8fb4d9" font-family="Helvetica, Arial, sans-serif" font-weight="bold">
+      <text x="60" y="52" font-size="20">z</text>
+      <text x="74" y="38" font-size="15">z</text>
+      <text x="85" y="26" font-size="11">z</text>
+    </g>
+  </g>
+</svg>

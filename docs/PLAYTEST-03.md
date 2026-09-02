@@ -1,8 +1,7 @@
 # Playtest 03 — the first one with a log
 
 The third human playtest, and the first read against a run trace rather than a recollection.
-Four findings and one bug, all of them measured off
-`run-2026-08-26T225417-seed437307357.log` unless stated otherwise.
+Four findings and one bug, all of them measured off a run trace unless stated otherwise.
 
 **Read [PLAYTEST-02.md](PLAYTEST-02.md) first.** Two of the four findings here are the same
 findings, arriving again with numbers attached; that is worth knowing before treating them as

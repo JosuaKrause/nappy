@@ -14,13 +14,98 @@ mid-way through.
 
 ## The order
 
-1. **M56** — the resistance is noticed.
-2. **M60** — ready for a GitHub Pages launch. *(2026-09-01: "can we use github pages to put the
-   game on a page?" and "add a step for preparing for github pages launch.")*
+1. **M64** — nothing off the path. Design the rows first, then place them.
+2. **M65** — the chalk mark is findable, and silent until it is found.
+3. **M56** — the resistance is noticed.
+
+**Playtest 19 is the freshest thing in this file** and its nine findings are filed against the
+milestones that own them — M64 and M65 are new, and the rest went to M48 (barriers), M49 (the north
+edge, the junction paint) and the small items (the robber in a building). Read it before picking
+anything up.
 
 M53's one remaining piece is specified and unordered — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
+
+---
+
+## M63 — It plays on a phone · asked for 2026-09-02
+
+*(2026-09-02, of the live site: "I can't start the game on mobile — there is no space", "the title
+screen requires me to press space". Asked whether that should become playable or become an honest
+"needs a keyboard": **playable**.)*
+
+**The page is published and a phone can do nothing with it.** Three screens are gated on
+`ui_accept`, which is space or enter — the title, the between-days summary, and the pause — and
+nothing anywhere in the game handles a touch or a click. Past them there would be no way to walk
+either: movement is the four `move_*` actions and they are bound to keys alone.
+
+- [ ] **Every screen advances on a tap.** The title, the day summary and the pause. Handle the
+      touch event itself rather than adding a click, so the desktop is untouched and a stray mouse
+      press cannot skip a day summary
+- [ ] **A virtual stick, and it costs the game nothing.** Movement is one call —
+      `Input.get_vector("move_left", "move_right", "move_up", "move_down")` in `Stroller`, already
+      an analogue vector with a 0.2 deadzone — so a stick that presses those actions with a
+      strength needs no gameplay change at all
+- [ ] **A held run button, and never a stick threshold.** *(2026-09-02: "is it possible to have a
+      separate button on mobile for running?")* Yes, and it is also the only correct answer.
+      `Stroller` moves toward `input_dir * top_speed` with the **raw** vector, so a partly
+      deflected stick is already a slower walk; making running the far end of that same push would
+      turn the one deliberate act in the game into a gradient. Running is *"rarely worth it"* in
+      the title screen's own words, day 3 exists to teach it, and every pursuit contract is stated
+      over the gap between a walk and a run. A separate button held under the other thumb is what
+      `Shift` already is
+- [ ] **The controls appear only where they are used**, and every hint agrees with them: a screen
+      that says *space to begin* on a device with no space is the same defect as the `q` that
+      quit nothing
+- [ ] **Landscape.** Letterboxed to 16:9 a portrait phone is a strip. The Web export preset can
+      declare the orientation
+- [ ] **Then measure the thing that might sink it.** `CrowdLanes` pushes the two walking lanes of a
+      pavement 8px apart so there is a clear line between them worth aiming at, and it carries the
+      measurement: forty seconds down an arterial lane centre costs 13.7 contacts and the midline
+      costs 0.0 — **148 points of a hundred-point meter riding on those pixels**. Arrow keys hit
+      that line and a thumb may not. **This is a question about whether careful-versus-careless
+      survives a blunter instrument, and it is answered by playing it rather than by arguing it**
+
+---
+
+## M64 — Nothing off the path · asked for 2026-09-02
+
+> "there is almost never anything when leaving a path. all events are on the path (restaurant
+> yeller etc are all *for* the path they force you to switch street sides) but there is *nothing*
+> off the path. we need more things for indicating the path (most events we have are for on the
+> path) so we need to come up with more things first then actually add them"
+
+> "also, there is no punishment for staying in the path"
+
+**This is M50's gradient working as built and being the wrong shape.** The corridor is the cheapest
+ground on every day by design, and the catalogue that fills it is a catalogue of *obstacles* — a
+yeller, a café, a market stall, a reversing lorry — each of which is a reason to **cross the
+street**, never a reason not to go somewhere. So the city can say *this way is expensive* and cannot
+say *not this way at all*, and the route decision the whole game is built on has one correct answer
+every day.
+
+**The instruction is two-stage and the order is the whole of it: come up with the rows first, then
+place them.** This is a catalogue design problem before it is a placement one, and playtest 19
+carries the map that shows it.
+
+- [ ] **Design the rows that mean *not this way*.** Nothing in the catalogue does. The constraint is
+      M45's, recorded there with its own trap: **a nudge that removes the decision is worse than a
+      closure that does nothing** — the game's one verb is *where do I walk*, and a signpost that
+      answers the question is worse than no signpost
+- [ ] **Then place them, and give the corridor a price.** A choice needs a cost on both branches
+- [ ] **Nothing arrives from off screen, and everything should.** *(2026-09-02: "the charging dog
+      doesn't have an offscreen indication it should start further away and appear first as
+      offscreen indicator", and "bikers / unleashed dogs all pop in in front of the player instead
+      of starting off screen".)* One defect across every director-sited row: a thing that
+      materialises inside the view has no approach, so the warning it owes is spent before the
+      player can watch it being spent. `DangerEdge` already draws the screen-edge badge for anything
+      off screen worth one, so the second half may be a consequence of the first — a dog sited
+      inside the view has no offscreen phase to be announced in.
+
+      **The care needed is the day-3 lesson.** `charging_dog` is deliberately unavoidable on the day
+      it teaches running, and a dog that starts further away is a dog with more room to be walked
+      around — which is the thing that placement was chosen to prevent
 
 ---
 
@@ -39,6 +124,32 @@ that meets one ends at its edge. What remains is that the ending is not *drawn* 
       nothing. What it wants is the smallest thing that says *this was done deliberately* — a line
       of posts across the mouth is the real-world answer and it is also the cheapest drawing in the
       list
+
+---
+
+## M65 — The chalk mark is findable, and silent until it is found · asked for 2026-09-02
+
+Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
+should not be, and it cannot be found when it should be.
+
+- [ ] **The first chalk mark is named in the status line.** *(2026-09-02: "the first chalk mark is
+      written in the status when it should not be.")* Seen in the screenshot as
+      `resistance ....   somewhere out there: a chalk mark`, before the player had found anything.
+      **This is the no-hint rule leaking**, and that rule is in `CLAUDE.md` under things
+      deliberately not done: *the **first** encounter comes with no hint at all, because finding the
+      difficulty dial is meant to be the player's own doing. After that the resistance speaks.* The
+      HUD line is fed by `resistance_contact_available`, which does not distinguish the first mark
+      from the rest
+- [ ] **A mark that was never on screen was never placed.** *(2026-09-02: "it's hard to find the
+      chalk mark remember it should be dynamically placed on the path where the player can see it.
+      if it was placed but never on screen it should count as not placed and be placed on the next
+      alley the player comes close to.")* *"Remember"* is right — placing it on the path is already
+      the design; what is new is the **re-placement rule**, and it is a shape nothing in the game
+      has: `ClosurePlanner` and `EventScheduler` both decide at dawn and stand, and this follows the
+      player through the day.
+
+      It is also what makes finding 1's silence fair: a first encounter with no hint is only
+      reasonable if the thing can actually be come across
 
 ---
 
@@ -95,6 +206,17 @@ the game. The export had never completed anywhere before that run.
 furniture, `Q` is not offered where quitting does nothing, and the window letterboxes so every
 player sees the same 640×360 of world. All three are in `DECISIONS.md` under M60.
 
+- [ ] **A pause a thumb can reach.** `pause` is bound to a key alone, so on a touch-only device the
+      pause screen arrives only when the between-days summary brings it. Every screen takes a tap
+      now; what is missing is something on screen to tap for it
+- [ ] **Landscape is declared where nothing reads it.** `export_presets.cfg` carries
+      `progressive_web_app/orientation=1`, and the manifest that would carry it is not written
+      unless the full PWA export is enabled — a larger change with unset icon paths. So an ordinary
+      browser tab ignores it and a phone can still be held in portrait, where a 16:9 letterbox is a
+      strip
+- [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
+      pointing home, and the stick and the run button sit at that height on both sides — so during
+      the return phase the one cue that says *this way home* can be under the finger steering her
 - [ ] **A browser smoke pass** once it is deployed, at the real address: boots, keyboard input
       works, holds frame rate at the game's scale, and the title screen reads as the front door of a
       public page. itch.io stays the fallback host (it sets the isolation headers, so a threaded
@@ -380,8 +502,17 @@ direction, not distance.**
       68px wide on a 64px sidewalk from a tile centre 16px from one edge — **it overhangs by 18px
       whichever lane it lands in.** Every `_draw_spread` row can break the same way. Wants a test
       over the catalogue
+      **Reported from play on 2026-09-02** (playtest 19, with a screenshot): *"they're all placed
+      with an offset that makes them clip into other things — the only barrier that is consistently
+      correct is the full street closure."* That last clause is the sharpest thing said about this
+      yet: **the closure is right because it spans the whole street**, so neither its offset nor its
+      rotation can be wrong. Every other placement is a body narrower than the ground it sits on,
+      which is the only case where either defect can show
 - [ ] **A spread is always drawn east–west, whatever street it is on.** Nothing rotates an
-      `EventInstance`. **A barrier's entire content is which way it faces**
+      `EventInstance`. **A barrier's entire content is which way it faces**, and playtest 19 reports
+      it from play: *"they're always horizontal even when they should be vertical."* The fix is a
+      rule rather than a field — **a spread's rotation is a property of the street it stands on**,
+      which the map can already answer
 - [ ] **And it does not say what it is.** Blue-grey with no hazard marking. One-picture-per-row
       passes and the row still says nothing, which is that rule's own limit — municipal barriers are
       red-and-white for a reason
@@ -390,6 +521,41 @@ direction, not distance.**
 
 ## M43 — Two that need a played run
 
+- [ ] **The pause lesson fires while she is being held.** *(2026-09-02, from play: "the pause
+      tutorial comes up when being detained (since you're not moving).")* `_teach_the_pause()`
+      decides she has stopped by asking `Stroller.is_idle()`, which is velocity under 12px/s, so a
+      `chatting_mother` conversation — which locks her movement input — reads as her choosing to
+      stand still, and three seconds later the HUD offers her the pause key.
+
+      **Wrong in the function's own terms**: it already teaches the pause at *"the first time she
+      stops of her own accord"* and already excludes somebody who has not started. Being held is
+      the third case in that list and the sharpest, since it offers her a key at the moment her
+      controls were taken away.
+
+      **And it has a second instance, so the rule is stated over the class.** The HUD has no
+      `process_mode` of its own and inherits `ALWAYS` from `Main`, so it keeps counting while the
+      tree is paused — behind the day summary, the pause screen and the title. The rule is *idle
+      **and** nothing is holding her still*: not detained, and the tree not paused
+- [ ] **The run lesson does not show, and it must.** *(2026-09-02, from play: "the run lesson
+      doesn't show at all anymore — it should always show for the day 3 lesson.")*
+
+      **The cause, given by the player and confirmed by reading the retry path:** *"when I die the
+      next time it won't show — you need to reset the flag when the player dies on day 3."*
+      `_taught_run` in the HUD is once per **run**, and a lost day is not a new run: losing a nerve
+      calls `_start_day()` again on the same HUD instance, which is never rebuilt. `_teach_the_day()`
+      already resets the line, its timer and the walked-today state on every day start, and
+      deliberately does not reset the once-per-run flags — so the second attempt at day 3 is the
+      first one that has already spent its lesson.
+
+      **The fix is that the flag belongs to the attempt, not to the run**, which is the game's own
+      rule about nerves arriving in the HUD: a nerve is a rewind, and a rewound day should not
+      remember what it taught. Reset it whenever the day being started is `Tuning.RUN_TAUGHT_DAY`,
+      so the lesson fires on every attempt at that day including the first.
+
+      **And the neighbouring case is a question, not part of the fix.** `_taught_pause` — the *"Esc
+      to pause"* line, also once per run — has the same shape but is not tied to a day at all: it
+      fires the first time she stops of her own accord. Whether a rewind should erase that too is
+      the player's call, and nothing should reset it unasked
 - [ ] **The tutorial dog is not a tutorial after day 3.** `charging_dog` is `first_day 3`,
       `AHEAD_OF_PLAYER`, no last day, so it is still sited in front of her on day 4. **Decided: it
       recurs but is not sited ahead of her** — it becomes a thing that is *somewhere*, like
@@ -411,17 +577,53 @@ direction, not distance.**
 - [ ] **The fence is drawn in elevation and turned on its side.** The game looks straight down,
       where a fence is a thin line with post-heads and a shadow. Rotating an elevation does not make
       it a top-down drawing
-- [ ] **People walk out onto the border and vanish there.**
+- [ ] **People walk out onto the border and vanish there.** Reported again from play on 2026-09-02
+      — *"the north edge still has people and cars walking into the mountain and disappearing"* —
+      so it is people **and cars**, and the north edge is where it was seen.
       **`CrowdAgent._blocked_ahead` returns `false` for a tile out of bounds**, so the one wall that
       should stop them reports as clear. Likely *out of bounds is blocked* and nothing else — check
       against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
 - [ ] **Whatever fixes one border has to be stated over *a border*.** The first pass wrote four
       sides four times, which is one bug per side waiting to happen
-- [ ] **Junctions are four-way where an arm dead-ends** — **not reproduced**, and three candidates
-      are now ruled out rather than two. The third was every precinct edge, and it cannot be the
-      place: where either corridor is a precinct the whole junction box is one flat sheet of paving
-      with no per-arm kerb or line art on it at all, so there is no directional drawing left to get
-      wrong. Still needs a location from the player, or a fourth candidate
+- [ ] **Junctions are four-way where an arm dead-ends — reproduced, with a picture.**
+      *(2026-09-02, from play: "the intersections are not t intersections", of the **north edge**.)*
+      **Seed 2927659514, day 1, standing at tile (80,1)** —
+      `docs/evidence/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png`. The zebras on the
+      north–south streets run all the way to the border and a crossing box is painted on an arm with
+      nothing beyond it. Three earlier candidates were checked and were correct, which is why this
+      sat as *not reproduced* for so long: the map's own border is the one place an arm genuinely
+      dead-ends. **The same frame shows a car and two pedestrians standing on the out-of-bounds
+      ground above the top pavement**, so this and the vanishing-walkers entry above are one cause
+      seen twice — whatever decides what is beyond the last tile is answering *street* in both.
+
+      **It is every side, not the north one.** The same seed at tile (5,88) is the **west** border
+      with the identical painted crossings running into it —
+      `run-2026-09-02T181431-seed2927659514-ffa2830-045s-asked.png`. Whatever fixes this is stated
+      over *a border*, which is the item two above this one.
+
+      **And there is a working case to copy, in one frame with a broken one** —
+      `run-2026-09-02T181431-seed2927659514-ffa2830-030s-asked.png`, tile (13,87). *(2026-09-02:
+      "here is an example of a proper closed off side of the intersection (towards the right to the
+      park) and an improperly closed off side (towards the south it should be closed off but
+      isn't).")* The arm running **east into the park** is terminated correctly — the carriageway
+      stops and the pavement carries on across it — while the arm running **south**, with nothing
+      beyond it either, is drawn as though the street continued.
+
+      **That is the most useful thing anybody has said about this**, because it makes the question
+      *what is different between those two arms* rather than *where is the bug*. `docs/TODO.md`'s
+      own M49 wording already guesses at the answer — *"where the arm beyond is not a street at all
+      — a park, a calm zone's absorbed corridor, the shore"* — so the case that works is the one the
+      generator was told about explicitly, and the fix is to state it over *anything* that is not a
+      street rather than over the list of things somebody remembered
+- [ ] **A main road's junction is four dotted crossings, not two.** *(2026-09-02: "minor issue — for
+      a main street intersection all four crossings should be lines instead of zebra crossing since
+      all four are controlled by the traffic light".)* `GroundTiles._crossing_variant` already draws
+      the dotted pair rather than a zebra for a **main road's** crossing, with the reason recorded in
+      `CityGenerator._street_tile`: traffic on a main road obeys the light rather than giving way, so
+      the crossing is a *timing* problem and a zebra there is paint promising a gap-hunting one. The
+      player's point is that the property belongs to **the junction rather than the arm** — where the
+      spine crosses an ordinary street, one light governs all four crossings, so the two on the side
+      street are currently painted as a promise the traffic does not make
 - [ ] **Restate the main-road pacing question.** The design says she exhausts her own side of the
       spine before being forced across. **Is that emergent** — calm areas exist on both sides and
       spoiling burns the near ones over an act — **or does something have to withhold the far side
@@ -451,6 +653,13 @@ direction, not distance.**
 
 Small, real, nobody's milestone. Each has sat since the milestone that deferred it.
 
+- [ ] **The robber can be placed inside a building, where he is stuck for ever.** *(2026-09-02:
+      "the robber can be placed inside buildings which makes him unable to move at all.")*
+      `alley_robbery` places on `ALLEY` tiles and pursues, and `EventInstance._walkable_step` clamps
+      a chase to walkable ground — so a robber who begins inside a building is not merely oddly
+      sited, **every step he tries is refused**. His lethal radius still travels with him, which
+      makes an invisible fatal spot inside a wall. Fix it where he is placed, not by letting a
+      pursuer walk through buildings
 - [ ] **The `burning_building` spawns in the road** rather than in a building — it spawns exactly
       where the engine stopped. A few lines to nudge it to the nearest `BUILDING` tile
 - [ ] **The pram has no collision of its own**, so it clips into walls when she hugs a corner. A
@@ -482,6 +691,26 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       has no row for it — so a reader of a run log meets a kind the documentation does not admit
       exists. One row, and the check that would have caught it is whether anything asserts the two
       lists agree
+- [ ] **The dusk map draws the route she actually walked.** *(2026-09-02: "the dusk picture should
+      contain the entire route a player took.")* Two maps are written per day — one at dawn and one
+      at dusk — and today they differ only in which resistance marks are opaque. **Nothing anywhere
+      records where she went**: `TelemetryMap.render()` takes the map, the closures, the day's route
+      tree and the event plans, and the log holds positions only at the moments something happened
+      (a tile, a road crossing, a contact). So the one picture that could answer *what did she
+      actually do* shows the same city as the one drawn before she left the house.
+
+      **Where it goes is decided by the telemetry rules**: a per-frame read belongs in
+      `TelemetryObserver`, which already holds the player and looks at her position every frame, and
+      **nothing about this may touch gameplay** — no RNG, no consumed values, no gameplay class
+      learning that it is being watched. Sample by **distance rather than by frame** so the trail is
+      bounded and framerate-independent: at one point per tile a 180-second day is a few hundred
+      points.
+
+      Three things to get right rather than discover. The **dawn** map keeps drawing nothing, since
+      there is no route yet and a picture that lies about which one it is would be worse than no
+      picture. A **lost day** restarts the trail, because a rewound day was not walked. And the
+      trail has to read *against* the corridor the map already draws — the whole value is seeing
+      where she went versus where the day expected her to
 - [ ] **The log says when she is stuck** *(asked 2026-09-01: "put a note in the telemetry when the
       player doesn't move even though they press something")*. A throttled `blocked` entry from
       `TelemetryObserver` — movement input held for about a second while displacement stays near
@@ -536,33 +765,3 @@ After the playtest work. There is no point polishing a loop that is about to be 
       the meters"*. A face would be that in the visual channel — the meter read off the baby rather
       than off a strip at the bottom of the screen. Not designed, and it needs the playing that the
       status-line cut is about to produce
-- [ ] **Could it be played on a phone?** **Asked about on 2026-09-02, not asked for** — the
-      reasoning is kept here because it is worth more than the question was, and none of it is a
-      commission.
-
-      **The plumbing is nearly free.** Movement is one call —
-      `Input.get_vector("move_left", "move_right", "move_up", "move_down")` in `Stroller`, which
-      already returns an analogue vector with a 0.2 deadzone — so a virtual stick feeding those
-      actions needs no gameplay change at all, and running is one boolean. Godot has no built-in
-      stick, so that is the thing to write, plus taps for the four keys the screens use.
-
-      **What is not free is the twenty pixels.** `CrowdLanes` pushes the two walking lanes of a
-      pavement 8px apart precisely so there is a clear line between them wide enough to aim at, and
-      it carries the measurement: forty seconds down an arterial lane centre costs 13.7 contacts and
-      the midline costs 0.0, which is **148 points of a hundred-point meter riding on those pixels**.
-      Arrow keys hit that line and a thumb does not. Mobile is therefore a question about whether
-      the careful/careless economy survives a blunter instrument, rather than a question about input.
-
-      **And running may not become a gradient.** The obvious mobile idiom — push the stick past a
-      threshold to run — is wrong here, and the code says why: `Stroller` moves toward
-      `input_dir * top_speed` with the *raw* vector, so partial deflection is already partial speed,
-      and running would become the far end of one continuous push. This game's run is the opposite
-      of that: the title screen calls it *"rarely worth it"*, day 3 exists to teach it, and every
-      pursuit contract is stated over the gap between a walk and a run. It stays a held button, so
-      it stays a decision.
-
-      **Landscape only.** Letterboxed to 16:9 a portrait phone would be a strip; the Web export
-      preset can declare the orientation. And if the controls are ever to sit *beside* the city
-      rather than on top of it, that is not the letterbox — a letterboxed bar is outside the
-      drawable viewport, so drawable margins mean fixing the world view with the camera instead,
-      which is a larger change than a project setting

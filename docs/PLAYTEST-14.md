@@ -292,8 +292,8 @@ camera's angle*, not drawn flat and rotated.
 
 ## 13. The eastern border, in one screenshot
 
-`run-2026-08-30T233248-seed3225216943-834423d-dirty-069s-asked.png` — seed 3225216943, day 2,
-tile (152,103), east edge. Four separate faults, listed as the player numbered them:
+Seed 3225216943, day 2, tile (152,103), east edge. Four separate faults, listed as the player
+numbered them:
 
 - **a) A calm area is directly against the border.** M47's *"calm ground is never at the edge"* was
   committed and this seed has it anyway, so either the rule does not cover this case or it is not

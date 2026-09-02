@@ -23,18 +23,14 @@ makes the file worth having.
 | `shot-2026-09-01-seed4242-d69631a-corner-nw-after.png` | The same corner **after**: the mountain runs the full width and the seam is straight. | [DECISIONS.md](../DECISIONS.md), M55, "The corners of the world stop going diagonal" |
 | `shot-2026-09-01-seed4242-d69631a-corner-se-after.png` | The south-east corner after, which is the other pair of bands — the bulkhead and the water carry on under the forest. | [DECISIONS.md](../DECISIONS.md), M55, "The corners of the world stop going diagonal" |
 
-## Three references that were already lost
+## Why a lost log stays lost
 
-Found while writing this directory, and worth recording rather than quietly fixing, because it is
-the cost the rule exists to stop. None of these three files was still on disk — the telemetry
-folder had 163 runs in it and not one of them was these:
+**A run log cannot be regenerated**, and that is the part worth understanding before anybody tries:
+it is a record of what a *player* did, so it is not a function of the seed. Replaying the seed on
+the same commit gives a different run.
 
-- `docs/PLAYTEST-03.md` — `run-2026-08-26T225417-seed437307357.log`
-- `docs/PLAYTEST-13.md` — `run-2026-08-30T031851-seed3251793152-b7590fb.log`
-- `docs/DECISIONS.md` and `docs/PLAYTEST-14.md` —
-  `run-2026-08-30T233248-seed3225216943-834423d-dirty-069s-asked.png`
-
-**They cannot be regenerated**, and that is the part worth understanding before anybody tries: a
-run log is a record of what a *player* did, so it is not a function of the seed. Replaying the seed
-on that commit gives a different run. The numbers those docs quote from them are still the record;
-the file behind the numbers is gone.
+Three traces from playtests 03, 13 and 14 were already gone when this directory was made — the
+scratch folder prunes itself, so evidence that lives only there is one ordinary Tuesday from being
+unrecoverable. What those documents quote from them is still the record; the files behind the
+numbers are not, and the citations that named them have been removed rather than left dangling.
+This directory exists so that stops happening.

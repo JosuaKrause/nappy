@@ -12,6 +12,11 @@ signal continued()
 @onready var _body: Label = $Root/Center/Lines/Body
 @onready var _hint: Label = $Root/Center/Lines/Hint
 
+## Whether this device has a touchscreen. Read once from `TouchInput`, so the hint says `tap`
+## rather than a `space` a phone does not have — the same reason `TitleScreen` and `PauseScreen`
+## each read it once into their own member instead of asking at every use site.
+var _touch := TouchInput.available()
+
 const _DAY_TITLE := {
 	GameEnums.DayResult.WON: "She's asleep.",
 	GameEnums.DayResult.LOST_CRYING: "Not tonight.",
@@ -86,7 +91,8 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 		lines.append("")
 		lines.append(_resistance_line())
 	_body.text = "\n".join(lines)
-	_hint.text = "space to try again" if retrying else "space to go on"
+	var verb := "tap" if _touch else "space"
+	_hint.text = "%s to try again" % verb if retrying else "%s to go on" % verb
 	_present()
 
 ## The tally, and — the mechanism rather than a courtesy — the chalk mark's own words once a
@@ -108,7 +114,8 @@ func _resistance_line() -> String:
 		GameState.pending_resistance_brief = ""
 	return "\n".join(lines)
 
-## The last screen of a run. `space` goes back to the title, which is where the next one begins.
+## The last screen of a run. `space` — or a tap — goes back to the title, which is where the next
+## one begins.
 ##
 ## **Not `esc to quit`**, which is not true from here: `Esc` opens the pause, and the pause offers
 ## `Esc` and `Q`, so a finished run becomes a cycle between two screens with closing the window as
@@ -119,7 +126,7 @@ func show_ending(ending: GameEnums.Ending) -> void:
 	_heading.show()
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
 	_body.text = _ENDING_BODY.get(ending, "")
-	_hint.text = "space to start again"
+	_hint.text = "tap to start again" if _touch else "space to start again"
 	_present()
 
 func _present() -> void:
@@ -133,7 +140,13 @@ func dismiss() -> void:
 func is_showing() -> bool:
 	return _root.visible
 
+## Space or a tap moves on. The touch event is handled directly rather than turned into a
+## synthetic click, so a stray mouse press elsewhere on the desktop still cannot skip a summary a
+## player has not read.
 func _unhandled_input(event: InputEvent) -> void:
-	if is_showing() and event.is_action_pressed("ui_accept"):
+	if not is_showing():
+		return
+	if event.is_action_pressed("ui_accept") \
+			or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed):
 		get_viewport().set_input_as_handled()
 		continued.emit()

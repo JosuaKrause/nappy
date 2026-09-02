@@ -26,6 +26,10 @@ func run(t) -> void:
 	_test_the_title_screen_does_not_stop_the_city(t)
 	_test_the_title_quit_key_matches_the_platform(t)
 	_test_the_pause_quit_key_matches_the_platform(t)
+	_test_a_tap_advances_every_screen(t)
+	_test_the_title_hint_and_body_match_the_platform(t)
+	_test_the_pause_hint_and_body_match_the_platform(t)
+	_test_the_summary_hint_matches_the_platform(t)
 	t.get_tree().paused = was_paused
 
 ## The trap, stated as an assertion so that reaching for `.visible` again fails loudly.
@@ -250,6 +254,125 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	t.get_tree().paused = false
 	pause.queue_free()
 
+## **The controls appear only where they are used, and every hint agrees with them** — a screen
+## that says `space to begin` on a device with no space is the same defect `q to quit` was on the
+## web. `title._touch` is read once so a test can drive both platform shapes, exactly as
+## `_can_quit` already does for the quit key.
+func _test_the_title_hint_and_body_match_the_platform(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+
+	title._touch = false
+	title._refresh_body()
+	title.open()
+	t.check("space to begin" in title._hint.text, "the keyboard hint says space")
+	t.check("Arrows or WASD" in title._body.text, "and the body names the keys")
+
+	title._touch = true
+	title._refresh_body()
+	title.open(true)
+	t.check("tap to walk again" in title._hint.text,
+			"the touch hint says tap ('%s')" % title._hint.text)
+	t.check("Drag the stick" in title._body.text,
+			"and the body names the stick and the run button ('%s')" % title._body.text)
+	t.check(not "Shift" in title._body.text, "and drops the key it does not have")
+
+	title.close()
+	title.queue_free()
+
+## The same agreement, one screen further in.
+func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	t.get_tree().paused = false
+
+	pause._touch = false
+	pause._refresh_body()
+	pause._refresh_hint()
+	pause.open()
+	t.check("space or esc to carry on" in pause._hint.text, "the keyboard hint names both keys")
+	t.check("r to start again" in pause._hint.text, "and the restart key")
+	t.check("Arrows or WASD" in pause._body.text, "and the body names the keys")
+	pause.close()
+
+	# `_can_quit` is fixed to `false` here so this assertion is only about `_touch` — the two
+	# platform questions are independent and `_test_the_pause_quit_key_matches_the_platform`
+	# already covers `q to quit` composing correctly on top of either shape.
+	pause._touch = true
+	pause._can_quit = false
+	pause._refresh_body()
+	pause._refresh_hint()
+	pause.open()
+	t.check(pause._hint.text == "tap to carry on",
+			"the touch hint says tap and drops the keys with no touch equivalent ('%s')"
+					% pause._hint.text)
+	t.check("Drag the stick" in pause._body.text, "and the body names the stick and run button")
+
+	pause.close()
+	t.get_tree().paused = false
+	pause.queue_free()
+
+## The between-days summary and the ending it leads to both say `space` today and `tap` on a touch
+## device, the same agreement the title and the pause hints keep.
+func _test_the_summary_hint_matches_the_platform(t) -> void:
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+
+	summary._touch = false
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	t.check("space to go on" in summary._hint.text, "the keyboard hint says space")
+
+	summary._touch = true
+	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	t.check("tap to try again" in summary._hint.text,
+			"the touch hint says tap ('%s')" % summary._hint.text)
+
+	summary.show_ending(GameEnums.Ending.GOOD)
+	t.check(summary._hint.text == "tap to start again",
+			"and the ending screen agrees too ('%s')" % summary._hint.text)
+
+	t.get_tree().paused = false
+	summary.queue_free()
+
+## **Every screen advances on a tap**, handled as the touch event itself rather than as a
+## synthetic mouse click — a phone has no `space`, and nothing before this fired anything for a
+## touch at all. Checked on all three screens the game can come to rest on, the same shape
+## `_test_space_carries_on_from_every_screen` already checks for the key, and a release is checked
+## to do nothing so a finger lifted off the stick elsewhere cannot be read as a dismissal.
+func _test_a_tap_advances_every_screen(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var started := [0]
+	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.open()
+	title._unhandled_input(_touch(false))
+	t.check(started[0] == 0, "lifting a finger does nothing on the title")
+	title._unhandled_input(_touch(true))
+	t.check(started[0] == 1, "and pressing one starts the run")
+	title.close()
+	title.queue_free()
+
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var resumed := [0]
+	pause.resumed.connect(func() -> void: resumed[0] += 1)
+	t.get_tree().paused = false
+	pause.open()
+	pause._unhandled_input(_touch(true))
+	t.check(resumed[0] == 1 and not pause.is_open(), "and a tap carries on from the pause")
+	t.get_tree().paused = false
+	pause.queue_free()
+
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	var carried_on := [0]
+	summary.continued.connect(func() -> void: carried_on[0] += 1)
+	summary._unhandled_input(_touch(true))
+	t.check(carried_on[0] == 1, "and a tap goes on from the between-days summary")
+	t.get_tree().paused = false
+	summary.queue_free()
+
 func _key(code: Key) -> InputEventKey:
 	var event := InputEventKey.new()
 	event.keycode = code
@@ -263,4 +386,9 @@ func _action(name: StringName) -> InputEventAction:
 	var event := InputEventAction.new()
 	event.action = name
 	event.pressed = true
+	return event
+
+func _touch(pressed: bool) -> InputEventScreenTouch:
+	var event := InputEventScreenTouch.new()
+	event.pressed = pressed
 	return event
