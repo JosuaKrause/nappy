@@ -255,16 +255,62 @@ player sees the same 640×360 of world. All three are in `DECISIONS.md` under M6
       tap for it.
 
       **The HUD teaches it by name.** Once per run, after she has walked and then stood still for a
-      few seconds, it says *Esc to pause* — on a phone, a key that does not exist. It cannot be
-      fixed the way the walk and run lessons are, because there is no touch control to name
-      instead: **this item is the one that would build it.** So the button and the wording are one
-      piece of work, and the fork is what the touch build says in the meantime — nothing at all, or
-      nothing until the button lands
+      few seconds, the HUD says *Esc to pause* — on a phone, a key that does not exist. It cannot
+      be fixed the way the walk and run lessons were, because there is no touch control to name
+      instead. *(2026-09-02: the button is built now rather than the line suppressed, so the two
+      ship together.)* **The button and the wording are one piece of work**: a lesson pointing at
+      nothing and a control nothing points at are the same defect from two sides.
+
+      **What it is.** A third element in `TouchControls`, beside the stick and the `RUN` circle, so
+      it inherits what they already get right: shown only where `TouchInput.available()` is true,
+      hidden the moment `get_tree().paused` is set — which is every screen the player could
+      otherwise pause on top of — and drawn in the same faint white the other two use (a filled
+      disc at 0.16 alpha, 0.32 while held, with a 0.4 arc around it). Small and out of the walking
+      hand's way, unlike the stick's 60px reach and 100px catch: it is pressed once a day at most.
+
+      **It presses the same action a keyboard does**, which for this one control is not
+      `Input.action_press`: the pause is read in `main._unhandled_input()` as
+      `event.is_action_pressed("pause")`, and `Input.action_press` sets the action's state without
+      producing an event for anything to hear. So it sends an `InputEventAction` for `pause` through
+      `Input.parse_input_event()` — the same shape `tests/test_pause.gd` already builds by hand to
+      drive that screen — and fires on release inside the button rather than on touch-down, so a
+      thumb landing wrong can slide off without stopping the day.
+
+      **Where it goes is the part to get right, and it is not free.** Both remaining edge-dwellers
+      live in that region: the screen-edge danger badges, and `HomeArrow`, which hugs within 74px of
+      an edge while pointing home and already has an open item about landing under a thumb. A
+      corner that never carries either is worth more than a tidy one — whatever is chosen, say what
+      else can be drawn there and what happens when both want the same pixels
+
+- [ ] **The pause lesson, in the words of the button that now exists.** On a touch device the HUD
+      says *Esc to pause* to a player with no `Esc`. It names the on-screen button instead, in
+      whatever wording the button's drawing makes true. **A glyph is not assumed to render** — if
+      the wording uses one, the screenshot is the evidence that it did, and plain words are the
+      safe answer if it did not
 - [ ] **Landscape is declared where nothing reads it.** `export_presets.cfg` carries
       `progressive_web_app/orientation=1`, and the manifest that would carry it is not written
       unless the full PWA export is enabled — a larger change with unset icon paths. So an ordinary
       browser tab ignores it and a phone can still be held in portrait, where a 16:9 letterbox is a
       strip
+- [ ] **The meters go to the top on a touch build.** *(2026-09-02: "let's also move the progress
+      bars to the top for mobile so they're not hidden by the finger.")* The two meter bars and the
+      optional-goal line sit in a 280px column against the **bottom** left, ending 18px above the
+      bottom edge — which on a desktop is the quietest corner of the screen and on a phone is under
+      the hand. **The state of the baby is the one thing that may never be occluded**: it is what
+      the whole route decision is read off, and a bar a thumb is resting on is a bar that is not
+      being read.
+
+      **Top left, under the day header**, which is the only other thing up there (a single line
+      inset 18px from the left, 20px tall, from the top). The clock is centred at the top and the
+      pause button above is going to the top right, so the three do not compete. It is a touch-only
+      layout — the desktop keeps the bottom-left column, because nothing is in front of it there —
+      so it is the same shape as every other touch difference in this game: read
+      `TouchInput.available()` once and move the anchors, rather than keep a second HUD scene that
+      has to be changed twice forever.
+
+      **What to watch for, since the top edge is not empty either.** The screen-edge danger badges
+      draw at whichever edge the danger is on, and `HomeArrow` hugs within 74px of an edge. Say what
+      happens when a badge and a meter want the same corner
 - [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
       pointing home, and the stick and the run button sit at that height on both sides — so during
       the return phase the one cue that says *this way home* can be under the finger steering her
