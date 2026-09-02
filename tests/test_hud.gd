@@ -14,6 +14,7 @@ func run(t) -> void:
 	_test_the_run_hint_fires_once_on_the_teaching_day(t)
 	_test_the_run_hint_never_fires_off_the_teaching_day(t)
 	_test_the_run_hint_fires_again_on_a_retried_teaching_day(t)
+	_test_the_pause_hint_waits_out_a_detention(t)
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
 	_test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots(t)
@@ -96,6 +97,38 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
 	third.free()
 	hud.free()
 	GameState.day = saved_day
+
+## **Being held is not stopping.** *(Player: "the pause tutorial comes up when being detained
+## (since you're not moving)".)* `chatting_mother`'s `detain()` locks her input and lets friction
+## settle her to idle, which used to read exactly like a stop of her own accord. The lesson has to
+## wait for release, and the time spent held must not count toward the stand a released player
+## still has to earn.
+func _test_the_pause_hint_waits_out_a_detention(t) -> void:
+	var stroller := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+
+	var hud := _hud(t)
+	hud._rig = stroller
+	hud._walked_today = true
+
+	stroller.detain(10.0)
+	for _i in 40: # 4s of held stillness, past TEACH_PAUSE_AFTER
+		hud._teach_the_pause(0.1)
+	t.check(not hud._taught_pause, "held past the usual wait teaches nothing")
+	t.check(hud._stood_for == 0.0, "and none of the held time is banked towards the lesson")
+
+	stroller._detained_for = 0.0
+	for _i in 40:
+		hud._teach_the_pause(0.1)
+	t.check(hud._taught_pause, "released, she still earns the lesson on her own stand")
+	t.check(hud._teach.text == "Esc to pause", "and says the actual line")
+
+	stroller.free()
+	hud.free()
 
 ## Every pursuit after the teaching day is the mechanic working, not the lesson repeating —
 ## `alley_robbery` from day 8 pursues exactly like `charging_dog` does, and none of it is a
