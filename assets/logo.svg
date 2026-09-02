@@ -1,0 +1,33 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg">
+  <!-- The logo: the stroller from icon.svg beside the game's name, on nothing.
+
+       Transparent by design, so it sits on the page's own background rather than carrying a
+       rectangle of a colour the site does not use. The name is Palette.TITLE_TEXT (#d2765a, the
+       doorstep) and the stroller keeps icon.svg's cream (#e8dcc8) and its slate outline
+       (#2b3a4a) — read against a dark page, which is what the game itself is. -->
+
+  <g transform="translate(453 34) scale(2.6)">
+    <!-- The stroller, drawn as in icon.svg with the rounded plate removed. -->
+    <path d="M34 74 A30 30 0 0 1 94 74 Z" fill="#e8dcc8"/>
+    <rect x="34" y="74" width="60" height="10" rx="4" fill="#c9b99b"/>
+    <path d="M94 74 L110 44" stroke="#e8dcc8" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <circle cx="46" cy="98" r="11" fill="#e8dcc8"/>
+    <circle cx="46" cy="98" r="4" fill="#2b3a4a"/>
+    <circle cx="86" cy="98" r="11" fill="#e8dcc8"/>
+    <circle cx="86" cy="98" r="4" fill="#2b3a4a"/>
+    <g fill="#8fb4d9" font-family="Helvetica, Arial, sans-serif" font-weight="bold">
+      <text x="60" y="52" font-size="20">z</text>
+      <text x="74" y="38" font-size="15">z</text>
+      <text x="85" y="26" font-size="11">z</text>
+    </g>
+  </g>
+
+  <!-- The name, in the title screen's own colour and its own heavy outline. -->
+  <text x="640" y="470" text-anchor="middle"
+        font-family="Helvetica, Arial, sans-serif" font-weight="bold" font-size="150"
+        fill="#d2765a" stroke="#221f28" stroke-width="10" paint-order="stroke fill">Nappy</text>
+
+  <text x="640" y="536" text-anchor="middle"
+        font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#b8b0a4"
+        letter-spacing="1">Fourteen days. One pram. Get her to sleep and get her home.</text>
+</svg>
