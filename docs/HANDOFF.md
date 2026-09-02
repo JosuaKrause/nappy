@@ -8,10 +8,8 @@ progress-tracking, which lives there too.
 
 ## The state of the tree
 
-**`main` is green and playable, and one feature branch is open with M56 half-built on it** —
-`git branch` names it, and M53's carriageway work has landed on the same branch. Nothing is broken
-and nothing is half-written: the branch's items are each finished and committed, and the milestone
-simply has items left. Trust the tools over any sentence here:
+**`main` is green, published and the only branch.** Nothing is open, nothing is half-written, and
+the working tree is clean. Trust the tools over any sentence here:
 
 ```sh
 ./tools/test.sh          # the full headless suite, ~200s; must be 0 failures
@@ -23,46 +21,27 @@ simply has items left. Trust the tools over any sentence here:
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
 
-**There is a GitHub remote** (`origin`), and completed work may be pushed to it without asking —
-see the **committing** skill for what *completed* means. `main` may never carry an unfinished
-milestone.
-
-## What is on the open branch
-
-**M56's mechanism and its non-lethal rung.** A row declares how it answers to the resistance with
-`EventDef.heat_response` — `NONE`, `PRESSES` or `HUNTS` — and `EventCatalogue.heated(def, level)`
-derives that row's shape at a progress level and keeps it. Because progress is a bounded integer,
-**every heated shape of every row is validated on boot**, which is the only way the fairness
-contracts can be about the dangerous version of an event rather than the harmless one.
-`EventScheduler.build_day()` takes the heat as an argument, so a rig can plan a fully heated day
-without a run having happened.
-
-**Both upper rungs of the ladder are built.** `police_patrol` carries `PRESSES`: more of them, more
-expensive to stand near, and from half progress it **investigates** — a pursuer that also has a
-route runs the route until it notices her, then follows. It never becomes lethal at any heat.
-`abduction` carries `HUNTS`: while she is close enough to watch, it takes a bystander of its own —
-a scripted figure the event draws, never a `CrowdAgent` — and past three of four it stops idling for
-strangers and comes after her instead, at 130px/s from a 180px trigger, still `hard_fail`.
-`tests/test_heat.gd` asserts both over the response rather than over the rows that carry them.
-
-**A pursuer is exempt from the rule that nothing else happens inside a lethal event's field**, and
-the exemption is stated over `pursues` rather than holding by accident of the `WALL` role.
+**The game is published, and a merge to `main` is a release.**
+`https://nappy.josuakrause.com/` serves it, and `.github/workflows/deploy.yml` rebuilds and
+republishes on every push to `main` — gate, export, upload, publish, in that order, so a red build
+never reaches the site. Completed work may be pushed without asking; see the **committing** skill
+for what *completed* means, and read the sentence above it before pushing, because pushing is now
+publishing.
 
 ## What to do next
-
-**The game is published.** `https://nappy.josuakrause.com/` serves it, and
-`.github/workflows/deploy.yml` rebuilds and republishes on every push to `main` — gate, export,
-upload, publish, in that order, so a red build never reaches the site. **A merge to `main` is now a
-release**, which is the one thing to know before making one.
 
 **Start with [PLAYTEST-19.md](PLAYTEST-19.md).** It is a played run on the deployed build, nine
 findings, and it is the freshest thing in the repo. Its findings are already filed against the
 milestones that own them.
 
-1. **M64 — nothing off the path.** The largest of the nine and the one the game is most about: every
-   event in the catalogue is a reason to cross the street and none is a reason not to go somewhere,
-   so the corridor is cheapest and nothing off it is dangerous. **Design the rows before placing
-   anything** — that order is the instruction, not a preference.
+1. **M64 — off the path is closed, not dear.** The largest of the nine and the one that changes the
+   game's shape: every event in the catalogue is a reason to cross the street and none is a reason
+   not to go somewhere. **It supersedes M50's gradient** — the corridor stops being the *cheapest*
+   ground and becomes the *only way through*, with the picture varying instead of the price. Read
+   its entry before touching M50, and note that the mechanism already exists: two ordinary obstacles
+   facing each other leave no line to walk. What has to be decided first is how many ways through
+   the day's route tree keeps open, because under this policy that number is the difficulty of the
+   whole game.
 2. **M65 — the chalk mark.** It is announced before it is found and cannot be found once it is
    announced. Two halves of one thing.
 3. **Finish M56** — "other dangers like this", then the measurement against the nerves.
@@ -147,8 +126,8 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   nothing draws an on-screen button for it, so a phone player reaches the pause screen only when the
   between-days summary brings it.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
-  running behind it, `space` to begin — but it is a title, three lines of controls and one key on
-  the web (two on the desktop, where `q` also quits): no options, no seed box, no load game.
+  running behind it, `space` or a tap to begin — but it is a title, three lines of controls and one
+  key on the web (two on the desktop, where `q` also quits): no options, no seed box, no load game.
 - **Nothing draws a bollard**, so a street that meets a precinct simply ends against the paving. The
   city and the crowd both explain a precinct by saying a driver meets a bollarded street, and there
   is no bollard anywhere in the game.
