@@ -14,6 +14,7 @@ func run(t) -> void:
 	_test_the_run_hint_fires_once_on_the_teaching_day(t)
 	_test_the_run_hint_never_fires_off_the_teaching_day(t)
 	_test_the_run_hint_fires_again_on_a_retried_teaching_day(t)
+	_test_the_run_hint_names_the_touch_button_on_a_touch_device(t)
 	_test_the_pause_hint_waits_out_a_detention(t)
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
@@ -59,6 +60,25 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 
 	first.free()
 	second.free()
+	hud.free()
+	GameState.day = saved_day
+
+## **The lesson names the control that is actually there.** *(Filed from a phone play of the
+## deployed build: "the run tutorial says hold 'SHIFT' on mobile.")* `hud._touch` is read once
+## from `TouchInput`, the same pattern `DaySummary` and `PauseScreen` use, so a touch device gets
+## the held `RUN` circle `TouchControls` draws rather than a key it has not got.
+func _test_the_run_hint_names_the_touch_button_on_a_touch_device(t) -> void:
+	var saved_day := GameState.day
+	GameState.day = Tuning.RUN_TAUGHT_DAY
+	var hud := _hud(t)
+	hud._touch = true
+
+	var first := _pursuer()
+	hud._on_event_telegraphed(first)
+	t.check(hud._teach.text == "Hold RUN to run",
+			"a touch device is told to hold the on-screen RUN button, not a keyboard key")
+
+	first.free()
 	hud.free()
 	GameState.day = saved_day
 

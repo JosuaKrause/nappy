@@ -26,6 +26,11 @@ extends CanvasLayer
 ## covered by nothing.
 var _debug := OS.is_debug_build()
 
+## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
+## `DaySummary` and `PauseScreen` use, so the run lesson names the held `RUN` circle the touch
+## layer draws instead of a `SHIFT` key a touch device does not have.
+var _touch := TouchInput.available()
+
 var _baby: Baby
 var _contact_step := 0
 var _announcement := ""
@@ -175,17 +180,20 @@ func _teach_the_pause(delta: float) -> void:
 ## Hung off the telegraph rather than off the day, so the prompt and the dog arrive together: a
 ## line of text at dawn saying "you can run" is a control list, and a line of text over a dog
 ## coming at the pram is an instruction. But it is a lesson about the mechanic, not a running
-## commentary on it — once `Tuning.RUN_TAUGHT_DAY` has taught the key, a line telling her to hold
-## shift explains something she has already been made to do, every time something later in the run
+## commentary on it — once `Tuning.RUN_TAUGHT_DAY` has taught the control, a line naming it again
+## explains something she has already been made to do, every time something later in the run
 ## pursues her. So it fires once, for the first pursuit of the day the run is taught, and never
 ## again this run: the same "once per run" shape as `_teach_the_pause()`, for the same reason —
 ## it is a keybinding, not a warning, and a cue that keeps coming back is one that gets read once
-## and then ignored.
+## and then ignored. The control it names is `_touch`'s: `SHIFT` on a keyboard, the held `RUN`
+## circle `TouchControls` draws on a touch device — same pattern `DaySummary` and `PauseScreen`
+## read `TouchInput.available()` for.
 func _on_event_telegraphed(instance: EventInstance) -> void:
 	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
-	_say("Hold SHIFT to run", instance.def.telegraph_time + TEACH_RUN_SECONDS)
+	var line := "Hold RUN to run" if _touch else "Hold SHIFT to run"
+	_say(line, instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
 func _say(line: String, seconds: float) -> void:
 	_teach.text = line
