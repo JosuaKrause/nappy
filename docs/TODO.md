@@ -113,6 +113,21 @@ workflow only proves itself by running.
       The key is not offered and not handled on the web, and **stays exactly as it is everywhere
       else**. The axis is the platform rather than the build, the same one the run log already uses
       to stay silent on the web: a debug web build must lose the key too
+- [ ] **Black bars, everywhere, rather than a wider view.** *(2026-09-02: "everything that doesn't
+      fit the aspect ratio should be filled in with black bars", said of the online version and
+      true of every build.)* `window/stretch/aspect` is `expand` today, so a window wider than 16:9
+      shows **more city** instead of letterboxing — a 21:9 monitor, a laptop and a phone in
+      landscape each see a different amount of street.
+
+      **This is a fairness change and not only a framing one.** `DangerEdge` — the chevrons at the
+      screen edge that warn about what is coming before it is visible — is defined entirely in
+      screen pixels and asks *is this on screen*. Under `expand`, a wider screen is more warning.
+      Letterboxing gives every player the same 640×360 of world (the viewport is 1280×720 and the
+      player's camera is at zoom 2), which is what every measurement in the docs already assumes.
+
+      **One value, not a web-only branch.** Making the desktop behave differently would be runtime
+      machinery for a difference nobody asked for, and the reason for the change is that the view
+      should be the same everywhere
 - [ ] **A browser smoke pass** once it is deployed, at the real address: boots, keyboard input
       works, holds frame rate at the game's scale, and the title screen reads as the front door of a
       public page. itch.io stays the fallback host (it sets the isolation headers, so a threaded
