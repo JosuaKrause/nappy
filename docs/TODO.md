@@ -14,10 +14,14 @@ mid-way through.
 
 ## The order
 
-1. **M63** — it plays on a phone. The site is live and a phone cannot start it.
-2. **M56** — the resistance is noticed.
-3. **M60** — ready for a GitHub Pages launch. *(2026-09-01: "can we use github pages to put the
-   game on a page?" and "add a step for preparing for github pages launch.")*
+1. **M64** — nothing off the path. Design the rows first, then place them.
+2. **M65** — the chalk mark is findable, and silent until it is found.
+3. **M56** — the resistance is noticed.
+
+**Playtest 19 is the freshest thing in this file** and its nine findings are filed against the
+milestones that own them — M64 and M65 are new, and the rest went to M48 (barriers), M49 (the north
+edge, the junction paint) and the small items (the robber in a building). Read it before picking
+anything up.
 
 M53's one remaining piece is specified and unordered — see its entry.
 
@@ -65,6 +69,46 @@ either: movement is the four `move_*` actions and they are bound to keys alone.
 
 ---
 
+## M64 — Nothing off the path · asked for 2026-09-02
+
+> "there is almost never anything when leaving a path. all events are on the path (restaurant
+> yeller etc are all *for* the path they force you to switch street sides) but there is *nothing*
+> off the path. we need more things for indicating the path (most events we have are for on the
+> path) so we need to come up with more things first then actually add them"
+
+> "also, there is no punishment for staying in the path"
+
+**This is M50's gradient working as built and being the wrong shape.** The corridor is the cheapest
+ground on every day by design, and the catalogue that fills it is a catalogue of *obstacles* — a
+yeller, a café, a market stall, a reversing lorry — each of which is a reason to **cross the
+street**, never a reason not to go somewhere. So the city can say *this way is expensive* and cannot
+say *not this way at all*, and the route decision the whole game is built on has one correct answer
+every day.
+
+**The instruction is two-stage and the order is the whole of it: come up with the rows first, then
+place them.** This is a catalogue design problem before it is a placement one, and playtest 19
+carries the map that shows it.
+
+- [ ] **Design the rows that mean *not this way*.** Nothing in the catalogue does. The constraint is
+      M45's, recorded there with its own trap: **a nudge that removes the decision is worse than a
+      closure that does nothing** — the game's one verb is *where do I walk*, and a signpost that
+      answers the question is worse than no signpost
+- [ ] **Then place them, and give the corridor a price.** A choice needs a cost on both branches
+- [ ] **Nothing arrives from off screen, and everything should.** *(2026-09-02: "the charging dog
+      doesn't have an offscreen indication it should start further away and appear first as
+      offscreen indicator", and "bikers / unleashed dogs all pop in in front of the player instead
+      of starting off screen".)* One defect across every director-sited row: a thing that
+      materialises inside the view has no approach, so the warning it owes is spent before the
+      player can watch it being spent. `DangerEdge` already draws the screen-edge badge for anything
+      off screen worth one, so the second half may be a consequence of the first — a dog sited
+      inside the view has no offscreen phase to be announced in.
+
+      **The care needed is the day-3 lesson.** `charging_dog` is deliberately unavoidable on the day
+      it teaches running, and a dog that starts further away is a dog with more room to be walked
+      around — which is the thing that placement was chosen to prevent
+
+---
+
 ## M53 — The precinct is for walking
 
 A precinct is paving frontage to frontage with nothing driving on it, on either axis, and a street
@@ -80,6 +124,32 @@ that meets one ends at its edge. What remains is that the ending is not *drawn* 
       nothing. What it wants is the smallest thing that says *this was done deliberately* — a line
       of posts across the mouth is the real-world answer and it is also the cheapest drawing in the
       list
+
+---
+
+## M65 — The chalk mark is findable, and silent until it is found · asked for 2026-09-02
+
+Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
+should not be, and it cannot be found when it should be.
+
+- [ ] **The first chalk mark is named in the status line.** *(2026-09-02: "the first chalk mark is
+      written in the status when it should not be.")* Seen in the screenshot as
+      `resistance ....   somewhere out there: a chalk mark`, before the player had found anything.
+      **This is the no-hint rule leaking**, and that rule is in `CLAUDE.md` under things
+      deliberately not done: *the **first** encounter comes with no hint at all, because finding the
+      difficulty dial is meant to be the player's own doing. After that the resistance speaks.* The
+      HUD line is fed by `resistance_contact_available`, which does not distinguish the first mark
+      from the rest
+- [ ] **A mark that was never on screen was never placed.** *(2026-09-02: "it's hard to find the
+      chalk mark remember it should be dynamically placed on the path where the player can see it.
+      if it was placed but never on screen it should count as not placed and be placed on the next
+      alley the player comes close to.")* *"Remember"* is right — placing it on the path is already
+      the design; what is new is the **re-placement rule**, and it is a shape nothing in the game
+      has: `ClosurePlanner` and `EventScheduler` both decide at dawn and stand, and this follows the
+      player through the day.
+
+      It is also what makes finding 1's silence fair: a first encounter with no hint is only
+      reasonable if the thing can actually be come across
 
 ---
 
@@ -136,6 +206,17 @@ the game. The export had never completed anywhere before that run.
 furniture, `Q` is not offered where quitting does nothing, and the window letterboxes so every
 player sees the same 640×360 of world. All three are in `DECISIONS.md` under M60.
 
+- [ ] **A pause a thumb can reach.** `pause` is bound to a key alone, so on a touch-only device the
+      pause screen arrives only when the between-days summary brings it. Every screen takes a tap
+      now; what is missing is something on screen to tap for it
+- [ ] **Landscape is declared where nothing reads it.** `export_presets.cfg` carries
+      `progressive_web_app/orientation=1`, and the manifest that would carry it is not written
+      unless the full PWA export is enabled — a larger change with unset icon paths. So an ordinary
+      browser tab ignores it and a phone can still be held in portrait, where a 16:9 letterbox is a
+      strip
+- [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
+      pointing home, and the stick and the run button sit at that height on both sides — so during
+      the return phase the one cue that says *this way home* can be under the finger steering her
 - [ ] **A browser smoke pass** once it is deployed, at the real address: boots, keyboard input
       works, holds frame rate at the game's scale, and the title screen reads as the front door of a
       public page. itch.io stays the fallback host (it sets the isolation headers, so a threaded
@@ -421,8 +502,17 @@ direction, not distance.**
       68px wide on a 64px sidewalk from a tile centre 16px from one edge — **it overhangs by 18px
       whichever lane it lands in.** Every `_draw_spread` row can break the same way. Wants a test
       over the catalogue
+      **Reported from play on 2026-09-02** (playtest 19, with a screenshot): *"they're all placed
+      with an offset that makes them clip into other things — the only barrier that is consistently
+      correct is the full street closure."* That last clause is the sharpest thing said about this
+      yet: **the closure is right because it spans the whole street**, so neither its offset nor its
+      rotation can be wrong. Every other placement is a body narrower than the ground it sits on,
+      which is the only case where either defect can show
 - [ ] **A spread is always drawn east–west, whatever street it is on.** Nothing rotates an
-      `EventInstance`. **A barrier's entire content is which way it faces**
+      `EventInstance`. **A barrier's entire content is which way it faces**, and playtest 19 reports
+      it from play: *"they're always horizontal even when they should be vertical."* The fix is a
+      rule rather than a field — **a spread's rotation is a property of the street it stands on**,
+      which the map can already answer
 - [ ] **And it does not say what it is.** Blue-grey with no hazard marking. One-picture-per-row
       passes and the row still says nothing, which is that rule's own limit — municipal barriers are
       red-and-white for a reason
@@ -487,17 +577,28 @@ direction, not distance.**
 - [ ] **The fence is drawn in elevation and turned on its side.** The game looks straight down,
       where a fence is a thin line with post-heads and a shadow. Rotating an elevation does not make
       it a top-down drawing
-- [ ] **People walk out onto the border and vanish there.**
+- [ ] **People walk out onto the border and vanish there.** Reported again from play on 2026-09-02
+      — *"the north edge still has people and cars walking into the mountain and disappearing"* —
+      so it is people **and cars**, and the north edge is where it was seen.
       **`CrowdAgent._blocked_ahead` returns `false` for a tile out of bounds**, so the one wall that
       should stop them reports as clear. Likely *out of bounds is blocked* and nothing else — check
       against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
 - [ ] **Whatever fixes one border has to be stated over *a border*.** The first pass wrote four
       sides four times, which is one bug per side waiting to happen
-- [ ] **Junctions are four-way where an arm dead-ends** — **not reproduced**, and three candidates
-      are now ruled out rather than two. The third was every precinct edge, and it cannot be the
-      place: where either corridor is a precinct the whole junction box is one flat sheet of paving
-      with no per-arm kerb or line art on it at all, so there is no directional drawing left to get
-      wrong. Still needs a location from the player, or a fourth candidate
+- [ ] **Junctions are four-way where an arm dead-ends — and the location is now known.**
+      *(2026-09-02, from play: "the intersections are not t intersections", of the **north edge**.)*
+      Three candidates had been ruled out and the entry was waiting for exactly this: the map's own
+      border is where an arm genuinely dead-ends, and it is the same place people and cars walk into
+      the mountain, so the two findings above and below this line are probably one cause seen twice
+- [ ] **A main road's junction is four dotted crossings, not two.** *(2026-09-02: "minor issue — for
+      a main street intersection all four crossings should be lines instead of zebra crossing since
+      all four are controlled by the traffic light".)* `GroundTiles._crossing_variant` already draws
+      the dotted pair rather than a zebra for a **main road's** crossing, with the reason recorded in
+      `CityGenerator._street_tile`: traffic on a main road obeys the light rather than giving way, so
+      the crossing is a *timing* problem and a zebra there is paint promising a gap-hunting one. The
+      player's point is that the property belongs to **the junction rather than the arm** — where the
+      spine crosses an ordinary street, one light governs all four crossings, so the two on the side
+      street are currently painted as a promise the traffic does not make
 - [ ] **Restate the main-road pacing question.** The design says she exhausts her own side of the
       spine before being forced across. **Is that emergent** — calm areas exist on both sides and
       spoiling burns the near ones over an act — **or does something have to withhold the far side
@@ -527,6 +628,13 @@ direction, not distance.**
 
 Small, real, nobody's milestone. Each has sat since the milestone that deferred it.
 
+- [ ] **The robber can be placed inside a building, where he is stuck for ever.** *(2026-09-02:
+      "the robber can be placed inside buildings which makes him unable to move at all.")*
+      `alley_robbery` places on `ALLEY` tiles and pursues, and `EventInstance._walkable_step` clamps
+      a chase to walkable ground — so a robber who begins inside a building is not merely oddly
+      sited, **every step he tries is refused**. His lethal radius still travels with him, which
+      makes an invisible fatal spot inside a wall. Fix it where he is placed, not by letting a
+      pursuer walk through buildings
 - [ ] **The `burning_building` spawns in the road** rather than in a building — it spawns exactly
       where the engine stopped. A few lines to nudge it to the nearest `BUILDING` tile
 - [ ] **The pram has no collision of its own**, so it clips into walls when she hugs a corner. A

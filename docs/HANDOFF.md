@@ -55,10 +55,17 @@ the exemption is stated over `pursues` rather than holding by accident of the `W
 upload, publish, in that order, so a red build never reaches the site. **A merge to `main` is now a
 release**, which is the one thing to know before making one.
 
-1. **Finish M56** — "other dangers like this", then the measurement against the nerves. The vans
-   have set the precedent the first of those was waiting on.
-2. **M60's last item is a browser smoke pass** at the real address, by a person: frame rate at the
-   game's scale, and whether the title screen reads as the front door of a public page.
+**Start with [PLAYTEST-19.md](PLAYTEST-19.md).** It is a played run on the deployed build, nine
+findings, and it is the freshest thing in the repo. Its findings are already filed against the
+milestones that own them.
+
+1. **M64 — nothing off the path.** The largest of the nine and the one the game is most about: every
+   event in the catalogue is a reason to cross the street and none is a reason not to go somewhere,
+   so the corridor is cheapest and nothing off it is dangerous. **Design the rows before placing
+   anything** — that order is the instruction, not a preference.
+2. **M65 — the chalk mark.** It is announced before it is found and cannot be found once it is
+   announced. Two halves of one thing.
+3. **Finish M56** — "other dangers like this", then the measurement against the nerves.
 
 M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
 bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.
@@ -130,6 +137,15 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 - **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
   address; what has not been checked is frame rate at the game's scale on a machine that is not the
   one it was built on, and whether a stranger arriving at the page understands what it is.
+- **The touch controls have never been touched.** The stick and the run button are built, tested and
+  screenshotted on a desktop — which proves only that they stay *off* where they should. Whether a
+  thumb can hold the 20px line between two pavement lanes, whether the catch radii feel right, and
+  whether `RUN` is legible at phone DPI are all unknown. The landscape declaration is inert in an
+  ordinary browser tab: it lives in a PWA manifest that is not written unless the full PWA export is
+  turned on.
+- **There is no way to open the pause on a touch-only device.** `pause` is bound to a key alone, and
+  nothing draws an on-screen button for it, so a phone player reaches the pause screen only when the
+  between-days summary brings it.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
   running behind it, `space` to begin — but it is a title, three lines of controls and one key on
   the web (two on the desktop, where `q` also quits): no options, no seed box, no load game.
