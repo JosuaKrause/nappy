@@ -1,11 +1,12 @@
 <svg width="640" height="640" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <!-- The icon's stroller on its own: `icon.svg` without the rounded slate plate behind it, so it
-       sits on whatever background it is placed on rather than carrying one.
+  <!-- `icon.svg` at a usable size: the rounded slate plate and the stroller on it.
 
-       The artwork is nudged to centre itself. In `icon.svg` it is not centred in the 128 box — it
-       spans x 34..110 and y 15..109 because the plate behind it was doing the framing — so with
-       the plate gone it has to do its own. -->
-  <g transform="translate(-8 2.5)">
+       The plate stays, because the stroller is drawn against it — the cream reads as cream because
+       of the slate behind it, and on a light page without it the mark disappears. What is
+       transparent is only what falls outside the plate's own rounded corners, so this drops onto
+       any background as a badge rather than as a square. -->
+  <rect width="128" height="128" rx="24" fill="#2b3a4a"/>
+  <g>
     <path d="M34 74 A30 30 0 0 1 94 74 Z" fill="#e8dcc8"/>
     <rect x="34" y="74" width="60" height="10" rx="4" fill="#c9b99b"/>
     <path d="M94 74 L110 44" stroke="#e8dcc8" stroke-width="7" stroke-linecap="round" fill="none"/>
