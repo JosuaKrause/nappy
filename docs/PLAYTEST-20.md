@@ -52,14 +52,38 @@ point on days 5 through 7
 the walked line, which had reached that block on days 1, 2, 4 and 6, does not go near it again once
 the barrier sits there.
 
-**"It's not enough to reach a block" is the sharper of the two sentences.** `docs/TODO.md`'s M45
-already carries `_park_is_reachable`, the check `EventScheduler._ensure_the_city_is_still_walkable`
-runs against the whole set of closures at once — but a park or a courtyard is not one tile, and a
-check that only asks whether the block is reachable at all can pass while every one of its usable
-openings (a park entered from more than one side, an alley that is a courtyard's sole door) is
-individually wrong. The player's own two examples are the fix stated as a test: reachability has to
-be asked of the interior a park or courtyard actually offers, through however many openings it has,
-not of the block as a single reachable-or-not point.
+**"It's not enough to reach a block" is the sharper of the two sentences, and reading the actual
+reachability code changes what it points at.** Two different pieces of the game already reason
+about this, and neither is `_park_is_reachable` alone:
+
+- `ClosurePlanner._access_streets` (`src/routes/closure_planner.gd:102-124`) already documents a
+  model close to the player's own — *"a block of open calm opens onto all four sides of its lot; a
+  zone onto one street per block edge; a courtyard onto exactly one, through its archway"* — so a
+  park not being sealed by one barrier on one of its four streets may be that model working as
+  written, not a bug in it.
+- The day's own guarantee, `Tuning.MIN_CALM_AREAS_REACHABLE := 2` enforced in
+  `ClosurePlanner._invariant_holds`, only requires **some** two calm areas to stay reachable, not
+  every one and not specifically whichever one the player had been using — a decision already on
+  record at `closure_planner.gd:157`, quoting the player from 2026-08-31: *"the two routes guarantee
+  is not a hard rule."* A courtyard going from usable to sealed while two other areas stay open may
+  be that invariant working exactly as written, with nothing telling the player the trade happened.
+
+**Put back to the player, and answered — this is the design, not a discovered bug in an existing
+one:** *"the code to detect reachability needs to become more precise. alleys should become edges.
+parks should have edges at all 8 exits. courtyards only have one edge to one road section segment."*
+So the fix is not "adjust the existing check" but a more precise reachability model stated as a
+graph: an alley is itself an edge rather than a walkable area folded into whatever it touches; a
+park's edges are its eight exits rather than the four sides `_access_streets` currently derives from
+`StreetNetwork.beside_block`; a courtyard keeps exactly the one edge to the one road segment its
+archway already gives it.
+
+**And a second clarification, on the same graph: *"nodes and edges need to be more granular."*** Not
+only which things get modelled as nodes and edges — how coarse each one is allowed to be. A single
+`StreetNetwork.Segment` today stands for a whole block-length side; the player's instruction is that
+this is still too coarse a unit for either a node or an edge to be built from, without yet fixing the
+grain it has to reach. `docs/TODO.md`'s M69 carries this as the player specified it, and the exact
+resolution is design work for whoever builds it, checked against this sentence rather than assumed
+from the current segment granularity.
 
 ## 2. The chalk mark is still unfindable, and the resistance has its own answer
 

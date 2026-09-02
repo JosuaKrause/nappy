@@ -159,35 +159,57 @@ that meets one ends at its edge. What remains is that the ending is not *drawn* 
 
 ---
 
-## M69 — Reachability is asked of an opening, not a block · asked for 2026-09-03
+## M69 — Reachability is a graph of nodes and edges, not a block-level check · asked for 2026-09-03
 
 > "barriers don't take into a account that parks can be entered where normally buildings would be
 > making them ineffective. (at the same time a courtyard can be completely sealed off by a barrier
 > because it blocks the entrance alley). the same applies to alleys. the reachability checks need to
 > take alleys and parks properly into account. it's not enough to reach a block."
 
-Two shapes of one gap, seen in the same run (playtest 20, seed 4070543669). A barrier meant to seal
-a street off does nothing if the park behind it can still be walked into from a side with no street
-or alley against it — the dusk maps show the walked line cutting straight across a park's interior
-rather than following any drawn opening, on day 1
+Seen in playtest 20 (seed 4070543669): the dusk maps show the walked line cutting straight across a
+park's interior on day 1
 (`docs/evidence/run-2026-09-03T002310-seed4070543669-5d342c9-map-day01-dusk.png`, the top-left
-forest block) and again on day 4 as a diagonal line straight through the big park's interior. And
-the reverse: a single barrier across a courtyard's one access alley seals the whole courtyard, seen
-on the same run's days 5 through 7, where the narrow forest strip at the top of the map gets a
-barrier drawn against its only opening and the walked line — which had reached that block on four
-of the run's first six days — never goes near it again.
+forest block) and again on day 4 as a diagonal line through the big park's interior, and a courtyard
+(the narrow forest strip at the top of the map) getting a barrier drawn against its one opening on
+days 5 through 7 and never visited again.
 
-- [ ] **State the check over an opening, not a block.** `EventScheduler._ensure_the_city_is_still_
-      walkable`'s `_park_is_reachable` (also relied on by M45) currently asks whether a block is
-      reachable at all; a park or courtyard has to be asked through however many openings it
-      actually has, so that a barrier against one opening does not falsely pass a park still walkable
-      through another, and does not falsely fail to notice it has sealed the only one a courtyard has
-- [ ] **The same question for alleys.** The player's sentence extends the fix to alleys explicitly —
-      an alley's own reachability wants the same per-opening treatment as a park or courtyard's,
-      not folded in as a special case of either
+**Reading the actual reachability code changes what looks broken.** `ClosurePlanner._access_streets`
+(`src/routes/closure_planner.gd:102-124`) already models something close to this — *"a block of open
+calm opens onto all four sides of its lot; a zone onto one street per block edge; a courtyard onto
+exactly one, through its archway"* — and the day's own guarantee,
+`Tuning.MIN_CALM_AREAS_REACHABLE := 2` enforced in `ClosurePlanner._invariant_holds`, only requires
+**some** two calm areas to stay reachable, not every one and not specifically whichever one the
+player had been using (`closure_planner.gd:157`, quoting the player from 2026-08-31: *"the two
+routes guarantee is not a hard rule."*). Put back to the player, and answered: this is not a bug in
+either of those — it is a request for a more precise model than either currently is.
+
+**The design, in the player's words, over two exchanges:**
+
+> "the code to detect reachability needs to become more precise. alleys should become edges. parks
+> should have edges at all 8 exits. courtyards only have one edge to one road section segment."
+
+> "nodes and edges need to be more granular."
+
+So the reachability graph's own units change: an alley becomes an edge in its own right rather than
+walkable ground folded into whatever it touches; a park gets eight edges — its eight exits — rather
+than the up-to-four sides `_access_streets` currently derives from `StreetNetwork.beside_block`; a
+courtyard keeps exactly the one edge to the one road segment its archway already gives it. And
+separately from which things are nodes and edges, **both need to be more granular than they are
+today** — a `StreetNetwork.Segment` currently stands for a whole block-length side, and the second
+instruction says that unit is still too coarse for either a node or an edge to be built from, without
+yet fixing what grain it has to reach.
+
+- [ ] **Work out the grain before building the graph.** The player has specified the shape (alleys
+      as edges, parks at eight exits, courtyards at one) and that the current segment-level unit is
+      too coarse, but not the target resolution itself — that is design work to settle first, checked
+      against both sentences above rather than assumed from today's `StreetNetwork.Segment`
+- [ ] **Build the graph model**, replacing the block-level checks: `ClosurePlanner._access_streets`
+      and `_invariant_holds`, and `EventScheduler._park_is_reachable`
+      (`src/events/event_scheduler.gd:1186`), both currently reason at the block or the whole-city
+      flood-fill level rather than through named, individually checkable edges
 - [ ] **Then re-check every barrier-placing milestone against it.** M45's closures, M48's barrier
-      drawing and M62's checkpoint perimeter all place barriers assuming a block-level reachability
-      check backs them; each wants confirming against the corrected check once it exists, rather than
+      drawing and M62's checkpoint perimeter all place barriers assuming today's coarser reachability
+      model backs them; each wants confirming against the new graph once it exists, rather than
       assumed clean
 
 ---
