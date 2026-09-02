@@ -87,47 +87,14 @@ threads off; `tools/export-web.sh` builds into `build/web/`; the run log is sile
 and `.github/workflows/deploy.yml` gates, exports and publishes on a push to `main`. The record is
 in `DECISIONS.md` under M60.
 
-**Neither of the two things that matter has been proven, and both need the same event: a push to
-`main`.** The export has never run to completion — the templates are not installed on the machine
-it was built on, so what was verified is that the tool reports their absence correctly. And a
-workflow only proves itself by running.
+**The site is live and the workflow built it.** The push to `main` that finished the build chain
+also ran it end to end — gate, export, upload, publish — and `https://nappy.josuakrause.com/` serves
+the game. The export had never completed anywhere before that run.
 
-- [ ] **The first deploy, which is a merge to `main` and nothing else.** The workflow fires on a
-      push there, so the way this milestone finishes is the way any milestone finishes. Two
-      failures to expect the first time and neither is a defect in the game: the export templates
-      download is the largest step and the one most likely to be wrong about a URL, and a Godot
-      binary whose version does not match its templates fails in a way that reads like a broken
-      export. Both are read off the run's own log
-- [~] **Two things the smoke pass found.** *(2026-09-02, on the deployed build: "the debug info on
-      the right side of the screen (fps, seed, etc.) is still showing. also for the web version
-      remove Q (quit) and its mentions since it doesn't have any effect", and "**only** for the
-      online version, for the local version Q needs to exist still".)*
+**What the first play of it changed.** The developer's readout is gated with the rest of the
+furniture, `Q` is not offered where quitting does nothing, and the window letterboxes so every
+player sees the same 640×360 of world. All three are in `DECISIONS.md` under M60.
 
-      The **developer's readout** — the right-hand panel with the seed, the frame rate, the tile,
-      the event counts and the meter's arithmetic — is a `Label` in `main.gd` rebuilt every frame,
-      and the dev-flag gate never reached it. It goes behind `DevFlags.enabled()` with the rest of
-      the furniture.
-
-      **`Q` quits, except on the web, where `SceneTree.quit()` does nothing at all** — the page is
-      still there and the player has pressed a key a screen told them to press and watched it fail.
-      The key is not offered and not handled on the web, and **stays exactly as it is everywhere
-      else**. The axis is the platform rather than the build, the same one the run log already uses
-      to stay silent on the web: a debug web build must lose the key too
-- [ ] **Black bars, everywhere, rather than a wider view.** *(2026-09-02: "everything that doesn't
-      fit the aspect ratio should be filled in with black bars", said of the online version and
-      true of every build.)* `window/stretch/aspect` is `expand` today, so a window wider than 16:9
-      shows **more city** instead of letterboxing — a 21:9 monitor, a laptop and a phone in
-      landscape each see a different amount of street.
-
-      **This is a fairness change and not only a framing one.** `DangerEdge` — the chevrons at the
-      screen edge that warn about what is coming before it is visible — is defined entirely in
-      screen pixels and asks *is this on screen*. Under `expand`, a wider screen is more warning.
-      Letterboxing gives every player the same 640×360 of world (the viewport is 1280×720 and the
-      player's camera is at zoom 2), which is what every measurement in the docs already assumes.
-
-      **One value, not a web-only branch.** Making the desktop behave differently would be runtime
-      machinery for a difference nobody asked for, and the reason for the change is that the view
-      should be the same everywhere
 - [ ] **A browser smoke pass** once it is deployed, at the real address: boots, keyboard input
       works, holds frame rate at the game's scale, and the title screen reads as the front door of a
       public page. itch.io stays the fallback host (it sets the isolation headers, so a threaded

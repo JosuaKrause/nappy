@@ -50,13 +50,15 @@ the exemption is stated over `pursues` rather than holding by accident of the `W
 
 ## What to do next
 
-1. **Merge to `main` and watch the deploy.** M60 is built except for the two things that can only
-   be proven by running: the Web export has never completed on a machine with templates installed,
-   and `.github/workflows/deploy.yml` fires on a push to `main`. The site is
-   `https://nappy.josuakrause.com/`, already on with its custom domain set as a repository setting.
-   **This publishes the game**, so it is the player's call rather than a routine merge.
-2. **Finish M56** — "other dangers like this", then the measurement against the nerves. The vans
+**The game is published.** `https://nappy.josuakrause.com/` serves it, and
+`.github/workflows/deploy.yml` rebuilds and republishes on every push to `main` — gate, export,
+upload, publish, in that order, so a red build never reaches the site. **A merge to `main` is now a
+release**, which is the one thing to know before making one.
+
+1. **Finish M56** — "other dangers like this", then the measurement against the nerves. The vans
    have set the precedent the first of those was waiting on.
+2. **M60's last item is a browser smoke pass** at the real address, by a person: frame rate at the
+   game's scale, and whether the title screen reads as the front door of a public page.
 
 M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
 bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.
@@ -125,12 +127,15 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   constant was 12.
 - **There is no audio at all.** Less urgent than it sounds: audio is redundancy, so the game must
   already be fully playable without it.
-- **The web build has never been built.** Every flag is gated, the preset is tracked and the
-  workflow is written, and no export has run to completion anywhere: the templates are not
-  installed on the machine it was built on. What is verified is that the tool says so clearly.
+- **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
+  address; what has not been checked is frame rate at the game's scale on a machine that is not the
+  one it was built on, and whether a stranger arriving at the page understands what it is.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
-  running behind it, `space` to begin — but it is a title, three lines of controls and two keys: no
-  options, no seed box, no load game.
+  running behind it, `space` to begin — but it is a title, three lines of controls and one key on
+  the web (two on the desktop, where `q` also quits): no options, no seed box, no load game.
+- **Nothing draws a bollard**, so a street that meets a precinct simply ends against the paving. The
+  city and the crowd both explain a precinct by saying a driver meets a bollarded street, and there
+  is no bollard anywhere in the game.
 
 ## The rule that matters most before starting anything
 
