@@ -38,6 +38,7 @@ func run(t) -> void:
 	_test_the_trail_carries_whether_she_was_running(t)
 	_test_a_lost_day_restarts_the_trail(t)
 	_test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t)
+	_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t)
 	_test_the_map_picture_draws_the_trail_and_distinguishes_running(t)
 
 # ------------------------------------------------------------------ dormancy ---
@@ -447,6 +448,70 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -
 	t.check(observer.met_events().has(plan),
 			"entering the outer radius — the field she can actually feel — is what counts as met")
 
+	observer.free()
+	city.free()
+
+## `_test_tracing_a_day_does_not_change_it` is the invariant's own test, and it does not reach
+## either of these two: it calls `EventScheduler.build_day` directly and never instantiates an
+## observer at all, so it says nothing about `_watch_the_trail` or `_watch_met_events` — the two
+## per-frame watchers M66 added, both of which run every frame the observer is alive and both of
+## which read live gameplay objects (the player's position; every event instance's
+## `global_position`). Neither takes a `RandomNumberGenerator` — there is no `rng` parameter to
+## consume from, unlike the hoisted-roll systems the invariant's comment warns about — and neither
+## writes anywhere but the observer's own `_trail` and `_met_events`. That is a claim about the
+## code, and this is the test that would catch it being wrong: it drives both across four hundred
+## frames of a real day, with the log on, and requires the day after to plan exactly as it would
+## have if the drive had never happened — the only way that can hold is if nothing either watcher
+## did reached `map`, `city.events` or a `day_rng()` stream.
+func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	t.add_child(city)
+	city.build(map)
+	var consumed: Array[String] = []
+	city.events.start_day(3, _rng(3), consumed)
+
+	var plan: EventScheduler.Planned = null
+	for candidate in city.events.plans():
+		if candidate.is_placed() and not candidate.def.city_wide:
+			plan = candidate
+			break
+	t.check(plan != null, "day 3 places something sited and not city-wide to walk near")
+	if plan == null:
+		city.free()
+		return
+	city.events.stream_around(plan.position)
+
+	# What day 4 plans, computed before the trail is ever walked.
+	var quiet := _plan_signature(map, 4)
+
+	var observer := TelemetryObserver.new()
+	observer._city = city
+	observer._player = Stroller.new()
+	observer._player.global_position = plan.live.global_position \
+			+ Vector2(plan.def.outer_radius + 200.0, 0.0)
+
+	Telemetry.begin_memory_log()
+	var here: Vector2 = observer._player.global_position
+	var towards := (plan.live.global_position - here).normalized()
+	for i in 400:
+		here += towards * TelemetryObserver.TRAIL_SAMPLE_DISTANCE
+		observer._player.global_position = here
+		observer._watch_the_trail(here)
+		observer._watch_met_events(here)
+	Telemetry.end_run()
+
+	t.check(observer.trail().size() > 300,
+			"the drive actually sampled the trail, not a vacuous pass (got %d points)"
+			% observer.trail().size())
+	t.check(not observer.met_events().is_empty(),
+			"and walked close enough to mark the plan met, so the scan actually ran")
+
+	var traced := _plan_signature(map, 4)
+	t.check(quiet == traced, "four hundred frames of trail sampling and met-events scanning, "
+			+ "with the log on, leave what day 4 plans untouched")
+
+	observer._player.free()
 	observer.free()
 	city.free()
 
