@@ -114,6 +114,14 @@ func _teach_the_day(day: int) -> void:
 	_stood_for = 0.0
 	if day == 1:
 		_say("Arrow keys or WASD to walk", TEACH_SECONDS)
+	# A nerve is a rewind, not a resource, and a rewound day has not been taught anything: this
+	# flag belongs to the *attempt* at the teaching day rather than to the run, and only on this
+	# one day, so a lost nerve on `RUN_TAUGHT_DAY` gets the lesson again instead of a HUD that
+	# remembers a lesson the player never actually reached. `_taught_pause` keeps the once-per-run
+	# shape the comment above it argues for — it is not tied to a day, so whether a rewind should
+	# clear it too is a different question and not this one's to answer.
+	if day == Tuning.RUN_TAUGHT_DAY:
+		_taught_run = false
 
 
 ## The pause exists, and the moment to say so is the first time she stops of her own accord.

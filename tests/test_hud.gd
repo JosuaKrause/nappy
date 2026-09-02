@@ -13,6 +13,7 @@ const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 func run(t) -> void:
 	_test_the_run_hint_fires_once_on_the_teaching_day(t)
 	_test_the_run_hint_never_fires_off_the_teaching_day(t)
+	_test_the_run_hint_fires_again_on_a_retried_teaching_day(t)
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
 	_test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots(t)
@@ -57,6 +58,42 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 
 	first.free()
 	second.free()
+	hud.free()
+	GameState.day = saved_day
+
+## **A lost nerve rewinds the day, not the run.** *(Player, of the deployed build: "the run lesson
+## doesn't show at all anymore — it should always show for the day 3 lesson", diagnosed as "you
+## need to reset the flag when the player dies on day 3.")* `main._start_day()` calls
+## `_teach_the_day()` again on the same HUD instance when a nerve is spent, so the first retry of
+## `RUN_TAUGHT_DAY` is already marked taught by an attempt the player never got to finish — and
+## every attempt after that stays silent. The flag has to belong to the attempt on this one day.
+func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
+	var saved_day := GameState.day
+	GameState.day = Tuning.RUN_TAUGHT_DAY
+	var hud := _hud(t)
+
+	var first := _pursuer()
+	hud._on_event_telegraphed(first)
+	t.check(hud._taught_run, "the first attempt teaches the run")
+
+	# The day restarts on the same HUD, exactly as a spent nerve does.
+	hud._teach_the_day(Tuning.RUN_TAUGHT_DAY)
+	t.check(not hud._taught_run, "a fresh attempt at the teaching day has not been taught yet")
+
+	var second := _pursuer()
+	hud._on_event_telegraphed(second)
+	t.check(hud._teach.text == "Hold SHIFT to run",
+			"and the lesson fires again on the second attempt")
+
+	# Still only once within that attempt — the gate is the attempt, not "has this run seen it".
+	hud._teach.text = ""
+	var third := _pursuer()
+	hud._on_event_telegraphed(third)
+	t.check(hud._teach.text == "", "and still only once within one attempt")
+
+	first.free()
+	second.free()
+	third.free()
 	hud.free()
 	GameState.day = saved_day
 
