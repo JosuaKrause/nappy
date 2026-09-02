@@ -1,15 +1,21 @@
 extends RefCounted
-## The HUD's teaching lines — currently just the run hint, which is the one that has been wrong.
+## The HUD's teaching lines, plus the debug/release gate that decides what else it draws.
 ##
-## Everything else the HUD draws is read off `EventBus` values and is either checked by eye or
-## covered by whatever produces the value. This suite is for the one piece of HUD logic that is a
-## *rule* rather than a readout: when "Hold SHIFT to run" is allowed to say anything at all.
+## Most of what the HUD shows is read off `EventBus` values and is either checked by eye or
+## covered by whatever produces the value. Two things here are a *rule* rather than a readout:
+## when "Hold SHIFT to run" is allowed to say anything at all, and which lines `hud._debug`
+## keeps or drops. `hud._debug` is read once into a member rather than asked of
+## `OS.is_debug_build()` at each use site precisely so a test — itself always a debug process —
+## can set it to `false` and see the release shape, which is otherwise asserted by nothing.
 
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 
 func run(t) -> void:
 	_test_the_run_hint_fires_once_on_the_teaching_day(t)
 	_test_the_run_hint_never_fires_off_the_teaching_day(t)
+	_test_the_release_hud_drops_the_header(t)
+	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
+	_test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots(t)
 
 func _hud(t) -> CanvasLayer:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
@@ -82,3 +88,88 @@ func _test_the_run_hint_never_fires_off_the_teaching_day(t) -> void:
 	hud_after.free()
 
 	GameState.day = saved_day
+
+## Day, act and nerves are all read between days already; during the day the release build says
+## none of it. `_debug` starts true in this process (the suite is itself a debug build), so the
+## release shape has to be reached by hand.
+func _test_the_release_hud_drops_the_header(t) -> void:
+	var hud := _hud(t)
+
+	hud._debug = false
+	hud._refresh_header()
+	t.check(hud._header.text == "", "the release build draws no header at all")
+
+	hud._debug = true
+	hud._refresh_header()
+	t.check(hud._header.text != "", "a debug build still draws it, for the rigs and tools/shot.sh")
+
+	hud.free()
+
+## The baby's own state, `stall_reason()` and the city-wide note are debug output — the state is
+## already on the pram, and the other two are read between days. An announcement is not part of
+## that cut: it is the one thing the game says out loud, and it keeps the same label in both
+## shapes because nothing else was asked to carry it.
+func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t) -> void:
+	var stroller := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby.set_physics_process(false)
+
+	var hud := _hud(t)
+	hud._baby = baby
+
+	hud._debug = false
+	hud._refresh_state()
+	t.check(hud._state_label.text == "",
+			"state, stall reason and the city-wide note stay off screen in release")
+
+	hud._debug = true
+	hud._refresh_state()
+	t.check(hud._state_label.text.begins_with("awake"), "a debug build still shows the state")
+	t.check("not settling" in hud._state_label.text,
+			"and the reason it is not settling, since she is standing still")
+
+	# An announcement pre-empts the status line in both shapes.
+	hud._debug = false
+	hud._announcement = "The loudspeakers cut out mid-sentence."
+	hud._announcement_for = 7.0
+	hud._refresh_state()
+	t.check(hud._state_label.text == hud._announcement,
+			"an announcement is not the status line and is never cut")
+
+	hud.free()
+	stroller.free()
+
+## Decided by the orchestrator, not the design, because the design was silent on this one detail:
+## `resistance ***..` is a progress count, the same category as the header's `nerves ***`, so it
+## is cut with the rest of the debug readout. The goal itself is kept — it is "the current optional
+## goal" the decision names as staying — with no dots beside it, and with the `somewhere out there:`
+## that makes a title an instruction rather than a noun.
+func _test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots(t) -> void:
+	var hud := _hud(t)
+	hud._debug = false
+
+	hud._contact_step = 0
+	hud._refresh_resistance()
+	t.check(hud._resistance_label.text == "", "no current goal draws nothing")
+
+	hud._contact_step = 1
+	hud._refresh_resistance()
+	var step := ResistanceSteps.by_index(1)
+	t.check(hud._resistance_label.text == "somewhere out there: %s" % step.title.to_lower(),
+			"the release line is the goal, said as an instruction rather than as a noun")
+	t.check(not "resistance" in hud._resistance_label.text,
+			"and carries no 'resistance ***..' progress count")
+
+	hud._debug = true
+	hud._refresh_resistance()
+	t.check("resistance" in hud._resistance_label.text,
+			"a debug build keeps the progress dots the rigs were built against")
+
+	hud.free()
