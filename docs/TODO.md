@@ -227,6 +227,15 @@ the game. The export had never completed anywhere before that run.
 furniture, `Q` is not offered where quitting does nothing, and the window letterboxes so every
 player sees the same 640×360 of world. All three are in `DECISIONS.md` under M60.
 
+- [ ] **The run lesson names a key that is not there.** *(2026-09-02: "the run tutorial says hold
+      'SHIFT' on mobile.")* The HUD says *Hold SHIFT to run* on the frame the first pursuit of
+      `RUN_TAUGHT_DAY` (day 3) telegraphs, and the string is the same whatever the device — so on a
+      phone the one lesson the game teaches about its only deliberate act names a key the player
+      does not have. What runs there is the held `RUN` circle the touch layer draws at the lower
+      right (a 50px disc with a 76px catch radius). The pattern to follow is the one the day
+      summary and the pause screen already use: read `TouchInput.available()` once and say *tap*
+      where a keyboard says *space*. `docs/MECHANICS.md` states the keyboard wording as *the*
+      wording and is wrong in the same way, so it changes in the same commit
 - [ ] **A pause a thumb can reach.** `pause` is bound to a key alone, so on a touch-only device the
       pause screen arrives only when the between-days summary brings it. Every screen takes a tap
       now; what is missing is something on screen to tap for it
