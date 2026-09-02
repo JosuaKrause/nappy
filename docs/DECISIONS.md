@@ -4748,6 +4748,79 @@ yet"*) and under the `CLAUDE.md` rule the first round produced.
       map: the first border pass wrote four sides four times, which is one bug per side waiting to
       happen, and this is it happening
 
+## M67 — The page is a thing people share · built 2026-09-02
+
+*(2026-09-02: "use the pram logo for social media for the nappy.josuakrause.com page, too", "add
+other social media info in the html head", and "the asset license is just an md file with custom
+text — should we get a proper named license for the assets?")*
+
+**The card image had to be published, not merely pointed at.** The Web export packs everything under
+`assets/` into the `.pck`, and the deploy workflow uploads only `build/web`, so an `og:image`
+pointing into `assets/` would have unfurled as a blank card while being perfectly correct markup.
+`deploy.yml` copies the logo to `build/web/social-card.png` after the export, which is the path the
+tag promises. **`assets/logo.png` over `assets/icon_stroller_1280x640.png`**, both being 1280×640:
+the logo is already the game's public face on the README, so the shared link and the repo's front
+door show one image rather than two, and it carries the wordmark for a client that renders only the
+picture.
+
+**Every attribute is single-quoted**, because `html/head_include` is one long double-quoted `.cfg`
+value and a literal `"` inside it ends the string early — a failure that would have looked like a
+broken export rather than like a quoting bug.
+
+**The asset licence is CC BY-NC-ND 4.0, and the badge still will not say so.** The full legal text
+ships in `LICENSE-ASSETS.md` with the project's own paragraph about which paths each licence
+covers, which no licence supplies. **It is one deliberate loosening**: CC BY-NC-ND permits verbatim
+sharing with credit, which "all rights reserved" did not; selling and altered versions stay
+forbidden. What was asked for and did not arrive is the name on GitHub — its detector matches
+against the choosealicense.com corpus, which carries CC BY 4.0, CC BY-SA 4.0 and CC0 and
+deliberately excludes every NonCommercial and NoDerivatives variant, so **no filename makes it show
+as a name.** *Open to overturn: the only way to a second named badge is a licence in that corpus,
+which means giving up either the non-commercial or the no-derivatives half.*
+
+## M60 — What a thumb can reach · built 2026-09-02
+
+**Every lesson the game teaches named a key.** The run hint said *Hold SHIFT to run* on a phone,
+found by playing the deployed build. The audit that followed — *"check all tutorial lines for mobile
+versions"* — found exactly two more lines with no touch form: the day-1 walk lesson and the pause
+lesson. **The negative half is the useful half**: the title and pause bodies, and every
+*space*/*tap* hint on the title, the pause screen and the between-days summary, already chose their
+wording from `TouchInput.available()`, and *q to quit* already appeared only where
+`QuitOption.available()` says quitting does something. Recorded so nobody audits those screens again
+to find nothing.
+
+**The wording matches the control rather than inventing a name for it.** *Hold RUN to run* reuses
+the pause screen's existing touch body character-for-character, and *Drag the stick to walk* does
+the same, so two screens never call one control two things. The pause lesson says *Tap the pause
+button to pause* — a description, because the button is drawn as two bars with no text on it, and a
+line quoting a label that is not on screen is the defect the whole audit exists to fix.
+
+**The pause button is the one control that cannot press its action.** The stick and the `RUN` circle
+call `Input.action_press`, and `main._unhandled_input()` reads the pause off the propagated *event*
+— so pressing the action would set the state and be heard by nothing. It sends an `InputEventAction`
+through `Input.parse_input_event()`, the shape `tests/test_pause.gd` already builds by hand. It
+fires on a clean release inside the button rather than on touch-down, so a thumb that lands wrong
+can slide off without stopping the day. **A first test failed for the honest reason**: it asserted
+polled `Input` state after sending an event, which is not set synchronously.
+
+**Placed at (1250, 30) with a 26px disc and a 46px catch** — small, because it is pressed once a day
+at most, unlike the stick's 60px reach and 100px catch. The two other things that live near an edge
+were checked rather than assumed: the screen-edge danger badges, and `HomeArrow`, which draws no
+closer than (1206, 74) while hugging an edge.
+
+**The meters move to the top left on touch only.** *(2026-09-02: "let's also move the progress bars
+to the top for mobile so they're not hidden by the finger.")* The bars sat 18px above the bottom
+edge, which is the quietest corner of a desktop screen and the busiest part of a phone. The anchors
+move on the one node rather than a second HUD scene existing to be changed twice forever; the
+desktop layout is untouched, since nothing is in front of it there.
+
+**Landscape is asked for, not enforced, because it cannot be.** `progressive_web_app/orientation=1`
+is only read from an installed PWA manifest, which this build does not write. So `html/head_include`
+carries a `screen.orientation.lock('landscape')` attempt — wrapped so a rejection or a missing API
+is silent, since Chrome for Android needs fullscreen for it and iOS Safari has no such API — and,
+because that lock cannot be relied on, a CSS overlay that asks. It keys on `orientation: portrait`
+**and** `hover: none` **and** `pointer: coarse` together, so a narrow desktop window is never told
+to rotate.
+
 ## M63 — It plays on a phone · built 2026-09-02
 
 **Asked for by the site being live and unusable on a phone.** *("I can't start the game on mobile —
