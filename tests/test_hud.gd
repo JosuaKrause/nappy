@@ -17,6 +17,7 @@ func run(t) -> void:
 	_test_the_run_hint_names_the_touch_button_on_a_touch_device(t)
 	_test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t)
 	_test_the_meters_move_to_the_top_on_a_touch_device(t)
+	_test_the_pause_hint_names_the_touch_button_on_a_touch_device(t)
 	_test_the_pause_hint_waits_out_a_detention(t)
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
@@ -158,6 +159,37 @@ func _test_the_meters_move_to_the_top_on_a_touch_device(t) -> void:
 			and hud._meters.offset_bottom - hud._meters.offset_top == 114.0,
 			"the column keeps its own size — only where it sits changes")
 
+	hud.free()
+
+## **The pause lesson names the button that now exists, in plain words rather than a label that
+## is not there.** Same defect the walk and run lessons had, filed by the same audit — `hud._touch`
+## picks the wording, and `TouchControls._draw_pause_button()` draws an icon (two bars), not a
+## word, so the touch line describes the control rather than naming a label it does not have, the
+## same shape "Drag the stick to walk" already uses for the stick.
+func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t) -> void:
+	var stroller := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+
+	var hud := _hud(t)
+	hud._touch = true
+	hud._rig = stroller
+	hud._walked_today = true
+
+	for _i in 40: # 4s of stillness, past TEACH_PAUSE_AFTER
+		hud._teach_the_pause(0.1)
+	t.check(hud._teach.text == "Tap the pause button to pause",
+			"a touch device is told to tap the button, not press a key it has not got")
+
+	# `.free()`, not `queue_free()`: `Stroller._exit_tree()` removes it from the "player" group
+	# synchronously, and this suite never yields a frame for a deferred deletion to catch up —
+	# `stroller.gd:105` puts every instance into that group, and `ContactPoint` (test_resistance.gd)
+	# looks it up by group later in the same run, so a queued deletion here is a stale Stroller
+	# another suite's lookup can pick up instead of its own.
+	stroller.free()
 	hud.free()
 
 ## **Being held is not stopping.** *(Player: "the pause tutorial comes up when being detained

@@ -208,7 +208,11 @@ func _teach_the_pause(delta: float) -> void:
 	if _stood_for < TEACH_PAUSE_AFTER:
 		return
 	_taught_pause = true
-	_say("Esc to pause", TEACH_SECONDS)
+	# "the pause button" rather than any drawn label: `TouchControls._draw_pause_button()` draws
+	# an icon, two bars, not a word — naming a label that is not there would be the same defect
+	# this line exists to fix on the other lessons.
+	var line := "Tap the pause button to pause" if _touch else "Esc to pause"
+	_say(line, TEACH_SECONDS)
 
 ## The run is taught by the thing that requires it, at the moment it requires it — and only for
 ## that one lesson.
