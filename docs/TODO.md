@@ -594,7 +594,27 @@ direction, not distance.**
       sat as *not reproduced* for so long: the map's own border is the one place an arm genuinely
       dead-ends. **The same frame shows a car and two pedestrians standing on the out-of-bounds
       ground above the top pavement**, so this and the vanishing-walkers entry above are one cause
-      seen twice — whatever decides what is beyond the last tile is answering *street* in both
+      seen twice — whatever decides what is beyond the last tile is answering *street* in both.
+
+      **It is every side, not the north one.** The same seed at tile (5,88) is the **west** border
+      with the identical painted crossings running into it —
+      `run-2026-09-02T181431-seed2927659514-ffa2830-045s-asked.png`. Whatever fixes this is stated
+      over *a border*, which is the item two above this one.
+
+      **And there is a working case to copy, in one frame with a broken one** —
+      `run-2026-09-02T181431-seed2927659514-ffa2830-030s-asked.png`, tile (13,87). *(2026-09-02:
+      "here is an example of a proper closed off side of the intersection (towards the right to the
+      park) and an improperly closed off side (towards the south it should be closed off but
+      isn't).")* The arm running **east into the park** is terminated correctly — the carriageway
+      stops and the pavement carries on across it — while the arm running **south**, with nothing
+      beyond it either, is drawn as though the street continued.
+
+      **That is the most useful thing anybody has said about this**, because it makes the question
+      *what is different between those two arms* rather than *where is the bug*. `docs/TODO.md`'s
+      own M49 wording already guesses at the answer — *"where the arm beyond is not a street at all
+      — a park, a calm zone's absorbed corridor, the shore"* — so the case that works is the one the
+      generator was told about explicitly, and the fix is to state it over *anything* that is not a
+      street rather than over the list of things somebody remembered
 - [ ] **A main road's junction is four dotted crossings, not two.** *(2026-09-02: "minor issue — for
       a main street intersection all four crossings should be lines instead of zebra crossing since
       all four are controlled by the traffic light".)* `GroundTiles._crossing_variant` already draws

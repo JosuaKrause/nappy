@@ -134,6 +134,11 @@ stop them reports as clear — and *"junctions are four-way where an arm dead-en
 **not reproduced** across three candidate locations. **The north edge is the fourth, and it is the
 one.**
 
+> "it happens on all sides"
+
+> "here is an example of a proper closed off side of the intersection (towards the right to the
+> park) and an improperly closed off side (towards the south it should be closed off but isn't)"
+
 **Reproduced with a picture**, sent when this side had still not managed it from a rig:
 `docs/evidence/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png` — seed 2927659514,
 day 1, standing at tile (80,1). The zebras on the north–south streets run all the way to the border
@@ -141,6 +146,18 @@ and a crossing box is painted on an arm with nothing beyond it, **and the same f
 two pedestrians standing on the out-of-bounds ground above the top pavement**. Both halves of this
 finding are one screenshot, which is the strongest argument that they are one cause: whatever
 decides what lies beyond the last tile is answering *street* to both the painter and the crowd.
+
+**Every side, not the north one**: the same seed at tile (5,88) is the west border with the
+identical crossings painted into it (`…-045s-asked.png`).
+
+**And one frame carries a working case beside a broken one** (`…-030s-asked.png`, tile (13,87)),
+which is the most useful thing said about this finding. The arm running **east into the park** is
+terminated correctly — the carriageway stops and the pavement carries on across it — while the arm
+running **south**, with nothing beyond it either, is drawn as though the street continued. That
+makes the question *what is different between those two arms* rather than *where is the bug*, and
+M49's own wording already suggests the answer: it lists the cases an arm can dead-end into — *"a
+park, a calm zone's absorbed corridor, the shore"* — so **the case that works is the one somebody
+wrote down**, and the fix is to state it over anything that is not a street rather than over a list.
 
 ## 9. A main road's junction should be four dotted crossings, not zebras
 
