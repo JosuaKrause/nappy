@@ -8,8 +8,11 @@ progress-tracking, which lives there too.
 
 ## The state of the tree
 
-**`main` is green, published and the only branch.** Nothing is open, nothing is half-written, and
-the working tree is clean. Trust the tools over any sentence here:
+**`main` has unpushed commits ahead of `origin/main` and is otherwise the only branch.** Nothing is
+half-written in the working tree — a license-file restructure, playtest 20's writeup, and a
+correction to M69 after reading the code showed the milestone's first draft was chasing something
+that mostly wasn't a bug (`git log` over what has not reached `origin/main` shows exactly these
+three). Trust the tools over any sentence here:
 
 ```sh
 ./tools/test.sh          # the full headless suite, ~200s; must be 0 failures
@@ -20,39 +23,71 @@ the working tree is clean. Trust the tools over any sentence here:
 ```
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
+`check.sh`'s import pass can rewrite an unrelated doc's whitespace as a side effect — it did once
+this session, to `docs/ARCHITECTURE.md`, reverted before committing — so diff what `git status`
+shows after running it rather than assuming only the files you touched changed.
 
 **The game is published, and a merge to `main` is a release.**
 `https://nappy.josuakrause.com/` serves it, and `.github/workflows/deploy.yml` rebuilds and
 republishes on every push to `main` — gate, export, upload, publish, in that order, so a red build
 never reaches the site. Completed work may be pushed without asking; see the **committing** skill
 for what *completed* means, and read the sentence above it before pushing, because pushing is now
-publishing.
+publishing. The three commits above are docs-only and gated (`lint.sh`, `check.sh`, the full
+`test.sh` all ran clean before each), so they are safe to push whenever wanted — they just have not
+been, yet.
 
 ## What to do next
 
-**Start with [PLAYTEST-19.md](PLAYTEST-19.md).** It is a played run on the deployed build, nine
-findings, and it is the freshest thing in the repo. Its findings are already filed against the
-milestones that own them.
+**Start with [PLAYTEST-20.md](PLAYTEST-20.md).** A full seven-day run, four findings, and it is now
+the freshest thing in the repo. Its own findings are filed against the milestones that own them, and
+one of the four — the reachability gap — is worth reading in full rather than only in `TODO.md`'s
+compressed form, because the milestone it produced changed shape twice over the course of writing it
+down.
 
-1. **M64 — off the path is closed, not dear.** The largest of the nine and the one that changes the
-   game's shape: every event in the catalogue is a reason to cross the street and none is a reason
-   not to go somewhere. **It supersedes M50's gradient** — the corridor stops being the *cheapest*
-   ground and becomes the *only way through*, with the picture varying instead of the price. Read
-   its entry before touching M50, and note that the mechanism already exists: two ordinary obstacles
-   facing each other leave no line to walk. What has to be decided first is how many ways through
-   the day's route tree keeps open, because under this policy that number is the difficulty of the
-   whole game.
-2. **M65 — the chalk mark.** It is announced before it is found and cannot be found once it is
-   announced. Two halves of one thing.
-3. **Finish M56** — "other dangers like this", then the measurement against the nerves.
+1. **M69 — reachability becomes a graph, not a block-level check — and it needs design work, not
+   implementation, before anything else happens to it.** The player's first report read like a bug
+   in `_park_is_reachable`; reading `ClosurePlanner._access_streets` and `_invariant_holds` first
+   showed both halves might already be *working as written* — a park's up-to-four sides and the
+   `MIN_CALM_AREAS_REACHABLE := 2` guarantee are both deliberate. Put back to the player rather than
+   assumed either way, and answered: alleys become their own edges, a park gets eight edges instead
+   of up to four, a courtyard keeps its one edge to one road segment, and **both nodes and edges need
+   to be more granular than today's `StreetNetwork.Segment`** — a whole block-length unit.
 
-**And the instrument to judge any of it with now exists.** The dusk map draws the walk over the
-plan: where she went, which stretches she ran, and which events actually reached her, against the
-corridor the day expected her to take. `docs/TELEMETRY.md` says what it draws and
-`docs/evidence/rig-2026-09-02T233549-seed4242-3c6d4b4-dirty-map-day01-dusk.png` is one. **A rig can
-walk a route now**, so a picture of a specific route is cheap: `--walk` takes a script of timed
-presses — `--walk 3s15e` is three seconds south then fifteen east — and the same script on the same
-seed walks the same way every time.
+   **An agent was started on this and stopped immediately, mid-file-read, with zero commits and the
+   worktree already cleaned up** — it had been asked to settle the graph's grain itself, which is
+   planning, not implementation, and this project's own rule is that the plan is the orchestrating
+   session's and only the implementation is an agent's. That has not been redone yet. What was found
+   before stopping: `StreetNetwork` (`src/routes/street_network.gd`) is already a real junction/edge
+   graph with a working max-flow route counter (`route_count`, edge-disjoint paths by Menger's
+   theorem) — the substrate to extend, not a naive block check to throw out. A single-block park's
+   four access segments collapse to about **four** sink-connected corner junctions in that flow graph
+   today, not eight, so "eight exits" is a real design addition and not something that falls out of
+   the existing junction lattice for free. Whether alleys are in `StreetNetwork` at all yet, and how
+   they should plug in as edges, was not checked before stopping —
+   `Tuning.ALLEY_CHANCE`/`Tuning.ALLEY_WIDTH_TILES` and `CityGenerator`'s `layout.alley` /
+   `layout.passage` rects (`src/city/city_generator.gd:704-767`) are where that answer lives.
+2. **M64 — off the path is closed, not dear.** Still queued behind M69: every event in the catalogue
+   is a reason to cross the street and none is a reason not to go somewhere. **It supersedes M50's
+   gradient** — the corridor stops being the *cheapest* ground and becomes the *only way through*,
+   with the picture varying instead of the price. The mechanism already exists: two ordinary
+   obstacles facing each other leave no line to walk. What has to be decided first is how many ways
+   through the day's route tree keeps open, because under this policy that number is the difficulty
+   of the whole game.
+3. **M65 — the chalk mark.** Still the same two-part gap from playtest 19 — announced before it is
+   found, unfindable once it is — with a third item added from playtest 20: a protester pointing
+   toward the current objective, and made more common since a protester obstructs nothing.
+4. **M56 — the resistance is noticed.**
+
+**The instrument to judge any of it with now exists and was used this session.** The dusk map draws
+the walk over the plan: where she went, which stretches she ran, and which events actually reached
+her, against the corridor the day expected her to take. `docs/TELEMETRY.md` says what it draws.
+Playtest 20's evidence is fourteen of them, one day and one dusk map for all seven days of a run —
+read alongside the run's own log, they are what turned "barriers don't work" into the specific,
+citable numbers now in `TODO.md` (the day-4 `charging_dog` killing her in 0.8s against every other
+encounter's 1.5s; the chalk mark going unfound on all four days it existed, `resistance 0/4`). **A
+rig can walk a route now**, so a picture of a specific route is cheap: `--walk` takes a script of
+timed presses — `--walk 3s15e` is three seconds south then fifteen east — and the same script on the
+same seed walks the same way every time.
 
 M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
 bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.
