@@ -18,24 +18,27 @@ mid-way through.
 2. **M60** — ready for a GitHub Pages launch. *(2026-09-01: "can we use github pages to put the
    game on a page?" and "add a step for preparing for github pages launch.")*
 
-M53's one remaining piece is a question for the player, not a task — see its entry.
+M53's one remaining piece is specified and unordered — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
 
 ---
 
-## M53 — What remains is a question, not a task
+## M53 — The precinct is for walking
 
-The rest of M53 shipped; the record, with the measurements and the not-reproduced claims, is in
-`DECISIONS.md` under M53.
+A precinct is paving frontage to frontage with nothing driving on it, on either axis, and a street
+that meets one ends at its edge. What remains is that the ending is not *drawn* as anything.
 
-- [ ] **The precinct junction — two recorded instructions are in tension, and the player decides.**
-      The queue called the junction between two precinct arms a bug ("still asphalt with zebras");
-      `CityGenerator._street_tile`'s own docstring defends the current behaviour as intentional —
-      a driveable street crossing a precinct does so over a zebra six tiles deep. Measured: no
-      `ROAD` tile is ever produced at an internal precinct junction, only `SIDEWALK`/`CROSSING`.
-      The question: should a real street's carriageway survive through a precinct it merely
-      crosses, or is the six-tile zebra the design and the queue's sentence the stale one?
+- [ ] **Nothing draws a bollard, and the street just stops.** Six comments across the city and the
+      crowd explain a precinct by saying a driver *"meeting a bollarded street"* diverts, and
+      `docs/CITY.md` says a span stops short of the crossroads at either end *"which is where the
+      bollards are"*. **There is no bollard anywhere in the game** — no sprite, no tile, no prop. The
+      carriageway simply ends flush against the paving, which reads as the road running out rather
+      than as a street that was closed on purpose. It is the same gap M48 names for the barrier that
+      is blue-grey with no hazard marking: one picture per row passes and the picture still says
+      nothing. What it wants is the smallest thing that says *this was done deliberately* — a line
+      of posts across the mouth is the real-world answer and it is also the cheapest drawing in the
+      list
 
 ---
 
@@ -44,23 +47,18 @@ The rest of M53 shipped; the record, with the measurements and the not-reproduce
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**
 — a nerve is a rewind, not a resource, so there is nothing to trade.
 
-- [ ] **Danger scales with `GameState.resistance_progress`.** What it may move is open. The
-      constraint is that a role is read off the def, so heat must not become a per-row switch
-- [ ] **The patrol is the non-lethal rung; the van is the lethal one.** `police_patrol` today is
-      mobile at 74px/s, intensity 10, radii 44/185, up to 12 a day, from day 4, and not `hard_fail`
-      — which the instruction keeps. The axes an escalation could move are intensity, radius,
-      population, and whether it investigates rather than patrols: **draft and put back**
-- [ ] **The abduction van takes somebody, and then it takes you.** `abduction` today does neither —
-      a static idling van, 250px field, `hard_fail` inside 54px. **"Normally just abduct people" is
-      the first authored event with a victim**; nothing in the catalogue has ever acted on the
-      crowd. And a hunting van inherits `pursue_speed` under `RUN_SPEED`, so it creeps at a fast
-      walk — a screenshot question, not an arithmetic one
-- [ ] **A lethal field that follows her** is neither M28's clearance rule nor M50's off-corridor
-      exemption. Either the rule gains a third case for pursuers — which `charging_dog` and
-      `alley_robbery` have quietly needed without anybody writing it down — or a hunting van is not
-      a `hard_fail`
-- [ ] **"And other dangers like this"** — drafted and put back, after the vans, because the vans
-      are where the precedent gets set
+**What the remaining items are stated against**, since the machinery under them exists: a row says
+how it answers to the resistance with `EventDef.heat_response` — `NONE`, `PRESSES` or `HUNTS` —
+`EventCatalogue.heated()` derives that row's shape at a progress level, and every one of those
+shapes is validated on boot. The ladder has three rungs a player can name and both its upper ones
+are built: `police_patrol` is **denser and then interested**, and `abduction` is **hunted**, taking
+a bystander of its own while she watches and coming after her instead past three of four. The
+reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
+
+- [ ] **"And other dangers like this"** — drafted and put back, and the vans have now set the
+      precedent it was waiting on: a `HUNTS` row keeps `hard_fail`, moves neither population nor
+      intensity, and gains its own threshold rather than sharing the patrol's. The candidates
+      already in the catalogue are `checkpoint` (day 7, closes a street) and `night_raid`
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
 
@@ -73,32 +71,251 @@ The game becomes a folder of static files a browser runs. Godot's HTML5/WASM exp
 cross-origin-isolation headers are needed and GitHub Pages serves it as-is. No server: the game has
 no networking. What Pages needs is preparation, not architecture:
 
-- [ ] **Gate the dev flags first — this is the prerequisite, not a polish item.** `--seed`,
-      `--day`, `--spawn`, `--ending` and the rest ship in the build today (M10 records the debug
-      gate as owed). A public build guards every dev flag and the snapshot key behind
-      `OS.is_debug_build()`, and the M10 item to move them into a `DevFlags` helper is naturally
-      the same work
-- [ ] **A tracked Web export preset.** `export_presets.cfg` is gitignored because presets often
-      carry credentials — a Web preset carries none, so track it (adjust the ignore with a comment
-      saying why), configured for threads off. Decide the viewport/canvas policy (the game renders
-      640×360 and scales)
-- [ ] **`tools/export-web.sh`** — headless export (`--headless --export-release Web`) into
-      `build/web/` (already gitignored), with the missing-export-templates failure caught the way
-      the other tools catch a missing Godot binary
-- [ ] **Telemetry on the web decides what it is.** `user://` maps to browser storage in a web
-      build: nobody collects those logs and the folder can grow unbounded on a stranger's machine.
-      Default telemetry off for web exports (an OS feature-tag check), unless a debug build
-- [ ] **The deploy workflow** — GitHub Actions on push to `main`: install Godot + export
-      templates, run the export, publish `build/web/` to Pages (`upload-pages-artifact` +
-      `deploy-pages`). **Blocked on a decision only the player can take: the repo has no GitHub
-      remote today**, and publishing it is theirs to do; the workflow file can sit ready in the
-      repo before the remote exists
-- [ ] **A browser smoke pass** once an export exists: boots, keyboard input works, holds frame
-      rate at the game's scale, and the title screen reads as the front door of a public page.
-      itch.io stays the fallback host (it sets the isolation headers, so a threaded build would
-      also work there)
+**The site exists and it has an address.** *(2026-09-02: "I set up the website for the gh-page —
+needs to be deployed via CI / gh-action — it's https://nappy.josuakrause.com/".)* So the two things
+a workflow file could never do for itself are done: Pages is on for the repository and the custom
+domain is set. **What is left is a build and a deploy**, and the address is a fact the rest of this
+milestone now has to hold — a custom domain is stored as a repository setting rather than in the
+artifact, so the deploy must not overwrite it and nothing in the export may assume a `/nappy/`
+path prefix.
+
+**What is built, so what is left has a floor.** Every dev flag and the snapshot key answer "not
+given" outside a debug build, with the parsing in `DevFlags` rather than woven through `main.gd`;
+the day's HUD is the clock, the two bars and the optional goal, with the header and status line
+behind the same gate; `export_presets.cfg` is tracked with one Web preset on `gl_compatibility` and
+threads off; `tools/export-web.sh` builds into `build/web/`; the run log is silent on a web build;
+and `.github/workflows/deploy.yml` gates, exports and publishes on a push to `main`. The record is
+in `DECISIONS.md` under M60.
+
+**Neither of the two things that matter has been proven, and both need the same event: a push to
+`main`.** The export has never run to completion — the templates are not installed on the machine
+it was built on, so what was verified is that the tool reports their absence correctly. And a
+workflow only proves itself by running.
+
+- [ ] **The first deploy, which is a merge to `main` and nothing else.** The workflow fires on a
+      push there, so the way this milestone finishes is the way any milestone finishes. Two
+      failures to expect the first time and neither is a defect in the game: the export templates
+      download is the largest step and the one most likely to be wrong about a URL, and a Godot
+      binary whose version does not match its templates fails in a way that reads like a broken
+      export. Both are read off the run's own log
+- [ ] **A browser smoke pass** once it is deployed, at the real address: boots, keyboard input
+      works, holds frame rate at the game's scale, and the title screen reads as the front door of a
+      public page. itch.io stays the fallback host (it sets the isolation headers, so a threaded
+      build would also work there)
 
 ---
+
+## M61 — A field is an ellipse · asked for 2026-09-02
+
+> "fields should be ellipses, not circles. the excentricity should be determined by movement speed.
+> the rationale is that an entity moving towards you has more of an effect than if it moves away or
+> orthogonal. the entity itself lives in one of the focus points"
+
+**A change to the emission model itself, and it is the first one since the falloff shape.** Today
+every field is a disc: `Tuning.falloff(distance, intensity, inner, outer)` prices being near a thing
+by distance alone, so a fire engine bearing down on her and one that has just gone past cost exactly
+the same at the same range. The instruction says the direction of travel is part of the price, and
+gives the geometry to say it with — an ellipse whose eccentricity is a function of speed, with the
+entity standing at a focus rather than at the centre, so the field reaches further ahead of a moving
+thing than behind it.
+
+- [ ] **Where the shape lives.** `contribution_at()` on `EventInstance` is one function and the
+      falloff is one function in `Tuning`, so the arithmetic has one home. What has more than one
+      home is everything that *reasons* about a radius — the telegraph contract
+      (`Tuning.required_telegraph_time`, stated over the gap between the inner and outer radii),
+      the placement spacing (`EVENT_SPACING_ANY` / `EVENT_SPACING_SAME`), the clearance a lethal
+      row keeps, the streaming radius, and the denial radius a park spoiler is measured by. **Each
+      of those is a question about "how far", and an ellipse has two answers.** Decide per rule
+      whether it takes the long axis (safe, and it widens every clearance in the game) or the short
+      one, before writing any of it
+- [ ] **The contract has to be restated over the worst direction.** A player who starts walking away
+      the instant an event becomes visible must get clear before it hurts. Against an ellipse
+      pointed at her that is a different sum, and a version stated over the mean radius would pass
+      while the encounter it describes is unfair — the same failure `Tuning.pursuit_standoff()`
+      exists to stop, one system over
+- [ ] **A stationary thing keeps its circle**, by construction: eccentricity from speed means zero
+      speed is a disc. So the change is *only* about the mobile rows, which is a much smaller blast
+      radius than it first reads as — and the pursuers are where it will be felt
+- [ ] **And it has to be visible.** The falloff is invisible today and that is fine because it is
+      symmetric; a field that is stronger in front of a van is a routing fact the player can only
+      learn by being told or by dying. Ask what draws it before deciding it is free
+
+## M62 — Checkpoints that divide the map · asked for 2026-09-02
+
+> "checkpoints in the later acts should divide the map into segments/areas. that is the player
+> should be forced to cross checkpoints to reach parts of the map and the checkpoints live alongside
+> the full perimeter of each region. checkpoints can reuse the other woman with baby logic. the cost
+> can be time (and a bit of excitement) while being detained until released"
+
+> "checkpoints are not the same as closures. closures are eg construction sites where the road is
+> fully closed. a checkpoint is a barrier across the street where there are guards on the side-walks
+> with a hut and a gate over the roadway to let cars through (cars need to slow down to a full stop
+> before the gate opens and they can go ahead again). the player walks to a hut gets detained inside
+> and then spawns on the other side afterwards. it works in both directions with the same cost each
+> time"
+
+**A checkpoint is not a closure and the difference is the whole design.** A closure — roadworks, a
+construction site — takes a street away, and `docs/CITY.md`'s `absent_segments` is how the city says
+so. **A checkpoint never removes a route; it prices one, and the price is the same every time in
+both directions.** It is a crossing you can always make and never make for free, which is a thing
+the game does not have yet: every other cost in it is either avoidable by routing or fatal.
+
+**Both survive, and they are two different things.** *(2026-09-02: "let's keep both the checkpoint
+and a barrier around.")* The existing row — a recurring event rolled onto `ROAD`/`CROSSING` tiles up
+to six times a day from day 7, whose own docstring calls it *"the first event that takes a route
+away rather than making it expensive"* — is **the barrier**, and it keeps doing exactly that. The
+new structure is **the checkpoint**, and it never takes a route away. Having both is what makes
+either legible: a street held by soldiers that you cannot pass, and a street held by soldiers that
+you can pass at a price, are only a decision when the city contains both.
+
+- [ ] **The barrier needs its own name, because the new thing has taken `checkpoint`.** Two rows
+      that draw armed men across a street and mean opposite things about whether you can get
+      through, sharing a word, is the *one picture per row* rule failing at the name instead of at
+      the drawing. `barricade` already exists in act IV and is something else — whatever was
+      stacked there by somebody — so this is a third name, not a merge. Its picture stays: poured
+      concrete and a hazard stripe is a street being **held**, which is still true of it
+
+**Its anatomy, in the player's words, and each part lands on a different system:**
+
+- **A barrier across the street**, with **guards on the sidewalks** and a **hut**. So it is not one
+  body on one tile — it spans the full width of a street, footway to footway, which nothing in the
+  catalogue does. `EventDef.obstructs_radius` is a *circle* whose radius is half a silhouette, and
+  half a street is not a silhouette.
+- **A gate over the roadway.** Cars come to a **full stop**, the gate opens, they go on. The
+  machinery for making traffic stop and start at a place already exists and is not in the crowd —
+  `src/city/traffic_signals.gd` and `traffic_light.gd` hold the cycle, `src/crowd/crowd_lanes.gd`
+  and `crowd.gd` are what obeys it. A gate is a signal with a different rule and a different
+  drawing, which is a much smaller thing to build than it sounds.
+- **She walks to the hut, is detained inside, and comes out the other side.** A **teleport**, and
+  nothing in this game has ever moved the player. It is also the answer to the question a barrier
+  spanning a street would otherwise raise — how does a pram get past a thing with no gap in it —
+  and it means the crossing is never a matter of finding a way through the geometry.
+- **Both directions, the same cost each time.** So it is a toll rather than a puzzle: nothing about
+  it is learnable except that it is there, which is what makes it a *routing* fact.
+
+**How the two are placed, and it is one rule for both.** *(2026-09-02: "for the barricade and
+checkpoint placement divide the map into regions and create barricades along the full perimeters —
+add checkpoints instead of barricades only where the paths cross the region boundaries.")*
+
+**The perimeter is a wall with doors in it.** Barricade every tile of a region's boundary; wherever
+a walkable route crosses that boundary, put a checkpoint there instead. So the wall is complete —
+there is no gap to find and no way round — and every way through is a toll. That is what makes both
+rows mean something: the barricade is what you cannot pass, the checkpoint is the only place you
+can, and neither reads as anything without the other beside it.
+
+It also answers, by construction, the thing that would otherwise sink the idea. A ring of
+impassable structure is exactly the shape of sealing her in, and *the doors are placed at every
+crossing rather than at a chosen few*, so a region she has business in can never become unreachable
+however the lattice came out. The winnability check stops being an argument about placement and
+becomes a count.
+
+**The regions partition the map.** *(2026-09-02: "regions should be a partition of the map.")* Every
+tile belongs to exactly one, with no gap between two of them and no tile in both. It is worth
+stating because the alternative — regions as a few marked-off districts in an otherwise open city —
+is what a first implementation drifts into, and it quietly gives back the way round that the
+perimeter exists to remove.
+
+**The regions are decided when the city is generated, and a region edge can never affect a path.**
+*(2026-09-02: "what the regions are is determined at initial city creation and paths planning and
+boundary placement are 100% orthogonal. a region edge can never affect a path — note this implies
+the region boundaries cannot be through calm zones etc.")*
+
+**This is the constraint the rest of the milestone hangs off, and it is stronger than it looks.**
+The two systems never negotiate: `RouteTree` grows a day's routes knowing nothing about regions, and
+the boundaries were drawn before any of them existed. There is no ordering problem, no feedback
+loop, and no case where a wall makes a route worse — a boundary is laid where a wall changes nothing
+about where anybody can get to, and the doors are then cut wherever the day's paths happen to cross
+it.
+
+**And it decides where a boundary may run.** A boundary through a park would wall off half of a
+destination, which is a region edge affecting a path — so **no boundary crosses calm ground**, and
+every calm area belongs wholly to one region. That is also what makes *"the region contains an
+accessible calm zone"* a question with an answer: nothing is ever half in. The same reasoning
+applies to anything else a route has to be able to reach or use as a whole, and the home is the
+sharpest case — it is a notch with one exit, so a boundary anywhere near it is the doorstep problem
+by another route.
+
+The honest form of the rule is therefore a **generation guarantee, checked like the other ones**:
+a boundary runs on ground where sealing it removes no destination and shortens no route. That is a
+test over many seeds, not an argument.
+
+**A region with nothing in it for her gets no doors at all.** *(2026-09-02: "a region that contains
+no accessible calm zone should have no checkpoints / gates. this might sound counter-intuitive from
+a realworld point of view since such a region wouldn't ordinarily make sense but from the game
+perspective there is no reason to ever enter the region so we shouldn't even provide the option —
+the player won't notice the difference.")* Its perimeter is barricade the whole way round and she
+can never enter it.
+
+**This is the game's own rule beating the simulation's**, and it is the same principle as the one
+that keeps a quest marker out of this game: offer a choice only where there is a choice. A door
+into ground with no calm area behind it is a route the player can spend a day's clock discovering
+is worthless, and the discovery teaches nothing, because *there was never anything there* is not a
+fact about the city she can carry to tomorrow. Sealing it costs her nothing she would have wanted
+and removes a way to lose a day to no purpose.
+
+Two things it forces, and neither is optional:
+
+- **The region she starts in always has doors.** If her own region holds no calm area and is sealed,
+  the day is unwinnable from the first frame. This is the doorstep exemption's shape at city scale —
+  the home is a notch with one exit, so sealing that street seals her in — and it lands the same
+  way: the rule is stated over *a region*, and then the one she is standing in is exempt from it.
+- **"Contains a calm zone" is settled at generation; "accessible today" is not.** No boundary
+  crosses calm ground, so which region a calm area is in is a permanent fact and a region with none
+  at all is sealed for the whole run — a district she learns once and never has reason to enter.
+  What is left open is the softer case: a region whose calm areas are all *spoiled* today has
+  nothing in it today either. Sealing on that is the day's steering rather than the city's shape, so
+  it belongs with the door placement and is answered there, not here.
+
+- [ ] **The regions are a city-generation question, not an event-placement one.** A perimeter is a
+      decision about the map, so what needs designing first is what a region *is* — the quadrants
+      either side of the spine, a growth from the home block, or something the lattice already
+      knows about. This is the largest piece and everything else waits on it
+- [ ] **The barricade is structure; the checkpoint is placed by the day.** Neither is a recurring
+      event rolled onto a tile by weight. A perimeter is a fact about the city, generated with it
+      and standing for the run, and M45's first item is **permanent impassable structure, reusing
+      `absent_segments` rather than reinventing it** — that is this, so build them together or build
+      that one first. The doors are the day's, and the thing that already places per-day openings
+      and closings on a fixed map is `ClosurePlanner`, which is where their planning belongs rather
+      than in the event scheduler
+- [ ] **The wall stands for the run and the doors are re-cut every morning.** *(2026-09-02: "it is
+      okay to move checkpoints on a daily basis — reassess where to put them depending on the paths
+      of the current day.")* So the boundary is permanent and *which* of its crossings are gated is
+      a decision the day takes, off `RouteTree.for_day(map, day)` — the day's corridor, a pure
+      function of the city's seed and the day number. A crossing that is a checkpoint today is
+      barricade tomorrow.
+
+      **This makes the gate the sharpest routing instrument in the game, and it is M45's open item
+      arriving with a mechanism.** M45 wants *"a closure that points"* — not *does this lengthen
+      the route* but *does this stop her committing to a direction that cannot win today* — and
+      records the trap beside it: **a nudge that removes the decision is worse than a closure that
+      does nothing.** Choosing which doors are open is exactly that instrument, and it is exactly
+      that trap, at full strength. Two doors is a choice; one door is a corridor with a toll booth
+
+      **No ordering problem, because the two are orthogonal by decree** — see the constraint above.
+      The tree is grown knowing nothing about regions, the boundary was drawn before it, and the
+      doors go wherever the two happen to meet. What is *not* in the tree is what a door costs:
+      `RouteTree` has never priced an edge, so a route through three checkpoints and one through
+      none look identical to it. That is a real gap and it is M45's open item — whether the tree
+      can express "passable, at a price" at all
+- [ ] **The detention is `chatting_mother`'s mechanism.** *"Reuse the other woman with baby logic"*:
+      `EventDef.detain_seconds` locks her movement on first contact inside `detain_radius`, and
+      `Stroller.detain()` runs the lock out through the ordinary friction rather than stopping her
+      dead. **`EventDef.validate()` currently refuses `detain` on anything `hard_fail` or that
+      `pursues`** — a conversation is a cost, never a threat — which a checkpoint satisfies, since
+      being held up is exactly a cost. What it does not cover is the teleport at the end of the
+      lock, which is new
+- [ ] **"A bit of excitement" is the second half, and it is not the detention.** A detained player
+      is standing still, and standing still is where `EXCITEMENT_DECAY_IDLE` pays back nothing — so
+      a checkpoint charges her twice over unless the intensity is set knowing that
+- [ ] **What the doors cannot fix is the toll on every park.** Reachability is settled by placing a
+      checkpoint at every crossing of a region worth entering, and that is not the same as winnable:
+      a region whose calm areas all sit behind a detention is a day priced differently from one that
+      does not, and the difference is a real number. Measure it against a day's clock, do not argue
+      it. **The check the tests carry is not "every boundary has a door"** — it is that every region
+      holding a calm area she can use has one, and that the region she starts in always does
+- [ ] **What it does to the corridor.** `RouteTree` grows the day's routes and `Corridor` answers
+      *is this tile on one*. A toll is a cost on an edge, and the route tree has never had one —
+      check whether it can express "passable, at a price" before assuming it can
 
 ## M50 — What the corridor still owes
 
@@ -203,8 +420,11 @@ direction, not distance.**
       against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
 - [ ] **Whatever fixes one border has to be stated over *a border*.** The first pass wrote four
       sides four times, which is one bug per side waiting to happen
-- [ ] **Junctions are four-way where an arm dead-ends** — **not reproduced.** Two candidates checked
-      and correct. Needs a location from the player, or a third candidate
+- [ ] **Junctions are four-way where an arm dead-ends** — **not reproduced**, and three candidates
+      are now ruled out rather than two. The third was every precinct edge, and it cannot be the
+      place: where either corridor is a precinct the whole junction box is one flat sheet of paving
+      with no per-arm kerb or line art on it at all, so there is no directional drawing left to get
+      wrong. Still needs a location from the player, or a fourth candidate
 - [ ] **Restate the main-road pacing question.** The design says she exhausts her own side of the
       spine before being forced across. **Is that emergent** — calm areas exist on both sides and
       spoiling burns the near ones over an act — **or does something have to withhold the far side
@@ -244,6 +464,27 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
 - [ ] **`generate()` retries with `seed + 1`**, so a run's city is the first nearby seed that
       passes rather than `run_seed` itself. Not a bug; worth remembering when reproducing from a
       seed
+- [ ] **A pursuer streamed out mid-chase comes back having forgotten it.** `EventInstance.resume()`
+      restores the age and the distance travelled but not `_noticed_at`, and a fresh instance starts
+      with that at `INF` — so a `pursues_within` row streamed out after it has noticed her returns
+      `is_waiting()`, standing where the day planted it. It is not new and it is not currently
+      dangerous: `alley_robbery` has had it since the mechanic was built, and the heated patrol that
+      surfaced it can never be `hard_fail`. **`tests/test_heat.gd` pins the behaviour rather than the
+      one the field name implies**, so a fix fails there first. The fix is `resume()` carrying the
+      notice, and it has to be checked against every `pursues_within` row rather than the one that
+      found it
+- [ ] **A big building can be built over a precinct's own pavement.** Measured on **seed 24757**:
+      two tiles inside a precinct span are not walkable, because something with a footprint was
+      placed across the corridor the span runs down. A precinct is the best ground in the city to
+      bring a meter down on and its whole design is *paving frontage to frontage* — a hole in it is
+      the one place that sentence stops being true. Nothing in the placement rules asks whether a
+      footprint lands on a precinct span; the fix is a constraint where big buildings and calm zones
+      choose their ground, not a repair pass afterwards
+- [ ] **`chat` is written and undocumented.** `EventManager` logs a `chat` entry when
+      `chatting_mother` starts a conversation, and the table of entry kinds in `docs/TELEMETRY.md`
+      has no row for it — so a reader of a run log meets a kind the documentation does not admit
+      exists. One row, and the check that would have caught it is whether anything asserts the two
+      lists agree
 - [ ] **The log says when she is stuck** *(asked 2026-09-01: "put a note in the telemetry when the
       player doesn't move even though they press something")*. A throttled `blocked` entry from
       `TelemetryObserver` — movement input held for about a second while displacement stays near
@@ -267,9 +508,10 @@ After the playtest work. There is no point polishing a loop that is about to be 
 - [ ] **A web build** — grew into its own milestone: M60, "Ready for a GitHub Pages launch"
 - [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
 - [ ] Controller support
-- [ ] Gate the dev flags behind a debug build, and move `_first_event_position` and friends out of
-      `main.gd` into a `DevFlags` helper — the audit measured the dev-only code at roughly a third
-      of `main.gd`, so the helper is worth doing before the file is next touched
+- [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag *parsing* out; what
+      stayed is the code that acts on it — `_first_event_position` and the `--spawn` target lookup,
+      both of which read the live city and would have made the move a rewrite rather than a
+      relocation. Worth finishing the next time the file is opened for another reason
 
 ---
 
@@ -287,5 +529,13 @@ After the playtest work. There is no point polishing a loop that is about to be 
       crossing"* is still a claim about a player rather than about a probe
 - [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little time to
       learn a city before it starts changing
-- [ ] **Could the meter bars be turned off entirely**, now that the pram carries four states of the
-      baby? A question for somebody playing with them hidden rather than for more code
+- [ ] **Could the meter bars be turned off entirely** — deferred, not open. *(2026-09-02: "we can
+      keep the bar for now and think about the diegetic face later on.")* The minimal HUD keeps the
+      bars and drops the status line beside them, so what gets tested first is whether the pram
+      alone can carry the baby's state on the half that was cut.
+
+      **What comes back with it is a face**, which is a bigger idea than hiding a bar: the same
+      shape M10 already records for audio, where the baby's breathing is *"the diegetic version of
+      the meters"*. A face would be that in the visual channel — the meter read off the baby rather
+      than off a strip at the bottom of the screen. Not designed, and it needs the playing that the
+      status-line cut is about to produce

@@ -1,9 +1,15 @@
 extends CanvasLayer
-## Meters, baby state and the run header.
+## The clock, the two meter bars and the current optional goal — the whole of the day's HUD.
 ##
 ## Meter values arrive over EventBus, so the HUD never holds a reference to the world or
 ## the event system. The one direct reference is to the Baby, for `stall_reason()` — a
 ## coaching hint that needs to ask "why", which a value signal cannot answer.
+##
+## The header (day / act / nerves) and the status line (the baby's state and why sleepiness has
+## stalled) are debug output, not the game: between-day summaries already say all of it, and
+## during the day it is noise the entity on screen already carries. They draw only in a debug
+## build, because the rigs and `tools/shot.sh` read them, and the release build drops them
+## silently rather than replacing them with anything.
 
 @onready var _sleepiness: MeterBar = $Meters/Sleepiness
 @onready var _excitement: MeterBar = $Meters/Excitement
@@ -14,13 +20,19 @@ extends CanvasLayer
 @onready var _home_arrow: HomeArrow = $HomeArrow
 @onready var _teach: Label = $Teach
 
+## Read once per instance rather than at each use site, so a test can flip it and drive both HUD
+## shapes without needing an actual debug build — the test process itself always is one, so asking
+## `OS.is_debug_build()` from inside `_refresh_header()` et al. would leave the release shape
+## covered by nothing.
+var _debug := OS.is_debug_build()
+
 var _baby: Baby
 var _contact_step := 0
 var _announcement := ""
 var _announcement_for := 0.0
-## What is holding a floor under the whole city, or "" for nothing. The only cue for a source with
-## no position: without it the loudspeaker masts hold the meter up from day 5 with nothing on
-## screen to say why.
+## What is holding a floor under the whole city, or "" for nothing. Debug-only readout (see
+## `_refresh_state()`); a city-wide source still holds the meter up in a release build, it is just
+## not named on screen any more.
 var _city_wide := ""
 
 const _STATE_TEXT := {
@@ -181,11 +193,17 @@ func _on_excitement_changed(value: float) -> void:
 func _on_baby_state_changed(_state: GameEnums.BabyState) -> void:
 	_refresh_state()
 
+## The status line. An announcement always uses it — "The loudspeakers cut out mid-sentence." has
+## nowhere else to go — but the baby's state, `stall_reason()` and the city-wide note are debug-only:
+## the state is already visible on the pram itself, and the other two are read between days.
 func _refresh_state() -> void:
 	if not _baby:
 		return
 	if _announcement_for > 0.0:
 		_state_label.text = _announcement
+		return
+	if not _debug:
+		_state_label.text = ""
 		return
 	var text: String = _STATE_TEXT.get(_baby.state, "?")
 	var reason := _baby.stall_reason()
@@ -207,9 +225,23 @@ func _on_contact_available(step: int) -> void:
 	_contact_step = step
 	_refresh_resistance()
 
-## Deliberately terse. There is no quest log — the subquest is chalk on a wall, and the HUD
-## says only how far in you are.
+## Deliberately terse. There is no quest log — the subquest is chalk on a wall.
+##
+## The release line is the current optional goal and no count: the progress dots are how far in you
+## are, the same category as the header's `nerves ***` and read between days rather than during one.
+## A debug build keeps the `resistance ***..` prefix the rigs and `tools/shot.sh` were built against.
+##
+## **`somewhere out there:` stays**, because it is what makes a title a goal. Without it the line is
+## a bare fragment — `a chalk mark` — which says a noun rather than *go and find this*, and the
+## whole of what survives the cut is that one instruction.
 func _refresh_resistance() -> void:
+	if not _debug:
+		var step: ResistanceSteps.Step = null
+		if _contact_step > 0:
+			step = ResistanceSteps.by_index(_contact_step)
+		_resistance_label.text = "somewhere out there: %s" % step.title.to_lower() if step else ""
+		return
+
 	if not GameState.has_joined_resistance() and _contact_step == 0:
 		_resistance_label.text = ""
 		return
@@ -240,7 +272,13 @@ func _on_city_went_quiet() -> void:
 	_announcement_for = 7.0
 	_refresh_state()
 
+## Debug-only: day, act and nerves are all read between days already, and during the day this is
+## the header the rigs and `tools/shot.sh` were built against, not something the release build owes
+## the player.
 func _refresh_header() -> void:
+	if not _debug:
+		_header.text = ""
+		return
 	_header.text = "day %d / %d      act %d      nerves %s" % [
 		GameState.day, Tuning.RUN_LENGTH_DAYS, GameState.current_act(),
 		"*".repeat(GameState.nerves) if GameState.nerves > 0 else "-",

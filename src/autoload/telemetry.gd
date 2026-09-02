@@ -56,8 +56,16 @@ func is_active() -> bool:
 ## `shot.sh --walk 60` writes a large, busy, entirely unplayed log. That is this project's own
 ## recurring mistake in miniature: **a proxy that is equivalent in the ideal case is not equivalent
 ## in a street**, and every measurement taken of the proxy agrees with it.
+##
+## **Silently does nothing on a web export.** `user://` is browser storage there, nobody collects
+## it, and it has no `tools/telemetry.sh` to prune it — see `KEEP_LOGS`, which only ever runs on
+## the machine that wrote the logs it is counting. Checked here rather than by the one caller, so
+## a future caller cannot reintroduce a run log on the one platform where nobody would ever read
+## or clear it.
 func begin_run(run_seed: int, played := true) -> void:
 	end_run()
+	if OS.has_feature("web"):
+		return
 	if not _prepare_directory():
 		return
 	var stamp := Time.get_datetime_string_from_system(false, false).replace(":", "").replace(" ", "-")

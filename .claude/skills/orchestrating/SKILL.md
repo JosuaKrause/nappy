@@ -1,20 +1,41 @@
 ---
 name: orchestrating
-description: How implementation work is delegated to sub-agents — Sonnet agents in isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Injected automatically by the rules hook on any Agent/Task spawn; also worth loading when deciding whether to implement directly or delegate.
+description: How implementation work is delegated to sub-agents — delegating is the default, Sonnet agents in isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Injected automatically at the start of every session, because who does the work is decided before the first tool call.
 ---
 
 # Orchestrating sub-agents
 
 **Implementation of a specified milestone is delegated to a Sonnet agent in an isolated git
-worktree; the orchestrating session designs, specifies, merges and maintains the queue.** Asked for
-on 2026-09-01. The split holds because the two jobs want different things: implementation wants
-fresh context and a fenced scope; orchestration wants the whole queue, the player's words, and the
-authority to merge.
+worktree; the orchestrating session designs, specifies, merges and maintains the queue.** The split
+holds because the two jobs want different things: implementation wants fresh context and a fenced
+scope; orchestration wants the whole queue, the player's words, and the authority to merge.
 
-**Delegate only what is specified.** A milestone whose `TODO.md` entry an implementer could build
-from cold — the test the feedback rules already impose — is ready for an agent. A milestone with an
-open design question is not; the question goes to the player first, and "draft and put back" items
-never go to an agent at all.
+## Delegating is the default, and implementing by hand is the decision
+
+**Before writing code in `src/` or `tests/`, the question is not "can I do this" but "is this
+specified enough to hand over".** If it is, hand it over.
+
+The three cases where the orchestrating session implements directly, and they are narrow:
+
+- **The design is still moving.** An open fork, a "draft and put back" item, or anything where the
+  next decision is the player's — an agent cannot hold a conversation with them.
+- **The change is a sentence.** A stale line in a doc, a constant, a one-line fix. Specifying it
+  costs more than doing it, and a prompt long enough to be unambiguous is longer than the diff.
+- **It is the queue or the archive.** `TODO.md`, `HANDOFF.md`, `DECISIONS.md` and the playtests are
+  the orchestrator's, always — see "What the orchestrator keeps".
+
+**Everything else is an agent's**, and a milestone that is not ready for one is a milestone whose
+`TODO.md` entry is not finished yet. That is the same test the feedback rules already impose:
+*somebody opening the repo cold could build the thing that was asked for.* Writing the brief until
+an agent can take it is not overhead on top of the work — it **is** the orchestrating half of it.
+
+**A milestone with an open design question is not ready for one.** The question goes to the player
+first, and "draft and put back" items never go to an agent at all.
+
+**This file loads at the start of the session, before the first tool call**, because that is when
+the question is live. Every later trigger is too late in one direction or the other: an `Agent`
+spawn is the decision already going the right way, and a first edit to `src/` is it already going
+the wrong one. It is the one rule in this project that cannot be hung on a file.
 
 ## The task description is the contract
 
@@ -28,16 +49,16 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
 - **A scope fence**: the files it may touch, and the files it must not — always including
   `docs/TODO.md`, `docs/HANDOFF.md`, `docs/DECISIONS.md` and the playtests (queue maintenance and
   archiving belong to the orchestrator), plus anything another live agent owns. Two agents editing
-  one file is a merge conflict scheduled in advance; when a shared file is unavoidable (it was
-  `.claude/settings.json` once), tell each agent exactly which lines are theirs.
+  one file is a merge conflict scheduled in advance; when a shared file is unavoidable, tell each
+  agent exactly which lines are theirs.
 - **The verification gate**: `./tools/check.sh` OK and the **full** `./tools/test.sh` — a
   `PARTIAL RUN` is not a green build. Filtered runs are fine for iteration; the gate is the
   unfiltered suite.
 - **Headless first.** Verification lives in the test rigs, not in watching the game. Windowed runs
   (`tools/run.sh`, repeated `tools/shot.sh`) open on the player's own screen; at most one or two
-  `shot.sh` calls at the end for evidence. The incident that set this: an agent burned several
-  windowed runs on a `--walk north` rig that stood against the home notch's back wall the whole
-  time — the verify skill now carries that trap.
+  `shot.sh` calls at the end for evidence. A windowed run is also the least reliable thing an agent
+  can lean on — the **verify** skill carries the rig traps that make one look like it worked when
+  it did not.
 - **Forks come back, never guessed.** If the design is ambiguous, or two recorded instructions
   conflict, the agent implements the unambiguous part and states the fork precisely in its report.
   Where the design is merely silent on a small detail, it chooses the smallest implementation

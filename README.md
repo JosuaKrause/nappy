@@ -48,7 +48,6 @@ Or open the project folder in Godot 4.7 directly.
 | --- | --- |
 | Arrow keys / WASD | Walk |
 | Hold Shift | Run (raises excitement) |
-| E | Interact |
 | Space | Begin, on the title screen; continue, on the between-days screen and from the pause |
 | Esc | Pause, and carry on again |
 | R | Start the run again — from the pause screen |
@@ -97,11 +96,15 @@ says what the entries mean.
 
 `.godot/` is gitignored, so a fresh clone needs an import pass before `class_name` types
 resolve. `tools/check.sh` does the import and then boots the project headless, failing on
-any script error:
+any script error; `tools/test.sh` is the headless suite, and it is what a commit rests on.
 
 ```sh
 ./tools/check.sh
+./tools/test.sh                 # everything
+./tools/test.sh crowd events    # just those suites, for the inner loop
 ```
+
+A filtered run prints `PARTIAL RUN` under its count and is deliberately not a green build.
 
 ## License
 

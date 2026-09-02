@@ -45,6 +45,16 @@ is the moment somebody is about to touch the file.
 | any `*.gd` | **godot** |
 | spawning a sub-agent (the `Agent`/`Task` tool — a tool, not a path) | **orchestrating** |
 
+**And one arrives before anything at all.** `.claude/hooks/session-rules.sh`, wired to `SessionStart`
+in `.claude/settings.json`, loads **orchestrating** at the start of every session, because
+*delegating is the default* is decided before the first tool call — an `Agent` spawn is that
+decision already going the right way and a first edit to `src/` is it already going the wrong one.
+The two path triggers are backstops and share its marker, so a session gets it exactly once.
+
+**Keep that list to one skill unless there is a real second.** Everything loaded at the start is
+paid for in every session whether or not it turns out to be relevant, which is the exact cost the
+path-triggered hook exists to avoid.
+
 **Three have no file to trigger on and are yours to invoke**, because they are about a *moment*
 rather than a place:
 

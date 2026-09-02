@@ -48,6 +48,11 @@ not one session.
 the person playtesting has to remember to turn on, which means the interesting run is the one
 that was not recorded.
 
+**It is always off on a web export**, no flag needed. `user://` there is a stranger's browser
+storage rather than a developer's disk: nobody collects what lands in it and nothing prunes it, so
+`Telemetry.begin_run()` checks `OS.has_feature("web")` itself and does nothing on that platform —
+the one caller cannot forget the check because there is only one place it is made.
+
 ## What one looks like
 
 ```
@@ -130,6 +135,7 @@ name the question it answers, or it is a metric and does not belong.
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager` | Where the city stopped being recomputable |
 | `ahead` | `EventManager` | When the director put something across her line, and where she was — the only record of an event that has no place on the map |
+| `taken` | `EventInstance` | Whether an `abduction`'s own bystander scene ever actually finishes — the only record that the catalogue touched the crowd at all. Written by the instance itself rather than by `EventManager`: the scene needs nothing the instance does not already carry (`player_at`, its own age), and that is what lets a data-level rig assert it with no map or city behind it |
 | `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial |
 | `start` | observer | Where the day began |
 | `cross` | observer | Did the player have to cross the street, and at a zebra? |

@@ -80,6 +80,13 @@ esac
 case "$path" in
 	*.gd)                      wanted+=(godot) ;;
 esac
+# A backstop, and it should never fire: session-rules.sh loads the orchestrating rules at the
+# start of the session and writes the same marker, because *who implements this* is decided
+# before any file is touched and both an Agent spawn and a first edit to src/ are already too
+# late to ask it. This case exists only for a session that somehow started without that hook.
+case "$path" in
+	*/src/*|*/tests/*)         wanted+=(orchestrating) ;;
+esac
 
 [ ${#wanted[@]} -eq 0 ] && exit 0
 

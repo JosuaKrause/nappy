@@ -8,46 +8,90 @@ progress-tracking, which lives there too.
 
 ## The state of the tree
 
-`main` is green and playable; no branches are open; nothing is half-built. Trust the tools over any
-sentence here:
+**`main` is green and playable, and one feature branch is open with M56 half-built on it** —
+`git branch` names it, and M53's carriageway work has landed on the same branch. Nothing is broken
+and nothing is half-written: the branch's items are each finished and committed, and the milestone
+simply has items left. Trust the tools over any sentence here:
 
 ```sh
 ./tools/test.sh          # the full headless suite, ~200s; must be 0 failures
 ./tools/check.sh         # boots the project, fails on any script error
+./tools/lint.sh          # the governed docs, for sentences that go stale on their own
 ./tools/run.sh           # plays it
 ./tools/telemetry.sh     # what the last run actually did, in order
 ```
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
 
+**There is a GitHub remote** (`origin`), and completed work may be pushed to it without asking —
+see the **committing** skill for what *completed* means. `main` may never carry an unfinished
+milestone.
+
+## What is on the open branch
+
+**M56's mechanism and its non-lethal rung.** A row declares how it answers to the resistance with
+`EventDef.heat_response` — `NONE`, `PRESSES` or `HUNTS` — and `EventCatalogue.heated(def, level)`
+derives that row's shape at a progress level and keeps it. Because progress is a bounded integer,
+**every heated shape of every row is validated on boot**, which is the only way the fairness
+contracts can be about the dangerous version of an event rather than the harmless one.
+`EventScheduler.build_day()` takes the heat as an argument, so a rig can plan a fully heated day
+without a run having happened.
+
+**Both upper rungs of the ladder are built.** `police_patrol` carries `PRESSES`: more of them, more
+expensive to stand near, and from half progress it **investigates** — a pursuer that also has a
+route runs the route until it notices her, then follows. It never becomes lethal at any heat.
+`abduction` carries `HUNTS`: while she is close enough to watch, it takes a bystander of its own —
+a scripted figure the event draws, never a `CrowdAgent` — and past three of four it stops idling for
+strangers and comes after her instead, at 130px/s from a 180px trigger, still `hard_fail`.
+`tests/test_heat.gd` asserts both over the response rather than over the rows that carry them.
+
+**A pursuer is exempt from the rule that nothing else happens inside a lethal event's field**, and
+the exemption is stated over `pursues` rather than holding by accident of the `WALL` role.
+
 ## What to do next
 
-The order, set on 2026-09-01. Each entry's full brief is in [TODO.md](TODO.md); the design work
-behind the newest one is in [PLAYTEST-18.md](PLAYTEST-18.md).
+1. **Merge to `main` and watch the deploy.** M60 is built except for the two things that can only
+   be proven by running: the Web export has never completed on a machine with templates installed,
+   and `.github/workflows/deploy.yml` fires on a push to `main`. The site is
+   `https://nappy.josuakrause.com/`, already on with its custom domain set as a repository setting.
+   **This publishes the game**, so it is the player's call rather than a routine merge.
+2. **Finish M56** — "other dangers like this", then the measurement against the nerves. The vans
+   have set the precedent the first of those was waiting on.
 
-1. **M56** — the resistance is noticed.
-2. **M60 — ready for a GitHub Pages launch.** Dev flags behind a debug gate first, then a tracked
-   Web export preset, an export tool, telemetry off for web, and a deploy workflow that waits on
-   the one decision only the player can take — publishing a remote.
-
-M53's remaining piece — the precinct junction — is a **question for the player** (two recorded
-instructions in tension); it is stated in [TODO.md](TODO.md) under M53.
+M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
+bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.
 
 ## Open beyond the order
 
-Unordered, reassessed 2026-09-01, full entries in [TODO.md](TODO.md): **M50** (the corridor's
-density is a catalogue question; placeholders step 3; the four-street building), **M47** (the 2×2
-courtyard complex; calm-area adjacency; multi-block calm re-derived for 121 blocks; the main road
-as a soft block), **M45** (closures that point), **M48** (bodies drawn wider than their pavement),
-**M43** (the tutorial dog after day 3; the one-contact cliff at 90; `RUN_TAUGHT_DAY` 3 → 2),
-**M49** (the fence, the vanishing border-walkers), **M25** (patrols for the empty acts), **M26**
-(teaching the controls), a shortlist of small items, and **M10** (polish, now including a web
-build).
+Unordered, full entries in [TODO.md](TODO.md): **M61** (fields as ellipses whose eccentricity comes
+from movement speed), **M62** (checkpoints and barricades dividing the map into regions), **M50**
+(the corridor's density; placeholders step 3; the four-street building), **M47** (the 2×2 courtyard
+complex; calm-area adjacency; multi-block calm re-derived for 121 blocks; the main road as a soft
+block), **M45** (closures that point), **M48** (bodies drawn wider than their pavement), **M43**
+(the tutorial dog after day 3; the one-contact cliff at 90; `RUN_TAUGHT_DAY` 3 → 2), **M49** (the
+fence, the vanishing border-walkers), **M25** (patrols for the empty acts), **M26** (teaching the
+controls), a shortlist of small items, and **M10** (polish).
 
 ## What to distrust
 
 What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 
+- **The whole of the heat is unfelt.** Every number in it was set by design and checked by a rig:
+  nobody has walked a city at full resistance progress, and the item that would tell you whether it
+  is fair — measuring it against the five nerves — is the one still queued. It makes the back half
+  harder *precisely for the player doing well at the optional path*, and **nobody has ever reached
+  act III**.
+- **An investigating patrol has never been seen.** The claim is that a police car breaking off its
+  route to follow her reads as *being noticed*. That is a screenshot question and no screenshot has
+  been taken.
+- **The van's victim reads as a man standing next to a van.** A screenshot of the scene is in
+  `docs/evidence/` and it is the weaker of the two taken: the figure is upright and unheld, so the
+  whole of *being taken* is carried by it walking in and disappearing over 2.5 seconds, which a
+  still cannot show and nobody has watched. The hunting half came out better — end-on, closing,
+  and not comic.
+- **A hunting van drives along the footway.** A pursuer steers straight at her over any walkable
+  tile, which every pursuer in this game already does; this is the first time the thing doing it is
+  a van. Whether that reads as menace or as a bug is a question for somebody watching it.
 - **The difficulty has been felt by a human once**, and that was a verdict on one density pass and
   one act I. The sleepiness numbers, the nerve economy, and whether the arterial is crossable are
   all still arithmetic checked by `tests/test_balance.gd` and unfelt. **Nobody has ever got past day
@@ -81,9 +125,9 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   constant was 12.
 - **There is no audio at all.** Less urgent than it sounds: audio is redundancy, so the game must
   already be fully playable without it.
-- **Dev flags are always on.** `--seed`, `--day`, `--spawn`, `--follow`, `--meters`, `--overview`,
-  `--day-length`, `--screenshot`, `--after`, `--walk`, `--flee`, `--press`, `--ending` ship in the
-  build. They should be gated behind a debug build before release.
+- **The web build has never been built.** Every flag is gated, the preset is tracked and the
+  workflow is written, and no export has run to completion anywhere: the templates are not
+  installed on the machine it was built on. What is verified is that the tool says so clearly.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
   running behind it, `space` to begin — but it is a title, three lines of controls and two keys: no
   options, no seed box, no load game.
@@ -94,3 +138,6 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 the playtest files for the noun. Three separate things in one session turned out to be already
 written down and never built — the interact key (filed in playtest 02), the alley roulette, and M40
 itself. The code is evidence of what was built; it is never evidence of what was agreed.
+
+**And the second rule is that the plan is yours and the implementation is an agent's.** The
+**orchestrating** rules load at the start of every session and say when that is not true.

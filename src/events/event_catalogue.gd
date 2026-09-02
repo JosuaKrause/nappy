@@ -17,13 +17,40 @@ const PERSON_BODY := 11.0
 const VEHICLE_BODY := 22.0
 
 static var _all: Array[EventDef] = []
+## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
+static var _hot: Dictionary[String, EventDef] = {}
+
+## Every heat level a run can reach. Progress runs 0..`RESISTANCE_GOAL`; a fifth completed task
+## adds nothing, because full heat is the qualification rather than the last errand. A function
+## rather than a `const`, because an autoload's constant is not available at parse time.
+static func heat_levels() -> int:
+	return Tuning.RESISTANCE_GOAL + 1
 
 static func all() -> Array[EventDef]:
 	if _all.is_empty():
 		_all = _build()
+		# **Every shape of every row, not only the cold one.** The fairness contracts are checked
+		# once, on load, from data — so a row that got worse with the resistance and was validated
+		# only at heat zero would have its contract stated about precisely the harmless version of
+		# itself. The set of shapes is finite because progress is a bounded integer, which is what
+		# makes checking all of them possible at all.
 		for def in _all:
-			def.validate()
+			for level in heat_levels():
+				heated(def, level).validate()
 	return _all
+
+## This row at a resistance level, derived once per run and kept.
+##
+## The derivation itself is `EventDef.at_heat()`; this is the cache in front of it, because a day
+## asks for the same heated row once per candidate placement and a duplicate per candidate would be
+## thousands of `Resource`s per day.
+static func heated(def: EventDef, level: int) -> EventDef:
+	if def.heat_response == EventDef.HeatResponse.NONE or level <= 0:
+		return def
+	var key := "%s|%d" % [def.id, level]
+	if not _hot.has(key):
+		_hot[key] = def.at_heat(level)
+	return _hot[key]
 
 static func by_id(id: String) -> EventDef:
 	for def in all():
@@ -31,17 +58,17 @@ static func by_id(id: String) -> EventDef:
 			return def
 	return null
 
-## Every def that may appear on this day, in catalogue order.
-static func available_on(day: int) -> Array[EventDef]:
+## Every def that may appear on this day, in catalogue order, in the shape `heat` puts them in.
+static func available_on(day: int, heat: int = 0) -> Array[EventDef]:
 	var found: Array[EventDef] = []
 	for def in all():
 		if def.available_on(day):
-			found.append(def)
+			found.append(heated(def, heat))
 	return found
 
-static func of_kind(kind: GameEnums.EventKind, day: int) -> Array[EventDef]:
+static func of_kind(kind: GameEnums.EventKind, day: int, heat: int = 0) -> Array[EventDef]:
 	var found: Array[EventDef] = []
-	for def in available_on(day):
+	for def in available_on(day, heat):
 		if def.kind == kind:
 			found.append(def)
 	return found
@@ -841,6 +868,11 @@ static func _charging_dog() -> EventDef:
 
 ## Mobile, unhurried, and it stops. Not dangerous yet — the danger is that you start
 ## planning around it, which is the point.
+##
+## **The non-lethal rung of the resistance's ladder.** `heat_response = PRESSES`: past
+## `GameState.resistance_progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
+## it stops merely patrolling and starts investigating — see `EventDef.at_heat()`. It never gains
+## `hard_fail`, whatever the heat; the van is the rung that kills.
 static func _police_patrol() -> EventDef:
 	var def := EventDef.new()
 	def.id = "police_patrol"
@@ -859,6 +891,7 @@ static func _police_patrol() -> EventDef:
 	def.path_length_tiles = 40
 	def.weight = 3.0
 	def.max_per_day = 12
+	def.heat_response = EventDef.HeatResponse.PRESSES
 	return def
 
 ## Cosmetic dread. Barely moves the meter; it is here so the walls change.
@@ -941,6 +974,19 @@ static func _checkpoint() -> EventDef:
 
 ## An unmarked van idles first — that idling IS the telegraph, and it runs long because
 ## the inner radius ends the day. Getting close does not excite the baby; it takes you.
+##
+## **And it takes somebody else first.** While she is close enough to watch (`outer_radius`), it
+## draws its own bystander walked to it and taken — `EventInstance._update_the_take()`. A scripted
+## figure that belongs to the event, never a real `CrowdAgent`: the crowd is a population of the
+## field around the player rather than of the city, recycled as she moves, so a taken pedestrian
+## could never be a lasting fact about the world either way. Drawing and telemetry only — nothing
+## here changes `contribution_at()`, spawns a body, or reaches into the crowd.
+##
+## **`heat_response = HUNTS`, the lethal rung of the resistance's ladder.** Below
+## `Tuning.HEAT_HUNTS_LEVEL` it is untouched — population and intensity are `PRESSES`'s axes, not
+## this one's. At and above it, the derived copy stops idling for a stranger and starts hunting
+## her instead: see `EventDef.at_heat()`. It keeps `hard_fail` throughout, because a pursuer is
+## exempt from the rule that nothing else happens inside a lethal event's field.
 static func _abduction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "abduction"
@@ -953,10 +999,14 @@ static func _abduction() -> EventDef:
 	def.inner_radius = 54.0
 	def.outer_radius = 250.0
 	def.duration = 34.0
-	# hard_fail doubles the required margin: (250-54)/92 * 2 = 4.26s.
+	# hard_fail doubles the required margin: (250-54)/92 * 2 = 4.26s. It stays exactly this long
+	# once the van hunts, too: a pursuer's telegraph buys the notice of it coming rather than an
+	# escape distance (`Tuning.PURSUIT_MIN_NOTICE`, 1.5s), and 4.6s is comfortably over it.
 	def.telegraph_time = 4.6
 	# A van is a van: 22 + her own 14 leaves the 54 that takes her comfortably reachable, so the
 	# body only ever stops her during the idling, which is the phase where it has not happened yet.
+	# Once it hunts, `EventInstance` drops this body the moment it stops waiting — a moving wall on
+	# a two-tile pavement pins her against a building, the same reason a pursuer never carries one.
 	def.obstructs_radius = VEHICLE_BODY
 	def.hard_fail = true
 	def.weight = 2.0
@@ -965,6 +1015,7 @@ static func _abduction() -> EventDef:
 	# blocks is one every twelve; twelve of them would be a difficulty setting nobody asked for.
 	def.max_per_day = 4
 	def.cost = 3
+	def.heat_response = EventDef.HeatResponse.HUNTS
 	return def
 
 ## **A man in an alley who is worth crossing the road for, and who comes after you if you do not.**

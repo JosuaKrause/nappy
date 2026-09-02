@@ -4,8 +4,10 @@
 /build/
 /export/
 
-# Godot export presets often carry credentials
-export_presets.cfg
+# Godot export presets often carry credentials (a keystore password, a signing identity) and are
+# usually left untracked for that reason. export_presets.cfg is tracked in this repo because its
+# only preset is Web, which carries none — a preset for a platform that does carry one belongs
+# back on an ignore line, not beside this one in the tracked file.
 
 # OS
 .DS_Store

@@ -43,6 +43,7 @@ func run(t) -> void:
 	_test_the_named_decisions_arrive(t)
 	_test_two_of_a_kind_are_not_the_same_incident(t)
 	_test_nothing_happens_inside_a_lethal_field(t)
+	_test_a_pursuer_keeps_no_field_clear(t)
 	_test_the_city_remembers_where_she_went(t)
 	_test_everything_that_stands_still_is_solid(t)
 	_test_a_lethal_thing_can_still_be_reached(t)
@@ -57,6 +58,10 @@ func run(t) -> void:
 	_test_a_conversation_prices_by_the_babys_state(t)
 	_test_a_conversation_only_starts_inside_detain_radius(t)
 	_test_a_conversation_happens_once_per_instance(t)
+	_test_the_take_begins_only_once_she_is_close(t)
+	_test_a_completed_take_is_logged_exactly_once(t)
+	_test_a_hunting_van_draws_no_victim(t)
+	_test_the_obstruction_comes_down_once_it_stops_waiting(t)
 
 # ------------------------------------------------------------------ fairness ---
 
@@ -1469,6 +1474,32 @@ func _test_nothing_happens_inside_a_lethal_field(t) -> void:
 	t.check(exempt > 0, "a run places lethal walls, which are the exempt ones (%d)" % exempt)
 	t.check(lethal_days >= 0, "and the rest are checked (%d)" % lethal_days)
 
+## **The third case of the clearance rule, pinned over `pursues` rather than over either row that
+## carries it today.** A lethal field that follows her is neither on the corridor nor off it, so
+## placement cannot keep it clear of anything — `charging_dog` never reaches `_room_around` at
+## all (it is `AHEAD_OF_PLAYER`, sited with no tile) and `alley_robbery` is exempt today only
+## because `hard_fail` always classifies a `MAP`-placed `RECURRING`/`SCRIPTED` row `WALL` before
+## `_role_for` ever asks whether it pursues. Forcing the role off `WALL` here is what tells the two
+## reasons apart, and it is why a third pursuer — one a future `_role_for` change routes through
+## `SET_PIECE` or `FRICTION` instead — inherits the exemption without anybody adding a case for it.
+func _test_a_pursuer_keeps_no_field_clear(t) -> void:
+	var pursuer := EventCatalogue.by_id("alley_robbery")
+	t.check(pursuer.hard_fail and pursuer.pursues, "alley_robbery is lethal and pursues")
+	var off_wall := EventScheduler.Planned.new(pursuer, Vector2.ZERO)
+	off_wall.role = GameEnums.BlockerRole.FRICTION
+	t.check(not EventScheduler._keeps_its_field_clear(off_wall),
+			"a lethal pursuer keeps nothing clear even when it is not classified a wall")
+
+	# The control: an otherwise identical lethal row that does not pursue still owes the rule off
+	# the `WALL` role — the exemption is `pursues`, not "the role happens not to be WALL".
+	var stationary := EventCatalogue.by_id("reversing_lorry")
+	t.check(stationary.hard_fail and not stationary.pursues,
+			"reversing_lorry is lethal and does not pursue, the contrast this needs")
+	var off_wall_stationary := EventScheduler.Planned.new(stationary, Vector2.ZERO)
+	off_wall_stationary.role = GameEnums.BlockerRole.FRICTION
+	t.check(EventScheduler._keeps_its_field_clear(off_wall_stationary),
+			"and a lethal row that does not pursue keeps its field clear off the WALL role too")
+
 ## Playtest 05, finding 4: *"I was able to go to the same park on day one and two — this
 ## shouldn't be possible."* The complaint is not about repetition, it is that the game's only
 ## verb stopped being a decision on day two.
@@ -1884,9 +1915,20 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	# and the exact share moves with the catalogue — what may not move is that neither end is empty.
 	# A day that walled every gap would have turned one corridor into several separate ones, which
 	# is the shape `RouteTree` deliberately does not grow; a day that walled none is the finding.
+	#
+	# **The floor is 0.2 because a precinct is safe ground and a wall is danger.** A precinct's box
+	# carries no `ROAD` or `CROSSING` tile, so the rows that place on a carriageway — the patrol, the
+	# checkpoint — cannot sit in a gap that runs through one. The `SIDEWALK`-placed rows still can,
+	# which is why this is a smaller pool of candidates rather than a gap nothing may ever wall, and
+	# why the denominator is still every gap: measured over the same map and the same sampled days,
+	# 26 of 89 gaps carried a wall before the precinct's box was paved and 21 of 89 after it — the
+	# count of gaps itself does not move, because which segments qualify is `RouteTree`'s business
+	# and nothing here touches it. Five gaps, all of them through the one stretch of the city whose
+	# design is that it is the safest ground in it. The band is what the check is for; the exact
+	# share moves with the catalogue.
 	t.check(gaps.size() > 20, "the days sampled have gaps between adjacent strands (%d)" % gaps.size())
 	var walled_share := float(gaps_walled.size()) / maxf(1.0, float(gaps.size()))
-	t.check(walled_share > 0.25, "%d of %d gaps carry a wall" % [gaps_walled.size(), gaps.size()])
+	t.check(walled_share > 0.2, "%d of %d gaps carry a wall" % [gaps_walled.size(), gaps.size()])
 	t.check(walled_share < 0.85,
 			"and the rest are left open (%.0f%% walled)" % (walled_share * 100.0))
 
@@ -2074,3 +2116,99 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 	mother.free()
 	stroller.free()
 	manager.free()
+
+# --------------------------------------------------------------- the van's victim ---
+# `abduction` draws its own scripted victim rather than touching a real `CrowdAgent` — see
+# docs/TODO.md, M56. Drawing and telemetry only, so a data-level rig can drive the whole scene by
+# hand: `player_at` is the same write `EventManager` makes every frame in the real game.
+
+## The design's own sentence is that the take "only means anything where she can see it happen" —
+## a van she never comes near takes nobody, and it begins the moment she does.
+func _test_the_take_begins_only_once_she_is_close(t) -> void:
+	var def := EventCatalogue.by_id("abduction")
+	var instance := _instance(t, def, Vector2.ZERO)
+	instance.player_at = Vector2(def.outer_radius + 40.0, 0.0)
+	_advance(instance, 2.0)
+	t.check(not instance.is_taking_a_victim(), "outside the field, nothing has started")
+
+	instance.player_at = Vector2(def.outer_radius - 20.0, 0.0)
+	instance._process(STEP)
+	t.check(instance.is_taking_a_victim(), "and it begins the frame she comes inside it")
+	instance.free()
+
+## One telemetry entry, written once — not per frame, and not before the walk actually finishes.
+func _test_a_completed_take_is_logged_exactly_once(t) -> void:
+	Telemetry.begin_memory_log()
+	var def := EventCatalogue.by_id("abduction")
+	var instance := _instance(t, def, Vector2.ZERO)
+	instance.player_at = Vector2(def.outer_radius - 20.0, 0.0)
+	_advance(instance, EventInstance.VICTIM_TAKEN_OVER * 0.5)
+	var mid_way := 0
+	for line in Telemetry.current_log().lines:
+		mid_way += 1 if line.contains("taken") else 0
+	t.check(mid_way == 0, "nothing is logged while the walk is still happening")
+
+	_advance(instance, EventInstance.VICTIM_TAKEN_OVER)
+	var finished := 0
+	for line in Telemetry.current_log().lines:
+		finished += 1 if line.contains("taken") else 0
+	t.check(finished == 1, "exactly one entry once it completes (%d)" % finished)
+
+	# Long past the completion, the count must not grow — the flag latches rather than re-firing.
+	_advance(instance, 5.0)
+	var later := 0
+	for line in Telemetry.current_log().lines:
+		later += 1 if line.contains("taken") else 0
+	t.check(later == 1, "and it never logs a second time (%d)" % later)
+	instance.free()
+	Telemetry.end_run()
+
+# ------------------------------------------------------- the van, once it hunts ---
+# `heat_response = HUNTS` turns the same row into a pursuer past `Tuning.HEAT_HUNTS_LEVEL` — see
+# docs/EVENTS.md, "The heat". Stated against the fully heated copy, the way `tests/test_heat.gd`'s
+# own pursuit tests are.
+
+func _hunting_abduction() -> EventDef:
+	return EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
+
+## A hunting van has other business: the moment it stops waiting, an in-progress take is
+## abandoned rather than finished — no victim drawn again, taken or not, and nothing logged for a
+## take that never completed.
+func _test_a_hunting_van_draws_no_victim(t) -> void:
+	Telemetry.begin_memory_log()
+	var hot := _hunting_abduction()
+	var instance := _instance(t, hot, Vector2.ZERO)
+	# Inside the field but outside the trigger, so it is only waiting — the take may begin exactly
+	# as it would for a cold van.
+	instance.player_at = Vector2(hot.pursues_within + 20.0, 0.0)
+	instance._process(STEP)
+	t.check(instance.is_taking_a_victim(), "waiting, it takes a bystander exactly like a cold van")
+
+	# Now she comes inside the trigger: it notices her and stops waiting, in the same frame.
+	instance.player_at = Vector2(hot.pursues_within - 10.0, 0.0)
+	instance._process(STEP)
+	t.check(not instance.is_waiting(), "she is inside the trigger, so it turns and notices her")
+	t.check(not instance.is_taking_a_victim(), "and the take it was running is abandoned")
+
+	_advance(instance, 5.0)
+	var entries := 0
+	for line in Telemetry.current_log().lines:
+		entries += 1 if line.contains("taken") else 0
+	t.check(entries == 0, "nothing is ever logged for a take that never finished")
+	instance.free()
+	Telemetry.end_run()
+
+## Anything that stands still is solid at the width it is drawn, and a hunting van is the first
+## row in the catalogue where that stops being true the instant it moves. `_walkable_step`'s own
+## note is why a moving pursuer may not keep one: a moving wall on a two-tile pavement pins her
+## against a building.
+func _test_the_obstruction_comes_down_once_it_stops_waiting(t) -> void:
+	var hot := _hunting_abduction()
+	var instance := _instance(t, hot, Vector2.ZERO)
+	t.check(instance.is_solid(), "a hunting van still parked is solid, exactly like a cold one")
+
+	instance.player_at = Vector2(hot.pursues_within - 10.0, 0.0)
+	instance._process(STEP)
+	t.check(not instance.is_waiting(), "she is inside the trigger, so it stops waiting")
+	t.check(not instance.is_solid(), "and the body comes down the same frame")
+	instance.free()

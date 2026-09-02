@@ -4749,6 +4749,253 @@ yet"*) and under the `CLAUDE.md` rule the first round produced.
       map: the first border pass wrote four sides four times, which is one bug per side waiting to
       happen, and this is it happening
 
+## M60 — Ready for a GitHub Pages launch · six of seven built 2026-09-02
+
+Six items across two agents run in parallel — the deploy chain and the HUD — partitioned by file
+rather than by topic, which is what made them safe to merge one after the other.
+
+**The gate is `OS.is_debug_build()` and the point is that it is one gate.** `DevFlags` reads the
+command line through a single choke point that returns nothing outside a debug build, so every
+flag answers *not given* in an exported release rather than each getter remembering to check.
+`AutoScreenshot` gates its own entry point in place, because `--screenshot`, `--after`, `--walk`,
+`--flee` and `--press` are parsed there rather than in `main.gd` and moving them would have been a
+rewrite. **`--no-telemetry` is deliberately not gated**: it is a documented player-facing opt-out,
+not developer furniture.
+
+**Two holes in that gate were found in review rather than by the agent.** `--no-title` read the raw
+command line, so a release export could still be told to skip its own front door. And the deploy
+workflow ran the export without running the suite: both workflows fire on the same push and neither
+waits for the other, so a deploy inheriting CI's verdict would publish a red build to a public
+address as often as not. The gate now runs inside the deploy job — a few minutes on the rare push
+that reaches `main`, against publishing something nobody checked.
+
+**The telemetry gate is on the platform, not on the build.** `Telemetry.begin_run()` returns early
+when `OS.has_feature("web")`, inside the function rather than at its one caller, so a second caller
+cannot reintroduce a run log on the one platform where nobody can read or clear it. *Rejected:
+gating on `OS.is_debug_build()`, which is the wrong axis — a debug web build must be just as
+silent.* The determinism invariant is untouched: the desktop test binary never carries the `web`
+feature tag.
+
+**Canvas policy: adaptive**, matching the `canvas_items`/`expand` stretch the desktop build already
+uses. *Rejected: a fixed canvas, which would have been a second sizing behaviour to maintain
+against a desktop build that already handles arbitrary windows.*
+
+**The HUD is one HUD with a gate rather than two HUDs**, and the implementation detail that makes it
+testable is the whole of the item's risk: a test process **is** a debug build, so a gate asking
+`OS.is_debug_build()` at each use site would leave the release shape asserted by nothing at all. It
+is read once into a member a test can set, and `tests/test_hud.gd` drives both shapes.
+
+**The optional goal keeps `somewhere out there:` and loses the progress dots.** The dots were the
+orchestrator's call, on the grounds that a count of how far in you are is the same category as
+`nerves ***` in the header. The words were a correction in review: the release line had been the
+step's title alone — *a chalk mark* — which says a noun where the whole content of what survives the
+cut is *go and find this*.
+
+**What nobody has proven, and both need the same event.** The export has never run to completion:
+the templates are not installed on the machine it was built on, so what was verified is that
+`tools/export-web.sh` reports their absence with an install pointer rather than a stack trace. And a
+workflow only proves itself by running. Both resolve on the first push to `main`.
+
+## M53 — The precinct is for walking · built 2026-09-02
+
+*(2026-09-02: "there should be no zebra cross markings or cars in a pedestrianized precinct — all
+roads leading up to a precinct should be t-junctions at the edge nothing should go in.")*
+
+**The question that produced this should never have been asked.** The queue carried the item as
+*two recorded instructions in tension, and the player decides*. Only one of them was recorded —
+playtest 16's finding 2, which already named both answers. The other was
+`CityGenerator._street_tile`'s own docstring defending what the code did, and a docstring is
+evidence of what was **built**, never of what was **agreed**. The player's reply was *"where does
+that question even come from?"*, and the answer is: from this side treating the two as equals.
+
+**Two halves, and neither is correct without the other**, which is why they are one commit. Paving
+the junction box removes the zebra; on its own it would have left a car on the crossing street
+driving over unmarked pavement, which is worse than the paint and invisible. `is_driveable_at` now
+asks **both** corridors that meet at a tile rather than only the one the car is following.
+
+**The drawing needed no code at all.** The ground painter already gives any tile in a precinct band
+the precinct's brick, so the repainted tiles picked it up — the shot in `docs/evidence/`
+(`shot-2026-09-02-seed4242-4442e68-precinct-street-ends.png`) is the carriageway ending flush at the
+paving with no zebra and no car in the band.
+
+**M49's *junctions are four-way where an arm dead-ends* did not reproduce here, and structurally
+cannot.** Once either corridor is a precinct the whole box is one flat sheet of paving with no
+per-arm kerb or line art, so there is no directional drawing left to be wrong. Three candidates ruled
+out, entry still open.
+
+**The wall-share floor moved from 25% to 20%, and the first attempt at it was the wrong shape.**
+`tests/test_events.gd` asserts that a real share of the gaps between adjacent route strands carry an
+off-corridor wall. Measured on the same map and the same sampled days, that share fell from 26 of 89
+to 21 of 89 once the box was paved: the rows that place on a carriageway — the patrol, the
+checkpoint — cannot sit in a gap running through a precinct. *Rejected: taking those gaps out of the
+denominator, which is what the check's meaning would want.* It cannot be determined honestly from
+geometry — `EventScheduler._role_for` assigns the `WALL` role from a row's cost and lethality and
+never consults where the row may be placed, and most rows place on `SIDEWALK`, which a precinct gap
+still has. Answering *"could anything have walled this gap"* properly means cross-referencing every
+active day's wall-eligible defs against their placement lists, machinery the rig does not have. An
+exclusion built on geometry alone would have been wrong in the same direction as an unexplained
+floor, with a better disguise. So the floor moved with the measurement recorded beside it — and the
+direction is the design rather than a loss: fewer walls in the one stretch of city whose whole point
+is that it is the safest ground in it.
+
+**Found and not fixed**, filed in `TODO.md`: seed 24757 has two non-walkable tiles inside a precinct
+span, because something with a footprint was placed across the corridor — pre-existing, and caught
+by the new generation test rather than caused by it. And nothing in the game **draws a bollard**,
+though six comments and two doc sentences explain a precinct by saying a driver meets a bollarded
+street: the carriageway ends flush against paving, which reads as the road running out rather than
+as a street closed on purpose.
+
+## M56 — The resistance is noticed · `feature/the-city-notices`, partly built
+
+Four of the six items shipped on 2026-09-02. "Other dangers like this" and the measurement against
+the nerves are still queued; the design for both is in `TODO.md`.
+
+### The van takes somebody, and then it takes you · built 2026-09-02
+
+Two commits. `HEAT_HUNTS_LEVEL` is **3** of four, on the player's own instruction — *"after the
+patrol but still early enough to happen more than just once"* — so the ladder's three steps land in
+three separate moments rather than two of them arriving together.
+
+**The victim is the event's own scripted figure and the precedent that matters is what it did not
+do.** Nothing in the catalogue has ever acted on the crowd; the van still has not. The take is
+drawing and one telemetry entry, it begins the first time she comes inside the van's own 250px
+field — the design's sentence was *it only means anything where she can see it happen*, so a van she
+never approaches takes nobody — and it refuses to start without enough of the van's remaining life
+to finish in, because a take cut short by the van expiring mid-walk reads as a bug rather than as an
+abduction.
+
+**The heated shape moves only what the rung is about.** Population and intensity are `PRESSES`'s
+axes and `HUNTS` touches neither; the test states that at *every* level rather than only below the
+threshold. At and above it the derived copy gains `pursues`, 130px/s (the one speed everything in
+this game pursues at), a 180px trigger sitting between its 132px stand-off and its 250px field, and
+`Tuning.PURSUIT_TIME` as the chase length in place of the 34s idle. The 4.6s telegraph is unchanged
+and that is deliberate: for a pursuer a telegraph buys the *notice of it coming* rather than an
+escape distance, and 4.6 is comfortably over the 1.5s floor.
+
+**The body is there exactly while it stands still**, which is the existing rule rather than a new
+one. A heated van waiting at the kerb is solid at 22px like any parked vehicle; the frame it stops
+waiting, the obstruction is freed, because a moving pursuer with a body is a wall that can pin her
+against a building on a two-tile pavement.
+
+**A consequence documented rather than fixed:** a heated van is *briefly less dangerous* than a cold
+one. Nothing is lethal while it is only `is_waiting()`, so a van at the kerb can be brushed past for
+free until she comes inside its trigger — the same shape `alley_robbery` has always had, now that a
+second row carries it.
+
+**The screenshots, and one of the two questions came back weaker than the report claimed.**
+The hunting shot in `docs/evidence/` (`shot-2026-09-02-seed2422590514-5fa7bd8-abduction-hunting.png`)
+answers the menacing-or-comic question well: the van end-on, closing, with the caret over her at a
+zebra — it reads as a thing coming for you rather than as a van at a fast walk. The victim shot
+(`shot-2026-09-02-seed2422590514-5fa7bd8-abduction-victim.png`) is the weaker one. It reads as
+*a person standing beside a van*, not as a person being taken: the figure is upright and unheld,
+and the whole of the
+"taken" is carried by it walking in and vanishing over 2.5s, which a still cannot show. Worth a
+second look from somebody watching it happen before deciding the posture is enough.
+
+**And the hunting van drives on the footway.** A pursuer steers straight at her over any walkable
+tile, so a van chasing her along a pavement is what the mechanic produces. It is what every pursuer
+in the game already does and it is the first time the thing doing it is four metres of metal.
+
+**Three choices open to overturn**, made where the design was silent. The walk takes **2.5s** from a
+**32px** standing offset — both picked by the implementer, neither derived. The `taken` entry is
+written by `EventInstance` itself rather than by `EventManager`, which is a new precedent for who
+writes the log: the argument for it is that the scene needs nothing the instance does not already
+carry, which is what lets a rig assert it with no map or city behind it. And the four copies of
+`130.0` across the pursuing rows were deliberately *not* collapsed into one shared constant, being a
+separate change from this one.
+
+**The three forks that were put back to the player, and what each rejected.**
+
+- **Heat is a declarative field on `EventDef` rather than extra days.** Adding
+  `resistance_progress` to the day number the scheduler plans against would have reused
+  `budget_for(day)` — the linear growth in the event budget — for nothing. Rejected because it also
+  moves `first_day`: a player doing well at the optional path would meet act III's vans in act II,
+  and the calendar `docs/EVENTS.md` publishes would stop being what the game does. A third option,
+  heat raising only how many dangerous rows a day places, was rejected as unable to express "the
+  van comes for you" at all.
+- **The patrol's escalation moves population, intensity and whether it investigates — not its outer
+  radius.** Widening the 185px field is the axis that most obviously changes routing and also the
+  one that costs something invisible: `Tuning.required_telegraph_time` is stated over the gap
+  between the inner and outer radii, so a wider field silently owes a longer telegraph than the
+  1.7s the row ships with.
+- **A pursuer is exempt from M28's clearance rule**, rather than the hunting van losing `hard_fail`.
+  The alternative kept a rule intact by contradicting the instruction that produced the van.
+
+**Why the heated row is a derived copy rather than a mutation**, which is the load-bearing
+implementation choice. Mutating a row in place is fewer lines and breaks the one thing this project
+checks on boot: `EventDef.validate()` and `Tuning.validate_pursuit()` run once, over the catalogue,
+from data. A def that changed shape mid-run would be validated in the shape it booted in — the
+harmless one — and the fairness contract would be stated about a version of the event that no
+longer exists. Progress is a bounded integer, so the set of shapes is finite and all of them are
+checked.
+
+**What the pursuer exemption turned out to be, which is neither of the two answers expected.** The
+clearance rule is `EventScheduler._keeps_its_field_clear`, and it read
+`plan.def.hard_fail and plan.role != WALL`. Because `_role_for` routes *any* placed `hard_fail` row
+that is not a `ONE_SHOT` to `WALL` before it ever asks whether the row pursues, every lethal pursuer
+in the catalogue was **already exempt by accident of that classification** — `charging_dog` because
+it is `AHEAD_OF_PLAYER` and never reaches the check at all, `alley_robbery` because `hard_fail`
+always routes it to `WALL`. So the answer to "was it already true or did it need fixing" is both: it
+held, and it held for a reason nobody had named, and a lethal `SET_PIECE` pursuer would have fallen
+straight through it, since kind is checked before `hard_fail` in `_role_for`. The rule is now stated
+over `pursues` directly, and `tests/test_events.gd` pins it by forcing a pursuer into a non-`WALL`
+role, with a lethal non-pursuing row in the identical forced role as the control.
+
+**Two things the implementing agent chose where the design was silent, and they are open to
+overturn.** `is_telegraphing_still()`'s guard was left off the new patrol-while-waiting branch,
+because `is_waiting()` implies `not is_telegraphing()` by construction and the check would be dead
+code. And `docs/EVENTS.md`'s clearance paragraph had never documented the `WALL` exemption at all —
+the agent filled that gap in the same edit rather than adding a third case beside two undocumented
+ones, which is slightly more than the brief asked for.
+
+**The finding carried forward rather than fixed**, and it is in `TODO.md`'s small items:
+`EventInstance.resume()` restores age and travelled distance but not `_noticed_at`, so a
+`pursues_within` row streamed out mid-chase comes back `is_waiting()`, having forgotten it. Shared
+with `alley_robbery` since the mechanic was built and never reachable before, because a stationary
+pursuer's field never moves far from where the day planted it. `tests/test_heat.gd` pins the actual
+behaviour so a fix fails there first.
+
+**Measured, not derived:** a day 9 planned at full heat places more `police_patrol` instances than
+the same day cold, from the same seed. Asserted as a relationship rather than as a count, because
+the population multiplier raising the cap does not by itself guarantee more of them get rolled
+against everything else competing for the budget.
+
+## Delegating is the default, and the rule that says so loads at `SessionStart`
+
+Asked for on 2026-09-02: *"make more use of sub-agents — you write plans, sub-agents implement
+etc."*, and immediately after it *"make sure this is properly triggered automatically"*. Then, after
+the first attempt: *"firing on src / test edits is still too late. how about making it a rule that
+loads at the beginning?"*
+
+**Three trigger points were tried, and the two that failed each failed in a way worth keeping.**
+
+- **On an `Agent`/`Task` spawn** — the original, from the M55 session. It cannot ever say *this
+  should have been delegated*, because a spawn is the decision already going the right way. It only
+  governs how a delegation is written, never whether one happens.
+- **On the first `Edit`/`Write` under `src/` or `tests/`** — the first answer to *"triggered
+  automatically"*, and the reasoning behind it was the rules hook's own principle: the moment a rule
+  matters is the moment somebody is about to touch the file. It is the right principle applied to
+  the wrong rule. By the first edit the implementation has already started, so the rule arrives as a
+  reprimand rather than as a choice — which is what the player's *"still too late"* names.
+- **`SessionStart`** — taken. `.claude/hooks/session-rules.sh` injects the skill before the first
+  tool call, and writes the same one-shot marker `project-rules.sh` uses, so the two path triggers
+  stay as backstops and no-op. Verified by running both hooks against one session id: the second
+  injects only `godot`.
+
+**The generalisation, and it is the reason this entry exists rather than a note in the hook:** a
+rule about *what governs this file* can be hung on the file, and a rule about *who should be doing
+this at all* cannot. The list loaded at `SessionStart` is deliberately one skill long, because
+everything in it is paid for in every session whether or not it turns out to be relevant — which is
+the exact cost the path-triggered hook was built to avoid.
+
+**What moved out of the skill in the same pass.** The orchestrating skill had accumulated its own
+history — *"Asked for on 2026-09-01"*, the dated player quotes for each of the three instructions
+above, and the incident that set the headless-first rule (an agent burning several windowed runs on
+a `--walk north` rig that stood against the home notch's back wall for the whole run, since the home
+is a notch with one exit facing south). All of it is here; the skill keeps only the rules and the
+reasons. *(2026-09-02: "the skill now reads like a quest log — keep the rationale etc in decisions
+and clean up the skills — THIS is the proper way to write anything.")*
+
 ## M50 — The city points somewhere · `feature/the-city-points-somewhere`
 
 **The plan for the diversion design.** The design itself is `docs/CITY.md`, "Diversions — the
@@ -5543,7 +5790,11 @@ rather than to move a number.
       dismissed with the same key as everything else. Finding 5 is the fix and this is the evidence
       for it. Reopen it if the counter is ever seen to move with nerves still on the HUD
 
-## M56 — The resistance is noticed · not started
+## M56 — The resistance is noticed · the brief as it was drafted, before the forks came back
+
+*(The outcome, and what the three forks settled, is under "M56 — The resistance is noticed ·
+`feature/the-city-notices`" earlier in this file. This is the drafting that preceded it, kept for
+the questions it raised rather than for the answers it guessed at.)*
 
 **Given on 2026-09-01, as the answer to M55's fourth question rather than as a finding.** The
 question was whether a resistance task may cost a nerve. The answer is no, and the second half of it
