@@ -362,7 +362,9 @@ Nothing is loaded upfront: the crowd and the events exist in the few blocks arou
 nowhere else.
 
 **The city is 160×160 tiles and the visible world is 640×360 px — about 20×11 tiles, well under one
-percent of it.** A city-wide population is divided by that before any of it reaches the player,
+percent of it — the same on every screen.** The window letterboxes to that aspect rather than
+showing more city on a wider monitor, so a measurement stated in world px means the same thing for
+every player. A city-wide population is divided by that before any of it reaches the player,
 which is how a hundred cars read as a street you can ignore. The licence for spending the budget
 locally is that continuity of a car you cannot see is unobservable, so it is free to give away, and
 density where somebody is looking is not.

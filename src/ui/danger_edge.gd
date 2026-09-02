@@ -8,6 +8,13 @@ extends Control
 ## their warning already spent. The fairness contract is met by the geometry and missed by the
 ## player.
 ##
+## `MARGIN`, `CHEVRON`, `ICON` and `SCREEN_MARGIN` are all screen px, and that is only fair because
+## the window is letterboxed: `window/stretch/aspect="keep"` in `project.godot` holds the viewport
+## at a fixed 1280×720 for every monitor, camera included, so a badge measured in screen px warns
+## the same distance out on a 21:9 monitor as on a 4:3 one. Under `"expand"` the same margin would
+## buy a wide screen more world before the badge fires — more warning for a bigger monitor, on
+## nothing the player did.
+##
 ## Two rules it is built to, both from the danger vocabulary:
 ##
 ## - **It says what is coming, not that something is.** The event's own silhouette rides in the
