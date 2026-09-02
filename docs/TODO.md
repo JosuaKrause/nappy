@@ -70,6 +70,25 @@ with what happened to it drawn over the top.**
 - [ ] **And it may not touch gameplay.** The run log's one invariant. No RNG, no consumed values,
       nothing in a gameplay class learning it is watched — `tests/test_telemetry.gd` plans all
       fourteen days with the log off and again with it on and requires the plans to be identical
+- [ ] **A rig that walks a route, because one that holds a key walks into a wall.** *(2026-09-02:
+      "why not allow for a sequence of button presses? like 1s5e meaning 1 second south then press 5
+      seconds east — that way you get a guaranteed path that is not stuck.")* `--walk
+      north|south|east|west` holds **one** direction down for the whole run, so a rig meets the
+      first building on that heading and stays there — which is why every dusk map taken so far
+      shows a speck where a trail should be, and why the one feature this milestone exists to draw
+      has never been photographed.
+
+      **A script of timed presses**: `1s5e` is one second of south then five of east, pressing the
+      same `move_*` actions `--walk` already presses, so everything downstream — the gait, the run
+      excess, the crowd, the director — behaves exactly as it does for a person holding a key.
+      Directions are the initials the flag already uses (`n`, `s`, `e`, `w`), a number is seconds,
+      and the sequence runs in order and then stops. **Backwards compatible**: a bare direction word
+      still means what it means today.
+
+      It is a **deterministic** path, which is the point — the same script over the same seed walks
+      the same route, so a picture of it is reproducible evidence rather than one run that happened
+      to go somewhere. It also gives the run-excess layer something to draw, since a script can hold
+      `run` for part of its length
 
 **It is a list in memory, not a new kind of log entry.** *(2026-09-02: "just keep a list during the
 play session of that information if telemetry is active and then draw it on the picture for the
