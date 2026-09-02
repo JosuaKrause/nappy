@@ -21,12 +21,27 @@ signal quit_requested()
 @onready var _root: Control = $Root
 @onready var _dim: ColorRect = $Root/Dim
 @onready var _standing: Label = $Root/Center/Lines/Standing
+@onready var _hint: Label = $Root/Center/Lines/Hint
+
+## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
+## each use site, so a test — never itself a web export — can set this and drive both shapes.
+var _can_quit := QuitOption.available()
 
 func _ready() -> void:
 	# Above the world and above the HUD, and it must keep running while everything else stops.
 	layer = 90
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
+	_refresh_hint()
+
+## Baked into the scene is only the part that is always true; `q to quit` is added here, since
+## whether it belongs depends on `_can_quit` rather than on anything the scene file can say.
+## Its own function, rather than inline in `_ready()`, so a test can flip `_can_quit` and call
+## this again to check the two platform shapes agree with `_unhandled_input`'s own gate.
+func _refresh_hint() -> void:
+	_hint.text = "space or esc to carry on     ·     r to start again"
+	if _can_quit:
+		_hint.text += "     ·     q to quit"
 
 func is_open() -> bool:
 	return visible
@@ -67,9 +82,10 @@ func close() -> void:
 	visible = false
 	get_tree().paused = _was_paused
 
-## `Esc` **or `space`** closes it, `R` starts the whole run again and `Q` leaves the game. Handled
-## here rather than in `main` so that the screen owns its own keys while it is up, and `main` only
-## owns the one that opens it.
+## `Esc` **or `space`** closes it, `R` starts the whole run again and `Q` leaves the game —
+## **except on the web**, where `QuitOption.available()` is false, `_ready()` never put "q to
+## quit" in the hint, and the key is not handled either. Handled here rather than in `main` so
+## that the screen owns its own keys while it is up, and `main` only owns the one that opens it.
 ##
 ## **`space` continues**, because it is the key the title screen and the between-days summary mean
 ## *carry on* with: a verb learned on two screens out of three and missing on the third is a verb
@@ -100,5 +116,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			restart_requested.emit()
 		KEY_Q:
-			get_viewport().set_input_as_handled()
-			quit_requested.emit()
+			if _can_quit:
+				get_viewport().set_input_as_handled()
+				quit_requested.emit()

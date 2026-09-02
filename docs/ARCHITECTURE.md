@@ -112,6 +112,16 @@ way, into a member (`_debug`) rather than asked of the OS inside `_process()` ev
 string is never assembled outside a debug build rather than merely hidden behind an invisible
 label.
 
+### Quitting on the web
+
+`SceneTree.quit()` does nothing on a Web export — the tab stays open — so `Q` is only offered
+where it works. `QuitOption` (`src/ui/quit_option.gd`) answers with `OS.has_feature("web")`, the
+platform axis rather than the build one, since a debug Web build has the same dead quit as a
+release one — the same axis `Telemetry.begin_run()` already uses to stay silent on the web.
+`TitleScreen` and `PauseScreen` each read it once into their own `_can_quit`, so their hint text
+and their `Q` handler always agree, and so a test — never itself a web export — can set the member
+and drive both platform shapes.
+
 ## Autoloads
 
 ### `Tuning`
