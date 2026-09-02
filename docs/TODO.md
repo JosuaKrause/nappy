@@ -98,6 +98,36 @@ workflow only proves itself by running.
       download is the largest step and the one most likely to be wrong about a URL, and a Godot
       binary whose version does not match its templates fails in a way that reads like a broken
       export. Both are read off the run's own log
+- [~] **Two things the smoke pass found.** *(2026-09-02, on the deployed build: "the debug info on
+      the right side of the screen (fps, seed, etc.) is still showing. also for the web version
+      remove Q (quit) and its mentions since it doesn't have any effect", and "**only** for the
+      online version, for the local version Q needs to exist still".)*
+
+      The **developer's readout** — the right-hand panel with the seed, the frame rate, the tile,
+      the event counts and the meter's arithmetic — is a `Label` in `main.gd` rebuilt every frame,
+      and the dev-flag gate never reached it. It goes behind `DevFlags.enabled()` with the rest of
+      the furniture.
+
+      **`Q` quits, except on the web, where `SceneTree.quit()` does nothing at all** — the page is
+      still there and the player has pressed a key a screen told them to press and watched it fail.
+      The key is not offered and not handled on the web, and **stays exactly as it is everywhere
+      else**. The axis is the platform rather than the build, the same one the run log already uses
+      to stay silent on the web: a debug web build must lose the key too
+- [ ] **Black bars, everywhere, rather than a wider view.** *(2026-09-02: "everything that doesn't
+      fit the aspect ratio should be filled in with black bars", said of the online version and
+      true of every build.)* `window/stretch/aspect` is `expand` today, so a window wider than 16:9
+      shows **more city** instead of letterboxing — a 21:9 monitor, a laptop and a phone in
+      landscape each see a different amount of street.
+
+      **This is a fairness change and not only a framing one.** `DangerEdge` — the chevrons at the
+      screen edge that warn about what is coming before it is visible — is defined entirely in
+      screen pixels and asks *is this on screen*. Under `expand`, a wider screen is more warning.
+      Letterboxing gives every player the same 640×360 of world (the viewport is 1280×720 and the
+      player's camera is at zoom 2), which is what every measurement in the docs already assumes.
+
+      **One value, not a web-only branch.** Making the desktop behave differently would be runtime
+      machinery for a difference nobody asked for, and the reason for the change is that the view
+      should be the same everywhere
 - [ ] **A browser smoke pass** once it is deployed, at the real address: boots, keyboard input
       works, holds frame rate at the game's scale, and the title screen reads as the front door of a
       public page. itch.io stays the fallback host (it sets the isolation headers, so a threaded
@@ -539,3 +569,33 @@ After the playtest work. There is no point polishing a loop that is about to be 
       the meters"*. A face would be that in the visual channel — the meter read off the baby rather
       than off a strip at the bottom of the screen. Not designed, and it needs the playing that the
       status-line cut is about to produce
+- [ ] **Could it be played on a phone?** **Asked about on 2026-09-02, not asked for** — the
+      reasoning is kept here because it is worth more than the question was, and none of it is a
+      commission.
+
+      **The plumbing is nearly free.** Movement is one call —
+      `Input.get_vector("move_left", "move_right", "move_up", "move_down")` in `Stroller`, which
+      already returns an analogue vector with a 0.2 deadzone — so a virtual stick feeding those
+      actions needs no gameplay change at all, and running is one boolean. Godot has no built-in
+      stick, so that is the thing to write, plus taps for the four keys the screens use.
+
+      **What is not free is the twenty pixels.** `CrowdLanes` pushes the two walking lanes of a
+      pavement 8px apart precisely so there is a clear line between them wide enough to aim at, and
+      it carries the measurement: forty seconds down an arterial lane centre costs 13.7 contacts and
+      the midline costs 0.0, which is **148 points of a hundred-point meter riding on those pixels**.
+      Arrow keys hit that line and a thumb does not. Mobile is therefore a question about whether
+      the careful/careless economy survives a blunter instrument, rather than a question about input.
+
+      **And running may not become a gradient.** The obvious mobile idiom — push the stick past a
+      threshold to run — is wrong here, and the code says why: `Stroller` moves toward
+      `input_dir * top_speed` with the *raw* vector, so partial deflection is already partial speed,
+      and running would become the far end of one continuous push. This game's run is the opposite
+      of that: the title screen calls it *"rarely worth it"*, day 3 exists to teach it, and every
+      pursuit contract is stated over the gap between a walk and a run. It stays a held button, so
+      it stays a decision.
+
+      **Landscape only.** Letterboxed to 16:9 a portrait phone would be a strip; the Web export
+      preset can declare the orientation. And if the controls are ever to sit *beside* the city
+      rather than on top of it, that is not the letterbox — a letterboxed bar is outside the
+      drawable viewport, so drawable margins mean fixing the world view with the camera instead,
+      which is a larger change than a project setting
