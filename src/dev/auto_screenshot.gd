@@ -76,8 +76,13 @@ var _fled := false
 ## were given. See `--press`.
 var _presses: Array[Dictionary] = []
 
-## Returns a configured instance, or null if the command line did not ask for a screenshot.
+## Returns a configured instance, or null if the command line did not ask for a screenshot —
+## including every time it is asked from outside a debug build. `--screenshot`, `--after`,
+## `--walk`, `--flee` and `--press` are developer furniture like every flag `DevFlags` gates, and
+## are gated here rather than moved there because this file already owns their parsing.
 static func from_command_line() -> AutoScreenshot:
+	if not OS.is_debug_build():
+		return null
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--screenshot")
 	if index == -1 or index + 1 >= args.size():

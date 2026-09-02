@@ -48,6 +48,11 @@ not one session.
 the person playtesting has to remember to turn on, which means the interesting run is the one
 that was not recorded.
 
+**It is always off on a web export**, no flag needed. `user://` there is a stranger's browser
+storage rather than a developer's disk: nobody collects what lands in it and nothing prunes it, so
+`Telemetry.begin_run()` checks `OS.has_feature("web")` itself and does nothing on that platform —
+the one caller cannot forget the check because there is only one place it is made.
+
 ## What one looks like
 
 ```
