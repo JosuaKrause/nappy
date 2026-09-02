@@ -457,6 +457,78 @@ Two things it forces, and neither is optional:
       *is this tile on one*. A toll is a cost on an edge, and the route tree has never had one —
       check whether it can express "passable, at a price" before assuming it can
 
+## M67 — The page is a thing people share · asked for 2026-09-02
+
+*(2026-09-02: "use the pram logo for social media for the nappy.josuakrause.com page, too", "add
+other social media info in the html head", and "the asset license is just an md file with custom
+text — should we get a proper named license for the assets? github does show both licenses so it
+would be good to have both with actual names.")*
+
+**Two halves of the same thing: what the project looks like from outside it.** One is the link when
+somebody pastes it into a chat, the other is the two words GitHub prints where it says what you are
+allowed to do with this.
+
+- [ ] **A link to the game shows the pram.** Nothing in the page's `<head>` says what the address
+      is, so a paste of `https://nappy.josuakrause.com/` unfurls as a bare URL. The picture already
+      exists — `assets/icon_stroller_1280x640.png` is the pram on its plate at exactly the 2:1 a
+      card wants, and `assets/logo.png` is the wordmark the README uses. The tags go in
+      `html/head_include` in `export_presets.cfg`, which is the same string the rotate overlay now
+      lives in, and they are: `og:title`, `og:description`, `og:image` (an **absolute** URL —
+      a relative one is the single most common reason a card comes out blank), `og:url`, `og:type`,
+      plus `twitter:card` as `summary_large_image`. A `<title>` and a `<meta name="description">`
+      belong in the same pass, since a browser tab and a search result read those and not the
+      Open Graph ones
+- [ ] **Both licences have names.** *(2026-09-02: CC BY-NC-ND 4.0 chosen for the assets.)* The code
+      is MIT and is detected as MIT. The other file is prose — "all rights reserved" over `assets/`,
+      `docs/`, the title and the story — which is a real position and an unnamed one, so nothing can
+      read it and a reader has to take the whole paragraph on trust. **Creative Commons
+      Attribution-NonCommercial-NoDerivatives 4.0** says nearly the same thing in a name: credit
+      required, no selling, no altered versions. It is one loosening, and it is deliberate — CC
+      BY-NC-ND *permits verbatim sharing*, which the current text does not. Ship the full licence
+      text rather than a link, name it in `README.md` beside the MIT one, and keep the paragraph
+      that says which paths each covers, because that part is this project's and no licence
+      supplies it
+
+---
+
+## M68 — Tap to walk, as an experiment with a switch · asked for 2026-09-02
+
+*(2026-09-02: "we want to experiment with tap to walk — ie I tap on the screen and she walks there
+— I double tap she runs there. should be easy to toggle both mobile modes (tap vs on screen button)
+so we can experiment with both. the real / web version doesn't get to choose but it must be easy to
+switch in the dev mode so we can try both out (on non-mobile we can try clicking with the mouse
+instead of tapping) ... but it should also be possible to test it on mobile so we kind of need a
+secret url flag for now or something like that.")*
+
+**A second way to say where she goes, and the point is the comparison, not the winner.** The stick
+and the `RUN` button press the same four `move_*` actions a keyboard does, so nothing downstream
+knows a thumb is driving. A tap that means *walk there* is a different shape: it is a destination,
+and something has to walk her to it — which is the first real question this milestone asks, because
+the game's only verb is *where do I walk* and a tap that pathfinds is the game choosing the route
+she takes through the thing the whole design is about.
+
+- [ ] **What a tap means.** A single tap walks to the point; a double tap runs to it. What it must
+      not quietly become is autopilot: **decide, and write down, whether a tap steers her (press the
+      direction of the point, re-aimed every frame, stopping on arrival) or routes her** around
+      what is in the way. Steering is the smaller change and keeps every obstacle the player's
+      problem; routing hands the route decision to the game
+- [ ] **Both modes exist at once and one is chosen.** Not a rewrite of `TouchControls` — the stick
+      build and the tap build are two ways of feeding the same actions, and the experiment needs
+      them side by side. Whatever holds the choice is read once, the way `TouchInput.available()`
+      already is
+- [ ] **Switchable in the dev build, fixed in the release.** *"The real / web version doesn't get to
+      choose."* `DevFlags` already answers nothing outside a debug build and already parses
+      `-- --flag` arguments, so a `--controls tap|stick` flag is the shape that exists
+- [ ] **And switchable on a phone, which no command line reaches.** The one case the existing dev
+      flags cannot serve: a phone opens a URL and nothing else. A query parameter on the deployed
+      page — read from `window.location` through JavaScript and handed to the game — is what "a
+      secret URL flag for now" means. **It is a dev door on a public page**, so it turns nothing on
+      that a player could hit by accident, and what it may switch is the control scheme and nothing
+      else
+- [ ] **Testable without a phone.** *"On non-mobile we can try clicking with the mouse instead of
+      tapping."* A mouse click stands in for a tap in the dev build, which is also what lets the
+      test rigs drive it at all
+
 ## M50 — What the corridor still owes
 
 **M64 supersedes the gradient this milestone built.** *(2026-09-02: "let's not make it a gradient
@@ -688,6 +760,18 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       sited, **every step he tries is refused**. His lethal radius still travels with him, which
       makes an invisible fatal spot inside a wall. Fix it where he is placed, not by letting a
       pursuer walk through buildings
+- [ ] **She flickers between two drawings when she walks diagonally.** *(2026-09-02: "when going
+      diagonally the graphic flickers — only change the graphic once it goes over 50 degrees or
+      below 40 degrees and stick with the previous graphic otherwise; this should prevent
+      flickering.")* Both `Stroller._draw_mother()` and `_draw_pram()` choose the side view over the
+      front or back one with the same test — whether the facing's horizontal part is larger than its
+      vertical part — which is a hard switch **exactly on the diagonal**. Walking at 45° the facing
+      wobbles across that line frame by frame, so the drawing does too. The fix is the hysteresis
+      the instruction gives: measure the facing's angle off the horizontal, go side-on only when it
+      falls **below 40°**, go front-or-back only when it rises **above 50°**, and between the two
+      keep whatever was drawn last. **It is one decision, not two** — the mother and the pram must
+      agree, or she faces one way and the pram another — so it belongs in a single member computed
+      once a frame and read by both
 - [ ] **The `burning_building` spawns in the road** rather than in a building — it spawns exactly
       where the engine stopped. A few lines to nudge it to the nearest `BUILDING` tile
 - [ ] **The pram has no collision of its own**, so it clips into walls when she hugs a corner. A
