@@ -82,6 +82,7 @@ assets/
 tools/
   check.sh                import + headless boot, fails on any script error
   shot.sh                 render the game to a PNG
+  export-web.sh           headless Web export into build/web/, using export_presets.cfg
 ```
 
 ### `GameEnums`
