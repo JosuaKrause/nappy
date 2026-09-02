@@ -130,9 +130,17 @@ refused. The lethal radius still travels with him, which makes an invisible fata
 **What this side reads into it.** Both halves are open items being reported again. M49 carries
 *"people walk out onto the border and vanish there"* with the cause already found —
 `CrowdAgent._blocked_ahead` returns `false` for a tile out of bounds, so the one wall that should
-stop them reports as clear — and *"junctions are four-way where an arm dead-ends"*, which has been
-**not reproduced** across three candidate locations. **This is the fourth candidate and it comes
-with a location: the north edge.** That entry has been waiting for exactly this.
+stop them reports as clear — and *"junctions are four-way where an arm dead-ends"*, which had been
+**not reproduced** across three candidate locations. **The north edge is the fourth, and it is the
+one.**
+
+**Reproduced with a picture**, sent when this side had still not managed it from a rig:
+`docs/evidence/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png` — seed 2927659514,
+day 1, standing at tile (80,1). The zebras on the north–south streets run all the way to the border
+and a crossing box is painted on an arm with nothing beyond it, **and the same frame has a car and
+two pedestrians standing on the out-of-bounds ground above the top pavement**. Both halves of this
+finding are one screenshot, which is the strongest argument that they are one cause: whatever
+decides what lies beyond the last tile is answering *street* to both the painter and the crowd.
 
 ## 9. A main road's junction should be four dotted crossings, not zebras
 

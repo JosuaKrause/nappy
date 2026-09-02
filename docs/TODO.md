@@ -585,11 +585,16 @@ direction, not distance.**
       against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
 - [ ] **Whatever fixes one border has to be stated over *a border*.** The first pass wrote four
       sides four times, which is one bug per side waiting to happen
-- [ ] **Junctions are four-way where an arm dead-ends — and the location is now known.**
+- [ ] **Junctions are four-way where an arm dead-ends — reproduced, with a picture.**
       *(2026-09-02, from play: "the intersections are not t intersections", of the **north edge**.)*
-      Three candidates had been ruled out and the entry was waiting for exactly this: the map's own
-      border is where an arm genuinely dead-ends, and it is the same place people and cars walk into
-      the mountain, so the two findings above and below this line are probably one cause seen twice
+      **Seed 2927659514, day 1, standing at tile (80,1)** —
+      `docs/evidence/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png`. The zebras on the
+      north–south streets run all the way to the border and a crossing box is painted on an arm with
+      nothing beyond it. Three earlier candidates were checked and were correct, which is why this
+      sat as *not reproduced* for so long: the map's own border is the one place an arm genuinely
+      dead-ends. **The same frame shows a car and two pedestrians standing on the out-of-bounds
+      ground above the top pavement**, so this and the vanishing-walkers entry above are one cause
+      seen twice — whatever decides what is beyond the last tile is answering *street* in both
 - [ ] **A main road's junction is four dotted crossings, not two.** *(2026-09-02: "minor issue — for
       a main street intersection all four crossings should be lines instead of zebra crossing since
       all four are controlled by the traffic light".)* `GroundTiles._crossing_variant` already draws
