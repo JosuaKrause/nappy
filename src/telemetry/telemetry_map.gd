@@ -79,15 +79,19 @@ const NO_ROLE_MARK := Color("8c93a1")
 ## carry it — what is stored is the mix.
 const CORRIDOR_ALPHA := 0.55
 
-## The single tile put through the middle of an event that has been in the world, which is what
-## tells a placement she reached from one she never did.
+## The single tile put through the middle of an event she **met** — came within `def.outer_radius`
+## of, the field she can actually feel — which is what tells a placement that cost her something
+## from one that merely stood there.
 ##
 ## **It is a mark added rather than strength taken away, and the first version was the other way
 ## round.** Fading what she never reached is the obvious design and it answers the wrong question:
 ## a wall placed in the far corner of a map she never walked into is still a wall in the wrong
 ## place, and it is the placement no trace can report — so the picture would have whispered exactly
 ## the thing it exists to shout. Drawn instead, every mark stays at full strength and the ones she
-## met carry a white pip.
+## met carry a white pip. `TelemetryObserver._watch_met_events` decides "met" against the outer
+## radius rather than against `EventScheduler.Planned.was_live`, which only says the plan was once
+## loaded into the world at `Tuning.EVENT_STREAM_RADIUS` — more than twice the reach of a typical
+## row, so it would mark a great deal of decoration as if it had cost her something.
 const MET_MARK := Color("ffffff")
 
 ## The trail itself: what colour a sampled point is drawn in while she was walking, and while she
@@ -145,13 +149,14 @@ const BUILDING_GROUND := Color("211f26")
 ## drawn against it says where the routes went and not whether anything was placed *for* them. See
 ## `_mark_the_events`.
 ##
-## `trail` is `TelemetryObserver`'s own list of where she actually went, sampled by distance rather
-## than by frame, and it is what turns the dusk picture into an answer rather than a repeat of the
-## dawn one. Optional and empty by default — on the dawn map there is no walk yet, and a picture
-## that invented one would be worse than a picture with none.
+## `trail` and `met` are `TelemetryObserver`'s two lists, and they are what turn the dusk picture
+## into an answer rather than a repeat of the dawn one: `trail` is where she actually went, sampled
+## by distance rather than by frame, and `met` is which of `plans` she came close enough to for it
+## to have cost her anything. Both are optional and empty by default — on the dawn map there is no
+## walk yet, and a picture that invented one would be worse than a picture with none.
 static func render(map: CityMap, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
-		trail: Array[Vector3] = []) -> Image:
+		trail: Array[Vector3] = [], met: Dictionary = {}) -> Image:
 	var image := Image.create_empty(map.size.x * SCALE, map.size.y * SCALE, false, Image.FORMAT_RGB8)
 	for y in map.size.y:
 		for x in map.size.x:
@@ -175,7 +180,7 @@ static func render(map: CityMap, closures: Array[RoadClosure] = [],
 	# once — and under the four below for the same reason the corridor is: where she arrives, what
 	# was shut and where she starts are the picture's fixed points, and a hundred and twenty event
 	# marks laid over them would bury the frame everything else is measured in.
-	_mark_the_events(image, map, plans)
+	_mark_the_events(image, map, plans, met)
 	# Over the corridor and the events, for the reason the milestone exists: seeing where she went
 	# against where the day expected her to is the entire value, so both have to already be on the
 	# picture. Under the same four fixed points as the events, for the same reason — a few hundred
@@ -240,7 +245,7 @@ static func _corridor_stroke(segment: StreetNetwork.Segment) -> Rect2i:
 	return Rect2i(Vector2i(from.x + across, from.y), Vector2i(1, length))
 
 ## Everything the day sited, each carrying what it is: **colour is the role, shape is the effect,
-## and a white pip is whether she ever got to it.**
+## and a white pip is whether she actually met it.**
 ##
 ## Three channels because the vocabulary has three axes and reading two of them off a log means
 ## joining a `plan` line to a `near` line by hand, which is the thing nobody does twice. The
@@ -255,8 +260,12 @@ static func _corridor_stroke(segment: StreetNetwork.Segment) -> Rect2i:
 ## A **spent** offer is drawn like any other: a set piece is planned at every site of a covering set
 ## and exactly one happens, so the sites that did not are what makes the covering set visible at
 ## all. They come out without a pip, which is right — she never reached them.
+##
+## `met` says which of `plans` she actually met — `TelemetryObserver._watch_met_events`, keyed by
+## the plan itself. Empty on the dawn map, so nothing carries a pip there, which is correct: there
+## is no walk yet to have met anything.
 static func _mark_the_events(image: Image, map: CityMap,
-		plans: Array[EventScheduler.Planned]) -> void:
+		plans: Array[EventScheduler.Planned], met: Dictionary = {}) -> void:
 	for plan in plans:
 		if not plan.is_placed():
 			continue
@@ -264,7 +273,7 @@ static func _mark_the_events(image: Image, map: CityMap,
 		if plan.path.size() >= 2:
 			_blend_tiles(image, _route_stroke(map, plan.path), colour, ROUTE_ALPHA)
 		_mark_one_event(image, map.world_to_tile(plan.position), colour,
-				plan.def.effect() == GameEnums.BlockerEffect.LETHAL, plan.was_live)
+				plan.def.effect() == GameEnums.BlockerEffect.LETHAL, met.has(plan))
 
 ## One event's glyph, three tiles across whatever it is.
 ##

@@ -352,7 +352,7 @@ Every **sited** event is drawn where the day put it, carrying the three things `
 |---|---|---|
 | colour | **role** — what it was placed *for* | wall (yellow), friction (blue), set piece (magenta), none (grey) |
 | shape | **effect** — what it does to a route | lethal fills its three tiles, costly is a cross |
-| a white pip in the middle | whether she ever reached it | drawn only once it has been in the world |
+| a white pip in the middle | whether she **met** it | drawn only once she has come within `outer_radius` — the field she can actually feel |
 
 - **The role gets the colour because the role is the question.** A wall drawn *on* the corridor
   instead of beside it is the central defect a placement pass can have, and it is one glance to see
@@ -381,8 +381,14 @@ first, and *a corridor with nothing on it ever met* is visible only in the secon
 obvious design and it answers the wrong question: a wall in the far corner of a map she never walked
 into is still a wall in the wrong place, and it is the placement no trace can report — so the
 picture would whisper exactly the thing it exists to shout. Drawn instead, every mark stays at full
-strength and the ones she met carry the pip on top of it — see "The trail" below for the other half
-of what the dusk map now says about where she went.
+strength and the ones she met carry the pip on top of it.
+
+**Met means she came within the event's own `outer_radius`** — the field that actually reaches
+her — not merely that `EventManager.stream_around` had loaded it into the world. Streaming happens
+at `Tuning.EVENT_STREAM_RADIUS` (900px), more than twice the reach of a typical row, so a day where
+she met eight of forty events and one where she was merely near forty are very different days, and
+only the narrower question is the one worth answering. `TelemetryObserver._watch_met_events` keeps
+the list; see "The trail" below for how it is carried to the picture.
 
 ### The trail
 

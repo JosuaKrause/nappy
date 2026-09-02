@@ -235,23 +235,24 @@ func snapshot_now(context: String) -> void:
 ## It also draws what the day **placed**, and that is why it is written twice.
 ##
 ## `at_dusk` is only the filename, and the difference between the two pictures is entirely in
-## `trail`: at dawn there is no walk yet, so it is left at its empty default and the picture is
-## purely *what the day intended*; at dusk `TelemetryObserver` hands over where she actually went,
-## so the same picture also says **what she did about it**. Neither picture is derivable from the
+## `trail` and `met`: at dawn there is no walk yet, so both are left at their empty default and the
+## picture is purely *what the day intended*; at dusk `TelemetryObserver` hands over where she
+## actually went and which of `plans` she came close enough to for it to have cost her anything, so
+## the same picture also says **what she did about it**. Neither picture is derivable from the
 ## other and neither is the more useful one — a wall in the wrong place is visible in the first, and
-## a corridor nobody ever walked is visible only in the second.
+## a corridor nothing on it was ever met is visible only in the second.
 ##
-## `trail` is `TelemetryObserver`'s own list — see `TelemetryObserver.trail()` — passed through
-## untouched. Reading it here takes no RNG and changes nothing about it, the same promise every
-## other argument to this function already keeps.
+## `trail` and `met` are `TelemetryObserver`'s own lists — see `TelemetryObserver.trail()` and
+## `.met_events()` — passed through untouched. Reading them here takes no RNG and changes nothing
+## about either list, the same promise every other argument to this function already keeps.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
-		at_dusk := false, trail: Array[Vector3] = []) -> void:
+		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
 	if not _log or _log.path == "":
 		return
 	var path := "%s/%s-map-day%02d%s.png" % [DIRECTORY, _stem, day, "-dusk" if at_dusk else ""]
 	var drawn := tree if tree else RouteTree.for_day(map, day)
-	if TelemetryMap.render(map, closures, drawn, plans, trail).save_png(path) != OK:
+	if TelemetryMap.render(map, closures, drawn, plans, trail, met).save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
 
 ## The capture itself, split out because it is the only thing here that has to wait for a frame.

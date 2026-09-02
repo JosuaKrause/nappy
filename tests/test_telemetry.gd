@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_the_trail_is_sampled_by_distance_not_by_frame(t)
 	_test_the_trail_carries_whether_she_was_running(t)
 	_test_a_lost_day_restarts_the_trail(t)
+	_test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t)
 	_test_the_map_picture_draws_the_trail_and_distinguishes_running(t)
 
 # ------------------------------------------------------------------ dormancy ---
@@ -312,10 +313,12 @@ func _test_a_capture_is_never_logged_as_blocked(t) -> void:
 	stroller.free()
 	observer.free()
 
-# ------------------------------------------------------------------------ the trail ---
+# ------------------------------------------------------------ the trail and the meets ---
 # *(`docs/TODO.md`, M66, "the dusk map shows what the player did": a trail belongs in
 # `TelemetryObserver`, sampled by distance rather than by frame so it stays bounded and
-# framerate-independent.)*
+# framerate-independent, and "met" means she came within an event's own outer radius — the field
+# she can actually feel — rather than merely close enough for the plan to have been streamed into
+# the world.)*
 
 ## A bare observer with only `_player` set, the one field `_watch_the_trail` reads besides the
 ## position it is handed directly.
@@ -399,6 +402,52 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 	GameState.day = saved_day
 	observer.free()
 	player.free()
+	city.free()
+
+## The dusk map's whole reason to exist: `was_live` marks a plan the moment
+## `EventManager.stream_around` loads it at `Tuning.EVENT_STREAM_RADIUS` (900px), which is more
+## than twice the reach (`def.outer_radius`, typically 150px) of a row that has not telegraphed
+## anything yet. "Met" has to be the narrower, honest question — did the field that actually costs
+## her something ever reach her — or a day that met eight of forty events would read as forty.
+func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	t.add_child(city)
+	city.build(map)
+	var consumed: Array[String] = []
+	city.events.start_day(3, _rng(3), consumed)
+
+	var plan: EventScheduler.Planned = null
+	for candidate in city.events.plans():
+		if candidate.is_placed() and not candidate.def.city_wide:
+			plan = candidate
+			break
+	t.check(plan != null, "day 3 places something sited and not city-wide to test against")
+	if plan == null:
+		city.free()
+		return
+
+	city.events.stream_around(plan.position)
+	t.check(plan.live != null, "streaming in from right on top of it brings it live")
+
+	var observer := TelemetryObserver.new()
+	observer._city = city
+
+	# Asserted about `plan` specifically rather than "the dict is empty": `stream_around` from right
+	# on top of it may well have streamed in a neighbour too, and a neighbour being met at `far` is
+	# not what this test is about.
+	var far := plan.live.global_position + Vector2(plan.def.outer_radius + 200.0, 0.0)
+	observer._watch_met_events(far)
+	t.check(not observer.met_events().has(plan),
+			"being streamed in is not being met — she has not come within the outer radius yet")
+	t.check(plan.was_live, "the plan is 'was_live' regardless, which answers the looser question")
+
+	var close := plan.live.global_position + Vector2(plan.def.outer_radius - 10.0, 0.0)
+	observer._watch_met_events(close)
+	t.check(observer.met_events().has(plan),
+			"entering the outer radius — the field she can actually feel — is what counts as met")
+
+	observer.free()
 	city.free()
 
 # ------------------------------------------------------------- the city grid ---
@@ -546,9 +595,10 @@ func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
 ##
 ## Three claims, and the middle one is the one a whole-picture check cannot make: a lethal row
 ## **fills** its three tiles and a costly one is a **cross**, so the corners are the difference and
-## a corner is where the two would be confused. The third is `was_live`, which is the only thing the
-## dusk picture says that the dawn one does not — and it is checked by flipping the flag rather than
-## by playing a day, because what is being tested is the drawing.
+## a corner is where the two would be confused. The third is the `met` pip, which is the only thing
+## the dusk picture says that the dawn one does not — and it is checked by handing `render` a `met`
+## dictionary directly rather than by playing a day, because what is being tested is the drawing and
+## not `TelemetryObserver._watch_met_events`, which has its own test.
 func _check_a_glyph_says_what_it_is(t, map: CityMap,
 		plans: Array[EventScheduler.Planned]) -> void:
 	var lethal: EventScheduler.Planned = null
@@ -582,12 +632,10 @@ func _check_a_glyph_says_what_it_is(t, map: CityMap,
 		# map she never walked into is exactly the placement worth seeing.
 		t.check(_tile_colour(image, at) != TelemetryMap.MET_MARK,
 				"and nothing she has not reached carries a pip")
-		plan.was_live = true
-		var met := TelemetryMap.render(map, [], null, only)
-		plan.was_live = false
-		t.check(_tile_colour(met, at) == TelemetryMap.MET_MARK,
+		var met_image := TelemetryMap.render(map, [], null, only, [], {plan: true})
+		t.check(_tile_colour(met_image, at) == TelemetryMap.MET_MARK,
 				"while one she reached does, in the middle of the same mark")
-		t.check(_tile_colour(met, at + Vector2i(1, 0)) == colour,
+		t.check(_tile_colour(met_image, at + Vector2i(1, 0)) == colour,
 				"and the pip does not change the glyph around it")
 
 ## The trail draws at all, and a point taken while running reads differently from one taken at a

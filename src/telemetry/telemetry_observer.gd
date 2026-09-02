@@ -11,9 +11,10 @@ extends Node
 ## of every gameplay class, and the invariant that matters most here — **telemetry must not
 ## touch gameplay** — is much easier to keep when the telemetry is not in the gameplay files.
 ## Nothing below writes to anything outside itself. It reads positions and meters, emits lines,
-## and — for the dusk map — keeps one more list in memory: the trail she actually walked. It is
-## never written to the log; `main.gd` hands it to `Telemetry.write_map` at dusk, the same way it
-## already hands the day's route tree.
+## and — for the dusk map — keeps two lists in memory: the trail she actually walked and which
+## planned events she came close enough to for them to have cost her anything. Neither is written
+## to the log; `main.gd` hands both to `Telemetry.write_map` at dusk, the same way it already hands
+## the day's route tree.
 ##
 ## It is only added to the tree when a run is being traced, so when telemetry is off this
 ## costs nothing at all rather than costing a disabled check per frame.
@@ -145,6 +146,12 @@ var _trail: Array[Vector3] = []
 ## all, and a stray sentinel value would be one more thing to keep in sync with it.
 var _trail_last := Vector2.ZERO
 
+## Which planned events she actually met today — came within `def.outer_radius` of, the field she
+## can feel — keyed by the `EventScheduler.Planned` itself so the dusk map can ask "was this one of
+## them" with no second identifier to keep in sync with the plan list it is already drawing. See
+## `_watch_met_events`.
+var _met_events := {}
+
 # When a bump was last written down, and how many have gone unwritten since.
 var _last_bump := -1000.0
 var _bumps_dropped := 0
@@ -243,6 +250,7 @@ func start_day() -> void:
 	_path_branches.clear()
 	_trail.clear()
 	_trail_last = Vector2.ZERO
+	_met_events.clear()
 	Telemetry.note("start", "doorstep %s, facing %s" % [
 		TelemetryLog.tile(_map.world_to_tile(_player.global_position)),
 		TelemetryLog.compass(_player.facing)])
@@ -284,6 +292,7 @@ func _process(delta: float) -> void:
 	_watch_closures(here)
 	_watch_the_contact(here)
 	_watch_the_trail(here)
+	_watch_met_events(here)
 
 ## Whether she is walking the day's corridor.
 ##
@@ -830,12 +839,35 @@ func _watch_the_trail(here: Vector2) -> void:
 	_trail.append(Vector3(here.x, here.y, _player.run_excess_ratio()))
 	_trail_last = here
 
-## The trail, for `main.gd` to hand to `Telemetry.write_map` at dusk alongside the route tree it
-## already passes. Empty before a day has been walked — before `start_day()` and on the dawn map,
-## which is the correct answer rather than a gap: there is no walk yet, and a picture that invented
-## one would be worse than a picture with none.
+## Which planned events she actually met — came within `def.outer_radius`, the field she can
+## actually feel, rather than merely close enough for `EventManager.stream_around` to have loaded
+## them into the world at `Tuning.EVENT_STREAM_RADIUS` (900px, more than twice the field of a
+## typical row). `plan.was_live` answers the looser, streaming question; the dusk map wants the one
+## that says whether a placement did anything to her, which is what decides whether it was a wall
+## or decoration. See `docs/TODO.md`, M66, "Which events she actually met".
+##
+## A `city_wide` source has no edge to enter — the same reasoning `_watch_what_is_near` gives for
+## excluding it there — so it can never be "met" and is skipped rather than answered `false`
+## forever.
+##
+## Once a plan is met it stays met for the rest of the day: the dictionary is never cleared except
+## in `start_day()`, so streaming an event back out and in again does not un-meet it.
+func _watch_met_events(here: Vector2) -> void:
+	for plan in _city.events.plans():
+		if _met_events.has(plan) or not plan.is_placed() or not plan.live or plan.def.city_wide:
+			continue
+		if plan.live.global_position.distance_to(here) <= plan.def.outer_radius:
+			_met_events[plan] = true
+
+## The trail and the met events, for `main.gd` to hand to `Telemetry.write_map` at dusk alongside
+## the route tree it already passes. Empty before a day has been walked — before `start_day()` and
+## on the dawn map, which is the correct answer rather than a gap: there is no walk yet, and a
+## picture that invented one would be worse than a picture with none.
 func trail() -> Array[Vector3]:
 	return _trail
+
+func met_events() -> Dictionary:
+	return _met_events
 
 # ------------------------------------------------------------------- signals ---
 
