@@ -525,6 +525,13 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       one the field name implies**, so a fix fails there first. The fix is `resume()` carrying the
       notice, and it has to be checked against every `pursues_within` row rather than the one that
       found it
+- [ ] **A big building can be built over a precinct's own pavement.** Measured on **seed 24757**:
+      two tiles inside a precinct span are not walkable, because something with a footprint was
+      placed across the corridor the span runs down. A precinct is the best ground in the city to
+      bring a meter down on and its whole design is *paving frontage to frontage* — a hole in it is
+      the one place that sentence stops being true. Nothing in the placement rules asks whether a
+      footprint lands on a precinct span; the fix is a constraint where big buildings and calm zones
+      choose their ground, not a repair pass afterwards
 - [ ] **`chat` is written and undocumented.** `EventManager` logs a `chat` entry when
       `chatting_mother` starts a conversation, and the table of entry kinds in `docs/TELEMETRY.md`
       has no row for it — so a reader of a run log meets a kind the documentation does not admit
