@@ -44,28 +44,29 @@ one of the four — the reachability gap — is worth reading in full rather tha
 compressed form, because the milestone it produced changed shape twice over the course of writing it
 down.
 
-1. **M69 — reachability becomes a graph, not a block-level check — and it needs design work, not
-   implementation, before anything else happens to it.** The player's first report read like a bug
-   in `_park_is_reachable`; reading `ClosurePlanner._access_streets` and `_invariant_holds` first
-   showed both halves might already be *working as written* — a park's up-to-four sides and the
-   `MIN_CALM_AREAS_REACHABLE := 2` guarantee are both deliberate. Put back to the player rather than
-   assumed either way, and answered: alleys become their own edges, a park gets eight edges instead
-   of up to four, a courtyard keeps its one edge to one road segment, and **both nodes and edges need
-   to be more granular than today's `StreetNetwork.Segment`** — a whole block-length unit.
+1. **M69 — reachability becomes a grid of two-tile cells, and the day's route tree grows on it.**
+   The design is settled and written out in full in `TODO.md`; what is left is implementation, in the
+   six items there. The short version: hand-modelling openings was replaced by a uniform cell grid
+   over the tile map, the cell is **two** tiles square because two divides the lattice's 14-tile
+   period and its 6- and 8-tile street and block spans exactly where three divides none of them, a
+   cell contributes **one node per connected component of its walkable tiles** rather than one node
+   outright, and `StreetNetwork.Segment` stays the unit a closure is expressed in because a closure
+   has to be a street the player can see the shape of. That last grain choice makes the grid the tile
+   graph contracted, so the verification is that it agrees with `CityMap.walk_field` over a sweep of
+   seeds.
 
-   **An agent was started on this and stopped immediately, mid-file-read, with zero commits and the
-   worktree already cleaned up** — it had been asked to settle the graph's grain itself, which is
-   planning, not implementation, and this project's own rule is that the plan is the orchestrating
-   session's and only the implementation is an agent's. That has not been redone yet. What was found
-   before stopping: `StreetNetwork` (`src/routes/street_network.gd`) is already a real junction/edge
-   graph with a working max-flow route counter (`route_count`, edge-disjoint paths by Menger's
-   theorem) — the substrate to extend, not a naive block check to throw out. A single-block park's
-   four access segments collapse to about **four** sink-connected corner junctions in that flow graph
-   today, not eight, so "eight exits" is a real design addition and not something that falls out of
-   the existing junction lattice for free. Whether alleys are in `StreetNetwork` at all yet, and how
-   they should plug in as edges, was not checked before stopping —
-   `Tuning.ALLEY_CHANCE`/`Tuning.ALLEY_WIDTH_TILES` and `CityGenerator`'s `layout.alley` /
-   `layout.passage` rects (`src/city/city_generator.gd:704-767`) are where that answer lives.
+   **Two things in it are bigger than they look.** The route tree moving onto the grid touches
+   `RouteTree`, `Corridor`, `ClosurePlanner`'s candidate picking and the dusk map's corridor stroke —
+   and it is **M64's precondition**, because a tree made of whole block sides puts every park
+   crossing and alley off the tree and *closed everywhere off the path* would then seal them. And the
+   payoff item is a placement rule rather than a check: **no barrier beside a park** (a park is
+   walked through, so the barrier closes nothing) and **no barrier on a courtyard's entry street** (a
+   courtyard is a pocket with one door, so a barrier beside it is real and one on its archway's
+   street seals it). Without that rule the milestone changes no behaviour.
+
+   **An agent was started on the earlier shape of this and stopped immediately**, mid-file-read, with
+   zero commits and the worktree already cleaned up — it had been asked to settle the grain itself,
+   which is planning, not implementation. That is now done, so the milestone is ready to hand over.
 2. **M64 — off the path is closed, not dear.** Still queued behind M69: every event in the catalogue
    is a reason to cross the street and none is a reason not to go somewhere. **It supersedes M50's
    gradient** — the corridor stops being the *cheapest* ground and becomes the *only way through*,

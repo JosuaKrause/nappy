@@ -14,7 +14,7 @@ mid-way through.
 
 ## The order
 
-1. **M69** — reachability is asked of an opening, not a block.
+1. **M69** — reachability is a grid of two-tile cells, and the day's route tree grows on it.
 2. **M64** — off the path is closed, not dear. Design the rows first, then place them.
 3. **M65** — the chalk mark is findable, and silent until it is found.
 4. **M56** — the resistance is noticed.
@@ -93,6 +93,11 @@ what stays open is the day's **route tree** rather than a single line, which is 
 `RouteTree.for_day()` already grows — several strands, with the redundancy guarantee counted as a
 max flow. So the policy is: the tree is open, everything off it is closed.
 
+**M69 is a precondition, not merely the milestone ahead of this one.** A tree made of whole block
+sides puts every park crossing and every alley in the city off the tree, so *closed everywhere off
+the path* would seal the shortcuts the city is built around. The tree has to grow at cell
+granularity first — see M69, "The day's route tree moves onto the grid too".
+
 **Four things it collides with, none of them fatal and all of them to be answered before building:**
 
 - **M45's trap, restated at full strength.** *A nudge that removes the decision is worse than a
@@ -159,7 +164,7 @@ that meets one ends at its edge. What remains is that the ending is not *drawn* 
 
 ---
 
-## M69 — Reachability is a graph of nodes and edges, not a block-level check · asked for 2026-09-03
+## M69 — Reachability is a grid of cells, not a block-level check · asked for 2026-09-03
 
 > "barriers don't take into a account that parks can be entered where normally buildings would be
 > making them ineffective. (at the same time a courtyard can be completely sealed off by a barrier
@@ -183,33 +188,190 @@ player had been using (`closure_planner.gd:157`, quoting the player from 2026-08
 routes guarantee is not a hard rule."*). Put back to the player, and answered: this is not a bug in
 either of those — it is a request for a more precise model than either currently is.
 
-**The design, in the player's words, over two exchanges:**
+**The shape, in the player's words, over three exchanges.** The first two named the pieces:
 
 > "the code to detect reachability needs to become more precise. alleys should become edges. parks
 > should have edges at all 8 exits. courtyards only have one edge to one road section segment."
 
 > "nodes and edges need to be more granular."
 
-So the reachability graph's own units change: an alley becomes an edge in its own right rather than
-walkable ground folded into whatever it touches; a park gets eight edges — its eight exits — rather
-than the up-to-four sides `_access_streets` currently derives from `StreetNetwork.beside_block`; a
-courtyard keeps exactly the one edge to the one road segment its archway already gives it. And
-separately from which things are nodes and edges, **both need to be more granular than they are
-today** — a `StreetNetwork.Segment` currently stands for a whole block-length side, and the second
-instruction says that unit is still too coarse for either a node or an edge to be built from, without
-yet fixing what grain it has to reach.
+The third replaced hand-modelled pieces with a uniform grid, which is what the milestone builds:
 
-- [ ] **Work out the grain before building the graph.** The player has specified the shape (alleys
-      as edges, parks at eight exits, courtyards at one) and that the current segment-level unit is
-      too coarse, but not the target resolution itself — that is design work to settle first, checked
-      against both sentences above rather than assumed from today's `StreetNetwork.Segment`
-- [ ] **Build the graph model**, replacing the block-level checks: `ClosurePlanner._access_streets`
-      and `_invariant_holds`, and `EventScheduler._park_is_reachable`
-      (`src/events/event_scheduler.gd:1186`), both currently reason at the block or the whole-city
-      flood-fill level rather than through named, individually checkable edges
+> "how about making every 3x3 tile block a node? that should cover it? … and the 2 wide alley just
+> connects in two connections instead of 4"
+
+**The reachability graph is a grid of square cells over the tile map**, and every geometric fact the
+first two sentences enumerate then falls out of the tiles rather than being modelled by hand.
+
+### The cell is two tiles square, not three
+
+**Three divides nothing in this lattice and two divides all of it.** The period from one street
+corridor to the next is `BLOCK_SIZE` (8) + `STREET_WIDTH` (6) = 14 tiles, a block interior starts
+`STREET_WIDTH` in from the corridor, and the map is `STREET_WIDTH + CITY_BLOCKS * period` = 160 tiles
+square. Three divides none of 6, 8, 14 or 160, so a three-tile cell straddles the kerb at a different
+offset in every block and a cell that is four tiles of building and five of street needs a threshold
+rule somebody invents — and the same physical situation gets a different answer in different parts of
+the map. Two divides all four exactly: a street is 3 cells across, a block 4, the period 7, and the
+map 80 cells per axis, so **every cell is wholly street or wholly block** and the grid is 6,400
+nodes.
+
+**And two is what makes the player's own point about the alley come out by itself.** An alley is
+`ALLEY_WIDTH_TILES` (2) wide, so it is exactly **one cell** — one connection — against a street's
+three and a park's four per side. Width becomes capacity with nothing written to make it so.
+
+**One wrinkle in that, and it is a one-line fix in the generator.** `CityGenerator._alley_rect` rolls
+the alley's offset from the lot edge over 2–4 tiles, so an odd offset straddles two cell columns and
+the alley comes out two cells wide one time in three. Constraining that roll to even offsets makes it
+one cell always, which is what the player asked for.
+
+### A cell is not one node — its contents decide which of its sides connect
+
+*(2026-09-03: "doesn't the content of the 2x2 super tile define which of the four sides are
+connected?")*
+
+**It does, and treating a cell as one node wherever any tile in it is walkable is wrong.** A cell
+holds four tiles, so one whose only walkable tile is the north-west corner touches the north and west
+sides and nothing else, while a single node would advertise all four. The sharp case is a **one-tile
+building sliver** with walkable ground either side of it: `CityGenerator._keep_nonempty` keeps slivers
+on purpose — *"A sliver renders as a low wall, which is what a 32px-wide building should look like"* —
+so that is a real wall, and a whole-cell node walks straight through it.
+
+**So a cell contributes one node per 4-connected component of its walkable tiles**, which for four
+tiles is a sixteen-entry lookup on the mask. Empty is a dead cell; one walkable tile, an adjacent
+pair, three or four are all a single component; and the **two diagonal masks are two components that
+do not connect to each other**. An edge between neighbouring cells exists wherever a walkable tile in
+one is orthogonally adjacent to a walkable tile in the other, which links the right components.
+
+**That makes the grid the tile graph contracted**, so it answers identically to a tile-level flood
+fill by construction, at a quarter of the nodes — and it hands the milestone its verification:
+**assert the grid agrees with `CityMap.walk_field` over many seeds**, so correctness is a measurement
+rather than an argument. The alley property survives: an even-offset two-tile alley is one cell wide
+and one component per rank, so it is one connection.
+
+The diagonal split may never occur in this city — carves are rects and most purposes allow only one,
+since `Tuning.ALLEY_CHANCE` is 0 for commercial, courtyard and park blocks. Handling it costs a lookup
+table and the seed sweep is what would say.
+
+**And the grid answers *is there a walkable tile path*, not *does the pram fit*.** M64's mechanism is
+two ordinary obstacles facing each other leaving no line to walk, which is a question about clearance
+rather than about tiles — so that check is M64's to add on top, not something this grid gives it.
+
+### What stops being modelled by hand
+
+The park bypass, the sealed courtyard, alleys, squares, the home notch, precincts, big buildings,
+dead-end streets and a park that stopped being calm this morning are all simply *tiles*, so the grid
+answers all of them without anybody enumerating them. **"Eight exits" for a park becomes moot**: a
+park's side is four cells, so it has sixteen frontage connections and four corners, and that is the
+geometry rather than a number.
+
+**`ClosurePlanner._access_streets` and its two helpers go away with it.** The current code derives a
+calm area's ways in from block coordinates — *"a block of open calm opens onto all four sides of its
+lot; a zone onto one street per block edge; a courtyard onto exactly one, through its archway"* —
+carrying a documented trap about asking that question of the block rather than of the lot. Under the
+grid, a calm area is the set of cells its tiles are in and "reachable" is a question about cells.
+
+### What the grid does not have to preserve
+
+**Nothing that ships counts distinct routes.** `StreetNetwork.route_count` is a unit-capacity max
+flow that counts edge-disjoint routes, and every production caller asks it for a cap of **one** —
+`CityGenerator` twice at generation, and `ClosurePlanner._invariant_holds` once per calm area per
+candidate closure. Only `tests/test_routes.gd` ever asks for two, as an observation rather than a
+guarantee. That matters because a six-tile street is three parallel cell columns, so under the grid
+"two distinct routes" would be satisfiable by two lanes of one street — and there is nothing in the
+game for that to break.
+
+### Where it lives
+
+**Beside `StreetNetwork`, not instead of it — a closure stays a whole street.**
+`StreetNetwork.Segment` is one block-length of street between two junctions, and its own docstring
+gives the reason it is the unit a day shuts: *"Closing half a street would be a closure the player
+cannot see the shape of."* That does not change. The grid answers whether the result is still
+walkable.
+
+**It is rebuilt every morning**, unlike the run-fixed lattice: which tiles are calm, boarded, burnt or
+requisitioned changes daily, and the grid is derived from tiles.
+
+### The day's route tree moves onto the grid too
+
+*(2026-09-03: "make sure to draw the paths in that granularity as well instead of the whole block
+side what it does now")*
+
+Today a route is a list of whole streets. `RouteTree.streets()` returns segment keys and the dusk map
+draws each as a one-tile line down the middle of a street from junction centre to junction centre
+(`TelemetryMap._corridor_stroke`), so **a path is a whole block side and can never be anything else**
+— it cannot cut a corner through a park, take an alley, or run down one side of a street.
+
+**Drawing it finer is only meaningful if the path is known finer.** A cell-snapped stroke over a
+segment-level tree is the same shape two tiles wide, which is cosmetic. So the instruction is that
+`RouteTree` grows on the cell grid: a strand becomes a chain of cells, and the picture is the cells.
+
+**And that is what M64 needs, which is why this belongs here rather than in a drawing item.** M64's
+policy is *the tree is open, everything off it is closed*. Against a tree made of whole block sides,
+every park crossing and every alley in the city is off the tree and therefore sealed — which would
+close the shortcuts the city is built around on the first day it shipped. **A cell-level tree is the
+precondition for M64 being buildable at all**, and M64 is the next milestone in the order.
+
+What has to be re-expressed when the tree moves, all of it currently keyed by segment: `RouteTree`'s
+own `streets()`, `rim()` (a turning off the tree, which is where a closure prefers to go), `gaps()`
+(the single street joining two adjacent strands) and `is_on_the_tree()`; `Corridor`, which answers
+*is this tile on a route*; and the corridor stroke on the dusk map. `ClosurePlanner` asks the tree
+three segment-level questions when it picks candidates, so it needs a cells-to-segment answer.
+
+**This is the part of the milestone that is not small**, and it is worth saying so against the
+paragraph above it: the grid itself is contained, and moving the tree onto it is not.
+
+### What it is for, which is the placement rule
+
+*(2026-09-03: "the planner shouldn't put a barrier next to a park anyway (it will never close the
+street) it only makes sense for courtyards (we need to check the entry and potentially move it)")*
+
+**The asymmetry is the whole payoff, and it is exactly the two halves of the original complaint.** A
+park is a hole in the block grid — `CityGenerator._build_block` fills an open calm lot frontage to
+frontage — so it is walked *through*, and a barrier on any of its four sides is stepped around at the
+cost of a few tiles. A courtyard is a pocket with one door, so it is not walked through and a barrier
+beside it closes a street for real.
+
+- **Never beside a park.** The barrier closes nothing, and it is read as broken by anybody standing
+  at it looking at the open ground next to it.
+- **Beside a courtyard it is a real barrier** — but it may not land on the one street the archway
+  opens onto. **Read as: check the courtyard's entry and move the barrier**, not the entry, since a
+  block's purpose may never move a walkable tile and the archway is generated once for the run.
+  Flagged as a reading rather than a quotation, so it is cheap to overturn.
+
+**The test is a *local* bypass, not a global route change, and that distinction decides whether this
+is buildable at all.** M45 measured the global version and it does not work — 350 closures across ten
+seeds changed the best route to the nearest calm area exactly once — so a rule of "place a barrier
+only where it lengthens the route" places almost none. What a player actually sees is the hole *next
+to* the barrier. The rule is therefore stated over the cells the barrier touches, not over the map.
+
+- [ ] **Build the cell grid**, two tiles square, derived from the day's tiles, one node per
+      4-connected component of a cell's walkable tiles. **Verified by agreeing with
+      `CityMap.walk_field` over a sweep of seeds** — the grid is the tile graph contracted, so
+      anything it answers differently is a defect in the contraction
+- [ ] **Move the two reachability answers onto it, because they currently disagree.**
+      `ClosurePlanner._invariant_holds` asks the junction graph, which cannot see a park or an alley
+      at all; `EventScheduler._park_is_reachable` (`src/events/event_scheduler.gd:1186`) is a real
+      whole-city tile flood fill that *can*, and is fed an over-blanked closed set (below). One
+      answer, and the grid is it
+- [ ] **`RoadClosure.tiles()` blanks the whole street and should not.** It takes every tile between
+      the two barriers out of the walkable world on its own stated argument that *"the ground between
+      them is not somewhere anyone can get to"* — which is false the moment an alley mouth or a
+      courtyard archway opens onto the middle of that street, both of which land mid-segment by
+      construction. What is genuinely unreachable is a question for the grid, so `closed_tiles`
+      becomes derived from it rather than asserted by the closure
+- [ ] **Even alley offsets.** `CityGenerator._alley_rect` rolls 2–4 tiles from the lot edge; even
+      offsets only, so a two-tile alley is exactly one cell and one connection
+- [ ] **The placement rule: no barrier beside a park, and no barrier on a courtyard's entry street.**
+      This is the thing the graph exists to make possible, and without it M69 changes no behaviour
+- [ ] **Grow the day's route tree on the grid, and draw it there.** A strand becomes a chain of
+      cells rather than a list of whole streets, so a path can cut through a park or take an alley,
+      and the dusk map draws the cells instead of a line down the middle of every street on the
+      tree. `RouteTree.rim()`, `gaps()` and `is_on_the_tree()`, `Corridor`, and `ClosurePlanner`'s
+      three segment-level questions of the tree all move with it. **The largest piece here, and
+      M64's precondition**
 - [ ] **Then re-check every barrier-placing milestone against it.** M45's closures, M48's barrier
       drawing and M62's checkpoint perimeter all place barriers assuming today's coarser reachability
-      model backs them; each wants confirming against the new graph once it exists, rather than
+      model backs them; each wants confirming against the new grid once it exists, rather than
       assumed clean
 
 ---
