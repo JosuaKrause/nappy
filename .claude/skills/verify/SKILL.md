@@ -103,6 +103,23 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
   a street.
 - **A test asserting a relationship beats one asserting a value.** `intensity < walking decay`
   survives rebalancing; `intensity == 3.2` does not.
+- **A test that only doubles the work of a change is deleted, not maintained.**
+  *(2026-09-03: "this was one example of pointless brittle tests … they just double the amount of
+  work when changing things".)* The shape is a test that **reads a design decision back to itself** —
+  asserting `act_for_day(4) == 2` when `ACT_START_DAYS` is `[1, 4, 8, 12]` is the table restated, so
+  moving an act boundary means editing the constant *and* editing the test, and no arrangement of
+  those two numbers was ever going to disagree.
+
+  **The distinction from a value that is worth pinning is the reason, not the literal.**
+  `CAR_HORN_TIME >= required_horn_time()` also fails when somebody lowers the horn time — and that
+  is the entire point, because it encodes *why* the number has a floor rather than what the number
+  is. Ask which of the two a test would tell you if it went red: **"you changed a number"** is a
+  test to delete, **"you broke the thing the number was for"** is a test to keep.
+
+  Three that look prunable and are not: a **guard that a sweep was not vacuous** (`"there were cells
+  to ask (%d)"`) is what stops a passing test from having checked nothing; an **ordering between two
+  constants** survives every rebalance that respects it; and anything the incident list in this file
+  names, which is a defect that has already shipped once.
 - **A test that is true by luck is worse than no test.** Two have been found here — a determinism
   guarantee that stayed green because one seed happened to generate a different city, and a crowd
   predicate that asserted the wrong thing for eleven milestones. **If a test would pass with the
