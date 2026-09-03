@@ -152,10 +152,45 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 		face := Vector2.RIGHT, map: CityMap = null) -> void:
 	def = definition
 	path = route
-	position = route[0] if route.size() > 0 else at
+	var start := route[0] if route.size() > 0 else at
+	if map and not definition.mobile and definition.obstructs_radius > 0.0 \
+			and definition.pavement_side == EventDef.Pavement.ANY:
+		start = _centred_on_the_pavement_band(map, start)
+	position = start
 	_heading = face
 	_map = map
 	_spread_vertical = _spread_is_vertical(map, position)
+
+## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
+## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
+## of the pavement's two lanes the scheduler happened to choose, 16px from that lane's own edge and
+## 48px from the far one — so a body sized against the *pavement* rather than the *lane* overhangs
+## by exactly the asymmetry between those two numbers. Playtest 19's own words are about the offset,
+## not the width: *"they're all placed with an offset that makes them clip into other things."*
+##
+## The fix is the position, not a smaller radius: this shifts a stationary, unpinned body from the
+## lane tile the scheduler chose to the middle of the two-lane band it belongs to, so a body may be
+## up to the full `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide and exactly fill the pavement, the way
+## `construction`'s own docstring always said it did.
+##
+## **Exempt: anything `pavement_side` pins to an edge on purpose.** `delivery_van` belongs at the
+## kerb and `reversing_lorry` belongs against the building — re-centring either would undo the one
+## thing `pavement_side` exists to do. Both stay exactly where `EventScheduler._build_placement`
+## put them, still measured against the same 64px band: a kerbed `VEHICLE_BODY` (44px) leaves a
+## 26px gap to the frontage, narrower than the 28px pram, which is `docs/HANDOFF.md`'s own reading
+## of that placement — a van at the kerb is *also* "no line to walk," on purpose.
+static func _centred_on_the_pavement_band(map: CityMap, at: Vector2) -> Vector2:
+	var tile := map.world_to_tile(at)
+	if map.pavement_inward(tile) == Vector2i.ZERO:
+		# Not a pavement tile at all, or a junction belonging to both corridors at once — nothing
+		# here has one band to be centred on.
+		return at
+	var x_offset := CityMap.corridor_offset(tile.x)
+	var offset := x_offset if x_offset >= 0 else CityMap.corridor_offset(tile.y)
+	var band_offset := Tuning.SIDEWALK_WIDTH * 0.5 if offset < Tuning.SIDEWALK_WIDTH \
+			else float(Tuning.STREET_WIDTH) - Tuning.SIDEWALK_WIDTH * 0.5
+	var shift := (band_offset - offset - 0.5) * Tuning.TILE_SIZE
+	return at + (Vector2.RIGHT if x_offset >= 0 else Vector2.DOWN) * shift
 
 ## **A spread's rotation is a property of the street it stands on**, not a field on the row: a
 ## barrier that lies correctly across a north-south street lies along the kerb — parallel to the

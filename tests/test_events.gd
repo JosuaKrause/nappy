@@ -7,6 +7,7 @@ const STEP := 1.0 / 60.0
 func run(t) -> void:
 	_test_catalogue_is_fair(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
+	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
@@ -98,23 +99,35 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.PROTEST, EventDef.Look.FIREFIGHT,
 ]
 
-## A `SIDEWALK` tile sits `TILE_SIZE * 0.5` from its own nearest edge whichever of the pavement's
-## two lanes it lands in — see `CityMap`'s own layout comment, "sidewalk | road | sidewalk" — so
-## that is the worst case, not the full `SIDEWALK_WIDTH * TILE_SIZE` band, because a body drawn
-## symmetrically about a tile centre reaches just as far past its own lane's edge as it reaches
-## into the lane beside it.
-const _SIDEWALK_SPREAD_CLEARANCE := Tuning.TILE_SIZE * 0.5
+## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
+## in total, and it is one piece of walkable ground rather than two lanes a body has to fit inside
+## one of. `EventInstance._centred_on_the_pavement_band()` moves a stationary, unpinned
+## (`pavement_side == ANY`) body from the lane tile `EventScheduler` chose to the middle of that
+## whole band, so this is half of the *band*, not half of a *lane*.
+const _SIDEWALK_SPREAD_CLEARANCE := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
 ## A `ROAD` or `CROSSING` tile sits much further from a building line: `(SIDEWALK_WIDTH + 0.5) *
 ## TILE_SIZE`, worst case, because it is one of the carriageway tiles in the middle of the
 ## corridor rather than at either edge of it — which is why a street-spanning row like
-## `checkpoint` is allowed a far wider body than a sidewalk obstruction is.
+## `checkpoint` is allowed a far wider body than a sidewalk obstruction is. Nothing re-centres a
+## `ROAD`/`CROSSING` body — `CityMap.pavement_inward()` answers zero for either, by design, so
+## `_centred_on_the_pavement_band()` leaves them exactly where the scheduler put them.
 const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TILE_SIZE
 
-## **A body on a pavement has to fit on the pavement.** `_draw_spread` and its cousins draw a body
-## at exactly the width `obstructs_radius` says, centred on the tile the scheduler chose — so that
-## width is a promise about where she can walk, and the promise is only kept if it fits the ground
-## `def.placement` actually offers. `SQUARE`, `PARK` and `ALLEY` are wide open and carry no bound
-## here; a tile type with no clearance defined is skipped rather than treated as a failure.
+## **A body on a pavement has to fit on the pavement — the whole of it, not the lane it happened to
+## be planned on.** `_draw_spread` and its cousins draw a body at exactly the width `obstructs_radius`
+## says, and `EventInstance.setup()` centres a stationary, unpinned body on the pavement band before
+## either the drawing or `_build_obstruction()`'s collision circle ever reads its position — so the
+## width is a promise about where she can walk and the promise is kept against the band a `SIDEWALK`
+## placement actually offers, not against whichever of its two lanes the scheduler rolled. `SQUARE`,
+## `PARK` and `ALLEY` are wide open and carry no bound here; a tile type with no clearance defined is
+## skipped rather than treated as a failure.
+##
+## **Blind spot, not a hole this test can close:** `burnt_shell` and `barricade` carry no
+## `def.placement` of their own — both are scars/spawns sited wherever `burning_building` /
+## `military_convoy` stopped rather than placed by `def.placement` — so the loop below never sees
+## them and a future regression on either row's `obstructs_radius` would pass silently. Checked by
+## hand instead: both actually land on `ROAD` (their spawning row's own placement), and 36px /
+## 62px both sit inside `_CARRIAGEWAY_SPREAD_CLEARANCE`.
 func _test_a_spread_body_fits_the_ground_it_stands_on(t) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
@@ -134,6 +147,57 @@ func _test_a_spread_body_fits_the_ground_it_stands_on(t) -> void:
 					"'%s' draws %.0fpx wide, which fits the %.0fpx that a %d-type tile clears"
 					% [def.id, half * 2.0, clearance * 2.0, tile_type])
 	t.check(checked >= 6, "and the rule covers the catalogue's spread rows (%d checks)" % checked)
+
+## **The kerb exception must not silently regress.** `delivery_van` and `ice_cream_van` are
+## `pavement_side == AT_THE_KERB` on purpose — `EventCatalogue`'s own docstring is "a parked van
+## belongs at the kerb" — so `_centred_on_the_pavement_band()` must leave them flush against it
+## rather than re-centring them onto the pavement band the way `construction` is. A kerb-parked
+## `VEHICLE_BODY` (44px across) still has to leave a gap to the frontage narrower than the pram, or
+## the row stops being an obstacle: `docs/HANDOFF.md`'s own reading of that placement is that the
+## gap "is intended and is also the exact shape of 'no line to walk.'"
+func _test_a_kerbed_body_still_pins_the_frontage(t) -> void:
+	var kerb_edge := Tuning.TILE_SIZE * 0.5
+	var band := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
+	var frontage_gap := (band - kerb_edge) - EventCatalogue.VEHICLE_BODY
+	t.check(frontage_gap < Tuning.PLAYER_BODY_RADIUS * 2.0,
+			"a %.0fpx VEHICLE_BODY at the kerb leaves %.0fpx to the frontage, narrower than the "
+			% [EventCatalogue.VEHICLE_BODY, frontage_gap]
+			+ "%.0fpx pram" % (Tuning.PLAYER_BODY_RADIUS * 2.0))
+
+	var map := CityMap.new()
+	# The kerb lane of a north-south street's near-start pavement pair — offset `SIDEWALK_WIDTH - 1`
+	# is the tile whose road-side neighbour is the carriageway.
+	var kerb_tile := Vector2i(Tuning.SIDEWALK_WIDTH - 1, Tuning.STREET_WIDTH + 3)
+	map.set_tile(kerb_tile, GameEnums.TileType.SIDEWALK)
+
+	var van := EventCatalogue.by_id("delivery_van")
+	var parked := EventInstance.new()
+	parked.setup(van, map.tile_to_world(kerb_tile), PackedVector2Array(), Vector2.RIGHT, map)
+	t.check(parked.position.is_equal_approx(map.tile_to_world(kerb_tile)),
+			"'delivery_van' (AT_THE_KERB) is left exactly where it was placed, not re-centred")
+	parked.free()
+
+	# The exemption is meaningful, not a no-op: an ANY-`pavement_side` body sited on the very same
+	# tile does get moved, onto the middle of the two-lane band — half a tile from the tile centre,
+	# in the direction `CityMap.pavement_inward()` already answers for this lane.
+	var barrier := EventCatalogue.by_id("construction")
+	var centred := EventInstance.new()
+	centred.setup(barrier, map.tile_to_world(kerb_tile), PackedVector2Array(), Vector2.RIGHT, map)
+	var band_centre := map.tile_to_world(kerb_tile) \
+			+ Vector2(map.pavement_inward(kerb_tile)) * (Tuning.TILE_SIZE * 0.5)
+	t.check(centred.position.is_equal_approx(band_centre),
+			"'construction' (pavement_side ANY) is re-centred onto the pavement band")
+	centred.free()
+
+	# And the payoff, stated as the arithmetic that decides it rather than as a distance: with
+	# `construction` centred on the band, no point on the pavement is far enough from it to clear
+	# `obstructs_radius + PLAYER_BODY_RADIUS` — the pram cannot pass on either lane, which is what
+	# "the only Act I event that is physically in the way" means.
+	var half_band := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
+	t.check(barrier.obstructs_radius + Tuning.PLAYER_BODY_RADIUS > half_band,
+			"a centred 'construction' (%.0fpx + %.0fpx pram) reaches past either edge of the %.0fpx "
+			% [barrier.obstructs_radius, Tuning.PLAYER_BODY_RADIUS, half_band * 2.0]
+			+ "band, so it seals the whole pavement rather than one lane of it")
 
 ## **A spread's rotation is a property of the street it stands on.** Playtest 13 and 19 both report
 ## it from play: *"they're always horizontal even when they should be vertical."* A tile whose `x`
