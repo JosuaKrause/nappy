@@ -816,13 +816,13 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 
 # ---------------------------------------------------------------- one folder ---
 # *(docs/TODO.md, M70, "all the files of one run live in one folder": the run identity moved from
-# a shared filename stem to a folder, `<day>/<commit>/<run>/`, and a day played twice — a nerve
+# a shared filename stem to a folder, `<day>/<minute>/<run>/`, and a day played twice — a nerve
 # retries a lost day without the calendar advancing — has to write a second picture rather than
 # overwrite the first's.)*
 
 ## Deletes a real path this suite wrote, so a test that opens a real run — the only way to check
 ## a folder actually landed where `begin_run()` says it does — leaves nothing behind for a person
-## to find later. Also removes the `<commit>` and `<day>` ancestors once they are empty: nothing in
+## to find later. Also removes the `<minute>` and `<day>` ancestors once they are empty: nothing in
 ## the game does that any more (2026-09-03: "no automatic cleanup anymore"), but the suite is a
 ## guest in the real telemetry directory and should not scatter empty folders through it.
 func _delete_recursive(path: String) -> void:
@@ -853,9 +853,12 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 	var run_dir := log_path.get_base_dir()
 	t.check(run_dir.get_file().begins_with("rig-"),
 			"the run folder itself carries the run/rig distinction (got '%s')" % run_dir.get_file())
-	t.check(run_dir.get_base_dir().get_file() == Telemetry._file_tag(),
-			"its parent is the commit folder (got '%s', wanted '%s')"
-			% [run_dir.get_base_dir().get_file(), Telemetry._file_tag()])
+	t.check(run_dir.get_file().ends_with("-" + Telemetry._file_tag()),
+			"and its own name ends with the commit it was played on (got '%s', wanted suffix '-%s')"
+			% [run_dir.get_file(), Telemetry._file_tag()])
+	var minute_dir := run_dir.get_base_dir().get_file()
+	t.check(minute_dir.length() == 4 and minute_dir.is_valid_int(),
+			"its parent is the minute folder, HHMM (got '%s')" % minute_dir)
 
 	Telemetry.begin_day(1, 1, 778812345, 778812345, 10.0)
 	Telemetry.write_map(map, 1)
