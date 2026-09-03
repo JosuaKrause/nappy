@@ -127,18 +127,24 @@ side on the corridor getting its other three closed one segment at a time. A blo
 a whole block's worth of frontage, so the off-path city reads as **solid** rather than as a scatter
 of blocked segments. Each sealed street is still either strength — hard, or the ordinary-event pair.
 
-**And the density on the corridor is normal, not low.** *(Same instruction: "a normal density of
-events on the path so we need to change the side of the street every now and then".)* **This is the
-half that contradicts what is built**, and it is the second thing M64 takes from M50 rather than the
-first. M50's gradient makes the corridor the *cheapest* ground in the city and biases costly rows off
-it, so a player walking the day's route meets the least of everything — which is what playtest 21
-reports as *"the city feels way empty now"*. Under M64 the corridor carries an **ordinary** event
-load, frequent enough that changing pavement is a regular occurrence rather than a rarity.
+**The density on the corridor is already right, and nothing about it changes.** *(2026-09-03, the
+design restated in full: "on the path there should be a normal amount of events that remain passable
+— that looks like it is the case here. off the path there should be fully blocking events on every
+segment — there should be no (easy) way to go off the path".)* The first clause is a **verdict on
+what is built**, given after the measurement below: the corridor's event load is normal, the rows on
+it stay passable, and the milestone touches none of it. `EventScheduler._copies_of` keeps offering a
+friction row `EVENT_CORRIDOR_WEIGHT` (4) extra copies of a corridor tile, and `Corridor.depth()`
+keeps pricing what it prices.
 
-**So what varies is off-path versus on-path, and no longer cheap versus dear.** The corridor stops
-being a discount and becomes an ordinary street that happens to be the one that goes somewhere. That
-is a sharper break with M50 than "closed rather than dear" alone: **both** of the gradient's ends
-move.
+**So M64 is one change, not two: everything it does is off the path.** An earlier reading of this
+entry had the corridor's discount as *"the other half of superseding M50"* and queued a second item
+to remove it. That item is gone — it was aimed at a cause the measurement could not find, and the
+design says the on-path half is already as it should be.
+
+**What *"no (easy) way"* rules in and out.** Not *no way*: a soft seal takes both pavements and
+leaves the carriageway to be risked, and an alley stays open at 3.0 excitement a second. Those are
+the priced ways through and they are the point. What has to stop existing is the **free** way — an
+off-path segment she can simply walk down, which today is most of them.
 
 **Which park to walk to therefore stays exactly as open a question as it is today**, and what
 changes is that the answer can no longer be reached any old way. That is the deliberate order: the
@@ -275,10 +281,10 @@ central claim — the corridor is the way through — true.
 
 - [ ] **The pictures, and they are the part that needed inventing.** Eight kinds, agreed 2026-09-03.
       Five for act I, where a closed street has a municipal reason, and three for acts II–IV, where
-      it is the city coming apart. **With every street off the tree sealed, a day places on the order
-      of a hundred and fifty of these and she walks past perhaps twenty-five**, so eight kinds is
-      each one met three or four times in a day — enough that no single barrier becomes the city's
-      signature.
+      it is the city coming apart. **With every street off the tree sealed, a day places about 187 of
+      these** — the lattice's 264 streets less the 76.6 the day's tree covers, measured — **and she
+      walks past perhaps twenty-five**, so eight kinds is each one met three or four times in a day —
+      enough that no single barrier becomes the city's signature.
 
       Act I: **a fallen tree**, root plate at one kerb and crown over the far footway (hard); **a car
       accident**, two cars locked together with debris and onlookers on both pavements (hard); **a
@@ -297,61 +303,55 @@ central claim — the corridor is the way through — true.
       same exchange. **The pair mechanism needs no new drawing at all** and is the cheapest soft
       seal there is: a café on one side facing a yeller on the other, from rows the catalogue
       already has
-- [ ] **Then place them off the tree, a block at a time**, exempting the doorstep, and check the
+- [ ] **Then place them off the tree, on every segment**, exempting the doorstep, and check the
       winnability guarantee still holds when sealing is the intent rather than the accident. **A
       one-cell stretch of corridor is not ordinary corridor** — where a branch runs down an alley
       there is no other side of the street to cross to, so the clearance a lethal row keeps has to be
       measured against the narrowest ground the tree touches rather than against a street's width
-- [ ] **Take the discount off the corridor, which is the other half of superseding M50.** What
-      replaces it is an ordinary density on the tree — *"so we need to change the side of the street
-      every now and then"* — which is a statement about **how often she is made to cross**, and that
-      is the thing to measure rather than an event count. The rows that do it are the pavement
-      obstacles M48 made fit their pavement: a café, a market stall, roadworks, a kerbed van.
-      **`Corridor.depth()` is where the discount lives**, so this is a change to what depth zero
-      costs rather than a new system.
 
-      **This item is waiting on an answer, because the measurement below cannot find the problem it
-      was written to fix.** The corridor is not short of these rows — it is where about half of every
-      one of them already lands. Building *more* density onto it against that measurement is the one
-      thing the numbers argue against, so what the instruction means has to be settled before the
-      change is made
+**Measured over 8 seeds × days 1, 5, 8, 11 and 14. Only the events on the path exist; everything else
+is bare — and it is a factor of three and a half.** *(2026-09-03: "if you look at any of those
+pictures it's immediately clear only the events on the path currently exist. everything else is
+empty", and "they meant literally empty — nothing on the street".)* The unit is **events standing on
+a street, per street, per day**, which is the question somebody walking down one is asking:
 
-**What the corridor actually carries, measured over 8 seeds × days 1, 5, 8, 11 and 14 — 5633 placed
-events.** The two causes playtest 21 could not tell apart were both tested and **neither is the
-cause.**
-
-**The corridor is the densest ground in the city, not the emptiest.** Every event is bucketed by
-`Corridor.depth()` — 0 on the tree, 1 the rim, 2+ elsewhere — and cross-tabbed with what the day
-placed it *for*:
-
-| role | depth 0 | rim | 2+ |
+| band | streets a day | events a day | **per street** |
 |---|---|---|---|
-| friction | **2074** | 709 | 1706 |
-| wall | **0** | 547 | 531 |
-| none | 10 | 12 | 44 |
+| on the tree | 76.6 | 62.8 | **0.82** |
+| the rim | 94.1 | 20.9 | **0.22** |
+| further out | 93.3 | 22.7 | **0.24** |
+| the whole city | 264 | 106.4 | 0.40 |
 
-That is about **52 friction events a day standing on the corridor itself**, and depth 0 is far less
-ground than "everywhere else". **The hypothesis that the side-changing rows are priced out of the
-corridor is false**: `_role_for` calls a row a wall when it is lethal or costs `WALL_WORTH_OF_COST`
-(40 points, which is 40% of a full meter) or more to walk through, and all four price well under it —
-`cafe_tables` 20.1, `market_stall` 27.9, `construction` 20.3, `delivery_van` 8.3. All four are
-friction, and each lands on the corridor about half the time (`cafe_tables` 388 of 781,
-`market_stall` 149 of 307, `construction` 134 of 259, `delivery_van` 233 of 425).
+A street on the day's route carries **0.82 events**; a street off it carries **0.23**, which is one
+event every four streets. The corridor is **29% of the lattice** and holds **59% of everything
+standing on a street**. `_copies_of` is what does it — a friction row is offered
+`EVENT_CORRIDOR_WEIGHT` (4) extra copies of any tile whose corridor depth is zero — and friction is
+4489 of 5633 placements, so the furniture is pulled onto the tree and the rest of the city is left
+bare.
 
-**M69's closure refusal is not it either.** Each day was planned twice on the same seeds — once
-through `ClosurePlanner.plan_day` as the game runs it, once through a copy of its candidate list with
-the calm-area exclusion removed. The refusal takes a mean of **35.0 of 264 lattice streets** a day out
-of the pool, but only **34.7% of those are rim** — the ground beside where she walks — so it removes
-**14.5% of the rim** and the rest of what it refuses was never near her. The closures land in almost
-the same place either way: **86.4% of them on the rim as built, 88.6% with the filter off**, at an
-identical 2.50 a day. Only 45 of 280 closures would have moved.
+**And the run log says she was not on the tree.** *(2026-09-03: "maybe what the playtester thought
+was the path was indeed something else. that would beg the question why were they able to leave the
+path?")* The `path` telemetry line closes each day with the share of her street time spent on the
+day's route, and playtest 20's run reads **52%, 29%, 51%, 30%, 20%, 52%, 33%, 36%, 0%, 0%, 59%** — a
+mean around a third, and two days on which she never set foot on it. So she spent most of her walking
+on 0.23-events-per-street ground. *Empty* is the accurate word for it.
 
-**So the reading the numbers support is neither of the two on offer: the corridor is full of things
-that do not matter.** `cafe_tables` alone is 781 of 5633 placements — one row in seven — and the
-whole depth-0 population is friction, by construction: a wall is refused every corridor tile, so
-**nothing she meets on her own route can stop her**. *Empty* is about consequence rather than count,
-which is M64's own sentence — *every event is a reason to cross the street and none is a reason not
-to go somewhere* — and it points at the sealing items rather than at the density one.
+**Neither cause playtest 21 proposed survives, and both were tested.** The rows that force a pavement
+change are not priced out of the corridor: `_role_for` calls a row a wall when it is lethal or costs
+`WALL_WORTH_OF_COST` (40 points of a 100-point meter) or more to walk through, and `cafe_tables`
+costs 20.1, `market_stall` 27.9, `construction` 20.3 and `delivery_van` 8.3 — all friction, each
+landing on the corridor about half the time. And M69's closure refusal moves almost nothing: planning
+every day twice on the same seeds, with and without the calm-area exclusion, moves **45 of 280
+closures** and shifts the share landing on the rim from **86.4% to 88.6%**, at an identical 2.50 a
+day. The refusal takes 35 streets a day out of the pool and only 34.7% of them are rim at all.
+
+**So the fix is the sealing, and the sealing has a size: 264 − 76.6 = about 187 segments a day.**
+
+**This makes playtest 19's older finding a measurement rather than an impression** — *going off the
+paths lets me skip events and is safer than going on the path.* Off-path is emptier, so off-path is
+safer, which is the exact inversion M64 exists to fix. And *why was she able to leave* has a plain
+answer: nothing stops her. M50 only makes the corridor **cheapest**, and it buys that cheapness by
+putting harmless things on it.
 
 *(`SET_PIECE` is zero in every bucket. A one-shot has no position at dawn, so this is the sweep
 looking at plans before the director sites them rather than a day with no set pieces in it.)*
