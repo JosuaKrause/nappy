@@ -340,22 +340,15 @@ through the walled city and a much larger game than the corridor policy describe
 a played day rather than in the abstract; the conservative version is the one that keeps M64's
 central claim — the corridor is the way through — true.
 
-- [ ] **Place a seal off the tree, on every segment**, exempting the doorstep, and check the
-      winnability guarantee still holds when sealing is the intent rather than the accident. **A
-      one-cell stretch of corridor is not ordinary corridor** — where a branch runs down an alley
-      there is no other side of the street to cross to, so the clearance a lethal row keeps has to be
-      measured against the narrowest ground the tree touches rather than against a street's width.
+**The sealing itself is built — `SealPlanner` places one on every real street off the day's tree —
+and the record is in `DECISIONS.md` under M64.** Off-path density measured 0.330 events per street
+before and **2.173** after, over 8 seeds × days 1, 5, 8, 11 and 14, with the on-tree figure unmoved.
+Two facts from that build govern what is left here: **a seal candidate is data** — an id, a strength
+and one or two catalogue rows — so the item below costs one appended entry each and no branch in the
+placement code; and **hard seals are act IV only today**, because `barricade` is the sole catalogue
+row wide enough to span a street. **Whether a walled city reads as a route decision or as a maze is
+the played question**, and nobody has walked one.
 
-      **The seals come from a list of candidates, and adding to that list is the only thing the next
-      item may cost.** *(2026-09-03: "code should be that updating the list of candidates is enough
-      and no other code changes need to happen to go to 8 seal pictures".)* So a candidate is data —
-      what to place, whether it seals **hard** or **soft**, and from which day — and the pass that
-      chooses and sites one is generic over that list. **This is the architectural requirement of
-      this item, not a nicety**: if the picture item turns out to need a branch in the placement code,
-      the placement code was written wrong.
-
-      Today's list is what the catalogue already carries, named above: `construction` and the other
-      pavement obstacles for a soft pair, `barricade` for a hard span
 - [ ] **Eight seal pictures, so that no single barrier becomes the city's signature.** Agreed
       2026-09-03. Five for act I, where a closed street has a municipal reason, and three for acts
       II–IV, where it is the city coming apart. **With every street off the tree sealed, a day places

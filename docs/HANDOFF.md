@@ -51,7 +51,7 @@ whose corridor was grown on cells.
 [PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 22 has three findings, and its third is built — a run
 is now a folder, `<day>/<commit>/<run>/`, and a replayed day no longer overwrites its own map. The
 two open ones are both M64's: barriers are still placed with gaps and overlaps, and the off-path city
-is still bare because the sealing has not been started. Playtest 21 is a brief run whose two
+was bare — which the sealing now answers. Playtest 21 is a brief run whose two
 findings are both M64's: the city *"feels way empty"*, and an instruction about the density on and
 off the path that moves **both** ends of M50's gradient. Playtest 20 is the full seven-day run behind
 them, and its findings are filed against the milestones that own them.
@@ -63,16 +63,17 @@ day's route tree grows on it, and `ClosurePlanner` refuses a calm area's access 
 `StreetNetwork` is still there and still owns the lattice and the structural route count; it is no
 longer what answers *can she get there today*.
 
-1. **M64 — off the path is closed, not dear.** First in the order and fully specified: every event in
-   the catalogue is a reason to cross the street and none is a reason not to go somewhere. **It
-   supersedes M50's gradient at both ends** — off the path stops being *dear* and becomes *closed*,
-   and the corridor stops being the *cheapest* ground and carries an ordinary event load. The
-   mechanism already exists: two ordinary obstacles facing each other leave no line to walk. **Two of
-   its three preconditions are built** — the tree grows on cells (M69), so sealing off the tree no
-   longer seals every park crossing and alley; and a spread now faces the street it stands on (M48),
-   so the ~187 seals a day are not half of them lying sideways. **The third is its own first item**:
-   a spread on a crossroads corner gets neither of M48's fixes, which is one pavement tile in six and
-   is playtest 22's first finding.
+1. **M64 — off the path is closed, not dear.** **Its sealing is built**: `SealPlanner` puts a seal on
+   every real street off the day's route tree, so the city can say *not this way at all* for the
+   first time and the route decision stops having one correct answer. Off-path density measures
+   0.330 events per street before and 2.173 after, with the on-tree figure unmoved; the record is in
+   `DECISIONS.md` under M64. **What is left is the eight seal pictures** — variety, so no single
+   barrier becomes the city's signature, and each costs one appended candidate and no code — plus
+   the two barrier-placement defects playtest 22 found, and the off-screen arrivals item.
+
+   **Hard seals are act IV only**, because `barricade` is the sole catalogue row wide enough to span
+   a street; days 1–11 seal soft, both pavements taken with the carriageway still walkable. Three of
+   the eight pictures are act-I hard seals and are what closes that.
 2. **M65 — the chalk mark.** Still the same two-part gap from playtest 19 — announced before it is
    found, unfindable once it is — with a third item added from playtest 20: a protester pointing
    toward the current objective, and made more common since a protester obstructs nothing.
@@ -108,6 +109,14 @@ items, and **M10** (polish).
 
 What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 
+- **The city is walled off the path and nobody has walked it.** About 369 seal bodies a day stand on
+  the 187 streets the day's tree does not use, and a day now plans four to five hundred events where
+  it used to plan a hundred and thirty. Everything about it is measured and none of it is felt.
+  **The specific worry, from a rig:** walking blindly away from the route on seed 2102613802, day 6
+  meets a wall at the second street, cannot move for thirteen seconds, and loses the day at 17.6s
+  with excitement at 100 — and the log says `crowd 28.0/s, events 0.0/s`, so it is the crowd shoving
+  a stopped player, not the seals. A player who routes would not stand there. It is still the first
+  time the wrong direction loses a day inside twenty seconds with nothing telegraphing it.
 - **Every route the game plans is now grown on cells, and nobody has walked one.** The day's corridor
   is a chain of two-tile cells rather than a list of whole streets, so it can cut a corner through a
   park or take an alley — which is the point, and which also means the shape of a day's route is not
