@@ -674,7 +674,13 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		return base
 	# The key is the *question*, and `hard_fail` is part of it since the wall band gained a
 	# gradient: two lethal rows share an answer and a lethal row and a costly one no longer do.
-	var key := "%s|%d|%d|%s|%s" % [def.placement, def.pavement_side, role, site, def.hard_fail]
+	# `has_a_spread` joined it for the same reason M64 added it to `_open_ground_for`'s own key: a
+	# corner is off the question for two rows sharing every other answer only when one of them
+	# actually has an orientation to be wrong about on it. Without this a plain silhouette processed
+	# first quietly hands its unfiltered `base` to a spread row asking the identical other four
+	# questions, and the corner refusal never runs at all.
+	var key := "%s|%d|%d|%s|%s|%s" % [def.placement, def.pavement_side, role, site, def.hard_fail,
+			EventInstance.has_a_spread(def)]
 	if ground.has(key):
 		return ground[key]
 	var aimed: Array[Vector2i] = []
@@ -698,31 +704,53 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 ## street — the one running east out of the north-west corner.
 const NO_SITE := Vector3i(-1, -1, -1)
 
+## A tile whose two coordinates are **both** inside a corridor band — a junction, belonging to two
+## streets at once. `EventInstance._spread_is_vertical` and `_centred_on_the_pavement_band` both
+## give up here, for the reason each states in its own docstring: there is no single street left for
+## a spread to lie across or be centred on. See `docs/TODO.md`, M64, "a spread on a corner is placed
+## as if the corner were nothing."
+static func _is_a_corner(tile: Vector2i) -> bool:
+	return CityMap.corridor_offset(tile.x) >= 0 and CityMap.corridor_offset(tile.y) >= 0
+
 ## Every tile of the right kind that anything may stand on today, precinct weighting included.
 ##
 ## **A precinct is a retail street**, so it carries more of the day than a length of ordinary
 ## pavement does: it is where the cafés and the market stalls and the buskers are.
+##
+## **Anything `EventInstance.has_a_spread()` is refused a corner outright**, cached under its own
+## key so the un-narrowed list stays shared with everything that has no orientation to get wrong on
+## one — a yeller or a busker keeps every tile a plain sidewalk scan already found. This is an
+## exclusion from the candidate pool rather than a repair after the fact, the same shape a barrier
+## beside a calm area's access street is refused in rather than moved out of afterwards.
 static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) -> Array[Vector2i]:
 	var key := "%s|%d" % [def.placement, def.pavement_side]
-	if ground.has(key):
+	if not ground.has(key):
+		var doorstep := _the_street_she_starts_on(map)
+		var open: Array[Vector2i] = []
+		for type in def.placement:
+			for candidate in map.tiles_of_type(type as GameEnums.TileType):
+				# A closed street is not somewhere anyone can get to, so it is not somewhere an event
+				# can usefully happen: the player would never see it and the scheduler would have
+				# spent budget on nothing.
+				if map.is_closed(candidate) or doorstep.has_point(candidate) \
+						or not _wants_this_side(def, map, candidate):
+					continue
+				open.append(candidate)
+				if map.street_kind_at(true, candidate) == GameEnums.StreetKind.PEDESTRIAN \
+						or map.street_kind_at(false, candidate) == GameEnums.StreetKind.PEDESTRIAN:
+					for _extra in Tuning.EVENT_PRECINCT_WEIGHT - 1:
+						open.append(candidate)
+		ground[key] = open
+	if not EventInstance.has_a_spread(def):
 		return ground[key]
-	var doorstep := _the_street_she_starts_on(map)
-	var open: Array[Vector2i] = []
-	for type in def.placement:
-		for candidate in map.tiles_of_type(type as GameEnums.TileType):
-			# A closed street is not somewhere anyone can get to, so it is not somewhere an event
-			# can usefully happen: the player would never see it and the scheduler would have
-			# spent budget on nothing.
-			if map.is_closed(candidate) or doorstep.has_point(candidate) \
-					or not _wants_this_side(def, map, candidate):
-				continue
-			open.append(candidate)
-			if map.street_kind_at(true, candidate) == GameEnums.StreetKind.PEDESTRIAN \
-					or map.street_kind_at(false, candidate) == GameEnums.StreetKind.PEDESTRIAN:
-				for _extra in Tuning.EVENT_PRECINCT_WEIGHT - 1:
-					open.append(candidate)
-	ground[key] = open
-	return open
+	var corner_free_key := key + "|no corner"
+	if not ground.has(corner_free_key):
+		var without_corners: Array[Vector2i] = []
+		for tile in ground[key]:
+			if not _is_a_corner(tile):
+				without_corners.append(tile)
+		ground[corner_free_key] = without_corners
+	return ground[corner_free_key]
 
 ## How many more times a tile is offered to the roll because of what the day is placing there.
 ##

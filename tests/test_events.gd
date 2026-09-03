@@ -9,6 +9,7 @@ func run(t) -> void:
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
+	_test_a_spread_never_lands_on_a_corner(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
@@ -238,6 +239,33 @@ func _test_a_spread_rotates_with_the_street(t) -> void:
 
 	t.check(not EventInstance._spread_is_vertical(null, Vector2.ZERO),
 			"a data-level rig with no map at all gets the unrotated default")
+
+## **A spread never lands on a corner.** `EventScheduler._is_a_corner` refuses any tile whose two
+## coordinates are both inside a corridor band to a row `EventInstance.has_a_spread()` names — see
+## `docs/TODO.md`, M64, "a spread on a corner is placed as if the corner were nothing": such a tile
+## has no single street for `_spread_is_vertical` or `_centred_on_the_pavement_band` to answer about.
+## Walked over the **planned** placements of several seeds and every day of a run, rather than over
+## the candidate pool directly, because a clean pool and a roll that still lands on a stale entry
+## are two different bugs.
+func _test_a_spread_never_lands_on_a_corner(t) -> void:
+	var checked := 0
+	for run_seed in [4242, 2102613802, 90210]:
+		var map := CityGenerator.generate(run_seed)
+		var consumed: Array[String] = []
+		for day in range(1, 15):
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("%d:%d" % [run_seed, day])
+			for plan in EventScheduler.build_day(day, rng, map, consumed):
+				if not plan.is_placed() or not EventInstance.has_a_spread(plan.def):
+					continue
+				checked += 1
+				var tile := map.world_to_tile(plan.position)
+				var on_corner := CityMap.corridor_offset(tile.x) >= 0 \
+						and CityMap.corridor_offset(tile.y) >= 0
+				t.check(not on_corner,
+						"seed %d day %d: '%s' at tile %s is not on a corner"
+						% [run_seed, day, plan.def.id, tile])
+	t.check(checked > 0, "some run placed a spread to check (%d)" % checked)
 
 # ------------------------------------------------------------------ emission ---
 

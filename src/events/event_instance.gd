@@ -92,6 +92,28 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.FIREFIGHT: return GUNMAN
 		_: return null
 
+## Whether a def's instance draws itself as a **spread** — a body built by repeating a segment
+## across `def.obstructs_radius`, laid along whichever axis `_spread_is_vertical` picks for the
+## street it stands on. That is exactly `_draw_spread` and `_draw_cafe`, nothing else in
+## `_draw_body`'s dispatch: `ROADWORKS`, `BURNT_SHELL`, `STALL`, `CHECKPOINT` and `BARRICADE` go to
+## the first, `CAFE` to the second. `PROTEST` and `FIREFIGHT` also fill `obstructs_radius`-worth of
+## ground but draw it with their own functions that never call `_spread_is_vertical` or
+## `_spread_at` — a protest rank and a firefight's cover are laid along local X unconditionally, so
+## a corner costs them nothing and they are rightly outside this test.
+##
+## **This is the test `EventScheduler._open_ground_for` asks before it will offer a corner as a
+## site.** See that function and `docs/TODO.md`, M64, "a spread on a corner is placed as if the
+## corner were nothing" — a junction has no single street for `_spread_is_vertical` or
+## `_centred_on_the_pavement_band` to answer about, so only a row that actually asks either
+## question has anything to lose by standing on one.
+static func has_a_spread(def: EventDef) -> bool:
+	match def.look:
+		EventDef.Look.ROADWORKS, EventDef.Look.BURNT_SHELL, EventDef.Look.STALL, \
+				EventDef.Look.CHECKPOINT, EventDef.Look.BARRICADE, EventDef.Look.CAFE:
+			return true
+		_:
+			return false
+
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
 var path: PackedVector2Array = PackedVector2Array()
