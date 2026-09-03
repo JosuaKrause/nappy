@@ -690,15 +690,35 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 	# she walks past on the way through rather than something near where she walked.
 	var named := StreetNetwork.by_key(site) if site != NO_SITE else null
 	var only := named.tile_rect() if named else Rect2i()
+	var refuses_required_alleys := _refuses_required_alleys(def)
 	for tile in base:
 		if site != NO_SITE:
 			if only.has_point(tile):
 				aimed.append(tile)
 			continue
+		# **No robber stands in an alley she has to walk down.** An alley the day's corridor runs
+		# through — `corridor.depth(tile) == 0`, the `INSIDE` band — is ground she has no way
+		# around, and `alley_robbery`'s own design note is that "a robbery has no telegraph you
+		# could see coming, and it never did": a risk with no warning is only fair on ground she
+		# chose to enter. See `docs/TODO.md`, M64, "and no robber stands in an alley she has to
+		# walk down."
+		if refuses_required_alleys and corridor.depth(tile) == 0:
+			continue
 		for _copy in _copies_of(tile, corridor, role, def.hard_fail):
 			aimed.append(tile)
 	ground[key] = aimed
 	return aimed
+
+## Whether `def` is refused a required alley outright — an alley the day's corridor runs down,
+## rather than one she may choose to detour into. **Exactly one row today**: `def.placement ==
+## [ALLEY]` is `alley_robbery` alone, the row the instruction named, rather than every lethal thing
+## that can ever reach an alley — `charging_dog` arrives `AHEAD_OF_PLAYER` and never asks this pool
+## at all, and a heated patrol reaches an alley by a different path than a map placement. Stated over
+## the placement shape rather than `def.id` so a future row sharing it inherits the same refusal
+## without this function changing, which is the same reason `has_a_spread` is a test on the def
+## rather than a name.
+static func _refuses_required_alleys(def: EventDef) -> bool:
+	return def.placement.size() == 1 and def.placement[0] == GameEnums.TileType.ALLEY
 
 ## A placement with no particular street asked for. Not `Vector3i.ZERO`, which is the key of a real
 ## street — the one running east out of the north-west corner.

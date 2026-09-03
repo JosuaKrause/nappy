@@ -32,6 +32,7 @@ func run(t) -> void:
 	_test_scheduler_is_deterministic(t)
 	_test_scheduler_respects_placement_and_caps(t)
 	_test_one_shots_fire_once_per_run(t)
+	_test_alley_robbery_never_lands_on_a_required_alley(t)
 	_test_one_park_stays_usable(t)
 	_test_calm_she_has_not_used_is_left_alone(t)
 	_test_successors_resolve(t)
@@ -1203,6 +1204,36 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 	t.check(groups_seen > 0, "some run had a one-shot to check (%d)" % groups_seen)
 	t.check(float(narrow) / maxf(1.0, float(groups_seen)) < 0.4,
 			"%d of %d one-shot runs offered only one place" % [narrow, groups_seen])
+
+## **No robber stands in an alley she has to walk down.** *(2026-09-03: "alley robber should not
+## happen on required alleys".)* `EventScheduler._refuses_required_alleys` excludes `alley_robbery`
+## from any `ALLEY` tile the day's corridor runs through — `corridor.depth(tile) == 0` — because its
+## own design note is that "a robbery has no telegraph you could see coming, and it never did": a
+## risk with no warning is only fair on ground she chose to enter. See `docs/TODO.md`, M64, "and no
+## robber stands in an alley she has to walk down."
+##
+## Walked over the **planned** placements of several seeds and every day the row is eligible on
+## (`first_day` 8 onward), the same reason the corner test is over placements rather than the pool
+## directly: a clean pool and a roll that still lands on a stale entry are two different bugs.
+func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
+	var checked := 0
+	for run_seed in [4242, 2102613802, 90210]:
+		var map := CityGenerator.generate(run_seed)
+		var consumed: Array[String] = []
+		for day in range(8, 15):
+			var tree := RouteTree.for_day(map, day)
+			var corridor := Corridor.of(tree)
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("%d:%d" % [run_seed, day])
+			for plan in EventScheduler.build_day(day, rng, map, consumed, [], [], tree):
+				if plan.def.id != "alley_robbery" or not plan.is_placed():
+					continue
+				checked += 1
+				var tile := map.world_to_tile(plan.position)
+				t.check(corridor.depth(tile) != 0,
+						"seed %d day %d: 'alley_robbery' at tile %s is not on the day's corridor"
+						% [run_seed, day, tile])
+	t.check(checked > 0, "some run placed alley_robbery to check (%d)" % checked)
 
 ## The rule that keeps a day winnable: however bad it gets, one calm zone stays usable.
 ##
