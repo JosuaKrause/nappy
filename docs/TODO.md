@@ -661,12 +661,11 @@ given" outside a debug build, with the parsing in `DevFlags` rather than woven t
 the day's HUD is the clock, the two bars and the optional goal, with the header and status line
 behind the same gate; `export_presets.cfg` is tracked with one Web preset on `gl_compatibility` and
 threads off; `tools/export-web.sh` builds into `build/web/`; the run log is silent on a web build;
-and `.github/workflows/deploy.yml` gates, exports and publishes on a push to `main`. The record is
-in `DECISIONS.md` under M60.
+and `.github/workflows/deploy.yml` gates, exports and publishes on a `v*` tag — see M71 for why a
+push is a check and a tag is a release. The record is in `DECISIONS.md` under M60.
 
-**The site is live and the workflow built it.** The push to `main` that finished the build chain
-also ran it end to end — gate, export, upload, publish — and `https://nappy.josuakrause.com/` serves
-the game. The export had never completed anywhere before that run.
+**The site is live and the workflow built it**, end to end — gate, export, upload, publish — and
+`https://nappy.josuakrause.com/` serves the game.
 
 **What the first play of it changed.** The developer's readout is gated with the rest of the
 furniture, `Q` is not offered where quitting does nothing, and the window letterboxes so every

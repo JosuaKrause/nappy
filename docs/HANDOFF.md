@@ -34,16 +34,23 @@ and it converts some of them every time. It is not a one-off; it has happened in
 sessions. **Run `git status` after `check.sh` and revert anything you did not mean to change**,
 rather than assuming only the files you touched moved.
 
-**The game is published, and a merge to `main` is a release.**
-`https://nappy.josuakrause.com/` serves it, and `.github/workflows/deploy.yml` rebuilds and
-republishes on every push to `main` — gate, export, upload, publish, in that order, so a red build
-never reaches the site. Completed work may be pushed without asking; see the **committing** skill
-for what *completed* means, and read the sentence above it before pushing, because pushing is now
-publishing. Everything unpushed is gated — `check.sh`, `lint.sh` and the full unfiltered `test.sh`
-ran clean on the merged tree — so it is safe to push whenever wanted. It just has not been, and
-M69 changed how every day's routes and closures are computed, so **a played day before publishing is
-worth more here than usual**: the whole milestone is verified by rigs and nobody has walked a city
-whose corridor was grown on cells.
+**The game is published, and a push is a check while a tag is a release.**
+`https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
+suite on every push and every pull request; `.github/workflows/deploy.yml` fires on a `v*` tag and
+nothing else — gate, export, upload, publish, in that order, so a red build never reaches the site.
+It re-runs the gate rather than trusting CI, because both workflows fire on the same push and neither
+waits for the other, and because a tag can point at any commit.
+
+**Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest version tag and
+prints what it would do. It only acts when given a second literal `push` argument, and it refuses a
+dirty tree, any branch but `main`, and a `main` that is not level with `origin/main` — every refusal
+fires in the dry run too, so the dry run tells the truth about whether the real thing would work.
+Semver, and **`major` is reserved for a change that breaks or fundamentally alters the game**.
+
+So pushing `main` no longer publishes. Completed work may be pushed without asking; see the
+**committing** skill for what *completed* means. **Publishing is now a separate, deliberate act**,
+and it is worth spending a played day before one: the sealing walls the city off the path, and
+nobody has walked that.
 
 ## What to do next
 
