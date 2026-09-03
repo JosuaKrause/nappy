@@ -52,10 +52,14 @@ static func kinds_on(day: int) -> Array[int]:
 
 # ------------------------------------------------------------------ geometry ---
 
-## Every tile the closure takes out of the network — the whole street, not just the two
-## ends. The barriers only stand at the mouths, but the ground between them is not somewhere
-## anyone can get to, so nothing should be placed there and nobody should be routed through
-## it.
+## Every tile of the street this closure's segment covers — the geometry, not the verdict.
+##
+## **This is not the same set as what ends up in `CityMap.closed_tiles`.** The barriers stand at
+## the two mouths, and ground between them that opens onto an alley or a courtyard archway mid-
+## segment is still somewhere a pedestrian can get to from that side, whatever the two ends of the
+## street say. Which of these tiles are genuinely unreachable is a question about the whole day's
+## walkable ground, not about one closure in isolation, so `CityMap.close_streets` is what answers
+## it — with `ReachabilityGrid`, once, for every closure of the day together.
 func tiles(map: CityMap) -> Array[Vector2i]:
 	return map.rect_tiles(segment.tile_rect())
 

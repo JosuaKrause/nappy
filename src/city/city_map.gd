@@ -325,14 +325,32 @@ func lot_rect(block: Vector2i) -> Rect2i:
 func anchor_of(block: Vector2i) -> Vector2i:
 	return zone_anchor.get(block, block)
 
-## Takes today's closed streets out of the network. The whole street goes in the set, not
-## just the two barriers: the ground between them is not somewhere anyone can get to, so
-## nothing should be placed there and nobody should be routed through it.
+## Takes today's closed streets out of the network — the tiles genuinely cut off by the barriers,
+## not the whole street on the assumption that they are. The barriers stand at the two mouths, and
+## a street with an alley mouth or a courtyard archway opening onto its middle is still reachable
+## from that side, whichever end the barriers seal; a street with no such opening is unreachable
+## end to end exactly as it always was. `ReachabilityGrid` is what tells the two apart: flood the
+## day's tiles from the doorstep with every barrier tile added on top, and whatever a closed
+## street's own ground the flood never reaches is what goes in `closed_tiles`.
+##
+## Built once for every closure of the day together, not one at a time: whether a bypass survives
+## can depend on ground a *different* closure also touches, so the barrier tiles of the whole set
+## have to be down before any of them is judged.
 func close_streets(closures: Array[RoadClosure]) -> void:
 	closed_tiles.clear()
+	if closures.is_empty():
+		return
+	var barrier_tiles := {}
+	for closure in closures:
+		for at_a in [true, false]:
+			for tile in rect_tiles(closure.segment.mouth_rect(at_a)):
+				barrier_tiles[tile] = true
+	var grid := ReachabilityGrid.build(self)
+	var reached := grid.flood([world_to_tile(doorstep_world_position())], barrier_tiles)
 	for closure in closures:
 		for tile in closure.tiles(self):
-			closed_tiles[tile] = true
+			if not grid.reaches(tile, barrier_tiles, reached):
+				closed_tiles[tile] = true
 
 # --------------------------------------------------------------- conversion ---
 

@@ -1150,12 +1150,11 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
 		for plan in spoilers[block]:
 			planned.erase(plan)
 
-## The rect of a calm block's actual calm ground, falling back to the whole lot.
+## The rect of a calm block's actual calm ground, falling back to the whole lot. The same question
+## `ClosurePlanner.CalmArea.rect` answers, and the same function now — a courtyard's calm is its
+## court alone, and there is exactly one place that says so.
 static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
-	var layout: BlockLayout = map.block_layouts.get(block)
-	if layout and BlockLayout.has(layout.open_rect):
-		return layout.open_rect
-	return CityMap.block_rect(block)
+	return ClosurePlanner.calm_area_rect(map, block)
 
 ## Checkpoints, barricades and roadblocks physically close streets, and from Act IV several
 ## can land on the same day. Any combination that seals the home off from every park makes
@@ -1177,17 +1176,24 @@ static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Plan
 	blockers.sort_custom(func(a: Planned, b: Planned) -> bool:
 		return _blocking_radius(a) > _blocking_radius(b))
 
-	while not blockers.is_empty() and not _park_is_reachable(map, blockers):
+	# Built once and asked once per blocker dropped, which is a handful of iterations at most —
+	# the grid is the day's tiles, which none of this loop changes.
+	var grid := ReachabilityGrid.build(map)
+	while not blockers.is_empty() and not _park_is_reachable(map, grid, blockers):
 		planned.erase(blockers.pop_front())
 
 static func _blocking_radius(plan: Planned) -> float:
 	return maxf(plan.def.obstructs_radius, plan.def.inner_radius if plan.def.hard_fail else 0.0)
 
-static func _park_is_reachable(map: CityMap, blockers: Array[Planned]) -> bool:
-	# Today's closures are part of what is in the way. The closure planner has already left
-	# two routes to two calm areas standing, so this can only ever be tightened by the
-	# events on top of them — but it has to count both or it will happily approve a
-	# checkpoint on the one street the closures left open.
+## Whether the grid still finds a way from the home to some calm tile, with `map.closed_tiles` —
+## today's closures, at the precision `RoadClosure.tiles()` now gives them — plus every blocker's
+## own obstruction circle added on top.
+##
+## **This asks the same grid `ClosurePlanner._invariant_holds` does**, so the two reachability
+## answers this milestone existed to unify are one function apart rather than two implementations
+## that could drift: both are `ReachabilityGrid.flood()`/`reaches()` under a `blocked` set, and the
+## grid does not care whether the tiles in it came from a candidate's barrier or an event's circle.
+static func _park_is_reachable(map: CityMap, grid: ReachabilityGrid, blockers: Array[Planned]) -> bool:
 	var blocked := map.closed_tiles.duplicate()
 	for plan in blockers:
 		var radius := _blocking_radius(plan)
@@ -1199,9 +1205,9 @@ static func _park_is_reachable(map: CityMap, blockers: Array[Planned]) -> bool:
 				if map.tile_to_world(tile).distance_to(plan.position) <= radius:
 					blocked[tile] = true
 
-	var reached := map.walk_field(map.home_rect.position, blocked)
+	var reached := grid.flood([map.home_rect.position], blocked)
 	for tile in map.calm_tiles():
-		if map.reaches(reached, tile):
+		if grid.reaches(tile, blocked, reached):
 			return true
 	return false
 

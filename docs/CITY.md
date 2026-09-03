@@ -749,8 +749,12 @@ impossible. It never suggests one.**
 
 `ClosurePlanner` checks it *before* accepting each closure rather than repairing the day
 afterwards, so the set it produces always satisfies it and there is no order-dependent
-unwinding to reason about. Counting routes is a unit-capacity max flow on the junction graph,
-asked for one path.
+unwinding to reason about. Reachability is asked of `ReachabilityGrid` — a flood fill over the
+day's tiles, with a candidate's barrier tiles added on top — rather than of the junction graph:
+the graph only knows a street is an edge, and cannot see that a park or an alley beside a closed
+street offers a way round it. `StreetNetwork.route_count()`'s unit-capacity max flow on the
+junction graph still stands behind the structural guarantee below, which is a fact about the fixed
+lattice rather than something asked fresh of every candidate.
 
 **It is not *"two distinct routes to two distinct calm areas"*, and the difference matters.**
 Edge-disjointness — two routes sharing no street — is a **stand-in** for winnability: by Menger,
@@ -823,17 +827,34 @@ Two consequences, and the first is what makes the rest of the day's placement po
   tree, so `_invariant_holds` should never refuse a candidate. It is still checked on every one —
   two independent mechanisms is the point — and a refusal writes a `plan` line saying the wall and
   the corridor disagree about where she is going. `tests/test_routes.gd` asserts it never happens,
-  over every off-corridor street of every day of four seeds.
+  over every off-corridor street of a sample of days across several seeds.
 
 **And the rim is where a wall is worth anything**: a closure in the far corner of the map is not a
 decision, it is scenery. A closure at the mouth of a turning is read from the junction, which is
 where the wrong way is still a choice — the same reason `RoadClosure` seals both mouths rather than
 putting one sign half way down a street.
 
+**Never on a calm area's own access street, and that is a third exclusion beside the tree and the
+doorstep.** A park is walked *through*, so a barrier on any of its access streets — every street
+round its lot, since `ClosurePlanner._access_segments` finds all of them — closes nothing, and
+reads as broken by anybody standing at it looking at the open ground beside it. A courtyard is a
+pocket with one door, so a barrier beside it is a real closure — except on the one street its
+archway opens onto, which is its own access street and closing it seals the courtyard rather than
+lengthening the walk to it. Both halves are the same rule: a calm area's access streets are refused
+outright rather than merely weighted down. It is stated over the cells the barrier touches rather
+than over the map, because the global version — does this closure lengthen the best route to any
+calm area — does not work on a lattice with several calm areas scattered across it: removing one
+street almost never lengthens the walk to any of them, so a filter stated that way would refuse
+almost nothing. See `docs/DECISIONS.md` under M45 for the measurement.
+
 ### Everything else has to know
 
-A closed street is not somewhere anyone can get to, so the whole street goes into
-`CityMap.closed_tiles` and not just the two barriers:
+A closed street's ground goes into `CityMap.closed_tiles` wherever the barriers actually cut it
+off — which is most of it, but not necessarily all: an alley mouth or a courtyard archway can open
+onto the middle of a closed street, and the ground beside it is still reachable from that side
+however the two mouths are sealed. `ReachabilityGrid` is what tells the difference, flooding the
+day's tiles with every barrier tile added on top; what the flood never reaches is what
+`closed_tiles` holds.
 
 - The **event scheduler** places nothing there, shortens a mobile event's route so it stops
   before a barrier, and counts closures as part of what is in the way when it checks that a
