@@ -107,9 +107,11 @@ func _test_the_formatting_helpers(t) -> void:
 	t.check(TelemetryLog.purpose(GameEnums.BlockPurpose.QUIET_SQUARE) == "quiet_square",
 			"a purpose is its enum name, lower case")
 
-## Without a commit a trace cannot be checked against anything, and a dirty tree has to say so
-## rather than claim a hash that does not describe what ran. Which of the two this machine is
-## in cannot be asserted — only that the answer is one of the shapes a reader can act on.
+## Without a version a trace cannot be checked against anything, and a dirty tree has to say so
+## rather than claim a build that does not describe what ran. Which of the shapes this machine
+## gets cannot be asserted — this repo has a tag reachable from `HEAD` (`v0.0.0`), so in practice
+## `source_version()` always returns the tag form here, but a shallow checkout with no tags
+## reachable is `git describe --always`'s bare-hash fallback, and neither is wrong.
 func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
 	var version := Telemetry.source_version()
 	t.check(version != "", "a run always records something about where it came from")
@@ -117,10 +119,18 @@ func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
 		# An exported build with no repository to ask. Nothing more to check.
 		t.check(true, "no repository here, and the log says so rather than guessing")
 		return
-	var commit := version.trim_suffix("*")
-	t.check(commit.length() >= 7 and commit.is_valid_hex_number(),
-			"the commit is a short hash (got '%s')" % version)
-	t.check(not version.ends_with("**"), "a dirty tree is marked once")
+	var stripped := version.trim_suffix("-dirty")
+	t.check(stripped != "", "a version is never just the dirty marker")
+	if stripped.begins_with("v") and stripped.contains("-g"):
+		# `git describe`'s tagged form: `<tag>-<commits-since>-g<hash>`.
+		var hash_part := stripped.substr(stripped.rfind("-g") + 2)
+		t.check(hash_part.length() >= 7 and hash_part.is_valid_hex_number(),
+				"the describe form ends in a short hash (got '%s')" % version)
+	else:
+		# `git describe --always`'s fallback when no tag is reachable: a bare short hash.
+		t.check(stripped.length() >= 7 and stripped.is_valid_hex_number(),
+				"with no tag reachable, describe falls back to a bare hash (got '%s')" % version)
+	t.check(not version.ends_with("-dirty-dirty"), "a dirty tree is marked once")
 
 # ----------------------------------------------------- and it changes nothing ---
 

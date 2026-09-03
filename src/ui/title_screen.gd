@@ -27,6 +27,7 @@ signal quit_requested()
 @onready var _name: Label = $Root/Top/Lines/Title
 @onready var _body: Label = $Root/Bottom/Lines/Body
 @onready var _hint: Label = $Root/Bottom/Lines/Hint
+@onready var _version: Label = $Root/Version
 
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
 ## each use site, so a test — never itself a web export — can set this and drive both shapes.
@@ -49,6 +50,7 @@ func _ready() -> void:
 	# standing in front of; see the note there for why it is not one of the danger colours.
 	_name.add_theme_color_override("font_color", Palette.TITLE_TEXT)
 	_refresh_body()
+	_version.text = version_text()
 	# Above the pause screen: this is the outermost frame the game runs inside, and nothing should
 	# ever be able to cover it.
 	layer = 95
@@ -61,6 +63,23 @@ func _ready() -> void:
 ## `_touch` and call this again the way `PauseScreen._refresh_hint()` already does for its hint.
 func _refresh_body() -> void:
 	_body.text = _BODY_TOUCH if _touch else _BODY_KEYBOARD
+
+## The one line on this screen that is not addressed to the player, so it is small, dim and in the
+## bottom corner rather than anywhere near the three lines that are — see the **cues** rule that a
+## short vocabulary stays short, which this deliberately stays outside of: it is not a danger cue,
+## just a label.
+##
+## Prefers `Telemetry.source_version()`, `git describe`'s form (`v0.0.0-49-gab12cd3`), because a
+## developer wants to know exactly what is running; an exported build has no repository to ask,
+## which is when this falls back to `application/config/version` — the setting
+## `.github/workflows/deploy.yml` writes into the export before it is built — so a player sees the
+## release rather than "unknown". A function rather than inline in `_ready()` so a test can call it
+## without instancing the whole scene.
+static func version_text() -> String:
+	var from_git := Telemetry.source_version()
+	if from_git != "unknown":
+		return from_git
+	return ProjectSettings.get_setting("application/config/version", "unknown")
 
 func is_open() -> bool:
 	return visible

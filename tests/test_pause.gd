@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_the_pause_quit_key_matches_the_platform(t)
 	_test_a_tap_advances_every_screen(t)
 	_test_the_title_hint_and_body_match_the_platform(t)
+	_test_the_title_names_a_version(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
 	_test_the_summary_hint_matches_the_platform(t)
 	t.get_tree().paused = was_paused
@@ -276,6 +277,30 @@ func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	t.check("Drag the stick" in title._body.text,
 			"and the body names the stick and the run button ('%s')" % title._body.text)
 	t.check(not "Shift" in title._body.text, "and drops the key it does not have")
+
+	title.close()
+	title.queue_free()
+
+## The version line is the one thing on this screen not addressed to the player — see
+## `TitleScreen.version_text()`, which prefers `Telemetry.source_version()` (the `git describe`
+## form) and falls back to `application/config/version`, the setting
+## `.github/workflows/deploy.yml` writes into an export before it is built. This repo always has a
+## `.git` to ask, so the git branch is what is asserted directly; the fallback is checked by
+## asserting the baked setting itself is present and shaped right, since forcing "no repository"
+## from inside a test would mean stubbing `OS.execute`, which `source_version()` deliberately does
+## not go through an overridable seam for.
+func _test_the_title_names_a_version(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	title.open()
+
+	t.check(title._version.text != "", "the title screen shows a version")
+	t.check(title._version.text == Telemetry.source_version(),
+			"and it is git's own answer where git can give one (got '%s')" % title._version.text)
+
+	var baked: String = ProjectSettings.get_setting("application/config/version", "")
+	t.check(baked != "", "and the baked setting TitleScreen falls back to actually exists")
+	t.check(baked.begins_with("v"), "in the same vMAJOR.MINOR.PATCH shape tools/release.sh writes")
 
 	title.close()
 	title.queue_free()
