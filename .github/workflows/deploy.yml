@@ -84,6 +84,17 @@ jobs:
       - name: Test
         run: GODOT="$HOME/godot/godot-bin" ./tools/test.sh
 
+      # Godot's own version mechanism -- `application/config/version`, read at runtime with
+      # `ProjectSettings.get_setting` -- baked into the export rather than shipped beside it as a
+      # file, which is what the milestone that added this step asked after: "unless godot already
+      # has a mechanism for that". `github.ref_name` on a tag push is the tag itself (e.g.
+      # "v1.2.3"), the same shape `tools/release.sh` writes, so `TitleScreen`'s fallback --
+      # `ProjectSettings.get_setting("application/config/version")`, read where
+      # `Telemetry.source_version()` has no repository to ask -- names the actual release rather
+      # than the placeholder `project.godot` carries in the repository.
+      - name: Write the release version into the export
+        run: sed -i "s/^config\/version=.*/config\/version=\"${GITHUB_REF_NAME}\"/" project.godot
+
       - name: Export the Web build
         run: GODOT="$HOME/godot/godot-bin" ./tools/export-web.sh
 
