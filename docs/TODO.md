@@ -109,14 +109,34 @@ Against ~150 seals a day that is not a blemish, it is half of them lying sideway
 pavement. **Build M48's "a spread's rotation is a property of the street it stands on" first**, or
 this milestone ships a city of sideways trees.
 
-**The whole tree stays open, and every street off it is sealed.** *(2026-09-03, answering the two
-questions this milestone could not be built without.)* So the difficulty dial is set at its most
-forgiving end and the sealing at its most complete: every calm area still worth reaching keeps its
-branch, both of its routes where the map allowed a second one — a day plans **about fifteen routes
-to five to seven areas** (`MIN_CALM_BLOCKS` 5 to `MAX_CALM_BLOCKS` 7, which the constant's own
-comment calls *"places to go"*) — and what is closed is not merely the rim but **every street of the
-lattice the tree does not touch**. The city's day has 264 lattice streets in it, so this is most of
-them.
+**The whole tree stays open, and everything off it is sealed a full block at a time.**
+*(2026-09-03, answering the two questions this milestone could not be built without, and corrected
+the same day by playtest 21.)* So the difficulty dial is set at its most forgiving end and the
+sealing at its most complete: every calm area still worth reaching keeps its branch, both of its
+routes where the map allowed a second one — a day plans **about fifteen routes to five to seven
+areas** (`MIN_CALM_BLOCKS` 5 to `MAX_CALM_BLOCKS` 7, which the constant's own comment calls
+*"places to go"*) — and what is closed is not merely the rim but everything the tree does not touch.
+The city's day has 264 lattice streets in it, so this is most of them.
+
+**The unit of sealing is a block, not a street.** *(2026-09-03, playtest 21: "we wanted full blocks
+off-path which can be hard or one normal event on both sides of the street".)* An earlier reading of
+this entry said *every street off the tree*, which is a street-level unit and leaves a block with one
+side on the corridor getting its other three closed one segment at a time. A block-level unit closes
+a whole block's worth of frontage, so the off-path city reads as **solid** rather than as a scatter
+of blocked segments. Each sealed street is still either strength — hard, or the ordinary-event pair.
+
+**And the density on the corridor is normal, not low.** *(Same instruction: "a normal density of
+events on the path so we need to change the side of the street every now and then".)* **This is the
+half that contradicts what is built**, and it is the second thing M64 takes from M50 rather than the
+first. M50's gradient makes the corridor the *cheapest* ground in the city and biases costly rows off
+it, so a player walking the day's route meets the least of everything — which is what playtest 21
+reports as *"the city feels way empty now"*. Under M64 the corridor carries an **ordinary** event
+load, frequent enough that changing pavement is a regular occurrence rather than a rarity.
+
+**So what varies is off-path versus on-path, and no longer cheap versus dear.** The corridor stops
+being a discount and becomes an ordinary street that happens to be the one that goes somewhere. That
+is a sharper break with M50 than "closed rather than dear" alone: **both** of the gradient's ends
+move.
 
 **Which park to walk to therefore stays exactly as open a question as it is today**, and what
 changes is that the answer can no longer be reached any old way. That is the deliberate order: the
@@ -275,11 +295,26 @@ central claim — the corridor is the way through — true.
       same exchange. **The pair mechanism needs no new drawing at all** and is the cheapest soft
       seal there is: a café on one side facing a yeller on the other, from rows the catalogue
       already has
-- [ ] **Then place them off the tree**, exempting the doorstep, and check the winnability guarantee
-      still holds when sealing is the intent rather than the accident. **A one-cell stretch of
-      corridor is not ordinary corridor** — where a branch runs down an alley there is no other side
-      of the street to cross to, so the clearance a lethal row keeps has to be measured against the
-      narrowest ground the tree touches rather than against a street's width
+- [ ] **Then place them off the tree, a block at a time**, exempting the doorstep, and check the
+      winnability guarantee still holds when sealing is the intent rather than the accident. **A
+      one-cell stretch of corridor is not ordinary corridor** — where a branch runs down an alley
+      there is no other side of the street to cross to, so the clearance a lethal row keeps has to be
+      measured against the narrowest ground the tree touches rather than against a street's width
+- [ ] **Take the discount off the corridor, which is the other half of superseding M50.** The
+      gradient biases costly rows away from the corridor and that is what makes a planned route feel
+      empty to walk. What replaces it is an ordinary density on the tree — *"so we need to change the
+      side of the street every now and then"* — which is a statement about **how often she is made to
+      cross**, and that is the thing to measure rather than an event count. The rows that already do
+      it are the pavement obstacles M48 just made fit their pavement: a café, a market stall,
+      roadworks, a kerbed van. **`Corridor.depth()` is where the discount lives**, so this is a
+      change to what depth zero costs rather than a new system
+- [ ] **Measure the empty feeling before and after, because two things could be causing it.**
+      Playtest 21 reports the city as empty and does not distinguish M50's corridor discount from
+      M69's closure refusal — `ClosurePlanner` now refuses every calm-area access street, a mean of
+      33.4 of 264 a day, which removes closures from ground she may walk disproportionately often.
+      **A dusk map of one run answers it**: it draws the walk over the plan, so *how much did she
+      meet* and *where was it relative to the corridor* are both readable off one picture. Do this
+      first — it is the difference between fixing the density and fixing the refusal
 - [ ] **Nothing arrives from off screen, and everything should.** *(2026-09-02: "the charging dog
       doesn't have an offscreen indication it should start further away and appear first as
       offscreen indicator", and "bikers / unleashed dogs all pop in in front of the player instead
@@ -692,11 +727,13 @@ she takes through the thing the whole design is about.
 
 ## M50 — What the corridor still owes
 
-**M64 supersedes the gradient this milestone built.** *(2026-09-02: "let's not make it a gradient
-but instead always have it fully closed everywhere off the path.")* Read M64 before picking up
-anything here — the corridor being *cheapest* is the thing that is being replaced by the corridor
-being *the only way through*, and an item below that tunes the gradient may be tuning something
-about to be removed.
+**M64 supersedes the gradient this milestone built, at both ends.** *(2026-09-02: "let's not make it
+a gradient but instead always have it fully closed everywhere off the path." And 2026-09-03, playtest
+21: "a normal density of events on the path so we need to change the side of the street every now and
+then".)* Read M64 before picking up anything here. Off the path, *dear* becomes *closed*; on it,
+*cheapest* becomes *ordinary* — so an item below that tunes the gradient may be tuning something
+about to be removed, and the corridor's discount specifically is a thing playtest 21 attributes the
+empty-feeling city to.
 
 - [ ] **"Blocking events all over" is a catalogue question, not a placement one.** The gradient is
       built and measured, and the corridor is the cheapest ground on every day. What is not true is
