@@ -196,8 +196,18 @@ moment that store is cleared or the work moves.
 Each was a decision. Do not "fix" one without a reason; the reasoning is in `docs/DECISIONS.md`.
 
 - **Closures and events are checked before they are accepted, never repaired afterwards.** If you
-  find yourself writing a pass that deletes what a previous pass placed, this is the rule you are
-  about to rediscover.
+  find yourself writing a pass that deletes what a previous pass placed *in order to make a
+  guarantee true*, this is the rule you are about to rediscover — the guarantee is then resting on
+  the repair, and nothing has checked the result.
+
+  **One exception, and what makes it one is the direction:** a pass that only ever *removes*
+  obstruction is safe, because every guarantee here is about **reaching** somewhere and taking a
+  barrier away can only add reachable ground. So the seal-thinning pass, which drops a fraction of
+  the day's soft seals to keep the walls from reading as guardrails, is allowed where a pass that
+  added or moved one would not be. **The test is monotonicity, not intent**: a pass that removes
+  some things and places others is not covered, and neither is one whose removal could make a
+  *cost* guarantee false rather than a reachability one. State the direction argument next to any
+  such pass, or the next reader deletes it on sight.
 - **Counting distinct routes is a max flow, not a search for routes.**
 - **No spatial hash for events.** The concurrent count stays a few dozen even on the last day, so a
   linear scan is free.
