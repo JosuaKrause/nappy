@@ -26,6 +26,8 @@ func run(t) -> void:
 	_test_no_single_street_closure_isolates_the_parks(t)
 	_test_a_missing_arm_has_no_crossing_on_it(t)
 	_test_nothing_goes_into_a_precinct(t)
+	_test_an_alley_is_exactly_one_cell_wide(t)
+	_test_even_offset_is_always_even(t)
 
 # ------------------------------------------------------------------- pieces ---
 
@@ -630,6 +632,37 @@ func _tile_is_hard_blocked(map: CityMap, tile: Vector2i) -> bool:
 		if (map.built_over[key] as Rect2i).has_point(tile):
 			return true
 	return false
+
+## An alley is `ALLEY_WIDTH_TILES` (2) tiles wide, and its offset from the lot edge is rolled even
+## so it lands exactly on a cell boundary — one cell wide under `ReachabilityGrid`, never two. Both
+## the offset itself and the alley's absolute position have to be even: the offset is rolled from
+## the lot edge, and the lot edge is even by construction, so an even offset is what makes the
+## alley's own tile coordinate even too.
+func _test_an_alley_is_exactly_one_cell_wide(t) -> void:
+	var checked := 0
+	for i in 40:
+		var map := CityGenerator.generate(_seed(i))
+		for alley in map.alley_rects:
+			checked += 1
+			var vertical := alley.size.x == Tuning.ALLEY_WIDTH_TILES
+			var offset_coordinate := alley.position.x if vertical else alley.position.y
+			t.check(offset_coordinate % ReachabilityGrid.CELL == 0,
+					"seed %d: alley %s starts on an even tile coordinate" % [_seed(i), alley])
+	t.check(checked > 0, "some generated city has an alley to check (%d found)" % checked)
+
+## `CityGenerator._even_offset` never returns an odd number, whatever range it is asked for —
+## including a degenerate one where the whole range collapses to its low end.
+func _test_even_offset_is_always_even(t) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 99
+	for low in range(0, 6):
+		for high in range(low, low + 6):
+			for _roll in 20:
+				var offset := CityGenerator._even_offset(rng, low, high)
+				t.check(offset % 2 == 0, "_even_offset(%d, %d) returned %d, which is odd"
+						% [low, high, offset])
+				t.check(offset >= low + (low % 2) and offset <= maxi(low + (low % 2), high),
+						"_even_offset(%d, %d) returned %d, out of range" % [low, high, offset])
 
 func _seed(index: int) -> int:
 	# Spread the seeds out; consecutive integers are what generate() retries with.

@@ -763,14 +763,30 @@ static func _corner_rect(lot: Rect2i, size: int, rng: RandomNumberGenerator) -> 
 	return Rect2i(position, Vector2i.ONE * size)
 
 ## A through-alley spanning the lot, leaving at least two tiles of building either side.
+##
+## **The offset is even, and that is not a style choice.** A lot's own position is always even —
+## `STREET_WIDTH` and `BLOCK_SIZE` both are, so every block origin is a sum of even numbers — and
+## `ALLEY_WIDTH_TILES` is 2, so an even offset lands the alley exactly on a cell boundary and it
+## comes out one cell wide, always. An odd offset would straddle two cell columns and the alley
+## would be two cells wide one time in three, which is not the "two connections instead of four"
+## a two-tile alley is supposed to be.
 static func _alley_rect(lot: Rect2i, rng: RandomNumberGenerator) -> Rect2i:
 	var width := Tuning.ALLEY_WIDTH_TILES
-	var offset := rng.randi_range(2, maxi(2, lot.size.x - width - 2))
+	var offset := _even_offset(rng, 2, maxi(2, lot.size.x - width - 2))
 	if rng.randf() < 0.5:
 		return Rect2i(Vector2i(lot.position.x + offset, lot.position.y),
 				Vector2i(width, lot.size.y))
 	return Rect2i(Vector2i(lot.position.x, lot.position.y + offset),
 			Vector2i(lot.size.x, width))
+
+## An even integer rolled from `low` to `high` inclusive, both ends pulled inward to the nearest
+## even value first so the range is never wider than what was asked for.
+static func _even_offset(rng: RandomNumberGenerator, low: int, high: int) -> int:
+	var lo := low + (low % 2)
+	var hi := high - (high % 2)
+	if hi <= lo:
+		return lo
+	return lo + rng.randi_range(0, (hi - lo) / 2) * 2
 
 ## Every non-degenerate piece is kept, including one-tile slivers left beside a hole.
 ## Dropping them instead would leave BUILDING tiles with no Building node over them — an
