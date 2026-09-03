@@ -21,12 +21,14 @@
 # `-l` prints the kind and `-p` treats every rig but the newest as stale.
 #
 # `-p` is playtest 10, finding 14: *"is there a mechanism to delete old outdated sessions?"* The
-# commit is the last part of a run's own folder name, so "stale" is a question the directory listing
-# can answer on its own, by path alone — a run whose name does not end in the commit checked out
-# describes a build that no longer exists, and a `run.log` under a few kB is a boot that never
-# became a run (`check.sh` and `shot.sh` start the game too). **This is the only thing in the game
-# that still deletes anything** — `Telemetry` itself no longer prunes on its own, precisely so the
-# folder can grow until a person decides to cut into it, by hand or with this flag.
+# version is the last part of a run's own folder name — `git describe --tags --always`'s own form,
+# the nearest version tag, commits since, and the hash checked out, e.g. `v0.0.0-49-gab12cd3` — so
+# "stale" is a question the directory listing can answer on its own, by path alone: a run whose name
+# does not end in the version checked out describes a build that no longer exists, and a `run.log`
+# under a few kB is a boot that never became a run (`check.sh` and `shot.sh` start the game too).
+# **This is the only thing in the game that still deletes anything** — `Telemetry` itself no longer
+# prunes on its own, precisely so the folder can grow until a person decides to cut into it, by hand
+# or with this flag.
 #
 # It never deletes the newest run, and it prints what it would do unless told `yes`, because the one
 # thing a trace cannot survive is being thrown away by a tool the person was still exploring.
@@ -79,14 +81,23 @@ if [[ ${#LOGS[@]} -eq 0 ]]; then
 fi
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HEAD_COMMIT="$(git -C "$PROJECT_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+# `git describe`'s own form -- the nearest version tag, commits since, and the abbreviated hash --
+# rather than a bare `rev-parse --short HEAD`, so this matches what `Telemetry.source_version()`
+# writes into a run folder's own name (`Telemetry._file_tag()`). `-dirty` is left off deliberately:
+# this compares against the tail of a folder name that was written the moment a run *started*, and
+# a tree dirty right now says nothing about whether it was dirty then, so a bare describe is
+# compared against the describe-with-or-without-`-dirty` tail below rather than demanding a match.
+HEAD_COMMIT="$(git -C "$PROJECT_DIR" describe --tags --always 2>/dev/null || echo unknown)"
+
 # Under this, a run is a boot rather than a play: a game that started, printed its plan and quit
 # writes about half a kilobyte, and the shortest real attempt in any playtest is several.
 TINY_BYTES=3000
 
-# The commit a run was played on, read off the tail of the run folder's own name:
-# `run-<HHMMSS>-seed<N>-<commit>`, the commit last so a busy folder still sorts by age. `sed`
-# rather than opening `run.log`, so this works by path alone even on a run still being written.
+# The version a run was played on, read off the tail of the run folder's own name:
+# `run-<HHMMSS>-seed<N>-<version>`, the version last so a busy folder still sorts by age -- and
+# itself a `git describe` form with dashes in it (`v0.0.0-49-gab12cd3`, maybe `-dirty`), which is
+# why the match anchors on `-seed<N>-` rather than counting dashes. `sed` rather than opening
+# `run.log`, so this works by path alone even on a run still being written.
 commit_of() {
     local name tag
     name="$(basename "$1")"

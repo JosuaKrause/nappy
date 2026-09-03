@@ -74,13 +74,13 @@ func is_active() -> bool:
 ## - `<run>` is the individual run, and its name now carries what used to be split across two
 ##   folder levels: `run-` or `rig-` (see `played` below — the distinction `tools/stats.sh` counts
 ##   separately and `tools/telemetry.sh -l` lists), the full `HHMMSS` time of day, the seed, and
-##   last `_file_tag()` — the short hash the run was played on, or `<hash>-dirty`. `tools/telemetry.sh
-##   -p` compares that tail against `git rev-parse --short HEAD`, by path alone, to say what is
-##   stale. Repeating the hour and minute the parent folder already carries is a few redundant
-##   characters, and what it buys is that the run folder still identifies itself once copied out on
-##   its own — into `docs/evidence/`, or pasted into a message. The commit goes **last** so that
-##   sorting the folder names within one `<day>/<minute>` still sorts by age, the time leading the
-##   name.
+##   last `_file_tag()` — the `git describe` form the run was played on (`v0.0.0-49-gab12cd3`), or
+##   the same with `-dirty` appended. `tools/telemetry.sh -p` compares that tail against the same
+##   `git describe`, computed once as `HEAD_COMMIT`, by path alone, to say what is stale. Repeating
+##   the hour and minute the parent folder already carries is a few redundant characters, and what
+##   it buys is that the run folder still identifies itself once copied out on its own — into
+##   `docs/evidence/`, or pasted into a message. The version goes **last** so that sorting the
+##   folder names within one `<day>/<minute>` still sorts by age, the time leading the name.
 ## - The log itself is `run.log`, directly in the run's folder rather than a suffix on a shared
 ##   stem — the folder is what says which run a file belongs to now, so the file only has to say
 ##   which file *within* the run it is.
@@ -121,7 +121,7 @@ func begin_run(run_seed: int, played := true) -> void:
 	_last_shot = -INF
 	_day_attempts = {}
 	_attempt = 1
-	_log.header("nappy %s log  %s  commit %s"
+	_log.header("nappy %s log  %s  version %s"
 			% ["run" if played else "rig", Time.get_datetime_string_from_system(),
 			source_version()])
 	if _log.path != "":
@@ -327,40 +327,48 @@ func _capture(path: String) -> void:
 
 # ----------------------------------------------------------------- provenance ---
 
-## The commit the run was played on, with a `*` if the working tree was dirty.
+## The version the run was played on: `git describe`'s own form, `<tag>-<commits-since>-g<hash>`
+## (e.g. `v0.0.0-49-gab12cd3`), or a bare abbreviated hash where no tag is reachable, with
+## `-dirty` appended if the working tree was not clean.
 ##
-## Without it a trace cannot be checked against anything: "day one was brutal" is only a
-## finding if the code that produced it can be got back. A dirty tree is worth marking rather
-## than hiding, because it means the log describes something no commit reproduces — the
-## reading is still useful, it just cannot be replayed by checking a hash out.
+## Without it a trace cannot be checked against anything: "day one was brutal" is only a finding
+## if the code that produced it can be got back. Naming the tag as well as the hash is what lets a
+## reader tell *which release this is close to* without opening a shell — the same question
+## `tools/release.sh` exists to answer when cutting one.
+##
+## **Dirty is asked separately from `git describe`, not folded into its own `--dirty` flag.**
+## `git describe --dirty` only looks at tracked files (`git diff-index`), so a file that has never
+## been committed leaves it silent — checked empirically, since the difference is easy to miss
+## reading the manual. The `status --porcelain` check below is the one this file always used, and
+## untracked files still count as dirty under it: the mark only ever claims "this is not exactly
+## that commit", and it must never claim otherwise.
 ##
 ## Asked of `git` at runtime rather than baked in, because the project has no build step to
 ## bake it during — `tools/run.sh` starts the engine on the working tree. An exported build
-## has no repository to ask, which is what "unknown" means; the traces worth reading come off
-## a developer's machine either way.
+## has no repository to ask, which is what "unknown" means; `application/config/version` is what
+## a deployed build shows instead — see `TitleScreen`.
 static func source_version() -> String:
 	var repository := ProjectSettings.globalize_path("res://")
-	var hash_out: Array = []
-	if OS.execute("git", ["-C", repository, "rev-parse", "--short", "HEAD"], hash_out) != 0:
+	var describe_out: Array = []
+	if OS.execute("git", ["-C", repository, "describe", "--tags", "--always"], describe_out) != 0:
 		return "unknown"
-	var commit := ("\n".join(hash_out)).strip_edges()
-	if commit == "":
+	var version := ("\n".join(describe_out)).strip_edges()
+	if version == "":
 		return "unknown"
 	var status: Array = []
-	# Untracked files count as dirty. The conservative reading is the right one: the mark
-	# only claims "this is not exactly that commit", and it should never claim otherwise.
 	if OS.execute("git", ["-C", repository, "status", "--porcelain"], status) != 0:
-		return commit
-	return commit + ("*" if ("\n".join(status)).strip_edges() != "" else "")
+		return version
+	return version + ("-dirty" if ("\n".join(status)).strip_edges() != "" else "")
 
-## The same thing in a form a folder name can carry, and a shell script can match on.
+## The same thing, kept as its own name because the run folder and `tools/telemetry.sh -p` both
+## call this rather than `source_version()` directly.
 ##
-## `*` is the dirty marker on line 1 of the log and is a glob character everywhere else, so it
-## becomes a word: `tools/telemetry.sh -p` compares it against `git rev-parse --short HEAD` inside
-## the run folder's own name, and a marker that expanded in a shell would make that comparison
-## delete the wrong things.
+## The two used to differ: `source_version()` wrote a bare `*` for a dirty tree — the log's own
+## first-line mark — and this turned it into the shell-safe word `-dirty` for a folder name and a
+## `sed` match. `git describe` now writes `-dirty` itself, so what this function does changed even
+## though what it produces for a caller did not.
 static func _file_tag() -> String:
-	return source_version().replace("*", "-dirty")
+	return source_version()
 
 # ------------------------------------------------------------------ the files ---
 

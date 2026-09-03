@@ -34,7 +34,7 @@ nobody reads, and on macOS the directory is inside `~/Library`, which Finder hid
 For example:
 
 ```
-user://telemetry/2026-09-03/2054/run-205437-seed2102613802-db09693-dirty/
+user://telemetry/2026-09-03/2054/run-205437-seed2102613802-v0.0.0-49-gdb09693-dirty/
 ├── run.log
 ├── maps/
 │   ├── day01-attempt1.png
@@ -56,15 +56,15 @@ user://telemetry/2026-09-03/2054/run-205437-seed2102613802-db09693-dirty/
 - **`<run>`** is the individual run, and its name carries what a level per commit used to split
   across two folders: `run-` when a person was at the controls, `rig-` for a headless boot or
   anything driven by `--screenshot`, `--walk`, `--flee` or `--press`; the full `HHMMSS` time of day
-  the run started; the seed; and last the short commit hash it was played on, or `<hash>-dirty` if
-  the tree was not clean — the same mark as the log's own first line. `*` is a glob character in a
-  shell, which is why the dirty mark is the word `-dirty` here rather than the `*` the log's first
-  line uses. `tools/telemetry.sh -p` compares that tail against `git rev-parse --short HEAD`, by
-  path alone, to say what is stale. Repeating the parent folder's hour and minute in the run's own
-  name is a few redundant characters, and what it buys is that a run folder still identifies itself
-  once copied out on its own — into `docs/evidence/`, or pasted into a message. The commit goes
-  **last**, so sorting the run folders within one `<day>/<minute>` by name still sorts them by age,
-  because the time leads the name.
+  the run started; the seed; and last `git describe --tags --always`'s own form — the nearest
+  version tag, commits since, and the abbreviated hash the run was played on
+  (`v0.0.0-49-gab12cd3`), with `-dirty` appended if the tree was not clean, the same mark as the
+  log's own first line. `tools/telemetry.sh -p` compares that tail against the same `git describe`,
+  by path alone, to say what is stale. Repeating the parent folder's hour and minute in the run's
+  own name is a few redundant characters, and what it buys is that a run folder still identifies
+  itself once copied out on its own — into `docs/evidence/`, or pasted into a message. The version
+  goes **last**, so sorting the run folders within one `<day>/<minute>` by name still sorts them by
+  age, because the time leads the name.
 - **`run.log` sits directly in the run's folder**, not in a subfolder of its own — it is the one
   artefact every run has, so it needs nothing to distinguish it from a sibling of its own kind.
 - **The three picture kinds each get their own subfolder**, so a directory listing separates them
@@ -82,13 +82,13 @@ clearing it — a day, a few minutes of one, or everything — is a decision for
 the directory, not one the game makes behind them. `tools/telemetry.sh -p` (`-p yes` to actually
 delete) is the one thing that still removes anything, and it does that because a person ran it.
 
-**The commit sits in the run's own folder name rather than in a folder level of its own**, because
+**The version sits in the run's own folder name rather than in a folder level of its own**, because
 a level per commit split a day's runs across as many folders as builds were played on it, and
 listing a day did not list its runs. `-p` is what still needs to answer *which of these describes
 the build in front of me*, and it does that by path alone, matching the tail of a run's own folder
-name against `git rev-parse --short HEAD`: it treats a run on another commit, or one too short to
-have been a run, as stale, never touches the newest, and prints what it would delete unless told
-`yes`.
+name against `git describe --tags --always`, computed once at the top of the script: it treats a
+run on another version, or one too short to have been a run, as stale, never touches the newest,
+and prints what it would delete unless told `yes`.
 
 **One sitting is often several runs, and that is correct.** Both `R` on the pause screen and a
 finished run restart the game, which reloads the scene and opens a new run folder — so a folder is
@@ -107,7 +107,7 @@ only one place it is made.
 ## What one looks like
 
 ```
-nappy run log  2026-08-26T22:39:25  commit b20763c*
+nappy run log  2026-08-26T22:39:25  version v0.0.0-49-gab12cd3-dirty
 
 day 6  act 2  run seed 4242  city seed 4242  length 144.0s
    0.0  contact  step 1 on offer at (79,94)
@@ -131,12 +131,14 @@ around 0:15 — with nothing but a pager.
 
 ### The first line
 
-`commit b20763c*` is the commit the run was played on, and the `*` means the working tree was
-dirty. Without it a trace cannot be checked against anything: "day one was brutal" is only a
-finding if the code that produced it can be got back. A dirty tree is marked rather than
-hidden, because it means the log describes something that no commit reproduces — the reading
-is still useful, it just cannot be replayed by checking a hash out. It is asked of `git` at
-runtime; an exported build has no repository to ask and records `unknown`.
+`version v0.0.0-49-gab12cd3-dirty` is `git describe --tags --always`, run at startup: the nearest
+version tag, how many commits since, and the abbreviated hash the run was played on, with `-dirty`
+appended if the working tree was not clean. Without it a trace cannot be checked against anything:
+"day one was brutal" is only a finding if the code that produced it can be got back, and naming the
+tag as well as the hash says which release this is close to without a `git log` to find out. A
+dirty tree is marked rather than hidden, because it means the log describes something that no
+commit reproduces — the reading is still useful, it just cannot be replayed by checking a commit
+out. Asked of `git` at runtime; an exported build has no repository to ask and records `unknown`.
 
 ### The day header
 
@@ -154,7 +156,7 @@ back.
 
 | Record | Do not record |
 | --- | --- |
-| The seed the generator actually used, and the commit it ran on | The city layout, block purposes, building rects — recomputable from that seed |
+| The seed the generator actually used, and the version it ran on | The city layout, block purposes, building rects — recomputable from that seed |
 | **Random outcomes that branch the run**: a one-shot that fired, with the roll and the threshold; which block arc advanced and what caused it; the alley trap roll; the scar an event left | Falloff curves, meter rates, event intensities and radii — they are in `Tuning` and the catalogue |
 | What the player did, in order: where they went, when they turned back, when they ran, when they crossed a road | Derived aggregates — the circling ratio, total distance. Computable when reading, and a reading aid at best |
 | What the world did to them: what came within range and how close, when sleep froze and what was near, which closure they saw | Which tiles are calm, which streets exist — recomputable |
