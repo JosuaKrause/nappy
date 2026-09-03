@@ -889,7 +889,13 @@ row today drawn as a citywide wall rather than a street event — the milestone 
 pictures for both strengths costs nothing here but longer candidate lists.
 
 **The doorstep is exempt, for the same reason a closure never stands there**: the home is a notch
-with one exit, and a seal on its own street would seal her in on the first frame.
+with one exit, and a seal on its own street would seal her in on the first frame. **The join
+between the home street and the rest of the tree is protected too, not merely the home street
+itself.** `RouteTree` grows a **trunk** from the home street outward to the nearest tree ground
+after every branch has grown, so at least one street meeting the home street's own junctions is
+always tree ground — the fact `SealPlanner` already reads to refuse a seal. Without it, which
+street that join landed on was whatever a branch's own random walk happened to reach home through,
+and on a bad roll every street the home led to could be off-tree and sealed at once.
 
 **Alleys are not streets, so they are never sealed — a through-alley's *mouth* can be.** An alley
 that touches the tree at either end stays open outright, which is the way round a wall the design
@@ -898,10 +904,11 @@ sealed streets into a second city behind them.
 
 **The winnability guarantee is not repeated here, it is true by construction.** A seal never
 stands on tree ground or the doorstep — the two things the tree and `ClosurePlanner` already
-guarantee a route through — so nothing a seal does can cut the corridor.
-`EventScheduler._ensure_the_city_is_still_walkable` stays what it always was, a repair pass for
-the catalogue's own placements; sealing needs no equivalent; `tests/test_seals.gd` measures the
-guarantee over many seeds and days instead of asserting it at runtime.
+guarantee a route through, and the trunk above is what makes the first of those cover the join as
+well — so nothing a seal does can cut the corridor. `EventScheduler._ensure_the_city_is_still_
+walkable` stays what it always was, a repair pass for the catalogue's own placements; sealing needs
+no equivalent; `tests/test_seals.gd` measures the guarantee over many seeds and days instead of
+asserting it at runtime.
 
 ## Block purposes
 

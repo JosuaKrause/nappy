@@ -53,6 +53,12 @@ extends RefCounted
 ## walkable` stays the *accidental* guarantee for the catalogue's own placements; this placement
 ## needs no repair pass because nothing it does can break the thing it is measured against.
 ##
+## **"Tree ground" includes the join, now.** `RouteTree._grow_the_trunk()` guarantees a coloured
+## path from the home street outward to the rest of the tree even where every branch's own random
+## walk happened to reach home a different way, so the sentence above did not have to grow a second
+## clause for it — a seal never standing on tree ground already covers the ground between the
+## doorstep and the corridor, because that ground is now tree ground like any other.
+##
 ## **Alleys are not streets, and that is why they stay open by construction** — `StreetNetwork.
 ## segments()` never contains one, so the loop above never seals one. What is sealed here instead
 ## is a through-alley's *mouth*, and only when neither street it connects to is on today's tree:

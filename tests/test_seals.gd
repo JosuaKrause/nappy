@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_every_off_tree_street_is_sealed(t)
 	_test_the_tree_and_the_doorstep_are_never_sealed(t)
 	_test_the_tree_itself_is_untouched(t)
+	_test_the_doorstep_reaches_the_corridor(t)
 	_test_a_day_is_still_winnable_under_every_seal(t)
 	_test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t)
 	_test_candidate_shapes(t)
@@ -129,6 +130,43 @@ func _test_the_tree_itself_is_untouched(t) -> void:
 				moved += 1
 		t.check(moved == 0,
 				"seed %d: sealing does not change which cells the tree carries" % map.seed_used)
+
+# ------------------------------------------------------------------- the doorstep ---
+
+## Playtest 22, finding 5: `SealPlanner.plan_day` exempts the home street itself, but nothing used
+## to protect the join between it and the rest of the tree — every street the home street led to
+## could be off-tree and therefore sealed. `RouteTree._grow_the_trunk()` is the fix: it always
+## finds a way from the home street to a cell already on the tree, so at least one of the streets
+## meeting the home street's own two junctions is `is_on_the_tree()` — which is exactly the ground
+## `SealPlanner` never seals. Checked directly against `is_on_the_tree()` rather than against
+## `SealPlanner`'s output, because the guarantee belongs to the tree and holds before any seal is
+## placed at all.
+func _test_the_doorstep_reaches_the_corridor(t) -> void:
+	var used_the_spine := 0
+	var total := 0
+	for map in _maps:
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			_repaint_for(map, day)
+			var home := ClosurePlanner.home_street(map)
+			var tree := RouteTree.for_day(map, day)
+			if tree.branches.is_empty():
+				continue
+			total += 1
+			if tree.trunk_used_the_spine:
+				used_the_spine += 1
+			var joined := false
+			for junction in [home.a, home.b]:
+				for segment in StreetNetwork.at_junction(junction):
+					if segment.key() != home.key() and tree.is_on_the_tree(segment.key()):
+						joined = true
+			t.check(joined,
+					"seed %d day %d: a street meeting the doorstep's own junctions is on the tree"
+					% [map.seed_used, day])
+	# Not a pass/fail bound — the fraction is a fact about the map (whether home was generated
+	# beside the main road), not about a defect: the trunk falls back to it only where every other
+	# way out of the home street is unreachable without it. Reported so the rate is visible.
+	t.check(total > 0, "%d of %d sampled days needed the main road to join the doorstep to the tree"
+			% [used_the_spine, total])
 
 # ------------------------------------------------------------------ winnability ---
 
