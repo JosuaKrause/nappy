@@ -9,10 +9,10 @@
 #   tools/telemetry.sh -p           # say what is stale; -p yes actually deletes it
 #   tools/telemetry.sh 3            # print the third-newest run
 #
-# **A run is a folder**, `<day>/<commit>/<run>/`, with `run.log` directly inside it and its
+# **A run is a folder**, `<day>/<minute>/<run>/`, with `run.log` directly inside it and its
 # pictures in `auto/`, `maps/` and `asked/` beside that — see docs/TELEMETRY.md and
-# `Telemetry.begin_run()`. Every level exists to be deleted on its own: a whole day, a whole
-# commit that no longer describes the tree, or one run.
+# `Telemetry.begin_run()`. Every level exists to be deleted on its own: a whole day, a few minutes
+# of a busy one, or one run.
 #
 # **A log says whether anybody was playing it.** *(Playtest 17, finding 3: "otherwise it looks like
 # a lot of plays happened when they were just regular tests. this skew statistics and muddies
@@ -21,8 +21,8 @@
 # `-l` prints the kind and `-p` treats every rig but the newest as stale.
 #
 # `-p` is playtest 10, finding 14: *"is there a mechanism to delete old outdated sessions?"* The
-# `<commit>` folder a run sits in says whether that build still exists, so "stale" is a question the
-# directory listing can answer on its own — a run under a commit that is not the one checked out
+# commit is the last part of a run's own folder name, so "stale" is a question the directory listing
+# can answer on its own, by path alone — a run whose name does not end in the commit checked out
 # describes a build that no longer exists, and a `run.log` under a few kB is a boot that never
 # became a run (`check.sh` and `shot.sh` start the game too). **This is the only thing in the game
 # that still deletes anything** — `Telemetry` itself no longer prunes on its own, precisely so the
@@ -54,12 +54,14 @@ if [[ ! -d "$DIR" ]]; then
     exit 1
 fi
 
-# Every run folder, `$DIR/<day>/<commit>/<run>`, newest first. The commit sits *between* the day
-# and the run in the tree, so a plain path sort would interleave two commits played on the same
-# day out of order — the sort key is `<day>/<run>` instead, which skips the commit on purpose and
-# still sorts correctly, because the day folder is the date and the run folder leads with the time
-# of day. Read in a loop rather than with `mapfile`, which macOS's bash 3.2 does not have — the
-# same reason the rest of tools/ stays this side of bash 4.
+# Every run folder, `$DIR/<day>/<minute>/<run>`, newest first. Neither a plain path sort nor
+# `<day>/<run>` gives that, and the second is the trap: the minute folder sits *between* the day and
+# the run, so a path sort interleaves two minutes of one day — but a run folder's name leads with
+# `run-` or `rig-` rather than with its clock, so keying on the whole name sorts every playtest
+# above every rig whatever time either happened. **The key is the day and the run's `HHMMSS` with
+# that prefix cut off**, which is the only part of the name that is a time. Read in a loop rather
+# than with `mapfile`, which macOS's bash 3.2 does not have — the same reason the rest of tools/
+# stays this side of bash 4.
 LOGS=()
 while IFS= read -r line; do
     LOGS+=("$line")
@@ -68,7 +70,7 @@ done < <(
     while IFS= read -r path; do
         day="$(basename "$(dirname "$(dirname "$path")")")"
         run="$(basename "$path")"
-        printf '%s/%s\t%s\n' "$day" "$run" "$path"
+        printf '%s/%s\t%s\n' "$day" "${run#*-}" "$path"
     done | sort -r | cut -f2-
 )
 if [[ ${#LOGS[@]} -eq 0 ]]; then
@@ -82,9 +84,14 @@ HEAD_COMMIT="$(git -C "$PROJECT_DIR" rev-parse --short HEAD 2>/dev/null || echo 
 # writes about half a kilobyte, and the shortest real attempt in any playtest is several.
 TINY_BYTES=3000
 
-# The commit a run was played on: the name of its `<commit>` folder, one level up from the run.
+# The commit a run was played on, read off the tail of the run folder's own name:
+# `run-<HHMMSS>-seed<N>-<commit>`, the commit last so a busy folder still sorts by age. `sed`
+# rather than opening `run.log`, so this works by path alone even on a run still being written.
 commit_of() {
-    basename "$(dirname "$1")"
+    local name tag
+    name="$(basename "$1")"
+    tag="$(echo "$name" | sed -E 's/^(run|rig)-[0-9]+-seed[0-9]+-(.+)$/\2/')"
+    if [[ "$tag" == "$name" ]]; then echo "unknown"; else echo "$tag"; fi
 }
 
 # Whether a person was at the controls, read off the run folder's own name: `run-` for a playtest,
@@ -97,7 +104,7 @@ size_of() {
     if [[ -f "$1/run.log" ]]; then wc -c < "$1/run.log" | tr -d ' '; else echo 0; fi
 }
 
-# A run's path, relative to $DIR — `<day>/<commit>/<run>`, which is the whole identity a folder
+# A run's path, relative to $DIR — `<day>/<minute>/<run>`, which is the whole identity a folder
 # needs to be found and deleted by hand.
 rel_of() { echo "${1#"$DIR"/}"; }
 
@@ -107,7 +114,7 @@ case "${1:-}" in
             printf '%3d  %7s  %-5s  %s\n' "$((i + 1))" \
                 "$(size_of "${LOGS[$i]}")" "$(kind_of "${LOGS[$i]}")" "$(rel_of "${LOGS[$i]}")"
         done
-        echo "     bytes   kind   day/commit/run (HEAD is $HEAD_COMMIT)" >&2
+        echo "     bytes   kind   day/minute/run (HEAD is $HEAD_COMMIT)" >&2
         ;;
     -p)
         DOOMED=()
@@ -140,12 +147,12 @@ case "${1:-}" in
         fi
         for run in "${DOOMED[@]}"; do
             rm -rf "$run"
-            # The `<commit>` and `<day>` folders above it, only if deleting this run left them
+            # The `<minute>` and `<day>` folders above it, only if deleting this run left them
             # empty — nothing else in the game ever removes them, so this is the one place an
             # empty ancestor is cleaned up, and only because a person asked for `yes`.
-            commit_dir="$(dirname "$run")"
-            rmdir "$commit_dir" 2>/dev/null || true
-            day_dir="$(dirname "$commit_dir")"
+            minute_dir="$(dirname "$run")"
+            rmdir "$minute_dir" 2>/dev/null || true
+            day_dir="$(dirname "$minute_dir")"
             rmdir "$day_dir" 2>/dev/null || true
         done
         echo "deleted ${#DOOMED[@]} runs and their pictures" >&2

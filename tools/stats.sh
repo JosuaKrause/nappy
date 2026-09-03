@@ -12,7 +12,7 @@
 # game's own naming: see main.gd's _somebody_is_playing() and Telemetry.begin_run()'s `played`
 # argument, documented in docs/TELEMETRY.md under "Where the logs are".
 #
-# Each run is a folder, `<day>/<commit>/<run>/`, with the log at `<run>/run.log` -- see
+# Each run is a folder, `<day>/<minute>/<run>/`, with the log at `<run>/run.log` -- see
 # Telemetry.begin_run() and docs/TELEMETRY.md. This script only ever reads that one file per run.
 #
 # Prints only what a log entry actually carries -- see docs/TELEMETRY.md's entry-kind table.
@@ -45,8 +45,8 @@ esac
 # on its own.
 print_group() {
 	local label="$1" prefix="$2"
-	# Every run folder's log, wherever its `<day>/<commit>/` ancestors are -- `-path` matches the
-	# whole reported path, so the leading `*/` is what lets the day and commit segments be anything.
+	# Every run folder's log, wherever its `<day>/<minute>/` ancestors are -- `-path` matches the
+	# whole reported path, so the leading `*/` is what lets the day and minute segments be anything.
 	local logs=()
 	while IFS= read -r log; do logs+=("$log"); done < <(
 		find "$DIR" -mindepth 4 -maxdepth 4 -type f -name run.log \
