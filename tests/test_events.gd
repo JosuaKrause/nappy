@@ -9,6 +9,8 @@ func run(t) -> void:
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
+	_test_a_spread_never_lands_on_a_corner(t)
+	_test_a_spread_cap_matches_what_it_obstructs(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
@@ -30,6 +32,7 @@ func run(t) -> void:
 	_test_scheduler_is_deterministic(t)
 	_test_scheduler_respects_placement_and_caps(t)
 	_test_one_shots_fire_once_per_run(t)
+	_test_alley_robbery_never_lands_on_a_required_alley(t)
 	_test_one_park_stays_usable(t)
 	_test_calm_she_has_not_used_is_left_alone(t)
 	_test_successors_resolve(t)
@@ -238,6 +241,51 @@ func _test_a_spread_rotates_with_the_street(t) -> void:
 
 	t.check(not EventInstance._spread_is_vertical(null, Vector2.ZERO),
 			"a data-level rig with no map at all gets the unrotated default")
+
+## **A spread never lands on a corner.** `EventScheduler._is_a_corner` refuses any tile whose two
+## coordinates are both inside a corridor band to a row `EventInstance.has_a_spread()` names — see
+## `docs/TODO.md`, M64, "a spread on a corner is placed as if the corner were nothing": such a tile
+## has no single street for `_spread_is_vertical` or `_centred_on_the_pavement_band` to answer about.
+## Walked over the **planned** placements of several seeds and every day of a run, rather than over
+## the candidate pool directly, because a clean pool and a roll that still lands on a stale entry
+## are two different bugs.
+func _test_a_spread_never_lands_on_a_corner(t) -> void:
+	var checked := 0
+	for run_seed in [4242, 2102613802, 90210]:
+		var map := CityGenerator.generate(run_seed)
+		var consumed: Array[String] = []
+		for day in range(1, 15):
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("%d:%d" % [run_seed, day])
+			for plan in EventScheduler.build_day(day, rng, map, consumed):
+				if not plan.is_placed() or not EventInstance.has_a_spread(plan.def):
+					continue
+				checked += 1
+				var tile := map.world_to_tile(plan.position)
+				var on_corner := CityMap.corridor_offset(tile.x) >= 0 \
+						and CityMap.corridor_offset(tile.y) >= 0
+				t.check(not on_corner,
+						"seed %d day %d: '%s' at tile %s is not on a corner"
+						% [run_seed, day, plan.def.id, tile])
+	t.check(checked > 0, "some run placed a spread to check (%d)" % checked)
+
+## **A spread's end cap is drawn at exactly the width it obstructs, not past it.**
+## `EventInstance._draw_spread`'s own docstring is the contract; the repeated segments already meet
+## it, and the cap is the half that used to break it — centred at `±half`, `barrier_end.svg` (6px
+## wide) hung 3px past each end of a `construction` barrier's 64px obstruction.
+## `EventInstance._cap_offset` is the pure arithmetic the drawing calls, so this asserts the outer
+## edge it produces against the real asset size and the real `obstructs_radius`, for the one row
+## that carries a cap.
+func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
+	var def := EventCatalogue.by_id("construction")
+	var half := maxf(11.0, def.obstructs_radius)
+	var cap_along := EventInstance.BARRIER_END.get_size().x
+	var offset := EventInstance._cap_offset(half, cap_along, 1.0)
+	t.check(is_equal_approx(offset + cap_along * 0.5, half),
+			"the cap's outer edge (%.1f) lands on the %.1fpx obstruction, not past it"
+			% [offset + cap_along * 0.5, half])
+	t.check(not is_equal_approx(offset, half),
+			"and it is not simply centred at ±half any more (%.1f)" % offset)
 
 # ------------------------------------------------------------------ emission ---
 
@@ -1156,6 +1204,36 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 	t.check(groups_seen > 0, "some run had a one-shot to check (%d)" % groups_seen)
 	t.check(float(narrow) / maxf(1.0, float(groups_seen)) < 0.4,
 			"%d of %d one-shot runs offered only one place" % [narrow, groups_seen])
+
+## **No robber stands in an alley she has to walk down.** *(2026-09-03: "alley robber should not
+## happen on required alleys".)* `EventScheduler._refuses_required_alleys` excludes `alley_robbery`
+## from any `ALLEY` tile the day's corridor runs through — `corridor.depth(tile) == 0` — because its
+## own design note is that "a robbery has no telegraph you could see coming, and it never did": a
+## risk with no warning is only fair on ground she chose to enter. See `docs/TODO.md`, M64, "and no
+## robber stands in an alley she has to walk down."
+##
+## Walked over the **planned** placements of several seeds and every day the row is eligible on
+## (`first_day` 8 onward), the same reason the corner test is over placements rather than the pool
+## directly: a clean pool and a roll that still lands on a stale entry are two different bugs.
+func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
+	var checked := 0
+	for run_seed in [4242, 2102613802, 90210]:
+		var map := CityGenerator.generate(run_seed)
+		var consumed: Array[String] = []
+		for day in range(8, 15):
+			var tree := RouteTree.for_day(map, day)
+			var corridor := Corridor.of(tree)
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("%d:%d" % [run_seed, day])
+			for plan in EventScheduler.build_day(day, rng, map, consumed, [], [], tree):
+				if plan.def.id != "alley_robbery" or not plan.is_placed():
+					continue
+				checked += 1
+				var tile := map.world_to_tile(plan.position)
+				t.check(corridor.depth(tile) != 0,
+						"seed %d day %d: 'alley_robbery' at tile %s is not on the day's corridor"
+						% [run_seed, day, tile])
+	t.check(checked > 0, "some run placed alley_robbery to check (%d)" % checked)
 
 ## The rule that keeps a day winnable: however bad it gets, one calm zone stays usable.
 ##
