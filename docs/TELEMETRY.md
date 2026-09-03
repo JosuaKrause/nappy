@@ -13,45 +13,90 @@ what actually happens to a person playing, and nobody should have to have an opi
 ```sh
 ./tools/telemetry.sh          # print the newest run
 ./tools/telemetry.sh -f       # follow the run happening right now
-./tools/telemetry.sh -l       # list them, newest first, with size and commit
+./tools/telemetry.sh -l       # list them, newest first, with size and kind
 ./tools/telemetry.sh -p       # say what is stale; `-p yes` deletes it
 ./tools/telemetry.sh 3        # print the third-newest
 ./tools/stats.sh              # aggregate playtest runs: days won/lost, loss causes, most-met events
 ```
 
-Underneath, one file per run in `user://telemetry/`:
+Underneath, one folder per run in `user://telemetry/`:
 
 ```
 ~/Library/Application Support/Godot/app_userdata/Nappy/telemetry/   (macOS)
 ~/.local/share/godot/app_userdata/Nappy/telemetry/                  (Linux)
 ```
 
-The absolute path is also printed to stdout at the start of every run. Both the script and
-the print exist for the same reason: a trace nobody can find is a trace nobody reads, and on
-macOS the directory is inside `~/Library`, which Finder hides by default.
+The absolute path of the run's own folder is also printed to stdout at the start of every run.
+Both the script and the print exist for the same reason: a trace nobody can find is a trace
+nobody reads, and on macOS the directory is inside `~/Library`, which Finder hides by default.
 
-Logs are named `run-<timestamp>-seed<N>-<commit>.log`. The newest fifty are kept and older ones are
-pruned automatically — `check.sh` and `shot.sh` boot the game too, and the directory would otherwise
-fill with two-line traces of runs that never started.
+**A run is a folder, `<day>/<commit>/<run>/`, and every level is there to be deleted by hand.**
+For example:
 
-**The commit is in the name as well as on the first line**, because the question *which of these
-still describes the build in front of me* is asked of a directory listing. `-p` is the other half:
-it treats a log from another commit, or one too short to have been a run, as stale, never touches
-the newest, and prints what it would delete unless told `yes`. The commit goes at the end of the
-name rather than the middle, because a timestamp has dashes in it and so does `abc1234-dirty`.
+```
+user://telemetry/2026-09-03/db09693-dirty/run-205437-seed2102613802/
+├── run.log
+├── maps/
+│   ├── day01.png
+│   ├── day01-dusk.png
+│   ├── day06.png
+│   ├── day06-attempt2.png
+│   └── day06-attempt2-dusk.png
+├── auto/
+│   └── 019s-lost-lost_crying.png
+└── asked/
+    └── 060s-asked.png
+```
 
-**One sitting is often several logs, and that is correct.** Both `R` on the pause screen and a
-finished run restart the game, which reloads the scene and opens a new log — so a file is one *run*,
-not one session.
+- **`<day>`** is the calendar date the run was played (not the in-game day the log talks about),
+  so a bad week of testing can be cleared with one `rm -rf` of its date folders.
+- **`<commit>`** is the short hash the run was played on, or `<hash>-dirty` if the tree was not
+  clean — the same mark as the log's own first line, written as a folder so every run played on a
+  build that no longer exists can be deleted together. `*` is a glob character in a shell, which is
+  why the dirty mark is the word `-dirty` here rather than the `*` the log's first line uses.
+  `tools/telemetry.sh -p` compares this folder's name against `git rev-parse --short HEAD` to say
+  what is stale.
+- **`<run>`** is the individual run, and carries only what its two ancestors do not already say:
+  `run-` when a person was at the controls, `rig-` for a headless boot or anything driven by
+  `--screenshot`, `--walk`, `--flee` or `--press`; the time of day the run started; and the seed.
+  Sorting the run folders within one `<day>/<commit>` by name sorts them by age, because the time
+  leads the name.
+- **`run.log` sits directly in the run's folder**, not in a subfolder of its own — it is the one
+  artefact every run has, so it needs nothing to distinguish it from a sibling of its own kind.
+- **The three picture kinds each get their own subfolder**, so a directory listing separates them
+  without anybody having to read a filename to tell which is which: `maps/` for the day pictures
+  (`Telemetry.write_map`, see "The city grid" below), `auto/` for the heuristic's own screenshots
+  (`Telemetry.snapshot`, see "Snapshots" below), and `asked/` for a picture a person pressed a key
+  for (`Telemetry.snapshot_now`). A subfolder is only created the first time something is actually
+  written into it, so a run that never triggers the heuristic — most of them — has no empty `auto/`
+  sitting in it.
+
+**The game never deletes anything under `user://telemetry/`.** *(2026-09-03: "no automatic cleanup
+anymore", "the folder structure allows for easily deleting old days/commits".)* The directory grows
+without bound on purpose: `<day>/<commit>/<run>/` is a hierarchy built to be cut into by hand, and
+clearing it — a day, a commit, or everything — is a decision for whoever is looking at the
+directory, not one the game makes behind them. `tools/telemetry.sh -p` (`-p yes` to actually
+delete) is the one thing that still removes anything, and it does that because a person ran it.
+
+**The commit sits in the directory tree rather than in every filename**, because the question
+*which of these still describes the build in front of me* is now answered by which `<commit>`
+folder a run is under, not by parsing a name. `-p` is what acts on it: it treats a run under
+another commit, or one too short to have been a run, as stale, never touches the newest, and
+prints what it would delete unless told `yes`.
+
+**One sitting is often several runs, and that is correct.** Both `R` on the pause screen and a
+finished run restart the game, which reloads the scene and opens a new run folder — so a folder is
+one *run*, not one session.
 
 **It is on by default.** `-- --no-telemetry` turns it off. A trace behind a flag is a trace
 the person playtesting has to remember to turn on, which means the interesting run is the one
 that was not recorded.
 
 **It is always off on a web export**, no flag needed. `user://` there is a stranger's browser
-storage rather than a developer's disk: nobody collects what lands in it and nothing prunes it, so
-`Telemetry.begin_run()` checks `OS.has_feature("web")` itself and does nothing on that platform —
-the one caller cannot forget the check because there is only one place it is made.
+storage rather than a developer's disk: nobody collects what lands in it and there is no
+`tools/telemetry.sh` to ever point at it, so `Telemetry.begin_run()` checks `OS.has_feature("web")`
+itself and does nothing on that platform — the one caller cannot forget the check because there is
+only one place it is made.
 
 ## What one looks like
 
@@ -229,8 +274,9 @@ the one this project keeps having to answer with a rig. The defects no log can s
 kind here: birds that freeze in the air, a cat drawn running backwards, a zzz a body's width off the
 pram, a caret over the wrong things.
 
-So a run writes PNGs beside its log, named `<log stem>-<clock>s-<what>.png`, and they are pruned
-with it. Three rules:
+So a run writes PNGs into its own `auto/` folder, named `<clock>s-<what>.png` — or
+`<clock>s-attempt<N>-<what>.png` from a day's second attempt onward, the same rule "A day played
+twice" below states for the maps. Three rules:
 
 - **The heuristic is the log's own.** There is no interval. A shot is taken on the entries a reader
   already stops at, because those are exactly the lines that raise the question a picture answers:
@@ -247,8 +293,10 @@ with it. Three rules:
 
 ### And one a person asks for
 
-`P` (or `F9`) writes `<log stem>-<clock>s-asked.png` and a `shot` entry beside it.
-`Telemetry.snapshot_now()` is the heuristic one with the two limits taken off, and that is the
+`P` (or `F9`) writes `<clock>s-asked.png` into the run's own `asked/` folder — kept apart from the
+heuristic's `auto/` so a directory listing already says which of the two asked for a picture — and
+a `shot` entry beside it in `run.log`. `Telemetry.snapshot_now()` is the heuristic one with the two
+limits taken off, and that is the
 whole difference: `SHOTS_PER_DAY` and `SHOT_SPACING` exist because a condition that stays true for
 two seconds would otherwise write a hundred and twenty frames, and **somebody pressing a key has
 already decided this frame is worth keeping**. A cap that silently swallows the seventh press is a
@@ -268,10 +316,18 @@ a log turn out to be questions about the layout — how far the nearest calm are
 closure cut anything, which street the spine is, why a park was never reached — and answering one
 from a list of tile coordinates is a thing nobody does twice.
 
-So a run writes `<log stem>-map-day<NN>.png`: one four-pixel square per tile, coloured by tile
-type, with the home, the calm areas, the main road, today's closures, the day's corridor, every
-event the day placed and — at dusk — the trail she actually walked marked over it. `TelemetryMap`
-does the drawing.
+So a run writes `day<NN>.png` into its own `maps/` folder: one four-pixel square per tile, coloured
+by tile type, with the home, the calm areas, the main road, today's closures, the day's corridor,
+every event the day placed and — at dusk — the trail she actually walked marked over it.
+`TelemetryMap` does the drawing.
+
+**A day played twice writes two pictures.** A nerve retries a lost day without the calendar
+advancing — see `GameState.finish_day()` and `src/autoload/game_state.gd`'s `spend_nerve` — so
+`Telemetry.begin_day()` is called again with the day it just failed at, and it counts how many
+times that has happened. A first attempt's filenames are exactly `day<NN>.png` /
+`day<NN>-dusk.png`, unchanged; a day's second attempt onward gets `-attempt<N>` folded in —
+`day06-attempt2.png`, `day06-attempt2-dusk.png` — so the retry does not overwrite the picture of
+the day that went wrong, which is the one worth keeping.
 
 - **It is not `--overview`.** That flag frames the *rendered* city — buildings, props, dusk, an
   act's colour cast — on a run somebody has to take deliberately. This is the grid, so it says what
@@ -375,10 +431,10 @@ Every **sited** event is drawn where the day put it, carrying the three things `
   streets, which is exactly what the violet is.
 
 **And it is written twice a day, which is the only reason the pip means anything.**
-`<log stem>-map-day<NN>.png` at dawn is purely *what the day intended*; `-map-day<NN>-dusk.png` is
-the same picture with the placements she actually walked up to burnt into it. Neither is derivable
-from the other and neither is the more useful one — a wall in the wrong place is visible in the
-first, and *a corridor with nothing on it ever met* is visible only in the second.
+`day<NN>.png` at dawn is purely *what the day intended*; `day<NN>-dusk.png` is the same picture
+with the placements she actually walked up to burnt into it. Neither is derivable from the other
+and neither is the more useful one — a wall in the wrong place is visible in the first, and *a
+corridor with nothing on it ever met* is visible only in the second.
 
 **The pip is a mark added rather than strength taken away.** Fading what she never reached is the
 obvious design and it answers the wrong question: a wall in the far corner of a map she never walked
