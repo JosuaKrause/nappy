@@ -441,6 +441,83 @@ again after* means running the same thing rather than reinventing it.
 
 ---
 
+## M71 — A push is a check, a tag is a release · asked for 2026-09-03
+
+> "let's not deploy on every push. push is for ci checks only. tag push triggers a deploy. write a
+> script to read the latest version tag eg v123 or v123.45.6 and bump it by one (with a
+> major/minor/patch argument) push the next tag. that way we don't have to reason about what the
+> next version is. also, the CI should store a version artifact in the deployed files so we don't
+> have to ship the git repo just to be able to show the version on the title screen (unless godot
+> already has a mechanism for that). for all usages of commits in the repo (filename or title screen
+> version) we should use the git built-in naming system that is in reference to the closest tag (I
+> think it was `<tag>-<steps>-<hash>` git has a command for it)"
+
+**The command is `git describe`**, and `git describe --tags --always --dirty` gives exactly that
+shape: `v0.0.0-49-gab12cd3`, the nearest tag, how many commits since, and the abbreviated hash with a
+`g` prefix. `--always` falls back to a bare hash where no tag is reachable, and `--dirty` appends the
+word `-dirty` — which is the marker this repo already writes as a word rather than `*`, because `*`
+is a glob character in a shell.
+
+**Two of the four are smaller than they look, and one is larger.**
+
+- **`ci.yml` already fires on every push and every pull request**, running lint, check and the full
+  suite. So *"push is for ci checks only"* needs nothing added — only `deploy.yml`'s trigger removed.
+- **`deploy.yml` re-runs the whole gate itself**, and its own comment says why: *"Both workflows fire
+  on the same push and neither waits for the other, so a deploy that trusted CI would publish a red
+  build to a public address as often as not."* On a tag that reasoning still holds — a tag can point
+  at any commit — so the gate stays.
+- **Godot does have the mechanism**: `application/config/version` in `project.godot`, read at runtime
+  with `ProjectSettings.get_setting`, and baked into the export rather than living beside it. So the
+  version artifact is that setting written by CI before the export runs, not a file shipped next to
+  `index.html`.
+- **Nothing shows a version on the title screen today.** `src/ui/title_screen.gd` has no version
+  line at all, so this is new rather than a change.
+
+**The first tag is `v0.0.0` on the current `origin/main`.** *(2026-09-03: "we start with the current
+origin/main as v0.0.0", and "your choice whether semantic or not. if semantic major is reserved for
+game breaking/fundamental changes".)* Semver is taken, so **major is reserved for a change that
+breaks or fundamentally alters the game** and the script's `major` argument is the one nobody reaches
+for casually.
+
+- [ ] **`deploy.yml` fires on a version tag and nothing else.** `on: push: tags: ['v*']` in place of
+      `branches: [main]`. The gate, the export, the social-card copy and the Pages upload are
+      unchanged — what changes is when they run. **Check what the Pages concurrency group and the
+      custom domain need**: the domain is a repository setting nothing in the workflow may write, and
+      the `pages` concurrency group queues rather than cancels, both of which stay true under a tag
+      trigger
+
+- [ ] **`tools/release.sh <major|minor|patch>` reads the latest tag, bumps it, and pushes it.** The
+      point is in the instruction: *"that way we don't have to reason about what the next version
+      is."* **Read loosely, write strictly** — a bare `v123` is understood as `v123.0.0`, and what
+      the script writes is always `vMAJOR.MINOR.PATCH`, so the shape converges after one release.
+      With no tag at all it starts at `v0.0.0`.
+
+      It pushes a tag to a public repository, which publishes a build, so it owes the things an
+      irreversible command owes: **print the current and next version and stop for a confirmation**,
+      refuse a dirty tree, refuse to run anywhere but `main`, and refuse when `main` is not level
+      with `origin/main` — a tag on a commit the remote has never seen deploys something nobody can
+      check out
+
+- [ ] **`git describe` replaces the bare hash everywhere a commit is written.** Two callers:
+      `Telemetry.source_version()`, which runs `git rev-parse --short HEAD` and feeds both the run
+      log's header line and the run folder's name through `_file_tag()`; and `tools/telemetry.sh`,
+      which computes `HEAD_COMMIT` the same way and compares it against the tail of a run folder's
+      name to say what is stale. **Both must change together or `-p` calls every run stale.**
+
+      `_file_tag()` currently turns a `*` into the word `-dirty`; `git describe --dirty` writes that
+      word itself, so what the function does changes even though what it produces does not. Run
+      folder names get longer — `run-223524-seed615548520-v0.0.0-49-gab12cd3` — which is the cost of
+      a name that says which release a run belongs to
+
+- [ ] **The title screen says which version it is.** It is the reason the version artifact exists:
+      a deployed build has no git repository to ask. Read `application/config/version` through
+      `ProjectSettings`, and fall back to `Telemetry.source_version()` where git is available, so a
+      developer sees `v0.0.0-49-gab12cd3` and a player sees the release. **Where it goes is a cue
+      question** — the title screen is the doorstep with the traffic running behind it, and a version
+      string is the one piece of text on it that is not addressed to the player
+
+---
+
 ## M53 — The precinct is for walking
 
 A precinct is paving frontage to frontage with nothing driving on it, on either axis, and a street
