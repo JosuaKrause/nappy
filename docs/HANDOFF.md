@@ -8,9 +8,15 @@ progress-tracking, which lives there too.
 
 ## The state of the tree
 
-**`main` has unpushed commits ahead of `origin/main` and is otherwise the only branch.** Nothing is
-half-written in the working tree and no worktree is open (`git log` over what has not reached
-`origin/main` says what those commits are). Trust the tools over any sentence here:
+**`main` has unpushed commits ahead of `origin/main`, and unmerged work stands beside it.** Nothing
+is half-written in `main`'s working tree. `git branch` and `git worktree list` are the truth about
+what is open; `git log` over what has not reached `origin/main` says what the unpushed commits are.
+
+One of those worktrees is deliberate rather than in progress: **M64's measurement probe,
+`tests/test_zz_m64_measure.gd`, is kept unmerged on its own branch** so that *measure it again
+afterwards* means running the same thing rather than reinventing it. It is the only file on it.
+
+Merge one at a time, `--no-ff`, and rerun the full gate on the merged tree between merges.
 
 ```sh
 ./tools/test.sh          # the full headless suite, ~200s; must be 0 failures
@@ -41,11 +47,13 @@ whose corridor was grown on cells.
 
 ## What to do next
 
-**Start with [PLAYTEST-21.md](PLAYTEST-21.md), then [PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 21
-is a brief run with two findings and both are M64's: the city *"feels way empty"*, and an instruction
-about what the density should be on and off the path that moves **both** ends of M50's gradient.
-Playtest 20 is the full seven-day run behind it, and its findings are filed against the milestones
-that own them.
+**Start with [PLAYTEST-22.md](PLAYTEST-22.md), then [PLAYTEST-21.md](PLAYTEST-21.md), then
+[PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 22 has three findings: barriers are still placed with
+gaps and overlaps (M64's first two items), the off-path city is still bare because M64's sealing has
+not been started, and the run log wants a folder per run (M70). Playtest 21 is a brief run whose two
+findings are both M64's: the city *"feels way empty"*, and an instruction about the density on and
+off the path that moves **both** ends of M50's gradient. Playtest 20 is the full seven-day run behind
+them, and its findings are filed against the milestones that own them.
 
 **Read `DECISIONS.md` under M69 before touching routes, closures or the corridor**, because it
 changed the ground every one of them stands on. Reachability is now `ReachabilityGrid` — the tile map
@@ -58,11 +66,12 @@ longer what answers *can she get there today*.
    the catalogue is a reason to cross the street and none is a reason not to go somewhere. **It
    supersedes M50's gradient at both ends** — off the path stops being *dear* and becomes *closed*,
    and the corridor stops being the *cheapest* ground and carries an ordinary event load. The
-   mechanism already exists: two ordinary obstacles facing each other leave no line to walk. **Both
-   preconditions are built** — the tree grows on cells (M69), so sealing off the tree no longer seals
-   every park crossing and alley; and a spread now faces the street it stands on (M48), so the ~150
-   seals a day are not half of them lying sideways. **Its first item is a measurement**, because
-   *"the city feels empty"* has two candidate causes and no evidence separating them.
+   mechanism already exists: two ordinary obstacles facing each other leave no line to walk. **Two of
+   its three preconditions are built** — the tree grows on cells (M69), so sealing off the tree no
+   longer seals every park crossing and alley; and a spread now faces the street it stands on (M48),
+   so the ~187 seals a day are not half of them lying sideways. **The third is its own first item**:
+   a spread on a crossroads corner gets neither of M48's fixes, which is one pavement tile in six and
+   is playtest 22's first finding.
 2. **M65 — the chalk mark.** Still the same two-part gap from playtest 19 — announced before it is
    found, unfindable once it is — with a third item added from playtest 20: a protester pointing
    toward the current objective, and made more common since a protester obstructs nothing.
