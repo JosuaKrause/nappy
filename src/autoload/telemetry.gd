@@ -287,8 +287,8 @@ func snapshot_now(context: String) -> void:
 ## **A day played twice writes two pictures.** A nerve retries a lost day without the calendar
 ## advancing, so this is called again for the same `day` — and without the attempt in the name the
 ## second attempt's maps would overwrite the first's, destroying the picture of the day that went
-## wrong. `_attempt_suffix()` is empty on a first attempt, so an ordinary day's filenames are
-## exactly what they were before a retry could happen at all.
+## wrong. `_attempt_suffix()` names the attempt every time, including the first, so a filename is
+## never ambiguous about which attempt it came from and there is only one shape to read.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
 		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
@@ -354,11 +354,11 @@ static func _file_tag() -> String:
 
 # ------------------------------------------------------------------ the files ---
 
-## `-attempt<N>` once a day has been retried, and nothing on a first attempt — so an ordinary run
-## that is never lost has exactly the filenames it always had. See `begin_day()`, which is where
-## `_attempt` is counted.
+## `-attempt<N>` on every name a run writes, including the first, so every filename has the same
+## shape and nothing that reads or matches one has to handle a suffix that is sometimes there and
+## sometimes not. See `begin_day()`, which is where `_attempt` is counted.
 func _attempt_suffix() -> String:
-	return "-attempt%d" % _attempt if _attempt > 1 else ""
+	return "-attempt%d" % _attempt
 
 ## The folder one kind of picture lives in, within the current run — `auto` for the heuristic's own
 ## screenshots (`snapshot()`), `maps` for the day maps (`write_map()`), `asked` for a picture a
