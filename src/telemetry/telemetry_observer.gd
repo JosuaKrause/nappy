@@ -122,10 +122,13 @@ var _carriageway := 0.0
 ## `Telemetry.write_map` grows one the same way. The determinism invariant is safe because nothing
 ## here draws from a `day_rng()` stream.
 var _tree: RouteTree
-## `on` the corridor, `off` it, or `away` from the streets entirely — in a park, an alley or a
-## plaza, which is neither. Held across a junction rather than answered there: a junction belongs to
-## no street on purpose (`StreetNetwork`), so asking one gives `away` for a body-width of pavement
-## and would put most of a day's corners in the wrong column.
+## The tile-level translation of `_tree` — since M69 the tree grows on `ReachabilityGrid` cells, so
+## a park cut or an alley the tree actually took answers `on` here exactly like a street would.
+var _corridor: Corridor
+## `on` the corridor, `off` it, or `away` from ground the grid cannot reach today. Held across a
+## junction rather than answered there: `_corridor.depth` still answers for one, but the state is
+## carried through so the transition line lands on the street either side of it rather than on the
+## four tiles of the crossing itself.
 var _path_state := ""
 ## When the current state began, for the transition line, and when it was last totalled, for the
 ## share. They are different numbers: one spans a stretch and the other spans a frame.
@@ -243,6 +246,7 @@ func start_day() -> void:
 	_mark_why = ""
 	_badges.clear()
 	_tree = RouteTree.for_day(_map, GameState.day)
+	_corridor = Corridor.of(_tree)
 	_path_time = {"on": 0.0, "off": 0.0, "away": 0.0}
 	_path_state = ""
 	_path_since = 0.0
@@ -348,10 +352,7 @@ func _watch_the_branch(here: Vector2, state: String) -> void:
 	if state != "on":
 		_path_branches.clear()
 		return
-	var segment := StreetNetwork.segment_containing(_map.world_to_tile(here))
-	if not segment:
-		return
-	var branches := _tree.branches_on(segment.key())
+	var branches := _tree.branches_on(_map.world_to_tile(here))
 	if branches.is_empty() or branches == _path_branches:
 		return
 	if not _path_branches.is_empty() and not _shares_a_branch(branches, _path_branches):
@@ -366,17 +367,18 @@ static func _shares_a_branch(a: Array[int], b: Array[int]) -> bool:
 	return false
 
 ## `on`, `off`, `away`, or "" for a tile that answers nothing yet — the opening frame, before any
-## street has been stood on.
+## tile has been stood on.
+##
+## `away` is calm ground — a destination rather than a route choice, so a won day spent in a park
+## does not count as leaving the corridor (see `_flush_corridor`). Everything else answers `on` or
+## `off` straight from `_corridor.depth`, which M69 gives a real answer at every cell rather than
+## only on a named street: a junction or an alley the tree actually uses now reads `on` directly,
+## where it used to hold whatever state she was already in for lack of a segment to ask.
 func _corridor_state(here: Vector2) -> String:
 	var tile := _map.world_to_tile(here)
-	var segment := StreetNetwork.segment_containing(tile)
-	if segment:
-		return "on" if _tree.is_on_the_tree(segment.key()) else "off"
-	# A junction, or the doorstep notch: street ground that belongs to no segment. Hold whatever
-	# she was doing rather than inventing a state for four tiles of tarmac.
-	if _map.is_street(tile):
-		return _path_state
-	return "away"
+	if Tile.is_calm(_map.tile_at(tile)):
+		return "away"
+	return "on" if _corridor.depth(tile) == 0 else "off"
 
 ## Crossing into the road, and arriving on or leaving calm ground. Both are transitions, so
 ## both are one line each rather than a state the reader has to infer from a gap.

@@ -965,26 +965,44 @@ func _test_scheduler_respects_placement_and_caps(t) -> void:
 ## offers and which one is taken is decided by where she walks — so it is asserted where it is
 ## decided: `tests/test_event_manager.gd`, against a real `EventManager` with the plans streamed in.
 func _test_one_shots_fire_once_per_run(t) -> void:
-	var map := _map()
-	var consumed: Array[String] = []
-	var seen := {}
-	for day in range(1, 15):
-		var groups := {}
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
-			if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
-				continue
-			t.check(int(seen.get(plan.def.id, day)) == day,
-					"one-shot '%s' is planned on one day of a run" % plan.def.id)
-			seen[plan.def.id] = day
-			groups[plan.def.id] = int(groups.get(plan.def.id, 0)) + 1
-			t.check(plan.set_piece_group != "",
-					"one-shot '%s' is planned as one of a group" % plan.def.id)
-		for id: String in groups:
-			# Two, because two distinct routes to one area share no street by construction, so no
-			# single site can ever cover both. One offer means the covering set collapsed and the
-			# fallback fired, which is legal and is not what a normal day looks like.
-			t.check(groups[id] >= 2,
-					"day %d offers '%s' in at least two places (%d)" % [day, id, groups[id]])
+	var narrow := 0
+	var groups_seen := 0
+	# One run has exactly one one-shot to count, so the "how often does the covering set narrow to
+	# one place" question below needs more than the file's shared seed to answer — several maps
+	# rather than the one every other test here deliberately shares.
+	for seed_value in [4242, 5150, 6060, 7070, 8080, 9090]:
+		var map := CityGenerator.generate(seed_value)
+		var consumed: Array[String] = []
+		var seen := {}
+		var rng_for := func(day: int) -> RandomNumberGenerator:
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("%d:%d" % [seed_value, day])
+			return rng
+		for day in range(1, 15):
+			var groups := {}
+			for plan in EventScheduler.build_day(day, rng_for.call(day), map, consumed):
+				if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
+					continue
+				t.check(int(seen.get(plan.def.id, day)) == day,
+						"one-shot '%s' is planned on one day of a run" % plan.def.id)
+				seen[plan.def.id] = day
+				groups[plan.def.id] = int(groups.get(plan.def.id, 0)) + 1
+				t.check(plan.set_piece_group != "",
+						"one-shot '%s' is planned as one of a group" % plan.def.id)
+			for id: String in groups:
+				groups_seen += 1
+				# Usually two: two distinct routes to one area share no *cell* by construction, so
+				# a site placed on the exact cell one route stands on is never on the other. Since
+				# M69 a site is still a whole street, though, and it is possible — rare, not ruled
+				# out — for the two routes to use different cells of the very same street, which
+				# one site then covers after all. That is the covering set collapsing to the
+				# fallback the comment above used to say could not happen; it is legal, just not
+				# the common case.
+				if groups[id] < 2:
+					narrow += 1
+	t.check(groups_seen > 0, "some run had a one-shot to check (%d)" % groups_seen)
+	t.check(float(narrow) / maxf(1.0, float(groups_seen)) < 0.4,
+			"%d of %d one-shot runs offered only one place" % [narrow, groups_seen])
 
 ## The rule that keeps a day winnable: however bad it gets, one calm zone stays usable.
 ##

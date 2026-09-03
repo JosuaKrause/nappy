@@ -160,7 +160,8 @@ func _test_a_park_stays_reachable_every_day(t) -> void:
 		for plan in planned:
 			if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
 				blockers.append(plan)
-		t.check(EventScheduler._park_is_reachable(_map, blockers),
+		var grid := ReachabilityGrid.build(_map)
+		t.check(EventScheduler._park_is_reachable(_map, grid, blockers),
 				"day %d leaves a walkable route from home to a park" % day)
 
 	GameState.scars = saved

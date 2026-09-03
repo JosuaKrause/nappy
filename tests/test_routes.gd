@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_a_calm_zone_takes_its_streets_out_of_the_lattice(t)
 	_test_a_tile_knows_which_street_it_is_on(t)
 	_test_an_open_city_can_reach_everywhere_calm(t)
+	_test_access_segments_are_never_absent(t)
 	_test_no_single_street_cuts_off_all_the_calm(t)
 	_test_a_doorway_is_not_a_route(t)
 	_test_every_planned_day_keeps_the_invariant(t)
@@ -34,9 +35,12 @@ func run(t) -> void:
 	_test_closures_are_deterministic(t)
 	_test_closure_counts_follow_the_act(t)
 	_test_a_closed_street_is_out_of_the_network(t)
+	_test_most_of_a_closed_streets_ground_stays_closed(t)
+	_test_a_mid_segment_opening_stays_reachable_from_its_own_side(t)
 	_test_calm_ground_is_still_walkable_to(t)
 	_test_closures_land_where_a_wall_belongs(t)
 	_test_a_wall_off_the_corridor_never_fails_the_invariant(t)
+	_test_a_closure_never_lands_on_a_calm_areas_own_access(t)
 
 # ------------------------------------------------------------------ lattice ---
 
@@ -179,6 +183,23 @@ func _test_an_open_city_can_reach_everywhere_calm(t) -> void:
 	t.check(float(with_a_choice) / float(total) >= 0.8,
 			"and most of them still have a choice of ways in (%d of %d)" % [with_a_choice, total])
 
+## `ClosurePlanner._access_segments` walks out from an area's tiles until it reaches a real
+## street, and a four-block apartment complex's archway can cross the geometric footprint of the
+## complex's own absorbed street on the way — a tile that is walkable and answers to a segment key,
+## but is not a street any lattice search may use. Stopping there rather than walking through it is
+## exactly the bug the milestone's own `_access_streets` had, arrived at by a different route: the
+## found "street" is absent, `route_count` never reaches it, and the area reads as unreachable.
+func _test_access_segments_are_never_absent(t) -> void:
+	var checked := 0
+	for map in _maps:
+		for area in ClosurePlanner.calm_areas(map):
+			for segment in area.access:
+				checked += 1
+				t.check(map.has_street(segment.key()),
+						"seed %d: %s's access street %s is a real street, not an absent one"
+						% [map.seed_used, area.block, segment.key()])
+	t.check(checked > 0, "some calm area had access streets to check (%d)" % checked)
+
 ## Menger, the other way round, asked about the **city** rather than about one area: no single
 ## street may cut off *all* the calm. This is the winnability property the old edge-disjoint rule
 ## was standing in for, stated directly — by actually closing each street in turn, the same brute
@@ -275,8 +296,8 @@ func _test_the_home_street_is_never_closed(t) -> void:
 func _test_closures_are_deterministic(t) -> void:
 	for map in _maps:
 		for day in [1, 7, 14]:
-			var first := _plan(map, day)
-			var second := _plan(map, day)
+			var first := _plan_uncached(map, day)
+			var second := _plan_uncached(map, day)
 			t.check(first.size() == second.size(),
 					"seed %d day %d shuts the same number of streets twice"
 					% [map.seed_used, day])
@@ -300,21 +321,113 @@ func _test_closure_counts_follow_the_act(t) -> void:
 						"seed %d day %d: %s cannot happen yet"
 						% [map.seed_used, day, RoadClosure.display_name(closure.kind)])
 
-## The whole street comes out, not just the two ends. Anything choosing somewhere to put
-## something asks `is_open`, and a street that is half closed would let it put an event in
-## the middle of a place nobody can reach.
+## Both mouths always come out, and nothing a closure marks closed ever stops being walkable —
+## `close_streets` narrows *how much* of a street is unreachable, never whether the ground itself
+## is still there.
 func _test_a_closed_street_is_out_of_the_network(t) -> void:
 	var map := _maps[0]
 	var closures := _plan(map, 12)
 	map.close_streets(closures)
 	t.check(not closures.is_empty(), "act IV shuts something")
 	for closure in closures:
+		for at_a in [true, false]:
+			for tile in map.rect_tiles(closure.segment.mouth_rect(at_a)):
+				t.check(map.is_closed(tile), "the mouth tile %s of a closed street is closed" % tile)
 		for tile in closure.tiles(map):
-			t.check(map.is_closed(tile), "tile %s of a closed street is closed" % tile)
-			t.check(not map.is_open(tile), "and is not open, though it is still walkable")
+			if map.is_closed(tile):
+				t.check(not map.is_open(tile), "and is not open, though it is still walkable")
 			t.check(map.is_walkable(tile),
 					"a closure never moves a walkable tile — it only shuts it")
 	map.closed_tiles.clear()
+
+## How much of a closed street's own ground stays genuinely unreachable, on one (map, day) rather
+## than the sweep below: a single street can go either way, since which of its cells sit beside an
+## alley or a courtyard archway is a fact about that one street, not about closures in general —
+## see `_test_a_mid_segment_opening_stays_reachable_from_its_own_side` for the bypass itself. Only
+## the sweep's aggregate is the thing this milestone promises: most of a closed street's ground
+## stays closed, and a bypass is the exception it exists to let through, not the rule.
+##
+## Measured over every seed and every day this suite already plans (the loop below costs nothing
+## `_plan`'s cache has not already paid for): 168 (map, day) pairs, aggregate ratio 0.81 — a floor
+## with room under it, not the number itself, because the aggregate moves with which candidates
+## `RouteTree.for_day` leaves off the tree and is not the milestone's own promise.
+func _test_most_of_a_closed_streets_ground_stays_closed(t) -> void:
+	var sum_closed := 0
+	var sum_total := 0
+	for map in _maps:
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			var closures := _plan(map, day)
+			map.close_streets(closures)
+			for closure in closures:
+				for tile in closure.tiles(map):
+					sum_total += 1
+					if map.is_closed(tile):
+						sum_closed += 1
+			map.closed_tiles.clear()
+	t.check(float(sum_closed) / maxf(1.0, float(sum_total)) > 0.75,
+			"most of a closed street's own ground is still closed, aggregated (%d of %d tiles)"
+			% [sum_closed, sum_total])
+
+## The bypass itself, found on real generated seeds rather than engineered by hand — the full
+## `StreetNetwork.Segment` lattice a `RoadClosure` needs only exists at the generated city's own
+## scale. Independent of `close_streets` and of home: given a segment whose side opens onto
+## walkable ground partway along it (an alley mouth or a courtyard archway), barricading both of
+## that segment's mouths still leaves the street tile beside the opening in the same component as
+## the opening — the exact fact `CityMap.close_streets` relies on to leave that tile out of
+## `closed_tiles`.
+## Capped per seed rather than exhaustive: a park's every bordering street qualifies as an
+## opening, so an uncapped scan floods dozens of times per city for a fact the first handful
+## already establish.
+const _OPENINGS_PER_SEED := 6
+
+func _test_a_mid_segment_opening_stays_reachable_from_its_own_side(t) -> void:
+	var openings := 0
+	for map in _maps:
+		var grid := ReachabilityGrid.build(map)
+		var found_this_seed := 0
+		for segment in StreetNetwork.segments():
+			if found_this_seed >= _OPENINGS_PER_SEED:
+				break
+			if not map.has_street(segment.key()):
+				continue
+			var found := _mid_segment_opening(map, segment)
+			if found.is_empty():
+				continue
+			openings += 1
+			found_this_seed += 1
+			var opening: Vector2i = found[0]
+			var street_side: Vector2i = found[1]
+			var barrier := {}
+			for at_a in [true, false]:
+				for tile in map.rect_tiles(segment.mouth_rect(at_a)):
+					barrier[tile] = true
+			var reached := grid.flood([opening], barrier)
+			t.check(grid.reaches(street_side, barrier, reached),
+					"seed %d: %s stays reachable from the opening at %s beside it, though both "
+					% [map.seed_used, street_side, opening]
+					+ "mouths of %s are barricaded" % segment.key())
+	t.check(openings > 0,
+			"some generated street has a mid-segment opening to test (%d found)" % openings)
+
+## A tile strictly between `segment`'s two mouths whose side opens onto walkable ground one step
+## into the block — normally a building frontage, so a walkable tile there is an alley mouth or a
+## courtyard archway landing mid-street. Returns `[the opening, the street tile beside it]`, or an
+## empty array where the street has no such side.
+func _mid_segment_opening(map: CityMap, segment: StreetNetwork.Segment) -> Array:
+	var rect := segment.tile_rect()
+	if segment.horizontal:
+		for x in range(rect.position.x + 1, rect.end.x - 1):
+			if map.is_walkable(Vector2i(x, rect.position.y - 1)):
+				return [Vector2i(x, rect.position.y - 1), Vector2i(x, rect.position.y)]
+			if map.is_walkable(Vector2i(x, rect.end.y)):
+				return [Vector2i(x, rect.end.y), Vector2i(x, rect.end.y - 1)]
+	else:
+		for y in range(rect.position.y + 1, rect.end.y - 1):
+			if map.is_walkable(Vector2i(rect.position.x - 1, y)):
+				return [Vector2i(rect.position.x - 1, y), Vector2i(rect.position.x, y)]
+			if map.is_walkable(Vector2i(rect.end.x, y)):
+				return [Vector2i(rect.end.x, y), Vector2i(rect.end.x - 1, y)]
+	return []
 
 ## The tile-level version of the promise, which is what the player actually experiences:
 ## with today's streets shut, walking from the doorstep still reaches calm ground.
@@ -396,6 +509,25 @@ func _test_closures_land_where_a_wall_belongs(t) -> void:
 	t.check(gap_share < 0.7, "and most of the rim is still ordinary ground (%.0f%% in a gap)"
 			% (gap_share * 100.0))
 
+## **The payoff rule.** A closure never lands on a calm area's own access street: never beside a
+## park, since a barrier there closes nothing the ground itself does not already leave open on
+## every other side; never on a courtyard's one archway street, since that is the one street
+## closing it seals the courtyard for real rather than merely making the walk longer.
+func _test_a_closure_never_lands_on_a_calm_areas_own_access(t) -> void:
+	var checked := 0
+	for map in _maps:
+		var access := {}
+		for area in ClosurePlanner.calm_areas(map):
+			for segment in area.access:
+				access[segment.key()] = true
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			for closure in _plan(map, day):
+				checked += 1
+				t.check(not access.has(closure.segment.key()),
+						"seed %d day %d: closure at %s is not a calm area's own access street"
+						% [map.seed_used, day, closure.segment.key()])
+	t.check(checked > 0, "some closures were planned to check (%d)" % checked)
+
 ## **A closure never cuts the corridor, so the day-level invariant should never have to refuse
 ## one.** `ClosurePlanner` still checks each candidate and still skips a failure, because two
 ## independent mechanisms is what M50 kept deliberately rather than trusting the placement alone —
@@ -404,24 +536,27 @@ func _test_closures_land_where_a_wall_belongs(t) -> void:
 ## runtime: over a run's worth of days on every seed, every candidate the planner reaches is legal.
 ##
 ## Every off-corridor street is tried rather than only the handful a day happens to reach, which
-## is what makes the planner's `else` branch provably dead rather than merely unvisited. Four
-## seeds and not twelve: it is a max flow per candidate per day, and the property is about the
-## construction rather than about a layout.
+## is what makes the planner's `else` branch provably dead rather than merely unvisited. Two seeds
+## and three days rather than twelve and fourteen: a grid flood is a real BFS over thousands of
+## nodes rather than a max flow over a couple of hundred, so trying every street of every day of
+## every seed costs minutes rather than seconds. The property is about the construction rather
+## than about a layout, so a sample of days still exercises it.
 func _test_a_wall_off_the_corridor_never_fails_the_invariant(t) -> void:
-	for i in 4:
+	for i in 2:
 		var map := _maps[i]
 		var home := ClosurePlanner.home_street(map)
-		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		var grid := ReachabilityGrid.build(map)
+		for day in [1, 7, 14]:
 			var tree := _todays_tree(map, day)
 			var areas := ClosurePlanner.calm_areas(map)
-			var closed := map.blocked_segments()
+			var closed := {}
 			var refused := 0
 			for segment in StreetNetwork.segments():
 				var key := segment.key()
 				if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
 					continue
 				closed[key] = true
-				if not _enough_calm_is_reachable(home, areas, closed):
+				if not _enough_calm_is_reachable(map, grid, areas, closed):
 					refused += 1
 				closed.erase(key)
 			t.check(refused == 0,
@@ -429,12 +564,29 @@ func _test_a_wall_off_the_corridor_never_fails_the_invariant(t) -> void:
 					% [map.seed_used, day, refused])
 
 ## `ClosurePlanner._invariant_holds`, restated here rather than exposed from it: a test that asks
-## the code under test what the right answer is has not checked anything.
-func _enough_calm_is_reachable(home: StreetNetwork.Segment,
+## the code under test what the right answer is has not checked anything. `closed` is the
+## candidate street on its own — the streets a calm zone absorbed need no barrier of their own,
+## since their ground is already reflected as calm in the grid `map` was built into.
+func _enough_calm_is_reachable(map: CityMap, grid: ReachabilityGrid,
 		areas: Array[ClosurePlanner.CalmArea], closed: Dictionary) -> bool:
+	var blocked := {}
+	for key: Vector3i in closed:
+		var segment := StreetNetwork.by_key(key)
+		if not segment:
+			continue
+		for at_a in [true, false]:
+			for tile in map.rect_tiles(segment.mouth_rect(at_a)):
+				blocked[tile] = true
+	var home_tile := map.world_to_tile(map.doorstep_world_position())
+	var reached := grid.flood([home_tile], blocked)
 	var reachable := 0
 	for area in areas:
-		if StreetNetwork.route_count(home, area.access, closed, 1) >= 1:
+		var found := false
+		for tile in map.rect_tiles(area.rect):
+			if Tile.is_calm(map.tile_at(tile)) and grid.reaches(tile, blocked, reached):
+				found = true
+				break
+		if found:
 			reachable += 1
 			if reachable >= Tuning.MIN_CALM_AREAS_REACHABLE:
 				return true
@@ -444,20 +596,47 @@ func _enough_calm_is_reachable(home: StreetNetwork.Segment,
 
 ## A day, planned the way the game plans it: the city becomes today's city first, because
 ## which blocks are calm is what the invariant is stated over.
+##
+## **Memoized per (seed, day).** `ClosurePlanner.plan_day` now builds a `ReachabilityGrid` and
+## floods it rather than asking a couple-hundred-node max flow, and a dozen functions in this file
+## each plan every day of every seed independently — recomputing the same plan eight times over
+## turned this suite from seconds into minutes without checking anything an eighth time did not
+## already check. `_test_closures_are_deterministic` is the one caller that has to see two genuinely
+## independent calls and goes round this cache on purpose.
+var _plan_cache := {}
+
 func _plan(map: CityMap, day: int) -> Array[RoadClosure]:
+	_repaint_for(map, day)
+	var key := "%d:%d" % [map.seed_used, day]
+	if not _plan_cache.has(key):
+		_plan_cache[key] = _plan_uncached(map, day)
+	return _plan_cache[key]
+
+func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
 	map.repaint(state)
+
+## The real thing, with no memory of having been asked before — what `_test_closures_are_
+## deterministic` calls twice to find out whether `ClosurePlanner.plan_day` itself repeats itself,
+## rather than whether a cache does.
+func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:
+	_repaint_for(map, day)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
 	return ClosurePlanner.plan_day(map, day, rng)
 
 ## Today's city, and then today's corridor grown on it — the order `City.start_day` uses.
+## Memoized for the same reason `_plan` is: several functions below ask for the same seed's same
+## day.
+var _tree_cache := {}
+
 func _todays_tree(map: CityMap, day: int) -> RouteTree:
-	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
-	map.repaint(state)
-	return RouteTree.for_day(map, day)
+	_repaint_for(map, day)
+	var key := "%d:%d" % [map.seed_used, day]
+	if not _tree_cache.has(key):
+		_tree_cache[key] = RouteTree.for_day(map, day)
+	return _tree_cache[key]
 
 func _closed_set(closures: Array[RoadClosure]) -> Dictionary:
 	var closed := {}

@@ -301,8 +301,9 @@ does the drawing.
 
 ### The corridor
 
-The picture also carries the day's **corridor** — `RouteTree`, the branch from the doorstep to every calm area still worth reaching —
-as one **translucent violet** line down the middle of every street on the tree.
+The picture also carries the day's **corridor** — `RouteTree`, the branch from the doorstep to
+every calm area still worth reaching — as a **translucent violet** fill over every cell the tree
+touches.
 
 It is the one mark in the picture that is a **plan rather than a fact about the ground**, which is
 why `render` takes it as an argument and draws nothing when there is none: a picture that invented
@@ -312,14 +313,16 @@ grows one when the caller has none to hand, and that is safe rather than conveni
 drawn is the same tree anything else asking for today's would get, and growing it touches no
 gameplay stream.
 
-Each stroke runs from the middle of one junction to the middle of the next rather than over the
-street alone, so consecutive streets meet and a turn crosses: the picture is a **path** rather
-than a set of dashes, which is the difference between reading a route and inferring one.
+**Cells rather than a stroke down the middle of every street.** `RouteTree` grows on
+`ReachabilityGrid` cells, so a strand can cut a corner through a park or take an alley — a tree
+made of whole streets could only ever be drawn as one, and drawing cells instead is what lets the
+picture show exactly the ground a branch actually uses rather than the street it happens to run
+beside.
 
-**Every street on the tree is drawn the same, and the stroke is mixed into the ground rather than
-laid over it.** Drawing a bundled street solid white and two tiles wide puts a third of the map
-under a colour that hides everything beneath it, and makes the shared trunk read as the subject of
-the picture rather than as a property of it. Transparency is a **mix** rather than an alpha, because
+**Every cell on the tree is drawn the same, and the fill is mixed into the ground rather than laid
+over it.** Drawing a bundled street solid white and two tiles wide puts a third of the map under a
+colour that hides everything beneath it, and makes the shared trunk read as the subject of the
+picture rather than as a property of it. Transparency is a **mix** rather than an alpha, because
 the image is `FORMAT_RGB8` — chosen so the file previews in a directory listing — and a colour with
 an alpha component written into one is simply stored opaque.
 

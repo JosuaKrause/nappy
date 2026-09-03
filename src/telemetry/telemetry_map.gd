@@ -208,17 +208,18 @@ static func _mark_the_spine(image: Image, map: CityMap) -> void:
 		_fill_tiles(image, Rect2i(Vector2i(corridor + offset, 0), Vector2i(1, map.size.y)),
 				SPINE_MARK)
 
-## The day's corridor, as the path it is: one translucent line down the middle of every street on
-## the tree.
+## The day's corridor, as the ground it actually is: every cell the tree touches, translucent.
 ##
 ## A **placement** is exactly what a trace in words cannot show, and *is anything guiding her* is
 ## the question the corridor exists to answer — so it is answered here or nowhere.
 ##
-## Each stroke runs from the middle of one junction to the middle of the next rather than over the
-## street alone, so consecutive streets meet and a turn crosses — the picture is a **path** rather
-## than a set of dashes, which is the difference between reading a route and inferring one.
+## **Cells rather than a stroke down the middle of every street, since M69.** A tree made of whole
+## streets could only ever be drawn as one; a tree grown on `ReachabilityGrid` cells can cut a
+## corner through a park or take an alley, and the picture has to be able to show exactly that
+## ground rather than the two-tile-wide street it happens to run beside. `RouteTree.cells()` is the
+## whole of the tree's footprint, so this is every one of them filled at cell size.
 ##
-## **Every street on the tree is drawn the same, and the bundles are not picked out.** *(2026-08-31:
+## **Every cell on the tree is drawn the same, and the bundles are not picked out.** *(2026-08-31:
 ## "don't draw the bundles white — don't make a distinction between path and bundle".)* The first
 ## version drew a bundled street solid white and two tiles wide, which was a third of the map under
 ## a colour that hides everything beneath it, and it made the shared trunk read as the subject of
@@ -229,20 +230,9 @@ static func _mark_the_spine(image: Image, map: CityMap) -> void:
 static func _mark_the_corridor(image: Image, tree: RouteTree) -> void:
 	if not tree:
 		return
-	for key in tree.streets():
-		var segment := StreetNetwork.by_key(key)
-		if not segment:
-			continue
-		_blend_tiles(image, _corridor_stroke(segment), CORRIDOR_MARK, CORRIDOR_ALPHA)
-
-## One street's stroke, junction centre to junction centre.
-static func _corridor_stroke(segment: StreetNetwork.Segment) -> Rect2i:
-	var across := Tuning.STREET_WIDTH / 2
-	var from := segment.a * CityMap.period()
-	var length := CityMap.period() + Tuning.STREET_WIDTH
-	if segment.horizontal:
-		return Rect2i(Vector2i(from.x, from.y + across), Vector2i(length, 1))
-	return Rect2i(Vector2i(from.x + across, from.y), Vector2i(1, length))
+	for cell in tree.cells():
+		var rect := Rect2i(cell * ReachabilityGrid.CELL, Vector2i.ONE * ReachabilityGrid.CELL)
+		_blend_tiles(image, rect, CORRIDOR_MARK, CORRIDOR_ALPHA)
 
 ## Everything the day sited, each carrying what it is: **colour is the role, shape is the effect,
 ## and a white pip is whether she actually met it.**

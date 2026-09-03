@@ -2,7 +2,8 @@ class_name RouteTree
 extends RefCounted
 ## The day's corridor: one branch from the doorstep to every calm area still worth reaching.
 ##
-## The design is docs/CITY.md, "Diversions — the design" and "How the corridor is built".
+## The design is docs/CITY.md, "Diversions — the design" and "How the corridor is built", and
+## docs/TODO.md, M69, "The day's route tree moves onto the grid too".
 ##
 ## **The city permits routes to calm and protects them from becoming impossible. It never
 ## suggests one.** This is the structure that lets it suggest one: a *wall* is a street just
@@ -22,7 +23,7 @@ extends RefCounted
 ## what is left where the branches have come together:
 ##
 ## - **Two probes at each calm area.** The first is a loop-erased random walk toward home; the
-##   second is the shortest way left once the first one's streets are spent.
+##   second is the shortest way left once the first one's ground is spent.
 ## - **A path carries the colour of its area**, and both probes from one area carry the same one.
 ## - **Same colours may not merge**, so where a second route exists at all the area is reached two
 ##   genuinely distinct ways.
@@ -41,35 +42,40 @@ extends RefCounted
 ## is a legitimate area. What must still hold absolutely is only that *some* calm is reachable,
 ## which is `EventScheduler._ensure_the_city_is_still_walkable`'s job and not this class's.
 ##
-## **A step is a segment on the junction graph, not a tile.** A corridor is a set of segment keys
-## everywhere else in this design, and a tile-walked path would produce something no other part
-## of it could consume.
+## **A step is a `ReachabilityGrid` node, one per 4-connected component of a cell — not a street
+## and not a tile.** M69 moved the growth here from the junction graph: a tree of whole streets
+## puts every park crossing and every alley off the tree, which would make *"closed everywhere off
+## the path"* (M64) seal the shortcuts the city is built around. Growing on the grid instead lets a
+## branch cut through a park corner or take an alley exactly where the ground allows it, and the
+## picture in `TelemetryMap` draws cells rather than a line down the middle of every street on the
+## tree.
 ##
-## Nothing here draws, emits or decides anything the player can feel yet — placement by role is
-## the milestone's step 2. This is the structure those decisions are made against, and the
-## picture in `TelemetryMap` is what says whether it points anywhere.
-
+## **What still asks about a street asks in segment keys, translated from the cells.** A closure is
+## still a whole `StreetNetwork.Segment` — see `StreetNetwork`'s own docstring on why — so
+## `streets()`, `rim()`, `gaps()` and `is_on_the_tree()` all answer in `Vector3i` segment keys, each
+## one derived from which cells are on the tree rather than tracked directly. `cells()` is the new
+## one, for the picture and for `Corridor`'s tile-level questions.
 
 ## One calm area's way home: the branch that reaches it, as one or two routes.
 ##
-## A route is an ordered `Array` of segment keys running **from the area to the doorstep**, which
-## is the direction it was grown in and the direction the shared stretch is at the end of. The
-## inner arrays are deliberately untyped `Array`s of `Vector3i` rather than `Array[Vector3i]`:
+## A route is an ordered `Array` of cell coordinates running **from the area to the doorstep**,
+## which is the direction it was grown in and the direction the shared stretch is at the end of.
+## The inner arrays are deliberately untyped `Array`s of `Vector2i` rather than `Array[Vector2i]`:
 ## passing an untyped array into an `Array[T]` parameter retains its arguments and leaks at
 ## shutdown, so the element type is declared at the call sites that need one instead.
 class Branch extends RefCounted:
 	## The block that anchors the calm area, matching `CityMap.calm_blocks`.
 	var area: Vector2i
 	## One or two routes. The first is the random walk, the second — where the map allowed one —
-	## the shortest way that shares none of its streets.
+	## the shortest way that shares none of its ground.
 	var routes: Array[Array] = []
 
-	## Every street on either route, as a set of keys.
+	## Every cell on either route, as a set.
 	func on_it() -> Dictionary:
 		var found := {}
 		for route in routes:
-			for key: Vector3i in route:
-				found[key] = true
+			for cell: Vector2i in route:
+				found[cell] = true
 		return found
 
 	func has_a_choice() -> bool:
@@ -80,29 +86,41 @@ class Branch extends RefCounted:
 ## the sharing is recorded in.
 var branches: Array[Branch] = []
 
-## Segment key -> the set of colours carried by that street.
+## The grid the tree was grown on. Kept rather than rebuilt, because `Corridor` and the telemetry
+## map both need to translate a cell or a tile against the same one the tree used.
+var grid: ReachabilityGrid
+
+## Node id -> the set of colours carried by that cell.
 var _colours := {}
-## Junction node -> `[the next node toward the doorstep, the street between them]`.
+## Node id -> the next node toward the doorstep.
 ##
-## Set the first time a junction enters the tree and never overwritten, which is what keeps this
-## a tree rather than a mesh: a later probe that passes through an existing junction without
-## merging leaves the way home it already had.
+## Set the first time a node enters the tree and never overwritten, which is what keeps this a
+## tree rather than a mesh: a later probe that passes through an existing node without merging
+## leaves the way home it already had.
 var _parent := {}
-## Junction node -> the colours carried by the chain of parents from it to the doorstep. This is
-## the whole of the same-colour rule: a probe may merge at a junction whose tail does not already
-## carry its colour, and may not at one that does. See `_resettle_the_tails`.
+## Node id -> the colours carried by the chain of parents from it to the doorstep. This is the
+## whole of the same-colour rule: a probe may merge at a node whose tail does not already carry
+## its colour, and may not at one that does. See `_resettle_the_tails`.
 var _tail := {}
-## Junction node -> the junctions whose way home runs through it. The inverse of `_parent`, kept
-## rather than searched because a colour reaches a junction's whole subtree.
+## Node id -> the nodes whose way home runs through it. The inverse of `_parent`, kept rather than
+## searched because a colour reaches a node's whole subtree.
 var _children := {}
-## The two junctions of the home street, which is where every branch ends. The home street itself
-## is not on the tree — a door is not a route, which is the same exemption both ends of the
-## journey have.
+## Every node of the home street's own tile rect, which is where every branch ends. The home
+## street itself is not on the tree — a door is not a route, which is the same exemption both ends
+## of the journey have.
 var _home := {}
-## Junction node -> `[[neighbour node, segment key], ...]`, closed and absent streets already
-## dropped. Built once per tree: a `Dictionary` keyed by `Vector3i` hashes a Variant on every
-## lookup, and a random walk asks thousands of times.
-var _links: Array = []
+## The segments this tree's own lattice does not have — `map.blocked_segments()`, i.e. absent
+## segments only, since the tree is grown before today's closures are chosen. Kept for the one
+## question still asked in segment terms without a cell to derive it from: whether a candidate
+## street for `gaps()` is a real street at all.
+var _absent := {}
+
+## Segment key -> `true`, lazily derived from `_colours` the first time anything asks a
+## segment-level question. A `ReachabilityGrid` node is a handful of tiles and a tree touches many
+## of them, so this is worth computing once rather than once per candidate `_shuffled_candidates`
+## or `CityGenerator` asks about.
+var _street_keys := {}
+var _street_keys_built := false
 
 ## When a random walk has taken this many steps without arriving, it is replaced by the shortest
 ## way home from where it started.
@@ -116,6 +134,8 @@ const _WALK_STEP_LIMIT := 20000
 ## about fifteen; the bound is here so that a city three times the size degrades into a worse
 ## answer rather than into a search nobody is waiting for.
 const _EXACT_COVER_ROUTES := 32
+
+const _NEIGHBOUR_OFFSETS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]
 
 # ---------------------------------------------------------------- construction ---
 
@@ -161,39 +181,38 @@ static func for_the_run(map: CityMap) -> RouteTree:
 static func for_day(map: CityMap, day: int) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
-	return grow(ClosurePlanner.home_street(map), ClosurePlanner.calm_areas(map),
-			map.blocked_segments(), rng)
+	var grid := ReachabilityGrid.build(map)
+	return grow(map, ClosurePlanner.home_street(map), ClosurePlanner.calm_areas(map),
+			map.blocked_segments(), grid, rng)
 
-## Grows the tree. `closed` is the merged set `CityMap.blocked_segments()` returns — the streets
-## a calm zone absorbed as well as the ones shut this morning, because neither is there to be
-## walked down.
-static func grow(home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea],
-		closed: Dictionary, rng: RandomNumberGenerator) -> RouteTree:
+## Grows the tree. `closed` is the merged set `CityMap.blocked_segments()` returns — the streets a
+## calm zone absorbed. Their ground is already reflected in `grid` as walkable calm tiles, so it
+## costs the growth nothing extra; it is kept here only for `gaps()`'s "is this candidate a real
+## street" question, which a segment key alone cannot answer.
+static func grow(map: CityMap, home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea],
+		closed: Dictionary, grid: ReachabilityGrid, rng: RandomNumberGenerator) -> RouteTree:
 	var tree := RouteTree.new()
 	if not home or areas.is_empty():
 		return tree
-	tree._build_links(closed)
-	for junction in [home.a, home.b]:
-		tree._home[StreetNetwork.node_of(junction)] = true
+	tree.grid = grid
+	tree._absent = closed
+	for tile in _rect_tiles(home.tile_rect()):
+		var node := grid.node_at(tile)
+		if node >= 0:
+			tree._home[node] = true
 	# The order decides which area's probe gets home first and therefore which one the trunk
 	# belongs to, so it is rolled rather than left as `calm_blocks`' generation order — otherwise
 	# the same area anchors the tree on every day of the run.
 	for area in tree._in_a_rolled_order(areas, rng):
-		tree._grow_a_branch(area, rng)
+		tree._grow_a_branch(map, area, rng)
 	return tree
 
-## The junction graph with today's shut and absent streets already gone.
-func _build_links(closed: Dictionary) -> void:
-	_links.resize(StreetNetwork.node_total())
-	for node in StreetNetwork.node_total():
-		_links[node] = []
-	for segment in StreetNetwork.segments():
-		if closed.has(segment.key()):
-			continue
-		var u := StreetNetwork.node_of(segment.a)
-		var v := StreetNetwork.node_of(segment.b)
-		(_links[u] as Array).append([v, segment.key()])
-		(_links[v] as Array).append([u, segment.key()])
+static func _rect_tiles(rect: Rect2i) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			found.append(Vector2i(x, y))
+	return found
 
 func _in_a_rolled_order(areas: Array[ClosurePlanner.CalmArea],
 		rng: RandomNumberGenerator) -> Array[ClosurePlanner.CalmArea]:
@@ -211,8 +230,8 @@ func _in_a_rolled_order(areas: Array[ClosurePlanner.CalmArea],
 ## the first probe finds no way home at all the area is simply not on the tree today — an area
 ## that cannot be reached is not a destination, and the walkability guarantee is stated over
 ## *some* calm rather than over this one.
-func _grow_a_branch(area: ClosurePlanner.CalmArea, rng: RandomNumberGenerator) -> void:
-	var sources := _access_junctions(area)
+func _grow_a_branch(map: CityMap, area: ClosurePlanner.CalmArea, rng: RandomNumberGenerator) -> void:
+	var sources := _access_nodes(map, area)
 	if sources.is_empty():
 		return
 	var colour := branches.size()
@@ -234,36 +253,32 @@ func _grow_a_branch(area: ClosurePlanner.CalmArea, rng: RandomNumberGenerator) -
 ## A probe that found nothing, or found that the area's way in **is** the doorstep.
 ##
 ## The second is the case worth naming: a calm area next door to the home is arrived at without
-## walking a street, so its route is empty. That is not a corridor — there is nothing to place a
+## walking any ground, so its route is empty. That is not a corridor — there is nothing to place a
 ## wall outside of or a set piece on — and an empty route in the covering set would be a route
 ## nothing can ever hit, which quietly makes the whole day's fan-out unanswerable. Not a branch.
 func _is_no_route(path: Array[int]) -> bool:
 	return path.is_empty() or (path.size() == 1 and _home.has(path[0]))
 
-## The junctions that count as having arrived at a calm area: both ends of every street it opens
-## onto. A street that is shut is not a way in today, which is the same reading `route_count`
-## takes — and it is what makes a courtyard whose one archway is closed drop off the tree.
-func _access_junctions(area: ClosurePlanner.CalmArea) -> Array[int]:
-	var found: Array[int] = []
-	var seen := {}
-	for segment in area.access:
-		if not _is_a_real_street(segment):
+## The nodes that count as having arrived at a calm area: every node that borders the area's own
+## calm ground from outside it. Found by walking the area's own tiles rather than by reasoning
+## about the lot — a park's every frontage tile is a way in and a courtyard's is the one tile its
+## archway lands on, and neither needs a special case here because the tiles already say so.
+func _access_nodes(map: CityMap, area: ClosurePlanner.CalmArea) -> Array[int]:
+	var found := {}
+	for tile in _rect_tiles(area.rect):
+		if not Tile.is_calm(map.tile_at(tile)):
 			continue
-		for junction in [segment.a, segment.b]:
-			var node := StreetNetwork.node_of(junction)
-			if seen.has(node):
+		for offset in _NEIGHBOUR_OFFSETS:
+			var neighbour := tile + offset
+			if area.rect.has_point(neighbour):
 				continue
-			seen[node] = true
-			found.append(node)
-	return found
-
-## Whether a street is still in the lattice today, asked of the links rather than of the map: a
-## segment that was closed or absorbed has no link on either of its junctions.
-func _is_a_real_street(segment: StreetNetwork.Segment) -> bool:
-	for link: Array in _links[StreetNetwork.node_of(segment.a)]:
-		if (link[1] as Vector3i) == segment.key():
-			return true
-	return false
+			var node := grid.node_at(neighbour)
+			if node >= 0:
+				found[node] = true
+	var result: Array[int] = []
+	for node in found:
+		result.append(node)
+	return result
 
 # --------------------------------------------------------------------- probes ---
 
@@ -281,7 +296,7 @@ func _walk_home(sources: Array[int], colour: int, rng: RandomNumberGenerator) ->
 	var at := start
 	var steps := 0
 	while not _is_the_end_of_a_probe(at, colour):
-		var ways: Array = _links[at]
+		var ways: Array = grid.neighbours(at)
 		if ways.is_empty():
 			return []
 		steps += 1
@@ -299,16 +314,24 @@ func _walk_home(sources: Array[int], colour: int, rng: RandomNumberGenerator) ->
 			path.append(at)
 	return path
 
-## The second probe: the shortest way home that uses none of this colour's streets.
+## The second probe: the shortest way home that uses none of this colour's ground.
 ##
 ## It stops where the first one does — at the doorstep or at a merge — and the mergeable set is
-## what makes the two routes distinct all the way rather than only up to the trunk: a junction
-## whose tail already carries this colour is not a merge, it is the first route.
+## what makes the two routes distinct all the way rather than only up to the trunk: a node whose
+## tail already carries this colour is not a merge, it is the first route.
+##
+## **A source the first probe's own route already stands on is excluded from starting the second
+## one, and this is not the same fact as the tail check above.** A cell is now the coloured unit —
+## the first probe's start node is *itself* part of route one, since a door is not a route but an
+## access cell is real ground — so seeding every access node as a free root here the way the
+## junction-graph version safely could would let probe two start again from that same cell and
+## share it with probe one. A junction was never part of a route in the old model and had nothing
+## to protect; a cell is, and does.
 func _shortest_home(sources: Array[int], colour: int) -> Array[int]:
 	var previous := {}
 	var queue: Array[int] = []
 	for node in sources:
-		if previous.has(node):
+		if previous.has(node) or _carries(node, colour):
 			continue
 		previous[node] = -1
 		queue.append(node)
@@ -318,9 +341,9 @@ func _shortest_home(sources: Array[int], colour: int) -> Array[int]:
 		head += 1
 		if _is_the_end_of_a_probe(node, colour):
 			return _unwind(previous, node)
-		for link: Array in _links[node]:
-			var next: int = link[0]
-			if previous.has(next) or _carries(link[1] as Vector3i, colour):
+		for edge: Array in grid.neighbours(node):
+			var next: int = edge[0]
+			if previous.has(next) or _carries(next, colour):
 				continue
 			previous[next] = node
 			queue.append(next)
@@ -343,57 +366,55 @@ func _is_the_end_of_a_probe(node: int, colour: int) -> bool:
 		return false
 	return not (_tail[node] as Dictionary).has(colour)
 
-func _carries(key: Vector3i, colour: int) -> bool:
-	return _colours.has(key) and (_colours[key] as Dictionary).has(colour)
+func _carries(node: int, colour: int) -> bool:
+	return _colours.has(node) and (_colours[node] as Dictionary).has(colour)
 
 # --------------------------------------------------------------------- adoption ---
 
-## Puts a probe's path into the tree and returns the whole route it stands for.
+## Puts a probe's path into the tree and returns the whole route it stands for, as a chain of
+## cells.
 ##
 ## The path itself is only the new stretch. Where it ended in a merge, the route continues down
-## the parent chain to the doorstep, and **this colour is added to every street of that chain**:
+## the parent chain to the doorstep, and **this colour is added to every node of that chain**:
 ## that is "the colours add up", and it is also what locks this area's other probe out of the
-## shared stretch, since a junction whose tail now carries the colour is no longer a merge.
+## shared stretch, since a node whose tail now carries the colour is no longer a merge. The home
+## nodes themselves are never coloured and never appear in the returned route — a door is not a
+## route.
 func _adopt(path: Array[int], colour: int) -> Array:
 	for i in range(path.size() - 1):
 		if not _parent.has(path[i]):
-			_parent[path[i]] = [path[i + 1], _street_between(path[i], path[i + 1])]
+			_parent[path[i]] = path[i + 1]
 			var below: Array[int] = _children.get(path[i + 1], [] as Array[int])
 			below.append(path[i])
 			_children[path[i + 1]] = below
 
 	var nodes: Array[int] = path.duplicate()
 	var at: int = nodes[nodes.size() - 1]
-	# Bounded rather than trusted. The chain cannot cycle — a junction's parent is set once, when
-	# it joins, and always points at something already on the way home — but a hang here would be
-	# a suite that prints nothing, so the one impossible case is the one worth bounding.
-	while not _home.has(at) and _parent.has(at) and nodes.size() <= StreetNetwork.node_total():
-		at = (_parent[at] as Array)[0]
+	# Bounded rather than trusted. The chain cannot cycle — a node's parent is set once, when it
+	# joins, and always points at something already on the way home — but a hang here would be a
+	# suite that prints nothing, so the one impossible case is the one worth bounding.
+	while not _home.has(at) and _parent.has(at) and nodes.size() <= grid.node_count():
+		at = _parent[at] as int
 		nodes.append(at)
 
-	var route: Array = []
-	for i in range(nodes.size() - 1):
-		var key := _street_between(nodes[i], nodes[i + 1])
-		route.append(key)
-		var carried: Dictionary = _colours.get(key, {})
+	var route: Array[Vector2i] = []
+	for node in nodes:
+		if _home.has(node):
+			continue
+		var carried: Dictionary = _colours.get(node, {})
 		carried[colour] = true
-		_colours[key] = carried
+		_colours[node] = carried
+		route.append(grid.cell_of(node))
 	_resettle_the_tails()
 	return route
 
-## Recomputes every junction's tail, from the doorstep outwards.
+## Recomputes every node's tail, from the doorstep outwards.
 ##
 ## **A tail is not the stretch that was just walked, it is everything hanging off it**, and this
 ## is the one piece of bookkeeping in the class that has to be transitive: adding a colour to a
-## stretch adds it to the tail of every junction that reaches home *through* that stretch,
-## including whole branches adopted earlier that merged into it further up, and including
-## branches that will hang off it later.
-##
-## Marking only the junctions the probe walked was the first version and it was silently wrong in
-## both directions at once — an area's second probe was allowed to merge at a junction whose way
-## home ran straight back into the streets its first probe had spent, so the two routes shared
-## ground while every explicit check in the construction said they could not. That is the failure
-## the colour rule exists to make impossible, arriving through the one place nothing was looking.
+## node adds it to the tail of every node that reaches home *through* it, including whole branches
+## adopted earlier that merged into it further up, and including branches that will hang off it
+## later.
 ##
 ## Recomputing the lot is O(the tree) a dozen times a day, which is nothing, and it is the version
 ## whose correctness can be read off the definition instead of argued about subtree by subtree.
@@ -407,89 +428,118 @@ func _resettle_the_tails() -> void:
 		var node: int = stack.pop_back()
 		for child: int in _children.get(node, [] as Array[int]):
 			var tail: Dictionary = (_tail[node] as Dictionary).duplicate()
-			for colour: int in (_colours[(_parent[child] as Array)[1] as Vector3i] as Dictionary):
+			for colour: int in (_colours.get(child, {}) as Dictionary):
 				tail[colour] = true
 			_tail[child] = tail
 			stack.append(child)
 
-func _street_between(from: int, to: int) -> Vector3i:
-	for link: Array in _links[from]:
-		if (link[0] as int) == to:
-			return link[1] as Vector3i
-	return Vector3i.ZERO   # unreachable: every step of a path came from a link
-
 # ---------------------------------------------------------------------- asking ---
 
-## Every street on the tree, in the order it was grown.
+## Every cell on the tree, in no particular order — what the dusk map draws.
+func cells() -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for node: int in _colours:
+		found.append(grid.cell_of(node))
+	return found
+
+## Builds `_street_keys` the first time anything asks a segment-level question. A node's cell
+## resolves to a segment exactly when the cell is wholly street — `StreetNetwork.segment_
+## containing` already tells a street tile from a junction or a block-interior one, and a cell
+## never straddles that distinction (docs/TODO.md, "The cell is two tiles square").
+func _ensure_street_keys() -> void:
+	if _street_keys_built:
+		return
+	for node: int in _colours:
+		var segment := StreetNetwork.segment_containing(grid.any_tile_of(node))
+		if segment:
+			_street_keys[segment.key()] = true
+	_street_keys_built = true
+
+## Every street the tree touches, as segment keys — the streets `ClosurePlanner` may not close and
+## `CityGenerator` may not take for a hard blocker. A tree that cuts through a park or an alley
+## simply contributes no key for that stretch, which is correct: there is no street there to
+## protect, only ground.
 func streets() -> Array[Vector3i]:
+	_ensure_street_keys()
 	var found: Array[Vector3i] = []
-	for key: Vector3i in _colours:
+	for key: Vector3i in _street_keys:
 		found.append(key)
 	return found
 
 func is_on_the_tree(key: Vector3i) -> bool:
-	return _colours.has(key)
-
-## How many branches run down a street. One is a branch; two or more is a bundle.
-func colours_on(key: Vector3i) -> int:
-	return (_colours[key] as Dictionary).size() if _colours.has(key) else 0
-
-## *Which* branches run down a street, sorted. `colours_on` answers how many, which is all
-## placement ever needed; this is for the telemetry, which has to be able to say that she left one
-## path and entered another. Two street sets that share no colour are two different routes, and
-## nothing else can tell.
-func branches_on(key: Vector3i) -> Array[int]:
-	var found: Array[int] = []
-	if _colours.has(key):
-		for colour: int in (_colours[key] as Dictionary):
-			found.append(colour)
-	found.sort()
-	return found
-
-## The streets carried by two or more branches — the trunk, and any stretch several ways out of
-## the city share before they separate.
-##
-## A bundle is what makes placement cheap: it narrows *how many places* a thing has to be in to
-## be met. It never narrows it to one, and anything written as "the street she must cross" is
-## wrong — see `covering_sites`.
-func bundles() -> Array[Vector3i]:
-	var found: Array[Vector3i] = []
-	for key: Vector3i in _colours:
-		if (_colours[key] as Dictionary).size() >= 2:
-			found.append(key)
-	return found
+	_ensure_street_keys()
+	return _street_keys.has(key)
 
 ## The streets just outside the corridor: not on the tree, and meeting one that is at a junction.
 ##
-## **This is where a wall goes**, and the adjacency is the whole content of it. *"Hard and lethal
-## blockers form the paths… the route is what is left between them"* — a wall bounds the corridor,
-## which means it has to be somewhere the corridor can see: the turning off the junction she is
-## standing at, not a lethal thing four streets away that nothing about the day points her toward.
+## **Kept junction-based rather than moved to grid depth, on purpose, and this is the one place
+## the milestone's own "everything moves to cells" does not reach.** `gaps()` stays a street-level
+## question stated over junctions — "a street of the tree crosses each of its two ends" — and its
+## own docstring promises every gap is on the rim by construction. A grid-depth rim would break
+## that promise the moment the tree can shortcut through calm ground: a gap street's own junction
+## might sit two or three grid hops from the nearest on-tree cell if the shorter way there runs
+## through a park, while still being exactly the street two tree strands cross at both ends. The
+## rim a wall is placed against is a fact about **streets meeting at a junction**, which is what
+## `_shuffled_candidates` and `CityGenerator`'s hard-blocker gate both actually ask about, so this
+## answers at that grain rather than the cell's.
+func rim() -> Array[Vector3i]:
+	_ensure_street_keys()
+	var found := {}
+	for key: Vector3i in _street_keys:
+		var segment := StreetNetwork.by_key(key)
+		if not segment:
+			continue
+		for junction in [segment.a, segment.b]:
+			for candidate in StreetNetwork.at_junction(junction):
+				var beside := candidate.key()
+				if _street_keys.has(beside) or _absent.has(beside):
+					continue
+				found[beside] = true
+	var result: Array[Vector3i] = []
+	for key in found:
+		result.append(key)
+	return result
+
+## How far off the corridor every reachable node is, counted in grid steps. Zero is on the tree;
+## `Corridor` is what turns this into the byte-a-tile answer placement actually asks.
+func node_depths() -> Dictionary:
+	var found := {}
+	var frontier: Array[int] = []
+	for node: int in _colours:
+		found[node] = 0
+		frontier.append(node)
+	var hop := 0
+	while not frontier.is_empty():
+		hop += 1
+		var next: Array[int] = []
+		for node in frontier:
+			for edge: Array in grid.neighbours(node):
+				var neighbour: int = edge[0]
+				if found.has(neighbour):
+					continue
+				found[neighbour] = hop
+				next.append(neighbour)
+		frontier = next
+	return found
+
+## How far off the corridor every reachable **street** is, counted in turnings — the junction-graph
+## question `node_depths()` answered before M69, kept for street ground specifically rather than
+## replaced by the grid everywhere.
 ##
-## Asked of the links rather than of `StreetNetwork.at_junction`, so a street a calm zone absorbed
-## or a dead end took out of the lattice is not offered as a place to put anything. What is
-## deliberately **not** excluded here is the street outside the front door: it is a turning off the
-## first junction like any other, and both callers that must leave it alone already do — the
-## closure planner by name and the scheduler through `_the_street_she_starts_on`.
-## How far off the corridor every street the day can reach is, counted in **turnings**.
-##
-## Zero is on the tree, one is the rim, and it counts outwards from there. *(2026-08-31: "areas
-## that outside the paths should have blocking events all over — we don't want the player to step in
-## those areas and it ranges from very costly to deadly", and the range is over this.)*
-##
-## **A depth is not the same fact as a rim and both are worth having.** The rim is a *place in the
-## design* — the turning she can see from the junction she is standing at — and it is what a wall
-## that bounds the corridor has to be on. The depth is how far she has strayed, which is what the
-## price is stated over. `rim()` is this at one and is kept as its own method, because a caller that
-## wants the turning off a junction should not have to know that it is spelled `1`.
-##
-## A street the day cannot reach at all is simply **absent from the answer**, which is the honest
-## shape rather than an infinity: `_build_links` has already dropped what is shut and what the
-## lattice does not have, so an unreachable street is not somewhere anything can be placed either.
-func depths() -> Dictionary:
+## **A street tile still answers at the grain of its whole street, not its own cell.** A route is
+## a thin chain of cells now, but a street is walkable frontage to frontage — three cells wide —
+## and a player on it can be anywhere across that width, on the side the tree's path happened to
+## take or the other one. Answering street tiles from `node_depths()` instead would price two
+## thirds of every on-tree street's own pavement as one turning further out than it is, which
+## `Corridor.depth()` found by measurement: the share of costly rows landing on the corridor nearly
+## halved the day this used the grid for streets too. Cells still answer the question they exist to
+## answer — a park cut or an alley the tree actually takes reads as depth zero, which no street
+## question could ever have told it.
+func segment_depths() -> Dictionary:
+	_ensure_street_keys()
 	var found := {}
 	var frontier: Array[Vector3i] = []
-	for key: Vector3i in _colours:
+	for key: Vector3i in _street_keys:
 		found[key] = 0
 		frontier.append(key)
 	var hop := 0
@@ -501,8 +551,8 @@ func depths() -> Dictionary:
 			if not segment:
 				continue
 			for junction in [segment.a, segment.b]:
-				for link: Array in _links[StreetNetwork.node_of(junction)]:
-					var beside := link[1] as Vector3i
+				for candidate in StreetNetwork.at_junction(junction):
+					var beside := candidate.key()
 					if found.has(beside):
 						continue
 					found[beside] = hop
@@ -510,21 +560,11 @@ func depths() -> Dictionary:
 		frontier = next
 	return found
 
-func rim() -> Array[Vector3i]:
-	var found: Array[Vector3i] = []
-	var seen := {}
-	for key: Vector3i in _colours:
-		var segment := StreetNetwork.by_key(key)
-		if not segment:
-			continue
-		for junction in [segment.a, segment.b]:
-			for link: Array in _links[StreetNetwork.node_of(junction)]:
-				var beside := link[1] as Vector3i
-				if _colours.has(beside) or seen.has(beside):
-					continue
-				seen[beside] = true
-				found.append(beside)
-	return found
+## Whether a street is still in the lattice today, asked of the run-fixed absent set rather than
+## of the grid: a segment a calm zone absorbed resolves to perfectly walkable (calm) ground, so the
+## grid alone cannot tell it apart from a real street.
+func _is_a_real_street(segment: StreetNetwork.Segment) -> bool:
+	return not _absent.has(segment.key())
 
 ## The streets that sit **between two adjacent strands of the corridor**: one street of the tree
 ## crossing each end, and nothing of the tree on the street itself.
@@ -532,33 +572,19 @@ func rim() -> Array[Vector3i]:
 ## What it is for: two strands of corridor running parallel with one free street between them are
 ## one wide route rather than two, so something goes in that street.
 ##
-## **This is not the spacing rule the class doc rules out, and the difference is the whole of why
-## it is allowed to exist.** Nothing here moves a branch, refuses a merge or asks two routes to
-## keep apart — the tree is grown exactly as it was and this is a question asked of the finished
-## thing. *"The player can walk the beginning of path A and then switch to path B without
-## noticing"* stays true of the **graph**; what the player asked for is that the one street the
-## switch is made through sometimes cost something, which is a placement and lives downstream.
-##
 ## **Directly adjacent means one street, and that is the whole definition.** Two strands two
 ## turnings apart have off-corridor ground between them, which is lethal or very costly on its own
 ## — so they are separated by the map and nothing has to be placed. Asking this question of
 ## anything wider invents a rule nobody asked for.
 ##
 ## **A strand is a stretch of corridor and not a branch**, so a single branch that runs out along
-## one street and home along the next one down answers yes here. That is deliberate: the complaint
-## is about the *shape on the ground* — two parallel lines with a free step between them — and a
-## player switching between them cannot see, and has no reason to care, whether the two lines are
-## coloured the same. `branches_on()` is what tells two routes apart, and it is the telemetry's
-## question rather than this one.
-##
-## Every answer is on the rim by construction: a street with a tree street at each end is one
-## turning off the corridor and never further. Kept as its own question anyway, because *the rim*
-## is a band round the whole corridor and this is a **gap in the middle of it**.
+## one street and home along the next one down answers yes here. `branches_on()` is what tells two
+## routes apart, and it is the telemetry's question rather than this one.
 func gaps() -> Array[Vector3i]:
 	var found: Array[Vector3i] = []
 	for segment in StreetNetwork.segments():
 		var key := segment.key()
-		if _colours.has(key) or not _is_a_real_street(segment):
+		if is_on_the_tree(key) or not _is_a_real_street(segment):
 			continue
 		if _crossed_by_the_tree(segment.a, key.z) and _crossed_by_the_tree(segment.b, key.z):
 			found.append(key)
@@ -570,11 +596,35 @@ func gaps() -> Array[Vector3i]:
 ## connector is the corridor carrying straight on through the junction, which is one strand rather
 ## than two, and counting it would call every dead end off a route a gap.
 func _crossed_by_the_tree(junction: Vector2i, along: int) -> bool:
-	for link: Array in _links[StreetNetwork.node_of(junction)]:
-		var beside := link[1] as Vector3i
-		if beside.z != along and _colours.has(beside):
+	for segment in StreetNetwork.at_junction(junction):
+		if segment.key().z != along and is_on_the_tree(segment.key()):
 			return true
 	return false
+
+## Which branches carry `tile`, sorted. Empty for a tile off the tree, which is what makes it
+## meaningful to the telemetry — *she left one path and entered another* is only sayable because a
+## count could not tell it apart from *she left the corridor*.
+func branches_on(tile: Vector2i) -> Array[int]:
+	var found: Array[int] = []
+	var node := grid.node_at(tile)
+	if node >= 0 and _colours.has(node):
+		for colour: int in (_colours[node] as Dictionary):
+			found.append(colour)
+	found.sort()
+	return found
+
+## The cells carried by two or more branches — the trunk, and any stretch several ways out of the
+## city share before they separate.
+##
+## A bundle is what makes placement cheap: it narrows *how many places* a thing has to be in
+## order to be met. It never narrows it to one, and anything written as "the tile she must cross"
+## is wrong — see `covering_sites`.
+func bundles() -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for node: int in _colours:
+		if (_colours[node] as Dictionary).size() >= 2:
+			found.append(grid.cell_of(node))
+	return found
 
 func branch_for(area: Vector2i) -> Branch:
 	for branch in branches:
@@ -582,30 +632,27 @@ func branch_for(area: Vector2i) -> Branch:
 			return branch
 	return null
 
-## The fan-out: the smallest set of streets such that **every route touches at least one of
-## them**. This is what a set piece needs.
+## The streets a set piece is placed on: the smallest set of **real streets** such that every
+## route touches at least one of them.
 ##
 ## *"We can have multiple candidate places and make sure all routes touch at least one of them."*
-## The guarantee is structural rather than predictive — it holds whichever way she goes, so
-## nothing has to know which route she chose, and the fire engine stops being a silhouette and a
-## fairness contract spent on a street she never walked.
+## Stated over streets rather than cells because a set piece needs somewhere she is walked *past*
+## rather than a single two-tile step — `EventScheduler._ground_for` bounds a set piece's candidate
+## ground to the whole named street. A route's cells that resolve to no street (a park cut, an
+## alley) simply do not offer a site; the guarantee is unaffected, because it never promised a
+## site on every cell, only that every route meets one somewhere.
 ##
 ## **It covers routes and not branches, and the difference is the whole of the design's warning.**
-## A first version of this counted a branch as covered when *either* of its routes was, which is
-## the natural reading of "every corridor passes at least one" — and measured over 32 planned
-## days it produced a **single** street on nine of them. That street is on route one of every
-## area and on route two of none, so a set piece placed there is met by a player who takes the
-## first way out of every area and missed entirely by one who takes the second. It is
-## "the street she must cross" arriving through the back door, which the design names as the
-## first draft's mistake and rules out in arithmetic: *"anything that must be encountered has to
-## exist in at least two places."* Covering routes gets that for nothing — the two routes of one
-## area share no street by construction, so no single site can ever cover both.
+## A first version of this counted a branch as covered when *either* of its routes was — see
+## `docs/DECISIONS.md` for the measurement that ruled it out — which is "the street she must
+## cross" arriving through the back door. Covering routes gets the right guarantee for nothing: the
+## two routes of one area share no ground by construction, so no single site can ever cover both.
 ##
 ## It is a minimum hitting set, which is only expensive in general: there are a handful of routes
 ## and a distinct street is only interesting for *which* of them it carries, so the search is over
 ## the distinct route sets and its depth is bounded by the number of routes. An empty answer means
-## no such set exists — which happens when a route has no streets at all, because its calm area
-## opens straight onto the doorstep.
+## no such set exists — which happens when a route has no real street on it at all, because its
+## calm area opens straight onto the doorstep or reaches home entirely through park and alley.
 func covering_sites() -> Array[Vector3i]:
 	var routes := _route_count()
 	if routes == 0:
@@ -631,14 +678,18 @@ func _route_count() -> int:
 	return total
 
 ## One street per distinct set of routes, as `route mask -> segment key`. Two streets carrying the
-## same routes are interchangeable here, so only one of them is worth searching over.
+## same routes are interchangeable here, so only one of them is worth searching over. A route's
+## cells that resolve to no real street contribute nothing to any mask.
 func _sites_by_route_set() -> Dictionary:
 	var masks := {}
 	var index := 0
 	for branch in branches:
 		for route: Array in branch.routes:
-			for key: Vector3i in route:
-				masks[key] = int(masks.get(key, 0)) | (1 << index)
+			for cell: Vector2i in route:
+				var segment := StreetNetwork.segment_containing(cell * ReachabilityGrid.CELL)
+				if segment:
+					var key := segment.key()
+					masks[key] = int(masks.get(key, 0)) | (1 << index)
 			index += 1
 	var sites := {}
 	for key: Vector3i in masks:

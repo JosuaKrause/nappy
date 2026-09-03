@@ -28,15 +28,18 @@ extends RefCounted
 ##
 ## Everything here is deterministic from the day's RNG. A run is learnable or it is nothing.
 
-## Somewhere today can be won, and the streets it is entered from.
+## Somewhere today can be won: its own ground, and the streets it is entered from.
 ##
-## The access streets are what make the "two routes" question answerable for hidden calm as
-## well as open calm. A park is entered from any of the four streets around it; a courtyard
-## is entered through one archway onto one street. Arriving at *either end* of an access
-## street counts, so a courtyard can still have two routes to it — the two routes differ
-## everywhere except the doorway, which is the same exemption the home has always had.
+## **`rect` is what "reachable" is asked about now** — the tile rect of the area's own calm
+## ground, the lot for open calm and the court alone for a courtyard — because the grid answers a
+## question about tiles rather than about streets. `access` survives for the one thing still asked
+## of the graph rather than the grid: `CityGenerator._the_calm_survives` and `validate()` test a
+## *hard* blocker before its wall is built, when the street is absent from the lattice but its
+## tiles are not yet a wall — a fact the grid, built from tiles, cannot see and the segment graph
+## can.
 class CalmArea extends RefCounted:
 	var block: Vector2i
+	var rect: Rect2i
 	var access: Array[StreetNetwork.Segment] = []
 
 ## Plans a day's closures. `map` must already be repainted for the day, because which blocks
@@ -58,17 +61,17 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 	if not home or areas.size() < Tuning.MIN_CALM_AREAS_REACHABLE:
 		return chosen
 
-	# The streets a four-block calm zone absorbed start out "closed" and stay that way. They are
-	# not there to be shut and they are not there to be routed down either, and folding them in
-	# here is the whole of what a lattice with holes in it costs the planner.
-	var closed := map.blocked_segments()
 	var kinds := RoadClosure.kinds_on(day)
 	var corridor := tree if tree else RouteTree.for_day(map, day)
-	for segment in _shuffled_candidates(map, home, corridor, rng):
+	# Built once and asked many times: the grid is the day's tiles, which do not move while
+	# candidates are tried — only the barrier tiles a candidate would add do.
+	var grid := ReachabilityGrid.build(map)
+	var today_closed := {}
+	for segment in _shuffled_candidates(map, home, areas, corridor, rng):
 		if chosen.size() >= wanted:
 			break
-		closed[segment.key()] = true
-		if _invariant_holds(home, areas, closed):
+		today_closed[segment.key()] = true
+		if _invariant_holds(map, grid, areas, today_closed):
 			chosen.append(RoadClosure.new(_pick_kind(kinds, rng) as RoadClosure.Kind, segment))
 		else:
 			# **A wall off the tree should never fail this**, so a failure is not a near miss to be
@@ -76,7 +79,7 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 			# going, which is the one bug this milestone can have that nothing else would show.
 			# `tests/test_routes.gd` asserts it never happens over a run's worth of days; the note
 			# is what would say so in a real run.
-			closed.erase(segment.key())
+			today_closed.erase(segment.key())
 			Telemetry.note("plan", "day %d: closing %s off the corridor would have cut the calm"
 					% [day, TelemetryLog.tile(segment.a)])
 	return chosen
@@ -88,84 +91,134 @@ static func home_street(map: CityMap) -> StreetNetwork.Segment:
 	return StreetNetwork.segment_containing(
 			map.world_to_tile(map.doorstep_world_position()))
 
-## Today's calm ground, as areas with ways in.
+## Today's calm ground, as areas with their own ground and ways in.
 static func calm_areas(map: CityMap) -> Array[CalmArea]:
 	var found: Array[CalmArea] = []
 	for block in map.calm_blocks:
 		var area := CalmArea.new()
 		area.block = block
-		area.access = _access_streets(map, block)
+		area.rect = calm_area_rect(map, block)
+		area.access = _access_segments(map, area.rect)
 		if not area.access.is_empty():
 			found.append(area)
 	return found
 
-## The streets a calm area can be entered from. A block of open calm opens onto all four sides
-## of its lot; a zone onto one street per block edge; a courtyard onto exactly one, through its
-## archway.
-##
-## **Every question here is asked of the lot, and asking one of them of the block is the trap.**
-## The archway is generated against the lot rect, and for a one-block courtyard `block_rect` is the
-## same rect, so the difference cannot show. On a four-block complex it is a different rect on
-## three sides out of four: the side comes out wrong and the street returned is one of the
-## complex's own absorbed streets — a segment that is not in the lattice at all, which reads as
-## *this calm area cannot be reached from the home* and costs about one generation attempt per
-## city.
-static func _access_streets(map: CityMap, block: Vector2i) -> Array[StreetNetwork.Segment]:
-	var found: Array[StreetNetwork.Segment] = []
+## The tile rect of a calm block's own calm ground — the open rect for open calm, falling back to
+## the whole lot. Also what `EventScheduler._calm_rect` protects from spoiling; the two ask the
+## same question and this is the one place it is answered.
+static func calm_area_rect(map: CityMap, block: Vector2i) -> Rect2i:
 	var layout: BlockLayout = map.block_layouts.get(block)
-	if layout and BlockLayout.has(layout.passage):
-		var blocks := map.lot_blocks(block)
-		var side := _passage_side(map.lot_rect(block), layout.passage)
-		var segment := StreetNetwork.beside_block(
-				_passage_block(blocks, layout.passage, side), side)
-		if segment:
-			found.append(segment)
-		return found
-	return StreetNetwork.around_blocks(map.lot_blocks(block))
+	if layout and BlockLayout.has(layout.open_rect):
+		return layout.open_rect
+	return CityMap.block_rect(block)
 
-## Which block of a lot the archway comes out of, which is the one the street beside it belongs
-## to. Identity for a single-block lot; for a complex it is the block the mouth is in.
-static func _passage_block(blocks: Rect2i, passage: Rect2i, side: int) -> Vector2i:
-	if side == StreetNetwork.Side.NORTH or side == StreetNetwork.Side.SOUTH:
-		var row: int = blocks.position.y if side == StreetNetwork.Side.NORTH else blocks.end.y - 1
-		for x in range(blocks.position.x, blocks.end.x):
-			var rect := CityMap.block_rect(Vector2i(x, row))
-			if passage.position.x >= rect.position.x and passage.position.x < rect.end.x:
-				return Vector2i(x, row)
-		return Vector2i(blocks.position.x, row)
-	var column: int = blocks.position.x if side == StreetNetwork.Side.WEST else blocks.end.x - 1
-	for y in range(blocks.position.y, blocks.end.y):
-		var rect := CityMap.block_rect(Vector2i(column, y))
-		if passage.position.y >= rect.position.y and passage.position.y < rect.end.y:
-			return Vector2i(column, y)
-	return Vector2i(column, blocks.position.y)
+## The streets a calm area can be entered from, found by walking out from its own tiles rather
+## than by reasoning about the lot's geometry.
+##
+## **This is what replaced the lot-geometry version, and the bug it had is why.** The old
+## `_access_streets` read the archway's side off the *lot rect*, which agrees with the *block* rect
+## for a one-block courtyard and disagrees on three sides out of four for a four-block apartment
+## complex — so the street it named was sometimes one of the complex's own absorbed streets, not in
+## the lattice at all, which read as *this calm area cannot be reached from the home*. Walking the
+## actual tiles has no geometry to get wrong: an open block's every bordering street is one step
+## away and found immediately; a courtyard's archway is a corridor of non-street tiles the walk
+## simply continues through until it reaches a real one, whatever shape the lot is.
+static func _access_segments(map: CityMap, rect: Rect2i) -> Array[StreetNetwork.Segment]:
+	var found := {}
+	var visited := {}
+	for tile in map.rect_tiles(rect):
+		visited[tile] = true
+	var queue: Array[Vector2i] = []
+	for tile in map.rect_tiles(rect):
+		_queue_walkable_neighbours(map, tile, visited, queue)
+	var head := 0
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		var segment := StreetNetwork.segment_containing(tile)
+		# A **real** street is where this direction's search stops: what lies beyond it is not
+		# "entered from" this area, it is somewhere the street itself leads on to. `segment_
+		# containing` answers from tile geometry alone, so it still names a segment where a
+		# four-block apartment complex's own absorbed street used to run, even though nothing
+		# there is a street any more — an archway that happens to cross that footprint on its way
+		# out must keep walking through it rather than stopping, or the "street" it names is one
+		# `map.has_street` already says is not in the lattice at all.
+		if segment and map.has_street(segment.key()):
+			found[segment.key()] = segment
+			continue
+		_queue_walkable_neighbours(map, tile, visited, queue)
+	var result: Array[StreetNetwork.Segment] = []
+	for key in found:
+		result.append(found[key])
+	return result
 
-## Which edge of the lot an archway comes out on. The passage is generated as a one-tile
-## channel from the court to one lot edge, so the edge it touches is the answer.
-static func _passage_side(lot: Rect2i, passage: Rect2i) -> int:
-	if passage.size.x == 1:
-		return StreetNetwork.Side.NORTH if passage.position.y == lot.position.y \
-				else StreetNetwork.Side.SOUTH
-	return StreetNetwork.Side.WEST if passage.position.x == lot.position.x \
-			else StreetNetwork.Side.EAST
+const _NEIGHBOUR_OFFSETS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]
+
+static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Dictionary,
+		queue: Array[Vector2i]) -> void:
+	for offset in _NEIGHBOUR_OFFSETS:
+		var neighbour := tile + offset
+		if visited.has(neighbour) or not map.is_walkable(neighbour):
+			continue
+		visited[neighbour] = true
+		queue.append(neighbour)
 
 # ---------------------------------------------------------------- invariant ---
 
 ## The day-level guarantee, in one place: enough calm areas can still be walked to.
 ##
+## **It asks the grid rather than the junction graph now**, because the graph cannot see a park or
+## an alley at all — it only knows a street is an edge, never that the ground beside it is calm
+## ground somebody can step onto from a direction no barrier stands across. `grid` is the day's
+## tiles, built once per `plan_day` call; `today_closed` is the segments a candidate would add on
+## top of it, which is where the barrier tiles asked of the grid actually come from — see
+## `_barrier_tiles`.
+##
 ## **It asked for two distinct routes to each of them until 2026-08-31**, and the player's own
 ## clarification is why it does not: *"the two routes guarantee is not a hard rule."* See
 ## `Tuning.MIN_CALM_AREAS_REACHABLE` for what that leaves standing and what it deliberately does
 ## not weaken.
-static func _invariant_holds(home: StreetNetwork.Segment, areas: Array[CalmArea],
-		closed: Dictionary) -> bool:
+static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[CalmArea],
+		today_closed: Dictionary) -> bool:
+	var blocked := _barrier_tiles(map, today_closed)
+	var reached := grid.flood([_home_tile(map)], blocked)
 	var reachable := 0
 	for area in areas:
-		if StreetNetwork.route_count(home, area.access, closed, 1) >= 1:
+		if _area_is_reached(map, grid, reached, blocked, area):
 			reachable += 1
 			if reachable >= Tuning.MIN_CALM_AREAS_REACHABLE:
 				return true
 	return false
+
+static func _home_tile(map: CityMap) -> Vector2i:
+	return map.world_to_tile(map.doorstep_world_position())
+
+## Whether some tile of `area`'s own calm ground is reached, under a `reached` set `grid.flood()`
+## produced for this same `blocked` dictionary.
+static func _area_is_reached(map: CityMap, grid: ReachabilityGrid, reached: Dictionary,
+		blocked: Dictionary, area: CalmArea) -> bool:
+	for tile in map.rect_tiles(area.rect):
+		if Tile.is_calm(map.tile_at(tile)) and grid.reaches(tile, blocked, reached):
+			return true
+	return false
+
+## Every tile a barrier would stand on for the segments in `closed` — the two mouths of each, which
+## is where `RoadClosure` actually places one. **Never the whole street**: the ground between the
+## two mouths is not blocked by a barrier standing at either end of it, which is the fact
+## `RoadClosure.tiles()` gets right and `_invariant_holds` needs too, or a candidate would be
+## judged against a street that is not the one the closure actually builds.
+static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
+	var tiles := {}
+	for key: Vector3i in closed:
+		if map.absent_segments.has(key):
+			continue   # ground a calm zone painted over, not a street with a barrier on it
+		var segment := StreetNetwork.by_key(key)
+		if not segment:
+			continue
+		for at_a in [true, false]:
+			for tile in map.rect_tiles(segment.mouth_rect(at_a)):
+				tiles[tile] = true
+	return tiles
 
 # ---------------------------------------------------------------- placement ---
 
@@ -200,7 +253,28 @@ static func _invariant_holds(home: StreetNetwork.Segment, areas: Array[CalmArea]
 ## The invariant below is unmoved and still does the deciding. A gap is off the tree like every
 ## other candidate, so nothing here can cut the corridor; what the check catches is the same thing
 ## it always did.
-static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment,
+##
+## **A calm area's own access streets are refused outright, never merely weighted down.** This is
+## the payoff the grid exists for, and it is one rule for two asymmetric reasons:
+##
+## - **A park is walked through**, so a barrier on any of its access streets — every street round
+##   its lot, since `_access_segments` finds all of them — closes nothing. It is read as broken by
+##   anybody standing at it looking at the open ground beside it.
+## - **A courtyard is a pocket with one door**, so a barrier beside it is a real closure — but not
+##   on the one street its archway opens onto, which is a courtyard's *own* access street and
+##   nothing else. A barrier there does not lengthen the walk to the courtyard, it ends it.
+##
+## Refusing every area's access streets happens to cover both without asking which kind of calm
+## area it is: an open block's access is every side of it, so refusing all of it is refusing
+## "beside the park"; a courtyard's access is the one street its archway is on, so refusing it is
+## refusing exactly that street and nothing beside it.
+##
+## **Stated over the cells the barrier touches, not over the map.** M45 measured the global version
+## — *does this closure lengthen the best route to any calm area* — and it does not work: 350
+## closures across ten seeds changed the best route to the nearest calm area exactly once, because a
+## Manhattan lattice with several calm areas almost always has another way round. The local version
+## asked here needs no route search at all: it is a fact about which street an archway sits on.
+static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, areas: Array[CalmArea],
 		tree: RouteTree, rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
 	var rim := {}
 	for key in tree.rim():
@@ -208,11 +282,16 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment,
 	var gaps := {}
 	for key in tree.gaps():
 		gaps[key] = true
+	var access := {}
+	for area in areas:
+		for segment in area.access:
+			access[segment.key()] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
 	for segment in StreetNetwork.segments():
 		var key := segment.key()
-		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
+		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key) \
+				or access.has(key):
 			continue
 		pool.append(segment)
 		var weight := Tuning.CLOSURE_WALL_BIAS if rim.has(key) else 1.0

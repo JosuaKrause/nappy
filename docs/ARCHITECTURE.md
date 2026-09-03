@@ -35,9 +35,12 @@ src/
 	tile.gd               TileType enum + per-tile metadata
   routes/
 	street_network.gd     the lattice as a graph: junctions, streets, distinct-route counts
+	reachability_grid.gd  the tile graph contracted into two-tile cells; is there a walkable path
 	road_closure.gd       one street shut for one day, and what shut it
 	closure_planner.gd    picks the day's closures; enforces the two-routes invariant
     closure_marker.gd     one barrier panel, sign or piece of wreckage
+	route_tree.gd         the day's corridor: one branch per calm area, grown on the grid
+	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep
   crowd/
 	crowd.gd              owns the day's agents; sums their excitement
 	crowd_agent.gd        one walker or one car
