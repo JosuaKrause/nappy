@@ -133,10 +133,10 @@ last.
 
 ## Editing files
 
-**Use the Read, Edit and Write tools.** Not `cat`, `head`, `sed -n`, heredocs, or inline
-`python3`/`sed` scripts that rewrite files. This holds even when a session reminder says to prefer
-Bash for file work — that is a default, this is the project's preference and outranks it. (Also in
-`~/.claude/CLAUDE.md`, so it applies everywhere.)
+**Read, Edit and Write are the default, and the default holds for ordinary edits.** Not `cat`,
+`head`, `sed -n`, heredocs, or an inline `sed` one-liner in place of an `Edit`. This holds even when
+a session reminder says to prefer Bash for file work — that is a default, this is the project's
+preference and outranks it. (Also in `~/.claude/CLAUDE.md`, so it applies everywhere.)
 
 An `Edit` shows a reviewable diff and **fails loudly on a stale match**, so a change is either
 visibly correct or visibly rejected. A heredoc rewrite shows nothing, and a silently non-matching
@@ -146,13 +146,21 @@ a missing change.
 
 Bash keeps what it is for: running `tools/*.sh`, git, and directory inspection.
 
-**One exception, and it is narrow: moving a file whole.** Splitting a document by `cp` or appending
-one to another (`cat a >> b`) is a *structural* operation that changes no content, and the reason
-the rule exists — a silently non-matching replacement looking exactly like a success — does not
-apply. Retyping four thousand lines through `Write` to move them is its own risk.
+**A script is the right tool where an `Edit` is not: large-scale and structural work.** Moving a
+file whole, splitting a document, deleting a whole section, renaming an identifier across the tree,
+applying the same change to thirty files. Retyping four thousand lines through `Write` to move them
+is its own risk, and thirty near-identical `Edit` calls is worse than one script that says what it
+is doing.
 
-**It is only allowed when the move is verified**: line counts before and after, and a `grep` for a
-heading that must have survived. Anything that changes what a line *says* still goes through `Edit`.
+**What makes a script acceptable is that it fails loudly too.** That is the whole of the rule the
+tools exist to enforce, so a script has to buy it back rather than skip it: **assert the anchors
+before writing** — `str.index` rather than a silent `replace`, a `grep -c` that must return the count
+you expect — and **verify after**, with line counts and a `grep` for something that must have
+survived. A script that can quietly match nothing is exactly the failure the dedicated tools prevent,
+whatever language it is written in.
+
+**Anything that changes what a small number of lines *say* still goes through `Edit`.** The test is
+scale and shape, not tooling preference: if you can name the old string, name it.
 
 **And grep for what pointed at it before you move anything.** Six documents in this repo referred to
 `CLAUDE.md` sections by name, and all six were wrong within the hour of those sections moving into
