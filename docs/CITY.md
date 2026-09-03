@@ -868,6 +868,41 @@ day's tiles with every barrier tile added on top; what the flood never reaches i
 - The **resistance** never puts a contact behind one. Steps expire, so that would silently
   cost a run its good ending.
 
+### Sealing the tree
+
+**A road closure is not what makes off-corridor ground closed.** `ClosurePlanner` shuts a handful
+of streets a day — one in act I, rising to four — which is guidance at the scale of a route
+decision, not a wall around the whole city. `SealPlanner` (`src/routes/seal_planner.gd`) is the
+separate pass that does that: every street off the day's tree, real and not the home's own —
+about 187 of the lattice's 264 on a typical day — carries a **seal**, so the corridor stops being
+the *cheapest* way through and becomes the *only* free one. It is planned the same morning as the
+closures, off the same tree, and counted apart from the day's event budget: a seal is a fact about
+where she may walk, not a piece of the catalogue's variety.
+
+**Two strengths, both obstacles from the existing catalogue rather than a new mechanism.** A
+**hard** seal — `barricade`, from act IV — stands several bodies across the street's whole width,
+sidewalk to sidewalk, so nothing gets past. A **soft** seal takes both pavements (`construction`,
+`cafe_tables`, `market_stall` or `delivery_van`, one on each side) and leaves the carriageway open:
+the road is always still there, so a soft seal costs time and exposure, never the day. Every day
+from day 1 has a working soft pair; the hard one only from act IV, since `barricade` is the only
+row today drawn as a citywide wall rather than a street event — the milestone that draws more
+pictures for both strengths costs nothing here but longer candidate lists.
+
+**The doorstep is exempt, for the same reason a closure never stands there**: the home is a notch
+with one exit, and a seal on its own street would seal her in on the first frame.
+
+**Alleys are not streets, so they are never sealed — a through-alley's *mouth* can be.** An alley
+that touches the tree at either end stays open outright, which is the way round a wall the design
+asks for; one that touches it at neither end is walled at both mouths, so it can never bridge two
+sealed streets into a second city behind them.
+
+**The winnability guarantee is not repeated here, it is true by construction.** A seal never
+stands on tree ground or the doorstep — the two things the tree and `ClosurePlanner` already
+guarantee a route through — so nothing a seal does can cut the corridor.
+`EventScheduler._ensure_the_city_is_still_walkable` stays what it always was, a repair pass for
+the catalogue's own placements; sealing needs no equivalent; `tests/test_seals.gd` measures the
+guarantee over many seeds and days instead of asserting it at runtime.
+
 ## Block purposes
 
 The street lattice is fixed for the run. What a block *is* is not.
