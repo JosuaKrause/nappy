@@ -140,15 +140,77 @@ var _map: CityMap
 ## `_process()` has dropped it. See `is_solid()`.
 var _obstruction: StaticBody2D
 
+## Whether `_draw_spread` and `_draw_cafe` lay their segments along local Y rather than local X.
+## Decided once, in `setup()`, from the street the instance stands on — see `_spread_is_vertical`.
+## Never a per-row field: two rows on the same street face the same way for the same reason, and a
+## row that had to say so itself could disagree with the street it was actually placed on.
+var _spread_vertical := false
+
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
 		face := Vector2.RIGHT, map: CityMap = null) -> void:
 	def = definition
 	path = route
-	position = route[0] if route.size() > 0 else at
+	var start := route[0] if route.size() > 0 else at
+	if map and not definition.mobile and definition.obstructs_radius > 0.0 \
+			and definition.pavement_side == EventDef.Pavement.ANY:
+		start = _centred_on_the_pavement_band(map, start)
+	position = start
 	_heading = face
 	_map = map
+	_spread_vertical = _spread_is_vertical(map, position)
+
+## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
+## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
+## of the pavement's two lanes the scheduler happened to choose, 16px from that lane's own edge and
+## 48px from the far one — so a body sized against the *pavement* rather than the *lane* overhangs
+## by exactly the asymmetry between those two numbers. Playtest 19's own words are about the offset,
+## not the width: *"they're all placed with an offset that makes them clip into other things."*
+##
+## The fix is the position, not a smaller radius: this shifts a stationary, unpinned body from the
+## lane tile the scheduler chose to the middle of the two-lane band it belongs to, so a body may be
+## up to the full `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide and exactly fill the pavement, the way
+## `construction`'s own docstring always said it did.
+##
+## **Exempt: anything `pavement_side` pins to an edge on purpose.** `delivery_van` belongs at the
+## kerb and `reversing_lorry` belongs against the building — re-centring either would undo the one
+## thing `pavement_side` exists to do. Both stay exactly where `EventScheduler._build_placement`
+## put them, still measured against the same 64px band: a kerbed `VEHICLE_BODY` (44px) leaves a
+## 26px gap to the frontage, narrower than the 28px pram, which is `docs/HANDOFF.md`'s own reading
+## of that placement — a van at the kerb is *also* "no line to walk," on purpose.
+static func _centred_on_the_pavement_band(map: CityMap, at: Vector2) -> Vector2:
+	var tile := map.world_to_tile(at)
+	if map.pavement_inward(tile) == Vector2i.ZERO:
+		# Not a pavement tile at all, or a junction belonging to both corridors at once — nothing
+		# here has one band to be centred on.
+		return at
+	var x_offset := CityMap.corridor_offset(tile.x)
+	var offset := x_offset if x_offset >= 0 else CityMap.corridor_offset(tile.y)
+	var band_offset := Tuning.SIDEWALK_WIDTH * 0.5 if offset < Tuning.SIDEWALK_WIDTH \
+			else float(Tuning.STREET_WIDTH) - Tuning.SIDEWALK_WIDTH * 0.5
+	var shift := (band_offset - offset - 0.5) * Tuning.TILE_SIZE
+	return at + (Vector2.RIGHT if x_offset >= 0 else Vector2.DOWN) * shift
+
+## **A spread's rotation is a property of the street it stands on**, not a field on the row: a
+## barrier that lies correctly across a north-south street lies along the kerb — parallel to the
+## traffic, blocking nothing — on an east-west one, unless the direction it spreads in changes with
+## the street. `CityMap.corridor_offset` answers which axis a tile's corridor runs on without
+## caring what the tile's *type* is, so a `ROAD` tile (`checkpoint`, the barricade a stopped convoy
+## leaves) is asked exactly the way a `SIDEWALK` tile is, with no second lookup for either.
+##
+## A tile whose two coordinates are **both** inside a corridor band is a junction — belonging to
+## two streets at once, with no single direction to be wrong about — and a tile whose coordinates
+## are **neither** is off any corridor at all: a square, a park, a courtyard. Both keep the spread's
+## long-standing lay along local X, which is what every row drew before this rule existed and is the
+## smallest answer for ground that was never a street to lie across in the first place.
+static func _spread_is_vertical(map: CityMap, at: Vector2) -> bool:
+	if not map:
+		return false
+	var tile := map.world_to_tile(at)
+	var on_a_north_south_street := CityMap.corridor_offset(tile.x) >= 0
+	var on_an_east_west_street := CityMap.corridor_offset(tile.y) >= 0
+	return on_an_east_west_street and not on_a_north_south_street
 
 func _ready() -> void:
 	EventBus.event_telegraphed.emit(self)
@@ -1150,21 +1212,35 @@ func _draw_fire() -> void:
 		var height := (34.0 + i % 2 * 14.0) * strength * flicker
 		Sprites.draw_standing(self, FLAME, Vector2(offset, 0.0), Vector2(18.0, height))
 
+## A point `offset` along whichever axis `_spread_vertical` says this instance spreads on — local X
+## by default, local Y on an east-west street. See `_spread_is_vertical`.
+func _spread_at(offset: float) -> Vector2:
+	return Vector2(0.0, offset) if _spread_vertical else Vector2(offset, 0.0)
+
+## The draw size for one slice of a spread: `along` is its length down the axis it spreads on,
+## `thickness` is its extent across that axis, swapped into `(x, y)` for whichever axis that is —
+## so a segment stays as tall as the art says on a north-south street and as wide as the art says
+## on an east-west one, whichever axis "tall" turns out to be.
+func _spread_extent(along: float, thickness: float) -> Vector2:
+	return Vector2(thickness, along) if _spread_vertical else Vector2(along, thickness)
+
 ## A blocking object is drawn at exactly the width it obstructs, by repeating a segment
 ## across it. Anything else would be a lie about where the player can walk.
 func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.9)
 	var segment := segment_texture.get_size()
-	var segments := maxi(1, ceili(half * 2.0 / segment.x))
+	var along_natural := segment.y if _spread_vertical else segment.x
+	var thickness := segment.x if _spread_vertical else segment.y
+	var segments := maxi(1, ceili(half * 2.0 / along_natural))
 	var width := half * 2.0 / segments
 	for i in segments:
 		Sprites.draw_standing(self, segment_texture,
-				Vector2(-half + width * (i + 0.5), 0.0), Vector2(width, segment.y))
+				_spread_at(-half + width * (i + 0.5)), _spread_extent(width, thickness))
 	if not cap:
 		return
 	for side in [-1.0, 1.0]:
-		Sprites.draw_standing(self, cap, Vector2(side * half, 0.0))
+		Sprites.draw_standing(self, cap, _spread_at(side * half))
 
 ## The tables, and the people at them.
 ##
@@ -1175,21 +1251,27 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null) -> void:
 ## cannot walk through and the picture has to agree with that.
 ##
 ## Alternate tables are mirrored, which turns a rank of clones into pairs facing each other — the
-## same reason a spoiled park rolls a different def per cell.
+## same reason a spoiled park rolls a different def per cell. The chair's own shift stays *along*
+## the spread axis, same as the table it sits beside; the −7 lift is a fixed screen-depth nudge that
+## puts a sitter visibly behind their table whichever way the row runs, so it stays a plain Y offset
+## rather than turning with the spread.
 func _draw_cafe() -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.9)
 	var segment := CAFE_TABLE.get_size()
-	var segments := maxi(1, ceili(half * 2.0 / segment.x))
+	var along_natural := segment.y if _spread_vertical else segment.x
+	var thickness := segment.x if _spread_vertical else segment.y
+	var segments := maxi(1, ceili(half * 2.0 / along_natural))
 	var width := half * 2.0 / segments
 	for i in segments:
-		var at := Vector2(-half + width * (i + 0.5), -7.0)
+		var along := -half + width * (i + 0.5)
 		# The chair is drawn at one end of the table sprite and turns round with it.
-		Sprites.draw_standing(self, CAFE_SITTER,
-				at + Vector2(width * (0.26 if i % 2 == 1 else -0.26), 0.0))
+		var chair_along := along + width * (0.26 if i % 2 == 1 else -0.26)
+		Sprites.draw_standing(self, CAFE_SITTER, _spread_at(chair_along) + Vector2(0.0, -7.0))
 	for i in segments:
+		var along := -half + width * (i + 0.5)
 		Sprites.draw_standing(self, CAFE_TABLE,
-				Vector2(-half + width * (i + 0.5), 0.0), Vector2(width, segment.y), i % 2 == 1)
+				_spread_at(along), _spread_extent(width, thickness), i % 2 == 1)
 
 ## A rank of placards as wide as the ground it takes.
 ##

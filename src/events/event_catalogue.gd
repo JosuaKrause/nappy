@@ -15,6 +15,16 @@ extends RefCounted
 const PERSON_BODY := 11.0
 ## `vehicle.svg` is 48px across.
 const VEHICLE_BODY := 22.0
+## The widest a `_draw_spread`-style body (`EventInstance._draw_spread`, `_draw_cafe`) may be on a
+## `SIDEWALK` tile before it draws past the pavement it stands on.
+##
+## A pavement is one piece of walkable ground, `Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE` (64px)
+## across, not two lanes a body has to fit inside one of. `EventInstance.setup()` centres a
+## stationary, unpinned (`pavement_side == ANY`) body on that whole band rather than leaving it at
+## whichever lane tile the scheduler happened to choose, so the ground a row may fill is the full
+## band and this is half of it. `tests/test_events.gd`,
+## `_test_a_spread_body_fits_the_ground_it_stands_on`, checks it over the whole catalogue.
+const SIDEWALK_SPREAD_MAX := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
 
 static var _all: Array[EventDef] = []
 ## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
@@ -367,7 +377,9 @@ static func _construction() -> EventDef:
 	def.inner_radius = 46.0
 	def.outer_radius = 200.0
 	def.telegraph_time = 1.8
-	def.obstructs_radius = 34.0
+	# `SIDEWALK_SPREAD_MAX`, capped from 34: the widest silhouette that reads as roadworks is 2px
+	# over the full pavement band, `EventInstance.setup()` centres it on.
+	def.obstructs_radius = SIDEWALK_SPREAD_MAX
 	def.weight = 1.5
 	def.max_per_day = 15
 	def.cost = 2

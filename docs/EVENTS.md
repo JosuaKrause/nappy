@@ -134,6 +134,19 @@ arrangement on load. It is why `alley_robbery`'s inner radius is 30 rather than 
 width would suggest: a man is 11px wide and she is 14, so at 22 the pram is held three pixels
 *outside* the radius that takes the baby.
 
+### Which way a spread lies
+
+`_draw_spread` and `_draw_cafe` lay their segments along local X by default — the right way to
+block a north-south street, where the traffic runs along Y and a barrier across it has to span X.
+On an east-west street the same default would lie parallel to the traffic and block nothing, so
+`EventInstance._spread_is_vertical()` rotates the lay onto local Y whenever the tile it is asked
+about sits on a corridor running that way. **It is a property of the street, decided once in
+`setup()`, and never a field a row sets** — two rows on the same street face the same way for the
+same reason, and `CityMap.corridor_offset` answers it for a `ROAD` or `CROSSING` tile exactly as it
+answers it for a `SIDEWALK` one, with no second lookup for either. A junction (both of a tile's
+coordinates inside a corridor band) and ground off any corridor at all (a square, a park, a
+courtyard) both keep the default lay along local X: neither has one street to be wrong about.
+
 ### Which lane of the pavement
 
 A corridor is sidewalk | road | sidewalk, so a pavement tile has a kerb on one side and a frontage
@@ -382,7 +395,7 @@ All implemented.
 | `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Constant, medium. The plain obstacle route planning is practised on. At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway is a street that costs the other side. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
-| `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` 34px), and the one that leaves no gap: 68px across a 64px sidewalk forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time and exposure, never the day. |
+| `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it and forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time and exposure, never the day. |
 | `fire_truck` | ONE_SHOT | 3 | Drives an arterial at 190px/s with a 340px radius and a 4s telegraph (the fast-mover rule — see docs/MECHANICS.md). `spawns_on_finish` leaves a `burning_building` where it stops. |
 | `burning_building` | — | — | Never scheduled: a SCRIPTED def with no day, so only the fire engine can put one in the world. Burns for the rest of the day, and you cannot walk through the fire. |
 
