@@ -897,6 +897,14 @@ always tree ground — the fact `SealPlanner` already reads to refuse a seal. Wi
 street that join landed on was whatever a branch's own random walk happened to reach home through,
 and on a bad roll every street the home led to could be off-tree and sealed at once.
 
+**The main road is exempt too, and a route never runs along it in the first place.** `RouteTree`
+refuses to grow a strand along the spine's own length — she may still cross it wherever she likes,
+which is unchanged and unrestricted — so the main road is off every day's tree by construction.
+Sealing it as well would wall the one street the design deliberately leaves open, so `SealPlanner`
+refuses it outright rather than treating "off the tree" as reason enough. It is already the worst
+ground in the game to stand on (0.6× decay against an ordinary street's 1.0), which is why making
+it *not a route* is the whole of the fix.
+
 **Alleys are not streets, so they are never sealed — a through-alley's *mouth* can be.** An alley
 that touches the tree at either end stays open outright, which is the way round a wall the design
 asks for; one that touches it at neither end is walled at both mouths, so it can never bridge two

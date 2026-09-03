@@ -56,6 +56,15 @@ extends RefCounted
 ## one derived from which cells are on the tree rather than tracked directly. `cells()` is the new
 ## one, for the picture and for `Corridor`'s tile-level questions.
 ##
+## **The main road.** *(2026-09-03, playtest 22: "a path should never go alongside the main road —
+## main road by itself can be considered a blocker — paths can only cross the main road".)* Every
+## probe here refuses an edge that would walk along the spine's own length; a crossing — a straight
+## run of steps at right angles to it, in and out the far side — is never refused, because nothing
+## here asks about direction, only about whether consecutive cells share the spine's column and
+## differ along it. `docs/CITY.md` still holds: she may cross wherever she likes, and nothing here
+## gates a crossing or gives it a day number. `SealPlanner` refuses the spine as a candidate
+## outright — see its own doc — so this is the only place that has to know it exists at all.
+##
 ## **The trunk.** *(2026-09-03, playtest 22: "the starting area was sealed off completely and the
 ## only way out was alongside the main road, which basically ends the day".)* `_home` is a rect of
 ## nodes and every branch's probe reaches *some* node bordering it, but which one is whatever the
@@ -321,7 +330,7 @@ func _walk_home(sources: Array[int], colour: int, rng: RandomNumberGenerator) ->
 	var at := start
 	var steps := 0
 	while not _is_the_end_of_a_probe(at, colour):
-		var ways: Array = grid.neighbours(at)
+		var ways: Array = _ways(at)
 		if ways.is_empty():
 			return []
 		steps += 1
@@ -366,7 +375,7 @@ func _shortest_home(sources: Array[int], colour: int) -> Array[int]:
 		head += 1
 		if _is_the_end_of_a_probe(node, colour):
 			return _unwind(previous, node)
-		for edge: Array in grid.neighbours(node):
+		for edge: Array in _ways(node):
 			var next: int = edge[0]
 			if previous.has(next) or _carries(next, colour):
 				continue
@@ -396,8 +405,11 @@ func _carries(node: int, colour: int) -> bool:
 
 # ------------------------------------------------------------------ the main road ---
 
-## `grid.neighbours(node)` with every edge that would walk along the main road removed. Used by
-## `_grow_the_trunk()`'s own search; see its own doc for why the trunk in particular needs this.
+## `grid.neighbours(node)` with every edge that would walk along the main road removed. Every
+## probe that plans a route calls this rather than the grid directly — `_walk_home`,
+## `_shortest_home` and `_grow_the_trunk`'s own search. `node_depths()` does not, because it
+## answers a proximity question about the physical lattice rather than proposing a way to walk,
+## and the main road is real ground either way.
 func _ways(node: int) -> Array:
 	var edges := grid.neighbours(node)
 	if not _map or _map.main_road < 0:

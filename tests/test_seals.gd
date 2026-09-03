@@ -19,6 +19,7 @@ func run(t) -> void:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 91))
 	_test_every_off_tree_street_is_sealed(t)
 	_test_the_tree_and_the_doorstep_are_never_sealed(t)
+	_test_the_main_road_is_never_sealed(t)
 	_test_the_tree_itself_is_untouched(t)
 	_test_the_doorstep_reaches_the_corridor(t)
 	_test_a_day_is_still_winnable_under_every_seal(t)
@@ -38,7 +39,8 @@ func _seal_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 	rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
 	return rng
 
-## Every real, non-home, off-tree street — what a day's seals are supposed to cover exactly.
+## Every real, non-home, non-spine, off-tree street — what a day's seals are supposed to cover
+## exactly.
 func _candidate_segments(map: CityMap, tree: RouteTree,
 		home: StreetNetwork.Segment) -> Dictionary:
 	var found := {}
@@ -47,6 +49,8 @@ func _candidate_segments(map: CityMap, tree: RouteTree,
 		if not map.has_street(key) or tree.is_on_the_tree(key):
 			continue
 		if home and key == home.key():
+			continue
+		if SealPlanner._is_the_main_road(map, segment):
 			continue
 		found[key] = true
 	return found
@@ -107,6 +111,26 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
 				t.check(not (home != null and segment.key() == home.key()),
 						"seed %d day %d: a seal stands on the doorstep's own street"
 						% [map.seed_used, day])
+
+## The main road is refused as a seal candidate outright — see `SealPlanner._is_the_main_road` and
+## its class doc, "The main road is exempt too". Checked over every real vertical segment at
+## `map.main_road`'s own corridor index, not only the ones sampled for the other tests, since a
+## seal here would wall the one street the design deliberately leaves open to cross.
+func _test_the_main_road_is_never_sealed(t) -> void:
+	for map in _maps:
+		if map.main_road < 0:
+			continue
+		for day in [1, 7, 14]:
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var planned := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+			var sealed := _sealed_segments(map, planned)
+			for segment in StreetNetwork.segments():
+				if not SealPlanner._is_the_main_road(map, segment):
+					continue
+				t.check(not sealed.has(segment.key()),
+						"seed %d day %d: a seal stands on the main road at %s"
+						% [map.seed_used, day, segment.key()])
 
 ## `SealPlanner` only ever reads `tree.is_on_the_tree()` — it must never grow, shrink or move what
 ## the tree itself carries.

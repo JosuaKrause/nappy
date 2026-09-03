@@ -45,6 +45,16 @@ extends RefCounted
 ## **The doorstep is exempt.** `ClosurePlanner.home_street(map)` is never sealed, for the same
 ## reason it is never closed: the home is a notch with one exit, so sealing it seals her in.
 ##
+## **The main road is exempt too, and that is a decision rather than an oversight.** *(2026-09-03,
+## playtest 22: "a path should never go alongside the main road — main road by itself can be
+## considered a blocker — paths can only cross the main road".)* `RouteTree` now refuses to route
+## a strand along it (see its own class doc, "The main road"), so the spine is off the tree on
+## every day by construction — which would make the loop below seal every segment of it, sidewalk
+## to sidewalk, on every day of the run. It is already the worst ground in the game to stand on
+## (`Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER`, 0.6 against an ordinary street's 1.0), so making
+## it *not a route* is enough — sealing it on top would be the harm playtest 22 reported rather than
+## the fix, and `docs/CITY.md`'s constraint that she may cross it wherever she likes stands unmoved.
+##
 ## **The winnability guarantee is not re-proved here, it is true by construction.** A seal never
 ## stands on tree ground or on the home street — the two things `RouteTree`/`ClosurePlanner`
 ## already guarantee a route through — so nothing here can cut the corridor. `tests/test_seals.gd`
@@ -102,8 +112,8 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 
 # ------------------------------------------------------------------- planning ---
 
-## Every seal for the day: one per off-tree, real, non-home street, plus the mouths of any
-## through-alley that rejoins the corridor at neither end. Returned as `EventScheduler.Planned`
+## Every seal for the day: one per off-tree, real, non-home, non-spine street, plus the mouths of
+## any through-alley that rejoins the corridor at neither end. Returned as `EventScheduler.Planned`
 ## so the caller (`EventManager.start_day`) can simply append them to the day's plan.
 static func plan_day(map: CityMap, day: int, tree: RouteTree,
 		rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
@@ -117,12 +127,20 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 			continue
 		if home and key == home.key():
 			continue
+		if _is_the_main_road(map, segment):
+			continue
 		var candidate := _pick_candidate(day, rng)
 		if not candidate:
 			continue
 		planned.append_array(_place(map, segment, candidate))
 	planned.append_array(_seal_alley_mouths(map, tree, day))
 	return planned
+
+## Whether `segment` is the main road. See the class doc: never a seal candidate, because
+## `RouteTree` already refuses to route a strand along it, and sealing it too would wall the one
+## street the design deliberately leaves open to cross.
+static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> bool:
+	return not segment.horizontal and segment.a.x == map.main_road
 
 static func _pick_candidate(day: int, rng: RandomNumberGenerator) -> Candidate:
 	var eligible: Array[Candidate] = []
