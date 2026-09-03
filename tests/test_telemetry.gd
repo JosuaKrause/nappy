@@ -40,6 +40,9 @@ func run(t) -> void:
 	_test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t)
 	_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t)
 	_test_the_map_picture_draws_the_trail_and_distinguishes_running(t)
+	_test_a_runs_files_share_one_folder(t)
+	_test_the_attempt_suffix_names_every_attempt_including_the_first(t)
+	_test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t)
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -810,6 +813,111 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 			"and the line is a shot entry")
 	Telemetry.end_run()
 	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
+
+# ---------------------------------------------------------------- one folder ---
+# *(docs/TODO.md, M70, "all the files of one run live in one folder": the run identity moved from
+# a shared filename stem to a folder, `<day>/<commit>/<run>/`, and a day played twice — a nerve
+# retries a lost day without the calendar advancing — has to write a second picture rather than
+# overwrite the first's.)*
+
+## Deletes a real path this suite wrote, so a test that opens a real run — the only way to check
+## a folder actually landed where `begin_run()` says it does — leaves nothing behind for a person
+## to find later. Also removes the `<commit>` and `<day>` ancestors once they are empty: nothing in
+## the game does that any more (2026-09-03: "no automatic cleanup anymore"), but the suite is a
+## guest in the real telemetry directory and should not scatter empty folders through it.
+func _delete_recursive(path: String) -> void:
+	var dir := DirAccess.open(path)
+	if dir:
+		for sub in dir.get_directories():
+			_delete_recursive("%s/%s" % [path, sub])
+		for file in dir.get_files():
+			DirAccess.remove_absolute("%s/%s" % [path, file])
+	DirAccess.remove_absolute(path)
+	for ancestor in [path.get_base_dir(), path.get_base_dir().get_base_dir()]:
+		var above := DirAccess.open(ancestor)
+		if above and above.get_files().is_empty() and above.get_directories().is_empty():
+			DirAccess.remove_absolute(ancestor)
+
+## The only way to check a folder actually landed where `begin_run()` says it does is to open a
+## real run — `begin_memory_log()` has no path to inspect. `false` (a rig) because this is a
+## scripted check rather than a person at the controls, the same reason `check.sh` and `shot.sh`
+## write `rig-`.
+func _test_a_runs_files_share_one_folder(t) -> void:
+	var map := CityGenerator.generate(4242)
+	Telemetry.begin_run(778812345, false)
+	var log_path := Telemetry.current_log().path
+	t.check(log_path != "", "a real run opens a file")
+	t.check(log_path.get_file() == "run.log",
+			"the log is named plainly — the folder is what says which run it belongs to (got '%s')"
+			% log_path.get_file())
+	var run_dir := log_path.get_base_dir()
+	t.check(run_dir.get_file().begins_with("rig-"),
+			"the run folder itself carries the run/rig distinction (got '%s')" % run_dir.get_file())
+	t.check(run_dir.get_base_dir().get_file() == Telemetry._file_tag(),
+			"its parent is the commit folder (got '%s', wanted '%s')"
+			% [run_dir.get_base_dir().get_file(), Telemetry._file_tag()])
+
+	Telemetry.begin_day(1, 1, 778812345, 778812345, 10.0)
+	Telemetry.write_map(map, 1)
+
+	var maps_dir := "%s/maps" % run_dir
+	t.check(DirAccess.dir_exists_absolute(maps_dir),
+			"the map landed in the run's own maps/ folder rather than beside the log")
+	var found := DirAccess.open(maps_dir).get_files()
+	t.check(found.has("day01-attempt1.png"),
+			"a first attempt is named like every other attempt (got %s)" % found)
+
+	Telemetry.end_run()
+	_delete_recursive(run_dir)
+
+## `_attempt_suffix()` is what every filename that can repeat within a run asks for its own name.
+## Driven directly against a memory log, so this needs no disk at all — it is a question about
+## `_day_attempts`, not about anything written anywhere.
+func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void:
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(6, 2, 1, 1, 10.0)
+	t.check(Telemetry._attempt_suffix() == "-attempt1",
+			"a first attempt is named too, so every name has the same shape")
+	Telemetry.begin_day(6, 2, 1, 1, 10.0)
+	t.check(Telemetry._attempt_suffix() == "-attempt2",
+			"a second attempt at the same day is named (a nerve retries without the day advancing)")
+	Telemetry.begin_day(7, 2, 1, 1, 10.0)
+	t.check(Telemetry._attempt_suffix() == "-attempt1",
+			"a different day's first attempt is unaffected by day 6's retry")
+	Telemetry.begin_day(6, 2, 1, 1, 10.0)
+	t.check(Telemetry._attempt_suffix() == "-attempt3",
+			"day 6 keeps its own count across whatever happened to other days in between")
+	Telemetry.end_run()
+
+## `GameState.finish_day()` retries a lost day by calling `_start_day()` again with the same
+## `GameState.day` — `begin_day()` sees the same day number twice — and `write_map()` is called
+## once per attempt from `main.gd`. Without the attempt in the name the second call's map would
+## overwrite the first's, which is exactly the picture worth keeping: the day that went wrong.
+func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t) -> void:
+	var map := CityGenerator.generate(4242)
+	Telemetry.begin_run(778812346, false)
+	var run_dir := Telemetry.current_log().path.get_base_dir()
+
+	Telemetry.begin_day(6, 2, 778812346, 778812346, 10.0)
+	Telemetry.write_map(map, 6)
+	Telemetry.write_map(map, 6, [], null, [], true)  # dusk, same attempt
+	Telemetry.begin_day(6, 2, 778812346, 778812346, 10.0)  # the retry a nerve buys
+	Telemetry.write_map(map, 6)
+	Telemetry.write_map(map, 6, [], null, [], true)
+
+	var found := DirAccess.open("%s/maps" % run_dir).get_files()
+	t.check(found.has("day06-attempt1.png"),
+			"the first attempt's dawn map is still there (got %s)" % found)
+	t.check(found.has("day06-attempt1-dusk.png"),
+			"and its dusk map is too (got %s)" % found)
+	t.check(found.has("day06-attempt2.png"),
+			"the retry writes a second dawn picture instead of overwriting the first (got %s)"
+			% found)
+	t.check(found.has("day06-attempt2-dusk.png"),
+			"and a second dusk picture (got %s)" % found)
+
+	Telemetry.end_run()
+	_delete_recursive(run_dir)
 
 # ------------------------------------------------------------------ helpers ---
 

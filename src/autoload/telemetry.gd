@@ -23,66 +23,94 @@ extends Node
 
 ## Where logs go. Printed at the start of a run, because a trace nobody can find is a trace
 ## nobody reads.
+##
+## **The game never deletes anything under here.** *(2026-09-03: "no automatic cleanup anymore",
+## "the folder structure allows for easily deleting old days/commits".)* Every run gets its own
+## folder, `<day>/<commit>/<run>/` (see `begin_run()`), precisely so a person can `rm -rf` a day or
+## a commit by hand once the directory is bigger than they want. That is a decision for whoever is
+## looking at the directory, not one the game makes behind them — `tools/telemetry.sh -p` is the
+## one tool that still deletes anything, and it does that because somebody ran it, not on its own.
 const DIRECTORY := "user://telemetry"
-## Logs kept before the oldest are pruned. `check.sh` and `shot.sh` boot the game too, so the
-## directory would otherwise fill with two-line traces of a run that never started.
-const KEEP_LOGS := 50
 
 var _log: TelemetryLog
 ## Seconds into the current day, fed by the observer from the day clock so that a timestamp
 ## in the log and the clock in the HUD are the same number.
 var _clock := 0.0
 var _day_open := false
-## The log's own filename without its extension, so a screenshot can be named after the run it
-## belongs to and sort next to it.
-var _stem := ""
+## The current run's own folder, absolute — every artefact of this run is written under it.
+## `""` when the log is in memory only, which is what the test suite runs on.
+var _run_dir := ""
+## How many times `begin_day()` has opened each day number this run. A nerve buys another attempt
+## at the same day without the calendar advancing — see `GameState.finish_day()` — so `begin_day`
+## is called again with the day number it just failed at, and this is what lets the second
+## attempt's pictures say so instead of overwriting the first's. Reset at the start of a run.
+var _day_attempts := {}
+## The day currently open's attempt number, `1` on a first attempt — mirrors
+## `_day_attempts[day]` for whichever day that is, kept as its own field so nothing that names a
+## file has to be handed the day number back in just to look the count up again.
+var _attempt := 1
 
 ## Whether anything is being recorded. Everything else here is a no-op when this is false.
 func is_active() -> bool:
 	return _log != null
 
-## Opens a log for a run. Called by `main.gd` and by nothing else — a system that wants to be
-## traced calls `note()` and lets this decide whether anyone is listening.
+## Opens a log for a run, in its own folder under `DIRECTORY`. Called by `main.gd` and by nothing
+## else — a system that wants to be traced calls `note()` and lets this decide whether anyone is
+## listening.
+##
+## **The folder is `<day>/<commit>/<run>/`, and every level is there to be deleted on its own.**
+## *(2026-09-03: "folder should be <day>/<commit>/<run>/<type> where type is automated screenshot
+## vs maps vs manual screenshots log file lives directly in the run folder".)*
+##
+## - `<day>` is the calendar date the run was played (not the in-game day), so a bad week can go
+##   with one `rm -rf` of its date folders.
+## - `<commit>` is `_file_tag()` — the short hash the run was played on, or `<hash>-dirty` — so
+##   every run played on a build that no longer exists can go together. `tools/telemetry.sh -p`
+##   compares this folder's name against `git rev-parse --short HEAD` to say what is stale.
+## - `<run>` is the individual run, and carries only what its two ancestors do not already say:
+##   `run-` or `rig-` (see `played` below — the distinction `tools/stats.sh` counts separately and
+##   `tools/telemetry.sh -l` lists), the time of day, and the seed. The time is what sorting the
+##   folder names within one `<day>/<commit>` sorts by age, the same property the flat layout kept
+##   by putting the full timestamp first in the name.
+## - The log itself is `run.log`, directly in the run's folder rather than a suffix on a shared
+##   stem — the folder is what says which run a file belongs to now, so the file only has to say
+##   which file *within* the run it is.
 ##
 ## **`played` says whether a person was at the controls, and it is the caller's answer rather than
-## something guessed here.** A pile of logs that does not say which of them a person played reads as
-## a great many plays that never happened, and every inference drawn from it is skewed. A rig's log
-## opens with the stem `rig-` instead of `run-`, so the question is answered by a directory listing
-## — the same reason the commit is in the name.
+## something guessed here.** A pile of runs that does not say which of them a person played reads as
+## a great many plays that never happened, and every inference drawn from it is skewed.
 ##
-## **The tool already had a proxy for this and the proxy is why it had to be said out loud.**
-## `tools/telemetry.sh` calls anything under 3kB "a boot that never became a run", which catches
-## `check.sh` and a doorstep screenshot and misses the case that matters most — a
-## `shot.sh --walk 60` writes a large, busy, entirely unplayed log. That is this project's own
-## recurring mistake in miniature: **a proxy that is equivalent in the ideal case is not equivalent
-## in a street**, and every measurement taken of the proxy agrees with it.
-##
-## **Silently does nothing on a web export.** `user://` is browser storage there, nobody collects
-## it, and it has no `tools/telemetry.sh` to prune it — see `KEEP_LOGS`, which only ever runs on
-## the machine that wrote the logs it is counting. Checked here rather than by the one caller, so
-## a future caller cannot reintroduce a run log on the one platform where nobody would ever read
-## or clear it.
+## **Silently does nothing on a web export.** `user://` is browser storage there — a stranger's
+## browser rather than a developer's disk — so nobody collects what lands in it and nobody would
+## ever run `tools/telemetry.sh` against it. Checked here rather than by the one caller, so a future
+## caller cannot reintroduce a run log on the one platform where nobody would ever read or clear it.
 func begin_run(run_seed: int, played := true) -> void:
 	end_run()
 	if OS.has_feature("web"):
 		return
-	if not _prepare_directory():
+	if not DirAccess.dir_exists_absolute(DIRECTORY) \
+			and DirAccess.make_dir_recursive_absolute(DIRECTORY) != OK:
+		push_warning("telemetry: cannot create %s" % DIRECTORY)
 		return
-	var stamp := Time.get_datetime_string_from_system(false, false).replace(":", "").replace(" ", "-")
-	# **The commit is in the name, not only on line 1.** On the first line it is no help when the
-	# question is asked of a directory listing — and it is always asked of a listing, because what
-	# a reader wants to know first is *which of these is still about this build*, in order to
-	# delete the rest. `tools/telemetry.sh -p` is the other half.
-	# The tag goes **last**, and that is not a cosmetic choice: the timestamp has dashes in it and so
-	# does `abc1234-dirty`, so a tag in the middle cannot be parsed back out by anything simpler than
-	# a real parser — and the thing that has to parse it is a bash script old enough to run on
-	# macOS's bash 3.2. At the end it is "everything after `-seed<digits>-`".
-	_stem = "%s-%s-seed%d-%s" % ["run" if played else "rig", stamp, run_seed, _file_tag()]
-	_log = TelemetryLog.new("%s/%s.log" % [DIRECTORY, _stem])
+	# "YYYY-MM-DDTHH:MM:SS" — split rather than reformatted, so the date half is exactly what a
+	# person reads as today's date and the time half needs only its colons stripped to be a
+	# folder-safe word.
+	var stamp := Time.get_datetime_string_from_system(false, false)
+	var day_folder := stamp.get_slice("T", 0)
+	var time_part := stamp.get_slice("T", 1).replace(":", "")
+	_run_dir = "%s/%s/%s/%s-%s-seed%d" % [DIRECTORY, day_folder, _file_tag(),
+			"run" if played else "rig", time_part, run_seed]
+	if DirAccess.make_dir_recursive_absolute(_run_dir) != OK:
+		push_warning("telemetry: cannot create %s" % _run_dir)
+		_run_dir = ""
+		return
+	_log = TelemetryLog.new("%s/run.log" % _run_dir)
 	_clock = 0.0
 	_day_open = false
 	_shots_today = 0
 	_last_shot = -INF
+	_day_attempts = {}
+	_attempt = 1
 	_log.header("nappy %s log  %s  commit %s"
 			% ["run" if played else "rig", Time.get_datetime_string_from_system(),
 			source_version()])
@@ -98,14 +126,24 @@ func begin_run(run_seed: int, played := true) -> void:
 func begin_memory_log() -> void:
 	end_run()
 	_log = TelemetryLog.new()
+	_run_dir = ""
 	_clock = 0.0
 	_day_open = false
+	_day_attempts = {}
+	_attempt = 1
 	_log.header("nappy run log  (memory)")
 
 ## Starts a day's section. Everything after this is timestamped from zero.
+##
+## **Also where the attempt is counted.** A nerve retries a lost day without the calendar
+## advancing — see `GameState.finish_day()` — so this is called again with the same `day`, and
+## `_day_attempts[day]` counts how many times that has happened. `_attempt` is a first attempt
+## (`1`) until it is not, and `_attempt_suffix()` is what turns that into a filename fragment.
 func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float) -> void:
 	if not _log:
 		return
+	_day_attempts[day] = int(_day_attempts.get(day, 0)) + 1
+	_attempt = _day_attempts[day]
 	_clock = 0.0
 	_day_open = true
 	_shots_today = 0
@@ -188,7 +226,7 @@ func snapshot(kind: String) -> void:
 		return
 	_shots_today += 1
 	_last_shot = _clock
-	_capture("%s/%s-%03.0fs-%s.png" % [DIRECTORY, _stem, _clock, kind])
+	_capture("%s/%03.0fs%s-%s.png" % [_type_dir("auto"), _clock, _attempt_suffix(), kind])
 
 ## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
 ## a game feature.
@@ -214,7 +252,7 @@ func snapshot_now(context: String) -> void:
 	if _log.path == "" or DisplayServer.get_name() == "headless":
 		return
 	_shots_today += 1
-	_capture("%s/%s-%03.0fs-asked.png" % [DIRECTORY, _stem, _clock])
+	_capture("%s/%03.0fs%s-asked.png" % [_type_dir("asked"), _clock, _attempt_suffix()])
 
 # --------------------------------------------------------------- the city grid ---
 
@@ -245,12 +283,19 @@ func snapshot_now(context: String) -> void:
 ## `trail` and `met` are `TelemetryObserver`'s own lists — see `TelemetryObserver.trail()` and
 ## `.met_events()` — passed through untouched. Reading them here takes no RNG and changes nothing
 ## about either list, the same promise every other argument to this function already keeps.
+##
+## **A day played twice writes two pictures.** A nerve retries a lost day without the calendar
+## advancing, so this is called again for the same `day` — and without the attempt in the name the
+## second attempt's maps would overwrite the first's, destroying the picture of the day that went
+## wrong. `_attempt_suffix()` names the attempt every time, including the first, so a filename is
+## never ambiguous about which attempt it came from and there is only one shape to read.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
 		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
 	if not _log or _log.path == "":
 		return
-	var path := "%s/%s-map-day%02d%s.png" % [DIRECTORY, _stem, day, "-dusk" if at_dusk else ""]
+	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, _attempt_suffix(),
+			"-dusk" if at_dusk else ""]
 	var drawn := tree if tree else RouteTree.for_day(map, day)
 	if TelemetryMap.render(map, closures, drawn, plans, trail, met).save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
@@ -298,47 +343,30 @@ static func source_version() -> String:
 		return commit
 	return commit + ("*" if ("\n".join(status)).strip_edges() != "" else "")
 
-## The same thing in a form a filename can carry, and a shell script can match on.
+## The same thing in a form a folder name can carry, and a shell script can match on.
 ##
 ## `*` is the dirty marker on line 1 of the log and is a glob character everywhere else, so it
-## becomes a word: `tools/telemetry.sh -p` compares the tag against `git rev-parse --short HEAD` and
-## a marker that expanded in a shell would make that comparison delete the wrong things.
+## becomes a word: `tools/telemetry.sh -p` compares a run's `<commit>` folder against
+## `git rev-parse --short HEAD` and a marker that expanded in a shell would make that comparison
+## delete the wrong things.
 static func _file_tag() -> String:
 	return source_version().replace("*", "-dirty")
 
 # ------------------------------------------------------------------ the files ---
 
-func _prepare_directory() -> bool:
-	if not DirAccess.dir_exists_absolute(DIRECTORY):
-		if DirAccess.make_dir_recursive_absolute(DIRECTORY) != OK:
-			push_warning("telemetry: cannot create %s" % DIRECTORY)
-			return false
-	_prune()
-	return true
+## `-attempt<N>` on every name a run writes, including the first, so every filename has the same
+## shape and nothing that reads or matches one has to handle a suffix that is sometimes there and
+## sometimes not. See `begin_day()`, which is where `_attempt` is counted.
+func _attempt_suffix() -> String:
+	return "-attempt%d" % _attempt
 
-## Keeps the newest `KEEP_LOGS` and deletes the rest. Only files this class named: the
-## directory is ours, but deleting by pattern rather than by "everything else" means a note
-## somebody dropped in there by hand survives.
-func _prune() -> void:
-	var dir := DirAccess.open(DIRECTORY)
-	if not dir:
-		return
-	var ours: Array[String] = []
-	for file in dir.get_files():
-		if file.begins_with("run-") and file.ends_with(".log"):
-			ours.append(file)
-	if ours.size() < KEEP_LOGS:
-		return
-	# The name carries the timestamp, so sorting by name sorts by age.
-	ours.sort()
-	for i in ours.size() - KEEP_LOGS + 1:
-		_remove_run(dir, ours[i].trim_suffix(".log"))
-
-## Deletes a log and the snapshots taken during it. They are one artefact — a line and the
-## picture of it — so a pruned run must not leave its images behind, which would otherwise be the
-## only thing in the directory nothing ever cleans up.
-func _remove_run(dir: DirAccess, stem: String) -> void:
-	dir.remove(stem + ".log")
-	for file in dir.get_files():
-		if file.begins_with(stem + "-") and file.ends_with(".png"):
-			dir.remove(file)
+## The folder one kind of picture lives in, within the current run — `auto` for the heuristic's own
+## screenshots (`snapshot()`), `maps` for the day maps (`write_map()`), `asked` for a picture a
+## person pressed a key for (`snapshot_now()`). Created the first time something is actually
+## written there rather than eagerly at `begin_run()`, so a run that never triggers the heuristic
+## — most of them — does not leave an empty `auto/` folder behind for a person to wonder about.
+func _type_dir(name: String) -> String:
+	var dir := "%s/%s" % [_run_dir, name]
+	if DirAccess.make_dir_recursive_absolute(dir) != OK:
+		push_warning("telemetry: cannot create %s" % dir)
+	return dir

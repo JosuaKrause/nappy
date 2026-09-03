@@ -99,13 +99,20 @@ rather than just pointing at it.
 **Every log, telemetry map or screenshot a doc points at gets copied into `docs/evidence/` in the
 same commit as the sentence that points at it.**
 
-`user://telemetry/` is a **scratch directory the player has to be able to empty.** It fills with
-every `tools/shot.sh` and `tools/check.sh` run, so tidying it is routine maintenance — which means a
-finding whose evidence lived only there stops being checkable on a perfectly ordinary Tuesday.
+`user://telemetry/` is a **scratch directory the player has to be able to empty**, and nothing
+prunes it — every `tools/shot.sh` and `tools/check.sh` run adds to it and the game deletes none of
+it, so emptying it is the player's routine maintenance. A finding whose evidence lived only there
+stops being checkable on a perfectly ordinary Tuesday.
 
 Evidence cannot be recovered by replaying: **a run log is a record of what a player did, so it is
-not a function of the seed.** Regenerating gives a different run with the same city. **Keep the
-original filename**; it carries the timestamp, the seed and the commit.
+not a function of the seed.** Regenerating gives a different run with the same city.
+
+**Copy the whole `<day>/<commit>/<run>/` folder, at that same three-level path, under
+`docs/evidence/`.** A run *is* a folder — `user://telemetry/<day>/<commit>/<run>/`, holding
+`run.log` and its `maps/`, `auto/` and `asked/` pictures — and **the folder is what carries the date,
+the commit and the seed**, since no single file inside it does. A lone picture lifted out of its
+`<run>/` folder is evidence with its ancestry left behind: nothing in the copy says which run it came
+from or what the code was when it was taken.
 
 ## Notes belong in the repo, never in a session's memory
 
