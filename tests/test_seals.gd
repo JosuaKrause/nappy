@@ -1,6 +1,6 @@
 extends RefCounted
-## `SealPlanner`: every street off the day's tree carries a seal, the tree and the doorstep never
-## do, and sealing never breaks the day's own winnability.
+## `SealPlanner`: every street off the day's tree carries a seal, the tree, the doorstep and the
+## main road never do, and sealing never breaks the day's own winnability.
 ##
 ## `docs/TODO.md`, M64, "Place a seal off the tree, on every segment" is the design;
 ## `src/routes/seal_planner.gd` is the implementation. The winnability check here is a hard
@@ -8,6 +8,13 @@ extends RefCounted
 ## seal never stands on tree ground or the doorstep, so nothing it does can cut the one route the
 ## day already guarantees, and a failure here would mean that construction itself is broken rather
 ## than an unlucky placement to repair.
+##
+## **The winnability check is stated over the main road, not merely over reachability.** *(Playtest
+## 22, finding 5: "she could reach one, along the spine... reachable is not survivable.")* A plain
+## flood fill from the doorstep passed on the run that found this bug, along a route that used the
+## main road — physically connected is not the same claim as winnable, and the old assertion had no
+## way to tell the two apart. `_test_a_day_is_reachable_without_the_main_road` is the restatement;
+## see its own doc for exactly what it proves and what it does not.
 
 const SEEDS := 6
 const BASE_SEED := 71717
@@ -22,7 +29,7 @@ func run(t) -> void:
 	_test_the_main_road_is_never_sealed(t)
 	_test_the_tree_itself_is_untouched(t)
 	_test_the_doorstep_reaches_the_corridor(t)
-	_test_a_day_is_still_winnable_under_every_seal(t)
+	_test_a_day_is_reachable_without_the_main_road(t)
 	_test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t)
 	_test_candidate_shapes(t)
 	_test_day_one_has_a_working_soft_pair(t)
@@ -205,33 +212,67 @@ func _add_circle(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) 
 			if map.tile_to_world(tile).distance_to(at) <= radius:
 				blocked[tile] = true
 
-## The guarantee `EventScheduler._ensure_the_city_is_still_walkable` used to repair for the
-## catalogue's own placements, checked here for `SealPlanner`'s instead — see the class doc.
-func _test_a_day_is_still_winnable_under_every_seal(t) -> void:
+## Every tile a seal plan obstructs, on top of today's closures — the physical, tile-level ground
+## she may not stand on with every seal and every closure in place. Shared by both winnability
+## checks below so the two only differ in what they flood against, not in how they build `blocked`.
+func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
+	var closure_rng := RandomNumberGenerator.new()
+	closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+	var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree)
+	map.close_streets(closures)
+	var seals := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+	var blocked := map.closed_tiles.duplicate()
+	for plan in seals:
+		_add_circle(map, blocked, plan.position, plan.def.obstructs_radius)
+	return blocked
+
+## Every tile of `map.main_road`'s own band, the width of the corridor and the height of the map —
+## the same rect `CityMap.street_kind_at(true, tile)` answers `MAIN` for, built directly rather
+## than swept tile by tile, since the band is a single rect by construction.
+func _main_road_tiles(map: CityMap) -> Dictionary:
+	var blocked := {}
+	if map.main_road < 0:
+		return blocked
+	var rect := Rect2i(Vector2i(map.main_road * CityMap.period(), 0),
+			Vector2i(Tuning.STREET_WIDTH, map.size.y))
+	for tile in map.rect_tiles(rect):
+		blocked[tile] = true
+	return blocked
+
+func _some_calm_is_reached(map: CityMap, grid: ReachabilityGrid, blocked: Dictionary) -> bool:
+	var reached := grid.flood([map.home_rect.position], blocked)
+	for tile in map.calm_tiles():
+		if grid.reaches(tile, blocked, reached):
+			return true
+	return false
+
+## Restates playtest 22's finding 5 as a number rather than a word: not merely "reachable", but
+## reachable **without setting foot on the main road at all** — the one street whose excitement
+## decay multiplier is `Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` (0.6, against an ordinary
+## street's 1.0 and calm's 2.2), and the ground the reported run was forced onto: "the only way out
+## was alongside the main road which basically ends the day."
+##
+## **What this proves and what it does not.** It proves the day never *requires* the main road to
+## reach calm — the exact harm reported — by showing calm stays reachable even when the whole spine
+## is removed from the walkable graph on top of every seal and closure. **It does not simulate the
+## day**: the crowd and the events actually standing on whichever route she does take are not
+## counted here, only the static ground. A route that avoids the spine could in principle still
+## cost more than the meter allows before she arrives — full survivability needs the day's own event
+## and crowd simulation over the static graph this test builds, which is a real gap and is named
+## rather than closed here.
+func _test_a_day_is_reachable_without_the_main_road(t) -> void:
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
-			var closure_rng := RandomNumberGenerator.new()
-			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
-			var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree)
-			map.close_streets(closures)
-			var seals := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
-
+			var blocked := _blocked_for_day(map, day, tree)
+			for tile in _main_road_tiles(map):
+				blocked[tile] = true
 			var grid := ReachabilityGrid.build(map)
-			var blocked := map.closed_tiles.duplicate()
-			for plan in seals:
-				_add_circle(map, blocked, plan.position, plan.def.obstructs_radius)
-
-			var reached := grid.flood([map.home_rect.position], blocked)
-			var reachable := false
-			for tile in map.calm_tiles():
-				if grid.reaches(tile, blocked, reached):
-					reachable = true
-					break
-			t.check(reachable,
-					"seed %d day %d: some calm area is still reachable with every seal in place"
-					% [map.seed_used, day])
+			t.check(_some_calm_is_reached(map, grid, blocked),
+					("seed %d day %d: some calm area is reachable without the main road " +
+					"(decay ×%.1f, the ground playtest 22's run was forced onto)")
+					% [map.seed_used, day, Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
 
 # ------------------------------------------------------------------------ alleys ---
 
