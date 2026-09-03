@@ -14,13 +14,11 @@ mid-way through.
 
 ## The order
 
-1. **M48** — things drawn where they stand. **Ahead of M64 because M64 cannot ship without it**: a
-   seal is a thing lying *across* a street, nothing in the game rotates an event body, and M64
-   places ~150 of them a day. See M64's own note on the precondition.
-2. **M64** — off the path is closed, not dear. Its two design questions are answered; the pictures
-   are specified and the placement follows them.
-3. **M65** — the chalk mark is findable, and silent until it is found.
-4. **M56** — the resistance is noticed.
+1. **M64** — off the path is closed, not dear. Its design questions are answered; the pictures are
+   specified and the placement follows them. Both of its preconditions are built — the tree grows on
+   cells (M69) and a spread now faces the street it stands on (M48).
+2. **M65** — the chalk mark is findable, and silent until it is found.
+3. **M56** — the resistance is noticed.
 
 **The instrument they are read with now exists.** The dusk map draws the walk over the plan — where
 she went, where she ran, and which events actually reached her — so *did the corridor have to be
@@ -28,14 +26,18 @@ walked* and *what did a day cost* are questions a picture can answer. See `DECIS
 and `docs/TELEMETRY.md` for what the map draws. This is also the instrument playtest 20 was read
 with — a full seven-day run's fourteen maps, copied into `docs/evidence/`.
 
-**Playtest 20 is the freshest thing in this file.** Its four findings: a reachability gap now filed
-as M69, a chalk-mark idea folded into M65, a calm-area spoiling inconsistency added to M47, and a
-measured lead-time gap on the post-tutorial `charging_dog` added to M43's existing item on that row.
-Read it before picking anything up.
+**Playtest 21 is the freshest thing in this file**, and both of its findings are M64's. *"The city
+feels way empty now"* is a symptom with two candidate causes and no measurement separating them, and
+the density instruction attached to it moves both ends of M50's gradient rather than one. Read
+[PLAYTEST-21.md](PLAYTEST-21.md) before picking M64 up.
+
+**Playtest 20's four findings** went to M69 (a reachability gap, now built), M65 (a chalk-mark idea),
+M47 (a calm-area spoiling inconsistency) and M43 (a measured lead-time gap on the post-tutorial
+`charging_dog`).
 
 **Playtest 19's nine findings are filed against the milestones that own them** — M64 and M65 are
-new, and the rest went to M48 (barriers), M49 (the north edge, the junction paint) and the small
-items (the robber in a building).
+new, the barriers went to M48 and are built, and the rest went to M49 (the north edge, the junction
+paint) and the small items (the robber in a building).
 
 M53's one remaining piece is specified and unordered — see its entry.
 
@@ -96,18 +98,18 @@ what stays open is the day's **route tree** rather than a single line, which is 
 `RouteTree.for_day()` already grows — several strands, with the redundancy guarantee counted as a
 max flow. So the policy is: the tree is open, everything off it is closed.
 
-**M69 is a precondition, not merely the milestone ahead of this one.** A tree made of whole block
-sides puts every park crossing and every alley in the city off the tree, so *closed everywhere off
-the path* would seal the shortcuts the city is built around. The tree has to grow at cell
-granularity first — see M69, "The day's route tree moves onto the grid too".
+**Both of its preconditions are built, and each was a precondition for a different reason.**
 
-**And so is M48's rotation item, for the same kind of reason.** A seal is a thing lying *across* a
-street, so its whole content is which way it faces — and nothing in the game rotates an event body:
-`_draw_spread` in `src/events/event_instance.gd:1155` lays its segments along local X and only along
-local X, which is why every barrier in the game is drawn east–west whatever street it stands on.
-Against ~150 seals a day that is not a blemish, it is half of them lying sideways across the
-pavement. **Build M48's "a spread's rotation is a property of the street it stands on" first**, or
-this milestone ships a city of sideways trees.
+- **M69 put the tree on cells.** A tree made of whole block sides would have put every park crossing
+  and every alley in the city off the tree, so *closed everywhere off the path* would have sealed the
+  shortcuts the city is built around. `RouteTree` now grows on `ReachabilityGrid` cells, so a branch
+  can cut a park corner or run down an alley.
+- **M48 made a spread face its street.** A seal is a thing lying *across* a street, so its whole
+  content is which way it faces, and every barrier in the game used to be drawn east–west whatever
+  street it stood on. `EventInstance._spread_is_vertical()` now asks `CityMap.corridor_offset()` of
+  both of a tile's coordinates and swaps the layout onto local Y on a north–south street. **It answers
+  a street tile only**: a junction, a square, a park and a courtyard all keep the unrotated lay along
+  local X, which is worth knowing before ~150 seals a day are placed against it.
 
 **The whole tree stays open, and everything off it is sealed a full block at a time.**
 *(2026-09-03, answering the two questions this milestone could not be built without, and corrected
@@ -340,9 +342,10 @@ that meets one ends at its edge. What remains is that the ending is not *drawn* 
       `docs/CITY.md` says a span stops short of the crossroads at either end *"which is where the
       bollards are"*. **There is no bollard anywhere in the game** — no sprite, no tile, no prop. The
       carriageway simply ends flush against the paving, which reads as the road running out rather
-      than as a street that was closed on purpose. It is the same gap M48 names for the barrier that
-      is blue-grey with no hazard marking: one picture per row passes and the picture still says
-      nothing. What it wants is the smallest thing that says *this was done deliberately* — a line
+      than as a street that was closed on purpose. It is the same gap M48 closed for `construction`,
+      whose barrier boards were blue-grey with no hazard marking: one picture per row passes and the
+      picture still says nothing. What it wants is the smallest thing that says *this was done
+      deliberately* — a line
       of posts across the mouth is the real-world answer and it is also the cheapest drawing in the
       list
 
@@ -806,34 +809,6 @@ direction, not distance.**
 
 ---
 
-## M48 — Things drawn where they stand
-
-**First in the order, because M64 stands on it.** M64 seals every street off the day's corridor with
-a thing lying *across* it, which is on the order of a hundred and fifty bodies a day whose entire
-content is which way they face. The rotation item below is not a blemish to tidy at that scale — it
-is half the city's walls lying sideways.
-
-- [ ] **A body on a pavement has to fit on the pavement.** `construction` obstructs 34, so it draws
-      68px wide on a 64px sidewalk from a tile centre 16px from one edge — **it overhangs by 18px
-      whichever lane it lands in.** Every `_draw_spread` row can break the same way. Wants a test
-      over the catalogue
-      **Reported from play on 2026-09-02** (playtest 19, with a screenshot): *"they're all placed
-      with an offset that makes them clip into other things — the only barrier that is consistently
-      correct is the full street closure."* That last clause is the sharpest thing said about this
-      yet: **the closure is right because it spans the whole street**, so neither its offset nor its
-      rotation can be wrong. Every other placement is a body narrower than the ground it sits on,
-      which is the only case where either defect can show
-- [ ] **A spread is always drawn east–west, whatever street it is on.** Nothing rotates an
-      `EventInstance`. **A barrier's entire content is which way it faces**, and playtest 19 reports
-      it from play: *"they're always horizontal even when they should be vertical."* The fix is a
-      rule rather than a field — **a spread's rotation is a property of the street it stands on**,
-      which the map can already answer
-- [ ] **And it does not say what it is.** Blue-grey with no hazard marking. One-picture-per-row
-      passes and the row still says nothing, which is that rule's own limit — municipal barriers are
-      red-and-white for a reason
-
----
-
 ## M43 — Two that need a played run
 
 - [ ] **The pause lesson fires while she is being held.** *(2026-09-02, from play: "the pause
@@ -993,11 +968,13 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       `CityGenerator._place_hard_blockers` grows one reference route tree for both the dead-end and
       the big-building placement, and a cell-grown tree moves both — so this is a latent defect newly
       exposed, not one M69 introduced.)*
-- [ ] **Confirm the three barrier-placing milestones against the reachability grid.** M45's
-      closures, M48's barrier drawing and M62's checkpoint perimeter were each designed against the
-      block-level reachability model that no longer exists. Each wants confirming rather than
-      assumed clean — and M45's is the sharpest, because `ClosurePlanner` now refuses a calm area's
-      access streets outright, which is a filter M45's own items were written without
+- [ ] **Confirm the two remaining barrier-placing milestones against the reachability grid.** M45's
+      closures and M62's checkpoint perimeter were each designed against the block-level reachability
+      model that no longer exists. Each wants confirming rather than assumed clean — and M45's is the
+      sharpest, because `ClosurePlanner` now refuses a calm area's access streets outright, which is
+      a filter M45's own items were written without. M48 was the third and is off this list because
+      it was built after the grid was: its rotation rule reads `CityMap.corridor_offset()`, which is
+      geometry rather than reachability
 - [ ] **The robber can be placed inside a building, where he is stuck for ever.** *(2026-09-02:
       "the robber can be placed inside buildings which makes him unable to move at all.")*
       `alley_robbery` places on `ALLEY` tiles and pursues, and `EventInstance._walkable_step` clamps

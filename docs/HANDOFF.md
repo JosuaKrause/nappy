@@ -10,8 +10,7 @@ progress-tracking, which lives there too.
 
 **`main` has unpushed commits ahead of `origin/main` and is otherwise the only branch.** Nothing is
 half-written in the working tree and no worktree is open (`git log` over what has not reached
-`origin/main` says what those commits are, and the newest of them is M69's merge). Trust the tools
-over any sentence here:
+`origin/main` says what those commits are). Trust the tools over any sentence here:
 
 ```sh
 ./tools/test.sh          # the full headless suite, ~200s; must be 0 failures
@@ -25,9 +24,9 @@ A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not 
 
 **`check.sh`'s import pass rewrites `docs/ARCHITECTURE.md`'s file tree as a side effect**, turning a
 run of spaces into a tab on whichever lines it feels like — the file's tree is indented with spaces
-and it converts some of them every time. It is not a one-off: it happened twice in the session that
-built M69 alone. **Run `git status` after `check.sh` and revert anything you did not mean to
-change**, rather than assuming only the files you touched moved.
+and it converts some of them every time. It is not a one-off; it has happened in three separate
+sessions. **Run `git status` after `check.sh` and revert anything you did not mean to change**,
+rather than assuming only the files you touched moved.
 
 **The game is published, and a merge to `main` is a release.**
 `https://nappy.josuakrause.com/` serves it, and `.github/workflows/deploy.yml` rebuilds and
@@ -42,25 +41,28 @@ whose corridor was grown on cells.
 
 ## What to do next
 
-**Start with [PLAYTEST-20.md](PLAYTEST-20.md).** A full seven-day run, four findings, and it is still
-the freshest thing in the repo. Its findings are filed against the milestones that own them; the
-reachability gap has been built, and the record of what that turned into is `DECISIONS.md` under M69.
+**Start with [PLAYTEST-21.md](PLAYTEST-21.md), then [PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 21
+is a brief run with two findings and both are M64's: the city *"feels way empty"*, and an instruction
+about what the density should be on and off the path that moves **both** ends of M50's gradient.
+Playtest 20 is the full seven-day run behind it, and its findings are filed against the milestones
+that own them.
 
-**Read that record before touching routes, closures or the corridor**, because M69 changed the ground
-every one of them stands on. Reachability is now `ReachabilityGrid` — the tile map contracted into
-two-tile cells, one node per connected component of a cell's walkable tiles — the day's route tree
-grows on it, and `ClosurePlanner` refuses a calm area's access streets outright. `StreetNetwork` is
-still there and still owns the lattice and the structural route count; it is no longer what answers
-*can she get there today*.
+**Read `DECISIONS.md` under M69 before touching routes, closures or the corridor**, because it
+changed the ground every one of them stands on. Reachability is now `ReachabilityGrid` — the tile map
+contracted into two-tile cells, one node per connected component of a cell's walkable tiles — the
+day's route tree grows on it, and `ClosurePlanner` refuses a calm area's access streets outright.
+`StreetNetwork` is still there and still owns the lattice and the structural route count; it is no
+longer what answers *can she get there today*.
 
-1. **M64 — off the path is closed, not dear.** Now first in the order: every event in the catalogue
-   is a reason to cross the street and none is a reason not to go somewhere. **It supersedes M50's
-   gradient** — the corridor stops being the *cheapest* ground and becomes the *only way through*,
-   with the picture varying instead of the price. The mechanism already exists: two ordinary
-   obstacles facing each other leave no line to walk. What has to be decided first is how many ways
-   through the day's route tree keeps open, because under this policy that number is the difficulty
-   of the whole game. **Its precondition is built**: the tree now grows on cells, so sealing off the
-   tree no longer seals every park crossing and alley in the city.
+1. **M64 — off the path is closed, not dear.** First in the order and fully specified: every event in
+   the catalogue is a reason to cross the street and none is a reason not to go somewhere. **It
+   supersedes M50's gradient at both ends** — off the path stops being *dear* and becomes *closed*,
+   and the corridor stops being the *cheapest* ground and carries an ordinary event load. The
+   mechanism already exists: two ordinary obstacles facing each other leave no line to walk. **Both
+   preconditions are built** — the tree grows on cells (M69), so sealing off the tree no longer seals
+   every park crossing and alley; and a spread now faces the street it stands on (M48), so the ~150
+   seals a day are not half of them lying sideways. **Its first item is a measurement**, because
+   *"the city feels empty"* has two candidate causes and no evidence separating them.
 2. **M65 — the chalk mark.** Still the same two-part gap from playtest 19 — announced before it is
    found, unfindable once it is — with a third item added from playtest 20: a protester pointing
    toward the current objective, and made more common since a protester obstructs nothing.
@@ -86,11 +88,11 @@ Unordered, full entries in [TODO.md](TODO.md): **M61** (fields as ellipses whose
 from movement speed), **M62** (checkpoints and barricades dividing the map into regions), **M50**
 (the corridor's density; placeholders step 3; the four-street building), **M47** (the 2×2 courtyard
 complex; calm-area adjacency; multi-block calm re-derived for 121 blocks; the main road as a soft
-block), **M45** (closures that point), **M48** (bodies drawn wider than their pavement), **M43**
-(the tutorial dog after day 3; the one-contact cliff at 90; `RUN_TAUGHT_DAY` 3 → 2), **M49** (the
-fence, the vanishing border-walkers), **M68** (tap to walk as a switchable experiment), **M60**'s
-last two (the home arrow under a thumb, the browser smoke pass), **M25** (patrols for the empty
-acts), **M26** (teaching the controls), a shortlist of small items, and **M10** (polish).
+block), **M45** (closures that point), **M43** (the tutorial dog after day 3; the one-contact cliff
+at 90; `RUN_TAUGHT_DAY` 3 → 2), **M49** (the fence, the vanishing border-walkers), **M68** (tap to
+walk as a switchable experiment), **M60**'s last two (the home arrow under a thumb, the browser smoke
+pass), **M25** (patrols for the empty acts), **M26** (teaching the controls), a shortlist of small
+items, and **M10** (polish).
 
 ## What to distrust
 
@@ -139,6 +141,14 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   mechanically complicated row in the catalogue — a field, a trigger, a notice, a stand-off and a
   break-off — and every number on him is a rig's. The pacing man is a man with no body on a 64px
   footway, avoided by the meter alone.
+- **Every pavement obstacle moved this session and nobody has walked past one.** A stationary,
+  unpinned body is now centred on the two-lane pavement band rather than standing at its lane's
+  centre, and a spread on a north–south street is now laid along that street instead of across it. So
+  `construction` genuinely blocks a 64px pavement — she needs 46px of clearance and the band gives 32
+  — where before it left a free lane. That is the intent and it is also the first time an act I
+  obstacle has been physically impassable in play. **Whether it reads as *cross the street* or as a
+  wall dropped on the pavement is a played question**, and it is the one M64 is about to place a
+  hundred and fifty of a day.
 - **A street that is solid has been walked by a rig and by nobody.** About two thirds of the
   catalogue has a body. The open question is not density but whether being stopped reads as *cross
   the street* or as an obstacle course. The gap between a kerbed van and the frontage is smaller

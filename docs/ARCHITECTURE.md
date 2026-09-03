@@ -50,10 +50,10 @@ src/
 	event_instance.gd     runtime node: position, lifetime, telegraph, emission
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + day
-    event_manager.gd      owns the live instances; answers total_excitement_at
-    event_aura_layer.gd   draws the excitement fields under the entity layer
+	event_manager.gd      owns the live instances; answers total_excitement_at
+	event_aura_layer.gd   draws the excitement fields under the entity layer
   day/
-    day_controller.gd     the clock, the two phases, the four ways a day ends
+	day_controller.gd     the clock, the two phases, the four ways a day ends
   resistance/
 	resistance_director.gd  places the day's contact; the guard and the deadline
 	resistance_steps.gd     the eleven steps (five tasks, two beats each, plus the finale)
