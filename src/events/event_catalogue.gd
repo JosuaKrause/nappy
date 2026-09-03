@@ -15,6 +15,15 @@ extends RefCounted
 const PERSON_BODY := 11.0
 ## `vehicle.svg` is 48px across.
 const VEHICLE_BODY := 22.0
+## The widest a `_draw_spread`-style body (`EventInstance._draw_spread`, `_draw_cafe`) may be on a
+## `SIDEWALK` tile before it draws past the pavement it stands on.
+##
+## A body is drawn symmetrically about the tile centre the scheduler chose, and that centre sits
+## `Tuning.TILE_SIZE * 0.5` from the near edge of whichever of the pavement's two lanes it lands
+## in — the kerb on one lane, the frontage on the other, both the same distance away, so this is
+## the worst case whichever the scheduler picks. `tests/test_events.gd`,
+## `_test_a_spread_body_fits_the_ground_it_stands_on`, checks it over the whole catalogue.
+const SIDEWALK_SPREAD_MAX := Tuning.TILE_SIZE * 0.5
 
 static var _all: Array[EventDef] = []
 ## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
@@ -298,7 +307,10 @@ static func _cafe_tables() -> EventDef:
 	def.outer_radius = 170.0
 	def.telegraph_time = 1.6
 	def.pulse_period = 6.0
-	def.obstructs_radius = 24.0
+	# `SIDEWALK_SPREAD_MAX`, not a number chosen for how wide a café reads: any wider and the tables
+	# drawn symmetrically about the tile centre reach past the pavement, into the road on one lane
+	# or the frontage on the other.
+	def.obstructs_radius = SIDEWALK_SPREAD_MAX
 	# Raised with `dog_walker` and for the same reason — see the note there.
 	def.weight = 4.0
 	# Only what is inside `EVENT_STREAM_RADIUS` ever exists, which is a fraction of the map — so a
@@ -353,9 +365,9 @@ static func _busker() -> EventDef:
 	def.max_per_day = 10
 	return def
 
-## The only Act I event that is physically in the way. Blocking the sidewalk forces a
-## reroute rather than merely inviting one — and since a street is sidewalk|road|sidewalk,
-## the road is always still there, so it costs time and exposure, never the day.
+## The only Act I event that is physically in the way. Blocking the lane it stands on forces a
+## reroute onto the other one — and since a street is sidewalk|road|sidewalk, the far lane or the
+## road is always still there, so it costs time and exposure, never the day.
 static func _construction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "construction"
@@ -367,7 +379,10 @@ static func _construction() -> EventDef:
 	def.inner_radius = 46.0
 	def.outer_radius = 200.0
 	def.telegraph_time = 1.8
-	def.obstructs_radius = 34.0
+	# `SIDEWALK_SPREAD_MAX`, not the widest silhouette that reads as roadworks: any wider and the
+	# barrier, drawn symmetrically about the tile centre, reaches past the pavement it stands on —
+	# into the road on one lane or the frontage on the other.
+	def.obstructs_radius = SIDEWALK_SPREAD_MAX
 	def.weight = 1.5
 	def.max_per_day = 15
 	def.cost = 2
@@ -496,8 +511,10 @@ static func _loose_dog() -> EventDef:
 ## A market trestle taking the pavement, and the second thing on day 1 that forces a crossing.
 ##
 ## **One obstacle repeated eighteen times is a rule, not a decision**, which is why day 1 needs a
-## second one. This is louder and wider than `cafe_tables` and on the other side of pleasant: a café
-## you squeeze past is a nuisance, a market is a crowd.
+## second one. This is louder than `cafe_tables` and on the other side of pleasant: a café you
+## squeeze past is a nuisance, a market is a crowd. Not wider — `obstructs_radius` is capped the
+## same as `cafe_tables`' the moment `SIDEWALK` is one of its allowed grounds, since the same tile
+## the scheduler might choose is exactly as narrow for either row.
 static func _market_stall() -> EventDef:
 	var def := EventDef.new()
 	def.id = "market_stall"
@@ -509,7 +526,10 @@ static func _market_stall() -> EventDef:
 	def.outer_radius = 185.0
 	def.telegraph_time = 1.7
 	def.pulse_period = 8.0
-	def.obstructs_radius = 28.0
+	# `SIDEWALK_SPREAD_MAX`, not the widest stall a market square could hold: `SIDEWALK` is one of
+	# the two grounds this row may land on, and a single radius has to fit whichever the scheduler
+	# picks.
+	def.obstructs_radius = SIDEWALK_SPREAD_MAX
 	def.weight = 1.6
 	def.max_per_day = 13
 	def.cost = 2

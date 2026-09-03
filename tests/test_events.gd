@@ -6,6 +6,7 @@ const STEP := 1.0 / 60.0
 
 func run(t) -> void:
 	_test_catalogue_is_fair(t)
+	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
@@ -85,6 +86,53 @@ func _test_catalogue_is_fair(t) -> void:
 	var playground := EventCatalogue.by_id("playground")
 	t.check(playground.kind == GameEnums.EventKind.AMBIENT,
 			"the playground is ambient, so its zero telegraph is intended")
+
+## Which looks draw a body at `max(11, obstructs_radius) * 2` wide, in `EventInstance._draw_spread`
+## or one of its cousins (`_draw_cafe`, `_draw_protest`, `_draw_firefight`) — as opposed to a fixed
+## sprite whose own pixel size has nothing to do with `obstructs_radius`, which is every other
+## row's collision radius alone.
+const _SPREAD_LOOKS: Array[EventDef.Look] = [
+	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.CHECKPOINT,
+	EventDef.Look.BARRICADE, EventDef.Look.BURNT_SHELL, EventDef.Look.CAFE,
+	EventDef.Look.PROTEST, EventDef.Look.FIREFIGHT,
+]
+
+## A `SIDEWALK` tile sits `TILE_SIZE * 0.5` from its own nearest edge whichever of the pavement's
+## two lanes it lands in — see `CityMap`'s own layout comment, "sidewalk | road | sidewalk" — so
+## that is the worst case, not the full `SIDEWALK_WIDTH * TILE_SIZE` band, because a body drawn
+## symmetrically about a tile centre reaches just as far past its own lane's edge as it reaches
+## into the lane beside it.
+const _SIDEWALK_SPREAD_CLEARANCE := Tuning.TILE_SIZE * 0.5
+## A `ROAD` or `CROSSING` tile sits much further from a building line: `(SIDEWALK_WIDTH + 0.5) *
+## TILE_SIZE`, worst case, because it is one of the carriageway tiles in the middle of the
+## corridor rather than at either edge of it — which is why a street-spanning row like
+## `checkpoint` is allowed a far wider body than a sidewalk obstruction is.
+const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TILE_SIZE
+
+## **A body on a pavement has to fit on the pavement.** `_draw_spread` and its cousins draw a body
+## at exactly the width `obstructs_radius` says, centred on the tile the scheduler chose — so that
+## width is a promise about where she can walk, and the promise is only kept if it fits the ground
+## `def.placement` actually offers. `SQUARE`, `PARK` and `ALLEY` are wide open and carry no bound
+## here; a tile type with no clearance defined is skipped rather than treated as a failure.
+func _test_a_spread_body_fits_the_ground_it_stands_on(t) -> void:
+	var checked := 0
+	for def in EventCatalogue.all():
+		if not _SPREAD_LOOKS.has(def.look) or def.placement.is_empty():
+			continue
+		var half := maxf(11.0, def.obstructs_radius)
+		for tile_type in def.placement:
+			var clearance := INF
+			if tile_type == GameEnums.TileType.SIDEWALK:
+				clearance = _SIDEWALK_SPREAD_CLEARANCE
+			elif tile_type == GameEnums.TileType.ROAD or tile_type == GameEnums.TileType.CROSSING:
+				clearance = _CARRIAGEWAY_SPREAD_CLEARANCE
+			if clearance == INF:
+				continue
+			checked += 1
+			t.check(half <= clearance,
+					"'%s' draws %.0fpx wide, which fits the %.0fpx that a %d-type tile clears"
+					% [def.id, half * 2.0, clearance * 2.0, tile_type])
+	t.check(checked >= 6, "and the rule covers the catalogue's spread rows (%d checks)" % checked)
 
 # ------------------------------------------------------------------ emission ---
 
