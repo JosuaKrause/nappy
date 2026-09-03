@@ -910,6 +910,10 @@ that touches the tree at either end stays open outright, which is the way round 
 asks for; one that touches it at neither end is walled at both mouths, so it can never bridge two
 sealed streets into a second city behind them.
 
+**A final pass thins the seals.** A small `Tuning.SEAL_THINNING_FRACTION` of the day's soft pairs
+lose one body — never a hard seal, never an alley mouth — so a wrong turn stays open long enough to
+be taken and discovered rather than reading as a wall on sight the moment she glances down it.
+
 **The winnability guarantee is not repeated here, it is true by construction.** A seal never
 stands on tree ground or the doorstep — the two things the tree and `ClosurePlanner` already
 guarantee a route through, and the trunk above is what makes the first of those cover the join as

@@ -33,6 +33,8 @@ func run(t) -> void:
 	_test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t)
 	_test_candidate_shapes(t)
 	_test_day_one_has_a_working_soft_pair(t)
+	_test_thinning_leaves_a_walkable_line(t)
+	_test_the_doorstep_still_reaches_the_corridor_after_thinning(t)
 
 # ------------------------------------------------------------------------ setup ---
 
@@ -340,3 +342,62 @@ func _test_day_one_has_a_working_soft_pair(t) -> void:
 		if candidate.strength == SealPlanner.Strength.SOFT and SealPlanner._eligible(candidate, 1):
 			has_soft = true
 	t.check(has_soft, "day 1 has at least one working soft seal pair")
+
+# ---------------------------------------------------------------------- thinning ---
+
+## Whether dropping one body of a soft pair (`SealPlanner._thin_soft_pairs`) actually leaves a
+## walkable line, checked against the pram's own collision circle rather than assumed.
+##
+## `SealPlanner._place_soft` puts one body per pavement and never touches the road — a soft seal
+## is "both pavements taken, the carriageway still there to be risked" (`docs/CITY.md`, "Sealing
+## the tree"). So the untouched side of a thinned pair, `Tuning.STREET_WIDTH - Tuning.SIDEWALK_
+## WIDTH` tiles of the far pavement plus the whole carriageway, was never obstructed by this seal
+## at all — not merely cleared of the surviving body, never touched by either one. Confirmed rather
+## than assumed by checking every soft candidate's own `obstructs_radius` stays within its own
+## pavement (`Tuning.SIDEWALK_WIDTH` tiles), so the surviving body can never bleed across into the
+## side the thinning pass just opened.
+func _test_thinning_leaves_a_walkable_line(t) -> void:
+	var checked := 0
+	var untouched_width := (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
+	var own_pavement := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
+	t.check(untouched_width >= Tuning.PLAYER_BODY_RADIUS * 2.0,
+			"the pram (%.0fpx across) fits the %dpx a thinned pair's far side never touches"
+			% [Tuning.PLAYER_BODY_RADIUS * 2.0, untouched_width])
+	for candidate in SealPlanner.candidates():
+		if candidate.strength != SealPlanner.Strength.SOFT:
+			continue
+		for id in candidate.def_ids:
+			var def := EventCatalogue.by_id(id)
+			if not def:
+				continue
+			checked += 1
+			t.check(def.obstructs_radius * 2.0 <= own_pavement,
+					("seal candidate %s's row %s obstructs %.0fpx across, more than its own " +
+					"%dpx pavement — it could reach the side thinning opens")
+					% [candidate.id, id, def.obstructs_radius * 2.0, own_pavement])
+	t.check(checked > 0, "at least one soft candidate's geometry was checked (%d)" % checked)
+
+## Item 1's guarantee — the doorstep reaches the corridor — restated after the thinning pass
+## rather than before it, per `docs/TODO.md`: trivially true if the pass is what it claims to be,
+## since thinning only ever removes seal bodies and the doorstep-to-corridor join is a fact about
+## `RouteTree`, which `SealPlanner` never touches (`_test_the_tree_itself_is_untouched`). Asserted
+## anyway rather than left as an inference.
+func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t) -> void:
+	for map in _maps:
+		var day := 6
+		_repaint_for(map, day)
+		var home := ClosurePlanner.home_street(map)
+		var tree := RouteTree.for_day(map, day)
+		if tree.branches.is_empty():
+			continue
+		# Sealing (and its thinning pass) is run for its side effect on `map.closed_tiles`/RNG
+		# consumption alone; the guarantee below is asked of the tree, which sealing never edits.
+		SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+		var joined := false
+		for junction in [home.a, home.b]:
+			for segment in StreetNetwork.at_junction(junction):
+				if segment.key() != home.key() and tree.is_on_the_tree(segment.key()):
+					joined = true
+		t.check(joined,
+				"seed %d day %d: the doorstep still reaches the corridor once seals are thinned"
+				% [map.seed_used, day])
