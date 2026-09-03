@@ -11,7 +11,7 @@ name: deploy
 
 on:
   push:
-    branches: [main]
+    tags: ['v*']
 
 # The two permissions actions/deploy-pages needs; contents: read is the checkout's own default
 # made explicit rather than inherited.
@@ -71,11 +71,13 @@ jobs:
           mv /tmp/templates/templates \
             "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
 
-      # **The gate runs here rather than being inherited from `ci.yml`.** Both workflows fire on
-      # the same push and neither waits for the other, so a deploy that trusted CI would publish
-      # a red build to a public address as often as not. Running it again costs a few minutes on
-      # the rare push that reaches `main`, and it is the same gate this project requires before a
-      # commit: the project boots, and the full suite is green.
+      # **The gate runs here rather than being inherited from `ci.yml`.** `ci.yml` has no branch or
+      # tag filter, so it fires on a version tag too, and neither workflow waits for the other — a
+      # deploy that trusted CI would publish a red build to a public address as often as not. A tag
+      # can point at any commit, so that reasoning holds exactly as it did when this ran on every
+      # push to `main`. Running it again costs a few minutes on the rare push of a version tag, and
+      # it is the same gate this project requires before a commit: the project boots, and the full
+      # suite is green.
       - name: Check
         run: GODOT="$HOME/godot/godot-bin" ./tools/check.sh
 
