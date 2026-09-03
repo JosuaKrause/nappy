@@ -14,9 +14,13 @@ mid-way through.
 
 ## The order
 
-1. **M64** — off the path is closed, not dear. Design the rows first, then place them.
-2. **M65** — the chalk mark is findable, and silent until it is found.
-3. **M56** — the resistance is noticed.
+1. **M48** — things drawn where they stand. **Ahead of M64 because M64 cannot ship without it**: a
+   seal is a thing lying *across* a street, nothing in the game rotates an event body, and M64
+   places ~150 of them a day. See M64's own note on the precondition.
+2. **M64** — off the path is closed, not dear. Its two design questions are answered; the pictures
+   are specified and the placement follows them.
+3. **M65** — the chalk mark is findable, and silent until it is found.
+4. **M56** — the resistance is noticed.
 
 **The instrument they are read with now exists.** The dusk map draws the walk over the plan — where
 she went, where she ran, and which events actually reached her — so *did the corridor have to be
@@ -97,18 +101,55 @@ sides puts every park crossing and every alley in the city off the tree, so *clo
 the path* would seal the shortcuts the city is built around. The tree has to grow at cell
 granularity first — see M69, "The day's route tree moves onto the grid too".
 
-**Four things it collides with, none of them fatal and all of them to be answered before building:**
+**And so is M48's rotation item, for the same kind of reason.** A seal is a thing lying *across* a
+street, so its whole content is which way it faces — and nothing in the game rotates an event body:
+`_draw_spread` in `src/events/event_instance.gd:1155` lays its segments along local X and only along
+local X, which is why every barrier in the game is drawn east–west whatever street it stands on.
+Against ~150 seals a day that is not a blemish, it is half of them lying sideways across the
+pavement. **Build M48's "a spread's rotation is a property of the street it stands on" first**, or
+this milestone ships a city of sideways trees.
+
+**The whole tree stays open, and every street off it is sealed.** *(2026-09-03, answering the two
+questions this milestone could not be built without.)* So the difficulty dial is set at its most
+forgiving end and the sealing at its most complete: every calm area still worth reaching keeps its
+branch, both of its routes where the map allowed a second one — a day plans **about fifteen routes
+to five to seven areas** (`MIN_CALM_BLOCKS` 5 to `MAX_CALM_BLOCKS` 7, which the constant's own
+comment calls *"places to go"*) — and what is closed is not merely the rim but **every street of the
+lattice the tree does not touch**. The city's day has 264 lattice streets in it, so this is most of
+them.
+
+**Which park to walk to therefore stays exactly as open a question as it is today**, and what
+changes is that the answer can no longer be reached any old way. That is the deliberate order: the
+policy is the change being measured, and the strand count is a dial to turn afterwards if the whole
+tree turns out to be too generous.
+
+**Three consequences of *every street off the tree*, and each is load-bearing rather than a detail:**
+
+- **The doorstep is exempt, and it has to be stated here because the tree itself would seal it.**
+  The home street is deliberately not on the tree — `RouteTree` colours no home node, on the
+  principle that *"a door is not a route"* — so a rule stated as *seal every street off the tree*
+  seals her in on the first frame. This is `CLAUDE.md`'s existing doorstep exemption arriving in a
+  new place.
+- **The seals are their own placement pass with their own budget.** ~150–200 sealed streets is two
+  bodies each, which is an order of magnitude past the day's event budget, and that budget exists to
+  decide *variety*, not to price the city's walls. A seal is a fact about where she may walk, so it
+  is planned where the day's closures are planned — beside `ClosurePlanner` — and counted separately
+  from the catalogue's density. **Chosen where the design was silent, and cheap to overturn:** the
+  alternative is seals drawn from the ordinary event budget, which would leave a day with either no
+  walls or no events.
+- **The winnability check stops being the guarantee and becomes an assertion.**
+  `EventScheduler._ensure_the_city_is_still_walkable` drops the widest blocker until a park is
+  reachable again; against seals placed *by construction* off a tree that is walkable by
+  construction, there is nothing to repair and dropping one would open a hole in a wall. The
+  guarantee moves to the placement — this is the project's own rule that closures are checked before
+  they are accepted, never repaired afterwards — and the check becomes what proves it.
+
+**Two things it collides with, neither fatal:**
 
 - **M45's trap, restated at full strength.** *A nudge that removes the decision is worse than a
-  closure that does nothing.* Sealing everything off the tree is the largest possible nudge, so the
-  number of strands the tree keeps open **is** the difficulty dial, and it stops being a placement
-  detail.
-- **The doorstep exemption.** The home is a notch with one exit; that street can never be sealed.
-- **The winnability check becomes load-bearing.** `EventScheduler._ensure_the_city_is_still_walkable`
-  already reasons over the **whole set** of blockers at once rather than one at a time — it asks
-  `_park_is_reachable` with all of them standing and drops the widest until it is — so a pair that
-  seals a street between them is seen today. What is new is how much weight that check will carry
-  once sealing is the intent rather than the accident.
+  closure that does nothing.* Sealing everything off the tree is the largest possible nudge. The
+  answer taken is that the tree is left at full width so the decision survives inside it, which
+  makes **the tree's own strand count the difficulty dial** — turned only once this has been walked.
 - **A fixed city is knowledge you earn.** The lattice does not move, so what a player learns still
   pays; what changes daily is which ways through are open. Worth checking that it still *feels* like
   earned knowledge rather than a new maze each morning.
@@ -121,15 +162,124 @@ crossing to the other side — so **two of them, one per side, leave no line to 
 needed for the mechanism; the catalogue already contains the wall, split in half and never yet
 placed as one.
 
-- [ ] **Decide how many ways through the tree keeps open**, because under a policy of *closed
-      everywhere off the path* that number is the difficulty of the whole game and not a placement
-      detail. It is also M45's trap in its sharpest form
-- [ ] **The pictures, which are the part that needs inventing.** The mechanism is a pair of
-      ordinary obstacles facing each other; what is missing is enough *kinds* of them that a sealed
-      street does not read as the same barrier every time. A fallen tree and a car accident are the
-      player's own two examples, and neither exists
-- [ ] **Then place them off the tree**, and check the winnability guarantee still holds when sealing
-      is the intent rather than the accident
+**A seal comes in two strengths, and both were asked for.** *(2026-09-03.)* A **hard** seal spans
+the street frontage to frontage and nothing gets past it — the fallen tree, the accident, the burst
+main. A **soft** seal is the obstacle pair: both pavements taken, and the carriageway still there to
+be risked. The distinction is real because of the cross-section — a street is sidewalk 2 tiles, road
+2, sidewalk 2, and `Tile.is_walkable()` refuses only `BUILDING`, so the asphalt is walkable ground
+with traffic on it. The `construction` row's own docstring is the sentence that names the
+consequence: *"since a street is sidewalk|road|sidewalk, the road is always still there, so it costs
+time and exposure, never the day."*
+
+**So how closed a street is becomes a variable alongside what it looks like**, which is the answer
+to M45's trap in its own terms: a soft seal removes the easy way and leaves a decision — *walk the
+carriageway with the cars, or go round* — where a hard seal removes the street. Neither of them may
+ever be the only thing between her and every calm area, because the tree is what guarantees that and
+the tree is left at full width.
+
+**An alley on the corridor is where this gets interesting, and it is already possible.**
+*(2026-09-03: "with the granular reachability can we make alleyways part of paths, too? that might
+force some interesting routes".)* It is what M69 built: the tree grows on the reachability grid, so
+a branch may *"cut through a park corner or take an alley exactly where the ground allows it"*, and
+`Corridor` prices such a cell as depth zero — genuinely on the corridor rather than a shortcut
+beside it. M69 also rolled an alley's offset even so that a two-tile alley is exactly one cell wide
+and connects end to end, which is what makes a branch able to run down one at all.
+
+**It stays luck, and that was the decision.** *(2026-09-03: "if they already can happen naturally,
+that is fine. no changes needed".)* Nothing prefers an alley — the two probes are a loop-erased
+random walk and the shortest way home, and neither knows an alley from a pavement, so a one-cell
+passage is entered only where the ground happens to lead there. A bias toward alleys, and a
+guarantee of one a day, were both offered and both declined: the natural rate is wanted. **So do not
+propose weighting the probes again without a reason that is not this one** — what would make it
+worth discussing is a played day, not an argument.
+
+**An alley is never mandatory, because an alley is always a toll.** *(2026-09-03: "since alleys are
+always a toll lets not make them mandatory".)* Standing in one adds a constant
+`EXCITEMENT_FROM_ALLEY` of 3.0 a second, and a cost with no alternative is a tax rather than a
+decision — which is the whole verb of this game being taken away on the narrowest ground in the
+city. So a day may put an alley on the corridor and may never leave her no way but through it.
+
+**Read as a day-level guarantee, mirroring the one the city already keeps.**
+`EventScheduler._ensure_the_city_is_still_walkable` promises that *some* calm is reachable rather
+than that every area is, and this is the same sentence one step further in: **a day's open network
+always offers a route to at least one usable calm area that uses no alley.** An individual branch
+may still run down one — that is the shortcut she may choose to take at a price, which is what an
+alley has always been here — and choosing it stays a choice because a park she can reach without one
+exists. **Chosen as the smallest form consistent with the existing guarantee and open to overturn:**
+the stricter reading is that every alley stretch on the tree has a parallel open way round it, which
+constrains the seal placement far harder for a fairness the day-level version already buys.
+
+**And no robber stands in an alley she has to walk down.** *(2026-09-03: "alley robber should not
+happen on required alleys".)* `alley_robbery` — placed on `ALLEY` tiles from day 8, lethal inside
+30px, with an explicit design note that *"a robbery has no telegraph you could see coming, and it
+never did"* — is a risk she is meant to have chosen by entering the alley. On ground she has no way
+around, a row whose only warning is the alley itself is unfair by its own description.
+
+**The guarantee above mostly satisfies this one**, since an alley she can avoid is not a required
+one. It is written down separately because it is the fallback that holds if the day-level guarantee
+is ever loosened, and because it is the cheaper check of the two: **`alley_robbery` is refused on any
+alley cell the day's corridor runs down** — an outright exclusion from the candidate pool rather than
+a weighting, which is this project's rule that placement is checked before it is accepted and never
+repaired afterwards, and the same shape M69 used to refuse a barrier beside a calm area's access
+street. **Read conservatively on purpose:** every on-tree alley rather than only the provably
+unavoidable ones, since the corridor touches few alleys and proving one unavoidable is a question
+about the whole day's open network. Open to overturn if it turns out to cost the row too many sites.
+
+**Whether the same exclusion should cover every lethal row rather than only this one is a question
+for the build**, not a widening to assume: the instruction named the robber, and `charging_dog` and
+the heated rows reach an alley by different paths.
+
+**What alleys are for, then, is going round a wall.** *(2026-09-03: "let's use them as option to
+avoid obstacles and as chalk mark carriers".)* This is the job the sealing gives them, and it falls
+out of a distinction the seal rule already makes: **a seal is placed on a street, and an alley is
+not a street.** An alley is `ALLEY` tiles cut through a block, not a `StreetNetwork` segment, so
+*seal every street off the tree* leaves every alley in the city open by construction. That is not an
+oversight to close — it is the answer. The off-path city is walled, and the alleys through it are the
+doors, priced at 3.0 a second of dread.
+
+**So the day has two kinds of ground she may walk and they read differently**: the corridor, which is
+free and goes where the day wants her; and the alleys, which go through the walls and charge her for
+it. An obstacle in front of her stops being *walk round the block* and becomes *take the alley or
+turn back*, which is a decision on the one verb the game has.
+
+**Which alleys stay open is the detail the instruction is silent on, and the smallest reading is
+taken: an alley bypasses an obstacle rather than opening a second city.** An alley kept open is one
+that rejoins the corridor — it goes round a wall and puts her back on the path — and alleys leading
+away into sealed ground may themselves be sealed at the mouth. **The alternative, named so it is
+cheap to pick instead:** every alley in the city stays open, which gives a complete shadow network
+through the walled city and a much larger game than the corridor policy describes. Decide it against
+a played day rather than in the abstract; the conservative version is the one that keeps M64's
+central claim — the corridor is the way through — true.
+
+- [ ] **The pictures, and they are the part that needed inventing.** Eight kinds, agreed 2026-09-03.
+      Five for act I, where a closed street has a municipal reason, and three for acts II–IV, where
+      it is the city coming apart. **With every street off the tree sealed, a day places on the order
+      of a hundred and fifty of these and she walks past perhaps twenty-five**, so eight kinds is
+      each one met three or four times in a day — enough that no single barrier becomes the city's
+      signature.
+
+      Act I: **a fallen tree**, root plate at one kerb and crown over the far footway (hard); **a car
+      accident**, two cars locked together with debris and onlookers on both pavements (hard); **a
+      skip and scaffolding**, skip at the kerb and boards over the far footway (soft); **a burst
+      water main**, a crater with water across the asphalt and municipal barriers at both kerbs
+      (hard — it is the one that explains why the road is out too); **a removal lorry with its ramp
+      down** (soft), which reuses `Look.LORRY`, the biggest silhouette in act I.
+
+      Acts II–IV: **a burnt-out car** (hard), which is `Look.BURNT_SHELL`'s charred palette at
+      vehicle scale; **a collapsed frontage** (hard), rubble spilled frontage to frontage, and the
+      `RUBBLE` texture `_draw_spread` already uses exists; **a stacked barricade** (hard), which is
+      the `barricade` row that already exists in act IV — *"whatever was on the street, stacked by
+      somebody"* — placed as a seal rather than rolled as an event.
+
+      **The first two are the player's own examples** and the rest were proposed and agreed in the
+      same exchange. **The pair mechanism needs no new drawing at all** and is the cheapest soft
+      seal there is: a café on one side facing a yeller on the other, from rows the catalogue
+      already has
+- [ ] **Then place them off the tree**, exempting the doorstep, and check the winnability guarantee
+      still holds when sealing is the intent rather than the accident. **A one-cell stretch of
+      corridor is not ordinary corridor** — where a branch runs down an alley there is no other side
+      of the street to cross to, so the clearance a lethal row keeps has to be measured against the
+      narrowest ground the tree touches rather than against a street's width
 - [ ] **Nothing arrives from off screen, and everything should.** *(2026-09-02: "the charging dog
       doesn't have an offscreen indication it should start further away and appear first as
       offscreen indicator", and "bikers / unleashed dogs all pop in in front of the player instead
@@ -167,6 +317,14 @@ that meets one ends at its edge. What remains is that the ending is not *drawn* 
 
 Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
 should not be, and it cannot be found when it should be.
+
+**The mark lives on an alley wall, and that was confirmed rather than newly decided.** *(2026-09-03:
+"let's use them as option to avoid obstacles and as chalk mark carriers".)* It is already the
+design — `docs/PLAYTEST-02.md` describes the mark as chalk on an alley wall, and the re-placement
+rule below is stated in the player's own words as *"the next alley the player comes close to"*. What
+the confirmation adds is the other half of the same sentence: under M64 an alley is also the way
+round a wall, so the ground the resistance is written on is ground the sealing already gives her a
+reason to enter. See M64, "What alleys are for, then, is going round a wall".
 
 - [ ] **The first chalk mark is named in the status line.** *(2026-09-02: "the first chalk mark is
       written in the status when it should not be.")* Seen in the screenshot as
@@ -612,6 +770,11 @@ direction, not distance.**
 ---
 
 ## M48 — Things drawn where they stand
+
+**First in the order, because M64 stands on it.** M64 seals every street off the day's corridor with
+a thing lying *across* it, which is on the order of a hundred and fifty bodies a day whose entire
+content is which way they face. The rotation item below is not a blemish to tidy at that scale — it
+is half the city's walls lying sideways.
 
 - [ ] **A body on a pavement has to fit on the pavement.** `construction` obstructs 34, so it draws
       68px wide on a 64px sidewalk from a tile centre 16px from one edge — **it overhangs by 18px
