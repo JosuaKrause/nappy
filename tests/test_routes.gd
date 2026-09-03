@@ -35,6 +35,7 @@ func run(t) -> void:
 	_test_closures_are_deterministic(t)
 	_test_closure_counts_follow_the_act(t)
 	_test_a_closed_street_is_out_of_the_network(t)
+	_test_most_of_a_closed_streets_ground_stays_closed(t)
 	_test_a_mid_segment_opening_stays_reachable_from_its_own_side(t)
 	_test_calm_ground_is_still_walkable_to(t)
 	_test_closures_land_where_a_wall_belongs(t)
@@ -328,26 +329,44 @@ func _test_a_closed_street_is_out_of_the_network(t) -> void:
 	var closures := _plan(map, 12)
 	map.close_streets(closures)
 	t.check(not closures.is_empty(), "act IV shuts something")
-	var closed_count := 0
-	var total := 0
 	for closure in closures:
 		for at_a in [true, false]:
 			for tile in map.rect_tiles(closure.segment.mouth_rect(at_a)):
 				t.check(map.is_closed(tile), "the mouth tile %s of a closed street is closed" % tile)
 		for tile in closure.tiles(map):
-			total += 1
 			if map.is_closed(tile):
-				closed_count += 1
 				t.check(not map.is_open(tile), "and is not open, though it is still walkable")
 			t.check(map.is_walkable(tile),
 					"a closure never moves a walkable tile — it only shuts it")
-	# Most of a closed street has no side opening onto it, so most of its ground stays genuinely
-	# unreachable — a floor with room under it, since a bypass is the exception this milestone
-	# exists to let through, not the rule.
-	t.check(float(closed_count) / maxf(1.0, float(total)) > 0.7,
-			"most of a closed street's own ground is still closed (%d of %d tiles)"
-			% [closed_count, total])
 	map.closed_tiles.clear()
+
+## How much of a closed street's own ground stays genuinely unreachable, on one (map, day) rather
+## than the sweep below: a single street can go either way, since which of its cells sit beside an
+## alley or a courtyard archway is a fact about that one street, not about closures in general —
+## see `_test_a_mid_segment_opening_stays_reachable_from_its_own_side` for the bypass itself. Only
+## the sweep's aggregate is the thing this milestone promises: most of a closed street's ground
+## stays closed, and a bypass is the exception it exists to let through, not the rule.
+##
+## Measured over every seed and every day this suite already plans (the loop below costs nothing
+## `_plan`'s cache has not already paid for): 168 (map, day) pairs, aggregate ratio 0.81 — a floor
+## with room under it, not the number itself, because the aggregate moves with which candidates
+## `RouteTree.for_day` leaves off the tree and is not the milestone's own promise.
+func _test_most_of_a_closed_streets_ground_stays_closed(t) -> void:
+	var sum_closed := 0
+	var sum_total := 0
+	for map in _maps:
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			var closures := _plan(map, day)
+			map.close_streets(closures)
+			for closure in closures:
+				for tile in closure.tiles(map):
+					sum_total += 1
+					if map.is_closed(tile):
+						sum_closed += 1
+			map.closed_tiles.clear()
+	t.check(float(sum_closed) / maxf(1.0, float(sum_total)) > 0.75,
+			"most of a closed street's own ground is still closed, aggregated (%d of %d tiles)"
+			% [sum_closed, sum_total])
 
 ## The bypass itself, found on real generated seeds rather than engineered by hand — the full
 ## `StreetNetwork.Segment` lattice a `RoadClosure` needs only exists at the generated city's own

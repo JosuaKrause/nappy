@@ -246,10 +246,13 @@ where a scar is recorded: a run gets exactly one fire however many streets were 
 Three things this gets right that choosing a site on her route would not:
 
 - **Nothing has to predict her.** The guarantee is structural and holds whichever way she goes.
-- **A bundle is not a guarantee.** Two distinct routes to one area share no street by
-  construction, so no single site can ever cover both. The covering set is two to six streets, and
-  code that expects one is looking for a *tile she must cross*, which the city is built not to
-  have.
+- **A bundle is not a guarantee.** Two distinct routes to one area share no *cell* by construction
+  — a route is a chain of `ReachabilityGrid` cells, and the same-colour rule never lets one probe
+  merge into ground the other already coloured. Almost always that also means they share no
+  street, so the covering set is usually two to six streets and code that expects one is looking
+  for a *tile she must cross*, which the city is built not to have. Rarely, the two routes use
+  different cells of the very same street, and one site there covers both after all — the fallback
+  a covering set of one is legal ground for, not a bug in either.
 - **The moment of choosing is the moment of walking there.** `_stream_in` is where an event becomes
   real — where its scar is recorded and its block moves along its arc — so the alternatives stop
   being possible on the same frame rather than when it finishes.

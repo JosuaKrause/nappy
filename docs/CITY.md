@@ -603,9 +603,9 @@ of her.
   placement nothing made.
 
 The three are stated relative to the corridor and none of them means anything without one.
-`Corridor` is the one translation from
-the tree's segment keys to the tile a placement actually happens on — *inside*, *rim* or *away* —
-so an event, a closure and the telemetry picture all mean the same thing by the words.
+`Corridor` is the one translation from the tree's cells to the tile a placement actually happens
+on — *inside*, *rim* or *away* — so an event, a closure and the telemetry picture all mean the
+same thing by the words.
 
 And the thing the roles are stated relative to needs a name too: **the corridor** — the ground
 today's routes run through, from the doorstep to the calm areas that are still worth reaching.
@@ -714,20 +714,24 @@ of its two ways in is met comes back as a **single** street on nine planned days
 one they all share on the way out. Placed there, the set piece is met by a player who takes the
 first way out of everywhere and missed by one who takes the second, which is the "tile she must
 cross" mistake with a covering set drawn round it. Covering every route costs nothing extra and
-cannot go wrong that way: the two routes to one area share no street by construction, so no single
-site can cover both, and *"at least two places"* is arithmetic rather than a rule anybody enforces.
+almost never goes wrong that way: the two routes to one area share no **cell** by construction —
+`ReachabilityGrid`'s two-tile-square unit, the grain the whole corridor is now grown on — so a
+single site covers both only on the rare street where the two routes' cells still resolve to the
+same `StreetNetwork.Segment`, a street being three cells wide. *"At least two places"* is arithmetic
+on the common case rather than a rule anybody enforces, and the rare exception is measured, not
+guarded against, in `tests/test_events.gd`.
 It comes out at two to six sites against about fifteen routes.
 
 **Two invariants this runs into, and both are smaller than they look.**
 
 - **Chokepoints and edge-disjointness barely conflict at all.** Read as a single tile every route
-  crosses, a chokepoint *would* break `ClosurePlanner`'s two-routes rule. It is a bundle, and the
+  crosses, a chokepoint *would* break the tree's two-ways-in guarantee. It is a bundle, and the
   design keeps at least two distinct paths standing by construction — which is the same thing the
-  invariant is protecting. What may still need loosening is its **formulation**: *distinct* means
-  **sharing no street**, and corridors that run together and then separate share plenty. The
-  guarantee to keep is *"the calm is reachable and no single closure decides the day"*; the
-  edge-disjoint max-flow reading is one way to get it and is stricter than the design needs. A
-  decision, but a small one.
+  guarantee is protecting. Its **formulation**: *distinct* means **sharing no cell**
+  (`ReachabilityGrid.CELL`, two tiles square, the grain `RouteTree` grows on), and corridors that run
+  together and then separate share plenty of street even so. The guarantee to keep is *"the calm is
+  reachable and no single closure decides the day"*; cell-disjointness is one way to get it and is
+  stricter than the design needs.
 - **A retried day discards what happened in the failed one**, so late binding costs nothing: the
   **plan** is identical on every attempt — the same tree, the same placeholders, the same candidate
   sets, all deterministic from the seed and the day number — and the **resolutions** she caused by
