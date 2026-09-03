@@ -4801,6 +4801,62 @@ yet"*) and under the `CLAUDE.md` rule the first round produced.
       map: the first border pass wrote four sides four times, which is one bug per side waiting to
       happen, and this is it happening
 
+## M70 — A run is a folder · built 2026-09-03
+
+*(2026-09-03, playtest 22: "also repeating a day should create a new image. also instead of encoding
+everything in the filename let's do folders instead", "so all files of a run stay together", "folder
+should be `<day>/<commit>/<run>/<type>` where type is automated screenshot vs maps vs manual
+screenshots log file lives directly in the run folder", "also no automatic cleanup anymore", "the
+folder structure allows for easily deleting old days/commits".)*
+
+**The whole run identity used to be repeated on every file.** `Telemetry.begin_run` built a stem —
+`run-<timestamp>-seed<N>-<commit>`, or `rig-` when nothing human was at the controls — and every
+artifact was that stem plus a suffix: `.log`, `-<clock>s-<kind>.png`, `-map-day<NN>[-dusk].png`, all
+dropped flat into one directory. Files of one run were adjacent only by luck of the timestamp sorting
+first.
+
+**The layout is the player's and was given verbatim**, so nothing about its shape was inferred. Four
+levels, each holding one thing the stem used to concatenate, with three type subfolders named `maps`,
+`auto` (the periodic captures) and `asked` (the snapshot-key ones), created lazily so an empty one
+never appears:
+
+```
+user://telemetry/2026-09-03/db09693-dirty/run-205437-seed2102613802/
+├── run.log
+├── maps/day06.png, day06-dusk.png, day06-attempt2.png
+├── auto/019s-lost-lost_crying.png
+└── asked/060s-asked.png
+```
+
+**Two things had to survive the move and both were verified by hand rather than by test.** The
+`run-` versus `rig-` prefix is load-bearing — a pile of logs that does not say which of them a person
+played reads as a great many plays that never happened — and `tools/stats.sh` groups by it. And the
+commit is in the path so `tools/telemetry.sh -p` can compare it against `git rev-parse --short HEAD`
+and say what is stale, with a dirty tree written as the word `-dirty` because `*` is a glob character
+in a shell.
+
+**Automatic pruning is gone entirely** — `_prune`, `_remove_run` and the 50-log `KEEP_LOGS` cap — and
+the player's reason is the structure itself: a tree of date, then commit, then run is one a person
+can delete a whole day or a whole commit out of. So the directory grows without bound on purpose.
+`tools/telemetry.sh -p` stays, because that is somebody running a command rather than the game
+deciding behind them, and it now removes whole run folders and their emptied `<commit>` and `<day>`
+ancestors instead of matching log-name patterns.
+
+**A day replayed after a nerve used to overwrite its own map**, which destroyed exactly the picture
+worth having: `write_map` built its path from the day number alone, and a lost day is retried without
+the calendar advancing. Attempts are counted per day and folded into map and screenshot filenames
+from the second attempt onward, so a first attempt's names are byte-identical to before. **Chosen
+where the design was silent and open to overturn:** the count is a dictionary keyed by day number
+rather than a single counter, so day 6's second attempt stays *attempt 2* even if other days were
+played in between.
+
+**The one thing it collided with was the evidence rule**, which said to keep a telemetry file's
+original name because that name carried the timestamp, the seed and the commit. No single file
+carries those now. **Chosen and open to overturn:** copy the whole `<day>/<commit>/<run>/` folder at
+its own three-level path under `docs/evidence/`, rather than inventing a rename convention for a lone
+extracted file. The alternative is that convention, and it is the one to pick if folder-per-finding
+turns out too heavy.
+
 ## M69 — Reachability is a grid of two-tile cells · built 2026-09-03
 
 *(2026-09-03, playtest 20: "barriers don't take into a account that parks can be entered where
