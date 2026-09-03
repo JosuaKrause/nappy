@@ -349,6 +349,45 @@ placement code; and **hard seals are act IV only today**, because `barricade` is
 row wide enough to span a street. **Whether a walled city reads as a route decision or as a maze is
 the played question**, and nobody has walked one.
 
+- [ ] **The doorstep can be sealed in, and it ends the day on the first frame.** *(2026-09-03,
+      playtest 22: "the starting area was sealed off completely and the only way out was alongside
+      the main road which basically ends the day".)* `SealPlanner.plan_day` exempts exactly one
+      segment — `ClosurePlanner.home_street(map)`, the street the doorstep is on — and every street
+      it leads to may be sealed. `RouteTree` colours no home node, on the principle that *"a door is
+      not a route"*, so **the join between the exempt home street and the day's tree is protected by
+      nothing.**
+
+      **This makes `SealPlanner`'s own docstring false**, and the sentence names its own error: the
+      guarantee *"is true by construction — a seal never stands on tree ground or on the home street,
+      the two things `RouteTree`/`ClosurePlanner` already guarantee a route through"*. Those are
+      guarantees about two disconnected pieces of ground. Neither says a walkable line joins them.
+
+      **The fix is a guarantee, not a repair** — this project's standing rule is that placement is
+      checked before it is accepted. The smallest form: **the day's tree is grown from the doorstep
+      and the trunk is exempt along with it**, so home-to-corridor is tree ground like any other.
+      The alternative, cheaper and weaker: exempt every street incident to the home street's far
+      junctions, which unseals a handful of segments without proving they lead anywhere
+
+- [ ] **`tests/test_seals.gd` proves reachability and the question is survivability.** It asserts
+      that *a calm area is still reachable* with every seal and closure standing, and that passed on
+      the run above — she could reach one, along the main road, which is the ground whose excitement
+      decay multiplier is **0.6** against an ordinary street's 1.0, calm's 2.2 and a precinct's 1.5.
+      **Reachable is not survivable.** Restate the assertion over a route the day can be won on, and
+      say in the test what "won on" means as a number rather than as a word
+
+- [ ] **A route may cross the main road and never run along it.** *(2026-09-03, playtest 22: "a path
+      should never go alongside the main road — main road by itself can be considered a blocker —
+      paths can only cross the main road".)* `RouteTree` knows nothing about the main road today:
+      nothing in `src/routes/` mentions `main_road` or `street_kind`, so a strand runs down the spine
+      wherever the ground allows, and on the run above that was the only way out of the doorstep.
+
+      **The main road is not sealed, and that is the point rather than an omission.** It is already
+      the worst ground in the game to be on — the 0.6 decay multiplier above — so making it *not a
+      route* is enough, and sealing it would be the harm the player is reporting rather than the fix.
+      `docs/CITY.md`'s constraint stands untouched: *"Nothing may be added that withholds the far
+      side, gates it behind a day number, or nudges her toward a crossing."* She may still cross
+      wherever she likes; what changes is that no day ever plans her *along* it
+
 - [ ] **Eight seal pictures, so that no single barrier becomes the city's signature.** Agreed
       2026-09-03. Five for act I, where a closed street has a municipal reason, and three for acts
       II–IV, where it is the city coming apart. **With every street off the tree sealed, a day places
