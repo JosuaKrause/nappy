@@ -126,51 +126,12 @@ third is the first item below and is not.**
   both of a tile's coordinates and swaps the layout onto local Y on a north–south street. **It answers
   a street tile only**: a junction, a square, a park and a courtyard all keep the unrotated lay along
   local X, which is worth knowing before ~150 seals a day are placed against it.
-- **A corner gets neither of M48's fixes, and that is the third precondition.** See the item below.
-  M48's own caveat above turns out to be the whole of playtest 22's first finding, and a defect that
-  shows on one placement a day is a different thing at 187.
-
-- [ ] **A spread on a corner is placed as if the corner were nothing.** *(2026-09-03, playtest 22:
-      "barriers are still placed in odd ways that leave gaps and overlap with other things".)* Both
-      halves of M48 switch themselves off on the same ground. `EventInstance._spread_is_vertical`,
-      which decides whether a barrier's segments lie along local Y instead of local X, returns
-      *not vertical* whenever **both** of a tile's coordinates fall inside a corridor band — a
-      junction — and its comment calls that deliberate: such a tile belongs to two streets at once,
-      "with no single direction to be wrong about". `EventInstance._centred_on_the_pavement_band`
-      gives up on exactly the same tiles, because it asks `CityMap.pavement_inward` and that returns
-      zero when both coordinates are inside a band: "nothing here has one band to be centred on."
-
-      So a corner barrier keeps the raw lane-tile position the scheduler chose *and* the unrotated
-      east–west lay. **It is one pavement tile in six**: the lattice repeats every
-      `BLOCK_SIZE + STREET_WIDTH` = 14 tiles, a 14×14 cell holds 96 sidewalk tiles, and 16 of them
-      are the four 2×2 corners of the crossroads.
-
-      **The fix is to refuse a corner as a site for anything with a spread.** *(2026-09-03, asked and
-      agreed: a corner has no street to lie across, so it is not a place a thing that lies across a
-      street belongs.)* An outright exclusion from the candidate pool rather than a repair
-      afterwards, which is this project's rule that placement is checked before it is accepted — the
-      same shape M69 used to refuse a barrier beside a calm area's access street. It costs 1 site in
-      6 and it agrees with M64's own unit of sealing: a seal goes on a **street**, and a junction is
-      not one. **The two alternatives, named so they are cheap to pick instead:** pass the street
-      axis the scheduler already chose down into the instance so a corner barrier lies across *that*
-      street (keeps every site, but two barriers at one crossroads then face different ways), or
-      centre on the nearer band and leave the rotation alone (fixes the offset the screenshot shows
-      and leaves half the corners lying along the street they should block).
-
-      **Reproduce it first.** The screenshot's barrier is consistent with a corner placement and
-      nobody has confirmed the tile: it is drawn 70 world px wide, which identifies it as
-      `construction` — `obstructs_radius` is `SIDEWALK_SPREAD_MAX`, `SIDEWALK_WIDTH * TILE_SIZE * 0.5`
-      = 32px, so it obstructs 64px, exactly a pavement's width — lying east–west with one end over a
-      north–south carriageway. Seed 2102613802, day 6
-
-- [ ] **A spread is drawn wider than it obstructs, by its end caps.** `EventInstance._draw_spread`'s
-      own docstring is the contract it breaks: a blocking object "is drawn at exactly the width it
-      obstructs, by repeating a segment across it. Anything else would be a lie about where the
-      player can walk." The segments do exactly that; the caps do not. Each is drawn **centred** at
-      ±`half`, and `barrier_end.svg` is 6px wide, so a `construction` barrier obstructs 64px and
-      draws 70 — 3px hanging past each end, into the carriageway or the frontage. Small on one
-      barrier, and it is the second half of *"overlap with other things"*. Draw the cap inset by half
-      its own width, or state in the docstring that the caps are outside the obstruction and why
+- **A corner is refused as a site for anything that lies across a street**, which is where M48's two
+  fixes both switched themselves off — a junction belongs to two streets at once and has no single
+  direction to be wrong about. That was the third precondition and it is built, along with the second
+  barrier defect playtest 22 named: a spread's end caps no longer draw wider than it obstructs. The
+  record, with the measured cost and the screenshot that remains unexplained, is in `DECISIONS.md`
+  under M64.
 
 **The whole tree stays open, and everything off it is sealed a full block at a time.**
 *(2026-09-03, answering the two questions this milestone could not be built without, and corrected

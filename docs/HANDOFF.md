@@ -48,13 +48,13 @@ whose corridor was grown on cells.
 ## What to do next
 
 **Start with [PLAYTEST-22.md](PLAYTEST-22.md), then [PLAYTEST-21.md](PLAYTEST-21.md), then
-[PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 22 has three findings, and its third is built — a run
-is now a folder, `<day>/<commit>/<run>/`, and a replayed day no longer overwrites its own map. The
-two open ones are both M64's: barriers are still placed with gaps and overlaps, and the off-path city
-was bare — which the sealing now answers. Playtest 21 is a brief run whose two
-findings are both M64's: the city *"feels way empty"*, and an instruction about the density on and
-off the path that moves **both** ends of M50's gradient. Playtest 20 is the full seven-day run behind
-them, and its findings are filed against the milestones that own them.
+[PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 22 has five findings and one of them is open work: the
+sealing can **wall the doorstep in on the first frame**, which is M64's first queued item and the
+most urgent thing in this file. Its other four are built — the two barrier-placement defects, the
+run-log folders, and the off-path city that was bare. Playtest 21 is a brief run whose two findings
+are both M64's: the city *"feels way empty"*, and an instruction about the density on and off the
+path that moves **both** ends of M50's gradient. Playtest 20 is the full seven-day run behind them,
+and its findings are filed against the milestones that own them.
 
 **Read `DECISIONS.md` under M69 before touching routes, closures or the corridor**, because it
 changed the ground every one of them stands on. Reachability is now `ReachabilityGrid` — the tile map
@@ -67,9 +67,20 @@ longer what answers *can she get there today*.
    every real street off the day's route tree, so the city can say *not this way at all* for the
    first time and the route decision stops having one correct answer. Off-path density measures
    0.330 events per street before and 2.173 after, with the on-tree figure unmoved; the record is in
-   `DECISIONS.md` under M64. **What is left is the eight seal pictures** — variety, so no single
-   barrier becomes the city's signature, and each costs one appended candidate and no code — plus
-   the two barrier-placement defects playtest 22 found, and the off-screen arrivals item.
+   `DECISIONS.md` under M64.
+
+   **Its first item is a correctness bug and nothing else in this file outranks it.** `SealPlanner`
+   exempts exactly the street the doorstep sits on, `RouteTree` colours no home node — *"a door is
+   not a route"* — and **nothing protects the join between them**, so every street the home street
+   leads to may be sealed. A player's run came back with the starting area closed off and the only
+   way out along the main road, *"which basically ends the day"*. `tests/test_seals.gd` passed
+   through it because it asserts a calm area is still **reachable**, and one was: along the spine,
+   whose excitement decay multiplier is 0.6 against an ordinary street's 1.0. **Reachable is not
+   survivable.**
+
+   The rest is the eight seal pictures — variety, so no single barrier becomes the city's signature,
+   each costing one appended candidate and no code — a route that may cross the main road and never
+   run along it, and the off-screen arrivals item.
 
    **Hard seals are act IV only**, because `barricade` is the sole catalogue row wide enough to span
    a street; days 1–11 seal soft, both pavements taken with the carriageway still walkable. Three of
