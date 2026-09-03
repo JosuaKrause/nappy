@@ -4949,10 +4949,9 @@ artifact was that stem plus a suffix: `.log`, `-<clock>s-<kind>.png`, `-map-day<
 dropped flat into one directory. Files of one run were adjacent only by luck of the timestamp sorting
 first.
 
-**The layout is the player's and was given verbatim**, so nothing about its shape was inferred. Four
-levels, each holding one thing the stem used to concatenate, with three type subfolders named `maps`,
-`auto` (the periodic captures) and `asked` (the snapshot-key ones), created lazily so an empty one
-never appears:
+**The layout is the player's and was given verbatim**, so nothing about its shape was inferred. Three
+type subfolders named `maps`, `auto` (the periodic captures) and `asked` (the snapshot-key ones),
+created lazily so an empty one never appears:
 
 ```
 user://telemetry/2026-09-03/db09693-dirty/run-205437-seed2102613802/
@@ -4961,6 +4960,25 @@ user://telemetry/2026-09-03/db09693-dirty/run-205437-seed2102613802/
 ├── auto/019s-lost-lost_crying.png
 └── asked/060s-asked.png
 ```
+
+**The `<commit>` level lasted two hours.** *(2026-09-03: "hmm, the commit hash makes it hard to find
+a run maybe let's remove it from the folder structure", then "and add a more granular timestamp as an
+intermediate folder", "minute precision `<date>/<hour:minute>/...`".)* A folder per commit split one
+day's runs across several folders, so listing a day did not list its runs — the exact thing the
+milestone had just been built to fix, reintroduced one level down. The commit moved to the **tail** of
+the run folder's own name, which keeps the one thing that level bought: `tools/telemetry.sh -p`
+compares it against `git rev-parse --short HEAD` by path alone, without opening a log. It goes last so
+the name still leads with its clock. A minute folder took its place, spelled `HHMM` rather than
+`HH:MM` — the instruction was about precision, not punctuation, and a colon in a path is trouble on
+macOS, where Finder renders one as `/`. The current shape is therefore
+`<day>/<minute>/<run>/<type>/`, and `docs/TELEMETRY.md` is where it is described.
+
+**And `tools/telemetry.sh -l` was wrong for those two hours.** It promises newest first; the sort key
+was `<day>/<run folder name>`, and a run folder's name leads with `run-` or `rig-` rather than with
+its clock, so every playtest sorted above every rig whatever time either happened — while the comment
+beside it asserted that "the run folder leads with the full `HHMMSS` time of day". The key became the
+day plus the time with that prefix cut off. **It was invisible until this milestone** because the
+flat layout sorted by mtime, so no filename had ever been load-bearing for order.
 
 **Two things had to survive the move and both were verified by hand rather than by test.** The
 `run-` versus `rig-` prefix is load-bearing — a pile of logs that does not say which of them a person
@@ -4992,10 +5010,11 @@ to protect from churn.
 
 **The one thing it collided with was the evidence rule**, which said to keep a telemetry file's
 original name because that name carried the timestamp, the seed and the commit. No single file
-carries those now. **Chosen and open to overturn:** copy the whole `<day>/<commit>/<run>/` folder at
-its own three-level path under `docs/evidence/`, rather than inventing a rename convention for a lone
-extracted file. The alternative is that convention, and it is the one to pick if folder-per-finding
-turns out too heavy.
+carries those now. **Chosen and open to overturn:** copy the whole run folder under `docs/evidence/`,
+rather than inventing a rename convention for a lone extracted file. Once the commit moved into that
+folder's name the copy stopped needing its ancestors to be identifiable, so what the rule asks for is
+one self-describing folder rather than a path. The alternative is the rename convention, and it is
+the one to pick if folder-per-finding turns out too heavy.
 
 ## M69 — Reachability is a grid of two-tile cells · built 2026-09-03
 
