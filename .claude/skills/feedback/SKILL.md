@@ -104,8 +104,14 @@ every `tools/shot.sh` and `tools/check.sh` run, so tidying it is routine mainten
 finding whose evidence lived only there stops being checkable on a perfectly ordinary Tuesday.
 
 Evidence cannot be recovered by replaying: **a run log is a record of what a player did, so it is
-not a function of the seed.** Regenerating gives a different run with the same city. **Keep the
-original filename**; it carries the timestamp, the seed and the commit.
+not a function of the seed.** Regenerating gives a different run with the same city. **Copy the
+whole `<day>/<commit>/<run>/` folder, at that same three-level path, under `docs/evidence/`** — a
+run is a folder (`user://telemetry/<day>/<commit>/<run>/`, holding `run.log` and its `maps/`,
+`auto/` and `asked/` pictures), and the folder is what carries the timestamp, the seed and the
+commit now that no single file inside it does. Copying only one picture out and leaving its
+ancestry behind is what the old rule's "keep the original filename" was written to prevent, back
+when a file's own name still carried that; a lone file extracted from its `<run>/` folder today
+would carry none of it.
 
 ## Notes belong in the repo, never in a session's memory
 
