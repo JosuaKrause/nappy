@@ -9,10 +9,9 @@ progress-tracking, which lives there too.
 ## The state of the tree
 
 **`main` has unpushed commits ahead of `origin/main` and is otherwise the only branch.** Nothing is
-half-written in the working tree — a license-file restructure, playtest 20's writeup, and a
-correction to M69 after reading the code showed the milestone's first draft was chasing something
-that mostly wasn't a bug (`git log` over what has not reached `origin/main` shows exactly these
-three). Trust the tools over any sentence here:
+half-written in the working tree and no worktree is open (`git log` over what has not reached
+`origin/main` says what those commits are, and the newest of them is M69's merge). Trust the tools
+over any sentence here:
 
 ```sh
 ./tools/test.sh          # the full headless suite, ~200s; must be 0 failures
@@ -23,61 +22,49 @@ three). Trust the tools over any sentence here:
 ```
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
-`check.sh`'s import pass can rewrite an unrelated doc's whitespace as a side effect — it did once
-this session, to `docs/ARCHITECTURE.md`, reverted before committing — so diff what `git status`
-shows after running it rather than assuming only the files you touched changed.
+
+**`check.sh`'s import pass rewrites `docs/ARCHITECTURE.md`'s file tree as a side effect**, turning a
+run of spaces into a tab on whichever lines it feels like — the file's tree is indented with spaces
+and it converts some of them every time. It is not a one-off: it happened twice in the session that
+built M69 alone. **Run `git status` after `check.sh` and revert anything you did not mean to
+change**, rather than assuming only the files you touched moved.
 
 **The game is published, and a merge to `main` is a release.**
 `https://nappy.josuakrause.com/` serves it, and `.github/workflows/deploy.yml` rebuilds and
 republishes on every push to `main` — gate, export, upload, publish, in that order, so a red build
 never reaches the site. Completed work may be pushed without asking; see the **committing** skill
 for what *completed* means, and read the sentence above it before pushing, because pushing is now
-publishing. The three commits above are docs-only and gated (`lint.sh`, `check.sh`, the full
-`test.sh` all ran clean before each), so they are safe to push whenever wanted — they just have not
-been, yet.
+publishing. Everything unpushed is gated — `check.sh`, `lint.sh` and the full unfiltered `test.sh`
+ran clean on the merged tree — so it is safe to push whenever wanted. It just has not been, and
+M69 changed how every day's routes and closures are computed, so **a played day before publishing is
+worth more here than usual**: the whole milestone is verified by rigs and nobody has walked a city
+whose corridor was grown on cells.
 
 ## What to do next
 
-**Start with [PLAYTEST-20.md](PLAYTEST-20.md).** A full seven-day run, four findings, and it is now
-the freshest thing in the repo. Its own findings are filed against the milestones that own them, and
-one of the four — the reachability gap — is worth reading in full rather than only in `TODO.md`'s
-compressed form, because the milestone it produced changed shape twice over the course of writing it
-down.
+**Start with [PLAYTEST-20.md](PLAYTEST-20.md).** A full seven-day run, four findings, and it is still
+the freshest thing in the repo. Its findings are filed against the milestones that own them; the
+reachability gap has been built, and the record of what that turned into is `DECISIONS.md` under M69.
 
-1. **M69 — reachability becomes a grid of two-tile cells, and the day's route tree grows on it.**
-   The design is settled and written out in full in `TODO.md`; what is left is implementation, in the
-   six items there. The short version: hand-modelling openings was replaced by a uniform cell grid
-   over the tile map, the cell is **two** tiles square because two divides the lattice's 14-tile
-   period and its 6- and 8-tile street and block spans exactly where three divides none of them, a
-   cell contributes **one node per connected component of its walkable tiles** rather than one node
-   outright, and `StreetNetwork.Segment` stays the unit a closure is expressed in because a closure
-   has to be a street the player can see the shape of. That last grain choice makes the grid the tile
-   graph contracted, so the verification is that it agrees with `CityMap.walk_field` over a sweep of
-   seeds.
+**Read that record before touching routes, closures or the corridor**, because M69 changed the ground
+every one of them stands on. Reachability is now `ReachabilityGrid` — the tile map contracted into
+two-tile cells, one node per connected component of a cell's walkable tiles — the day's route tree
+grows on it, and `ClosurePlanner` refuses a calm area's access streets outright. `StreetNetwork` is
+still there and still owns the lattice and the structural route count; it is no longer what answers
+*can she get there today*.
 
-   **Two things in it are bigger than they look.** The route tree moving onto the grid touches
-   `RouteTree`, `Corridor`, `ClosurePlanner`'s candidate picking and the dusk map's corridor stroke —
-   and it is **M64's precondition**, because a tree made of whole block sides puts every park
-   crossing and alley off the tree and *closed everywhere off the path* would then seal them. And the
-   payoff item is a placement rule rather than a check: **no barrier beside a park** (a park is
-   walked through, so the barrier closes nothing) and **no barrier on a courtyard's entry street** (a
-   courtyard is a pocket with one door, so a barrier beside it is real and one on its archway's
-   street seals it). Without that rule the milestone changes no behaviour.
-
-   **An agent was started on the earlier shape of this and stopped immediately**, mid-file-read, with
-   zero commits and the worktree already cleaned up — it had been asked to settle the grain itself,
-   which is planning, not implementation. That is now done, so the milestone is ready to hand over.
-2. **M64 — off the path is closed, not dear.** Still queued behind M69: every event in the catalogue
+1. **M64 — off the path is closed, not dear.** Now first in the order: every event in the catalogue
    is a reason to cross the street and none is a reason not to go somewhere. **It supersedes M50's
    gradient** — the corridor stops being the *cheapest* ground and becomes the *only way through*,
    with the picture varying instead of the price. The mechanism already exists: two ordinary
    obstacles facing each other leave no line to walk. What has to be decided first is how many ways
    through the day's route tree keeps open, because under this policy that number is the difficulty
-   of the whole game.
-3. **M65 — the chalk mark.** Still the same two-part gap from playtest 19 — announced before it is
+   of the whole game. **Its precondition is built**: the tree now grows on cells, so sealing off the
+   tree no longer seals every park crossing and alley in the city.
+2. **M65 — the chalk mark.** Still the same two-part gap from playtest 19 — announced before it is
    found, unfindable once it is — with a third item added from playtest 20: a protester pointing
    toward the current objective, and made more common since a protester obstructs nothing.
-4. **M56 — the resistance is noticed.**
+3. **M56 — the resistance is noticed.**
 
 **The instrument to judge any of it with now exists and was used this session.** The dusk map draws
 the walk over the plan: where she went, which stretches she ran, and which events actually reached
@@ -109,6 +96,18 @@ acts), **M26** (teaching the controls), a shortlist of small items, and **M10** 
 
 What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 
+- **Every route the game plans is now grown on cells, and nobody has walked one.** The day's corridor
+  is a chain of two-tile cells rather than a list of whole streets, so it can cut a corner through a
+  park or take an alley — which is the point, and which also means the shape of a day's route is not
+  the shape any played run has ever had. It is verified by the test rigs and by one dusk map read off
+  a screenshot. **Whether a corridor that cuts through a park still reads as a route** is the
+  question, and it is a played one.
+- **No barrier is placed beside a calm area any more, and that is a third of the lattice.**
+  `ClosurePlanner` refuses every access street of every calm area outright — a measured mean of 33.4
+  of 264 streets a day. The intent is that a closure stops reading as broken; the risk nobody has
+  looked at is the opposite one, that closures now cluster away from the places she actually walks and
+  stop being met at all. M45's own trap in a new place: *a nudge that removes the decision is worse
+  than a closure that does nothing.*
 - **The whole of the heat is unfelt.** Every number in it was set by design and checked by a rig:
   nobody has walked a city at full resistance progress, and the item that would tell you whether it
   is fair — measuring it against the five nerves — is the one still queued. It makes the back half
