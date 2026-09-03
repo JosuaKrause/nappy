@@ -302,21 +302,62 @@ central claim — the corridor is the way through — true.
       one-cell stretch of corridor is not ordinary corridor** — where a branch runs down an alley
       there is no other side of the street to cross to, so the clearance a lethal row keeps has to be
       measured against the narrowest ground the tree touches rather than against a street's width
-- [ ] **Take the discount off the corridor, which is the other half of superseding M50.** The
-      gradient biases costly rows away from the corridor and that is what makes a planned route feel
-      empty to walk. What replaces it is an ordinary density on the tree — *"so we need to change the
-      side of the street every now and then"* — which is a statement about **how often she is made to
-      cross**, and that is the thing to measure rather than an event count. The rows that already do
-      it are the pavement obstacles M48 just made fit their pavement: a café, a market stall,
-      roadworks, a kerbed van. **`Corridor.depth()` is where the discount lives**, so this is a
-      change to what depth zero costs rather than a new system
-- [ ] **Measure the empty feeling before and after, because two things could be causing it.**
-      Playtest 21 reports the city as empty and does not distinguish M50's corridor discount from
-      M69's closure refusal — `ClosurePlanner` now refuses every calm-area access street, a mean of
-      33.4 of 264 a day, which removes closures from ground she may walk disproportionately often.
-      **A dusk map of one run answers it**: it draws the walk over the plan, so *how much did she
-      meet* and *where was it relative to the corridor* are both readable off one picture. Do this
-      first — it is the difference between fixing the density and fixing the refusal
+- [ ] **Take the discount off the corridor, which is the other half of superseding M50.** What
+      replaces it is an ordinary density on the tree — *"so we need to change the side of the street
+      every now and then"* — which is a statement about **how often she is made to cross**, and that
+      is the thing to measure rather than an event count. The rows that do it are the pavement
+      obstacles M48 made fit their pavement: a café, a market stall, roadworks, a kerbed van.
+      **`Corridor.depth()` is where the discount lives**, so this is a change to what depth zero
+      costs rather than a new system.
+
+      **This item is waiting on an answer, because the measurement below cannot find the problem it
+      was written to fix.** The corridor is not short of these rows — it is where about half of every
+      one of them already lands. Building *more* density onto it against that measurement is the one
+      thing the numbers argue against, so what the instruction means has to be settled before the
+      change is made
+
+**What the corridor actually carries, measured over 8 seeds × days 1, 5, 8, 11 and 14 — 5633 placed
+events.** The two causes playtest 21 could not tell apart were both tested and **neither is the
+cause.**
+
+**The corridor is the densest ground in the city, not the emptiest.** Every event is bucketed by
+`Corridor.depth()` — 0 on the tree, 1 the rim, 2+ elsewhere — and cross-tabbed with what the day
+placed it *for*:
+
+| role | depth 0 | rim | 2+ |
+|---|---|---|---|
+| friction | **2074** | 709 | 1706 |
+| wall | **0** | 547 | 531 |
+| none | 10 | 12 | 44 |
+
+That is about **52 friction events a day standing on the corridor itself**, and depth 0 is far less
+ground than "everywhere else". **The hypothesis that the side-changing rows are priced out of the
+corridor is false**: `_role_for` calls a row a wall when it is lethal or costs `WALL_WORTH_OF_COST`
+(40 points, which is 40% of a full meter) or more to walk through, and all four price well under it —
+`cafe_tables` 20.1, `market_stall` 27.9, `construction` 20.3, `delivery_van` 8.3. All four are
+friction, and each lands on the corridor about half the time (`cafe_tables` 388 of 781,
+`market_stall` 149 of 307, `construction` 134 of 259, `delivery_van` 233 of 425).
+
+**M69's closure refusal is not it either.** Each day was planned twice on the same seeds — once
+through `ClosurePlanner.plan_day` as the game runs it, once through a copy of its candidate list with
+the calm-area exclusion removed. The refusal takes a mean of **35.0 of 264 lattice streets** a day out
+of the pool, but only **34.7% of those are rim** — the ground beside where she walks — so it removes
+**14.5% of the rim** and the rest of what it refuses was never near her. The closures land in almost
+the same place either way: **86.4% of them on the rim as built, 88.6% with the filter off**, at an
+identical 2.50 a day. Only 45 of 280 closures would have moved.
+
+**So the reading the numbers support is neither of the two on offer: the corridor is full of things
+that do not matter.** `cafe_tables` alone is 781 of 5633 placements — one row in seven — and the
+whole depth-0 population is friction, by construction: a wall is refused every corridor tile, so
+**nothing she meets on her own route can stop her**. *Empty* is about consequence rather than count,
+which is M64's own sentence — *every event is a reason to cross the street and none is a reason not
+to go somewhere* — and it points at the sealing items rather than at the density one.
+
+*(`SET_PIECE` is zero in every bucket. A one-shot has no position at dawn, so this is the sweep
+looking at plans before the director sites them rather than a day with no set pieces in it.)*
+
+The probe that produced all of this is kept on this milestone's own branch, so that *measure it
+again after* means running the same thing rather than reinventing it.
 - [ ] **Nothing arrives from off screen, and everything should.** *(2026-09-02: "the charging dog
       doesn't have an offscreen indication it should start further away and appear first as
       offscreen indicator", and "bikers / unleashed dogs all pop in in front of the player instead
