@@ -1248,6 +1248,12 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 
 ## A blocking object is drawn at exactly the width it obstructs, by repeating a segment
 ## across it. Anything else would be a lie about where the player can walk.
+##
+## **The end cap is inset by half its own width, for the same reason.** A cap centred at `±half`
+## hangs half its own width past the obstruction — `barrier_end.svg` is 6px wide, so a `construction`
+## barrier obstructs 64px and used to draw 70 — which is the picture claiming ground the collision
+## does not hold. Insetting so the cap's *outer* edge lands on `±half` instead makes the drawn extent
+## equal the obstructed one, matching the segments above rather than overhanging them.
 func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.9)
@@ -1261,8 +1267,20 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null) -> void:
 				_spread_at(-half + width * (i + 0.5)), _spread_extent(width, thickness))
 	if not cap:
 		return
+	var cap_size := cap.get_size()
+	var cap_along := cap_size.y if _spread_vertical else cap_size.x
+	var cap_thickness := cap_size.x if _spread_vertical else cap_size.y
 	for side in [-1.0, 1.0]:
-		Sprites.draw_standing(self, cap, _spread_at(side * half))
+		Sprites.draw_standing(self, cap, _spread_at(_cap_offset(half, cap_along, side)),
+				_spread_extent(cap_along, cap_thickness))
+
+## The along-axis offset for one end cap, inset from `±half` by half the cap's own extent on that
+## axis so its outer edge lands on the obstruction boundary rather than past it — see `_draw_spread`.
+## A pure function so a test can assert the arithmetic directly, against the same asset size and
+## `obstructs_radius` the drawing itself uses, rather than by parsing what `draw_texture_rect`
+## painted.
+static func _cap_offset(half: float, cap_along: float, side: float) -> float:
+	return side * (half - cap_along * 0.5)
 
 ## The tables, and the people at them.
 ##

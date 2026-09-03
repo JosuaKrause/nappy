@@ -10,6 +10,7 @@ func run(t) -> void:
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
 	_test_a_spread_never_lands_on_a_corner(t)
+	_test_a_spread_cap_matches_what_it_obstructs(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
@@ -266,6 +267,24 @@ func _test_a_spread_never_lands_on_a_corner(t) -> void:
 						"seed %d day %d: '%s' at tile %s is not on a corner"
 						% [run_seed, day, plan.def.id, tile])
 	t.check(checked > 0, "some run placed a spread to check (%d)" % checked)
+
+## **A spread's end cap is drawn at exactly the width it obstructs, not past it.**
+## `EventInstance._draw_spread`'s own docstring is the contract; the repeated segments already meet
+## it, and the cap is the half that used to break it — centred at `±half`, `barrier_end.svg` (6px
+## wide) hung 3px past each end of a `construction` barrier's 64px obstruction.
+## `EventInstance._cap_offset` is the pure arithmetic the drawing calls, so this asserts the outer
+## edge it produces against the real asset size and the real `obstructs_radius`, for the one row
+## that carries a cap.
+func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
+	var def := EventCatalogue.by_id("construction")
+	var half := maxf(11.0, def.obstructs_radius)
+	var cap_along := EventInstance.BARRIER_END.get_size().x
+	var offset := EventInstance._cap_offset(half, cap_along, 1.0)
+	t.check(is_equal_approx(offset + cap_along * 0.5, half),
+			"the cap's outer edge (%.1f) lands on the %.1fpx obstruction, not past it"
+			% [offset + cap_along * 0.5, half])
+	t.check(not is_equal_approx(offset, half),
+			"and it is not simply centred at ±half any more (%.1f)" % offset)
 
 # ------------------------------------------------------------------ emission ---
 
