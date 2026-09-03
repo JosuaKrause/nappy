@@ -349,6 +349,37 @@ the played question**, and nobody has walked one.
       side, gates it behind a day number, or nudges her toward a crossing."* She may still cross
       wherever she likes; what changes is that no day ever plans her *along* it
 
+- [ ] **Thin the seals, so a wrong turn stays open long enough to be taken.** *(2026-09-03, playtest
+      22: "the guidance is there and properly pushes the player in the right direction but it feels a
+      bit on guardrails… removing some obstacles randomly might lead the player down a bad path until
+      they return to the actual path because they get stuck otherwise. this makes the actual path the
+      player takes feel more organic, self-chosen, and earned. the goal is to guide the player without
+      having the player know they are being guided. subtlety is key".)*
+
+      A final pass over the day's seals removes a small fraction. **Soft seals only — never a hard
+      one, which is a full street closure**, and never an alley mouth, which is a different mechanism
+      answering a different rule. Every seal is off the tree already, so *"only on non-paths"* is
+      satisfied by construction rather than by a check.
+
+      **The fraction is a `Tuning` constant, because it is the dial this is really about.** Too low
+      and the walls stay visible; too high and the corridor stops being the way through, which is
+      M64's central claim. Start small — *"a tiny bit"* — and expect to move it against a played day
+      rather than an argument.
+
+      **What "removes a barrier" means is a real fork and the smaller reading is taken: drop one body
+      of the pair, not the pair.** A soft seal is two obstacles, one per pavement, and taking one away
+      leaves the street walkable down the other side while it still *looks* obstructed — so it reads
+      as an ordinary street with something on it rather than as a gate somebody opened. **The
+      alternative, named so it is cheap to pick instead:** remove the whole pair, which opens the
+      street cleanly and is easier to notice, both as a player and in a test.
+
+      **Why this does not rediscover the rule it appears to break.** `CLAUDE.md` says closures and
+      events are checked before they are accepted, never repaired afterwards, and warns against a pass
+      that deletes what a previous pass placed. That rule guards against a later pass invalidating an
+      earlier one's guarantee. **Removal cannot**: every guarantee the sealing carries is about
+      reaching somewhere, and taking a barrier away only makes more ground reachable. Say so in the
+      code, next to the pass, or the next reader will delete it on sight
+
 - [ ] **Eight seal pictures, so that no single barrier becomes the city's signature.** Agreed
       2026-09-03. Five for act I, where a closed street has a municipal reason, and three for acts
       II–IV, where it is the city coming apart. **With every street off the tree sealed, a day places

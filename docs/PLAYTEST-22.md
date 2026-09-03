@@ -104,6 +104,41 @@ number and nothing else — `<stem>-map-day<NN>[-dusk].png` — so a day played 
 nerve is spent writes over the first attempt's picture. The evidence of what went wrong the first
 time is destroyed by the retry, which is exactly the run the map was worth having for.
 
+## 6. The guidance works and it shows its working
+
+> "can we reduce the density of the full barriers a tiny bit by doing a pass in the end that removes
+> a small fraction of sidewalk barriers (only on non-paths and only on sidewalks *not* full street
+> closures) — right now the guidance is there and properly pushes the player in the right direction
+> but it feels a bit on guardrails so removing some obstacles randomly might lead the player down a
+> bad path until they return to the actual path because they get stuck otherwise. this makes the
+> actual path the player takes feel more organic, self-chosen, and earned. the goal is to guide the
+> player without having the player know they are being guided. subtlety is key"
+
+**This is a verdict on the sealing before it is a request.** *"The guidance is there and properly
+pushes the player in the right direction"* — the milestone works. What is wrong is that it works
+visibly: every street off the route is closed, so the open ones are a corridor with walls, and a
+player who notices that is being routed rather than routing.
+
+**It is also M45's recorded trap, sharpened.** That entry says *"a nudge that removes the decision is
+worse than a closure that does nothing"*, and M64's own text answered it by leaving the route tree at
+full width so a decision survives *inside* the open network. This says that is not enough: the
+decision has to survive at the **edges** too, and the way to buy that is a wrong turn that stays open
+long enough to be taken.
+
+**A wrong turn is the point, not a side effect.** *"Removing some obstacles randomly might lead the
+player down a bad path until they return to the actual path because they get stuck otherwise."* So
+the fraction removed is not a softening of the walls — it is what makes the walls discoverable by
+walking into them, which is the only way a route can be *earned* rather than followed.
+
+**It collides with a standing rule and the collision is only apparent.** `CLAUDE.md` lists, under
+things deliberately not done: *"Closures and events are checked before they are accepted, never
+repaired afterwards. If you find yourself writing a pass that deletes what a previous pass placed,
+this is the rule you are about to rediscover."* This asks for exactly such a pass. **The rule bites
+where a later pass can invalidate what an earlier one guaranteed**, and removal cannot: every
+guarantee the sealing carries is about *reaching* somewhere, and taking a barrier away can only make
+more ground reachable. A thinning pass is monotone in the safe direction, which is what makes it the
+exception rather than the rediscovery.
+
 ## 5. The doorstep can be sealed in, and the sealing's guarantee cannot see it
 
 > "the starting area was sealed off completely and the only way out was alongside the main road
