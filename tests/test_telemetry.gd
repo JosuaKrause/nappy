@@ -41,7 +41,7 @@ func run(t) -> void:
 	_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t)
 	_test_the_map_picture_draws_the_trail_and_distinguishes_running(t)
 	_test_a_runs_files_share_one_folder(t)
-	_test_the_attempt_suffix_is_empty_until_a_day_repeats(t)
+	_test_the_attempt_suffix_names_every_attempt_including_the_first(t)
 	_test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t)
 
 # ------------------------------------------------------------------ dormancy ---
@@ -864,7 +864,8 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 	t.check(DirAccess.dir_exists_absolute(maps_dir),
 			"the map landed in the run's own maps/ folder rather than beside the log")
 	var found := DirAccess.open(maps_dir).get_files()
-	t.check(found.has("day01.png"), "a first attempt keeps the plain name (got %s)" % found)
+	t.check(found.has("day01-attempt1.png"),
+			"a first attempt is named like every other attempt (got %s)" % found)
 
 	Telemetry.end_run()
 	_delete_recursive(run_dir)
@@ -872,15 +873,16 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 ## `_attempt_suffix()` is what every filename that can repeat within a run asks for its own name.
 ## Driven directly against a memory log, so this needs no disk at all — it is a question about
 ## `_day_attempts`, not about anything written anywhere.
-func _test_the_attempt_suffix_is_empty_until_a_day_repeats(t) -> void:
+func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void:
 	Telemetry.begin_memory_log()
 	Telemetry.begin_day(6, 2, 1, 1, 10.0)
-	t.check(Telemetry._attempt_suffix() == "", "a first attempt names nothing extra")
+	t.check(Telemetry._attempt_suffix() == "-attempt1",
+			"a first attempt is named too, so every name has the same shape")
 	Telemetry.begin_day(6, 2, 1, 1, 10.0)
 	t.check(Telemetry._attempt_suffix() == "-attempt2",
 			"a second attempt at the same day is named (a nerve retries without the day advancing)")
 	Telemetry.begin_day(7, 2, 1, 1, 10.0)
-	t.check(Telemetry._attempt_suffix() == "",
+	t.check(Telemetry._attempt_suffix() == "-attempt1",
 			"a different day's first attempt is unaffected by day 6's retry")
 	Telemetry.begin_day(6, 2, 1, 1, 10.0)
 	t.check(Telemetry._attempt_suffix() == "-attempt3",
@@ -904,8 +906,9 @@ func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(
 	Telemetry.write_map(map, 6, [], null, [], true)
 
 	var found := DirAccess.open("%s/maps" % run_dir).get_files()
-	t.check(found.has("day06.png"), "the first attempt's dawn map is still there (got %s)" % found)
-	t.check(found.has("day06-dusk.png"),
+	t.check(found.has("day06-attempt1.png"),
+			"the first attempt's dawn map is still there (got %s)" % found)
+	t.check(found.has("day06-attempt1-dusk.png"),
 			"and its dusk map is too (got %s)" % found)
 	t.check(found.has("day06-attempt2.png"),
 			"the retry writes a second dawn picture instead of overwriting the first (got %s)"
