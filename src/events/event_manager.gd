@@ -49,10 +49,16 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
 	# than grown again so that the walls, the friction and the picture are all stated against one
 	# tree; `RouteTree.for_day` would give the same answer, and two places agreeing by arithmetic
-	# is a thing that stops being true the first time one of them takes an argument.
+	# is a thing that stops being true the first time one of them takes an argument. Kept as a local
+	# rather than re-read from `_city` below, for the same reason — `SealPlanner` needs the same
+	# tree the catalogue's own placements were just stated against.
+	var tree := _city.route_tree() if _city else RouteTree.for_day(_map, day)
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
-			GameState.settled_this_act(), _city.route_tree() if _city else null,
-			GameState.resistance_progress)
+			GameState.settled_this_act(), tree, GameState.resistance_progress)
+	# Off the catalogue's own budget on purpose — see `SealPlanner`'s own doc. It seals everything
+	# `EventScheduler` was not permitted to touch: every street off `tree`, hard or soft, plus the
+	# mouths of any through-alley that never reaches it.
+	_plans.append_array(SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals")))
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
 	stream_around(focus)
 
