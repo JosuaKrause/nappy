@@ -18,6 +18,16 @@ Run all three before committing. They are fast and they each catch a different c
 **A filtered run prints `PARTIAL RUN` under its count and is not a green build.** Commit on the
 unfiltered one.
 
+**And whose job that is depends on who you are.** A **sub-agent** runs `check.sh`, `lint.sh` if it
+moved a governed doc, and the suites its own change touches — its `PARTIAL RUN` is expected. The
+**orchestrating session** runs the unfiltered suite on the merged tree, and that is the run that
+gates the commit. The full suite in a sub-agent is duplicated cost: the merge gate re-proves it
+anyway, because two green branches can still be wrong together, and a failure found after the merge
+goes back to the agent with the output attached. **The exception is a change to the rigs themselves
+or to something every suite loads** — then the full suite is the thing being verified rather than a
+backstop, and it is the agent's to run. The **orchestrating** skill says how to put that in a
+prompt.
+
 **Do not quote a check count in a doc.** It changes on almost every milestone, and three files in
 this repo once carried three different answers to that one question. Say what the command is, not
 what it prints.

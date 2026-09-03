@@ -71,9 +71,14 @@ A message that restates the diff is worth nothing; the diff is right there.
 
 ## Before committing
 
-Run the verification loop — see the **verify** skill. `./tools/check.sh`, `./tools/test.sh`
-unfiltered, and a screenshot if you touched anything visual. **A filtered test run prints
-`PARTIAL RUN` and is not a green build.**
+Run the verification loop — see the **verify** skill. `./tools/check.sh`, `./tools/test.sh`, and a
+screenshot if you touched anything visual.
+
+**Which `test.sh` depends on who you are.** A **sub-agent** runs the suites its own change touches;
+its `PARTIAL RUN` marker is expected, not a failure. The **orchestrating session** runs it
+unfiltered on the merged tree, and that is the run the commit rests on — a filtered run there prints
+`PARTIAL RUN` and is not a green build. The reasoning is in **verify**, and how to say it in an
+agent's prompt is in **orchestrating**.
 
 Run `./tools/lint.sh` too if the commit touches a governed doc (`CLAUDE.md`, a skill, `README.md`
 or anything under `docs/` besides `DECISIONS.md` and the `PLAYTEST-NN.md` files). A hit is a stop:

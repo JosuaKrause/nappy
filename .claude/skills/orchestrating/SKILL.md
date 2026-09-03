@@ -62,9 +62,23 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
   archiving belong to the orchestrator), plus anything another live agent owns. Two agents editing
   one file is a merge conflict scheduled in advance; when a shared file is unavoidable, tell each
   agent exactly which lines are theirs.
-- **The verification gate**: `./tools/check.sh` OK and the **full** `./tools/test.sh` — a
-  `PARTIAL RUN` is not a green build. Filtered runs are fine for iteration; the gate is the
-  unfiltered suite.
+- **The verification gate, and it is split: the agent's own tests are the agent's, the full suite is
+  the orchestrator's.** An agent runs `./tools/check.sh`, `./tools/lint.sh` if it moved a governed
+  doc, and **the suites its own change touches** — `./tools/test.sh seals events`, seconds rather
+  than minutes. **It does not run the unfiltered suite**, and its `PARTIAL RUN` marker is expected
+  rather than a failure.
+
+  **Why: the orchestrator has to run the full suite on the merged tree anyway**, and that is the run
+  that counts. Two green branches can still be wrong together, so a green branch proves nothing the
+  merge gate does not re-prove — which makes the agent's copy pure duplicated cost, several minutes
+  of a long-running command inside the context that can least afford to wait on one. **A failure
+  after the merge goes back to the agent with the failing output**, which is the same loop as
+  finding it early and costs the orchestrator one message.
+
+  **The exception is when the full suite is the thing being changed**: a change to the test rigs, to
+  something every suite loads, or one whose blast radius the agent cannot name. Then it is directly
+  the agent's task and it runs it. **Say which of the two the agent is in, in the prompt** — an
+  agent left to judge it will run the whole thing to be safe.
 - **Headless first.** Verification lives in the test rigs, not in watching the game. Windowed runs
   (`tools/run.sh`, repeated `tools/shot.sh`) open on the player's own screen; at most one or two
   `shot.sh` calls at the end for evidence. A windowed run is also the least reliable thing an agent
