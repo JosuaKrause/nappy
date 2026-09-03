@@ -38,7 +38,10 @@ user://telemetry/2026-09-03/db09693-dirty/run-205437-seed2102613802/
 ├── run.log
 ├── maps/
 │   ├── day01.png
-│   └── day01-dusk.png
+│   ├── day01-dusk.png
+│   ├── day06.png
+│   ├── day06-attempt2.png
+│   └── day06-attempt2-dusk.png
 ├── auto/
 │   └── 019s-lost-lost_crying.png
 └── asked/
@@ -271,7 +274,9 @@ the one this project keeps having to answer with a rig. The defects no log can s
 kind here: birds that freeze in the air, a cat drawn running backwards, a zzz a body's width off the
 pram, a caret over the wrong things.
 
-So a run writes PNGs into its own `auto/` folder, named `<clock>s-<what>.png`. Three rules:
+So a run writes PNGs into its own `auto/` folder, named `<clock>s-<what>.png` — or
+`<clock>s-attempt<N>-<what>.png` from a day's second attempt onward, the same rule "A day played
+twice" below states for the maps. Three rules:
 
 - **The heuristic is the log's own.** There is no interval. A shot is taken on the entries a reader
   already stops at, because those are exactly the lines that raise the question a picture answers:
@@ -315,6 +320,14 @@ So a run writes `day<NN>.png` into its own `maps/` folder: one four-pixel square
 by tile type, with the home, the calm areas, the main road, today's closures, the day's corridor,
 every event the day placed and — at dusk — the trail she actually walked marked over it.
 `TelemetryMap` does the drawing.
+
+**A day played twice writes two pictures.** A nerve retries a lost day without the calendar
+advancing — see `GameState.finish_day()` and `src/autoload/game_state.gd`'s `spend_nerve` — so
+`Telemetry.begin_day()` is called again with the day it just failed at, and it counts how many
+times that has happened. A first attempt's filenames are exactly `day<NN>.png` /
+`day<NN>-dusk.png`, unchanged; a day's second attempt onward gets `-attempt<N>` folded in —
+`day06-attempt2.png`, `day06-attempt2-dusk.png` — so the retry does not overwrite the picture of
+the day that went wrong, which is the one worth keeping.
 
 - **It is not `--overview`.** That flag frames the *rendered* city — buildings, props, dusk, an
   act's colour cast — on a run somebody has to take deliberately. This is the grid, so it says what

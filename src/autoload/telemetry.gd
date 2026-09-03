@@ -40,6 +40,15 @@ var _day_open := false
 ## The current run's own folder, absolute — every artefact of this run is written under it.
 ## `""` when the log is in memory only, which is what the test suite runs on.
 var _run_dir := ""
+## How many times `begin_day()` has opened each day number this run. A nerve buys another attempt
+## at the same day without the calendar advancing — see `GameState.finish_day()` — so `begin_day`
+## is called again with the day number it just failed at, and this is what lets the second
+## attempt's pictures say so instead of overwriting the first's. Reset at the start of a run.
+var _day_attempts := {}
+## The day currently open's attempt number, `1` on a first attempt — mirrors
+## `_day_attempts[day]` for whichever day that is, kept as its own field so nothing that names a
+## file has to be handed the day number back in just to look the count up again.
+var _attempt := 1
 
 ## Whether anything is being recorded. Everything else here is a no-op when this is false.
 func is_active() -> bool:
@@ -100,6 +109,8 @@ func begin_run(run_seed: int, played := true) -> void:
 	_day_open = false
 	_shots_today = 0
 	_last_shot = -INF
+	_day_attempts = {}
+	_attempt = 1
 	_log.header("nappy %s log  %s  commit %s"
 			% ["run" if played else "rig", Time.get_datetime_string_from_system(),
 			source_version()])
@@ -118,12 +129,21 @@ func begin_memory_log() -> void:
 	_run_dir = ""
 	_clock = 0.0
 	_day_open = false
+	_day_attempts = {}
+	_attempt = 1
 	_log.header("nappy run log  (memory)")
 
 ## Starts a day's section. Everything after this is timestamped from zero.
+##
+## **Also where the attempt is counted.** A nerve retries a lost day without the calendar
+## advancing — see `GameState.finish_day()` — so this is called again with the same `day`, and
+## `_day_attempts[day]` counts how many times that has happened. `_attempt` is a first attempt
+## (`1`) until it is not, and `_attempt_suffix()` is what turns that into a filename fragment.
 func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float) -> void:
 	if not _log:
 		return
+	_day_attempts[day] = int(_day_attempts.get(day, 0)) + 1
+	_attempt = _day_attempts[day]
 	_clock = 0.0
 	_day_open = true
 	_shots_today = 0
@@ -206,7 +226,7 @@ func snapshot(kind: String) -> void:
 		return
 	_shots_today += 1
 	_last_shot = _clock
-	_capture("%s/%03.0fs-%s.png" % [_type_dir("auto"), _clock, kind])
+	_capture("%s/%03.0fs%s-%s.png" % [_type_dir("auto"), _clock, _attempt_suffix(), kind])
 
 ## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
 ## a game feature.
@@ -232,7 +252,7 @@ func snapshot_now(context: String) -> void:
 	if _log.path == "" or DisplayServer.get_name() == "headless":
 		return
 	_shots_today += 1
-	_capture("%s/%03.0fs-asked.png" % [_type_dir("asked"), _clock])
+	_capture("%s/%03.0fs%s-asked.png" % [_type_dir("asked"), _clock, _attempt_suffix()])
 
 # --------------------------------------------------------------- the city grid ---
 
@@ -263,12 +283,19 @@ func snapshot_now(context: String) -> void:
 ## `trail` and `met` are `TelemetryObserver`'s own lists — see `TelemetryObserver.trail()` and
 ## `.met_events()` — passed through untouched. Reading them here takes no RNG and changes nothing
 ## about either list, the same promise every other argument to this function already keeps.
+##
+## **A day played twice writes two pictures.** A nerve retries a lost day without the calendar
+## advancing, so this is called again for the same `day` — and without the attempt in the name the
+## second attempt's maps would overwrite the first's, destroying the picture of the day that went
+## wrong. `_attempt_suffix()` is empty on a first attempt, so an ordinary day's filenames are
+## exactly what they were before a retry could happen at all.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
 		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
 	if not _log or _log.path == "":
 		return
-	var path := "%s/day%02d%s.png" % [_type_dir("maps"), day, "-dusk" if at_dusk else ""]
+	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, _attempt_suffix(),
+			"-dusk" if at_dusk else ""]
 	var drawn := tree if tree else RouteTree.for_day(map, day)
 	if TelemetryMap.render(map, closures, drawn, plans, trail, met).save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
@@ -326,6 +353,12 @@ static func _file_tag() -> String:
 	return source_version().replace("*", "-dirty")
 
 # ------------------------------------------------------------------ the files ---
+
+## `-attempt<N>` once a day has been retried, and nothing on a first attempt — so an ordinary run
+## that is never lost has exactly the filenames it always had. See `begin_day()`, which is where
+## `_attempt` is counted.
+func _attempt_suffix() -> String:
+	return "-attempt%d" % _attempt if _attempt > 1 else ""
 
 ## The folder one kind of picture lives in, within the current run — `auto` for the heuristic's own
 ## screenshots (`snapshot()`), `maps` for the day maps (`write_map()`), `asked` for a picture a

@@ -41,6 +41,8 @@ func run(t) -> void:
 	_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t)
 	_test_the_map_picture_draws_the_trail_and_distinguishes_running(t)
 	_test_a_runs_files_share_one_folder(t)
+	_test_the_attempt_suffix_is_empty_until_a_day_repeats(t)
+	_test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t)
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -814,7 +816,9 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 
 # ---------------------------------------------------------------- one folder ---
 # *(docs/TODO.md, M70, "all the files of one run live in one folder": the run identity moved from
-# a shared filename stem to a folder, `<day>/<commit>/<run>/`.)*
+# a shared filename stem to a folder, `<day>/<commit>/<run>/`, and a day played twice — a nerve
+# retries a lost day without the calendar advancing — has to write a second picture rather than
+# overwrite the first's.)*
 
 ## Deletes a real path this suite wrote, so a test that opens a real run — the only way to check
 ## a folder actually landed where `begin_run()` says it does — leaves nothing behind for a person
@@ -861,6 +865,53 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 			"the map landed in the run's own maps/ folder rather than beside the log")
 	var found := DirAccess.open(maps_dir).get_files()
 	t.check(found.has("day01.png"), "a first attempt keeps the plain name (got %s)" % found)
+
+	Telemetry.end_run()
+	_delete_recursive(run_dir)
+
+## `_attempt_suffix()` is what every filename that can repeat within a run asks for its own name.
+## Driven directly against a memory log, so this needs no disk at all — it is a question about
+## `_day_attempts`, not about anything written anywhere.
+func _test_the_attempt_suffix_is_empty_until_a_day_repeats(t) -> void:
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(6, 2, 1, 1, 10.0)
+	t.check(Telemetry._attempt_suffix() == "", "a first attempt names nothing extra")
+	Telemetry.begin_day(6, 2, 1, 1, 10.0)
+	t.check(Telemetry._attempt_suffix() == "-attempt2",
+			"a second attempt at the same day is named (a nerve retries without the day advancing)")
+	Telemetry.begin_day(7, 2, 1, 1, 10.0)
+	t.check(Telemetry._attempt_suffix() == "",
+			"a different day's first attempt is unaffected by day 6's retry")
+	Telemetry.begin_day(6, 2, 1, 1, 10.0)
+	t.check(Telemetry._attempt_suffix() == "-attempt3",
+			"day 6 keeps its own count across whatever happened to other days in between")
+	Telemetry.end_run()
+
+## `GameState.finish_day()` retries a lost day by calling `_start_day()` again with the same
+## `GameState.day` — `begin_day()` sees the same day number twice — and `write_map()` is called
+## once per attempt from `main.gd`. Without the attempt in the name the second call's map would
+## overwrite the first's, which is exactly the picture worth keeping: the day that went wrong.
+func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t) -> void:
+	var map := CityGenerator.generate(4242)
+	Telemetry.begin_run(778812346, false)
+	var run_dir := Telemetry.current_log().path.get_base_dir()
+
+	Telemetry.begin_day(6, 2, 778812346, 778812346, 10.0)
+	Telemetry.write_map(map, 6)
+	Telemetry.write_map(map, 6, [], null, [], true)  # dusk, same attempt
+	Telemetry.begin_day(6, 2, 778812346, 778812346, 10.0)  # the retry a nerve buys
+	Telemetry.write_map(map, 6)
+	Telemetry.write_map(map, 6, [], null, [], true)
+
+	var found := DirAccess.open("%s/maps" % run_dir).get_files()
+	t.check(found.has("day06.png"), "the first attempt's dawn map is still there (got %s)" % found)
+	t.check(found.has("day06-dusk.png"),
+			"and its dusk map is too (got %s)" % found)
+	t.check(found.has("day06-attempt2.png"),
+			"the retry writes a second dawn picture instead of overwriting the first (got %s)"
+			% found)
+	t.check(found.has("day06-attempt2-dusk.png"),
+			"and a second dusk picture (got %s)" % found)
 
 	Telemetry.end_run()
 	_delete_recursive(run_dir)
