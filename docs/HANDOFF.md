@@ -48,9 +48,10 @@ whose corridor was grown on cells.
 ## What to do next
 
 **Start with [PLAYTEST-22.md](PLAYTEST-22.md), then [PLAYTEST-21.md](PLAYTEST-21.md), then
-[PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 22 has three findings: barriers are still placed with
-gaps and overlaps (M64's first two items), the off-path city is still bare because M64's sealing has
-not been started, and the run log wants a folder per run (M70). Playtest 21 is a brief run whose two
+[PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 22 has three findings, and its third is built — a run
+is now a folder, `<day>/<commit>/<run>/`, and a replayed day no longer overwrites its own map. The
+two open ones are both M64's: barriers are still placed with gaps and overlaps, and the off-path city
+is still bare because the sealing has not been started. Playtest 21 is a brief run whose two
 findings are both M64's: the city *"feels way empty"*, and an instruction about the density on and
 off the path that moves **both** ends of M50's gradient. Playtest 20 is the full seven-day run behind
 them, and its findings are filed against the milestones that own them.
