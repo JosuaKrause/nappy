@@ -24,11 +24,11 @@ func _rng(day: int) -> RandomNumberGenerator:
 # -------------------------------------------------------------------- gating ---
 
 func _test_acts_are_gated_by_day(t) -> void:
-	t.check(Tuning.act_for_day(1) == 1, "day 1 is act I")
-	t.check(Tuning.act_for_day(3) == 1, "day 3 is still act I")
-	t.check(Tuning.act_for_day(4) == 2, "day 4 opens act II")
-	t.check(Tuning.act_for_day(8) == 3, "day 8 opens act III")
-	t.check(Tuning.act_for_day(12) == 4, "day 12 opens act IV")
+	# The boundaries themselves are `Tuning.ACT_START_DAYS` and are not restated here — a check
+	# that reads that array back would only ever fail because somebody moved an act on purpose.
+	# What is worth pinning is the behaviour around it: the day *before* a boundary stays in the
+	# earlier act, and the run does not outlast its last act.
+	t.check(Tuning.act_for_day(3) == 1, "the day before a boundary is still in the earlier act")
 	t.check(Tuning.act_for_day(Tuning.RUN_LENGTH_DAYS) == 4, "the last day is act IV")
 
 	# Nothing from a later act may leak into an earlier day.

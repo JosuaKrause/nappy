@@ -148,6 +148,11 @@ func _test_the_meters_move_to_the_top_on_a_touch_device(t) -> void:
 	var hud := _hud(t)
 	t.check(hud._meters.anchor_top == 1.0 and hud._meters.anchor_bottom == 1.0,
 			"desktop keeps the bottom-anchored column")
+	# Measured before the flip rather than written down as 280x114: the size the desktop column
+	# happens to be is a layout decision, and a test naming it would go red for a resize that
+	# broke nothing. What this asserts is that repositioning does not *resize*.
+	var was := Vector2(hud._meters.offset_right - hud._meters.offset_left,
+			hud._meters.offset_bottom - hud._meters.offset_top)
 
 	hud._touch = true
 	hud._reposition_meters_for_touch()
@@ -155,8 +160,8 @@ func _test_the_meters_move_to_the_top_on_a_touch_device(t) -> void:
 			"a touch device anchors the column to the top instead")
 	t.check(hud._meters.offset_top > hud._header.offset_bottom,
 			"and starts below where the day header ends, rather than under it")
-	t.check(hud._meters.offset_right - hud._meters.offset_left == 280.0
-			and hud._meters.offset_bottom - hud._meters.offset_top == 114.0,
+	t.check(Vector2(hud._meters.offset_right - hud._meters.offset_left,
+			hud._meters.offset_bottom - hud._meters.offset_top) == was,
 			"the column keeps its own size — only where it sits changes")
 
 	hud.free()
