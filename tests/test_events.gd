@@ -7,6 +7,7 @@ const STEP := 1.0 / 60.0
 func run(t) -> void:
 	_test_catalogue_is_fair(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
+	_test_a_spread_rotates_with_the_street(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
@@ -133,6 +134,46 @@ func _test_a_spread_body_fits_the_ground_it_stands_on(t) -> void:
 					"'%s' draws %.0fpx wide, which fits the %.0fpx that a %d-type tile clears"
 					% [def.id, half * 2.0, clearance * 2.0, tile_type])
 	t.check(checked >= 6, "and the rule covers the catalogue's spread rows (%d checks)" % checked)
+
+## **A spread's rotation is a property of the street it stands on.** Playtest 13 and 19 both report
+## it from play: *"they're always horizontal even when they should be vertical."* A tile whose `x`
+## sits inside a corridor band and whose `y` does not is on a north-south street, where the default
+## lay (along local X) already blocks the traffic; a tile whose `y` is inside a band and `x` is not
+## is on an east-west street, where the spread has to rotate onto local Y to block anything at all.
+## A bare `CityMap.new()` needs no generation for this — `corridor_offset` is arithmetic over
+## `Tuning`'s constants alone.
+func _test_a_spread_rotates_with_the_street(t) -> void:
+	var map := CityMap.new()
+
+	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
+	t.check(CityMap.corridor_offset(ns_tile.x) >= 0 and CityMap.corridor_offset(ns_tile.y) < 0,
+			"tile %s sits on a north-south street" % ns_tile)
+	t.check(not EventInstance._spread_is_vertical(map, map.tile_to_world(ns_tile)),
+			"a north-south street keeps the spread's default lay along local X")
+
+	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
+	t.check(CityMap.corridor_offset(ew_tile.y) >= 0 and CityMap.corridor_offset(ew_tile.x) < 0,
+			"tile %s sits on an east-west street" % ew_tile)
+	t.check(EventInstance._spread_is_vertical(map, map.tile_to_world(ew_tile)),
+			"an east-west street rotates the spread onto local Y")
+
+	# A junction belongs to both corridors at once, and ground off any corridor belongs to
+	# neither — neither has one street to lie across, so both keep the default lay.
+	var junction_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH / 2)
+	t.check(CityMap.corridor_offset(junction_tile.x) >= 0
+			and CityMap.corridor_offset(junction_tile.y) >= 0,
+			"tile %s is a junction, on both corridors at once" % junction_tile)
+	t.check(not EventInstance._spread_is_vertical(map, map.tile_to_world(junction_tile)),
+			"a junction has no single street to be wrong about")
+
+	var block_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH + 3)
+	t.check(CityMap.corridor_offset(block_tile.x) < 0 and CityMap.corridor_offset(block_tile.y) < 0,
+			"tile %s is off any corridor — a square, a park, a courtyard" % block_tile)
+	t.check(not EventInstance._spread_is_vertical(map, map.tile_to_world(block_tile)),
+			"ground that was never a street keeps the default lay too")
+
+	t.check(not EventInstance._spread_is_vertical(null, Vector2.ZERO),
+			"a data-level rig with no map at all gets the unrotated default")
 
 # ------------------------------------------------------------------ emission ---
 

@@ -134,6 +134,19 @@ arrangement on load. It is why `alley_robbery`'s inner radius is 30 rather than 
 width would suggest: a man is 11px wide and she is 14, so at 22 the pram is held three pixels
 *outside* the radius that takes the baby.
 
+### Which way a spread lies
+
+`_draw_spread` and `_draw_cafe` lay their segments along local X by default — the right way to
+block a north-south street, where the traffic runs along Y and a barrier across it has to span X.
+On an east-west street the same default would lie parallel to the traffic and block nothing, so
+`EventInstance._spread_is_vertical()` rotates the lay onto local Y whenever the tile it is asked
+about sits on a corridor running that way. **It is a property of the street, decided once in
+`setup()`, and never a field a row sets** — two rows on the same street face the same way for the
+same reason, and `CityMap.corridor_offset` answers it for a `ROAD` or `CROSSING` tile exactly as it
+answers it for a `SIDEWALK` one, with no second lookup for either. A junction (both of a tile's
+coordinates inside a corridor band) and ground off any corridor at all (a square, a park, a
+courtyard) both keep the default lay along local X: neither has one street to be wrong about.
+
 ### Which lane of the pavement
 
 A corridor is sidewalk | road | sidewalk, so a pavement tile has a kerb on one side and a frontage
