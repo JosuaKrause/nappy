@@ -91,9 +91,21 @@ not necessarily with a full road closure like a tree or car accident.")* M50 mak
 through*, and **what varies is the picture rather than the price** — a fallen tree, a car accident,
 a skip, not one barrier row repeated.
 
-**The order is still the whole of the instruction: the pictures come before the placement.** This
-is a catalogue design problem before it is a placement one, and playtest 19 carries the map that
-shows it.
+**The placement comes first and the pictures are independent of it.** *(2026-09-03: "how's that 8
+seal pictures gonna solve the issue? the task can be solved right now — having more pictures makes it
+nicer with variety but it's independent from actually placing things".)* This reverses the order this
+entry carried, and the reversal is the player's own — the earlier instruction was *"we need to come
+up with more things first then actually add them"* (2026-09-02), given before the pair mechanism was
+worked out.
+
+**The catalogue can seal a street today, from day 1, with nothing new drawn.** A soft seal is one
+ordinary obstacle on each pavement, and the rows are already there: `construction` (Roadworks) has
+`obstructs_radius` of `SIDEWALK_SPREAD_MAX` — 32px, so 64px wide, exactly a pavement band — from day
+2, and `cafe_tables` (48px), `market_stall` (56px), `delivery_van` (pinned at the kerb) and
+`homeless_yeller` are all available from day 1. For a hard seal, `barricade` obstructs 62px — 124px,
+the whole street — and this entry already says it should be *"placed as a seal rather than rolled as
+an event"*. So *empty off the path* is fixable now, and what the eight pictures buy is that no single
+barrier becomes the city's signature.
 
 **The city becomes a maze rather than a weighted grid**, and the route decision changes with it:
 not *which way is cheaper* but *which of the open ways do I take*. That only remains a decision if
@@ -328,12 +340,33 @@ through the walled city and a much larger game than the corridor policy describe
 a played day rather than in the abstract; the conservative version is the one that keeps M64's
 central claim — the corridor is the way through — true.
 
-- [ ] **The pictures, and they are the part that needed inventing.** Eight kinds, agreed 2026-09-03.
-      Five for act I, where a closed street has a municipal reason, and three for acts II–IV, where
-      it is the city coming apart. **With every street off the tree sealed, a day places about 187 of
-      these** — the lattice's 264 streets less the 76.6 the day's tree covers, measured — **and she
-      walks past perhaps twenty-five**, so eight kinds is each one met three or four times in a day —
-      enough that no single barrier becomes the city's signature.
+- [ ] **Place a seal off the tree, on every segment**, exempting the doorstep, and check the
+      winnability guarantee still holds when sealing is the intent rather than the accident. **A
+      one-cell stretch of corridor is not ordinary corridor** — where a branch runs down an alley
+      there is no other side of the street to cross to, so the clearance a lethal row keeps has to be
+      measured against the narrowest ground the tree touches rather than against a street's width.
+
+      **The seals come from a list of candidates, and adding to that list is the only thing the next
+      item may cost.** *(2026-09-03: "code should be that updating the list of candidates is enough
+      and no other code changes need to happen to go to 8 seal pictures".)* So a candidate is data —
+      what to place, whether it seals **hard** or **soft**, and from which day — and the pass that
+      chooses and sites one is generic over that list. **This is the architectural requirement of
+      this item, not a nicety**: if the picture item turns out to need a branch in the placement code,
+      the placement code was written wrong.
+
+      Today's list is what the catalogue already carries, named above: `construction` and the other
+      pavement obstacles for a soft pair, `barricade` for a hard span
+- [ ] **Eight seal pictures, so that no single barrier becomes the city's signature.** Agreed
+      2026-09-03. Five for act I, where a closed street has a municipal reason, and three for acts
+      II–IV, where it is the city coming apart. **With every street off the tree sealed, a day places
+      about 187 of these** — the lattice's 264 streets less the 76.6 the day's tree covers, measured
+      — **and she walks past perhaps twenty-five**, so eight kinds is each one met three or four
+      times in a day.
+
+      **This is variety, and it is independent of the item above.** *(2026-09-03: "having more
+      pictures makes it nicer with variety but it's independent from actually placing things".)* It
+      is finished when the eight are drawn and added to the candidate list, and it should change no
+      other code.
 
       Act I: **a fallen tree**, root plate at one kerb and crown over the far footway (hard); **a car
       accident**, two cars locked together with debris and onlookers on both pavements (hard); **a
@@ -349,14 +382,7 @@ central claim — the corridor is the way through — true.
       somebody"* — placed as a seal rather than rolled as an event.
 
       **The first two are the player's own examples** and the rest were proposed and agreed in the
-      same exchange. **The pair mechanism needs no new drawing at all** and is the cheapest soft
-      seal there is: a café on one side facing a yeller on the other, from rows the catalogue
-      already has
-- [ ] **Then place them off the tree, on every segment**, exempting the doorstep, and check the
-      winnability guarantee still holds when sealing is the intent rather than the accident. **A
-      one-cell stretch of corridor is not ordinary corridor** — where a branch runs down an alley
-      there is no other side of the street to cross to, so the clearance a lethal row keeps has to be
-      measured against the narrowest ground the tree touches rather than against a street's width
+      same exchange
 
 **Measured over 8 seeds × days 1, 5, 8, 11 and 14. Only the events on the path exist; everything else
 is bare — and it is a factor of three and a half.** *(2026-09-03: "if you look at any of those
