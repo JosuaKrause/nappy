@@ -697,11 +697,30 @@ func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
 ## not `TelemetryObserver._watch_met_events`, which has its own test.
 func _check_a_glyph_says_what_it_is(t, map: CityMap,
 		plans: Array[EventScheduler.Planned]) -> void:
+	# **The glyph is only readable where nothing is drawn over it**, and four marks are laid over
+	# the events on purpose — the calm outlines, the dead ends, the closures and the home, which
+	# `render` calls the picture's fixed points. So a plan standing under one of those is a plan
+	# whose shape this test cannot see, and *which* plan the day happens to put there changes with
+	# every change to how routes are grown. The bare render is the oracle for that: a tile the
+	# overlays touch is a tile that is already not its ground colour before any event is drawn.
+	var bare := TelemetryMap.render(map)
+	var unobstructed := func(plan: EventScheduler.Planned) -> bool:
+		var at := map.world_to_tile(plan.position)
+		for probe in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(1, 1)]:
+			var tile: Vector2i = at + probe
+			if not Rect2i(Vector2i.ZERO, map.size).has_point(tile):
+				return false
+			if _tile_colour(bare, tile) != Tile.ground_colour(map.tile_at(tile)):
+				return false
+		return true
+
 	var lethal: EventScheduler.Planned = null
 	var costly: EventScheduler.Planned = null
 	for plan in plans:
 		# A routed event lays a band over its own corners, so the shape is read off a stationary one.
 		if not plan.is_placed() or plan.path.size() >= 2:
+			continue
+		if not unobstructed.call(plan):
 			continue
 		if plan.def.hard_fail and lethal == null:
 			lethal = plan

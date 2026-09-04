@@ -55,6 +55,27 @@ extends RefCounted
 ## `streets()`, `rim()`, `gaps()` and `is_on_the_tree()` all answer in `Vector3i` segment keys, each
 ## one derived from which cells are on the tree rather than tracked directly. `cells()` is the new
 ## one, for the picture and for `Corridor`'s tile-level questions.
+##
+## **The main road.** *(2026-09-03, playtest 22: "a path should never go alongside the main road —
+## main road by itself can be considered a blocker — paths can only cross the main road".)* Every
+## probe here refuses an edge that would walk along the spine's own length; a crossing — a straight
+## run of steps at right angles to it, in and out the far side — is never refused, because nothing
+## here asks about direction, only about whether consecutive cells share the spine's column and
+## differ along it. `docs/CITY.md` still holds: she may cross wherever she likes, and nothing here
+## gates a crossing or gives it a day number. `SealPlanner` refuses the spine as a candidate
+## outright — see its own doc — so this is the only place that has to know it exists at all.
+##
+## **The trunk.** *(2026-09-03, playtest 22: "the starting area was sealed off completely and the
+## only way out was alongside the main road, which basically ends the day".)* `_home` is a rect of
+## nodes and every branch's probe reaches *some* node bordering it, but which one is whatever the
+## random walk happened to find first — on a day where every ordinary street near home lost the
+## coin flip to the main road, the main road can end up the *only* street the join is protected on.
+## `_grow_the_trunk()` runs once after every branch has grown: a plain BFS from the home nodes
+## outward to the nearest cell already on the tree, tried first without the main road and only with
+## it if no other way out exists at all (`trunk_used_the_spine`). Adopted through the same
+## `_adopt()` every branch uses, under one of the merge point's own existing colours rather than a
+## new one, so `is_on_the_tree()` — the fact `SealPlanner` and `ClosurePlanner` both build their
+## guarantee on — is true of the join without either of them having to know the trunk exists.
 
 ## One calm area's way home: the branch that reaches it, as one or two routes.
 ##
@@ -89,6 +110,17 @@ var branches: Array[Branch] = []
 ## The grid the tree was grown on. Kept rather than rebuilt, because `Corridor` and the telemetry
 ## map both need to translate a cell or a tile against the same one the tree used.
 var grid: ReachabilityGrid
+
+## The city the tree is grown against. Kept for the one fact about the lattice growth itself needs
+## beyond plain walkability: which cells are the main road, so `_grow_the_trunk()` can prefer a way
+## out that never walks along it. See `_runs_along_the_spine` and the class doc, "The trunk".
+var _map: CityMap
+
+## Whether `_grow_the_trunk()` had to allow the main road to connect the doorstep to the rest of
+## the tree at all, because every other way out of the home street was unreachable without it. See
+## the class doc, "The trunk". Kept as a field rather than only a local so a caller can measure it
+## directly instead of re-deriving it.
+var trunk_used_the_spine := false
 
 ## Node id -> the set of colours carried by that cell.
 var _colours := {}
@@ -195,6 +227,7 @@ static func grow(map: CityMap, home: StreetNetwork.Segment, areas: Array[Closure
 	if not home or areas.is_empty():
 		return tree
 	tree.grid = grid
+	tree._map = map
 	tree._absent = closed
 	for tile in _rect_tiles(home.tile_rect()):
 		var node := grid.node_at(tile)
@@ -205,6 +238,7 @@ static func grow(map: CityMap, home: StreetNetwork.Segment, areas: Array[Closure
 	# the same area anchors the tree on every day of the run.
 	for area in tree._in_a_rolled_order(areas, rng):
 		tree._grow_a_branch(map, area, rng)
+	tree._grow_the_trunk()
 	return tree
 
 static func _rect_tiles(rect: Rect2i) -> Array[Vector2i]:
@@ -296,7 +330,7 @@ func _walk_home(sources: Array[int], colour: int, rng: RandomNumberGenerator) ->
 	var at := start
 	var steps := 0
 	while not _is_the_end_of_a_probe(at, colour):
-		var ways: Array = grid.neighbours(at)
+		var ways: Array = _ways(at)
 		if ways.is_empty():
 			return []
 		steps += 1
@@ -341,7 +375,7 @@ func _shortest_home(sources: Array[int], colour: int) -> Array[int]:
 		head += 1
 		if _is_the_end_of_a_probe(node, colour):
 			return _unwind(previous, node)
-		for edge: Array in grid.neighbours(node):
+		for edge: Array in _ways(node):
 			var next: int = edge[0]
 			if previous.has(next) or _carries(next, colour):
 				continue
@@ -368,6 +402,35 @@ func _is_the_end_of_a_probe(node: int, colour: int) -> bool:
 
 func _carries(node: int, colour: int) -> bool:
 	return _colours.has(node) and (_colours[node] as Dictionary).has(colour)
+
+# ------------------------------------------------------------------ the main road ---
+
+## `grid.neighbours(node)` with every edge that would walk along the main road removed. Every
+## probe that plans a route calls this rather than the grid directly — `_walk_home`,
+## `_shortest_home` and `_grow_the_trunk`'s own search. `node_depths()` does not, because it
+## answers a proximity question about the physical lattice rather than proposing a way to walk,
+## and the main road is real ground either way.
+func _ways(node: int) -> Array:
+	var edges := grid.neighbours(node)
+	if not _map or _map.main_road < 0:
+		return edges
+	var found: Array = []
+	for edge: Array in edges:
+		if _runs_along_the_spine(edge[1], edge[2]):
+			continue
+		found.append(edge)
+	return found
+
+## Whether stepping from tile `a` to tile `b` walks along the main road rather than across it.
+##
+## A grid edge is either an x-step or a y-step (`ReachabilityGrid._build_edges` only ever connects
+## a cell to its immediate horizontal or vertical neighbour), and the main road is a north-south
+## band — `CityMap.street_kind_at(true, tile)` depends only on the tile's `x`. So a **y-step within
+## the band** (`a.x == b.x`, both on the spine) is walking along it; an **x-step through the band**
+## is crossing it, one cell at a time, and is never refused here however many of them a route takes
+## in a row.
+func _runs_along_the_spine(a: Vector2i, b: Vector2i) -> bool:
+	return a.x == b.x and _map.street_kind_at(true, a) == GameEnums.StreetKind.MAIN
 
 # --------------------------------------------------------------------- adoption ---
 
@@ -432,6 +495,64 @@ func _resettle_the_tails() -> void:
 				tail[colour] = true
 			_tail[child] = tail
 			stack.append(child)
+
+# ------------------------------------------------------------------------ the trunk ---
+
+## Guarantees the join between the doorstep and the rest of the tree, regardless of which street a
+## branch's own random walk happened to reach home through. See the class doc, "The trunk", and
+## `docs/TODO.md`, M64: "grow the day's tree from the doorstep and exempt the trunk with it, so
+## home-to-corridor is tree ground like any other."
+##
+## A no-op when nothing grew at all — there is no tree to join home to, and that day's walkability
+## is somebody else's question (`EventScheduler._ensure_the_city_is_still_walkable`, `Tuning.
+## MIN_CALM_AREAS_REACHABLE`), not this one's.
+func _grow_the_trunk() -> void:
+	if _colours.is_empty():
+		return
+	var path := _trunk_path(true)
+	if path.is_empty():
+		path = _trunk_path(false)
+		if path.is_empty():
+			return
+		trunk_used_the_spine = true
+	# `path` runs merge point first, home last (see `_trunk_path`) — the merge point is the end
+	# that already carries a colour; the home end never does.
+	_adopt(path, _any_colour_of(path[0]))
+
+## The shortest way from any home node to the nearest cell already on the tree, oriented the way
+## `_adopt()` expects — far end first, home last — exactly like a branch's own probe. `avoid_spine`
+## true is tried first; see `_grow_the_trunk`.
+func _trunk_path(avoid_spine: bool) -> Array[int]:
+	var previous := {}
+	var queue: Array[int] = []
+	for node: int in _home:
+		previous[node] = -1
+		queue.append(node)
+	var head := 0
+	while head < queue.size():
+		var node: int = queue[head]
+		head += 1
+		if _colours.has(node):
+			var path := _unwind(previous, node)
+			path.reverse()
+			return path
+		var edges := _ways(node) if avoid_spine else grid.neighbours(node)
+		for edge: Array in edges:
+			var next: int = edge[0]
+			if previous.has(next):
+				continue
+			previous[next] = node
+			queue.append(next)
+	return []
+
+## Any one colour already carried at `node` — deterministic (the lowest), so the trunk's own
+## colour does not depend on dictionary iteration order.
+func _any_colour_of(node: int) -> int:
+	var best := -1
+	for colour: int in (_colours.get(node, {}) as Dictionary):
+		if best == -1 or colour < best:
+			best = colour
+	return best
 
 # ---------------------------------------------------------------------- asking ---
 

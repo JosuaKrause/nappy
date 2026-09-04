@@ -45,6 +45,7 @@ func run(t) -> void:
 			_days.append(_plan(map, day))
 	_test_a_route_is_a_walk_from_the_calm_to_the_door(t)
 	_test_the_tree_only_uses_streets_that_are_there(t)
+	_test_no_route_runs_along_the_main_road(t)
 	_test_the_two_routes_of_one_area_share_no_cell(t)
 	_test_a_tile_says_which_branches_it_carries(t)
 	_test_different_areas_share_ground(t)
@@ -125,6 +126,40 @@ func _test_the_tree_only_uses_streets_that_are_there(t) -> void:
 			t.check(key != planned.home.key(),
 					"seed %d day %d: and off the doorstep itself, which is not a route"
 					% [planned.map.seed_used, planned.day])
+
+## *(2026-09-03, playtest 22: "a path should never go alongside the main road — main road by
+## itself can be considered a blocker — paths can only cross the main road".)* Restated
+## independently of `RouteTree._runs_along_the_spine` rather than calling it, for the reason
+## `_home_nodes` above is restated rather than exposed: a check that shares the rule's own code
+## cannot catch the rule being wrong. Every route is a chain of adjacent cells
+## (`_test_a_route_is_a_walk_from_the_calm_to_the_door` establishes that); this asks whether any
+## two consecutive cells of one are a **y-step inside the main road's own x-band** — a step along
+## the spine's length rather than across its width — checked against `CityMap.street_kind_at`
+## directly rather than against anything `RouteTree` computed.
+func _test_no_route_runs_along_the_main_road(t) -> void:
+	var on_the_spine := 0
+	for planned in _days:
+		if planned.map.main_road < 0:
+			continue
+		for branch in planned.tree.branches:
+			for route: Array in branch.routes:
+				for cell: Vector2i in route:
+					if planned.map.street_kind_at(true, cell * ReachabilityGrid.CELL) \
+							== GameEnums.StreetKind.MAIN:
+						on_the_spine += 1
+				for i in range(1, route.size()):
+					var a: Vector2i = route[i - 1]
+					var b: Vector2i = route[i]
+					if a.x != b.x:
+						continue   # an x-step: crossing the spine's width, never refused
+					var both_on_spine := planned.map.street_kind_at(true, a * ReachabilityGrid.CELL) \
+							== GameEnums.StreetKind.MAIN
+					t.check(not both_on_spine,
+							("seed %d day %d: %s's route does not run along the main road " +
+							"(%s -> %s)") % [planned.map.seed_used, planned.day, branch.area, a, b])
+	# Not a lower bound to defend — crossing is luck, the same as an alley (see RouteTree's own
+	# doc, "It stays luck"). Reported so a run of zero is visible rather than silently unchecked.
+	t.check(on_the_spine >= 0, "%d route cells crossed the main road" % on_the_spine)
 
 ## **Same colours may not merge.** The two probes from one area can never become one path, so
 ## where a second route exists at all the area is reached two genuinely distinct ways. This is

@@ -584,6 +584,20 @@ const CLOSURE_BARRIER_DEPTH := 24.0
 func closures_for_day(day: int) -> int:
 	return CLOSURES_PER_ACT[clampi(act_for_day(day) - 1, 0, CLOSURES_PER_ACT.size() - 1)]
 
+# ------------------------------------------------------------------- the seals ---
+# `SealPlanner` closes every street off the day's route tree. See docs/CITY.md, "Sealing the tree".
+
+## The fraction of the day's **soft** seal pairs that lose one body in the final thinning pass, so
+## a wrong turn stays open long enough to be taken and discovered rather than reading as a wall on
+## sight. *(Playtest 22, finding 6: "the guidance is there and properly pushes the player in the
+## right direction but it feels a bit on guardrails… subtlety is key".)*
+##
+## **This is the dial the whole pass is about, and it is started small on purpose.** Too low and
+## the walls stay too visible to ever be walked into by accident; too high and the corridor stops
+## being the way through, which is M64's central claim. `SealPlanner._thin_soft_pairs` is the pass;
+## move this against a played day rather than an argument.
+const SEAL_THINNING_FRACTION := 0.08
+
 # --------------------------------------------------------------- the crowd ---
 # The crowd is why a street is loud and a park is quiet, and it is the base noise floor a day needs
 # so that standing in one place cannot work. It is emergent rather than a city-wide constant,

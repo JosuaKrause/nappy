@@ -540,6 +540,13 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 	if made.is_empty():
 		var anywhere := _place_one(def, rng, map, already, ground, leave_alone, corridor)
 		if anywhere:
+			# **The fallback carries the group too, and it is a group of one.** Every other
+			# one-shot placement is tagged, and `EventManager._stream_in` spends the rest of a
+			# group the moment one of it fires — so an untagged placement is a one-shot that can
+			# never be spent that way, silently exempt from the machinery the row is written
+			# against. A group of one spends nothing and costs nothing; being outside the group
+			# system is what costs.
+			anywhere.set_piece_group = "%s@%d" % [def.id, day]
 			made.append(anywhere)
 	return made
 

@@ -45,6 +45,16 @@ extends RefCounted
 ## **The doorstep is exempt.** `ClosurePlanner.home_street(map)` is never sealed, for the same
 ## reason it is never closed: the home is a notch with one exit, so sealing it seals her in.
 ##
+## **The main road is exempt too, and that is a decision rather than an oversight.** *(2026-09-03,
+## playtest 22: "a path should never go alongside the main road — main road by itself can be
+## considered a blocker — paths can only cross the main road".)* `RouteTree` now refuses to route
+## a strand along it (see its own class doc, "The main road"), so the spine is off the tree on
+## every day by construction — which would make the loop below seal every segment of it, sidewalk
+## to sidewalk, on every day of the run. It is already the worst ground in the game to stand on
+## (`Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER`, 0.6 against an ordinary street's 1.0), so making
+## it *not a route* is enough — sealing it on top would be the harm playtest 22 reported rather than
+## the fix, and `docs/CITY.md`'s constraint that she may cross it wherever she likes stands unmoved.
+##
 ## **The winnability guarantee is not re-proved here, it is true by construction.** A seal never
 ## stands on tree ground or on the home street — the two things `RouteTree`/`ClosurePlanner`
 ## already guarantee a route through — so nothing here can cut the corridor. `tests/test_seals.gd`
@@ -52,6 +62,17 @@ extends RefCounted
 ## `docs/TODO.md`'s own reading of what changes here: `EventScheduler._ensure_the_city_is_still_
 ## walkable` stays the *accidental* guarantee for the catalogue's own placements; this placement
 ## needs no repair pass because nothing it does can break the thing it is measured against.
+##
+## **"Tree ground" includes the join, now.** `RouteTree._grow_the_trunk()` guarantees a coloured
+## path from the home street outward to the rest of the tree even where every branch's own random
+## walk happened to reach home a different way, so the sentence above did not have to grow a second
+## clause for it — a seal never standing on tree ground already covers the ground between the
+## doorstep and the corridor, because that ground is now tree ground like any other.
+##
+## **A final pass thins the seals**, after every street off the tree has one: a small fraction of
+## the day's soft pairs drop one body, so a wrong turn stays open long enough to be taken rather
+## than reading as a wall on sight. See `_thin_soft_pairs` for why this is not the repair pass
+## `CLAUDE.md` warns against.
 ##
 ## **Alleys are not streets, and that is why they stay open by construction** — `StreetNetwork.
 ## segments()` never contains one, so the loop above never seals one. What is sealed here instead
@@ -96,27 +117,44 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 
 # ------------------------------------------------------------------- planning ---
 
-## Every seal for the day: one per off-tree, real, non-home street, plus the mouths of any
-## through-alley that rejoins the corridor at neither end. Returned as `EventScheduler.Planned`
-## so the caller (`EventManager.start_day`) can simply append them to the day's plan.
+## Every seal for the day: one per off-tree, real, non-home, non-spine street, thinned by a small
+## fraction, plus the mouths of any through-alley that rejoins the corridor at neither end.
+## Returned as `EventScheduler.Planned` so the caller (`EventManager.start_day`) can simply append
+## them to the day's plan.
 static func plan_day(map: CityMap, day: int, tree: RouteTree,
 		rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
 	var planned: Array[EventScheduler.Planned] = []
 	if not tree:
 		return planned
 	var home := ClosurePlanner.home_street(map)
+	# Soft pairs are collected rather than appended straight away, because the thinning pass below
+	# has to see a whole pair at once to drop one body of it — see `_thin_soft_pairs`.
+	var soft_pairs: Array = []
 	for segment in StreetNetwork.segments():
 		var key := segment.key()
 		if not map.has_street(key) or tree.is_on_the_tree(key):
 			continue
 		if home and key == home.key():
 			continue
+		if _is_the_main_road(map, segment):
+			continue
 		var candidate := _pick_candidate(day, rng)
 		if not candidate:
 			continue
-		planned.append_array(_place(map, segment, candidate))
+		var placed := _place(map, segment, candidate)
+		if candidate.strength == Strength.SOFT:
+			soft_pairs.append(placed)
+		else:
+			planned.append_array(placed)
+	planned.append_array(_thin_soft_pairs(soft_pairs, rng))
 	planned.append_array(_seal_alley_mouths(map, tree, day))
 	return planned
+
+## Whether `segment` is the main road. See the class doc: never a seal candidate, because
+## `RouteTree` already refuses to route a strand along it, and sealing it too would wall the one
+## street the design deliberately leaves open to cross.
+static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> bool:
+	return not segment.horizontal and segment.a.x == map.main_road
 
 static func _pick_candidate(day: int, rng: RandomNumberGenerator) -> Candidate:
 	var eligible: Array[Candidate] = []
@@ -179,6 +217,39 @@ static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
 	planned.append(EventScheduler.Planned.new(def_a, map.tile_to_world(side_a)))
 	planned.append(EventScheduler.Planned.new(def_b, map.tile_to_world(side_b)))
 	return planned
+
+## The final pass: drop one body of `Tuning.SEAL_THINNING_FRACTION` of the day's soft pairs, so a
+## wrong turn stays open long enough to be taken and discovered. *(Playtest 22, finding 6: "removing
+## some obstacles randomly might lead the player down a bad path until they return to the actual
+## path because they get stuck otherwise. this makes the actual path the player takes feel more
+## organic, self-chosen, and earned.")*
+##
+## **Soft pairs only, by construction — never a hard seal or an alley mouth**, because neither is
+## ever collected into `pairs`: `plan_day` only appends a `Strength.SOFT` placement here, and the
+## hard and alley-mouth ones go straight into the day's plan untouched.
+##
+## **Drops one body of the pair, not the pair** — the smaller of the two readings `docs/TODO.md`
+## names, taken because it is the one where the street still *looks* obstructed from the near side:
+## an ordinary street with something on it, rather than a gate somebody visibly opened. The other
+## body is never touched, so the pavement it stands on reads exactly as it did before. The
+## alternative — drop the whole pair — is named there as cheap to pick instead if this reads as too
+## subtle against a played day.
+##
+## **This is a removal pass and does not rediscover `CLAUDE.md`'s rule against repairing
+## placements.** That rule guards against a later pass invalidating an earlier one's guarantee —
+## the failure mode is a repair a reader cannot see was needed, resting a guarantee on code nothing
+## checks. Removal cannot do that here: every guarantee the sealing carries
+## (`tests/test_seals.gd`) is about *reaching* somewhere, and dropping a barrier only adds reachable
+## ground, never takes it away. A pass that only ever removes obstruction is the one case `CLAUDE.md`
+## names as safe.
+static func _thin_soft_pairs(pairs: Array, rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
+	var kept: Array[EventScheduler.Planned] = []
+	for pair: Array in pairs:
+		if pair.size() == 2 and rng.randf() < Tuning.SEAL_THINNING_FRACTION:
+			kept.append(pair[rng.randi_range(0, 1)])
+		else:
+			kept.append_array(pair)
+	return kept
 
 ## A candidate's def, made safe to place as a seal rather than roll as an event. See the class
 ## doc for why the scar and the finish-spawn are stripped unconditionally, on every candidate,
