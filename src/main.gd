@@ -14,6 +14,7 @@ const TITLE_SCREEN := preload("res://scenes/ui/title_screen.tscn")
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 
 @onready var _status: Label = $CanvasLayer/Status
+@onready var _status_layer: CanvasLayer = $CanvasLayer
 
 ## Whether the developer readout runs at all. Read once from `DevFlags.enabled()` into a member
 ## — rather than asked of `OS.is_debug_build()` inside `_process()` — so a test can set it and
@@ -35,6 +36,7 @@ var _edge_layer: CanvasLayer
 ## The on-screen stick, on its own layer for the same reason the danger edge is: it has to sit
 ## above the world it is drawn over.
 var _touch_controls: TouchControls
+var _touch_layer: CanvasLayer
 var _summary: CanvasLayer
 var _pause: PauseScreen
 var _title: TitleScreen
@@ -47,6 +49,16 @@ var _run_over := false
 var _ending_shown := false
 ## Whether the title screen is up, with the city running behind it and nobody in it.
 var _in_the_title := false
+
+## Read once — a run's own touch hardware does not change — the same pattern `TouchControls._touch`
+## and `hud._touch` already follow, and what lets `_process()` ask `ScreenOrientation.wants_rotation`
+## every frame without also repeating `TouchInput.available()`'s own `OS.get_cmdline_user_args()`
+## call sixty times a second.
+var _touch_available := TouchInput.available()
+## The rotation `_apply_orientation()` last actually applied, so `_process()` can ask the same
+## question every frame and reapply only on change — see that function's own doc for why a signal
+## alone is not enough.
+var _rotated := false
 
 func _ready() -> void:
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
@@ -86,8 +98,6 @@ func _ready() -> void:
 	add_child(_hud)
 	_add_danger_edge()
 	_add_touch_controls()
-	_apply_orientation()
-	get_window().size_changed.connect(_apply_orientation)
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 	_summary.continued.connect(_on_summary_continued)
@@ -104,6 +114,11 @@ func _ready() -> void:
 	add_child(_title)
 	_title.start_requested.connect(_on_title_start)
 	_title.quit_requested.connect(_quit)
+
+	# After every layer `_apply_orientation()` touches exists — it reaches `_summary`, `_pause`
+	# and `_title` too, not just the HUD and the two layers built just above. `_process()` is what
+	# keeps it current from here on, not a `size_changed` connection — see that function's own doc.
+	_apply_orientation()
 
 	_resistance = ResistanceDirector.new()
 	_resistance.name = "Resistance"
@@ -238,7 +253,10 @@ func _add_danger_edge() -> void:
 	_edge_layer = layer
 	_edge = DangerEdge.new()
 	_edge.name = "Edge"
-	_edge.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Pinned to the fixed design box rather than full-rect, so this layer's own rotation (applied
+	# in `_apply_orientation()`) has a stationary 1280x720 footprint to rotate — see
+	# `ScreenOrientation.pin_to_design_box()`.
+	ScreenOrientation.pin_to_design_box(_edge)
 	_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_edge.setup(_city.events, _player)
 	layer.add_child(_edge)
@@ -254,21 +272,47 @@ func _add_danger_edge() -> void:
 func _add_touch_controls() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "TouchControls"
+	_touch_layer = layer
 	_touch_controls = TOUCH_CONTROLS.instantiate()
 	layer.add_child(_touch_controls)
 	add_child(layer)
 
 ## Presents the game rotated 90° when the real window is a portrait touch screen, so a phone
 ## with auto-rotate off shows a full-size landscape game rather than a thin letterboxed strip of
-## one — see `ScreenOrientation` for the mechanism and why it needs no CSS and no orientation
-## API. Nothing here asks the device itself to rotate; it is asked again on every `size_changed`,
-## since a phone can be turned back to a shape that already reads as landscape, or a desktop
-## window can be resized narrower or wider, at any point in a run.
+## one — see `ScreenOrientation` for the mechanism and why it needs no CSS and no orientation API.
+## Nothing here asks the device itself to rotate.
+##
+## Every `CanvasLayer` of screen furniture gets the same `ScreenOrientation.rotation_transform()`,
+## so the HUD, the pause screen, the day summary, the title screen, the debug status line, the
+## danger edge and the on-screen stick all turn together; the world is the one thing not drawn
+## through a `CanvasLayer`, so it rotates separately, through the camera — see
+## `Stroller.set_screen_rotation()`.
+##
+## Called once from `_ready()` and again from `_process()` whenever the answer changes — never
+## only from a `size_changed` signal, which can arrive with a stale `get_window().size`, or not
+## arrive at all if a phone is turned back to a shape that already reads as landscape without the
+## browser ever resizing the canvas, latching the wrong `content_scale_size` until a reload. Asking
+## the same question every frame instead means the decision cannot go stale between calls.
 func _apply_orientation() -> void:
-	var rotate := ScreenOrientation.wants_rotation(get_window().size, TouchInput.available())
+	var rotate := ScreenOrientation.wants_rotation(get_window().size, _touch_available)
+	_rotated = rotate
 	get_window().content_scale_size = ScreenOrientation.content_scale_size(rotate)
 	_player.set_screen_rotation(deg_to_rad(90.0) if rotate else 0.0)
 	_touch_controls.rotated = rotate
+	_edge.rotated = rotate
+	_hud.set_rotated(rotate)
+	# Every layer of screen furniture carries the same rotation, so the world (rotated by the
+	# camera above) and everything drawn over it agree — see `ScreenOrientation`'s class doc for
+	# why a `CanvasLayer` transform is the mechanism and `apply_to_layer()` the one place that
+	# reads `if rotate: ... else: IDENTITY`.
+	for layer in _screen_furniture_layers():
+		ScreenOrientation.apply_to_layer(layer, rotate)
+
+## Every `CanvasLayer` `_apply_orientation()` rotates — its own list, pulled out so a test can
+## assert against exactly this set rather than duplicate it, which is what makes an eighth layer
+## added later and forgotten here a test failure instead of a silent gap.
+func _screen_furniture_layers() -> Array[CanvasLayer]:
+	return [_hud, _edge_layer, _touch_layer, _summary, _pause, _title, _status_layer]
 
 ## Marks a node as part of the game rather than part of the frame around it, so the summary
 ## screen actually stops it.
@@ -435,6 +479,13 @@ func _restart_run() -> void:
 
 func _process(_delta: float) -> void:
 	_update_follow_camera()
+	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
+	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
+	# `get_window()` is null for the script-only instance `tests/test_main.gd` drives straight
+	# through `_process()` with no window behind it at all.
+	var window := get_window()
+	if window and ScreenOrientation.wants_rotation(window.size, _touch_available) != _rotated:
+		_apply_orientation()
 	if not _player or not _baby:
 		return
 	if _in_the_title:

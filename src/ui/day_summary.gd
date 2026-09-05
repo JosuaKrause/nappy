@@ -62,6 +62,10 @@ const _ENDING_BODY := {
 func _ready() -> void:
 	# The summary has to keep running while it pauses everything behind it.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Pinned to the fixed design box, not full-rect, so this layer's own rotation (applied in
+	# `main._apply_orientation()`) has a stationary 1280x720 footprint to rotate — see
+	# `ScreenOrientation.pin_to_design_box()`.
+	ScreenOrientation.pin_to_design_box(_root)
 	# Coloured here rather than in the scene so `Palette` stays the one place a runtime colour is
 	# decided — which is what its own class comment asks for.
 	_heading.add_theme_color_override("font_color", Palette.GAME_OVER)

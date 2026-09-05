@@ -43,6 +43,10 @@ func _ready() -> void:
 	# Above the world and above the HUD, and it must keep running while everything else stops.
 	layer = 90
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Pinned to the fixed design box, not full-rect, so this layer's own rotation (applied in
+	# `main._apply_orientation()`) has a stationary 1280x720 footprint to rotate — see
+	# `ScreenOrientation.pin_to_design_box()`.
+	ScreenOrientation.pin_to_design_box(_root)
 	visible = false
 	_refresh_body()
 	_refresh_hint()

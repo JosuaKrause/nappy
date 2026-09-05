@@ -8,13 +8,10 @@ script = ExtResource("1_main")
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="Status" type="Label" parent="CanvasLayer"]
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -230.0
+offset_left = 1050.0
 offset_top = 14.0
-offset_right = -16.0
+offset_right = 1264.0
 offset_bottom = 240.0
-grow_horizontal = 0
 theme_override_colors/font_color = Color(1, 1, 1, 0.7)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
 theme_override_constants/outline_size = 5

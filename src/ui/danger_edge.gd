@@ -73,6 +73,13 @@ const SMOOTHING := 6.0
 ## closing test and for the same reason.
 const SCREEN_MARGIN := 130.0
 
+## Whether `main` has decided a portrait touch window is presenting rotated. Set from outside —
+## see `TouchControls.rotated`'s own doc. This control is pinned to `ScreenOrientation.DESIGN_SIZE`
+## regardless of rotation (see `main._add_danger_edge()`), so a raw canvas-space position has to
+## come back through `ScreenOrientation.to_design_space()` before it is usable as a local
+## coordinate here.
+var rotated := false
+
 var _events: EventManager
 var _player: Node2D
 ## Per live instance: where it was last frame, its smoothed approach speed, and how long its
@@ -159,8 +166,9 @@ static func announces(approach: float, gap: float) -> bool:
 ## Whether something is in view, optionally counting a band `margin` px beyond the edge as in
 ## view as well. In screen pixels, because that is the question — the world is drawn scaled.
 func _is_on_screen(world_position: Vector2, margin: float) -> bool:
-	return Rect2(Vector2.ZERO, size).grow(margin).has_point(
-			get_viewport().get_canvas_transform() * world_position)
+	var at := ScreenOrientation.to_design_space(
+			get_viewport().get_canvas_transform() * world_position, rotated)
+	return Rect2(Vector2.ZERO, size).grow(margin).has_point(at)
 
 ## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
 ## arrival first. For the telemetry observer, which has to be able to say what she was warned
@@ -215,7 +223,9 @@ func _is_worth_an_arrow(instance: EventInstance) -> bool:
 
 func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2D) -> void:
 	var centre := size * 0.5
-	var offset: Vector2 = transform * instance.global_position - centre
+	var at_design := ScreenOrientation.to_design_space(
+			transform * instance.global_position, rotated)
+	var offset: Vector2 = at_design - centre
 	if offset.length() < 1.0:
 		return
 	var bounds := Rect2(MARGIN.x, MARGIN.y,

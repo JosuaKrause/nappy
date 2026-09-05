@@ -67,12 +67,23 @@ const PAUSE_RADIUS := 26.0
 ## radius a *release* has to land inside to fire, so a thumb that lands wrong can slide off and
 ## lift without stopping the day. See `_on_touch()`.
 const PAUSE_CATCH_RADIUS := 46.0
-## Top right, deep in the corner both `DangerEdge` and `HomeArrow` keep clear on purpose rather
-## than in front of them: `DangerEdge.MARGIN` (104/116/104/148, left/top/right/bottom) never draws
-## a chevron closer to this corner than (1176, 116), and `HomeArrow.MARGIN` (74px, uniform) never
-## draws its own arrow closer than (1206, 74) — both well outside `PAUSE_RADIUS` of this point, so
-## nothing else is ever asked to share these pixels with the button.
-const PAUSE_CENTRE := Vector2(1250.0, 30.0)
+## Top right, in the corner both `DangerEdge` and `HomeArrow` keep clear on purpose rather than in
+## front of them: `DangerEdge.MARGIN` (104/116/104/148, left/top/right/bottom) never draws a chevron
+## closer to this corner than (1176, 116), and `HomeArrow.MARGIN` (96px, uniform) never draws its
+## own arrow closer than (1184, 96) — so nothing else is ever asked to share these pixels.
+##
+## **It is held 36px clear of both edges rather than pushed right into them.** The rim is what the
+## margin is measured to, so the drawn circle stops 36px short of the top and the right. A button
+## whose edge touches the screen's reads as clipped, and on a real phone that corner is where the
+## rounded glass and the system gesture strip live — a control flush against it is one a thumb
+## cannot reach cleanly even when it is drawn in full.
+##
+## **That margin is what set `HomeArrow.MARGIN`, not the other way round.** This button's rim needs
+## `PAUSE_RADIUS` + `HomeArrow.SIZE` (15px, the chevron's reach from its own centre) = 41px of
+## clearance from the arrow's closest approach, and coming in off the edge spends exactly that. At
+## the arrow's old 74px inset the two overlapped, so the arrow moved to 96 to make room. Widening
+## this margin further moves the arrow again; the two numbers are one decision.
+const PAUSE_CENTRE := Vector2(1218.0, 62.0)
 
 var _touch := TouchInput.available()
 
@@ -81,7 +92,9 @@ var _touch := TouchInput.available()
 ## of a platform fact rather than a query at each use site: `main._apply_orientation()` is the one
 ## place that knows the window's own shape, and every consumer of a raw touch position here goes
 ## through `ScreenOrientation.to_design_space()` with this flag before comparing it to
-## `STICK_CENTRE` and friends, which stay authored in the unrotated 1280x720 box regardless.
+## `STICK_CENTRE` and friends, which stay authored in the unrotated 1280x720 box regardless. A real
+## touch still arrives in the swapped 720x1280 box even though this node's own drawing no longer
+## needs a transform of its own — see `_draw()`.
 var rotated := false
 
 ## The touch index currently driving the stick, or -1 when nothing is.
@@ -100,7 +113,11 @@ var _pause_touch := -1
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Pinned to the fixed design box rather than full-rect, so this node's own ancestor
+	# `CanvasLayer` (set up in `main._add_touch_controls()`) has a stationary 1280x720 footprint to
+	# rotate rather than one that resizes itself to whatever `content_scale_size` currently is —
+	# see `ScreenOrientation.pin_to_design_box()`.
+	ScreenOrientation.pin_to_design_box(self)
 	visible = false
 
 func _process(_delta: float) -> void:
@@ -232,14 +249,13 @@ func _send_pause_action() -> InputEventAction:
 func _draw() -> void:
 	if not visible:
 		return
-	# One matrix for the whole call rather than transforming each point drawn below: every
-	# `draw_*` call below keeps using its own unrotated design-space coordinate (`STICK_CENTRE`
-	# and friends, untouched), and this is what carries the result — text included, so a label
-	# reads the right way up to a player who has turned the phone to match — onto the rotated
-	# 720x1280 box `content_scale_size` reports while rotated. Reset to identity by Godot at the
-	# start of every `_draw()` call, so there is nothing to put back afterwards.
-	if rotated:
-		draw_set_transform_matrix(ScreenOrientation.rotation_transform())
+	# No transform here: every `draw_*` call below keeps using its own unrotated design-space
+	# coordinate (`STICK_CENTRE` and friends, untouched), and this node's own `CanvasLayer` — set
+	# up in `main._add_touch_controls()`, pinned to the fixed design box by
+	# `ScreenOrientation.pin_to_design_box()` — already carries the rotation for the whole layer,
+	# text included, the same way it does for the HUD and every other layer of screen furniture.
+	# A second `draw_set_transform_matrix()` here would compose with that and rotate everything
+	# twice over.
 	_draw_stick()
 	_draw_run_button()
 	_draw_pause_button()

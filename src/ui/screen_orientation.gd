@@ -7,17 +7,29 @@ extends RefCounted
 ## Nothing here asks the device to rotate — no orientation lock, no manifest hint, no fullscreen
 ## request. `project.godot`'s `window/stretch/mode="canvas_items"` already maps every touch and
 ## every Control/CanvasLayer coordinate into one fixed logical box, `Window.content_scale_size`
-## (1280x720 by default), regardless of the real window's own pixel size — that is why
-## `TouchControls`' own `STICK_CENTRE` and friends are plain constants that already work at any
-## window size. Swapping `content_scale_size` to the ROTATED box when the window is portrait asks
-## Godot to do that same free mapping against the rotated shape instead, so a real touch already
-## arrives in 720x1280 space; `rotation_transform()` is the one further, fixed step back into the
-## 1280x720 space every screen is still authored in, needed only where a screen reads a raw
-## screen-space position rather than letting a `Control`'s own anchors or `Camera2D` adapt to
-## whatever `content_scale_size` currently is. `TouchControls` is the one place in `src/ui/` that
-## does — `DangerEdge` and `HomeArrow` both compute their own screen position fresh every frame
-## from `size` and `get_viewport().get_canvas_transform()`, so they already track a rotated,
-## swapped viewport with no change of their own.
+## (1280x720 by default), regardless of the real window's own pixel size. Swapping
+## `content_scale_size` to the ROTATED box when the window is portrait asks Godot to do that same
+## free mapping against the rotated shape instead, so a real touch already arrives in 720x1280
+## space, and `rotation_transform()` is the fixed step back into the 1280x720 space every screen
+## is still authored in.
+##
+## **One rotation, carried by every `CanvasLayer` of screen furniture.** `main._apply_orientation()`
+## sets `layer.transform` to `rotation_transform()` (or `Transform2D.IDENTITY`) on every layer —
+## `apply_to_layer()` is that one line, so it is written once. A layer's own children still have to
+## be laid out against the fixed 1280x720 box rather than against whatever `content_scale_size`
+## currently is — a `Control` anchored full-rect under a rotated layer would otherwise size itself
+## to the swapped 720x1280 box and rotate that, landing a 1280x720 footprint in the wrong place —
+## which is what `pin_to_design_box()` is for: a single root `Control` per layer, pinned to
+## `DESIGN_SIZE` with fixed top-left anchors so its rect never depends on the viewport's own shape.
+##
+## `TouchControls` is the one place in `src/ui/` whose *input* needs the same correction the other
+## direction: a real touch still arrives in the swapped 720x1280 box regardless of any layer
+## transform, so `to_design_space()` is what remaps it back before comparing it to `STICK_CENTRE`
+## and friends. `DangerEdge` and `HomeArrow` need the same remap on the way *out* — both compute a
+## screen position fresh every frame from a world position and
+## `get_viewport().get_canvas_transform()`, which lands in that same swapped box, and now that
+## their own `Control` is pinned to the fixed design box by `pin_to_design_box()` too, that raw
+## position has to go through `to_design_space()` before it is usable as a local coordinate on it.
 
 ## The box every screen in this game is authored against, matching `project.godot`'s own
 ## `window/size/viewport_width` and `window/size/viewport_height`.
@@ -63,3 +75,26 @@ static func to_presented_space(position: Vector2, rotate: bool) -> Vector2:
 	if not rotate:
 		return position
 	return rotation_transform() * position
+
+## Pins `control`'s rect to the fixed 1280x720 box every screen is authored against — top-left
+## anchors and literal offsets, so its size depends on nothing but this call, not on whatever
+## `content_scale_size` currently reports. The single definition of "laid out against the design
+## box" every rotating `CanvasLayer`'s root uses, instead of the same four offsets written out at
+## every call site: `hud.tscn`'s inserted `Root`, `pause_screen.tscn`'s, `day_summary.tscn`'s and
+## `title_screen.tscn`'s own, and the two single-node layers built in code, `DangerEdge` and
+## `TouchControls`.
+static func pin_to_design_box(control: Control) -> void:
+	control.anchor_left = 0.0
+	control.anchor_top = 0.0
+	control.anchor_right = 0.0
+	control.anchor_bottom = 0.0
+	control.offset_left = 0.0
+	control.offset_top = 0.0
+	control.offset_right = DESIGN_SIZE.x
+	control.offset_bottom = DESIGN_SIZE.y
+
+## Sets `layer`'s own transform to the rotation while rotated, identity while not — the single
+## definition every screen-furniture `CanvasLayer` applies, so `main._apply_orientation()` reads
+## as one line per layer rather than an `if rotate: ... else: IDENTITY` repeated at each one.
+static func apply_to_layer(layer: CanvasLayer, rotate: bool) -> void:
+	layer.transform = rotation_transform() if rotate else Transform2D.IDENTITY

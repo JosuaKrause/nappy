@@ -24,6 +24,7 @@ extends CanvasLayer
 signal start_requested()
 signal quit_requested()
 
+@onready var _root: Control = $Root
 @onready var _name: Label = $Root/Top/Lines/Title
 @onready var _body: Label = $Root/Bottom/Lines/Body
 @onready var _hint: Label = $Root/Bottom/Lines/Hint
@@ -55,6 +56,10 @@ func _ready() -> void:
 	# ever be able to cover it.
 	layer = 95
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Pinned to the fixed design box, not full-rect, so this layer's own rotation (applied in
+	# `main._apply_orientation()`) has a stationary 1280x720 footprint to rotate — see
+	# `ScreenOrientation.pin_to_design_box()`.
+	ScreenOrientation.pin_to_design_box(_root)
 	visible = false
 
 ## A screen that names a key with no space is the same defect `QuitOption` exists to close for
