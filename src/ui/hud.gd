@@ -36,6 +36,12 @@ var _debug := OS.is_debug_build()
 ## layer draws instead of a `SHIFT` key a touch device does not have.
 var _touch := TouchInput.available()
 
+## Which of the two control schemes is driving this run. Read once from `ControlsMode`, the same
+## pattern `_touch` follows, so the walking and running lessons name a tap rather than a control
+## tap mode does not draw, and so the pause lesson knows to say nothing at all — see
+## `_teach_the_pause()`.
+var _controls_mode := ControlsMode.resolve()
+
 var _baby: Baby
 var _contact_step := 0
 var _announcement := ""
@@ -158,7 +164,11 @@ func _teach_the_day(day: int) -> void:
 	_walked_today = false
 	_stood_for = 0.0
 	if day == 1:
-		var line := "Drag the stick to walk" if _touch else "Arrow keys or WASD to walk"
+		var line := "Arrow keys or WASD to walk"
+		if _controls_mode == ControlsMode.Mode.TAP:
+			line = "Tap to walk, double tap to run"
+		elif _touch:
+			line = "Drag the stick to walk"
 		_say(line, TEACH_SECONDS)
 	# A nerve is a rewind, not a resource, and a rewound day has not been taught anything: this
 	# flag belongs to the *attempt* at the teaching day rather than to the run, and only on this
@@ -191,8 +201,13 @@ func _teach_the_day(day: int) -> void:
 ## It is also, incidentally, the moment the answer is most useful: standing still settles nothing,
 ## so somebody who has stopped either wants the game to stop with them, or is about to find out
 ## that waiting is not a plan.
+##
+## **Has nothing to say in tap mode**, and does not run there at all: there is no pause key on a
+## phone and no button to point at — `TapControls` itself pauses when she stands at a destination
+## long enough (`TapControls.ARRIVAL_PAUSE_AFTER`), every time rather than once, because that is
+## how the mode works rather than a cue to be taught once and then left alone.
 func _teach_the_pause(delta: float) -> void:
-	if _taught_pause:
+	if _taught_pause or _controls_mode == ControlsMode.Mode.TAP:
 		return
 	if not _rig:
 		_rig = get_tree().get_first_node_in_group("player") as Stroller
@@ -237,7 +252,11 @@ func _on_event_telegraphed(instance: EventInstance) -> void:
 	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
-	var line := "Hold RUN to run" if _touch else "Hold SHIFT to run"
+	var line := "Hold SHIFT to run"
+	if _controls_mode == ControlsMode.Mode.TAP:
+		line = "Double tap to run"
+	elif _touch:
+		line = "Hold RUN to run"
 	_say(line, instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
 func _say(line: String, seconds: float) -> void:

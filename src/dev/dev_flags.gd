@@ -101,3 +101,13 @@ static func ending_override() -> String:
 	if index == -1 or index + 1 >= args.size():
 		return ""
 	return args[index + 1]
+
+## `--controls tap|stick` switches the control scheme for a local build — the raw word, or "" if
+## none was given. `ControlsMode.resolve()` is the only reader; mapping the word onto
+## `ControlsMode.Mode` stays there, the same split `ending_override()` and `main.gd` already keep.
+static func controls_override() -> String:
+	var args := _args()
+	var index := args.find("--controls")
+	if index == -1 or index + 1 >= args.size():
+		return ""
+	return args[index + 1]

@@ -16,6 +16,8 @@ func run(t) -> void:
 	_test_the_run_hint_fires_again_on_a_retried_teaching_day(t)
 	_test_the_run_hint_names_the_touch_button_on_a_touch_device(t)
 	_test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t)
+	_test_the_walk_and_run_hints_name_a_tap_in_tap_mode(t)
+	_test_the_pause_hint_says_nothing_in_tap_mode(t)
 	_test_the_meters_move_to_the_top_on_a_touch_device(t)
 	_test_the_pause_hint_names_the_touch_button_on_a_touch_device(t)
 	_test_the_pause_hint_waits_out_a_detention(t)
@@ -97,6 +99,54 @@ func _test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t) -> void:
 	t.check(hud._teach.text == "Drag the stick to walk",
 			"day 1 tells a touch device to drag the stick, not press a key it has not got")
 
+	hud.free()
+
+## **Tap mode names a tap, not a control it does not draw.** `hud._controls_mode` is read once
+## from `ControlsMode`, the same pattern `_touch` already is, and takes precedence over `_touch`
+## for both lessons: there is no stick and no `RUN` circle to point at in tap mode, only the tap
+## itself.
+func _test_the_walk_and_run_hints_name_a_tap_in_tap_mode(t) -> void:
+	var saved_day := GameState.day
+	var hud := _hud(t)
+	hud._controls_mode = ControlsMode.Mode.TAP
+	hud._touch = true
+
+	hud._teach_the_day(1)
+	t.check(hud._teach.text == "Tap to walk, double tap to run",
+			"day 1 in tap mode names the tap rather than the stick it does not draw")
+
+	GameState.day = Tuning.RUN_TAUGHT_DAY
+	var pursuer := _pursuer()
+	hud._on_event_telegraphed(pursuer)
+	t.check(hud._teach.text == "Double tap to run",
+			"the run lesson in tap mode names the double tap rather than a RUN button it does not draw")
+
+	pursuer.free()
+	hud.free()
+	GameState.day = saved_day
+
+## **The pause hint has nothing to say in tap mode.** There is no pause key on a phone and no
+## button to point at — `TapControls` pauses on its own, every stand rather than once per run, so
+## the once-per-run keybinding lesson `_teach_the_pause()` teaches does not apply and must not fire.
+func _test_the_pause_hint_says_nothing_in_tap_mode(t) -> void:
+	var stroller := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+
+	var hud := _hud(t)
+	hud._controls_mode = ControlsMode.Mode.TAP
+	hud._rig = stroller
+	hud._walked_today = true
+
+	for _i in 40: # 4s of stillness, past TEACH_PAUSE_AFTER
+		hud._teach_the_pause(0.1)
+	t.check(hud._teach.text == "" and not hud._taught_pause,
+			"tap mode never raises the pause keybinding lesson at all")
+
+	stroller.free()
 	hud.free()
 
 ## **A lost nerve rewinds the day, not the run.** *(Player, of the deployed build: "the run lesson
