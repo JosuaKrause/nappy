@@ -16,6 +16,7 @@ const SEED := 4242
 
 func run(t) -> void:
 	_test_the_readout_is_not_assembled_outside_a_debug_build(t)
+	_test_add_touch_controls_picks_the_stick_or_the_tap_reader_by_controls_mode(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -75,3 +76,23 @@ func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
 	day.free()
 	stroller.free()
 	city.free()
+
+## **Exactly one of the stick and the tap reader is ever in the tree**, and which one is
+## `main._controls_mode`'s own choice, made once — the same shape `ScreenOrientation`'s tests hold
+## `_screen_furniture_layers()` to. `_add_touch_controls()` parents whichever it builds under
+## `main` itself, so freeing `main` here reaches it too.
+func _test_add_touch_controls_picks_the_stick_or_the_tap_reader_by_controls_mode(t) -> void:
+	var stick_main: Node2D = MAIN_SCRIPT.new()
+	stick_main._controls_mode = ControlsMode.Mode.STICK
+	stick_main._add_touch_controls()
+	t.check(stick_main._touch_controls != null and stick_main._tap_controls == null,
+			"stick mode builds the stick and not the tap reader")
+
+	var tap_main: Node2D = MAIN_SCRIPT.new()
+	tap_main._controls_mode = ControlsMode.Mode.TAP
+	tap_main._add_touch_controls()
+	t.check(tap_main._tap_controls != null and tap_main._touch_controls == null,
+			"tap mode builds the tap reader and not the stick")
+
+	stick_main.free()
+	tap_main.free()

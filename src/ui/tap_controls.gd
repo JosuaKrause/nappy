@@ -21,6 +21,15 @@ extends Node
 ## the wrong place. Both are plain constants here, the way `TouchControls.RUN_CATCH_RADIUS` (how
 ## near the RUN button a thumb must land) is a plain constant there rather than a balance number in
 ## `Tuning`.
+##
+## **Arriving starts a clock, and the clock pauses.** Pausing on arrival itself would stutter the
+## ordinary loop — arrive, tap on — so `ARRIVAL_PAUSE_AFTER` only fires the pause if she is still
+## standing when it expires, and a tap before then is simply the next leg. It is gated on
+## *arriving*, not on standing still: something blocking her never crosses the plane and so never
+## starts the clock, consistent with "walking into a wall and stopping is the player's mistake to
+## make" above — nothing here detects being stuck, and nothing is meant to. The pause it opens is
+## `TouchControls._send_pause_action()`'s own real `InputEventAction`, the same one the stick's
+## pause button sends, so `main._unhandled_input()` opens the same `PauseScreen` either way.
 
 ## How soon a second tap has to land to read as a double, in seconds.
 const DOUBLE_TAP_SECONDS := 0.35
@@ -28,6 +37,10 @@ const DOUBLE_TAP_SECONDS := 0.35
 ## destination rather than a new one. Generous like `TouchControls.RUN_CATCH_RADIUS`, because a
 ## thumb tapping twice does not land on the same pixel either time.
 const DOUBLE_TAP_DISTANCE := 60.0
+## How long she can stand at a destination before the game pauses on her behalf. Longer than
+## `HUD.TEACH_PAUSE_AFTER` (3s) on purpose — this is a feel number, the only way to set it is to
+## walk with it, and it moves against a played day.
+const ARRIVAL_PAUSE_AFTER := 5.0
 
 ## The rig, found the same way `HUD._rig` is: a state of the player rather than something a
 ## signal carries.
@@ -43,6 +56,16 @@ var _walking := false
 ## "no earlier tap this run", which can never fall inside either window.
 var _last_tap_at := -INF
 var _last_tap_screen_position := Vector2.ZERO
+
+## Counts down once she has arrived and is standing; `<= 0.0` while walking or once the pause has
+## already fired for this stand.
+var _stand_left := 0.0
+## Whether the pause currently up is the one `_stand_left` raised, as opposed to Esc, the day
+## ending, or a screen with nothing to do with tap mode. Only "our own" pause is a tap's to
+## dismiss — see `_on_tap()` — and only an unrelated one needs its own held direction force-released
+## the way `TouchControls._release_all()` already forces one on every kind of hiding.
+var _own_pause := false
+var _was_paused := false
 
 func _ready() -> void:
 	# Has to keep reading a tap through the arrival pause it can itself raise, the same reason
@@ -67,7 +90,17 @@ func _input(event: InputEvent) -> void:
 ## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
 ## window still instead of racing the engine clock -- `_input()` is the one real caller and is what
 ## supplies it from `Time.get_ticks_msec()`.
+##
+## **While paused for a reason of its own making, a tap both unpauses and sets the next
+## destination** -- a tap is the only input this mode has, and two taps to resume-then-walk would
+## collide with the double tap that means *run*. The event is left unhandled either way, so the
+## same raw touch also reaches `PauseScreen._unhandled_input()`, which already closes on any touch
+## press; this does not have to know how to close that screen itself. Paused for any other
+## reason -- Esc, the day ending, the title -- a tap here does nothing, the same as the stick's own
+## controls drawing nothing on any of those screens.
 func _on_tap(screen_position: Vector2, now: float) -> void:
+	if get_tree().paused and not _own_pause:
+		return
 	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
 	var double := is_double_tap(now - _last_tap_at,
 			screen_position.distance_to(_last_tap_screen_position))
@@ -75,16 +108,36 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 	_last_tap_screen_position = screen_position
 	walk_to(world, double)
 
-func _process(_delta: float) -> void:
-	if not _walking:
-		return
-	if not _rig:
-		_rig = get_tree().get_first_node_in_group("player") as Node2D
-		if not _rig:
-			return
-	if has_arrived(_target, _rig.global_position, _direction):
+func _process(delta: float) -> void:
+	var paused := get_tree().paused
+	if paused and not _was_paused and not _own_pause:
+		# Esc, the day ending, or a screen with nothing to do with tap mode -- not the clock below.
+		# A direction left pressed into whatever comes next is the same leak
+		# `TouchControls._release_all()` already guards its own controls against.
 		_walking = false
+		_stand_left = 0.0
 		_release()
+	elif not paused and _was_paused:
+		_own_pause = false
+	_was_paused = paused
+
+	if _walking:
+		if not _rig:
+			_rig = get_tree().get_first_node_in_group("player") as Node2D
+		if _rig and has_arrived(_target, _rig.global_position, _direction):
+			_walking = false
+			_release()
+			_stand_left = ARRIVAL_PAUSE_AFTER
+		return
+	if _stand_left <= 0.0:
+		return
+	_stand_left = maxf(0.0, _stand_left - delta)
+	if _stand_left <= 0.0:
+		_own_pause = true
+		# The tap that dismisses this pause must read as a fresh single tap, not a double against
+		# whatever was tapped minutes ago to get here.
+		_last_tap_at = -INF
+		TouchControls._send_pause_action()
 
 ## Starts a leg toward `target`, computed once here and never again. `run` holds the same `run`
 ## action the button and Shift do, until she arrives or the next tap lets go of it.

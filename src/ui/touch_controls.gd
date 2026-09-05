@@ -248,7 +248,10 @@ static func _pause_fires(at: Vector2) -> bool:
 ##
 ## Returns the event it sent, so a test can inspect its shape directly rather than depend on when
 ## the tree gets around to propagating or polling it.
-func _send_pause_action() -> InputEventAction:
+##
+## Static, and reused by `TapControls` for its own arrival clock: opening the pause is the same
+## action either way, sent the same way, whichever control scheme raised it.
+static func _send_pause_action() -> InputEventAction:
 	var event := InputEventAction.new()
 	event.action = &"pause"
 	event.pressed = true

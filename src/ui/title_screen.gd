@@ -37,12 +37,17 @@ var _can_quit := QuitOption.available()
 ## `_can_quit` is: a test process is never a touch device, and the body and the hint both have to
 ## agree with whatever drew — or did not draw — the stick and the run button.
 var _touch := TouchInput.available()
+## Which of the two control schemes is driving this run. Read once from `ControlsMode`, for the
+## same reason `_touch` is: the body has to name a tap rather than a stick that is not there.
+var _controls_mode := ControlsMode.resolve()
 
 const _BODY_KEYBOARD := "Arrows or WASD to walk.\n" \
 		+ "Hold Shift to run — it wakes her, so it is rarely worth it.\n" \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
 const _BODY_TOUCH := "Drag the stick to walk.\n" \
 		+ "Hold RUN to run — it wakes her, so it is rarely worth it.\n" \
+		+ "Walk to calm ground and stay moving; standing still settles nothing."
+const _BODY_TAP := "Tap to walk there, double tap to run.\n" \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:
@@ -67,7 +72,10 @@ func _ready() -> void:
 ## other shape it can be. Its own function, rather than inline in `_ready()`, so a test can flip
 ## `_touch` and call this again the way `PauseScreen._refresh_hint()` already does for its hint.
 func _refresh_body() -> void:
-	_body.text = _BODY_TOUCH if _touch else _BODY_KEYBOARD
+	if _controls_mode == ControlsMode.Mode.TAP:
+		_body.text = _BODY_TAP
+	else:
+		_body.text = _BODY_TOUCH if _touch else _BODY_KEYBOARD
 
 ## The one line on this screen that is not addressed to the player, so it is small, dim and in the
 ## bottom corner rather than anywhere near the three lines that are — see the **cues** rule that a

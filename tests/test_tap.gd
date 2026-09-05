@@ -5,6 +5,9 @@ extends RefCounted
 ## a new destination.
 
 func run(t) -> void:
+	# Several tests below toggle the tree's own pause, the same guard `test_touch.gd` takes for
+	# the same reason: whatever this suite runs under must not be left paused for the next one.
+	var was_paused: bool = t.get_tree().paused
 	_test_has_arrived_is_the_plane_not_a_radius(t)
 	_test_heading_to_is_the_unit_vector_and_zero_for_a_tap_on_herself(t)
 	_test_is_double_tap_needs_both_windows(t)
@@ -14,6 +17,11 @@ func run(t) -> void:
 	_test_a_shove_past_the_plane_still_arrives(t)
 	_test_a_tap_maps_its_screen_position_through_the_viewports_canvas_transform(t)
 	_test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t)
+	_test_arriving_starts_a_clock_that_opens_tap_modes_own_pause(t)
+	_test_a_tap_during_tap_modes_own_pause_still_sets_the_next_destination(t)
+	_test_a_tap_during_an_unrelated_pause_does_nothing(t)
+	_test_an_unrelated_pause_force_releases_a_held_direction(t)
+	t.get_tree().paused = was_paused
 	_release_actions()
 
 func _rig_at(position: Vector2) -> Node2D:
@@ -156,6 +164,86 @@ func _test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t) -> vo
 
 	tap._on_tap(transform * Vector2(500.0, 500.0), 12.0)
 	t.check(not Input.is_action_pressed("run"), "close but late is also a new single tap")
+
+	tap.free()
+	rig.free()
+
+## **Arriving starts the stand, not the pause** -- pausing on arrival itself would stutter the
+## ordinary loop of arriving and tapping on. Only standing the whole of `ARRIVAL_PAUSE_AFTER` out
+## raises tap mode's own pause.
+func _test_arriving_starts_a_clock_that_opens_tap_modes_own_pause(t) -> void:
+	var rig := _rig_at(Vector2.ZERO)
+	t.add_child(rig)
+	var tap := TapControls.new()
+	t.add_child(tap)
+
+	tap.walk_to(Vector2(10.0, 0.0), false)
+	rig.global_position = Vector2(10.0, 0.0)
+	tap._process(0.016)
+	t.check(not tap._walking and not tap._own_pause,
+			"arriving starts the stand, and the pause has not fired yet")
+
+	tap._process(TapControls.ARRIVAL_PAUSE_AFTER)
+	t.check(tap._own_pause, "standing the clock out the whole way opens tap mode's own pause")
+
+	tap.free()
+	rig.free()
+
+## **A tap while tap mode's own pause is up both unpauses and sets the next destination** -- a tap
+## is the only input this mode has, so the same tap that dismisses the pause is the one that says
+## where to go next. Unpausing itself is `PauseScreen._unhandled_input()`'s own job, off the same
+## raw touch event once it propagates past here unhandled -- not asserted in this suite, which has
+## no `PauseScreen` to check it against.
+func _test_a_tap_during_tap_modes_own_pause_still_sets_the_next_destination(t) -> void:
+	var rig := _rig_at(Vector2.ZERO)
+	t.add_child(rig)
+	var tap := TapControls.new()
+	t.add_child(tap)
+	tap._own_pause = true
+	t.get_tree().paused = true
+
+	tap._on_tap(tap.get_viewport().get_canvas_transform() * Vector2(50.0, 0.0), 0.0)
+	t.check(Input.is_action_pressed("move_right"),
+			"a tap during tap mode's own pause still sets a new destination")
+
+	tap.free()
+	rig.free()
+
+## Paused for any other reason -- Esc, the day ending, the title -- a tap does nothing, the same as
+## every one of those screens already leaving the stick's own controls drawing nothing.
+func _test_a_tap_during_an_unrelated_pause_does_nothing(t) -> void:
+	# Leftover state from the previous test's own tap, not this one's concern to leave held.
+	_release_actions()
+	var rig := _rig_at(Vector2.ZERO)
+	t.add_child(rig)
+	var tap := TapControls.new()
+	t.add_child(tap)
+	t.get_tree().paused = true
+
+	tap._on_tap(tap.get_viewport().get_canvas_transform() * Vector2(50.0, 0.0), 0.0)
+	t.check(not Input.is_action_pressed("move_right") and not tap._walking,
+			"a tap during a pause tap mode did not raise itself does nothing at all")
+
+	tap.free()
+	rig.free()
+
+## A direction left pressed into whatever comes next is the same leak
+## `TouchControls._release_all()` already guards its own controls against on every kind of hiding.
+func _test_an_unrelated_pause_force_releases_a_held_direction(t) -> void:
+	var rig := _rig_at(Vector2.ZERO)
+	t.add_child(rig)
+	var tap := TapControls.new()
+	t.add_child(tap)
+
+	tap.walk_to(Vector2(100.0, 0.0), true)
+	t.check(Input.is_action_pressed("move_right") and Input.is_action_pressed("run"),
+			"walking holds a direction and, on a double tap, run")
+
+	t.get_tree().paused = true
+	tap._process(0.016)
+	t.check(not Input.is_action_pressed("move_right") and not Input.is_action_pressed("run"),
+			"Esc or any other pause force-releases whatever tap mode was holding")
+	t.check(not tap._walking, "and abandons the leg rather than merely pausing mid-stride")
 
 	tap.free()
 	rig.free()
