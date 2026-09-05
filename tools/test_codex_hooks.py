@@ -104,14 +104,14 @@ class CodexHooksTest(unittest.TestCase):
                 self.assertEqual(self.call(command=patch, **variant), "")
         self.assertIn("RULE_CONTENT_orchestrating", self.call(kind="SubagentStart", agent_id="fresh"))
 
-    def test_shell_reminder_and_post_command_lint(self):
+    def test_shell_reminder_does_not_lint_every_command(self):
         text = self.call(tool="Bash", command="pwd")
         self.assertTrue(text)
         self.assertIn("committing", text)
         self.assertEqual(self.call(tool="Bash", command="pwd"), "")
         self.assertEqual(self.call(kind="PostToolUse", tool="Bash", command="pwd"), "")
         self.write("AGENTS.md")
-        self.assertIn("AGENTS.md", self.call(kind="PostToolUse", tool="Bash", command="pwd"))
+        self.assertEqual(self.call(kind="PostToolUse", tool="Bash", command="pwd"), "")
 
     def test_document_lint_includes_agents_and_rename_destination(self):
         self.write("AGENTS.md")

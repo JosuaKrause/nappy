@@ -65,12 +65,6 @@ def main():
                                    "from CLAUDE.md's path table. Before git mutations, load committing. "
                                    "Shell command text cannot reliably identify the files it will change.")
                     marker.touch()
-            elif kind == "PostToolUse":
-                result = subprocess.run([str(ROOT / "tools/lint.sh")],
-                                        text=True, capture_output=True)
-                if result.returncode:
-                    context.append("Fix documentation lint findings before continuing:\n"
-                                   + result.stdout + result.stderr)
         else:
             paths = []
             if tool == "apply_patch":

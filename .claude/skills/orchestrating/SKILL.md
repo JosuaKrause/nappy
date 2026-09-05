@@ -1,6 +1,6 @@
 ---
 name: orchestrating
-description: How implementation work is delegated to sub-agents — isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Loaded at session start, before deciding who does the work.
+description: How implementation work is delegated to sub-agents — delegating is the default, isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Loaded at session start because who does the work is decided before the first tool call.
 ---
 
 # Orchestrating sub-agents

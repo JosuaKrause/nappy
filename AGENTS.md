@@ -27,8 +27,8 @@ read its file explicitly before doing the governed work.
 At session start, read `.claude/skills/orchestrating/SKILL.md` before deciding how to
 divide the work. Delegation is recommended for specified implementation, using the
 cheaper-model defaults in `.codex/config.toml` and the skill's model-selection guidance.
-Keep design and final review in the orchestrating session. Before editing any file, consult the path-to-skill table in
-`CLAUDE.md` under **The rules load themselves**, and read each matching
+Keep design and final review in the orchestrating session. Before editing any file, consult
+`.claude/hooks/project-rules.sh`, the executable path-to-skill mapping, and read each matching
 `.claude/skills/<skill>/SKILL.md` in full. All matches apply: an event GDScript file
 requires both `events` and `godot`. The executable mapping is in
 `.claude/hooks/project-rules.sh`; consult it if the table is ambiguous. These rules
@@ -60,7 +60,7 @@ frontmatter. Read any nested `CLAUDE.md` governing files you touch as well as ne
   rules and explain the limitation.
 - Ordinary edits use patches so rules arrive before the edit. Arbitrary shell scripts
   can compute their paths; before structural script edits, load the matching skills
-  explicitly. The shell hook supplies this reminder and runs doc lint afterward.
+  explicitly. The shell hook supplies this reminder.
 - Run `./tools/lint.sh` before committing even when post-edit lint hooks ran; it
   includes this entry point. Follow the applicable skills for other verification.
 
