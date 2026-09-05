@@ -903,15 +903,28 @@ thing than behind it.
       pointed at her that is a different sum, and a version stated over the mean radius would pass
       while the encounter it describes is unfair — the same failure `Tuning.pursuit_standoff()`
       exists to stop, one system over
-- [ ] **A long body gets a long field: a capsule, not a circle.** *(2026-09-05: "horizontal
-      barriers need a combination of rectangular and circular fields ... a rounded rectangle if you
-      will ... since they are not point sources".)* A rectangle along the body's own length with
-      circular caps — the distance to a **line segment** rather than to a point. Every field in this
-      game is computed from one point today, and the rows drawn as a spread along a pavement
-      (`cafe_tables` through `EventInstance._draw_cafe`; `construction`, `market_stall`, `barricade`
-      and `delivery_van` through `_draw_spread`) are not points. A six-tile café frontage currently
-      prices somebody across the street exactly as it prices somebody standing at the tables,
-      reaching far perpendicular to itself and falling short along its own length.
+- [ ] **A field is the Minkowski sum of the body and a disc.** *(2026-09-05: "horizontal barriers
+      need a combination of rectangular and circular fields ... a rounded rectangle if you will ...
+      since they are not point sources", and then the general form: "basically for every base shape
+      the minkowsky sum of a circle and the shape should be the influence field".)*
+
+      **One rule, and every shape falls out of it**: the falloff is a function of the distance to
+      the **body**, not to a point. A point body gives the circle every field in the game already
+      has and nothing moves; a line segment gives a capsule — the "rounded rectangle"; a rectangle
+      gives a rectangle with rounded corners; any polygon gives itself offset outward.
+
+      The rows it changes are the ones drawn as a spread along a pavement — `cafe_tables` through
+      `EventInstance._draw_cafe`, and `construction`, `market_stall`, `barricade` and `delivery_van`
+      through `_draw_spread`. A six-tile café frontage currently prices somebody across the street
+      exactly as it prices somebody standing at the tables, reaching far perpendicular to itself and
+      falling short along its own length.
+
+      **The trap, and it has to be settled before any code**: under this rule `inner_radius` and
+      `outer_radius` stop meaning *distance from the centre* and start meaning *distance from the
+      body*. Identical for a point, not for a spread — read across naively, a 170px outer radius
+      becomes 170px **beyond** the whole café, which is a **bigger** field than today's and the
+      exact opposite of what M72 is being asked for. Every row with a body needs its radii re-read
+      rather than carried over. This is not the refactor it looks like.
 
       **This overturns the bullet that used to stand here** — *"a stationary thing keeps its circle,
       by construction: eccentricity from speed means zero speed is a disc"*, and with it the

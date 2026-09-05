@@ -277,9 +277,25 @@ and the rationale, which is the part that took the thought:
 
 > "since they are not point sources"
 
-**A capsule: the distance to a line segment rather than to a point.** The reasoning is physical
-rather than aesthetic, and it generalises past the rows named — **every field in this game is
-computed from a single point, and half the things emitting one are not points.** A rectangle along the
+and then the general rule the two sentences above are an instance of:
+
+> "basically for every base shape the minkowsky sum of a circle and the shape should be the
+> influence field"
+
+**That is the whole thing in one line, and it is a better statement than the capsule.** The
+influence field of a body is the set of points within a given distance *of the body* — so the
+falloff is a function of **distance to the body**, not distance to a point, and every shape falls
+out of the same rule rather than needing its own case:
+
+| Base shape | Field |
+|---|---|
+| a point | a circle — every field in the game today, unchanged |
+| a line segment | a capsule — the "rounded rectangle" |
+| a rectangle | that rectangle with rounded corners |
+| any polygon | the polygon offset outward, corners rounded |
+
+The reasoning is physical rather than aesthetic — **every field in this game is computed from a
+single point, and half the things emitting one are not points.** A rectangle along the
 barrier's own length with circular caps at its ends — which is what a body that is drawn as a spread
 along the pavement actually occupies. Today every field in the game is a disc centred on the
 instance, so a six-tile café frontage prices someone standing across the street exactly as it prices
@@ -304,6 +320,14 @@ the rows it would apply to are stationary, so nothing needs it answered yet.
 telegraph contract stated over the gap between inner and outer radii, the placement spacing, the
 clearance a lethal row keeps, the streaming radius, the denial radius a park spoiler is measured by
 — asks a question a circle answers with one number and a capsule answers with two.
+
+**And there is a trap in it that has to be named before anybody writes the code.** Under the
+Minkowski rule, `inner_radius` and `outer_radius` stop meaning *distance from the centre* and start
+meaning *distance from the body*. For a point body those are the same number and nothing moves. For
+a six-tile café frontage they are not: read naively, a 170px outer radius becomes 170px **beyond**
+the whole spread, which is a **larger** field than today's, not a smaller one — the exact opposite
+of what findings 8 and 9 are asking for. So the rows with bodies need their radii re-read rather
+than carried across, and the change is not a refactor even where it looks like one.
 
 What each row carries today — every one of them stationary, every one of them obstructing:
 
