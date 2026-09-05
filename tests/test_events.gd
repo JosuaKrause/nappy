@@ -2320,24 +2320,43 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		world.free()
 		manager.free()
 
+## `detain_radius` (33px) sits *past* `Tuning.TILE_SIZE` (32px), the far-lane distance the row
+## used to be tucked under — see `EventCatalogue._chatting_mother`, "the far-lane rule is
+## overturned". So the far lane now catches her, and this checks both halves of the new geometry:
+## the far lane triggers, and a point just outside `detain_radius` but still inside `inner_radius`
+## does not — the ambient field reaches her there and only the conversation must not.
 func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(4000.0, 4000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
+
+	var far_lane := _instance(t, def, at, path)
+	var far_manager := _chat_manager()
+	far_manager._instances.append(far_lane)
+	var far_stroller := _chat_stroller(t)
+	far_manager._player = far_stroller
+	far_stroller.global_position = at + Vector2(0.0, Tuning.TILE_SIZE)
+	far_manager._tell_them_where_she_is()
+	far_manager._check_detentions()
+	t.check(far_stroller.is_detained(),
+			"the far lane of a two-tile pavement now starts a conversation too")
+	far_lane.free()
+	far_stroller.free()
+	far_manager.free()
+
 	var mother := _instance(t, def, at, path)
 	var manager := _chat_manager()
 	manager._instances.append(mother)
 	var stroller := _chat_stroller(t)
 	manager._player = stroller
 
-	# The far lane of a two-tile pavement — `Tuning.TILE_SIZE` (32px) off, outside `detain_radius`
-	# but well inside `inner_radius`, so the ambient field still reaches her and only the
-	# conversation must not.
-	stroller.global_position = at + Vector2(0.0, Tuning.TILE_SIZE)
+	# Just outside detain_radius (33) and well inside inner_radius (34): the ambient field still
+	# reaches her and only the conversation must not.
+	stroller.global_position = at + Vector2(0.0, def.detain_radius + 0.5)
 	manager._tell_them_where_she_is()
 	manager._check_detentions()
 	t.check(not stroller.is_detained(),
-			"passing the far lane, outside detain_radius, never starts a conversation")
+			"just outside detain_radius, no conversation starts")
 	t.check(not mother.is_chatting() and not mother.has_chatted(),
 			"and the instance is untouched by it")
 	mother.free()

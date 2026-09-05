@@ -883,10 +883,14 @@ where she may walk, not a piece of the catalogue's variety.
 **hard** seal — `barricade`, from act IV — stands several bodies across the street's whole width,
 sidewalk to sidewalk, so nothing gets past. A **soft** seal takes both pavements (`construction`,
 `cafe_tables`, `market_stall` or `delivery_van`, one on each side) and leaves the carriageway open:
-the road is always still there, so a soft seal costs time and exposure, never the day. Every day
-from day 1 has a working soft pair; the hard one only from act IV, since `barricade` is the only
-row today drawn as a citywide wall rather than a street event — the milestone that draws more
-pictures for both strengths costs nothing here but longer candidate lists.
+the road is always still there, so a soft seal always costs time, never the day. **A thing whose
+job is to stand in the way costs route and nothing else** — `construction`, `delivery_van` and
+`barricade` carry no field at all, so they cost only the detour; `cafe_tables` and `market_stall`
+are genuine sources as well as bodies and still charge the meter, tightly, to whoever actually
+stands at the tables or the stall. Every day from day 1 has a working soft pair; the hard one only
+from act IV, since `barricade` is the only row today drawn as a citywide wall rather than a street
+event — the milestone that draws more pictures for both strengths costs nothing here but longer
+candidate lists.
 
 **The doorstep is exempt, for the same reason a closure never stands there**: the home is a notch
 with one exit, and a seal on its own street would seal her in on the first frame. **The join
@@ -905,10 +909,12 @@ refuses it outright rather than treating "off the tree" as reason enough. It is 
 ground in the game to stand on (0.6× decay against an ordinary street's 1.0), which is why making
 it *not a route* is the whole of the fix.
 
-**Alleys are not streets, so they are never sealed — a through-alley's *mouth* can be.** An alley
-that touches the tree at either end stays open outright, which is the way round a wall the design
-asks for; one that touches it at neither end is walled at both mouths, so it can never bridge two
-sealed streets into a second city behind them.
+**Alleys are not streets, so they are never sealed — a through-alley's *mouth* can be, and only
+sometimes.** An alley that touches the tree at either end stays open outright, which is the way
+round a wall the design asks for; one that touches it at neither end is a *candidate* to be walled
+at both mouths, so it can never bridge two sealed streets into a second city behind them — but only
+`Tuning.ALLEY_MOUTH_SEAL_CHANCE` of those candidates actually are, rolled once per qualifying alley,
+so an alley reads as the occasional exception rather than a wall of its own.
 
 **A final pass thins the seals.** A small `Tuning.SEAL_THINNING_FRACTION` of the day's soft pairs
 lose one body — never a hard seal, never an alley mouth — so a wrong turn stays open long enough to
