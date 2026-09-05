@@ -896,12 +896,34 @@ files is a merge conflict scheduled in advance.
       than a place a hidden button might be. That is also why the tap reader is its own node rather
       than a branch inside `TouchControls`: in tap mode `TouchControls` is not there.
 
-      **The consequence is that a phone in tap mode cannot pause, and no answer to that is recorded
-      yet.** Desktop keeps `Esc`, and the mode is reachable only through a dev flag or the secret URL
-      parameter — the shipped web build is stick mode, which keeps its pause button — so an
-      experiment with no pause on a phone is survivable. **Do not invent a gesture for it**; a
-      long-press or a two-finger tap spends the same screen the instruction just cleared. If the
-      experiment is worth keeping, that is the question to bring back
+      **No pause button is needed, because arriving is the pause.** *(2026-09-05: "when the player
+      reaches a location and stops movement — normally the pause hint would show up — in this mode
+      it just pauses".)* The moment already exists and is already guarded: `HUD._teach_the_pause()`
+      watches for the first time she stops **of her own accord** — she has walked today, nothing is
+      holding her still (`chatting_mother`'s `detain()` locks her input and lets friction carry her
+      to a standstill, which is not the same claim as *she stopped*), and no screen that already
+      pauses is up — and after `TEACH_PAUSE_AFTER` (3s) it offers the pause key once per run. **Tap
+      mode takes the same moment and pauses instead of saying anything.**
+
+      Two differences from the hint, both because tap mode knows something stick mode cannot:
+
+      - **It fires on arrival, not after a 3s stand.** The idle timer exists because with a stick
+        there is no way to tell a deliberate stop from a pause between presses. A tap names a
+        destination, so arrival is a definite event — the plane test above — and there is nothing to
+        wait to be sure of.
+      - **Every time, not once per run.** The hint is a keybinding taught once. This is how the mode
+        works, so it is the loop rather than a cue: tap, walk, arrive, pause, tap.
+
+      And `_teach_the_pause()`'s own hint has nothing to say in tap mode — there is no pause key on a
+      phone and no button to point at — so it does not run there.
+
+      **Two details the instruction is silent on. Smallest reading taken, both cheap to overturn:**
+      a tap while paused both unpauses and sets the next destination, since a tap is the only input
+      the mode has and two taps to start walking would collide with the double tap that means *run*;
+      and arriving shows the existing `PauseScreen` unchanged. **Whether that screen's text every few
+      seconds is right, or whether arrival should stop time and draw nothing, is a played question**
+      — it is the difference between a route planner that lets you think and a screen that keeps
+      interrupting
 - [ ] **Switchable in the dev build, fixed in the release.** *"The real / web version doesn't get to
       choose."* `DevFlags` already answers nothing outside a debug build and already parses
       `-- --flag` arguments, so a `--controls tap|stick` flag is the shape that exists
