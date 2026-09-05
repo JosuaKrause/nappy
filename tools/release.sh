@@ -85,11 +85,85 @@ esac
 echo "current: $CURRENT"
 echo "next:    $NEXT  ($PART)"
 
+# How the `test` check on the commit about to be tagged is doing, as one word: success, failure,
+# pending (running, or not all of them finished), none (no test run has registered yet), or
+# unavailable (no `gh`, or the API would not answer).
+#
+# `main`'s ruleset covers tag refs, not just branches, so it refuses a tag while that check is
+# still running -- which is not a hypothetical: it is what happened publishing v0.1.2, and the
+# rejection was nearly reported as a release. Waiting here is the fix for the cause rather than
+# for the symptom.
+#
+# Every push to main fires two runs of the same workflow, one for `push` and one for
+# `pull_request`, so "green" means *all* of them finished well, not the first one to answer.
+# `neutral` and `skipped` count as passing because that is what they mean to the ruleset.
+CHECK_POLL_SECONDS=20
+CHECK_WAIT_SECONDS=1800
+
+check_state() {
+    command -v gh >/dev/null 2>&1 || { echo unavailable; return; }
+    local repo state
+    repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)"
+    [[ -n "$repo" ]] || { echo unavailable; return; }
+    state="$(gh api "repos/$repo/commits/$LOCAL/check-runs" --jq '
+        [.check_runs[] | select(.name == "test")] as $t
+        | if ($t | length) == 0 then "none"
+          elif ($t | any(.status == "completed" and
+                ((.conclusion == "success" or .conclusion == "neutral"
+                  or .conclusion == "skipped") | not))) then "failure"
+          elif ($t | all(.status == "completed")) then "success"
+          else "pending" end' 2>/dev/null)"
+    [[ -n "$state" ]] || { echo unavailable; return; }
+    echo "$state"
+}
+
+STATE="$(check_state)"
+
 if [[ $CONFIRMED -ne 1 ]]; then
+    echo "checks:  $STATE  (on $LOCAL)"
     echo "" >&2
+    case "$STATE" in
+        failure) echo "the test check on main is RED -- a real run would abort here." >&2 ;;
+        success) echo "the test check on main is green -- a real run would tag and push now." >&2 ;;
+        unavailable) echo "cannot read the test check (no gh, or the API declined); a real run" >&2
+                     echo "would push anyway and let the ruleset refuse it if it is not ready." >&2 ;;
+        *) echo "the test check on main has not finished -- a real run would wait for it." >&2 ;;
+    esac
     echo "dry run -- nothing tagged or pushed. Run 'tools/release.sh $PART push' to publish $NEXT." >&2
     exit 0
 fi
+
+# Nothing is tagged until the check is green, so aborting leaves no tag to clean up.
+WAITED=0
+while :; do
+    case "$STATE" in
+        success)
+            echo "checks:  green on $LOCAL"
+            break
+            ;;
+        failure)
+            echo "" >&2
+            echo "REFUSING: the test check on main is RED at $LOCAL." >&2
+            echo "Nothing was tagged. Fix main, then run this again." >&2
+            exit 1
+            ;;
+        unavailable)
+            echo "checks:  unreadable (no gh, or the API declined) -- pushing anyway;" >&2
+            echo "         the ruleset refuses the tag if main is not actually ready." >&2
+            break
+            ;;
+    esac
+    if (( WAITED >= CHECK_WAIT_SECONDS )); then
+        echo "" >&2
+        echo "REFUSING: the test check on main was still '$STATE' after ${CHECK_WAIT_SECONDS}s." >&2
+        echo "Nothing was tagged." >&2
+        exit 1
+    fi
+    echo "checks:  $STATE on $LOCAL -- waiting (${WAITED}s)"
+    sleep "$CHECK_POLL_SECONDS"
+    WAITED=$(( WAITED + CHECK_POLL_SECONDS ))
+    STATE="$(check_state)"
+done
 
 git tag -a "$NEXT" -m "$NEXT"
 
