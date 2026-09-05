@@ -887,9 +887,21 @@ files is a merge conflict scheduled in advance.
 - [ ] **Both modes exist at once and one is chosen.** Not a rewrite of `TouchControls` — the stick
       build and the tap build are two ways of feeding the same actions, and the experiment needs
       them side by side. Whatever holds the choice is read once, the way `TouchInput.available()`
-      already is. **The pause button belongs to neither mode and survives both**: in tap mode
-      `TouchControls` draws that and nothing else, and a tap that lands on it pauses without also
-      setting a destination underneath it
+      already is.
+
+      **Tap mode draws nothing at all.** *(2026-09-05: "tap mode is 'I click on the screen and then
+      the player moves to that location on a straight line' — this mode does not have UI
+      elements".)* No stick, no `RUN`, and **no pause button** — the whole screen is the control, so
+      there is nothing on it to catch a thumb, and every pixel of the city is a destination rather
+      than a place a hidden button might be. That is also why the tap reader is its own node rather
+      than a branch inside `TouchControls`: in tap mode `TouchControls` is not there.
+
+      **The consequence is that a phone in tap mode cannot pause, and no answer to that is recorded
+      yet.** Desktop keeps `Esc`, and the mode is reachable only through a dev flag or the secret URL
+      parameter — the shipped web build is stick mode, which keeps its pause button — so an
+      experiment with no pause on a phone is survivable. **Do not invent a gesture for it**; a
+      long-press or a two-finger tap spends the same screen the instruction just cleared. If the
+      experiment is worth keeping, that is the question to bring back
 - [ ] **Switchable in the dev build, fixed in the release.** *"The real / web version doesn't get to
       choose."* `DevFlags` already answers nothing outside a debug build and already parses
       `-- --flag` arguments, so a `--controls tap|stick` flag is the shape that exists
