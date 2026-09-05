@@ -62,6 +62,39 @@ Everything below that is unordered and reassessed on 2026-09-01.
 Playtest 25's first two findings. Both are about a reader being told something that is not so — one
 on screen, one at the command line.
 
+- [ ] **The day can end without anything saying so, and then nothing can end it again.** *"if
+      excitement reaches 100 the game doesn't end! that's a major bug" ... "it stays on 100 and I'm
+      completely invincible"*. **Found, reproduced in a real Web export, and it is one line** —
+      `src/main.gd:464`, inside `_on_day_finished()`:
+
+      ```gdscript
+      var trail: Array[Vector3] = _observer.trail() if _observer else []
+      ```
+
+      The `else []` is an **untyped** `Array`, and assigning it to an `Array[Vector3]` throws at
+      runtime. `_observer` is in the tree only while a run is being traced, so with telemetry off
+      the `else` runs and `_on_day_finished()` aborts six lines before `_summary.show_day(...)` —
+      while `DayController._end()` has already set the phase to `OVER`. From there the clock stops,
+      no summary appears, the tree is never paused, she keeps walking, and every later ending is
+      swallowed, because `_on_baby_state_changed()`, `_on_hard_fail()` and `DayController._process()`
+      all return immediately unless the day is running.
+
+      **Nothing about it is mobile.** `Telemetry` disables itself on a web export
+      (`OS.has_feature("web")`), so `_observer` is null there and never null on an ordinary desktop
+      run — which is why the desktop, and every rig, dies correctly. `--no-telemetry` puts a desktop
+      build in the same state.
+
+      **Fix the shape, not the symptom.** A cast on the literal leaves the ternary in place and the
+      next edit puts it straight back; a typed local assigned in an `if` cannot regress. **Grep the
+      tree for the same pattern** — a typed collection initialised from a ternary with a bare `[]`
+      or `{}` on one side — and fix any others in the same commit.
+
+      **It owes a headless test in `tests/`, and the gap it closes is the interesting part**: no
+      test has ever run the day-ending path with no observer in the tree, so CI could not have
+      caught this and neither could any number of desktop playtests. `tests/test_day_loop.gd`
+      asserts that crying loses the day; what is missing is that the summary comes up afterwards
+      with telemetry off
+
 - [ ] **A meter bar may not read `100` while the day is still alive.** `MeterBar._draw()` prints its
       value with `"%3.0f" % value`, which rounds to nearest, so **99.5 and everything above it
       prints `100`** — checked against the engine, not inferred. The day ends when excitement

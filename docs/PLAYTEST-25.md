@@ -45,19 +45,53 @@ day, which is a real thing to fix and was the first explanation reached for. **T
 out from the chair**, and the "invincible" half rules it out on its own: a meter a fraction under
 100 is a meter that goes back down, not one that sits.
 
-**What is left is a stuck state, and it has not been found.** The shape to look for is something
-that makes `Baby._physics_process()` stop advancing while the day and the walking carry on —
-`Baby` returns from it immediately once `state` is `CRYING`, which pins both meters exactly where
-they were — or something that leaves the day unable to end at all. Note that `Baby.reset()` at the
-start of every day sets the state back to `AWAKE`, and that the title screen pauses the player
-subtree, so the obvious version of "it went `CRYING` while no day was running" is already closed off.
+## The cause, found and reproduced
 
-**What could not be checked here:** the Web export itself. The export templates for this Godot build
-are not installed on this machine, so nothing in this session ran the bundle a phone actually loads
-— the `--touch` runs above are the desktop binary wearing the touch shape, and they lose the day
-correctly. **The deployed build the player was on is `v0.2.0`**, the M68 merge, served at
-`https://nappy.josuakrause.com/`. Reproducing on that page is the next step and it is the one that
-will actually say what this is.
+**One line, `src/main.gd:464`, inside `_on_day_finished()`:**
+
+```gdscript
+var trail: Array[Vector3] = _observer.trail() if _observer else []
+```
+
+The `else []` branch produces an **untyped** `Array`, and assigning that to an `Array[Vector3]`
+throws at runtime — `Trying to assign an array of type "Array" to a variable of type
+"Array[Vector3]"`. `_observer` is in the tree only while a run is being traced, so on a build with
+telemetry off the `else` runs and `_on_day_finished()` **aborts at that line**, six lines before it
+would have called `_summary.show_day(...)`.
+
+**And `DayController._end()` has already set the phase to `OVER` by then.** So the day is over and
+nothing says so: the clock stops, no summary appears, the tree is never paused, she keeps walking,
+and every later ending is swallowed — `_on_baby_state_changed()`, `_on_hard_fail()` and
+`DayController._process()` all return immediately unless the day is running. That is the whole of
+*"it stays on 100 and I'm completely invincible"*, and it is the same hole the cyclist and the dusk
+timeout fall into.
+
+**Why it is mobile-only and not a mobile bug at all.** `Telemetry` disables itself on a web export
+(`OS.has_feature("web")` — browser storage is a stranger's disk, and nobody would ever collect or
+clear it), so `_observer` is null there and is never null on an ordinary desktop run. Nothing about
+touch, rotation or the phone is involved. The two rig runs earlier in this entry die correctly
+because they had telemetry on.
+
+**Reproduced twice**: in a real Web export served locally, with the GDScript backtrace read out of
+the browser console; and on the desktop with `--no-telemetry`, which puts a desktop build in the
+same condition by a different route —
+
+```sh
+./tools/shot.sh /tmp/x.png 25 --no-telemetry --seed 2102613802 --day 6 \
+    --spawn arterial --meters 0 99 --walk 25s
+```
+
+**That second command opens a window on whoever runs it**, which is worth saying because it was
+called headless here first and it is not: `shot.sh` renders, so it needs a window even though it
+exits on its own. The condition it creates — no `TelemetryObserver` in the tree while the day ends
+— is the thing worth keeping, and the place it belongs is a rig in `tests/`, which is headless and
+is where the regression test for this goes.
+
+**Why nothing caught it.** It is a runtime type error on a path no test walks: `tests/
+test_day_loop.gd` asserts that crying loses the day, and every rig that has ever run the day-ending
+path had telemetry on. CI could not have caught it, and neither could a hundred desktop playtests.
+It is exactly the silent-type-drop trap the **godot** skill exists for, in the one place the type
+was written down and the literal was not.
 
 ## 2. The local build does not start — fixed
 
