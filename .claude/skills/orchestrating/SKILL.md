@@ -1,14 +1,37 @@
 ---
 name: orchestrating
-description: How implementation work is delegated to sub-agents — delegating is the default, Sonnet agents in isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Injected automatically at the start of every session, because who does the work is decided before the first tool call.
+description: How implementation work is delegated to sub-agents — delegating is the default, isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Loaded at session start because who does the work is decided before the first tool call.
 ---
 
 # Orchestrating sub-agents
 
-**Implementation of a specified milestone is delegated to a Sonnet agent in an isolated git
-worktree; the orchestrating session designs, specifies, merges and maintains the queue.** The split
-holds because the two jobs want different things: implementation wants fresh context and a fenced
-scope; orchestration wants the whole queue, the player's words, and the authority to merge.
+**When delegating a milestone, give the implementation agent an isolated git worktree;
+the orchestrating session designs, specifies, reviews integration and maintains the queue.**
+The split gives implementation fresh context and a fenced scope while orchestration retains
+the whole queue and the player's words.
+
+Use Sonnet in Claude Code; in Codex, use its available delegation tool and an appropriate
+available model. The contract is the same: fresh context, a bounded scope and an isolated
+checkout for implementation. Create the worktree explicitly if the tool does not create one.
+Read-only review can share a checkout. If delegation is unavailable, do the bounded work locally
+and retain the same verification gate. Tool or model names do not require changing hosts.
+
+## Codex: use cheaper models for bounded implementation
+
+**Delegation is recommended in Codex too.** Hand specified implementation and routine
+investigation to a less costly model, keeping design, ambiguous decisions and final review in
+the orchestrating session. Cost savings are a reason to delegate even when the parent has no
+parallel task to do.
+
+`.codex/config.toml` sets the default subagent model and reasoning effort. It selects
+`gpt-5.6-luna` at medium effort for bounded work. Choose a stronger available model explicitly
+when the task needs it; do not keep retrying an underpowered model. Keep the same scope and
+verification contracts regardless of model cost.
+
+If the host does not apply repository subagent defaults, select the model and effort explicitly
+when spawning. With the collaboration tool, use a fresh context (`fork_turns="none"`) and a
+self-contained brief so the model override takes effect. A full-history fork inherits the
+parent model. Do not confuse that inheritance with automatic routing to a cheaper model.
 
 ## Delegating is the default, and implementing by hand is the decision
 

@@ -2,6 +2,12 @@
 
 Working guidelines for this repo. The *game* is documented in `docs/`.
 
+**These guidelines and `.claude/skills/` are shared by Claude Code and Codex.** Codex
+starts at [AGENTS.md](AGENTS.md), which explains how to load the same rules and adapt
+Claude-specific tools. Claude uses `.claude/settings.json`; Codex uses `.codex/hooks.json`
+and an adapter that runs the same rule-loading and lint scripts. Codex discovers the
+same skills through `.agents/skills`, which links to `.claude/skills`.
+
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is
 [docs/DECISIONS.md](docs/DECISIONS.md), fetched on demand. Nothing outside that file describes a
