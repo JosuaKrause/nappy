@@ -14,11 +14,10 @@ mid-way through.
 
 ## The order
 
-1. **M64** — off the path is closed, not dear. Its design questions are answered; the pictures are
-   specified and the placement follows them. Two of its three preconditions are built — the tree
-   grows on cells (M69) and a spread now faces the street it stands on (M48). The third is its first
-   item: a spread on a **corner** gets neither of M48's fixes, and M64 places about 187 spreads a
-   day.
+1. **M64** — off the path is closed, not dear. The sealing is built and every fairness defect
+   playtest 22 found in it is fixed; what is left is the eight seal pictures, so that no single
+   barrier becomes the city's signature, and the off-screen arrivals item. **Its open question is a
+   played one** — whether a walled city reads as a route decision or as a maze.
 2. **M65** — the chalk mark is findable, and silent until it is found.
 3. **M56** — the resistance is noticed.
 
@@ -28,11 +27,13 @@ walked* and *what did a day cost* are questions a picture can answer. See `DECIS
 and `docs/TELEMETRY.md` for what the map draws. This is also the instrument playtest 20 was read
 with — a full seven-day run's fourteen maps, copied into `docs/evidence/`.
 
-**Playtest 22 is the freshest thing in this file**, and both of its findings are M64's: barriers are
-still placed with gaps and overlaps, and the off-path city is still bare because the sealing has not
-been started. **Playtest 21** is the one before it — *"the city feels way empty now"*, with a density
-instruction attached that moves both ends of M50's gradient rather than one. Read
-[PLAYTEST-22.md](PLAYTEST-22.md) and [PLAYTEST-21.md](PLAYTEST-21.md) before picking M64 up.
+**Playtest 22 is the freshest thing in this file and every one of its findings is built** — the two
+barrier-placement defects, the doorstep that could be sealed in, the winnability check that proved
+reachability rather than survivability, the route that ran alongside the main road, and the seals
+thinned so the guidance stops reading as guardrails. The record is in `DECISIONS.md` under M64.
+**Playtest 21** is the one before it — *"the city feels way empty now"*, answered by the sealing.
+Read [PLAYTEST-22.md](PLAYTEST-22.md) and [PLAYTEST-21.md](PLAYTEST-21.md) before picking M64 up:
+what they asked for is built and unplayed, so the next report on it is the thing that matters.
 
 **Playtest 20's four findings** went to M69 (a reachability gap, now built), M65 (a chalk-mark idea),
 M47 (a calm-area spoiling inconsistency) and M43 (a measured lead-time gap on the post-tutorial
@@ -175,11 +176,12 @@ tree turns out to be too generous.
 
 **Three consequences of *every street off the tree*, and each is load-bearing rather than a detail:**
 
-- **The doorstep is exempt, and it has to be stated here because the tree itself would seal it.**
-  The home street is deliberately not on the tree — `RouteTree` colours no home node, on the
-  principle that *"a door is not a route"* — so a rule stated as *seal every street off the tree*
-  seals her in on the first frame. This is `CLAUDE.md`'s existing doorstep exemption arriving in a
-  new place.
+- **The doorstep is exempt, and the join to the corridor is on the tree.** The home street is
+  deliberately not coloured by any branch — *"a door is not a route"* — so a rule stated as *seal
+  every street off the tree* would seal her in on the first frame, which is `CLAUDE.md`'s doorstep
+  exemption arriving in a new place. `RouteTree._grow_the_trunk()` closes it: a BFS from the home
+  street outward to the nearest cell already on the tree, so `is_on_the_tree()` is true of the join
+  and the sealing's own rule covers it without an extra exemption.
 - **The seals are their own placement pass with their own budget.** ~150–200 sealed streets is two
   bodies each, which is an order of magnitude past the day's event budget, and that budget exists to
   decide *variety*, not to price the city's walls. A seal is a fact about where she may walk, so it
@@ -310,76 +312,6 @@ placement code; and **hard seals are act IV only today**, because `barricade` is
 row wide enough to span a street. **Whether a walled city reads as a route decision or as a maze is
 the played question**, and nobody has walked one.
 
-- [ ] **The doorstep can be sealed in, and it ends the day on the first frame.** *(2026-09-03,
-      playtest 22: "the starting area was sealed off completely and the only way out was alongside
-      the main road which basically ends the day".)* `SealPlanner.plan_day` exempts exactly one
-      segment — `ClosurePlanner.home_street(map)`, the street the doorstep is on — and every street
-      it leads to may be sealed. `RouteTree` colours no home node, on the principle that *"a door is
-      not a route"*, so **the join between the exempt home street and the day's tree is protected by
-      nothing.**
-
-      **This makes `SealPlanner`'s own docstring false**, and the sentence names its own error: the
-      guarantee *"is true by construction — a seal never stands on tree ground or on the home street,
-      the two things `RouteTree`/`ClosurePlanner` already guarantee a route through"*. Those are
-      guarantees about two disconnected pieces of ground. Neither says a walkable line joins them.
-
-      **The fix is a guarantee, not a repair** — this project's standing rule is that placement is
-      checked before it is accepted. The smallest form: **the day's tree is grown from the doorstep
-      and the trunk is exempt along with it**, so home-to-corridor is tree ground like any other.
-      The alternative, cheaper and weaker: exempt every street incident to the home street's far
-      junctions, which unseals a handful of segments without proving they lead anywhere
-
-- [ ] **`tests/test_seals.gd` proves reachability and the question is survivability.** It asserts
-      that *a calm area is still reachable* with every seal and closure standing, and that passed on
-      the run above — she could reach one, along the main road, which is the ground whose excitement
-      decay multiplier is **0.6** against an ordinary street's 1.0, calm's 2.2 and a precinct's 1.5.
-      **Reachable is not survivable.** Restate the assertion over a route the day can be won on, and
-      say in the test what "won on" means as a number rather than as a word
-
-- [ ] **A route may cross the main road and never run along it.** *(2026-09-03, playtest 22: "a path
-      should never go alongside the main road — main road by itself can be considered a blocker —
-      paths can only cross the main road".)* `RouteTree` knows nothing about the main road today:
-      nothing in `src/routes/` mentions `main_road` or `street_kind`, so a strand runs down the spine
-      wherever the ground allows, and on the run above that was the only way out of the doorstep.
-
-      **The main road is not sealed, and that is the point rather than an omission.** It is already
-      the worst ground in the game to be on — the 0.6 decay multiplier above — so making it *not a
-      route* is enough, and sealing it would be the harm the player is reporting rather than the fix.
-      `docs/CITY.md`'s constraint stands untouched: *"Nothing may be added that withholds the far
-      side, gates it behind a day number, or nudges her toward a crossing."* She may still cross
-      wherever she likes; what changes is that no day ever plans her *along* it
-
-- [ ] **Thin the seals, so a wrong turn stays open long enough to be taken.** *(2026-09-03, playtest
-      22: "the guidance is there and properly pushes the player in the right direction but it feels a
-      bit on guardrails… removing some obstacles randomly might lead the player down a bad path until
-      they return to the actual path because they get stuck otherwise. this makes the actual path the
-      player takes feel more organic, self-chosen, and earned. the goal is to guide the player without
-      having the player know they are being guided. subtlety is key".)*
-
-      A final pass over the day's seals removes a small fraction. **Soft seals only — never a hard
-      one, which is a full street closure**, and never an alley mouth, which is a different mechanism
-      answering a different rule. Every seal is off the tree already, so *"only on non-paths"* is
-      satisfied by construction rather than by a check.
-
-      **The fraction is a `Tuning` constant, because it is the dial this is really about.** Too low
-      and the walls stay visible; too high and the corridor stops being the way through, which is
-      M64's central claim. Start small — *"a tiny bit"* — and expect to move it against a played day
-      rather than an argument.
-
-      **What "removes a barrier" means is a real fork and the smaller reading is taken: drop one body
-      of the pair, not the pair.** A soft seal is two obstacles, one per pavement, and taking one away
-      leaves the street walkable down the other side while it still *looks* obstructed — so it reads
-      as an ordinary street with something on it rather than as a gate somebody opened. **The
-      alternative, named so it is cheap to pick instead:** remove the whole pair, which opens the
-      street cleanly and is easier to notice, both as a player and in a test.
-
-      **Why this does not rediscover the rule it appears to break.** `CLAUDE.md` says closures and
-      events are checked before they are accepted, never repaired afterwards, and warns against a pass
-      that deletes what a previous pass placed. That rule guards against a later pass invalidating an
-      earlier one's guarantee. **Removal cannot**: every guarantee the sealing carries is about
-      reaching somewhere, and taking a barrier away only makes more ground reachable. Say so in the
-      code, next to the pass, or the next reader will delete it on sight
-
 - [ ] **Eight seal pictures, so that no single barrier becomes the city's signature.** Agreed
       2026-09-03. Five for act I, where a closed street has a municipal reason, and three for acts
       II–IV, where it is the city coming apart. **With every street off the tree sealed, a day places
@@ -469,83 +401,6 @@ again after* means running the same thing rather than reinventing it.
       **The care needed is the day-3 lesson.** `charging_dog` is deliberately unavoidable on the day
       it teaches running, and a dog that starts further away is a dog with more room to be walked
       around — which is the thing that placement was chosen to prevent
-
----
-
-## M71 — A push is a check, a tag is a release · asked for 2026-09-03
-
-> "let's not deploy on every push. push is for ci checks only. tag push triggers a deploy. write a
-> script to read the latest version tag eg v123 or v123.45.6 and bump it by one (with a
-> major/minor/patch argument) push the next tag. that way we don't have to reason about what the
-> next version is. also, the CI should store a version artifact in the deployed files so we don't
-> have to ship the git repo just to be able to show the version on the title screen (unless godot
-> already has a mechanism for that). for all usages of commits in the repo (filename or title screen
-> version) we should use the git built-in naming system that is in reference to the closest tag (I
-> think it was `<tag>-<steps>-<hash>` git has a command for it)"
-
-**The command is `git describe`**, and `git describe --tags --always --dirty` gives exactly that
-shape: `v0.0.0-49-gab12cd3`, the nearest tag, how many commits since, and the abbreviated hash with a
-`g` prefix. `--always` falls back to a bare hash where no tag is reachable, and `--dirty` appends the
-word `-dirty` — which is the marker this repo already writes as a word rather than `*`, because `*`
-is a glob character in a shell.
-
-**Two of the four are smaller than they look, and one is larger.**
-
-- **`ci.yml` already fires on every push and every pull request**, running lint, check and the full
-  suite. So *"push is for ci checks only"* needs nothing added — only `deploy.yml`'s trigger removed.
-- **`deploy.yml` re-runs the whole gate itself**, and its own comment says why: *"Both workflows fire
-  on the same push and neither waits for the other, so a deploy that trusted CI would publish a red
-  build to a public address as often as not."* On a tag that reasoning still holds — a tag can point
-  at any commit — so the gate stays.
-- **Godot does have the mechanism**: `application/config/version` in `project.godot`, read at runtime
-  with `ProjectSettings.get_setting`, and baked into the export rather than living beside it. So the
-  version artifact is that setting written by CI before the export runs, not a file shipped next to
-  `index.html`.
-- **Nothing shows a version on the title screen today.** `src/ui/title_screen.gd` has no version
-  line at all, so this is new rather than a change.
-
-**The first tag is `v0.0.0` on the current `origin/main`.** *(2026-09-03: "we start with the current
-origin/main as v0.0.0", and "your choice whether semantic or not. if semantic major is reserved for
-game breaking/fundamental changes".)* Semver is taken, so **major is reserved for a change that
-breaks or fundamentally alters the game** and the script's `major` argument is the one nobody reaches
-for casually.
-
-- [ ] **`deploy.yml` fires on a version tag and nothing else.** `on: push: tags: ['v*']` in place of
-      `branches: [main]`. The gate, the export, the social-card copy and the Pages upload are
-      unchanged — what changes is when they run. **Check what the Pages concurrency group and the
-      custom domain need**: the domain is a repository setting nothing in the workflow may write, and
-      the `pages` concurrency group queues rather than cancels, both of which stay true under a tag
-      trigger
-
-- [ ] **`tools/release.sh <major|minor|patch>` reads the latest tag, bumps it, and pushes it.** The
-      point is in the instruction: *"that way we don't have to reason about what the next version
-      is."* **Read loosely, write strictly** — a bare `v123` is understood as `v123.0.0`, and what
-      the script writes is always `vMAJOR.MINOR.PATCH`, so the shape converges after one release.
-      With no tag at all it starts at `v0.0.0`.
-
-      It pushes a tag to a public repository, which publishes a build, so it owes the things an
-      irreversible command owes: **print the current and next version and stop for a confirmation**,
-      refuse a dirty tree, refuse to run anywhere but `main`, and refuse when `main` is not level
-      with `origin/main` — a tag on a commit the remote has never seen deploys something nobody can
-      check out
-
-- [ ] **`git describe` replaces the bare hash everywhere a commit is written.** Two callers:
-      `Telemetry.source_version()`, which runs `git rev-parse --short HEAD` and feeds both the run
-      log's header line and the run folder's name through `_file_tag()`; and `tools/telemetry.sh`,
-      which computes `HEAD_COMMIT` the same way and compares it against the tail of a run folder's
-      name to say what is stale. **Both must change together or `-p` calls every run stale.**
-
-      `_file_tag()` currently turns a `*` into the word `-dirty`; `git describe --dirty` writes that
-      word itself, so what the function does changes even though what it produces does not. Run
-      folder names get longer — `run-223524-seed615548520-v0.0.0-49-gab12cd3` — which is the cost of
-      a name that says which release a run belongs to
-
-- [ ] **The title screen says which version it is.** It is the reason the version artifact exists:
-      a deployed build has no git repository to ask. Read `application/config/version` through
-      `ProjectSettings`, and fall back to `Telemetry.source_version()` where git is available, so a
-      developer sees `v0.0.0-49-gab12cd3` and a player sees the release. **Where it goes is a cue
-      question** — the title screen is the doorstep with the traffic running behind it, and a version
-      string is the one piece of text on it that is not addressed to the player
 
 ---
 
@@ -661,8 +516,9 @@ given" outside a debug build, with the parsing in `DevFlags` rather than woven t
 the day's HUD is the clock, the two bars and the optional goal, with the header and status line
 behind the same gate; `export_presets.cfg` is tracked with one Web preset on `gl_compatibility` and
 threads off; `tools/export-web.sh` builds into `build/web/`; the run log is silent on a web build;
-and `.github/workflows/deploy.yml` gates, exports and publishes on a `v*` tag — see M71 for why a
-push is a check and a tag is a release. The record is in `DECISIONS.md` under M60.
+and `.github/workflows/deploy.yml` gates, exports and publishes on a `v*` tag — see `DECISIONS.md`
+under M71 for why a push is a check and a tag is a release. The record for the rest is in
+`DECISIONS.md` under M60.
 
 **The site is live and the workflow built it**, end to end — gate, export, upload, publish — and
 `https://nappy.josuakrause.com/` serves the game.
