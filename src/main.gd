@@ -86,6 +86,8 @@ func _ready() -> void:
 	add_child(_hud)
 	_add_danger_edge()
 	_add_touch_controls()
+	_apply_orientation()
+	get_window().size_changed.connect(_apply_orientation)
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 	_summary.continued.connect(_on_summary_continued)
@@ -255,6 +257,18 @@ func _add_touch_controls() -> void:
 	_touch_controls = TOUCH_CONTROLS.instantiate()
 	layer.add_child(_touch_controls)
 	add_child(layer)
+
+## Presents the game rotated 90° when the real window is a portrait touch screen, so a phone
+## with auto-rotate off shows a full-size landscape game rather than a thin letterboxed strip of
+## one — see `ScreenOrientation` for the mechanism and why it needs no CSS and no orientation
+## API. Nothing here asks the device itself to rotate; it is asked again on every `size_changed`,
+## since a phone can be turned back to a shape that already reads as landscape, or a desktop
+## window can be resized narrower or wider, at any point in a run.
+func _apply_orientation() -> void:
+	var rotate := ScreenOrientation.wants_rotation(get_window().size, TouchInput.available())
+	get_window().content_scale_size = ScreenOrientation.content_scale_size(rotate)
+	_player.set_screen_rotation(deg_to_rad(90.0) if rotate else 0.0)
+	_touch_controls.rotated = rotate
 
 ## Marks a node as part of the game rather than part of the frame around it, so the summary
 ## screen actually stops it.
