@@ -5382,7 +5382,12 @@ edge, which is the quietest corner of a desktop screen and the busiest part of a
 move on the one node rather than a second HUD scene existing to be changed twice forever; the
 desktop layout is untouched, since nothing is in front of it there.
 
-**Landscape is asked for, not enforced, because it cannot be.** `progressive_web_app/orientation=1`
+**Landscape is asked for, not enforced, because it cannot be.** *(Wrong, and corrected on
+2026-09-05: the instruction was to make the game always **do** landscape, and it was answered with a
+message asking the player to rotate the phone. Two of the three available levers were never used —
+the manifest is not written because the PWA export is off, and the lock is called outside the
+fullscreen and gesture it requires — and the third, rotating the canvas in portrait, is what makes
+it universal. The item is in `TODO.md` under M60.)* `progressive_web_app/orientation=1`
 is only read from an installed PWA manifest, which this build does not write. So `html/head_include`
 carries a `screen.orientation.lock('landscape')` attempt — wrapped so a rejection or a missing API
 is silent, since Chrome for Android needs fullscreen for it and iOS Safari has no such API — and,

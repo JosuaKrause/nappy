@@ -227,9 +227,12 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   produced one finding — the run lesson named a key the device has not got — and everything else
   about them is still unknown: whether a thumb can hold the 20px line between two pavement lanes,
   whether the catch radii feel right, whether `RUN` is legible at phone DPI, and whether the new
-  pause button at the top right is reachable without covering something. The rotate prompt has never
-  been seen on a phone either: it is a CSS overlay plus a best-effort `screen.orientation.lock`,
-  and iOS Safari has no such API at all.
+  pause button at the top right is reachable without covering something.
+- **A phone held upright is told to turn instead of being given a landscape game**, which is the
+  opposite of what was asked for. The live build covers a portrait page with *"Turn your phone
+  sideways to play."* and attempts an orientation lock that cannot succeed where it is called. It is
+  M60's first item now, and until it is built the deployed game asks something of every phone player
+  in the one moment it has their attention.
 - **The social card has never been unfurled.** The Open Graph tags and the image copy into
   `build/web` are correct as far as a local check can tell, and nothing has pasted the address into
   a chat client to see what comes back.
