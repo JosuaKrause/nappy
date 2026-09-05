@@ -617,9 +617,13 @@ device or the real address:**
       existing note that `R` is *"deliberately not confirmed"* rests on *"`R` is not next to `Esc`"*
       — and that is exactly what stops being true on a screen where **every other pixel means carry
       on**, so a brushed thumb would end a fourteen-day walk with no save in it. A hold cannot be
-      triggered by a brush, and it needs no second screen state. It costs discoverability, since
-      nothing else in the game teaches a hold, so **the button says what it wants** rather than
-      relying on the player trying it.
+      triggered by a brush, and it needs no second screen state.
+
+      **The label is the instruction: `hold to restart`.** *(2026-09-05: "just make the description
+      'hold to restart' or something like that".)* Nothing else in the game teaches a hold, so the
+      one thing that makes it discoverable is the button saying so on its face — the same shape the
+      rest of this screen already uses, where the hint names the action rather than leaving it to be
+      found.
 
       **The trap is the catch-all above it.** `PauseScreen._unhandled_input` treats any pressed
       `InputEventScreenTouch` exactly as `space` and closes the screen, so a touch anywhere resumes.
