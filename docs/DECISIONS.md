@@ -1,5 +1,19 @@
 # Decisions
 
+## Shared coding-agent setup — 2026-09-05
+
+The request was to support both Claude Code and Codex, including hooks and discoverable skills,
+with the same behavior "in spirit". The integration kept `.claude/skills/` as the canonical
+content and exposed it through `.agents/skills`, rather than copying skills that could drift.
+`AGENTS.md` supplied Codex's entry point and tool adaptations. A Codex hook adapter reused the
+Claude rule mapping and lint scripts, translating multi-file patches and lifecycle payloads.
+Shell edits retained explicit rule loading because script-generated paths cannot be inferred
+reliably; loading every skill on the first shell read was rejected to preserve selective context.
+The user also questioned whether Claude's delegation rule saved usage in Codex. The shared
+orchestration skill separated Claude's Sonnet default from Codex's decision to delegate for
+parallelism, context isolation or independent review; inheriting the parent model offered no
+automatic cheaper-model saving.
+
 **This file is the history. Nothing in it describes the game as it is now.**
 
 Every other document in this repo states the current state and only the current state. When one of
