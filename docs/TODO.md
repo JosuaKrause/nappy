@@ -533,34 +533,54 @@ record — including why the pause button is the one control that sends an event
 an action — is in `DECISIONS.md` under M60. **Three things are left, and two of them want a real
 device or the real address:**
 
-- [ ] **The game plays landscape whichever way the phone is held, and never asks.** *(2026-09-05:
-      "the message to 'turn your phone sideways to play' wtf did you think? the request was to make
-      the game **always do** landscape mode".)* What is built asks: a CSS overlay in
-      `export_presets.cfg`'s `html/head_include` that covers the page in portrait with *"Turn your
-      phone sideways to play."*, plus a `screen.orientation.lock('landscape')` attempt beside it.
-      **This is the instruction answered with its opposite** — a request to enforce, built as a
-      request to the player — and the original words were never written down, which is how the
-      substitution survived review.
+- [ ] **The rotated presentation is three different rotations in one picture.** *(2026-09-05,
+      [PLAYTEST-23.md](PLAYTEST-23.md), the first phone session on it: "controls are the only things
+      that are rotated correctly".)* The standing instruction is that the game **always does**
+      landscape — *"the game should be rotated in the viewport — so when I'm looking at it it should
+      be sideways"* — and a portrait phone does now get a rotated game. What it does not get is one
+      rotated game. Four things are wrong and they are one root: **the rotation is implemented three
+      separate times, so the three can disagree, and two of them do.**
 
-      **It is a blocking bug, not a wrong message.** *(2026-09-05: "right now the mobile version
-      doesn't load at all", and the cause: "I have auto rotate turned off on my phone — it's always
-      in portrait mode".)* The overlay's media query is `(orientation: portrait) and (hover: none)
-      and (pointer: coarse)`, so on a phone that never leaves portrait it matches forever: the page
-      is a black screen with a sentence on it, the game runs behind it unseen, and from the outside
-      that is indistinguishable from a build that does not load. Reproduced by reasoning rather than
-      on a device — the live build boots and plays in a desktop browser, which is what proves the
-      failure is the overlay rather than the export.
+      - **The world is 180° from the controls.** *("the game area is rotated 180 from that".)*
+        `Stroller.set_screen_rotation()` turns the world by setting `Camera2D.rotation` to +90° and
+        clearing `ignore_rotation`; `TouchControls._draw` turns the buttons by setting
+        `ScreenOrientation.rotation_transform()` — a +90° rotation and a recentre — for the whole
+        draw call. **A camera turning one way swings the world the other way on screen**, so two
+        +90°s land 180° apart. The controls are the half the player says is right, so the camera is
+        the half that flips.
+      - **The text is not rotated at all.** *("the text is not rotated at all".)* The HUD (the clock,
+        the two meters, the resistance line, the developer readout), the pause screen, the day
+        summary and the title screen are `Control` nodes under `CanvasLayer`s, and nothing in the
+        change touched them. It was named as a known limitation before release and published anyway.
+        **It is not a limitation, it is the feature half-built:** upright text is the largest, most
+        readable thing on the screen, and it is saying the screen is not sideways.
+      - **Auto-rotate on stops the rotation and leaves the play area portrait-shaped, and it does not
+        recover.** *("if I turn on auto rotate it behaves correctly (stops rotating in game) but the
+        viewport is now higher than wide and the game is stretched vertically", and then "if I then
+        rotate back it stays like that".)* `main._apply_orientation()` sets the content box, the
+        camera and the controls from one boolean, so those three cannot disagree *inside* one call —
+        but it runs only at startup and on the window's `size_changed`. A signal that arrives with a
+        stale size, or does not arrive at all, latches the wrong content box until a reload. With
+        `window/stretch/aspect="keep"` in `project.godot`, a 720×1280 content box left in force on a
+        landscape window is a tall strip down the middle, which is the shape being reported.
+
+      **The fix is one rotation, applied once, to everything on the screen.** Every `CanvasLayer`
+      carries `ScreenOrientation.rotation_transform()` and every layer's children are laid out
+      against the 1280×720 design box rather than against the swapped viewport — three of the five
+      scene layers already have the single `Root` `Control` that needs, so the HUD is the one that
+      wants a root inserted. Then `TouchControls`' own `draw_set_transform_matrix` is redundant and
+      goes, the camera stops being a second implementation, and there is no third place for the text
+      to be forgotten in.
+
+      **And the decision is re-asked continuously rather than on a signal**, since a missed or
+      early-fired `size_changed` is exactly what the latch is made of. Recomputing
+      `ScreenOrientation.wants_rotation()` every frame and applying only on change costs a vector
+      comparison.
 
       **The device's own orientation is never touched.** *(2026-09-05: "don't try to **change**
       landscape/portrait mode — work with what you have".)* No orientation lock, no manifest
-      orientation, no fullscreen request. What changes is how the game lays itself out in the
-      viewport it is given: *"the game should be rotated in the viewport — so when I'm looking at it
-      it should be sideways"*.
-
-      **The answer is to rotate the presentation, and only that.** *(2026-09-05, choosing between
-      three levers.)* When the viewport is portrait, the game is presented rotated 90°, so it is
-      landscape however the phone is held and on every platform — including iOS Safari in a tab,
-      which has no orientation API at all.
+      orientation, no fullscreen request — only how the game lays itself out in the viewport it is
+      given. That is also why it works on iOS Safari in a tab, which has no orientation API at all.
 
       **The two rejected levers, named so they are cheap to pick up if this one disappoints:**
       writing the PWA manifest (`progressive_web_app/enabled=false` today, so
@@ -571,19 +591,52 @@ device or the real address:**
       **Both are ruled out by the instruction rather than by cost:** each one *changes* the device's
       orientation mode, and a phone whose owner turned auto-rotate off has said what they want.
 
-      **The cost is input, not drawing, and it is the whole risk of the item.** Godot maps a touch
-      to a canvas position from the element's bounding rect, so a CSS rotation of the canvas leaves
-      the stick, the run button and the pause button responding in the wrong places unless pointer
-      coordinates are remapped with the same transform. **The alternative worth measuring first is
-      to rotate inside the engine instead** — the root viewport's own transform, where Godot already
-      maps input through the canvas transform and no remapping is needed. Whichever is taken, the
-      thing that proves it is a test: a portrait window, a touch at a known screen position, and the
-      control it must land on.
+      **It has to be photographed, and it was one shell argument away from being photographable.**
+      `--touch` already forces `TouchInput.available()` true in a debug build — it is how M60's
+      on-screen stick and `RUN` button were looked at — but `tools/shot.sh` passes a hardcoded
+      `--resolution 1280x720`, so every picture the rig can take is of the landscape branch, which
+      was already correct. **`shot.sh` takes a resolution**, and the rotated branch is looked at in a
+      portrait window before anything is called done. A test that asserts a transform cannot catch a
+      sign error the transform and the drawing share — that is how three of these four shipped
 
-      **Then the overlay is deleted rather than kept as a fallback.** A presentation that is always
-      landscape has nothing to ask for, and an overlay that can still appear is the same substitution
-      surviving in a smaller form
+- [ ] **A phone cannot start the run again, and wants a button on the pause screen that can.**
+      *(2026-09-05: "we need a dedicated button for restart from the pause menu".)* Restarting is
+      `R`, a key, and `PauseScreen._refresh_hint()` deliberately drops it from the touch hint — which
+      reads only *"tap to carry on"* — on the correct grounds that naming a key a device has not got
+      is *"the same defect class `q to quit` was"*. The drop is real and not cosmetic: the restart
+      arm of `_unhandled_input` is reached only through an `InputEventKey`, so with no keyboard there
+      is no restart at all. **The two ways off a phone today are to spend all five nerves and take
+      the ending, whose summary offers *"tap to start again"*, or to reload the page.** The pause
+      screen's own reasoning is what this fails: `R` exists because *"a run is also abandonable long
+      before it has ended — a day gone wrong on a city you do not want to walk any more is exactly
+      when somebody reaches for the pause"*, and the touch build is the one shape where that argument
+      does not land.
 
+      **It is held, not tapped.** *(2026-09-05, chosen over a one-tap button and over an arm-then-
+      confirm second tap.)* A press that fills over about a second and restarts on completion. The
+      existing note that `R` is *"deliberately not confirmed"* rests on *"`R` is not next to `Esc`"*
+      — and that is exactly what stops being true on a screen where **every other pixel means carry
+      on**, so a brushed thumb would end a fourteen-day walk with no save in it. A hold cannot be
+      triggered by a brush, and it needs no second screen state.
+
+      **The label is the instruction: `hold to restart`.** *(2026-09-05: "just make the description
+      'hold to restart' or something like that".)* Nothing else in the game teaches a hold, so the
+      one thing that makes it discoverable is the button saying so on its face — the same shape the
+      rest of this screen already uses, where the hint names the action rather than leaving it to be
+      found.
+
+      **The trap is the catch-all above it.** `PauseScreen._unhandled_input` treats any pressed
+      `InputEventScreenTouch` exactly as `space` and closes the screen, so a touch anywhere resumes.
+      A restart control has to be tested against the touch position **before** that branch, the way
+      `TouchControls._input` checks a touch against `RUN_CATCH_RADIUS` (how near the `RUN` button a
+      thumb must land) before anything else claims it. **Do not rely on a `Button` node consuming
+      it**: Godot delivers the screen touch *and* an emulated mouse event, and this screen reads the
+      touch itself on purpose — *"the touch event itself, not a synthetic click, so the desktop keeps
+      behaving as it always has"* — so the `Button` would eat the click and the raw touch would still
+      resume underneath it.
+
+      **The keyboard keeps `R` and is not given a hold.** Nothing about the key is broken, and the
+      hint already says the right thing on each platform from `_refresh_hint()`
 - [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
       pointing home, and the stick and the run button sit at that height on both sides — so during
       the return phase the one cue that says *this way home* can be under the finger steering her
@@ -822,6 +875,10 @@ and something has to walk her to it — which is the first real question this mi
 the game's only verb is *where do I walk* and a tap that pathfinds is the game choosing the route
 she takes through the thing the whole design is about.
 
+**Sequence this after M60's rotation fix.** Both rewrite `src/ui/touch_controls.gd` and
+`src/main.gd`, so run them one after the other rather than side by side; two agents in those two
+files is a merge conflict scheduled in advance.
+
 - [ ] **What a tap means: a straight line, and nothing cleverer.** *(2026-09-02: "the tap should
       just be a straight path — no collision avoiding path.")* A single tap walks to the point, a
       double tap runs to it, and she goes **straight at it**. *(2026-09-02: "calculate the direction
@@ -834,22 +891,112 @@ she takes through the thing the whole design is about.
       the game's only verb is *where do I walk*, and a tap that pathfinds hands the route decision
       to the game. Walking into a wall and stopping is the player's mistake to make, exactly as it
       is with the stick
+
+      **It presses at the true angle, not one of eight, and that needs no new input path.**
+      `Input.action_press()` takes a strength, and `Stroller._physics_process` reads its heading as
+      `Input.get_vector("move_left", "move_right", "move_up", "move_down")` — an analog vector, not
+      four booleans. `TouchControls._set_axis()` already exploits this, pressing `move_left` or
+      `move_right` with the stick's own x component and explicitly releasing the opposite one so a
+      reversal cannot leave both held. A tap presses the same way with the components of the unit
+      vector from her to the target, so the tap mode is the stick mode holding one fixed vector.
+
+      **Arrival is the plane, not a radius.** She has arrived when what is left of the journey stops
+      pointing forwards — `(target - global_position).dot(direction) <= 0`, the plane through the
+      target at right angles to the heading fixed at the tap. That needs no tolerance constant and
+      it still terminates when a shove pushes her sideways off the line, where a distance test would
+      leave her pressing forever past a target she was knocked around.
+
+      **Blocked is not a case.** She presses until she arrives or until the next tap; nothing times
+      out and nothing gives up, because that is what holding a key into a wall already does. The one
+      release that is not the player's is the end of the day — `TouchControls._release_everything()`
+      exists for exactly that ("leaves a direction — or the run key — pressed into the day that
+      follows") and the tap mode uses it unchanged.
+
+      **A double tap is two windows, and the second one matters.** A time window decides *double*,
+      and a **distance** window decides whether the second tap is a modifier or a new destination —
+      without it, a tap somewhere else a moment later makes her run to the wrong place. Both are
+      plain constants in the tap file, the way `RUN_CATCH_RADIUS` (how near the `RUN` button a thumb
+      must land) is a plain constant in `TouchControls`, rather than balance numbers in `Tuning`
+- [ ] **A tap is a screen position and the target is a world one.**
+      `get_viewport().get_canvas_transform().affine_inverse()` maps the one to the other. That is
+      the same transform `DangerEdge` and `HomeArrow` already read every frame to place a screen cue
+      from a world position, run backwards — so it tracks the camera, the zoom and the rotated
+      presentation with nothing of its own to keep in step
 - [ ] **Both modes exist at once and one is chosen.** Not a rewrite of `TouchControls` — the stick
       build and the tap build are two ways of feeding the same actions, and the experiment needs
       them side by side. Whatever holds the choice is read once, the way `TouchInput.available()`
-      already is
+      already is.
+
+      **Tap mode draws nothing at all.** *(2026-09-05: "tap mode is 'I click on the screen and then
+      the player moves to that location on a straight line' — this mode does not have UI
+      elements".)* No stick, no `RUN`, and **no pause button** — the whole screen is the control, so
+      there is nothing on it to catch a thumb, and every pixel of the city is a destination rather
+      than a place a hidden button might be. That is also why the tap reader is its own node rather
+      than a branch inside `TouchControls`: in tap mode `TouchControls` is not there.
+
+      **No pause button is needed, because arriving is the pause.** *(2026-09-05: "when the player
+      reaches a location and stops movement — normally the pause hint would show up — in this mode
+      it just pauses".)* The moment already exists and is already guarded: `HUD._teach_the_pause()`
+      watches for the first time she stops **of her own accord** — she has walked today, nothing is
+      holding her still (`chatting_mother`'s `detain()` locks her input and lets friction carry her
+      to a standstill, which is not the same claim as *she stopped*), and no screen that already
+      pauses is up — and after `TEACH_PAUSE_AFTER` (3s) it offers the pause key once per run. **Tap
+      mode takes the same moment and pauses instead of saying anything.**
+
+      **Arrival starts a clock; the clock pauses.** *(2026-09-05: "that would be very unpleasant UX
+      — pause should only start after a few seconds — probably even later than the teach hint", and
+      "the 5s timer should start *after* arrival".)* Pausing the instant she reaches the point would
+      stutter the game on every single leg, since the ordinary loop is to arrive and tap on. So
+      arrival — the plane test above, which is also what releases the movement keys — starts a timer
+      rather than pausing, and the pause comes only if she is still standing when it expires. A tap
+      before then is the next leg and cancels it, so the ordinary loop never pauses at all: it fires
+      only when the player genuinely stopped to think.
+
+      **5s to start with, and it is longer than the hint's on purpose.** `TEACH_PAUSE_AFTER` is 3s.
+      This is a feel number, the only way to set it is to walk with it, and it moves against a
+      played day.
+
+      **It is gated on arrival, not on standing still, and that has one consequence worth stating.**
+      Being blocked is not arriving — she presses into an obstacle nothing routes around, never
+      crosses the plane, and so never pauses. That is consistent with the rest of the design, where
+      *"walking into a wall and stopping is the player's mistake to make, exactly as it is with the
+      stick"*, and the next tap is still the way out. It does mean nothing detects being stuck, and
+      nothing is meant to.
+
+      **It fires every time, not once per run.** The hint is a keybinding taught once; this is how
+      the mode works, so it is the loop rather than a cue: tap, walk, arrive, wait, pause, tap.
+
+      And `_teach_the_pause()`'s own hint has nothing to say in tap mode — there is no pause key on a
+      phone and no button to point at — so it does not run there.
+
+      **Two details the instruction is silent on. Smallest reading taken, both cheap to overturn:**
+      a tap while paused both unpauses and sets the next destination, since a tap is the only input
+      the mode has and two taps to start walking would collide with the double tap that means *run*;
+      and arriving shows the existing `PauseScreen` unchanged. **Whether that screen's text every few
+      seconds is right, or whether arrival should stop time and draw nothing, is a played question**
+      — it is the difference between a route planner that lets you think and a screen that keeps
+      interrupting
 - [ ] **Switchable in the dev build, fixed in the release.** *"The real / web version doesn't get to
       choose."* `DevFlags` already answers nothing outside a debug build and already parses
       `-- --flag` arguments, so a `--controls tap|stick` flag is the shape that exists
 - [ ] **And switchable on a phone, which no command line reaches.** The one case the existing dev
       flags cannot serve: a phone opens a URL and nothing else. A query parameter on the deployed
-      page — read from `window.location` through JavaScript and handed to the game — is what "a
-      secret URL flag for now" means. **It is a dev door on a public page**, so it turns nothing on
-      that a player could hit by accident, and what it may switch is the control scheme and nothing
-      else
+      page — `JavaScriptBridge.eval("window.location.search")`, which nothing in the project uses
+      yet and which answers only in a web build — is what "a secret URL flag for now" means. **It is
+      a dev door on a public page**, so it turns nothing on that a player could hit by accident, and
+      what it may switch is the control scheme and nothing else.
+
+      **So this one flag cannot live behind `DevFlags`, and that is the point rather than an
+      oversight.** `DevFlags.enabled()` is `OS.is_debug_build()`, which is false for the exported
+      release template `tools/export-web.sh` produces — the property that makes a public build
+      unable to reveal a seed or jump to a day. The deployed page is precisely where the URL flag
+      has to work, so gating it there would build it dead. **What keeps it safe is its scope, not a
+      build gate:** it chooses between two control schemes that both ship and are both playable, and
+      it can reach nothing else
 - [ ] **Testable without a phone.** *"On non-mobile we can try clicking with the mouse instead of
-      tapping."* A mouse click stands in for a tap in the dev build, which is also what lets the
-      test rigs drive it at all
+      tapping."* An `InputEventMouseButton` stands in for a tap in the dev build, which is also what
+      lets the test rigs drive it at all — and a rig flag that taps a given point is what makes the
+      mode photographable, the way `--walk` is what makes the stick mode photographable
 
 ## M50 — What the corridor still owes
 
