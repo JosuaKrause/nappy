@@ -152,11 +152,15 @@ this report that can be walked straight past — is **26px** as well. Two rows w
 *it catches you*, both set to a radius the player reports never connecting. Whatever is decided for
 one is worth deciding for the other in the same pass.
 
-**It may also be the same bug as finding 1.** `DayController._on_hard_fail()` returns immediately
-unless the day is running, exactly as the crying handler does, so a day loop that is not running
-swallows the cyclist and the crying alike — which is what *"completely invincible"* would mean.
-**Do not fix the radius and call the cyclist done** until finding 1 is understood, or a real bug
-gets closed by a number that only hid it.
+**And it is not finding 1 wearing a disguise.** That was the first worry — `DayController
+._on_hard_fail()` returns immediately unless the day is running, exactly as the crying handler
+does, so a stuck day loop would swallow the cyclist and the crying alike. The player closed it:
+
+> "cyclist radius should be bigger, then. that observation was from local"
+
+The local desktop build is the one where dying demonstrably works, so a cyclist that goes past
+without ending the day there is a **radius that never fires**, not a day that cannot end. The two
+26px rows are one finding after all.
 
 ## 8. There is no way to calm down
 

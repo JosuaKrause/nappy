@@ -268,11 +268,12 @@ they leave behind.
       rows whose entire content is *it catches you*, both set to a radius that never fires, is one
       finding wearing two hats: decide the two together.
 
-      **Do not close this with a radius until M70's first item is understood.**
-      `DayController._on_hard_fail()` returns immediately unless the day is running, exactly as the
-      crying handler does — so a day loop stuck out of `WALKING` swallows the cyclist and the crying
-      alike, which is precisely what *"completely invincible"* would look like. Widening the radius
-      on top of that bug would hide it rather than fix it.
+      **It is a radius and not M70's bug, and that was checked rather than assumed.** The worry
+      was that `DayController._on_hard_fail()` returns immediately unless the day is running —
+      exactly as the crying handler does — so a stuck day loop would swallow the cyclist and the
+      crying alike. The player closed it: *"cyclist radius should be bigger, then. that observation
+      was from local"*. The local desktop build is the one where dying demonstrably works, so a
+      cyclist that passes without ending the day there never fired at all. Widen it.
 
 ---
 
