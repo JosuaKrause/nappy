@@ -76,6 +76,14 @@ const PAUSE_CENTRE := Vector2(1250.0, 30.0)
 
 var _touch := TouchInput.available()
 
+## Whether `main` has decided a portrait touch window is presenting rotated — see
+## `ScreenOrientation`. Set from outside rather than asked here, the same way `_touch` is a read
+## of a platform fact rather than a query at each use site: `main._apply_orientation()` is the one
+## place that knows the window's own shape, and every consumer of a raw touch position here goes
+## through `ScreenOrientation.to_design_space()` with this flag before comparing it to
+## `STICK_CENTRE` and friends, which stay authored in the unrotated 1280x720 box regardless.
+var rotated := false
+
 ## The touch index currently driving the stick, or -1 when nothing is.
 var _stick_touch := -1
 ## Current deflection, each axis in [-1, 1]. `Vector2.ZERO` is centred.
@@ -112,16 +120,19 @@ func _input(event: InputEvent) -> void:
 		_on_drag(event as InputEventScreenDrag)
 
 func _on_touch(event: InputEventScreenTouch) -> void:
+	# The one correction a rotated presentation needs on the input side — see
+	# `ScreenOrientation`'s own doc for why this is the only file in `src/ui/` that needs it.
+	var position := ScreenOrientation.to_design_space(event.position, rotated)
 	if event.pressed:
-		if _stick_touch == -1 and event.position.distance_to(STICK_CENTRE) <= STICK_CATCH_RADIUS:
+		if _stick_touch == -1 and position.distance_to(STICK_CENTRE) <= STICK_CATCH_RADIUS:
 			_stick_touch = event.index
-			_update_stick(event.position)
-		elif _run_touch == -1 and event.position.distance_to(RUN_CENTRE) <= RUN_CATCH_RADIUS:
+			_update_stick(position)
+		elif _run_touch == -1 and position.distance_to(RUN_CENTRE) <= RUN_CATCH_RADIUS:
 			_run_touch = event.index
 			Input.action_press(&"run", 1.0)
 			queue_redraw()
 		elif _pause_touch == -1 \
-				and event.position.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS:
+				and position.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS:
 			# Only grabs the touch index here — see `_send_pause_action()`'s doc for why nothing
 			# fires until the matching release.
 			_pause_touch = event.index
@@ -142,12 +153,12 @@ func _on_touch(event: InputEventScreenTouch) -> void:
 		# Fires on release rather than on touch-down, and only when the release itself is still
 		# over the button: a thumb that lands wrong can slide off and lift without stopping the
 		# day, the opposite of the stick and RUN, which commit the moment a thumb lands.
-		if _pause_fires(event.position):
+		if _pause_fires(position):
 			_send_pause_action()
 
 func _on_drag(event: InputEventScreenDrag) -> void:
 	if event.index == _stick_touch:
-		_update_stick(event.position)
+		_update_stick(ScreenOrientation.to_design_space(event.position, rotated))
 
 func _update_stick(at: Vector2) -> void:
 	var offset := at - STICK_CENTRE
@@ -221,6 +232,14 @@ func _send_pause_action() -> InputEventAction:
 func _draw() -> void:
 	if not visible:
 		return
+	# One matrix for the whole call rather than transforming each point drawn below: every
+	# `draw_*` call below keeps using its own unrotated design-space coordinate (`STICK_CENTRE`
+	# and friends, untouched), and this is what carries the result — text included, so a label
+	# reads the right way up to a player who has turned the phone to match — onto the rotated
+	# 720x1280 box `content_scale_size` reports while rotated. Reset to identity by Godot at the
+	# start of every `_draw()` call, so there is nothing to put back afterwards.
+	if rotated:
+		draw_set_transform_matrix(ScreenOrientation.rotation_transform())
 	_draw_stick()
 	_draw_run_button()
 	_draw_pause_button()

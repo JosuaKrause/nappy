@@ -385,6 +385,17 @@ func set_camera_limits(bounds: Rect2) -> void:
 	_camera.limit_right = int(bounds.end.x)
 	_camera.limit_bottom = int(bounds.end.y)
 
+## Rotates the world in the viewport without asking the device to rotate — see
+## `ScreenOrientation`. The camera's own `rotation` is what turns the world; the same picture's
+## UI half is `ScreenOrientation.rotation_transform()`, applied wherever a screen still reasons
+## about a raw screen-space position rather than letting its own anchors adapt.
+##
+## `Camera2D.ignore_rotation` defaults to `true` — a camera's own rotation does nothing to the
+## rendered view until this is turned off, which nothing before this needed.
+func set_screen_rotation(radians: float) -> void:
+	_camera.ignore_rotation = is_zero_approx(radians)
+	_camera.rotation = radians
+
 # ------------------------------------------------------------------ queries ---
 # Consumed by `Baby` to decide how the meters move.
 
