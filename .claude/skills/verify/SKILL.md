@@ -5,28 +5,32 @@ description: How to verify a change in this project — the three tools, what ea
 
 # Verification
 
-Run all three before committing. They are fast and they each catch a different class of bug.
+Run these before committing. They are fast and they each catch a different class of bug.
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
-./tools/test.sh               # the full headless suite, ~200s
-./tools/test.sh crowd events  # just those suites, in seconds — for the inner loop
+./tools/test.sh crowd events  # just the suites your change touches, in seconds
+./tools/lint.sh               # the governed docs, if you moved one
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
 
-**A filtered run prints `PARTIAL RUN` under its count and is not a green build.** Commit on the
-unfiltered one.
+**The unfiltered `./tools/test.sh` is CI's job, not yours.** Every branch reaches `main` through a
+pull request, and `main`'s ruleset requires the `test` check — which runs the doc lint, the boot
+check and the full suite on the *merge result*. So the full run happens on exactly the tree that
+matters, on a machine that is not yours, whether or not anybody remembers to ask for it.
 
-**And whose job that is depends on who you are.** A **sub-agent** runs `check.sh`, `lint.sh` if it
-moved a governed doc, and the suites its own change touches — its `PARTIAL RUN` is expected. The
-**orchestrating session** runs the unfiltered suite on the merged tree, and that is the run that
-gates the commit. The full suite in a sub-agent is duplicated cost: the merge gate re-proves it
-anyway, because two green branches can still be wrong together, and a failure found after the merge
-goes back to the agent with the output attached. **The exception is a change to the rigs themselves
-or to something every suite loads** — then the full suite is the thing being verified rather than a
-backstop, and it is the agent's to run. The **orchestrating** skill says how to put that in a
-prompt.
+**Which makes a local full run duplicated cost.** It is the slow thing in the loop by an order of
+magnitude, and what it buys is an answer eight minutes before the PR gives the same answer about a
+better tree. **A `PARTIAL RUN` marker is the expected state of a local run**, not a failure to
+apologise for.
+
+**Two cases where running it locally is still right**, and neither is a gate:
+
+- **You changed the rigs themselves, or something every suite loads**, and want to know the blast
+  radius before you push a red PR for everyone to look at.
+- **CI came back red and you are iterating on the failure.** Reproducing locally beats pushing to
+  ask a question.
 
 **Do not quote a check count in a doc.** It changes on almost every milestone, and three files in
 this repo once carried three different answers to that one question. Say what the command is, not
