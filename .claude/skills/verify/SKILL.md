@@ -5,6 +5,28 @@ description: How to verify a change in this project — the three tools, what ea
 
 # Verification
 
+## Headless unless a window is the only way
+
+**`check.sh` and `test.sh` already pass `--headless`, and nothing may take that away.**
+`shot.sh` and `run.sh` are the two that open a window, and they are the exception you have to
+earn: run one only when the thing being checked *is what the screen looks like*, and take the
+smallest number of them that answers the question.
+
+**Why, and it is not tidiness — a windowed run can hang forever.** The window has to reach its own
+quit to end, and **a window that loses focus stops getting there**, so the process sits open with
+nothing to do and the command never returns. It is not an edge case: *(2026-09-05: "if you run in a
+windowed mode and the window loses focus the test gets stalled since the window will never close.
+when I'm doing something else the window will lose focus 100%".)* Anybody working while a run is
+open takes focus away from it by definition, so the stall is the normal outcome rather than the
+unlucky one — and it burns the wall-clock of whoever is waiting, not yours.
+
+So: **never reach for a windowed run to check something a headless one can answer.** A rig that
+prints numbers, an assertion in a suite, or a `check.sh` boot beats a screenshot for anything that
+is not a picture. When a picture genuinely is the question, take it once with everything you need
+already in the flags rather than iterating live.
+
+---
+
 Run these before committing. They are fast and they each catch a different class of bug.
 
 ```sh
