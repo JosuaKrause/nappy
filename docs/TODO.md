@@ -14,6 +14,26 @@ mid-way through.
 
 ## The order
 
+## Visual overhaul
+
+Requested in [PLAYTEST-25.md](PLAYTEST-25.md). The visual direction is a warm illustrated city
+with restrained ink outlines, textured materials, angled light and clear silhouettes. The SVG
+pipeline remains the asset source; later acts retain their cooling and desaturation.
+
+- [ ] City presentation: richer architecture, coherent ground materials and greenery; fix the
+      alley-floor transition, roofless slivers, floating home door, tunnel layering and fence
+      perspective where inspection confirms them. Preserve route geometry and collision contracts.
+- [ ] Characters and objects: redraw the mother, pram, crowd, vehicles, event silhouettes and
+      closure props with consistent material detail, shading and readable poses. Preserve anchors,
+      dimensions, facing conventions and the existing danger vocabulary.
+- [ ] Interface presentation: compose title, pause and summary screens and refine meters and
+      touch controls with a shared visual language. Preserve input, orientation and gameplay rules.
+
+The world, asset and interface passes have disjoint file ownership and receive an integrated
+visual review. Visual-only detail does not change encounter numbers or route planning.
+
+## Route work order
+
 1. **M64** — off the path is closed, not dear. The sealing is built and every fairness defect
    playtest 22 found in it is fixed; what is left is the eight seal pictures, so that no single
    barrier becomes the city's signature, and the off-screen arrivals item. **Its open question is a
