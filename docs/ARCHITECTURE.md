@@ -105,8 +105,8 @@ windowed, saves the viewport after N frames and quits.
 ### Dev flags and release builds
 
 `DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
-`--overview`, `--day-length` and `--ending`; `src/dev/auto_screenshot.gd` parses `--screenshot`
-and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`) itself, and gates its own
+`--overview`, `--day-length`, `--ending` and `--controls`; `src/dev/auto_screenshot.gd` parses `--screenshot`
+and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`, `--tap`) itself, and gates its own
 entry point the same way rather than moving that parsing out. Both read `OS.is_debug_build()`,
 which is `false` for an exported release template, so none of this furniture — nor the snapshot
 key `main.gd` reads directly — can be reached from a public build regardless of what is on the
@@ -145,6 +145,42 @@ which keeps it off the title, the pause and the between-days summary without a w
 telling it so on each: that flag is the one thing all three already set. The three screens also
 handle `InputEventScreenTouch` directly alongside `ui_accept`, so a tap advances each of them the
 way `space` does, without teaching the desktop a click it never asked for.
+
+### Tap to walk
+
+`ControlsMode` (`src/ui/controls_mode.gd`) is which of two schemes drives the day: the stick above,
+or `TapControls` (`src/ui/tap_controls.gd`), a second node rather than a branch inside
+`TouchControls` because tap mode draws nothing at all — no stick, no `RUN`, no pause button.
+`main._add_touch_controls()` reads `ControlsMode.resolve()` once and instantiates exactly one of
+the two onto the same layer.
+
+A tap computes a heading once — `(target - position)`, normalised — and presses it through
+`TouchControls._set_axis()` (static, shared by both) exactly as the stick presses its own
+deflection, never re-aiming. Arrival is the plane through the target at right angles to that
+heading, `(target - position).dot(direction) <= 0`, not a radius, so a shove that knocks her
+sideways off the line still terminates the leg. A double tap needs both a time window
+(`TapControls.DOUBLE_TAP_SECONDS`) and a distance window (`TapControls.DOUBLE_TAP_DISTANCE`) to
+read as a modifier on the same destination rather than a new one. The screen tap itself is mapped
+to a world position with `get_viewport().get_canvas_transform().affine_inverse()` — the reverse of
+what `DangerEdge` and `HomeArrow` already do forwards every frame — so it tracks the camera, the
+zoom and the rotated presentation for free.
+
+Arriving starts a clock (`TapControls.ARRIVAL_PAUSE_AFTER`) rather than pausing immediately, so the
+ordinary loop of arriving and tapping on never stutters; only a genuine stand opens the same
+`PauseScreen` the stick's own pause button opens, through the same
+`TouchControls._send_pause_action()`. `ControlsMode.resolve()` reads `DevFlags.controls_override()`
+(`--controls tap|stick`, a debug build only) first, then the page's own `?controls=` query
+parameter through `JavaScriptBridge.eval("window.location.search")` — the one flag in the project
+not gated behind `DevFlags.enabled()`, because that gate is `OS.is_debug_build()` and the deployed
+page is exactly where a public build still has to be switchable — and falls back to the stick if
+neither answers.
+
+Testable without a phone: `TapControls` reads an `InputEventMouseButton` the same way it reads a
+finger, gated on `not TouchInput.available()` as well as a debug build — a real touch device
+already emulates a mouse click from every tap it makes, so without that second gate a single real
+tap would fire twice, once through each event, and read as its own double tap. `--tap X Y`
+(`src/dev/auto_screenshot.gd`) sends one synthetic tap the same way, which is what makes tap mode
+photographable at all — `tools/shot.sh out.png 3 --touch --controls tap --tap 640 420`.
 
 ## Autoloads
 
