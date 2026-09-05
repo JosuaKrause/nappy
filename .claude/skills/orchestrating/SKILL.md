@@ -16,21 +16,24 @@ checkout for implementation. Create the worktree explicitly if the tool does not
 Read-only review can share a checkout. If delegation is unavailable, do the bounded work locally
 and retain the same verification gate. Tool or model names do not require changing hosts.
 
-## Codex: delegate when the split earns its cost
+## Codex: use cheaper models for bounded implementation
 
-Codex subagents inherit the parent model and reasoning effort unless configured otherwise.
-Delegation is therefore not automatically a usage saving. Use a subagent for an independent
-review, a substantial investigation that would crowd the main context, or a bounded implementation
-that can run alongside useful work. Keep small fixes, tightly coupled changes and work that the
-main session would merely wait for local. A task touching several files or needing a test does
-not by itself justify delegation in Codex.
+**Delegation is recommended in Codex too.** Hand specified implementation and routine
+investigation to a less costly model, keeping design, ambiguous decisions and final review in
+the orchestrating session. Cost savings are a reason to delegate even when the parent has no
+parallel task to do.
 
-Use a less costly model only when explicitly available and suitable for the task, with the same
-review and verification gates. Do not assume Codex automatically routes gruntwork to one.
-The Claude-specific default below does not apply to Codex; the scope, handoff and verification
-contracts in the remaining sections apply whenever either host delegates.
+`.codex/config.toml` sets the default subagent model and reasoning effort. It selects
+`gpt-5.6-luna` at medium effort for bounded work. Choose a stronger available model explicitly
+when the task needs it; do not keep retrying an underpowered model. Keep the same scope and
+verification contracts regardless of model cost.
 
-## Claude Code: delegating is the default, and implementing by hand is the decision
+If the host does not apply repository subagent defaults, select the model and effort explicitly
+when spawning. With the collaboration tool, use a fresh context (`fork_turns="none"`) and a
+self-contained brief so the model override takes effect. A full-history fork inherits the
+parent model. Do not confuse that inheritance with automatic routing to a cheaper model.
+
+## Delegating is the default, and implementing by hand is the decision
 
 **Before writing code in `src/` or `tests/`, the question is not "can I do this" but "is this
 specified enough to hand over".** If it is, hand it over.

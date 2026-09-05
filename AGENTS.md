@@ -25,9 +25,9 @@ new hooks or skills do not appear. If a rule has not actually arrived in context
 read its file explicitly before doing the governed work.
 
 At session start, read `.claude/skills/orchestrating/SKILL.md` before deciding how to
-divide the work. Its Codex section makes delegation conditional on useful parallelism,
-context isolation or independent review; Claude's default of delegating implementation
-to Sonnet does not carry over. Before editing any file, consult the path-to-skill table in
+divide the work. Delegation is recommended for specified implementation, using the
+cheaper-model defaults in `.codex/config.toml` and the skill's model-selection guidance.
+Keep design and final review in the orchestrating session. Before editing any file, consult the path-to-skill table in
 `CLAUDE.md` under **The rules load themselves**, and read each matching
 `.claude/skills/<skill>/SKILL.md` in full. All matches apply: an event GDScript file
 requires both `events` and `godot`. The executable mapping is in

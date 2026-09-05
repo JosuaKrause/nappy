@@ -14,6 +14,11 @@ orchestration skill separated Claude's Sonnet default from Codex's decision to d
 parallelism, context isolation or independent review; inheriting the parent model offered no
 automatic cheaper-model saving.
 
+The user clarified that this had been a question to investigate, not a decision to discourage
+delegation: cheaper Codex models made delegation recommended. The correction restored that
+recommendation and selected Luna at medium effort as the repository's subagent default, with
+explicit stronger-model overrides when needed. The parent retained design and verification.
+
 **This file is the history. Nothing in it describes the game as it is now.**
 
 Every other document in this repo states the current state and only the current state. When one of
