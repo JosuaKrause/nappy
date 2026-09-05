@@ -92,5 +92,20 @@ if [[ $CONFIRMED -ne 1 ]]; then
 fi
 
 git tag -a "$NEXT" -m "$NEXT"
-git push origin "$NEXT"
+
+# The push is the publish, so a rejected push must not read as a release. This script runs under
+# `set -uo pipefail` without `-e`, so a failing `git push` carries on to the next line -- and the
+# next line used to announce the deploy unconditionally. `main`'s ruleset applies to tag refs too
+# and refuses one while the `test` check is still running, which is exactly the case that produced
+# a success message and no release.
+#
+# The tag is left in place on failure rather than deleted: it is annotated, it is what a retry
+# pushes, and deleting the thing the operator just asked for is the worse of the two surprises.
+if ! git push origin "$NEXT"; then
+    echo "" >&2
+    echo "PUSH REJECTED -- $NEXT exists locally and NOTHING has been published." >&2
+    echo "The tag is still here; retry with 'git push origin $NEXT' once the reason above is" >&2
+    echo "resolved, or drop it with 'git tag -d $NEXT'." >&2
+    exit 1
+fi
 echo "pushed $NEXT -- deploy.yml will build and publish it"
