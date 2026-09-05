@@ -77,7 +77,7 @@ func _test_the_transform_sends_the_design_centre_to_the_rotated_centre(t: Node) 
 ## back must be the identity, for several points including ones outside the design box (where a
 ## touch on the letterboxed edge of a non-16:9 window would land).
 func _test_the_transform_round_trips(t: Node) -> void:
-	for point in [Vector2(130.0, 500.0), Vector2(1150.0, 500.0), Vector2(1250.0, 30.0),
+	for point in [TouchControls.STICK_CENTRE, TouchControls.RUN_CENTRE, TouchControls.PAUSE_CENTRE,
 			Vector2.ZERO, Vector2(-40.0, 800.0)]:
 		var there := ScreenOrientation.to_presented_space(point, true)
 		var back := ScreenOrientation.to_design_space(there, true)

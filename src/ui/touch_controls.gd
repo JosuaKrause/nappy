@@ -67,12 +67,23 @@ const PAUSE_RADIUS := 26.0
 ## radius a *release* has to land inside to fire, so a thumb that lands wrong can slide off and
 ## lift without stopping the day. See `_on_touch()`.
 const PAUSE_CATCH_RADIUS := 46.0
-## Top right, deep in the corner both `DangerEdge` and `HomeArrow` keep clear on purpose rather
-## than in front of them: `DangerEdge.MARGIN` (104/116/104/148, left/top/right/bottom) never draws
-## a chevron closer to this corner than (1176, 116), and `HomeArrow.MARGIN` (74px, uniform) never
-## draws its own arrow closer than (1206, 74) — both well outside `PAUSE_RADIUS` of this point, so
-## nothing else is ever asked to share these pixels with the button.
-const PAUSE_CENTRE := Vector2(1250.0, 30.0)
+## Top right, in the corner both `DangerEdge` and `HomeArrow` keep clear on purpose rather than in
+## front of them: `DangerEdge.MARGIN` (104/116/104/148, left/top/right/bottom) never draws a chevron
+## closer to this corner than (1176, 116), and `HomeArrow.MARGIN` (96px, uniform) never draws its
+## own arrow closer than (1184, 96) — so nothing else is ever asked to share these pixels.
+##
+## **It is held 36px clear of both edges rather than pushed right into them.** The rim is what the
+## margin is measured to, so the drawn circle stops 36px short of the top and the right. A button
+## whose edge touches the screen's reads as clipped, and on a real phone that corner is where the
+## rounded glass and the system gesture strip live — a control flush against it is one a thumb
+## cannot reach cleanly even when it is drawn in full.
+##
+## **That margin is what set `HomeArrow.MARGIN`, not the other way round.** This button's rim needs
+## `PAUSE_RADIUS` + `HomeArrow.SIZE` (15px, the chevron's reach from its own centre) = 41px of
+## clearance from the arrow's closest approach, and coming in off the edge spends exactly that. At
+## the arrow's old 74px inset the two overlapped, so the arrow moved to 96 to make room. Widening
+## this margin further moves the arrow again; the two numbers are one decision.
+const PAUSE_CENTRE := Vector2(1218.0, 62.0)
 
 var _touch := TouchInput.available()
 

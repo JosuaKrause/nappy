@@ -7,7 +7,15 @@ extends Control
 ## is a different and much less interesting kind of failure.
 
 ## How far in from the screen edge the arrow sits when home is off-screen.
-const MARGIN := 74.0
+##
+## **Set by the pause button rather than by this cue's own taste.** `TouchControls.PAUSE_CENTRE`
+## keeps its rim 36px clear of the top and right edges, and this arrow's closest approach to that
+## corner is `(1280 - MARGIN, MARGIN)`. The button's rim needs `TouchControls.PAUSE_RADIUS` + `SIZE`
+## = 41px of clearance from it, and at the old 74 the two overlapped once the button came in off
+## the edge. Lowering this number again moves the arrow back into the button.
+const MARGIN := 96.0
+## How far the chevron reaches from its own centre — the arrow's whole visual extent, and so the
+## figure anything keeping clear of it has to add to its own radius.
 const SIZE := 15.0
 
 var target := Vector2.INF
