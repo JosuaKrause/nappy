@@ -53,10 +53,10 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 git fetch origin main --quiet
-LOCAL="$(git rev-parse main)"
-REMOTE="$(git rev-parse origin/main)"
-if [[ "$LOCAL" != "$REMOTE" ]]; then
-    echo "refusing: main ($LOCAL) is not level with origin/main ($REMOTE)" >&2
+TARGET_SHA="$(git rev-parse origin/main)"
+HEAD_SHA="$(git rev-parse HEAD)"
+if [[ "$HEAD_SHA" != "$TARGET_SHA" ]]; then
+    echo "refusing: main ($HEAD_SHA) is not level with origin/main ($TARGET_SHA)" >&2
     echo "a tag on a commit the remote has never seen deploys something nobody can check out" >&2
     exit 1
 fi
@@ -105,7 +105,7 @@ check_state() {
     local repo state
     repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)"
     [[ -n "$repo" ]] || { echo unavailable; return; }
-    state="$(gh api "repos/$repo/commits/$LOCAL/check-runs" --jq '
+    state="$(gh api "repos/$repo/commits/$TARGET_SHA/check-runs" --jq '
         [.check_runs[] | select(.name == "test")] as $t
         | if ($t | length) == 0 then "none"
           elif ($t | any(.status == "completed" and
@@ -120,14 +120,14 @@ check_state() {
 STATE="$(check_state)"
 
 if [[ $CONFIRMED -ne 1 ]]; then
-    echo "checks:  $STATE  (on $LOCAL)"
+    echo "checks:  $STATE  (on $TARGET_SHA)"
     echo "" >&2
     case "$STATE" in
-        failure) echo "the test check on main is RED -- a real run would abort here." >&2 ;;
-        success) echo "the test check on main is green -- a real run would tag and push now." >&2 ;;
+        failure) echo "the test check for the release target did not pass -- a real run would abort here." >&2 ;;
+        success) echo "the test check for the release target is green -- a real run would tag and push now." >&2 ;;
         unavailable) echo "cannot read the test check (no gh, or the API declined); a real run" >&2
                      echo "would push anyway and let the ruleset refuse it if it is not ready." >&2 ;;
-        *) echo "the test check on main has not finished -- a real run would wait for it." >&2 ;;
+        *) echo "the test check for the release target has not finished -- a real run would wait for it." >&2 ;;
     esac
     echo "dry run -- nothing tagged or pushed. Run 'tools/release.sh $PART push' to publish $NEXT." >&2
     exit 0
@@ -138,13 +138,13 @@ WAITED=0
 while :; do
     case "$STATE" in
         success)
-            echo "checks:  green on $LOCAL"
+            echo "checks:  green on $TARGET_SHA"
             break
             ;;
         failure)
             echo "" >&2
-            echo "REFUSING: the test check on main is RED at $LOCAL." >&2
-            echo "Nothing was tagged. Fix main, then run this again." >&2
+            echo "REFUSING: the test check for the release target did not pass at $TARGET_SHA." >&2
+            echo "Nothing was tagged. Refresh main, then run this again." >&2
             exit 1
             ;;
         unavailable)
@@ -159,13 +159,13 @@ while :; do
         echo "Nothing was tagged." >&2
         exit 1
     fi
-    echo "checks:  $STATE on $LOCAL -- waiting (${WAITED}s)"
+    echo "checks:  $STATE on $TARGET_SHA -- waiting (${WAITED}s)"
     sleep "$CHECK_POLL_SECONDS"
     WAITED=$(( WAITED + CHECK_POLL_SECONDS ))
     STATE="$(check_state)"
 done
 
-git tag -a "$NEXT" -m "$NEXT"
+git tag -a "$NEXT" "$TARGET_SHA" -m "$NEXT"
 
 # The push is the publish, so a rejected push must not read as a release. This script runs under
 # `set -uo pipefail` without `-e`, so a failing `git push` carries on to the next line -- and the
