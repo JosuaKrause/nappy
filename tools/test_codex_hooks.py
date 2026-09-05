@@ -92,6 +92,23 @@ class CodexHooksTest(unittest.TestCase):
         self.assertIn("RULE_CONTENT_orchestrating", self.call(kind="SessionStart", source="compact"))
         self.assertIn("RULE_CONTENT_events", self.call(command=patch))
 
+    def test_tmp_without_tmpdir_reloads_the_shared_markers(self):
+        # The Bash hooks use TMPDIR or /tmp. TMP alone must not send the adapter's
+        # reset to a different directory from the markers the hooks write.
+        alternate = self.base / "alternate-tmp"
+        alternate.mkdir()
+        original_env = self.env
+        self.env = dict(os.environ, TMP=str(alternate))
+        self.env.pop("TMPDIR", None)
+        try:
+            patch = "*** Update File: src/events/a.gd\n"
+            self.assertIn("RULE_CONTENT_orchestrating", self.call(kind="SessionStart"))
+            self.assertIn("RULE_CONTENT_events", self.call(command=patch))
+            self.assertIn("RULE_CONTENT_orchestrating", self.call(kind="SessionStart", source="compact"))
+            self.assertIn("RULE_CONTENT_events", self.call(command=patch))
+        finally:
+            self.env = original_env
+
     def test_sessions_worktrees_and_agents_do_not_share_rules(self):
         patch = "*** Update File: src/events/a.gd\n"
         self.call(command=patch)

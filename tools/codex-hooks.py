@@ -8,7 +8,6 @@ from pathlib import Path
 import re
 import subprocess
 import sys
-import tempfile
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -23,7 +22,7 @@ def main():
     identity = json.dumps([str(ROOT), event.get("session_id"),
                            event.get("transcript_path"), event.get("agent_id")])
     session = "codex-" + hashlib.sha256(identity.encode()).hexdigest()
-    state = Path(os.environ.get("TMPDIR") or tempfile.gettempdir()) / "claude-nappy-rules" / session
+    state = Path(os.environ.get("TMPDIR") or "/tmp") / "claude-nappy-rules" / session
     state.mkdir(parents=True, exist_ok=True)
     context = []
 
