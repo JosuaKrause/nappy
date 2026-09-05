@@ -164,6 +164,17 @@ gets closed by a number that only hid it.
 > sidewalk segment does not lower excitement and sometimes even increases it more -- I don't think
 > this is a necessarily straightforward fix."
 
+And the part that is about legibility rather than arithmetic:
+
+> "while walking the excitement kept going up for semingly no reason"
+
+**"For seemingly no reason" is the whole finding, not a flourish.** The things doing it are café
+tables, market stalls and delivery vans — scenery a player reads as *the street*, not as a source —
+and each reaches 150–200px, so the ones actually charging her are mostly off screen or behind her.
+There is nothing to point at and nothing to walk away from, which means the meter is rising against
+a decision the player cannot see and therefore cannot make. That is the opposite of what every
+danger cue in this game exists to do.
+
 **The player supplied the run**, and it is copied into
 `docs/evidence/run-181812-seed3038142309-v0.2.0-6-gedeed04-dirty/` — a played desktop run on
 `v0.2.0-6-gedeed04`, seed 3038142309, with its dawn and dusk maps and the two loss screenshots.
@@ -190,6 +201,22 @@ a few points a second against that, so there is no ground left that subtracts.
 **So this is this finding's mechanism, and finding 9 below is most of its fix.** Take the field off the five
 barrier rows and the 355 bodies stop being emitters; what is left emitting is the handful of things
 that are meant to be loud. That is the reason the two are one milestone and not two.
+
+**The dusk map the player sent is day 3 of that same run**, and it is the clearest single picture
+of the problem: *"this attempt was such a case the excitement kept going up and in the end a cat
+killed me"*. Her trail is a stub — she is barely off the doorstep — and the log line for it reads
+`lost_crying after 26.7s ... exc 100, in 40.6/s (crowd 0.0, events 40.6) | near: cat_dash 39px`.
+
+And the player's own reading of it, unprompted:
+
+> "the cat was what ultimately did it but without it I would have died a few seconds later"
+
+**So this is a finding about finding 6 as much as this one, and it points the other way.** `cat_dash`
+is not a hard fail and carries only intensity 15 — it cannot kill anybody who has headroom. It
+killed her because the meter never came back down from everything before it, so the cat was the last
+few points of a loss that was already arriving. **The cat is not weak; the baseline is high.** Raising the cat's impact
+while the baseline is still pinned would make it an instant loss on contact, which is not what was
+asked for. Fix the calm-down problem first, then judge whether the cat still needs anything.
 
 **What it does not explain, and the player flagged it as not straightforward:** whether the falloff
 curve and the 150–200px radii are right *at all* once the count drops. A row that reaches 185px was

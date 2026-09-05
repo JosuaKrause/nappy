@@ -164,6 +164,21 @@ they leave behind.
       sentence: *walking a seemingly empty pavement has to give the meter back*. If it still does
       not once the barriers are silent, the radii are the next thing to move, not the density.
 
+      **Half of this is legibility rather than arithmetic**: *"while walking the excitement kept
+      going up for semingly no reason"*. The rows charging her are café tables, stalls and vans —
+      scenery a player reads as *the street* — reaching 150–200px, so most of what is billing her
+      is off screen or behind her. A meter that rises against nothing the player can point at is a
+      decision they cannot make, which is the opposite of what every cue in this game is for. A
+      quiet barrier fixes that by removing the charge; if any invisible ambient charge survives the
+      change, it owes the player something to see.
+
+      **It also settles the order against the cat.** The day-3 dusk map the player sent — the
+      `lost_crying` at 26.7s with `in 40.6/s (crowd 0.0, events 40.6) | near: cat_dash 39px`, and
+      her trail barely off the doorstep — is a cat with intensity 15 finishing a loss that was
+      already arriving: *"the cat was what ultimately did it but without it I would have died a few
+      seconds later"*. **Do not raise the cat while the baseline is pinned**, or a `cat_dash` becomes
+      an instant loss on contact, which is not what was asked for.
+
 - [ ] **A thing whose job is to stand in the way costs route and nothing else.** *"static blockages
       in general shouldn't increase excitement"*, with the exception the player gave in the next
       breath: *"except for things like ice cream trucks which have inherent excitement"*. So this
