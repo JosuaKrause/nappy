@@ -18,6 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify agent hooks
+        run: python3 tools/test_codex_hooks.py
+
       - name: Lint the docs
         run: ./tools/lint.sh
 

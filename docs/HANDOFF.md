@@ -8,8 +8,9 @@ progress-tracking, which lives there too.
 
 ## The state of the tree
 
-**`main` is level with `origin/main` and nothing is half-written in its working tree.** `git branch`
-and `git worktree list` are the truth about what is open.
+**Check `git status`, `git branch` and `git worktree list` for the current checkout and open work.**
+Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex's entry point is `AGENTS.md`.
+Its repository hooks need review through `/hooks` before they execute.
 
 One branch is unmerged and that is deliberate rather than in progress: **M64's measurement probes,
 `tests/test_zz_m64_measure.gd` and `tests/test_zz_m64_density.gd`, are kept off `main` on a branch

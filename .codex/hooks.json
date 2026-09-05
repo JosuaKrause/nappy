@@ -1,0 +1,58 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/tools/codex-hooks.py\"",
+            "timeout": 10,
+            "statusMessage": "Loading shared project rules",
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/tools/codex-hooks.py\"",
+            "timeout": 10,
+            "statusMessage": "Loading shared project rules",
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|Edit|Write|MultiEdit|Bash|Agent|Task|spawn_agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/tools/codex-hooks.py\"",
+            "timeout": 10,
+            "statusMessage": "Loading rules for this edit",
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "apply_patch|Edit|Write|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/tools/codex-hooks.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking documentation",
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ]
+  }
+}

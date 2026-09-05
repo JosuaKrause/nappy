@@ -31,10 +31,10 @@ case "$path" in
 		;;
 esac
 
-# The governed set: CLAUDE.md, .claude/skills/*/SKILL.md, README.md, docs/*.md.
+# The governed set: AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md, README.md, docs/*.md.
 governed=0
 case "$path" in
-	"$root"/CLAUDE.md|"$root"/README.md|"$root"/.claude/skills/*/SKILL.md|"$root"/docs/*.md)
+	"$root"/AGENTS.md|"$root"/CLAUDE.md|"$root"/README.md|"$root"/.claude/skills/*/SKILL.md|"$root"/docs/*.md)
 		governed=1
 		;;
 esac
