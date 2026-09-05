@@ -50,6 +50,16 @@ var _ending_shown := false
 ## Whether the title screen is up, with the city running behind it and nobody in it.
 var _in_the_title := false
 
+## Read once — a run's own touch hardware does not change — the same pattern `TouchControls._touch`
+## and `hud._touch` already follow, and what lets `_process()` ask `ScreenOrientation.wants_rotation`
+## every frame without also repeating `TouchInput.available()`'s own `OS.get_cmdline_user_args()`
+## call sixty times a second.
+var _touch_available := TouchInput.available()
+## The rotation `_apply_orientation()` last actually applied, so `_process()` can ask the same
+## question every frame and reapply only on change — see that function's own doc for why a signal
+## alone is not enough.
+var _rotated := false
+
 func _ready() -> void:
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
@@ -106,9 +116,9 @@ func _ready() -> void:
 	_title.quit_requested.connect(_quit)
 
 	# After every layer `_apply_orientation()` touches exists — it reaches `_summary`, `_pause`
-	# and `_title` too, not just the HUD and the two layers built just above.
+	# and `_title` too, not just the HUD and the two layers built just above. `_process()` is what
+	# keeps it current from here on, not a `size_changed` connection — see that function's own doc.
 	_apply_orientation()
-	get_window().size_changed.connect(_apply_orientation)
 
 	_resistance = ResistanceDirector.new()
 	_resistance.name = "Resistance"
@@ -270,17 +280,22 @@ func _add_touch_controls() -> void:
 ## Presents the game rotated 90° when the real window is a portrait touch screen, so a phone
 ## with auto-rotate off shows a full-size landscape game rather than a thin letterboxed strip of
 ## one — see `ScreenOrientation` for the mechanism and why it needs no CSS and no orientation API.
-## Nothing here asks the device itself to rotate; it is asked again on every `size_changed`, since
-## a phone can be turned back to a shape that already reads as landscape, or a desktop window can
-## be resized narrower or wider, at any point in a run.
+## Nothing here asks the device itself to rotate.
 ##
 ## Every `CanvasLayer` of screen furniture gets the same `ScreenOrientation.rotation_transform()`,
 ## so the HUD, the pause screen, the day summary, the title screen, the debug status line, the
 ## danger edge and the on-screen stick all turn together; the world is the one thing not drawn
 ## through a `CanvasLayer`, so it rotates separately, through the camera — see
 ## `Stroller.set_screen_rotation()`.
+##
+## Called once from `_ready()` and again from `_process()` whenever the answer changes — never
+## only from a `size_changed` signal, which can arrive with a stale `get_window().size`, or not
+## arrive at all if a phone is turned back to a shape that already reads as landscape without the
+## browser ever resizing the canvas, latching the wrong `content_scale_size` until a reload. Asking
+## the same question every frame instead means the decision cannot go stale between calls.
 func _apply_orientation() -> void:
-	var rotate := ScreenOrientation.wants_rotation(get_window().size, TouchInput.available())
+	var rotate := ScreenOrientation.wants_rotation(get_window().size, _touch_available)
+	_rotated = rotate
 	get_window().content_scale_size = ScreenOrientation.content_scale_size(rotate)
 	_player.set_screen_rotation(deg_to_rad(90.0) if rotate else 0.0)
 	_touch_controls.rotated = rotate
@@ -464,6 +479,13 @@ func _restart_run() -> void:
 
 func _process(_delta: float) -> void:
 	_update_follow_camera()
+	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
+	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
+	# `get_window()` is null for the script-only instance `tests/test_main.gd` drives straight
+	# through `_process()` with no window behind it at all.
+	var window := get_window()
+	if window and ScreenOrientation.wants_rotation(window.size, _touch_available) != _rotated:
+		_apply_orientation()
 	if not _player or not _baby:
 		return
 	if _in_the_title:
