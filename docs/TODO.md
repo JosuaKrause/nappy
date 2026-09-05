@@ -528,10 +528,61 @@ furniture, `Q` is not offered where quitting does nothing, and the window letter
 player sees the same 640×360 of world. All three are in `DECISIONS.md` under M60.
 
 **What a phone can reach.** Every lesson names a control that device actually has, there is a pause
-button on screen, the meters sit at the top on a touch build so a hand cannot cover them, and a
-portrait phone is asked to turn. The record — including why the pause button is the one control
-that sends an event rather than pressing an action — is in `DECISIONS.md` under M60. **Two things
-are left, and both want a real device or the real address:**
+button on screen, and the meters sit at the top on a touch build so a hand cannot cover them. The
+record — including why the pause button is the one control that sends an event rather than pressing
+an action — is in `DECISIONS.md` under M60. **Three things are left, and two of them want a real
+device or the real address:**
+
+- [ ] **The game plays landscape whichever way the phone is held, and never asks.** *(2026-09-05:
+      "the message to 'turn your phone sideways to play' wtf did you think? the request was to make
+      the game **always do** landscape mode".)* What is built asks: a CSS overlay in
+      `export_presets.cfg`'s `html/head_include` that covers the page in portrait with *"Turn your
+      phone sideways to play."*, plus a `screen.orientation.lock('landscape')` attempt beside it.
+      **This is the instruction answered with its opposite** — a request to enforce, built as a
+      request to the player — and the original words were never written down, which is how the
+      substitution survived review.
+
+      **It is a blocking bug, not a wrong message.** *(2026-09-05: "right now the mobile version
+      doesn't load at all", and the cause: "I have auto rotate turned off on my phone — it's always
+      in portrait mode".)* The overlay's media query is `(orientation: portrait) and (hover: none)
+      and (pointer: coarse)`, so on a phone that never leaves portrait it matches forever: the page
+      is a black screen with a sentence on it, the game runs behind it unseen, and from the outside
+      that is indistinguishable from a build that does not load. Reproduced by reasoning rather than
+      on a device — the live build boots and plays in a desktop browser, which is what proves the
+      failure is the overlay rather than the export.
+
+      **The device's own orientation is never touched.** *(2026-09-05: "don't try to **change**
+      landscape/portrait mode — work with what you have".)* No orientation lock, no manifest
+      orientation, no fullscreen request. What changes is how the game lays itself out in the
+      viewport it is given: *"the game should be rotated in the viewport — so when I'm looking at it
+      it should be sideways"*.
+
+      **The answer is to rotate the presentation, and only that.** *(2026-09-05, choosing between
+      three levers.)* When the viewport is portrait, the game is presented rotated 90°, so it is
+      landscape however the phone is held and on every platform — including iOS Safari in a tab,
+      which has no orientation API at all.
+
+      **The two rejected levers, named so they are cheap to pick up if this one disappoints:**
+      writing the PWA manifest (`progressive_web_app/enabled=false` today, so
+      `progressive_web_app/orientation=1` is written into nothing) would give a real lock to an
+      installed web app; and moving `screen.orientation.lock` onto the first tap after requesting
+      fullscreen — it is called from `DOMContentLoaded` today, outside the gesture and the
+      fullscreen it requires, so it is rejected every time — would give one to Chrome for Android.
+      **Both are ruled out by the instruction rather than by cost:** each one *changes* the device's
+      orientation mode, and a phone whose owner turned auto-rotate off has said what they want.
+
+      **The cost is input, not drawing, and it is the whole risk of the item.** Godot maps a touch
+      to a canvas position from the element's bounding rect, so a CSS rotation of the canvas leaves
+      the stick, the run button and the pause button responding in the wrong places unless pointer
+      coordinates are remapped with the same transform. **The alternative worth measuring first is
+      to rotate inside the engine instead** — the root viewport's own transform, where Godot already
+      maps input through the canvas transform and no remapping is needed. Whichever is taken, the
+      thing that proves it is a test: a portrait window, a touch at a known screen position, and the
+      control it must land on.
+
+      **Then the overlay is deleted rather than kept as a fallback.** A presentation that is always
+      landscape has nothing to ask for, and an overlay that can still appear is the same substitution
+      surviving in a smaller form
 
 - [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
       pointing home, and the stick and the run button sit at that height on both sides — so during
