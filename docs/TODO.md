@@ -905,14 +905,21 @@ files is a merge conflict scheduled in advance.
       pauses is up — and after `TEACH_PAUSE_AFTER` (3s) it offers the pause key once per run. **Tap
       mode takes the same moment and pauses instead of saying anything.**
 
-      Two differences from the hint, both because tap mode knows something stick mode cannot:
+      **It is the stand that pauses, not the arrival.** *(2026-09-05: "that would be very unpleasant
+      UX — pause should only start after a few seconds — probably even later than the teach hint".)*
+      Pausing the instant she reaches the point would stutter the game on every single leg, since
+      the ordinary loop is to arrive and tap on. So tap mode reuses the hint's own idle timer with a
+      **longer** threshold than `TEACH_PAUSE_AFTER`'s 3s — start at 5s and move it against a played
+      day; it is a feel number and the only way to set it is to walk with it. The common case then
+      never pauses at all: it fires only when the player genuinely stopped to think.
 
-      - **It fires on arrival, not after a 3s stand.** The idle timer exists because with a stick
-        there is no way to tell a deliberate stop from a pause between presses. A tap names a
-        destination, so arrival is a definite event — the plane test above — and there is nothing to
-        wait to be sure of.
-      - **Every time, not once per run.** The hint is a keybinding taught once. This is how the mode
-        works, so it is the loop rather than a cue: tap, walk, arrive, pause, tap.
+      **Which also covers walking into a wall for free.** She is idle when she is blocked, not only
+      when she has arrived, so the one case the straight-line design deliberately refuses to solve —
+      pressing into an obstacle that nothing routes around — ends in the same pause as any other
+      stop, and the next tap is the way out. Nothing has to detect being stuck.
+
+      **It fires every time, not once per run.** The hint is a keybinding taught once; this is how
+      the mode works, so it is the loop rather than a cue: tap, walk, stand, pause, tap.
 
       And `_teach_the_pause()`'s own hint has nothing to say in tap mode — there is no pause key on a
       phone and no button to point at — so it does not run there.
