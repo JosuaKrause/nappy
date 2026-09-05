@@ -837,6 +837,10 @@ and something has to walk her to it — which is the first real question this mi
 the game's only verb is *where do I walk* and a tap that pathfinds is the game choosing the route
 she takes through the thing the whole design is about.
 
+**Sequence this after M60's rotation fix.** Both rewrite `src/ui/touch_controls.gd` and
+`src/main.gd`, so run them one after the other rather than side by side; two agents in those two
+files is a merge conflict scheduled in advance.
+
 - [ ] **What a tap means: a straight line, and nothing cleverer.** *(2026-09-02: "the tap should
       just be a straight path — no collision avoiding path.")* A single tap walks to the point, a
       double tap runs to it, and she goes **straight at it**. *(2026-09-02: "calculate the direction
@@ -849,22 +853,64 @@ she takes through the thing the whole design is about.
       the game's only verb is *where do I walk*, and a tap that pathfinds hands the route decision
       to the game. Walking into a wall and stopping is the player's mistake to make, exactly as it
       is with the stick
+
+      **It presses at the true angle, not one of eight, and that needs no new input path.**
+      `Input.action_press()` takes a strength, and `Stroller._physics_process` reads its heading as
+      `Input.get_vector("move_left", "move_right", "move_up", "move_down")` — an analog vector, not
+      four booleans. `TouchControls._set_axis()` already exploits this, pressing `move_left` or
+      `move_right` with the stick's own x component and explicitly releasing the opposite one so a
+      reversal cannot leave both held. A tap presses the same way with the components of the unit
+      vector from her to the target, so the tap mode is the stick mode holding one fixed vector.
+
+      **Arrival is the plane, not a radius.** She has arrived when what is left of the journey stops
+      pointing forwards — `(target - global_position).dot(direction) <= 0`, the plane through the
+      target at right angles to the heading fixed at the tap. That needs no tolerance constant and
+      it still terminates when a shove pushes her sideways off the line, where a distance test would
+      leave her pressing forever past a target she was knocked around.
+
+      **Blocked is not a case.** She presses until she arrives or until the next tap; nothing times
+      out and nothing gives up, because that is what holding a key into a wall already does. The one
+      release that is not the player's is the end of the day — `TouchControls._release_everything()`
+      exists for exactly that ("leaves a direction — or the run key — pressed into the day that
+      follows") and the tap mode uses it unchanged.
+
+      **A double tap is two windows, and the second one matters.** A time window decides *double*,
+      and a **distance** window decides whether the second tap is a modifier or a new destination —
+      without it, a tap somewhere else a moment later makes her run to the wrong place. Both are
+      plain constants in the tap file, the way `RUN_CATCH_RADIUS` (how near the `RUN` button a thumb
+      must land) is a plain constant in `TouchControls`, rather than balance numbers in `Tuning`
+- [ ] **A tap is a screen position and the target is a world one.**
+      `get_viewport().get_canvas_transform().affine_inverse()` maps the one to the other. That is
+      the same transform `DangerEdge` and `HomeArrow` already read every frame to place a screen cue
+      from a world position, run backwards — so it tracks the camera, the zoom and the rotated
+      presentation with nothing of its own to keep in step
 - [ ] **Both modes exist at once and one is chosen.** Not a rewrite of `TouchControls` — the stick
       build and the tap build are two ways of feeding the same actions, and the experiment needs
       them side by side. Whatever holds the choice is read once, the way `TouchInput.available()`
-      already is
+      already is. **The pause button belongs to neither mode and survives both**: in tap mode
+      `TouchControls` draws that and nothing else, and a tap that lands on it pauses without also
+      setting a destination underneath it
 - [ ] **Switchable in the dev build, fixed in the release.** *"The real / web version doesn't get to
       choose."* `DevFlags` already answers nothing outside a debug build and already parses
       `-- --flag` arguments, so a `--controls tap|stick` flag is the shape that exists
 - [ ] **And switchable on a phone, which no command line reaches.** The one case the existing dev
       flags cannot serve: a phone opens a URL and nothing else. A query parameter on the deployed
-      page — read from `window.location` through JavaScript and handed to the game — is what "a
-      secret URL flag for now" means. **It is a dev door on a public page**, so it turns nothing on
-      that a player could hit by accident, and what it may switch is the control scheme and nothing
-      else
+      page — `JavaScriptBridge.eval("window.location.search")`, which nothing in the project uses
+      yet and which answers only in a web build — is what "a secret URL flag for now" means. **It is
+      a dev door on a public page**, so it turns nothing on that a player could hit by accident, and
+      what it may switch is the control scheme and nothing else.
+
+      **So this one flag cannot live behind `DevFlags`, and that is the point rather than an
+      oversight.** `DevFlags.enabled()` is `OS.is_debug_build()`, which is false for the exported
+      release template `tools/export-web.sh` produces — the property that makes a public build
+      unable to reveal a seed or jump to a day. The deployed page is precisely where the URL flag
+      has to work, so gating it there would build it dead. **What keeps it safe is its scope, not a
+      build gate:** it chooses between two control schemes that both ship and are both playable, and
+      it can reach nothing else
 - [ ] **Testable without a phone.** *"On non-mobile we can try clicking with the mouse instead of
-      tapping."* A mouse click stands in for a tap in the dev build, which is also what lets the
-      test rigs drive it at all
+      tapping."* An `InputEventMouseButton` stands in for a tap in the dev build, which is also what
+      lets the test rigs drive it at all — and a rig flag that taps a given point is what makes the
+      mode photographable, the way `--walk` is what makes the stick mode photographable
 
 ## M50 — What the corridor still owes
 
