@@ -12,6 +12,8 @@ func run(t) -> void:
 	_test_a_tap_on_herself_presses_nothing(t)
 	_test_arriving_releases_every_action_it_held(t)
 	_test_a_shove_past_the_plane_still_arrives(t)
+	_test_a_tap_maps_its_screen_position_through_the_viewports_canvas_transform(t)
+	_test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t)
 	_release_actions()
 
 func _rig_at(position: Vector2) -> Node2D:
@@ -109,6 +111,51 @@ func _test_a_shove_past_the_plane_still_arrives(t) -> void:
 	tap._process(0.016)
 	t.check(not Input.is_action_pressed("move_right"),
 			"knocked past the plane by a shove still reads as arrived, not stuck pressing forever")
+
+	tap.free()
+	rig.free()
+
+## **The test a screenshot cannot be**: `_on_tap()`'s own reverse of the transform `DangerEdge` and
+## `HomeArrow` already read forwards. Constructed from the viewport's own real
+## `get_canvas_transform()` rather than an assumed identity, so this would still catch a camera
+## offset or a rotation the way a hard-coded expectation would not.
+func _test_a_tap_maps_its_screen_position_through_the_viewports_canvas_transform(t) -> void:
+	var rig := _rig_at(Vector2.ZERO)
+	t.add_child(rig)
+	var tap := TapControls.new()
+	t.add_child(tap)
+
+	var world_target := Vector2(120.0, -40.0)
+	var screen_position: Vector2 = tap.get_viewport().get_canvas_transform() * world_target
+	tap._on_tap(screen_position, 0.0)
+	t.check(tap._target.is_equal_approx(world_target),
+			"a tap's own screen position maps back to the world position it was drawn from")
+
+	tap.free()
+	rig.free()
+
+## The double-tap windows again, now through the real entry point rather than the pure function
+## directly -- a close tap soon after runs, and either window failing on its own falls back to a
+## fresh single tap.
+func _test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t) -> void:
+	var rig := _rig_at(Vector2.ZERO)
+	t.add_child(rig)
+	var tap := TapControls.new()
+	t.add_child(tap)
+	var transform: Transform2D = tap.get_viewport().get_canvas_transform()
+
+	tap._on_tap(transform * Vector2(100.0, 0.0), 10.0)
+	t.check(not Input.is_action_pressed("run"), "the first tap of a run only walks")
+
+	tap._on_tap(transform * Vector2(100.0, 0.0), 10.2)
+	t.check(Input.is_action_pressed("run"), "soon and on the same spot reads as a double tap")
+
+	tap._on_tap(transform * Vector2(500.0, 500.0), 10.4)
+	t.check(not Input.is_action_pressed("run"),
+			"soon but far away is a new destination, not a double tap on the old one")
+
+	tap._on_tap(transform * Vector2(500.0, 500.0), 12.0)
+	t.check(not Input.is_action_pressed("run"), "close but late is also a new single tap")
 
 	tap.free()
 	rig.free()

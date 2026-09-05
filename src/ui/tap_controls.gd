@@ -39,10 +39,41 @@ var _direction := Vector2.ZERO
 var _target := Vector2.ZERO
 var _walking := false
 
+## The previous tap's own moment and screen position, for the double-tap windows. `-INF` reads as
+## "no earlier tap this run", which can never fall inside either window.
+var _last_tap_at := -INF
+var _last_tap_screen_position := Vector2.ZERO
+
 func _ready() -> void:
 	# Has to keep reading a tap through the arrival pause it can itself raise, the same reason
 	# `TouchControls` stays ALWAYS rather than the inherited PAUSABLE.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+
+## Every real tap: `InputEventScreenTouch` is what a finger sends. A mouse click stands in for one
+## too, in the dev build only -- that is its own later entry, not this one.
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		_on_tap((event as InputEventScreenTouch).position, Time.get_ticks_msec() / 1000.0)
+
+## A tap arrived at `screen_position` -- the same canvas-space coordinate the event itself carries,
+## whatever the window's own rotation -- at moment `now`.
+##
+## `get_viewport().get_canvas_transform().affine_inverse()` maps it to a world position: the exact
+## reverse of what `DangerEdge` and `HomeArrow` already do every frame to place a screen cue from a
+## world one, so this tracks the camera, the zoom and the rotated presentation with nothing of its
+## own to keep in step -- no separate remap through `ScreenOrientation` the way `TouchControls` has
+## to for its own fixed screen constants, because a tap has no fixed constant to compare against.
+##
+## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
+## window still instead of racing the engine clock -- `_input()` is the one real caller and is what
+## supplies it from `Time.get_ticks_msec()`.
+func _on_tap(screen_position: Vector2, now: float) -> void:
+	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
+	var double := is_double_tap(now - _last_tap_at,
+			screen_position.distance_to(_last_tap_screen_position))
+	_last_tap_at = now
+	_last_tap_screen_position = screen_position
+	walk_to(world, double)
 
 func _process(_delta: float) -> void:
 	if not _walking:
