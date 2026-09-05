@@ -105,7 +105,7 @@ windowed, saves the viewport after N frames and quits.
 ### Dev flags and release builds
 
 `DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
-`--overview`, `--day-length` and `--ending`; `src/dev/auto_screenshot.gd` parses `--screenshot`
+`--overview`, `--day-length`, `--ending` and `--controls`; `src/dev/auto_screenshot.gd` parses `--screenshot`
 and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`) itself, and gates its own
 entry point the same way rather than moving that parsing out. Both read `OS.is_debug_build()`,
 which is `false` for an exported release template, so none of this furniture — nor the snapshot
@@ -168,7 +168,8 @@ zoom and the rotated presentation for free.
 Arriving starts a clock (`TapControls.ARRIVAL_PAUSE_AFTER`) rather than pausing immediately, so the
 ordinary loop of arriving and tapping on never stutters; only a genuine stand opens the same
 `PauseScreen` the stick's own pause button opens, through the same
-`TouchControls._send_pause_action()`. `ControlsMode.resolve()` answers `STICK` today.
+`TouchControls._send_pause_action()`. `ControlsMode.resolve()` reads `DevFlags.controls_override()`
+(`--controls tap|stick`, a debug build only) and answers `STICK` otherwise.
 
 ## Autoloads
 
