@@ -126,6 +126,15 @@ func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
 		var hash_part := stripped.substr(stripped.rfind("-g") + 2)
 		t.check(hash_part.length() >= 7 and hash_part.is_valid_hex_number(),
 				"the describe form ends in a short hash (got '%s')" % version)
+	elif stripped.begins_with("v"):
+		# **Standing exactly on a tag, `git describe` prints the tag alone** — no distance and no
+		# hash, because there are no commits since it. This is the shape a *released* build has
+		# and the only one a player ever sees, since `deploy.yml` checks the tag out to export it.
+		# It went unasserted until the first real release cut one, and the bare-hash branch below
+		# then rejected it for not being hexadecimal.
+		var digits := stripped.substr(1)
+		t.check(digits != "" and not digits.contains("-"),
+				"an exact tag is the version alone, with nothing appended (got '%s')" % version)
 	else:
 		# `git describe --always`'s fallback when no tag is reachable: a bare short hash.
 		t.check(stripped.length() >= 7 and stripped.is_valid_hex_number(),
