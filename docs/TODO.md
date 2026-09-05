@@ -599,6 +599,40 @@ device or the real address:**
       portrait window before anything is called done. A test that asserts a transform cannot catch a
       sign error the transform and the drawing share — that is how three of these four shipped
 
+- [ ] **A phone cannot start the run again, and wants a button on the pause screen that can.**
+      *(2026-09-05: "we need a dedicated button for restart from the pause menu".)* Restarting is
+      `R`, a key, and `PauseScreen._refresh_hint()` deliberately drops it from the touch hint — which
+      reads only *"tap to carry on"* — on the correct grounds that naming a key a device has not got
+      is *"the same defect class `q to quit` was"*. The drop is real and not cosmetic: the restart
+      arm of `_unhandled_input` is reached only through an `InputEventKey`, so with no keyboard there
+      is no restart at all. **The two ways off a phone today are to spend all five nerves and take
+      the ending, whose summary offers *"tap to start again"*, or to reload the page.** The pause
+      screen's own reasoning is what this fails: `R` exists because *"a run is also abandonable long
+      before it has ended — a day gone wrong on a city you do not want to walk any more is exactly
+      when somebody reaches for the pause"*, and the touch build is the one shape where that argument
+      does not land.
+
+      **It is held, not tapped.** *(2026-09-05, chosen over a one-tap button and over an arm-then-
+      confirm second tap.)* A press that fills over about a second and restarts on completion. The
+      existing note that `R` is *"deliberately not confirmed"* rests on *"`R` is not next to `Esc`"*
+      — and that is exactly what stops being true on a screen where **every other pixel means carry
+      on**, so a brushed thumb would end a fourteen-day walk with no save in it. A hold cannot be
+      triggered by a brush, and it needs no second screen state. It costs discoverability, since
+      nothing else in the game teaches a hold, so **the button says what it wants** rather than
+      relying on the player trying it.
+
+      **The trap is the catch-all above it.** `PauseScreen._unhandled_input` treats any pressed
+      `InputEventScreenTouch` exactly as `space` and closes the screen, so a touch anywhere resumes.
+      A restart control has to be tested against the touch position **before** that branch, the way
+      `TouchControls._input` checks a touch against `RUN_CATCH_RADIUS` (how near the `RUN` button a
+      thumb must land) before anything else claims it. **Do not rely on a `Button` node consuming
+      it**: Godot delivers the screen touch *and* an emulated mouse event, and this screen reads the
+      touch itself on purpose — *"the touch event itself, not a synthetic click, so the desktop keeps
+      behaving as it always has"* — so the `Button` would eat the click and the raw touch would still
+      resume underneath it.
+
+      **The keyboard keeps `R` and is not given a hold.** Nothing about the key is broken, and the
+      hint already says the right thing on each platform from `_refresh_hint()`
 - [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
       pointing home, and the stick and the run button sit at that height on both sides — so during
       the return phase the one cue that says *this way home* can be under the finger steering her
@@ -905,21 +939,28 @@ files is a merge conflict scheduled in advance.
       pauses is up — and after `TEACH_PAUSE_AFTER` (3s) it offers the pause key once per run. **Tap
       mode takes the same moment and pauses instead of saying anything.**
 
-      **It is the stand that pauses, not the arrival.** *(2026-09-05: "that would be very unpleasant
-      UX — pause should only start after a few seconds — probably even later than the teach hint".)*
-      Pausing the instant she reaches the point would stutter the game on every single leg, since
-      the ordinary loop is to arrive and tap on. So tap mode reuses the hint's own idle timer with a
-      **longer** threshold than `TEACH_PAUSE_AFTER`'s 3s — start at 5s and move it against a played
-      day; it is a feel number and the only way to set it is to walk with it. The common case then
-      never pauses at all: it fires only when the player genuinely stopped to think.
+      **Arrival starts a clock; the clock pauses.** *(2026-09-05: "that would be very unpleasant UX
+      — pause should only start after a few seconds — probably even later than the teach hint", and
+      "the 5s timer should start *after* arrival".)* Pausing the instant she reaches the point would
+      stutter the game on every single leg, since the ordinary loop is to arrive and tap on. So
+      arrival — the plane test above, which is also what releases the movement keys — starts a timer
+      rather than pausing, and the pause comes only if she is still standing when it expires. A tap
+      before then is the next leg and cancels it, so the ordinary loop never pauses at all: it fires
+      only when the player genuinely stopped to think.
 
-      **Which also covers walking into a wall for free.** She is idle when she is blocked, not only
-      when she has arrived, so the one case the straight-line design deliberately refuses to solve —
-      pressing into an obstacle that nothing routes around — ends in the same pause as any other
-      stop, and the next tap is the way out. Nothing has to detect being stuck.
+      **5s to start with, and it is longer than the hint's on purpose.** `TEACH_PAUSE_AFTER` is 3s.
+      This is a feel number, the only way to set it is to walk with it, and it moves against a
+      played day.
+
+      **It is gated on arrival, not on standing still, and that has one consequence worth stating.**
+      Being blocked is not arriving — she presses into an obstacle nothing routes around, never
+      crosses the plane, and so never pauses. That is consistent with the rest of the design, where
+      *"walking into a wall and stopping is the player's mistake to make, exactly as it is with the
+      stick"*, and the next tap is still the way out. It does mean nothing detects being stuck, and
+      nothing is meant to.
 
       **It fires every time, not once per run.** The hint is a keybinding taught once; this is how
-      the mode works, so it is the loop rather than a cue: tap, walk, stand, pause, tap.
+      the mode works, so it is the loop rather than a cue: tap, walk, arrive, wait, pause, tap.
 
       And `_teach_the_pause()`'s own hint has nothing to say in tap mode — there is no pause key on a
       phone and no button to point at — so it does not run there.
