@@ -533,34 +533,54 @@ record — including why the pause button is the one control that sends an event
 an action — is in `DECISIONS.md` under M60. **Three things are left, and two of them want a real
 device or the real address:**
 
-- [ ] **The game plays landscape whichever way the phone is held, and never asks.** *(2026-09-05:
-      "the message to 'turn your phone sideways to play' wtf did you think? the request was to make
-      the game **always do** landscape mode".)* What is built asks: a CSS overlay in
-      `export_presets.cfg`'s `html/head_include` that covers the page in portrait with *"Turn your
-      phone sideways to play."*, plus a `screen.orientation.lock('landscape')` attempt beside it.
-      **This is the instruction answered with its opposite** — a request to enforce, built as a
-      request to the player — and the original words were never written down, which is how the
-      substitution survived review.
+- [ ] **The rotated presentation is three different rotations in one picture.** *(2026-09-05,
+      [PLAYTEST-23.md](PLAYTEST-23.md), the first phone session on it: "controls are the only things
+      that are rotated correctly".)* The standing instruction is that the game **always does**
+      landscape — *"the game should be rotated in the viewport — so when I'm looking at it it should
+      be sideways"* — and a portrait phone does now get a rotated game. What it does not get is one
+      rotated game. Four things are wrong and they are one root: **the rotation is implemented three
+      separate times, so the three can disagree, and two of them do.**
 
-      **It is a blocking bug, not a wrong message.** *(2026-09-05: "right now the mobile version
-      doesn't load at all", and the cause: "I have auto rotate turned off on my phone — it's always
-      in portrait mode".)* The overlay's media query is `(orientation: portrait) and (hover: none)
-      and (pointer: coarse)`, so on a phone that never leaves portrait it matches forever: the page
-      is a black screen with a sentence on it, the game runs behind it unseen, and from the outside
-      that is indistinguishable from a build that does not load. Reproduced by reasoning rather than
-      on a device — the live build boots and plays in a desktop browser, which is what proves the
-      failure is the overlay rather than the export.
+      - **The world is 180° from the controls.** *("the game area is rotated 180 from that".)*
+        `Stroller.set_screen_rotation()` turns the world by setting `Camera2D.rotation` to +90° and
+        clearing `ignore_rotation`; `TouchControls._draw` turns the buttons by setting
+        `ScreenOrientation.rotation_transform()` — a +90° rotation and a recentre — for the whole
+        draw call. **A camera turning one way swings the world the other way on screen**, so two
+        +90°s land 180° apart. The controls are the half the player says is right, so the camera is
+        the half that flips.
+      - **The text is not rotated at all.** *("the text is not rotated at all".)* The HUD (the clock,
+        the two meters, the resistance line, the developer readout), the pause screen, the day
+        summary and the title screen are `Control` nodes under `CanvasLayer`s, and nothing in the
+        change touched them. It was named as a known limitation before release and published anyway.
+        **It is not a limitation, it is the feature half-built:** upright text is the largest, most
+        readable thing on the screen, and it is saying the screen is not sideways.
+      - **Auto-rotate on stops the rotation and leaves the play area portrait-shaped, and it does not
+        recover.** *("if I turn on auto rotate it behaves correctly (stops rotating in game) but the
+        viewport is now higher than wide and the game is stretched vertically", and then "if I then
+        rotate back it stays like that".)* `main._apply_orientation()` sets the content box, the
+        camera and the controls from one boolean, so those three cannot disagree *inside* one call —
+        but it runs only at startup and on the window's `size_changed`. A signal that arrives with a
+        stale size, or does not arrive at all, latches the wrong content box until a reload. With
+        `window/stretch/aspect="keep"` in `project.godot`, a 720×1280 content box left in force on a
+        landscape window is a tall strip down the middle, which is the shape being reported.
+
+      **The fix is one rotation, applied once, to everything on the screen.** Every `CanvasLayer`
+      carries `ScreenOrientation.rotation_transform()` and every layer's children are laid out
+      against the 1280×720 design box rather than against the swapped viewport — three of the five
+      scene layers already have the single `Root` `Control` that needs, so the HUD is the one that
+      wants a root inserted. Then `TouchControls`' own `draw_set_transform_matrix` is redundant and
+      goes, the camera stops being a second implementation, and there is no third place for the text
+      to be forgotten in.
+
+      **And the decision is re-asked continuously rather than on a signal**, since a missed or
+      early-fired `size_changed` is exactly what the latch is made of. Recomputing
+      `ScreenOrientation.wants_rotation()` every frame and applying only on change costs a vector
+      comparison.
 
       **The device's own orientation is never touched.** *(2026-09-05: "don't try to **change**
       landscape/portrait mode — work with what you have".)* No orientation lock, no manifest
-      orientation, no fullscreen request. What changes is how the game lays itself out in the
-      viewport it is given: *"the game should be rotated in the viewport — so when I'm looking at it
-      it should be sideways"*.
-
-      **The answer is to rotate the presentation, and only that.** *(2026-09-05, choosing between
-      three levers.)* When the viewport is portrait, the game is presented rotated 90°, so it is
-      landscape however the phone is held and on every platform — including iOS Safari in a tab,
-      which has no orientation API at all.
+      orientation, no fullscreen request — only how the game lays itself out in the viewport it is
+      given. That is also why it works on iOS Safari in a tab, which has no orientation API at all.
 
       **The two rejected levers, named so they are cheap to pick up if this one disappoints:**
       writing the PWA manifest (`progressive_web_app/enabled=false` today, so
@@ -571,18 +591,13 @@ device or the real address:**
       **Both are ruled out by the instruction rather than by cost:** each one *changes* the device's
       orientation mode, and a phone whose owner turned auto-rotate off has said what they want.
 
-      **The cost is input, not drawing, and it is the whole risk of the item.** Godot maps a touch
-      to a canvas position from the element's bounding rect, so a CSS rotation of the canvas leaves
-      the stick, the run button and the pause button responding in the wrong places unless pointer
-      coordinates are remapped with the same transform. **The alternative worth measuring first is
-      to rotate inside the engine instead** — the root viewport's own transform, where Godot already
-      maps input through the canvas transform and no remapping is needed. Whichever is taken, the
-      thing that proves it is a test: a portrait window, a touch at a known screen position, and the
-      control it must land on.
-
-      **Then the overlay is deleted rather than kept as a fallback.** A presentation that is always
-      landscape has nothing to ask for, and an overlay that can still appear is the same substitution
-      surviving in a smaller form
+      **It has to be photographed, and it was one shell argument away from being photographable.**
+      `--touch` already forces `TouchInput.available()` true in a debug build — it is how M60's
+      on-screen stick and `RUN` button were looked at — but `tools/shot.sh` passes a hardcoded
+      `--resolution 1280x720`, so every picture the rig can take is of the landscape branch, which
+      was already correct. **`shot.sh` takes a resolution**, and the rotated branch is looked at in a
+      portrait window before anything is called done. A test that asserts a transform cannot catch a
+      sign error the transform and the drawing share — that is how three of these four shipped
 
 - [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
       pointing home, and the stick and the run button sit at that height on both sides — so during
