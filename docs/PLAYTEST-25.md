@@ -253,6 +253,15 @@ scenery and not a loudspeaker — it is a real source with an unreasonable **rea
 carries 12.0 out to **170px**, which is most of the way across a street, so it charges people who
 are nowhere near it and is invisible to them while it does. The fix is a short radius, not silence.
 
+**And the player named where the 170 came from**, which is the thing that makes it a design fault
+rather than a badly chosen number:
+
+> "that number was so big because it was a point source before"
+
+A field computed from a single point has to be wide enough to stand in for a thing that is not a
+point. The radius was doing the body's job. Once the field is the body's own shape — finding 10 —
+that job goes away and the number should come **down**, not be carried across.
+
 Asked whether a market stall is the same, the player said yes. So the rows sort three ways:
 
 - **Silent — pure obstruction**, their whole price is being in the way: `construction`,
@@ -330,9 +339,17 @@ rationale — *"an entity moving towards you has more of an effect than if it mo
 orthogonal"*. The offset is what buys the asymmetry; the eccentricity alone does not. A rectangle along the
 barrier's own length with circular caps at its ends — which is what a body that is drawn as a spread
 along the pavement actually occupies. Today every field in the game is a disc centred on the
-instance, so a six-tile café frontage prices someone standing across the street exactly as it prices
-someone standing at the tables, and reaches a long way perpendicular to itself while under-reaching
-along its own length.
+instance, so a café frontage prices someone standing across the street exactly as it prices someone
+standing at the tables, and reaches a long way perpendicular to itself while under-reaching along
+its own length.
+
+**The bodies, so nobody sizes this off a guess.** A spread is drawn `obstructs_radius` either side
+of its centre (`EventInstance._draw_spread` and `_draw_cafe` both take `half = max(11, obstructs_
+radius)`), so the frontages are **48px** for `cafe_tables` (24px each way, against a 170px field),
+**56px** for `market_stall` (28, against 185), **64px** for `construction` (`SIDEWALK_SPREAD_MAX`,
+against 200), **44px** for `delivery_van` (`VEHICLE_BODY` 22, against 150) and **124px** for
+`barricade` (62, against 120). Only the barricade is long against its own reach; the rest are short
+bodies wearing wide circles.
 
 **This is finding 9 seen from the other side.** Tightening `cafe_tables`' 170px circle makes it stop
 charging people who are nowhere near it, and a capsule is the shape that would have made the circle
@@ -356,10 +373,16 @@ clearance a lethal row keeps, the streaming radius, the denial radius a park spo
 **And there is a trap in it that has to be named before anybody writes the code.** Under the
 Minkowski rule, `inner_radius` and `outer_radius` stop meaning *distance from the centre* and start
 meaning *distance from the body*. For a point body those are the same number and nothing moves. For
-a six-tile café frontage they are not: read naively, a 170px outer radius becomes 170px **beyond**
-the whole spread, which is a **larger** field than today's, not a smaller one — the exact opposite
-of what findings 8 and 9 are asking for. So the rows with bodies need their radii re-read rather
-than carried across, and the change is not a refactor even where it looks like one.
+a spread they are not: read naively, a 170px outer radius becomes 170px **beyond** the body, which
+is a **larger** field than today's, not a smaller one — the exact opposite of what findings 8 and 9
+are asking for.
+
+**The player's own reading points the other way and is the one to build to**: *"that number was so
+big because it was a point source before"*. The radius was standing in for a body the maths could
+not see, so once the shape carries the body the radius should come down by roughly what the body was
+worth — for `cafe_tables`, on the order of the 24px half-frontage, and much more than that if the
+reach was never justified at 170px in the first place. Either way the numbers get **derived**, not
+carried across, and the change is not a refactor even where it looks like one.
 
 What each row carries today — every one of them stationary, every one of them obstructing:
 

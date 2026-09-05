@@ -935,16 +935,30 @@ thing than behind it.
 
       The rows it changes are the ones drawn as a spread along a pavement — `cafe_tables` through
       `EventInstance._draw_cafe`, and `construction`, `market_stall`, `barricade` and `delivery_van`
-      through `_draw_spread`. A six-tile café frontage currently prices somebody across the street
-      exactly as it prices somebody standing at the tables, reaching far perpendicular to itself and
-      falling short along its own length.
+      through `_draw_spread`. A café frontage currently prices somebody across the street exactly as
+      it prices somebody standing at the tables, reaching far perpendicular to itself and falling
+      short along its own length.
 
-      **The trap, and it has to be settled before any code**: under this rule `inner_radius` and
+      **The bodies, so this is not sized off a guess.** A spread is drawn `obstructs_radius` either
+      side of centre (`_draw_spread` and `_draw_cafe` both take `half = max(11, obstructs_radius)`),
+      so the frontages are 48px for `cafe_tables` against a 170px field, 56px for `market_stall`
+      against 185, 64px for `construction` against 200, 44px for `delivery_van` against 150 and
+      124px for `barricade` against 120. Only the barricade is long against its own reach; the rest
+      are short bodies wearing wide circles.
+
+      **The radii change meaning, and that has to be settled before any code**: `inner_radius` and
       `outer_radius` stop meaning *distance from the centre* and start meaning *distance from the
       body*. Identical for a point, not for a spread — read across naively, a 170px outer radius
-      becomes 170px **beyond** the whole café, which is a **bigger** field than today's and the
-      exact opposite of what M72 is being asked for. Every row with a body needs its radii re-read
-      rather than carried over. This is not the refactor it looks like.
+      becomes 170px **beyond** the whole café, a **bigger** field than today's and the exact
+      opposite of what M72 is being asked for.
+
+      **Which way they should actually move is the player's own point** *(2026-09-05: "that number
+      was so big because it was a point source before")*: a field computed from one point has to be
+      wide enough to stand in for a thing that is not a point, so the radius was doing the body's
+      job. Once the shape carries the body, that job goes away and the number comes **down** — by
+      at least what the body was worth, and further wherever the reach was never justified. Every
+      row with a body gets its radii **derived**, never carried over. This is not the refactor it
+      looks like.
 
       **This overturns the bullet that used to stand here** — *"a stationary thing keeps its circle,
       by construction: eccentricity from speed means zero speed is a disc"*, and with it the
