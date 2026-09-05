@@ -13,6 +13,13 @@ const SIZE := 15.0
 var target := Vector2.INF
 var active := false
 
+## Whether `main` has decided a portrait touch window is presenting rotated. Set from outside —
+## see `TouchControls.rotated`'s own doc for why this is a flag rather than a query at each use
+## site. `hud.gd`'s `_root` is pinned to `ScreenOrientation.DESIGN_SIZE` regardless of rotation, so
+## the raw canvas-space position below has to come back through `ScreenOrientation.to_design_space()`
+## before it is usable as a local coordinate on this control.
+var rotated := false
+
 func show_toward(world_position: Vector2) -> void:
 	target = world_position
 	active = true
@@ -30,7 +37,8 @@ func _draw() -> void:
 	if not active or target == Vector2.INF:
 		return
 
-	var on_screen: Vector2 = get_viewport().get_canvas_transform() * target
+	var on_screen: Vector2 = ScreenOrientation.to_design_space(
+			get_viewport().get_canvas_transform() * target, rotated)
 	var centre := size * 0.5
 	var offset := on_screen - centre
 	if offset.length() < 1.0:

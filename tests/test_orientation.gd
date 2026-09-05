@@ -8,8 +8,22 @@ extends RefCounted
 ## under the wrong control. This suite proves the remap by construction: a touch sent at the
 ## exact screen position `ScreenOrientation.to_presented_space()` says a design-space point ends
 ## up at, while rotated, must be read back by `TouchControls` as that same design-space point.
+##
+## **What none of that can prove is a sign error the world and the drawing share** — playtest 23's
+## finding, on a build this suite's earlier checks all passed. A test can assert a transform;
+## it cannot look at a picture. So alongside the transform checks below, `pin_to_design_box()` and
+## `apply_to_layer()` — the two `ScreenOrientation` helpers every rotating `CanvasLayer` calls — are
+## checked to compose correctly, and `main._screen_furniture_layers()` is checked to still name
+## every layer it should, so a layer added later and forgotten there is a failing test rather than
+## a picture nobody happened to take. The picture still has to be taken too — see
+## `docs/evidence/` for the ones this milestone's report cites.
 
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
+const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
+const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
+const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
+const TITLE_SCREEN_SCENE := preload("res://scenes/ui/title_screen.tscn")
+const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 func run(t) -> void:
 	_test_wants_rotation_only_for_a_portrait_touch_window(t)
@@ -19,6 +33,10 @@ func run(t) -> void:
 	_test_a_rotated_touch_still_grabs_the_stick(t)
 	_test_a_rotated_touch_still_holds_the_run_button(t)
 	_test_a_rotated_touch_still_fires_the_pause_button(t)
+	_test_pin_to_design_box_gives_a_fixed_rect_regardless_of_any_parent(t)
+	_test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t)
+	_test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(t)
+	_test_every_screen_furniture_layer_is_named_by_main(t)
 	_release_actions()
 
 func _controls(t) -> TouchControls:
@@ -122,6 +140,113 @@ func _test_a_rotated_touch_still_fires_the_pause_button(t: Node) -> void:
 
 	controls.queue_free()
 	Input.action_release(&"pause")
+
+## `pin_to_design_box()` has to give the same fixed rect whatever it is asked to pin — that is the
+## whole point of using fixed (rather than fractional) anchors: a `Control`'s own offsets then
+## decide its rect independently of any parent's size. Checked by pinning one under a parent whose
+## own size is nothing like 1280x720, which a fractional anchor would have picked up and a fixed
+## one must not.
+func _test_pin_to_design_box_gives_a_fixed_rect_regardless_of_any_parent(t: Node) -> void:
+	var parent := Control.new()
+	parent.size = Vector2(50.0, 4000.0)
+	t.add_child(parent)
+	var control := Control.new()
+	parent.add_child(control)
+
+	ScreenOrientation.pin_to_design_box(control)
+
+	t.check(control.position.is_equal_approx(Vector2.ZERO),
+			"pinned to the design box starts at the origin")
+	t.check(control.size.is_equal_approx(ScreenOrientation.DESIGN_SIZE),
+			"pinned to the design box is exactly 1280x720, not the parent's own 50x4000")
+
+	control.free()
+	parent.free()
+
+## The not-rotated case is exactly identity — no rotation and no recentring — and the rotated case
+## is exactly `rotation_transform()`, so `main._apply_orientation()` reads as the one call
+## `apply_to_layer()` is for rather than an `if rotate: ... else: IDENTITY` at every layer.
+func _test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t: Node) -> void:
+	var layer := CanvasLayer.new()
+
+	ScreenOrientation.apply_to_layer(layer, false)
+	t.check(layer.transform == Transform2D.IDENTITY,
+			"not rotated is exactly identity, nothing partial")
+
+	ScreenOrientation.apply_to_layer(layer, true)
+	t.check(layer.transform == ScreenOrientation.rotation_transform(),
+			"rotated is exactly the one rotation every layer of screen furniture shares")
+
+	layer.free()
+
+## **The test a screenshot cannot be**: proves the two halves of the mechanism compose. A `Control`
+## pinned to the design box and parented under a layer carrying the rotation must put a
+## design-space point at exactly the screen position `ScreenOrientation.to_presented_space()` says
+## that point belongs at — the same relationship `TouchControls`' own tests hold its input remap
+## to, checked here for the drawing side every other layer of screen furniture relies on instead.
+func _test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(t: Node) -> void:
+	var layer := CanvasLayer.new()
+	var control := Control.new()
+	layer.add_child(control)
+	ScreenOrientation.pin_to_design_box(control)
+	ScreenOrientation.apply_to_layer(layer, true)
+
+	for point in [Vector2(130.0, 500.0), Vector2(1150.0, 500.0), Vector2(640.0, 360.0)]:
+		# The control's own transform is identity (fixed anchors, no rotation or scale of its
+		# own), so a point local to it is a point in the layer's local space too -- what is left
+		# to check is that the layer's transform alone carries it the rest of the way.
+		var presented: Vector2 = layer.transform * (control.get_transform() * point)
+		t.check(presented.is_equal_approx(ScreenOrientation.to_presented_space(point, true)),
+				"design point %s lands where to_presented_space says it should" % point)
+
+	control.free()
+	layer.free()
+
+## **So an eighth layer cannot be added and forgotten.** `main._screen_furniture_layers()` is the
+## one list `_apply_orientation()` walks; this pins down exactly what it names today, so a name
+## quietly dropped from it — the failure mode a screenshot of a *different* screen would never
+## catch — is a red test rather than a rotation nobody happened to look at.
+##
+## `main.gd` is never instantiated as a scene in this suite — see `tests/test_main.gd`'s own doc
+## for why — so this is the same script-only instance, its handful of dependencies wired by hand.
+func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
+	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	t.add_child(hud)
+	hud.set_process(false)
+	var edge_layer := CanvasLayer.new()
+	var touch_layer := CanvasLayer.new()
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+	var pause: CanvasLayer = PAUSE_SCREEN_SCENE.instantiate()
+	t.add_child(pause)
+	var title: CanvasLayer = TITLE_SCREEN_SCENE.instantiate()
+	t.add_child(title)
+	var status_layer := CanvasLayer.new()
+
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._hud = hud
+	main._edge_layer = edge_layer
+	main._touch_layer = touch_layer
+	main._summary = summary
+	main._pause = pause
+	main._title = title
+	main._status_layer = status_layer
+
+	var layers: Array[CanvasLayer] = main._screen_furniture_layers()
+	t.check(layers.size() == 7, "every layer of screen furniture is named, and nothing extra")
+	for layer: CanvasLayer in layers:
+		t.check(layer != null, "no layer in the list is unset")
+	for expected in [hud, edge_layer, touch_layer, summary, pause, title, status_layer]:
+		t.check(expected in layers, "the list still names the layer main wires up for it")
+
+	main.free()
+	hud.free()
+	edge_layer.free()
+	touch_layer.free()
+	summary.free()
+	pause.free()
+	title.free()
+	status_layer.free()
 
 func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()

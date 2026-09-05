@@ -11,15 +11,19 @@ extends CanvasLayer
 ## build, because the rigs and `tools/shot.sh` read them, and the release build drops them
 ## silently rather than replacing them with anything.
 
-@onready var _meters: Control = $Meters
-@onready var _sleepiness: MeterBar = $Meters/Sleepiness
-@onready var _excitement: MeterBar = $Meters/Excitement
-@onready var _state_label: Label = $Meters/State
-@onready var _resistance_label: Label = $Meters/Resistance
-@onready var _header: Label = $Header
-@onready var _clock: Label = $Clock
-@onready var _home_arrow: HomeArrow = $HomeArrow
-@onready var _teach: Label = $Teach
+## Pinned to `ScreenOrientation.DESIGN_SIZE` in `_ready()`, so every child below keeps anchoring
+## against the fixed 1280x720 box it is authored for rather than against whatever
+## `content_scale_size` currently reports — see `ScreenOrientation.pin_to_design_box()`.
+@onready var _root: Control = $Root
+@onready var _meters: Control = $Root/Meters
+@onready var _sleepiness: MeterBar = $Root/Meters/Sleepiness
+@onready var _excitement: MeterBar = $Root/Meters/Excitement
+@onready var _state_label: Label = $Root/Meters/State
+@onready var _resistance_label: Label = $Root/Meters/Resistance
+@onready var _header: Label = $Root/Header
+@onready var _clock: Label = $Root/Clock
+@onready var _home_arrow: HomeArrow = $Root/HomeArrow
+@onready var _teach: Label = $Root/Teach
 
 ## Read once per instance rather than at each use site, so a test can flip it and drive both HUD
 ## shapes without needing an actual debug build — the test process itself always is one, so asking
@@ -48,6 +52,7 @@ const _STATE_TEXT := {
 }
 
 func _ready() -> void:
+	ScreenOrientation.pin_to_design_box(_root)
 	_sleepiness.label = "SLEEPINESS"
 	_sleepiness.fill_colour = Color("4a5f9e")
 	_sleepiness.full_colour = Color("8fb4d9")
@@ -322,6 +327,13 @@ func _refresh_resistance() -> void:
 		if step:
 			line += "   somewhere out there: %s" % step.title.to_lower()
 	_resistance_label.text = line
+
+## Forwarded from `main._apply_orientation()`. `HomeArrow` is the one child here that computes a
+## screen position from a world one every frame rather than sitting still under `_root`'s own
+## pinned anchors, so it needs to know when to correct for the rotation the same way `DangerEdge`
+## does — see `ScreenOrientation`'s class doc.
+func set_rotated(rotate: bool) -> void:
+	_home_arrow.rotated = rotate
 
 ## The one moment the game says something out loud.
 ## Shown only while she is carrying a sleeping baby home.
