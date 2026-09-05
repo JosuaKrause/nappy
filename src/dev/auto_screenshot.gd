@@ -62,6 +62,16 @@ extends Node
 ## screen is mostly made of.
 ##
 ##     tools/shot.sh restart.png 6 --press pause 2 --press key:r 3.5
+##
+## `--tap X Y` sends one synthetic tap at the raw screen position `(X, Y)`, the moment the run
+## starts — `TapControls` reads a mouse click the same way it reads a finger in a debug build (see
+## its own `_input()`), so this is what makes tap mode photographable, the way `--walk` is what
+## makes the stick mode photographable. `X` and `Y` are in whatever box the window is actually
+## presenting — the unrotated 1280x720 one by default, or the rotated 720x1280 one under
+## `RESOLUTION=720x1280 ... --touch`, in which case give a point `ScreenOrientation
+## .to_presented_space()` already maps one from, the same box a real touch would arrive in.
+##
+##     tools/shot.sh tap.png 4 --touch --controls tap --tap 900 500
 
 const DEFAULT_SECONDS := 1.5
 
@@ -99,6 +109,8 @@ var _fled := false
 ## What to tap and when: `[{ "what": String, "at": float, "done": bool }]`, in the order the flags
 ## were given. See `--press`.
 var _presses: Array[Dictionary] = []
+## Where `--tap X Y` asks for a synthetic tap, or `Vector2.INF` for none given. See `_tap_screen()`.
+var _tap_at := Vector2.INF
 
 ## Returns a configured instance, or null if the command line did not ask for a screenshot —
 ## including every time it is asked from outside a debug build. `--screenshot`, `--after`,
@@ -143,6 +155,9 @@ static func from_command_line() -> AutoScreenshot:
 			push_warning("unknown --press action '%s'" % what)
 			continue
 		node._presses.append({"what": what, "at": float(args[i + 2]), "done": false})
+	var tap := args.find("--tap")
+	if tap != -1 and tap + 2 < args.size():
+		node._tap_at = Vector2(float(args[tap + 1]), float(args[tap + 2]))
 	return node
 
 ## What marks a `--press` argument as a raw key rather than an input action.
@@ -182,6 +197,8 @@ func _ready() -> void:
 		Input.action_press(_holding)
 	if _flees:
 		EventBus.event_telegraphed.connect(_on_telegraphed)
+	if _tap_at != Vector2.INF:
+		_send_tap_once_the_camera_has_positioned()
 
 ## Steps the script forward against `_elapsed`, the same clock `--after` and `--flee` already read,
 ## rather than a timer of its own. `while` and not `if`: a step shorter than one frame's delta must
@@ -257,6 +274,25 @@ func _tap(what: String) -> void:
 			action.action = what
 			action.pressed = pressed
 			event = action
+		Input.parse_input_event(event)
+
+## `TapControls` maps a tap through `get_viewport().get_canvas_transform()`, which is the
+## follow camera's own — and a `Camera2D` has not positioned itself even once on the very first
+## frame its owner enters the tree, the frame this node's own `_ready()` runs on. A tap sent that
+## early reads a stale, camera-less transform and lands nowhere near the player, unlike `--walk`
+## and `--press`, which press actions and propagate events with no viewport question to get wrong.
+## One physics frame is enough for the follow camera to have run at least once.
+func _send_tap_once_the_camera_has_positioned() -> void:
+	await get_tree().physics_frame
+	_tap_screen(_tap_at)
+
+## `--tap X Y`: one synthetic tap at `position`, press then release, the same shape a real finger's
+## own `InputEventScreenTouch` takes — `TapControls` reads only the press half.
+func _tap_screen(position: Vector2) -> void:
+	for pressed in [true, false]:
+		var event := InputEventScreenTouch.new()
+		event.position = position
+		event.pressed = pressed
 		Input.parse_input_event(event)
 
 ## The one answer the game asks for: about-turn, and hold shift.

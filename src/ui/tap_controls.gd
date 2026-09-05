@@ -42,6 +42,13 @@ const DOUBLE_TAP_DISTANCE := 60.0
 ## walk with it, and it moves against a played day.
 const ARRIVAL_PAUSE_AFTER := 5.0
 
+## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
+## `TouchControls._touch` is — and the reason the mouse stand-in below checks it: Godot emulates a
+## mouse click from every real touch by default (`input_devices/pointing/emulate_mouse_from_touch`),
+## so without this gate a single tap on an actual touch device would fire `_on_tap()` twice in the
+## same instant, through both event types, and read as its own double tap.
+var _touch := TouchInput.available()
+
 ## The rig, found the same way `HUD._rig` is: a state of the player rather than something a
 ## signal carries.
 var _rig: Node2D
@@ -72,11 +79,24 @@ func _ready() -> void:
 	# `TouchControls` stays ALWAYS rather than the inherited PAUSABLE.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-## Every real tap: `InputEventScreenTouch` is what a finger sends. A mouse click stands in for one
-## too, in the dev build only -- that is its own later entry, not this one.
+## Every real tap: `InputEventScreenTouch` is what a finger sends. `InputEventMouseButton` stands
+## in for one too, in a debug build with no touch hardware of its own — "on non-mobile we can try
+## clicking with the mouse instead of tapping" is a way to try the mode out on a desktop, not a
+## control an exported build owes a mouse.
+##
+## **Gated on `not _touch`, and that gate is load-bearing, not a nicety**: Godot emulates a mouse
+## click from every real touch by default, so on an actual touch device a single tap would
+## otherwise arrive here twice, once as each event type, close enough together in space and time to
+## read as its own double tap. `not _touch` is false on any device this matters on — a real
+## touchscreen, or a screenshot rig run with `--touch` — so the emulated click is never read there,
+## and the mouse-only branch is live only where no touch event could ever collide with it.
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
 		_on_tap((event as InputEventScreenTouch).position, Time.get_ticks_msec() / 1000.0)
+	elif OS.is_debug_build() and not _touch and event is InputEventMouseButton:
+		var click := event as InputEventMouseButton
+		if click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+			_on_tap(click.position, Time.get_ticks_msec() / 1000.0)
 
 ## A tap arrived at `screen_position` -- the same canvas-space coordinate the event itself carries,
 ## whatever the window's own rotation -- at moment `now`.

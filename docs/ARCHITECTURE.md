@@ -106,7 +106,7 @@ windowed, saves the viewport after N frames and quits.
 
 `DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
 `--overview`, `--day-length`, `--ending` and `--controls`; `src/dev/auto_screenshot.gd` parses `--screenshot`
-and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`) itself, and gates its own
+and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`, `--tap`) itself, and gates its own
 entry point the same way rather than moving that parsing out. Both read `OS.is_debug_build()`,
 which is `false` for an exported release template, so none of this furniture — nor the snapshot
 key `main.gd` reads directly — can be reached from a public build regardless of what is on the
@@ -174,6 +174,13 @@ parameter through `JavaScriptBridge.eval("window.location.search")` — the one 
 not gated behind `DevFlags.enabled()`, because that gate is `OS.is_debug_build()` and the deployed
 page is exactly where a public build still has to be switchable — and falls back to the stick if
 neither answers.
+
+Testable without a phone: `TapControls` reads an `InputEventMouseButton` the same way it reads a
+finger, gated on `not TouchInput.available()` as well as a debug build — a real touch device
+already emulates a mouse click from every tap it makes, so without that second gate a single real
+tap would fire twice, once through each event, and read as its own double tap. `--tap X Y`
+(`src/dev/auto_screenshot.gd`) sends one synthetic tap the same way, which is what makes tap mode
+photographable at all — `tools/shot.sh out.png 3 --touch --controls tap --tap 640 420`.
 
 ## Autoloads
 

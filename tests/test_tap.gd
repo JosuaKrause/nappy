@@ -21,6 +21,8 @@ func run(t) -> void:
 	_test_a_tap_during_tap_modes_own_pause_still_sets_the_next_destination(t)
 	_test_a_tap_during_an_unrelated_pause_does_nothing(t)
 	_test_an_unrelated_pause_force_releases_a_held_direction(t)
+	_test_a_mouse_click_stands_in_for_a_tap(t)
+	_test_a_touch_devices_own_emulated_click_is_ignored(t)
 	t.get_tree().paused = was_paused
 	_release_actions()
 
@@ -244,6 +246,71 @@ func _test_an_unrelated_pause_force_releases_a_held_direction(t) -> void:
 	t.check(not Input.is_action_pressed("move_right") and not Input.is_action_pressed("run"),
 			"Esc or any other pause force-releases whatever tap mode was holding")
 	t.check(not tap._walking, "and abandons the leg rather than merely pausing mid-stride")
+
+	tap.free()
+	rig.free()
+
+## "On non-mobile we can try clicking with the mouse instead of tapping" -- a left click reaches
+## `_on_tap()` exactly the way a finger's own `InputEventScreenTouch` does. This suite's own process
+## is always a debug build, the same as every other dev-only path in this project, so the gate
+## itself is not what this checks; only that a click is read at all.
+func _test_a_mouse_click_stands_in_for_a_tap(t) -> void:
+	# Leftover pause from the previous test's own unrelated-pause check, not this one's concern.
+	t.get_tree().paused = false
+	var rig := _rig_at(Vector2.ZERO)
+	t.add_child(rig)
+	var tap := TapControls.new()
+	t.add_child(tap)
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = tap.get_viewport().get_canvas_transform() * Vector2(100.0, 0.0)
+	tap._input(click)
+	t.check(Input.is_action_pressed("move_right"), "a left click walks exactly as a tap would")
+
+	# A right click, or the release half of a left one, is not a tap.
+	var release := click.duplicate()
+	release.pressed = false
+	tap._input(release)
+	var other_button := InputEventMouseButton.new()
+	other_button.button_index = MOUSE_BUTTON_RIGHT
+	other_button.pressed = true
+	other_button.position = tap.get_viewport().get_canvas_transform() * Vector2(-100.0, 0.0)
+	tap._input(other_button)
+	t.check(not Input.is_action_pressed("move_left"), "only a left click's own press is a tap")
+
+	tap.free()
+	rig.free()
+
+## **The gate that makes the mouse stand-in safe on a real touch device.** Godot emulates a mouse
+## click from every real touch by default (`input_devices/pointing/emulate_mouse_from_touch`), so
+## without `not _touch` a single tap would fire `_on_tap()` twice, once through each event, at the
+## same place and the same instant -- close enough on both windows to read as its own double tap.
+## This is the bug a first version of `--tap` actually hit: a lone `--tap` on a screenshot rig run
+## with `--touch` came back running, not walking.
+func _test_a_touch_devices_own_emulated_click_is_ignored(t) -> void:
+	var rig := _rig_at(Vector2.ZERO)
+	t.add_child(rig)
+	var tap := TapControls.new()
+	tap._touch = true
+	t.add_child(tap)
+
+	var touch := InputEventScreenTouch.new()
+	touch.position = tap.get_viewport().get_canvas_transform() * Vector2(100.0, 0.0)
+	touch.pressed = true
+	tap._input(touch)
+	t.check(not Input.is_action_pressed("run"), "the real touch alone only walks")
+
+	# The engine's own emulated click, same place, same instant -- exactly what a real touch device
+	# would also deliver right behind the touch above.
+	var emulated := InputEventMouseButton.new()
+	emulated.button_index = MOUSE_BUTTON_LEFT
+	emulated.pressed = true
+	emulated.position = touch.position
+	tap._input(emulated)
+	t.check(not Input.is_action_pressed("run"),
+			"a touch device's own emulated click is not read as a second, doubling tap")
 
 	tap.free()
 	rig.free()
