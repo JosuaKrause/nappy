@@ -169,7 +169,11 @@ Arriving starts a clock (`TapControls.ARRIVAL_PAUSE_AFTER`) rather than pausing 
 ordinary loop of arriving and tapping on never stutters; only a genuine stand opens the same
 `PauseScreen` the stick's own pause button opens, through the same
 `TouchControls._send_pause_action()`. `ControlsMode.resolve()` reads `DevFlags.controls_override()`
-(`--controls tap|stick`, a debug build only) and answers `STICK` otherwise.
+(`--controls tap|stick`, a debug build only) first, then the page's own `?controls=` query
+parameter through `JavaScriptBridge.eval("window.location.search")` — the one flag in the project
+not gated behind `DevFlags.enabled()`, because that gate is `OS.is_debug_build()` and the deployed
+page is exactly where a public build still has to be switchable — and falls back to the stick if
+neither answers.
 
 ## Autoloads
 
