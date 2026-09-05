@@ -1,16 +1,36 @@
 ---
 name: orchestrating
-description: How implementation work is delegated to sub-agents — delegating is the default, Sonnet agents in isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Injected automatically at the start of every session, because who does the work is decided before the first tool call.
+description: How implementation work is delegated to sub-agents — isolated worktrees, one milestone per agent, and what a task description must contain for the result to be mergeable. Loaded at session start, before deciding who does the work.
 ---
 
 # Orchestrating sub-agents
 
-**Implementation of a specified milestone is delegated to a Sonnet agent in an isolated git
-worktree; the orchestrating session designs, specifies, merges and maintains the queue.** The split
-holds because the two jobs want different things: implementation wants fresh context and a fenced
-scope; orchestration wants the whole queue, the player's words, and the authority to merge.
+**When delegating a milestone, give the implementation agent an isolated git worktree;
+the orchestrating session designs, specifies, reviews integration and maintains the queue.**
+The split gives implementation fresh context and a fenced scope while orchestration retains
+the whole queue and the player's words.
 
-## Delegating is the default, and implementing by hand is the decision
+Use Sonnet in Claude Code; in Codex, use its available delegation tool and an appropriate
+available model. The contract is the same: fresh context, a bounded scope and an isolated
+checkout for implementation. Create the worktree explicitly if the tool does not create one.
+Read-only review can share a checkout. If delegation is unavailable, do the bounded work locally
+and retain the same verification gate. Tool or model names do not require changing hosts.
+
+## Codex: delegate when the split earns its cost
+
+Codex subagents inherit the parent model and reasoning effort unless configured otherwise.
+Delegation is therefore not automatically a usage saving. Use a subagent for an independent
+review, a substantial investigation that would crowd the main context, or a bounded implementation
+that can run alongside useful work. Keep small fixes, tightly coupled changes and work that the
+main session would merely wait for local. A task touching several files or needing a test does
+not by itself justify delegation in Codex.
+
+Use a less costly model only when explicitly available and suitable for the task, with the same
+review and verification gates. Do not assume Codex automatically routes gruntwork to one.
+The Claude-specific default below does not apply to Codex; the scope, handoff and verification
+contracts in the remaining sections apply whenever either host delegates.
+
+## Claude Code: delegating is the default, and implementing by hand is the decision
 
 **Before writing code in `src/` or `tests/`, the question is not "can I do this" but "is this
 specified enough to hand over".** If it is, hand it over.
