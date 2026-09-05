@@ -191,7 +191,10 @@ func _apply_stick() -> void:
 	_set_axis(&"move_left", &"move_right", _stick_vector.x)
 	_set_axis(&"move_up", &"move_down", _stick_vector.y)
 
-func _set_axis(negative: StringName, positive: StringName, value: float) -> void:
+## Static, and reused by `TapControls`: pressing one signed value onto a pair of opposite actions
+## is exactly what a tap's own fixed heading needs too — the stick's own deflection and a tap's
+## own unit vector are pressed through the same one line either way.
+static func _set_axis(negative: StringName, positive: StringName, value: float) -> void:
 	if value > 0.0:
 		Input.action_press(positive, value)
 		Input.action_release(negative)
@@ -216,6 +219,12 @@ func _release_all() -> void:
 	_stick_vector = Vector2.ZERO
 	_run_touch = -1
 	_pause_touch = -1
+	_release_movement()
+
+## The four `move_*` actions and `run`, released together — the shape both this and `TapControls`
+## need at the moment either mode has to let go of a direction that is not the player's own doing:
+## the day ending, a pause opening, or a leg of a tap arriving.
+static func _release_movement() -> void:
 	Input.action_release(&"move_left")
 	Input.action_release(&"move_right")
 	Input.action_release(&"move_up")
