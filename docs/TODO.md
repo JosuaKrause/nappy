@@ -903,9 +903,28 @@ thing than behind it.
       pointed at her that is a different sum, and a version stated over the mean radius would pass
       while the encounter it describes is unfair — the same failure `Tuning.pursuit_standoff()`
       exists to stop, one system over
-- [ ] **A stationary thing keeps its circle**, by construction: eccentricity from speed means zero
-      speed is a disc. So the change is *only* about the mobile rows, which is a much smaller blast
-      radius than it first reads as — and the pursuers are where it will be felt
+- [ ] **A long body gets a long field: a capsule, not a circle.** *(2026-09-05: "horizontal
+      barriers need a combination of rectangular and circular fields ... a rounded rectangle if you
+      will ... since they are not point sources".)* A rectangle along the body's own length with
+      circular caps — the distance to a **line segment** rather than to a point. Every field in this
+      game is computed from one point today, and the rows drawn as a spread along a pavement
+      (`cafe_tables` through `EventInstance._draw_cafe`; `construction`, `market_stall`, `barricade`
+      and `delivery_van` through `_draw_spread`) are not points. A six-tile café frontage currently
+      prices somebody across the street exactly as it prices somebody standing at the tables,
+      reaching far perpendicular to itself and falling short along its own length.
+
+      **This overturns the bullet that used to stand here** — *"a stationary thing keeps its circle,
+      by construction: eccentricity from speed means zero speed is a disc"*, and with it the
+      conclusion that this milestone touches only the mobile rows. *Overturned on 2026-09-05 by the
+      player, because a body's shape and a body's motion are two independent sources of shape, and
+      only the second one goes to zero when the thing stands still.* Whether the two compose — a
+      capsule that is also eccentric — is open, and nothing needs it answered while every capsule
+      row is stationary.
+
+      **It is M72's "close only" item seen from the other side.** The reason `cafe_tables` needs a
+      170px radius at all is that a circle is the wrong shape for the body it is wrapped around, so
+      tightening the radius is the stopgap and this is the fix. Expect the tightened numbers to want
+      revisiting once the shape lands
 - [ ] **And it has to be visible.** The falloff is invisible today and that is fine because it is
       symmetric; a field that is stronger in front of a van is a routing fact the player can only
       learn by being told or by dying. Ask what draws it before deciding it is free

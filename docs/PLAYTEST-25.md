@@ -1,9 +1,9 @@
 # Playtest 25 — 2026-09-05
 
 A phone session on the mobile build, given as notes across one conversation rather than as a
-written-up run — *"I did a test run with the latest mobile updates"*. **Nine findings.** One is a
+written-up run — *"I did a test run with the latest mobile updates"*. **Ten findings.** One is a
 day that will not end, one is a build that will not start, one is the two control schemes coming
-out of their experiment, and six are about what the city costs to walk through.
+out of their experiment, and seven are about what the city costs to walk through.
 
 **Only the boot failure is diagnosed.** It was reproduced and fixed in the session it was reported
 in. Everything else below is the player's own sentence plus, where one was looked for, a statement
@@ -228,7 +228,7 @@ authored when a street held a few of them. The player's own framing — that a s
 pavement should give the meter back — is a statement about what calm ground has to be worth, and it
 is worth measuring against the same log after the barrier fields go.
 
-## 9. Static blockages should not raise excitement, unless the thing itself is exciting
+## 9. Static blockages should not raise excitement — unless the thing is exciting, and then only up close
 
 > "static blockages in general shouldn't increase excitement"
 
@@ -241,22 +241,84 @@ way costs **route and nothing else**, and a thing a baby would actually notice k
 whether or not it also blocks. Being in the way is the entire price of a barrier; being interesting
 is priced separately and on its own merits.
 
-The rows it has to be drawn through, with what each carries today — every one of them stationary
-and every one of them obstructing:
+**And then the player drew the line again, in a place the first sentence had put on the wrong
+side:**
+
+> "restaurants should only increase your excitement when you're actually close"
+
+> "but they should nonetheless"
+
+**That is a third category and it is where most of this finding actually lives.** A café is not
+scenery and not a loudspeaker — it is a real source with an unreasonable **reach**. `cafe_tables`
+carries 12.0 out to **170px**, which is most of the way across a street, so it charges people who
+are nowhere near it and is invisible to them while it does. The fix is a short radius, not silence.
+
+Asked whether a market stall is the same, the player said yes. So the rows sort three ways:
+
+- **Silent — pure obstruction**, their whole price is being in the way: `construction`,
+  `delivery_van`, `barricade`.
+- **A field, but close only** — real sources whose reach was authored for a street that held a few
+  of them, not a hundred: `cafe_tables` (12.0 / 170px) and `market_stall` (14.0 / 185px).
+- **A field at range, deliberately**: `ice_cream_van` (13.0 / 240px — the chime carrying three
+  streets is the row) and `leaf_blower` (20.0 / 200px — loud is the whole content). **Whether these
+  two also want tightening is left to measurement** *(2026-09-05, the player's own call: judge it
+  after the rest lands)*, and either answer has to be stated rather than defaulted to.
+
+**Reach, not count, is the thread running through this whole report.** It is what makes finding 8's
+*"for semingly no reason"* true: a source you cannot see is one you cannot walk away from.
+
+## 10. A long barrier needs a long field, not a big circle
+
+> "one note is -- horizontal barriers need a combination of rectangular and circular fields"
+
+> "a rounded rectangle if you will"
+
+and the rationale, which is the part that took the thought:
+
+> "since they are not point sources"
+
+**A capsule: the distance to a line segment rather than to a point.** The reasoning is physical
+rather than aesthetic, and it generalises past the rows named — **every field in this game is
+computed from a single point, and half the things emitting one are not points.** A rectangle along the
+barrier's own length with circular caps at its ends — which is what a body that is drawn as a spread
+along the pavement actually occupies. Today every field in the game is a disc centred on the
+instance, so a six-tile café frontage prices someone standing across the street exactly as it prices
+someone standing at the tables, and reaches a long way perpendicular to itself while under-reaching
+along its own length.
+
+**This is finding 9 seen from the other side.** Tightening `cafe_tables`' 170px circle makes it stop
+charging people who are nowhere near it, and a capsule is the shape that would have made the circle
+unnecessary — the reason the radius has to be so large is that it is the wrong shape for the body it
+belongs to. Worth knowing when the radius is picked, because the radius is the stopgap and this is
+the fix.
+
+**It overturns a sentence already written down, and the player is the one overturning it.** M61's
+entry — fields as ellipses whose eccentricity comes from movement speed — states that *"a stationary
+thing keeps its circle, by construction: eccentricity from speed means zero speed is a disc"*, and
+concludes from that that the change is only about the mobile rows. That is no longer true: a
+stationary barrier gets a shape from its **body**, independently of any shape it gets from its
+**motion**. Whether the two compose — a capsule that is also eccentric — is an open question, and
+the rows it would apply to are stationary, so nothing needs it answered yet.
+
+**The blast radius is M61's, not a small one.** Everything that reasons about "how far" — the
+telegraph contract stated over the gap between inner and outer radii, the placement spacing, the
+clearance a lethal row keeps, the streaming radius, the denial radius a park spoiler is measured by
+— asks a question a circle answers with one number and a capsule answers with two.
+
+What each row carries today — every one of them stationary, every one of them obstructing:
 
 | Row | Field now | Reads as |
 |---|---|---|
-| `construction` | 11.0 over 46/200px | a hoarding, and the widest body in act I |
-| `market_stall` | 14.0 over 44/185px, pulsing every 8s | a trestle across the pavement |
-| `cafe_tables` | 12.0 over 40/170px, pulsing every 6s | chairs and tables to squeeze past |
-| `delivery_van` | 8.0 over 40/150px | a van at the kerb |
-| `barricade` | 6.0 over 40/120px | the act IV hard seal, the one row wide enough to span a street |
-| `ice_cream_van` | 13.0 over 48/240px, pulsing every 11s | **the player's own named exception** — the chime is the point |
-| `leaf_blower` | 20.0 over 40/200px, pulsing every 4s | a man and a machine; loud is the entire row |
+| `construction` | 11.0 over 46/200px | a hoarding, and the widest body in act I — **silent** |
+| `delivery_van` | 8.0 over 40/150px | a van at the kerb — **silent** |
+| `barricade` | 6.0 over 40/120px | the act IV hard seal, the one row wide enough to span a street — **silent** |
+| `market_stall` | 14.0 over 44/185px, pulsing every 8s | a trestle across the pavement — **field, close only** |
+| `cafe_tables` | 12.0 over 40/170px, pulsing every 6s | chairs and tables to squeeze past — **field, close only** |
+| `ice_cream_van` | 13.0 over 48/240px, pulsing every 11s | the chime is the point — **field at range; reach open to measurement** |
+| `leaf_blower` | 20.0 over 40/200px, pulsing every 4s | a man and a machine; loud is the entire row — **field at range; reach open to measurement** |
 
-The first five are barriers. The last two are noise that happens to have a body, and `leaf_blower`
-is the clearest case of what the exception is protecting: nothing about it is worth meeting if its
-field goes.
+`leaf_blower` is the clearest case of what the exception is protecting: nothing about it is worth
+meeting if its field goes.
 
 It interacts directly with findings 5 and 8, and with M64's sealing, which places several hundred
 barrier bodies a day, and it is worth reading the three together: the seals stop being a meter tax, so the
