@@ -295,7 +295,39 @@ out of the same rule rather than needing its own case:
 | any polygon | the polygon offset outward, corners rounded |
 
 The reasoning is physical rather than aesthetic — **every field in this game is computed from a
-single point, and half the things emitting one are not points.** A rectangle along the
+single point, and half the things emitting one are not points.**
+
+And then the other operand, which is what makes this one rule for the whole game rather than one
+rule for barriers:
+
+> "that's for static objects. for moving objects one side of the sum is an oval"
+
+**So the field is always `body ⊕ kernel`, and only the kernel changes**: a **disc** when the thing
+is standing still, an **ellipse** when it is moving, with the eccentricity coming from speed — which
+is M61's original instruction, *"fields should be ellipses, not circles. the excentricity should be
+determined by movement speed"*, arriving as the second half of the same sum rather than as a
+separate system.
+
+**That answers a question this file was about to leave open.** Whether a capsule could also be
+eccentric had no answer; now it does, and it is composition rather than a special case. A stationary
+café is its frontage ⊕ a disc. A van driving at her is its body ⊕ an ellipse.
+
+**And the player scoped the implementation in the same breath:**
+
+> "but most moving objects are small enough to be a point"
+
+**Which means nobody has to compute a general Minkowski sum of two convex shapes.** In practice the
+two cases are disjoint and each collapses to something ordinary: a **static body ⊕ a disc** is a
+capsule or a rounded rectangle, and a **moving point ⊕ an ellipse** is just the ellipse. The cat,
+the loose dog, the cyclist, the flock and the pursuers are all points. The only rows that would need
+the general case are things that are both large and moving — the vehicles — and whether any of them
+is worth the general form is a question to settle then, not an argument for building it now.
+
+**One detail worth carrying over from M61 rather than rediscovering.** Its instruction says *"the
+entity itself lives in one of the focus points"*, not at the centre. That matters, because a kernel
+ellipse **centred** on the body is symmetric front to back and would deliver none of M61's own
+rationale — *"an entity moving towards you has more of an effect than if it moves away or
+orthogonal"*. The offset is what buys the asymmetry; the eccentricity alone does not. A rectangle along the
 barrier's own length with circular caps at its ends — which is what a body that is drawn as a spread
 along the pavement actually occupies. Today every field in the game is a disc centred on the
 instance, so a six-tile café frontage prices someone standing across the street exactly as it prices
@@ -309,12 +341,12 @@ belongs to. Worth knowing when the radius is picked, because the radius is the s
 the fix.
 
 **It overturns a sentence already written down, and the player is the one overturning it.** M61's
-entry — fields as ellipses whose eccentricity comes from movement speed — states that *"a stationary
-thing keeps its circle, by construction: eccentricity from speed means zero speed is a disc"*, and
-concludes from that that the change is only about the mobile rows. That is no longer true: a
-stationary barrier gets a shape from its **body**, independently of any shape it gets from its
-**motion**. Whether the two compose — a capsule that is also eccentric — is an open question, and
-the rows it would apply to are stationary, so nothing needs it answered yet.
+entry states that *"a stationary thing keeps its circle, by construction: eccentricity from speed
+means zero speed is a disc"*, and concludes that the change is only about the mobile rows. That is
+no longer true: a stationary barrier gets its shape from its **body**, and zero speed only collapses
+the **kernel**. The rule survives the correction — a still thing does get a disc for a kernel — but
+the conclusion drawn from it does not, and the blast radius is the whole catalogue rather than the
+movers.
 
 **The blast radius is M61's, not a small one.** Everything that reasons about "how far" — the
 telegraph contract stated over the gap between inner and outer radii, the placement spacing, the

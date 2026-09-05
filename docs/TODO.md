@@ -913,6 +913,26 @@ thing than behind it.
       has and nothing moves; a line segment gives a capsule — the "rounded rectangle"; a rectangle
       gives a rectangle with rounded corners; any polygon gives itself offset outward.
 
+      **And the other operand is what folds this milestone's original instruction into the same
+      rule** *(2026-09-05: "that's for static objects. for moving objects one side of the sum is an
+      oval")*. The field is always `body ⊕ kernel`; only the kernel changes — a **disc** standing
+      still, an **ellipse** moving, eccentricity from speed. So the ellipse this milestone was
+      opened for is the second half of one sum rather than a system of its own, and a capsule that
+      is also eccentric is composition rather than a special case.
+
+      **Nobody has to compute a general Minkowski sum of two convex shapes** *(2026-09-05: "but most
+      moving objects are small enough to be a point")*. The two cases are disjoint in practice and
+      each collapses: a static body ⊕ a disc is a capsule, and a moving point ⊕ an ellipse is just
+      the ellipse. The cat, the loose dog, the cyclist, the flock and every pursuer are points. Only
+      something both large and moving — a vehicle — would want the general form, and whether any row
+      is worth it is a question for then rather than a reason to build it now.
+
+      **Keep M61's own offset when the kernel is an ellipse.** The original instruction says *"the
+      entity itself lives in one of the focus points"*, not at the centre, and that is load-bearing:
+      a kernel centred on the body is symmetric front to back and delivers none of the rationale it
+      was asked for — *"an entity moving towards you has more of an effect than if it moves away or
+      orthogonal"*. The offset buys the asymmetry; eccentricity alone does not.
+
       The rows it changes are the ones drawn as a spread along a pavement — `cafe_tables` through
       `EventInstance._draw_cafe`, and `construction`, `market_stall`, `barricade` and `delivery_van`
       through `_draw_spread`. A six-tile café frontage currently prices somebody across the street
