@@ -10,7 +10,7 @@
 #   tools/lint.sh              # the whole governed set
 #   tools/lint.sh a.md b.md    # just these files (how the PostToolUse hook calls it)
 #
-# Governed: CLAUDE.md, .claude/skills/*/SKILL.md, README.md and docs/*.md — except
+# Governed: AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md, README.md and docs/*.md — except
 # docs/DECISIONS.md and docs/PLAYTEST-*.md, which are history and primary sources and are
 # allowed to say what was true then, and docs/evidence/README.md, whose job is filenames that
 # embed hashes.
@@ -29,6 +29,7 @@ files=()
 if [[ $# -gt 0 ]]; then
     files=("$@")
 else
+    [[ -f AGENTS.md ]] && files+=("AGENTS.md")
     [[ -f CLAUDE.md ]] && files+=("CLAUDE.md")
     [[ -f README.md ]] && files+=("README.md")
     for f in .claude/skills/*/SKILL.md; do
