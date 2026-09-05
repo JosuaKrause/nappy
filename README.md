@@ -21,6 +21,7 @@ it is not.
 
 | Doc | Contents |
 | --- | --- |
+| [AGENTS.md](AGENTS.md) | Codex entry point — loads the shared Claude instructions and skills |
 | [CLAUDE.md](CLAUDE.md) | How to work on this repo — an index; the rules are in `.claude/skills/` |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Where to pick up: the state of the tree and what is queued |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | The history — decisions taken, options rejected, what changed and why |
