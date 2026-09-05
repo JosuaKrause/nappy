@@ -1,0 +1,23 @@
+nappy rig log  2026-09-05T16:10:32  version v0.1.1-22-gce0d216-dirty
+
+day 1  act 1  run seed 3199523899  city seed 3199523899  length 180.0s
+   0.0  plan     closed: accident v(4,3)
+   0.0  plan     calm: 1 forest, 1 quiet_square, 3 park, 4 courtyard
+   0.0  plan     events: cafe_tables x107, cat_dash x8, chatting_mother x2, delivery_van x95, dog_walker x26, homeless_yeller x12, leaf_blower x13, loose_dog x16, market_stall x136, pigeon_flock x4, playground x3
+   0.0  start    doorstep (80,84), facing south
+   0.0  crowd    walked into somebody at (79,84) | exc 0, in 4.2/s (crowd 22.2, events 0.0), sleep 0
+   1.1  near     cafe_tables (telegraph) at (75,76), 168px, exc 20, in 17.0/s (crowd 0.0, events 0.0), sleep 0
+   1.5  path     onto the corridor at (75,80), after 1.5s off it
+   1.8  freeze   sleep stopped filling | exc 35, in 21.6/s (crowd 0.0, events 7.7), sleep 0 | near: cafe_tables 91px
+   1.8  near     cafe_tables at (75,76), 91px, exc 35, in 21.6/s (crowd 0.0, events 7.7), sleep 0
+   2.0  cross    stepped into the road at (73,78), mid-block
+   2.5  near     market_stall at (66,75), 183px, exc 51, in 27.0/s (crowd 3.6, events 9.4), sleep 0
+   2.8  path     off the corridor at (71,75), after 1.3s on it
+   3.0  near     market_stall at (66,71), 185px, exc 63, in 25.2/s (crowd 0.0, events 11.2), sleep 0
+   3.1  near     market_stall at (66,75), 100px, exc 68, in 29.8/s (crowd 0.0, events 15.8), sleep 0
+   3.3  cross    stepped into the road at (68,73), mid-block
+   3.5  near     market_stall at (66,71), 102px, exc 79, in 40.0/s (crowd 1.7, events 24.1), sleep 0
+   3.7  near     market_stall at (66,71), 56px, exc 91, in 42.6/s (crowd 1.8, events 26.6), sleep 0
+   4.0  path     33% of her street time on the corridor (1.3s on, 2.5s off, 0.0s off the streets)
+   4.0  lost     lost_crying after 4.0s — She started crying. There is no settling her now. | exc 100, in 42.8/s (crowd 2.1, events 26.7), sleep 0 | near: market_stall 42px
+   4.0  nerve    spent a nerve on day 1 (act 1); 4 left — day 1 again

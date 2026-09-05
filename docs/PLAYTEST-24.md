@@ -41,6 +41,18 @@ Two symptoms in one sentence, and it is worth keeping them apart when this is pi
 being cut through the home's own footprint, **and** the consequence is that the door is left drawn
 over ground that is no longer a building.
 
+**It reproduces, and there is a seed.** *(2026-09-05: "this seed has an alley with floating door".)*
+`--seed 3199523899`, day 1, standing on the doorstep at dawn — no walking needed, it is the opening
+frame. The player's own run is in `docs/evidence/rig-161032-seed3199523899-v0.1.1-22-gce0d216-dirty/`,
+and `docs/evidence/shot-2026-09-05-seed3199523899-c354776-home-alley-floating-door.png` is that seed
+photographed again on the merged tree, so the defect is not something the dirty tree of the original
+run introduced.
+
+What the picture shows, which is a little more than the sentence: the alley runs **vertically
+through the middle of the home's frontage**, splitting the tan facade into two halves, and the door
+sits at the top of that strip against the dark roof band rather than against a wall. So the door is
+not merely beside a gap — it is centred on the alley the building was cut in two by.
+
 ## 5. The north tunnel draws in the wrong order, and its mouth is empty
 
 > "the tunnel in the north has its road texture _above_ the tunnel entrance and the tunnel entrance
