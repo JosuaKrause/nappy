@@ -43,15 +43,18 @@ over ground that is no longer a building.
 
 **It reproduces, and there is a seed.** *(2026-09-05: "this seed has an alley with floating door".)*
 `--seed 3199523899`, day 1, standing on the doorstep at dawn — no walking needed, it is the opening
-frame. The player's own run is in `docs/evidence/rig-161032-seed3199523899-v0.1.1-22-gce0d216-dirty/`,
-and `docs/evidence/shot-2026-09-05-seed3199523899-c354776-home-alley-floating-door.png` is that seed
-photographed again on the merged tree, so the defect is not something the dirty tree of the original
-run introduced.
+frame, so this costs a screenshot rather than a played day.
+`docs/evidence/shot-2026-09-05-seed3199523899-c354776-home-alley-floating-door.png` is that seed on
+the merged tree; the run it came from was taken on a dirty tree, and the city regenerates from the
+seed alone, so the picture rules that out as the cause.
 
-What the picture shows, which is a little more than the sentence: the alley runs **vertically
-through the middle of the home's frontage**, splitting the tan facade into two halves, and the door
-sits at the top of that strip against the dark roof band rather than against a wall. So the door is
-not merely beside a gap — it is centred on the alley the building was cut in two by.
+**The alley runs horizontally**, east–west behind the building row — the dark band across the top of
+the frame — and the door is drawn up in that band instead of on the home's own frontage below it.
+That is what *floating* means here: the door is not on a wall at all, it is lying on alley ground.
+
+It also ties this note to note 2. The thing the door is floating on is the alley's darker texture,
+which is the same surface that *"makes it hard to identify it as floor"* — so a reader coming to
+this picture cold has to be told the dark band is ground, which is exactly the complaint.
 
 ## 5. The north tunnel draws in the wrong order, and its mouth is empty
 
