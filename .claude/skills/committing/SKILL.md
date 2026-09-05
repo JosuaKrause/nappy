@@ -14,9 +14,10 @@ time.**
 the permission: a milestone merged to `main` with its gate green, or a branch whose items are done
 and archived. It is not a licence to push a branch mid-item to see what happens.
 
-Everything else about the local repository is unchanged — branch, commit and merge freely — and the
-gate before a push is the same one as before a commit: `./tools/check.sh`, the **full**
-`./tools/test.sh`, and `./tools/lint.sh` if a governed doc moved.
+Everything else about the local repository is unchanged — branch and commit freely — and the gate
+before a push is the same one as before a commit: `./tools/check.sh`, the suites your change
+touches, and `./tools/lint.sh` if a governed doc moved. **The full suite runs in CI on the pull
+request**, on the merge result, which is the tree that actually matters.
 
 **A half-built milestone's branch may be pushed as a branch**, which is backup rather than a claim.
 What may not happen is `main` carrying an unfinished milestone: `main` is the thing a fresh clone
@@ -71,14 +72,14 @@ A message that restates the diff is worth nothing; the diff is right there.
 
 ## Before committing
 
-Run the verification loop — see the **verify** skill. `./tools/check.sh`, `./tools/test.sh`, and a
-screenshot if you touched anything visual.
+Run the verification loop — see the **verify** skill. `./tools/check.sh`, the suites your change
+touches, and a screenshot if you touched anything visual.
 
-**Which `test.sh` depends on who you are.** A **sub-agent** runs the suites its own change touches;
-its `PARTIAL RUN` marker is expected, not a failure. The **orchestrating session** runs it
-unfiltered on the merged tree, and that is the run the commit rests on — a filtered run there prints
-`PARTIAL RUN` and is not a green build. The reasoning is in **verify**, and how to say it in an
-agent's prompt is in **orchestrating**.
+**Nobody runs the unfiltered suite locally as a gate.** It runs in CI on the pull request, against
+the merge result, and `main`'s ruleset will not let anything land without it — so a local full run
+buys an answer several minutes before the PR gives a better one. A `PARTIAL RUN` marker is the
+expected state of a local run. The reasoning is in **verify**, which also names the two cases where
+running it locally is still the fast thing to do.
 
 Run `./tools/lint.sh` too if the commit touches a governed doc (`CLAUDE.md`, a skill, `README.md`
 or anything under `docs/` besides `DECISIONS.md` and the `PLAYTEST-NN.md` files). A hit is a stop:

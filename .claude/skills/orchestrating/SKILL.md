@@ -62,23 +62,23 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
   archiving belong to the orchestrator), plus anything another live agent owns. Two agents editing
   one file is a merge conflict scheduled in advance; when a shared file is unavoidable, tell each
   agent exactly which lines are theirs.
-- **The verification gate, and it is split: the agent's own tests are the agent's, the full suite is
-  the orchestrator's.** An agent runs `./tools/check.sh`, `./tools/lint.sh` if it moved a governed
-  doc, and **the suites its own change touches** — `./tools/test.sh seals events`, seconds rather
-  than minutes. **It does not run the unfiltered suite**, and its `PARTIAL RUN` marker is expected
-  rather than a failure.
+- **The verification gate is CI's, and nobody runs the full suite locally to satisfy it.** An agent
+  runs `./tools/check.sh`, `./tools/lint.sh` if it moved a governed doc, and **the suites its own
+  change touches** — `./tools/test.sh seals events`, seconds rather than minutes. Its `PARTIAL RUN`
+  marker is expected rather than a failure, and the same is true of the orchestrator's own runs.
 
-  **Why: the orchestrator has to run the full suite on the merged tree anyway**, and that is the run
-  that counts. Two green branches can still be wrong together, so a green branch proves nothing the
-  merge gate does not re-prove — which makes the agent's copy pure duplicated cost, several minutes
-  of a long-running command inside the context that can least afford to wait on one. **A failure
-  after the merge goes back to the agent with the failing output**, which is the same loop as
-  finding it early and costs the orchestrator one message.
+  **Why: every branch reaches `main` through a pull request**, and `main`'s ruleset requires the
+  `test` check, which runs the doc lint, the boot check and the unfiltered suite **on the merge
+  result**. That is a better tree than either side can test locally — two green branches can still
+  be wrong together, and the merge result is the thing that catches it — so a local full run buys
+  an earlier answer about a worse tree, at several minutes inside the context that can least afford
+  to wait. **A red PR goes back to the agent with the failing output**, which is the same loop and
+  costs one message.
 
-  **The exception is when the full suite is the thing being changed**: a change to the test rigs, to
-  something every suite loads, or one whose blast radius the agent cannot name. Then it is directly
-  the agent's task and it runs it. **Say which of the two the agent is in, in the prompt** — an
-  agent left to judge it will run the whole thing to be safe.
+  **Ask for a local full run only when the suite is the thing being changed**: the test rigs, or
+  something every suite loads, where a red PR would be uninformative noise for everybody looking at
+  it. **Say which of the two the agent is in, in the prompt** — an agent left to judge it will run
+  the whole thing to be safe.
 - **Headless first.** Verification lives in the test rigs, not in watching the game. Windowed runs
   (`tools/run.sh`, repeated `tools/shot.sh`) open on the player's own screen; at most one or two
   `shot.sh` calls at the end for evidence. A windowed run is also the least reliable thing an agent
@@ -114,10 +114,12 @@ merging is what collides — so parallelism is planned at the file level, before
 - **Overlapping the event catalogue, `tuning.gd` or a shared test file means sequential.** Those
   are the repo's convergence points; two agents adding rows or checks to the same file will not
   auto-merge.
-- **Merge one at a time, gate each.** As each agent lands: merge `--no-ff`, run the full suite on
-  the merged tree before the next merge, then remove the worktree
-  (`git worktree unlock` first if the harness locked it) and delete the branch. Two green branches
-  can still be wrong together; the gate after each merge is what catches it.
+- **Merge one at a time, and let CI gate each.** As each agent lands: push its branch, open a pull
+  request, and merge it once the `test` check is green — GitHub runs that check on the merge result,
+  which is exactly the "two green branches can still be wrong together" case. **A second agent's PR
+  needs its branch brought up to date with the new `main` before it can merge**, since the ruleset
+  requires strict status checks, and that re-run is the gate on the second merge. Then remove the
+  worktree (`git worktree unlock` first if the harness locked it) and delete the branch.
 - **Sweep the harness's own branches at the end.** Each spawn also leaves a `worktree-agent-*`
   branch pointing at the worktree's base; after the feature branches are merged, `git worktree
   prune` and delete them with `git branch -d` (never `-D` — a refusal is a branch worth looking

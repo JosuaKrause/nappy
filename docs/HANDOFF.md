@@ -17,10 +17,14 @@ of their own** so that *measure it again afterwards* means running the same thin
 reinventing it. They are the only files on it, they print rather than assert, and they are the
 instrument the per-street density figures in `TODO.md` were read with.
 
-Merge one at a time, `--no-ff`, and rerun the full gate on the merged tree between merges.
+**Work reaches `main` through a pull request and nothing else.** `main`'s ruleset requires one, plus
+the `test` check — the doc lint, the boot check and the full suite, run on the merge result. So the
+gate is CI's: locally you run `check.sh`, the suites your change touches, and `lint.sh` if you moved
+a governed doc. A second PR in flight needs its branch brought up to date with `main` before it can
+merge, and that re-run is the gate on the second merge.
 
 ```sh
-./tools/test.sh          # the full headless suite, ~200s; must be 0 failures
+./tools/test.sh          # the full headless suite, ~200s — CI's job, not a local gate
 ./tools/check.sh         # boots the project, fails on any script error
 ./tools/lint.sh          # the governed docs, for sentences that go stale on their own
 ./tools/run.sh           # plays it
