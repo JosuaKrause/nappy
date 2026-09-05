@@ -95,6 +95,30 @@ on screen, one at the command line.
       asserts that crying loses the day; what is missing is that the summary comes up afterwards
       with telemetry off
 
+- [ ] **Every environment gate becomes a flag with an override.** *(2026-09-05: "in general don't
+      tie features directly to an environment — tie it to a feature flag which might be informed by
+      the environment but lets you override ... that way you can get telemetry when you need it".)*
+      The rule itself is in the **godot** skill under "Capabilities", so it arrives before the next
+      edit that would break it; this item is the existing gates it condemns.
+
+      **`Telemetry` is the one the player named and the one that hid the bug above.** It returns
+      early on `OS.has_feature("web")` — the reasoning is sound and stays as the *default*, since
+      `user://` is a stranger's browser storage that nobody collects or clears — but there is no way
+      to say *yes, this run, log it*. So the web build's day-ending path was unreachable from every
+      test and every desktop session, and a runtime type error lived on the live site. Give it an
+      override, and note the override has to work in a **release** build, because the deployed page
+      is exactly where `DevFlags.enabled()` cannot reach — `ControlsMode`'s `?controls=` URL flag is
+      the precedent for that, and its docstring already argues the case.
+
+      **Then audit the rest**: `QuitOption.available()` is `not OS.has_feature("web")` with no way
+      in; `DevFlags.enabled()` is `OS.is_debug_build()` outright; `AutoScreenshot` returns early on
+      the same. Each is a branch somebody may need to look at from the other side. **`TouchInput
+      .available()` is the shape to copy** — a platform fact plus a `--touch` override — and needs
+      nothing.
+
+      **The measure of done is not the flags but the reach**: name, for each gate, how a person
+      would enter the branch the platform does not pick for them
+
 - [ ] **A meter bar may not read `100` while the day is still alive.** `MeterBar._draw()` prints its
       value with `"%3.0f" % value`, which rounds to nearest, so **99.5 and everything above it
       prints `100`** — checked against the engine, not inferred. The day ends when excitement

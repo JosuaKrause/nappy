@@ -93,6 +93,25 @@ path had telemetry on. CI could not have caught it, and neither could a hundred 
 It is exactly the silent-type-drop trap the **godot** skill exists for, in the one place the type
 was written down and the literal was not.
 
+**And the player drew the rule out of it, which is worth more than the fix:**
+
+> "in general don't tie features directly to an environment -- tie it to a feature flag which might
+> be informed by the environment but let's you override"
+
+> "that way you can get telemetry when you need it"
+
+**The gate did not cause the bug; it made the bug unfindable.** `Telemetry` returns early on
+`OS.has_feature("web")` and there is no way to say *yes, this run, log it* — so the branch where
+`_observer` is absent could not be entered by any test or any desktop session, and nothing about
+that looked like a gap. The platform is allowed to pick the **default**; it may not **be** the
+decision, because a branch only the deploy target can enter is a branch nobody has ever watched.
+
+`TouchInput.available()` is the shape the project already has right — the platform fact
+(`DisplayServer.is_touchscreen_available()`) and the policy built on it are separate, so `--touch`
+renders a touch-only screen on a machine with no touchscreen and a rig can photograph it. The rule
+is now in the **godot** skill under "Capabilities", so it arrives before the next edit that would
+break it, and the gates that currently violate it are queued under M70.
+
 ## 2. The local build does not start — fixed
 
 > "the local version doesn't start at all right now"

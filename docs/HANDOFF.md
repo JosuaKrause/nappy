@@ -40,6 +40,12 @@ and it converts some of them every time. It is not a one-off; it has happened in
 sessions. **Run `git status` after `check.sh` and revert anything you did not mean to change**,
 rather than assuming only the files you touched moved.
 
+**`project.godot` is the other one, and it loses more than whitespace.** Anything that makes the
+editor rewrite it — the import pass, and `tools/export-web.sh` — strips every `;` comment in the
+file and can drop a setting outright; a single run took `window/stretch/aspect="keep"` with it,
+which is load-bearing for the presentation. Nothing warns. Same rule, higher stakes: `git status`
+after, and `git diff project.godot` before believing it is only comments.
+
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
 suite on every push and every pull request; `.github/workflows/deploy.yml` fires on a `v*` tag and
