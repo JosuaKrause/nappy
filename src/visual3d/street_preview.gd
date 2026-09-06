@@ -8,6 +8,8 @@ var _day14 := false
 var _city: Node3D
 var _state_label: Label
 var _capture_path := ""
+var _sequence_prefix := ""
+var _sequence_frame := 0
 var _capture_late := false
 
 const ORTHO_PITCH_DEGREES := 65.0
@@ -40,21 +42,27 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _read_capture_flag() -> void:
 	const prefix := "--preview-capture="
+	const sequence_prefix := "--preview-sequence="
 	var arguments: PackedStringArray = OS.get_cmdline_user_args()
 	for index in arguments.size():
 		var argument: String = arguments[index]
 		if argument.begins_with(prefix):
 			_capture_path = argument.trim_prefix(prefix)
+		elif argument.begins_with(sequence_prefix):
+			_sequence_prefix = argument.trim_prefix(sequence_prefix)
 		elif argument == "--preview-late":
 			_capture_late = true
-	if _capture_path.is_empty():
+	if _capture_path.is_empty() and _sequence_prefix.is_empty():
 		return
 	if DisplayServer.get_name() == "headless":
 		return
 	# Let each pose settle before saving; the final stage exits the preview after the stills are written.
-	get_tree().create_timer(1.0).timeout.connect(_capture_stage.bind("early"))
-	get_tree().create_timer(3.0).timeout.connect(_capture_stage.bind("late"))
-	get_tree().create_timer(4.0).timeout.connect(_capture_stage.bind("turn"))
+	if not _capture_path.is_empty():
+		get_tree().create_timer(1.0).timeout.connect(_capture_stage.bind("early"))
+		get_tree().create_timer(3.0).timeout.connect(_capture_stage.bind("late"))
+		get_tree().create_timer(4.0).timeout.connect(_capture_stage.bind("turn"))
+	if not _sequence_prefix.is_empty():
+		_capture_sequence_frame()
 
 func _capture_stage(stage: String) -> void:
 	if stage == "late":
@@ -67,6 +75,16 @@ func _capture_stage(stage: String) -> void:
 		push_error("preview capture failed (%s): %s" % [stage, error])
 	if stage == "turn":
 		get_tree().quit()
+
+func _capture_sequence_frame() -> void:
+	await RenderingServer.frame_post_draw
+	var image: Image = get_viewport().get_texture().get_image()
+	var error: Error = image.save_png("%s-%03d.png" % [_sequence_prefix, _sequence_frame])
+	if error != OK:
+		push_error("preview sequence capture failed (%d): %s" % [_sequence_frame, error])
+	_sequence_frame += 1
+	if _sequence_frame < 24:
+		get_tree().create_timer(1.0 / 12.0).timeout.connect(_capture_sequence_frame)
 
 func _apply_day(day14: bool) -> void:
 	_day14 = day14

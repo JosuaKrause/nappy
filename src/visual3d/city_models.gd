@@ -8,18 +8,18 @@ extends Node3D
 
 const ROAD := Color("343943")
 const ROAD_EDGE := Color("59606a")
-const STONE := Color("b7aa95")
-const STONE_DARK := Color("8c8174")
-const GRASS := Color("647c55")
-const GRASS_LIGHT := Color("7f9864")
-const PLASTER := [Color("d2b99c"), Color("c3c7bb"), Color("d7c2a8"), Color("b7c0b2")]
-const ROOF := [Color("765c55"), Color("8a6b58"), Color("5e6162"), Color("806d61")]
-const TRIM := Color("ece0c8")
-const WINDOW := Color("31454b")
-const WINDOW_GLOW := Color("e5b96f")
-const WOOD := Color("765447")
-const CRACK := Color("443d3c")
-const PAPER := Color("d7cba9")
+const STONE := Color("8a8175")
+const STONE_DARK := Color("625c58")
+const GRASS := Color("526a4b")
+const GRASS_LIGHT := Color("71885a")
+const PLASTER := [Color("a87860"), Color("899489"), Color("b18d6e"), Color("7d9084")]
+const ROOF := [Color("594448"), Color("654b3d"), Color("4b5050"), Color("605044")]
+const TRIM := Color("d2c2a6")
+const WINDOW := Color("273b42")
+const WINDOW_GLOW := Color("bf9150")
+const WOOD := Color("5d4238")
+const CRACK := Color("302c2d")
+const PAPER := Color("b7a985")
 
 @export var day14 := false
 
@@ -81,13 +81,13 @@ func _process(delta: float) -> void:
 			if phase < delta * 1.5:
 				_actor_nodes[i].position = Vector3(2.8, 0.2, -2.0)
 		_actor_speeds[i] = speed
-		_actor_headings[i] = heading
+		_actor_headings[i] = 0.0 if kind == "pram" else heading
 		if kind != "pram":
 			_actor_nodes[i].position += Vector3(sin(heading), 0.0, cos(heading)) * speed * delta
-		_actor_motions[i].call("advance", delta, speed, heading)
+		_actor_motions[i].call("advance", delta, speed, 0.0 if kind == "pram" else heading)
 
 func _build_world() -> void:
-	var base_mat := _material(Color("958b7d"), 0.94)
+	var base_mat := _material(Color("5f5b59"), 0.94)
 	_box(self, "Ground", Vector3(30.0, 0.28, 30.0), Vector3(0.0, -0.18, 0.0), base_mat)
 
 	var road_mat := _material(ROAD, 0.88)
@@ -111,6 +111,17 @@ func _build_world() -> void:
 	for x in [-2.1, 2.1]:
 		for z in [-2.1, 2.1]:
 			_box(self, "CornerPaving", Vector3(2.0, 0.12, 2.0), Vector3(x, 0.1, z), pavement_mat)
+	var paving_joint_mat := _material(STONE_DARK.darkened(0.18), 0.98)
+	for z in [-2.1, 2.1]:
+		for x in [-9.0, 9.0]:
+			for offset in [-4.0, 0.0, 4.0]:
+				_box(self, "PavingJoint", Vector3(0.035, 0.035, 2.02),
+					Vector3(x + offset, 0.18, z), paving_joint_mat)
+	for x in [-2.1, 2.1]:
+		for z in [-9.0, 9.0]:
+			for offset in [-4.0, 0.0, 4.0]:
+				_box(self, "PavingJoint", Vector3(2.02, 0.035, 0.035),
+					Vector3(x, 0.18, z + offset), paving_joint_mat)
 
 	# Small slabs make the alleys visibly traversable instead of filling the blocks with walls.
 	var alley_mat := _material(STONE_DARK, 0.94)
@@ -137,6 +148,7 @@ func _building(parent_position: Vector3, footprint: Vector2, height: float, vari
 	var wall_mat := _material(PLASTER[variant], 0.88)
 	var shadow_mat := _material(PLASTER[variant].darkened(0.22), 0.95)
 	var roof_mat := _material(ROOF[variant], 0.9)
+	var roof_tile_mat := _material(ROOF[variant].lightened(0.08), 0.96)
 	var body_size := Vector3(footprint.x, height, footprint.y)
 	_box(building, "PlasterBody", body_size, Vector3(0.0, height * 0.5, 0.0), wall_mat)
 	_box(building, "Plinth", Vector3(footprint.x + 0.16, 0.26, footprint.y + 0.16),
@@ -158,6 +170,16 @@ func _building(parent_position: Vector3, footprint: Vector2, height: float, vari
 		Vector3(0.0, height + 0.17, footprint.y * 0.5 + 0.5), shadow_mat)
 	_box(building, "RoofFascia", Vector3(footprint.x + 1.0, 0.22, 0.22),
 		Vector3(0.0, height + 0.17, -footprint.y * 0.5 - 0.5), shadow_mat)
+	# A handful of shared-material courses break the roof into authored tiles without a forest of
+	# per-tile nodes. They follow both slopes and catch a thin line of occlusion under the ridge.
+	for course in 5:
+		var course_z := lerpf(-footprint.y * 0.42, footprint.y * 0.42, float(course) / 4.0)
+		_box(building, "RoofCourseWest", Vector3(panel_width, 0.035, 0.09),
+			Vector3(-footprint.x * 0.25, roof_y + 0.14, course_z), roof_tile_mat,
+			Vector3(0.0, 0.0, roof_pitch))
+		_box(building, "RoofCourseEast", Vector3(panel_width, 0.035, 0.09),
+			Vector3(footprint.x * 0.25, roof_y + 0.14, course_z), roof_tile_mat,
+			Vector3(0.0, 0.0, -roof_pitch))
 
 	# Front windows have a reveal, sill, and trim rather than a painted rectangle.
 	var window_mat := _material(WINDOW, 0.55)
@@ -169,6 +191,9 @@ func _building(parent_position: Vector3, footprint: Vector2, height: float, vari
 		_window(building, wx, height * 0.55, footprint.y * 0.5 + 0.06,
 			window_mat if col == 0 else glow_mat, frame_mat)
 		_window(building, wx, height * 0.55, -footprint.y * 0.5 - 0.06, window_mat, frame_mat)
+	for bay in [-1.0, 1.0]:
+		_box(building, "FacadePilaster", Vector3(0.12, height - 0.42, 0.16),
+			Vector3(bay * footprint.x * 0.42, height * 0.5, footprint.y * 0.5 + 0.08), frame_mat)
 
 	# A centered entrance gives every block a human-scale cue. Storefronts get a warm awning and a
 	# lower reveal so the intersection has a distinct civic/commercial corner.
@@ -176,6 +201,8 @@ func _building(parent_position: Vector3, footprint: Vector2, height: float, vari
 	_box(building, "DoorReveal", Vector3(1.15, 1.9, 0.12), Vector3(0.0, 0.96, footprint.y * 0.5 + 0.07), shadow_mat)
 	_box(building, "Door", Vector3(0.76, 1.62, 0.1), Vector3(0.0, 0.82, footprint.y * 0.5 + 0.14), door_mat)
 	_box(building, "DoorLintel", Vector3(1.35, 0.16, 0.2), Vector3(0.0, 1.82, footprint.y * 0.5 + 0.15), frame_mat)
+	_box(building, "FrontGutter", Vector3(footprint.x + 1.0, 0.12, 0.14),
+		Vector3(0.0, height + 0.24, footprint.y * 0.5 + 0.5), shadow_mat)
 	if storefront:
 		_box(building, "Shopfront", Vector3(footprint.x * 0.55, 1.0, 0.12),
 			Vector3(0.0, 1.3, footprint.y * 0.5 + 0.11), glow_mat)
@@ -259,10 +286,20 @@ func _build_wear() -> void:
 		var origin := Vector3(rng.randf_range(-12.0, 12.0), 0.34, rng.randf_range(-12.0, 12.0))
 		if absf(origin.x) < 3.8 or absf(origin.z) < 3.8:
 			origin.x += 4.4 if origin.x >= 0.0 else -4.4
-		var paper := _box(_wear_root, "WindblownPaper", Vector3(0.38, 0.035, 0.24), origin, litter_mat)
-		_paper_nodes.append(paper)
-		_paper_origins.append(origin)
-		_paper_phases.append(rng.randf_range(0.0, TAU))
+		_add_paper(origin, litter_mat, rng.randf_range(0.0, TAU))
+	# These sit on the actual kerbs and pavement corners, where day-14 litter remains legible in
+	# the close orthographic frame instead of disappearing below a building footprint.
+	for origin in [
+		Vector3(-5.2, 0.34, 2.7), Vector3(-0.8, 0.34, 2.7), Vector3(3.6, 0.34, 2.7),
+		Vector3(2.7, 0.34, -4.8), Vector3(2.7, 0.34, 0.8), Vector3(-2.7, 0.34, -5.4),
+	]:
+		_add_paper(origin, litter_mat, rng.randf_range(0.0, TAU))
+
+func _add_paper(origin: Vector3, material: Material, phase: float) -> void:
+	var paper := _box(_wear_root, "WindblownPaper", Vector3(0.38, 0.035, 0.24), origin, material)
+	_paper_nodes.append(paper)
+	_paper_origins.append(origin)
+	_paper_phases.append(phase)
 
 func _build_optional_actors() -> void:
 	# The visual study can run before the actor milestone lands. Loading by path keeps this scene
@@ -285,7 +322,7 @@ func _build_optional_actors() -> void:
 	person.add_child(pram)
 	add_child(person)
 	_add_actor_motion(motion_script, person, "mother", 2.875, PI)
-	_add_actor_motion(motion_script, pram, "pram", 2.875, PI)
+	_add_actor_motion(motion_script, pram, "pram", 2.875, 0.0)
 
 	var car: Node3D = models_script.call("make_vehicle", "car") as Node3D
 	if car != null:
