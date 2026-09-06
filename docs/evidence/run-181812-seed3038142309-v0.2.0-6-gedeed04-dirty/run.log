@@ -1,0 +1,286 @@
+nappy run log  2026-09-05T18:18:12  version v0.2.0-6-gedeed04-dirty
+
+day 1  act 1  run seed 3038142309  city seed 3038142309  length 180.0s
+   0.0  plan     closed: roadworks h(8,7)
+   0.0  plan     calm: 1 park, 2 forest, 2 quiet_square, 3 courtyard
+   0.0  plan     events: cafe_tables x147, cat_dash x7, chatting_mother x2, delivery_van x84, dog_walker x23, homeless_yeller x11, leaf_blower x14, loose_dog x15, market_stall x124, pigeon_flock x5, playground
+   0.0  start    doorstep (80,84), facing south
+   0.0  crowd    walked into somebody at (80,84) | exc 0, in 4.2/s (crowd 22.2, events 0.0), sleep 0
+   0.8  near     market_stall (telegraph) at (79,90), 185px, exc 12, in 7.3/s (crowd 7.0, events 0.0), sleep 0
+   2.4  path     onto the corridor at (84,85), after 2.4s off it
+   6.8  path     off the corridor at (85,73), after 4.4s on it
+   6.8  cross    stepped into the road at (85,73), at a zebra
+   7.0  near     cafe_tables at (80,71), 170px, exc 2, in 0.9/s (crowd 0.9, events 0.0), sleep 3
+   7.8  near     delivery_van at (85,66), 149px, exc 3, in 5.7/s (crowd 3.5, events 2.3), sleep 3
+   8.6  turn     doubled back south
+   8.7  cross    stepped into the road at (85,72), at a zebra
+   9.5  path     onto the corridor at (84,74), after 2.7s off it
+  12.4  crowd    walked into somebody at (76,75) | exc 2, in 6.7/s (crowd 24.7, events 0.0), sleep 5
+  13.4  cross    stepped into the road at (74,73), at a zebra
+  18.4  path     off the corridor at (73,60), after 8.8s on it
+  18.4  cross    stepped into the road at (73,60), at a zebra
+  19.4  near     dog_walker at (71,54), 104px, exc 8, in 0.3/s (crowd 0.0, events 0.6), sleep 8
+  19.7  cross    stepped into the road at (72,57), at a zebra
+  19.7  crowd    a car sounded its horn at her in the road at (72,57) | exc 10, in 11.5/s (crowd 0.0, events 11.5), sleep 8
+  20.5  path     onto the corridor at (74,56), after 2.1s off it
+  20.5  cue      the mark over her head: soon for 0.8s (0.8s of it on the road) | a car, and she is in the road
+  20.6  crowd    walked into somebody at (74,56) | exc 28, in 15.3/s (crowd 30.2, events 3.1), sleep 8
+  21.2  freeze   sleep stopped filling | exc 35, in 23.4/s (crowd 21.9, events 1.3), sleep 8 | near: dog_walker 97px
+  22.6  thaw     settling again | exc 35, in 0.0/s (crowd 0.0, events 0.0), sleep 8
+  22.7  ahead    pigeon_flock crosses 184px in front of her at (74,50)
+  24.5  near     pigeon_flock at (80,45), 168px, exc 28, in 0.0/s (crowd 0.0, events 0.0), sleep 9
+  24.5  crowd    a car sounded its horn at her in the road at (75,45) | exc 28, in 0.0/s (crowd 0.0, events 0.0), sleep 9
+  24.5  cross    stepped into the road at (75,45), at a zebra
+  25.4  near     pigeon_flock at (80,45), 92px, exc 28, in 15.2/s (crowd 0.0, events 15.2), sleep 10
+  25.9  freeze   sleep stopped filling | exc 35, in 21.3/s (crowd 9.2, events 12.3), sleep 10 | near: pigeon_flock 82px
+  25.9  cue      the mark over her head: soon for 1.4s (1.4s of it on the road) | a car, and she is in the road
+  26.6  path     away from the corridor at (78,41), after 6.2s on it
+  26.6  calm     entered park (5,2), sleep 10
+  27.4  thaw     settling again | exc 35, in 3.5/s (crowd 2.1, events 1.4), sleep 10
+  27.5  near     market_stall at (85,38), 184px, exc 35, in 4.3/s (crowd 3.3, events 1.0), sleep 12
+  28.5  near     playground at (78,36), 150px, exc 35, in 10.9/s (crowd 0.0, events 10.9), sleep 29
+  28.5  freeze   sleep stopped filling | exc 35, in 12.0/s (crowd 0.0, events 12.0), sleep 30 | near: market_stall 108px
+  30.5  near     market_stall at (85,38), 101px, exc 50, in 8.1/s (crowd 0.0, events 8.1), sleep 30
+  30.7  near     playground at (78,36), 149px, exc 50, in 11.0/s (crowd 2.9, events 8.1), sleep 30
+  30.9  turn     doubled back west
+  32.2  near     playground at (78,36), 82px, exc 56, in 9.5/s (crowd 0.0, events 9.5), sleep 30
+  34.0  turn     doubled back east
+  34.8  near     market_stall at (85,38), 184px, exc 52, in 3.2/s (crowd 0.0, events 3.2), sleep 30
+  35.5  turn     doubled back west
+  37.0  turn     doubled back east
+  37.9  near     market_stall at (85,38), 184px, exc 54, in 14.2/s (crowd 3.6, events 10.6), sleep 30
+  39.0  turn     doubled back west
+  43.2  near     playground at (78,36), 150px, exc 69, in 2.1/s (crowd 2.2, events 0.0), sleep 30
+  44.0  near     market_stall at (85,38), 185px, exc 64, in 2.1/s (crowd 2.1, events 0.0), sleep 30
+  44.9  turn     doubled back west
+  46.3  turn     doubled back east
+  47.1  path     onto the corridor at (79,42), after 20.5s away it
+  47.1  left     left park (5,2), sleep 30
+  47.6  ahead    loose_dog comes at her from 0px in front of her at (77,42)
+  47.9  near     loose_dog (telegraph) at (72,42), 139px, exc 43, in 0.0/s (crowd 0.0, events 0.0), sleep 30
+  48.1  path     away from the corridor at (76,41), after 1.0s on it
+  48.1  calm     entered park (5,2), sleep 30
+  48.2  near     loose_dog (telegraph) at (74,42), 75px, exc 41, in 2.0/s (crowd 0.0, events 2.1), sleep 30
+  49.0  near     loose_dog (telegraph) at (77,42), 41px, exc 38, in 3.1/s (crowd 0.0, events 3.1), sleep 30
+  49.4  near     loose_dog at (79,42), 21px, exc 37, in 11.8/s (crowd 0.0, events 11.4), sleep 30
+  49.4  path     onto the corridor at (79,42), after 1.4s away it
+  49.4  left     left park (5,2), sleep 30
+  49.9  turn     doubled back west
+  50.8  path     away from the corridor at (76,41), after 1.4s on it
+  50.8  calm     entered park (5,2), sleep 30
+  51.1  thaw     settling again | exc 35, in 2.3/s (crowd 2.1, events 0.0), sleep 30
+  51.5  turn     doubled back east
+  55.0  calm     settled in the calm block (5,2); tomorrow will know
+  55.0  asleep   asleep after 55.0s, exc 9, in 2.4/s (crowd 2.4, events 0.0), sleep 100
+  55.4  turn     doubled back west
+  56.5  path     onto the corridor at (75,41), after 5.6s away it
+  56.5  left     left park (5,2), sleep 100
+  57.6  cross    stepped into the road at (74,44), at a zebra
+  62.5  cross    stepped into the road at (74,58), at a zebra
+  67.3  cross    stepped into the road at (74,72), at a zebra
+  71.9  ahead    pigeon_flock crosses 184px in front of her at (75,85)
+  72.3  path     off the corridor at (76,85), after 15.9s on it
+  72.4  near     market_stall at (79,90), 185px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  74.0  path     81% of her street time on the corridor (37.6s on, 8.7s off, 27.4s off the streets)
+  74.0  home     WON, 106.0s to spare
+
+day 2  act 1  run seed 3038142309  city seed 3038142309  length 180.0s
+   0.0  roll     leaf_blower in the park she used yesterday, (5,2)
+   0.0  plan     closed: fallen tree v(2,5)
+   0.0  plan     calm: 1 park, 2 forest, 2 quiet_square, 3 courtyard
+   0.0  plan     events: busker x6, cafe_tables x99, cat_dash x8, chatting_mother x2, construction x98, cyclist x9, delivery_van x80, dog_walker x13, homeless_yeller x6, ice_cream_van x5, leaf_blower x13, loose_dog x19, market_stall x93, pigeon_flock x5, playground
+   0.0  start    doorstep (80,84), facing south
+   2.3  path     onto the corridor at (75,85), after 2.3s off it
+   2.9  path     off the corridor at (73,85), after 0.7s on it
+   2.9  cross    stepped into the road at (73,85), at a zebra
+   4.1  path     onto the corridor at (70,86), after 1.1s off it
+   4.1  cross    stepped into the road at (70,86), at a zebra
+   7.1  turn     doubled back east
+  10.3  path     off the corridor at (61,89), after 6.2s on it
+  11.0  path     onto the corridor at (60,87), after 0.7s off it
+  11.0  cross    stepped into the road at (60,87), at a zebra
+  13.2  near     homeless_yeller at (48,88), 209px, exc 14, in 0.1/s (crowd 0.0, events 0.2), sleep 5
+  14.1  near     homeless_yeller at (49,88), 114px, exc 14, in 5.2/s (crowd 0.0, events 5.2), sleep 6
+  15.3  near     market_stall at (47,80), 185px, exc 15, in 3.5/s (crowd 0.0, events 3.6), sleep 6
+  16.3  cross    stepped into the road at (45,85), at a zebra
+  16.7  near     market_stall at (43,80), 185px, exc 14, in 0.0/s (crowd 0.0, events 0.0), sleep 7
+  17.0  path     off the corridor at (43,85), after 6.0s on it
+  17.7  path     onto the corridor at (41,85), after 0.7s off it
+  18.8  ahead    pigeon_flock crosses 184px in front of her at (38,85)
+  19.6  closure  saw the fallen tree on v(2,5) from (36,85)
+  19.9  cross    stepped into the road at (35,86), mid-block
+  20.8  path     off the corridor at (33,87), after 3.0s on it
+  21.8  cross    stepped into the road at (31,89), at a zebra
+  21.9  path     onto the corridor at (31,90), after 1.1s off it
+  24.4  near     cafe_tables at (24,99), 169px, exc 0, in 3.1/s (crowd 0.0, events 0.1), sleep 10
+  24.5  turn     doubled back west, 4.9s after seeing the fallen tree
+  25.2  near     construction at (19,94), 199px, exc 1, in 6.7/s (crowd 0.0, events 3.7), sleep 10
+  25.3  path     away from the corridor at (24,94), after 3.4s on it
+  25.3  calm     entered courtyard (1,6), sleep 11
+  26.2  near     construction at (19,94), 110px, exc 2, in 10.1/s (crowd 0.0, events 10.1), sleep 26
+  27.4  turn     doubled back south
+  28.6  near     cafe_tables at (24,99), 169px, exc 5, in 10.6/s (crowd 0.0, events 10.6), sleep 69
+  30.1  turn     doubled back north
+  30.3  calm     settled in the calm block (1,6); tomorrow will know
+  30.3  asleep   asleep after 30.3s, exc 13, in 8.7/s (crowd 0.0, events 8.7), sleep 100
+  30.6  ahead    loose_dog comes at her from 0px in front of her at (22,93)
+  30.9  near     loose_dog (telegraph) at (28,93), 139px, exc 11, in 3.0/s (crowd 0.0, events 5.6), sleep 100
+  31.1  near     cafe_tables at (24,99), 169px, exc 10, in 3.1/s (crowd 0.0, events 5.7), sleep 100
+  31.3  near     loose_dog (telegraph) at (26,93), 75px, exc 9, in 3.7/s (crowd 0.0, events 6.9), sleep 100
+  31.6  path     onto the corridor at (25,94), after 6.3s away it
+  31.6  left     left courtyard (1,6), sleep 100
+  31.6  near     loose_dog (telegraph) at (25,93), 41px, exc 8, in 5.5/s (crowd 0.0, events 7.0), sleep 100
+  34.3  cross    stepped into the road at (30,90), mid-block
+  34.6  path     off the corridor at (30,89), after 3.1s on it
+  35.9  path     onto the corridor at (34,89), after 1.2s off it
+  38.6  near     homeless_yeller at (48,88), 210px, exc 0, in 3.7/s (crowd 6.7, events 0.0), sleep 100
+  39.3  crowd    walked into somebody at (43,88) | exc 2, in 9.7/s (crowd 32.1, events 3.6), sleep 100
+  39.5  cross    stepped into the road at (43,87), at a zebra
+  40.1  near     market_stall at (43,80), 184px, exc 7, in 4.2/s (crowd 4.9, events 2.7), sleep 100
+  40.2  path     off the corridor at (43,85), after 4.3s on it
+  40.6  path     onto the corridor at (44,85), after 0.3s off it
+  40.6  cross    stepped into the road at (44,85), at a zebra
+  40.6  near     market_stall at (47,80), 184px, exc 9, in 7.9/s (crowd 6.3, events 7.8), sleep 100
+  40.7  near     homeless_yeller at (46,88), 115px, exc 9, in 7.9/s (crowd 5.6, events 8.6), sleep 100
+  41.7  crowd    walked into somebody at (47,85) | exc 15, in 14.7/s (crowd 33.4, events 11.4), sleep 100
+  44.7  ahead    cyclist comes at her from 0px in front of her at (55,85)
+  44.8  path     off the corridor at (56,85), after 4.2s on it
+  44.9  near     cyclist (telegraph) at (60,85), 142px, exc 24, in 0.5/s (crowd 0.9, events 0.1), sleep 100
+  45.2  near     cyclist (telegraph) at (59,85), 77px, exc 24, in 2.7/s (crowd 2.7, events 2.2), sleep 100
+  45.3  near     cyclist (telegraph) at (58,85), 42px, exc 24, in 3.5/s (crowd 3.7, events 2.7), sleep 100
+  45.4  near     cyclist (telegraph) at (58,85), 21px, exc 24, in 4.6/s (crowd 5.9, events 2.7), sleep 100
+  45.5  near     construction at (55,79), 200px, exc 24, in 5.5/s (crowd 7.4, events 2.7), sleep 100
+  45.6  cross    stepped into the road at (58,84), at a signalled crossing
+  46.4  cue      the mark over her head: soon for 1.5s (0.7s of it on the road) | cyclist 142px
+  47.0  path     onto the corridor at (62,84), after 2.2s off it
+  49.8  path     off the corridor at (70,85), after 2.8s on it
+  50.5  cross    stepped into the road at (72,85), at a zebra
+  51.2  path     onto the corridor at (74,85), after 1.4s off it
+  51.9  path     off the corridor at (76,85), after 0.7s on it
+  52.9  crowd    walked into somebody at (79,85) (+1 in the last 11.2s) | exc 8, in 3.6/s (crowd 24.6, events 0.0), sleep 100
+  53.6  path     73% of her street time on the corridor (34.5s on, 12.7s off, 6.3s off the streets)
+  53.6  home     WON, 126.4s to spare
+
+day 3  act 1  run seed 3038142309  city seed 3038142309  length 180.0s
+   0.0  roll     one-shot fire_truck: 0.64 <= 1.00 — waiting at (73,77), (105,86), (31,93)
+   0.0  roll     busker in the park she used yesterday, (1,6)
+   0.0  roll     leaf_blower in the park she used yesterday, (5,2)
+   0.0  plan     closed: accident v(3,8)
+   0.0  plan     calm: 1 park, 2 forest, 2 quiet_square, 3 courtyard
+   0.0  plan     events: busker x9, cafe_tables x84, cat_dash x8, charging_dog x3, chatting_mother x2, construction x130, cyclist x5, delivery_van x88, dog_walker x18, fire_truck x3, homeless_yeller x7, ice_cream_van x4, leaf_blower x13, loose_dog x15, market_stall x77, pigeon_flock x5, playground, reversing_lorry x3
+   0.0  start    doorstep (80,84), facing south
+   0.1  near     fire_truck (telegraph) at (73,76), 323px, exc 0, in 0.9/s (crowd 0.0, events 0.5), sleep 0
+   1.7  crowd    walked into somebody at (77,85) | exc 0, in 4.2/s (crowd 22.2, events 0.0), sleep 0
+   3.4  path     onto the corridor at (74,83), after 3.4s off it
+   5.7  near     homeless_yeller at (71,72), 209px, exc 1, in 5.1/s (crowd 5.1, events 0.1), sleep 2
+   6.3  path     off the corridor at (75,75), after 2.9s on it
+   6.7  ahead    charging_dog comes at her from 200px in front of her at (75,74)
+   6.7  chase    charging_dog came for her at (75,68) | exc 5, in 10.7/s (crowd 5.0, events 5.7), sleep 3
+   7.0  near     charging_dog (telegraph) at (75,69), 149px, exc 6, in 12.7/s (crowd 4.9, events 7.6), sleep 3
+   7.0  cross    stepped into the road at (74,73), at a zebra
+   7.2  cue      the mark over her head: soon for 0.2s (0.2s of it on the road) | charging_dog 147px
+   7.3  near     charging_dog at (75,70), 81px, exc 11, in 25.4/s (crowd 6.3, events 19.0), sleep 3
+   7.8  turn     doubled back south
+   7.9  cue      the mark over her head: now for 0.7s (0.4s of it on the road) | charging_dog 98px
+   8.0  path     onto the corridor at (74,76), after 1.7s off it
+   8.1  freeze   sleep stopped filling | exc 35, in 30.1/s (crowd 6.2, events 10.0), sleep 3 | near: charging_dog 76px
+   8.2  chase    charging_dog gave up after 1.5s — closest 55px, she ran 0.7s of it | exc 38, in 31.8/s (crowd 8.2, events 0.0), sleep 3
+   9.0  run      ran 1.5s, exc 16 -> 54, nearest when it started: charging_dog 57px
+  10.0  path     off the corridor at (74,84), after 2.0s on it
+  10.1  scar     burnt_shell left at (73,17) by burning_building
+  10.1  arc      block (5,1) residential -> burnt_out (fire)
+  10.8  path     onto the corridor at (74,83), after 0.8s off it
+  11.0  turn     doubled back north
+  12.6  near     homeless_yeller at (71,73), 209px, exc 56, in 10.0/s (crowd 9.8, events 0.2), sleep 3
+  13.6  path     off the corridor at (74,75), after 2.8s on it
+  13.8  near     homeless_yeller at (71,74), 114px, exc 68, in 9.9/s (crowd 2.9, events 6.9), sleep 3
+  14.3  cross    stepped into the road at (74,73), at a zebra
+  14.9  crowd    a car sounded its horn at her in the road at (74,72) | exc 69, in 2.1/s (crowd 0.0, events 2.1), sleep 3
+  15.0  path     onto the corridor at (74,71), after 1.4s off it
+  15.0  cue      the mark over her head: soon for 0.1s (0.1s of it on the road) | a car, and she is in the road
+  17.8  near     leaf_blower at (80,61), 200px, exc 64, in 0.1/s (crowd 0.0, events 0.1), sleep 3
+  17.8  near     construction at (80,61), 200px, exc 64, in 0.1/s (crowd 0.0, events 0.1), sleep 3
+  18.5  path     off the corridor at (74,61), after 3.5s on it
+  19.2  cross    stepped into the road at (74,59), at a zebra
+  19.2  near     construction at (80,57), 199px, exc 69, in 8.5/s (crowd 3.8, events 4.7), sleep 3
+  20.5  path     onto the corridor at (74,55), after 2.1s off it
+  22.7  near     construction at (80,47), 200px, exc 65, in 0.0/s (crowd 0.0, events 0.0), sleep 3
+  22.9  near     dog_walker at (75,46), 103px, exc 65, in 1.6/s (crowd 0.0, events 1.8), sleep 3
+  23.3  near     dog_walker at (75,46), 57px, exc 69, in 14.4/s (crowd 0.8, events 13.7), sleep 3
+  23.4  path     off the corridor at (74,47), after 2.9s on it
+  23.6  crowd    a car sounded its horn at her in the road at (73,47) | exc 72, in 12.3/s (crowd 2.3, events 10.0), sleep 3
+  23.6  cross    stepped into the road at (73,47), at a zebra
+  24.3  ahead    cat_dash crosses 221px in front of her at (74,45)
+  24.5  near     construction at (80,47), 200px, exc 84, in 9.9/s (crowd 5.8, events 4.0), sleep 3
+  24.6  near     construction at (80,43), 199px, exc 85, in 8.3/s (crowd 4.2, events 4.1), sleep 3
+  25.1  cue      the mark over her head: soon for 1.5s (1.5s of it on the road) | a car, and she is in the road
+  25.7  near     leaf_blower at (80,38), 200px, exc 87, in 5.6/s (crowd 0.0, events 5.6), sleep 3
+  25.9  path     away from the corridor at (76,41), after 2.5s off it
+  25.9  calm     entered park (5,2), sleep 3
+  26.2  near     cat_dash at (76,37), 119px, exc 89, in 15.0/s (crowd 0.0, events 15.3), sleep 3
+  26.4  near     construction at (80,47), 200px, exc 92, in 29.2/s (crowd 0.0, events 29.6), sleep 3
+  26.4  near     construction at (80,43), 109px, exc 92, in 29.2/s (crowd 0.0, events 29.6), sleep 3
+  26.5  near     cat_dash at (77,39), 64px, exc 95, in 34.6/s (crowd 0.0, events 34.8), sleep 3
+  26.7  path     54% of her street time on the corridor (14.0s on, 11.8s off, 0.8s off the streets)
+  26.7  lost     lost_crying after 26.7s — She started crying. There is no settling her now. | exc 100, in 40.6/s (crowd 0.0, events 40.6), sleep 3 | near: cat_dash 39px
+  26.7  nerve    spent a nerve on day 3 (act 1); 4 left — day 3 again
+
+day 3  act 1  run seed 3038142309  city seed 3038142309  length 180.0s
+   0.0  roll     busker in the park she used yesterday, (1,6)
+   0.0  roll     leaf_blower in the park she used yesterday, (5,2)
+   0.0  plan     closed: accident v(3,8)
+   0.0  plan     calm: 1 park, 2 forest, 2 quiet_square, 3 courtyard
+   0.0  plan     events: busker x9, cafe_tables x84, cat_dash x8, charging_dog x3, chatting_mother x2, construction x130, cyclist x5, delivery_van x88, dog_walker x18, homeless_yeller x7, ice_cream_van x4, leaf_blower x13, loose_dog x15, market_stall x77, pigeon_flock x5, playground, reversing_lorry x3
+   0.0  start    doorstep (80,84), facing south
+   1.0  cross    stepped into the road at (80,86), mid-block
+   2.6  path     onto the corridor at (84,88), after 2.6s off it
+   2.7  near     construction at (85,94), 200px, exc 0, in 5.4/s (crowd 5.5, events 0.1), sleep 1
+   3.2  path     off the corridor at (85,87), after 0.6s on it
+   3.2  cross    stepped into the road at (85,87), at a zebra
+   4.6  near     leaf_blower at (89,93), 199px, exc 0, in 0.1/s (crowd 0.0, events 0.1), sleep 2
+   4.9  path     onto the corridor at (89,88), after 1.7s off it
+   5.0  near     construction at (89,94), 200px, exc 0, in 5.9/s (crowd 1.1, events 4.8), sleep 2
+   6.0  cross    stepped into the road at (90,87), mid-block
+   6.4  near     delivery_van at (95,85), 150px, exc 3, in 0.0/s (crowd 0.0, events 0.0), sleep 3
+   7.2  near     delivery_van at (95,85), 81px, exc 4, in 7.6/s (crowd 0.6, events 6.9), sleep 3
+   7.4  ahead    charging_dog comes at her from 200px in front of her at (93,85)
+   7.4  chase    charging_dog came for her at (99,85) | exc 5, in 7.6/s (crowd 0.0, events 7.6), sleep 3
+   7.7  near     charging_dog (telegraph) at (98,85), 150px, exc 6, in 7.9/s (crowd 0.0, events 7.9), sleep 3
+   7.7  cross    stepped into the road at (93,86), mid-block
+   8.5  near     charging_dog at (95,86), 82px, exc 12, in 16.2/s (crowd 1.2, events 15.2), sleep 3
+   8.6  cue      the mark over her head: soon for 0.9s (0.7s of it on the road) | charging_dog 147px
+   9.0  near     leaf_blower at (89,93), 200px, exc 19, in 22.2/s (crowd 8.5, events 13.6), sleep 4
+   9.2  near     construction at (89,94), 200px, exc 28, in 37.1/s (crowd 6.8, events 16.3), sleep 4
+   9.4  chase    charging_dog gave up after 2.0s — closest 46px, she ran 0.4s of it | exc 34, in 45.5/s (crowd 10.9, events 9.2), sleep 4
+   9.4  cue      the mark over her head: now for 0.6s (0.0s of it on the road) | charging_dog 61px
+   9.4  freeze   sleep stopped filling | exc 35, in 35.3/s (crowd 11.1, events 10.1), sleep 4 | near: charging_dog 65px
+  10.0  run      ran 0.9s, exc 21 -> 53, nearest when it started: charging_dog 48px
+  10.5  turn     doubled back south
+  11.3  near     delivery_van at (95,85), 149px, exc 62, in 2.1/s (crowd 0.0, events 2.0), sleep 4
+  12.7  near     construction at (99,94), 200px, exc 68, in 4.7/s (crowd 0.0, events 4.7), sleep 4
+  13.7  path     off the corridor at (98,87), after 8.8s on it
+  13.7  cross    stepped into the road at (98,87), at a zebra
+  14.1  near     construction at (99,80), 199px, exc 71, in 9.1/s (crowd 2.9, events 6.3), sleep 4
+  14.9  near     construction at (103,80), 200px, exc 78, in 16.8/s (crowd 3.7, events 13.2), sleep 4
+  15.5  cross    stepped into the road at (98,86), at a zebra
+  15.5  turn     doubled back south
+  16.2  path     onto the corridor at (98,88), after 2.5s off it
+  16.3  near     construction at (99,94), 199px, exc 88, in 1.3/s (crowd 0.0, events 1.3), sleep 4
+  17.2  near     delivery_van at (95,85), 150px, exc 88, in 1.9/s (crowd 0.0, events 1.9), sleep 4
+  17.3  turn     doubled back north
+  19.3  near     leaf_blower at (89,93), 199px, exc 95, in 2.2/s (crowd 0.8, events 1.4), sleep 4
+  19.6  near     construction at (89,94), 200px, exc 94, in 1.9/s (crowd 0.0, events 1.8), sleep 4
+  20.3  near     delivery_van at (95,85), 149px, exc 94, in 4.1/s (crowd 3.0, events 1.2), sleep 4
+  20.4  turn     doubled back east
+  20.5  crowd    walked into somebody at (93,89) | exc 94, in 5.7/s (crowd 22.3, events 1.5), sleep 4
+  20.8  path     67% of her street time on the corridor (13.9s on, 6.7s off, 0.0s off the streets)
+  20.8  lost     lost_crying after 20.8s — She started crying. There is no settling her now. | exc 100, in 21.6/s (crowd 18.9, events 2.7), sleep 4 | near: delivery_van 129px
+  20.8  nerve    spent a nerve on day 3 (act 1); 3 left — day 3 again
+
+day 3  act 1  run seed 3038142309  city seed 3038142309  length 180.0s
+   0.0  roll     busker in the park she used yesterday, (1,6)
+   0.0  roll     leaf_blower in the park she used yesterday, (5,2)
+   0.0  plan     closed: accident v(3,8)
+   0.0  plan     calm: 1 park, 2 forest, 2 quiet_square, 3 courtyard
+   0.0  plan     events: busker x9, cafe_tables x84, cat_dash x8, charging_dog x3, chatting_mother x2, construction x130, cyclist x5, delivery_van x88, dog_walker x18, homeless_yeller x7, ice_cream_van x4, leaf_blower x13, loose_dog x15, market_stall x77, pigeon_flock x5, playground, reversing_lorry x3
+   0.0  start    doorstep (80,84), facing south

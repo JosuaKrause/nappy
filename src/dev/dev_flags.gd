@@ -18,6 +18,17 @@ extends RefCounted
 ## Whether dev flags are readable at all. `main.gd` also reads this directly for the two gated
 ## things that are not a flag value — the snapshot key, and whether to even ask `AutoScreenshot`
 ## for a rig.
+##
+## **Deliberately has no override.** Every other gate this project ties to an environment gets a
+## way in for a public build — `Telemetry`'s own `?telemetry=1`, `QuitOption`'s `--web` — but this
+## one gates a batch of capabilities at once: an arbitrary seed, a chosen day, a spawn point beside
+## any event, forced meters, a compressed day, a forced ending, and (through
+## `AutoScreenshot.from_command_line()`'s own copy of this same gate) scripted input and a
+## screenshot written to disk. `ControlsMode`'s `?controls=` is safe unlocked from a release build
+## because it reaches exactly one bounded, already-shipped choice; an override here would reach all
+## of the above at once from any visitor's address bar, which is precisely "reveal a seed, jump to a
+## day... nobody documented for a player" — the exact outcome this class exists to prevent. The
+## entry point stays what it already is: run a debug build.
 static func enabled() -> bool:
 	return OS.is_debug_build()
 

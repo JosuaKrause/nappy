@@ -76,9 +76,9 @@ static func make_pram() -> Node3D:
 
 	# The handle is two warm metal rails behind the basket, leaving a clear
 	# place for the mother's forward hands in a composed rig.
-	_add_cylinder_between(root, Vector3(-0.18, 0.54, -0.26), Vector3(-0.18, 0.78, -0.43), 0.018, metal, "HandleLeft")
-	_add_cylinder_between(root, Vector3(0.18, 0.54, -0.26), Vector3(0.18, 0.78, -0.43), 0.018, metal, "HandleRight")
-	_add_cylinder_between(root, Vector3(-0.18, 0.78, -0.43), Vector3(0.18, 0.78, -0.43), 0.025, metal, "HandleGrip")
+	_add_cylinder_between(root, Vector3(-0.18, 0.54, -0.26), Vector3(-0.18, 0.70, -0.43), 0.018, metal, "HandleLeft")
+	_add_cylinder_between(root, Vector3(0.18, 0.54, -0.26), Vector3(0.18, 0.70, -0.43), 0.018, metal, "HandleRight")
+	_add_cylinder_between(root, Vector3(-0.18, 0.70, -0.43), Vector3(0.18, 0.70, -0.43), 0.025, metal, "HandleGrip")
 
 	_add_pram_wheel(root, "WheelRearLeft", Vector3(-0.24, 0.18, -0.27), wheel)
 	_add_pram_wheel(root, "WheelRearRight", Vector3(0.24, 0.18, -0.27), wheel)
@@ -154,8 +154,8 @@ static func make_vehicle(kind: String = "car") -> Node3D:
 
 	var wheel_z: Array[float] = [-length * 0.32, length * 0.32]
 	for axle_z: float in wheel_z:
-		_add_vehicle_wheel(root, "WheelFront" if axle_z > 0.0 else "WheelRear", axle_z, -1.0, width, tire)
-		_add_vehicle_wheel(root, "WheelFront" if axle_z > 0.0 else "WheelRear", axle_z, 1.0, width, tire)
+		_add_vehicle_wheel(root, "WheelFront" if axle_z > 0.0 else "WheelRear", axle_z, -1.0, width, tire, trim)
+		_add_vehicle_wheel(root, "WheelFront" if axle_z > 0.0 else "WheelRear", axle_z, 1.0, width, tire, trim)
 
 	match kind:
 		"truck":
@@ -250,9 +250,17 @@ static func _add_limb(parent: Node3D, name: String, pivot_position: Vector3, len
 	pivot.name = name
 	pivot.position = pivot_position
 	parent.add_child(pivot)
-	_add_cylinder(pivot, radius, radius * 1.08, length, 8, Vector3(0.0, -length * 0.5, 0.0), material, "%sMesh" % name)
+	var upper_length: float = length * 0.56
+	var lower_length: float = length - upper_length
+	_add_cylinder(pivot, radius, radius * 1.08, upper_length, 8, Vector3(0.0, -upper_length * 0.5, 0.0), material, "%sUpperMesh" % name)
+	var lower_pivot: Node3D = Node3D.new()
+	lower_pivot.name = "%sLowerPivot" % name
+	lower_pivot.position = Vector3(0.0, -upper_length, 0.0)
+	lower_pivot.rotation.z = -0.055 if name.contains("Arm") else 0.045
+	pivot.add_child(lower_pivot)
+	_add_cylinder(lower_pivot, radius * 0.94, radius * 0.82, lower_length, 8, Vector3(0.0, -lower_length * 0.5, 0.0), material, "%sLowerMesh" % name)
 	if shoe_position != Vector3.ZERO:
-		_add_box(pivot, Vector3(0.105, 0.07, 0.18), Vector3(0.0, -length - 0.015, 0.055), material, "%sShoe" % name)
+		_add_box(lower_pivot, Vector3(0.105, 0.07, 0.18), Vector3(0.0, -lower_length - 0.015, 0.055), material, "%sShoe" % name)
 	return pivot
 
 
@@ -268,21 +276,43 @@ static func _add_pram_wheel(parent: Node3D, name: String, position: Vector3, mat
 	var pivot: Node3D = Node3D.new()
 	pivot.name = name
 	pivot.position = position
-	pivot.rotation.z = PI * 0.5
+	pivot.set_meta("wheel_radius", 0.075)
 	parent.add_child(pivot)
-	_add_cylinder(pivot, 0.075, 0.075, 0.045, 12, Vector3.ZERO, material, "%sMesh" % name)
+	var axle: Node3D = Node3D.new()
+	axle.name = "WheelAxle"
+	axle.rotation.z = PI * 0.5
+	pivot.add_child(axle)
+	var spin: Node3D = Node3D.new()
+	spin.name = "WheelSpin"
+	axle.add_child(spin)
+	_add_cylinder(spin, 0.075, 0.075, 0.045, 12, Vector3.ZERO, material, "%sMesh" % name)
+	_add_wheel_details(spin, _material(Color("#b69570"), 0.58, 0.18))
 
 
-static func _add_vehicle_wheel(parent: Node3D, axle: String, z: float, side: float, width: float, material: StandardMaterial3D) -> void:
+static func _add_vehicle_wheel(parent: Node3D, axle_name: String, z: float, side: float, width: float, material: StandardMaterial3D, trim: StandardMaterial3D) -> void:
 	var side_name: String = "Left" if side < 0.0 else "Right"
 	var pivot: Node3D = Node3D.new()
-	pivot.name = "%s%s" % [axle, side_name]
+	pivot.name = "%s%s" % [axle_name, side_name]
 	pivot.position = Vector3(side * width * 0.53, 0.22, z)
-	pivot.rotation.z = PI * 0.5
+	pivot.set_meta("wheel_radius", 0.125)
 	parent.add_child(pivot)
-	_add_cylinder(pivot, 0.125, 0.125, 0.065, 12, Vector3.ZERO, material, "%sMesh" % pivot.name)
+	var axle: Node3D = Node3D.new()
+	axle.name = "WheelAxle"
+	axle.rotation.z = PI * 0.5
+	pivot.add_child(axle)
+	var spin: Node3D = Node3D.new()
+	spin.name = "WheelSpin"
+	axle.add_child(spin)
+	_add_cylinder(spin, 0.125, 0.125, 0.065, 12, Vector3.ZERO, material, "%sMesh" % pivot.name)
+	_add_wheel_details(spin, trim)
 	var arch: MeshInstance3D = _add_torus(pivot, 0.126, 0.145, material, "%sArch" % pivot.name)
 	arch.rotation.z = PI * 0.5
+
+
+static func _add_wheel_details(parent: Node3D, hub_material: StandardMaterial3D) -> void:
+	_add_cylinder(parent, 0.028, 0.028, 0.075, 10, Vector3.ZERO, hub_material, "WheelHub")
+	for spoke_index: int in range(4):
+		_add_box(parent, Vector3(0.016, 0.018, 0.10), Vector3.ZERO, hub_material, "WheelSpoke%d" % spoke_index, Vector3(0.0, spoke_index * PI * 0.25, 0.0))
 
 
 static func _add_torus(parent: Node3D, inner_radius: float, outer_radius: float, material: StandardMaterial3D, name: String) -> MeshInstance3D:

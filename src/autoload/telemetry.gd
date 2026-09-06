@@ -89,13 +89,46 @@ func is_active() -> bool:
 ## something guessed here.** A pile of runs that does not say which of them a person played reads as
 ## a great many plays that never happened, and every inference drawn from it is skewed.
 ##
-## **Silently does nothing on a web export.** `user://` is browser storage there — a stranger's
-## browser rather than a developer's disk — so nobody collects what lands in it and nobody would
-## ever run `tools/telemetry.sh` against it. Checked here rather than by the one caller, so a future
-## caller cannot reintroduce a run log on the one platform where nobody would ever read or clear it.
+## Whether the deployed page has asked, this run, to be logged anyway. Read through
+## `JavaScriptBridge.eval("window.location.search")` the same way `ControlsMode._url_word()` reads
+## `?controls=` — the one channel that reaches a Web export at all, since the page it runs on has no
+## command line for `DevFlags` to parse.
+##
+## **Not gated behind `DevFlags.enabled()`, the same exception `?controls=` already is and for the
+## same reason.** That gate is `OS.is_debug_build()`, `false` for the release template the deployed
+## page runs, so a check behind it could never be crossed on the one platform this override exists
+## for. What keeps it safe is its scope rather than a build gate: it can only send this run's own
+## log to `user://` in the browser that is asking — where a run already goes on every other
+## platform — and it reaches nothing else.
+static func _web_override_requested() -> bool:
+	if OS.get_name() != "Web":
+		return false
+	var search: Variant = JavaScriptBridge.eval("window.location.search")
+	if typeof(search) != TYPE_STRING:
+		return false
+	return _telemetry_flag_from_query(search)
+
+## `"?telemetry=1"` (with or without a leading `?`, alongside any other parameter) reads as "log
+## this run"; anything else — absent, or any other value — leaves the platform's own default in
+## place. Pulled out from `_web_override_requested()` so a test can ask the parsing question
+## directly, without a Web export to produce a real `window.location.search` to parse.
+static func _telemetry_flag_from_query(query: String) -> bool:
+	var trimmed := query.trim_prefix("?")
+	for pair in trimmed.split("&"):
+		var parts := pair.split("=")
+		if parts.size() == 2 and parts[0] == "telemetry":
+			return parts[1] == "1"
+	return false
+
+## **Silently does nothing on a web export, unless the page's own `?telemetry=1` says otherwise.**
+## `user://` is browser storage there — a stranger's browser rather than a developer's disk — so by
+## default nobody collects what lands in it and nobody would ever run `tools/telemetry.sh` against
+## it. Checked here rather than by the one caller, so a future caller cannot reintroduce a run log
+## on the one platform where nobody would ever read or clear it without also reintroducing the one
+## way to override that. See `_web_override_requested()` for what turns it back on.
 func begin_run(run_seed: int, played := true) -> void:
 	end_run()
-	if OS.has_feature("web"):
+	if OS.has_feature("web") and not _web_override_requested():
 		return
 	if not DirAccess.dir_exists_absolute(DIRECTORY) \
 			and DirAccess.make_dir_recursive_absolute(DIRECTORY) != OK:

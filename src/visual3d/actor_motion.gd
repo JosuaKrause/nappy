@@ -6,14 +6,14 @@ class_name ActorMotion extends Node3D
 ## articulated children, and rolls named wheels. If no caller invokes `advance`,
 ## time does not move and the pose is paused.
 
-const WALK_STRIDE: float = 0.48
-const WHEEL_RADIUS: float = 0.125
+const WALK_STRIDE: float = 1.45
+const RUN_STRIDE: float = 2.45
 
 var _actor: Node3D
 var _kind: String = "person"
 var _walk_distance: float = 0.0
 var _idle_time: float = 0.0
-var _wheel_spin: float = 0.0
+var _wheel_distance: float = 0.0
 var _steer_angle: float = 0.0
 var _last_heading: float = 0.0
 var _has_heading: bool = false
@@ -25,7 +25,8 @@ var _right_leg: Node3D
 var _left_arm: Node3D
 var _right_arm: Node3D
 var _torso: Node3D
-var _wheels: Array[Node3D] = []
+var _wheel_spins: Array[Node3D] = []
+var _wheel_radii: Array[float] = []
 var _front_wheels: Array[Node3D] = []
 
 
@@ -34,7 +35,7 @@ func configure(actor: Node3D, kind: String) -> void:
 	_kind = kind
 	_walk_distance = 0.0
 	_idle_time = 0.0
-	_wheel_spin = 0.0
+	_wheel_distance = 0.0
 	_steer_angle = 0.0
 	_has_heading = false
 	_rest_y = actor.position.y
@@ -46,7 +47,8 @@ func configure(actor: Node3D, kind: String) -> void:
 	if _torso != null:
 		_rest_torso_y = _torso.position.y
 	_rest_hip_rotation = actor.rotation.z
-	_wheels.clear()
+	_wheel_spins.clear()
+	_wheel_radii.clear()
 	_front_wheels.clear()
 	for node: Node in actor.find_children("Wheel*", "Node3D", true, false):
 		var wheel: Node3D = node as Node3D
@@ -54,7 +56,11 @@ func configure(actor: Node3D, kind: String) -> void:
 			continue
 		if not (wheel.name.ends_with("Left") or wheel.name.ends_with("Right")):
 			continue
-		_wheels.append(wheel)
+		var spin: Node3D = _find_node(wheel, "WheelSpin")
+		if spin != null:
+			_wheel_spins.append(spin)
+			var radius_value: Variant = wheel.get_meta("wheel_radius", 0.125)
+			_wheel_radii.append(float(radius_value))
 		if wheel.name.begins_with("WheelFront"):
 			_front_wheels.append(wheel)
 
@@ -82,7 +88,8 @@ func advance(delta: float, speed: float, heading: float) -> void:
 
 
 func _apply_walk(speed: float, delta: float) -> void:
-	var phase: float = _walk_distance * TAU / WALK_STRIDE
+	var stride: float = RUN_STRIDE if absf(speed) > 3.6 else WALK_STRIDE
+	var phase: float = _walk_distance * TAU / stride
 	var amplitude: float = 0.43 if absf(speed) < 1.5 else 0.62
 	var swing: float = sin(phase) * amplitude
 	_actor.position.y = lerpf(_actor.position.y, _rest_y + sin(phase * 0.5) * 0.003, minf(1.0, delta * 8.0))
@@ -127,16 +134,17 @@ func _apply_idle(delta: float) -> void:
 
 
 func _roll_wheels(speed: float, delta: float, heading: float) -> void:
-	_wheel_spin += speed * delta / WHEEL_RADIUS
-	for wheel: Node3D in _wheels:
-		wheel.rotation.x = _wheel_spin
+	_wheel_distance += speed * delta
+	for index: int in range(_wheel_spins.size()):
+		var radius: float = _wheel_radii[index]
+		_wheel_spins[index].rotation.y = _wheel_distance / radius
 	var heading_delta: float = angle_difference(_last_heading, heading)
 	var steering_target: float = clampf(heading_delta / maxf(delta, 0.001) * 0.08, -0.35, 0.35)
 	_steer_angle = lerpf(_steer_angle, steering_target, minf(1.0, delta * 7.0))
 	for wheel: Node3D in _front_wheels:
 		wheel.rotation.y = _steer_angle
 	if _actor != null:
-		_actor.position.y = lerpf(_actor.position.y, _rest_y + sin(_wheel_spin * 0.4) * 0.003, minf(1.0, delta * 8.0))
+		_actor.position.y = lerpf(_actor.position.y, _rest_y + sin(_wheel_distance * 0.4) * 0.003, minf(1.0, delta * 8.0))
 
 
 func _is_vehicle() -> bool:

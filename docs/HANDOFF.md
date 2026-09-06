@@ -12,7 +12,7 @@ progress-tracking, which lives there too.
 Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex's entry point is `AGENTS.md`.
 Its repository hooks need review through `/hooks` before they execute.
 
-One branch is unmerged and that is deliberate rather than in progress: **M64's measurement probes,
+**M64's measurement probes,
 `tests/test_zz_m64_measure.gd` and `tests/test_zz_m64_density.gd`, are kept off `main` on a branch
 of their own** so that *measure it again afterwards* means running the same thing rather than
 reinventing it. They are the only files on it, they print rather than assert, and they are the
@@ -21,8 +21,16 @@ instrument the per-street density figures in `TODO.md` were read with.
 **Work reaches `main` through a pull request and nothing else.** `main`'s ruleset requires one, plus
 the `test` check — the doc lint, the boot check and the full suite, run on the merge result. So the
 gate is CI's: locally you run `check.sh`, the suites your change touches, and `lint.sh` if you moved
-a governed doc. A second PR in flight needs its branch brought up to date with `main` before it can
-merge, and that re-run is the gate on the second merge.
+a governed doc.
+
+**Several PRs can be merged in a row without re-greening each one.** The ruleset does *not* require
+a branch to be up to date with `main` (`strict_required_status_checks_policy` is off), so a PR whose
+`test` check is green merges even after `main` has moved under it, as long as the merge is still
+clean. A conflict still blocks it and still has to be resolved on the branch. **What that trades
+away is real and worth knowing**: the check ran on that branch's merge result, not on the one it
+actually gets, so a semantic conflict between two PRs that touch different files passes both gates
+and lands broken. Watch `main`'s own CI run after a batch rather than assuming the last green PR
+spoke for it.
 
 ```sh
 ./tools/test.sh          # the full headless suite, ~200s — CI's job, not a local gate
@@ -40,6 +48,12 @@ and it converts some of them every time. It is not a one-off; it has happened in
 sessions. **Run `git status` after `check.sh` and revert anything you did not mean to change**,
 rather than assuming only the files you touched moved.
 
+**`project.godot` is the other one, and it loses more than whitespace.** Anything that makes the
+editor rewrite it — the import pass, and `tools/export-web.sh` — strips every `;` comment in the
+file and can drop a setting outright; a single run took `window/stretch/aspect="keep"` with it,
+which is load-bearing for the presentation. Nothing warns. Same rule, higher stakes: `git status`
+after, and `git diff project.godot` before believing it is only comments.
+
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
 suite on every push and every pull request; `.github/workflows/deploy.yml` fires on a `v*` tag and
@@ -56,22 +70,50 @@ Semver, and **`major` is reserved for a change that breaks or fundamentally alte
 So pushing `main` no longer publishes. Completed work may be pushed without asking; see the
 **committing** skill for what *completed* means. **Publishing is a separate, deliberate act**, and
 the live site is whatever the newest tag pointed at — `git tag --list 'v*'` and `tools/release.sh`'s
-own dry run say which. **The site currently serves a build nobody has played**: the sealed city and
-everything under "What to distrust" reached it by measurement, not by a played day.
+own dry run say which.
+
+**The invincibility bug is fixed on `main`, and a fix on `main` is not a fix on the site.** The
+release `v0.2.0` carried a day that ends without saying so — the clock stops, no summary appears,
+the player keeps walking and nothing can end the day again — from one untyped array literal in
+`main.gd`'s `_on_day_finished()`. The record is in `DECISIONS.md` under M73. **The site serves
+whatever the newest tag points at**, so check `git tag --list 'v*'` and `tools/release.sh`'s dry run
+against the commit that fixed it before telling anybody the page is well.
 
 ## What to do next
 
-**The most useful thing anybody can do next is play a day.** Every finding of playtest 22 is built
-and none of it has been walked: the sealing that closes the city off the path, the trunk that keeps
-the doorstep joined to it, the ban on routing along the main road, and the thinning that leaves a
-wrong turn open. It is arithmetic and rig runs all the way down, and the questions it raises —
-*does a walled city read as a route decision or as a maze*, *is a thinned wall an invitation or a
-mistake* — are the kind only a person answers.
+**The active request is the ground-up graphics overhaul in [PLAYTEST-26.md](PLAYTEST-26.md).**
+[VISUALS.md](VISUALS.md) describes its target, not a completed renderer. Articulated actor models
+and the standalone orthographic street study live in `src/visual3d/`. Further city, animal and
+screen revisions are isolated worktree work. The playable game still uses its existing renderer.
+The street study needs lighting, material and framing corrections before it is an accepted target.
+Review actual rendered motion before
+extending the prototype to the whole city and every screen. Implementation belongs to Luna agents.
+Preserve the title's control selection, truthful meter display and event-cost behavior while
+replacing their presentation. Use `git worktree list` and each checkout's status to locate unfinished
+work; do not treat the earlier SVG polish as the requested overhaul.
 
-**Read [PLAYTEST-22.md](PLAYTEST-22.md), then [PLAYTEST-21.md](PLAYTEST-21.md), then
-[PLAYTEST-20.md](PLAYTEST-20.md)** for what has already been said about this ground. Playtest 21 is
-a brief run whose complaint — the city *"feels way empty"* — the sealing answers. Playtest 20 is the
-full seven-day run behind them, and its findings are filed against the milestones that own them.
+**For route and balance work, the most useful next check is a played day**, with two unplayed layers
+of change rather than one.
+
+**Playtest 25's nine findings are all built and none of them has been walked.** The barrier rows
+stopped charging the meter, two ambient reaches were cut roughly in half, the cat and the dog hit
+harder, two rows that could be walked straight past now catch you, and alleys are walled at 15% of
+the rate they were. That is the largest single change to what a day costs the project has made, and
+it was measured against a rig rather than felt. The record is in `DECISIONS.md` under M73, M74 and
+M75. **Its own test is the player's sentence**: *walking a seemingly empty pavement has to give the
+meter back*. If it still does not, the radii move next, not the density.
+
+**Playtest 22's findings are built and unwalked underneath that** — the sealing that closes the city
+off the path, the trunk that keeps the doorstep joined to it, the ban on routing along the main
+road, and the thinning that leaves a wrong turn open. Its questions are the kind only a person
+answers: *does a walled city read as a route decision or as a maze*, *is a thinned wall an
+invitation or a mistake*.
+
+**Read [PLAYTEST-25.md](PLAYTEST-25.md) first, then [PLAYTEST-22.md](PLAYTEST-22.md),
+[PLAYTEST-21.md](PLAYTEST-21.md) and [PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 25 is the first
+phone session on the built mobile game and the first human verdict on the sealed city. Playtest 21
+is a brief run whose complaint — the city *"feels way empty"* — the sealing answers. Playtest 20 is
+the full seven-day run behind them, and its findings are filed against the milestones that own them.
 
 **Read `DECISIONS.md` under M69 before touching routes, closures or the corridor**, because it
 changed the ground every one of them stands on. Reachability is now `ReachabilityGrid` — the tile map
@@ -121,8 +163,11 @@ bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TO
 
 ## Open beyond the order
 
-Unordered, full entries in [TODO.md](TODO.md): **M61** (fields as ellipses whose eccentricity comes
-from movement speed), **M62** (checkpoints and barricades dividing the map into regions), **M50**
+Unordered, full entries in [TODO.md](TODO.md): **M61** (a field becomes the Minkowski sum of the
+body and a kernel — a point body keeps today's circle, a frontage becomes a capsule, and the kernel
+is a disc standing still and an ellipse moving, so the eccentricity-from-speed idea it was opened
+for is one half of that sum; it is also what the tightened café and market radii are a stopgap for),
+**M62** (checkpoints and barricades dividing the map into regions), **M50**
 (the corridor's density; placeholders step 3; the four-street building), **M47** (the 2×2 courtyard
 complex; calm-area adjacency; multi-block calm re-derived for 121 blocks; the main road as a soft
 block), **M45** (closures that point), **M43** (the tutorial dog after day 3; the one-contact cliff
@@ -242,8 +287,23 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   `build/web` are correct as far as a local check can tell, and nothing has pasted the address into
   a chat client to see what comes back.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
-  running behind it, `space` or a tap to begin — but it is a title, three lines of controls and one
-  key on the web (two on the desktop, where `q` also quits): no options, no seed box, no load game.
+  running behind it — and it now asks one question: two buttons, and picking one is also the start.
+  That is the whole of it: no options, no seed box, no load game. **Nobody has met the question on a
+  phone**, which is where it was asked for, so whether two buttons read as a choice or as an
+  obstacle between a player and the game is unanswered. A run started with `--controls` or
+  `?controls=` skips the question by design and is therefore the path least likely to be tested.
+- **The city just got much cheaper to walk through and nobody has walked it.** Five barrier rows
+  emit nothing at all now and the two that kept a field had their reach roughly halved, against a
+  day that plans several hundred of exactly those bodies. **Whether the day is still losable on the
+  meter** is asked by `tests/test_balance.gd` and answered by nobody. The opposite risk is the one
+  to watch for: the complaint was that a quiet pavement never gave the meter back, and the failure
+  this creates is a city that no longer costs anything to cross.
+- **Four rows changed what they do to a player and all four were set by a rig.** `cat_dash` at 17
+  and `loose_dog` at 32 are meant to land as a startle without becoming a day lost to something
+  behind her; `chatting_mother` at a 33px `detain_radius` and `cyclist` at a 33px lethal band are
+  both meant to stop being walkable-past. The chatting mother's is the one to distrust: her radius
+  now exceeds the 32px between a pavement's two walking lanes, **so walking her far lane no longer
+  avoids her**, which is the trade the player accepted and nobody has felt.
 - **Nothing draws a bollard**, so a street that meets a precinct simply ends against the paving. The
   city and the crowd both explain a precinct by saying a driver meets a bollarded street, and there
   is no bollard anywhere in the game.

@@ -1,5 +1,47 @@
 # Decisions
 
+## Graphics prototype review — 2026-09-06
+
+The graphics draft integrated main through `2bac221` and opened PR #19 at the player's request
+as a tracking draft, not a completed overhaul. The headless boot, focused HUD/main/pause/quit
+suites and lint passed. Initial articulated model work and its wheel/gait corrections were merged
+into the draft; the live game renderer was not replaced.
+
+A single externally bounded windowed street-study capture exited normally. Its early frame is
+`evidence/graphics-study-first-render.png`, rendered from `2c5c713` with the Compatibility backend,
+1280x720 window and `--preview-capture`. Review rejected it as a production target: paving and
+facades were washed out, roof planes lacked material detail, shadows were visibly jagged, and
+actors were too small. `Camera3D.size = 20` had treated a desired horizontal span as the default
+vertical span. Corrections returned to the Luna city agent before live renderer integration.
+The roof-reveal and browser-performance gates remained open. This evidence is a standalone art
+study, not a gameplay trace or a claim that the whole overhaul was present.
+
+## Graphics redesign — 2026-09-05
+
+The player requested a whole-game overhaul and explicitly rejected the first implementation's
+SVG outline and polish approach: "a full overhaul of the graphics as if nothing had existed
+before". The correction includes animation, every screen, projecting roof depth with stylized
+occlusion reveal, actual excitement-source feedback, late-game deterioration and reconsidered
+objective guidance. Full wording is in `PLAYTEST-26.md`; `PLAYTEST-25.md` is reserved for the
+separate mobile playtest on the other development branch.
+
+The initial SVG polish is preserved in a local stash and isolated worktrees, not adopted as the
+new art direction. The prior keep-every-roof-inside-its-lot restriction and SVG-only assumption are
+open to replacement under the player's explicit instruction to rethink graphics and challenge
+earlier guidelines. Collision and route guarantees still describe gameplay and are not repealed
+by an artistic roof projection.
+
+`VISUALS.md` specifies the redesign. The first implementation experiment uses native orthographic
+3D and articulated models with Godot's Compatibility renderer. A generated concept image supplies
+material and early/late mood, not evidence that the game renders that way. Native 3D must pass a
+rendered movement and browser-cost review before it defines the production pipeline; rendered PNG
+animation atlases from the same models are the fallback worth measuring. Blender is absent on
+this machine and is not installed by the experiment.
+
+The requested main update brought in the release-tag pinning fix. The separate branches for the
+mobile playtest and event costs also contain relevant title/control and field instructions, so
+the new presentation must coordinate with them rather than overwrite them.
+
 **This file is the history. Nothing in it describes the game as it is now.**
 
 Every other document in this repo states the current state and only the current state. When one of
@@ -4917,6 +4959,149 @@ exposed two latent bugs and one false assertion:
   those six read 16.7%. The assertion is replaced by the measurement. The real **17-point drop in
   one-shot covering breadth** is a consequence of forbidding the spine and is left for somebody's
   judgement rather than a green tick.
+
+## Playtest 25's three milestones are M73, M74 and M75 — renumbered 2026-09-06
+
+They were queued as M70, M71 and M72, and **M70 and M71 were already spent**: "A run is a folder"
+and "A push is a check, a tag is a release", both built 2026-09-03 and both recorded below under
+those numbers. The collision was found while filing the new work here, which is the first time two
+entries would have shared a heading.
+
+**The new work was renumbered rather than the old**, because the old numbers are settled history
+that other documents and a test comment already point at, and because renumbering the thing that
+just landed touches one PR's worth of references instead of the archive. The mapping, since the
+commit messages on `main` still say the old numbers: **M70 → M73** (the meter tells the truth, and
+the local build starts), **M71 → M74** (the title screen asks which controls), **M72 → M75** (what
+the city costs to walk through). `docs/PLAYTEST-25.md` also names M70 for the environment-gate
+finding and is left alone: a playtest file is a primary source and is never rewritten.
+
+## M75 — What the city costs to walk through · built 2026-09-06
+
+Playtest 25's six gameplay findings, built as one balance change because some take cost out of the
+city and some put it back, and measuring any of them alone measures the wrong thing.
+
+**The barrier rows went silent, and that is the largest single change to what a day costs the
+project has made.** *"static blockages in general shouldn't increase excitement"*, with the player's
+own exception in the next breath: *"except for things like ice cream trucks which have inherent
+excitement"*. So `construction` (was 11.0), `market_stall`, `cafe_tables`, `delivery_van` (was 8.0)
+and `barricade` (was 6.0) stopped emitting; `ice_cream_van` (13.0 over 48/240px, the named
+exception) and `leaf_blower` (20.0 over 40/200px) kept their fields. The scale is M64's doing: day 1
+plans 147 `cafe_tables`, 124 `market_stall` and 84 `delivery_van` — 355 static bodies, because
+sealing puts a barrier on every street off the day's route tree — and fields sum, so the measured
+symptom was excitement going **35 → 69 in fifteen seconds of calm ground** in the player's own run
+(`docs/evidence/run-181812-seed3038142309-v0.2.0-6-gedeed04-dirty/`), with the log reading
+`near market_stall 184px … in 14.2/s (crowd 3.6, events 10.6)`.
+
+**Two of the five kept a field instead of losing it, and that is a narrower answer than the item
+asked for.** `cafe_tables` and `market_stall` are crowds rather than scenery, so the player's
+adjacent sentence governed them — *"restaurants should only increase your excitement when you're
+actually close … but they should nonetheless"* — and the reach was tightened rather than removed:
+**170px → 90px** for the café, **185px → 95px** for the stall. 90px is one and a half tiles past a
+two-tile (64px) pavement and comfortably inside the 448px block period, so a café can never bill the
+far side of its own street.
+
+**Why those two numbers are a stopgap and were recorded as one.** *(2026-09-05: "that number was so
+big because it was a point source before".)* A circle centred on a point has to be wide enough to
+stand in for a body that is not a point, so the radius was doing the body's job — it over-reaches
+perpendicular to a 48px café frontage and under-reaches along it. The fix is M61's third bullet, a
+field as the Minkowski sum of the body and a kernel; both catalogue docstrings say so where the
+numbers are.
+
+**The startle spike is a short duration at high intensity, and no `impulse` field was added.**
+*"dashing cat and dog (not pursuing) are basically useless right now — they need a bigger impact"*.
+`cat_dash` went 15.0 → **17.0** and `loose_dog` 24.0 → **32.0**. The cat was deliberately held under
+`Tuning.MARK_WORTH_A_DETOUR` so it does not acquire a caret for the first time — the crouch is its
+own silhouette — which moved that threshold's stated gap from *between `market_stall` and
+`construction`* to *between `cat_dash` (+24) and `checkpoint` (+29)*. **The order mattered and was
+stated**: raising the cat while the baseline was still pinned near 100 by the barrier fields would
+have made contact an instant loss, which is not what was asked for, so the silencing was measured
+first.
+
+**Two rows reported as unmissable were one finding wearing two hats.** `chatting_mother`'s
+`detain_radius` and `cyclist`'s lethal `inner_radius` were both **26px** and both went to **33px**.
+The chatting mother's 26 was deliberate — it sat under the 32px between a pavement's two walking
+lanes so the far lane could never trigger it — and **that reasoning is what the player overturned**:
+*"the chatting lady has a way too small capture radius"*. What it gives up is that walking her far
+lane no longer avoids her, and the note stayed in the code rather than being deleted. The cyclist
+was a defect, not a design change: it already carries `hard_fail`, and the player closed the worry
+that the day loop was swallowing it — *"cyclist radius should be bigger, then. that observation was
+from local"* — since the desktop build is the one where dying demonstrably works.
+
+**Alleys got a probability where there was none.** *"the probability of blocking off alleys should
+be way lower"*, and the player separated the two things that word covers: *"at least for full
+blockages — robbers can be frequent"*, so `alley_robbery`'s frequency is untouched.
+`SealPlanner._seal_alley_mouths()` had walled both mouths of every qualifying through-alley
+unconditionally, every day; `Tuning.ALLEY_MOUTH_SEAL_CHANCE` is now **0.15**, rolled once per alley.
+**Sealing one mouth instead of both was rejected as the wrong half-measure** — a through-alley with
+one end walled is still not a way through — so the roll is on the alley rather than on the mouth.
+0.15 was started low rather than derived, the same way `SEAL_THINNING_FRACTION` was, and is meant to
+move against a played day.
+
+## M74 — The title screen asks which controls · built 2026-09-06
+
+Playtest 25's verdict on M68's experiment, which existed to find out which of the two control
+schemes wins. **Neither did** — *"I like both control modes equally"* — so the experiment resolved
+by handing the choice to the player: *"let the player choose on the title screen (instead of tap the
+screen to start have two buttons to choose from)"*.
+
+The title stopped being a single "tap to start" and became a choice that is also the start: one
+press, not a menu and then a start. `ControlsMode` moved from a build-time resolution read once into
+three `_ready`-time members — in `main.gd`, `hud.gd` and `title_screen.gd` — to an answer produced
+by the title screen and read after it, because **a stale copy of the answer was the whole of the
+work**. The existing flag order is unchanged and deliberate: `--controls tap|stick` behind
+`DevFlags`, then the page's `?controls=` URL flag, then the question. **A flag is how you skip the
+question, so a run started with one is not asked.**
+
+## M73 — The meter tells the truth, and the local build starts · built 2026-09-06
+
+Playtest 25's first two findings, both about a reader being told something that is not so — one on
+screen, one at the command line — plus the two items that fell out of them.
+
+**The invincibility bug was one untyped array literal.** *"if excitement reaches 100 the game
+doesn't end! that's a major bug … it stays on 100 and I'm completely invincible"*. In
+`_on_day_finished()`, `_observer.trail() if _observer else []` assigned an **untyped** `Array` to an
+`Array[Vector3]`, which throws at runtime. With telemetry off the `else` ran, the handler aborted
+six lines before the summary was shown, and `DayController._end()` had already set the phase to
+`OVER` — so the clock stopped, no summary appeared, she kept walking, and every later ending was
+swallowed, because the crying handler, the hard-fail handler and `DayController._process()` all
+return unless the day is running.
+
+**Nothing about it was mobile, and that is why it survived every gate.** `Telemetry` disables itself
+on a web export, so the observer is null there and never null on an ordinary desktop run — the
+desktop and every rig died correctly. **A cast on the literal was rejected in favour of a typed
+local assigned in an `if`**: the ternary would have invited the same edit back, and the tree was
+grepped for the same shape — a typed collection initialised from a ternary with a bare `[]` or `{}`
+on one side — in the same commit.
+
+**Every environment gate became a flag with an override.** *(2026-09-05: "in general don't tie
+features directly to an environment — tie it to a feature flag which might be informed by the
+environment but lets you override … that way you can get telemetry when you need it".)* The rule
+itself went into the **godot** skill so it arrives before the next edit that would break it. The
+gates it condemned were `Telemetry`'s web check — which is what hid the bug above, by making the web
+build's day-ending path unreachable from every test and every desktop session — plus
+`QuitOption.available()`, `DevFlags.enabled()` and `AutoScreenshot`. The platform default is kept in
+each case and the reasoning with it: `user://` on a web export is a stranger's browser storage that
+nobody collects or clears. **The measure of done was the reach rather than the flags** — for each
+gate, how a person enters the branch the platform does not pick for them — and the override has to
+work in a *release* build, since the deployed page is exactly where `DevFlags` cannot reach.
+`ControlsMode`'s `?controls=` URL flag was the precedent. `TouchInput.available()` already had the
+shape and needed nothing.
+
+**A meter bar may not read `100` while the day is still alive.** `MeterBar._draw()` printed with
+`"%3.0f"`, which rounds to nearest, so 99.5 and above printed `100` while the day ends at exactly
+`Tuning.METER_MAX`. The player met it on a phone and read it as the crying rule being broken — it is
+the same sentence that opened the bug above, and the two were genuinely different faults. Both bars
+now floor rather than round, since the sleepiness bar told the same lie at the other end of the day.
+
+**`tools/run.sh` refuses a stale class cache instead of booting into it.** The player's local build
+would not start: `Parse Error: Identifier "ControlsMode" not declared in the current scope`, and the
+same for `TapControls`. Neither file was missing; what was missing was their entry in
+`.godot/global_script_class_cache.cfg`, because `run.sh` exec'd the Godot binary straight at the
+project with no import pass and the checkout's cache predated the merge that added them. **No gate
+could have caught it and none was at fault** — CI and `tools/check.sh` both import from clean, which
+is why `check.sh` was green on a tree that would not run. It is reachable from any `git pull` that
+adds a `class_name`. The constraint on the fix was that `run.sh` must not become slow to start, so
+the import pass is a no-op on an up-to-date cache.
 
 ## M71 — A push is a check, a tag is a release · built 2026-09-03
 
