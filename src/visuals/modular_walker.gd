@@ -6,7 +6,7 @@ const RUST_TEXTURE: Texture2D = preload("res://assets/illustrated/walkers/upper-
 const LEGS_TEXTURE: Texture2D = preload("res://assets/illustrated/walkers/legs-denim-sneakers-v1.png")
 const UPPER_SIZE := Vector2(2172.0, 724.0)
 const LEGS_SIZE := Vector2(2172.0, 724.0)
-const VISUAL_SCALE := 0.065
+const VISUAL_SCALE := 0.045
 
 var direction: int = DirectionalParts.Direction.S
 var heading := Vector2.DOWN
