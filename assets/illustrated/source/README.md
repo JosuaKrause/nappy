@@ -11,12 +11,13 @@ images as style and camera references. The saved file is 1402×1122 PNG, RGB, wi
 not transparency. Do not use this file as a cutout until the background is removed or a genuinely
 transparent replacement is generated.
 
-The sheet visibly contains the requested 4×2 directional arrangement in reading order (N, NE, E,
-SE / S, SW, W, NW), with a consistent green coat, warm scarf, high brown bun, blue jeans and dark
-shoes. It has no stroller, UI, labels or environment. The views are cardinal-game character views
-rather than an isometric diamond, but cell bounds are implicit rather than machine-registered and
-the generated canvas is not an exact 2:1 sheet. The front/three-quarter/back silhouettes are useful
-for style and proportion review only.
+The sheet visibly contains a 4×2 directional arrangement, but its observed reading order is
+`S, SE, E, NE / N, NW, W, SW` rather than the requested N-first order. It has a consistent green
+coat, warm scarf, high brown bun, blue jeans and dark shoes, with no stroller, UI, labels or
+environment. The views are cardinal-game character views rather than an isometric diamond, but cell
+bounds are implicit rather than machine-registered and the generated canvas is not an exact 2:1
+sheet. The front/three-quarter/back silhouettes are useful for style and proportion review only;
+direction remapping and registration remain open.
 
 The tool's first correction attempt produced an RGBA PNG but replaced the checkerboard with an
 opaque dark gradient; it was rejected and is not copied into this checkout. A separate modular
