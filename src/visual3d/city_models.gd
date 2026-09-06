@@ -27,12 +27,18 @@ var _wear_root: Node3D
 var _paper_nodes: Array[MeshInstance3D] = []
 var _paper_origins: Array[Vector3] = []
 var _paper_phases: Array[float] = []
+var _actor_nodes: Array[Node3D] = []
+var _actor_motions: Array[Node] = []
+var _actor_kinds: Array[String] = []
+var _actor_speeds: Array[float] = []
+var _actor_headings: Array[float] = []
 var _time := 0.0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 	_build_world()
 	set_day14(day14)
+	_build_optional_actors()
 
 ## Switches the art-only deterioration pass. The deterministic seed belongs to this preview and
 ## never touches the playable city's random stream.
@@ -52,36 +58,70 @@ func _process(delta: float) -> void:
 		paper.position = origin + drift
 		paper.rotation.y = _time * 0.45 + phase
 		paper.rotation.z = sin(_time * 1.2 + phase) * 0.18
+	for i in _actor_motions.size():
+		var speed: float = _actor_speeds[i]
+		var heading: float = _actor_headings[i]
+		var phase := fmod(_time, 8.0)
+		var kind: String = _actor_kinds[i]
+		if kind == "mother" or kind == "pram":
+			# The mother pauses at the curb, walks across the pavement, then turns toward the alley.
+			speed = 0.0 if phase < 0.8 else (2.875 if phase < 3.4 else 5.25)
+			heading = PI * 0.5 if phase < 3.4 else 0.0
+			if kind == "mother" and phase < delta * 1.5:
+				_actor_nodes[i].position = Vector3(-2.0, 0.2, 2.8)
+		elif kind == "car":
+			# The car demonstrates a straight approach followed by a right-angle turn at the crossing.
+			speed = 3.0
+			heading = PI * 0.5 if phase < 3.0 else 0.0
+			if phase < delta * 1.5:
+				_actor_nodes[i].position = Vector3(-11.0, 0.18, 0.0)
+		else: # civilian
+			speed = 0.95
+			heading = -PI * 0.5
+			if phase < delta * 1.5:
+				_actor_nodes[i].position = Vector3(2.8, 0.2, -2.0)
+		_actor_speeds[i] = speed
+		_actor_headings[i] = heading
+		if kind != "pram":
+			_actor_nodes[i].position += Vector3(sin(heading), 0.0, cos(heading)) * speed * delta
+		_actor_motions[i].call("advance", delta, speed, heading)
 
 func _build_world() -> void:
 	var base_mat := _material(Color("958b7d"), 0.94)
-	_box(self, "Ground", Vector3(46.0, 0.28, 46.0), Vector3(0.0, -0.18, 0.0), base_mat)
+	_box(self, "Ground", Vector3(30.0, 0.28, 30.0), Vector3(0.0, -0.18, 0.0), base_mat)
 
 	var road_mat := _material(ROAD, 0.88)
-	_box(self, "RoadEastWest", Vector3(46.0, 0.08, 7.2), Vector3(0.0, 0.02, 0.0), road_mat)
-	_box(self, "RoadNorthSouth", Vector3(7.2, 0.09, 46.0), Vector3(0.0, 0.025, 0.0), road_mat)
+	_box(self, "RoadEastWest", Vector3(30.0, 0.08, 2.0), Vector3(0.0, 0.02, 0.0), road_mat)
+	_box(self, "RoadNorthSouth", Vector3(2.0, 0.09, 30.0), Vector3(0.0, 0.025, 0.0), road_mat)
 	var road_edge_mat := _material(ROAD_EDGE, 0.9)
-	for z in [-4.1, 4.1]:
-		_box(self, "Kerb", Vector3(46.0, 0.18, 0.24), Vector3(0.0, 0.11, z), road_edge_mat)
-	for x in [-4.1, 4.1]:
-		_box(self, "Kerb", Vector3(0.24, 0.18, 46.0), Vector3(x, 0.11, 0.0), road_edge_mat)
+	for z in [-1.1, 1.1]:
+		for x in [-8.15, 8.15]:
+			_box(self, "Kerb", Vector3(13.7, 0.18, 0.24), Vector3(x, 0.11, z), road_edge_mat)
+	for x in [-1.1, 1.1]:
+		for z in [-8.15, 8.15]:
+			_box(self, "Kerb", Vector3(0.24, 0.18, 13.7), Vector3(x, 0.11, z), road_edge_mat)
 
 	var pavement_mat := _material(STONE, 0.9)
-	for z in [-5.0, 5.0]:
-		_box(self, "Pavement", Vector3(46.0, 0.12, 1.55), Vector3(0.0, 0.1, z), pavement_mat)
-	for x in [-5.0, 5.0]:
-		_box(self, "Pavement", Vector3(1.55, 0.12, 46.0), Vector3(x, 0.1, 0.0), pavement_mat)
+	for z in [-2.1, 2.1]:
+		for x in [-9.0, 9.0]:
+			_box(self, "Pavement", Vector3(12.0, 0.12, 2.0), Vector3(x, 0.1, z), pavement_mat)
+	for x in [-2.1, 2.1]:
+		for z in [-9.0, 9.0]:
+			_box(self, "Pavement", Vector3(2.0, 0.12, 12.0), Vector3(x, 0.1, z), pavement_mat)
+	for x in [-2.1, 2.1]:
+		for z in [-2.1, 2.1]:
+			_box(self, "CornerPaving", Vector3(2.0, 0.12, 2.0), Vector3(x, 0.1, z), pavement_mat)
 
 	# Small slabs make the alleys visibly traversable instead of filling the blocks with walls.
 	var alley_mat := _material(STONE_DARK, 0.94)
-	for x in [-12.0, 12.0]:
-		_box(self, "Alley", Vector3(2.2, 0.08, 9.0), Vector3(x, 0.17, 9.2), alley_mat)
-	_box(self, "Alley", Vector3(9.0, 0.08, 2.2), Vector3(-10.0, 0.17, -12.0), alley_mat)
+	for x in [-3.8, 3.8]:
+		_box(self, "Alley", Vector3(1.0, 0.08, 9.0), Vector3(x, 0.17, 7.5), alley_mat)
+	_box(self, "Alley", Vector3(9.0, 0.08, 1.0), Vector3(-8.5, 0.17, -3.8), alley_mat)
 
-	_building(Vector3(-12.0, 0.0, 12.0), Vector2(8.4, 8.0), 4.4, 0, true)
-	_building(Vector3(12.0, 0.0, -12.0), Vector2(8.8, 8.0), 5.0, 1, false)
-	_building(Vector3(-12.0, 0.0, -12.0), Vector2(8.0, 8.8), 3.8, 2, true)
-	_build_park(Vector3(12.0, 0.0, 12.0))
+	_building(Vector3(-8.5, 0.0, 8.5), Vector2(8.4, 8.0), 4.4, 0, true)
+	_building(Vector3(8.5, 0.0, -8.5), Vector2(8.8, 8.0), 5.0, 1, false)
+	_building(Vector3(-8.5, 0.0, -8.5), Vector2(8.0, 8.8), 3.8, 2, true)
+	_build_park(Vector3(8.5, 0.0, 8.5))
 
 	_wear_root = Node3D.new()
 	_wear_root.name = "Day14Wear"
@@ -109,9 +149,11 @@ func _building(parent_position: Vector3, footprint: Vector2, height: float, vari
 	var half_width := footprint.x * 0.5 + 0.5
 	var panel_width := half_width / cos(roof_pitch)
 	_box(building, "RoofWest", Vector3(panel_width, 0.22, footprint.y + 1.0),
-		Vector3(-footprint.x * 0.25, roof_y, 0.0), roof_mat, Vector3(0.0, 0.0, -roof_pitch))
+		Vector3(-footprint.x * 0.25, roof_y, 0.0), roof_mat, Vector3(0.0, 0.0, roof_pitch))
 	_box(building, "RoofEast", Vector3(panel_width, 0.22, footprint.y + 1.0),
-		Vector3(footprint.x * 0.25, roof_y, 0.0), roof_mat, Vector3(0.0, 0.0, roof_pitch))
+		Vector3(footprint.x * 0.25, roof_y, 0.0), roof_mat, Vector3(0.0, 0.0, -roof_pitch))
+	_box(building, "RoofRidge", Vector3(0.28, 0.28, footprint.y + 1.0),
+		Vector3(0.0, height + 1.17, 0.0), shadow_mat)
 	_box(building, "RoofFascia", Vector3(footprint.x + 1.0, 0.22, 0.22),
 		Vector3(0.0, height + 0.17, footprint.y * 0.5 + 0.5), shadow_mat)
 	_box(building, "RoofFascia", Vector3(footprint.x + 1.0, 0.22, 0.22),
@@ -191,9 +233,9 @@ func _build_wear() -> void:
 	var board_mat := _material(WOOD.lightened(0.08), 0.92)
 	# Cracks are shallow dark planes on facades; boards are sparse so the whole city still feels lived in.
 	for info in [
-		[Vector3(-12.0, 0.0, 12.0), 4.4, 8.0, 0.0],
-		[Vector3(12.0, 0.0, -12.0), 5.0, 8.0, 1.0],
-		[Vector3(-12.0, 0.0, -12.0), 3.8, 8.8, 2.0],
+		[Vector3(-8.5, 0.0, 8.5), 4.4, 8.0, 0.0],
+		[Vector3(8.5, 0.0, -8.5), 5.0, 8.0, 1.0],
+		[Vector3(-8.5, 0.0, -8.5), 3.8, 8.8, 2.0],
 	]:
 		var root := Node3D.new()
 		_wear_root.add_child(root)
@@ -214,13 +256,65 @@ func _build_wear() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 14014
 	for i in 9:
-		var origin := Vector3(rng.randf_range(-17.0, 17.0), 0.34, rng.randf_range(-17.0, 17.0))
-		if absf(origin.x) < 4.8 or absf(origin.z) < 4.8:
-			origin.x += 5.6 if origin.x >= 0.0 else -5.6
+		var origin := Vector3(rng.randf_range(-12.0, 12.0), 0.34, rng.randf_range(-12.0, 12.0))
+		if absf(origin.x) < 3.8 or absf(origin.z) < 3.8:
+			origin.x += 4.4 if origin.x >= 0.0 else -4.4
 		var paper := _box(_wear_root, "WindblownPaper", Vector3(0.38, 0.035, 0.24), origin, litter_mat)
 		_paper_nodes.append(paper)
 		_paper_origins.append(origin)
 		_paper_phases.append(rng.randf_range(0.0, TAU))
+
+func _build_optional_actors() -> void:
+	# The visual study can run before the actor milestone lands. Loading by path keeps this scene
+	# useful in that state while allowing the finished articulated silhouettes to appear automatically
+	# once their scripts are present in the same checkout.
+	const models_path := "res://src/visual3d/actor_models.gd"
+	const motion_path := "res://src/visual3d/actor_motion.gd"
+	if not ResourceLoader.exists(models_path) or not ResourceLoader.exists(motion_path):
+		return
+	var models_script: Script = load(models_path)
+	var motion_script: Script = load(motion_path)
+	var person: Node3D = models_script.call("make_person", "mother") as Node3D
+	var pram: Node3D = models_script.call("make_pram") as Node3D
+	if person == null or pram == null:
+		return
+	person.name = "PreviewMother"
+	person.position = Vector3(-2.0, 0.2, 2.8)
+	person.rotation.y = PI
+	pram.position = Vector3(0.0, 0.0, 0.58)
+	person.add_child(pram)
+	add_child(person)
+	_add_actor_motion(motion_script, person, "mother", 2.875, PI)
+	_add_actor_motion(motion_script, pram, "pram", 2.875, PI)
+
+	var car: Node3D = models_script.call("make_vehicle", "car") as Node3D
+	if car != null:
+		car.name = "PreviewCar"
+		car.position = Vector3(-11.0, 0.18, 0.0)
+		car.rotation.y = PI * 0.5
+		add_child(car)
+		_add_actor_motion(motion_script, car, "car", 3.0, PI * 0.5)
+
+	var civilian: Node3D = models_script.call("make_person", "civilian") as Node3D
+	if civilian != null:
+		civilian.name = "PreviewCivilian"
+		civilian.position = Vector3(2.8, 0.2, -2.0)
+		civilian.rotation.y = -PI * 0.5
+		add_child(civilian)
+		_add_actor_motion(motion_script, civilian, "civilian", 0.95, -PI * 0.5)
+
+func _add_actor_motion(motion_script: Script, actor: Node3D, kind: String, speed: float,
+		heading: float) -> void:
+	var motion: Node = motion_script.new() as Node
+	if motion == null:
+		return
+	add_child(motion)
+	motion.call("configure", actor, kind)
+	_actor_nodes.append(actor)
+	_actor_motions.append(motion)
+	_actor_kinds.append(kind)
+	_actor_speeds.append(speed)
+	_actor_headings.append(heading)
 
 func _material(colour: Color, roughness: float, emission: bool = false) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
