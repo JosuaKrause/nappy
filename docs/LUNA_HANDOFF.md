@@ -84,7 +84,10 @@ The modular sprite work is a standalone, tested presentation component, not live
   body, collision or gameplay RNG.
 - `assets/illustrated/modular/` supplies registered mother and pram bundles, including articulated
   lower-body parts. `tests/test_visuals.gd` exercises their regions and a walk/stop/turn sequence.
-- Player/crowd binding and on-screen inspection remain to be built and verified.
+- `Stroller` owns a zero-offset live `ModularPerson` child. It supplies only displacement that
+  survived collision and shove resolution, then resets the gait with every logical player reset.
+  Legacy mother/pram SVG drawing is absent while shadows, baby cues and alert cues remain.
+- Crowd binding and on-screen inspection remain to be built and verified.
 
 The standalone `scenes/dev/illustrated_street_review.tscn` consumes the layered PNG assets under
 `assets/illustrated/street/`: ground, continuous apartment frontage, roof depth and props. Its
@@ -104,7 +107,7 @@ screen experiment predates some of this and must not simply replace current titl
 
 ## Next work order
 
-1. Bind the approved presentation to the live player/crowd and expand by event family. Every
+1. Bind the approved presentation to the live crowd and expand by event family. Every
    catalogue look needs its own identity and state-appropriate animation; a generic placeholder
    must be recorded as unfinished, never quietly substituted.
 2. Add seeded deterioration, truthful contribution cues and objective guidance. The baby already

@@ -21,7 +21,7 @@ animation and every screen. SVG polish is a separate small PR, not this overhaul
 The rendering medium and earlier visual restrictions are open to reassessment by the player's
 instruction. [VISUALS.md](VISUALS.md) carries the design and implementation gates.
 
-- [ ] Bind the approved illustrated PNG target to live movement, starting with the mother and pram.
+- [ ] Extend the approved illustrated PNG target from the live mother and pram to crowd and events.
       `scenes/dev/illustrated_street_review.tscn` carries the accepted non-diagonal apartment
       street direction. The logical body, collision, route rules and gameplay RNG remain owned by
       the existing game; presentation receives only applied displacement. The diagonal
