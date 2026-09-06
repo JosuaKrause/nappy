@@ -40,14 +40,19 @@ func _test_registered_regions_and_order(t) -> void:
 				"%s direction %d uses its documented cell" % [part_id, index])
 	t.check(rig.mother_manifest.require_part("head_hair").pivot == Vector2(80, 28),
 		"head uses the documented attachment pivot")
-	t.check(rig.mother_manifest.require_part("left_upper_leg").pivot_for(0) == Vector2(68, 24),
-		"left upper leg uses the documented north hip pivot")
-	t.check(rig.mother_manifest.require_part("right_lower_leg").pivot_for(2) == Vector2(96, 12),
-		"right lower leg uses the documented east knee pivot")
+	t.check(rig.mother_manifest.require_part("left_upper_leg").pivot_for(0) == Vector2(68, 116),
+		"left upper leg uses the measured north hip pivot")
+	t.check(rig.mother_manifest.require_part("right_lower_leg").pivot_for(2) == Vector2(96, 146),
+		"right lower leg uses the measured east knee pivot")
 	t.check(rig.mother_manifest.require_part("left_shoe").rect_for(0) == Rect2(27, 7 * 192 + 19, 46, 63),
 		"left shoe uses its numeric v3 cutout")
 	t.check(rig.pram_manifest.require_part("wheels_frame").pivot == Vector2(80, 112),
 		"wheels use the documented wheel pivot")
+	var wheel_registration := rig.pram_manifest.require_part("wheels_frame")
+	var wheel_sprite: Sprite2D = rig.pram_sprites["wheels_frame"]
+	var wheel_baseline := wheel_sprite.position.y + (118.0 - wheel_registration.pivot_for(rig.direction).y) * rig.PRAM_SCALE
+	t.check(is_zero_approx(wheel_baseline),
+		"pram wheel bottom is grounded on the compositor baseline")
 	t.check(rig.mother_sprites["right_lower_leg"].z_index < rig.mother_sprites["left_shoe"].z_index,
 		"mother shoes draw over legs")
 	t.check(rig.pram_sprites["wheels_frame"].z_index < rig.pram_sprites["canopy_baby"].z_index,
