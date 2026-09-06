@@ -94,6 +94,13 @@ believing rather than explaining away.** The record is in `DECISIONS.md` under M
 
 ## What to do next
 
+**M83 is built on the graphics-overhaul branch, but the illustrated presentation is review-only.**
+The normal game remains on its legacy SVG graphics. `--illustrated` selects the new character
+runtime locally and `?illustrated=1` selects it in a web build; neither changes gameplay. The
+focused parser, legacy-binding, grounding and boot checks pass. A display-capable session still
+needs to inspect the opted-in mother, pram and walkers for scale, feet/wheels on the ground, joints
+and layer order before the artwork is accepted. The record is in `DECISIONS.md` under M83.
+
 **M82 is built: the game has one control scheme and no question about which.** A press sets a
 direction, measured from her own world position, that she walks until the next press; a press
 within a generous radius of her stops her; a double press sets the direction and runs it; a pause

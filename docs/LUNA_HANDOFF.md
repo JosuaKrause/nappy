@@ -71,7 +71,10 @@ image of a checkerboard is not transparency.
 
 ## Implementation checkpoint
 
-The playable game still uses the existing renderer. No illustrated replacement is wired into it.
+The playable game uses the existing renderer by default. `--illustrated` or a web
+`?illustrated=1` query opts into the initial illustrated character runtime for review; neither
+argument changes simulation. A missing argument remains legacy, so this is not an approval or a
+release switch.
 The `src/visual3d/` street and actor files are isolated experiments. Additional 3D animal,
 projection and screen attempts are preserved in ancestry, indexed in `docs/DECISIONS.md` under
 Illustrated assets and experiment preservation. Do not revive their design by mistake.
@@ -84,10 +87,12 @@ The modular sprite work is a standalone, tested presentation component, not live
   body, collision or gameplay RNG.
 - `assets/illustrated/modular/` supplies registered mother and pram bundles, including articulated
   lower-body parts. `tests/test_visuals.gd` exercises their regions and a walk/stop/turn sequence.
-- `Stroller` owns a zero-offset live `ModularPerson` child. It supplies only displacement that
-  survived collision and shove resolution, then resets the gait with every logical player reset.
-  Legacy mother/pram SVG drawing is absent while shadows, baby cues and alert cues remain.
-- Crowd binding and on-screen inspection remain to be built and verified.
+- Under the illustrated opt-in, `Stroller` owns a zero-offset live `ModularPerson` child. It
+  receives only displacement that survived collision and shove resolution, then resets the gait
+  with every logical player reset. The legacy mother/pram SVG drawing remains the default, with
+  shadows, baby cues and alert cues in both presentations.
+- Under the illustrated opt-in, walkers bind to `ModularWalker`; cars retain their existing
+  presentation. On-screen inspection remains unverified.
 
 The standalone `scenes/dev/illustrated_street_review.tscn` consumes the layered PNG assets under
 `assets/illustrated/street/`: ground, continuous apartment frontage, roof depth and props. Its
