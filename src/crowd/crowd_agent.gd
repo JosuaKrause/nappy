@@ -180,7 +180,7 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 		axis_roll = _rng.randf()
 	_settle_junction()
 	colour = _colour()
-	if kind == Kind.WALKER:
+	if kind == Kind.WALKER and DevFlags.illustrated_requested():
 		walker_visual = ModularWalker.new()
 		walker_visual.name = "ModularWalker"
 		add_child(walker_visual)

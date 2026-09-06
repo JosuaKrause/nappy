@@ -34,6 +34,30 @@ extends RefCounted
 static func enabled() -> bool:
 	return OS.is_debug_build()
 
+## Whether the optional illustrated presentation was explicitly requested. The baseline is the
+## existing legacy SVG presentation. This is intentionally not part of `_args()` or
+## `DevFlags.enabled()`: an exported web build must be able to opt in with `?illustrated=1` even
+## though release builds have no developer flags. The command-line spelling is `--illustrated`.
+## An absent parameter or `?illustrated=0` selects legacy graphics.
+static func illustrated_requested() -> bool:
+	return _illustrated_from_args(OS.get_cmdline_user_args()) or _illustrated_from_query(_web_query())
+
+static func _illustrated_from_args(args: PackedStringArray) -> bool:
+	return "--illustrated" in args
+
+static func _illustrated_from_query(query: String) -> bool:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "illustrated" and pair[1] == "1":
+			return true
+	return false
+
+static func _web_query() -> String:
+	if OS.get_name() != "Web":
+		return ""
+	var search: Variant = JavaScriptBridge.eval("window.location.search")
+	return search as String if search is String else ""
+
 ## The command line, or nothing at all outside a debug build — the one choke point every getter
 ## below reads through.
 static func _args() -> PackedStringArray:
@@ -114,4 +138,3 @@ static func ending_override() -> String:
 	if index == -1 or index + 1 >= args.size():
 		return ""
 	return args[index + 1]
-
