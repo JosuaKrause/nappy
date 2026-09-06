@@ -17,6 +17,7 @@ signal restart_requested()
 @onready var _body: Label = $Root/Center/Lines/Body
 @onready var _hint: Label = $Root/Center/Lines/Hint
 @onready var _buttons: HBoxContainer = $Root/Center/Lines/Buttons
+@onready var _continue_column: VBoxContainer = $Root/Center/Lines/Buttons/ContinueColumn
 @onready var _continue_button: ModeButton = $Root/Center/Lines/Buttons/ContinueColumn/Continue
 @onready var _restart_button: ModeButton = $Root/Center/Lines/Buttons/RestartColumn/Restart
 
@@ -80,16 +81,31 @@ func _ready() -> void:
 	_refresh_buttons()
 	_root.hide()
 
+## Whether the screen currently up is the ending — read by `_refresh_buttons()` to decide whether
+## `_continue_column` shows, and set before `_present()` runs rather than passed as an argument to
+## it, since `_present()` is also what `_restart_button.cancel_hold()` and `_continuing`'s own reset
+## share and neither of those needs to know which screen raised it.
+var _showing_ending := false
+
 ## The continue/restart pair only replaces a sentence where there is a thumb to press it with —
 ## see `PauseScreen._refresh_buttons()`, the same split on the same platform question. Its own
 ## function for the same reason: a test can flip `_touch` and call this again.
+##
+## **Continue does not show on an ending.** *(Playtest 28 finding 4: "the game over screen cannot
+## have a continue button".)* Every other screen this row appears on carries on into a day that
+## still has one; an ending has none, and the button was drawn as *continue* while doing exactly
+## what the catch-all underneath it already does — restart the run. `_buttons` itself stays
+## visible for `_restart_button` even here: *"the restart button, hold and all"* is the player's
+## own answer to whether the hold still earns its keep with no day left to protect.
 func _refresh_buttons() -> void:
 	_buttons.visible = _touch
+	_continue_column.visible = not _showing_ending
 
 func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int) -> void:
 	# A lost *day* is not the end of a run — there are nerves left, and the screen says so two lines
 	# down. The heading belongs to the screen that ends the run and to nothing else.
 	_heading.hide()
+	_showing_ending = false
 	_title.text = _DAY_TITLE.get(result, "The day ends.")
 	var lines: Array[String] = ["Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]]
 	if reason != "":
@@ -152,6 +168,7 @@ func show_ending(ending: GameEnums.Ending) -> void:
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
 	_body.text = _ENDING_BODY.get(ending, "")
 	_hint.text = _hint_text("start again")
+	_showing_ending = true
 	_present()
 
 func _present() -> void:
@@ -177,27 +194,49 @@ func _wants_rotation() -> bool:
 	return ScreenOrientation.wants_rotation(get_window().size, _touch)
 
 ## The trap this milestone's own design names, the same one `PauseScreen._handle_restart_touch()`
-## guards against: `_unhandled_input`'s catch-all below reads **any** pressed
-## `InputEventScreenTouch` as *carry on*, so a held button has to be tested against the touch
-## position before that branch ever sees the event. See that function's own doc for why this reads
-## the raw touch rather than the restart button's own `pressed` signal.
-func _handle_restart_touch(event: InputEventScreenTouch) -> bool:
+## guards against: `_unhandled_input`'s catch-all below reads **any** pressed touch or click as
+## *carry on*, so a held button has to be tested against the press position before that branch ever
+## sees the event. A left click holds it too, gated on `not _touch` for the same reason
+## `PauseScreen._handle_restart_touch()`'s own mouse branch is — see that function's own doc.
+func _handle_restart_touch(event: InputEvent) -> bool:
 	if not _buttons.visible:
 		return false
-	if event.pressed:
-		var at := ScreenOrientation.to_design_space(event.position, _wants_rotation())
+	var position: Vector2
+	var pressed: bool
+	var index: int
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		position = touch.position
+		pressed = touch.pressed
+		index = touch.index
+	elif not _touch and event is InputEventMouseButton \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var click := event as InputEventMouseButton
+		position = click.position
+		pressed = click.pressed
+		index = _MOUSE_HOLD_INDEX
+	else:
+		return false
+	if pressed:
+		var at := ScreenOrientation.to_design_space(position, _wants_rotation())
 		if not _restart_button.catch_rect().has_point(at):
 			return false
-		if not _restart_button.begin_hold(event.index):
+		if not _restart_button.begin_hold(index):
 			return false
 		get_viewport().set_input_as_handled()
 		return true
-	if not _restart_button.is_held_by(event.index):
+	if not _restart_button.is_held_by(index):
 		return false
 	get_viewport().set_input_as_handled()
-	if _restart_button.end_hold(event.index):
+	if _restart_button.end_hold(index):
 		restart_requested.emit()
 	return true
+
+## Stands in for the touch index a mouse event carries none of — the same role
+## `PauseScreen._MOUSE_HOLD_INDEX` plays there, kept as its own constant here rather than shared,
+## since each screen already owns a full duplicate of the hold-reading logic rather than one moved
+## out to `ModeButton`.
+const _MOUSE_HOLD_INDEX := -2
 
 ## Whether a `continued` request is already on its way to being acknowledged — the one-frame gap
 ## `_acknowledge_and_continue()` opens is also one frame in which a second tap can land, and a
@@ -243,17 +282,35 @@ func _acknowledge_and_continue() -> void:
 	_continuing = false
 	continued.emit()
 
-## Space or a tap moves on. The touch event is handled directly rather than turned into a
-## synthetic click, so a stray mouse press elsewhere on the desktop still cannot skip a summary a
-## player has not read.
+## Space, a tap, or a mouse click moves on. *(2026-09-06, on a laptop: "I still need to press space
+## even in mouse mode".)* **This overturns an earlier reason**: the touch event used to be read
+## directly rather than turned into a synthetic click *"so a stray mouse press elsewhere on the
+## desktop still cannot skip a summary a player has not read"* — a real concern, taken when no
+## control scheme invited a player to use the mouse. The pointer scheme now reads a click
+## everywhere, so a laptop player is expected to click, and the screen has to accept one.
+##
+## **The mouse branch is its own, gated on `not _touch`, rather than folded into `TouchInput
+## .is_press()`.** A real touch device emulates a mouse click from every finger it reads, and
+## `_acknowledge_and_continue()`'s two-frame delay leaves `is_showing()` true for that whole
+## window — long enough for the emulated click to arrive while it is still open. Reading it through
+## the same `not _touch` gate `TouchControls` and `PauseScreen`'s own restart hold use means the
+## emulated click never reaches a branch at all on a device where a real touch already has, so it
+## can never fire `continued` a second time underneath the delay `_continuing` exists to guard.
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_showing():
 		return
-	if event is InputEventScreenTouch and _handle_restart_touch(event as InputEventScreenTouch):
+	if (event is InputEventScreenTouch or event is InputEventMouseButton) \
+			and _handle_restart_touch(event):
 		return
 	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
 		get_viewport().set_input_as_handled()
 		_acknowledge_and_continue()
+		return
+	if not _touch and event is InputEventMouseButton \
+			and (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		get_viewport().set_input_as_handled()
+		continued.emit()
 		return
 	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()

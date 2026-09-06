@@ -92,13 +92,13 @@ const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")
 
 # ------------------------------------------------------------------ buttons ---
-# `ModeButton` draws a solid filled disc with a white glyph on top — one shared, neutral fill for
-# every mode, because a hue in this file means something (`SIGNAL_RED`/`AMBER`/`GREEN` are the
-# lights, `MARK_COSTLY`/`MARK_LETHAL` are what an event costs) and a menu that spent two more
-# saturated hues telling STICK and TAP apart would teach a distinction that means nothing anywhere
-# else in the game — the cues rule against a second hand-drawn vocabulary, aimed at colour instead
-# of a shape. The symbol carries the whole difference; see `ModeButton._draw_stick()` and
-# `_draw_tap()`.
+# `ModeButton` draws a solid filled disc with a white glyph on top — one shared, neutral fill
+# regardless of which symbol a button carries, because a hue in this file means something
+# (`SIGNAL_RED`/`AMBER`/`GREEN` are the lights, `MARK_COSTLY`/`MARK_LETHAL` are what an event
+# costs) and a screen that spent a saturated hue telling two buttons apart would teach a
+# distinction that means nothing anywhere else in the game — the cues rule against a second
+# hand-drawn vocabulary, aimed at colour instead of a shape. The glyph is meant to carry the whole
+# difference; see `ModeButton`'s own class comment.
 
 ## Warm and opaque enough to read as a raised surface rather than another layer of the title
 ## screen's own scrim (`TopScrim`/`BottomScrim`, `Color(0.04, 0.04, 0.06, 0.62)`, near-black) —

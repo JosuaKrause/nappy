@@ -60,7 +60,7 @@ theme_override_constants/separation = 10
 [node name="Continue" type="Button" parent="Root/Center/Lines/Buttons/ContinueColumn"]
 size_flags_horizontal = 4
 script = ExtResource("2_mode_button")
-symbol = 3
+symbol = 1
 
 [node name="ContinueCaption" type="Label" parent="Root/Center/Lines/Buttons/ContinueColumn"]
 mouse_filter = 2
@@ -76,7 +76,7 @@ theme_override_constants/separation = 10
 [node name="Restart" type="Button" parent="Root/Center/Lines/Buttons/RestartColumn"]
 size_flags_horizontal = 4
 script = ExtResource("2_mode_button")
-symbol = 2
+symbol = 0
 
 [node name="RestartCaption" type="Label" parent="Root/Center/Lines/Buttons/RestartColumn"]
 mouse_filter = 2

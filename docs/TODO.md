@@ -14,13 +14,11 @@ mid-way through.
 
 ## The order
 
-1. **M81** — the scheme you chose is the scheme you can play: tap mode does nothing on a laptop,
-   and the drag stick becomes a joystick that is aimed rather than gripped.
-2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-3. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
+2. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
    be watched.
-4. **M56** — the resistance is noticed.
+3. **M56** — the resistance is noticed.
 
 **Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
 deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
@@ -33,26 +31,27 @@ no single barrier becomes the city's signature), **M65** (a protester who points
 holds either drawings or not**, so that deferring one never parks work that needs no artist — which
 is why M77 and M78 stand apart from M64 and M65 rather than inside them.
 
-**M81 is not covered by the deferral.** A control is interface rather than art — *(2026-09-06:
-"this is not game graphics. buttons are just UI")*, said of the title screen's buttons and true of
-the joystick for the same reason. A control nobody can see, or nobody can play with, is a control
-that does not work.
-
 **M79 waits on the overhaul rather than behind it.** It is the city seen at an angle — a
 presentation change with the lattice left cardinal — and it is written down and tabled so that
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
 
-**[PLAYTEST-27.md](PLAYTEST-27.md) is the freshest report**, the second session on the released
-page and the first played on both a laptop browser and a phone. **Four of its six findings are
-built**: the release now arrives under versioned URLs, the shared link carries an opaque card, the
-continue and restart buttons are on both screens, and a press acknowledges itself before the day it
-starts blocks the frame. **The two that are left are M81**, and they are the whole of it — tap mode
-does nothing on a laptop, and the joystick becomes aimed rather than gripped. The record for the
-rest is in `DECISIONS.md` under M76 and M80.
+**[PLAYTEST-28.md](PLAYTEST-28.md)'s four findings are built** — the game has one control scheme
+and no question about which: a press sets a direction she walks until the next press, a press on
+her stops her, a double press runs, and the pause button in the top right is the only thing drawn.
+The ending screen's own continue button, which meant nothing there, is gone too. The record is in
+`DECISIONS.md` under M82.
+
+**[PLAYTEST-27.md](PLAYTEST-27.md) is the second session on the released page and the first played
+on both a laptop browser and a phone, and every one of its six findings is built.** The release
+arrives under versioned URLs, the shared link carries an opaque card, the continue and restart
+buttons are on both screens, a press acknowledges itself before the day it starts blocks the frame,
+and the two findings about the controls themselves — tap mode dead on a laptop, and the drag stick
+— are answered the same way M82 answers playtest 28: one scheme, chosen nowhere, that a mouse
+click drives on every build. The record is in `DECISIONS.md` under M76, M80 and M82.
 
 **[PLAYTEST-26.md](PLAYTEST-26.md) is the one before it and every finding in it is built**, across
-the two halves of M76.
+the two halves of M76 and M82's own deletion of the title screen's two circular mode buttons.
 
 **[PLAYTEST-25.md](PLAYTEST-25.md)'s nine findings are built** — the
 first phone session on the built mobile game and the first human verdict on the sealed city. The
@@ -107,86 +106,6 @@ which proves only that the controls stay *off* where they should.
       careful-versus-careless survives a blunter instrument, and it is answered by playing it rather
       than by arguing it.** The three smaller things a real device would also settle — the catch
       radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
-
----
-
-## M81 — The scheme you chose is the scheme you can play · asked for 2026-09-06
-
-[PLAYTEST-27.md](PLAYTEST-27.md)'s second and sixth findings. Both are `ControlsMode` work — one
-scheme does nothing on the device that was invited to pick it, and the other is replaced outright at
-the player's request.
-
-- [ ] **Tap mode does nothing on a laptop browser.** *(2026-09-06: "tap mode doesn't work on a
-      laptop browser. I click on the tap button and I have to use keyboard anyway".)*
-
-      **Diagnosed by reading, not by running the released build.** `TapControls._input()` reads a
-      real finger's `InputEventScreenTouch` always, and a mouse click's `InputEventMouseButton` only
-      behind `OS.is_debug_build() and not _touch`. The published page is a **release** export —
-      `tools/export-web.sh` with no argument, which is what `deploy.yml` runs — so
-      `OS.is_debug_build()` is false there and the mouse branch is dead code on the only build a
-      player ever loads. Choosing tap on a laptop therefore selects a scheme with **no input at
-      all**, which is why the keyboard is what was left.
-
-      **It is invisible to every local check**, which is worth knowing before trusting one:
-      `tools/serve-web.sh` is the only way to run the web build without deploying, and it exports
-      **debug** on purpose — the one build where the mouse branch is live.
-
-      **The fix is to drop the `OS.is_debug_build()` gate, and that overturns a written decision
-      with the player's own words.** The comment on that branch says the mouse click is *"a way to
-      try the mode out on a desktop, not a control an exported build owes a mouse"* — taken when the
-      only way to reach tap mode was a URL parameter somebody had to know about. *(2026-09-06:
-      asked for X · overturned to Y, because the title screen now **offers** tap as one of two
-      buttons on a desktop, and the player reported the result as broken.)* **Keep the `not _touch`
-      half.** It is load-bearing for a different reason and is not part of this: Godot emulates a
-      mouse click from every real touch, so without it a single tap on a phone would arrive twice
-      and read as its own double tap — which is *run*.
-
-      **Verify it on a release export**, not on `serve-web.sh`'s debug one, or the check passes for
-      the same reason the bug survived
-
-- [ ] **The drag stick becomes a joystick that is aimed rather than gripped.** *(2026-09-06: "since
-      the tap mode now works really nice I want to try an alternative joystick mode …" — the full
-      sentence, with every specific, is [PLAYTEST-27.md](PLAYTEST-27.md)'s sixth finding.)*
-
-      **It replaces the drag stick, which is deleted** *(2026-09-06, asked whether this was a third
-      scheme or a replacement: "replaces the drag stick")*. The title screen keeps exactly two
-      buttons and its joystick glyph still tells the truth, because what it selects is still a
-      joystick — aimed at rather than gripped. There is no third control path to keep alive.
-
-      **The scheme.** A tap **anywhere in the left two thirds of the screen** is read as a
-      direction — the vector from the drawn joystick's centre to where the tap landed — and that
-      direction is **locked in** and walked with nothing held down, until another tap changes it.
-      The stick is a compass rose the whole left of the screen aims through.
-
-      - **The joystick moves**, *"more towards the middle vertically and a little bit more inside
-        from the left"*: today `TouchControls.STICK_CENTRE` is `(130, 500)` in the fixed 1280x720
-        design box, so up toward 360 and right from 130.
-      - **The catch region is a half-plane, not a radius**: x < 853, two thirds of the 1280-wide box.
-      - **Stopping is a tap on the joystick's own centre**, with a target the size of the knob —
-        *"doesn't have to be dead on"* — so a 24px radius, `TouchControls.STICK_KNOB_RADIUS`.
-      - **`RUN` and pause are unchanged**, at `(1150, 500)` held and `(1218, 62)` fired on a clean
-        release. Both sit in the right third, outside every aiming tap.
-
-      **One speed, and this is what makes that true.** *(2026-09-06: "there is no way to walk slowly
-      -- that is intentional -- there should only ever be one speed (plus a second via running)".)*
-      Distance from the centre sets nothing; every aiming tap presses a **unit** vector.
-      `Stroller._physics_process()` moves toward `input_dir * top_speed` with the **raw**
-      `Input.get_vector(...)` — deliberately, so running can never be reached by pushing a stick
-      further — and `TouchControls._update_stick()` is the only input path in the game that can
-      press a partial one: `offset.limit_length(60) / 60`, so a thumb resting half way out walks at
-      46 px/s instead of `Tuning.WALK_SPEED`'s 92. **That is not only a feel problem.** Every lead
-      time and stand-off in `src/autoload/tuning.gd` is computed against 92 as *the* walking speed —
-      a pursuit speed is required to sit strictly between `WALK_SPEED + PURSUIT_MIN_MARGIN` and
-      `RUN_SPEED - PURSUIT_MIN_MARGIN`, 112 to 148 px/s, so that walking away always loses ground
-      slowly and running always gains it. Half-deflecting the stick puts the player outside all of
-      them silently. **Deleting the drag stick is what closes it**, and a test that asserts no input
-      path can produce a vector shorter than 1.0 is what keeps it closed.
-
-      **Two things to carry over from the code being replaced**, because both were bought with a
-      played session: `process_mode` stays `ALWAYS` so a direction is force-released on the frame a
-      pause lands rather than one frame late, and every raw touch still goes through
-      `ScreenOrientation.to_design_space(position, rotated)` before being compared to a design-box
-      constant — a rotated portrait presentation delivers touches in the swapped 720x1280 box
 
 ---
 
@@ -1480,7 +1399,7 @@ would stay the same only the presentation would rotate".)*
       If you learn *something is there* because a wall went translucent, the **cues** rules govern it
       and it owes the same discipline as the rest of the danger vocabulary
 
-- [ ] **It must be a real camera transform, not faked in `_draw()`.** `TapControls._on_tap()` maps a
+- [ ] **It must be a real camera transform, not faked in `_draw()`.** `TouchControls._on_tap()` maps a
       tap to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, and
       `DangerEdge` and `HomeArrow` both go the other way every frame from the same transform. A real
       transform keeps all three working; a fake one breaks every one of them. Two more that follow:
@@ -1508,21 +1427,17 @@ would stay the same only the presentation would rotate".)*
       ground. Rotated, with keys on world axes, a single key follows a street and **two keys point
       between buildings** — so the combination a player reaches for becomes the useless one.
 
-      **Tap has none of this.** `TapControls._on_tap()` already maps a screen point to a world point
-      through `get_viewport().get_canvas_transform().affine_inverse()`, so a rotated camera is
-      handled by the transform and costs the design nothing: you tap where you want to be.
+      **The pointer scheme has none of this.** `TouchControls._on_tap()` already maps a screen point
+      to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, so a
+      rotated camera is handled by the transform and costs the design nothing: a press already
+      means *go there*, in world space, whatever the camera's own angle.
 
-      **So this item is coupled to which control scheme is the default**, and that is a decision
-      rather than a consequence. The player's own condition is written above — *if tap becomes the
-      default it's fine* — and it does not overturn M68's verdict that both schemes are keepers
-      (*"I like both control modes equally"*): both would still ship, and the title screen would
-      still ask. What would change is which one a fresh install starts from. **Settle that before
-      this is scheduled**, because if the answer is that the keyboard stays the default, the
-      objection above stands unanswered and the whole item should stay tabled
-
-      *(The on-screen stick has the same problem and the same fix: `TouchControls` drives the four
-      `move_*` actions from its own screen-space vector, and `ScreenOrientation.to_design_space()`
-      already does exactly this correction for the 90° portrait case, so the machinery exists.)*
+      **So the objection is the keyboard alone, now that there is one control scheme rather than a
+      choice between two** (M82 deleted the drag stick and the title screen's own question). A
+      fresh install has nothing to default to any more — every device gets the same pointer scheme,
+      and the keyboard sits beside it as arrows/WASD always have. **Settle whether the diagonal
+      clunkiness above is acceptable on a keyboard before this is scheduled**, because that is now
+      the whole of what standing in the way of a rotated presentation.
 
 - [ ] **Spike the transform alone on the existing square art before anybody draws anything** —
       proving tap-to-world, the edge cues, the zoom fit and y-sorting survive, with no new art,

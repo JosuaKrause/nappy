@@ -18,8 +18,7 @@ const SEED := 4242
 
 func run(t) -> void:
 	_test_the_readout_is_not_assembled_outside_a_debug_build(t)
-	_test_add_touch_controls_picks_the_stick_or_the_tap_reader_by_controls_mode(t)
-	_test_resolve_controls_mode_defers_until_something_answers(t)
+	_test_add_touch_controls_builds_the_one_control_reader(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
@@ -81,56 +80,19 @@ func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
 	stroller.free()
 	city.free()
 
-## **Exactly one of the stick and the tap reader is ever in the tree**, and which one is
-## `main._controls_mode`'s own choice, made once — the same shape `ScreenOrientation`'s tests hold
-## `_screen_furniture_layers()` to. `_add_touch_controls()` parents whichever it builds under
-## `main` itself, so freeing `main` here reaches it too.
-func _test_add_touch_controls_picks_the_stick_or_the_tap_reader_by_controls_mode(t) -> void:
-	var stick_main: Node2D = MAIN_SCRIPT.new()
-	stick_main._controls_mode = ControlsMode.Mode.STICK
-	stick_main._add_touch_controls()
-	t.check(stick_main._touch_controls != null and stick_main._tap_controls == null,
-			"stick mode builds the stick and not the tap reader")
-
-	var tap_main: Node2D = MAIN_SCRIPT.new()
-	tap_main._controls_mode = ControlsMode.Mode.TAP
-	tap_main._add_touch_controls()
-	t.check(tap_main._tap_controls != null and tap_main._touch_controls == null,
-			"tap mode builds the tap reader and not the stick")
-
-	stick_main.free()
-	tap_main.free()
-
-## **The title screen may answer after day 1 is already running behind it, and nothing may keep a
-## stale copy of the answer.** *(2026-09-05, playtest 25 finding 3.)* `_resolve_controls_mode()` is
-## the one place `main._controls_mode` is actually set and `_add_touch_controls()` is actually
-## called from — guarded so an answer a `--controls` flag or a `?controls=` URL already built in
-## `_ready()` is never rebuilt or silently replaced by whatever the title screen goes on to emit.
-func _test_resolve_controls_mode_defers_until_something_answers(t) -> void:
+## **One node goes into the tree, not a choice between two.** `_add_touch_controls()` no longer
+## branches on `_controls_mode` — `TouchControls` is the whole of the one scheme left — so it
+## builds the same thing regardless of what the title screen goes on to answer.
+func _test_add_touch_controls_builds_the_one_control_reader(t) -> void:
 	var main: Node2D = MAIN_SCRIPT.new()
-	var hud: CanvasLayer = HUD_SCENE.instantiate()
-	t.add_child(hud)
-	hud.set_process(false)
-	main._hud = hud
+	t.check(main._touch_controls == null, "nothing is built before _ready() runs")
 
-	t.check(main._touch_controls == null and main._tap_controls == null,
-			"nothing is built before anything has answered the controls question")
-
-	main._resolve_controls_mode(ControlsMode.Mode.TAP)
-	t.check(main._tap_controls != null and main._touch_controls == null,
-			"the title's own choice builds the tap reader")
-	t.check(hud._controls_mode == ControlsMode.Mode.TAP, "and tells the HUD the same answer")
-
-	# A forced flag already built one before the title ever had a chance to ask — a second call,
-	# the way `_on_title_start()` would still make if the title happened to fire anyway, must not
-	# replace it with a different mode.
-	var already_built: TapControls = main._tap_controls
-	main._resolve_controls_mode(ControlsMode.Mode.STICK)
-	t.check(main._tap_controls == already_built and main._touch_controls == null,
-			"an already-built answer is never rebuilt or replaced")
+	main._add_touch_controls()
+	t.check(main._touch_controls != null, "and _add_touch_controls() builds it")
+	t.check(main._touch_controls.get_parent() == main._touch_layer,
+			"parented under the layer it builds alongside it")
 
 	main.free()
-	hud.free()
 
 ## **Caught only by asking the connection, not by pressing the button.** The day summary's own
 ## restart button held, filled its bar, fired `restart_requested`, and reached nobody — a green

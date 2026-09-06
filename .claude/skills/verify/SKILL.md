@@ -25,6 +25,21 @@ prints numbers, an assertion in a suite, or a `check.sh` boot beats a screenshot
 is not a picture. When a picture genuinely is the question, take it once with everything you need
 already in the flags rather than iterating live.
 
+**And a screenshot cannot be taken at all without a display**, which is worth knowing before
+planning a verification around one. `shot.sh` runs Godot *without* `--headless` on purpose, so a
+process with no window server to open a window against falls back to the null display server, where
+no frame is ever drawn and there is no viewport texture to save. `AutoScreenshot._capture()` says so
+and quits non-zero rather than waiting — `can_photograph(DisplayServer.get_name())` is the guard,
+and `"headless"` is the name Godot gives that null server.
+
+**Whether a sub-agent can take one is a property of its environment, not of being a sub-agent** —
+some background worktrees reach a display and photograph the game perfectly well. So do not assume
+either way: **the guard is what answers it**, because a run with no display now says so and exits
+instead of sitting there. If an agent reports that capture "stalls" or hangs, that is the message it
+should have got, and the branch is worth pulling and photographing from a session that does have a
+display. A missing screenshot from an agent is a missing check, never evidence that the change is
+wrong.
+
 ---
 
 Run these before committing. They are fast and they each catch a different class of bug.

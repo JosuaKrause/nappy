@@ -1,7 +1,7 @@
 class_name ModeButton
 extends Button
-## A circular, icon-only button: a round disc with a tinted glyph for the mode it selects and no
-## text inside it at all.
+## A circular, icon-only button: a round disc with a tinted glyph for what it does and no text
+## inside it at all.
 ##
 ## **No glyph is painted.** *(2026-09-06, the player: "never draw in code -- at the very least use
 ## svgs".)* The disc is a `StyleBoxFlat` per state (`normal`/`hover`/`pressed`), its
@@ -9,9 +9,7 @@ extends Button
 ## and every glyph is the button's own `icon` — a preloaded SVG under `assets/ui/`, tinted through
 ## `icon_normal_color` and its per-state siblings rather than drawn. Two earlier versions of this
 ## file painted the disc and the glyphs by hand in `_draw()`; both are gone, because a picture is
-## an asset the moment a person could call it one, and evaluating one means opening
-## `assets/ui/joystick.svg` or `tap.svg` directly rather than running the game to see what code
-## produced.
+## an asset the moment a person could call it one.
 ##
 ## **`_draw()` is back, for exactly one thing that is not a picture: `RESTART`'s own hold-fill
 ## bar.** A rectangle whose width tracks `hold_progress` is layout the same way `MeterBar`'s own
@@ -20,48 +18,35 @@ extends Button
 ## rule's own "prefer the engine's data" clause has nothing to prefer.
 ##
 ## **Every button shares one neutral fill (`Palette.BUTTON_FILL`/`BUTTON_HOVER`/`BUTTON_PRESSED`)
-## rather than a colour per mode.** A hue in this project already means something
+## rather than a colour per symbol.** A hue in this project already means something
 ## (`Palette.SIGNAL_RED`/`AMBER`/`GREEN` are the lights, `MARK_COSTLY`/`MARK_LETHAL` are what an
-## event costs), and a menu spending two more saturated hues on which button is which teaches a
-## distinction that means nothing anywhere else in the game — the **cues** rule against a second
-## hand-drawn vocabulary, aimed at colour instead of a shape. The glyph carries the whole
-## difference between the two buttons.
+## event costs), and spending a saturated hue on which button is which teaches a distinction that
+## means nothing anywhere else in the game — the **cues** rule against a second hand-drawn
+## vocabulary, aimed at colour instead of a shape. The glyph carries the whole difference.
 ##
-## `Stick` and `Tap` under `Root/Bottom/Lines/Choice` in `scenes/ui/title_screen.tscn` first tried
-## a 380x100 rectangle with the mode's own paragraph inside it. That collided by construction: the
-## paragraph is three sentences of body copy dense enough that no corner of a 100px-tall button is
-## ever entirely free of it. Moving the paragraph outside the button entirely — see
-## `TitleScreen._stick_caption` and `_tap_caption`, plain `Label`s the scene places below each
-## button rather than children of it — removes the collision at its root: there is no text inside
-## this control for a glyph to compete with.
-##
-## A small reusable control rather than a one-off inside `title_screen.gd`, because the pause
-## screen and the day summary share the same pair of buttons, for `Symbol.RESTART` and
-## `Symbol.CONTINUE` — one interaction learned once rather than a different control on each
-## screen. `RESTART`'s own hold-fill bar lives here too, so both screens drive the same drawing
-## through `hold_progress` rather than each screen painting its own.
+## A small reusable control rather than a one-off, because the pause screen and the day summary
+## share the same pair of buttons, for `Symbol.RESTART` and `Symbol.CONTINUE` — one interaction
+## learned once rather than a different control on each screen. `RESTART`'s own hold-fill bar lives
+## here too, so both screens drive the same drawing through `hold_progress` rather than each screen
+## painting its own.
 
 ## The mode this button's icon names.
-enum Symbol { STICK, TAP, RESTART, CONTINUE }
-@export var symbol: Symbol = Symbol.STICK
+enum Symbol { RESTART, CONTINUE }
+@export var symbol: Symbol = Symbol.RESTART
 
-const _STICK_ICON: Texture2D = preload("res://assets/ui/joystick.svg")
-const _TAP_ICON: Texture2D = preload("res://assets/ui/tap.svg")
 const _RESTART_ICON: Texture2D = preload("res://assets/ui/restart.svg")
 const _CONTINUE_ICON: Texture2D = preload("res://assets/ui/continue.svg")
 
 const _ICON_BY_SYMBOL := {
-	Symbol.STICK: _STICK_ICON,
-	Symbol.TAP: _TAP_ICON,
 	Symbol.RESTART: _RESTART_ICON,
 	Symbol.CONTINUE: _CONTINUE_ICON,
 }
 
-## `TouchControls`' own three catch radii are `STICK_CATCH_RADIUS` (100px), `RUN_CATCH_RADIUS`
-## (76px) and `PAUSE_CATCH_RADIUS` (46px) — the smallest a thumb is ever asked to land inside
-## during a run. This button is opened on the same phone, so its own radius is the floor of that
-## set rather than a value chosen for a mouse: nothing on this screen may be harder to hit than
-## the least generous control already in the game.
+## `TouchControls.PAUSE_CATCH_RADIUS` (46px) is the one catch radius left in the game, now that the
+## drag stick and the `RUN` button are gone — a thumb is never asked to land inside anything
+## smaller during a run. This button is opened on the same phone, so its own radius matches it
+## rather than a value chosen for a mouse: nothing on this screen may be harder to hit than the
+## one control already in the game.
 const _RADIUS := 46.0
 const _DIAMETER := _RADIUS * 2.0
 ## The glyph reads best at roughly half the disc's own diameter — big enough to read at this
@@ -89,8 +74,8 @@ const _HOLD_BAR_TRACK := Color(1.0, 1.0, 1.0, 0.22)
 const RESTART_HOLD_SECONDS := 1.0
 
 ## The touch index currently holding this button, or -1 when nothing is — the same shape
-## `TouchControls._stick_touch` and its siblings already track a touch by. Only ever non‑`-1` for
-## `Symbol.RESTART`; the other three symbols never call `begin_hold()`.
+## `TouchControls._pause_touch` already tracks a touch by. Only ever non‑`-1` for
+## `Symbol.RESTART`; the other symbol never calls `begin_hold()`.
 var _held_by := -1
 ## `Time.get_ticks_msec() / 1000.0` when `_held_by` was grabbed, so `_process()` can measure the
 ## hold against `RESTART_HOLD_SECONDS` without keeping its own delta accumulator.
@@ -175,14 +160,13 @@ func _draw() -> void:
 		draw_rect(Rect2(track.position, Vector2(track.size.x * hold_progress, track.size.y)),
 				Palette.BUTTON_SYMBOL)
 
-## A thumb does not land on a drawn disc to the pixel — every one of `TouchControls`' own catch
-## radii is more generous than what is drawn, and this button already sits at that set's own floor
-## (`_RADIUS`'s own doc). Grown by a third again for the same reason, in the coordinate space
-## `PauseScreen`/`DaySummary` already convert a raw touch into: `get_global_rect()` on a `Control`
-## under a `CanvasLayer` excludes that layer's own rotation transform, landing in the fixed
-## 1280x720 design box every screen is authored against — the same box
-## `ScreenOrientation.to_design_space()` converts a raw touch into, so the two are directly
-## comparable with no further correction here.
+## A thumb does not land on a drawn disc to the pixel — `TouchControls.PAUSE_CATCH_RADIUS` is more
+## generous than what is drawn, and this button already matches that radius (`_RADIUS`'s own doc).
+## Grown by a third again for the same reason, in the coordinate space `PauseScreen`/`DaySummary`
+## already convert a raw touch into: `get_global_rect()` on a `Control` under a `CanvasLayer`
+## excludes that layer's own rotation transform, landing in the fixed 1280x720 design box every
+## screen is authored against — the same box `ScreenOrientation.to_design_space()` converts a raw
+## touch into, so the two are directly comparable with no further correction here.
 func catch_rect() -> Rect2:
 	return get_global_rect().grow(_RADIUS / 3.0)
 
@@ -197,8 +181,7 @@ func _apply_disc_style() -> void:
 	add_theme_stylebox_override("normal", _disc_style(Palette.BUTTON_FILL))
 	add_theme_stylebox_override("hover", _disc_style(Palette.BUTTON_HOVER))
 	add_theme_stylebox_override("pressed", _disc_style(Palette.BUTTON_PRESSED))
-	# Held down while still under the pointer reads as pressed, not as a third shade — the same
-	# two states TouchControls._draw_run_button() varies between for held vs not.
+	# Held down while still under the pointer reads as pressed, not as a third shade.
 	add_theme_stylebox_override("hover_pressed", _disc_style(Palette.BUTTON_PRESSED))
 
 static func _disc_style(fill: Color) -> StyleBoxFlat:

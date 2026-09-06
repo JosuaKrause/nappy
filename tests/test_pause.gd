@@ -30,19 +30,9 @@ func run(t) -> void:
 	_test_the_title_quit_key_matches_the_platform(t)
 	_test_the_pause_quit_key_matches_the_platform(t)
 	_test_a_tap_advances_every_screen(t)
+	_test_a_mouse_click_advances_every_screen(t)
 	_test_the_title_hint_and_body_match_the_platform(t)
-	_test_the_title_asks_when_nothing_forces_an_answer(t)
-	_test_pressing_a_title_button_both_chooses_and_starts(t)
-	_test_the_dropped_key_chooses_nothing(t)
-	_test_an_arrow_key_chooses_the_stick(t)
-	_test_a_pointer_press_away_from_the_buttons_does_nothing(t)
-	_test_the_forced_controls_path_ignores_the_new_inputs(t)
-	_test_the_title_hint_names_the_new_inputs(t)
-	_test_the_title_buttons_carry_their_own_symbol(t)
 	_test_the_button_fill_states_are_distinguishable(t)
-	_test_the_title_buttons_are_sized_for_a_thumb(t)
-	_test_the_title_captions_are_not_clickable(t)
-	_test_the_title_captions_match_the_body_wording(t)
 	_test_the_title_names_a_version(t)
 	_test_mode_button_restart_hold_state_machine(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
@@ -50,6 +40,7 @@ func run(t) -> void:
 	_test_the_restart_button_is_a_hold(t)
 	_test_a_touch_away_from_restart_still_carries_on(t)
 	_test_the_summary_hint_matches_the_platform(t)
+	_test_an_ending_has_no_continue_button(t)
 	_test_the_summary_restart_button_is_a_hold(t)
 	_test_a_continue_press_flashes_before_it_is_acted_on(t)
 	t.get_tree().paused = was_paused
@@ -206,7 +197,7 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 
 	var started := [0]
 	var quit := [0]
-	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
+	title.start_requested.connect(func() -> void: started[0] += 1)
 	title.quit_requested.connect(func() -> void: quit[0] += 1)
 	title._unhandled_input(_accept())
 	t.check(started[0] == 1, "space begins the run")
@@ -283,10 +274,6 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
-	# This is the skip-the-question shape a `--controls` flag or a `?controls=` URL forces; a test
-	# process forces neither, so it is set directly, the same way `_can_quit` and `_touch` already
-	# are for their own platform questions.
-	title._asking_controls = false
 
 	title._touch = false
 	title._refresh_body()
@@ -299,174 +286,12 @@ func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	title.open(true)
 	t.check("tap to walk again" in title._hint.text,
 			"the touch hint says tap ('%s')" % title._hint.text)
-	t.check("Drag the stick" in title._body.text,
-			"and the body names the stick and the run button ('%s')" % title._body.text)
+	t.check("Tap to walk" in title._body.text,
+			"and the body names the tap rather than a control it does not draw ('%s')"
+					% title._body.text)
 	t.check(not "Shift" in title._body.text, "and drops the key it does not have")
 
 	title.close()
-	title.queue_free()
-
-## *(2026-09-05, playtest 25 finding 3: "I like both control modes equally let the player choose on
-## the title screen (instead of tap the screen to start have two buttons to choose from)".)* A
-## test process forces neither `--controls` nor a `?controls=` URL, so a freshly instanced title
-## always lands here — which is deliberately also the shape a fresh install shows, unless launched
-## with a flag.
-func _test_the_title_asks_when_nothing_forces_an_answer(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-	t.check(title._asking_controls, "a title with no forcing flag asks the question")
-	t.check(title._choice.visible and not title._body.visible,
-			"and shows the two buttons instead of the one paragraph")
-	title.queue_free()
-
-## **One press, not a menu then a start.** Each button both names its own control scheme and starts
-## the run in it, the same way the single hint used to before this milestone — there is no
-## separate "confirm" step.
-func _test_pressing_a_title_button_both_chooses_and_starts(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-	var chosen: Array = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: chosen.append(mode))
-	title.open()
-
-	title._tap_button.pressed.emit()
-	t.check(chosen == [ControlsMode.Mode.TAP], "pressing the tap button starts in tap mode")
-
-	title._stick_button.pressed.emit()
-	t.check(chosen == [ControlsMode.Mode.TAP, ControlsMode.Mode.STICK],
-			"and the stick button starts in stick mode")
-
-	title.close()
-	title.queue_free()
-
-## *(2026-09-06, playtest 26 finding 2: "on the local clicking should choose the tap and arrow
-## keys should choose the controls ... t I'm not so sure since it's a move from keyboard to
-## mouse".)* The player closed their own uncertainty by taking `T` out — no key selects the scheme
-## played with a mouse, so the letter that used to reach the tap button now reaches nothing.
-func _test_the_dropped_key_chooses_nothing(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-	var chosen: Array = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: chosen.append(mode))
-	title.open()
-
-	title._unhandled_input(_key(KEY_T))
-	t.check(chosen.is_empty(), "t no longer chooses anything")
-
-	title.close()
-	title.queue_free()
-
-## An arrow key **is** the stick scheme on a desktop, so pressing one is a choice rather than
-## something this screen ignores — see `_unhandled_input()`'s own doc. `ui_left` is checked as the
-## representative of the four; `_is_arrow_key()` is the same one condition for all of them.
-func _test_an_arrow_key_chooses_the_stick(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-	var chosen: Array = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: chosen.append(mode))
-	title.open()
-
-	title._unhandled_input(_action("ui_left"))
-	t.check(chosen == [ControlsMode.Mode.STICK], "an arrow key picks the stick")
-
-	title.close()
-	title.queue_free()
-
-## *(2026-09-06, the player, asked directly about the touch fallback: "clicking anywhere else
-## should do nothing".)* The two buttons are the only pointer route to a choice while asking: a
-## left click that lands nowhere near either does nothing at all, not even the stick — the two
-## earlier shapes (a click anywhere choosing tap, a touch anywhere falling back to the stick) are
-## both withdrawn, since a pointer answering the question silently is exactly what two visible
-## buttons exist to replace. This also covers a click landing on `_stick_caption`/`_tap_caption`:
-## both set `mouse_filter = Control.MOUSE_FILTER_IGNORE` (see `TitleScreen._stick_caption`'s own
-## doc), so a caption click reaches `_unhandled_input()` unconsumed exactly like one that lands on
-## the bare scrim, and is the same event this test already sends.
-func _test_a_pointer_press_away_from_the_buttons_does_nothing(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-	var chosen: Array = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: chosen.append(mode))
-	title.open()
-
-	title._unhandled_input(_left_click())
-	t.check(chosen.is_empty(), "a left click away from the buttons does nothing")
-	title._unhandled_input(_touch(true))
-	t.check(chosen.is_empty(), "and neither does a bare touch, while the screen is still asking")
-
-	title.close()
-	title.queue_free()
-
-## The one case a run started with a flag must not be asked again: an arrow key does nothing once
-## `ControlsMode.is_forced()` has already answered the question, and the screen falls back to
-## exactly the shape it had before this milestone — `ui_accept` still chooses whichever mode the
-## flag fixed, and so, unchanged, does a bare touch: a flag-started web build (the deployed page's
-## own `?controls=`) still has to be startable by touch, since nothing on it will ever ask.
-func _test_the_forced_controls_path_ignores_the_new_inputs(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-	title._asking_controls = false
-	title._controls_mode = ControlsMode.Mode.TAP
-	var chosen: Array = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: chosen.append(mode))
-	title.open()
-
-	title._unhandled_input(_action("ui_left"))
-	t.check(chosen.is_empty(), "an arrow key does nothing once a flag has already answered")
-	title._unhandled_input(_accept())
-	t.check(chosen == [ControlsMode.Mode.TAP],
-			"space still starts the mode the flag fixed, unchanged")
-
-	title.close()
-	title.queue_free()
-
-## *(2026-09-06, playtest 26 finding 2.)* The hint has to state the new shape rather than the
-## dropped `"space or t to choose"`, in both the `_can_quit` and not-`_can_quit` shapes the `·`
-## separator already composes — see `_test_the_title_quit_key_matches_the_platform` for why that
-## suffix rule itself is unchanged. It no longer mentions clicking: with two visible buttons and no
-## pointer fallback, "click the tap button" needs no hint at all.
-func _test_the_title_hint_names_the_new_inputs(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-
-	title._can_quit = true
-	title.open()
-	t.check(title._hint.text == "arrows or space for stick     ·     q to quit",
-			"the hint names the keyboard route and keeps q where quitting works ('%s')"
-					% title._hint.text)
-
-	title._can_quit = false
-	title.open()
-	t.check(title._hint.text == "arrows or space for stick",
-			"and drops the quit suffix where quitting is impossible ('%s')" % title._hint.text)
-
-	title.close()
-	title.queue_free()
-
-## *(2026-09-06, playtest 26 finding 1: "the choice on the title screen is not at all obvious.
-## those should be proper buttons".)* `ModeButton` is the reusable control both buttons draw
-## themselves through — see its own class comment for why it is not a one-off in this scene — and
-## each names a different mode with its own symbol. *(2026-09-06, the player: "ignore the color of
-## the reference".)* Both share one neutral `Palette.BUTTON_FILL`/`BUTTON_HOVER`/`BUTTON_PRESSED`
-## rather than a colour per mode — a hue in this project already means something elsewhere (the
-## traffic lights, an event's own cost), so the symbol carries the whole difference between them.
-func _test_the_title_buttons_carry_their_own_symbol(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-
-	t.check(title._stick_button is ModeButton, "the stick button draws itself as a ModeButton")
-	t.check(title._tap_button is ModeButton, "and so does the tap button")
-	t.check((title._stick_button as ModeButton).symbol == ModeButton.Symbol.STICK,
-			"the stick button carries the stick symbol")
-	t.check((title._tap_button as ModeButton).symbol == ModeButton.Symbol.TAP,
-			"and the tap button carries the tap symbol, not the same one")
-	t.check(title._stick_button.icon != null, "the stick button carries an icon texture")
-	t.check(title._tap_button.icon != null and title._tap_button.icon != title._stick_button.icon,
-			"and the tap button carries a different icon texture, not the same one")
-	var disc: StyleBoxFlat = title._stick_button.get_theme_stylebox("normal")
-	t.check(disc is StyleBoxFlat and disc.corner_radius_top_left == int(ModeButton._RADIUS),
-			"the disc's own StyleBoxFlat rounds every corner by half its size, which is what "
-					+ "turns a square Button into a circle")
-
 	title.queue_free()
 
 ## With one hue doing every button, hover and pressed are the only feedback left that a press
@@ -515,65 +340,6 @@ func _test_mode_button_restart_hold_state_machine(t) -> void:
 	t.close_to(button.hold_progress, 0.0, "and below 0")
 
 	button.free()
-
-## *(2026-09-06, the player's own visual reference: circular buttons sized for a thumb.)*
-## `TouchControls.PAUSE_CATCH_RADIUS` (46px) is the smallest of its three catch radii
-## (`STICK_CATCH_RADIUS` 100px, `RUN_CATCH_RADIUS` 76px) — the least generous target a thumb is
-## already asked to hit during a run. `ModeButton` is opened on the same phone, so its own minimum
-## size must be at least that radius doubled, or the title screen would ask for a more precise
-## touch than the game it leads into ever does.
-func _test_the_title_buttons_are_sized_for_a_thumb(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-
-	var floor_diameter: float = TouchControls.PAUSE_CATCH_RADIUS * 2.0
-	t.check(title._stick_button.custom_minimum_size.x >= floor_diameter
-				and title._stick_button.custom_minimum_size.y >= floor_diameter,
-			"the stick button is at least as wide and tall as TouchControls' smallest catch target")
-	t.check(title._tap_button.custom_minimum_size.x >= floor_diameter
-				and title._tap_button.custom_minimum_size.y >= floor_diameter,
-			"and so is the tap button")
-
-	title.queue_free()
-
-## *(2026-09-06: "remove the text (or put it under it without it being clickable)".)* The paragraph
-## each button used to carry as its own `text` moved out to `_stick_caption`/`_tap_caption` — plain
-## `Label`s beside rather than inside either `Button`, see `TitleScreen._stick_caption`'s own doc,
-## so neither is a pressable control by construction (a `Label` is statically never a `BaseButton`).
-## "Not clickable" is only true if a press actually falls through too, so `mouse_filter` is
-## asserted directly rather than trusted from the scene.
-func _test_the_title_captions_are_not_clickable(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-
-	t.check(title._stick_caption.mouse_filter == Control.MOUSE_FILTER_IGNORE,
-			"the stick caption lets a press fall through to whatever is behind it")
-	t.check(title._tap_caption.mouse_filter == Control.MOUSE_FILTER_IGNORE,
-			"and so does the tap caption")
-
-	title.queue_free()
-
-## The captions carry the exact wording `_refresh_body()` gives a forced mode — see
-## `_refresh_choice()`'s own doc for why the two must never say the choice differently depending on
-## which path answered it.
-func _test_the_title_captions_match_the_body_wording(t) -> void:
-	var title: TitleScreen = TITLE.instantiate()
-	t.add_child(title)
-
-	title._touch = false
-	title._refresh_choice()
-	t.check("Arrows or WASD" in title._stick_caption.text,
-			"the stick caption names the keys on a keyboard ('%s')" % title._stick_caption.text)
-	t.check(title._tap_caption.text.begins_with("Tap to walk there"),
-			"and the tap caption keeps its own wording ('%s')" % title._tap_caption.text)
-
-	title._touch = true
-	title._refresh_choice()
-	t.check("Drag the stick" in title._stick_caption.text,
-			"and the stick caption switches to the touch wording when _touch flips ('%s')"
-					% title._stick_caption.text)
-
-	title.queue_free()
 
 ## The version line is the one thing on this screen not addressed to the player — see
 ## `TitleScreen.version_text()`, which prefers `Telemetry.source_version()` (the `git describe`
@@ -625,7 +391,8 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 	pause.open()
 	t.check(pause._hint.text == "",
 			"the touch hint says nothing at all — the buttons say it now ('%s')" % pause._hint.text)
-	t.check("Drag the stick" in pause._body.text, "and the body names the stick and run button")
+	t.check("Tap to walk" in pause._body.text,
+			"and the body names the tap rather than a control it does not draw")
 	t.check(pause._buttons.visible, "and the continue/restart pair is what shows instead")
 
 	pause.close()
@@ -748,7 +515,37 @@ func _test_the_summary_hint_matches_the_platform(t) -> void:
 
 	summary.show_ending(GameEnums.Ending.GOOD)
 	t.check(summary._hint.text == "", "and the ending screen agrees too ('%s')" % summary._hint.text)
-	t.check(summary._buttons.visible, "carrying the same pair of buttons")
+	t.check(summary._buttons.visible, "the row still shows, for the restart button")
+	t.check(not summary._continue_column.visible,
+			"but not the continue button — see _test_an_ending_has_no_continue_button")
+
+	t.get_tree().paused = false
+	summary.queue_free()
+
+## *(Playtest 28 finding 4: "the game over screen cannot have a continue button".)* Every other
+## screen this row appears on carries on into a day that still has one; an ending has none, and the
+## button was drawn as *continue* while doing exactly what the catch-all underneath it already
+## does — restart the run. The restart button stays, hold and all — *(2026-09-06, asked directly:
+## "the restart button, hold and all")* — since a screen with no day left to protect still owes one
+## interaction learned everywhere it is met.
+func _test_an_ending_has_no_continue_button(t) -> void:
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	summary._touch = true
+
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	t.check(summary._continue_column.visible, "an ordinary day summary still offers continue")
+
+	summary.show_ending(GameEnums.Ending.BAD)
+	t.check(not summary._continue_column.visible, "but the ending screen does not")
+	t.check(summary._restart_button.get_parent().visible,
+			"the restart button stays, hold and all")
+
+	# The row returns to its ordinary shape once a fresh run's own day summary shows — the flag
+	# belongs to the screen currently up, not to whatever was up last.
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	t.check(summary._continue_column.visible,
+			"and a later day summary is not left thinking it is still an ending")
 
 	t.get_tree().paused = false
 	summary.queue_free()
@@ -838,22 +635,15 @@ func _test_a_continue_press_flashes_before_it_is_acted_on(t) -> void:
 	t.get_tree().paused = false
 	summary.queue_free()
 
-## **Every screen advances on a tap**, handled as the touch event itself rather than as a
-## synthetic mouse click — a phone has no `space`, and nothing before this fired anything for a
-## touch at all. Checked on all three screens the game can come to rest on, the same shape
-## `_test_space_carries_on_from_every_screen` already checks for the key, and a release is checked
-## to do nothing so a finger lifted off the stick elsewhere cannot be read as a dismissal.
-##
-## The title only keeps this shape once a flag has already answered the controls question
-## (`_asking_controls = false` here) — while still asking, a bare touch does nothing at all, see
-## `_test_a_pointer_press_away_from_the_buttons_does_nothing()`, because the two buttons are the
-## only pointer route to a choice and a stray tap must not silently pick one for a phone.
+## **Every screen advances on a tap** — a phone has no `space`, and nothing before this fired
+## anything for a touch at all. Checked on all three screens the game can come to rest on, the same
+## shape `_test_space_carries_on_from_every_screen` already checks for the key, and a release is
+## checked to do nothing so a finger lifted off elsewhere cannot be read as a dismissal.
 func _test_a_tap_advances_every_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
-	title._asking_controls = false
 	var started := [0]
-	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
+	title.start_requested.connect(func() -> void: started[0] += 1)
 	title.open()
 	title._unhandled_input(_touch(false))
 	t.check(started[0] == 0, "lifting a finger does nothing on the title")
@@ -889,6 +679,47 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	t.check(carried_on[0] == 1, "and a tap goes on from the between-days summary")
+	t.get_tree().paused = false
+	summary.queue_free()
+
+## **Every screen advances on a left click too, on every build.** *(2026-09-06, on a laptop: "I
+## still need to press space even in mouse mode".)* This overturns each screen's own earlier
+## reason for reading only the raw touch — a stray desktop mouse press was a real risk when no
+## scheme invited the mouse; the pointer scheme now reads a click everywhere, so a laptop player is
+## expected to click and every screen has to accept the one they send.
+func _test_a_mouse_click_advances_every_screen(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var started := [0]
+	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.open()
+	var release := _left_click()
+	release.pressed = false
+	title._unhandled_input(release)
+	t.check(started[0] == 0, "releasing a click does nothing on the title")
+	title._unhandled_input(_left_click())
+	t.check(started[0] == 1, "and pressing one starts the run, once a flag has already answered")
+	title.close()
+	title.queue_free()
+
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var resumed := [0]
+	pause.resumed.connect(func() -> void: resumed[0] += 1)
+	t.get_tree().paused = false
+	pause.open()
+	pause._unhandled_input(_left_click())
+	t.check(resumed[0] == 1 and not pause.is_open(), "and a click carries on from the pause")
+	t.get_tree().paused = false
+	pause.queue_free()
+
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	var carried_on := [0]
+	summary.continued.connect(func() -> void: carried_on[0] += 1)
+	summary._unhandled_input(_left_click())
+	t.check(carried_on[0] == 1, "and a click goes on from the between-days summary")
 	t.get_tree().paused = false
 	summary.queue_free()
 

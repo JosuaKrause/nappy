@@ -49,17 +49,18 @@ load-bearing: a debug build is the only one where the URL modifiers answer at al
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
 
-**`check.sh`'s import pass rewrites `docs/ARCHITECTURE.md`'s file tree as a side effect**, turning a
-run of spaces into a tab on whichever lines it feels like — the file's tree is indented with spaces
-and it converts some of them every time. It is not a one-off; it has happened in three separate
-sessions. **Run `git status` after `check.sh` and revert anything you did not mean to change**,
-rather than assuming only the files you touched moved.
+**`check.sh`'s import pass rewrites two files that have nothing to do with the check, and `check.sh`
+now puts them back.** It turns runs of spaces into tabs in `docs/ARCHITECTURE.md`'s file tree, and it
+makes the editor rewrite `project.godot`, which loses more than whitespace — every `;` comment is
+stripped and a setting can go outright, one run having taken `window/stretch/aspect="keep"`, which is
+load-bearing for the presentation. `check.sh` records whether each was clean before it ran and
+reverts it afterwards if it was, printing which file it reverted; the revert runs from an `EXIT`
+trap, so it also happens when the check fails.
 
-**`project.godot` is the other one, and it loses more than whitespace.** Anything that makes the
-editor rewrite it — the import pass, and `tools/export-web.sh` — strips every `;` comment in the
-file and can drop a setting outright; a single run took `window/stretch/aspect="keep"` with it,
-which is load-bearing for the presentation. Nothing warns. Same rule, higher stakes: `git status`
-after, and `git diff project.godot` before believing it is only comments.
+**A file you had already edited yourself is left alone and named**, because reverting it would delete
+real work to fix a whitespace bug — that case still prints a note and is still yours to read with
+`git diff`. **And `tools/export-web.sh` rewrites `project.godot` the same way with no such guard**,
+so `git status` after an export is still the rule there.
 
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
@@ -93,28 +94,32 @@ believing rather than explaining away.** The record is in `DECISIONS.md` under M
 
 ## What to do next
 
-**Start with [PLAYTEST-27.md](PLAYTEST-27.md) and M81, which is what is left of it.** It is the
-second session on the released page and the first played on both a laptop browser and a phone. Four
-of its six findings are built and released: the export now publishes `index.js`, `index.wasm` and
-`index.pck` under a directory named for the release tag, so Pages' unchangeable
-`Cache-Control: max-age=600` can no longer serve a **mixed** build; the shared card is opaque and
-declares its dimensions; and both the pause screen and the day summary carry a continue button and a
-held restart that acknowledges the press before the day it starts blocks the frame.
+**M82 is built: the game has one control scheme and no question about which.** A press sets a
+direction, measured from her own world position, that she walks until the next press; a press
+within a generous radius of her stops her; a double press sets the direction and runs it; a pause
+button, top right, is the only thing drawn, and only on a touch device. The drag stick, the aimed
+joystick playtest 27 specified and never built, the `RUN` button and the title screen's two mode
+buttons are all deleted rather than one replacing another. The record is in `DECISIONS.md` under
+M82.
 
-**M81 is the rest, and both halves are control schemes.** Tap mode has no input at all on a release
-web build — `TapControls` reads a mouse click only behind `OS.is_debug_build()`, and
-`tools/serve-web.sh` exports *debug*, which is why every local check passed — and the drag stick
-becomes a joystick that is aimed rather than gripped.
+**M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
+continue button and a held restart that acknowledges the press before the day it starts blocks the
+frame; the export publishes `index.js`, `index.wasm` and `index.pck` under a directory named for the
+release tag, so Pages' unchangeable `Cache-Control: max-age=600` can no longer serve a **mixed**
+build; and the shared card is opaque and declares its dimensions. The record is in `DECISIONS.md`
+under M76 and M80. **Follow `TODO.md`'s own order for what is next.**
 
-**One rule arrived with playtest 27 that is wider than any of them**: *"there is no way to walk
-slowly — that is intentional — there should only ever be one speed (plus a second via running)"*.
-`Stroller` moves toward `input_dir * top_speed` with the raw input vector, so the drag stick's
-partial deflection is the one input path in the game that can walk her at anything other than
+**The rule playtest 27 raised alongside the joystick is now also enforced by a test**: *"there is no
+way to walk slowly — that is intentional — there should only ever be one speed (plus a second via
+running)"*. `Stroller` moves toward `input_dir * top_speed` with the raw input vector, so the drag
+stick's partial deflection was the one input path that could walk her at anything other than
 `Tuning.WALK_SPEED` (92 px/s) — and every pursuit lead time in `src/autoload/tuning.gd` is computed
-against 92 as *the* walking speed. Deleting the drag stick under M81 is what makes the rule true.
+against 92 as *the* walking speed. Deleting the drag stick is what makes the rule true, and
+`tests/test_touch.gd`'s `_test_no_input_path_presses_a_vector_shorter_than_one` is what keeps it
+true.
 
-**After that, the most useful thing anybody can do is play a day**, and there are two unplayed layers
-of change rather than one.
+**The most useful thing anybody can do now is play a day on the new controls, then play a whole run
+on the layers under it**, and none of the following has been touched by a thumb since M82 landed.
 
 **Playtest 25's nine findings are all built and none of them has been walked.** The barrier rows
 stopped charging the meter, two ambient reaches were cut roughly in half, the cat and the dog hit
@@ -294,11 +299,12 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 - **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
   address; what has not been checked is frame rate at the game's scale on a machine that is not the
   one it was built on, and whether a stranger arriving at the page understands what it is.
-- **The touch controls have been played once, briefly.** One phone session on the deployed build
-  produced one finding — the run lesson named a key the device has not got — and everything else
-  about them is still unknown: whether a thumb can hold the 20px line between two pavement lanes,
-  whether the catch radii feel right, whether `RUN` is legible at phone DPI, and whether the new
-  pause button at the top right is reachable without covering something.
+- **The touch controls have been played once, briefly, and that was the deleted scheme.** One phone
+  session found the run lesson naming a key the device has not got. M82 has since replaced the
+  whole of what a thumb does — a press sets a direction and a double press runs it, rather than a
+  drag stick and a held `RUN` circle — and none of it has been played: whether a press lands where
+  it was meant to, whether `STOP_RADIUS` (48px) reads as a deliberate stop or a missed direction,
+  and whether the pause button at the top right is reachable without covering something.
 - **A phone held upright gets one rotation now, and nobody has held a phone since.** The three
   disagreeing rotations playtest 23 met are gone: one transform is applied to every `CanvasLayer`,
   the camera is no longer a second implementation, and the choice is re-asked every frame rather
@@ -314,24 +320,16 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   not itself been unfurled.** Paste the address into a chat client and see what comes back; the
   record of what was wrong and what was ruled out is in `DECISIONS.md` under M80.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
-  running behind it — and it asks one question: two circular icon buttons, and picking one is also
-  the start. That is the whole of it: no options, no seed box, no load game. **Nobody has met
-  the question on a phone**, which is where it was asked for, so whether two buttons read as a
-  choice or as an obstacle between a player and the game is unanswered. A run started with
-  `--controls`, or with `?controls=` on a **debug** web build, skips the question by design and is
-  therefore the path least likely to be tested.
-- **The two title icons have been judged by reading the files, not by anybody meeting them.**
-  `assets/ui/joystick.svg` and `assets/ui/tap.svg` are legible at their rendered 46px radius, which
-  is what the **cues** rule *a picture is an asset, never code* buys — the SVG is the thing you look
-  at. Whether they read as *joystick* and *tap* to somebody who has not been told is the part no
-  file settles and a person does; the reference is
-  `docs/evidence/reference-buttons-2026-09-06.jpeg`. Replacing either is copying a file over that
-  path, since `ModeButton` loads both by path and draws nothing itself.
+  running behind it — and it asks nothing: a press, a tap or a click begins the run, since there is
+  one scheme to begin it in. That is the whole of it: no options, no seed box, no load game.
+  **Nobody has met this screen on a phone** since the two circular mode buttons it used to show
+  were deleted, so whether a bare "tap to begin" reads clearly with no button to press is
+  unanswered.
 - **A release build carries no modifiers, and nothing has confirmed that on a real release build.**
-  `?controls=` and `?telemetry=1` answer only when `OS.is_debug_build()` is true. The four-case truth
-  table is asserted in the suites, so the *predicate* is proven; the build type itself has no seam to
-  fake and is therefore untested. **The deployed page is the first real check**, and what to watch is
-  that it still starts and still logs nothing.
+  `?telemetry=1` answers only when `OS.is_debug_build()` is true. The truth table is asserted in the
+  suites, so the *predicate* is proven; the build type itself has no seam to fake and is therefore
+  untested. **The deployed page is the first real check**, and what to watch is that it still starts
+  and still logs nothing.
 - **The city just got much cheaper to walk through and nobody has walked it.** Five barrier rows
   emit nothing at all now and the two that kept a field had their reach roughly halved, against a
   day that plans several hundred of exactly those bodies. **Whether the day is still losable on the
