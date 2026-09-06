@@ -15,15 +15,20 @@ signal restart_requested()
 @onready var _heading: Label = $Root/Center/Lines/Heading
 @onready var _title: Label = $Root/Center/Lines/Title
 @onready var _body: Label = $Root/Center/Lines/Body
+## Always empty — see `PauseScreen._hint`'s own doc for why the label stays but nothing writes to
+## it any more: the continue/restart pair already says what a tap does, and nothing left to say
+## here does not name a key.
 @onready var _hint: Label = $Root/Center/Lines/Hint
 @onready var _buttons: HBoxContainer = $Root/Center/Lines/Buttons
 @onready var _continue_column: VBoxContainer = $Root/Center/Lines/Buttons/ContinueColumn
 @onready var _continue_button: ModeButton = $Root/Center/Lines/Buttons/ContinueColumn/Continue
 @onready var _restart_button: ModeButton = $Root/Center/Lines/Buttons/RestartColumn/Restart
 
-## Whether this device has a touchscreen. Read once from `TouchInput`, so the hint says `tap`
-## rather than a `space` a phone does not have — the same reason `TitleScreen` and `PauseScreen`
-## each read it once into their own member instead of asking at every use site.
+## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
+## `TitleScreen` and `PauseScreen` each read it once into their own member instead of asking at
+## every use site. No longer chooses the hint's own wording (`_hint` is always empty now — see
+## its own doc), but still gates `_wants_rotation()` and the mouse branch in
+## `_handle_restart_touch()` below.
 var _touch := TouchInput.available()
 
 const _DAY_TITLE := {
@@ -127,15 +132,12 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 		lines.append("")
 		lines.append(_resistance_line())
 	_body.text = "\n".join(lines)
-	_hint.text = _hint_text("try again" if retrying else "go on")
+	# Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still
+	# carries on, but the continue/restart pair below already says what a tap does, and nothing
+	# left to say here does not name a key — see `PauseScreen._hint`'s own doc for the same call
+	# made there.
+	_hint.text = ""
 	_present()
-
-## The keyboard says the verb; touch says nothing, because the continue/restart pair below already
-## does — see `PauseScreen._refresh_hint()`'s own doc for why a sentence and a button do not both
-## say the same thing on the same screen. `verb` is the second word only (`"go on"`, `"try again"`,
-## `"start again"`), so every call site reads as what it is asking rather than as string plumbing.
-func _hint_text(verb: String) -> String:
-	return "" if _touch else "space to %s" % verb
 
 ## The tally, and — the mechanism rather than a courtesy — the chalk mark's own words once a
 ## pickup has just been touched. Read once and cleared: `GameState.pending_resistance_brief` is
@@ -168,7 +170,7 @@ func show_ending(ending: GameEnums.Ending) -> void:
 	_heading.show()
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
 	_body.text = _ENDING_BODY.get(ending, "")
-	_hint.text = _hint_text("start again")
+	_hint.text = ""
 	_showing_ending = true
 	_present()
 

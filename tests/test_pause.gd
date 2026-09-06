@@ -215,10 +215,10 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 
 ## **"For the web version remove Q (quit) and its mentions since it doesn't have any effect. Only
 ## for the online version, for the local version Q needs to exist still."** `SceneTree.quit()` is
-## a no-op on a Web export, so the hint and the key have to agree in both platform shapes rather
-## than each asking `OS.has_feature("web")` on its own — `title._can_quit` is read once so a test
-## can drive both. Both directions are checked: the key must fire where the hint offers it, and
-## must emit nothing where the hint does not.
+## a no-op on a Web export, so `_can_quit` gates whether the key does anything at all rather than
+## each asking `OS.has_feature("web")` on its own — read once so a test can drive both. *(Playtest
+## 29 finding 4: "never should it be mentioned to the user" — the hint this test used to also check
+## no longer names the key on either platform, so only the key's own effect is asserted here now.)*
 func _test_the_title_quit_key_matches_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
@@ -227,23 +227,19 @@ func _test_the_title_quit_key_matches_the_platform(t) -> void:
 
 	title._can_quit = true
 	title.open()
-	t.check("q to quit" in title._hint.text, "the hint offers q where quitting works")
 	title._unhandled_input(_key(KEY_Q))
-	t.check(quit[0] == 1, "and the key does something there")
+	t.check(quit[0] == 1, "the key does something where quitting works")
 
 	title._can_quit = false
 	title.open()
-	t.check(not "q to quit" in title._hint.text,
-			"and the hint drops it where quitting is impossible ('%s')" % title._hint.text)
 	title._unhandled_input(_key(KEY_Q))
-	t.check(quit[0] == 1, "pressing it there emits nothing at all")
+	t.check(quit[0] == 1, "and pressing it where quitting is impossible emits nothing at all")
 
 	title.close()
 	title.queue_free()
 
-## The same agreement, one screen further in. Unlike the title, the pause screen's hint was never
-## rebuilt on open — `_refresh_hint()` is what a test can call after flipping `_can_quit` to reach
-## the shape `_ready()` would have produced on the other platform.
+## The same agreement, one screen further in — see `_test_the_title_quit_key_matches_the_platform`
+## for why only the key's own effect is asserted, not a hint that no longer names it.
 func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
 	t.add_child(pause)
@@ -252,48 +248,41 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	t.get_tree().paused = false
 
 	pause._can_quit = true
-	pause._refresh_hint()
 	pause.open()
-	t.check("q to quit" in pause._hint.text, "the hint offers q where quitting works")
 	pause._unhandled_input(_key(KEY_Q))
-	t.check(quit[0] == 1, "and the key does something there")
+	t.check(quit[0] == 1, "the key does something where quitting works")
 	pause.close()
 
 	pause._can_quit = false
-	pause._refresh_hint()
 	pause.open()
-	t.check(not "q to quit" in pause._hint.text,
-			"and the hint drops it where quitting is impossible ('%s')" % pause._hint.text)
 	pause._unhandled_input(_key(KEY_Q))
-	t.check(quit[0] == 1, "pressing it there emits nothing at all")
+	t.check(quit[0] == 1, "and pressing it where quitting is impossible emits nothing at all")
 
 	pause.close()
 	t.get_tree().paused = false
 	pause.queue_free()
 
-## **The controls appear only where they are used, and every hint agrees with them** — a screen
-## that says `space to begin` on a device with no space is the same defect `q to quit` was on the
-## web. `title._touch` is read once so a test can drive both platform shapes, exactly as
-## `_can_quit` already does for the quit key.
+## **One hint, one body, on every device.** *(Playtest 29 finding 4: "in fact I said to remove the
+## keyboard inputs altogether but I'm willing to compromise on letting them stay silently" — no
+## key may be named on screen.)* This screen has no buttons, so it still needs a hint that says
+## *press to begin* — `title._touch` used to choose between "space to begin" and "tap to begin";
+## now there is only the tap wording, and `TitleScreen` keeps no `_touch` member at all, since
+## nothing left in this file depends on it.
 func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 
-	title._touch = false
-	title._refresh_body()
 	title.open()
-	t.check("space to begin" in title._hint.text, "the keyboard hint says space")
-	t.check("Arrows or WASD" in title._body.text, "and the body names the keys")
+	t.check("tap to begin" in title._hint.text,
+			"the hint says tap, on every device ('%s')" % title._hint.text)
+	t.check("Tap to walk" in title._body.text,
+			"and the body names the tap rather than a key ('%s')" % title._body.text)
+	t.check(not "Shift" in title._body.text, "no key is named")
+	t.check(not "q to quit" in title._hint.text, "and neither is q, even where it works")
 
-	title._touch = true
-	title._refresh_body()
 	title.open(true)
 	t.check("tap to walk again" in title._hint.text,
-			"the touch hint says tap ('%s')" % title._hint.text)
-	t.check("Tap to walk" in title._body.text,
-			"and the body names the tap rather than a control it does not draw ('%s')"
-					% title._body.text)
-	t.check(not "Shift" in title._body.text, "and drops the key it does not have")
+			"a returning run gets the same tap wording ('%s')" % title._hint.text)
 
 	title.close()
 	title.queue_free()
@@ -369,7 +358,12 @@ func _test_the_title_names_a_version(t) -> void:
 	title.close()
 	title.queue_free()
 
-## The same agreement, one screen further in.
+## **One hint (always empty), one body, on every device.** *(Playtest 29 finding 4: "never should
+## it be mentioned to the user".)* `_touch` used to choose between a keyboard body/hint and a touch
+## one; now `_body` is the touch wording on both flag values and `_hint` is always blank — the
+## continue/restart pair says what a press does instead. `Esc`, `space`, `r` and `q` all keep
+## working regardless (see `_test_there_is_a_way_out_of_a_finished_run` and the quit-key tests);
+## only the sentences naming them are gone.
 func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
 	t.add_child(pause)
@@ -377,24 +371,22 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 
 	pause._touch = false
 	pause._refresh_body()
-	pause._refresh_hint()
 	pause.open()
-	t.check("space or esc to carry on" in pause._hint.text, "the keyboard hint names both keys")
-	t.check("r to start again" in pause._hint.text, "and the restart key")
-	t.check("Arrows or WASD" in pause._body.text, "and the body names the keys")
+	t.check(pause._hint.text == "",
+			"the hint says nothing at all, even on a keyboard-and-mouse desktop ('%s')"
+					% pause._hint.text)
+	t.check("Tap to walk" in pause._body.text,
+			"and the body names the tap rather than a key, even here ('%s')" % pause._body.text)
+	t.check(not "Shift" in pause._body.text and not "Arrows" in pause._body.text,
+			"no key is named")
 	pause.close()
 
-	# `_can_quit` is fixed to `false` here so this assertion is only about `_touch` — the two
-	# platform questions are independent and `_test_the_pause_quit_key_matches_the_platform`
-	# already covers `q to quit` composing correctly on top of either shape.
 	pause._touch = true
-	pause._can_quit = false
 	pause._refresh_body()
-	pause._refresh_hint()
 	pause._refresh_buttons()
 	pause.open()
 	t.check(pause._hint.text == "",
-			"the touch hint says nothing at all — the buttons say it now ('%s')" % pause._hint.text)
+			"the touch hint says nothing either — the buttons say it now ('%s')" % pause._hint.text)
 	t.check("Tap to walk" in pause._body.text,
 			"and the body names the tap rather than a control it does not draw")
 	t.check(pause._buttons.visible, "and the continue/restart pair is what shows instead")
@@ -589,19 +581,21 @@ func _touch_at(position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	event.index = 0
 	return event
 
-## The between-days summary and the ending it leads to both say `space` today and `tap` on a touch
-## device, the same agreement the title and the pause hints keep.
+## The between-days summary and the ending it leads to say nothing at all — the continue/restart
+## pair says it instead, on every device. *(Playtest 29 finding 4: "never should it be mentioned
+## to the user.")* `space` still carries on regardless of what the hint says.
 func _test_the_summary_hint_matches_the_platform(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
 
 	summary._touch = false
 	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
-	t.check("space to go on" in summary._hint.text, "the keyboard hint says space")
+	t.check(summary._hint.text == "",
+			"the hint says nothing, even on a keyboard-and-mouse desktop ('%s')" % summary._hint.text)
 
 	summary._touch = true
 	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
-	t.check(summary._hint.text == "", "the touch hint says nothing — the buttons say it now")
+	t.check(summary._hint.text == "", "the touch hint says nothing either — the buttons say it now")
 	t.check(summary._buttons.visible, "and the continue/restart pair is what shows instead")
 
 	summary.show_ending(GameEnums.Ending.GOOD)

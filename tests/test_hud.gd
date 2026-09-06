@@ -3,7 +3,7 @@ extends RefCounted
 ##
 ## Most of what the HUD shows is read off `EventBus` values and is either checked by eye or
 ## covered by whatever produces the value. Two things here are a *rule* rather than a readout:
-## when "Hold SHIFT to run" is allowed to say anything at all, and which lines `hud._debug`
+## when "Double tap to run" is allowed to say anything at all, and which lines `hud._debug`
 ## keeps or drops. `hud._debug` is read once into a member rather than asked of
 ## `OS.is_debug_build()` at each use site precisely so a test — itself always a debug process —
 ## can set it to `false` and see the release shape, which is otherwise asserted by nothing.
@@ -51,7 +51,7 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 
 	var first := _pursuer()
 	hud._on_event_telegraphed(first)
-	t.check(hud._teach.text == "Hold SHIFT to run",
+	t.check(hud._teach.text == "Double tap to run",
 			"the first pursuit of the teaching day shows the hint")
 	t.check(hud._taught_run, "and the day is marked taught")
 
@@ -67,35 +67,37 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 	hud.free()
 	GameState.day = saved_day
 
-## **The lesson names the control that is actually there.** *(Filed from a phone play of the
-## deployed build: "the run tutorial says hold 'SHIFT' on mobile.")* `hud._touch` is read once
-## from `TouchInput`, the same pattern `DaySummary` and `PauseScreen` use, so a touch device gets
-## the double press that runs rather than a key it has not got.
+## **The lesson names the control on every device, not only a touch one.** *(Filed from a phone
+## play of the deployed build: "the run tutorial says hold 'SHIFT' on mobile", then confirmed by
+## playtest 29 finding 4: nothing on screen may name a key at all, on any device.)* `hud._touch`
+## used to choose between this wording and "Hold SHIFT to run"; now both flag values produce the
+## same line, since the double-tap wording is the only one left.
 func _test_the_run_hint_names_a_double_tap_on_a_touch_device(t) -> void:
 	var saved_day := GameState.day
 	GameState.day = Tuning.RUN_TAUGHT_DAY
 	var hud := _hud(t)
-	hud._touch = true
+	hud._touch = false
 
 	var first := _pursuer()
 	hud._on_event_telegraphed(first)
 	t.check(hud._teach.text == "Double tap to run",
-			"a touch device is told to double tap, not press a key it has not got")
+			"a keyboard-and-mouse desktop gets the same wording — no key is named for it either")
 
 	first.free()
 	hud.free()
 	GameState.day = saved_day
 
-## **The day-1 walk lesson has the same defect the run lesson had, and the same fix.** `hud._touch`
-## drives both: a touch device gets "Tap to walk, double tap to run" rather than
-## "Arrow keys or WASD to walk", which names two things it does not have.
+## **The day-1 walk lesson has the same defect the run lesson had, and the same fix.** *(Playtest
+## 29 finding 4.)* `hud._touch` used to choose between "Tap to walk, double tap to run" and
+## "Arrow keys or WASD to walk"; the keyboard wording is gone, so both flag values now produce the
+## touch line.
 func _test_the_walk_hint_names_a_tap_on_a_touch_device(t) -> void:
 	var hud := _hud(t)
-	hud._touch = true
+	hud._touch = false
 
 	hud._teach_the_day(1)
 	t.check(hud._teach.text == "Tap to walk, double tap to run",
-			"day 1 tells a touch device to tap, not press a key it has not got")
+			"day 1 tells every device to tap — no key is named for a keyboard either")
 
 	hud.free()
 
@@ -120,7 +122,7 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
 
 	var second := _pursuer()
 	hud._on_event_telegraphed(second)
-	t.check(hud._teach.text == "Hold SHIFT to run",
+	t.check(hud._teach.text == "Double tap to run",
 			"and the lesson fires again on the second attempt")
 
 	# Still only once within that attempt — the gate is the attempt, not "has this run seen it".
@@ -166,10 +168,12 @@ func _test_the_meters_move_to_the_top_on_a_touch_device(t) -> void:
 
 	hud.free()
 
-## **The pause lesson names the button that now exists, in plain words rather than a label that
-## is not there.** Same defect the walk and run lessons had, filed by the same audit — `hud._touch`
-## picks the wording, and `TouchControls._draw_pause_button()` draws an icon (two bars), not a
-## word, so the touch line describes the control rather than naming a label it does not have.
+## **The pause lesson names the button on every device, in plain words rather than a label that is
+## not there.** Same defect the walk and run lessons had, filed by the same audit, closed the same
+## way playtest 29 finding 4 closes it everywhere else: `TouchControls._draw_pause_button()` draws
+## an icon (two bars), not a word, so the line describes the control rather than naming a label —
+## or a key — that is not there. `hud._touch` used to pick between this and "Esc to pause"; now
+## both flag values produce the same line.
 func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t) -> void:
 	var stroller := Stroller.new()
 	var camera := Camera2D.new()
@@ -179,14 +183,14 @@ func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t) -> void:
 	stroller.set_physics_process(false)
 
 	var hud := _hud(t)
-	hud._touch = true
+	hud._touch = false
 	hud._rig = stroller
 	hud._walked_today = true
 
 	for _i in 40: # 4s of stillness, past TEACH_PAUSE_AFTER
 		hud._teach_the_pause(0.1)
 	t.check(hud._teach.text == "Tap the pause button to pause",
-			"a touch device is told to tap the button, not press a key it has not got")
+			"a keyboard-and-mouse desktop is told to tap the button too — Esc is not named")
 
 	# `.free()`, not `queue_free()`: `Stroller._exit_tree()` removes it from the "player" group
 	# synchronously, and this suite never yields a frame for a deferred deletion to catch up —
@@ -223,7 +227,8 @@ func _test_the_pause_hint_waits_out_a_detention(t) -> void:
 	for _i in 40:
 		hud._teach_the_pause(0.1)
 	t.check(hud._taught_pause, "released, she still earns the lesson on her own stand")
-	t.check(hud._teach.text == "Esc to pause", "and says the actual line")
+	t.check(hud._teach.text == "Tap the pause button to pause",
+			"and says the actual line — no key named, even on this default (non-touch) device")
 
 	stroller.free()
 	hud.free()

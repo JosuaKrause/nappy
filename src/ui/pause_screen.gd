@@ -22,6 +22,10 @@ signal quit_requested()
 @onready var _dim: ColorRect = $Root/Dim
 @onready var _standing: Label = $Root/Center/Lines/Standing
 @onready var _body: Label = $Root/Center/Lines/Body
+## Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space`/`esc`/`r`/`q`
+## keep working, and the continue/restart pair already says what a tap does — there is nothing
+## left for a sentence here to say that does not name a key, so the label stays only to be looked
+## at and found blank rather than for a function to keep writing "" into.
 @onready var _hint: Label = $Root/Center/Lines/Hint
 @onready var _buttons: HBoxContainer = $Root/Center/Lines/Buttons
 @onready var _continue_button: ModeButton = $Root/Center/Lines/Buttons/ContinueColumn/Continue
@@ -29,16 +33,22 @@ signal quit_requested()
 
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
 ## each use site, so a test — never itself a web export — can set this and drive both shapes.
+## Gates only whether the key is **handled** in `_unhandled_input()` below; it names nothing on
+## screen any more — see `_BODY`'s own doc.
 var _can_quit := QuitOption.available()
-## Whether this device has a touchscreen. Read once from `TouchInput`, for the same reason
-## `_can_quit` is: a test process is never a touch device, and the body and the hint both have to
-## agree with whatever the game is actually played with.
+## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
+## `_can_quit` follows: a test process is never a touch device. Still gates real platform
+## questions elsewhere in this file (`_wants_rotation()`, the mouse branch in
+## `_handle_restart_touch()`) even though it no longer chooses between two bodies or two hints.
 var _touch := TouchInput.available()
 
-const _BODY_KEYBOARD := "Arrows or WASD to walk.\n" \
-		+ "Hold Shift to run — it wakes her, so it is rarely worth it.\n" \
-		+ "Walk to calm ground and stay moving; standing still settles nothing."
-const _BODY_TOUCH := "Tap to walk that way, tap her to stop, double tap to run.\n" \
+## One body for every device. *(2026-09-06, the player: "in fact I said to remove the keyboard
+## inputs altogether but I'm willing to compromise on letting them stay silently".)* The keyboard
+## still walks, runs, pauses and restarts — nothing here stops reading `KEY_R`/`KEY_Q` or the
+## `move_*`/`run`/`pause` actions a key presses — but nothing on screen names a key any more, so
+## the keyboard and touch bodies collapse to the one shape that was always the touch body: naming
+## the tap is naming a control every device actually has, since a mouse click reads as one too.
+const _BODY := "Tap to walk that way, tap her to stop, double tap to run.\n" \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:
@@ -51,34 +61,12 @@ func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(_root)
 	visible = false
 	_refresh_body()
-	_refresh_hint()
 	_refresh_buttons()
 
-## The keyboard's own three lines, or the one other shape they can be. Its own function for the
-## same reason `_refresh_hint()` is one: so a test can flip `_touch` and call this again rather
-## than reaching for a fresh scene.
+## Its own function for the same reason it always was: so a test can call this again rather than
+## reaching for a fresh scene. No longer branches on `_touch` — see `_BODY`'s own doc.
 func _refresh_body() -> void:
-	_body.text = _BODY_TOUCH if _touch else _BODY_KEYBOARD
-
-## Baked into the scene is only the part that is always true; the rest depends on `_can_quit` and
-## `_touch` rather than on anything the scene file can say. `R` restarts and `Esc` is a second way
-## to carry on, and neither exists on a device with no keyboard, so the touch hint drops both
-## rather than naming a key that is not there — the same defect class `q to quit` was.
-##
-## **On touch it says nothing at all**, once said `tap to carry on`. Two buttons — see
-## `_refresh_buttons()` — now say that, and *"a screen offers something to press"* is this
-## milestone's own name for not saying it twice in two different vocabularies at once. `q to quit`
-## survives as the one word a button carries no glyph for.
-##
-## Its own function, rather than inline in `_ready()`, so a test can flip either flag and call
-## this again to check the platform shapes agree with `_unhandled_input`'s own gate.
-func _refresh_hint() -> void:
-	if _touch:
-		_hint.text = "q to quit" if _can_quit else ""
-		return
-	_hint.text = "space or esc to carry on     ·     r to start again"
-	if _can_quit:
-		_hint.text += "     ·     q to quit"
+	_body.text = _BODY
 
 ## Shown on every device — there is one control scheme now, and a press sets a direction on a
 ## keyboard-and-mouse desktop exactly as it does on a phone, so the same pair of buttons is a
@@ -88,8 +76,7 @@ func _refresh_hint() -> void:
 ## continue/restart pair only replaces a sentence where there is a thumb to press it with — a
 ## mouse-and-keyboard desktop keeps `space`/`esc`/`r`, which already read as a control there and
 ## need no picture beside them."* M82 deleted the choice, so that reason no longer holds. Its own
-## function still, for the same reason `_refresh_hint()` is one: a test can call this again after
-## changing what it depends on.
+## function still, so a test can call this again after changing what it depends on.
 func _refresh_buttons() -> void:
 	_buttons.visible = true
 
@@ -210,9 +197,11 @@ func _handle_restart_touch(event: InputEvent) -> bool:
 const _MOUSE_HOLD_INDEX := -2
 
 ## `Esc` **or `space`** closes it, `R` starts the whole run again and `Q` leaves the game —
-## **except on the web**, where `QuitOption.available()` is false, `_ready()` never put "q to
-## quit" in the hint, and the key is not handled either. Handled here rather than in `main` so
-## that the screen owns its own keys while it is up, and `main` only owns the one that opens it.
+## **except on the web**, where `QuitOption.available()` is false and the key is not handled at
+## all. None of the four is named on screen any more — see `_hint`'s own doc — so a keyboard
+## player learns them from playing rather than from a sentence, the compromise this milestone
+## settled on in place of deleting them outright. Handled here rather than in `main` so that the
+## screen owns its own keys while it is up, and `main` only owns the one that opens it.
 ##
 ## **`space` continues**, because it is the key the title screen and the between-days summary mean
 ## *carry on* with: a verb learned on two screens out of three and missing on the third is a verb

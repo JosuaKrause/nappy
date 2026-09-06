@@ -32,8 +32,9 @@ extends CanvasLayer
 var _debug := OS.is_debug_build()
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
-## `DaySummary` and `PauseScreen` use, so the walking, running and pause lessons name a tap and the
-## pause button rather than a key a touch device does not have.
+## `DaySummary` and `PauseScreen` use. No longer chosen between two wordings for the walking,
+## running and pause lessons — those now name the tap on every device, since nothing on screen
+## names a key any more — but still drives `_reposition_meters_for_touch()` below.
 var _touch := TouchInput.available()
 
 var _baby: Baby
@@ -158,8 +159,9 @@ func _teach_the_day(day: int) -> void:
 	_walked_today = false
 	_stood_for = 0.0
 	if day == 1:
-		var line := "Tap to walk, double tap to run" if _touch else "Arrow keys or WASD to walk"
-		_say(line, TEACH_SECONDS)
+		# One wording for every device now — see `PauseScreen._BODY`'s own doc for the same
+		# collapse made there. The keyboard still walks and runs; nothing on screen names its keys.
+		_say("Tap to walk, double tap to run", TEACH_SECONDS)
 	# A nerve is a rewind, not a resource, and a rewound day has not been taught anything: this
 	# flag belongs to the *attempt* at the teaching day rather than to the run, and only on this
 	# one day, so a lost nerve on `RUN_TAUGHT_DAY` gets the lesson again instead of a HUD that
@@ -215,9 +217,9 @@ func _teach_the_pause(delta: float) -> void:
 	_taught_pause = true
 	# "the pause button" rather than any drawn label: `TouchControls._draw_pause_button()` draws
 	# an icon, two bars, not a word — naming a label that is not there would be the same defect
-	# this line exists to fix on the other lessons.
-	var line := "Tap the pause button to pause" if _touch else "Esc to pause"
-	_say(line, TEACH_SECONDS)
+	# this line exists to fix on the other lessons. One wording for every device — `Esc` still
+	# pauses on a keyboard, but nothing on screen names it any more.
+	_say("Tap the pause button to pause", TEACH_SECONDS)
 
 ## The run is taught by the thing that requires it, at the moment it requires it — and only for
 ## that one lesson.
@@ -230,14 +232,14 @@ func _teach_the_pause(delta: float) -> void:
 ## pursues her. So it fires once, for the first pursuit of the day the run is taught, and never
 ## again this run: the same "once per run" shape as `_teach_the_pause()`, for the same reason —
 ## it is a keybinding, not a warning, and a cue that keeps coming back is one that gets read once
-## and then ignored. The control it names is `_touch`'s: `SHIFT` on a keyboard, a double press on a
-## touch device — same pattern `DaySummary` and `PauseScreen` read `TouchInput.available()` for.
+## and then ignored. One wording for every device now: `Shift` still holds `run` on a keyboard,
+## but nothing on screen names it any more — see `PauseScreen._BODY`'s own doc for the same
+## collapse made there.
 func _on_event_telegraphed(instance: EventInstance) -> void:
 	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
-	var line := "Double tap to run" if _touch else "Hold SHIFT to run"
-	_say(line, instance.def.telegraph_time + TEACH_RUN_SECONDS)
+	_say("Double tap to run", instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
 func _say(line: String, seconds: float) -> void:
 	_teach.text = line
