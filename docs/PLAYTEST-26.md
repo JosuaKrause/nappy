@@ -113,7 +113,18 @@ leaves the principle without an exception: click chooses tap, the arrow keys cho
 > "build buttons with symbols indicating the mode (joystick for keyboard controls and something
 > else for taps)"
 
-A joystick for the stick scheme, and something yet to be chosen for tap-to-walk.
+A joystick for the stick scheme, and a tap for the other.
+
+**The picture that goes with it is `docs/evidence/reference-buttons-2026-09-06.jpeg`**: four solid
+circular buttons, each a white glyph centred on a filled disc with its caption in plain text
+*below* the circle rather than inside it — a circular arrow for restart, a play triangle for
+continue, a joystick, and a hand with tap ripples. Its **colours are not part of it**
+*(2026-09-06: "ignore the color of the reference")*.
+
+**A stray pointer press chooses nothing.** *(2026-09-06, asked which way the touch fallback should
+go: "clicking anywhere else should do nothing".)* So the two buttons are the only pointer route to
+an answer, and the keys are the only other one. It resolves finding 2's own loose end — that a touch
+anywhere had been choosing the stick, silently and against the principle.
 
 **And the day-end and pause screens get the same pair of buttons as each other:**
 

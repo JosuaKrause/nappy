@@ -37,8 +37,15 @@ spoke for it.
 ./tools/check.sh         # boots the project, fails on any script error
 ./tools/lint.sh          # the governed docs, for sentences that go stale on their own
 ./tools/run.sh           # plays it
+./tools/serve-web.sh     # plays the *web* build, locally, in a browser
 ./tools/telemetry.sh     # what the last run actually did, in order
 ```
+
+**`tools/serve-web.sh` is the only way to run the web build without deploying it.** A Godot web
+export cannot be opened from `file://` — the browser refuses the WASM and pack fetches — so a static
+server is the requirement rather than a convenience. It exports **debug** and serves `build/web`
+over plain HTTP, printing an address rather than opening a browser, and the debug half is
+load-bearing: a debug build is the only one where the URL modifiers answer at all.
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
 
@@ -276,11 +283,24 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   `build/web` are correct as far as a local check can tell, and nothing has pasted the address into
   a chat client to see what comes back.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
-  running behind it — and it now asks one question: two buttons, and picking one is also the start.
-  That is the whole of it: no options, no seed box, no load game. **Nobody has met the question on a
-  phone**, which is where it was asked for, so whether two buttons read as a choice or as an
-  obstacle between a player and the game is unanswered. A run started with `--controls` or
-  `?controls=` skips the question by design and is therefore the path least likely to be tested.
+  running behind it — and it asks one question: two circular icon buttons, and picking one is also
+  the start. That is the whole of it: no options, no seed box, no load game. **Nobody has met
+  the question on a phone**, which is where it was asked for, so whether two buttons read as a
+  choice or as an obstacle between a player and the game is unanswered. A run started with
+  `--controls`, or with `?controls=` on a **debug** web build, skips the question by design and is
+  therefore the path least likely to be tested.
+- **The two title icons have been judged by reading the files, not by anybody meeting them.**
+  `assets/ui/joystick.svg` and `assets/ui/tap.svg` are legible at their rendered 46px radius, which
+  is what the **cues** rule *a picture is an asset, never code* buys — the SVG is the thing you look
+  at. Whether they read as *joystick* and *tap* to somebody who has not been told is the part no
+  file settles and a person does; the reference is
+  `docs/evidence/reference-buttons-2026-09-06.jpeg`. Replacing either is copying a file over that
+  path, since `ModeButton` loads both by path and draws nothing itself.
+- **A release build carries no modifiers, and nothing has confirmed that on a real release build.**
+  `?controls=` and `?telemetry=1` answer only when `OS.is_debug_build()` is true. The four-case truth
+  table is asserted in the suites, so the *predicate* is proven; the build type itself has no seam to
+  fake and is therefore untested. **The deployed page is the first real check**, and what to watch is
+  that it still starts and still logs nothing.
 - **The city just got much cheaper to walk through and nobody has walked it.** Five barrier rows
   emit nothing at all now and the two that kept a field had their reach roughly halved, against a
   day that plans several hundred of exactly those bodies. **Whether the day is still losable on the
