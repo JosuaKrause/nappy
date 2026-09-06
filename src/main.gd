@@ -461,7 +461,20 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# planned for her — which is the one thing the dawn map cannot say. `_observer` is only in the
 	# tree while a run is being traced, so both are empty rather than missing when it is not — see
 	# `Telemetry.write_map`. Before `end_day()`, so it belongs to the day it is of.
-	var trail: Array[Vector3] = _observer.trail() if _observer else []
+	#
+	# **Not a ternary.** `_observer.trail() if _observer else []` assigned straight into a typed
+	# `Array[Vector3]` throws at runtime — the `else` branch is a bare untyped `Array`, which is not
+	# the declared type, and Godot only catches the mismatch when the line actually runs rather than
+	# at parse time. `_observer` is null on every build with telemetry off (`--no-telemetry`, and
+	# every Web export, since `Telemetry` disables itself there), which is exactly the ordinary
+	# shape nothing in the suite ran this line under — an untraced day ending threw here, before
+	# `_summary.show_day()` below ever ran, which is the whole of "the meter reached 100 and the day
+	# would not end": the day had already ended and silently stopped telling anything downstream.
+	var trail: Array[Vector3] = []
+	if _observer:
+		trail = _observer.trail()
+	# `met` is a plain, untyped `Dictionary` (no `[K, V]`), so `{}` on either side of the ternary is
+	# the same type either way and this one was never the trap the trail line was.
 	var met: Dictionary = _observer.met_events() if _observer else {}
 	Telemetry.write_map(_city.map, finished_day, _city.closures(), _city.route_tree(),
 			_city.events.plans(), true, trail, met)

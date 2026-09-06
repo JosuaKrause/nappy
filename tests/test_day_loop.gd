@@ -3,6 +3,9 @@ extends RefCounted
 ## that decides which ending you get.
 
 const SEED := 4242
+const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
+const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 var _map: CityMap
 var _player: Node2D
@@ -22,6 +25,7 @@ func run(t) -> void:
 	_test_a_day_ends_only_once(t)
 	_test_nerves_and_endings(t)
 	_test_the_city_learns_where_she_settled(t)
+	_test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t)
 
 # --------------------------------------------------------------------- rig ---
 
@@ -295,3 +299,81 @@ func _test_the_city_learns_where_she_settled(t) -> void:
 	GameState.settled_in = saved_settled
 	GameState.run_seed = saved_seed
 	GameState.day = saved_day
+
+## **A day ending with no `TelemetryObserver` in the tree must still reach the summary.**
+## *(Reproduced on the deployed build and read out of a real Web export's console: "excitement
+## pinned at 100 and I'm completely invincible", also swallowing the cyclist and the timeout.)*
+##
+## `main._on_day_finished()` built its trail for `Telemetry.write_map()` from
+## `_observer.trail() if _observer else []` assigned straight into a declared `Array[Vector3]` — a
+## bare `[]` on the `else` side is an **untyped** `Array`, which is not the declared type, and
+## Godot only throws on the mismatch when the line actually runs rather than at parse time.
+## `_observer` is null on every build with telemetry off (`--no-telemetry`, and always on a Web
+## export, since `Telemetry` disables itself there), which is the ordinary shape nothing that ever
+## exercised this line ran under. The function aborted at that line, before `_summary.show_day()`
+## a few lines below it ever ran — and `DayController._end()` had already moved the day's own phase
+## to `OVER`, so from there the day simply stopped telling anything downstream: no summary, no
+## paused tree, the meter frozen wherever it stood and the player still walking a day already over.
+##
+## Exercises `main._on_day_finished()` directly rather than through `DayController`'s own signal,
+## the same way `tests/test_main.gd` reaches past `main._ready()` for the rest of its logic — a
+## script-only instance, its handful of world dependencies wired up by hand, with `_observer` left
+## null exactly the way a telemetry-off run leaves it.
+func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> void:
+	var saved_seed := GameState.run_seed
+	var saved_day := GameState.day
+	var saved_nerves := GameState.nerves
+	var saved_progress := GameState.resistance_progress
+	var saved_sabotage := GameState.sabotage_done
+	var saved_paused: bool = t.get_tree().paused
+	GameState.start_run(SEED)
+
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+
+	var player := Node2D.new()
+	t.add_child(player)
+	var day := DayController.new()
+	t.add_child(day)
+	day.set_process(false)
+	day.setup(city.map, player)
+	day.start(300.0)
+	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
+	t.check(day.failure_reason != "",
+			"the rig actually lost the day before asking the summary for anything")
+
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._city = city
+	main._day = day
+	main._summary = summary
+	main._observer = null
+
+	main._on_day_finished(GameEnums.DayResult.LOST_CRYING)
+
+	t.check(summary.is_showing(),
+			"the summary actually comes up with no telemetry observer in the tree")
+
+	main.free()
+	summary.free()
+	day.free()
+	player.free()
+	city.free()
+	# **Unpause, or this test silently disarms three of `tests/test_hud.gd`'s.** A summary coming up
+	# sets `get_tree().paused = true` (`DaySummary.show_day()`, so the city keeps its state behind
+	# it) and `.free()` on the node does not put it back — the whole suite shares one tree, so the
+	# flag outlives this function. `HUD._teach_the_pause()` treats a paused tree as being *held*
+	# rather than having stopped and resets its stand timer every frame, so the pause lesson simply
+	# never fires again and the checks that assert its wording fail in a full run while passing on
+	# their own. Restored rather than set to `false` for the same reason `main._close_the_pause()`
+	# puts back the state it found: nothing here may decide the tree's paused state for a suite that
+	# had its own reason to set one.
+	t.get_tree().paused = saved_paused
+	GameState.run_seed = saved_seed
+	GameState.day = saved_day
+	GameState.nerves = saved_nerves
+	GameState.resistance_progress = saved_progress
+	GameState.sabotage_done = saved_sabotage
