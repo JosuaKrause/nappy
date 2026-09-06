@@ -24,6 +24,7 @@ func run(t) -> void:
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
 	_test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots(t)
+	_test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t)
 
 func _hud(t) -> CanvasLayer:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
@@ -392,3 +393,30 @@ func _test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots
 			"a debug build keeps the progress dots the rigs were built against")
 
 	hud.free()
+
+## *(Playtest 25 finding 1, verified against the engine rather than inferred: `"%3.0f" % value`
+## rounds to nearest, so 99.5 and everything above it already printed `100` while the day was
+## still live — read by the player on a phone as the crying rule being broken outright: "if
+## excitement reaches 100 the game doesn't end! that's a major bug".)* The day ends only at
+## exactly `Tuning.METER_MAX`, so the bar may not say so a fraction early. Nothing in this project
+## screenshots a meter and reads the number back, which is exactly why this survived every gate —
+## `MeterBar.displayed_value()` and `displayed_fraction()` are pulled out to pure functions for
+## precisely that reason, so the formatting is a value this suite can hold without a render.
+func _test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t) -> void:
+	t.check(MeterBar.displayed_value(99.999) == 99,
+			"a value a hair under the max still floors to 99, not a rounded-up 100")
+	t.check(MeterBar.displayed_value(99.5) == 99,
+			"99.5 is exactly the value that used to round up and cannot any more")
+	t.check(MeterBar.displayed_value(100.0) == 100, "the true max still reads 100")
+	t.check(MeterBar.displayed_value(0.0) == 0, "and the floor holds at the bottom of the bar too")
+
+	# The fill has the same lie in a quieter shape: at 99.7% full no eye can tell it from solid, so
+	# a bare `value / max_value` (0.999, well past the point an eye reads as solid) is not enough
+	# of a check on its own — it asserts the cap actually held, not merely that the raw fraction
+	# happens to round the same way.
+	t.check(MeterBar.displayed_fraction(99.99, Tuning.METER_MAX) == MeterBar._MAX_FILL_BEFORE_FULL,
+			"just short of the max is held at the visual ceiling rather than reading as nearly solid")
+	t.check(MeterBar.displayed_fraction(Tuning.METER_MAX, Tuning.METER_MAX) == 1.0,
+			"and only reaches solid once the value genuinely is the max")
+	t.check(MeterBar.displayed_fraction(50.0, Tuning.METER_MAX) == 0.5,
+			"and away from the ceiling the fraction is not touched at all")

@@ -38,10 +38,33 @@ const _BORDER := Color(1, 1, 1, 0.28)
 const _MARKER := Color(1, 1, 1, 0.55)
 const _TEXT := Color(1, 1, 1, 0.85)
 
+## The most the bar may look full before `value` genuinely is: at 99.7 the fill was drawn 99.7% of
+## the width, a sliver no eye can tell from solid, so a bar could *look* done on a day that was
+## still live. Capped rather than reworked, the same floor the printed number gets below — the bar
+## and the number now agree that "looks/reads full" and "is full" are the same claim.
+const _MAX_FILL_BEFORE_FULL := 0.99
+
+## The number this bar actually prints. Floored, not rounded: `"%3.0f" % value` rounds to nearest,
+## so 99.5 and everything above it already read `100` while the day was still live — the day ends
+## only at exactly `max_value`, never at "close enough". Pulled out to a pure function because
+## nothing in this project screenshots a meter and reads the number back, so this is the part a
+## test can hold instead of the drawing nothing here can see.
+static func displayed_value(value: float) -> int:
+	return int(floorf(value))
+
+## The fraction of the bar's width the fill may draw, held at `_MAX_FILL_BEFORE_FULL` until `value`
+## genuinely reaches `max_value` — see that constant's own doc for why a bar that merely looks full
+## is the same lie the printed number told, just quieter.
+static func displayed_fraction(value: float, max_value: float) -> float:
+	var fraction := value / max_value
+	if value < max_value:
+		fraction = minf(fraction, _MAX_FILL_BEFORE_FULL)
+	return fraction
+
 func _draw() -> void:
 	var width := size.x
 	var bar := Rect2(0.0, BAR_TOP, width, BAR_HEIGHT)
-	var fraction := value / Tuning.METER_MAX
+	var fraction := displayed_fraction(value, Tuning.METER_MAX)
 
 	draw_rect(bar, _BACKGROUND)
 	draw_rect(Rect2(bar.position, Vector2(width * fraction, BAR_HEIGHT)),
@@ -55,5 +78,5 @@ func _draw() -> void:
 
 	var font := ThemeDB.fallback_font
 	draw_string(font, Vector2(1.0, 11.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, _TEXT)
-	draw_string(font, Vector2(width - 32.0, 11.0), "%3.0f" % value,
+	draw_string(font, Vector2(width - 32.0, 11.0), "%3.0f" % displayed_value(value),
 			HORIZONTAL_ALIGNMENT_RIGHT, 30, 11, _TEXT)
