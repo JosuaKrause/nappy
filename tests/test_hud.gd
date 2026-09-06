@@ -17,6 +17,8 @@ func run(t) -> void:
 	_test_the_run_hint_names_the_touch_button_on_a_touch_device(t)
 	_test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t)
 	_test_the_walk_and_run_hints_name_a_tap_in_tap_mode(t)
+	_test_set_controls_mode_reannounces_day_ones_lesson_once_known(t)
+	_test_set_controls_mode_leaves_a_later_days_lesson_alone(t)
 	_test_the_pause_hint_says_nothing_in_tap_mode(t)
 	_test_the_meters_move_to_the_top_on_a_touch_device(t)
 	_test_the_pause_hint_names_the_touch_button_on_a_touch_device(t)
@@ -123,6 +125,43 @@ func _test_the_walk_and_run_hints_name_a_tap_in_tap_mode(t) -> void:
 			"the run lesson in tap mode names the double tap rather than a RUN button it does not draw")
 
 	pursuer.free()
+	hud.free()
+	GameState.day = saved_day
+
+## **Day 1's own line may already have guessed wrong.** `EventBus.day_started` fires
+## `_teach_the_day(1)` the moment the day is built, which for the very first day can be *before* an
+## interactively-asked title screen has closed — so `main` calls `set_controls_mode()` once it
+## actually knows, and that has to redo the line rather than merely note the answer for next time.
+## The HUD is hidden behind the title for the whole of that wait, so nobody has read the guess yet.
+func _test_set_controls_mode_reannounces_day_ones_lesson_once_known(t) -> void:
+	var saved_day := GameState.day
+	GameState.day = 1
+	var hud := _hud(t)
+	hud._touch = false
+	hud._teach_the_day(1)
+	t.check(hud._teach.text == "Arrow keys or WASD to walk",
+			"day 1 first guesses the keyboard line, before the choice is known")
+
+	hud.set_controls_mode(ControlsMode.Mode.TAP)
+	t.check(hud._teach.text == "Tap to walk, double tap to run",
+			"and corrects itself the moment the title screen's own choice is known")
+
+	hud.free()
+	GameState.day = saved_day
+
+## Every day past the first has its own opening line long behind it by the time anything could
+## call this, so re-announcing it would replay a lesson that already happened.
+func _test_set_controls_mode_leaves_a_later_days_lesson_alone(t) -> void:
+	var saved_day := GameState.day
+	GameState.day = 3
+	var hud := _hud(t)
+	hud._teach.text = "an unrelated line"
+
+	hud.set_controls_mode(ControlsMode.Mode.TAP)
+	t.check(hud._teach.text == "an unrelated line",
+			"the mode can still be set later without replaying a day already under way")
+	t.check(hud._controls_mode == ControlsMode.Mode.TAP, "and the mode itself is still recorded")
+
 	hud.free()
 	GameState.day = saved_day
 

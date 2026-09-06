@@ -151,8 +151,13 @@ way `space` does, without teaching the desktop a click it never asked for.
 `ControlsMode` (`src/ui/controls_mode.gd`) is which of two schemes drives the day: the stick above,
 or `TapControls` (`src/ui/tap_controls.gd`), a second node rather than a branch inside
 `TouchControls` because tap mode draws nothing at all — no stick, no `RUN`, no pause button.
-`main._add_touch_controls()` reads `ControlsMode.resolve()` once and instantiates exactly one of
-the two onto the same layer.
+`main._resolve_controls_mode()` is the one place the mode is actually set and
+`_add_touch_controls()` actually called from, instantiating exactly one of the two onto the same
+layer — either immediately in `_ready()`, when `ControlsMode.is_forced()` says a `--controls` flag
+or the page's own `?controls=` already answered the question, or once `TitleScreen`'s own two
+buttons answer it instead: with neither present the title asks rather than assuming the stick, and
+`hud.set_controls_mode()` learns the same answer at the same moment so its lessons never name a
+control that turned out to be the wrong guess.
 
 A tap computes a heading once — `(target - position)`, normalised — and presses it through
 `TouchControls._set_axis()` (static, shared by both) exactly as the stick presses its own

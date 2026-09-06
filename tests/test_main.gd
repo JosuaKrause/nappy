@@ -17,6 +17,7 @@ const SEED := 4242
 func run(t) -> void:
 	_test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	_test_add_touch_controls_picks_the_stick_or_the_tap_reader_by_controls_mode(t)
+	_test_resolve_controls_mode_defers_until_something_answers(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -96,3 +97,34 @@ func _test_add_touch_controls_picks_the_stick_or_the_tap_reader_by_controls_mode
 
 	stick_main.free()
 	tap_main.free()
+
+## **The title screen may answer after day 1 is already running behind it, and nothing may keep a
+## stale copy of the answer.** *(2026-09-05, playtest 25 finding 3.)* `_resolve_controls_mode()` is
+## the one place `main._controls_mode` is actually set and `_add_touch_controls()` is actually
+## called from — guarded so an answer a `--controls` flag or a `?controls=` URL already built in
+## `_ready()` is never rebuilt or silently replaced by whatever the title screen goes on to emit.
+func _test_resolve_controls_mode_defers_until_something_answers(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	t.add_child(hud)
+	hud.set_process(false)
+	main._hud = hud
+
+	t.check(main._touch_controls == null and main._tap_controls == null,
+			"nothing is built before anything has answered the controls question")
+
+	main._resolve_controls_mode(ControlsMode.Mode.TAP)
+	t.check(main._tap_controls != null and main._touch_controls == null,
+			"the title's own choice builds the tap reader")
+	t.check(hud._controls_mode == ControlsMode.Mode.TAP, "and tells the HUD the same answer")
+
+	# A forced flag already built one before the title ever had a chance to ask — a second call,
+	# the way `_on_title_start()` would still make if the title happened to fire anyway, must not
+	# replace it with a different mode.
+	var already_built: TapControls = main._tap_controls
+	main._resolve_controls_mode(ControlsMode.Mode.STICK)
+	t.check(main._tap_controls == already_built and main._touch_controls == null,
+			"an already-built answer is never rebuilt or replaced")
+
+	main.free()
+	hud.free()

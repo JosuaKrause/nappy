@@ -35,11 +35,14 @@ var _edge: DangerEdge
 var _edge_layer: CanvasLayer
 ## The on-screen stick, on its own layer for the same reason the danger edge is: it has to sit
 ## above the world it is drawn over. Null in tap mode, where `_tap_controls` is what lives on the
-## same layer instead — see `_add_touch_controls()`.
+## same layer instead, and null before either exists — see `_resolve_controls_mode()`.
 var _touch_controls: TouchControls
 ## The tap-to-walk reader, on the same layer `_touch_controls` would otherwise occupy. Null unless
 ## `_controls_mode` is `ControlsMode.Mode.TAP` — the two are never both in the tree at once.
 var _tap_controls: TapControls
+## Built in `_ready()` whether or not the controls question is answered yet — `_apply_orientation()`
+## needs somewhere to rotate even while the title is still asking — but its one child, `_touch_controls`
+## or `_tap_controls`, is only added once `_resolve_controls_mode()` runs.
 var _touch_layer: CanvasLayer
 var _summary: CanvasLayer
 var _pause: PauseScreen
@@ -59,8 +62,10 @@ var _in_the_title := false
 ## every frame without also repeating `TouchInput.available()`'s own `OS.get_cmdline_user_args()`
 ## call sixty times a second.
 var _touch_available := TouchInput.available()
-## Which of the two ways to say where she goes is driving this run — the stick or a tap. Read once
-## the same way `_touch_available` is, because a run's own choice does not change either.
+## Which of the two ways to say where she goes is driving this run — the stick or a tap. Only ever
+## actually set by `_resolve_controls_mode()`, whether that runs immediately (a flag or a URL
+## skipped the question) or once the title screen's own two buttons answer it; this initial value
+## is a placeholder for the gap between `_ready()` and whichever of those happens.
 var _controls_mode := ControlsMode.resolve()
 ## The rotation `_apply_orientation()` last actually applied, so `_process()` can ask the same
 ## question every frame and reapply only on change — see that function's own doc for why a signal
@@ -104,7 +109,14 @@ func _ready() -> void:
 	_hud = HUD.instantiate()
 	add_child(_hud)
 	_add_danger_edge()
-	_add_touch_controls()
+	# A flag or a URL already answered the controls question, so there is nothing for the title
+	# screen to ask — build the real control layer now, the way every build before this milestone
+	# did. Otherwise only the layer itself exists until `_on_title_start()` supplies the answer; see
+	# `_resolve_controls_mode()`.
+	if ControlsMode.is_forced():
+		_resolve_controls_mode(_controls_mode)
+	else:
+		_ensure_touch_layer()
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 	_summary.continued.connect(_on_summary_continued)
@@ -235,8 +247,10 @@ func _open_the_title() -> void:
 	_status.visible = false
 	_title.open(_ending_shown)
 
-## The player has pressed space: hand the city back to the day it belongs to.
-func _on_title_start() -> void:
+## The player has picked one of the title's two controls, which is also the start: hand the city
+## back to the day it belongs to.
+func _on_title_start(mode: ControlsMode.Mode) -> void:
+	_resolve_controls_mode(mode)
 	_in_the_title = false
 	_title.close()
 	_player.step_back_in()
@@ -284,16 +298,45 @@ func _add_danger_edge() -> void:
 ## itself for the one case where a tap still has to do something behind a paused screen — see its
 ## own `_on_tap()`.
 func _add_touch_controls() -> void:
+	_ensure_touch_layer()
+	if _controls_mode == ControlsMode.Mode.TAP:
+		_tap_controls = TapControls.new()
+		_touch_layer.add_child(_tap_controls)
+	else:
+		_touch_controls = TOUCH_CONTROLS.instantiate()
+		_touch_layer.add_child(_touch_controls)
+
+## The layer itself, built the first time anything asks for it and reused after — `_ready()` needs
+## it to exist even while the title screen is still asking, since `_apply_orientation()` rotates
+## every layer of screen furniture whether or not the control it will eventually hold has been
+## built yet.
+func _ensure_touch_layer() -> void:
+	if _touch_layer:
+		return
 	var layer := CanvasLayer.new()
 	layer.name = "TouchControls"
 	_touch_layer = layer
-	if _controls_mode == ControlsMode.Mode.TAP:
-		_tap_controls = TapControls.new()
-		layer.add_child(_tap_controls)
-	else:
-		_touch_controls = TOUCH_CONTROLS.instantiate()
-		layer.add_child(_touch_controls)
 	add_child(layer)
+
+## The one place `_controls_mode` is actually set and `_add_touch_controls()` is actually called
+## from — whether that is `_ready()`, immediately, because a flag or a URL already answered the
+## question, or `_on_title_start()`, once the player has pressed one of the title's own two
+## buttons. Guarded so a forced answer already built by `_ready()` is never rebuilt or replaced by
+## whatever the title screen goes on to emit — the title does not even ask in that case, but the
+## guard is what makes that a guarantee rather than a hope.
+##
+## `_touch_controls.rotated` is corrected here rather than left to `_apply_orientation()`, which
+## the interactive path has already missed once: it runs once from `_ready()`, before the title
+## screen can have closed, so a stick built only now would otherwise carry the default `false`
+## until the window next changes shape.
+func _resolve_controls_mode(mode: ControlsMode.Mode) -> void:
+	if _touch_controls or _tap_controls:
+		return
+	_controls_mode = mode
+	_add_touch_controls()
+	if _touch_controls:
+		_touch_controls.rotated = _rotated
+	_hud.set_controls_mode(mode)
 
 ## Presents the game rotated 90° when the real window is a portrait touch screen, so a phone
 ## with auto-rotate off shows a full-size landscape game rather than a thin letterboxed strip of
