@@ -1,0 +1,46 @@
+{
+  "asset": "mother-parts-v3",
+  "texture": "mother-parts-v3.png",
+  "format": "RGBA PNG",
+  "sheet_px": [1280, 1536],
+  "cell_px": [160, 192],
+  "columns": 8,
+  "rows": 8,
+  "directions": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+  "rows_by_layer": [
+    "head_hair",
+    "torso_clothing",
+    "arms_hands",
+    "left_upper_leg",
+    "left_lower_leg",
+    "right_upper_leg",
+    "right_lower_leg",
+    "shoe_pair_preview"
+  ],
+  "shoe_layers": {
+    "left_shoe": "row 7, left shoe sub-art in each direction cell",
+    "right_shoe": "row 7, right shoe sub-art in each direction cell"
+  },
+  "draw_order": [
+    "left_upper_leg", "left_lower_leg", "right_upper_leg", "right_lower_leg",
+    "torso_clothing", "head_hair", "arms_hands", "left_shoe", "right_shoe"
+  ],
+  "ground_y": 184,
+  "pivots": {
+    "head": [80, 28],
+    "torso": [80, 66],
+    "left_shoulder": [52, 77],
+    "right_shoulder": [108, 77],
+    "left_hip": [68, 116],
+    "right_hip": [92, 116],
+    "left_knee": "direction-specific, independently posed",
+    "right_knee": "direction-specific, independently posed",
+    "left_ankle": "direction-specific, independently posed",
+    "right_ankle": "direction-specific, independently posed",
+    "left_sole": "direction-specific, shoe sub-art anchor on y=184 when planted",
+    "right_sole": "direction-specific, shoe sub-art anchor on y=184 when planted"
+  },
+  "symmetry": "none; all eight views are independently authored and no view is mirrored",
+  "direction_order_is_clockwise": true,
+  "notes": "The final row is a shoe-pair registration row because each 160x192 cell contains separate left and right shoe sub-art. The leg rows are independently movable upper/lower segments for each side; the compositor must use the shoe sub-art as separate left_shoe and right_shoe sprites."
+}
