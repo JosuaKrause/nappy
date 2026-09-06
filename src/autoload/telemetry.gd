@@ -101,14 +101,24 @@ func is_active() -> bool:
 ## of a query string nobody documented is exactly what a release build carrying no modifiers rules
 ## out. A debug build answers immediately, with nothing else to unlock: the browser used to debug a
 ## web build is its own debug export (`tools/export-web.sh debug`), and the published build is the
-## release export.
+## release export. `_reads_the_url()` below is the gate itself, pulled out to a pure function so the
+## promise is a truth table a test can check rather than a build type nothing can fake.
 static func _web_override_requested() -> bool:
-	if not DevFlags.enabled() or OS.get_name() != "Web":
+	if not _reads_the_url(DevFlags.enabled(), OS.get_name() == "Web"):
 		return false
 	var search: Variant = JavaScriptBridge.eval("window.location.search")
 	if typeof(search) != TYPE_STRING:
 		return false
 	return _telemetry_flag_from_query(search)
+
+## The decision behind `_web_override_requested()`'s own gate, pulled out to a pure function of its
+## two inputs — the same shape `ControlsMode._reads_the_url()` uses for `?controls=`, duplicated
+## rather than shared: a one-line boolean `and` is not worth a module both files would have to
+## import for two call sites, and the next modifier this project gains should have an obvious
+## static function to copy, not a dependency to go find. debug and web is the one case `?telemetry=1`
+## exists for; release and web — the published page — is the case the promise is actually about.
+static func _reads_the_url(is_debug: bool, on_web: bool) -> bool:
+	return is_debug and on_web
 
 ## `"?telemetry=1"` (with or without a leading `?`, alongside any other parameter) reads as "log
 ## this run"; anything else — absent, or any other value — leaves the platform's own default in

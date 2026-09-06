@@ -52,14 +52,25 @@ static func from_word(word: String) -> Mode:
 ## now", because the deployed page had no command line to ask through and the question had nowhere
 ## else to be answered. The title screen now asks the question outright (see `TitleScreen`), so the
 ## reason to reach a release build from its own address bar is gone, and this reads the same
-## `OS.is_debug_build()` gate as `DevFlags.controls_override()` above it.
+## `OS.is_debug_build()` gate as `DevFlags.controls_override()` above it — through `_reads_the_url()`
+## below, so the promise is a truth table a test can check rather than a build type nothing can fake.
 static func _url_word() -> String:
-	if not DevFlags.enabled() or OS.get_name() != "Web":
+	if not _reads_the_url(DevFlags.enabled(), OS.get_name() == "Web"):
 		return ""
 	var search: Variant = JavaScriptBridge.eval("window.location.search")
 	if typeof(search) != TYPE_STRING:
 		return ""
 	return _word_from_query(search)
+
+## The decision behind `_url_word()`'s own gate, pulled out to a pure function of its two inputs
+## rather than welded into the `if` as `DevFlags.enabled() or OS.get_name() != "Web"` — a build type
+## and a platform are exactly the two things a test cannot fake, so the untestable half of "a
+## release build carries no modifiers" would otherwise be the promise itself. With the predicate
+## exposed, a test drives the whole table directly: debug and web is the one case the flag exists
+## for; release and web — the deployed page — is the case the promise is actually about; neither
+## debug-not-web nor release-not-web ever had a `window.location.search` to ask in the first place.
+static func _reads_the_url(is_debug: bool, on_web: bool) -> bool:
+	return is_debug and on_web
 
 ## `"?controls=tap&seed=4"` (or without the leading `?`) to `"tap"`, or `""` for a query with no
 ## `controls` key. Pulled out from `_url_word()` so a test can ask the parsing question directly,
