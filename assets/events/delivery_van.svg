@@ -3,7 +3,7 @@
      car, a riot van, an army truck and the unmarked van that takes the baby were all this
      picture. The colour is baked rather than modulated: multiplying would tint the tyres and the
      windscreen too. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="30" viewBox="0 0 48 30" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="30" viewBox="0 0 48 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="2" y="2" width="44" height="20" fill="#6b7a8c"/>
   <rect x="2" y="2" width="44" height="4" fill="#7d8a9a"/>
   <rect x="5" y="7" width="12" height="7" fill="#454e5c"/>

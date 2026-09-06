@@ -3,7 +3,7 @@
      forward leg with an arm at full stretch. It is the `cat_crouched` / `cat_running` rule — the
      crouch *is* the telegraph, so the two silhouettes have to differ at a glance rather than by
      a scale factor — arriving at the one row where getting it wrong ends the day. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="3" y="32" width="5" height="10" fill="#26262e"/>
   <rect x="14" y="34" width="9" height="4" fill="#26262e"/>
   <rect x="2" y="42" width="6" height="2" fill="#17171c"/>

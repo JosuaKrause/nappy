@@ -1,5 +1,5 @@
 <!-- Head, hands, legs and shoes: never tinted, because a coat colour is not a skin colour. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="4" y="27" width="4" height="9" fill="#46506b"/>
   <rect x="10" y="27" width="4" height="9" fill="#3c4560"/>
   <rect x="3" y="36" width="6" height="2" fill="#2f2a2c"/>

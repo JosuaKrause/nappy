@@ -1,7 +1,7 @@
 <!-- The convoy truck seen along its length. The ribbed tilt is the side view's silhouette and it
      is edge-on here, so what has to carry the row is the canvas back itself: an olive box with an
      open, darker mouth where the fire engine has a red one and the patrol car a pale one. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="34" height="50" viewBox="0 0 34 50" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="34" height="50" viewBox="0 0 34 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="3" y="4" width="28" height="36" fill="#5f6b47"/>
   <rect x="3" y="4" width="28" height="3" fill="#75825a"/>
   <rect x="6" y="8" width="22" height="4" fill="#2f3630"/>

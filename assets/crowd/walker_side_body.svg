@@ -1,5 +1,5 @@
 <!-- In profile, facing east; mirrored for west. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="4" y="11" width="11" height="17" fill="#ffffff"/>
   <rect x="4" y="23" width="11" height="5" fill="#e0e0e0"/>
   <rect x="13" y="14" width="4" height="4" fill="#f2f2f2"/>

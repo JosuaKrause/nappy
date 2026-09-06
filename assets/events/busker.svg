@@ -2,7 +2,7 @@
      out of the shoulder line, which is a silhouette nothing else in the game has. The open case
      on the ground beside him is the second half — it says he is *staying*, which is what makes
      him a place to route around rather than somebody walking past. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="30" height="44" viewBox="0 0 30 44" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="44" viewBox="0 0 30 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="0" y="37" width="11" height="6" fill="#4a3a2c"/>
   <rect x="0" y="35" width="11" height="2" fill="#6b543f"/>
   <rect x="2" y="38" width="7" height="3" fill="#8a6f52"/>

@@ -4,7 +4,7 @@
      detour and losing the day.
      What makes it not a delivery van: no windows down the side, a blacked-out cab, no livery, and
      the side door standing open. It is the only vehicle in the game with a dark hole in it. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="50" height="32" viewBox="0 0 50 32" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="32" viewBox="0 0 50 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="2" y="3" width="46" height="21" fill="#4a4e56"/>
   <rect x="2" y="3" width="46" height="3" fill="#5a5f68"/>
   <rect x="5" y="8" width="11" height="7" fill="#191b21"/>

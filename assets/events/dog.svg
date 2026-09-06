@@ -1,6 +1,6 @@
 <!-- The dog on the other end of the lead. Drawn low and braced, because the whole hazard is
      that it lunges: how dangerous a thing is has to be visible from looking at the thing. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="26" height="20" viewBox="0 0 26 20" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="20" viewBox="0 0 26 20" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="4" y="16" width="3" height="4" fill="#3b2f26"/>
   <rect x="11" y="16" width="3" height="4" fill="#3b2f26"/>
   <rect x="3" y="8" width="14" height="8" fill="#6b543f"/>

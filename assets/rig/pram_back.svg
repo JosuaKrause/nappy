@@ -1,6 +1,6 @@
 <!-- Going away from the viewer: the same shape from behind, so no face — the hood is
      between the baby and the camera. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <path d="M4 6 A11 11 0 0 1 26 6 L26 12 L4 12 Z" fill="#d8ccb4"/>
   <path d="M6 8 A9 9 0 0 1 24 8 L24 12 L6 12 Z" fill="#c4b79c"/>
   <rect x="3" y="11" width="24" height="10" fill="#3f4a5c"/>

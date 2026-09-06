@@ -1,5 +1,5 @@
 <!-- Two cars that met. Slewed across the carriageway, one wing off, glass on the road. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="80" height="38" viewBox="0 0 80 38" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="38" viewBox="0 0 80 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="4" y="14" width="40" height="17" fill="#8a6f60"/>
   <rect x="4" y="14" width="40" height="4" fill="#a08475"/>
   <rect x="10" y="18" width="12" height="7" fill="#4d5a63"/>

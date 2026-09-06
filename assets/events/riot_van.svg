@@ -2,7 +2,7 @@
      the side. Read against `unmarked_van.svg`, which is the same colour family and the opposite
      idea — that one is trying not to be seen and this one is not. The grilles are what tell them
      apart, and they are drawn coarse enough to survive being shrunk. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="54" height="38" viewBox="0 0 54 38" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="38" viewBox="0 0 54 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="2" y="2" width="50" height="26" fill="#39414f"/>
   <rect x="2" y="2" width="50" height="4" fill="#48515f"/>
   <rect x="5" y="8" width="12" height="8" fill="#2a303a"/>

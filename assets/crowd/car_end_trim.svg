@@ -1,5 +1,5 @@
 <!-- Roof, glass front and back, wheels showing at the sides. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="30" height="46" viewBox="0 0 30 46" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="46" viewBox="0 0 30 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="6" y="11" width="18" height="5" fill="#2f3742"/>
   <rect x="6" y="30" width="18" height="5" fill="#2f3742"/>
   <rect x="7" y="17" width="16" height="12" fill="#221f28" fill-opacity="0.18"/>

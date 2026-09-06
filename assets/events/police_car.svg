@@ -1,7 +1,7 @@
 <!-- A police car. Low and pale where every other vehicle in act II is a tall dark box, with the
      light bar the one detail that has to survive icon size. It patrols, so the shape reads from
      the side at speed. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="46" height="26" viewBox="0 0 46 26" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="46" height="26" viewBox="0 0 46 26" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="12" y="4" width="20" height="3" fill="#3a3f4a"/>
   <rect x="13" y="4" width="8" height="3" fill="#4a7fc4"/>
   <rect x="23" y="4" width="8" height="3" fill="#c4503c"/>

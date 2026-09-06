@@ -1,5 +1,5 @@
 <!-- Walking away: the same coat with a centre seam. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="2" y="11" width="14" height="17" fill="#ffffff"/>
   <rect x="2" y="23" width="14" height="5" fill="#e0e0e0"/>
   <rect x="8" y="11" width="2" height="17" fill="#ededed"/>

@@ -2,7 +2,7 @@
      190px/s most of its telegraph happens off screen and what the player actually reads is the
      badge at the screen edge — which draws this at icon size, aspect kept. The ladder along the
      roof is the part that survives being shrunk to 40px. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="62" height="36" viewBox="0 0 62 36" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="36" viewBox="0 0 62 36" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="4" y="4" width="18" height="4" fill="#3a3f4a"/>
   <rect x="24" y="4" width="34" height="4" fill="#3a3f4a"/>
   <rect x="6" y="5" width="50" height="2" fill="#8a95a4"/>

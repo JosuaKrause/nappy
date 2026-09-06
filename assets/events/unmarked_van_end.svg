@@ -4,7 +4,7 @@
      end-on view does: at this angle the front and the back of a windowless box are the same
      shape. Read against unmarked_van.svg — same paint, same blacked-out cab, and the open door
      reads here as a second dark rectangle low on the body rather than a hole in the side. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="48" viewBox="0 0 32 48" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="48" viewBox="0 0 32 48" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="3" y="4" width="26" height="32" fill="#4a4e56"/>
   <rect x="3" y="4" width="26" height="3" fill="#5a5f68"/>
   <rect x="8" y="8" width="16" height="6" fill="#191b21"/>
