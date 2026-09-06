@@ -98,11 +98,15 @@ one *run*, not one session.
 the person playtesting has to remember to turn on, which means the interesting run is the one
 that was not recorded.
 
-**It is always off on a web export**, no flag needed. `user://` there is a stranger's browser
-storage rather than a developer's disk: nobody collects what lands in it and there is no
-`tools/telemetry.sh` to ever point at it, so `Telemetry.begin_run()` checks `OS.has_feature("web")`
-itself and does nothing on that platform — the one caller cannot forget the check because there is
-only one place it is made.
+**It is off by default on a web export**, and the page's own `?telemetry=1` query parameter is the
+one way to turn it on there. The deployed page has no command line for `DevFlags` to read, so this
+is the one telemetry switch not gated behind `DevFlags.enabled()` — the same exception
+`ControlsMode`'s `?controls=` already is, and for the same reason. `user://` on the web is still a
+stranger's browser storage rather than a developer's disk, so the override is for watching what a
+run does while sitting at that browser, not for collecting anything back afterwards — there is
+still no `tools/telemetry.sh` to point at it. `Telemetry.begin_run()` checks `OS.has_feature("web")`
+and the query parameter itself and does nothing on that platform without it — the one caller cannot
+forget the check because there is only one place it is made.
 
 ## What one looks like
 

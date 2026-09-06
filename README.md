@@ -89,6 +89,7 @@ godot --path . -- --seed 12345 --day 9 --overview
 | `--no-title` | Skip the title screen |
 | `--ending bad\|neutral\|good` | Put the given ending screen up at boot, to screenshot one without playing a run out to reach it |
 | `--no-telemetry` | Do not write a run log |
+| `--web` | Preview the web export's hidden-quit shape (`QuitOption`) from a desktop debug build |
 
 ## Run logs
 
