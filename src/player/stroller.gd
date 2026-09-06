@@ -4,7 +4,8 @@ extends CharacterBody2D
 ##
 ## `position` is the mother's feet on the ground plane; everything is drawn upward from
 ## there so that y-sorting against buildings and props matches where she actually stands.
-## The live mother and pram are composed by `ModularPerson`; this node remains the logical body.
+## The live mother and pram use the optional `ModularPerson` compositor when
+## `DevFlags.illustrated_requested()` is true; this node remains the logical body either way.
 
 ## How far ahead of the mother the pram sits, on the ground plane.
 const PRAM_DISTANCE := 34.0
@@ -14,6 +15,19 @@ const OBLIQUE_Y := 0.7
 const FACING_TURN_SPEED := 12.0
 ## How far the camera leads the player, in px.
 const CAMERA_LOOK_AHEAD := 46.0
+
+## Legacy SVG presentation: two stride frames and three cardinal silhouettes.
+const SIDE_VIEW_BELOW_DEGREES := 40.0
+const FRONT_OR_BACK_VIEW_ABOVE_DEGREES := 50.0
+const MOTHER_FRONT: Array[Texture2D] = [
+	preload("res://assets/rig/mother_front_a.svg"), preload("res://assets/rig/mother_front_b.svg")]
+const MOTHER_BACK: Array[Texture2D] = [
+	preload("res://assets/rig/mother_back_a.svg"), preload("res://assets/rig/mother_back_b.svg")]
+const MOTHER_SIDE: Array[Texture2D] = [
+	preload("res://assets/rig/mother_side_a.svg"), preload("res://assets/rig/mother_side_b.svg")]
+const PRAM_SIDE := preload("res://assets/rig/pram_side.svg")
+const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
+const PRAM_BACK := preload("res://assets/rig/pram_back.svg")
 
 const ALERT := preload("res://assets/props/alert.svg")
 const ALERT_CLOSE := preload("res://assets/props/alert_close.svg")
@@ -66,6 +80,8 @@ enum Alert {
 var _modular_person: ModularPerson
 
 var facing := Vector2.DOWN
+var _side_view := false
+var _walk_phase := 0.0
 ## How long her own movement input stays ignored, set by `detain()`. Velocity is not touched here —
 ## it runs out through the ordinary friction the same as letting go of every key would, which is
 ## what makes a capture look like stopping rather than like being frozen. See `chatting_mother`.
@@ -86,10 +102,14 @@ var _alert_source := &""
 
 func _ready() -> void:
 	add_to_group("player")
+	if not DevFlags.illustrated_requested():
+		return
 	_ensure_modular_person()
 	_modular_person.reset_at(global_position, facing)
 
 func _ensure_modular_person() -> void:
+	if not DevFlags.illustrated_requested():
+		return
 	if is_instance_valid(_modular_person):
 		return
 	_modular_person = ModularPerson.new()
@@ -148,6 +168,7 @@ func _physics_process(delta: float) -> void:
 		_turn_toward(input_dir.normalized(), delta)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
+	_update_view()
 	move_and_slide()
 
 	# The deflection is moved separately rather than added to `velocity`, which stays what she
@@ -156,11 +177,13 @@ func _physics_process(delta: float) -> void:
 	if _shove != Vector2.ZERO:
 		move_and_collide(_shove * delta)
 		_shove = _shove.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
+	_walk_phase = wrapf(_walk_phase + velocity.length() * delta * 0.09, 0.0, TAU)
 
-	_ensure_modular_person()
-	# Only displacement that survived collision and shove resolution drives the gait. Input,
-	# velocity and elapsed time alone must never advance a planted foot.
-	_modular_person.apply_displacement(global_position - position_before_motion, global_position, delta, facing)
+	if DevFlags.illustrated_requested():
+		_ensure_modular_person()
+		# Only displacement that survived collision and shove resolution drives the gait. Input,
+		# velocity and elapsed time alone must never advance a planted foot.
+		_modular_person.apply_displacement(global_position - position_before_motion, global_position, delta, facing)
 
 	# Stride cadence is driven by distance covered, so it stays in step at any speed.
 	_alert_phase = wrapf(_alert_phase + delta, 0.0, 1.0)
@@ -337,8 +360,12 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	if _camera:
 		_camera.offset = Vector2.ZERO
 		_camera.reset_smoothing()
-	_ensure_modular_person()
-	_modular_person.reset_at(global_position, facing)
+	_side_view = false
+	_update_view()
+	_walk_phase = 0.0
+	if DevFlags.illustrated_requested():
+		_ensure_modular_person()
+		_modular_person.reset_at(global_position, facing)
 	queue_redraw()
 
 ## Stops the camera from panning past the edge of the city.
@@ -392,9 +419,46 @@ func _draw() -> void:
 	# Shadows belong to the ground plane, so they always go underneath both figures.
 	Sprites.draw_shadow(self, Vector2.ZERO, 9.0)
 	Sprites.draw_shadow(self, pram_offset, 12.0)
+	if not DevFlags.illustrated_requested():
+		var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
+		if facing.y < 0.0:
+			_draw_pram(pram_offset)
+			_draw_mother(gait)
+		else:
+			_draw_mother(gait)
+			_draw_pram(pram_offset)
 
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
+
+func _draw_mother(gait: float) -> void:
+	var stepping := gait > 0.05 and sin(_walk_phase * 2.0) > 0.0
+	var frame := 1 if stepping else 0
+	var flip := false
+	var texture: Texture2D
+	if _side_view:
+		texture = MOTHER_SIDE[frame]
+		flip = facing.x < 0.0
+	elif facing.y > 0.0:
+		texture = MOTHER_FRONT[frame]
+	else:
+		texture = MOTHER_BACK[frame]
+	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, flip)
+
+func _draw_pram(at: Vector2) -> void:
+	if _side_view:
+		Sprites.draw_standing(self, PRAM_SIDE, at, Vector2.ZERO, facing.x < 0.0)
+	elif facing.y > 0.0:
+		Sprites.draw_standing(self, PRAM_FRONT, at)
+	else:
+		Sprites.draw_standing(self, PRAM_BACK, at)
+
+func _update_view() -> void:
+	var degrees_off_horizontal := rad_to_deg(atan2(absf(facing.y), absf(facing.x)))
+	if degrees_off_horizontal < SIDE_VIEW_BELOW_DEGREES:
+		_side_view = true
+	elif degrees_off_horizontal > FRONT_OR_BACK_VIEW_ABOVE_DEGREES:
+		_side_view = false
 
 ## How the baby is, drawn where the player is already looking — a zzz above the stroller when the
 ## baby is asleep, and something louder as the excitement approaches full, rather than a number
