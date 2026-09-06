@@ -29,14 +29,13 @@ signal quit_requested()
 var _can_quit := QuitOption.available()
 ## Whether this device has a touchscreen. Read once from `TouchInput`, for the same reason
 ## `_can_quit` is: a test process is never a touch device, and the body and the hint both have to
-## agree with whatever drew — or did not draw — the stick and the run button.
+## agree with whatever the game is actually played with.
 var _touch := TouchInput.available()
 
 const _BODY_KEYBOARD := "Arrows or WASD to walk.\n" \
 		+ "Hold Shift to run — it wakes her, so it is rarely worth it.\n" \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
-const _BODY_TOUCH := "Drag the stick to walk.\n" \
-		+ "Hold RUN to run — it wakes her, so it is rarely worth it.\n" \
+const _BODY_TOUCH := "Tap to walk that way, tap her to stop, double tap to run.\n" \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:
@@ -129,10 +128,11 @@ func close() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
-	# A tap carries on exactly as space does — the touch event itself, not a synthetic click, so
-	# the desktop keeps behaving as it always has.
+	# A tap or a mouse click carries on exactly as space does. *(2026-09-06: "I still need to press
+	# space even in mouse mode".)* The pointer scheme reads a click everywhere now, so this screen
+	# has to accept one too rather than leaving the keyboard as the only way past it.
 	if event.is_action_pressed("pause") or event.is_action_pressed("ui_accept") \
-			or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed):
+			or TouchInput.is_press(event):
 		get_viewport().set_input_as_handled()
 		close()
 		resumed.emit()

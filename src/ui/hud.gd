@@ -32,21 +32,9 @@ extends CanvasLayer
 var _debug := OS.is_debug_build()
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
-## `DaySummary` and `PauseScreen` use, so the run lesson names the held `RUN` circle the touch
-## layer draws instead of a `SHIFT` key a touch device does not have.
+## `DaySummary` and `PauseScreen` use, so the walking, running and pause lessons name a tap and the
+## pause button rather than a key a touch device does not have.
 var _touch := TouchInput.available()
-
-## Which of the two control schemes is driving this run, so the walking and running lessons name a
-## tap rather than a control tap mode does not draw, and so the pause lesson knows to say nothing
-## at all — see `_teach_the_pause()`.
-##
-## **Not read from `ControlsMode` at `_ready()`.** The title screen may still be asking when day 1
-## already starts behind it (see `main._open_the_title()`), so there is no answer to cache yet —
-## `main` calls `set_controls_mode()` the moment there is one, whether that is immediately (a flag
-## or a URL skipped the question) or once the player has pressed one of the title's own two
-## buttons. Defaults to the stick, the same fallback `ControlsMode.from_word("")` itself falls back
-## to, so a test that never calls the setter still gets a sensible shape.
-var _controls_mode := ControlsMode.Mode.STICK
 
 var _baby: Baby
 var _contact_step := 0
@@ -101,9 +89,9 @@ func _ready() -> void:
 
 ## *("let's also move the progress bars to the top for mobile so they're not hidden by the
 ## finger.")* The two meter bars, the resistance line and the baby's state sit in `hud.tscn`'s
-## `Meters` column, anchored bottom-left ending 18px above the bottom edge — under a walking
-## thumb on a phone, where `TouchControls.STICK_CENTRE` (130, 500) sits right above it. **The
-## baby's state may never be occluded: it is what the whole route decision is read off.**
+## `Meters` column, anchored bottom-left ending 18px above the bottom edge — exactly where a
+## walking thumb rests on a phone, since a press anywhere sets the direction. **The baby's state
+## may never be occluded: it is what the whole route decision is read off.**
 ##
 ## Touch only, moving the anchors on the one node rather than keeping a second HUD scene that has
 ## to be changed twice forever — the same shape every other touch difference in this game takes.
@@ -170,11 +158,7 @@ func _teach_the_day(day: int) -> void:
 	_walked_today = false
 	_stood_for = 0.0
 	if day == 1:
-		var line := "Arrow keys or WASD to walk"
-		if _controls_mode == ControlsMode.Mode.TAP:
-			line = "Tap to walk, double tap to run"
-		elif _touch:
-			line = "Drag the stick to walk"
+		var line := "Tap to walk, double tap to run" if _touch else "Arrow keys or WASD to walk"
 		_say(line, TEACH_SECONDS)
 	# A nerve is a rewind, not a resource, and a rewound day has not been taught anything: this
 	# flag belongs to the *attempt* at the teaching day rather than to the run, and only on this
@@ -207,12 +191,8 @@ func _teach_the_day(day: int) -> void:
 ## It is also, incidentally, the moment the answer is most useful: standing still settles nothing,
 ## so somebody who has stopped either wants the game to stop with them, or is about to find out
 ## that waiting is not a plan.
-##
-## **Has nothing to say in tap mode**, and does not run there at all: there is no pause key on a
-## phone, and tap mode's own stand-still pause was removed along with the destination it depended
-## on, with nothing standing in for it yet.
 func _teach_the_pause(delta: float) -> void:
-	if _taught_pause or _controls_mode == ControlsMode.Mode.TAP:
+	if _taught_pause:
 		return
 	if not _rig:
 		_rig = get_tree().get_first_node_in_group("player") as Stroller
@@ -250,18 +230,13 @@ func _teach_the_pause(delta: float) -> void:
 ## pursues her. So it fires once, for the first pursuit of the day the run is taught, and never
 ## again this run: the same "once per run" shape as `_teach_the_pause()`, for the same reason —
 ## it is a keybinding, not a warning, and a cue that keeps coming back is one that gets read once
-## and then ignored. The control it names is `_touch`'s: `SHIFT` on a keyboard, the held `RUN`
-## circle `TouchControls` draws on a touch device — same pattern `DaySummary` and `PauseScreen`
-## read `TouchInput.available()` for.
+## and then ignored. The control it names is `_touch`'s: `SHIFT` on a keyboard, a double press on a
+## touch device — same pattern `DaySummary` and `PauseScreen` read `TouchInput.available()` for.
 func _on_event_telegraphed(instance: EventInstance) -> void:
 	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
-	var line := "Hold SHIFT to run"
-	if _controls_mode == ControlsMode.Mode.TAP:
-		line = "Double tap to run"
-	elif _touch:
-		line = "Hold RUN to run"
+	var line := "Double tap to run" if _touch else "Hold SHIFT to run"
 	_say(line, instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
 func _say(line: String, seconds: float) -> void:
@@ -351,22 +326,6 @@ func _refresh_resistance() -> void:
 		if step:
 			line += "   somewhere out there: %s" % step.title.to_lower()
 	_resistance_label.text = line
-
-## `main`'s own answer to which control scheme is driving this run — see `_controls_mode`'s own
-## doc for why this is a setter rather than something read here at `_ready()`.
-##
-## **Re-announces day 1's opening line if it already went out.** `_teach_the_day(1)` fires from
-## `EventBus.day_started` the moment the day is built, which for the very first day is *before* an
-## interactively-asked title screen has closed — so that line may have already guessed the stick
-## from the still-default `_controls_mode` above. The HUD is hidden behind the title for the whole
-## of that wait, so nobody has read the guess yet; redoing it here, now that the real answer
-## exists, is free and is what keeps the line honest once the HUD becomes visible again. A day
-## already under way when this is called (every day but the first) is left alone — its own opening
-## line is long past and nothing here should replay it.
-func set_controls_mode(mode: ControlsMode.Mode) -> void:
-	_controls_mode = mode
-	if GameState.day == 1:
-		_teach_the_day(GameState.day)
 
 ## Forwarded from `main._apply_orientation()`. `HomeArrow` is the one child here that computes a
 ## screen position from a world one every frame rather than sitting still under `_root`'s own

@@ -15,9 +15,9 @@
 # every mode a task might need.
 #
 # **Exports debug**, not release: `tools/export-web.sh debug`, so `OS.is_debug_build()` is true in
-# the served build and `--controls`/`?controls=`/`?telemetry=1` — all gated behind
-# `DevFlags.enabled()` — actually answer. Serving a release export locally would defeat the whole
-# point of a local dev server, since every one of those flags would silently do nothing.
+# the served build and `?telemetry=1` — gated behind `DevFlags.enabled()` — actually answers.
+# Serving a release export locally would defeat the whole point of a local dev server, since the
+# flag would silently do nothing.
 #
 # **Fails loudly if the export failed**, rather than serving a stale build/web/ from a previous
 # run. build/web/ is gitignored, so a stale directory left over from an earlier success is exactly

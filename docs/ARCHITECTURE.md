@@ -106,7 +106,7 @@ windowed, saves the viewport after N frames and quits.
 ### Dev flags and release builds
 
 `DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
-`--overview`, `--day-length`, `--ending` and `--controls`; `src/dev/auto_screenshot.gd` parses `--screenshot`
+`--overview`, `--day-length` and `--ending`; `src/dev/auto_screenshot.gd` parses `--screenshot`
 and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`, `--tap`) itself, and gates its own
 entry point the same way rather than moving that parsing out. Both read `OS.is_debug_build()`,
 which is `false` for an exported release template, so none of this furniture — nor the snapshot
@@ -140,56 +140,38 @@ browser what the visiting device actually has. `TitleScreen`, `PauseScreen`, `Da
 `TouchControls` each read it once into their own `_touch`, the same shape `_can_quit` uses, so a
 test can drive both platform shapes.
 
-`TouchControls` (`src/ui/touch_controls.gd`) is a stick and a held run button drawn over the city,
-each pressing the actions a keyboard already presses — `Input.action_press("move_left", strength)`
-and its three siblings for the stick, `"run"` held for the button — so nothing downstream learns a
-thumb was involved. It shows only when `TouchInput.available()` and `get_tree().paused` is false,
-which keeps it off the title, the pause and the between-days summary without a wire from `main`
-telling it so on each: that flag is the one thing all three already set. The three screens also
-handle `InputEventScreenTouch` directly alongside `ui_accept`, so a tap advances each of them the
-way `space` does, without teaching the desktop a click it never asked for.
+`TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme: a press — a
+finger, or a mouse click on any build including a release export — sets a direction, measured from
+her own world position, that is locked in and walked with nothing held down until the next press
+changes it; a press within `STOP_RADIUS` of her stops her instead; a double press sets the
+direction and holds `run` until the next press changes or releases it. It draws one thing, a pause
+button top right, shown only when `TouchInput.available()` and `get_tree().paused` is false, which
+keeps it off the title, the pause and the between-days summary without a wire from `main` telling
+it so on each: that flag is the one thing all three already set. The three screens also handle a
+touch or a left click directly alongside `ui_accept` (through `TouchInput.is_press()`), so either
+advances each of them the way `space` does.
 
-### Tap to walk
-
-`ControlsMode` (`src/ui/controls_mode.gd`) is which of two schemes drives the day: the stick above,
-or `TapControls` (`src/ui/tap_controls.gd`), a second node rather than a branch inside
-`TouchControls` because tap mode draws nothing at all — no stick, no `RUN`, no pause button.
-`main._resolve_controls_mode()` is the one place the mode is actually set and
-`_add_touch_controls()` actually called from, instantiating exactly one of the two onto the same
-layer — either immediately in `_ready()`, when `ControlsMode.is_forced()` says a `--controls` flag
-or the page's own `?controls=` already answered the question, or once `TitleScreen`'s own two
-buttons answer it instead: with neither present the title asks rather than assuming the stick, and
-`hud.set_controls_mode()` learns the same answer at the same moment so its lessons never name a
-control that turned out to be the wrong guess.
-
-A tap computes a heading once — `(target - position)`, normalised — and presses it through
-`TouchControls._set_axis()` (static, shared by both) exactly as the stick presses its own
-deflection, never re-aiming. There is no target and nothing to arrive at: she walks the heading
-until the next tap changes it. A tap within `TapControls.STOP_RADIUS` of her own world position —
-generous, since the pram rides up to `PRAM_DISTANCE` (34px) off to one side of her — stops her
-instead of setting a direction. A double tap needs both a time window
-(`TapControls.DOUBLE_TAP_SECONDS`) and a distance window (`TapControls.DOUBLE_TAP_DISTANCE`) to
-read as a modifier on the same direction rather than a new one, and holds `run` until the next tap
-changes the direction or stops her. The screen tap itself is mapped to a world position with
-`get_viewport().get_canvas_transform().affine_inverse()` — the reverse of what `DangerEdge` and
-`HomeArrow` already do forwards every frame — so it tracks the camera, the zoom and the rotated
+A press computes a heading once — `(target - position)`, normalised — and presses it through
+`_set_axis()`, one signed value onto a pair of opposite actions, never re-aiming. There is no
+target and nothing to arrive at: she walks the heading until the next press changes it. A press
+within `STOP_RADIUS` of her own world position — generous, since the pram rides up to
+`PRAM_DISTANCE` (34px) off to one side of her — stops her instead of setting a direction. A double
+press needs both a time window (`DOUBLE_TAP_SECONDS`) and a distance window (`DOUBLE_TAP_DISTANCE`)
+to read as a modifier on the same direction rather than a new one, and holds `run` until the next
+press changes the direction or stops her. The screen press itself is mapped to a world position
+with `get_viewport().get_canvas_transform().affine_inverse()` — the reverse of what `DangerEdge`
+and `HomeArrow` already do forwards every frame — so it tracks the camera, the zoom and the rotated
 presentation for free, and the stop radius is compared in that same world space rather than on
-screen.
+screen. **The one exception is the pause button's own corner**: a touch there is subtracted from
+the aiming surface, but only while the button is actually showing, through
+`ScreenOrientation.to_design_space()` against the fixed `PAUSE_CENTRE` — a mouse click never needs
+that remap, since the button (and so the corner) is never drawn on a device with no touch hardware.
 
-`ControlsMode.resolve()` reads `DevFlags.controls_override()`
-(`--controls tap|stick`) first, then the page's own `?controls=` query parameter through
-`JavaScriptBridge.eval("window.location.search")`, and falls back to the stick if neither answers.
-Both routes are gated behind `DevFlags.enabled()` (`OS.is_debug_build()`): a release build answers
-neither, a debug build answers both immediately — the browser used to debug a web build is its own
-debug export (`tools/export-web.sh debug`, served locally by `tools/serve-web.sh`), and the
-published page is the release export `tools/export-web.sh` (no argument) produces.
-
-Testable without a phone: `TapControls` reads an `InputEventMouseButton` the same way it reads a
-finger, gated on `not TouchInput.available()` as well as a debug build — a real touch device
-already emulates a mouse click from every tap it makes, so without that second gate a single real
-tap would fire twice, once through each event, and read as its own double tap. `--tap X Y`
-(`src/dev/auto_screenshot.gd`) sends one synthetic tap the same way, which is what makes tap mode
-photographable at all — `tools/shot.sh out.png 3 --touch --controls tap --tap 640 420`.
+A real touch device emulates a mouse click from every tap it makes, so the mouse branch is gated on
+`not TouchInput.available()` — without that gate a single real tap would fire twice, once through
+each event, and read as its own double tap. `--tap X Y` (`src/dev/auto_screenshot.gd`) sends one
+synthetic touch the same way a finger would, which is what makes the direction it sets
+photographable — `tools/shot.sh out.png 3 --touch --tap 640 420`.
 
 ## Autoloads
 

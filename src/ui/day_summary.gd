@@ -144,13 +144,16 @@ func dismiss() -> void:
 func is_showing() -> bool:
 	return _root.visible
 
-## Space or a tap moves on. The touch event is handled directly rather than turned into a
-## synthetic click, so a stray mouse press elsewhere on the desktop still cannot skip a summary a
-## player has not read.
+## Space, a tap, or a mouse click moves on. *(2026-09-06, on a laptop: "I still need to press space
+## even in mouse mode".)* **This overturns an earlier reason**: the touch event used to be read
+## directly rather than turned into a synthetic click *"so a stray mouse press elsewhere on the
+## desktop still cannot skip a summary a player has not read"* — a real concern, taken when no
+## control scheme invited a player to use the mouse. The pointer scheme now reads a click
+## everywhere, so a laptop player is expected to click, and the screen has to accept the same click
+## rather than making the keyboard the only way past it.
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_showing():
 		return
-	if event.is_action_pressed("ui_accept") \
-			or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed):
+	if event.is_action_pressed("ui_accept") or TouchInput.is_press(event):
 		get_viewport().set_input_as_handled()
 		continued.emit()

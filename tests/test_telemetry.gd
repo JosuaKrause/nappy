@@ -966,8 +966,7 @@ func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(
 
 ## `_telemetry_flag_from_query()` is the pure half of `_web_override_requested()`, pulled out for
 ## exactly this: a test process is never a Web export, so there is no real
-## `window.location.search` to drive it with, the same reason `ControlsMode._word_from_query()`
-## exists.
+## `window.location.search` to drive it with.
 func _test_the_web_override_flag_parses_the_query(t) -> void:
 	t.check(Telemetry._telemetry_flag_from_query("?telemetry=1"),
 			"the leading '?' a real address bar gives is not part of the key")
@@ -985,8 +984,7 @@ func _test_the_web_override_flag_parses_the_query(t) -> void:
 ## dev only the CI build is release.")* `_web_override_requested()`'s own gate used to be welded
 ## into an `if` as `DevFlags.enabled() or OS.get_name() != "Web"` — a build type and a platform,
 ## neither of which a test can fake — so `_reads_the_url()` exists to make that promise a truth
-## table instead. Same shape as `ControlsMode._reads_the_url()`, one line duplicated rather than
-## shared: not worth a module for two call sites.
+## table instead.
 func _test_reads_the_url_only_when_debug_and_web(t) -> void:
 	t.check(Telemetry._reads_the_url(true, true),
 			"a debug build on the web reads the query string -- the one case the flag exists for")

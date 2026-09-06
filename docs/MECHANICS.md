@@ -197,19 +197,23 @@ This makes the walk home a real second act rather than a victory lap.
 | Idle threshold | speed `< 12 px/s` counts as idle |
 
 Controls: arrow keys or WASD to walk, hold **Shift** to run, **Esc** to pause. There is no
-interact key — touching a resistance chalk mark or a task's own contact is what completes it.
+interact key — touching a resistance chalk mark or a task's own contact is what completes it. The
+keyboard is a device rather than a scheme and works this way regardless of what a pointer does.
 
-On a touch device (`TouchInput.available()`), a virtual stick and a separate held run button
-overlay the city and press the same `move_*` and `run` actions a keyboard does — `Stroller` never
-learns the difference. The button is never a threshold on the stick's own deflection: running is
-one deliberate, held press, exactly as **Shift** is, so a partly-pushed stick stays what it always
-was, a slower walk.
+A press — a finger, or a mouse click on any build — sets a direction, measured from her own world
+position, that is locked in and walked with nothing held down until the next press changes it; a
+press within a generous radius of her stops her instead; a double press sets the direction and
+holds **run** until the next press changes or releases it, the same deliberate act **Shift** is
+rather than a gradient a thumb could cross by accident. There is no partial-strength walk on any
+input path: every press is a full-speed unit vector, so the only two speeds in the game are the
+walk and the run.
 
-A third element, top right, sends the pause: a real `InputEventAction` for `pause` through
-`Input.parse_input_event()` rather than held state, since `main` reads the pause off the
-propagated event and would hear nothing from `Input.action_press()` alone. It fires on release
-rather than on touch-down, and only when the release is still over the button, so a thumb that
-lands wrong can slide off without stopping the day.
+The one thing drawn is a pause button, top right, shown only on a touch device: a real
+`InputEventAction` for `pause` through `Input.parse_input_event()` rather than held state, since
+`main` reads the pause off the propagated event and would hear nothing from `Input.action_press()`
+alone. It fires on release rather than on touch-down, and only when the release is still over the
+button, so a thumb that lands wrong can slide off without stopping the day. A keyboard device never
+draws it — **Esc** is its pause.
 
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.

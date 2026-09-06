@@ -33,16 +33,11 @@ var _hud: CanvasLayer
 ## is kept only so the title screen can take it off the street.
 var _edge: DangerEdge
 var _edge_layer: CanvasLayer
-## The on-screen stick, on its own layer for the same reason the danger edge is: it has to sit
-## above the world it is drawn over. Null in tap mode, where `_tap_controls` is what lives on the
-## same layer instead, and null before either exists — see `_resolve_controls_mode()`.
+## The pointer controls, on their own layer for the same reason the danger edge is: they have to
+## sit above the world they are drawn over. Built in `_ready()`, alongside `_touch_layer`.
 var _touch_controls: TouchControls
-## The tap-to-walk reader, on the same layer `_touch_controls` would otherwise occupy. Null unless
-## `_controls_mode` is `ControlsMode.Mode.TAP` — the two are never both in the tree at once.
-var _tap_controls: TapControls
-## Built in `_ready()` whether or not the controls question is answered yet — `_apply_orientation()`
-## needs somewhere to rotate even while the title is still asking — but its one child, `_touch_controls`
-## or `_tap_controls`, is only added once `_resolve_controls_mode()` runs.
+## Built in `_ready()` for `_touch_controls` to live on — `_apply_orientation()` needs somewhere to
+## rotate, the same reason it exists before the controls question used to be answered.
 var _touch_layer: CanvasLayer
 var _summary: CanvasLayer
 var _pause: PauseScreen
@@ -62,11 +57,6 @@ var _in_the_title := false
 ## every frame without also repeating `TouchInput.available()`'s own `OS.get_cmdline_user_args()`
 ## call sixty times a second.
 var _touch_available := TouchInput.available()
-## Which of the two ways to say where she goes is driving this run — the stick or a tap. Only ever
-## actually set by `_resolve_controls_mode()`, whether that runs immediately (a flag or a URL
-## skipped the question) or once the title screen's own two buttons answer it; this initial value
-## is a placeholder for the gap between `_ready()` and whichever of those happens.
-var _controls_mode := ControlsMode.resolve()
 ## The rotation `_apply_orientation()` last actually applied, so `_process()` can ask the same
 ## question every frame and reapply only on change — see that function's own doc for why a signal
 ## alone is not enough.
@@ -109,14 +99,7 @@ func _ready() -> void:
 	_hud = HUD.instantiate()
 	add_child(_hud)
 	_add_danger_edge()
-	# A flag or a URL already answered the controls question, so there is nothing for the title
-	# screen to ask — build the real control layer now, the way every build before this milestone
-	# did. Otherwise only the layer itself exists until `_on_title_start()` supplies the answer; see
-	# `_resolve_controls_mode()`.
-	if ControlsMode.is_forced():
-		_resolve_controls_mode(_controls_mode)
-	else:
-		_ensure_touch_layer()
+	_add_touch_controls()
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 	_summary.continued.connect(_on_summary_continued)
@@ -247,10 +230,9 @@ func _open_the_title() -> void:
 	_status.visible = false
 	_title.open(_ending_shown)
 
-## The player has picked one of the title's two controls, which is also the start: hand the city
-## back to the day it belongs to.
-func _on_title_start(mode: ControlsMode.Mode) -> void:
-	_resolve_controls_mode(mode)
+## The title screen has been pressed, which is also the start: hand the city back to the day it
+## belongs to.
+func _on_title_start() -> void:
 	_in_the_title = false
 	_title.close()
 	_player.step_back_in()
@@ -283,60 +265,20 @@ func _add_danger_edge() -> void:
 	layer.add_child(_edge)
 	add_child(layer)
 
-## The stick, or the tap reader, in its own layer for the same reason the danger edge gets one: it
-## has to sit above the world it overlays. Exactly one of the two is instantiated — not a rewrite
-## of `TouchControls` and not a branch inside it, because the whole point of `ControlsMode` is that
-## the stick build and the tap build are two ways of feeding the same actions, side by side in the
-## source, and only one of them is ever the thing on screen. Tap mode draws nothing at all, so
-## nothing further has to hide it the way `TouchControls` hides itself.
-##
-## Nothing here decides whether the stick is *shown* — `TouchControls` answers that itself, off
-## `TouchInput.available()` and `get_tree().paused`, which is what a title screen, the pause and
-## the between-days summary all set. That is one fact main already produces for other reasons
-## rather than a second wire main would have to remember to pull on every one of those screens.
-## `TapControls` needs no such wire either: it draws nothing to hide, and reads `get_tree().paused`
-## itself for the one case where a tap still has to do something behind a paused screen — see its
-## own `_on_tap()`.
+## The one control scheme, in its own layer for the same reason the danger edge gets one: it has to
+## sit above the world it overlays. One node goes into the tree rather than a choice between two —
+## `TouchControls` answers whether it is *shown* itself, off `TouchInput.available()` and
+## `get_tree().paused`, which is what a title screen, the pause and the between-days summary all
+## set. That is one fact main already produces for other reasons rather than a second wire main
+## would have to remember to pull on every one of those screens.
 func _add_touch_controls() -> void:
-	_ensure_touch_layer()
-	if _controls_mode == ControlsMode.Mode.TAP:
-		_tap_controls = TapControls.new()
-		_touch_layer.add_child(_tap_controls)
-	else:
-		_touch_controls = TOUCH_CONTROLS.instantiate()
-		_touch_layer.add_child(_touch_controls)
-
-## The layer itself, built the first time anything asks for it and reused after — `_ready()` needs
-## it to exist even while the title screen is still asking, since `_apply_orientation()` rotates
-## every layer of screen furniture whether or not the control it will eventually hold has been
-## built yet.
-func _ensure_touch_layer() -> void:
-	if _touch_layer:
-		return
 	var layer := CanvasLayer.new()
 	layer.name = "TouchControls"
 	_touch_layer = layer
 	add_child(layer)
-
-## The one place `_controls_mode` is actually set and `_add_touch_controls()` is actually called
-## from — whether that is `_ready()`, immediately, because a flag or a URL already answered the
-## question, or `_on_title_start()`, once the player has pressed one of the title's own two
-## buttons. Guarded so a forced answer already built by `_ready()` is never rebuilt or replaced by
-## whatever the title screen goes on to emit — the title does not even ask in that case, but the
-## guard is what makes that a guarantee rather than a hope.
-##
-## `_touch_controls.rotated` is corrected here rather than left to `_apply_orientation()`, which
-## the interactive path has already missed once: it runs once from `_ready()`, before the title
-## screen can have closed, so a stick built only now would otherwise carry the default `false`
-## until the window next changes shape.
-func _resolve_controls_mode(mode: ControlsMode.Mode) -> void:
-	if _touch_controls or _tap_controls:
-		return
-	_controls_mode = mode
-	_add_touch_controls()
-	if _touch_controls:
-		_touch_controls.rotated = _rotated
-	_hud.set_controls_mode(mode)
+	_touch_controls = TOUCH_CONTROLS.instantiate()
+	_touch_layer.add_child(_touch_controls)
+	_touch_controls.rotated = _rotated
 
 ## Presents the game rotated 90° when the real window is a portrait touch screen, so a phone
 ## with auto-rotate off shows a full-size landscape game rather than a thin letterboxed strip of
@@ -345,7 +287,7 @@ func _resolve_controls_mode(mode: ControlsMode.Mode) -> void:
 ##
 ## Every `CanvasLayer` of screen furniture gets the same `ScreenOrientation.rotation_transform()`,
 ## so the HUD, the pause screen, the day summary, the title screen, the debug status line, the
-## danger edge and the on-screen stick all turn together; the world is the one thing not drawn
+## danger edge and the touch controls all turn together; the world is the one thing not drawn
 ## through a `CanvasLayer`, so it rotates separately, through the camera — see
 ## `Stroller.set_screen_rotation()`.
 ##
@@ -359,10 +301,7 @@ func _apply_orientation() -> void:
 	_rotated = rotate
 	get_window().content_scale_size = ScreenOrientation.content_scale_size(rotate)
 	_player.set_screen_rotation(deg_to_rad(90.0) if rotate else 0.0)
-	# Null in tap mode — `TapControls` needs no remap of its own, since it reads the viewport's own
-	# canvas transform fresh at every tap rather than comparing a raw touch to a fixed constant.
-	if _touch_controls:
-		_touch_controls.rotated = rotate
+	_touch_controls.rotated = rotate
 	_edge.rotated = rotate
 	_hud.set_rotated(rotate)
 	# Every layer of screen furniture carries the same rotation, so the world (rotated by the

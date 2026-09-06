@@ -20,17 +20,17 @@ extends RefCounted
 ## for a rig.
 ##
 ## **Deliberately has no override of its own — the one gate everything else now funnels through,
-## including `Telemetry`'s own `?telemetry=1` and `ControlsMode`'s `?controls=`.** *(2026-09-06,
-## the player: "for dev you need it to be controllable from the getgo -- for release there should
-## be no modifiers".)* A release build carries no modifiers of any kind; a debug build carries
-## every one of them immediately, with nothing further to unlock. This class gates a batch of
-## capabilities at once — an arbitrary seed, a chosen day, a spawn point beside any event, forced
-## meters, a compressed day, a forced ending, and (through `AutoScreenshot.from_command_line()`'s
-## own copy of this same gate) scripted input and a screenshot written to disk — where
-## `?controls=` and `?telemetry=1` each reach exactly one bounded, already-shipped choice. An
-## override here would reach all of the above at once from any visitor's address bar, which is
-## precisely "reveal a seed, jump to a day... nobody documented for a player" — the exact outcome
-## this class exists to prevent. The entry point stays what it already is: run a debug build.
+## including `Telemetry`'s own `?telemetry=1`.** *(2026-09-06, the player: "for dev you need it to
+## be controllable from the getgo -- for release there should be no modifiers".)* A release build
+## carries no modifiers of any kind; a debug build carries every one of them immediately, with
+## nothing further to unlock. This class gates a batch of capabilities at once — an arbitrary seed,
+## a chosen day, a spawn point beside any event, forced meters, a compressed day, a forced ending,
+## and (through `AutoScreenshot.from_command_line()`'s own copy of this same gate) scripted input
+## and a screenshot written to disk — where `?telemetry=1` reaches exactly one bounded,
+## already-shipped choice. An override here would reach all of the above at once from any
+## visitor's address bar, which is precisely "reveal a seed, jump to a day... nobody documented for
+## a player" — the exact outcome this class exists to prevent. The entry point stays what it
+## already is: run a debug build.
 static func enabled() -> bool:
 	return OS.is_debug_build()
 
@@ -115,12 +115,3 @@ static func ending_override() -> String:
 		return ""
 	return args[index + 1]
 
-## `--controls tap|stick` switches the control scheme for a local build — the raw word, or "" if
-## none was given. `ControlsMode.resolve()` is the only reader; mapping the word onto
-## `ControlsMode.Mode` stays there, the same split `ending_override()` and `main.gd` already keep.
-static func controls_override() -> String:
-	var args := _args()
-	var index := args.find("--controls")
-	if index == -1 or index + 1 >= args.size():
-		return ""
-	return args[index + 1]

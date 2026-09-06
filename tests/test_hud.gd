@@ -14,12 +14,8 @@ func run(t) -> void:
 	_test_the_run_hint_fires_once_on_the_teaching_day(t)
 	_test_the_run_hint_never_fires_off_the_teaching_day(t)
 	_test_the_run_hint_fires_again_on_a_retried_teaching_day(t)
-	_test_the_run_hint_names_the_touch_button_on_a_touch_device(t)
-	_test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t)
-	_test_the_walk_and_run_hints_name_a_tap_in_tap_mode(t)
-	_test_set_controls_mode_reannounces_day_ones_lesson_once_known(t)
-	_test_set_controls_mode_leaves_a_later_days_lesson_alone(t)
-	_test_the_pause_hint_says_nothing_in_tap_mode(t)
+	_test_the_run_hint_names_a_double_tap_on_a_touch_device(t)
+	_test_the_walk_hint_names_a_tap_on_a_touch_device(t)
 	_test_the_meters_move_to_the_top_on_a_touch_device(t)
 	_test_the_pause_hint_names_the_touch_button_on_a_touch_device(t)
 	_test_the_pause_hint_waits_out_a_detention(t)
@@ -74,8 +70,8 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 ## **The lesson names the control that is actually there.** *(Filed from a phone play of the
 ## deployed build: "the run tutorial says hold 'SHIFT' on mobile.")* `hud._touch` is read once
 ## from `TouchInput`, the same pattern `DaySummary` and `PauseScreen` use, so a touch device gets
-## the held `RUN` circle `TouchControls` draws rather than a key it has not got.
-func _test_the_run_hint_names_the_touch_button_on_a_touch_device(t) -> void:
+## the double press that runs rather than a key it has not got.
+func _test_the_run_hint_names_a_double_tap_on_a_touch_device(t) -> void:
 	var saved_day := GameState.day
 	GameState.day = Tuning.RUN_TAUGHT_DAY
 	var hud := _hud(t)
@@ -83,110 +79,24 @@ func _test_the_run_hint_names_the_touch_button_on_a_touch_device(t) -> void:
 
 	var first := _pursuer()
 	hud._on_event_telegraphed(first)
-	t.check(hud._teach.text == "Hold RUN to run",
-			"a touch device is told to hold the on-screen RUN button, not a keyboard key")
+	t.check(hud._teach.text == "Double tap to run",
+			"a touch device is told to double tap, not press a key it has not got")
 
 	first.free()
 	hud.free()
 	GameState.day = saved_day
 
 ## **The day-1 walk lesson has the same defect the run lesson had, and the same fix.** `hud._touch`
-## drives both: a touch device gets "Drag the stick to walk", the exact wording `TitleScreen` and
-## `PauseScreen` already use for the same control, rather than "Arrow keys or WASD to walk", which
-## names two things it does not have.
-func _test_the_walk_hint_names_the_touch_stick_on_a_touch_device(t) -> void:
+## drives both: a touch device gets "Tap to walk, double tap to run" rather than
+## "Arrow keys or WASD to walk", which names two things it does not have.
+func _test_the_walk_hint_names_a_tap_on_a_touch_device(t) -> void:
 	var hud := _hud(t)
 	hud._touch = true
 
 	hud._teach_the_day(1)
-	t.check(hud._teach.text == "Drag the stick to walk",
-			"day 1 tells a touch device to drag the stick, not press a key it has not got")
-
-	hud.free()
-
-## **Tap mode names a tap, not a control it does not draw.** `hud._controls_mode` is read once
-## from `ControlsMode`, the same pattern `_touch` already is, and takes precedence over `_touch`
-## for both lessons: there is no stick and no `RUN` circle to point at in tap mode, only the tap
-## itself.
-func _test_the_walk_and_run_hints_name_a_tap_in_tap_mode(t) -> void:
-	var saved_day := GameState.day
-	var hud := _hud(t)
-	hud._controls_mode = ControlsMode.Mode.TAP
-	hud._touch = true
-
-	hud._teach_the_day(1)
 	t.check(hud._teach.text == "Tap to walk, double tap to run",
-			"day 1 in tap mode names the tap rather than the stick it does not draw")
+			"day 1 tells a touch device to tap, not press a key it has not got")
 
-	GameState.day = Tuning.RUN_TAUGHT_DAY
-	var pursuer := _pursuer()
-	hud._on_event_telegraphed(pursuer)
-	t.check(hud._teach.text == "Double tap to run",
-			"the run lesson in tap mode names the double tap rather than a RUN button it does not draw")
-
-	pursuer.free()
-	hud.free()
-	GameState.day = saved_day
-
-## **Day 1's own line may already have guessed wrong.** `EventBus.day_started` fires
-## `_teach_the_day(1)` the moment the day is built, which for the very first day can be *before* an
-## interactively-asked title screen has closed — so `main` calls `set_controls_mode()` once it
-## actually knows, and that has to redo the line rather than merely note the answer for next time.
-## The HUD is hidden behind the title for the whole of that wait, so nobody has read the guess yet.
-func _test_set_controls_mode_reannounces_day_ones_lesson_once_known(t) -> void:
-	var saved_day := GameState.day
-	GameState.day = 1
-	var hud := _hud(t)
-	hud._touch = false
-	hud._teach_the_day(1)
-	t.check(hud._teach.text == "Arrow keys or WASD to walk",
-			"day 1 first guesses the keyboard line, before the choice is known")
-
-	hud.set_controls_mode(ControlsMode.Mode.TAP)
-	t.check(hud._teach.text == "Tap to walk, double tap to run",
-			"and corrects itself the moment the title screen's own choice is known")
-
-	hud.free()
-	GameState.day = saved_day
-
-## Every day past the first has its own opening line long behind it by the time anything could
-## call this, so re-announcing it would replay a lesson that already happened.
-func _test_set_controls_mode_leaves_a_later_days_lesson_alone(t) -> void:
-	var saved_day := GameState.day
-	GameState.day = 3
-	var hud := _hud(t)
-	hud._teach.text = "an unrelated line"
-
-	hud.set_controls_mode(ControlsMode.Mode.TAP)
-	t.check(hud._teach.text == "an unrelated line",
-			"the mode can still be set later without replaying a day already under way")
-	t.check(hud._controls_mode == ControlsMode.Mode.TAP, "and the mode itself is still recorded")
-
-	hud.free()
-	GameState.day = saved_day
-
-## **The pause hint has nothing to say in tap mode.** There is no pause key on a phone and no
-## button to point at — `TapControls` pauses on its own, every stand rather than once per run, so
-## the once-per-run keybinding lesson `_teach_the_pause()` teaches does not apply and must not fire.
-func _test_the_pause_hint_says_nothing_in_tap_mode(t) -> void:
-	var stroller := Stroller.new()
-	var camera := Camera2D.new()
-	camera.name = "Camera2D"
-	stroller.add_child(camera)
-	t.add_child(stroller)
-	stroller.set_physics_process(false)
-
-	var hud := _hud(t)
-	hud._controls_mode = ControlsMode.Mode.TAP
-	hud._rig = stroller
-	hud._walked_today = true
-
-	for _i in 40: # 4s of stillness, past TEACH_PAUSE_AFTER
-		hud._teach_the_pause(0.1)
-	t.check(hud._teach.text == "" and not hud._taught_pause,
-			"tap mode never raises the pause keybinding lesson at all")
-
-	stroller.free()
 	hud.free()
 
 ## **A lost nerve rewinds the day, not the run.** *(Player, of the deployed build: "the run lesson
@@ -259,8 +169,7 @@ func _test_the_meters_move_to_the_top_on_a_touch_device(t) -> void:
 ## **The pause lesson names the button that now exists, in plain words rather than a label that
 ## is not there.** Same defect the walk and run lessons had, filed by the same audit — `hud._touch`
 ## picks the wording, and `TouchControls._draw_pause_button()` draws an icon (two bars), not a
-## word, so the touch line describes the control rather than naming a label it does not have, the
-## same shape "Drag the stick to walk" already uses for the stick.
+## word, so the touch line describes the control rather than naming a label it does not have.
 func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t) -> void:
 	var stroller := Stroller.new()
 	var camera := Camera2D.new()

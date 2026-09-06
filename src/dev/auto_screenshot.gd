@@ -64,14 +64,13 @@ extends Node
 ##     tools/shot.sh restart.png 6 --press pause 2 --press key:r 3.5
 ##
 ## `--tap X Y` sends one synthetic tap at the raw screen position `(X, Y)`, the moment the run
-## starts — `TapControls` reads a mouse click the same way it reads a finger in a debug build (see
-## its own `_input()`), so this is what makes tap mode photographable, the way `--walk` is what
-## makes the stick mode photographable. `X` and `Y` are in whatever box the window is actually
-## presenting — the unrotated 1280x720 one by default, or the rotated 720x1280 one under
-## `RESOLUTION=720x1280 ... --touch`, in which case give a point `ScreenOrientation
+## starts — `TouchControls` reads it as a real `InputEventScreenTouch` (see its own `_input()`),
+## which is what makes the direction it sets photographable. `X` and `Y` are in whatever box the
+## window is actually presenting — the unrotated 1280x720 one by default, or the rotated 720x1280
+## one under `RESOLUTION=720x1280 ... --touch`, in which case give a point `ScreenOrientation
 ## .to_presented_space()` already maps one from, the same box a real touch would arrive in.
 ##
-##     tools/shot.sh tap.png 4 --touch --controls tap --tap 900 500
+##     tools/shot.sh tap.png 4 --touch --tap 900 500
 
 const DEFAULT_SECONDS := 1.5
 
@@ -284,7 +283,7 @@ func _tap(what: String) -> void:
 			event = action
 		Input.parse_input_event(event)
 
-## `TapControls` maps a tap through `get_viewport().get_canvas_transform()`, which is the
+## `TouchControls` maps a tap through `get_viewport().get_canvas_transform()`, which is the
 ## follow camera's own — and a `Camera2D` has not positioned itself even once on the very first
 ## frame its owner enters the tree, the frame this node's own `_ready()` runs on. A tap sent that
 ## early reads a stale, camera-less transform and lands nowhere near the player, unlike `--walk`
@@ -295,7 +294,7 @@ func _send_tap_once_the_camera_has_positioned() -> void:
 	_tap_screen(_tap_at)
 
 ## `--tap X Y`: one synthetic tap at `position`, press then release, the same shape a real finger's
-## own `InputEventScreenTouch` takes — `TapControls` reads only the press half.
+## own `InputEventScreenTouch` takes — `TouchControls` reads only the press half.
 func _tap_screen(position: Vector2) -> void:
 	for pressed in [true, false]:
 		var event := InputEventScreenTouch.new()

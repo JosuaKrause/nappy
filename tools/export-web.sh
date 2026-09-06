@@ -3,8 +3,8 @@
 #
 #   tools/export-web.sh          # release -- what .github/workflows/deploy.yml publishes
 #   tools/export-web.sh debug    # debug -- OS.is_debug_build() is true in the result, so
-#                                # --controls, ?controls= and ?telemetry=1 all answer; see
-#                                # tools/serve-web.sh, which exports this way and serves the result
+#                                # ?telemetry=1 answers; see tools/serve-web.sh, which exports
+#                                # this way and serves the result
 #
 # Uses the tracked "Web" preset in export_presets.cfg — gl_compatibility, threads off, so the
 # templates Godot resolves are web_nothreads_debug.zip / web_nothreads_release.zip rather than
