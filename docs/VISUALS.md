@@ -12,8 +12,9 @@ A detailed illustrated urban city, following the user's references in
 contours, painted brick and plaster, substantial apartment facades, readable shopfronts, clothing
 folds, identifiable faces and detailed vehicles. The cardinal-layout draft in
 `evidence/graphics-reference-cardinal.jpeg` is the floor for the available cardinal perspective;
-it does not lower the art target. The reference action buttons, minimap and portrait HUD are not
-requested features.
+it does not lower the art target. `evidence/reference-isometric-street-2026-09-06.jpeg` is an
+additional approved urban gameplay reference. `evidence/reference-buttons-2026-09-06.jpeg` is an
+approved button/icon reference; its depicted controls are not automatically requested features.
 
 `evidence/graphics-reference-urban-01.jpeg` and `evidence/graphics-reference-urban-02.jpeg` are
 the authoritative illustrated urban references. `evidence/graphics-reference-mother.jpeg` is the
