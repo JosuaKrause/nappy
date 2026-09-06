@@ -5,12 +5,12 @@
 
 [sub_resource type="Environment" id="Environment_preview"]
 background_mode = 1
-background_color = Color(0.11, 0.13, 0.16, 1)
+background_color = Color(0.07, 0.08, 0.1, 1)
 ambient_light_source = 3
-ambient_light_color = Color(0.63, 0.68, 0.73, 1)
-ambient_light_energy = 0.72
+ambient_light_color = Color(0.52, 0.56, 0.61, 1)
+ambient_light_energy = 0.38
 reflected_light_source = 2
-tonemap_mode = 2
+tonemap_mode = 0
 glow_enabled = false
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_panel"]
@@ -38,15 +38,15 @@ environment = SubResource("Environment_preview")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-52, -34, 0)
 light_color = Color(1, 0.86, 0.7, 1)
-light_energy = 1.35
+light_energy = 0.72
 shadow_enabled = true
-directional_shadow_max_distance = 80.0
-directional_shadow_fade_start = 0.72
+directional_shadow_max_distance = 28.0
+directional_shadow_fade_start = 0.9
 
 [node name="Camera3D" type="Camera3D" parent="."]
 position = Vector3(0, 31, 14.5)
 projection = 1
-size = 20.0
+size = 11.25
 current = true
 
 [node name="CityModels" type="Node3D" parent="."]
