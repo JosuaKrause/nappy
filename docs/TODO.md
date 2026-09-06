@@ -16,21 +16,24 @@ mid-way through.
 
 ## Visual overhaul
 
-Requested in [PLAYTEST-25.md](PLAYTEST-25.md). The visual direction is a warm illustrated city
-with restrained ink outlines, textured materials, angled light and clear silhouettes. The SVG
-pipeline remains the asset source; later acts retain their cooling and desaturation.
+Requested in [PLAYTEST-26.md](PLAYTEST-26.md). **Rebuild the graphics from the ground up**, including
+animation and every screen. Thickening the existing SVG outlines is explicitly rejected.
+The rendering medium and earlier visual restrictions are open to reassessment by the player's
+instruction. [VISUALS.md](VISUALS.md) carries the design and implementation gates.
 
-- [ ] City presentation: richer architecture, coherent ground materials and greenery; fix the
-      alley-floor transition, roofless slivers, floating home door, tunnel layering and fence
-      perspective where inspection confirms them. Preserve route geometry and collision contracts.
-- [ ] Characters and objects: redraw the mother, pram, crowd, vehicles, event silhouettes and
-      closure props with consistent material detail, shading and readable poses. Preserve anchors,
-      dimensions, facing conventions and the existing danger vocabulary.
-- [ ] Interface presentation: compose title, pause and summary screens and refine meters and
-      touch controls with a shared visual language. Preserve input, orientation and gameplay rules.
-
-The world, asset and interface passes have disjoint file ownership and receive an integrated
-visual review. Visual-only detail does not change encounter numbers or route planning.
+- [ ] Establish the visual target with a representative animated street, comparing an orthographic
+      3D presentation against 2D before scaling the asset work. Assess tools and mobile/web cost.
+- [ ] Rebuild architecture, terrain, nature, people, pram, vehicles, all events and closures.
+      Include walk/run/idle/turn and event animations, roof depth and stylized occlusion reveal.
+- [ ] Show the city deteriorating through persistent litter, local surface damage, building wear
+      and windblown papers, with cosmetic effects separated from route and excitement rules.
+- [ ] Show actual excitement contributors subtly and provide a coherent way to locate the current
+      objective. Reassess protesters and chalk breadcrumbs; preserve first discovery unless the
+      redesign explicitly makes and records a different decision.
+- [ ] Rebuild the title, control selection, pause, day summaries, endings, HUD and touch presentation
+      around the new visual direction. Coordinate with the control-selection work on other branches.
+- [ ] Integrate with current main, verify behavior headlessly, review bounded rendered captures and
+      check the browser presentation. Actual implementation is delegated to Luna agents.
 
 ## Route work order
 
