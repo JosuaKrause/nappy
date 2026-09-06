@@ -96,8 +96,19 @@ func _test_displacement_plants_and_lifts(t) -> void:
 func _test_stop_reverse_turn_and_reset(t) -> void:
 	var rig := _rig(t)
 	rig.apply_displacement(Vector2(16.0, 0.0), Vector2(26.0, 20.0), 1.0, Vector2.RIGHT)
+	var left_before_stop: Vector2 = rig.gait.stance_anchor(PlantedGait.LEFT_FOOT)
+	var right_before_stop: Vector2 = rig.gait.stance_anchor(PlantedGait.RIGHT_FOOT)
 	rig.stop_pose()
 	t.check(rig.last_displacement == Vector2.ZERO, "stop cancels further gait travel")
+	t.check(rig.last_pose["left_foot_height"] == 0.0 and rig.last_pose["right_foot_height"] == 0.0,
+		"stop settles both feet onto the ground plane")
+	t.check(rig.gait.stance_anchor(PlantedGait.LEFT_FOOT) == left_before_stop and
+		rig.gait.stance_anchor(PlantedGait.RIGHT_FOOT) == right_before_stop,
+		"stop preserves both existing foot anchors")
+	rig.stop_pose()
+	t.check(rig.gait.stance_anchor(PlantedGait.LEFT_FOOT) == left_before_stop and
+		rig.gait.stance_anchor(PlantedGait.RIGHT_FOOT) == right_before_stop,
+		"repeated stop keeps settled anchors stable")
 	rig.turn_to(Vector2.LEFT)
 	t.check(rig.direction == DirectionalParts.Direction.W, "turn selects the reverse authored view")
 	rig.apply_displacement(Vector2(-16.0, 0.0), Vector2(10.0, 20.0), 1.0, Vector2.LEFT)
