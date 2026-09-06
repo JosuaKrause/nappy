@@ -1,6 +1,6 @@
 # Graphics redesign
 
-This is the implementation brief for [PLAYTEST-26.md](PLAYTEST-26.md), covering the whole game.
+This is the implementation brief for [PLAYTEST-27.md](PLAYTEST-27.md), covering the whole game.
 It describes the target, not a claim that the renderer or artwork is implemented. The existing
 SVG silhouettes are not the visual target. Animation, depth, material and composition are designed
 together. Luna agents implement bounded pieces; the orchestrating session owns design and review.

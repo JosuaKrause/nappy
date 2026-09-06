@@ -81,13 +81,13 @@ against the commit that fixed it before telling anybody the page is well.
 
 ## What to do next
 
-**The active request is the ground-up graphics overhaul in [PLAYTEST-26.md](PLAYTEST-26.md).**
+**The active request is the ground-up graphics overhaul in [PLAYTEST-27.md](PLAYTEST-27.md).**
 [VISUALS.md](VISUALS.md) describes its target, not a completed renderer. Articulated actor models
 and the standalone orthographic street study live in `src/visual3d/`. Further city, animal and
 screen revisions are isolated worktree work. The playable game still uses its existing renderer.
 The street study is review material, not an accepted target. Its architecture must become urban
 apartment streetfronts rather than detached houses; review that direction with the player before
-expanding the building library. See PLAYTEST-26 and VISUALS.md.
+expanding the building library. See PLAYTEST-27 and VISUALS.md.
 Review actual rendered motion before
 extending the prototype to the whole city and every screen. Implementation belongs to Luna agents.
 Preserve the title's control selection, truthful meter display and event-cost behavior while

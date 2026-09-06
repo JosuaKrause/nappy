@@ -31,7 +31,7 @@ The player requested a whole-game overhaul and explicitly rejected the first imp
 SVG outline and polish approach: "a full overhaul of the graphics as if nothing had existed
 before". The correction includes animation, every screen, projecting roof depth with stylized
 occlusion reveal, actual excitement-source feedback, late-game deterioration and reconsidered
-objective guidance. Full wording is in `PLAYTEST-26.md`; `PLAYTEST-25.md` is reserved for the
+objective guidance. Full wording is in `PLAYTEST-27.md`; `PLAYTEST-25.md` is reserved for the
 separate mobile playtest on the other development branch.
 
 The initial SVG polish is preserved in a local stash and isolated worktrees, not adopted as the

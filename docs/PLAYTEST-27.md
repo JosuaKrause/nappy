@@ -1,4 +1,4 @@
-# Playtest 26 — 2026-09-05
+# Playtest 27 — 2026-09-05
 
 ## Graphics throughout
 
@@ -60,3 +60,28 @@ The supplied references are preserved as `evidence/graphics-reference-urban-01.j
 not screenshots of the game or approval of their depicted extra controls.
 
 > "make sure to commit and push everything *especially* before changing direction"
+
+> "I'm warming up to the diagonal grid let's make that work"
+
+> "also make sure to commit the reference images as well"
+
+> "[Image #1] a draft closer to what we already have. [Image #2] a few variations. note this is intentionally closer to what we already have. the above direction is still what we're aiming for"
+
+Both attachments for that message resolve to the same supplied file, preserved once as
+`evidence/graphics-reference-cardinal.jpeg`.
+
+> "all rejected ideas should stay in the same graphics overhaul branch so we can find them inside the branch instead of having dead unmerged branches. the svg overhaul we can make as separate PR and probably merge as is since it's just a tweak and it does look good compared to what we have right now."
+
+> "let's not go diagonal for now but try to match the diagonal artworks style"
+
+> "there should be no dangling branches"
+
+> "on latest main there is some investigation on what it would take to go diagonal please have a look and add your own thoughts -- but for now we don't want to do it yet"
+
+> "[Image #1] also make the woman with the stroller look like in this reference image"
+
+That reference is preserved as `evidence/graphics-reference-mother.jpeg`.
+
+> "main has updated again. maybe create 8 directional sprite sheets for all assets even if some direction is not currently used. that way we eliminate a lot of bugs. don't use svg anymore. if you can't generate images that you like you can draft the sheets and I can do the style transfer myself"
+
+> "split character sprites into multiple parts so we can mix and match and combinatorically create many distinct looking pedestrians etc down the line (for now only create a few variations to be increased later)"
