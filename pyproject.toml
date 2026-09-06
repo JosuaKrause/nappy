@@ -1,0 +1,11 @@
+[project]
+name = "nappy-tooling"
+version = "0.0.0"
+description = "Python tooling dependencies for the Nappy repository"
+requires-python = ">=3.9"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "PyYAML>=6.0,<7",
+]
