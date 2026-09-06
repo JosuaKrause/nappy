@@ -3,7 +3,7 @@
      what is drawn is exactly what is in the way.
      It used to be drawn with `barrier_segment.svg`, i.e. as roadworks — a scar that has been on
      that corner since day 3 rendered as a crew who had just turned up. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="30" viewBox="0 0 24 30" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="30" viewBox="0 0 24 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="0" y="4" width="24" height="24" fill="#3e3a38"/>
   <rect x="0" y="4" width="24" height="3" fill="#4c4744"/>
   <rect x="3" y="10" width="7" height="8" fill="#1b1a1c"/>

@@ -4,7 +4,7 @@
      body could only ever be one person wide.
      The placard is above head height, so a rank of them reads as a crowd rather than as a queue
      even where the bodies overlap. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="22" height="52" viewBox="0 0 22 52" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="52" viewBox="0 0 22 52" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="6" y="39" width="4" height="11" fill="#46506b"/>
   <rect x="11" y="39" width="4" height="11" fill="#46506b"/>
   <rect x="5" y="50" width="5" height="2" fill="#221f28"/>

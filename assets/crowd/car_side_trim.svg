@@ -1,11 +1,14 @@
 <!-- Glass, tyres and lights, at full colour whatever the car is painted. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="52" height="30" viewBox="0 0 52 30" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="52" height="30" viewBox="0 0 52 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <path d="M14 9 L19 4 L25 4 L25 9 Z" fill="#2f3742"/>
   <path d="M27 4 L34 4 L38 9 L27 9 Z" fill="#2f3742"/>
+  <path d="M16 8 L20 5 L24 5 L24 8 Z M28 5 L33 5 L36 8 L28 8 Z" fill="#556779"/>
+  <path d="M26 4 L26 10" stroke="#3b2d32" stroke-width="0.8" fill="none"/>
   <rect x="46" y="12" width="4" height="3" fill="#f0d99a"/>
   <rect x="2" y="12" width="3" height="3" fill="#a8443a"/>
   <circle cx="14" cy="24" r="5" fill="#26232a"/>
   <circle cx="38" cy="24" r="5" fill="#26232a"/>
   <circle cx="14" cy="24" r="2" fill="#4a464f"/>
   <circle cx="38" cy="24" r="2" fill="#4a464f"/>
+  <path d="M6 16 Q26 18 46 16" fill="none" stroke="#f6dba1" stroke-width="0.8"/>
 </svg>

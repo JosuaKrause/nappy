@@ -3,7 +3,7 @@
 
      Facing east, like `cat_running.svg` and like everything else that has a front — see the note
      there. The two postures must at least point the same way as each other. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="30" height="20" viewBox="0 0 30 20" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="20" viewBox="0 0 30 20" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="7" y="11" width="16" height="7" fill="#58524d"/>
   <circle cx="23" cy="9" r="5" fill="#58524d"/>
   <path d="M25 5 L24 9 L22 6 Z" fill="#58524d"/>

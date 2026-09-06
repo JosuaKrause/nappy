@@ -1,5 +1,5 @@
 <!-- A tree down across the road, roots and all. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="98" height="40" viewBox="0 0 98 40" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="98" height="40" viewBox="0 0 98 40" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="10" y="24" width="76" height="9" fill="#5b4433"/>
   <rect x="10" y="24" width="76" height="3" fill="#6e5440"/>
   <path d="M4 20 L14 18 L16 36 L4 34 Z" fill="#4a382a"/>

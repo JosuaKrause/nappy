@@ -1,6 +1,6 @@
 <!-- A car in profile, travelling east; mirrored for west. Paintwork only. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="52" height="30" viewBox="0 0 52 30" shape-rendering="crispEdges">
-  <rect x="2" y="10" width="48" height="12" fill="#ffffff"/>
-  <path d="M12 10 L18 3 L36 3 L41 10 Z" fill="#f4f4f4"/>
-  <rect x="2" y="18" width="48" height="4" fill="#dcdcdc"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="52" height="30" viewBox="0 0 52 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M2 11 Q4 9 10 9 L15 3 Q18 1 35 2 L41 9 Q47 9 50 12 L49 22 L3 22 Q1 18 2 11 Z" fill="#ffffff"/>
+  <path d="M12 9 L17 3 Q25 1 35 3 L40 9 Z" fill="#f4f4f4"/>
+  <path d="M2 18 Q25 20 50 18 L49 22 L3 22 Z" fill="#dcdcdc"/>
 </svg>

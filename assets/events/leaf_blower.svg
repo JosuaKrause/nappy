@@ -1,7 +1,7 @@
 <!-- A groundskeeper with a leaf blower. The nozzle sticking out at hip height is the whole
      tell — it is the loudest thing in act I and it must not be another `person.svg`, which is
      the failure the known-shaky-ground note in CLAUDE.md is about. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 34 42" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 34 42" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="5" y="29" width="4" height="13" fill="#4a4a3c"/>
   <rect x="10" y="29" width="4" height="13" fill="#4a4a3c"/>
   <rect x="4" y="40" width="5" height="2" fill="#221f28"/>

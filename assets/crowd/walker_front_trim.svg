@@ -1,11 +1,11 @@
 <!-- Head, hands, legs and shoes: never tinted, because a coat colour is not a skin colour. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="crispEdges">
-  <rect x="4" y="27" width="4" height="9" fill="#46506b"/>
-  <rect x="10" y="27" width="4" height="9" fill="#3c4560"/>
-  <rect x="3" y="36" width="6" height="2" fill="#2f2a2c"/>
-  <rect x="10" y="36" width="6" height="2" fill="#2f2a2c"/>
-  <rect x="0" y="23" width="3" height="3" fill="#d9a878"/>
-  <rect x="15" y="23" width="3" height="3" fill="#d9a878"/>
-  <circle cx="9" cy="6" r="5.5" fill="#d9a878"/>
-  <path d="M3.5 6 A5.5 5.5 0 0 1 14.5 6 Z" fill="#3a2b26"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M4 27 L8 27 L8 36 L4 36 Z M10 27 L14 27 L14 36 L10 36 Z" fill="#46506b"/>
+  <path d="M3 35 L9 35 L8 38 L2 38 Z M10 35 L16 35 L17 38 L10 38 Z" fill="#2f2a2c"/>
+  <path d="M0 23 L3 22 L4 26 L1 27 Z M15 22 L18 23 L17 27 L14 26 Z" fill="#d9a878"/>
+  <path d="M3.5 6 Q4 0 9 0 Q14 0 14.5 6 Q13 11 9 11 Q5 11 3.5 6 Z" fill="#d9a878"/>
+  <path d="M3.5 6 Q4 0 9 0 Q14 0 14.5 6 Q11 4 9 5 Q6 4 3.5 6 Z" fill="#3a2b26"/>
+  <path d="M5 2 Q9 -1 13 2" fill="none" stroke="#67443a" stroke-width="0.8"/>
+  <circle cx="7" cy="6" r="0.8" fill="#221f28"/>
+  <circle cx="11" cy="6" r="0.8" fill="#221f28"/>
 </svg>
