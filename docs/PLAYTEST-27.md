@@ -17,6 +17,29 @@ This approves the representative cardinal apartment-street direction: illustrate
 continuous apartment frontage, roof depth and stable dotted occlusion. It does not approve the
 whole renderer or replace the required movement, event, city, deterioration and screen work.
 
+## Generated concept reference — 2026-09-06
+
+> "btw [Image #1] how does this image play into all of this? this reference was never approved. if
+> it is just a stale reference we can keep it for posterity if it is actively being used over the
+> real references I provided then let's remove it and remove all references to it"
+
+> "same applies to the graphics-studies -- we don't base our designs on those they were dead ends"
+
+The generated concept was an active material, depth and deterioration reference in the redesign
+brief, so it is removed. The supplied urban, cardinal-layout and mother images remain the visual
+references; no generated concept image substitutes for them. The graphics studies are retained
+only as rejected historical evidence and do not define the visual target.
+
+> "[Image #1] and [Image #2] are the proper references to use"
+
+`evidence/graphics-reference-mother.jpeg` and `evidence/graphics-reference-urban-01.jpeg` are the
+authoritative mother/pram and illustrated urban references, respectively.
+
+> "[Image #1] is also another reference to use"
+
+`evidence/graphics-reference-urban-02.jpeg` is an additional authoritative illustrated urban
+reference, including vehicles, street furniture, storefront density and pedestrian variety.
+
 ## The first approach is rejected
 
 > "are you kidding me? your thought of improving graphics is to make the outlines of existing assets thicker? I'm talking about a full overhaul of the graphics as if nothing had existed before. also, one major thing you apparently missed is that we currently have *no animations*"

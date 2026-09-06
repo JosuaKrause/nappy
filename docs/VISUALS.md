@@ -14,6 +14,11 @@ folds, identifiable faces and detailed vehicles. The cardinal-layout draft in
 `evidence/graphics-reference-cardinal.jpeg` is useful for composition but does not lower the art
 target. The reference action buttons, minimap and portrait HUD are not requested features.
 
+`evidence/graphics-reference-urban-01.jpeg` and `evidence/graphics-reference-urban-02.jpeg` are
+the authoritative illustrated urban references. `evidence/graphics-reference-mother.jpeg` is the
+authoritative mother/pram reference; its green coat, patterned scarf, high bun, jeans and practical
+shoes take precedence over generated drafts.
+
 **Keep the current non-diagonal presentation.** Match the diagonal references' illustration,
 detail and inhabited-city character without rotating the grid. M79's diagonal investigation is
 tabled, not an implementation task. The logical street layout, controls and route rules stay intact.
@@ -70,7 +75,7 @@ RNG. The illustrated renderer must meet the mobile/browser budget as well as the
 
 Prepare draft sheets for player-applied style transfer if generated art does not meet the target.
 That fallback keeps dimensions, alpha, part registration, anchors and frame layout unchanged.
-A concept image establishes style; only a rendered scene establishes feasibility and motion quality.
+Only a rendered scene establishes feasibility and motion quality.
 
 ### Projection adapter contract
 
@@ -97,10 +102,6 @@ Each sheet has explicit pixel rectangles, logical anchor, attachment pivots, dir
 layer order in a manifest. Style transfer can replace the PNG without changing that manifest.
 Review an assembled character as well as individual parts: independently attractive parts can
 still leave seams, mismatched lighting or disconnected hands when composed.
-
-The [concept reference](evidence/graphics-redesign-concept.png) is generated art, not a capture of
-the game. It establishes material, depth and early/late contrast; its density and camera framing
-are not gameplay specifications. The generation prompt is kept beside it.
 
 ## Animation contract
 

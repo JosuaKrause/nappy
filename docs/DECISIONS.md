@@ -70,12 +70,12 @@ open to replacement under the player's explicit instruction to rethink graphics 
 earlier guidelines. Collision and route guarantees still describe gameplay and are not repealed
 by an artistic roof projection.
 
-`VISUALS.md` specifies the redesign. The first implementation experiment uses native orthographic
-3D and articulated models with Godot's Compatibility renderer. A generated concept image supplies
-material and early/late mood, not evidence that the game renders that way. Native 3D must pass a
-rendered movement and browser-cost review before it defines the production pipeline; rendered PNG
-animation atlases from the same models are the fallback worth measuring. Blender is absent on
-this machine and is not installed by the experiment.
+`VISUALS.md` specifies the redesign from the player's supplied urban, cardinal-layout and mother
+references. The first implementation experiment uses native orthographic 3D and articulated models
+with Godot's Compatibility renderer. Native 3D must pass a rendered movement and browser-cost
+review before it defines the production pipeline; rendered PNG animation atlases from the same
+models are the fallback worth measuring. Blender is absent on this machine and is not installed by
+the experiment.
 
 The requested main update brought in the release-tag pinning fix. The separate branches for the
 mobile playtest and event costs also contain relevant title/control and field instructions, so
