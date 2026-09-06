@@ -3,9 +3,9 @@
      opening above the fingertip, the shape a tap actually makes rather than a moving hand.
      White line-art on a transparent ground, tinted by ModeButton's own icon_normal_color theme
      override (Palette.BUTTON_SYMBOL) the same way joystick.svg is. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <path d="M12 28 L20 28 L20 19 L18 19 L18 9 L14 9 L14 19 L12 20 L8 21 L8 24 L12 25 Z"
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <path d="M48 112 L80 112 L80 76 L72 76 L72 36 L56 36 L56 76 L48 80 L32 84 L32 96 L48 100 Z"
       fill="#ffffff"/>
-  <path d="M10.91 5.82 A6 6 0 0 1 21.09 5.82" fill="none" stroke="#ffffff" stroke-width="2"/>
-  <path d="M8.37 4.23 A9 9 0 0 1 23.63 4.23" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <path d="M43.64 23.28 A24 24 0 0 1 84.36 23.28" fill="none" stroke="#ffffff" stroke-width="8"/>
+  <path d="M33.48 16.92 A36 36 0 0 1 94.52 16.92" fill="none" stroke="#ffffff" stroke-width="8"/>
 </svg>
