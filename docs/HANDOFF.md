@@ -94,12 +94,21 @@ believing rather than explaining away.** The record is in `DECISIONS.md` under M
 
 ## What to do next
 
-**M83 is built on the graphics-overhaul branch, but the illustrated presentation is review-only.**
-The normal game remains on its legacy SVG graphics. `--illustrated` selects the new character
-runtime locally and `?illustrated=1` selects it in a web build; neither changes gameplay. The
-focused parser, legacy-binding, grounding and boot checks pass. A display-capable session still
-needs to inspect the opted-in mother, pram and walkers for scale, feet/wheels on the ground, joints
-and layer order before the artwork is accepted. The record is in `DECISIONS.md` under M83.
+**M83 is built on the graphics-overhaul branch, but the illustrated presentation is rejected and
+remains review-only.** The normal game remains on its legacy SVG graphics. `--illustrated` selects
+the new character runtime locally and `?illustrated=1` selects it in a web build; neither changes
+gameplay. The focused parser, legacy-binding, grounding and boot checks pass, but the display review
+does not.
+
+The concept capture is [illustrated-street-review.png](evidence/archive/session-captures/2026-09-06/illustrated-street-review.png).
+The street study is completely off and must be redone from scratch: it has no coherence or sense,
+and it uses reference imagery that does not fit the game's art style. It is not an approved visual
+direction or a basis for extending the asset family.
+
+The gameplay capture is [illustrated-gameplay-review.png](evidence/archive/session-captures/2026-09-06/illustrated-gameplay-review.png).
+It shows disconnected limbs in the wrong topological order, with positions incorrect relative to
+their owners and ground anchors. The compositor needs its layer order, pivots and placement rebuilt
+before another acceptance review. The record is in `DECISIONS.md` under M83.
 
 **M82 is built: the game has one control scheme and no question about which.** A press sets a
 direction, measured from her own world position, that she walks until the next press; a press
