@@ -134,6 +134,40 @@ holds **no reference to the world**. Anything that has to *ask the world* where 
 frame does not belong in it: `DangerEdge` is its own layer, created by `main`, for exactly that
 reason.
 
+## A picture is an asset, never code
+
+***"Never draw in code -- at the very least use svgs."* Anything that is a *picture* — a glyph, an
+icon, a silhouette, a symbol — is authored as an SVG under `assets/` and drawn as a texture.** Not
+assembled at runtime out of `draw_circle`, `draw_rect`, `draw_line`, `draw_arc` or
+`draw_colored_polygon`.
+
+**The reason is the feedback loop, and it is decisive:** *(2026-09-06: "that way you can evaluate
+the assets independently of running code".)* An SVG can be opened and looked at — by a person, or by
+an agent reading the file — and judged on its own. A picture assembled in `_draw()` can only be
+judged by booting the game, taking a screenshot and reasoning about draw order, transforms and
+state. So a wrong asset is one file to look at and one file to fix, while a wrong `_draw()` is a
+debugging session, and **the same headless run that proves the code correct proves nothing about
+whether it looks like anything at all.**
+
+The second reason follows from the first: an asset is **replaceable without touching code**. A
+`preload()` of `assets/ui/joystick.svg` takes whatever is at that path, so a better drawing — from
+anybody, at any time — is a drop-in.
+
+**What this does not cover.** A rectangle that is a *bar* rather than a picture is layout —
+`MeterBar`'s fill is not a drawing of anything. The line is whether a person would call the result
+an *image*: a meter's fill, a scrim and a debug overlay are not, and a joystick, a hand and a
+fence are.
+
+**Prefer the engine's data over any drawing at all.** A `Button`'s circular fill is a
+`StyleBoxFlat` with corner radii and per-state overrides, not a painted disc; its glyph is the
+button's own `icon`. Reaching for `_draw()` on a `Control` is the tell that a `StyleBox`, an
+`icon` or a `TextureRect` was the answer.
+
+**`TouchControls` predates this rule and violates it** — the on-screen stick, `RUN` and pause
+button are assembled from primitives in its `_draw()`. Converting them is not urgent and is not
+free (`ScreenOrientation` remaps its input against fixed constants), but **nothing new joins it**,
+and a change that rewrites that file anyway should take the opportunity.
+
 ## Drawing traps
 
 **A negative-width `Rect2` does not flip `draw_texture_rect`.** It is normalised on the way through,

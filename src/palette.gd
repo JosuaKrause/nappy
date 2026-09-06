@@ -91,6 +91,28 @@ const CHALK := Color(0.92, 0.92, 0.88, 0.62)
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")
 
+# ------------------------------------------------------------------ buttons ---
+# `ModeButton` draws a solid filled disc with a white glyph on top — one shared, neutral fill for
+# every mode, because a hue in this file means something (`SIGNAL_RED`/`AMBER`/`GREEN` are the
+# lights, `MARK_COSTLY`/`MARK_LETHAL` are what an event costs) and a menu that spent two more
+# saturated hues telling STICK and TAP apart would teach a distinction that means nothing anywhere
+# else in the game — the cues rule against a second hand-drawn vocabulary, aimed at colour instead
+# of a shape. The symbol carries the whole difference; see `ModeButton._draw_stick()` and
+# `_draw_tap()`.
+
+## Warm and opaque enough to read as a raised surface rather than another layer of the title
+## screen's own scrim (`TopScrim`/`BottomScrim`, `Color(0.04, 0.04, 0.06, 0.62)`, near-black) —
+## anything that dark would still look like more of the dimness behind it.
+const BUTTON_FILL := Color(0.18, 0.15, 0.13, 0.88)
+## Lighter than `BUTTON_FILL`, for a pointer resting on the button before it is pressed.
+const BUTTON_HOVER := Color(0.24, 0.2, 0.17, 0.92)
+## Darker than `BUTTON_FILL`, for the moment it is actually held down. With one hue doing every
+## button, hover and pressed are the only feedback left that a press registered at all, so the two
+## have to stay clearly apart from each other as well as from the resting fill.
+const BUTTON_PRESSED := Color(0.11, 0.09, 0.08, 0.95)
+## The glyph colour drawn on top of every button's fill.
+const BUTTON_SYMBOL := Color(0.97, 0.96, 0.94, 1.0)
+
 # --------------------------------------------------------------- buildings ---
 # One asset set covers every building: the near-white wall and roof tiles are multiplied by
 # the variant's colour. These therefore still decide what a building looks like.

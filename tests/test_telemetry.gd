@@ -43,6 +43,8 @@ func run(t) -> void:
 	_test_a_runs_files_share_one_folder(t)
 	_test_the_attempt_suffix_names_every_attempt_including_the_first(t)
 	_test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t)
+	_test_the_web_override_flag_parses_the_query(t)
+	_test_reads_the_url_only_when_debug_and_web(t)
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -853,7 +855,7 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
 
 # ---------------------------------------------------------------- one folder ---
-# *(docs/TODO.md, M70, "all the files of one run live in one folder": the run identity moved from
+# *(docs/DECISIONS.md, M70 "A run is a folder": the run identity moved from
 # a shared filename stem to a folder, `<day>/<minute>/<run>/`, and a day played twice — a nerve
 # retries a lost day without the calendar advancing — has to write a second picture rather than
 # overwrite the first's.)*
@@ -959,6 +961,41 @@ func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(
 
 	Telemetry.end_run()
 	_delete_recursive(run_dir)
+
+# -------------------------------------------------------------- the web override ---
+
+## `_telemetry_flag_from_query()` is the pure half of `_web_override_requested()`, pulled out for
+## exactly this: a test process is never a Web export, so there is no real
+## `window.location.search` to drive it with, the same reason `ControlsMode._word_from_query()`
+## exists.
+func _test_the_web_override_flag_parses_the_query(t) -> void:
+	t.check(Telemetry._telemetry_flag_from_query("?telemetry=1"),
+			"the leading '?' a real address bar gives is not part of the key")
+	t.check(Telemetry._telemetry_flag_from_query("telemetry=1"),
+			"and it parses just as well without one")
+	t.check(Telemetry._telemetry_flag_from_query("?seed=4242&telemetry=1&day=3"),
+			"telemetry is found among other query parameters, wherever it sits")
+	t.check(not Telemetry._telemetry_flag_from_query("?telemetry=0"),
+			"any value but '1' leaves the platform default in place")
+	t.check(not Telemetry._telemetry_flag_from_query("?seed=4242"),
+			"a query with no telemetry key answers false rather than guessing")
+	t.check(not Telemetry._telemetry_flag_from_query(""), "no query at all is also false")
+
+## *(2026-09-06, the player: "I never asked for telemetry on web ... that browser build should be
+## dev only the CI build is release.")* `_web_override_requested()`'s own gate used to be welded
+## into an `if` as `DevFlags.enabled() or OS.get_name() != "Web"` — a build type and a platform,
+## neither of which a test can fake — so `_reads_the_url()` exists to make that promise a truth
+## table instead. Same shape as `ControlsMode._reads_the_url()`, one line duplicated rather than
+## shared: not worth a module for two call sites.
+func _test_reads_the_url_only_when_debug_and_web(t) -> void:
+	t.check(Telemetry._reads_the_url(true, true),
+			"a debug build on the web reads the query string -- the one case the flag exists for")
+	t.check(not Telemetry._reads_the_url(false, true),
+			"a release build on the web does not -- the published page, and the promise being made")
+	t.check(not Telemetry._reads_the_url(true, false),
+			"a debug build off the web does not -- there is no address bar to ask")
+	t.check(not Telemetry._reads_the_url(false, false),
+			"and neither does a release build off the web")
 
 # ------------------------------------------------------------------ helpers ---
 

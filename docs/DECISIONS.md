@@ -4918,6 +4918,264 @@ exposed two latent bugs and one false assertion:
   one-shot covering breadth** is a consequence of forbidding the spine and is left for somebody's
   judgement rather than a green tick.
 
+## M76 — The title asks with buttons, and a release carries no modifiers · built 2026-09-06
+
+Playtest 26's first two findings, plus two instructions that arrived beside them. The milestone's
+other half — the summary's tap target and the held restart — is still queued.
+
+**The two title buttons already were `Button` nodes; they did not read as any.** *"the choice on the
+title screen is not at all obvious. those should be proper buttons"*. The scene gave them a minimum
+size, a font size and wrapping, so they took Godot's default flat theme and looked like the label
+text above them. **Three attempts, and the first two failed on the same mistaken constraint.** The
+brief forbade SVG to keep the work clear of the deferred graphics overhaul — but the player had
+already ruled that *"this is not game graphics. buttons are just UI"*, so the constraint protected
+nothing and cost two rounds: a rectangle with a corner badge that overlapped its own body text, then
+a circular disc whose glyphs were assembled from primitives and read as a lollipop on a bar and a T
+with a wedge. **The rule that came out of it is in the cues skill** — a picture is an asset, never
+code — and `ModeButton` ended with no `_draw()` at all: three `StyleBoxFlat` states with circular
+corner radii for the disc, and the button's own `icon` for the glyph.
+
+**The paragraph moved out of the button rather than being laid out around the glyph.** *"remove the
+text (or put it under it without it being clickable)"*. It is a plain `Label` beside each button
+with `mouse_filter = MOUSE_FILTER_IGNORE`, so a click on the caption falls through instead of
+becoming a dead zone in the middle of the screen.
+
+**Sizing came from the game rather than from a mouse**: the disc's 46px radius is the floor of
+`TouchControls`' own three catch radii, so nothing on the title screen is harder to hit than the
+least generous control already in play.
+
+**The icons went through a defect that was invisible in the source.** Both carried
+`shape-rendering="crispEdges"` on a 32-unit grid while rendering into a 46px radius — antialiasing
+off, upscaled about 3x — so every curve quantised to a staircase and the tap ripples collapsed into
+bars. Dropping it and re-authoring on a 128 grid fixed the arcs outright. What remained after that
+was shape rather than resolution: straight lines and square corners everywhere, which is why the
+hand read as a letter. The silhouettes were rebuilt on the three things that carry a glyph at that
+size — a narrow finger with a rounded tip against a much wider palm, a thumb breaking the outline on
+one side only, a flat wrist — and the joystick's ball was made round rather than as wide as its base
+is deep. The reference is `docs/evidence/reference-buttons-2026-09-06.jpeg`, colours excluded on
+instruction.
+
+**The input principle is the player's and is stronger than its two mappings**: *"on the local
+clicking should choose the tap and arrow keys should choose the controls"* — the device you answer
+with is the device you are answering about, so each choice is made by doing the thing it selects.
+`t` was dropped on the player's own reasoning (*"it's a move from keyboard to mouse"*), `space` and
+the arrows choose the stick, and a click chooses tap. **Both fallbacks went**: a pointer press
+landing on neither button now does nothing — *"clicking anywhere else should do nothing"* — which
+also removed a touch-anywhere path that had been silently choosing the stick on the one device the
+screen actually opens on. **A flag still skips the question entirely**, and that path is
+byte-for-byte what it was.
+
+**A release build carries no modifiers; a debug build carries all of them from the start.**
+*(2026-09-06: "for dev you need it to be controllable from the getgo -- for release there should be
+no modifiers".)* Both URL flags — `?controls=` and `?telemetry=1` — are kept for testing and gated
+behind `DevFlags.enabled()`.
+
+**This overturns a line written into M73 four days earlier**, which said the telemetry override
+*"has to work in a release build, because the deployed page is exactly where `DevFlags.enabled()`
+cannot reach"*. That was the milestone's own inference rather than a request, and the player said so
+plainly: *"I never asked for telemetry on web. you added that to debug in a browser. that browser
+build should be dev only the CI build is release."* Three docstrings had been arguing the ungated
+case in some detail and now argue the opposite.
+
+**The gating would have been a deletion without the other half**, since `tools/export-web.sh` only
+ran `--export-release`, so no web build existed where `OS.is_debug_build()` is true. It takes a
+`release|debug` argument now, defaulting to release so the deploy workflow is untouched. And
+`tools/serve-web.sh` exports debug and serves it, because **a Godot web export cannot be opened from
+`file://`** and nothing in the project served one — so until now the only way to run this game's web
+build was to deploy it, which is a large part of why a runtime error reached the live site.
+
+**The promise is tested rather than assumed.** The guard's predicate is a pure function taking
+`is_debug` and `on_web`, so all four combinations are asserted directly with no build type to fake —
+which matters because the untestable version of exactly this gate is what hid M73's invincibility
+bug.
+## M60 — One rotation, applied once · built 2026-09-05
+
+Playtest 23, the first phone session on the deployed build, found the rotated presentation was
+**three different rotations in one picture** — *"controls are the only things that are rotated
+correctly"*. Four symptoms, one root: the rotation was implemented three separate times and two of
+them disagreed.
+
+- **The world sat 180° from the controls.** `Stroller.set_screen_rotation()` turned the world by
+  setting `Camera2D.rotation` to +90°; `TouchControls._draw` turned the buttons by applying a +90°
+  transform to its draw call. **A camera turning one way swings the world the other way on screen**,
+  so two +90°s landed 180° apart.
+- **The text was not rotated at all** — the HUD, pause screen, summary and title are `Control` nodes
+  under `CanvasLayer`s and nothing had touched them. It was published as a known limitation, which
+  it was not: upright text is the largest thing on the screen and it was saying the screen is not
+  sideways.
+- **Auto-rotate latched a portrait content box** and never recovered, because `_apply_orientation()`
+  ran only at startup and on `size_changed`, and a signal arriving with a stale size or not at all
+  left the wrong box in force until a reload.
+
+**The fix was to stop having three implementations rather than to reconcile them.** One transform,
+`ScreenOrientation.rotation_transform()`, applied to every `CanvasLayer` through `apply_to_layer()`,
+with each layer's children pinned to the fixed 1280x720 design box by `pin_to_design_box()` so a
+`Control` cannot size itself against the swapped viewport. The camera stopped being a second
+implementation and `TouchControls`' own draw transform was deleted. **And the decision is re-asked
+every frame rather than on a signal** — `main._process()` compares `wants_rotation()` against the
+applied state and reapplies on change — because a missed or early `size_changed` is exactly what the
+latch was made of. It cost a vector comparison.
+
+**The device's own orientation is never touched**, on instruction: *(2026-09-05: "don't try to
+**change** landscape/portrait mode — work with what you have")*. Two levers were rejected on that
+ground rather than on cost, and are cheap to pick up if the chosen one disappoints: writing the PWA
+manifest would give an installed web app a real lock, and moving `screen.orientation.lock` onto the
+first tap after a fullscreen request — it is called from `DOMContentLoaded` today, outside the
+gesture it requires, so it is refused every time — would give one to Chrome for Android. Each
+*changes* the device's mode, and a phone whose owner turned auto-rotate off has said what they want.
+
+**What the tests can and cannot prove, which is why this is not finished until somebody looks.**
+`tests/test_orientation.gd` proves the input remap by construction: a touch sent at the exact screen
+position a design-space point maps to, while rotated, is read back by `TouchControls` as that same
+point — which closes the failure where the controls draw correctly and the remap silently disagrees.
+**It cannot catch a sign error the transform and the drawing share**, and that is how three of the
+four symptoms shipped in the first place. `tools/shot.sh` now takes a resolution so the rotated
+branch can be photographed at all; before that every picture a rig could take was of the landscape
+branch, which was already correct.
+
+## Playtest 25's three milestones are M73, M74 and M75 — renumbered 2026-09-06
+
+They were queued as M70, M71 and M72, and **M70 and M71 were already spent**: "A run is a folder"
+and "A push is a check, a tag is a release", both built 2026-09-03 and both recorded below under
+those numbers. The collision was found while filing the new work here, which is the first time two
+entries would have shared a heading.
+
+**The new work was renumbered rather than the old**, because the old numbers are settled history
+that other documents and a test comment already point at, and because renumbering the thing that
+just landed touches one PR's worth of references instead of the archive. The mapping, since the
+commit messages on `main` still say the old numbers: **M70 → M73** (the meter tells the truth, and
+the local build starts), **M71 → M74** (the title screen asks which controls), **M72 → M75** (what
+the city costs to walk through). `docs/PLAYTEST-25.md` also names M70 for the environment-gate
+finding and is left alone: a playtest file is a primary source and is never rewritten.
+
+## M75 — What the city costs to walk through · built 2026-09-06
+
+Playtest 25's six gameplay findings, built as one balance change because some take cost out of the
+city and some put it back, and measuring any of them alone measures the wrong thing.
+
+**The barrier rows went silent, and that is the largest single change to what a day costs the
+project has made.** *"static blockages in general shouldn't increase excitement"*, with the player's
+own exception in the next breath: *"except for things like ice cream trucks which have inherent
+excitement"*. So `construction` (was 11.0), `market_stall`, `cafe_tables`, `delivery_van` (was 8.0)
+and `barricade` (was 6.0) stopped emitting; `ice_cream_van` (13.0 over 48/240px, the named
+exception) and `leaf_blower` (20.0 over 40/200px) kept their fields. The scale is M64's doing: day 1
+plans 147 `cafe_tables`, 124 `market_stall` and 84 `delivery_van` — 355 static bodies, because
+sealing puts a barrier on every street off the day's route tree — and fields sum, so the measured
+symptom was excitement going **35 → 69 in fifteen seconds of calm ground** in the player's own run
+(`docs/evidence/run-181812-seed3038142309-v0.2.0-6-gedeed04-dirty/`), with the log reading
+`near market_stall 184px … in 14.2/s (crowd 3.6, events 10.6)`.
+
+**Two of the five kept a field instead of losing it, and that is a narrower answer than the item
+asked for.** `cafe_tables` and `market_stall` are crowds rather than scenery, so the player's
+adjacent sentence governed them — *"restaurants should only increase your excitement when you're
+actually close … but they should nonetheless"* — and the reach was tightened rather than removed:
+**170px → 90px** for the café, **185px → 95px** for the stall. 90px is one and a half tiles past a
+two-tile (64px) pavement and comfortably inside the 448px block period, so a café can never bill the
+far side of its own street.
+
+**Why those two numbers are a stopgap and were recorded as one.** *(2026-09-05: "that number was so
+big because it was a point source before".)* A circle centred on a point has to be wide enough to
+stand in for a body that is not a point, so the radius was doing the body's job — it over-reaches
+perpendicular to a 48px café frontage and under-reaches along it. The fix is M61's third bullet, a
+field as the Minkowski sum of the body and a kernel; both catalogue docstrings say so where the
+numbers are.
+
+**The startle spike is a short duration at high intensity, and no `impulse` field was added.**
+*"dashing cat and dog (not pursuing) are basically useless right now — they need a bigger impact"*.
+`cat_dash` went 15.0 → **17.0** and `loose_dog` 24.0 → **32.0**. The cat was deliberately held under
+`Tuning.MARK_WORTH_A_DETOUR` so it does not acquire a caret for the first time — the crouch is its
+own silhouette — which moved that threshold's stated gap from *between `market_stall` and
+`construction`* to *between `cat_dash` (+24) and `checkpoint` (+29)*. **The order mattered and was
+stated**: raising the cat while the baseline was still pinned near 100 by the barrier fields would
+have made contact an instant loss, which is not what was asked for, so the silencing was measured
+first.
+
+**Two rows reported as unmissable were one finding wearing two hats.** `chatting_mother`'s
+`detain_radius` and `cyclist`'s lethal `inner_radius` were both **26px** and both went to **33px**.
+The chatting mother's 26 was deliberate — it sat under the 32px between a pavement's two walking
+lanes so the far lane could never trigger it — and **that reasoning is what the player overturned**:
+*"the chatting lady has a way too small capture radius"*. What it gives up is that walking her far
+lane no longer avoids her, and the note stayed in the code rather than being deleted. The cyclist
+was a defect, not a design change: it already carries `hard_fail`, and the player closed the worry
+that the day loop was swallowing it — *"cyclist radius should be bigger, then. that observation was
+from local"* — since the desktop build is the one where dying demonstrably works.
+
+**Alleys got a probability where there was none.** *"the probability of blocking off alleys should
+be way lower"*, and the player separated the two things that word covers: *"at least for full
+blockages — robbers can be frequent"*, so `alley_robbery`'s frequency is untouched.
+`SealPlanner._seal_alley_mouths()` had walled both mouths of every qualifying through-alley
+unconditionally, every day; `Tuning.ALLEY_MOUTH_SEAL_CHANCE` is now **0.15**, rolled once per alley.
+**Sealing one mouth instead of both was rejected as the wrong half-measure** — a through-alley with
+one end walled is still not a way through — so the roll is on the alley rather than on the mouth.
+0.15 was started low rather than derived, the same way `SEAL_THINNING_FRACTION` was, and is meant to
+move against a played day.
+
+## M74 — The title screen asks which controls · built 2026-09-06
+
+Playtest 25's verdict on M68's experiment, which existed to find out which of the two control
+schemes wins. **Neither did** — *"I like both control modes equally"* — so the experiment resolved
+by handing the choice to the player: *"let the player choose on the title screen (instead of tap the
+screen to start have two buttons to choose from)"*.
+
+The title stopped being a single "tap to start" and became a choice that is also the start: one
+press, not a menu and then a start. `ControlsMode` moved from a build-time resolution read once into
+three `_ready`-time members — in `main.gd`, `hud.gd` and `title_screen.gd` — to an answer produced
+by the title screen and read after it, because **a stale copy of the answer was the whole of the
+work**. The existing flag order is unchanged and deliberate: `--controls tap|stick` behind
+`DevFlags`, then the page's `?controls=` URL flag, then the question. **A flag is how you skip the
+question, so a run started with one is not asked.**
+
+## M73 — The meter tells the truth, and the local build starts · built 2026-09-06
+
+Playtest 25's first two findings, both about a reader being told something that is not so — one on
+screen, one at the command line — plus the two items that fell out of them.
+
+**The invincibility bug was one untyped array literal.** *"if excitement reaches 100 the game
+doesn't end! that's a major bug … it stays on 100 and I'm completely invincible"*. In
+`_on_day_finished()`, `_observer.trail() if _observer else []` assigned an **untyped** `Array` to an
+`Array[Vector3]`, which throws at runtime. With telemetry off the `else` ran, the handler aborted
+six lines before the summary was shown, and `DayController._end()` had already set the phase to
+`OVER` — so the clock stopped, no summary appeared, she kept walking, and every later ending was
+swallowed, because the crying handler, the hard-fail handler and `DayController._process()` all
+return unless the day is running.
+
+**Nothing about it was mobile, and that is why it survived every gate.** `Telemetry` disables itself
+on a web export, so the observer is null there and never null on an ordinary desktop run — the
+desktop and every rig died correctly. **A cast on the literal was rejected in favour of a typed
+local assigned in an `if`**: the ternary would have invited the same edit back, and the tree was
+grepped for the same shape — a typed collection initialised from a ternary with a bare `[]` or `{}`
+on one side — in the same commit.
+
+**Every environment gate became a flag with an override.** *(2026-09-05: "in general don't tie
+features directly to an environment — tie it to a feature flag which might be informed by the
+environment but lets you override … that way you can get telemetry when you need it".)* The rule
+itself went into the **godot** skill so it arrives before the next edit that would break it. The
+gates it condemned were `Telemetry`'s web check — which is what hid the bug above, by making the web
+build's day-ending path unreachable from every test and every desktop session — plus
+`QuitOption.available()`, `DevFlags.enabled()` and `AutoScreenshot`. The platform default is kept in
+each case and the reasoning with it: `user://` on a web export is a stranger's browser storage that
+nobody collects or clears. **The measure of done was the reach rather than the flags** — for each
+gate, how a person enters the branch the platform does not pick for them — and the override has to
+work in a *release* build, since the deployed page is exactly where `DevFlags` cannot reach.
+`ControlsMode`'s `?controls=` URL flag was the precedent. `TouchInput.available()` already had the
+shape and needed nothing.
+
+**A meter bar may not read `100` while the day is still alive.** `MeterBar._draw()` printed with
+`"%3.0f"`, which rounds to nearest, so 99.5 and above printed `100` while the day ends at exactly
+`Tuning.METER_MAX`. The player met it on a phone and read it as the crying rule being broken — it is
+the same sentence that opened the bug above, and the two were genuinely different faults. Both bars
+now floor rather than round, since the sleepiness bar told the same lie at the other end of the day.
+
+**`tools/run.sh` refuses a stale class cache instead of booting into it.** The player's local build
+would not start: `Parse Error: Identifier "ControlsMode" not declared in the current scope`, and the
+same for `TapControls`. Neither file was missing; what was missing was their entry in
+`.godot/global_script_class_cache.cfg`, because `run.sh` exec'd the Godot binary straight at the
+project with no import pass and the checkout's cache predated the merge that added them. **No gate
+could have caught it and none was at fault** — CI and `tools/check.sh` both import from clean, which
+is why `check.sh` was green on a tree that would not run. It is reachable from any `git pull` that
+adds a `class_name`. The constraint on the fix was that `run.sh` must not become slow to start, so
+the import pass is a no-op on an up-to-date cache.
+
 ## M71 — A push is a check, a tag is a release · built 2026-09-03
 
 *(2026-09-03: "let's not deploy on every push. push is for ci checks only. tag push triggers a

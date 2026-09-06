@@ -116,6 +116,14 @@ var _tap_at := Vector2.INF
 ## including every time it is asked from outside a debug build. `--screenshot`, `--after`,
 ## `--walk`, `--flee` and `--press` are developer furniture like every flag `DevFlags` gates, and
 ## are gated here rather than moved there because this file already owns their parsing.
+##
+## **Deliberately has no override, for the same reason `DevFlags.enabled()` does not get one.**
+## What this gate reaches is scripted input (`--walk`, `--flee`, `--press` can drive any action or
+## bare key, including `key:r` and `key:q`) and a PNG written straight to disk — automation built
+## for the person who already has the source, not a capability to hand a public build's visitor
+## through an address bar. Unlike `Telemetry`'s `?telemetry=1`, which only asks that *this run's own
+## log* go where a run's log already goes on every other platform, an override here would let
+## anyone drive the game like a rig. The entry point stays what it already is: run a debug build.
 static func from_command_line() -> AutoScreenshot:
 	if not OS.is_debug_build():
 		return null

@@ -87,7 +87,8 @@ assets/
 tools/
   check.sh                import + headless boot, fails on any script error
   shot.sh                 render the game to a PNG
-  export-web.sh           headless Web export into build/web/, using export_presets.cfg
+  export-web.sh           headless Web export into build/web/ -- release by default, or `debug`
+  serve-web.sh            export-web.sh debug, then serve build/web/ over plain HTTP and print the URL
 ```
 
 ### `GameEnums`
@@ -125,7 +126,9 @@ platform axis rather than the build one, since a debug Web build has the same de
 release one — the same axis `Telemetry.begin_run()` already uses to stay silent on the web.
 `TitleScreen` and `PauseScreen` each read it once into their own `_can_quit`, so their hint text
 and their `Q` handler always agree, and so a test — never itself a web export — can set the member
-and drive both platform shapes.
+and drive both platform shapes. A debug build can preview the web shape without a real export:
+`--web` forces `QuitOption.available()` false, the same role `TouchInput`'s own `--touch` plays
+for its platform fact.
 
 ### Playing on a touch device
 
@@ -151,8 +154,13 @@ way `space` does, without teaching the desktop a click it never asked for.
 `ControlsMode` (`src/ui/controls_mode.gd`) is which of two schemes drives the day: the stick above,
 or `TapControls` (`src/ui/tap_controls.gd`), a second node rather than a branch inside
 `TouchControls` because tap mode draws nothing at all — no stick, no `RUN`, no pause button.
-`main._add_touch_controls()` reads `ControlsMode.resolve()` once and instantiates exactly one of
-the two onto the same layer.
+`main._resolve_controls_mode()` is the one place the mode is actually set and
+`_add_touch_controls()` actually called from, instantiating exactly one of the two onto the same
+layer — either immediately in `_ready()`, when `ControlsMode.is_forced()` says a `--controls` flag
+or the page's own `?controls=` already answered the question, or once `TitleScreen`'s own two
+buttons answer it instead: with neither present the title asks rather than assuming the stick, and
+`hud.set_controls_mode()` learns the same answer at the same moment so its lessons never name a
+control that turned out to be the wrong guess.
 
 A tap computes a heading once — `(target - position)`, normalised — and presses it through
 `TouchControls._set_axis()` (static, shared by both) exactly as the stick presses its own
@@ -169,11 +177,12 @@ Arriving starts a clock (`TapControls.ARRIVAL_PAUSE_AFTER`) rather than pausing 
 ordinary loop of arriving and tapping on never stutters; only a genuine stand opens the same
 `PauseScreen` the stick's own pause button opens, through the same
 `TouchControls._send_pause_action()`. `ControlsMode.resolve()` reads `DevFlags.controls_override()`
-(`--controls tap|stick`, a debug build only) first, then the page's own `?controls=` query
-parameter through `JavaScriptBridge.eval("window.location.search")` — the one flag in the project
-not gated behind `DevFlags.enabled()`, because that gate is `OS.is_debug_build()` and the deployed
-page is exactly where a public build still has to be switchable — and falls back to the stick if
-neither answers.
+(`--controls tap|stick`) first, then the page's own `?controls=` query parameter through
+`JavaScriptBridge.eval("window.location.search")`, and falls back to the stick if neither answers.
+Both routes are gated behind `DevFlags.enabled()` (`OS.is_debug_build()`): a release build answers
+neither, a debug build answers both immediately — the browser used to debug a web build is its own
+debug export (`tools/export-web.sh debug`, served locally by `tools/serve-web.sh`), and the
+published page is the release export `tools/export-web.sh` (no argument) produces.
 
 Testable without a phone: `TapControls` reads an `InputEventMouseButton` the same way it reads a
 finger, gated on `not TouchInput.available()` as well as a debug build — a real touch device
@@ -207,7 +216,9 @@ The run log: one plain-text file per run, written as it happens. **Inert until
 `begin_run()`**, which only `main.gd` calls — so the test suite, which never calls it, writes
 no files and pays nothing. `begin_run()` is also inert on a web export
 (`OS.has_feature("web")`), since `user://` there is a stranger's browser storage that nothing
-ever prunes. See `docs/TELEMETRY.md` for the format and what belongs in it.
+ever prunes — **unless the page's own `?telemetry=1` asks otherwise**, which is the one telemetry
+switch not gated behind `DevFlags.enabled()`, because the deployed page has no command line for
+that gate to read. See `docs/TELEMETRY.md` for the format and what belongs in it.
 
 The rule that governs it is one line long: **telemetry must not touch gameplay.** No RNG, no
 `day_rng()` stream, nothing that changes a placement or a roll. Where a system logs a random

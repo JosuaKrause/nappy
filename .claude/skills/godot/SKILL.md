@@ -35,6 +35,43 @@ called from another where `x` came from `OtherScript.Side`, fails to parse: *"ar
 Side but is StreetNetwork.Side"*. Widen the parameter to `int` and say why in a comment.
 `StreetNetwork.beside_block()` is the one place that does.
 
+## Capabilities
+
+**Never tie a feature straight to the environment. Tie it to a flag the environment *informs*, and
+leave the override.** *(2026-09-05: "in general don't tie features directly to an environment — tie
+it to a feature flag which might be informed by the environment but lets you override ... that way
+you can get telemetry when you need it".)*
+
+So `OS.has_feature("web")`, `OS.is_debug_build()` and `DisplayServer.is_touchscreen_available()` are
+allowed to **answer** the flag. They may not **be** it. The platform is the default; the flag is the
+decision; the override is how anybody ever looks at the other branch.
+
+```gdscript
+# Wrong — the web branch cannot be entered anywhere it can be watched.
+if OS.has_feature("web"):
+    return
+
+# Right — the platform picks the default and the flag is what the code reads.
+static func available() -> bool:
+    if OS.is_debug_build() and "--touch" in OS.get_cmdline_user_args():
+        return true
+    return DisplayServer.is_touchscreen_available()
+```
+
+`TouchInput.available()` is that second shape and is the model to copy: the platform fact and the
+policy built on it are separate, so `--touch` can render a touch-only screen on a machine with no
+touchscreen, and a screenshot rig can photograph it.
+
+**Why it is a rule rather than a preference: a hard-tied gate makes a whole branch unreachable from
+every test you own.** The invincibility bug in `docs/PLAYTEST-25.md` is the case that earned this
+entry — `Telemetry` returns early on `OS.has_feature("web")`, so no test and no desktop session
+could ever run the day-ending path with the observer absent, and a runtime type error sat on the
+live site through a full CI suite and a hundred plays. **The gate did not cause the bug; it made the
+bug unfindable**, which is worse, because nothing about it looked like a gap.
+
+The test is not "can I reach this branch" but **"can somebody watching a screen reach it"**. A branch
+only the deploy target can enter is a branch nobody has seen.
+
 ## Structure
 
 **`--script` skips autoloads.** The test suite runs as a **scene**

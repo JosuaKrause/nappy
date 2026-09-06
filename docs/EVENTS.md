@@ -389,13 +389,13 @@ All implemented.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
-| `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. High intensity, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
+| `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Kept just under `Tuning.MARK_WORTH_A_DETOUR` on purpose, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
-| `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the thing that forces a crossing. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits. |
+| `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the thing that forces a crossing. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, but tightened to a 90px reach so only somebody actually near the tables is billed for them. |
 | `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
-| `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Constant, medium. The plain obstacle route planning is practised on. At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway is a street that costs the other side. |
+| `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway is a street that costs the other side. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
-| `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it and forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time and exposure, never the day. |
+| `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it and forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
 | `fire_truck` | ONE_SHOT | 3 | Drives an arterial at 190px/s with a 340px radius and a 4s telegraph (the fast-mover rule — see docs/MECHANICS.md). `spawns_on_finish` leaves a `burning_building` where it stops. |
 | `burning_building` | — | — | Never scheduled: a SCRIPTED def with no day, so only the fire engine can put one in the world. Burns for the rest of the day, and you cannot walk through the fire. |
 
@@ -404,15 +404,15 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `loose_dog` | RECURRING (`TOWARD_PLAYER`) | 1 | A dog whose owner has dropped the leash, sited on her own pavement when she gets close and running straight down it toward her. The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal, which is what separates it from `charging_dog`: this one is answered by getting out of the way, not by running. |
-| `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. |
+| `loose_dog` | RECURRING (`TOWARD_PLAYER`) | 1 | A dog whose owner has dropped the leash, sited on her own pavement when she gets close and running straight down it toward her. The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal, which is what separates it from `charging_dog`: this one is answered by getting out of the way, not by running. Intensity 32, raised from 24 for a bigger impact once a real meeting is priced against the fixed baseline rather than the barrier fields that used to pin it near the top of the meter regardless. |
+| `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, tightened to a 95px reach so it bills the crowd at the stall rather than the whole block. |
 | `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use. Swept in bursts, so there is a rhythm to time a pass through. |
 | `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that a director with a single trick makes every moment a cat. It is on the pavement for its whole telegraph, then up, then *away* — and it is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one. The only row in the game that is more than one source. |
-| `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 3.3s, which is what the doubled margin costs at 165px/s. |
+| `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 3.3s, which is what the doubled margin costs at 165px/s. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn and the same number as `chatting_mother`'s `detain_radius`. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. It stands `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
 | `charging_dog` **`hard_fail`** | RECURRING (`AHEAD_OF_PLAYER`) | `RUN_TAUGHT_DAY` | **The one thing running is the answer to**, and the day the run is taught. It is sited in front of her, spends `telegraph_time` 2.4s visibly closing at the stand-off, then chases at 130px/s for `Tuning.PURSUIT_TIME`. Its 150px field is **wider than the stand-off** — a narrower one is a field the pursuer is never inside, so the warning would emit nothing at her and the `!` over her head would never go up; `validate_pursuit` refuses that. `max_per_day` 3, because a street with three of them turns the run button from an answer into a second walk speed. It trots off at 110px/s rather than blinking out: a dog that gives up in front of her and is then not there says the chase was never real. |
-| `chatting_mother` | RECURRING | 1 | Another mother with a pram, paced along eight tiles of pavement like `homeless_yeller`. Her ambient field is person-scale (intensity 4.5, near a passer-by's 4.2) and tight (34/70px), so a normal pass costs a normal close pass. Entering `detain_radius` (26px, under the 32px lane spacing so the far lane of a two-tile pavement can never trigger it) of an instance that has not chatted yet locks the player's movement input for `detain_seconds` (5s) — the one mechanic in the catalogue that takes the controls away rather than costing a meter; the existing idle rules price the stop, so nothing new prices the time. While the conversation runs and the baby is **awake** it adds a flat `Tuning.CHAT_EXCITEMENT` (25) over the whole capture; **asleep** it adds nothing, gated on the baby's own state read from `EventInstance.baby_awake` rather than scaled through `SLEEPING_SENSITIVITY` — a *pure* time loss means exactly zero, not a smaller number. One conversation per instance: she is then spent as a detainer and departs like a `dog_walker`. |
+| `chatting_mother` | RECURRING | 1 | Another mother with a pram, paced along eight tiles of pavement like `homeless_yeller`. Her ambient field is person-scale (intensity 4.5, near a passer-by's 4.2) and tight (34/70px), so a normal pass costs a normal close pass. Entering `detain_radius` (33px, past the 32px lane spacing so the far lane of a two-tile pavement can no longer clear it for free) of an instance that has not chatted yet locks the player's movement input for `detain_seconds` (5s) — the one mechanic in the catalogue that takes the controls away rather than costing a meter; the existing idle rules price the stop, so nothing new prices the time. While the conversation runs and the baby is **awake** it adds a flat `Tuning.CHAT_EXCITEMENT` (25) over the whole capture; **asleep** it adds nothing, gated on the baby's own state read from `EventInstance.baby_awake` rather than scaled through `SLEEPING_SENSITIVITY` — a *pure* time loss means exactly zero, not a smaller number. One conversation per instance: she is then spent as a detainer and departs like a `dog_walker`. |
 
 ### Act II — Something is off (days 4–7)
 
@@ -581,18 +581,18 @@ alone is answering a narrower question than it thinks.
 | --- | ---: | ---: | :---: |
 | `loudspeaker` | — | — | — |
 | `curfew_announce` | — | — | — |
+| `construction` | −15.2 | +32.1 | |
+| `delivery_van` | −11.4 | +24.1 | |
+| `barricade` | −9.1 | +19.3 | |
 | `burnt_shell` | −3.0 | +16.5 | |
 | `poster_crew` | +0.7 | +22.6 | |
-| `barricade` | +3.0 | +26.0 | |
-| `delivery_van` | +8.3 | +34.9 | |
+| `cafe_tables` | +12.3 | +24.9 | |
 | `busker` | +13.3 | +45.7 | |
 | `police_patrol` | +15.9 | +46.2 | |
+| `market_stall` | +16.5 | +28.3 | |
 | `charging_dog` * | +16.9 | — | ●● |
-| `cafe_tables` | +20.1 | +45.4 | |
-| `cat_dash` | +20.2 | +35.4 | |
-| `construction` | +20.3 | +51.6 | |
+| `cat_dash` | +24.1 | +37.5 | |
 | `playground` | +25.5 | +44.3 | — |
-| `market_stall` | +27.9 | +52.7 | ● |
 | `checkpoint` | +29.0 | +59.4 | ● |
 | `cyclist` * | +30.2 | +45.9 | ●● |
 | `homeless_yeller` | +31.2 | +59.6 | ● |
@@ -600,11 +600,11 @@ alone is answering a narrower question than it thinks.
 | `reversing_lorry` * | +32.6 | +53.3 | ●● |
 | `alley_robbery` * | +34.6 | — | ●● |
 | `dog_walker` | +36.5 | +41.2 | ● |
-| `loose_dog` | +43.3 | +52.0 | ● |
 | `leaf_blower` | +48.6 | +67.1 | ● |
 | `protest` | +50.0 | +88.1 | ● |
 | `pigeon_flock` † | +54.1 | +63.6 | ● |
 | `burning_building` | +55.9 | +83.2 | ● |
+| `loose_dog` | +61.2 | +61.9 | ● |
 | `abduction` * | +61.3 | +84.1 | ●● |
 | `military_convoy` | +84.9 | +107.2 | ● |
 | `night_raid` | +101.8 | +122.6 | ● |
@@ -613,10 +613,11 @@ alone is answering a narrower question than it thinks.
 
 **The `mark` column.** ● is the amber caret — *worth going round* — and ●● the doubled deep red
 that means it ends the day. The threshold is `Tuning.MARK_WORTH_A_DETOUR`, a quarter of the meter,
-and it falls in the gap between `construction` and `market_stall`; a lethal row is marked whatever
-it costs, which is why `charging_dog` at +16.9 carries one and `cat_dash` at +20.2 does not. Apart
-from the lethal rows the column is **monotone** — if A is marked and B is not, A costs more than B —
-and `tests/test_danger.gd` asserts exactly that.
+and it falls in the gap between `cat_dash` and `checkpoint`; a lethal row is marked whatever it
+costs, which is why `charging_dog` at +16.9 carries one and `cat_dash` at +24.1 does not — kept just
+under the line on purpose, so a startle spike does not also claim the caret the crouch's own
+silhouette already carries. Apart from the lethal rows the column is **monotone** — if A is marked
+and B is not, A costs more than B — and `tests/test_danger.gd` asserts exactly that.
 
 `playground` is the one row above the line with no mark, because it is `AMBIENT`: it never appears,
 there is no moment to mark, and the park's own swing frame is the picture.
@@ -627,13 +628,17 @@ costs 35 points from the lunge and less the sooner it is given. See `docs/MECHAN
 that matters", for the measured tables. The city-wide rows have no line through them at all, which
 is why `EventDef.walk_through_cost()` answers zero for them and this table says nothing.
 
-**Three rows are cheap to walk through on purpose, and no fourth may be.** `burnt_shell` is
-negative — a reminder rather than an obstacle, so it does not have to cost anything — and
-`poster_crew` and `barricade` are marginally positive, which costs their design nothing: scenery
-only ever asked to be nearly free. Everything else must be more expensive to walk through than to
-walk around, or the correct play is to plough into it, and `tests/test_events.gd` asserts that with
-those three named as the exemptions. A fourth is a decision somebody takes on purpose rather than a
-number nobody checked.
+**One row is cheap to walk through by taste, and every zero-intensity row is cheap by
+construction.** `burnt_shell` and `poster_crew` are scenery asked to be nearly free on purpose —
+`tests/test_events.gd` names them as the sole exemptions among the rows that emit anything at all.
+`construction`, `delivery_van` and `barricade` sit well below zero for a different reason: **a
+thing whose whole job is to stand in the way costs route and nothing else**, so `intensity <= 0.0`
+is its own blanket exemption — walking "through" a solid body was never a real choice to price, and
+the negative figure is what `walk_through_cost()` answers once nothing at the centre is left to
+outweigh the walking decay. Everything else — every row that still emits — must be more expensive
+to walk through than to walk around, or the correct play is to plough into it. A new zero-cost row
+is a decision about what a thing is (a pure obstruction) rather than a number nobody checked; a new
+*positive* exemption is the one that still needs naming by hand.
 
 **Running is never correct** on any row here. It costs `EXCITEMENT_FROM_RUNNING` *and* collapses
 the decay from 3.5/s to 0.5/s, and together those beat the shorter exposure every time. Making
@@ -713,9 +718,9 @@ Three rules underneath the table, in the order they matter:
    The rule is the player's own expectation, stated so a test can hold it: **if A is marked and
    B is not, A costs more than B.** `EventDef.walk_through_cost()` is the order,
    `Tuning.MARK_WORTH_A_DETOUR` is where the line falls (a quarter of the meter, which lands in
-   the 7.5-point gap between `market_stall` and `construction` rather than slicing a cluster),
-   and lethal rows are marked whatever they cost — *ends your day* is a different kind of thing
-   rather than a larger amount of the same one. `tests/test_danger.gd` holds all of it.
+   the gap between `cat_dash` and `checkpoint` rather than slicing a cluster), and lethal rows are
+   marked whatever they cost — *ends your day* is a different kind of thing rather than a larger
+   amount of the same one. `tests/test_danger.gd` holds all of it.
 
    **The trap it is written against** is a rule like *danger that changes over time* — lethal,
    telegraphing, swelling, or pulsing fast enough to be timed. Every clause of that is a true
@@ -728,9 +733,10 @@ Three rules underneath the table, in the order they matter:
    barricade, a poster crew and a burnt-out shell are large, distinct and visibly what they are,
    and pointing at them adds noise and no information.
 
-   What this gives up, as a decision rather than an oversight: **a crouching cat (+20) has no
+   What this gives up, as a decision rather than an oversight: **a crouching cat (+24) has no
    caret.** The crouch is its own silhouette and the vocabulary's first row is that the entity
-   carries it.
+   carries it — kept true on purpose when the cat's own intensity was raised for a bigger startle,
+   by stopping short of the threshold rather than by exempting the row.
 2. **Breathing is load-bearing.** It is the one thing a ring gives for free that a discrete
    symbol does not, and without it a pulsing event stops being something to time a pass
    through and becomes something that hurts at random.
