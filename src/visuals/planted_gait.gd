@@ -68,6 +68,7 @@ func advance(world_position: Vector2, body_displacement: Vector2, delta: float,
 		reset(world_position, facing if facing.length_squared() > 0.000001 else body_displacement)
 	if delta <= 0.0:
 		_body_world = world_position
+		_settle_swing()
 		return pose(world_position)
 	if facing.length_squared() > 0.000001:
 		_facing = facing.normalized()
@@ -76,6 +77,7 @@ func advance(world_position: Vector2, body_displacement: Vector2, delta: float,
 	_body_world = world_position
 	var travel: float = body_displacement.length()
 	if travel <= 0.000001:
+		_settle_swing()
 		return pose(world_position)
 	if _stepping:
 		_swing_distance += travel
@@ -169,6 +171,15 @@ func _foot_height(index: int) -> float:
 		return 0.0
 	var progress: float = clampf(_swing_distance / step_span, 0.0, 1.0)
 	return sin(progress * PI) * swing_height
+
+
+func _settle_swing() -> void:
+	if not _stepping:
+		return
+	_stance_world[_swing_foot] = _feet_world[_swing_foot]
+	_stepping = false
+	_swing_distance = 0.0
+	_travel_since_step = 0.0
 
 
 func _safe_direction(value: Vector2, fallback: Vector2) -> Vector2:
