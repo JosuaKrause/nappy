@@ -53,6 +53,31 @@ If native 3D cannot meet the mobile/browser budget, render the same models to di
 animation atlases. This is a measured alternative, not a return to static SVG placeholders.
 A concept image establishes style; only a rendered scene establishes feasibility and motion quality.
 
+### Projection adapter contract
+
+Keep the live `Camera2D` as the source of the logical ground transform, including its smoothing,
+limits and look-ahead. Present the 3D world through a fixed-design-size `SubViewport` on a layer
+behind the interface; rotate that layer through `ScreenOrientation` alongside the other furniture.
+The logical world continues processing even when its old drawing is hidden.
+
+For a camera pitch of 65 degrees and one model unit per 32 logical pixels, map a logical point
+`(x, y)` to `(x / 32, 0, y / (32 * sin(65 degrees)))`. Apply the same mapping to the camera's
+ground target. With `Camera3D.KEEP_HEIGHT`, orthographic size is the design viewport height divided
+by logical zoom and tile size: 11.25 units for 720 design pixels at zoom 2. A size of 20 describes
+the width at that scale, not the height. Read the actual camera transform instead of assuming the
+player position is its center. Unrotate the canvas transform into design space before comparing
+it with the 3D viewport.
+
+Prove agreement between logical-to-screen, screen-to-logical and `Camera3D.unproject_position`
+for ground points at the center, corners and building edges, through camera motion and both
+orientations. Tap picking keeps the same ground destination. Elevation affects only the drawing;
+warning anchors can use model height, but warning conditions still use logical positions.
+
+The adapter owns presentation streaming and mesh lifetime, never movement, event clocks or costs.
+Batch repetitive static geometry by material and visible chunk; do not instantiate the whole city
+as individual tile nodes. A debug override may select either renderer while integration is
+incomplete, but an incomplete replacement is not the ordinary playable default.
+
 The [concept reference](evidence/graphics-redesign-concept.png) is generated art, not a capture of
 the game. It establishes material, depth and early/late contrast; its density and camera framing
 are not gameplay specifications. The generation prompt is kept beside it.
@@ -123,8 +148,8 @@ instead of arbitrarily blaming a pedestrian. Preserve the full contributing set 
 when only a few sources are emphasized. Recovery reducing the total is not a source disappearing.
 
 No range rings or beams to every entity. Test several contributors, sleeping sensitivity, running,
-alley cost, pause and offscreen sources. Coordinate with the separate event-field/cost branch before
-integrating; the renderer must consume its contributions rather than copy its arithmetic.
+alley cost, pause and offscreen sources. Consume the event system's current contributions rather
+than copying its arithmetic; silent obstacles must remain silent in the presentation too.
 
 ## Objective guidance
 
@@ -145,7 +170,7 @@ Park guidance must preserve a choice of destinations instead of silently choosin
 ## Every screen
 
 The title is a composed animated home street, distinct wordmark and clear control-mode choices,
-coordinated with the title-selection work in flight. No developer readout or wall of instructions.
+preserving the existing title-selection behavior. No developer readout or wall of instructions.
 The city supplies imagery; typography and spacing provide hierarchy. Pause freezes that place.
 Day summaries and endings use the street's condition and the baby's state, with distinct next steps.
 

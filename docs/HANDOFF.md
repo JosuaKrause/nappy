@@ -83,8 +83,10 @@ against the commit that fixed it before telling anybody the page is well.
 
 **The active request is the ground-up graphics overhaul in [PLAYTEST-26.md](PLAYTEST-26.md).**
 [VISUALS.md](VISUALS.md) describes its target, not a completed renderer. Articulated actor models
-live in `src/visual3d/`; the orthographic street study and animation revisions are isolated worktree
-work. The playable game still uses its existing renderer. Review actual rendered motion before
+and the standalone orthographic street study live in `src/visual3d/`. Further city, animal and
+screen revisions are isolated worktree work. The playable game still uses its existing renderer.
+The street study needs lighting, material and framing corrections before it is an accepted target.
+Review actual rendered motion before
 extending the prototype to the whole city and every screen. Implementation belongs to Luna agents.
 Preserve the title's control selection, truthful meter display and event-cost behavior while
 replacing their presentation. Use `git worktree list` and each checkout's status to locate unfinished

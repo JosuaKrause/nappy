@@ -1,5 +1,21 @@
 # Decisions
 
+## Graphics prototype review — 2026-09-06
+
+The graphics draft integrated main through `2bac221` and opened PR #19 at the player's request
+as a tracking draft, not a completed overhaul. The headless boot, focused HUD/main/pause/quit
+suites and lint passed. Initial articulated model work and its wheel/gait corrections were merged
+into the draft; the live game renderer was not replaced.
+
+A single externally bounded windowed street-study capture exited normally. Its early frame is
+`evidence/graphics-study-first-render.png`, rendered from `2c5c713` with the Compatibility backend,
+1280x720 window and `--preview-capture`. Review rejected it as a production target: paving and
+facades were washed out, roof planes lacked material detail, shadows were visibly jagged, and
+actors were too small. `Camera3D.size = 20` had treated a desired horizontal span as the default
+vertical span. Corrections returned to the Luna city agent before live renderer integration.
+The roof-reveal and browser-performance gates remained open. This evidence is a standalone art
+study, not a gameplay trace or a claim that the whole overhaul was present.
+
 ## Graphics redesign — 2026-09-05
 
 The player requested a whole-game overhaul and explicitly rejected the first implementation's
