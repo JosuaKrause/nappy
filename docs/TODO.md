@@ -14,17 +14,11 @@ mid-way through.
 
 ## The order
 
-1. **M80** — the page a player opens is the release that was cut, and a shared link carries its
-   picture. **Ahead of everything else because the rest of this file is invisible until it is**:
-   the site serves a build the browser may not go back for, so a milestone that lands is not a
-   milestone that arrives.
-2. **M76** — a screen offers something to press: a summary takes a tap anywhere, the restart that
-   has now been asked for three times gets built, and a press says it was heard.
-3. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-4. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
+2. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
    be watched.
-5. **M56** — the resistance is noticed.
+3. **M56** — the resistance is noticed.
 
 **Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
 deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
@@ -37,9 +31,6 @@ no single barrier becomes the city's signature), **M65** (a protester who points
 holds either drawings or not**, so that deferring one never parks work that needs no artist — which
 is why M77 and M78 stand apart from M64 and M65 rather than inside them.
 
-**M76 is not covered by the deferral** — *(2026-09-06: "this is not game graphics. buttons are just
-UI")*. A control nobody can see is a control that does not work.
-
 **M79 waits on the overhaul rather than behind it.** It is the city seen at an angle — a
 presentation change with the lattice left cardinal — and it is written down and tabled so that
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
@@ -50,11 +41,16 @@ and no question about which: a press sets a direction she walks until the next p
 her stops her, a double press runs, and the pause button in the top right is the only thing drawn.
 The record is in `DECISIONS.md` under M82.
 
-**[PLAYTEST-27.md](PLAYTEST-27.md) and [PLAYTEST-26.md](PLAYTEST-26.md)** are the two sessions
-before it. Their controls findings are built the same way — the title screen's two circular mode
-buttons and the drag stick they chose between are gone, leaving one scheme and so no question to
-answer. What is left of either is **M76**: the summary's tap, and the restart and continue buttons
-asked for a third time.
+**[PLAYTEST-27.md](PLAYTEST-27.md) is the second session on the released page and the first played
+on both a laptop browser and a phone, and every one of its six findings is built.** The release
+arrives under versioned URLs, the shared link carries an opaque card, the continue and restart
+buttons are on both screens, a press acknowledges itself before the day it starts blocks the frame,
+and the two findings about the controls themselves — tap mode dead on a laptop, and the drag stick
+— are answered the same way M82 answers playtest 28: one scheme, chosen nowhere, that a mouse
+click drives on every build. The record is in `DECISIONS.md` under M76, M80 and M82.
+
+**[PLAYTEST-26.md](PLAYTEST-26.md) is the one before it and every finding in it is built**, across
+the two halves of M76 and M82's own deletion of the title screen's two circular mode buttons.
 
 **[PLAYTEST-25.md](PLAYTEST-25.md)'s nine findings are built** — the
 first phone session on the built mobile game and the first human verdict on the sealed city. The
@@ -109,188 +105,6 @@ which proves only that the controls stay *off* where they should.
       careful-versus-careless survives a blunter instrument, and it is answered by playing it rather
       than by arguing it.** The three smaller things a real device would also settle — the catch
       radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
-
----
-
-## M80 — The release arrives, and the link carries its picture · asked for 2026-09-06
-
-[PLAYTEST-27.md](PLAYTEST-27.md)'s first and fifth findings. Both are about the **published page**
-rather than about the game, which is why they are one milestone: neither is reachable from
-`tools/run.sh`, both are settled in `export_presets.cfg` and `.github/workflows/deploy.yml`, and
-both are checked with `curl` against the live site rather than with the suite.
-
-**It is first in the order because everything else in this file depends on it.** A fix that a
-browser does not go back for is a fix nobody receives, and the next playtest would be run on a build
-that is partly the last one.
-
-- [ ] **The browser serves a stale — or mixed — build after a release.** *(2026-09-06: "the browser
-      doesn't automatically refresh to the newest release I think the caching is not based on
-      etag?".)*
-
-      **The mechanism, measured against the live site.** GitHub Pages sends an `ETag` for every file
-      *and* `Cache-Control: max-age=600` beside it. `max-age` is what decides whether the browser
-      asks at all: inside those ten minutes the cached copy is considered fresh and no request is
-      made, so the `ETag` is never offered and never compared. The player's guess is right in
-      effect — the page is not refreshing on an `ETag` because there is no request for one to ride
-      on.
-
-      **The worse half is that the four files expire independently.** The export is `index.html`,
-      `index.js`, `index.wasm` (39.5 MB) and `index.pck` (2.4 MB), all under fixed names that never
-      change between releases — the generated `index.html` carries `"executable":"index"` in its
-      `GODOT_CONFIG` and the engine appends `.wasm` and `.pck`. Each file's ten minutes starts when
-      that file was last fetched, so a reload part-way through can pair a fresh `index.html` against
-      last release's `index.pck`. That is a **mixed** build, not a stale one, and it would present
-      as the game behaving strangely rather than as anything anybody would call a cache problem.
-
-      **No header fix exists.** GitHub Pages has no `_headers`, no `.htaccess` and no configuration
-      surface; `max-age=600` is the host's and cannot be changed from this repository. **So the fix
-      is in the names**: the URLs have to change when the release changes, which makes a cached copy
-      irrelevant rather than merely stale.
-
-      **The shape to build, and the one constraint that decides it.** Put the three large files in a
-      directory named for the release tag — `build/web/<tag>/index.{js,wasm,pck}` — and leave
-      `index.html` alone at the root as the only unversioned file, where a ten-minute window is
-      harmless because it is 6 KB and always fetched before anything else. `deploy.yml` already
-      knows the tag (`github.ref_name`, which it writes into `project.godot` for the version label),
-      so the move plus a rewrite of the `<script src="index.js">` line and of `GODOT_CONFIG`'s
-      `"executable"` is what publishes it. **The constraint is that the engine builds the wasm and
-      pack URLs by concatenating `executable` with `.wasm` and `.pck`**, so a query string
-      (`index.js?v=…`) cannot be used for those two — a path prefix can, because `"v0.3.0/index"`
-      concatenates correctly. Check that against the exported shell before building on it.
-
-      **What makes it verifiable**: after a release, `curl -sI https://nappy.josuakrause.com/<tag>/index.pck`
-      answers 200, and the root `index.html` names that path and no other
-
-- [ ] **A shared link unfurls with no picture.** *(2026-09-06: "the social media images don't load.
-      are they properly set? compare with josuakrause.com".)* Seen in a messaging app
-      *(2026-09-06, asked where: WhatsApp / Signal / iMessage)*.
-
-      **The image is published and reachable, so this is markup and file format rather than a
-      missing file.** `https://nappy.josuakrause.com/social-card.png` answers 200 with
-      `Content-Type: image/png` and 49,894 bytes, for an ordinary browser and for each of
-      `facebookexternalhit`, `Twitterbot`, `WhatsApp` and `Slackbot-LinkExpanding`. The `og:image` is
-      an absolute `https://` URL and it is in the head.
-
-      **Four differences against `josuakrause.com`, which is the comparison that was asked for**, and
-      the messaging-app answer says the first two matter most:
-
-      - **The card carries an alpha channel and the reference does not.** `assets/logo.png` is
-        `PNG image data, 1280 x 640, 8-bit/color RGBA`; `josuakrause.com`'s
-        `img/photo_675x630.png` is `8-bit/color RGB`. A transparent PNG is the classic reason a
-        messaging client drops a card image or paints it black. **Flatten it onto an opaque
-        background** — and flatten the *published* copy in `deploy.yml`, or keep a separate opaque
-        card asset, rather than changing `assets/logo.png`, which is also the README's image.
-      - **The dimensions and type are not declared.** Add `og:image:type`, `og:image:width` (1280)
-        and `og:image:height` (640) to `html/head_include`. `josuakrause.com` sends all three; a
-        client that would otherwise have to fetch and measure the image itself often just skips it.
-      - **There is no `twitter:image`.** The page sets `twitter:card` to `summary_large_image` and
-        then names no image under the `twitter:` prefix at all. Add `twitter:image` and
-        `twitter:title` beside the `og:` pair.
-      - **There are two `<title>` elements.** Godot's own shell writes `<title>Nappy</title>` and
-        `html/head_include` adds a second, longer one after it, so a scraper that takes the first
-        gets `Nappy` rather than the sentence written for it. This does not explain a missing image
-        and is wrong on its own account.
-
-      **The quoting trap is already recorded and still applies**: `html/head_include` is one long
-      double-quoted `.cfg` value, so every attribute inside it is single-quoted — a literal `"`
-      ends the string early and presents as a broken export rather than as a quoting bug
-
----
-
-## M76 — A screen offers something to press · asked for 2026-09-06
-
-[PLAYTEST-26.md](PLAYTEST-26.md)'s four findings, and they are one complaint: **every screen in this
-game states its controls as a sentence, and a sentence is not a control.** The title screen's
-choice, the summary's dismissal and the missing restart are the same shape from three angles, which
-is why they are one milestone — fixing any one of them alone leaves the game still telling a player
-what to press where it should be offering something to press.
-
-**This is interface, not art, and that distinction is what keeps it in front of the deprioritised
-drawing work.** *(2026-09-06: "we deprioritize graphics works or bugs for now since a graphics
-overhaul is in-flight".)* A control nobody can see is a control that does not work.
-
-**The title screen's half of it is built and released; the rest is not.** What shipped is the two
-circular `ModeButton`s and the rule that the device you answer with is the device you are answering
-about. [PLAYTEST-27.md](PLAYTEST-27.md) re-reported the missing restart a third time and added a
-third item — a press that says it was heard — so all three below are open together.
-
-- [ ] **A summary has to be tapped on its text, and the code says it should not.** *(2026-09-06:
-      "on mobile when the day ends or one dies you have to tap on the text right now I should be
-      able to tap anywhere or it should be obvious where I need to tap".)*
-
-      **Find the cause before designing anything**, because the report contradicts the source.
-      `DaySummary._unhandled_input()` already accepts any pressed `InputEventScreenTouch` with no
-      position test of any kind, so there is no region to widen. And the touch handler is not
-      swallowing it as far as reading it goes: `TouchControls._input()` runs before
-      `_unhandled_input`, but **it never calls `set_input_as_handled()` anywhere**, and its own
-      direction-setting path returns early on a paused tree, which a summary already is.
-
-      So the first half of this item is an investigation on a real device or a rig that reproduces
-      one. **The second half depends on the answer**: if tap-anywhere is broken, fix it; if it works
-      and was simply not discoverable, the player's own alternative is the design — *"or it should
-      be obvious where I need to tap"* — and that is the first item above, on a different screen
-
-- [ ] **The restart, asked for twice and designed once.** *(2026-09-06: "and there is no restart
-      button still", after 2026-09-05: "we need a dedicated button for restart from the pause
-      menu".)* **Do not design this again.** This milestone owns it on both screens, because the
-      two askings put the same control on each and one interaction learned once is the point. The
-      design: a **hold** that fills over about a second, chosen over a one-tap button and over
-      arm-then-confirm, labelled `hold to restart`, and tested against the
-      touch position before the catch-all that reads any touch on the pause screen as *carry on*.
-      Build that.
-
-      **It is both screens, with one pair of buttons.** *(2026-09-06: "on the day end and pause
-      screen show two buttons continue (arrow to the right maybe?) and restart game (must be held
-      down so a bar needs to fill up while pressing; maybe a circular arrow?)".)* That closes the
-      question of whether the queued pause-screen control was the whole answer: the day-end and
-      pause screens get **the same two buttons as each other**, so there is one interaction to learn
-      rather than two.
-
-      **Continue** is a tap, suggested as an arrow to the right. **Restart** is held, with a bar
-      that fills while it is pressed, suggested as a circular arrow — both symbols offered as
-      suggestions rather than decisions. The hold is what M60 had already chosen over a one-tap
-      button and over arm-then-confirm, on the reasoning that **every other pixel of those screens
-      means carry on**, so a brushed thumb would otherwise end a fourteen-day walk with no save in
-      it; this session repeats it independently and extends it to the summary.
-
-      **What that replaces**: the ending's *"tap to start again"*, a lost day's *"tap to go on"* and
-      *"tap to try again"*, and the pause screen's *"tap to carry on"* — sentences, every one, which
-      is this milestone's first item again.
-
-      **The trap is the catch-all.** `PauseScreen._unhandled_input` treats any pressed
-      `InputEventScreenTouch` exactly as `space` and closes the screen, and `DaySummary` does the
-      same, so a touch anywhere already means *carry on* on both. A held button has to be tested
-      against the touch position **before** that branch, the way `TouchControls._input` checks a
-      touch against its own catch radii before anything else claims it. **Do not rely on a `Button`
-      node consuming it**: Godot delivers the screen touch *and* an emulated mouse event, and these
-      screens read the touch itself on purpose, so the `Button` would eat the click while the raw
-      touch resumed underneath it.
-
-      **The keyboard keeps `R` and is not given a hold.** Nothing about the key is broken, and
-      `PauseScreen._refresh_hint()` already says the right thing per platform
-
-- [ ] **A press has to say it was heard.** *(2026-09-06: "after pressing a button there is a
-      significant delay before the game starts/resumes. we need to indicate that the button press is
-      registered".)* [PLAYTEST-27.md](PLAYTEST-27.md)'s third finding, and it belongs here because
-      **the two buttons above are the thing that does the acknowledging** — a screen whose only
-      control is *tap anywhere* has nothing that can light up, so this is unbuildable until they
-      exist and nearly free once they do.
-
-      **The design is the player's and it is the acknowledgement, not the delay.** A press with no
-      feedback reads as a press that missed, and the next thing a player does is press again. So
-      every one of these controls — the title's two `ModeButton`s, and continue and restart on both
-      screens — changes visibly on *touch down*, before any work the press causes has run.
-
-      **The delay is a separate investigation and does not block it.** What is known from reading,
-      with nothing measured on a phone: day one is placed during boot (`main._ready()` ends with
-      `_start_day()`), so the title's start is not obviously where a wait comes from; continuing from
-      a summary runs `main._start_day()`, which plans the day's closures, places every event and
-      streams the world around the doorstep on the frame the button was pressed; and restarting runs
-      `main._restart_run()`, which reloads the scene and regenerates the city — the step `main`
-      already times and prints as `[Main] city generated in N ms`. A fourth candidate is the browser
-      rather than the game: shader compilation and texture uploads on the first frames after a
-      screen closes. **Measure before moving any of it**, and print the same `N ms` for the day-start
-      path so there is a number rather than an impression
 
 ---
 
@@ -795,11 +609,11 @@ record — including why the pause button is the one control that sends an event
 an action — is in `DECISIONS.md` under M60. **Three things are left, and two of them want a real
 device or the real address:**
 
-**The restart button this screen needs is M76's**, together with the day-end screen's, because the
+**The restart button this screen needs is built**, together with the day-end screen's, because the
 same pair of controls was asked for on both and one interaction learned once is the point of putting
-them there. It is not an item here and nothing about it is recorded here: the hold, the label, the
-catch-all it has to be tested before, and why `R` keeps the keyboard to itself are all in M76's
-fourth item.
+them there. It was never an item here and nothing about it is recorded here: the hold, the label,
+the catch-all it has to be tested before, and why `R` keeps the keyboard to itself are all in
+`DECISIONS.md` under M76.
 
 - [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
       pointing home, and the stick and the run button sit at that height on both sides — so during

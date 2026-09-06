@@ -102,14 +102,13 @@ func _ready() -> void:
 	_add_touch_controls()
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
-	_summary.continued.connect(_on_summary_continued)
 
 	# Deliberately not `_pauses_with_the_game`: a pause screen that pauses with the game cannot
 	# unpause it. It inherits ALWAYS from this node, which is what it wants.
 	_pause = PAUSE_SCREEN.instantiate()
 	add_child(_pause)
-	_pause.quit_requested.connect(_quit)
-	_pause.restart_requested.connect(_restart_run)
+
+	_connect_summary_and_pause_signals()
 
 	# Same reasoning, one screen further out. See `TitleScreen`.
 	_title = TITLE_SCREEN.instantiate()
@@ -168,6 +167,23 @@ func _ready() -> void:
 	if (screenshot or "--no-title" in args) and not "--title" in args:
 		return
 	_open_the_title()
+
+## Both screens' own restart reaches the one thing that means it, and both screens' own way out
+## reaches the same quit — pulled into its own function, called once `_summary` and `_pause` both
+## exist, rather than left as four lines split across each screen's own instantiation.
+##
+## **This is the fix for the day summary's own restart button holding, filling its bar, firing its
+## signal, and being heard by nobody** — `_summary.restart_requested` had no connection at all next
+## to `_pause.restart_requested.connect(_restart_run)`, which is the shape
+## `_test_the_summary_and_pause_restart_signals_are_both_connected` now holds so a screen added
+## later cannot repeat it silently: a green `check.sh` and a green suite both passed with the day
+## summary's restart doing nothing, because nothing before this ever asked whether the signal was
+## connected rather than only whether pressing the button emitted it.
+func _connect_summary_and_pause_signals() -> void:
+	_summary.continued.connect(_on_summary_continued)
+	_summary.restart_requested.connect(_restart_run)
+	_pause.quit_requested.connect(_quit)
+	_pause.restart_requested.connect(_restart_run)
 
 ## Dev flag: `-- --ending bad|neutral|good` puts the last screen of a run on screen at boot.
 ##
@@ -329,6 +345,11 @@ func _pauses_with_the_game(node: Node) -> void:
 # --------------------------------------------------------------- the day loop ---
 
 func _start_day() -> void:
+	# Timed for the same reason `_ready()` times `CityGenerator.generate()`: playtest 27 named
+	# this path — planning the day's closures, placing every event, streaming the world around
+	# the doorstep — as one of the candidates for the wait after a summary's continue button,
+	# and nothing about it had ever been measured.
+	var elapsed := Time.get_ticks_msec()
 	# The day is announced first, so listeners clear yesterday's state before anything is
 	# placed in today — announcing it afterwards wiped the contact the director had just
 	# reported, and the HUD showed nothing.
@@ -370,9 +391,9 @@ func _start_day() -> void:
 		_apply_meter_override()
 	_first_day = false
 
-	print("[Main] day %d (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
-			% [GameState.day, GameState.current_act(), _city.events.planned_count(),
-			_city.events.active_count(), _city.events.owed_ahead(),
+	print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
+			% [GameState.day, Time.get_ticks_msec() - elapsed, GameState.current_act(),
+			_city.events.planned_count(), _city.events.active_count(), _city.events.owed_ahead(),
 			_city.crowd.agent_count(), _day.time_total]
 			+ "| calm: %s | closed: %s" % [_calm_summary(), _closure_summary()])
 

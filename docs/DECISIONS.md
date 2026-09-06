@@ -5024,10 +5024,126 @@ exposed two latent bugs and one false assertion:
   one-shot covering breadth** is a consequence of forbidding the spine and is left for somebody's
   judgement rather than a green tick.
 
+## M76 — A screen offers something to press, the rest of it · built 2026-09-06
+
+Playtest 26's last two findings and playtest 27's third, which is the restart's third asking. The
+title screen's half was built first and is the entry below.
+
+**The summary's tap-anywhere was never broken, and finding out cost more than a fix would have.**
+*"on mobile when the day ends or one dies you have to tap on the text"* contradicted the source
+outright — `DaySummary._unhandled_input()` accepts any pressed `InputEventScreenTouch` with no
+position test, and neither touch handler calls `set_input_as_handled()` — so the entry made the
+investigation the deliverable rather than a fix. It was settled by booting `day_summary.tscn` inside
+a real `SceneTree` and firing a genuine touch at (20, 20), far from any text and through the `Dim`
+`ColorRect` whose `mouse_filter` is `STOP`: `continued` fired. **A raw touch bypasses Control hit
+testing entirely** — only the *emulated* mouse click goes through that path — so the scrim was never
+in the way. The report was **discoverability**, which is the player's own alternative reading:
+*"or it should be obvious where I need to tap"*, and the buttons are the answer.
+
+**The restart shipped inert on one of its two screens, and a green suite said nothing.** The
+day-summary button held, filled its bar and emitted `restart_requested`; `main._ready()` connected
+`_pause.restart_requested` and nothing at all connected the summary's. **What let it through is that
+every test asked whether pressing the button emits the signal, and none asked whether the signal
+reaches anything.** The four connections are now one function, and the test calls
+`Signal.is_connected()` on both screens directly rather than driving a press — a distinction worth
+keeping, because the wiring is the half a review of the diff does not see.
+
+**The press acknowledgement is two `await get_tree().process_frame`, and one is not enough.**
+`SceneTree.process_frame` fires *before* the frame it names is drawn — confirmed against
+`RenderingServer.frame_pre_draw`/`frame_post_draw`, which both fire only after the first await has
+resumed. The first version awaited once, cleared the pressed look before a pixel of it reached the
+screen, and **nothing in the suite could see the difference**, since a frame that is never drawn is
+invisible to every assertion about state. It was caught by a screenshot rig that showed no flash at
+all. The second await is what lands after the draw between them.
+
+**Why the flash is forced rather than a `Button`'s own pressed state.** The catch-all is what fires
+for most presses — nothing requires landing on the button — so a native pressed state, which only
+answers a press that actually hit, would leave a tap on the bare scrim with nothing to show. Both
+now go through `ModeButton.force_pressed_look()`. The keyboard branch stays synchronous: `space` has
+no on-screen button to flash, and a wait with nothing to show for it is latency for its own sake.
+
+**A one-frame gap is a one-frame window for a second tap**, found while building it rather than
+after: a coroutine that has not resumed does not stop `_unhandled_input` reading the next event as a
+fresh press, so a fumbled double tap started the day twice. A `_continuing` guard closes it.
+
+**The delay behind the complaint was measured and nothing was moved on the strength of it**, which
+the entry required. `_start_day()` — planning the day's closures, placing every event, streaming the
+world around the doorstep — is **610–740 ms on day 1 and 860–910 ms by days 8–14**, against city
+generation's 280–450 ms; it is the dominant cost and it grows with event density. **Day 1 is
+provably off every button's path**, paid during `_ready()` before the title opens. The web half —
+shader compilation and texture uploads on the first frames after a screen closes — is not measurable
+headlessly and stays unmeasured. What to do about the wait is a decision for the player, and the
+acknowledgement is what this milestone owed regardless of the answer.
+
+**`PauseScreen.resumed` has no listener in `main.gd` at all**, found during the same audit. Its
+catch-all closes the screen and emits into nothing, and both are instant, so it was left alone —
+recorded because it looks exactly like the bug above and is not one.
+
+**Choices made where the design was silent**, each cheap to overturn: the hold is exactly 1.0 s
+(*"about a second"*, taken as the round number); restart's glyph is a three-quarter ring with an
+arrowhead and continue's a play triangle, matching the reference picture rather than the plain arrow
+the player offered as a suggestion; the fill bar is a linear rectangle under the disc rather than a
+ring around it; the buttons appear on touch only, and a desktop keeps `space`/`esc`/`r` as text
+because a key already reads as a control there; and the final ending screen gets the same pair even
+though a plain tap there already restarts, chosen for *one interaction to learn* over a special case.
+
+## M80 — The release arrives, and the link carries its picture · built 2026-09-06
+
+Playtest 27's first and fifth findings, both about the published page rather than the game, and both
+checked with `curl` against the live site rather than with the suite.
+
+**The stale build was a `max-age`, not an `ETag`.** *"I think the caching is not based on etag?"* —
+right in effect. GitHub Pages sends both, and `Cache-Control: max-age=600` is what decides whether
+the browser asks at all: inside those ten minutes the cached copy is fresh, no request is made, and
+the `ETag` is never offered. **The half the guess did not reach is the worse one**: the four
+exported files keep fixed names between releases and each one's window starts when *that* file was
+fetched, so a reload mid-window can pair a fresh `index.html` with the previous release's
+`index.pck`. That is a **mixed** build, not a stale one, and it presents as the game behaving
+strangely rather than as anything anybody would call a cache problem. **Pages has no header
+surface** — no `_headers`, no `.htaccess` — so the fix had to be in the names.
+
+**The design named one constraint and missed a second that would have broken audio.** It held that
+the engine builds the wasm and pack URLs by concatenating `GODOT_CONFIG.executable`, so a path
+prefix carries both where a query string could not. True. What nobody had checked is that the same
+`loadPath` also names `godot.audio.worklet.js` and its `.position.` variant through Emscripten's
+`locateFile` hook, read the instant audio initialises — **versioning the directory without moving
+those two would have 404'd the first sound the game plays**, on a path no test covers. Found by
+reading the exported `index.js` rather than trusting the brief, and confirmed by fetching both from
+a served export in a real browser.
+
+Every anchor in `index.html` is asserted to occur exactly once before it is rewritten, so a future
+Godot shell that renames one fails the export loudly rather than shipping a page pointing at the
+wrong place.
+
+**The card image was never missing.** It answered 200 with `Content-Type: image/png` for an ordinary
+browser and for `facebookexternalhit`, `Twitterbot`, `WhatsApp` and `Slackbot-LinkExpanding`. **The
+cause is the alpha channel**: `assets/logo.png` is RGBA and its transparent pixels carry RGB
+`(0, 0, 0)`, verified pixel-wise, so a messaging client that ignores alpha paints the card **black**
+— which is what *"the images don't load"* looks like from the outside. The player's answer that they
+saw it in a messaging app is what ranked that above the other three differences from
+`josuakrause.com`.
+
+**Flattened once and committed rather than at deploy time**, which was the milestone's other offered
+option: ImageMagick is no longer preinstalled on `ubuntu-latest`, and a `pip install Pillow` step
+would hit PEP 668's externally-managed-environment restriction without a venv. `assets/logo.png` is
+untouched, since it is also the README's image and transparency is right there.
+
+The other three: `og:image:type`/`width`/`height` declared, because a client that would otherwise
+have to fetch and measure the image often skips it; `twitter:image` and `twitter:title` added, since
+the page declared `summary_large_image` and then named no image under the `twitter:` prefix at all;
+and the duplicate `<title>` removed. Godot's own shell writes `<title>Nappy</title>` *before*
+`html/head_include` is appended, so a scraper reading the first title got `Nappy` rather than the
+sentence written for it — stripped from the shell's side during the export, since the include's
+title is the one meant to survive.
+
+**Left open and cheap to overturn**: `RELEASE_TAG` versions the **debug** export too, so
+`tools/serve-web.sh` serves from `build/web/dev/`. One code path rather than two, and no downside
+was found.
+
 ## M76 — The title asks with buttons, and a release carries no modifiers · built 2026-09-06
 
 Playtest 26's first two findings, plus two instructions that arrived beside them. The milestone's
-other half — the summary's tap target and the held restart — is still queued.
+other half — the summary's tap target and the held restart — is the entry above.
 
 **The two title buttons already were `Button` nodes; they did not read as any.** *"the choice on the
 title screen is not at all obvious. those should be proper buttons"*. The scene gave them a minimum

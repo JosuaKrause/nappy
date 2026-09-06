@@ -3,14 +3,22 @@ extends CanvasLayer
 ##
 ## Also the pause: the tree is paused while this is up, so the city keeps its state and the
 ## day can simply be restarted rather than rebuilt.
+##
+## `restart_requested` is wired in `main._connect_summary_and_pause_signals()` to the same
+## `main._restart_run()` `PauseScreen.restart_requested` reaches — see that function's own doc for
+## why the wiring is pulled into one place rather than left beside each screen's own instantiation.
 
 signal continued()
+signal restart_requested()
 
 @onready var _root: Control = $Root
 @onready var _heading: Label = $Root/Center/Lines/Heading
 @onready var _title: Label = $Root/Center/Lines/Title
 @onready var _body: Label = $Root/Center/Lines/Body
 @onready var _hint: Label = $Root/Center/Lines/Hint
+@onready var _buttons: HBoxContainer = $Root/Center/Lines/Buttons
+@onready var _continue_button: ModeButton = $Root/Center/Lines/Buttons/ContinueColumn/Continue
+@onready var _restart_button: ModeButton = $Root/Center/Lines/Buttons/RestartColumn/Restart
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, so the hint says `tap`
 ## rather than a `space` a phone does not have — the same reason `TitleScreen` and `PauseScreen`
@@ -69,7 +77,14 @@ func _ready() -> void:
 	# Coloured here rather than in the scene so `Palette` stays the one place a runtime colour is
 	# decided — which is what its own class comment asks for.
 	_heading.add_theme_color_override("font_color", Palette.GAME_OVER)
+	_refresh_buttons()
 	_root.hide()
+
+## The continue/restart pair only replaces a sentence where there is a thumb to press it with —
+## see `PauseScreen._refresh_buttons()`, the same split on the same platform question. Its own
+## function for the same reason: a test can flip `_touch` and call this again.
+func _refresh_buttons() -> void:
+	_buttons.visible = _touch
 
 func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int) -> void:
 	# A lost *day* is not the end of a run — there are nerves left, and the screen says so two lines
@@ -95,9 +110,15 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 		lines.append("")
 		lines.append(_resistance_line())
 	_body.text = "\n".join(lines)
-	var verb := "tap" if _touch else "space"
-	_hint.text = "%s to try again" % verb if retrying else "%s to go on" % verb
+	_hint.text = _hint_text("try again" if retrying else "go on")
 	_present()
+
+## The keyboard says the verb; touch says nothing, because the continue/restart pair below already
+## does — see `PauseScreen._refresh_hint()`'s own doc for why a sentence and a button do not both
+## say the same thing on the same screen. `verb` is the second word only (`"go on"`, `"try again"`,
+## `"start again"`), so every call site reads as what it is asking rather than as string plumbing.
+func _hint_text(verb: String) -> String:
+	return "" if _touch else "space to %s" % verb
 
 ## The tally, and — the mechanism rather than a courtesy — the chalk mark's own words once a
 ## pickup has just been touched. Read once and cleared: `GameState.pending_resistance_brief` is
@@ -130,30 +151,150 @@ func show_ending(ending: GameEnums.Ending) -> void:
 	_heading.show()
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
 	_body.text = _ENDING_BODY.get(ending, "")
-	_hint.text = "tap to start again" if _touch else "space to start again"
+	_hint.text = _hint_text("start again")
 	_present()
 
 func _present() -> void:
 	_root.show()
+	_refresh_buttons()
+	_restart_button.cancel_hold()
+	_continuing = false
 	get_tree().paused = true
 
 func dismiss() -> void:
 	_root.hide()
 	get_tree().paused = false
+	_restart_button.cancel_hold()
 
 func is_showing() -> bool:
 	return _root.visible
+
+## Whether the screen's own layer is presenting rotated — computed fresh rather than pushed in
+## from `main`, for the same reason `PauseScreen._wants_rotation()` is: `TouchControls` is the only
+## file `main._apply_orientation()` reaches with a `rotated` property, and `ScreenOrientation
+## .wants_rotation()` is a pure function of the same two facts `main` itself asks it with.
+func _wants_rotation() -> bool:
+	return ScreenOrientation.wants_rotation(get_window().size, _touch)
+
+## The trap this milestone's own design names, the same one `PauseScreen._handle_restart_touch()`
+## guards against: `_unhandled_input`'s catch-all below reads **any** pressed touch or click as
+## *carry on*, so a held button has to be tested against the press position before that branch ever
+## sees the event. A left click holds it too, gated on `not _touch` for the same reason
+## `PauseScreen._handle_restart_touch()`'s own mouse branch is — see that function's own doc.
+func _handle_restart_touch(event: InputEvent) -> bool:
+	if not _buttons.visible:
+		return false
+	var position: Vector2
+	var pressed: bool
+	var index: int
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		position = touch.position
+		pressed = touch.pressed
+		index = touch.index
+	elif not _touch and event is InputEventMouseButton \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var click := event as InputEventMouseButton
+		position = click.position
+		pressed = click.pressed
+		index = _MOUSE_HOLD_INDEX
+	else:
+		return false
+	if pressed:
+		var at := ScreenOrientation.to_design_space(position, _wants_rotation())
+		if not _restart_button.catch_rect().has_point(at):
+			return false
+		if not _restart_button.begin_hold(index):
+			return false
+		get_viewport().set_input_as_handled()
+		return true
+	if not _restart_button.is_held_by(index):
+		return false
+	get_viewport().set_input_as_handled()
+	if _restart_button.end_hold(index):
+		restart_requested.emit()
+	return true
+
+## Stands in for the touch index a mouse event carries none of — the same role
+## `PauseScreen._MOUSE_HOLD_INDEX` plays there, kept as its own constant here rather than shared,
+## since each screen already owns a full duplicate of the hold-reading logic rather than one moved
+## out to `ModeButton`.
+const _MOUSE_HOLD_INDEX := -2
+
+## Whether a `continued` request is already on its way to being acknowledged — the one-frame gap
+## `_acknowledge_and_continue()` opens is also one frame in which a second tap can land, and a
+## coroutine that has not yet resumed does not stop `_unhandled_input` from reading the next event
+## as a fresh press. Without this, a fumbled double-tap starts the day twice.
+var _continuing := false
+
+## Acknowledges a touch before the day it starts costs anything to look at. *(Playtest 27 finding
+## 3: a press was not acknowledged, and the wait after it was long.)* `main._on_summary_continued()`
+## runs `_start_day()` synchronously in response to `continued` — measured at 610-900ms — and
+## nothing was ever rendered between the touch landing and that freeze, because both happened
+## inside the same frame's input processing.
+##
+## **Two awaits, not one, and the difference is load-bearing.** `SceneTree.process_frame` fires
+## *before* the frame it names is drawn, not after — confirmed directly with
+## `RenderingServer.frame_pre_draw`/`frame_post_draw`, both of which fire only once this coroutine's
+## first `await` has already resumed. A single `await get_tree().process_frame` therefore resumes
+## and would clear the flash before a single pixel of it ever reached the screen — the mistake this
+## function's first version made, caught only by a screenshot that showed no flash at all rather than
+## by anything the suite could see. The *second* `process_frame` is what actually lands after the
+## draw that happened between the two: the button paints pressed, that frame is drawn, and only then
+## does the second await let this go on to clear it. Both fire under `get_tree().paused` — this
+## screen's own state throughout — checked directly rather than assumed, since a coroutine that
+## never resumed would hang the game on the one screen everybody eventually presses.
+##
+## **Flashes the continue button even for a press that missed it.** The catch-all below is what
+## fires for most presses — nothing requires landing on the button itself — so a `Button`'s own
+## native pressed state, which only ever answers a press that actually hit it, would leave a tap on
+## the bare scrim with nothing to show for it. `force_pressed_look()` says the same thing regardless
+## of where the touch landed.
+##
+## **Touch only.** A keyboard has no button on screen to flash, and `space` needs no frame held open
+## for it — the keyboard branch below stays exactly as synchronous as it always was, since adding a
+## wait with nothing new to show for it is latency this path does not need.
+func _acknowledge_and_continue() -> void:
+	if _continuing:
+		return
+	_continuing = true
+	_continue_button.force_pressed_look()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_continue_button.clear_forced_press()
+	_continuing = false
+	continued.emit()
 
 ## Space, a tap, or a mouse click moves on. *(2026-09-06, on a laptop: "I still need to press space
 ## even in mouse mode".)* **This overturns an earlier reason**: the touch event used to be read
 ## directly rather than turned into a synthetic click *"so a stray mouse press elsewhere on the
 ## desktop still cannot skip a summary a player has not read"* — a real concern, taken when no
 ## control scheme invited a player to use the mouse. The pointer scheme now reads a click
-## everywhere, so a laptop player is expected to click, and the screen has to accept the same click
-## rather than making the keyboard the only way past it.
+## everywhere, so a laptop player is expected to click, and the screen has to accept one.
+##
+## **The mouse branch is its own, gated on `not _touch`, rather than folded into `TouchInput
+## .is_press()`.** A real touch device emulates a mouse click from every finger it reads, and
+## `_acknowledge_and_continue()`'s two-frame delay leaves `is_showing()` true for that whole
+## window — long enough for the emulated click to arrive while it is still open. Reading it through
+## the same `not _touch` gate `TouchControls` and `PauseScreen`'s own restart hold use means the
+## emulated click never reaches a branch at all on a device where a real touch already has, so it
+## can never fire `continued` a second time underneath the delay `_continuing` exists to guard.
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_showing():
 		return
-	if event.is_action_pressed("ui_accept") or TouchInput.is_press(event):
+	if (event is InputEventScreenTouch or event is InputEventMouseButton) \
+			and _handle_restart_touch(event):
+		return
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		get_viewport().set_input_as_handled()
+		_acknowledge_and_continue()
+		return
+	if not _touch and event is InputEventMouseButton \
+			and (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		get_viewport().set_input_as_handled()
+		continued.emit()
+		return
+	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		continued.emit()
