@@ -40,9 +40,9 @@ func _test_registered_regions_and_order(t) -> void:
 				"%s direction %d uses its documented cell" % [part_id, index])
 	t.check(rig.mother_manifest.require_part("head_hair").pivot == Vector2(80, 28),
 		"head uses the documented attachment pivot")
-	t.check(rig.mother_manifest.require_part("left_upper_leg").pivot_for(0) == Vector2(68, 116),
+	t.check(rig.mother_manifest.require_part("left_upper_leg").pivot_for(0) == Vector2(68, 24),
 		"left upper leg uses the documented north hip pivot")
-	t.check(rig.mother_manifest.require_part("right_lower_leg").pivot_for(2) == Vector2(96, 146),
+	t.check(rig.mother_manifest.require_part("right_lower_leg").pivot_for(2) == Vector2(96, 12),
 		"right lower leg uses the documented east knee pivot")
 	t.check(rig.mother_manifest.require_part("left_shoe").rect_for(0) == Rect2(27, 7 * 192 + 19, 46, 63),
 		"left shoe uses its numeric v3 cutout")
