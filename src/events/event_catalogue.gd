@@ -319,7 +319,10 @@ static func _dog_walker() -> EventDef:
 ## was never near the tables. 90px is a real band beyond the 24px the tables themselves obstruct and
 ## the 40px of full intensity — one and a half tiles past the frontage on a two-tile (64px) pavement,
 ## comfortably short of the 448px block period so a café never bills the far side of the street it is
-## on. **Expected to move again once fields become capsules** (a later milestone): a circle this tight
+## on. **Expected to move again once a field takes the shape of its body** — M61's third item, where
+## the field becomes the Minkowski sum of the body and a disc, so a frontage gets a capsule instead
+## of a circle. This number is the stopgap for that and has to be re-derived rather than reused: a
+## circle this tight
 ## still over-reaches perpendicular to the frontage and under-reaches along it, which is the wrong
 ## shape for a source that sits across a stretch of pavement rather than at a point.
 static func _cafe_tables() -> EventDef:
@@ -559,7 +562,8 @@ static func _loose_dog() -> EventDef:
 ## `cafe_tables`, on the same reasoning: a market is a real crowd, not scenery, but the reach has to
 ## match the source. 95px is a touch wider than the café's 90, matching its own slightly bigger
 ## `inner_radius` (44 against 40) and `obstructs_radius` (28 against 24), and stays well inside the
-## 448px block period. **Expected to move again once fields become capsules** — see `cafe_tables`.
+## 448px block period. **Expected to move again once a field takes the shape of its body**, and to be
+## re-derived rather than shrunk again — see `cafe_tables` and M61's third item.
 static func _market_stall() -> EventDef:
 	var def := EventDef.new()
 	def.id = "market_stall"

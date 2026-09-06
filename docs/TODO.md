@@ -14,20 +14,20 @@ mid-way through.
 
 ## The order
 
-1. **M70** — the meter tells the truth, and the local build starts.
-2. **M72** — what the city costs to walk through: barriers stop charging meter, alleys stop being
-   walled shut, the chatting mother can catch you, and the cat and the dog land.
-3. **M71** — the title screen asks which controls.
-4. **M64** — off the path is closed, not dear. The sealing is built and every fairness defect
+1. **M64** — off the path is closed, not dear. The sealing is built and every fairness defect
    playtest 22 found in it is fixed; what is left is the eight seal pictures, so that no single
    barrier becomes the city's signature, and the off-screen arrivals item. **Its open question is a
    played one** — whether a walled city reads as a route decision or as a maze.
-5. **M65** — the chalk mark is findable, and silent until it is found.
-6. **M56** — the resistance is noticed.
+2. **M65** — the chalk mark is findable, and silent until it is found.
+3. **M56** — the resistance is noticed.
 
-**The first three are [PLAYTEST-25.md](PLAYTEST-25.md)**, the first phone session on the built
-mobile game and the first human verdict on the sealed city. Read it before picking any of them up:
-four of its seven findings are numbers that a rig set and nobody had ever walked past.
+**[PLAYTEST-25.md](PLAYTEST-25.md) is the freshest report and its nine findings are built** — the
+first phone session on the built mobile game and the first human verdict on the sealed city. The
+record is in `DECISIONS.md` under M73, M74 and M75. **What it leaves open is a played question and
+a shaped one.** Played: the barrier rows are silent and the two ambient radii are tight, and nobody
+has walked a city that costs what this one now costs. Shaped: **M61**, which is what the tightened
+radii are a stopgap for — the player's *"that number was so big because it was a point source
+before"* is the reason those numbers move again once a field takes the shape of its body.
 
 **The instrument they are read with now exists.** The dusk map draws the walk over the plan — where
 she went, where she ran, and which events actually reached her — so *did the corridor have to be
@@ -54,283 +54,6 @@ paint) and the small items (the robber in a building).
 M53's one remaining piece is specified and unordered — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
-
----
-
-## M70 — The meter tells the truth, and the local build starts · asked for 2026-09-05
-
-Playtest 25's first two findings. Both are about a reader being told something that is not so — one
-on screen, one at the command line.
-
-- [ ] **The day can end without anything saying so, and then nothing can end it again.** *"if
-      excitement reaches 100 the game doesn't end! that's a major bug" ... "it stays on 100 and I'm
-      completely invincible"*. **Found, reproduced in a real Web export, and it is one line** —
-      `src/main.gd:464`, inside `_on_day_finished()`:
-
-      ```gdscript
-      var trail: Array[Vector3] = _observer.trail() if _observer else []
-      ```
-
-      The `else []` is an **untyped** `Array`, and assigning it to an `Array[Vector3]` throws at
-      runtime. `_observer` is in the tree only while a run is being traced, so with telemetry off
-      the `else` runs and `_on_day_finished()` aborts six lines before `_summary.show_day(...)` —
-      while `DayController._end()` has already set the phase to `OVER`. From there the clock stops,
-      no summary appears, the tree is never paused, she keeps walking, and every later ending is
-      swallowed, because `_on_baby_state_changed()`, `_on_hard_fail()` and `DayController._process()`
-      all return immediately unless the day is running.
-
-      **Nothing about it is mobile.** `Telemetry` disables itself on a web export
-      (`OS.has_feature("web")`), so `_observer` is null there and never null on an ordinary desktop
-      run — which is why the desktop, and every rig, dies correctly. `--no-telemetry` puts a desktop
-      build in the same state.
-
-      **Fix the shape, not the symptom.** A cast on the literal leaves the ternary in place and the
-      next edit puts it straight back; a typed local assigned in an `if` cannot regress. **Grep the
-      tree for the same pattern** — a typed collection initialised from a ternary with a bare `[]`
-      or `{}` on one side — and fix any others in the same commit.
-
-      **It owes a headless test in `tests/`, and the gap it closes is the interesting part**: no
-      test has ever run the day-ending path with no observer in the tree, so CI could not have
-      caught this and neither could any number of desktop playtests. `tests/test_day_loop.gd`
-      asserts that crying loses the day; what is missing is that the summary comes up afterwards
-      with telemetry off
-
-- [ ] **Every environment gate becomes a flag with an override.** *(2026-09-05: "in general don't
-      tie features directly to an environment — tie it to a feature flag which might be informed by
-      the environment but lets you override ... that way you can get telemetry when you need it".)*
-      The rule itself is in the **godot** skill under "Capabilities", so it arrives before the next
-      edit that would break it; this item is the existing gates it condemns.
-
-      **`Telemetry` is the one the player named and the one that hid the bug above.** It returns
-      early on `OS.has_feature("web")` — the reasoning is sound and stays as the *default*, since
-      `user://` is a stranger's browser storage that nobody collects or clears — but there is no way
-      to say *yes, this run, log it*. So the web build's day-ending path was unreachable from every
-      test and every desktop session, and a runtime type error lived on the live site. Give it an
-      override, and note the override has to work in a **release** build, because the deployed page
-      is exactly where `DevFlags.enabled()` cannot reach — `ControlsMode`'s `?controls=` URL flag is
-      the precedent for that, and its docstring already argues the case.
-
-      **Then audit the rest**: `QuitOption.available()` is `not OS.has_feature("web")` with no way
-      in; `DevFlags.enabled()` is `OS.is_debug_build()` outright; `AutoScreenshot` returns early on
-      the same. Each is a branch somebody may need to look at from the other side. **`TouchInput
-      .available()` is the shape to copy** — a platform fact plus a `--touch` override — and needs
-      nothing.
-
-      **The measure of done is not the flags but the reach**: name, for each gate, how a person
-      would enter the branch the platform does not pick for them
-
-- [ ] **A meter bar may not read `100` while the day is still alive.** `MeterBar._draw()` prints its
-      value with `"%3.0f" % value`, which rounds to nearest, so **99.5 and everything above it
-      prints `100`** — checked against the engine, not inferred. The day ends when excitement
-      reaches `Tuning.METER_MAX` (100) exactly, so the whole top half point of the meter is a live
-      day showing a full bar and a full number. The player met it on a phone and read it as the
-      crying rule being broken: *"if excitement reaches 100 the game doesn't end! that's a major
-      bug"*.
-
-      **Floor it rather than rounding it** — `99` until it is genuinely `100` — for both bars, since
-      the sleepiness bar tells the same lie at the other end of the day. **The fill fraction has the
-      same problem in a quieter way** and is worth deciding on in the same change: at 99.7 the bar is
-      drawn 99.7% full, which no eye can tell from full.
-
-      **A test owes this one an assertion**, because it is invisible to every rig the project has:
-      nothing screenshots a meter and reads the number back, so this survived every gate. A unit
-      test on the formatting is enough — it is a pure function of the value.
-
-- [ ] **`tools/run.sh` must not boot a stale class cache.** The player's local build would not start
-      at all: `Parse Error: Identifier "ControlsMode" not declared in the current scope`, and the
-      same for `TapControls`, from `hud.gd`, `title_screen.gd` and `main.gd`. Neither file was
-      missing and neither was wrong — what was missing was their entry in
-      `.godot/global_script_class_cache.cfg`, which is how Godot knows a global class exists. The
-      checkout's cache predated the merge that added the two files, and **`run.sh` execs the Godot
-      binary straight at the project with no import pass**, so nothing ever refreshed it.
-
-      **No gate could have caught it and none is at fault**: CI and `tools/check.sh` both import
-      from clean, which is exactly why `check.sh` was green on the tree that would not run. It is
-      reachable only from a working copy older than a new `class_name`, which is every `git pull`
-      that adds one.
-
-      The fix is in `run.sh`: import first, the way `check.sh` does, or detect the stale cache and
-      say so. **Whichever is chosen, it must not make `run.sh` slow to start** — it is the tool
-      somebody reaches for twenty times in a session, and a multi-second import on every launch buys
-      the fix by making the common case worse. An import pass that is a no-op on an up-to-date cache
-      is the shape to aim for.
-
----
-
-## M71 — The title screen asks which controls · asked for 2026-09-05
-
-Playtest 25's verdict on M68's experiment, which was built to find out which of the two control
-schemes wins. Neither did: *"I like both control modes equally"*.
-
-- [ ] **Two buttons on the title screen, and picking one starts the run.** The player's own design:
-      *"let the player choose on the title screen (instead of tap the screen to start have two
-      buttons to choose from)"*. So the title stops being a single "tap to start" and becomes a
-      choice that is also the start — one press, not a menu then a start.
-
-      **`ControlsMode` becomes a player choice rather than a build-time resolution.** It currently
-      answers `resolve()` once from the command line (`--controls tap|stick`, behind
-      `DevFlags.enabled()`) then the page URL (`?controls=tap`) then a default of the stick, and
-      three separate screens read it once into a member at `_ready`: `main.gd` (which instantiates
-      either `TapControls` or `TouchControls` and nothing else ever switches), `hud.gd` (so the
-      walking, running and pause lessons name the control that exists) and `title_screen.gd`.
-      **The order the flags are resolved in is the design's, and it stays**: a flag is how you skip
-      the question, so a run started with one must not be asked.
-
-      What that costs, and it is the whole of the work: the mode is currently fixed before anything
-      is built, and it now has to be answered *by* the title screen and read *after* it. Whether
-      that is main deferring `_add_touch_controls()` until the title is dismissed, or the two
-      readers re-asking, is an implementation call — but **nothing may keep a stale copy of the
-      answer**, which is exactly what three `_ready`-time members are.
-
-      **The desktop keeps a keyboard either way.** The stick is only drawn on a touch device
-      (`TouchInput.available()`), so on a desktop this choice is between tap-to-walk and the arrow
-      keys, and both of those already coexist. The buttons should say what they do rather than name
-      an internal mode.
-
----
-
-## M72 — What the city costs to walk through · asked for 2026-09-05
-
-Playtest 25's six gameplay findings, kept in one milestone because **they are one balance change**:
-some take cost *out* of the city and some put it back, they are measured against each other, and
-measuring any of them alone measures the wrong thing. See the **balance** skill before moving a
-number here. **Do the first two items first and in that order** — the rest is read against what
-they leave behind.
-
-- [ ] **There has to be ground that gives the meter back.** *"currently there is no real way of
-      calming down after an event. even walking on a seemingly empty sidewalk segment does not lower
-      excitement and sometimes even increases it more -- I don't think this is a necessarily
-      straightforward fix."* The player supplied the run and it is in
-      `docs/evidence/run-181812-seed3038142309-v0.2.0-6-gedeed04-dirty/`.
-
-      **The measured mechanism, from that log.** Day 1 plans 147 `cafe_tables`, 124 `market_stall`
-      and 84 `delivery_van` — 355 static bodies, because M64's sealing puts a barrier on every
-      street off the day's route — and every one carries a 150–200px ambient field. **Fields sum**,
-      so at any point several are inside their radii at once. In a park on day 1 the log reads
-      `near market_stall 184px ... in 14.2/s (crowd 3.6, events 10.6)` — the *nearest* event is at
-      the very edge of its own 185px reach and events are still worth 10.6 a second — and excitement
-      goes **35 → 69 in fifteen seconds of calm ground** while she doubles back trying to settle.
-
-      **The item below is most of the fix**, and that is why the two are in one milestone: take the
-      field off the barrier rows and 355 of those emitters go quiet at once. **Measure this one
-      after that one**, against the same log.
-
-      **What is left afterwards is the real question and the player said as much.** Whether a
-      150–200px reach and the current falloff are right at all once the count drops — those radii
-      were authored when a street held a few of these, not a hundred. The test is the player's own
-      sentence: *walking a seemingly empty pavement has to give the meter back*. If it still does
-      not once the barriers are silent, the radii are the next thing to move, not the density.
-
-      **Half of this is legibility rather than arithmetic**: *"while walking the excitement kept
-      going up for semingly no reason"*. The rows charging her are café tables, stalls and vans —
-      scenery a player reads as *the street* — reaching 150–200px, so most of what is billing her
-      is off screen or behind her. A meter that rises against nothing the player can point at is a
-      decision they cannot make, which is the opposite of what every cue in this game is for. A
-      quiet barrier fixes that by removing the charge; if any invisible ambient charge survives the
-      change, it owes the player something to see.
-
-      **It also settles the order against the cat.** The day-3 dusk map the player sent — the
-      `lost_crying` at 26.7s with `in 40.6/s (crowd 0.0, events 40.6) | near: cat_dash 39px`, and
-      her trail barely off the doorstep — is a cat with intensity 15 finishing a loss that was
-      already arriving: *"the cat was what ultimately did it but without it I would have died a few
-      seconds later"*. **Do not raise the cat while the baseline is pinned**, or a `cat_dash` becomes
-      an instant loss on contact, which is not what was asked for.
-
-- [ ] **A thing whose job is to stand in the way costs route and nothing else.** *"static blockages
-      in general shouldn't increase excitement"*, with the exception the player gave in the next
-      breath: *"except for things like ice cream trucks which have inherent excitement"*. So this
-      is not *static means no field* — it is that being in the way is the entire price of a barrier,
-      and being interesting is priced separately.
-
-      The five that are barriers and should stop emitting: `construction` (11.0 over 46/200px),
-      `market_stall` (14.0 over 44/185px, pulsing every 8s), `cafe_tables` (12.0 over 40/170px,
-      pulsing every 6s), `delivery_van` (8.0 over 40/150px) and `barricade` (6.0 over 40/120px, the
-      act IV hard seal). The two that keep their fields: `ice_cream_van` (13.0 over 48/240px — the
-      player's named exception, the chime is the point) and `leaf_blower` (20.0 over 40/200px,
-      pulsing every 4s — loud is the entire row).
-
-      **This is the largest single change to what a day costs that the project has made**, because
-      M64's sealing places several hundred of exactly these bodies a day, and five of the seven rows
-      above are also the seal candidates. Measure the day's total incoming before and after, the way
-      M64's off-path density was measured, and expect the corridor to get cheaper as well as the
-      city off it. **Whether the day is still losable on the meter afterwards is the question**, and
-      `tests/test_balance.gd` is where it gets asked.
-
-      Two things to decide rather than assume, and both need stating in the change: whether a
-      zero-intensity row still has a `cost` for routing purposes (`EventDef` caches one, and
-      `Tuning.WALL_WORTH_OF_COST` is `METER_MAX * 0.4`), and whether an obstacle with no field still
-      earns any telegraph or cue at all — a thing that costs nothing to stand next to may not need
-      announcing.
-
-- [ ] **Alleys are walled shut far too often.** *"the probability of blocking off alleys should be
-      way lower"* — and the player separated the two things that word covers: *"at least for full
-      blockages -- robbers can be frequent"*. So `alley_robbery`, which is an event rather than a
-      barrier, is left alone.
-
-      The full blockage is `SealPlanner._seal_alley_mouths()`, and there is no probability in it to
-      lower: it walls **both** mouths of **every** through-alley whose two ends are both off the
-      day's route tree, unconditionally, every day. A fraction has to be introduced. **Sealing one
-      mouth rather than both is the cheaper half-measure and is not what was asked for** — a
-      through-alley with one end walled is still not a way through — so the roll belongs on the
-      alley, not on the mouth.
-
-      **What the current rule was protecting is stated in `SealPlanner`'s own class doc** and does
-      not go away: an alley walled at neither end, with both its streets sealed, is a shortcut
-      between two places the day has already said no to. That is the cost of the change rather than
-      an argument against it.
-
-- [ ] **The chatting mother can be walked straight past.** *"the chatting lady has a way too small
-      capture radius in should be much bigger. right now I can basically walk up to her without
-      consequence"*. `chatting_mother`'s `detain_radius` is **26px**, and the catalogue's own note
-      says why: it sits under the **32px** spacing between the two walking lanes of a pavement "so
-      the far lane of a two-tile pavement can never trigger it".
-
-      **That reasoning is what the player is overturning, and the overturn is theirs to make**: the
-      whole content of the row is that she catches you, and a radius that the far lane clears by
-      construction is a row with an answer that costs nothing. What the change gives up is that
-      walking the far lane of her pavement no longer avoids her — state it in the code where the
-      old note is, rather than deleting the note and leaving the next reader to rediscover the
-      trade.
-
-- [ ] **The cat and the dog need to land.** *"dashing cat and dog (not pursuing) are basically
-      useless right now -- they need a bigger impact"*. Named precisely, and `charging_dog` is
-      excluded by the player's own *"(not pursuing)"*.
-
-      **The shape asked for is a sharp startle spike** *(2026-09-05, chosen from four options: a
-      short high-intensity burst over a louder-but-same-shape field, a movement consequence, or
-      making one lethal)*. That is `CLAUDE.md`'s standing decision about impulses arriving as a
-      requirement rather than a constraint: there is no `impulse` field on an event and there is not
-      going to be one, because **a sharp spike is a short `duration` at high `intensity`** — so this
-      is expressible in the numbers the catalogue already has.
-
-      What the two carry now: `cat_dash` is intensity 15.0 over a 30/120px field, `AHEAD_OF_PLAYER`,
-      1.8s long behind a 1.6s telegraph, crossing the road at 240px/s. `loose_dog` is intensity 24.0
-      over 30/140px, `TOWARD_PLAYER`, running down her pavement at 132px/s behind a 1.7s telegraph,
-      pulsing every 2.2s, and **deliberately not lethal** — act I has exactly two rows that end the
-      day and this is not one of them. That decision is not touched by this item.
-
-      **The trap to measure against is the one the dog already has a note about**: a spike big
-      enough to matter and slow enough to see coming is a day lost to noise while the thing is still
-      behind her. The cat is the harder half, because it is over in 1.8s and only the peak is
-      available to charge for.
-
-- [ ] **The cyclist does not connect.** *"biker currently is also basically inconsequential. when
-      hit it should be dayending"* — and **it already is meant to be**: `cyclist` carries
-      `hard_fail = true`, and `DayController` already holds the sentence it ends the day with,
-      *"The bell, and then the bike. She is screaming."* So this is a defect report, not a design
-      change.
-
-      **Its lethal band is its `inner_radius`, 26px — the same number as the chatting mother's
-      `detain_radius` above**, and both are reported as things the player walks straight past. Two
-      rows whose entire content is *it catches you*, both set to a radius that never fires, is one
-      finding wearing two hats: decide the two together.
-
-      **It is a radius and not M70's bug, and that was checked rather than assumed.** The worry
-      was that `DayController._on_hard_fail()` returns immediately unless the day is running —
-      exactly as the crying handler does — so a stuck day loop would swallow the cyclist and the
-      crying alike. The player closed it: *"cyclist radius should be bigger, then. that observation
-      was from local"*. The local desktop build is the one where dying demonstrably works, so a
-      cyclist that passes without ending the day there never fired at all. Widen it.
 
 ---
 
@@ -998,16 +721,23 @@ thing than behind it.
 
       **The bodies, so this is not sized off a guess.** A spread is drawn `obstructs_radius` either
       side of centre (`_draw_spread` and `_draw_cafe` both take `half = max(11, obstructs_radius)`),
-      so the frontages are 48px for `cafe_tables` against a 170px field, 56px for `market_stall`
-      against 185, 64px for `construction` against 200, 44px for `delivery_van` against 150 and
-      124px for `barricade` against 120. Only the barricade is long against its own reach; the rest
-      are short bodies wearing wide circles.
+      so the frontages are 48px for `cafe_tables`, 56px for `market_stall`, 64px for `construction`,
+      44px for `delivery_van` and 124px for `barricade`.
+
+      **Only two of those five still emit**, and they are the two this bullet is really about:
+      `cafe_tables` carries 12.0 over 40/90px and `market_stall` 14.0 over 44/95px, so each is a
+      short body wearing a circle a little under twice its own length. `construction`,
+      `delivery_van` and `barricade` are at intensity 0 — their radii are dead numbers that price
+      nothing, and giving one of them a shape means first deciding it should emit again, which is a
+      separate question and one the player has already answered no to.
 
       **The radii change meaning, and that has to be settled before any code**: `inner_radius` and
       `outer_radius` stop meaning *distance from the centre* and start meaning *distance from the
-      body*. Identical for a point, not for a spread — read across naively, a 170px outer radius
-      becomes 170px **beyond** the whole café, a **bigger** field than today's and the exact
-      opposite of what M72 is being asked for.
+      body*. Identical for a point, not for a spread — so **carrying a number across unchanged
+      silently inflates it**: 90px kept as-is stops meaning 90px from the café's centre and starts
+      meaning 90px beyond the whole 48px frontage, a wider field than the one standing there today.
+      M75 tightened those radii *for* this change, and this is the way to undo its work by
+      accident — the number has to be re-derived from the body, not reused.
 
       **Which way they should actually move is the player's own point** *(2026-09-05: "that number
       was so big because it was a point source before")*: a field computed from one point has to be
@@ -1025,10 +755,14 @@ thing than behind it.
       capsule that is also eccentric — is open, and nothing needs it answered while every capsule
       row is stationary.
 
-      **It is M72's "close only" item seen from the other side.** The reason `cafe_tables` needs a
-      170px radius at all is that a circle is the wrong shape for the body it is wrapped around, so
-      tightening the radius is the stopgap and this is the fix. Expect the tightened numbers to want
-      revisiting once the shape lands
+      **It is M75's "close only" item seen from the other side, and that item has landed.**
+      `cafe_tables` went from a 170px reach to 90 and `market_stall` from 185 to 95, on the
+      reasoning that a café should bill somebody at the tables and not somebody across the street.
+      That is the stopgap; this is the fix. **The stopgap is now the thing to beat**: a 90px circle
+      still over-reaches perpendicular to a 48px frontage and under-reaches along it, so the number
+      to derive is not a shrink of 170 but a fresh answer measured from the body. The two rows'
+      catalogue docstrings say so where the numbers are, and expect both to move again when this
+      lands
 - [ ] **And it has to be visible.** The falloff is invisible today and that is fine because it is
       symmetric; a field that is stronger in front of a van is a routing fact the player can only
       learn by being told or by dying. Ask what draws it before deciding it is free
