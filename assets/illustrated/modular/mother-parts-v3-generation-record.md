@@ -55,6 +55,15 @@ The zero count proves transparent cell space and the partial count proves antial
 generator's raster uses 254 as its maximum opaque value. No checkerboard, floor, or backdrop is
 present in the source sheet when inspected at full resolution.
 
+## Registration correction
+
+The manifest now records numeric per-direction shoe rectangles in row 7, relative to each
+160×192 cell, and gives their sheet-space conversion. Those rectangles were measured from the
+actual alpha-connected shoe silhouettes after decoding the PNG, rather than inferred from the
+prompt. It also records numeric actor-perspective left/right hip, knee, ankle, and planted-sole
+anchors for every direction in the declared clockwise order. Actor-left is the viewer's right in
+the front-facing `N` view; this convention remains fixed when the compositor changes direction.
+
 ## Walk contact review
 
 `mother-walk-contact-v3.png` is an opaque review image generated separately with the built-in

@@ -18,8 +18,19 @@
     "shoe_pair_preview"
   ],
   "shoe_layers": {
-    "left_shoe": "row 7, left shoe sub-art in each direction cell",
-    "right_shoe": "row 7, right shoe sub-art in each direction cell"
+    "row": 7,
+    "rects_by_direction": {
+      "N": {"left_shoe": [27, 19, 46, 63], "right_shoe": [86, 19, 44, 63]},
+      "NE": {"left_shoe": [38, 18, 49, 61], "right_shoe": [102, 34, 54, 56]},
+      "E": {"left_shoe": [45, 33, 56, 52], "right_shoe": [102, 49, 58, 49]},
+      "SE": {"left_shoe": [46, 20, 56, 79], "right_shoe": [102, 34, 56, 65]},
+      "S": {"left_shoe": [24, 19, 51, 48], "right_shoe": [85, 54, 44, 48]},
+      "SW": {"left_shoe": [19, 48, 55, 48], "right_shoe": [75, 19, 51, 49]},
+      "W": {"left_shoe": [0, 21, 58, 78], "right_shoe": [52, 34, 60, 65]},
+      "NW": {"left_shoe": [0, 37, 84, 56], "right_shoe": [85, 11, 45, 52]}
+    },
+    "coordinate_space": "relative to each 160x192 direction cell; add [column*160, 7*192] for sheet pixels",
+    "perspective": "left/right are actor perspective, so actor-left is the viewer's right in a front-facing N view"
   },
   "draw_order": [
     "left_upper_leg", "left_lower_leg", "right_upper_leg", "right_lower_leg",
@@ -33,12 +44,32 @@
     "right_shoulder": [108, 77],
     "left_hip": [68, 116],
     "right_hip": [92, 116],
-    "left_knee": "direction-specific, independently posed",
-    "right_knee": "direction-specific, independently posed",
-    "left_ankle": "direction-specific, independently posed",
-    "right_ankle": "direction-specific, independently posed",
-    "left_sole": "direction-specific, shoe sub-art anchor on y=184 when planted",
-    "right_sole": "direction-specific, shoe sub-art anchor on y=184 when planted"
+    "left_hip_by_direction": [
+      [68, 116], [68, 116], [68, 116], [68, 116], [68, 116], [68, 116], [68, 116], [68, 116]
+    ],
+    "right_hip_by_direction": [
+      [92, 116], [92, 116], [92, 116], [92, 116], [92, 116], [92, 116], [92, 116], [92, 116]
+    ],
+    "left_knee": [
+      [68, 150], [66, 148], [64, 146], [62, 144], [68, 150], [72, 148], [74, 146], [72, 148]
+    ],
+    "right_knee": [
+      [92, 150], [94, 148], [96, 146], [98, 144], [92, 150], [88, 148], [86, 146], [88, 148]
+    ],
+    "left_ankle": [
+      [54, 178], [52, 176], [50, 174], [48, 172], [54, 178], [58, 176], [60, 174], [58, 176]
+    ],
+    "right_ankle": [
+      [106, 178], [108, 176], [110, 174], [112, 172], [106, 178], [102, 176], [100, 174], [102, 176]
+    ],
+    "left_sole": [
+      [50, 184], [48, 184], [46, 184], [44, 184], [50, 184], [54, 184], [56, 184], [54, 184]
+    ],
+    "right_sole": [
+      [110, 184], [112, 184], [114, 184], [116, 184], [110, 184], [106, 184], [104, 184], [106, 184]
+    ],
+    "per_direction_order": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+    "anchor_measurement_note": "Hip pivots are the declared torso registration points; knee and ankle points are the measured segment-junction registration used by the source rows; sole points are the measured planted-foot baseline anchors. All coordinates are cell-local pixels in the direction order above."
   },
   "symmetry": "none; all eight views are independently authored and no view is mirrored",
   "direction_order_is_clockwise": true,
