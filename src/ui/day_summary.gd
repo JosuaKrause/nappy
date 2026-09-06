@@ -87,9 +87,10 @@ func _ready() -> void:
 ## share and neither of those needs to know which screen raised it.
 var _showing_ending := false
 
-## The continue/restart pair only replaces a sentence where there is a thumb to press it with —
-## see `PauseScreen._refresh_buttons()`, the same split on the same platform question. Its own
-## function for the same reason: a test can flip `_touch` and call this again.
+## Shown on every device — see `PauseScreen._refresh_buttons()`, the same split on the same
+## question, now answered the same way here: one control scheme means the same buttons everywhere.
+## Its own function still, for the same reason: a test can call this again after changing what it
+## depends on.
 ##
 ## **Continue does not show on an ending.** *(Playtest 28 finding 4: "the game over screen cannot
 ## have a continue button".)* Every other screen this row appears on carries on into a day that
@@ -98,7 +99,7 @@ var _showing_ending := false
 ## visible for `_restart_button` even here: *"the restart button, hold and all"* is the player's
 ## own answer to whether the hold still earns its keep with no day left to protect.
 func _refresh_buttons() -> void:
-	_buttons.visible = _touch
+	_buttons.visible = true
 	_continue_column.visible = not _showing_ending
 
 func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int) -> void:

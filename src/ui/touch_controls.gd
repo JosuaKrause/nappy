@@ -17,15 +17,15 @@ extends Control
 ## `AutoScreenshot._tap()` already names in its own comment for exactly this action. See
 ## `_send_pause_action()`.
 ##
-## **Drawn only on a touch device** (`TouchInput.available()`) **and only while a day is actually
-## being walked.** `get_tree().paused` is the one fact the title screen, the pause and the
-## between-days summary all set, and checking it here is what keeps the button off every one of
-## those three screens without a wire from `main` telling it so on each. A keyboard-and-mouse
-## desktop never draws it at all: `Esc` is its pause, exactly as it always was, and pressing
-## anywhere else on such a device still sets a direction or stops her — the corner is only ever
-## subtracted from the aiming surface where the button is actually there to press. Direction
-## presses themselves are read whether or not the button is drawn, since a keyboard device is
-## exactly where the mouse half of this file has to keep working.
+## **Drawn on every device, and only while a day is actually being walked.** *(2026-09-06: "I
+## specifically said that now all controls are treated the same across platforms so the buttons
+## should show in *every* environment.")* `get_tree().paused` is the one fact the title screen, the
+## pause and the between-days summary all set, and checking it here is what keeps the button off
+## every one of those three screens without a wire from `main` telling it so on each. A
+## keyboard-and-mouse desktop draws it too, now that a click sets a direction or stops her the same
+## way a finger does: pressing the corner presses the button there exactly as it does on a phone,
+## so the corner is subtracted from the aiming surface on every device that shows the button rather
+## than only a touch one — see `_on_pointer()`'s own doc for that consequence.
 ##
 ## `process_mode` stays `ALWAYS`, like the three screens it has to disappear under: a `PAUSABLE`
 ## node stops running the instant the tree pauses, which is one frame too late to let go of
@@ -39,7 +39,7 @@ const PAUSE_RADIUS := 26.0
 ## As generous as the catch radii this file's own now-deleted stick and `RUN` button used to
 ## carry, for the same reason a thumb does not land on a button to the pixel — and also the radius
 ## a *release* has to land inside to fire, so a thumb that lands wrong can slide off and lift
-## without stopping the day. See `_on_touch()`.
+## without stopping the day. See `_on_pointer()`.
 const PAUSE_CATCH_RADIUS := 46.0
 ## Top right, in the corner both `DangerEdge` and `HomeArrow` keep clear on purpose rather than in
 ## front of them: `DangerEdge.MARGIN` (104/116/104/148, left/top/right/bottom) never draws a chevron
@@ -84,9 +84,9 @@ var _touch := TouchInput.available()
 ## canvas transform, which already carries the rotation.
 var rotated := false
 
-## The touch index currently down on the pause button, or -1 when nothing is. Going down does not
-## press anything — see `_on_touch()` for why the action only fires on release, and only if that
-## release is still over the button.
+## The touch or pointer index currently down on the pause button, or -1 when nothing is. Going down
+## does not press anything — see `_on_pointer()` for why the action only fires on release, and only
+## if that release is still over the button.
 var _pause_touch := -1
 
 ## The rig, found the same way `HUD._rig` is: a state of the player rather than something a
@@ -114,15 +114,13 @@ func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(self)
 	visible = false
 
-## The pause button's own visibility, gated on device and pause exactly as it always was; a
-## direction press is read whether or not this ever turns true, so a keyboard-and-mouse desktop —
-## which never shows the button — still walks on a click. Any pause landing, on any device,
-## force-releases whatever direction and `run` were held: the tree pausing is the one signal both
-## halves of this file share, so it is what `_release_all()` is hung off rather than the
-## visibility toggle alone.
+## The pause button's own visibility, gated on pause only — every device shows it now, not only a
+## touch one. Any pause landing, on any device, force-releases whatever direction and `run` were
+## held: the tree pausing is the one signal both halves of this file share, so it is what
+## `_release_all()` is hung off rather than the visibility toggle alone.
 func _process(_delta: float) -> void:
 	var paused := get_tree().paused
-	var showing := _touch and not paused
+	var showing := not paused
 	if showing != visible:
 		visible = showing
 		queue_redraw()
@@ -138,41 +136,52 @@ func _process(_delta: float) -> void:
 ## emulates a mouse click from every real touch by default, so on an actual touch device a single
 ## tap would otherwise arrive here twice, once as each event type, close enough together in space
 ## and time to read as its own double tap — see `_test_a_touch_devices_own_emulated_click_is_ignored`
-## in `tests/test_touch.gd`. Neither branch is gated on `visible`: the pause button only ever
-## matters while it is shown, which `_on_touch()` checks for itself, but a direction press has to
-## keep working on a device that never draws anything at all.
+## in `tests/test_touch.gd`. Both branches feed `_on_pointer()`, which is what checks `visible`
+## for the pause button: the button is drawn on every device now, so a mouse press has to be
+## checked against it exactly as a finger's press is, not only a direction press kept working on a
+## device that never draws anything at all.
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
-		_on_touch(event as InputEventScreenTouch)
+		var touch := event as InputEventScreenTouch
+		_on_pointer(touch.position, touch.pressed, touch.index)
 	elif not _touch and event is InputEventMouseButton:
 		var click := event as InputEventMouseButton
-		if click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
-			_on_tap(click.position, Time.get_ticks_msec() / 1000.0)
+		if click.button_index == MOUSE_BUTTON_LEFT:
+			_on_pointer(click.position, click.pressed, _MOUSE_POINTER_INDEX)
 
-## A touch press or release. **The corner is subtracted from the aiming surface only while the
-## button is actually showing** (`visible`, `_touch and not get_tree().paused`) — pressing where it
-## would be on a device that never draws it is an ordinary direction press, same as anywhere else.
-func _on_touch(event: InputEventScreenTouch) -> void:
-	if event.pressed:
+## Stands in for the touch index a mouse event carries none of — the same role `PauseScreen
+## ._MOUSE_HOLD_INDEX` plays for the restart button's own hold. Needed now that the pause button is
+## drawn on every device: a mouse press near the corner has to be tracked by `_pause_touch` the same
+## way a finger holding it would be, rather than always falling through to `_on_tap()`.
+const _MOUSE_POINTER_INDEX := -2
+
+## A press or release, from a real finger or — now that the button is drawn on every device — a
+## left click standing in for one. **The corner is subtracted from the aiming surface only while
+## the button is actually showing** (`visible`, `not get_tree().paused`) — pressing where it would
+## be while the button is not currently drawn is an ordinary direction press, same as anywhere
+## else. `index` is `InputEventScreenTouch.index` for a real finger or `_MOUSE_POINTER_INDEX` for a
+## click, so both share the one piece of state (`_pause_touch`) that tracks which of them is
+## currently holding the button.
+func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
+	if pressed:
 		if visible:
 			# The one correction a rotated presentation needs on the input side — see
 			# `ScreenOrientation`'s own doc for why this is the only file in `src/ui/` that needs it.
-			var design := ScreenOrientation.to_design_space(event.position, rotated)
+			var design := ScreenOrientation.to_design_space(position, rotated)
 			if _pause_touch == -1 and design.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS:
-				# Only grabs the touch index here — see `_send_pause_action()`'s doc for why
+				# Only grabs the index here — see `_send_pause_action()`'s doc for why
 				# nothing fires until the matching release.
-				_pause_touch = event.index
+				_pause_touch = index
 				queue_redraw()
 				return
-		_on_tap(event.position, Time.get_ticks_msec() / 1000.0)
+		_on_tap(position, Time.get_ticks_msec() / 1000.0)
 		return
-	if event.index == _pause_touch:
+	if index == _pause_touch:
 		_pause_touch = -1
 		queue_redraw()
-		# Fires on release rather than on touch-down, and only when the release itself is still
-		# over the button, so a thumb that lands wrong can slide off and lift without stopping the
-		# day.
-		var design := ScreenOrientation.to_design_space(event.position, rotated)
+		# Fires on release rather than on press, and only when the release itself is still over
+		# the button, so a press that lands wrong can slide off and lift without stopping the day.
+		var design := ScreenOrientation.to_design_space(position, rotated)
 		if _pause_fires(design):
 			_send_pause_action()
 
@@ -186,7 +195,7 @@ func _on_touch(event: InputEventScreenTouch) -> void:
 ## heading toward it.
 ##
 ## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
-## window still instead of racing the engine clock -- `_input()` and `_on_touch()` are the real
+## window still instead of racing the engine clock -- `_input()` and `_on_pointer()` are the real
 ## callers and supply it from `Time.get_ticks_msec()`.
 ##
 ## **Paused, a press does nothing at all**, the same as this file's controls drawing nothing on the

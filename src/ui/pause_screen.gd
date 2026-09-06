@@ -80,12 +80,18 @@ func _refresh_hint() -> void:
 	if _can_quit:
 		_hint.text += "     ·     q to quit"
 
-## The continue/restart pair only replaces a sentence where there is a thumb to press it with — a
+## Shown on every device — there is one control scheme now, and a press sets a direction on a
+## keyboard-and-mouse desktop exactly as it does on a phone, so the same pair of buttons is a
+## control there too. *(2026-09-06: "I specifically said that now all controls are treated the
+## same across platforms so the buttons should show in *every* environment.")* This overturns
+## M76's own reason, taken while a device still chose between two control schemes: *"The
+## continue/restart pair only replaces a sentence where there is a thumb to press it with — a
 ## mouse-and-keyboard desktop keeps `space`/`esc`/`r`, which already read as a control there and
-## need no picture beside them. Its own function for the same reason `_refresh_hint()` is one: a
-## test can flip `_touch` and call this again.
+## need no picture beside them."* M82 deleted the choice, so that reason no longer holds. Its own
+## function still, for the same reason `_refresh_hint()` is one: a test can call this again after
+## changing what it depends on.
 func _refresh_buttons() -> void:
-	_buttons.visible = _touch
+	_buttons.visible = true
 
 func is_open() -> bool:
 	return visible

@@ -36,7 +36,7 @@ func run(t) -> void:
 	_test_the_title_names_a_version(t)
 	_test_mode_button_restart_hold_state_machine(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
-	_test_the_buttons_only_show_on_touch(t)
+	_test_the_buttons_show_on_every_device(t)
 	_test_the_restart_button_is_a_hold(t)
 	_test_a_touch_away_from_restart_still_carries_on(t)
 	_test_the_summary_hint_matches_the_platform(t)
@@ -400,21 +400,23 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 	pause.queue_free()
 
 ## *(2026-09-06, playtest 26 finding 4 and playtest 27 finding 4: a restart control asked for on
-## the pause screen and re-asked once the touch buttons existed but this one still had none.)* A
-## keyboard never sees the buttons — `space`/`esc`/`r` already read as controls there — so the pair
-## is touch-only, the same split `_refresh_hint()` makes for its own sentence.
-func _test_the_buttons_only_show_on_touch(t) -> void:
+## the pause screen and re-asked once the touch buttons existed but this one still had none; then
+## playtest 29 finding 1: "I specifically said that now all controls are treated the same across
+## platforms so the buttons should show in *every* environment".)* The pair shows on every device —
+## there is one control scheme now, and a press sets a direction on a keyboard-and-mouse desktop
+## exactly as it does on a phone, so the same buttons are a control there too.
+func _test_the_buttons_show_on_every_device(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
 	t.add_child(pause)
 	t.get_tree().paused = false
 
 	pause._touch = false
 	pause._refresh_buttons()
-	t.check(not pause._buttons.visible, "a keyboard gets no buttons")
+	t.check(pause._buttons.visible, "a keyboard-and-mouse desktop gets the buttons too")
 
 	pause._touch = true
 	pause._refresh_buttons()
-	t.check(pause._buttons.visible, "and a touch device gets both")
+	t.check(pause._buttons.visible, "and so does a touch device")
 
 	t.get_tree().paused = false
 	pause.queue_free()

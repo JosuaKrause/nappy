@@ -13,7 +13,7 @@ const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 func run(t) -> void:
 	var was_paused: bool = t.get_tree().paused
 	_test_process_mode_stays_always(t)
-	_test_the_button_shows_only_on_a_touch_device_with_a_day_running(t)
+	_test_the_button_shows_on_every_device_with_a_day_running(t)
 	_test_the_pause_button_sends_a_real_action_event(t)
 	_test_the_pause_button_fires_on_release_inside_and_not_outside(t)
 	_test_the_pause_button_tracks_its_own_touch_index(t)
@@ -31,6 +31,7 @@ func run(t) -> void:
 	_test_a_mouse_click_stands_in_for_a_tap(t)
 	_test_a_touch_devices_own_emulated_click_is_ignored(t)
 	_test_a_press_on_the_pause_button_is_not_also_a_direction(t)
+	_test_a_mouse_click_on_the_pause_button_is_not_also_a_direction(t)
 	_test_the_corner_is_an_ordinary_direction_press_where_the_button_is_not_drawn(t)
 	_test_no_input_path_presses_a_vector_shorter_than_one(t)
 	t.get_tree().paused = was_paused
@@ -59,27 +60,29 @@ func _rig_at(t, position: Vector2) -> Node2D:
 	t.add_child(rig)
 	return rig
 
-## **Both gates, independently.** Neither a keyboard-and-mouse desktop nor a phone mid-pause should
-## ever see the button — the first because `TouchInput.available()` says there is no touch hardware
-## to draw it for, the second because `get_tree().paused` is what the title, the pause and the
-## between-days summary all set, and none of the three has anything for a thumb to press.
-func _test_the_button_shows_only_on_a_touch_device_with_a_day_running(t) -> void:
+## **One gate, and it is the same for every device.** *(2026-09-06: "I specifically said that now
+## all controls are treated the same across platforms so the buttons should show in *every*
+## environment.")* A phone mid-pause should not see the button, because `get_tree().paused` is what
+## the title, the pause and the between-days summary all set and none of the three has anything for
+## a press to reach — but a keyboard-and-mouse desktop sees it exactly as a phone does, since there
+## is one control scheme now rather than one chosen by device.
+func _test_the_button_shows_on_every_device_with_a_day_running(t) -> void:
 	var controls := _controls(t)
+
+	controls._touch = false
+	t.get_tree().paused = true
+	controls._process(0.0)
+	t.check(not controls.visible, "no device sees the button while the tree is paused")
 
 	controls._touch = false
 	t.get_tree().paused = false
 	controls._process(0.0)
-	t.check(not controls.visible, "no touch hardware means no button, even mid-day")
-
-	controls._touch = true
-	t.get_tree().paused = true
-	controls._process(0.0)
-	t.check(not controls.visible, "a touch device still gets nothing while the tree is paused")
+	t.check(controls.visible, "a desktop with no touch hardware shows it too, once a day is running")
 
 	controls._touch = true
 	t.get_tree().paused = false
 	controls._process(0.0)
-	t.check(controls.visible, "and it shows once both are true")
+	t.check(controls.visible, "and a touch device shows it exactly the same way")
 
 	controls.queue_free()
 
@@ -408,9 +411,35 @@ func _test_a_press_on_the_pause_button_is_not_also_a_direction(t) -> void:
 	controls.queue_free()
 	rig.free()
 
-## **Only where the button is actually there to press.** A keyboard-and-mouse desktop never draws
-## it — `Esc` is its pause — so a press in the same corner there is an ordinary direction press,
-## not a dead zone nobody can walk into.
+## **A left click on a visible pause button presses it, not the corner underneath it.** The button
+## is drawn on every device now, so a desktop mouse click has to be checked against it exactly as a
+## finger's press already was — see `_on_pointer()`'s own doc for why the mouse path was folded
+## into the same function that already tracked a touch index.
+func _test_a_mouse_click_on_the_pause_button_is_not_also_a_direction(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	controls._touch = false
+	controls.visible = true
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = TouchControls.PAUSE_CENTRE
+	controls._input(click)
+	t.check(not controls._walking, "a click on the button is not read as a direction toward the corner")
+
+	var release := click.duplicate()
+	release.pressed = false
+	controls._input(release)
+	t.check(controls._pause_touch == -1, "and releasing on it lets go of the button's own hold")
+
+	Input.action_release(&"pause")
+	controls.queue_free()
+	rig.free()
+
+## **Only while the button is actually drawn.** `visible` is the gate, not the device — a press in
+## the same corner while the button is hidden (paused, or before the first `_process()` call) is an
+## ordinary direction press, not a dead zone nobody can walk into.
 func _test_the_corner_is_an_ordinary_direction_press_where_the_button_is_not_drawn(t) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := _controls(t)
