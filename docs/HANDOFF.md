@@ -89,14 +89,16 @@ against the commit that fixed it before telling anybody the page is well.
 ## What to do next
 
 **The active request is the ground-up graphics overhaul in [PLAYTEST-27.md](PLAYTEST-27.md).**
-[VISUALS.md](VISUALS.md) describes its target, not a completed renderer. Articulated actor models
-and the standalone orthographic street study live in `src/visual3d/`. Further city, animal and
-screen revisions are isolated worktree work. The playable game still uses its existing renderer.
-The street study is review material, not an accepted target. Its architecture must become urban
-apartment streetfronts rather than detached houses; review that direction with the player before
-expanding the building library. See PLAYTEST-27 and VISUALS.md.
-Review actual rendered motion before
-extending the prototype to the whole city and every screen. Implementation belongs to Luna agents.
+[VISUALS.md](VISUALS.md) describes its target, not a completed renderer: illustrated PNG art,
+eight-direction sheets and interchangeable character parts on the existing non-diagonal view.
+The mother follows the supplied green-coat/scarf/bun reference. M79's diagonal investigation stays
+tabled. The 3D street and actor studies are experiments, not the accepted art target; rejected
+work is recoverable from this branch's ancestry, indexed in DECISIONS.md, rather than dangling
+branches. The playable game still uses its existing renderer. Luna worktrees hold the PNG source
+art and grounded modular animation implementation. The earlier SVG actors/events polish has its
+own separate PR workflow and is not the full overhaul.
+Review assembled artwork and actual foot contact before extending it to the whole city and every
+screen. Implementation belongs to Luna agents.
 Preserve the title's control selection, truthful meter display and event-cost behavior while
 replacing their presentation. Use `git worktree list` and each checkout's status to locate unfinished
 work; do not treat the earlier SVG polish as the requested overhaul.
