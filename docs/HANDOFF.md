@@ -89,6 +89,8 @@ against the commit that fixed it before telling anybody the page is well.
 ## What to do next
 
 **The active request is the ground-up graphics overhaul in [PLAYTEST-27.md](PLAYTEST-27.md).**
+**For the Luna takeover, read [LUNA_HANDOFF.md](LUNA_HANDOFF.md)** for the current decisions,
+reference assets, implementation checkpoint, verification limits and concrete next work order.
 [VISUALS.md](VISUALS.md) describes its target, not a completed renderer: illustrated PNG art,
 eight-direction sheets and interchangeable character parts on the existing non-diagonal view.
 The mother follows the supplied green-coat/scarf/bun reference. M79's diagonal investigation stays
