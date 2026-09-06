@@ -86,6 +86,12 @@ The modular sprite work is a standalone, tested presentation component, not live
   lower-body parts. `tests/test_visuals.gd` exercises their regions and a walk/stop/turn sequence.
 - Player/crowd binding and on-screen inspection remain to be built and verified.
 
+The standalone `scenes/dev/illustrated_street_review.tscn` consumes the layered PNG assets under
+`assets/illustrated/street/`: ground, continuous apartment frontage, roof depth and props. Its
+camera-specific shortened north depth and stable dotted roof reveal are a player-review gate, not a
+live renderer or a substitute for movement review. `GENERATION_RECORD.md` retains the built-in
+generation prompts; facade, roof and props have verified alpha, while the ground plate is opaque.
+
 Review coordinate units before integration: the gait draft's configurable limb lengths are not
 proof of logical-pixel sizing. Test foot anchors in world space and apply drawing height only
 when projecting the pose. Validate zero displacement, collision, reverse/turn, teleports/resets,
@@ -98,9 +104,9 @@ screen experiment predates some of this and must not simply replace current titl
 
 ## Next work order
 
-1. Build one cardinal apartment street using actual separate PNG assets, with roof depth and an
-   occlusion treatment. Preserve the existing logical geometry. Obtain art feedback on the rendered
-   street and movement, not another all-in-one concept image.
+1. Obtain art feedback on `illustrated_street_review.tscn`'s cardinal apartment street before
+   extending its presentation. Review roof depth and the dotted occlusion treatment at gameplay
+   scale; it is deliberately not another all-in-one concept image.
 2. Bind the validated presentation to the live player/crowd and expand by event family. Every
    catalogue look needs its own identity and state-appropriate animation; a generic placeholder
    must be recorded as unfinished, never quietly substituted.

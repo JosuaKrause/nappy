@@ -100,8 +100,11 @@ branches. The playable game still uses its existing renderer. Luna worktrees hol
 art and grounded modular animation implementation. The first registered, real-alpha mother and
 pram part sheets and their gameplay-scale contact review are in `assets/illustrated/modular/`.
 The standalone compositor now has articulated lower-body source parts and a headless planted-gait
-proof; live player/crowd binding remains open. The earlier SVG actors/events polish has its own
-separate PR workflow and is not the full overhaul.
+proof; live player/crowd binding remains open. `assets/illustrated/street/` and
+`scenes/dev/illustrated_street_review.tscn` add the first cardinal apartment-street review gate:
+layered PNG ground, frontage, roof depth and props with a stable dotted roof reveal. It is not live
+gameplay and awaits player art review before it is extended. The earlier SVG actors/events polish
+has its own separate PR workflow and is not the full overhaul.
 Review assembled artwork and actual foot contact before extending it to the whole city and every
 screen. Implementation belongs to Luna agents.
 Preserve the title's control selection, truthful meter display and event-cost behavior while
