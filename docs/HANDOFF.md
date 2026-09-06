@@ -267,11 +267,14 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   about them is still unknown: whether a thumb can hold the 20px line between two pavement lanes,
   whether the catch radii feel right, whether `RUN` is legible at phone DPI, and whether the new
   pause button at the top right is reachable without covering something.
-- **A phone held upright gets a rotated game made of three disagreeing rotations.** The live build
-  no longer asks anybody to turn their phone — it presents rotated instead — and playtest 23 is the
-  first phone session on it: the controls are right, the world is 180° from them, the text is not
-  rotated at all, and turning auto-rotate on latches a portrait-shaped play area that a reload is
-  the only escape from. It is M60's first item and the deployed build has all four.
+- **A phone held upright gets one rotation now, and nobody has held a phone since.** The three
+  disagreeing rotations playtest 23 met are gone: one transform is applied to every `CanvasLayer`,
+  the camera is no longer a second implementation, and the choice is re-asked every frame rather
+  than on a `size_changed` that could arrive stale. The record is in `DECISIONS.md` under M60.
+  **The one thing a rig cannot settle is the one that shipped three of those four symptoms** —
+  `tests/test_orientation.gd` proves the input remap by construction and says outright that it
+  cannot catch a sign error the transform and the drawing share. `tools/shot.sh` takes a resolution
+  now, so the rotated branch can at least be photographed; it wants a person holding a phone.
 - **The social card has never been unfurled.** The Open Graph tags and the image copy into
   `build/web` are correct as far as a local check can tell, and nothing has pasted the address into
   a chat client to see what comes back.

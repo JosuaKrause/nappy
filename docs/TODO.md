@@ -709,72 +709,6 @@ record — including why the pause button is the one control that sends an event
 an action — is in `DECISIONS.md` under M60. **Three things are left, and two of them want a real
 device or the real address:**
 
-- [ ] **The rotated presentation is three different rotations in one picture.** *(2026-09-05,
-      [PLAYTEST-23.md](PLAYTEST-23.md), the first phone session on it: "controls are the only things
-      that are rotated correctly".)* The standing instruction is that the game **always does**
-      landscape — *"the game should be rotated in the viewport — so when I'm looking at it it should
-      be sideways"* — and a portrait phone does now get a rotated game. What it does not get is one
-      rotated game. Four things are wrong and they are one root: **the rotation is implemented three
-      separate times, so the three can disagree, and two of them do.**
-
-      - **The world is 180° from the controls.** *("the game area is rotated 180 from that".)*
-        `Stroller.set_screen_rotation()` turns the world by setting `Camera2D.rotation` to +90° and
-        clearing `ignore_rotation`; `TouchControls._draw` turns the buttons by setting
-        `ScreenOrientation.rotation_transform()` — a +90° rotation and a recentre — for the whole
-        draw call. **A camera turning one way swings the world the other way on screen**, so two
-        +90°s land 180° apart. The controls are the half the player says is right, so the camera is
-        the half that flips.
-      - **The text is not rotated at all.** *("the text is not rotated at all".)* The HUD (the clock,
-        the two meters, the resistance line, the developer readout), the pause screen, the day
-        summary and the title screen are `Control` nodes under `CanvasLayer`s, and nothing in the
-        change touched them. It was named as a known limitation before release and published anyway.
-        **It is not a limitation, it is the feature half-built:** upright text is the largest, most
-        readable thing on the screen, and it is saying the screen is not sideways.
-      - **Auto-rotate on stops the rotation and leaves the play area portrait-shaped, and it does not
-        recover.** *("if I turn on auto rotate it behaves correctly (stops rotating in game) but the
-        viewport is now higher than wide and the game is stretched vertically", and then "if I then
-        rotate back it stays like that".)* `main._apply_orientation()` sets the content box, the
-        camera and the controls from one boolean, so those three cannot disagree *inside* one call —
-        but it runs only at startup and on the window's `size_changed`. A signal that arrives with a
-        stale size, or does not arrive at all, latches the wrong content box until a reload. With
-        `window/stretch/aspect="keep"` in `project.godot`, a 720×1280 content box left in force on a
-        landscape window is a tall strip down the middle, which is the shape being reported.
-
-      **The fix is one rotation, applied once, to everything on the screen.** Every `CanvasLayer`
-      carries `ScreenOrientation.rotation_transform()` and every layer's children are laid out
-      against the 1280×720 design box rather than against the swapped viewport — three of the five
-      scene layers already have the single `Root` `Control` that needs, so the HUD is the one that
-      wants a root inserted. Then `TouchControls`' own `draw_set_transform_matrix` is redundant and
-      goes, the camera stops being a second implementation, and there is no third place for the text
-      to be forgotten in.
-
-      **And the decision is re-asked continuously rather than on a signal**, since a missed or
-      early-fired `size_changed` is exactly what the latch is made of. Recomputing
-      `ScreenOrientation.wants_rotation()` every frame and applying only on change costs a vector
-      comparison.
-
-      **The device's own orientation is never touched.** *(2026-09-05: "don't try to **change**
-      landscape/portrait mode — work with what you have".)* No orientation lock, no manifest
-      orientation, no fullscreen request — only how the game lays itself out in the viewport it is
-      given. That is also why it works on iOS Safari in a tab, which has no orientation API at all.
-
-      **The two rejected levers, named so they are cheap to pick up if this one disappoints:**
-      writing the PWA manifest (`progressive_web_app/enabled=false` today, so
-      `progressive_web_app/orientation=1` is written into nothing) would give a real lock to an
-      installed web app; and moving `screen.orientation.lock` onto the first tap after requesting
-      fullscreen — it is called from `DOMContentLoaded` today, outside the gesture and the
-      fullscreen it requires, so it is rejected every time — would give one to Chrome for Android.
-      **Both are ruled out by the instruction rather than by cost:** each one *changes* the device's
-      orientation mode, and a phone whose owner turned auto-rotate off has said what they want.
-
-      **It has to be photographed, and it was one shell argument away from being photographable.**
-      `--touch` already forces `TouchInput.available()` true in a debug build — it is how M60's
-      on-screen stick and `RUN` button were looked at — but `tools/shot.sh` passes a hardcoded
-      `--resolution 1280x720`, so every picture the rig can take is of the landscape branch, which
-      was already correct. **`shot.sh` takes a resolution**, and the rotated branch is looked at in a
-      portrait window before anything is called done. A test that asserts a transform cannot catch a
-      sign error the transform and the drawing share — that is how three of these four shipped
-
 **The restart button this screen needs is M76's**, together with the day-end screen's, because the
 same pair of controls was asked for on both and one interaction learned once is the point of putting
 them there. It is not an item here and nothing about it is recorded here: the hold, the label, the
@@ -1096,9 +1030,9 @@ and something has to walk her to it — which is the first real question this mi
 the game's only verb is *where do I walk* and a tap that pathfinds is the game choosing the route
 she takes through the thing the whole design is about.
 
-**Sequence this after M60's rotation fix.** Both rewrite `src/ui/touch_controls.gd` and
-`src/main.gd`, so run them one after the other rather than side by side; two agents in those two
-files is a merge conflict scheduled in advance.
+**Do not run this beside anything else that touches `src/ui/touch_controls.gd` or `src/main.gd`** —
+two agents in those two files is a merge conflict scheduled in advance, and both are where the
+rotated presentation and the control schemes already meet.
 
 - [ ] **What a tap means: a straight line, and nothing cleverer.** *(2026-09-02: "the tap should
       just be a straight path — no collision avoiding path.")* A single tap walks to the point, a
@@ -1513,8 +1447,8 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
 findings about the diagonal grid but table it for now".)* Nothing here is rejected; it is written
 down so the graphics overhaul can decide the projection with the code's constraints in front of it
 rather than after committing to art. **What would make it worth picking up**: the overhaul reaching
-the point where it chooses a projection, and M60's rotation fix landing — not a complaint about how
-the city looks today.
+the point where it chooses a projection, and somebody confirming the existing rotated presentation
+on a real phone — not a complaint about how the city looks today.
 
 The reference the player gave is `docs/evidence/reference-isometric-street-2026-09-06.jpeg`: a 2:1
 isometric street with buildings as tall volumes, pedestrians, cars and a pram. **Its HUD is not part
@@ -1608,12 +1542,17 @@ would stay the same only the presentation would rotate".)*
       `move_*` actions from its own screen-space vector, and `ScreenOrientation.to_design_space()`
       already does exactly this correction for the 90° portrait case, so the machinery exists.)*
 
-- [ ] **Sequence it after M60's rotation fix.** `ScreenOrientation` already carries a rotation for
-      the portrait phone, M60's first item is that rotation being *"implemented three times"* and
-      producing *"three different rotations in one picture"*, and this composes a fourth onto it.
-      **Fix that first, then spike the transform alone on the existing square art** — proving
-      tap-to-world, the edge cues, the zoom fit and y-sorting survive, with no new art — because that
-      is what de-risks the expensive half before anybody draws anything
+- [ ] **Spike the transform alone on the existing square art before anybody draws anything** —
+      proving tap-to-world, the edge cues, the zoom fit and y-sorting survive, with no new art,
+      because that is what de-risks the expensive half.
+
+      **The rotation it composes with is already one rotation**, which is what makes the spike
+      worth doing rather than doomed: `ScreenOrientation` carries a single transform applied to
+      every `CanvasLayer`, `main._process()` re-asks `wants_rotation()` every frame and reapplies
+      only on change, and `TouchControls` no longer turns itself. **What is not settled is a sign
+      error the world and the drawing could share**, which `tests/test_orientation.gd` says outright
+      it cannot catch — so the spike is looked at in a portrait window with `tools/shot.sh`'s
+      resolution argument, not judged from a passing suite
 
 ---
 
