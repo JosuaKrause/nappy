@@ -4,13 +4,14 @@
      detour and losing the day.
      What makes it not a delivery van: no windows down the side, a blacked-out cab, no livery, and
      the side door standing open. It is the only vehicle in the game with a dark hole in it. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="50" height="32" viewBox="0 0 50 32" shape-rendering="crispEdges">
-  <rect x="2" y="3" width="46" height="21" fill="#4a4e56"/>
-  <rect x="2" y="3" width="46" height="3" fill="#5a5f68"/>
-  <rect x="5" y="8" width="11" height="7" fill="#191b21"/>
-  <rect x="26" y="6" width="15" height="16" fill="#141419"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="32" viewBox="0 0 50 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M2 5 Q4 3 9 3 L43 3 Q48 4 48 9 L48 24 Q25 27 2 24 Z" fill="#4a4e56"/>
+  <path d="M3 5 Q24 2 46 5 L47 8 L3 8 Z" fill="#5a5f68"/>
+  <path d="M5 9 Q10 7 16 9 L16 15 L5 15 Z" fill="#191b21"/>
+  <path d="M26 7 Q34 5 41 7 L41 22 L26 22 Z" fill="#141419"/>
+  <path d="M27 8 L40 7 L40 10 L27 10 Z" fill="#343840"/>
   <rect x="41" y="6" width="4" height="16" fill="#3a3e46"/>
-  <rect x="2" y="20" width="46" height="4" fill="#221f28"/>
+  <path d="M2 20 Q25 23 48 20 L48 25 Q25 28 2 25 Z" fill="#221f28"/>
   <circle cx="13" cy="27" r="5" fill="#26232a"/>
   <circle cx="38" cy="27" r="5" fill="#26232a"/>
   <circle cx="13" cy="27" r="2" fill="#3a373f"/>

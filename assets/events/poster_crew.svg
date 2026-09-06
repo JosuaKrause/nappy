@@ -2,7 +2,7 @@
      the man: he holds it up at head height with a paste brush in the other hand and a bucket at
      his feet. The overall is a colour nothing else in act II wears, because from a street away
      the poster is the only part that will read. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="30" height="44" viewBox="0 0 30 44" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="44" viewBox="0 0 30 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="0" y="36" width="9" height="7" fill="#58524d"/>
   <rect x="0" y="35" width="9" height="2" fill="#7a736c"/>
   <rect x="11" y="30" width="4" height="12" fill="#5c6b5c"/>

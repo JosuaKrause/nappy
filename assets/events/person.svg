@@ -1,5 +1,5 @@
 <!-- A generic passer-by: whoever the event needs to be a person. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="18" height="42" viewBox="0 0 18 42" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="42" viewBox="0 0 18 42" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="5" y="29" width="4" height="13" fill="#46506b"/>
   <rect x="10" y="29" width="4" height="13" fill="#46506b"/>
   <rect x="4" y="40" width="5" height="2" fill="#221f28"/>

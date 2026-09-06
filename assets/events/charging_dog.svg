@@ -4,7 +4,7 @@
      with the shoulders, legs thrown front and back, and it is half again as long. The open jaw
      is the only red on it — the one detail that says the difference between a dog running past
      and a dog running at. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="40" height="22" viewBox="0 0 40 22" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="22" viewBox="0 0 40 22" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <!-- Back legs thrown behind, front legs thrown ahead: mid-bound, not mid-trot. -->
   <rect x="2" y="15" width="7" height="3" fill="#4a3a2c"/>
   <rect x="1" y="17" width="4" height="3" fill="#4a3a2c"/>

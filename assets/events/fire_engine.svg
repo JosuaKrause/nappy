@@ -2,17 +2,18 @@
      190px/s most of its telegraph happens off screen and what the player actually reads is the
      badge at the screen edge — which draws this at icon size, aspect kept. The ladder along the
      roof is the part that survives being shrunk to 40px. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="62" height="36" viewBox="0 0 62 36" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="36" viewBox="0 0 62 36" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="4" y="4" width="18" height="4" fill="#3a3f4a"/>
   <rect x="24" y="4" width="34" height="4" fill="#3a3f4a"/>
   <rect x="6" y="5" width="50" height="2" fill="#8a95a4"/>
-  <rect x="2" y="8" width="58" height="18" fill="#c4503c"/>
-  <rect x="2" y="8" width="58" height="3" fill="#d96a52"/>
-  <rect x="4" y="12" width="13" height="8" fill="#454e5c"/>
-  <rect x="22" y="13" width="12" height="8" fill="#a03c2c"/>
-  <rect x="38" y="13" width="12" height="8" fill="#a03c2c"/>
+  <path d="M2 10 Q3 7 7 7 L56 7 Q60 8 60 12 L60 26 Q30 29 2 26 Z" fill="#c4503c"/>
+  <path d="M3 9 Q28 6 58 9 L59 12 L3 12 Z" fill="#d96a52"/>
+  <path d="M4 12 Q10 10 17 12 L17 20 L4 20 Z" fill="#454e5c"/>
+  <path d="M22 13 Q28 11 34 13 L34 21 L22 21 Z M38 13 Q44 11 50 13 L50 21 L38 21 Z" fill="#a03c2c"/>
+  <path d="M24 14 Q28 12 32 14 L32 18 L24 18 Z M40 14 Q44 12 48 14 L48 18 L40 18 Z" fill="#5d6d78"/>
   <rect x="8" y="1" width="8" height="3" fill="#4a7fc4"/>
-  <rect x="2" y="22" width="58" height="4" fill="#221f28"/>
+  <path d="M2 22 Q31 26 60 22 L60 27 Q31 31 2 27 Z" fill="#221f28"/>
+  <path d="M20 23 L20 27 M36 23 L36 28 M53 22 L53 27" stroke="#e8b64a" stroke-width="0.8" fill="none"/>
   <circle cx="14" cy="29" r="6" fill="#26232a"/>
   <circle cx="46" cy="29" r="6" fill="#26232a"/>
   <circle cx="14" cy="29" r="2" fill="#4a464f"/>

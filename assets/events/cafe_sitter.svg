@@ -2,7 +2,7 @@
      what makes it read as seated at a glance rather than as a passer-by who has stopped.
      *(Playtest 07, finding 11: "the café has no people at it" — the tables were the obstacle and
      the conversation was what made it loud, and only one of the two was drawn.)* -->
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 16 30" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 16 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="2" y="22" width="12" height="6" fill="#46506b"/>
   <rect x="3" y="11" width="10" height="12" fill="#8a5f6b"/>
   <rect x="3" y="19" width="10" height="4" fill="#74505c"/>

@@ -1,7 +1,7 @@
 <!-- The ice cream van: a van with a cone on the roof and a serving hatch. Pale and cheerful
      against `vehicle.svg`'s working white, because the point of it is that nothing about it
      looks like a hazard and it is still the loudest thing on the street. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="50" height="40" viewBox="0 0 50 40" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="40" viewBox="0 0 50 40" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="20" y="2" width="4" height="8" fill="#e8ddc8"/>
   <path d="M18 10 L26 10 L22 2 Z" fill="#e8b64a"/>
   <circle cx="22" cy="4" r="4" fill="#e8ddc8"/>

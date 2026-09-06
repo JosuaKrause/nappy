@@ -3,15 +3,16 @@
      car, a riot van, an army truck and the unmarked van that takes the baby were all this
      picture. The colour is baked rather than modulated: multiplying would tint the tyres and the
      windscreen too. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="30" viewBox="0 0 48 30" shape-rendering="crispEdges">
-  <rect x="2" y="2" width="44" height="20" fill="#6b7a8c"/>
-  <rect x="2" y="2" width="44" height="4" fill="#7d8a9a"/>
-  <rect x="5" y="7" width="12" height="7" fill="#454e5c"/>
-  <rect x="30" y="6" width="14" height="12" fill="#4e5866"/>
-  <rect x="30" y="6" width="14" height="3" fill="#8a95a4"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="30" viewBox="0 0 48 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M2 4 Q4 2 8 2 L39 2 Q44 2 46 7 L46 21 Q24 24 2 21 Z" fill="#6b7a8c"/>
+  <path d="M3 4 Q20 1 39 3 Q43 3 45 7 L45 8 L3 8 Z" fill="#7d8a9a"/>
+  <path d="M5 8 Q10 6 17 8 L17 15 L5 14 Z" fill="#454e5c"/>
+  <path d="M30 7 Q37 5 44 8 L44 18 L30 18 Z" fill="#4e5866"/>
+  <path d="M31 7 Q37 6 43 8" fill="none" stroke="#aeb8c2" stroke-width="1"/>
   <rect x="44" y="8" width="3" height="4" fill="#e8b64a"/>
   <rect x="1" y="8" width="3" height="4" fill="#e8b64a"/>
-  <rect x="2" y="18" width="44" height="4" fill="#221f28"/>
+  <path d="M2 18 Q24 21 46 18 L46 22 Q24 25 2 22 Z" fill="#221f28"/>
+  <path d="M19 9 L27 9 M19 12 L27 12" stroke="#aeb8c2" stroke-width="0.7" fill="none"/>
   <circle cx="12" cy="25" r="5" fill="#26232a"/>
   <circle cx="36" cy="25" r="5" fill="#26232a"/>
   <circle cx="12" cy="25" r="2" fill="#4a464f"/>

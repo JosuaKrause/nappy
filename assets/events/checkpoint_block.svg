@@ -4,7 +4,7 @@
      they were the same picture — but one is a street being mended and the other is a street being
      held, and act II turning into act III is exactly that difference. Concrete rather than a
      lightweight barrier, and it stands taller than it is deep. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 22 30" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 22 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="0" y="2" width="22" height="26" fill="#8a8a84"/>
   <rect x="0" y="2" width="22" height="3" fill="#9e9e97"/>
   <rect x="0" y="9" width="22" height="8" fill="#c4503c"/>

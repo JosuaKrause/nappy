@@ -4,7 +4,7 @@
      street: playtest 19, "no clue what they are supposed to be." Diagonal, same as `checkpoint`'s
      own red-and-cream band, so the two read as kin — a street being mended rather than a street
      being held — without ever sharing a picture. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="0" y="2" width="22" height="18" fill="#e0d8c4"/>
   <polygon points="-12,2 -6,2 6,20 0,20" fill="#c4503c"/>
   <polygon points="0,2 6,2 18,20 12,20" fill="#c4503c"/>
