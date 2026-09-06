@@ -50,3 +50,13 @@ application registration. The diagnostic is separate from a GDScript error or an
 ## Reviewing the architecture — 2026-09-06
 
 > "can I review the proposed graphics to give feedback? in the godot runs you do I see single family houses even though we are in a city where apartment buildings would be more appropriate"
+
+## Illustrated city references, camera and gait — 2026-09-06
+
+> "it needs a lot of polishing still. let's rotate the view a little bit back to more sideways like it was before. we can cheat a bit for eg  multi-storey apartment blocks by cutting the north end short so you can draw their front with a fitting height without blocking the next street fully. the scene needs to look \"right enough\" for gameplay but doesn't have to be realistic. that means standalone viewed in a 3d modeling tool the models don't need to look correct. they only need to look fitting during gameplay (some games use warped/tilted models that look correct only from one single perspective for this purpose). one gripe I have with the video is that the leg movement happens independently from the movement on the ground so it looks like the objects are floating and just coincidentally moving their legs, too. but they don't use their leg movement for walking. the leg movement doesn't match their gait / walk. for 3d a rectangle and a circle for a person doesn't cut it any more. things need to be more detailed. the direction of 3d was to make things *easier* to model. if it's easier to just create more 2d drawings then let's go that route instead. make sure to regularly commit and push so we don't lose progress especially if we decide to go in different directions. [Image #1] here is the look I'm going for. whether to shift into a tilted grid as well is also an interesting avenue to explore. note this is a concept art the extra items on the bottom are not needed. the map is something we can think about later. same with faces of mother and child. hmm, the diagonal way could work with fully tall buildings with the transparency trick I was talking about earlier. or the building in the front of the scene could just disappear when walking in a way where the player would otherwise be occluded giving a clean street look. [Image #2] some more references. your call to decide whether to do 3d models or 2d graphics."
+
+The supplied references are preserved as `evidence/graphics-reference-urban-01.jpeg` and
+`evidence/graphics-reference-urban-02.jpeg`, respectively. They are user-supplied concept art,
+not screenshots of the game or approval of their depicted extra controls.
+
+> "make sure to commit and push everything *especially* before changing direction"
