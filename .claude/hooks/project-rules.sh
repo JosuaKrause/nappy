@@ -69,6 +69,9 @@ case "$path" in
 	*/src/telemetry/*)         wanted+=(telemetry) ;;
 esac
 case "$path" in
+	*/assets/illustrated/*|*/src/visuals/*) wanted+=(illustrated-png) ;;
+esac
+case "$path" in
 	*/autoload/tuning.gd)      wanted+=(balance) ;;
 esac
 case "$path" in
