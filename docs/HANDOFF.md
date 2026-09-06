@@ -110,6 +110,9 @@ It shows disconnected limbs in the wrong topological order, with positions incor
 their owners and ground anchors. The compositor needs its layer order, pivots and placement rebuilt
 before another acceptance review. The record is in `DECISIONS.md` under M83.
 
+[Illustrated gameplay repair instructions](ILLUSTRATED-GAMEPLAY-FIXES.md) specify the asset,
+attachment, gait and sorting repairs, their order, and the visual acceptance checks for this capture.
+
 **M82 is built: the game has one control scheme and no question about which.** A press sets a
 direction, measured from her own world position, that she walks until the next press; a press
 within a generous radius of her stops her; a double press sets the direction and runs it; a pause

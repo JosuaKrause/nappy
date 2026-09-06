@@ -1,0 +1,172 @@
+# Illustrated gameplay repair instructions
+
+This brief addresses [the gameplay capture](evidence/archive/session-captures/2026-09-06/illustrated-gameplay-review.png).
+The capture is dated evidence, not an approved art reference. These are implementation
+instructions from inspection of that frame, its source sheets and the current compositors;
+they are not a claim that repairs are implemented or visually accepted.
+
+Read `CLAUDE.md`, `HANDOFF.md`, `PLAYTEST-27.md`, `VISUALS.md` and the M83 record in
+`DECISIONS.md` first. The handoff identifies the illustrated presentation and street study as
+rejected; descriptions elsewhere of an approved street gate do not authorize reusing that study.
+Use the supplied mother and urban reference images named in `VISUALS.md` for art direction.
+Keep the cardinal camera, logical bodies, movement, collision, crowd density and gameplay RNG.
+
+## What the frame establishes
+
+| Visible issue | Repair priority |
+| --- | --- |
+| Detached trouser segments and tiny shoes surround pedestrians across the frame. | Reconstruct one complete registered pedestrian before expanding variants. |
+| At the centre, the mother's head/clothing overlap near ground level while legs float above; the pram reads as separate horizontal slices. | Rebuild attachment transforms and the pram asset registration. |
+| Pale rectangular speckling surrounds the central pram. | Inspect source transparency and crop contamination before attributing it to an occlusion effect. |
+| Detailed cutout people sit in a flat, sparsely detailed street with large plain building surfaces and simpler vehicles/props. | Integrate a coherent illustrated environment after the actor assembly gate. |
+| A large developer readout covers the right street; tutorial text dominates the lower centre. | Separate diagnostic evidence from a clean gameplay composition review. |
+
+A still cannot establish foot sliding, frame-rate stability, correct recycling, or how limbs
+behave while turning. Those need movement evidence. Nor does this frame prove a traffic,
+collision or density defect: do not change those systems to hide a drawing problem.
+
+## 1. Make the sheets and their manifests agree
+
+Start in `assets/illustrated/modular/`, `assets/illustrated/walkers/` and
+`src/visuals/directional_parts.gd`, which maps sheet regions and pivots to sprites.
+
+- Inspect every direction crop at source resolution and assembled gameplay size. Measure actual
+  artwork bounds and attachment points; an equal grid and a declared direction order are not
+  evidence that a generated image follows them.
+- The pram sheet visibly contains seven groups across each row, while its manifest and
+  `ModularPerson` divide it into eight 160-pixel columns. That slices across drawings. Supply
+  eight complete authored views, or preserve valid crops and author the missing views into a new
+  registered sheet. Do not stretch seven groups across eight slots or silently mirror one.
+- The mother's first column visibly faces the viewer, while the manifest calls it N and the
+  direction selector defines N as screen-up. Audit actual facings across all sheets and map
+  them explicitly to N, NE, E, SE, S, SW, W, NW. Check matching mother and pram facings together.
+- The mother's painted parts are independently packed into rows. The torso already includes
+  arms, and the shoe area contains additional shoe drawings. Extract exactly the part named by
+  each registration; remove duplicate anatomy from newly authored modular layers. A whole row
+  cell must not contribute unrelated shoes or a second pair of arms.
+- Walker legs currently use fixed horizontal bands and split each direction cell in half.
+  Source silhouettes have different extents, and profile views do not provide two cleanly
+  separated halves. Replace inferred cuts with measured per-part regions and explicit
+  left/right ownership; author missing limbs where extraction cannot supply them.
+- Use one authoritative machine-readable manifest for runtime registration and asset inspection.
+  Include crop, crop-local attachment points, rest-axis endpoints, scale, actual facing and
+  per-direction order. Validate texture bounds, required parts and missing directions loudly.
+
+The pram PNG reports an alpha channel, but its background visibly contains a checker pattern.
+An alpha channel alone does not prove clean transparency. Inspect alpha values in intended empty
+areas and composite each crop over light, dark and saturated backgrounds. Remove baked background
+and edge contamination in a versioned replacement, preserving fine spokes and painted edges.
+Do not erase every pale pixel: highlights belong to the drawing. Follow the image-generation
+skill for replacement raster art and preserve its reference inputs and generation record.
+
+Acceptance: every isolated crop contains only its named part; every direction can be assembled
+into a complete static person/pram with no foreign fragments, checker rectangles or duplicate limbs.
+
+## 2. Rebuild attachment transforms from a common ground anchor
+
+`src/visuals/modular_person.gd` places head, torso and arms at the same node position after
+subtracting different pivots. It similarly places all pram layers at one position after
+subtracting different pivots. This aligns those different anatomical points to one spot instead
+of joining the parts. The gait's hip anchors and the rendered torso are also independent.
+
+- Define a per-direction rest skeleton relative to the owner's ground anchor: pelvis, neck,
+  shoulders, hips, knees and ankles, plus hand and pram-handle contacts. Derive body placement
+  from that skeleton. A neck pivot goes to the neck target, not to the actor origin.
+- For a cropped part, transform a texture point as
+  `target_joint + rotation * scale * (texture_point - crop_local_pivot)`.
+  Keep texture pixels, actor-local drawing coordinates and world ground coordinates explicit.
+  Apply the source-to-game scale once. The parent already supplies owner translation.
+- Assemble rigid pram layers against one shared chassis coordinate system. Preserve their
+  designed offsets from axle/ground baseline; do not collapse canopy, basket and wheels onto
+  their separate pivots at a common position.
+- Replace the universal sideways pram offset with authored per-facing placement that visibly
+  joins the mother's hands to the handle. The combined visual stays registered to the existing
+  logical owner. Changing its collision shape is outside this repair.
+- Calibrate mother, pram and walkers together at gameplay scale. Their torso heights, limb
+  lengths and wheel sizes must agree before animation is enabled. The current independent art
+  scales and gait lengths are inputs to review, not proportions to preserve blindly.
+
+Acceptance: the idle pose works in all eight directions. Feet and wheels meet the ground,
+head meets neck, legs meet hips, hands meet handle, and switching facing does not teleport the
+assembly away from its owner. Prove this before tuning a walk cycle.
+
+## 3. Make rendered limbs follow the solved gait
+
+Both `ModularPerson` and `src/visuals/modular_walker.gd` calculate limb rotation by subtracting
+the actor's travel-direction angle. A drawn thigh's rest axis is not the direction the actor
+walks. Rotating a nearly vertical painted leg by that difference can turn it sideways or upside
+down. Fixed sprite scale also does not make the painted knee reach the solver's knee.
+
+- Measure proximal and distal attachment points for each limb crop. Compute rotation from its
+  authored rest axis to the desired joint segment. Match the rendered segment length to the
+  solved length with suitable authored proportions and controlled longitudinal scaling.
+- Make the upper leg end at the rendered knee and the lower leg end at the rendered ankle.
+  Apply swing-foot height to the ankle used by the leg as well as the shoe; lifting only the
+  shoe separates it from the shin.
+- Keep `PlantedGait`'s world-ground stance constraint, but verify the rendered sole after all
+  sprite transforms. A correct invisible foot target does not prove that the shoe lands there.
+- Drive travel from applied displacement, including collision and shoves. Verify idle, walk,
+  run, abrupt stop, reverse, turn, blocked movement and reset/recycle. Zero applied travel must
+  not keep advancing a walking cycle. Maintain direction hysteresis without mismatching parts.
+
+Acceptance: a planted rendered sole remains fixed against paving during stance; swing feet
+lift and land connected to their legs; stopping and turning leave a complete connected actor.
+
+## 4. Order whole actors and their parts correctly
+
+The compositors currently assign the same part order in every direction, even though the
+registration format permits directional order. `DirectionalParts` also gives child sprites
+positive z offsets; being a child is not itself proof that parts sort as one actor in the city.
+
+- Author near/far leg and arm order for each facing. Put the pram in front of or behind the
+  relevant body parts according to the view, with hands visibly meeting the handle.
+- Inspect the actual actor/city sorting hierarchy. Keep internal part ordering confined to
+  the actor's visual assembly so one person's shoes cannot sort through another's torso merely
+  because all shoes share a higher z value. Sort world overlap using ground depth.
+- Verify crossings between two people, player and car, and actor and foreground roof in both
+  directions. Preserve stable local dotted occlusion and readable existing danger/baby cues.
+  Do not use transparency to disguise a disconnected assembly.
+
+Acceptance: each person reads as one body at overlaps, the pram occludes coherently, and roofs
+do not hide the player or approaching threats. Review consecutive frames as well as stills.
+
+## 5. Resolve the presentation mismatch and review composition
+
+The live illustrated switch binds characters; it does not make the standalone illustrated
+street the live city. Do not report the environment fixed because its separate scene renders.
+
+- After actor assembly passes, build a representative live apartment frontage, pavement and
+  crossing from the supplied urban references. Use consistent painted materials, line weight
+  and apparent scale with the actors. Keep passable ground and crossings legible.
+- Give the large plain building areas credible roof structure and multi-storey frontage,
+  entrances and appropriate street detail. Use camera-specific depth compression and reviewed
+  occlusion to retain visibility. Do not add visual doorways that imply nonexistent routes.
+- Replace vehicles and authored props/events by their own reviewed families. Keep incomplete
+  families explicit; generic pedestrians cannot substitute for event identities. Expand modular
+  crowd variation only after the small initial set shares reliable joints and proportions.
+- Produce a clean gameplay view without the diagnostic readout alongside targeted diagnostics.
+  Review HUD/tutorial hierarchy against the current control behavior, including portrait/touch.
+  Do not remove useful diagnostics or change the tutorial solely because this debug frame shows
+  them. Do not inherit obsolete title choices from the graphics handoff.
+
+## Verification and handoff
+
+Implement in bounded sequential pieces: sheet/manifest repair, static assembly, gait and sorting,
+then environment integration. Use isolated Luna implementation worktrees under the orchestration
+rules; the orchestrator owns queue changes and visual acceptance. Load the path-matched skills,
+especially illustrated-PNG, Godot and verification; load city/crowd/cues rules if those areas change.
+
+Run `./tools/check.sh`, `./tools/lint.sh` and the affected focused suites. Extend the existing
+visual tests to check rendered attachment continuity, sole placement and clean reset behavior,
+not just sprite existence, region count or the solver's own coordinates. Compare equivalent
+legacy/illustrated scenarios to ensure the presentation changes no simulation state.
+
+Use a bounded contact/movement review covering all facings and at most one or two purposeful
+windowed captures at the end. Include the capture's visible seed, 3224974826, when reproducing
+the busy street; the screenshot alone does not supply the exact original route or build state.
+Save new evidence under its dated session-capture directory. Inspect native gameplay size,
+overlap, clean alpha and motion. If a display is unavailable, report the visual gate unverified.
+
+Keep the illustrated presentation review-only until the player accepts the repaired result.
+Report each repaired defect, the checks and images supporting it, and any remaining family or
+motion gap. Passing headless checks cannot override visible disconnection in the rendered game.
