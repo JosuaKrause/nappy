@@ -220,11 +220,10 @@ third item — a press that says it was heard — so all three below are open to
 
       **Find the cause before designing anything**, because the report contradicts the source.
       `DaySummary._unhandled_input()` already accepts any pressed `InputEventScreenTouch` with no
-      position test of any kind, so there is no region to widen. And neither touch handler is
-      swallowing it as far as reading them goes: `TapControls._input()` and `TouchControls._input()`
-      both run before `_unhandled_input`, but **neither file calls `set_input_as_handled()`
-      anywhere**, and `TouchControls._input()` returns immediately when it is not visible, which it
-      is not over a summary.
+      position test of any kind, so there is no region to widen. And the touch handler is not
+      swallowing it as far as reading it goes: `TouchControls._input()` runs before
+      `_unhandled_input`, but **it never calls `set_input_as_handled()` anywhere**, and its own
+      direction-setting path returns early on a paused tree, which a summary already is.
 
       So the first half of this item is an investigation on a real device or a rig that reproduces
       one. **The second half depends on the answer**: if tap-anywhere is broken, fix it; if it works
@@ -1585,7 +1584,7 @@ would stay the same only the presentation would rotate".)*
       If you learn *something is there* because a wall went translucent, the **cues** rules govern it
       and it owes the same discipline as the rest of the danger vocabulary
 
-- [ ] **It must be a real camera transform, not faked in `_draw()`.** `TapControls._on_tap()` maps a
+- [ ] **It must be a real camera transform, not faked in `_draw()`.** `TouchControls._on_tap()` maps a
       tap to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, and
       `DangerEdge` and `HomeArrow` both go the other way every frame from the same transform. A real
       transform keeps all three working; a fake one breaks every one of them. Two more that follow:
@@ -1613,21 +1612,17 @@ would stay the same only the presentation would rotate".)*
       ground. Rotated, with keys on world axes, a single key follows a street and **two keys point
       between buildings** — so the combination a player reaches for becomes the useless one.
 
-      **Tap has none of this.** `TapControls._on_tap()` already maps a screen point to a world point
-      through `get_viewport().get_canvas_transform().affine_inverse()`, so a rotated camera is
-      handled by the transform and costs the design nothing: you tap where you want to be.
+      **The pointer scheme has none of this.** `TouchControls._on_tap()` already maps a screen point
+      to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, so a
+      rotated camera is handled by the transform and costs the design nothing: a press already
+      means *go there*, in world space, whatever the camera's own angle.
 
-      **So this item is coupled to which control scheme is the default**, and that is a decision
-      rather than a consequence. The player's own condition is written above — *if tap becomes the
-      default it's fine* — and it does not overturn M68's verdict that both schemes are keepers
-      (*"I like both control modes equally"*): both would still ship, and M76's title screen would
-      still ask. What would change is which one a fresh install starts from. **Settle that before
-      this is scheduled**, because if the answer is that the keyboard stays the default, the
-      objection above stands unanswered and the whole item should stay tabled
-
-      *(The on-screen stick has the same problem and the same fix: `TouchControls` drives the four
-      `move_*` actions from its own screen-space vector, and `ScreenOrientation.to_design_space()`
-      already does exactly this correction for the 90° portrait case, so the machinery exists.)*
+      **So the objection is the keyboard alone, now that there is one control scheme rather than a
+      choice between two** (M82 deleted the drag stick and the title screen's own question). A
+      fresh install has nothing to default to any more — every device gets the same pointer scheme,
+      and the keyboard sits beside it as arrows/WASD always have. **Settle whether the diagonal
+      clunkiness above is acceptable on a keyboard before this is scheduled**, because that is now
+      the whole of what standing in the way of a rotated presentation.
 
 - [ ] **Spike the transform alone on the existing square art before anybody draws anything** —
       proving tap-to-world, the edge cues, the zoom fit and y-sorting survive, with no new art,
