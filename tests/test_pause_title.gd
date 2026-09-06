@@ -1,5 +1,8 @@
 extends RefCounted
-## The pause, and the reason it needs a test at all.
+## The pause and the title screen, which share this file because both are the game's ends: the
+## title is where a run begins and where a finished one goes back to, and the pause is where a
+## run in progress can be walked away from and returned to. Neither has anywhere else its own
+## suite would naturally sit.
 ##
 ## **`Esc` did nothing from M33 until M36.** The guard in `main._unhandled_input` read
 ## `_summary.visible`, and `_summary` is a `CanvasLayer` whose `visible` is `true` from the moment
@@ -31,6 +34,7 @@ func run(t) -> void:
 	_test_the_title_asks_when_nothing_forces_an_answer(t)
 	_test_pressing_a_title_button_both_chooses_and_starts(t)
 	_test_the_title_choice_reaches_the_keyboard_too(t)
+	_test_the_title_buttons_carry_their_own_symbol(t)
 	_test_the_title_names_a_version(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
 	_test_the_summary_hint_matches_the_platform(t)
@@ -335,6 +339,25 @@ func _test_the_title_choice_reaches_the_keyboard_too(t) -> void:
 	t.check(chosen == [ControlsMode.Mode.TAP], "T picks the tap button from the keyboard")
 
 	title.close()
+	title.queue_free()
+
+## *(2026-09-06, playtest 26 finding 1: "the choice on the title screen is not at all obvious.
+## those should be proper buttons".)* `ModeButton` is the reusable control both buttons draw
+## themselves through — see its own class comment for why it is not a one-off in this scene — and
+## each names a different mode's symbol rather than sharing one.
+func _test_the_title_buttons_carry_their_own_symbol(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+
+	t.check(title._stick_button is ModeButton, "the stick button draws itself as a ModeButton")
+	t.check(title._tap_button is ModeButton, "and so does the tap button")
+	t.check((title._stick_button as ModeButton).symbol == ModeButton.Symbol.STICK,
+			"the stick button carries the stick symbol")
+	t.check((title._tap_button as ModeButton).symbol == ModeButton.Symbol.TAP,
+			"and the tap button carries the tap symbol, not the same one")
+	t.check(title._stick_button.flat,
+			"flat turns off Godot's own theme, leaving ModeButton's _draw() the whole of its look")
+
 	title.queue_free()
 
 ## The version line is the one thing on this screen not addressed to the player — see

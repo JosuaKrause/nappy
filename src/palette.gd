@@ -91,6 +91,24 @@ const CHALK := Color(0.92, 0.92, 0.88, 0.62)
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")
 
+# ------------------------------------------------------------------ buttons ---
+# `ModeButton` draws its own fill, border and symbol rather than taking a theme — see its class
+# comment — and reads these rather than deciding a colour at the draw call.
+
+## Warm and opaque enough to read as a surface rather than another layer of scrim: the title
+## screen's `TopScrim`/`BottomScrim` are `Color(0.04, 0.04, 0.06, 0.62)`, near-black, so anything
+## that dark would still look like more of the dimness behind it rather than something to press.
+const BUTTON_FILL := Color(0.18, 0.15, 0.13, 0.88)
+## Lighter than `BUTTON_FILL`, for a pointer resting on the button before it is pressed.
+const BUTTON_FILL_HOVER := Color(0.24, 0.2, 0.17, 0.92)
+## Darker than `BUTTON_FILL`, for the moment it is actually held down — a button that only ever
+## lightens never reads as pushed in.
+const BUTTON_FILL_PRESSED := Color(0.11, 0.09, 0.08, 0.95)
+## The outline and the symbol drawn on top of the fill, off-white so both read against every fill
+## state above.
+const BUTTON_BORDER := Color(0.86, 0.82, 0.76, 0.9)
+const BUTTON_SYMBOL := Color(0.92, 0.88, 0.82, 0.95)
+
 # --------------------------------------------------------------- buildings ---
 # One asset set covers every building: the near-white wall and roof tiles are multiplied by
 # the variant's colour. These therefore still decide what a building looks like.

@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/ui/title_screen.gd" id="1_title"]
+[ext_resource type="Script" path="res://src/ui/mode_button.gd" id="2_mode_button"]
 
 [node name="TitleScreen" type="CanvasLayer"]
 layer = 95
@@ -66,12 +67,16 @@ custom_minimum_size = Vector2(380, 100)
 theme_override_font_sizes/font_size = 15
 autowrap_mode = 3
 text = ""
+script = ExtResource("2_mode_button")
+symbol = 0
 
 [node name="Tap" type="Button" parent="Root/Bottom/Lines/Choice"]
 custom_minimum_size = Vector2(380, 100)
 theme_override_font_sizes/font_size = 15
 autowrap_mode = 3
 text = ""
+script = ExtResource("2_mode_button")
+symbol = 1
 
 [node name="Hint" type="Label" parent="Root/Bottom/Lines"]
 horizontal_alignment = 1
