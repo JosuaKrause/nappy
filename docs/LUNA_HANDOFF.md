@@ -53,15 +53,15 @@ All paths are relative to the repository root and are committed assets, not Down
 | `docs/evidence/graphics-reference-mother.jpeg` | Mother, clothing, face, pram and baby reference |
 | `assets/illustrated/source/mother-turnaround-v1.png` | Generated eight-view source draft; **not runtime-ready** |
 | `assets/illustrated/source/README.md` | Exact built-in generation prompt, inspection and remaining defects |
-| `assets/illustrated/modular/` | Registered, transparent mother and pram part sheets, contact review, manifests and generation record; **not runtime-wired** |
+| `assets/illustrated/modular/` | Registered, transparent mother/pram part sheets, articulated mother revision, contact reviews, manifests and generation records; **not runtime-wired** |
 
 The original mother draft is materially closer in style, but has a **baked checkerboard and no
 alpha**. Its observed order is **S, SE, E, NE / N, NW, W, SW**, not the requested N-first ordering.
 It remains a style reference only. The registered replacement in `assets/illustrated/modular/`
 provides real-alpha mother and pram part sheets in `N, NE, E, SE, S, SW, W, NW` order, with
-manifests for cells, pivots, foot/wheel anchors and draw order. Its review contact sheet shows
-assembled foot and wheel contact at gameplay scale. The art is source material for the forthcoming
-compositor, not a completed renderer or live gameplay binding. The player explicitly offers to
+manifests for cells, pivots, foot/wheel anchors and draw order. `mother-parts-v3.png` separates
+the mother’s leg segments and shoe cutouts so the compositor can show a planted foot and a lifted
+swing foot. The art and compositor are not live gameplay binding. The player explicitly offers to
 perform style transfer on usable draft sheets if generation does not achieve the target.
 
 Use the imagegen skill for generation/editing. Built-in mode does not require an API key. Do not
@@ -76,13 +76,15 @@ The `src/visual3d/` street and actor files are isolated experiments. Additional 
 projection and screen attempts are preserved in ancestry, indexed in `docs/DECISIONS.md` under
 Illustrated assets and experiment preservation. Do not revive their design by mistake.
 
-The modular sprite work is a scaffold, not a tested completed renderer:
+The modular sprite work is a standalone, tested presentation component, not live gameplay:
 
-- `src/visuals/directional_parts.gd` defines direction and registered-part data helpers.
-- `src/visuals/planted_gait.gd` drafts stance/swing state and knee solving.
-- `assets/illustrated/modular/` supplies the first real part bundles and documented registration.
-- A complete `ModularPerson` texture compositor, grounded-motion tests and live player/crowd
-  binding remain to be built and verified.
+- `src/visuals/directional_parts.gd` registers eight-direction regions and per-direction pivots.
+- `src/visuals/planted_gait.gd` uses world-pixel stance/swing state and solved knees.
+- `src/visuals/modular_person.gd` consumes actual applied displacement without changing a logical
+  body, collision or gameplay RNG.
+- `assets/illustrated/modular/` supplies registered mother and pram bundles, including articulated
+  lower-body parts. `tests/test_visuals.gd` exercises their regions and a walk/stop/turn sequence.
+- Player/crowd binding and on-screen inspection remain to be built and verified.
 
 Review coordinate units before integration: the gait draft's configurable limb lengths are not
 proof of logical-pixel sizing. Test foot anchors in world space and apply drawing height only
@@ -96,19 +98,16 @@ screen experiment predates some of this and must not simply replace current titl
 
 ## Next work order
 
-1. Finish the modular compositor and grounded-gait tests against the registered mother/pram parts,
-   then render a short walk/stop/turn sequence.
-   Verify planted feet rather than merely observing that legs move. Do this before multiplying art.
-2. Build one cardinal apartment street using actual separate PNG assets, with roof depth and an
+1. Build one cardinal apartment street using actual separate PNG assets, with roof depth and an
    occlusion treatment. Preserve the existing logical geometry. Obtain art feedback on the rendered
    street and movement, not another all-in-one concept image.
-3. Bind the validated presentation to the live player/crowd and expand by event family. Every
+2. Bind the validated presentation to the live player/crowd and expand by event family. Every
    catalogue look needs its own identity and state-appropriate animation; a generic placeholder
    must be recorded as unfinished, never quietly substituted.
-4. Add seeded deterioration, truthful contribution cues and objective guidance. The baby already
+3. Add seeded deterioration, truthful contribution cues and objective guidance. The baby already
    receives event/crowd contributions: consume those facts instead of inventing nearest-source
    attribution or copying meter arithmetic. Silent barriers remain silent.
-5. Rebuild all screens while preserving the current main behavior, then verify busy scenes,
+4. Rebuild all screens while preserving the current main behavior, then verify busy scenes,
    portrait/touch, pauses/transitions and the browser. Keep the full TODO scope visible throughout.
 
 The separate SVG polish is an independent small PR. Review its existing asset-only diff and finish
