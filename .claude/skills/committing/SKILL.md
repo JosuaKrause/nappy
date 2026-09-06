@@ -48,8 +48,21 @@ decided separately and are each true or false on their own, so each one gets a c
 read, reverted or bisected by itself. A single commit at the end of a milestone throws that away and
 makes the branch's own history unusable.
 
-**Commit before stopping.** Work that is finished and green does not sit in the working tree waiting
-to be asked about: an unfinished milestone is a branch with commits on it, not a dirty tree.
+**But a branch is yours, and a messy commit inside one is fine.** *(2026-09-05: "unclean commits are
+fine inside a branch since main is protected".)* `main`'s ruleset means nothing lands except through
+a pull request with the `test` check green on the merge result, so **the branch cannot hurt anybody**
+— the thing that has to be clean is what reaches `main`, and the merge commit is what the project
+keeps. A half-finished item, a commit that does not build, a "wip" while you go and check something,
+several small commits where the rule above wants one: all fine, none of it needs asking about.
+
+So read the one-per-item rule as **what the branch should look like by the time it is proposed**,
+not as a gate on each `git commit`. Tidy at the end if it is worth tidying; an interactive rebase is
+not available in this environment, so in practice that means writing the good message on the commit
+that finishes an item rather than reshaping history afterwards.
+
+**Commit before stopping, and prefer a scruffy commit to a dirty tree.** Uncommitted work is the only
+state that can actually be lost. An unfinished milestone is a branch with commits on it — say in the
+message that an item is incomplete and where you stopped, and move on.
 
 **And that includes a session that only writes docs.** A long design conversation produces the most
 valuable and least recoverable thing in this repo — a brief in the player's own words, and the

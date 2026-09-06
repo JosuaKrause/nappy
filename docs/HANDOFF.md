@@ -40,6 +40,12 @@ and it converts some of them every time. It is not a one-off; it has happened in
 sessions. **Run `git status` after `check.sh` and revert anything you did not mean to change**,
 rather than assuming only the files you touched moved.
 
+**`project.godot` is the other one, and it loses more than whitespace.** Anything that makes the
+editor rewrite it — the import pass, and `tools/export-web.sh` — strips every `;` comment in the
+file and can drop a setting outright; a single run took `window/stretch/aspect="keep"` with it,
+which is load-bearing for the presentation. Nothing warns. Same rule, higher stakes: `git status`
+after, and `git diff project.godot` before believing it is only comments.
+
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
 suite on every push and every pull request; `.github/workflows/deploy.yml` fires on a `v*` tag and
@@ -56,8 +62,13 @@ Semver, and **`major` is reserved for a change that breaks or fundamentally alte
 So pushing `main` no longer publishes. Completed work may be pushed without asking; see the
 **committing** skill for what *completed* means. **Publishing is a separate, deliberate act**, and
 the live site is whatever the newest tag pointed at — `git tag --list 'v*'` and `tools/release.sh`'s
-own dry run say which. **The site currently serves a build nobody has played**: the sealed city and
-everything under "What to distrust" reached it by measurement, not by a played day.
+own dry run say which.
+
+**The live site is broken and the fix is known.** `v0.2.0` is what `https://nappy.josuakrause.com/`
+serves, and on it the day ends without saying so: the clock stops, no summary appears, the player
+keeps walking and nothing can end the day again. One untyped array literal at `src/main.gd:464`,
+diagnosed in full under M70 in [TODO.md](TODO.md). **Cutting a release is the last step of that
+milestone, not a separate errand** — until it is cut, everybody who opens the page meets it.
 
 ## What to do next
 
