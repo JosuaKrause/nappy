@@ -4,8 +4,7 @@ extends CharacterBody2D
 ##
 ## `position` is the mother's feet on the ground plane; everything is drawn upward from
 ## there so that y-sorting against buildings and props matches where she actually stands.
-## The pram is drawn as an offset in the facing direction, foreshortened on Y to sell the
-## oblique view (docs/CITY.md, "Rendering").
+## The live mother and pram are composed by `ModularPerson`; this node remains the logical body.
 
 ## How far ahead of the mother the pram sits, on the ground plane.
 const PRAM_DISTANCE := 34.0
@@ -16,32 +15,6 @@ const FACING_TURN_SPEED := 12.0
 ## How far the camera leads the player, in px.
 const CAMERA_LOOK_AHEAD := 46.0
 
-## The hysteresis band `_update_view()` holds `_side_view` across. Below this many degrees off
-## the horizontal axis she is drawn side-on; above `FRONT_OR_BACK_VIEW_ABOVE_DEGREES` she is
-## drawn front-or-back; in between, whatever was drawn last frame stands. A single switching
-## angle sits exactly on the diagonal, where the facing's two components are equal to within
-## float noise as she turns through it, so a straight 45° walk flips the drawing every frame a
-## strict comparison is asked. Forty and fifty are wide enough apart that a facing crossing the
-## band takes several frames at `FACING_TURN_SPEED`, not one.
-const SIDE_VIEW_BELOW_DEGREES := 40.0
-const FRONT_OR_BACK_VIEW_ABOVE_DEGREES := 50.0
-
-## Two frames per direction: mid-stride, then feet passing.
-const MOTHER_FRONT: Array[Texture2D] = [
-	preload("res://assets/rig/mother_front_a.svg"),
-	preload("res://assets/rig/mother_front_b.svg"),
-]
-const MOTHER_BACK: Array[Texture2D] = [
-	preload("res://assets/rig/mother_back_a.svg"),
-	preload("res://assets/rig/mother_back_b.svg"),
-]
-const MOTHER_SIDE: Array[Texture2D] = [
-	preload("res://assets/rig/mother_side_a.svg"),
-	preload("res://assets/rig/mother_side_b.svg"),
-]
-const PRAM_SIDE := preload("res://assets/rig/pram_side.svg")
-const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
-const PRAM_BACK := preload("res://assets/rig/pram_back.svg")
 const ALERT := preload("res://assets/props/alert.svg")
 const ALERT_CLOSE := preload("res://assets/props/alert_close.svg")
 ## The baby's own three, which ride over the pram rather than over her. See `Baby.Cue`.
@@ -90,20 +63,13 @@ enum Alert {
 ## The baby rides in the pram and the rig draws itself, so the rig asks her what to draw. Null
 ## in a test rig built without one, which is why every use is guarded.
 @onready var _baby: Baby = get_node_or_null("Baby")
+var _modular_person: ModularPerson
 
 var facing := Vector2.DOWN
-## Which family of drawing `_draw_mother()` and `_draw_pram()` show: side-on when `true`,
-## front-or-back when `false`. Computed once a frame by `_update_view()` into this single member
-## rather than asked separately by each draw function, so the two can never disagree about which
-## way she faces. Starts `false` to match the default `facing` of `Vector2.DOWN` — squarely in
-## the front-or-back band, not near the diagonal, so there is nothing to settle before she has
-## moved.
-var _side_view := false
 ## How long her own movement input stays ignored, set by `detain()`. Velocity is not touched here —
 ## it runs out through the ordinary friction the same as letting go of every key would, which is
 ## what makes a capture look like stopping rather than like being frozen. See `chatting_mother`.
 var _detained_for := 0.0
-var _walk_phase := 0.0
 ## Deflection from being walked into, decaying like any other velocity. Kept apart from
 ## `velocity` so an input frame cannot quietly erase it.
 var _shove := Vector2.ZERO
@@ -120,6 +86,17 @@ var _alert_source := &""
 
 func _ready() -> void:
 	add_to_group("player")
+	_ensure_modular_person()
+	_modular_person.reset_at(global_position, facing)
+
+func _ensure_modular_person() -> void:
+	if is_instance_valid(_modular_person):
+		return
+	_modular_person = ModularPerson.new()
+	_modular_person.name = "ModularPerson"
+	# Keep the compositor at the owner's origin. It consumes world coordinates for its
+	# planted pose while its sprites remain local, so it cannot offset the logical body.
+	add_child(_modular_person)
 
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
 ## mode: the home and the street in front of it, with nobody in it.
@@ -157,6 +134,7 @@ func step_back_in() -> void:
 	_camera.process_mode = Node.PROCESS_MODE_INHERIT
 
 func _physics_process(delta: float) -> void:
+	var position_before_motion: Vector2 = global_position
 	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if _detained_for > 0.0:
 		_detained_for = maxf(0.0, _detained_for - delta)
@@ -170,8 +148,6 @@ func _physics_process(delta: float) -> void:
 		_turn_toward(input_dir.normalized(), delta)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
-	_update_view()
-
 	move_and_slide()
 
 	# The deflection is moved separately rather than added to `velocity`, which stays what she
@@ -181,8 +157,12 @@ func _physics_process(delta: float) -> void:
 		move_and_collide(_shove * delta)
 		_shove = _shove.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
 
+	_ensure_modular_person()
+	# Only displacement that survived collision and shove resolution drives the gait. Input,
+	# velocity and elapsed time alone must never advance a planted foot.
+	_modular_person.apply_displacement(global_position - position_before_motion, global_position, delta, facing)
+
 	# Stride cadence is driven by distance covered, so it stays in step at any speed.
-	_walk_phase = wrapf(_walk_phase + velocity.length() * delta * 0.09, 0.0, TAU)
 	_alert_phase = wrapf(_alert_phase + delta, 0.0, 1.0)
 	_alert_left = maxf(0.0, _alert_left - delta)
 	if _alert_left <= 0.0:
@@ -337,22 +317,6 @@ func _turn_toward(target: Vector2, delta: float) -> void:
 	var diff := angle_difference(facing.angle(), target.angle())
 	facing = facing.rotated(clampf(diff, -step, step)).normalized()
 
-## Decides `_side_view` for this frame, with hysteresis rather than a single switching angle. See
-## `SIDE_VIEW_BELOW_DEGREES`.
-##
-## The east/west mirror the side view picks by the sign of `facing.x` needs no hysteresis of its
-## own: turning between facing mostly-east and mostly-west at `FACING_TURN_SPEED` sweeps through
-## facing mostly-north-or-south on the way, which is deep in the front-or-back band, not near
-## either switching angle — so `_side_view` has already dropped to `false` and settled back to
-## `true` with the new sign already decided by the time either draw function reads it.
-func _update_view() -> void:
-	var degrees_off_horizontal := rad_to_deg(atan2(absf(facing.y), absf(facing.x)))
-	if degrees_off_horizontal < SIDE_VIEW_BELOW_DEGREES:
-		_side_view = true
-	elif degrees_off_horizontal > FRONT_OR_BACK_VIEW_ABOVE_DEGREES:
-		_side_view = false
-	# Between the two: keep whatever was drawn last frame.
-
 func _update_camera(delta: float) -> void:
 	var lead := Vector2(facing.x, facing.y * OBLIQUE_Y) * CAMERA_LOOK_AHEAD
 	_camera.offset = _camera.offset.lerp(lead, clampf(delta * 3.0, 0.0, 1.0))
@@ -365,9 +329,6 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	# Not left to hold across the reset: a rewound or new day did not walk here, so there is no
 	# "last frame" of hysteresis worth keeping, and `look`'s default of `Vector2.DOWN` is squarely
 	# in the front-or-back band regardless.
-	_side_view = false
-	_update_view()
-	_walk_phase = 0.0
 	_shove = Vector2.ZERO
 	_detained_for = 0.0
 	_alert = Alert.NONE
@@ -376,6 +337,8 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	if _camera:
 		_camera.offset = Vector2.ZERO
 		_camera.reset_smoothing()
+	_ensure_modular_person()
+	_modular_person.reset_at(global_position, facing)
 	queue_redraw()
 
 ## Stops the camera from panning past the edge of the city.
@@ -424,20 +387,11 @@ func run_excess_ratio() -> float:
 # ------------------------------------------------------------------ drawing ---
 
 func _draw() -> void:
-	var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
 	var pram_offset := Vector2(facing.x, facing.y * OBLIQUE_Y) * PRAM_DISTANCE
 
 	# Shadows belong to the ground plane, so they always go underneath both figures.
 	Sprites.draw_shadow(self, Vector2.ZERO, 9.0)
 	Sprites.draw_shadow(self, pram_offset, 12.0)
-
-	# Facing away from the viewer puts the pram further up the screen, i.e. behind her.
-	if facing.y < 0.0:
-		_draw_pram(pram_offset)
-		_draw_mother(gait)
-	else:
-		_draw_mother(gait)
-		_draw_pram(pram_offset)
 
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
@@ -496,33 +450,3 @@ func _draw_alert() -> void:
 		return
 	var mark := ALERT_CLOSE if _alert == Alert.NOW else ALERT
 	Sprites.draw_standing(self, mark, Vector2(0.0, -ALERT_HEIGHT))
-
-## The stride is two frames rather than a procedural swing: with the legs drawn into the
-## sprite there is nothing left to swing. The frames carry the body's bob too, which is why
-## nothing here offsets her vertically any more.
-func _draw_mother(gait: float) -> void:
-	var stepping := gait > 0.05 and sin(_walk_phase * 2.0) > 0.0
-	var frame := 1 if stepping else 0
-	var flip := false
-	var texture: Texture2D
-	if _side_view:
-		texture = MOTHER_SIDE[frame]
-		flip = facing.x < 0.0
-	elif facing.y > 0.0:
-		texture = MOTHER_FRONT[frame]
-	else:
-		texture = MOTHER_BACK[frame]
-	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, flip)
-
-## Three profiles rather than one drawing with the hood nudged sideways. Sliding the hood
-## along a fixed basket made it overhang the end of the pram whenever she turned, which is
-## what "the canopy is offset going sideways" was: the hood was drawn at the rear, but the
-## basket underneath it never changed shape, so the two stopped agreeing.
-func _draw_pram(at: Vector2) -> void:
-	if _side_view:
-		# Authored travelling east, hood at the rear; mirrored to travel west.
-		Sprites.draw_standing(self, PRAM_SIDE, at, Vector2.ZERO, facing.x < 0.0)
-	elif facing.y > 0.0:
-		Sprites.draw_standing(self, PRAM_FRONT, at)
-	else:
-		Sprites.draw_standing(self, PRAM_BACK, at)

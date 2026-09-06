@@ -8,6 +8,7 @@ func run(t) -> void:
 	_test_stop_reverse_turn_and_reset(t)
 	_test_direction_hysteresis(t)
 	_test_visual_state_does_not_own_body(t)
+	_test_live_owner_coordinate_binding(t)
 	_test_short_walk_stop_turn_sequence(t)
 
 func _rig(t) -> ModularPerson:
@@ -139,6 +140,22 @@ func _test_visual_state_does_not_own_body(t) -> void:
 	t.check(logical == Vector2(33.0, 44.0), "caller logical body value is unchanged")
 	t.check(rig.position == Vector2.ZERO, "compositor does not move its Node2D origin")
 	rig.free()
+
+func _test_live_owner_coordinate_binding(t) -> void:
+	var stroller := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.reset_at(Vector2(137.0, 241.0), Vector2.RIGHT)
+	var compositor: ModularPerson = stroller.get_node("ModularPerson")
+	t.check(compositor.position == Vector2.ZERO, "live compositor stays at the owner's local origin")
+	t.check(compositor.global_position == stroller.global_position,
+		"live compositor origin is aligned with the owner's world position")
+	stroller.global_position = Vector2(181.0, 209.0)
+	t.check(compositor.global_position == stroller.global_position,
+		"child compositor follows owner movement without an independent offset")
+	stroller.free()
 
 func _test_short_walk_stop_turn_sequence(t) -> void:
 	var rig := _rig(t)
