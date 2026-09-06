@@ -2,7 +2,7 @@ class_name DirectionalParts extends RefCounted
 ## Directional PNG-sheet registrations and the direction selector shared by modular actors.
 ##
 ## A registration is deliberately data-only: eight real rectangles, one logical anchor,
-## one texture pivot and eight layer values. Missing views are errors rather than an
+## eight texture pivots and eight layer values. Missing views are errors rather than an
 ## invitation to mirror a different drawing.
 
 enum Direction { N, NE, E, SE, S, SW, W, NW }

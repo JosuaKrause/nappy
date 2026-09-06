@@ -66,11 +66,11 @@ func _test_no_motion_is_stable(t) -> void:
 func _test_displacement_plants_and_lifts(t) -> void:
 	var rig := _rig(t)
 	var planted := rig.gait.stance_anchor(PlantedGait.RIGHT_FOOT)
-	rig.apply_displacement(Vector2(0.2, 0.0), Vector2(10.2, 20.0), 1.0, Vector2.RIGHT)
+	rig.apply_displacement(Vector2(16.0, 0.0), Vector2(26.0, 20.0), 1.0, Vector2.RIGHT)
 	t.check(rig.gait.is_stepping(), "actual travel starts a swing step")
 	t.check(rig.gait.stance_anchor(PlantedGait.RIGHT_FOOT) == planted,
 		"stance foot keeps its world anchor while the body travels")
-	rig.apply_displacement(Vector2(0.05, 0.0), Vector2(10.25, 20.0), 1.0, Vector2.RIGHT)
+	rig.apply_displacement(Vector2(6.0, 0.0), Vector2(32.0, 20.0), 1.0, Vector2.RIGHT)
 	var swing := rig.gait.step_foot()
 	t.check(rig.last_pose["%s_foot_height" % ("left" if swing == 0 else "right")] > 0.0,
 		"only the swing foot receives lift")
@@ -85,6 +85,8 @@ func _test_displacement_plants_and_lifts(t) -> void:
 		"stance shoe consumes its planted world pose")
 	t.check(swing_shoe.position.y < rig.last_pose[swing_name + "_foot"].y,
 		"swing shoe visibly lifts above the ground plane")
+	t.check(rig.last_pose[swing_name + "_foot_height"] >= 4.0,
+		"swing lift is meaningful at gameplay pixel scale")
 	t.check(swing_lower.position.is_equal_approx(rig.last_pose[swing_name + "_knee"]),
 		"swing lower leg is attached at the solved knee")
 	t.check(absf(swing_lower.rotation) > 0.001,
@@ -93,12 +95,12 @@ func _test_displacement_plants_and_lifts(t) -> void:
 
 func _test_stop_reverse_turn_and_reset(t) -> void:
 	var rig := _rig(t)
-	rig.apply_displacement(Vector2(0.25, 0.0), Vector2(10.25, 20.0), 1.0, Vector2.RIGHT)
+	rig.apply_displacement(Vector2(16.0, 0.0), Vector2(26.0, 20.0), 1.0, Vector2.RIGHT)
 	rig.stop_pose()
 	t.check(rig.last_displacement == Vector2.ZERO, "stop cancels further gait travel")
 	rig.turn_to(Vector2.LEFT)
 	t.check(rig.direction == DirectionalParts.Direction.W, "turn selects the reverse authored view")
-	rig.apply_displacement(Vector2(-0.2, 0.0), Vector2(10.05, 20.0), 1.0, Vector2.LEFT)
+	rig.apply_displacement(Vector2(-16.0, 0.0), Vector2(10.0, 20.0), 1.0, Vector2.LEFT)
 	t.check(rig.direction == DirectionalParts.Direction.W, "reverse displacement follows the new heading")
 	rig.teleport_to(Vector2(100.0, 40.0), Vector2.UP)
 	t.check(rig.visual_world_position == Vector2(100.0, 40.0), "teleport resets visual position")
@@ -129,8 +131,8 @@ func _test_visual_state_does_not_own_body(t) -> void:
 
 func _test_short_walk_stop_turn_sequence(t) -> void:
 	var rig := _rig(t)
-	rig.apply_displacement(Vector2(0.2, 0.0), Vector2(10.2, 20.0), 1.0, Vector2.RIGHT)
-	var walk := rig.apply_displacement(Vector2(0.05, 0.0), Vector2(10.25, 20.0), 1.0, Vector2.RIGHT)
+	rig.apply_displacement(Vector2(16.0, 0.0), Vector2(26.0, 20.0), 1.0, Vector2.RIGHT)
+	var walk := rig.apply_displacement(Vector2(6.0, 0.0), Vector2(32.0, 20.0), 1.0, Vector2.RIGHT)
 	var swing := rig.gait.step_foot()
 	var swing_sprite: Sprite2D = rig.mother_sprites["left_shoe" if swing == 0 else "right_shoe"]
 	print("[visual-sequence] walk direction=%s swing=%d shoe_pos=%s knee=%s leg_rot=%.3f lift=(%.3f, %.3f)" % [

@@ -42,6 +42,9 @@ var pram_sprites: Dictionary = {}
 var _has_pose := false
 
 func _init() -> void:
+	# The source joints are 34px hip-to-ground and the sheet is drawn at half scale.
+	# These world-pixel lengths keep a normal Stroller walk visible at gameplay scale.
+	gait.configure( [Vector2(-6.0, -34.0), Vector2(6.0, -34.0)], 17.0, 17.0, 14.0, 24.0, 8.0, [Vector2(-15.0, 0.0), Vector2(15.0, 0.0)])
 	_register_parts()
 	_create_sprites()
 

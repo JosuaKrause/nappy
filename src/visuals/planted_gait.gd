@@ -2,17 +2,21 @@ class_name PlantedGait extends RefCounted
 ## Distance-driven two-foot gait state for a feet-anchored sprite assembly.
 ##
 ## A stance foot stores a world-space anchor and does not move while the body passes
-## over it. A swing begins only after actual body displacement reaches the step trigger;
-## elapsed time alone cannot advance it. The helper never changes the logical body.
+## over it. Lengths, offsets and lift are world pixels, so the visual pose stays legible
+## at the compositor's gameplay scale. A swing begins only after actual body displacement
+## reaches the step trigger; elapsed time alone cannot advance it. The helper never changes
+## the logical body.
 
 const LEFT_FOOT: int = 0
 const RIGHT_FOOT: int = 1
 
-var hip_offsets: Array[Vector2] = [Vector2(-0.12, 0.0), Vector2(0.12, 0.0)]
-var upper_leg_length: float = 0.25
-var lower_leg_length: float = 0.25
-var step_trigger: float = 0.18
-var step_span: float = 0.34
+var hip_offsets: Array[Vector2] = [Vector2(-6.0, -34.0), Vector2(6.0, -34.0)]
+var foot_offsets: Array[Vector2] = [Vector2(-15.0, 0.0), Vector2(15.0, 0.0)]
+var upper_leg_length: float = 17.0
+var lower_leg_length: float = 17.0
+var step_trigger: float = 14.0
+var step_span: float = 24.0
+var swing_height: float = 8.0
 
 var _initialized: bool = false
 var _body_world: Vector2 = Vector2.ZERO
@@ -28,7 +32,8 @@ var _stepping: bool = false
 
 
 func configure(hips: Array[Vector2], upper_length: float, lower_length: float,
-		trigger: float = 0.18, swing_span: float = 0.34) -> void:
+		trigger: float = 14.0, swing_span: float = 24.0, lift: float = 8.0,
+		feet: Array[Vector2] = [Vector2(-15.0, 0.0), Vector2(15.0, 0.0)]) -> void:
 	if hips.size() != 2:
 		push_error("PlantedGait needs exactly two hip offsets")
 		return
@@ -37,13 +42,16 @@ func configure(hips: Array[Vector2], upper_length: float, lower_length: float,
 	lower_leg_length = maxf(0.001, lower_length)
 	step_trigger = maxf(0.001, trigger)
 	step_span = maxf(0.001, swing_span)
+	swing_height = maxf(0.0, lift)
+	if feet.size() == 2:
+		foot_offsets = feet.duplicate()
 	_initialized = false
 
 
 func reset(world_position: Vector2, facing: Vector2 = Vector2.DOWN) -> void:
 	_body_world = world_position
 	_facing = _safe_direction(facing, Vector2.DOWN)
-	_feet_world = [world_position + hip_offsets[LEFT_FOOT], world_position + hip_offsets[RIGHT_FOOT]]
+	_feet_world = [world_position + foot_offsets[LEFT_FOOT], world_position + foot_offsets[RIGHT_FOOT]]
 	_stance_world = _feet_world.duplicate()
 	_swing_start = Vector2.ZERO
 	_swing_target = Vector2.ZERO
@@ -160,7 +168,7 @@ func _foot_height(index: int) -> float:
 	if not _stepping or index != _swing_foot:
 		return 0.0
 	var progress: float = clampf(_swing_distance / step_span, 0.0, 1.0)
-	return sin(progress * PI) * 0.07
+	return sin(progress * PI) * swing_height
 
 
 func _safe_direction(value: Vector2, fallback: Vector2) -> Vector2:
