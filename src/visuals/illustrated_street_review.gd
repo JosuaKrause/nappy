@@ -2,10 +2,10 @@ extends Node2D
 ## Bounded art review: a cardinal street composition with authored PNG layers.
 ## This node has no City, collision, route, or gameplay dependencies by design.
 
-const GROUND := preload("res://assets/illustrated/street/street-ground.png")
-const FACADE := preload("res://assets/illustrated/street/apartment-facade.png")
-const ROOF := preload("res://assets/illustrated/street/roof-depth-overlay.png")
-const PROPS := preload("res://assets/illustrated/street/street-props.png")
+const GROUND := preload("res://assets/illustrated/street/street-ground-v2.png")
+const FACADE := preload("res://assets/illustrated/street/apartment-facade-v2.png")
+const ROOF := preload("res://assets/illustrated/street/roof-depth-overlay-v2.png")
+const PROPS := preload("res://assets/illustrated/street/street-props-v2.png")
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
