@@ -11,11 +11,12 @@ extends Button
 ## file painted the disc and the glyphs by hand in `_draw()`; both are gone, because a picture is
 ## an asset the moment a person could call it one.
 ##
-## **`_draw()` is back, for exactly one thing that is not a picture: `RESTART`'s own hold-fill
-## bar.** A rectangle whose width tracks `hold_progress` is layout the same way `MeterBar`'s own
-## fill is — see the **cues** rule's own exception for a bar that is not a drawing of anything —
-## and a `Button` has no stock control for "fills while held", so this is the one place the **cues**
-## rule's own "prefer the engine's data" clause has nothing to prefer.
+## **`_draw()` is back, for exactly one thing that is not a picture: `RESTART`'s own hold fill.**
+## *(Playtest 29 finding 5: "the hold button should fill up in its entirety while holding, not
+## have a separate bar.")* A radial sweep tracking `hold_progress` is layout the same way
+## `MeterBar`'s own fill is — see the **cues** rule's own exception for a fill that is not a
+## drawing of anything — and a `Button` has no stock control for "fills while held", so this is the
+## one place the **cues** rule's own "prefer the engine's data" clause has nothing to prefer.
 ##
 ## **Every button shares one neutral fill (`Palette.BUTTON_FILL`/`BUTTON_HOVER`/`BUTTON_PRESSED`)
 ## rather than a colour per symbol.** A hue in this project already means something
@@ -26,7 +27,7 @@ extends Button
 ##
 ## A small reusable control rather than a one-off, because the pause screen and the day summary
 ## share the same pair of buttons, for `Symbol.RESTART` and `Symbol.CONTINUE` — one interaction
-## learned once rather than a different control on each screen. `RESTART`'s own hold-fill bar lives
+## learned once rather than a different control on each screen. `RESTART`'s own hold fill lives
 ## here too, so both screens drive the same drawing through `hold_progress` rather than each screen
 ## painting its own.
 
@@ -64,10 +65,13 @@ var hold_progress := 0.0:
 		hold_progress = clampf(value, 0.0, 1.0)
 		queue_redraw()
 
-## Reserved below the disc for `RESTART`'s own hold-fill bar — see `_draw()`.
-const _HOLD_BAR_GAP := 10.0
-const _HOLD_BAR_HEIGHT := 6.0
-const _HOLD_BAR_TRACK := Color(1.0, 1.0, 1.0, 0.22)
+## The disc's own fill, while held — see `_draw()`. Translucent rather than opaque: a script
+## `_draw()` on a `Button` paints over the stylebox and the icon, and a fully opaque fill would
+## hide the glyph underneath it as the sweep passed over it.
+const _HOLD_FILL := Color(1.0, 1.0, 1.0, 0.4)
+## How many wedges make up a full-circle sweep — the same order of segment count `TouchControls`'
+## own now-deleted rim arc and `DangerEdge`'s circular badges use for a smooth curve at this size.
+const _HOLD_FILL_SEGMENTS := 48
 
 ## About a second, per the design this milestone builds rather than invents — *(2026-09-06:
 ## "restart game (must be held down so a bar needs to fill up while pressing".)*
@@ -82,8 +86,9 @@ var _held_by := -1
 var _held_since := 0.0
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(_DIAMETER,
-			_DIAMETER + _HOLD_BAR_GAP + _HOLD_BAR_HEIGHT if symbol == Symbol.RESTART else _DIAMETER)
+	# A plain diameter square for both symbols — the extra height `RESTART`'s own hold bar used to
+	# reserve below the disc is gone along with the bar itself; the fill now lives inside the disc.
+	custom_minimum_size = Vector2(_DIAMETER, _DIAMETER)
 	_apply_disc_style()
 	icon = _ICON_BY_SYMBOL.get(symbol)
 	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -157,17 +162,28 @@ func force_pressed_look() -> void:
 func clear_forced_press() -> void:
 	_apply_disc_style()
 
-## The one thing this button paints — see the class comment for why a fill bar is not a picture.
-## Drawn under the disc rather than around it, at the width `_HOLD_BAR_GAP`/`_HOLD_BAR_HEIGHT`
-## already reserved in `custom_minimum_size`, so it never overlaps the glyph or the disc's own rim.
+## The one thing this button paints — see the class comment for why a fill that is not a drawing
+## of anything is not a picture. A radial sweep from 12 o'clock clockwise, drawn as a triangle fan
+## (`draw_colored_polygon`) clipped to `_RADIUS` rather than a full opaque disc, so the SVG glyph
+## underneath still reads through the translucent `_HOLD_FILL` even once `hold_progress` reaches
+## 1.0 and the sweep has closed the whole circle. Segment count scales with `hold_progress` rather
+## than always drawing `_HOLD_FILL_SEGMENTS` wedges, so a `hold_progress` of 0 needs no fan at all.
 func _draw() -> void:
-	if symbol != Symbol.RESTART:
+	if symbol != Symbol.RESTART or hold_progress <= 0.0:
 		return
-	var track := Rect2(0.0, _DIAMETER + _HOLD_BAR_GAP, _DIAMETER, _HOLD_BAR_HEIGHT)
-	draw_rect(track, _HOLD_BAR_TRACK)
-	if hold_progress > 0.0:
-		draw_rect(Rect2(track.position, Vector2(track.size.x * hold_progress, track.size.y)),
-				Palette.BUTTON_SYMBOL)
+	var centre := Vector2(_RADIUS, _RADIUS)
+	# -PI/2 is straight up in this control's own local space (y grows downward), so the sweep
+	# starts at 12 o'clock; increasing the angle from there moves toward 3, 6 and 9 o'clock in
+	# turn, which is clockwise once y is flipped back the way a player actually sees it.
+	var start := -PI / 2.0
+	var sweep := TAU * hold_progress
+	var segments := maxi(1, ceili(_HOLD_FILL_SEGMENTS * hold_progress))
+	var points := PackedVector2Array()
+	points.append(centre)
+	for i in segments + 1:
+		var angle := start + sweep * (float(i) / float(segments))
+		points.append(centre + Vector2(cos(angle), sin(angle)) * _RADIUS)
+	draw_colored_polygon(points, _HOLD_FILL)
 
 ## A thumb does not land on a drawn disc to the pixel — `TouchControls.PAUSE_CATCH_RADIUS` is more
 ## generous than what is drawn, and this button already matches that radius (`_RADIUS`'s own doc).
