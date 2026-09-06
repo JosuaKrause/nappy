@@ -14,21 +14,17 @@ mid-way through.
 
 ## The order
 
-1. **M82** — one way to say where she goes: a press sets a direction she walks until the next one,
-   a press on her stops her, a double press runs, and every other scheme is deleted. **First
-   because the player asked for it first** — *(2026-09-06: "do those before merging")*, said of the
-   open pull request that carries M76.
-2. **M80** — the page a player opens is the release that was cut, and a shared link carries its
-   picture. **Ahead of everything but M82 because the rest of this file is invisible until it is**:
+1. **M80** — the page a player opens is the release that was cut, and a shared link carries its
+   picture. **Ahead of everything else because the rest of this file is invisible until it is**:
    the site serves a build the browser may not go back for, so a milestone that lands is not a
    milestone that arrives.
-3. **M76** — a screen offers something to press: a summary takes a tap anywhere, the restart that
+2. **M76** — a screen offers something to press: a summary takes a tap anywhere, the restart that
    has now been asked for three times gets built, and a press says it was heard.
-4. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+3. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-5. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
+4. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
    be watched.
-6. **M56** — the resistance is noticed.
+5. **M56** — the resistance is noticed.
 
 **Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
 deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
@@ -49,22 +45,16 @@ presentation change with the lattice left cardinal — and it is written down an
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
 
-**[PLAYTEST-28.md](PLAYTEST-28.md) is the freshest report** and the whole of M82. It is a laptop
-session on `v0.4.1`, and the four answers under its three findings leave the game with **one control
-scheme and no question about which** — the drag stick and the aimed joystick are both deleted rather
-than one replacing the other.
+**[PLAYTEST-28.md](PLAYTEST-28.md)'s three findings are built** — the game has one control scheme
+and no question about which: a press sets a direction she walks until the next press, a press on
+her stops her, a double press runs, and the pause button in the top right is the only thing drawn.
+The record is in `DECISIONS.md` under M82.
 
-**[PLAYTEST-27.md](PLAYTEST-27.md) is the one before it**, the second session on the released page
-and the first played on both a laptop browser and a phone. Its six findings are M80 (a build that
-does not arrive, and a shared link with no picture), M76 (a press that is not acknowledged, and the
-continue and restart buttons asked for a third time), and two that M82 has since absorbed — tap mode
-dead on a laptop, and the joystick that is aimed rather than gripped. Read it before picking up any
-of those, because the walking rule M82 keeps is specified there rather than in playtest 28.
-
-**[PLAYTEST-26.md](PLAYTEST-26.md) is third**, and what is left of it is M76's two open items, the
-summary's tap and the restart. Its other half — the title screen's two circular mode buttons and the
-rule that the device you answer the controls question with is the device you play with — shipped and
-is then deleted by M82, which leaves one scheme and so no question to answer.
+**[PLAYTEST-27.md](PLAYTEST-27.md) and [PLAYTEST-26.md](PLAYTEST-26.md)** are the two sessions
+before it. Their controls findings are built the same way — the title screen's two circular mode
+buttons and the drag stick they chose between are gone, leaving one scheme and so no question to
+answer. What is left of either is **M76**: the summary's tap, and the restart and continue buttons
+asked for a third time.
 
 **[PLAYTEST-25.md](PLAYTEST-25.md)'s nine findings are built** — the
 first phone session on the built mobile game and the first human verdict on the sealed city. The
@@ -302,173 +292,6 @@ third item — a press that says it was heard — so all three below are open to
       rather than the game: shader compilation and texture uploads on the first frames after a
       screen closes. **Measure before moving any of it**, and print the same `N ms` for the day-start
       path so there is a number rather than an impression
-
----
-
-## M82 — One way to say where she goes · asked for 2026-09-06
-
-[PLAYTEST-28.md](PLAYTEST-28.md), all three findings and the four answers under them. **The game
-has one control scheme after this and no question about which.** It absorbs what was M81 — playtest
-27's second and sixth findings — because the scheme M81 was going to fix and the scheme M81 was
-going to add are both inside what this replaces: *(2026-09-06: "get rid of all other modes".)*
-
-**What survives from the deleted schemes is their walking rule, not their surface.** A press sets a
-direction that is locked in and walked with nothing held down, which is playtest 27's aimed
-joystick; the direction is measured **from her**, because no joystick is drawn any more and there
-is no drawing's centre left to measure from.
-
-**The keyboard is not a scheme and is untouched.** Arrows and `WASD` press the `move_*` actions
-directly, `Shift` runs, `Esc` pauses. Nothing in playtest 28 mentions them and they are how the game
-is played on a desktop that never presses anything.
-
-- [ ] **A press sets a direction; she walks it until the next press.** *(2026-09-06: "let's do mouse
-      mode to behave the same way that she keeps walking in the direction indefinitely".)*
-
-      **This deletes the destination.** `TapControls` today fixes a heading *and* a target at the
-      tap and stops at `has_arrived()` — `(target - position).dot(direction) <= 0.0`, the plane
-      through the target at right angles to the heading — which is what releases the movement
-      actions. There is no target now and nothing to arrive at, so the plane test, `_target`, and
-      `ARRIVAL_PAUSE_AFTER` (the 5.0s stand-still clock that pauses the game on her behalf) all go
-      with it.
-
-      **The heading is still fixed once and never re-aimed.** *"Nothing here re-aims"* is the
-      existing rule and it survives unchanged: a shove that knocks her off the line does not
-      silently correct itself, and walking into a wall and stopping is the player's mistake to make.
-
-      **It presses a unit vector**, the way a leg already does — `TouchControls._set_axis()` on
-      `move_left`/`move_right` and `move_up`/`move_down` with the components of a normalised
-      direction.
-
-- [ ] **Pressing on her stops her.** *(2026-09-06: "also, to stop her just click on her".)*
-
-      **This replaces two things at once.** It replaces arriving, which is what used to release the
-      movement actions and no longer exists; and it replaces playtest 27's own stop target, a 24px
-      tap area at the drawn joystick's centre — a control that cannot survive the drawing being
-      deleted.
-
-      **A press within a generous radius of her counts**, the way every other catch radius in this
-      game is generous rather than exact: `TouchControls.RUN_CATCH_RADIUS` and the pause button's
-      own are both wider than what they draw, because *"a thumb tapping does not land on the same
-      pixel either time"*. Pick the radius against a played run, and state it as a plain constant in
-      the controls file rather than a balance number in `Tuning`, which is where
-      `DOUBLE_TAP_DISTANCE` (60px) and `RUN_CATCH_RADIUS` already live.
-
-      **It is compared in world space, not screen space**, since she moves and the camera follows:
-      the press already becomes a world position through
-      `get_viewport().get_canvas_transform().affine_inverse()`, so the test is that world point
-      against `_rig.global_position`.
-
-      **A press on her is not also a direction.** Today a press that lands on her own position is a
-      no-op because `heading_to()` returns `Vector2.ZERO` for a zero-length offset and `walk_to()`
-      returns early. That is the same case and it now means *stop* rather than *nothing*, which is
-      strictly more useful and is what was asked for.
-
-- [ ] **A double press sets the direction and runs it.** *(2026-09-06, asked how she runs once the
-      held RUN button goes with the stick: "double press keeps running".)*
-
-      The two windows are unchanged and already exist: `DOUBLE_TAP_SECONDS` (0.35s) decides *soon
-      enough*, and `DOUBLE_TAP_DISTANCE` (60px) decides *close enough to the first press to read as
-      the same thing doubled rather than a new one* — without the second window a press somewhere
-      else a moment later would make her run in the wrong direction.
-
-      **Running holds until the next press changes it**, the same lifetime the direction has, since
-      there is nothing to arrive at that would release it. `Input.action_press(&"run")` on a double,
-      `Input.action_release(&"run")` on a single, and released with the direction when she is
-      stopped.
-
-- [ ] **The pause button, top right, and it is the only thing drawn.** *(2026-09-06: "and then it
-      also needs the pause button in the top right".)*
-
-      **This overturns a decision, and the player drew the line themselves** — the *"and then"* is
-      the argument. Tap mode drawing nothing was asked for outright *(2026-09-05: "this mode does
-      not have UI elements")*, and the pause it did have was the arrival clock: **no pause button
-      was needed because arriving was the pause.** The first item above removes arriving, so the
-      mode loses its only way to pause on a device with no `Esc` key.
-
-      **Same place and same mechanism as the stick's**, so it is the same control rather than a new
-      one: `TouchControls.PAUSE_CENTRE` is `(1218, 62)` in the 1280x720 design box, a 26px disc with
-      two bars, caught on a *release* inside a wider radius so a thumb that lands wrong can slide
-      off without stopping the day. It fires `TouchControls._send_pause_action()`, a real
-      `InputEventAction` for `pause` through `Input.parse_input_event()`, which reaches
-      `main._unhandled_input()` exactly the way `Esc` does — `TapControls` already sends that same
-      action, so this is a place to press rather than a new path.
-
-      **A press on the pause button is not also a direction.** The corner has to be subtracted from
-      the aiming surface, which is the cost the no-UI decision was protecting against and is now
-      paid deliberately.
-
-- [ ] **A mouse click is a press, on a release build, on every screen.** [PLAYTEST-28.md](PLAYTEST-28.md)'s
-      first finding and playtest 27's second, which are the same defect in two places.
-
-      **The walking half.** `TapControls._input()` reads `InputEventScreenTouch` always and
-      `InputEventMouseButton` only behind `OS.is_debug_build() and not _touch`; the published page
-      is a release export, so on the only build a player ever loads the mouse branch is dead and
-      choosing this scheme on a laptop selects **no input at all**. Drop the `OS.is_debug_build()`
-      half. **Keep `not _touch`** — Godot emulates a mouse click from every real touch, so without
-      it one finger would arrive twice and read as its own double press, which now means *run*.
-
-      **The screens half.** *(2026-09-06: "I still need to press space even in mouse mode".)*
-      `TitleScreen._unhandled_input()`, `DaySummary._unhandled_input()` and
-      `PauseScreen._unhandled_input()` each accept `ui_accept` — space and enter — or an
-      `InputEventScreenTouch` press, and nothing else, so on a laptop the keyboard is the only way
-      off the day summary, off the ending and out of the pause. The title screen's mode buttons are
-      the one exception and are about to be deleted by the item below.
-
-      **It overturns a written reason and the player's own words are what overturn it.** The comment
-      above `DaySummary._unhandled_input()` says the touch is read directly *"rather than turned
-      into a synthetic click, so a stray mouse press elsewhere on the desktop still cannot skip a
-      summary a player has not read"* — a real concern, taken when no scheme invited a player to use
-      the mouse.
-
-      **Verify it on a release export, not on `tools/serve-web.sh`'s debug one**, or the check
-      passes for the same reason the bug survived: `serve-web.sh` exports debug on purpose, and
-      debug is the one build where the dead branch is live.
-
-- [ ] **The drag stick, the RUN button and the controls question are deleted.** *(2026-09-06: "get
-      rid of all other modes".)*
-
-      `TouchControls`' gripped stick was already condemned by playtest 27's sixth finding, which
-      replaced it with an aimed joystick; it is now deleted with no replacement scheme. The held
-      `RUN` circle at `(1150, 500)` goes with it, since running is a double press. What has to
-      survive out of that file is the pause button — its centre, its radii, its release-catch
-      behaviour and `_send_pause_action()` — and `_release_all()`'s discipline of force-releasing
-      every held action whenever the controls go invisible.
-
-      **`ControlsMode` has one mode left, so it stops being a choice.** With `Mode.STICK` gone there
-      is nothing for `--controls`/`?controls=` to select, nothing for `is_forced()` to mean, and
-      nothing for the title screen to ask: its two circular `ModeButton` discs go, and the screen
-      returns to the single hint it had before — *"press to begin"*, worded for the device.
-      `assets/ui/joystick.svg` and `assets/ui/tap.svg` are then unreferenced.
-
-      **`main._add_touch_controls()` stops branching.** One node goes into the tree rather than one
-      of two.
-
-- [ ] **A test that no input path can press a vector shorter than 1.0.** *(2026-09-06: "there is no
-      way to walk slowly -- that is intentional -- there should only ever be one speed (plus a
-      second via running)".)*
-
-      **Deleting the stick is what makes this true and the test is what keeps it true.**
-      `Stroller._physics_process()` moves toward `input_dir * top_speed` with the **raw**
-      `Input.get_vector(...)`, deliberately, so running can never be reached by pushing a stick
-      further — and `TouchControls._update_stick()` was the one input path that could press a
-      partial vector, `offset.limit_length(60) / 60`, walking her at 46 px/s instead of
-      `Tuning.WALK_SPEED`'s 92. **That is not only a feel problem**: every lead time and stand-off in
-      `src/autoload/tuning.gd` is computed against 92 as *the* walking speed, with a pursuit speed
-      required to sit strictly between `WALK_SPEED + PURSUIT_MIN_MARGIN` and
-      `RUN_SPEED - PURSUIT_MIN_MARGIN` (112 to 148 px/s), so that walking away always loses ground
-      slowly and running always gains it. A half-pressed vector puts the player outside all of them
-      silently.
-
-- [ ] **Two things to carry over from the code being replaced**, because both were bought with a
-      played session.
-
-      `process_mode` stays `Node.PROCESS_MODE_ALWAYS`, so a held direction is force-released on the
-      frame a pause lands rather than one frame late. And every raw press still goes through
-      `ScreenOrientation.to_design_space(position, rotated)` before it is compared against a
-      design-box constant like the pause button's centre — a rotated portrait presentation delivers
-      touches in the swapped 720x1280 box, and a constant written for 1280x720 is wrong there by
-      exactly that swap. A press being turned into a *world* position needs no such remap, because
-      the canvas transform already carries the rotation.
 
 ---
 
