@@ -26,36 +26,57 @@ fi
 # check.sh both import from clean, which is exactly why check.sh is green on a tree that will not
 # run.
 #
-# Refuse and say what to run, rather than import here. check.sh's import pass costs about two
-# seconds even with nothing to import, on a script reached twenty times a session, and it is also
-# the pass known to rewrite project.godot and docs/ARCHITECTURE.md as a side effect -- neither is
-# a price this quick, common path should pay on the chance the cache happens to be stale.
+# **So detect it here and fix it here, rather than printing an instruction.** The detection is
+# cheap enough to pay on every run and the repair only happens when it is actually needed, so the
+# common path is unchanged and the rare one just starts. check.sh's own import pass now reverts
+# the project.godot and docs/ARCHITECTURE.md rewrites it causes, which is what made calling it
+# from here safe.
 #
 # **The test is which classes are cached, not which files are newer.** A modification time says
-# only that a script changed, which is what every ordinary edit does -- refusing on that would
-# make "edit a script, play it" cost a full import every time, which buys the fix by wrecking the
-# common case. What actually breaks the boot is a `class_name` the cache has never heard of, and
-# that is exactly checkable: every name declared in the tree must appear in the cache's own
-# `"class": &"Name"` list. Costs a couple of greps and has no false positives.
+# only that a script changed, which is what every ordinary edit does -- rebuilding on that would
+# make "edit a script, play it" cost a full import every time. What actually breaks the boot is a
+# `class_name` the cache has never heard of, and that is exactly checkable: every name declared in
+# the tree must appear in the cache's own `"class": &"Name"` list. Costs a couple of greps and has
+# no false positives.
 CACHE="$PROJECT_DIR/.godot/global_script_class_cache.cfg"
-if [[ ! -f "$CACHE" ]]; then
-    echo "no class cache at ${CACHE#"$PROJECT_DIR"/}, so no global class resolves" >&2
-    echo "run tools/check.sh once to build it, then try again" >&2
-    exit 1
-fi
-missing=$(comm -23 \
-    <(grep -rhE '^class_name [A-Za-z_][A-Za-z0-9_]*' \
+
+# Names declared in the tree that the cache has never heard of, one per line; empty when the cache
+# is current. A missing cache file counts as every name missing, which is the fresh-clone case.
+missing_classes() {
+    local declared
+    declared=$(grep -rhE '^class_name [A-Za-z_][A-Za-z0-9_]*' \
             --include='*.gd' "$PROJECT_DIR/src" "$PROJECT_DIR/tests" \
-        | awk '{print $2}' | sort -u) \
-    <(grep -oE '"class": &"[A-Za-z_][A-Za-z0-9_]*"' "$CACHE" \
-        | sed 's/.*&"//; s/"$//' | sort -u))
+        | awk '{print $2}' | sort -u)
+    if [[ ! -f "$CACHE" ]]; then
+        echo "$declared"
+        return
+    fi
+    comm -23 <(echo "$declared") \
+        <(grep -oE '"class": &"[A-Za-z_][A-Za-z0-9_]*"' "$CACHE" \
+            | sed 's/.*&"//; s/"$//' | sort -u)
+}
+
+missing=$(missing_classes)
 if [[ -n "$missing" ]]; then
-    echo "stale class cache: ${missing//$'\n'/, }" >&2
-    echo "  declared in the tree but absent from ${CACHE#"$PROJECT_DIR"/}," >&2
-    echo "  so every reference to them fails to parse" >&2
-    echo "run tools/check.sh to rebuild it -- then check git status, because its import" >&2
-    echo "pass sometimes rewrites project.godot and docs/ARCHITECTURE.md as a side effect" >&2
-    exit 1
+    if [[ -f "$CACHE" ]]; then
+        echo "stale class cache: ${missing//$'\n'/, }" >&2
+        echo "  declared in the tree but absent from ${CACHE#"$PROJECT_DIR"/}," >&2
+        echo "  so every reference to them would fail to parse" >&2
+    else
+        echo "no class cache at ${CACHE#"$PROJECT_DIR"/}, so no global class resolves" >&2
+    fi
+    echo "rebuilding it with tools/check.sh -- this takes a few seconds" >&2
+    if ! "$PROJECT_DIR/tools/check.sh" >/dev/null; then
+        echo "tools/check.sh failed; run it directly to see why" >&2
+        exit 1
+    fi
+    missing=$(missing_classes)
+    if [[ -n "$missing" ]]; then
+        echo "still absent after the rebuild: ${missing//$'\n'/, }" >&2
+        echo "the import pass ran and did not register them, so this is not a stale cache" >&2
+        exit 1
+    fi
+    echo "class cache rebuilt" >&2
 fi
 
 # `--` separates Godot's own arguments from the game's.
