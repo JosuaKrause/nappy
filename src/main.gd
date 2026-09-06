@@ -390,6 +390,11 @@ func _pauses_with_the_game(node: Node) -> void:
 # --------------------------------------------------------------- the day loop ---
 
 func _start_day() -> void:
+	# Timed for the same reason `_ready()` times `CityGenerator.generate()`: playtest 27 named
+	# this path — planning the day's closures, placing every event, streaming the world around
+	# the doorstep — as one of the candidates for the wait after a summary's continue button,
+	# and nothing about it had ever been measured.
+	var elapsed := Time.get_ticks_msec()
 	# The day is announced first, so listeners clear yesterday's state before anything is
 	# placed in today — announcing it afterwards wiped the contact the director had just
 	# reported, and the HUD showed nothing.
@@ -431,9 +436,9 @@ func _start_day() -> void:
 		_apply_meter_override()
 	_first_day = false
 
-	print("[Main] day %d (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
-			% [GameState.day, GameState.current_act(), _city.events.planned_count(),
-			_city.events.active_count(), _city.events.owed_ahead(),
+	print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
+			% [GameState.day, Time.get_ticks_msec() - elapsed, GameState.current_act(),
+			_city.events.planned_count(), _city.events.active_count(), _city.events.owed_ahead(),
 			_city.crowd.agent_count(), _day.time_total]
 			+ "| calm: %s | closed: %s" % [_calm_summary(), _closure_summary()])
 
