@@ -4,9 +4,10 @@ class_name ModularWalker extends Node2D
 const MUSTARD_TEXTURE: Texture2D = preload("res://assets/illustrated/walkers/upper-mustard-bob-v1.png")
 const RUST_TEXTURE: Texture2D = preload("res://assets/illustrated/walkers/upper-rust-curls-v1.png")
 const LEGS_TEXTURE: Texture2D = preload("res://assets/illustrated/walkers/legs-denim-sneakers-v1.png")
+const MANIFEST_PATH := "res://assets/illustrated/walkers/MANIFEST.json"
 const UPPER_SIZE := Vector2(2172.0, 724.0)
 const LEGS_SIZE := Vector2(2172.0, 724.0)
-const VISUAL_SCALE := 0.045
+const VISUAL_SCALE := 0.05
 
 var direction: int = DirectionalParts.Direction.S
 var heading := Vector2.DOWN
@@ -16,8 +17,10 @@ var gait := PlantedGait.new()
 var manifest := DirectionalParts.new_manifest()
 var sprites: Dictionary = {}
 var variant := "mustard_bob"
+var asset_manifest: Dictionary = {}
 
 func _init() -> void:
+	asset_manifest = _read_manifest()
 	# These anchors are shared by every authored view; the PNGs retain their own transparent padding.
 	gait.configure([Vector2(-5.0, -29.0), Vector2(5.0, -29.0)], 14.0, 14.0, 12.0, 20.0, 6.0,
 		[Vector2(-11.0, 0.0), Vector2(11.0, 0.0)])
@@ -75,16 +78,18 @@ func _register_parts() -> void:
 func _regions(size: Vector2) -> Array[Rect2]:
 	var result: Array[Rect2] = []
 	for direction_index: int in DirectionalParts.DIRECTION_NAMES.size():
-		var left := floorf(size.x * float(direction_index) / 8.0)
-		var right := floorf(size.x * float(direction_index + 1) / 8.0)
+		var source_column: int = _source_column(DirectionalParts.DIRECTION_NAMES[direction_index])
+		var left := floorf(size.x * float(source_column) / 8.0)
+		var right := floorf(size.x * float(source_column + 1) / 8.0)
 		result.append(Rect2(left, 0.0, right - left, size.y))
 	return result
 
 func _leg_regions(top: float, bottom: float, side: String) -> Array[Rect2]:
 	var result: Array[Rect2] = []
 	for direction_index: int in DirectionalParts.DIRECTION_NAMES.size():
-		var left := floorf(LEGS_SIZE.x * float(direction_index) / 8.0)
-		var right := floorf(LEGS_SIZE.x * float(direction_index + 1) / 8.0)
+		var source_column: int = _source_column(DirectionalParts.DIRECTION_NAMES[direction_index])
+		var left := floorf(LEGS_SIZE.x * float(source_column) / 8.0)
+		var right := floorf(LEGS_SIZE.x * float(source_column + 1) / 8.0)
 		var half := (right - left) * 0.5
 		result.append(Rect2(left if side == "left" else left + half, top, half, bottom - top))
 	return result
@@ -108,6 +113,23 @@ func _z_orders(value: int) -> Array[int]:
 		result.append(value)
 	return result
 
+func _read_manifest() -> Dictionary:
+	var file: FileAccess = FileAccess.open(MANIFEST_PATH, FileAccess.READ)
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if not parsed is Dictionary:
+		push_error("walker manifest is not a JSON object: %s" % MANIFEST_PATH)
+		return {}
+	var manifest: Dictionary = parsed
+	var columns: Array = manifest.get("source_columns", [])
+	if columns.size() != DirectionalParts.DIRECTION_NAMES.size():
+		push_error("walker manifest must map all 8 source columns")
+	return manifest
+
+func _source_column(direction_name: String) -> int:
+	var columns: Array = asset_manifest.get("source_columns", [])
+	var source_column: int = columns.find(direction_name)
+	return source_column if source_column >= 0 else DirectionalParts.DIRECTION_NAMES.find(direction_name)
+
 func _create_sprites() -> void:
 	var upper: Sprite2D = manifest.make_sprite("upper_body", direction, variant)
 	upper.name = "WalkerUpperBody"
@@ -124,6 +146,8 @@ func _create_sprites() -> void:
 func _update_sprites() -> void:
 	var upper: Sprite2D = sprites["upper_body"]
 	manifest.update_sprite(upper, "upper_body", direction, variant)
+	var hip_center: Vector2 = (last_pose["left_hip"] + last_pose["right_hip"]) * 0.5
+	upper.position = hip_center
 	upper.scale = Vector2.ONE * VISUAL_SCALE
 	for side: String in ["left", "right"]:
 		var hip: Vector2 = last_pose[side + "_hip"]
@@ -144,5 +168,5 @@ func _update_sprites() -> void:
 
 func _segment_rotation(start: Vector2, finish: Vector2) -> float:
 	var segment := finish - start
-	return segment.angle() - DirectionalParts.DIRECTION_VECTORS[direction].angle() \
+	return segment.angle() - Vector2.DOWN.angle() \
 		if segment.length_squared() > 0.000001 else 0.0

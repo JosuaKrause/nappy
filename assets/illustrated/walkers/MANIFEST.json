@@ -1,5 +1,6 @@
 {
   "direction_order": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+  "source_columns": ["S", "SE", "E", "NE", "N", "NW", "W", "SW"],
   "symmetry": [],
   "parts": {
     "upper_body": {

@@ -7,13 +7,14 @@
   "columns": 8,
   "rows": 3,
   "directions": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+  "source_columns": ["S", "SE", "E", "NE", "N", "NW", "W", "SW"],
   "rows_by_layer": ["pram_body_basket", "canopy_baby", "wheels_frame"],
   "draw_order": ["wheels_frame", "pram_body_basket", "canopy_baby"],
   "ground_y": 118,
   "pivots": {
     "body": [80, 74],
     "canopy_baby": [80, 34],
-    "wheel_center_y": 112
+    "wheels_frame": [80, 112]
   },
   "symmetry": "none; all eight views are individually authored",
   "direction_order_is_clockwise": true

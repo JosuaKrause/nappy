@@ -36,7 +36,9 @@ func _test_registered_regions_and_order(t) -> void:
 		var registration := rig.pram_manifest.require_part(part_id)
 		t.check(registration.rects.size() == 8, "%s has eight pram regions" % part_id)
 		for index: int in 8:
-			t.check(registration.rect_for(index) == Rect2(index * 160, rig.PRAM_ROWS[part_id] * 128, 160, 128),
+			var row: int = rig.pram_asset["rows_by_layer"].find(part_id)
+			var source_column: int = rig.pram_asset["source_columns"].find(DirectionalParts.DIRECTION_NAMES[index])
+			t.check(registration.rect_for(index) == Rect2(source_column * 160, row * 128, 160, 128),
 				"%s direction %d uses its documented cell" % [part_id, index])
 	t.check(rig.mother_manifest.require_part("head_hair").pivot == Vector2(80, 28),
 		"head uses the documented attachment pivot")
@@ -44,7 +46,8 @@ func _test_registered_regions_and_order(t) -> void:
 		"left upper leg uses the measured north hip pivot")
 	t.check(rig.mother_manifest.require_part("right_lower_leg").pivot_for(2) == Vector2(96, 146),
 		"right lower leg uses the measured east knee pivot")
-	t.check(rig.mother_manifest.require_part("left_shoe").rect_for(0) == Rect2(27, 7 * 192 + 19, 46, 63),
+	var north_shoe_column: int = rig.mother_asset["source_columns"].find("N")
+	t.check(rig.mother_manifest.require_part("left_shoe").rect_for(0) == Rect2(north_shoe_column * 160 + 27, 7 * 192 + 19, 46, 63),
 		"left shoe uses its numeric v3 cutout")
 	t.check(rig.pram_manifest.require_part("wheels_frame").pivot == Vector2(80, 112),
 		"wheels use the documented wheel pivot")
@@ -59,6 +62,12 @@ func _test_registered_regions_and_order(t) -> void:
 		"pram canopy draws over wheels")
 	t.check(rig.pram_sprites["wheels_frame"].position != Vector2.ZERO,
 		"pram is composed beside the mother")
+	var torso: Sprite2D = rig.mother_sprites["torso_clothing"]
+	t.check(torso.position.is_equal_approx((rig.last_pose["left_hip"] + rig.last_pose["right_hip"]) * 0.5 +
+		(Vector2(80.0, 66.0) - Vector2(80.0, 116.0)) * rig.MOTHER_SCALE),
+		"mother torso is registered from the gait hip anchor")
+	t.check(rig.mother_sprites["head_hair"].position.y < torso.position.y - 15.0,
+		"mother head stays above the torso")
 	rig.free()
 
 func _test_no_motion_is_stable(t) -> void:
@@ -193,8 +202,14 @@ func _test_walker_manifest_and_variants(t) -> void:
 		var registration := walker.manifest.require_part("upper_body", variant)
 		t.check(registration.rects.size() == 8, "%s upper body has eight authored views" % variant)
 		for index: int in 8:
-			t.check(registration.rect_for(index).size.x > 0.0 and registration.pivot_for(index) != Vector2.ZERO,
-				"%s direction %d has a non-empty region and shared pivot" % [variant, index])
+				t.check(registration.rect_for(index).size.x > 0.0 and registration.pivot_for(index) != Vector2.ZERO,
+					"%s direction %d has a non-empty region and shared pivot" % [variant, index])
+		var north_column: int = walker.asset_manifest["source_columns"].find("N")
+		var south_column: int = walker.asset_manifest["source_columns"].find("S")
+		t.check(registration.rect_for(0).position.x == floorf(2172.0 * north_column / 8.0),
+			"walker north uses the authored north source column")
+		t.check(registration.rect_for(4).position.x == floorf(2172.0 * south_column / 8.0),
+			"walker south uses the authored south source column")
 	for part_id: String in ["left_upper_leg", "right_upper_leg", "left_lower_leg", "right_lower_leg", "left_shoe", "right_shoe"]:
 		var lower := walker.manifest.require_part(part_id)
 		t.check(lower.rects.size() == 8, "%s has eight authored views and a registered pivot" % part_id)
@@ -204,6 +219,12 @@ func _test_walker_manifest_and_variants(t) -> void:
 		"lower leg pivot is the local knee attachment")
 	t.check(walker.manifest.require_part("left_shoe").pivot_for(0) == Vector2(67.0, 214.0),
 		"shoe pivot is the local sole anchor")
+	t.check(is_equal_approx(walker.sprites["upper_body"].scale.x, walker.VISUAL_SCALE) and
+		walker.VISUAL_SCALE > ModularPerson.MOTHER_SCALE / 3.0,
+		"walker art uses a readable gameplay scale")
+	t.check(walker.sprites["upper_body"].position.is_equal_approx(
+		(walker.last_pose["left_hip"] + walker.last_pose["right_hip"]) * 0.5),
+		"walker upper body is registered from the gait hip anchor")
 	walker.set_variant("rust_curls")
 	t.check(walker.variant == "rust_curls", "walker can switch interchangeable upper variation")
 	walker.free()
