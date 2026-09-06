@@ -44,8 +44,13 @@ func run(t) -> void:
 	_test_the_title_captions_are_not_clickable(t)
 	_test_the_title_captions_match_the_body_wording(t)
 	_test_the_title_names_a_version(t)
+	_test_mode_button_restart_hold_state_machine(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
+	_test_the_buttons_only_show_on_touch(t)
+	_test_the_restart_button_is_a_hold(t)
+	_test_a_touch_away_from_restart_still_carries_on(t)
 	_test_the_summary_hint_matches_the_platform(t)
+	_test_the_summary_restart_button_is_a_hold(t)
 	t.get_tree().paused = was_paused
 
 ## The trap, stated as an assertion so that reaching for `.visible` again fails loudly.
@@ -474,6 +479,42 @@ func _test_the_button_fill_states_are_distinguishable(t) -> void:
 	t.check(Palette.BUTTON_HOVER != Palette.BUTTON_PRESSED,
 			"and hover and pressed are different from each other too")
 
+## The state machine `PauseScreen` and `DaySummary` both drive through `begin_hold()`/
+## `is_held_by()`/`end_hold()`/`cancel_hold()`, held here on `ModeButton` itself directly rather
+## than only through a screen — see `ModeButton`'s own class comment for why the two screens share
+## one implementation of "held for about a second" instead of each keeping its own clock.
+func _test_mode_button_restart_hold_state_machine(t) -> void:
+	var button := ModeButton.new()
+	button.symbol = ModeButton.Symbol.RESTART
+
+	t.check(button.begin_hold(0), "nothing else holds it, so a first touch is accepted")
+	t.check(not button.begin_hold(1), "a second finger cannot also start a hold on the same button")
+	t.check(button.is_held_by(0), "the first touch is the one recorded")
+	t.check(not button.is_held_by(1), "and no other index reads as held")
+
+	t.check(not button.end_hold(1), "ending the wrong index changes nothing and answers false")
+	t.check(button.is_held_by(0), "so the real hold is still live")
+
+	button._held_since = Time.get_ticks_msec() / 1000.0
+	t.check(not button.end_hold(0), "released immediately, it does not count as a completed hold")
+	t.check(not button.is_held_by(0), "but the hold is over either way")
+
+	t.check(button.begin_hold(0), "a fresh touch can start a new hold once the last one ended")
+	button._held_since = Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	t.check(button.end_hold(0), "held the full duration, it counts")
+
+	button.begin_hold(0)
+	button.cancel_hold()
+	t.check(not button.is_held_by(0), "cancel_hold lets go without completing it")
+	t.close_to(button.hold_progress, 0.0, "and resets the fill back to empty")
+
+	button.hold_progress = 5.0
+	t.close_to(button.hold_progress, 1.0, "hold_progress clamps above 1")
+	button.hold_progress = -2.0
+	t.close_to(button.hold_progress, 0.0, "and below 0")
+
+	button.free()
+
 ## *(2026-09-06, the player's own visual reference: circular buttons sized for a thumb.)*
 ## `TouchControls.PAUSE_CATCH_RADIUS` (46px) is the smallest of its three catch radii
 ## (`STICK_CATCH_RADIUS` 100px, `RUN_CATCH_RADIUS` 76px) — the least generous target a thumb is
@@ -579,15 +620,115 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 	pause._can_quit = false
 	pause._refresh_body()
 	pause._refresh_hint()
+	pause._refresh_buttons()
 	pause.open()
-	t.check(pause._hint.text == "tap to carry on",
-			"the touch hint says tap and drops the keys with no touch equivalent ('%s')"
-					% pause._hint.text)
+	t.check(pause._hint.text == "",
+			"the touch hint says nothing at all — the buttons say it now ('%s')" % pause._hint.text)
 	t.check("Drag the stick" in pause._body.text, "and the body names the stick and run button")
+	t.check(pause._buttons.visible, "and the continue/restart pair is what shows instead")
 
 	pause.close()
 	t.get_tree().paused = false
 	pause.queue_free()
+
+## *(2026-09-06, playtest 26 finding 4 and playtest 27 finding 4: a restart control asked for on
+## the pause screen and re-asked once the touch buttons existed but this one still had none.)* A
+## keyboard never sees the buttons — `space`/`esc`/`r` already read as controls there — so the pair
+## is touch-only, the same split `_refresh_hint()` makes for its own sentence.
+func _test_the_buttons_only_show_on_touch(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	t.get_tree().paused = false
+
+	pause._touch = false
+	pause._refresh_buttons()
+	t.check(not pause._buttons.visible, "a keyboard gets no buttons")
+
+	pause._touch = true
+	pause._refresh_buttons()
+	t.check(pause._buttons.visible, "and a touch device gets both")
+
+	t.get_tree().paused = false
+	pause.queue_free()
+
+## **The trap this milestone's own design names**: a touch anywhere already means *carry on*, so a
+## press that lands on the restart button has to be caught before that catch-all or it would both
+## start a hold and immediately close the screen underneath it. Driven through `_unhandled_input`
+## directly with events shaped at the restart button's own `catch_rect()` centre, the same way
+## every other touch test in this file drives a real propagated-looking event rather than calling
+## the hold logic by name.
+func _test_the_restart_button_is_a_hold(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var restarts := [0]
+	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
+	var resumed := [0]
+	pause.resumed.connect(func() -> void: resumed[0] += 1)
+
+	pause._touch = true
+	pause._refresh_buttons()
+	t.get_tree().paused = false
+	pause.open()
+	# `Container` sorting is deferred a frame, so a rect read straight after `open()` is still
+	# (0, 0) — not what a played frame would ever see, and not what this test is about. The rect
+	# is set directly so the hit test is exercised against a known shape rather than against
+	# whichever position happens to have landed by the time this line runs.
+	pause._restart_button.position = Vector2(500.0, 400.0)
+	pause._restart_button.size = Vector2(92.0, 108.0)
+
+	var at: Vector2 = pause._restart_button.catch_rect().get_center()
+	pause._unhandled_input(_touch_at(at, true))
+	t.check(pause._restart_button.is_held_by(0), "landing on the restart button starts a hold")
+	t.check(resumed[0] == 0, "and does not also read as carrying on")
+	t.check(pause.is_open(), "the screen stays open while the hold is tracked")
+
+	# Released early: no restart, and the screen still has not read it as carrying on either —
+	# the catch-all never saw this touch at all, on either its press or its release.
+	pause._unhandled_input(_touch_at(at, false))
+	t.check(restarts[0] == 0, "letting go early cancels rather than restarting")
+	t.check(resumed[0] == 0, "and still does not carry on")
+	t.check(not pause._restart_button.is_held_by(0), "and the hold's own state is cleared either way")
+
+	# Held the full duration this time, backdating the start so the test does not sleep.
+	pause._unhandled_input(_touch_at(at, true))
+	pause._restart_button._held_since = Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	pause._unhandled_input(_touch_at(at, false))
+	t.check(restarts[0] == 1, "held the full duration, it fires")
+
+	pause.close()
+	t.get_tree().paused = false
+	pause.queue_free()
+
+## A touch that lands away from the restart button is not this button's business at all — the
+## catch-all below still reads it as carrying on, exactly as any other tap on this screen already
+## does.
+func _test_a_touch_away_from_restart_still_carries_on(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var resumed := [0]
+	pause.resumed.connect(func() -> void: resumed[0] += 1)
+
+	pause._touch = true
+	pause._refresh_buttons()
+	t.get_tree().paused = false
+	pause.open()
+	# See `_test_the_restart_button_is_a_hold` for why the rect is set directly rather than read
+	# straight after `open()`.
+	pause._restart_button.position = Vector2(500.0, 400.0)
+	pause._restart_button.size = Vector2(92.0, 108.0)
+
+	pause._unhandled_input(_touch_at(Vector2(20.0, 20.0), true))
+	t.check(resumed[0] == 1, "a touch nowhere near the restart button still carries on")
+
+	t.get_tree().paused = false
+	pause.queue_free()
+
+func _touch_at(position: Vector2, pressed: bool) -> InputEventScreenTouch:
+	var event := InputEventScreenTouch.new()
+	event.position = position
+	event.pressed = pressed
+	event.index = 0
+	return event
 
 ## The between-days summary and the ending it leads to both say `space` today and `tap` on a touch
 ## device, the same agreement the title and the pause hints keep.
@@ -601,12 +742,49 @@ func _test_the_summary_hint_matches_the_platform(t) -> void:
 
 	summary._touch = true
 	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
-	t.check("tap to try again" in summary._hint.text,
-			"the touch hint says tap ('%s')" % summary._hint.text)
+	t.check(summary._hint.text == "", "the touch hint says nothing — the buttons say it now")
+	t.check(summary._buttons.visible, "and the continue/restart pair is what shows instead")
 
 	summary.show_ending(GameEnums.Ending.GOOD)
-	t.check(summary._hint.text == "tap to start again",
-			"and the ending screen agrees too ('%s')" % summary._hint.text)
+	t.check(summary._hint.text == "", "and the ending screen agrees too ('%s')" % summary._hint.text)
+	t.check(summary._buttons.visible, "carrying the same pair of buttons")
+
+	t.get_tree().paused = false
+	summary.queue_free()
+
+## The day summary's own restart button, the second half of M76's item 2 — the pause screen's own
+## version is `_test_the_restart_button_is_a_hold`, and the two share every line of the state
+## machine through `ModeButton.begin_hold()`/`end_hold()`, so only the wiring differs here.
+func _test_the_summary_restart_button_is_a_hold(t) -> void:
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	var restarts := [0]
+	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
+	var continued := [0]
+	summary.continued.connect(func() -> void: continued[0] += 1)
+
+	summary._touch = true
+	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	# See `_test_the_restart_button_is_a_hold` for why the rect is set directly rather than read
+	# straight after showing — `Container` sorting is a frame behind either way.
+	summary._restart_button.position = Vector2(500.0, 400.0)
+	summary._restart_button.size = Vector2(92.0, 108.0)
+
+	var at: Vector2 = summary._restart_button.catch_rect().get_center()
+	summary._unhandled_input(_touch_at(at, true))
+	t.check(summary._restart_button.is_held_by(0), "landing on the restart button starts a hold")
+	t.check(continued[0] == 0, "and does not also read as continuing")
+
+	summary._restart_button._held_since = Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	summary._unhandled_input(_touch_at(at, false))
+	t.check(restarts[0] == 1, "held the full duration, it fires")
+	t.check(continued[0] == 0, "and still never reads as continuing")
+
+	# A touch elsewhere on the same screen still means continue, exactly as before this button
+	# existed.
+	summary.show_day(2, GameEnums.DayResult.WON, "", 3)
+	summary._unhandled_input(_touch_at(Vector2(20.0, 20.0), true))
+	t.check(continued[0] == 1, "a touch away from the restart button still continues")
 
 	t.get_tree().paused = false
 	summary.queue_free()

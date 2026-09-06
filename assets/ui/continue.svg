@@ -1,0 +1,10 @@
+<!-- The day summary's and the pause screen's own "carry on" symbol: a play triangle, an arrow to
+     the right rather than a word. White fill on a transparent ground, tinted by ModeButton's own
+     icon_normal_color theme override (Palette.BUTTON_SYMBOL), the same way joystick.svg and
+     tap.svg are — see either for why the fill stays plain white.
+     Authored on the same 128 grid as every other button glyph, with antialiasing left on: a small
+     grid with crispEdges quantises a diagonal edge into a staircase, which is exactly what sank
+     the first two attempts at this button's own disc — see ModeButton's class comment. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <path d="M44 34 L44 94 L94 64 Z" fill="#ffffff"/>
+</svg>
