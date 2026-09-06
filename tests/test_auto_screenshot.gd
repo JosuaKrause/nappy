@@ -21,6 +21,26 @@ func run(t) -> void:
 	_test_a_script_presses_one_action_at_a_time_in_order(t)
 	_test_a_script_lets_go_of_the_last_action_when_it_ends(t)
 	_test_a_pursuit_stops_the_script_from_resuming(t)
+	_test_a_headless_run_has_nothing_to_photograph(t)
+
+# --------------------------------------------------------------- photographing ---
+
+## The guard that stops `_capture()` awaiting a frame a headless run will never draw. **The hang it
+## replaces printed nothing at all**, so the failure read as a slow run rather than as a stuck one,
+## and it is reached by any caller of `tools/shot.sh` that has no display to open a window against.
+##
+## The predicate takes the display server's name rather than reading it, which is what makes this
+## testable: the suite is itself headless, so a version that asked `DisplayServer` directly could
+## only ever be checked in one of its two states.
+func _test_a_headless_run_has_nothing_to_photograph(t) -> void:
+	t.check(not AutoScreenshot.can_photograph("headless"),
+			"a headless run draws no frame, so there is nothing to save")
+	t.check(AutoScreenshot.can_photograph("macos"),
+			"a real display server has a frame to photograph")
+	t.check(AutoScreenshot.can_photograph("windows") and AutoScreenshot.can_photograph("x11"),
+			"and so does every other one — only the null server is refused")
+	t.check(not AutoScreenshot.can_photograph(DisplayServer.get_name()),
+			"and this suite is itself headless, which is why the name is a parameter")
 
 # ------------------------------------------------------------------- parsing ---
 
@@ -57,8 +77,8 @@ func _test_a_malformed_script_parses_to_nothing(t) -> void:
 # -------------------------------------------------------------------- stepping ---
 
 ## A fresh rig ready to run a script, never added to a tree — `_seconds_to_wait` is set high
-## enough that no test here ever reaches `--after` and calls `_capture()`, which awaits a real
-## frame and would hang the headless suite.
+## enough that no test here ever reaches `--after` and calls `_capture()`, which quits the process
+## headless rather than photographing it, and would therefore end the suite mid-run.
 func _script_rig(script: String) -> AutoScreenshot:
 	var node := AutoScreenshot.new()
 	node._seconds_to_wait = 60.0
