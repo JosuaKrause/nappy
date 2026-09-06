@@ -4,8 +4,7 @@ extends RefCounted
 ## *(2026-09-02, playtest of the deployed web build: "the debug info on the right side of the
 ## screen (fps, seed, etc.) is still showing.")* `main.gd` is never instantiated as a scene
 ## anywhere else in the suite — its `_ready()` boots a whole run, city and all — so this reaches
-## past `_ready()` the way `tests/test_pause_title.gd` already reaches past it for
-## `_unhandled_input()`:
+## past `_ready()` the way `tests/test_pause.gd` already reaches past it for `_unhandled_input()`:
 ## a script-only instance, its handful of world dependencies wired up by hand, and `_process()`
 ## called directly.
 
