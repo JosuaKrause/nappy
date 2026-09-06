@@ -23,6 +23,8 @@ instruction. [VISUALS.md](VISUALS.md) carries the design and implementation gate
 
 - [ ] Establish the visual target with a representative animated street, comparing an orthographic
       3D presentation against 2D before scaling the asset work. Assess tools and mobile/web cost.
+      Present apartment-block architecture for player review; the detached-house prototype is not
+      the city's target. See PLAYTEST-26's architecture feedback and VISUALS.md.
 - [ ] Rebuild architecture, terrain, nature, people, pram, vehicles, all events and closures.
       Include walk/run/idle/turn and event animations, roof depth and stylized occlusion reveal.
 - [ ] Show the city deteriorating through persistent litter, local surface damage, building wear

@@ -85,7 +85,9 @@ against the commit that fixed it before telling anybody the page is well.
 [VISUALS.md](VISUALS.md) describes its target, not a completed renderer. Articulated actor models
 and the standalone orthographic street study live in `src/visual3d/`. Further city, animal and
 screen revisions are isolated worktree work. The playable game still uses its existing renderer.
-The street study needs lighting, material and framing corrections before it is an accepted target.
+The street study is review material, not an accepted target. Its architecture must become urban
+apartment streetfronts rather than detached houses; review that direction with the player before
+expanding the building library. See PLAYTEST-26 and VISUALS.md.
 Review actual rendered motion before
 extending the prototype to the whole city and every screen. Implementation belongs to Luna agents.
 Preserve the title's control selection, truthful meter display and event-cost behavior while

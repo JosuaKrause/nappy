@@ -23,6 +23,14 @@ awnings, industrial loading doors and roof vents, civic steps and stone bays. Sm
 intentionally shallow buildings, not walls missing their roofs. Home has an entrance attached to
 its actual building. The tunnel has a visible road receding under a modeled portal.
 
+**This is an apartment city, not a suburb of detached houses.** Residential streetfronts are
+continuous multi-storey apartment buildings: repeated window bays, shared entrances, balconies,
+ground-floor shops where appropriate, and internal courts. Roofs finish an urban block rather
+than giving each large lot a single family-house silhouette. Compress apparent height where
+needed to keep streets readable; do not change the logical footprint or replace apartments with
+bungalows to solve occlusion. Review the revised apartment street with the player before expanding
+the architecture library. The current detached-house study is not an approved building target.
+
 ## Medium and architecture
 
 The first experiment is a native orthographic 3D street with articulated actors. Godot can provide

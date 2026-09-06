@@ -2,6 +2,15 @@
 
 ## Graphics prototype review — 2026-09-06
 
+The player asked to review the proposed graphics and identified the study's single-family houses
+as inappropriate for a city. The apartment-block direction became explicit in VISUALS.md and the
+architecture expansion paused for review; projection and other independent implementation could
+continue. Revised-lighting captures were offered as review material, not approved art:
+`evidence/graphics-study-review-day1.png`, `evidence/graphics-study-review-day14.png`, and
+`evidence/graphics-study-review-motion.mp4`. These came from standalone street-study revision
+`05d3924` with corrected actor revision `7dfab84`, captured in one bounded Compatibility run.
+The motion file encodes its 24 captured frames at 12 fps; it is not a gameplay demonstration.
+
 The graphics draft integrated main through `2bac221` and opened PR #19 at the player's request
 as a tracking draft, not a completed overhaul. The headless boot, focused HUD/main/pause/quit
 suites and lint passed. Initial articulated model work and its wheel/gait corrections were merged

@@ -46,3 +46,7 @@ The alley floor, roofless slivers, floating home door and tunnel mouth are also 
 The attached macOS crash report identifies Godot 4.7.2, process 24261, incident
 648CB20E-8F7A-4114-9006-17AE894731AB, at 17:18:19 on 2026-09-05. It reports SIGABRT during
 application registration. The diagnostic is separate from a GDScript error or an art verdict.
+
+## Reviewing the architecture — 2026-09-06
+
+> "can I review the proposed graphics to give feedback? in the godot runs you do I see single family houses even though we are in a city where apartment buildings would be more appropriate"
