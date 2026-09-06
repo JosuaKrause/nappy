@@ -34,6 +34,12 @@ func run(t) -> void:
 	_test_a_mouse_click_on_the_pause_button_is_not_also_a_direction(t)
 	_test_the_corner_is_an_ordinary_direction_press_where_the_button_is_not_drawn(t)
 	_test_no_input_path_presses_a_vector_shorter_than_one(t)
+	_test_nearer_focus_is_picked_on_each_half(t)
+	_test_is_on_a_focus_catches_the_stop_radius_around_either_point(t)
+	_test_a_touch_aims_from_the_nearer_focus_not_from_her(t)
+	_test_a_press_at_a_focus_centre_stops_her_on_touch(t)
+	_test_a_press_on_her_still_stops_her_on_touch(t)
+	_test_a_mouse_click_still_aims_from_her_not_a_focus(t)
 	t.get_tree().paused = was_paused
 	_release_actions()
 
@@ -474,6 +480,108 @@ func _test_no_input_path_presses_a_vector_shorter_than_one(t) -> void:
 		t.check(pressed.length() >= 1.0 - 0.001,
 				"a press at %d degrees still presses a full unit vector (got length %.4f)"
 						% [degrees, pressed.length()])
+
+	controls.queue_free()
+	rig.free()
+
+## **Pure geometry, no viewport needed** — the same shape `heading_to()`/`is_double_tap()` are
+## tested in. *(2026-09-06, the player: "define two points equally apart from the border on each
+## side ... whichever is closer to the touch".)*
+func _test_nearer_focus_is_picked_on_each_half(t) -> void:
+	t.check(TouchControls.nearer_focus(Vector2(100.0, 200.0)) == TouchControls.FOCUS_LEFT,
+			"the left half of the design box picks the left focus")
+	t.check(TouchControls.nearer_focus(Vector2(1200.0, 500.0)) == TouchControls.FOCUS_RIGHT,
+			"and the right half picks the right focus")
+	t.check(TouchControls.nearer_focus(TouchControls.FOCUS_LEFT) == TouchControls.FOCUS_LEFT,
+			"a press right on a focus picks that one")
+	t.check(TouchControls.nearer_focus(TouchControls.FOCUS_RIGHT) == TouchControls.FOCUS_RIGHT,
+			"and the other focus, right on it")
+
+## *(2026-09-06, the player: "tapping in their center ... should stop the player still".)*
+func _test_is_on_a_focus_catches_the_stop_radius_around_either_point(t) -> void:
+	t.check(TouchControls.is_on_a_focus(TouchControls.FOCUS_LEFT), "dead on the left focus stops")
+	t.check(TouchControls.is_on_a_focus(TouchControls.FOCUS_RIGHT), "dead on the right focus stops")
+	t.check(TouchControls.is_on_a_focus(TouchControls.FOCUS_LEFT + Vector2(10.0, 0.0)),
+			"and near enough to it (within STOP_RADIUS) stops too")
+	t.check(not TouchControls.is_on_a_focus(Vector2(640.0, 360.0)),
+			"exactly between the two, past both radii, is neither")
+
+## **The reach the two focal points exist to fix.** *(2026-09-06, the player: "right now the
+## finger needs to reach over half the phone to be able to input an up or down direction".)* A
+## press west of a focus walks west, and above it walks north, no matter where she is standing —
+## the whole point of the two fixed points is that the direction no longer depends on where she is.
+func _test_a_touch_aims_from_the_nearer_focus_not_from_her(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
+	var controls := _controls(t)
+	controls._touch = true
+
+	# West of the left focus, in the design box `_on_tap()` reads a non-rotated press in directly.
+	controls._on_tap(TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), 0.0)
+	t.check(Input.is_action_pressed("move_left") and not Input.is_action_pressed("move_right"),
+			"a press west of the left focus walks west, regardless of where she is standing")
+	t.check(not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
+			"and not north or south, since the press is due west of the focus")
+
+	# Above (smaller y) the right focus.
+	controls._on_tap(TouchControls.FOCUS_RIGHT + Vector2(0.0, -150.0), 1.0)
+	t.check(Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
+			"and a press above the right focus walks north")
+
+	controls.queue_free()
+	rig.free()
+
+func _test_a_press_at_a_focus_centre_stops_her_on_touch(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls.set_direction(Vector2(100.0, 0.0), false)
+	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
+
+	controls._on_tap(TouchControls.FOCUS_LEFT, 0.0)
+	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
+			"a press dead on a focus stops her")
+
+	controls.queue_free()
+	rig.free()
+
+## **Both doors, not one instead of the other.** *(2026-09-06, the player: "tapping in their
+## center or on the player should stop the player still".)* A press near her own world position
+## stops her on a touch device too, even though the direction she would otherwise have walked is
+## now measured from a focus rather than from her.
+func _test_a_press_on_her_still_stops_her_on_touch(t) -> void:
+	var rig := _rig_at(t, Vector2(300.0, 300.0))
+	var controls := _controls(t)
+	controls._touch = true
+	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
+
+	controls.set_direction(Vector2(400.0, 300.0), false)
+	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
+
+	# Well away from either focus in design space, but within STOP_RADIUS of her in world space.
+	controls._on_tap(transform * Vector2(310.0, 300.0), 1.0)
+	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
+			"a press on her still stops her on a touch device")
+
+	controls.queue_free()
+	rig.free()
+
+## **The one place a mouse and a real finger disagree, and only there.** *(2026-09-06, the player:
+## "that two focal point mode should only exist for the touch enabled version not the mouse
+## version where the direction uses the player as reference".)*
+func _test_a_mouse_click_still_aims_from_her_not_a_focus(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls._touch = false
+	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = transform * (rig.global_position + Vector2(200.0, 0.0))
+	controls._input(click)
+	t.check(Input.is_action_pressed("move_right"),
+			"a mouse click still aims from her own position, not from a focus, even here")
 
 	controls.queue_free()
 	rig.free()

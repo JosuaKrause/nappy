@@ -2,14 +2,25 @@ class_name TouchControls
 extends Control
 ## The one control scheme a pointer drives, and the pause button it draws.
 ##
-## A press — a finger, or (on a device with no touch hardware of its own) a mouse click —
-## sets a direction, measured from her own world position, that is locked in and walked with
-## nothing held down until the next press changes it; a press within `STOP_RADIUS` of her stops
-## her instead; a double press sets the direction and holds `run` until the next press changes or
-## releases it. See `set_direction()`, `_stop()` and `is_double_tap()` — that half of this file
-## used to be `TapControls`, a second node with nothing to draw, and is folded in here because it
-## needs something to draw now: the pause button, the one thing left standing once the drag stick
-## and the held `RUN` circle are deleted.
+## A press — a finger, or (on a device with no touch hardware of its own) a mouse click — sets a
+## direction that is locked in and walked with nothing held down until the next press changes it;
+## a press within `STOP_RADIUS` of her stops her instead; a double press sets the direction and
+## holds `run` until the next press changes or releases it. See `set_direction()`, `_stop()` and
+## `is_double_tap()` — that half of this file used to be `TapControls`, a second node with nothing
+## to draw, and is folded in here because it needs something to draw now: the pause button, the one
+## thing left standing once the drag stick and the held `RUN` circle are deleted.
+##
+## **Where the direction is measured from is the one place a mouse and a real finger disagree.**
+## *(Playtest 29 finding 6: "let's not make the directions in relation to the player but define
+## two points equally apart from the border on each side ... this is because right now the finger
+## needs to reach over half the phone to be able to input an up or down direction".)* A mouse click
+## still aims from her own world position, exactly as before. A real touch instead aims from
+## whichever of the two fixed focal points, `FOCUS_LEFT` (360, 360) or `FOCUS_RIGHT` (920, 360) in
+## the 1280x720 design box, is nearer the press — see `nearer_focus()` and `_on_tap()`'s own doc for
+## the coordinate-space trip a focus has to take to become a world heading. A press within
+## `STOP_RADIUS` of either focus stops her too, alongside a press near her own position — see
+## `is_on_a_focus()`. Nothing is drawn for the two focal points; whether they can be found by feel
+## alone is a played question, not a built one.
 ##
 ## **The pause button is not that kind of control.** `main._unhandled_input()` reads
 ## `event.is_action_pressed("pause")` off the propagated *event*, not off polled state, so
@@ -72,8 +83,21 @@ const DOUBLE_TAP_DISTANCE := 60.0
 ## Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram rides up to `PRAM_DISTANCE` (34px)
 ## off to one side of her, and a press that lands on the pram is a press on her — with room to
 ## spare for a thumb that does not land on the same pixel twice, the way every catch radius in this
-## game is generous rather than exact.
+## game is generous rather than exact. Also the radius `is_on_a_focus()` uses, in design-space px,
+## for a press near one of the two focal points below — the milestone that added them named no
+## separate number, and this is the one "how close counts as *stop*" radius the file already has.
 const STOP_RADIUS := 48.0
+
+## The two fixed points a touch device aims from — see the class doc's own paragraph on why a real
+## finger and a mouse disagree here. *(2026-09-06, the player: "define two points equally apart
+## from the border on each side (same distance from top/bottom/and its own side)".)* Same distance
+## from the top and the bottom of the 1280x720 design box puts both at y = 360; the same distance
+## from each one's own side as well makes that distance 360 too — so `(360, 360)` and `(920, 360)`,
+## each a full 360° dial around its own half of the screen. Authored in **design space**, not world
+## space: they are a fixed place on the glass, not a place in the city, so they have to make the
+## same design→presented→world trip a raw touch's own position does — see `_on_tap()`'s own doc.
+const FOCUS_LEFT := Vector2(360.0, 360.0)
+const FOCUS_RIGHT := Vector2(920.0, 360.0)
 
 var _touch := TouchInput.available()
 
@@ -194,8 +218,23 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ## `get_viewport().get_canvas_transform().affine_inverse()` maps it to a world position: the exact
 ## reverse of what `DangerEdge` and `HomeArrow` already do every frame to place a screen cue from a
 ## world one, so this tracks the camera, the zoom and the rotated presentation with nothing of its
-## own to keep in step. A press within `STOP_RADIUS` of her stops her; otherwise it locks in the
-## heading toward it.
+## own to keep in step. A press within `STOP_RADIUS` of her stops her; otherwise it locks in a
+## heading.
+##
+## **Where that heading is measured from is the one place a mouse and a real finger disagree.**
+## *(Playtest 29 finding 6.)* A mouse click (`not _touch`) aims from her own world position,
+## exactly as before. A real touch instead aims from the nearer of `FOCUS_LEFT`/`FOCUS_RIGHT` —
+## and this is the one place the coordinate-space trap in those constants' own doc actually has to
+## be walked through, because the two spaces cannot be mixed:
+## - "which focus is nearer" and "is this press on a focus" are asked in **design space**, the
+##   1280x720 box the two constants are authored in and where "half the screen" means half the
+##   screen — `ScreenOrientation.to_design_space(screen_position, rotated)` is what gets there.
+## - the heading itself needs the focus in **world space**, the same space `target` (the press) is
+##   already in. A design-space subtraction would ignore the camera, the zoom and — on a rotated
+##   presentation — literally point the wrong way, since the design box does not carry the
+##   rotation. So the chosen focus makes the same round trip a raw touch's own position takes, the
+##   other direction: design → presented (`ScreenOrientation.to_presented_space()`, the inverse of
+##   `to_design_space()`) → world (the same canvas-transform inverse used above).
 ##
 ## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
 ## window still instead of racing the engine clock -- `_input()` and `_on_pointer()` are the real
@@ -221,23 +260,39 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 	if world.distance_to(_rig.global_position) <= STOP_RADIUS:
 		_stop()
 		return
-	set_direction(world, double)
+	if not _touch:
+		set_direction(world, double)
+		return
+	# Touch only, past here — see the class doc and this function's own doc above.
+	var design := ScreenOrientation.to_design_space(screen_position, rotated)
+	if is_on_a_focus(design):
+		_stop()
+		return
+	var focus_world := get_viewport().get_canvas_transform().affine_inverse() \
+			* ScreenOrientation.to_presented_space(nearer_focus(design), rotated)
+	set_direction(world, double, focus_world)
 
-## Locks in the heading toward `target`, computed once here and never again — nothing here
-## re-aims, so a shove that knocks her off the line does not silently correct itself, the same way
-## walking into a wall and stopping is the player's mistake to make. `run` holds the same `run`
-## action Shift does, until the next press changes the direction or stops her — there is nothing
-## to arrive at that would let go of it on its own.
+## Locks in the heading toward `target` from `from` — computed once here and never again, so a
+## shove that knocks her off the line does not silently correct itself, the same way walking into a
+## wall and stopping is the player's mistake to make. `run` holds the same `run` action Shift does,
+## until the next press changes the direction or stops her — there is nothing to arrive at that
+## would let go of it on its own.
 ##
-## A press exactly on her own position has no heading to compute and stops her instead, the same
-## case `_on_tap()`'s own `STOP_RADIUS` check already catches for anything a thumb's-width away —
-## this is the fallback for the one caller (a test) that calls straight in with an exact point.
-func set_direction(target: Vector2, run: bool) -> void:
+## `from` defaults to `Vector2.INF`, read as "her own world position" — the mouse's own aiming
+## point, and every existing caller's, since `Vector2.INF` can never be a real focus or a real
+## press. `_on_tap()` is the one caller that ever passes something else: a focus already converted
+## to world space, for a real touch.
+##
+## A press exactly on `from` has no heading to compute and stops her instead, the same case
+## `_on_tap()`'s own `STOP_RADIUS` check already catches for anything a thumb's-width away from her
+## — this is the fallback for the one caller (a test) that calls straight in with an exact point.
+func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 	if not _rig:
 		_rig = get_tree().get_first_node_in_group("player") as Node2D
 	if not _rig:
 		return
-	var direction := heading_to(target, _rig.global_position)
+	var origin := _rig.global_position if from == Vector2.INF else from
+	var direction := heading_to(target, origin)
 	if direction == Vector2.ZERO:
 		_stop()
 		return
@@ -261,6 +316,23 @@ func _stop() -> void:
 static func heading_to(target: Vector2, from: Vector2) -> Vector2:
 	var offset := target - from
 	return offset.normalized() if offset.length() > 0.001 else Vector2.ZERO
+
+## The nearer of `FOCUS_LEFT`/`FOCUS_RIGHT` to `design_position`, which must already be in the
+## 1280x720 design box — see `_on_tap()`'s own doc for the coordinate-space trip that takes. Pure
+## and static, like `heading_to()`/`is_double_tap()`, so this geometry is testable with no viewport
+## and no rig at all. Ties go to `FOCUS_LEFT`; the two are 560px apart and a tie only happens
+## exactly on the design box's own centre line, which is not a press either focus would rather own.
+static func nearer_focus(design_position: Vector2) -> Vector2:
+	return FOCUS_LEFT if design_position.distance_to(FOCUS_LEFT) \
+			<= design_position.distance_to(FOCUS_RIGHT) else FOCUS_RIGHT
+
+## Whether `design_position` (already in design space) lands within `STOP_RADIUS` of either focal
+## point — the other door `_on_tap()` stops her through on a touch device, alongside a press near
+## her own world position. *(2026-09-06, the player: "tapping in their center or on the player
+## should stop the player still".)*
+static func is_on_a_focus(design_position: Vector2) -> bool:
+	return design_position.distance_to(FOCUS_LEFT) <= STOP_RADIUS \
+			or design_position.distance_to(FOCUS_RIGHT) <= STOP_RADIUS
 
 ## Whether a second tap `distance` px from the first, `elapsed` seconds after it, reads as the
 ## same direction doubled into a run rather than a new one.
