@@ -1,0 +1,16 @@
+<!-- The stick scheme's own symbol on the title screen: an arcade joystick seen slightly from
+     above, not a virtual thumbstick — a ball on a shaft rising from a base drawn in perspective.
+     White line-art on a transparent ground, tinted by ModeButton's own icon_normal_color theme
+     override (Palette.BUTTON_SYMBOL), so the colour lives in one place rather than being baked
+     into the art twice.
+     The base is the part a flat rectangle could never be: a top face (the rhombus, full white)
+     and two side faces below it at reduced opacity. A uniform tint multiplies every pixel by the
+     same colour, so the ratio between a fully-opaque face and a dimmer one survives the tint —
+     which is what lets three flat shapes still read as one box seen at an angle. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <path d="M16 20 L24 24 L16 28 L8 24 Z" fill="#ffffff"/>
+  <path d="M8 24 L16 28 L16 31 L8 27 Z" fill="#ffffff" fill-opacity="0.75"/>
+  <path d="M16 28 L24 24 L24 27 L16 31 Z" fill="#ffffff" fill-opacity="0.55"/>
+  <rect x="14" y="12" width="4" height="9" fill="#ffffff"/>
+  <circle cx="16" cy="8" r="5.5" fill="#ffffff"/>
+</svg>

@@ -1,42 +1,46 @@
 class_name ModeButton
 extends Button
-## A circular, icon-only button: a solid filled disc with a white glyph for the mode it selects and
-## no text inside it at all.
+## A circular, icon-only button: a round disc with a tinted glyph for the mode it selects and no
+## text inside it at all.
+##
+## **Nothing here is painted.** *(2026-09-06, the player: "never draw in code -- at the very least
+## use svgs".)* The disc is a `StyleBoxFlat` per state (`normal`/`hover`/`pressed`), its
+## `corner_radius_*` set to half the button's own size so a square `Button` renders as a circle,
+## and the glyph is the button's own `icon` — a preloaded SVG under `assets/ui/`, tinted through
+## `icon_normal_color` and its per-state siblings rather than drawn. Two earlier versions of this
+## file painted the disc and the glyphs by hand in `_draw()`; both are gone, along with `_draw()`
+## itself, because a picture is an asset the moment a person could call it one, and evaluating one
+## means opening `assets/ui/joystick.svg` or `tap.svg` directly rather than running the game to see
+## what code produced.
 ##
 ## **Every button shares one neutral fill (`Palette.BUTTON_FILL`/`BUTTON_HOVER`/`BUTTON_PRESSED`)
-## rather than a colour per mode.** *(2026-09-06, the player: "ignore the color of the reference".)*
-## A player's own visual reference used a different hue per button, and a first version of this
-## file chased that — but a hue in this project already means something (`Palette.SIGNAL_RED`/
-## `AMBER`/`GREEN` are the lights, `MARK_COSTLY`/`MARK_LETHAL` are what an event costs), and a menu
-## spending two more saturated hues on which button is which teaches a distinction that means
-## nothing anywhere else in the game. That is the **cues** rule against a second hand-drawn
-## vocabulary, aimed at colour instead of a shape: the symbol already carries the whole difference.
+## rather than a colour per mode.** A hue in this project already means something
+## (`Palette.SIGNAL_RED`/`AMBER`/`GREEN` are the lights, `MARK_COSTLY`/`MARK_LETHAL` are what an
+## event costs), and a menu spending two more saturated hues on which button is which teaches a
+## distinction that means nothing anywhere else in the game — the **cues** rule against a second
+## hand-drawn vocabulary, aimed at colour instead of a shape. The glyph carries the whole
+## difference between the two buttons.
 ##
 ## `Stick` and `Tap` under `Root/Bottom/Lines/Choice` in `scenes/ui/title_screen.tscn` first tried
-## a 380x100 rectangle with the mode's own paragraph inside it and a small badge tucked into a
-## corner. That collided by construction: the paragraph is three sentences of body copy dense
-## enough that no corner of a 100px-tall button is ever entirely free of it, badge or no badge, so
-## the button that was supposed to make the choice *more* obvious still buried a symbol under
-## text. Moving the paragraph outside the button entirely — see `TitleScreen._stick_caption` and
-## `_tap_caption`, plain `Label`s the scene places below each button rather than children of it —
-## removes the collision at its root instead of laying icon and text out around each other: there
-## is no text inside this control for a symbol to compete with.
-##
-## `flat = true` turns off Godot's own button theme, and `_draw()` supplies the whole of what this
-## button looks like: a filled circle in `Palette.BUTTON_FILL`, `BUTTON_HOVER` or `BUTTON_PRESSED`
-## per `get_draw_mode()` — the pressed/hover feedback a flat control would otherwise drop entirely —
-## and the symbol on top of it.
+## a 380x100 rectangle with the mode's own paragraph inside it. That collided by construction: the
+## paragraph is three sentences of body copy dense enough that no corner of a 100px-tall button is
+## ever entirely free of it. Moving the paragraph outside the button entirely — see
+## `TitleScreen._stick_caption` and `_tap_caption`, plain `Label`s the scene places below each
+## button rather than children of it — removes the collision at its root: there is no text inside
+## this control for a glyph to compete with.
 ##
 ## A small reusable control rather than a one-off inside `title_screen.gd`, because the pause
 ## screen and the day summary want the same button next, for `Symbol.RESTART` and
-## `Symbol.CONTINUE` — reserved on the enum below and left undrawn, since building their behaviour
-## is a later item in `docs/TODO.md`'s M76 queue and a second hand-drawn button style the day it
-## arrives is the same failure the **cues** rule names for a second hand-drawn chevron.
+## `Symbol.CONTINUE` — reserved on the enum below and left with no icon, since building their
+## behaviour is a later item in `docs/TODO.md`'s M76 queue.
 
-## The mode this button's symbol names. `RESTART` and `CONTINUE` are reserved for the pause screen
-## and the day summary and have no symbol drawn yet — see the class comment.
+## The mode this button's icon names. `RESTART` and `CONTINUE` are reserved for the pause screen
+## and the day summary and have no icon assigned yet — see the class comment.
 enum Symbol { STICK, TAP, RESTART, CONTINUE }
 @export var symbol: Symbol = Symbol.STICK
+
+const _STICK_ICON: Texture2D = preload("res://assets/ui/joystick.svg")
+const _TAP_ICON: Texture2D = preload("res://assets/ui/tap.svg")
 
 ## `TouchControls`' own three catch radii are `STICK_CATCH_RADIUS` (100px), `RUN_CATCH_RADIUS`
 ## (76px) and `PAUSE_CATCH_RADIUS` (46px) — the smallest a thumb is ever asked to land inside
@@ -45,69 +49,46 @@ enum Symbol { STICK, TAP, RESTART, CONTINUE }
 ## the least generous control already in the game.
 const _RADIUS := 46.0
 const _DIAMETER := _RADIUS * 2.0
-## Roughly half the disc's own diameter, matching the reference this button is drawn from ("the
-## glyphs ... occupying maybe half the circle's diameter").
-const _ICON_RADIUS := _RADIUS * 0.5
-## About a tenth of the disc's radius, the reference's own stroke weight for the glyphs.
-const _STROKE := _RADIUS * 0.1
+## The glyph reads best at roughly half the disc's own diameter — big enough to read at this
+## button's 46px radius, short of the rim so it never touches the disc's own edge.
+const _ICON_SIZE := _DIAMETER * 0.5
+const _ICON_INSET := (_DIAMETER - _ICON_SIZE) * 0.5
 
 func _ready() -> void:
-	flat = true
 	custom_minimum_size = Vector2(_DIAMETER, _DIAMETER)
-	mouse_entered.connect(queue_redraw)
-	mouse_exited.connect(queue_redraw)
-	button_down.connect(queue_redraw)
-	button_up.connect(queue_redraw)
+	_apply_disc_style()
+	icon = _STICK_ICON if symbol == Symbol.STICK else (_TAP_ICON if symbol == Symbol.TAP else null)
+	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+	expand_icon = true
+	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color",
+			"icon_hover_pressed_color", "icon_focused_color", "icon_disabled_color"]:
+		add_theme_color_override(state, Palette.BUTTON_SYMBOL)
 
-func _draw() -> void:
-	var shade := Palette.BUTTON_FILL
-	match get_draw_mode():
-		DRAW_PRESSED:
-			shade = Palette.BUTTON_PRESSED
-		DRAW_HOVER, DRAW_HOVER_PRESSED:
-			shade = Palette.BUTTON_HOVER
-	var centre := size * 0.5
-	draw_circle(centre, _RADIUS, shade)
-	match symbol:
-		Symbol.STICK:
-			_draw_stick(centre)
-		Symbol.TAP:
-			_draw_tap(centre)
-		_:
-			# Symbol.RESTART, Symbol.CONTINUE: reserved for the pause screen and the day summary —
-			# see the class comment. Nothing to draw yet.
-			pass
+## The disc itself: one `StyleBoxFlat` per visual state, so the fill comes from data Godot already
+## knows how to switch on rather than from a paint call keyed off `get_draw_mode()`.
+## `corner_radius_*` at `_RADIUS` — half this button's own `_DIAMETER` — turns the square `Button`
+## rect into a circle, the same way rounding a square's corners by half its side always does.
+## `content_margin_*` at `_ICON_INSET` is what makes the icon read at `_ICON_SIZE` instead of
+## filling the whole disc: `expand_icon` scales the glyph to fill whatever content area the active
+## stylebox leaves after its own margins, so the margin is the sizing knob.
+func _apply_disc_style() -> void:
+	add_theme_stylebox_override("normal", _disc_style(Palette.BUTTON_FILL))
+	add_theme_stylebox_override("hover", _disc_style(Palette.BUTTON_HOVER))
+	add_theme_stylebox_override("pressed", _disc_style(Palette.BUTTON_PRESSED))
+	# Held down while still under the pointer reads as pressed, not as a third shade — the same
+	# two states TouchControls._draw_run_button() varies between for held vs not.
+	add_theme_stylebox_override("hover_pressed", _disc_style(Palette.BUTTON_PRESSED))
 
-## A joystick, side-on: a small plinth, a stalk rising from it and a ball at the top — the
-## reference's own "a ball on top of a vertical stalk rising from a small square plinth drawn in
-## slight perspective". The plinth is a plain rectangle rather than a perspective quad: this file
-## draws with `draw_circle`/`draw_arc`/`draw_line`/`draw_rect` only, the same primitives-only rule
-## `TouchControls._draw()` follows, and a quad is not one of them.
-func _draw_stick(centre: Vector2) -> void:
-	var r := _ICON_RADIUS
-	var plinth_size := Vector2(r * 1.1, r * 0.34)
-	var plinth_rect := Rect2(
-			centre + Vector2(-plinth_size.x * 0.5, r * 0.6 - plinth_size.y * 0.5), plinth_size)
-	draw_rect(plinth_rect, Palette.BUTTON_SYMBOL)
-	var stalk_top := centre + Vector2(0.0, -r * 0.55)
-	var stalk_bottom := centre + Vector2(0.0, plinth_rect.position.y)
-	draw_line(stalk_bottom, stalk_top, Palette.BUTTON_SYMBOL, _STROKE)
-	draw_circle(stalk_top, r * 0.42, Palette.BUTTON_SYMBOL)
-
-## A pointing hand and the tap ripple above its fingertip — the reference's own "a hand in white
-## silhouette with the index finger pointing up, and two concentric arcs above the fingertip".
-## Simplified to a fist (a circle) and a raised index finger (a rectangle) rather than an
-## articulated hand, for the same primitives-only reason `_draw_stick()` simplifies its plinth.
-func _draw_tap(centre: Vector2) -> void:
-	var r := _ICON_RADIUS
-	var fist_radius := r * 0.42
-	var fist_centre := centre + Vector2(0.0, r * 0.35)
-	draw_circle(fist_centre, fist_radius, Palette.BUTTON_SYMBOL)
-	var finger_size := Vector2(r * 0.28, r * 0.75)
-	var finger_rect := Rect2(
-			fist_centre + Vector2(-finger_size.x * 0.5, -fist_radius - finger_size.y * 0.72),
-			finger_size)
-	draw_rect(finger_rect, Palette.BUTTON_SYMBOL)
-	var tip := Vector2(centre.x, finger_rect.position.y)
-	draw_arc(tip, r * 0.4, PI * 1.15, PI * 1.85, 16, Palette.BUTTON_SYMBOL, _STROKE)
-	draw_arc(tip, r * 0.66, PI * 1.15, PI * 1.85, 16, Palette.BUTTON_SYMBOL, _STROKE)
+static func _disc_style(fill: Color) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
+	box.corner_radius_top_left = int(_RADIUS)
+	box.corner_radius_top_right = int(_RADIUS)
+	box.corner_radius_bottom_left = int(_RADIUS)
+	box.corner_radius_bottom_right = int(_RADIUS)
+	box.content_margin_left = _ICON_INSET
+	box.content_margin_right = _ICON_INSET
+	box.content_margin_top = _ICON_INSET
+	box.content_margin_bottom = _ICON_INSET
+	return box

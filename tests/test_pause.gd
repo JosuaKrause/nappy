@@ -453,8 +453,13 @@ func _test_the_title_buttons_carry_their_own_symbol(t) -> void:
 			"the stick button carries the stick symbol")
 	t.check((title._tap_button as ModeButton).symbol == ModeButton.Symbol.TAP,
 			"and the tap button carries the tap symbol, not the same one")
-	t.check(title._stick_button.flat,
-			"flat turns off Godot's own theme, leaving ModeButton's _draw() the whole of its look")
+	t.check(title._stick_button.icon != null, "the stick button carries an icon texture")
+	t.check(title._tap_button.icon != null and title._tap_button.icon != title._stick_button.icon,
+			"and the tap button carries a different icon texture, not the same one")
+	var disc: StyleBoxFlat = title._stick_button.get_theme_stylebox("normal")
+	t.check(disc is StyleBoxFlat and disc.corner_radius_top_left == int(ModeButton._RADIUS),
+			"the disc's own StyleBoxFlat rounds every corner by half its size, which is what "
+					+ "turns a square Button into a circle")
 
 	title.queue_free()
 
