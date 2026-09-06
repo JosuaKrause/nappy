@@ -278,44 +278,61 @@ func _test_a_day_is_reachable_without_the_main_road(t) -> void:
 
 # ------------------------------------------------------------------------ alleys ---
 
-## An alley that touches the tree at either end is left open; one that touches it at neither is
-## walled at both mouths. Re-derives the same rule `SealPlanner._seal_alley_mouths` uses and
-## checks the plans agree with it, which is what catches the rule and the placement drifting
+## An alley that touches the tree at either end is **never** walled — that half of the rule is
+## still absolute. One that touches it at neither end is only a *candidate*, sealed with chance
+## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` rather than certainly — *(playtest 25, finding 5: "the
+## probability of blocking off alleys should be way lower")* — so the second half is checked as a
+## rate over many days and seeds rather than as a per-alley certainty. Re-derives the same rule
+## `SealPlanner._seal_alley_mouths` uses, which is what catches the rule and the placement drifting
 ## apart from each other rather than only catching one of them being wrong on its own.
 func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
+	var candidates := 0
+	var sealed_count := 0
 	for map in _maps:
-		var day := 6
-		_repaint_for(map, day)
-		var tree := RouteTree.for_day(map, day)
-		var planned := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
-		var off_street_tiles := {}
-		for plan in planned:
-			var tile := map.world_to_tile(plan.position)
-			if not StreetNetwork.segment_containing(tile):
-				off_street_tiles[tile] = true
+		for day in [1, 4, 7, 10, 14]:
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var planned := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+			var off_street_tiles := {}
+			for plan in planned:
+				var tile := map.world_to_tile(plan.position)
+				if not StreetNetwork.segment_containing(tile):
+					off_street_tiles[tile] = true
 
-		var checked := 0
-		for rect in map.alley_rects:
-			if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
-				continue
-			checked += 1
-			var vertical := rect.size.x < rect.size.y
-			var block := map.block_at(map.tile_rect_to_world(rect).get_center())
-			var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
-			var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
-			var segment_a := StreetNetwork.beside_block(block, side_a)
-			var segment_b := StreetNetwork.beside_block(block, side_b)
-			var rejoins := (segment_a != null and tree.is_on_the_tree(segment_a.key())) \
-					or (segment_b != null and tree.is_on_the_tree(segment_b.key()))
-			var sealed_here := false
-			for tile in off_street_tiles:
-				if rect.has_point(tile):
-					sealed_here = true
-					break
-			t.check(sealed_here != rejoins,
-					"seed %d day %d: alley at %s sealed=%s rejoins the tree=%s (should differ)"
-					% [map.seed_used, day, rect.position, sealed_here, rejoins])
-		t.check(checked >= 0, "seed %d day %d: %d through-alleys checked" % [map.seed_used, day, checked])
+			for rect in map.alley_rects:
+				if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+					continue
+				var vertical := rect.size.x < rect.size.y
+				var block := map.block_at(map.tile_rect_to_world(rect).get_center())
+				var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
+				var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
+				var segment_a := StreetNetwork.beside_block(block, side_a)
+				var segment_b := StreetNetwork.beside_block(block, side_b)
+				var rejoins := (segment_a != null and tree.is_on_the_tree(segment_a.key())) \
+						or (segment_b != null and tree.is_on_the_tree(segment_b.key()))
+				var sealed_here := false
+				for tile in off_street_tiles:
+					if rect.has_point(tile):
+						sealed_here = true
+						break
+				t.check(not (sealed_here and rejoins),
+						"seed %d day %d: alley at %s is sealed although it rejoins the tree"
+						% [map.seed_used, day, rect.position])
+				if not rejoins:
+					candidates += 1
+					sealed_count += 1 if sealed_here else 0
+	t.check(candidates > 0, "at least one disconnected alley was sampled (%d)" % candidates)
+	if candidates > 0:
+		var rate := float(sealed_count) / float(candidates)
+		# A wide band around the constant: this is a Bernoulli rate over a few hundred draws, not
+		# an exact fraction, and the point of the change is that it is well short of 1.0 rather than
+		# that it hits a precise number.
+		t.check(rate < Tuning.ALLEY_MOUTH_SEAL_CHANCE + 0.15,
+				"disconnected alleys are sealed at about the configured rate (%.2f of %d, chance %.2f)"
+				% [rate, candidates, Tuning.ALLEY_MOUTH_SEAL_CHANCE])
+		t.check(rate < 0.5,
+				"disconnected alleys are the exception now, not the rule (%.2f of %d sealed)"
+				% [rate, candidates])
 
 # --------------------------------------------------------------------- candidates ---
 

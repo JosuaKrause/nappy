@@ -172,9 +172,10 @@ const CHAT_EXCITEMENT := 25.0
 ##
 ## **A quarter of the meter**, and it is a taste call stated rather than derived: one of these is a
 ## quarter of the bar and a route has three or four on it. What makes it a *safe* taste call is
-## where it falls — the catalogue has a 7.5-point gap between `market_stall` (+27.8) and
-## `construction` (+20.3), so the line sits in open ground rather than slicing a cluster, and a
-## small rebalance cannot flip a row across it by accident.
+## where it falls — the catalogue has a gap between `cat_dash` (+24, kept just under the line on
+## purpose so a startle spike does not also claim the caret the crouch's own silhouette already
+## carries) and `checkpoint` (+29), so the line sits in open ground rather than slicing a cluster,
+## and a small rebalance cannot flip a row across it by accident.
 ##
 ## The number decides *how many* rows are marked rather than which: the ordering is the invariant,
 ## and `tests/test_danger.gd` holds it — if A is marked and B is not, A costs more than B, over the
@@ -597,6 +598,22 @@ func closures_for_day(day: int) -> int:
 ## being the way through, which is M64's central claim. `SealPlanner._thin_soft_pairs` is the pass;
 ## move this against a played day rather than an argument.
 const SEAL_THINNING_FRACTION := 0.08
+
+## The chance a through-alley disconnected from the day's tree actually gets walled at both mouths,
+## rolled once per qualifying alley. *(Playtest 25, finding 5: "the probability of blocking off
+## alleys should be way lower" — and, on which half of "alley" that covers, "at least for full
+## blockages -- robbers can be frequent".)* Before this it was 1.0 in code rather than in a
+## constant: `SealPlanner._seal_alley_mouths` walled every qualifying alley, every day, with no roll
+## at all.
+##
+## **Started low rather than derived**, the same way `SEAL_THINNING_FRACTION` was: too high and
+## alleys read as closed off wholesale again, which is the complaint; too low and the class doc's
+## own reason for sealing one at all — an alley walled at neither end, with both its streets sealed,
+## is a shortcut between two places the day has already said no to — stops mattering. Move this
+## against a played day rather than an argument. `alley_robbery`'s own frequency is untouched: the
+## player was explicit that the event and the physical blockage are two different things wearing one
+## word.
+const ALLEY_MOUTH_SEAL_CHANCE := 0.15
 
 # --------------------------------------------------------------- the crowd ---
 # The crowd is why a street is loud and a park is quiet, and it is the base noise floor a day needs
@@ -1101,9 +1118,10 @@ const CLOSURE_GAP_BIAS := 4.0
 ## The line is set by one row instead, and by the right one. **`dog_walker` costs 36.5 and has to
 ## stay friction**: the dog-walker decision arriving twice on day one is the route decision this
 ## game is made of, and a dog walker that is never on her route is that decision deleted. So the
-## line goes above it, and the first row above it is `loose_dog` at 43.3 — which is where *very
-## costly* starts reading as a different thing from *costly*. Forty points is four tenths of the
-## meter to walk through the middle of.
+## line goes above it, and the first row above it is `loose_dog` (61.2, raised from 43.3 for a
+## bigger startle without moving out of this bracket) — which is where *very costly* starts reading
+## as a different thing from *costly*. Forty points is four tenths of the meter to walk through the
+## middle of.
 ##
 ## What that leaves on the corridor is `cafe_tables`, `market_stall`, `homeless_yeller`,
 ## `delivery_van` and the dog walker — the ordinary expensive city — and what it puts off it is

@@ -1006,9 +1006,10 @@ const MARK_FLASHES_PER_SECOND := 3.0
 ## café, a delivery van, a poster crew, a burnt-out shell. And the mark **breathes** with current
 ## emission, which is the one thing a ring does that a symbol does not get for free.
 ##
-## What is given up, and it is a decision rather than an oversight: **a crouching cat (+20) loses
+## What is given up, and it is a decision rather than an oversight: **a crouching cat (+24) loses
 ## its caret.** The crouch is its own silhouette and the vocabulary's first rule is that the entity
-## carries it.
+## carries it — held true on purpose against a raised intensity by stopping short of the threshold,
+## not by exempting the row.
 func wants_a_mark() -> bool:
 	if is_finished or is_leaving or def.city_wide:
 		# A floor under the whole city has nothing to stand over. That is the HUD's job.
