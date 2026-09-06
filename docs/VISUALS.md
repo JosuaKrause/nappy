@@ -11,8 +11,9 @@ A detailed illustrated urban city, following the user's references in
 `evidence/graphics-reference-urban-01.jpeg` and `graphics-reference-urban-02.jpeg`: fine ink
 contours, painted brick and plaster, substantial apartment facades, readable shopfronts, clothing
 folds, identifiable faces and detailed vehicles. The cardinal-layout draft in
-`evidence/graphics-reference-cardinal.jpeg` is useful for composition but does not lower the art
-target. The reference action buttons, minimap and portrait HUD are not requested features.
+`evidence/graphics-reference-cardinal.jpeg` is the floor for the available cardinal perspective;
+it does not lower the art target. The reference action buttons, minimap and portrait HUD are not
+requested features.
 
 `evidence/graphics-reference-urban-01.jpeg` and `evidence/graphics-reference-urban-02.jpeg` are
 the authoritative illustrated urban references. `evidence/graphics-reference-mother.jpeg` is the

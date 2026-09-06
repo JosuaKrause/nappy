@@ -40,6 +40,12 @@ authoritative mother/pram and illustrated urban references, respectively.
 `evidence/graphics-reference-urban-02.jpeg` is an additional authoritative illustrated urban
 reference, including vehicles, street furniture, storefront density and pedestrian variety.
 
+> "[Image #1] is a reference for the worst case expected look -- it's more to show how things can
+> look like with the perspective that is available to us"
+
+`evidence/graphics-reference-cardinal.jpeg` is the floor for the available cardinal perspective,
+not the illustrated style or detail target.
+
 ## The first approach is rejected
 
 > "are you kidding me? your thought of improving graphics is to make the outlines of existing assets thicker? I'm talking about a full overhaul of the graphics as if nothing had existed before. also, one major thing you apparently missed is that we currently have *no animations*"

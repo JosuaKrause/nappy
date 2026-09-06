@@ -49,7 +49,7 @@ All paths are relative to the repository root and are committed assets, not Down
 | --- | --- |
 | `docs/evidence/graphics-reference-urban-01.jpeg` | Main illustrated urban style reference |
 | `docs/evidence/graphics-reference-urban-02.jpeg` | Additional street, vehicle, shop and crowd detail |
-| `docs/evidence/graphics-reference-cardinal.jpeg` | Composition closer to the existing layout; not a lower art-quality target |
+| `docs/evidence/graphics-reference-cardinal.jpeg` | Floor for the available cardinal perspective; not the illustrated style or detail target |
 | `docs/evidence/graphics-reference-mother.jpeg` | Mother, clothing, face, pram and baby reference |
 | `assets/illustrated/source/mother-turnaround-v1.png` | Generated eight-view source draft; **not runtime-ready** |
 | `assets/illustrated/source/README.md` | Exact built-in generation prompt, inspection and remaining defects |
