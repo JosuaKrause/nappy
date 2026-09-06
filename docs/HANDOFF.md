@@ -12,7 +12,7 @@ progress-tracking, which lives there too.
 Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex's entry point is `AGENTS.md`.
 Its repository hooks need review through `/hooks` before they execute.
 
-One branch is unmerged and that is deliberate rather than in progress: **M64's measurement probes,
+**M64's measurement probes,
 `tests/test_zz_m64_measure.gd` and `tests/test_zz_m64_density.gd`, are kept off `main` on a branch
 of their own** so that *measure it again afterwards* means running the same thing rather than
 reinventing it. They are the only files on it, they print rather than assert, and they are the
@@ -81,7 +81,16 @@ against the commit that fixed it before telling anybody the page is well.
 
 ## What to do next
 
-**The most useful thing anybody can do next is play a day**, and there are now two unplayed layers
+**The active request is the ground-up graphics overhaul in [PLAYTEST-26.md](PLAYTEST-26.md).**
+[VISUALS.md](VISUALS.md) describes its target, not a completed renderer. Articulated actor models
+live in `src/visual3d/`; the orthographic street study and animation revisions are isolated worktree
+work. The playable game still uses its existing renderer. Review actual rendered motion before
+extending the prototype to the whole city and every screen. Implementation belongs to Luna agents.
+Preserve the title's control selection, truthful meter display and event-cost behavior while
+replacing their presentation. Use `git worktree list` and each checkout's status to locate unfinished
+work; do not treat the earlier SVG polish as the requested overhaul.
+
+**For route and balance work, the most useful next check is a played day**, with two unplayed layers
 of change rather than one.
 
 **Playtest 25's nine findings are all built and none of them has been walked.** The barrier rows

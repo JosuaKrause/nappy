@@ -31,7 +31,7 @@ instruction. [VISUALS.md](VISUALS.md) carries the design and implementation gate
       objective. Reassess protesters and chalk breadcrumbs; preserve first discovery unless the
       redesign explicitly makes and records a different decision.
 - [ ] Rebuild the title, control selection, pause, day summaries, endings, HUD and touch presentation
-      around the new visual direction. Coordinate with the control-selection work on other branches.
+      around the new visual direction. Preserve the title's existing control-selection behavior.
 - [ ] Integrate with current main, verify behavior headlessly, review bounded rendered captures and
       check the browser presentation. Actual implementation is delegated to Luna agents.
 
@@ -44,7 +44,7 @@ instruction. [VISUALS.md](VISUALS.md) carries the design and implementation gate
 2. **M65** — the chalk mark is findable, and silent until it is found.
 3. **M56** — the resistance is noticed.
 
-**[PLAYTEST-25.md](PLAYTEST-25.md) is the freshest report and its nine findings are built** — the
+**[PLAYTEST-25.md](PLAYTEST-25.md) is the latest route-and-balance report and its nine findings are built** — the
 first phone session on the built mobile game and the first human verdict on the sealed city. The
 record is in `DECISIONS.md` under M73, M74 and M75. **What it leaves open is a played question and
 a shaped one.** Played: the barrier rows are silent and the two ambient radii are tight, and nobody
@@ -58,7 +58,7 @@ walked* and *what did a day cost* are questions a picture can answer. See `DECIS
 and `docs/TELEMETRY.md` for what the map draws. This is also the instrument playtest 20 was read
 with — a full seven-day run's fourteen maps, copied into `docs/evidence/`.
 
-**Playtest 22 is the freshest thing in this file and every one of its findings is built** — the two
+**Playtest 22's findings are built** — the two
 barrier-placement defects, the doorstep that could be sealed in, the winnability check that proved
 reachability rather than survivability, the route that ran alongside the main road, and the seals
 thinned so the guidance stops reading as guardrails. The record is in `DECISIONS.md` under M64.
