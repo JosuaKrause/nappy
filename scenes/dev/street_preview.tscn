@@ -1,0 +1,88 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/visual3d/street_preview.gd" id="1_preview"]
+[ext_resource type="Script" path="res://src/visual3d/city_models.gd" id="2_city"]
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.11, 0.13, 0.16, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.63, 0.68, 0.73, 1)
+ambient_light_energy = 0.72
+reflected_light_source = 2
+tonemap_mode = 2
+glow_enabled = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_panel"]
+bg_color = Color(0.09, 0.1, 0.12, 0.82)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.79, 0.68, 0.5, 0.48)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+
+[node name="StreetPreview" type="Node3D"]
+script = ExtResource("1_preview")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_preview")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-52, -34, 0)
+light_color = Color(1, 0.86, 0.7, 1)
+light_energy = 1.35
+shadow_enabled = true
+directional_shadow_max_distance = 80.0
+directional_shadow_fade_start = 0.72
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(0, 31, 14.5)
+projection = 1
+orthogonal_size = 32.0
+current = true
+
+[node name="CityModels" type="Node3D" parent="."]
+script = ExtResource("2_city")
+
+[node name="Overlay" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="PanelContainer" parent="Overlay"]
+offset_left = 24.0
+offset_top = 22.0
+offset_right = 324.0
+offset_bottom = 116.0
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="Stack" type="VBoxContainer" parent="Overlay/Panel"]
+theme_override_constants/separation = 3
+
+[node name="Title" type="Label" parent="Overlay/Panel/Stack"]
+theme_override_colors/font_color = Color(0.94, 0.87, 0.75, 1)
+theme_override_font_sizes/font_size = 18
+text = "ORTHOGRAPHIC STREET STUDY"
+
+[node name="Hint" type="Label" parent="Overlay/Panel/Stack"]
+theme_override_colors/font_color = Color(0.76, 0.78, 0.75, 1)
+theme_override_font_sizes/font_size = 12
+text = "D  ·  toggle weathering     SPACE  ·  pause"
+
+[node name="State" type="Label" parent="Overlay"]
+offset_left = 1098.0
+offset_top = 28.0
+offset_right = 1256.0
+offset_bottom = 55.0
+theme_override_colors/font_color = Color(0.95, 0.84, 0.64, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.65)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 13
+text = "DAY 1  ·  FRESH"
+horizontal_alignment = 2
