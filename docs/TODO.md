@@ -25,6 +25,19 @@ deprioritize graphics works or bugs for now since a graphics overhaul is in-flig
 other things")*. That is about the order and not about the worth of the items, so each keeps its
 entry and its reasoning and comes back when the overhaul lands.
 
+## M83 — Opt-in illustrated presentation · asked for 2026-09-06
+
+The initial illustrated graphics can merge before their review is complete, but **the legacy
+renderer remains the default**. An explicit command-line argument and a web URL query argument
+select the illustrated presentation; neither is a gameplay, debug, or release-development door.
+They only choose which renderer draws the same simulation. The web form is deliberately available
+on the deployed build so it can be reviewed on a phone, while the default URL remains legacy.
+
+The illustration fixes proceed in parallel. Implementation agents currently cannot make captures,
+so a focused headless contract is the local gate and every visual claim remains unreviewed until a
+display-capable session captures the opted-in renderer. The full request is preserved in
+`PLAYTEST-29.md`.
+
 **Deferred by it, and each is a milestone of only its drawings**: **M64** (eight seal pictures, so
 no single barrier becomes the city's signature), **M65** (a protester who points at the objective),
 **M53** (the bollard, so a street that meets a precinct stops against something). **A milestone
