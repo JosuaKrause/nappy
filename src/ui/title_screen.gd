@@ -85,11 +85,6 @@ func _ready() -> void:
 	if _asking_controls:
 		_body.visible = false
 		_choice.visible = true
-		# One colour per mode, decided by `Palette` rather than baked into the scene — see
-		# `ModeButton.fill_colour`'s own doc for why it is an exported per-instance colour instead
-		# of a shared constant.
-		(_stick_button as ModeButton).fill_colour = Palette.MODE_STICK
-		(_tap_button as ModeButton).fill_colour = Palette.MODE_TAP
 		_refresh_choice()
 		_stick_button.pressed.connect(_choose.bind(ControlsMode.Mode.STICK))
 		_tap_button.pressed.connect(_choose.bind(ControlsMode.Mode.TAP))

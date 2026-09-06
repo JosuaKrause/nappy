@@ -39,6 +39,7 @@ func run(t) -> void:
 	_test_the_forced_controls_path_ignores_the_new_inputs(t)
 	_test_the_title_hint_names_the_new_inputs(t)
 	_test_the_title_buttons_carry_their_own_symbol(t)
+	_test_the_button_fill_states_are_distinguishable(t)
 	_test_the_title_buttons_are_sized_for_a_thumb(t)
 	_test_the_title_captions_are_not_clickable(t)
 	_test_the_title_captions_match_the_body_wording(t)
@@ -438,8 +439,10 @@ func _test_the_title_hint_names_the_new_inputs(t) -> void:
 ## *(2026-09-06, playtest 26 finding 1: "the choice on the title screen is not at all obvious.
 ## those should be proper buttons".)* `ModeButton` is the reusable control both buttons draw
 ## themselves through — see its own class comment for why it is not a one-off in this scene — and
-## each names a different mode with its own symbol and its own fill colour rather than sharing
-## either.
+## each names a different mode with its own symbol. *(2026-09-06, the player: "ignore the color of
+## the reference".)* Both share one neutral `Palette.BUTTON_FILL`/`BUTTON_HOVER`/`BUTTON_PRESSED`
+## rather than a colour per mode — a hue in this project already means something elsewhere (the
+## traffic lights, an event's own cost), so the symbol carries the whole difference between them.
 func _test_the_title_buttons_carry_their_own_symbol(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
@@ -450,14 +453,21 @@ func _test_the_title_buttons_carry_their_own_symbol(t) -> void:
 			"the stick button carries the stick symbol")
 	t.check((title._tap_button as ModeButton).symbol == ModeButton.Symbol.TAP,
 			"and the tap button carries the tap symbol, not the same one")
-	t.check((title._stick_button as ModeButton).fill_colour == Palette.MODE_STICK,
-			"the stick button fills with Palette.MODE_STICK")
-	t.check((title._tap_button as ModeButton).fill_colour == Palette.MODE_TAP,
-			"and the tap button fills with Palette.MODE_TAP, a different colour")
 	t.check(title._stick_button.flat,
 			"flat turns off Godot's own theme, leaving ModeButton's _draw() the whole of its look")
 
 	title.queue_free()
+
+## With one hue doing every button, hover and pressed are the only feedback left that a press
+## registered at all — see `Palette.BUTTON_PRESSED`'s own doc — so the three states have to read as
+## three states rather than two of them collapsing into the same shade.
+func _test_the_button_fill_states_are_distinguishable(t) -> void:
+	t.check(Palette.BUTTON_FILL != Palette.BUTTON_HOVER,
+			"resting and hover are different shades")
+	t.check(Palette.BUTTON_FILL != Palette.BUTTON_PRESSED,
+			"resting and pressed are different shades")
+	t.check(Palette.BUTTON_HOVER != Palette.BUTTON_PRESSED,
+			"and hover and pressed are different from each other too")
 
 ## *(2026-09-06, the player's own visual reference: circular buttons sized for a thumb.)*
 ## `TouchControls.PAUSE_CATCH_RADIUS` (46px) is the smallest of its three catch radii
