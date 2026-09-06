@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Headless Web export, into build/web/ (gitignored).
 #
-#   tools/export-web.sh
+#   tools/export-web.sh          # release -- what .github/workflows/deploy.yml publishes
+#   tools/export-web.sh debug    # debug -- OS.is_debug_build() is true in the result, so
+#                                # --controls, ?controls= and ?telemetry=1 all answer; see
+#                                # tools/serve-web.sh, which exports this way and serves the result
 #
 # Uses the tracked "Web" preset in export_presets.cfg — gl_compatibility, threads off, so the
 # templates Godot resolves are web_nothreads_debug.zip / web_nothreads_release.zip rather than
@@ -12,6 +15,16 @@ GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="$PROJECT_DIR/build/web"
 
+MODE="${1:-release}"
+case "$MODE" in
+    release) EXPORT_FLAG="--export-release" ;;
+    debug)   EXPORT_FLAG="--export-debug" ;;
+    *)
+        echo "usage: tools/export-web.sh [release|debug]" >&2
+        exit 2
+        ;;
+esac
+
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT (override with GODOT=...)" >&2
     exit 127
@@ -19,8 +32,8 @@ fi
 
 mkdir -p "$OUT_DIR"
 
-echo "== export (Web) =="
-output=$("$GODOT" --headless --path "$PROJECT_DIR" --export-release "Web" "$OUT_DIR/index.html" 2>&1)
+echo "== export (Web, $MODE) =="
+output=$("$GODOT" --headless --path "$PROJECT_DIR" "$EXPORT_FLAG" "Web" "$OUT_DIR/index.html" 2>&1)
 status=$?
 echo "$output"
 

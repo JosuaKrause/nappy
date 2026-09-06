@@ -94,14 +94,16 @@ func is_active() -> bool:
 ## `?controls=` — the one channel that reaches a Web export at all, since the page it runs on has no
 ## command line for `DevFlags` to parse.
 ##
-## **Not gated behind `DevFlags.enabled()`, the same exception `?controls=` already is and for the
-## same reason.** That gate is `OS.is_debug_build()`, `false` for the release template the deployed
-## page runs, so a check behind it could never be crossed on the one platform this override exists
-## for. What keeps it safe is its scope rather than a build gate: it can only send this run's own
-## log to `user://` in the browser that is asking — where a run already goes on every other
-## platform — and it reaches nothing else.
+## **Gated behind `DevFlags.enabled()` (`OS.is_debug_build()`), the same as every other developer
+## flag now.** *(2026-09-06, the player: "I never asked for telemetry on web. you added that to
+## debug in a browser. that browser build should be dev only the CI build is release.")* A release
+## build must answer nothing here — the published page collecting from a stranger's browser because
+## of a query string nobody documented is exactly what a release build carrying no modifiers rules
+## out. A debug build answers immediately, with nothing else to unlock: the browser used to debug a
+## web build is its own debug export (`tools/export-web.sh debug`), and the published build is the
+## release export.
 static func _web_override_requested() -> bool:
-	if OS.get_name() != "Web":
+	if not DevFlags.enabled() or OS.get_name() != "Web":
 		return false
 	var search: Variant = JavaScriptBridge.eval("window.location.search")
 	if typeof(search) != TYPE_STRING:

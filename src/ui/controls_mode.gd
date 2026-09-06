@@ -7,18 +7,18 @@ extends RefCounted
 ## `TouchControls` and `TapControls` are two different nodes rather than two branches of one --
 ## only one of them ever belongs in the tree at a time. See `main._add_touch_controls()`.
 ##
-## Resolved in this order: the local command line first (`--controls tap|stick`, gated behind
-## `DevFlags.enabled()` like every other developer flag), then the page's own URL
-## (`?controls=tap`), then the stick, which is every build's own behaviour with neither asked.
+## Resolved in this order: the local command line first (`--controls tap|stick`), then the page's
+## own URL (`?controls=tap`), then the stick, which is every build's own behaviour with neither
+## asked. Both routes are gated behind `DevFlags.enabled()` (`OS.is_debug_build()`) — see
+## `_url_word()`'s own doc for why the URL is no longer the exception.
 ##
 ## The command line wins over the URL because it is the more deliberate of the two — a debug Web
 ## build carrying both is somebody testing one channel against the other, and the one they typed
-## for this run is the one they meant. **The URL is the one flag in the project not gated behind
-## `DevFlags.enabled()`, and that is the point rather than an oversight**: that gate is
-## `OS.is_debug_build()`, `false` for the exported release template `tools/export-web.sh` produces,
-## and the deployed page is precisely where the command line cannot reach — "a secret url flag for
-## now", in the player's own words. What keeps it safe is its scope, not a build gate: it chooses
-## between two control schemes that both ship and are both playable, and it can reach nothing else.
+## for this run is the one they meant. **A release build carries no modifiers of any kind, and a
+## debug build carries every one of them from the start**: the browser used to debug a web build is
+## its own debug export (`tools/export-web.sh debug`), and the page a player actually opens is the
+## release export `tools/export-web.sh` (no argument) produces — two different builds answering two
+## different questions, never the same one asked twice.
 enum Mode { STICK, TAP }
 
 static func resolve() -> Mode:
@@ -43,9 +43,18 @@ static func from_word(word: String) -> Mode:
 ## The page's own `?controls=tap` or `?controls=stick`, read through
 ## `JavaScriptBridge.eval("window.location.search")` — the one place in the project that asks the
 ## browser's own address bar anything. "" outside a Web export, where the address bar does not
-## exist to ask, and "" for a page with no such parameter.
+## exist to ask, "" for a page with no such parameter, and "" in a release build regardless of the
+## query string.
+##
+## **Gated behind `DevFlags.enabled()`, not the exception it once was.** *(2026-09-06, the player:
+## "for dev you need it to be controllable from the getgo -- for release there should be no
+## modifiers".)* This used to answer on a release Web export on purpose — "a secret url flag for
+## now", because the deployed page had no command line to ask through and the question had nowhere
+## else to be answered. The title screen now asks the question outright (see `TitleScreen`), so the
+## reason to reach a release build from its own address bar is gone, and this reads the same
+## `OS.is_debug_build()` gate as `DevFlags.controls_override()` above it.
 static func _url_word() -> String:
-	if OS.get_name() != "Web":
+	if not DevFlags.enabled() or OS.get_name() != "Web":
 		return ""
 	var search: Variant = JavaScriptBridge.eval("window.location.search")
 	if typeof(search) != TYPE_STRING:

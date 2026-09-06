@@ -87,7 +87,8 @@ assets/
 tools/
   check.sh                import + headless boot, fails on any script error
   shot.sh                 render the game to a PNG
-  export-web.sh           headless Web export into build/web/, using export_presets.cfg
+  export-web.sh           headless Web export into build/web/ -- release by default, or `debug`
+  serve-web.sh            export-web.sh debug, then serve build/web/ over plain HTTP and print the URL
 ```
 
 ### `GameEnums`
@@ -176,11 +177,12 @@ Arriving starts a clock (`TapControls.ARRIVAL_PAUSE_AFTER`) rather than pausing 
 ordinary loop of arriving and tapping on never stutters; only a genuine stand opens the same
 `PauseScreen` the stick's own pause button opens, through the same
 `TouchControls._send_pause_action()`. `ControlsMode.resolve()` reads `DevFlags.controls_override()`
-(`--controls tap|stick`, a debug build only) first, then the page's own `?controls=` query
-parameter through `JavaScriptBridge.eval("window.location.search")` — the one flag in the project
-not gated behind `DevFlags.enabled()`, because that gate is `OS.is_debug_build()` and the deployed
-page is exactly where a public build still has to be switchable — and falls back to the stick if
-neither answers.
+(`--controls tap|stick`) first, then the page's own `?controls=` query parameter through
+`JavaScriptBridge.eval("window.location.search")`, and falls back to the stick if neither answers.
+Both routes are gated behind `DevFlags.enabled()` (`OS.is_debug_build()`): a release build answers
+neither, a debug build answers both immediately — the browser used to debug a web build is its own
+debug export (`tools/export-web.sh debug`, served locally by `tools/serve-web.sh`), and the
+published page is the release export `tools/export-web.sh` (no argument) produces.
 
 Testable without a phone: `TapControls` reads an `InputEventMouseButton` the same way it reads a
 finger, gated on `not TouchInput.available()` as well as a debug build — a real touch device
