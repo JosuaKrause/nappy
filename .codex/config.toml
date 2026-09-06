@@ -1,4 +1,6 @@
 # Bounded implementation uses a cheaper model; orchestration keeps its selected model.
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
 [agents]
 default_subagent_model = "gpt-5.6-luna"
 default_subagent_reasoning_effort = "medium"
