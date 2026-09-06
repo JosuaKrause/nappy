@@ -23,3 +23,13 @@ The requested repairs are to use the legacy `homeless_yeller` on the left of the
 scale comparison for pedestrians and to lower the player head toward its body. Direction, body
 rotation, leg orientation, leg-to-body connection and ground contact remain part of the same
 illustrated presentation repair; the capture shows the defects rather than approving a result.
+
+For the next review, the player specified the comparison method:
+
+> for each object render the original graphic offset by a specific number to the right
+
+> that way you can easily gauge the right scale
+
+The original rendering is therefore a side-by-side calibration reference for each illustrated
+object, shifted by one explicit fixed horizontal offset. It is not a second gameplay object and it
+does not change simulation or collision placement.

@@ -11,6 +11,7 @@ const PRAM_MANIFEST_PATH := "res://assets/illustrated/modular/pram-parts-v2.mani
 const MOTHER_SCALE := 0.14
 const PRAM_SCALE := 0.28
 const PRAM_SIDE_OFFSET := 34.0
+const COMPARISON_OFFSET := 96.0
 var mother_order: Array[String] = []
 var pram_order: Array[String] = []
 const LEFT_HIPS: Array[Vector2] = [Vector2(68, 116), Vector2(68, 116), Vector2(68, 116), Vector2(68, 116), Vector2(68, 116), Vector2(68, 116), Vector2(68, 116), Vector2(68, 116)]

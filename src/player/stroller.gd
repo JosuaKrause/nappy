@@ -427,11 +427,22 @@ func _draw() -> void:
 		else:
 			_draw_mother(gait)
 			_draw_pram(pram_offset)
+	else:
+		# Keep the original pair beside the illustrated pair while the opt-in presentation is
+		# being calibrated. The offset is presentation-only; the logical ground point stays here.
+		var comparison_at := Vector2(ModularPerson.COMPARISON_OFFSET, 0.0)
+		var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
+		if facing.y < 0.0:
+			_draw_pram(pram_offset + comparison_at)
+			_draw_mother(gait, comparison_at)
+		else:
+			_draw_mother(gait, comparison_at)
+			_draw_pram(pram_offset + comparison_at)
 
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
 
-func _draw_mother(gait: float) -> void:
+func _draw_mother(gait: float, origin := Vector2.ZERO) -> void:
 	var stepping := gait > 0.05 and sin(_walk_phase * 2.0) > 0.0
 	var frame := 1 if stepping else 0
 	var flip := false
@@ -443,7 +454,7 @@ func _draw_mother(gait: float) -> void:
 		texture = MOTHER_FRONT[frame]
 	else:
 		texture = MOTHER_BACK[frame]
-	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, flip)
+	Sprites.draw_standing(self, texture, origin, Vector2.ZERO, flip)
 
 func _draw_pram(at: Vector2) -> void:
 	if _side_view:

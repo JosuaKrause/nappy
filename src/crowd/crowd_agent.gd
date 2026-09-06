@@ -1105,6 +1105,9 @@ func _draw() -> void:
 		return
 	if walker_visual:
 		Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
+		var comparison_at := Vector2(ModularWalker.COMPARISON_OFFSET, 0.0)
+		Sprites.draw_standing(self, WALKER_BODY[frame], comparison_at, Vector2.ZERO, flip, colour)
+		Sprites.draw_standing(self, WALKER_TRIM[frame], comparison_at, Vector2.ZERO, flip)
 		return
 	Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
 	Sprites.draw_standing(self, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
