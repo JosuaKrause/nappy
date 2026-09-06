@@ -51,6 +51,7 @@ func run(t) -> void:
 	_test_a_touch_away_from_restart_still_carries_on(t)
 	_test_the_summary_hint_matches_the_platform(t)
 	_test_the_summary_restart_button_is_a_hold(t)
+	_test_a_continue_press_flashes_before_it_is_acted_on(t)
 	t.get_tree().paused = was_paused
 
 ## The trap, stated as an assertion so that reaching for `.visible` again fails loudly.
@@ -781,10 +782,58 @@ func _test_the_summary_restart_button_is_a_hold(t) -> void:
 	t.check(continued[0] == 0, "and still never reads as continuing")
 
 	# A touch elsewhere on the same screen still means continue, exactly as before this button
-	# existed.
+	# existed — acknowledged two frames ahead of itself, see `_test_a_tap_advances_every_screen`
+	# for why both are emitted manually rather than awaited, and why it is two and not one.
 	summary.show_day(2, GameEnums.DayResult.WON, "", 3)
 	summary._unhandled_input(_touch_at(Vector2(20.0, 20.0), true))
+	t.check(continued[0] == 0, "not yet — the press is acknowledged first")
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
 	t.check(continued[0] == 1, "a touch away from the restart button still continues")
+
+	t.get_tree().paused = false
+	summary.queue_free()
+
+## **The ordering fix 2 exists for**, asserted directly rather than only screenshotted: the
+## continue button's own resting colour changes the instant a tap lands, stays changed across the
+## one frame boundary that renders it, and only reverts — together with the day actually starting —
+## on the second. A version that awaited `process_frame` once, which the first draft of this fix
+## did, would already show the reverted colour and `carried_on == 1` after the *first* `emit()`
+## here, since `SceneTree.process_frame` fires before the frame it names is drawn rather than after
+## — see `DaySummary._acknowledge_and_continue()`'s own doc for how that was found.
+func _test_a_continue_press_flashes_before_it_is_acted_on(t) -> void:
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	summary._touch = true
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	# See `_test_the_restart_button_is_a_hold` for why the rect is set directly rather than read
+	# straight after showing — a stale, pre-layout rect at the origin would otherwise swallow the
+	# (20, 20) touch below as a restart-button press instead of letting it reach the catch-all.
+	summary._restart_button.position = Vector2(500.0, 400.0)
+	summary._restart_button.size = Vector2(92.0, 108.0)
+	var carried_on := [0]
+	summary.continued.connect(func() -> void: carried_on[0] += 1)
+
+	var resting: Color = (summary._continue_button.get_theme_stylebox("normal") as StyleBoxFlat) \
+			.bg_color
+	summary._unhandled_input(_touch_at(Vector2(20.0, 20.0), true))
+	var flashed: Color = (summary._continue_button.get_theme_stylebox("normal") as StyleBoxFlat) \
+			.bg_color
+	t.check(flashed != resting,
+			"the continue button's resting colour changes the instant any tap continues")
+	t.check(carried_on[0] == 0, "and the day has not actually started yet")
+
+	t.get_tree().process_frame.emit()
+	t.check((summary._continue_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+				== flashed,
+			"the flash is still showing after the first frame boundary")
+	t.check(carried_on[0] == 0, "and still has not started")
+
+	t.get_tree().process_frame.emit()
+	t.check((summary._continue_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+				== resting,
+			"and only clears once the second frame boundary has passed")
+	t.check(carried_on[0] == 1, "which is also when the day actually starts")
 
 	t.get_tree().paused = false
 	summary.queue_free()
@@ -830,6 +879,15 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	var carried_on := [0]
 	summary.continued.connect(func() -> void: carried_on[0] += 1)
 	summary._unhandled_input(_touch(true))
+	# A touch continue is acknowledged two frames before it fires — see
+	# `DaySummary._acknowledge_and_continue()` for why it is two `process_frame`s rather than one:
+	# the signal fires *before* the frame it names is drawn, so the second is what actually lands
+	# after the draw that happens between them. Emitted manually rather than awaited: `run_tests.gd`
+	# calls every suite synchronously, so an `await` in a test would return control before the rest
+	# of the test ran.
+	t.check(carried_on[0] == 0, "the press is acknowledged before it is acted on")
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
 	t.check(carried_on[0] == 1, "and a tap goes on from the between-days summary")
 	t.get_tree().paused = false
 	summary.queue_free()

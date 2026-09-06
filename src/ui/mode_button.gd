@@ -148,6 +148,21 @@ func cancel_hold() -> void:
 	_held_by = -1
 	hold_progress = 0.0
 
+## Shows this disc as pressed with no real press behind it — for a catch-all press that landed
+## somewhere else on the screen entirely, which is most of them: `DaySummary`'s own continue never
+## required landing on this button, so a `Button`'s native pressed state, which only ever answers
+## for a press that actually hit it, covers the minority case and nothing else. Paired with
+## `clear_forced_press()`, which every caller has to call before this button is shown again — this
+## overrides the *resting* state itself rather than the momentary one, so it does not clear on its
+## own the way a real press does.
+func force_pressed_look() -> void:
+	add_theme_stylebox_override("normal", _disc_style(Palette.BUTTON_PRESSED))
+
+## Puts the disc back to its three ordinary states — `_apply_disc_style()` is idempotent, so this
+## is that call again rather than a second implementation of what "normal" looks like.
+func clear_forced_press() -> void:
+	_apply_disc_style()
+
 ## The one thing this button paints — see the class comment for why a fill bar is not a picture.
 ## Drawn under the disc rather than around it, at the width `_HOLD_BAR_GAP`/`_HOLD_BAR_HEIGHT`
 ## already reserved in `custom_minimum_size`, so it never overlaps the glyph or the disc's own rim.

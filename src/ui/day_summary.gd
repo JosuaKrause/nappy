@@ -158,6 +158,7 @@ func _present() -> void:
 	_root.show()
 	_refresh_buttons()
 	_restart_button.cancel_hold()
+	_continuing = false
 	get_tree().paused = true
 
 func dismiss() -> void:
@@ -198,6 +199,50 @@ func _handle_restart_touch(event: InputEventScreenTouch) -> bool:
 		restart_requested.emit()
 	return true
 
+## Whether a `continued` request is already on its way to being acknowledged — the one-frame gap
+## `_acknowledge_and_continue()` opens is also one frame in which a second tap can land, and a
+## coroutine that has not yet resumed does not stop `_unhandled_input` from reading the next event
+## as a fresh press. Without this, a fumbled double-tap starts the day twice.
+var _continuing := false
+
+## Acknowledges a touch before the day it starts costs anything to look at. *(Playtest 27 finding
+## 3: a press was not acknowledged, and the wait after it was long.)* `main._on_summary_continued()`
+## runs `_start_day()` synchronously in response to `continued` — measured at 610-900ms — and
+## nothing was ever rendered between the touch landing and that freeze, because both happened
+## inside the same frame's input processing.
+##
+## **Two awaits, not one, and the difference is load-bearing.** `SceneTree.process_frame` fires
+## *before* the frame it names is drawn, not after — confirmed directly with
+## `RenderingServer.frame_pre_draw`/`frame_post_draw`, both of which fire only once this coroutine's
+## first `await` has already resumed. A single `await get_tree().process_frame` therefore resumes
+## and would clear the flash before a single pixel of it ever reached the screen — the mistake this
+## function's first version made, caught only by a screenshot that showed no flash at all rather than
+## by anything the suite could see. The *second* `process_frame` is what actually lands after the
+## draw that happened between the two: the button paints pressed, that frame is drawn, and only then
+## does the second await let this go on to clear it. Both fire under `get_tree().paused` — this
+## screen's own state throughout — checked directly rather than assumed, since a coroutine that
+## never resumed would hang the game on the one screen everybody eventually presses.
+##
+## **Flashes the continue button even for a press that missed it.** The catch-all below is what
+## fires for most presses — nothing requires landing on the button itself — so a `Button`'s own
+## native pressed state, which only ever answers a press that actually hit it, would leave a tap on
+## the bare scrim with nothing to show for it. `force_pressed_look()` says the same thing regardless
+## of where the touch landed.
+##
+## **Touch only.** A keyboard has no button on screen to flash, and `space` needs no frame held open
+## for it — the keyboard branch below stays exactly as synchronous as it always was, since adding a
+## wait with nothing new to show for it is latency this path does not need.
+func _acknowledge_and_continue() -> void:
+	if _continuing:
+		return
+	_continuing = true
+	_continue_button.force_pressed_look()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_continue_button.clear_forced_press()
+	_continuing = false
+	continued.emit()
+
 ## Space or a tap moves on. The touch event is handled directly rather than turned into a
 ## synthetic click, so a stray mouse press elsewhere on the desktop still cannot skip a summary a
 ## player has not read.
@@ -206,7 +251,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventScreenTouch and _handle_restart_touch(event as InputEventScreenTouch):
 		return
-	if event.is_action_pressed("ui_accept") \
-			or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed):
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		get_viewport().set_input_as_handled()
+		_acknowledge_and_continue()
+		return
+	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		continued.emit()
