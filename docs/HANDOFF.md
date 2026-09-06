@@ -33,7 +33,7 @@ and lands broken. Watch `main`'s own CI run after a batch rather than assuming t
 spoke for it.
 
 ```sh
-./tools/test.sh          # the full headless suite, ~200s — CI's job, not a local gate
+./tools/test.sh          # the full headless suite, minutes — CI's job, not a local gate
 ./tools/check.sh         # boots the project, fails on any script error
 ./tools/lint.sh          # the governed docs, for sentences that go stale on their own
 ./tools/run.sh           # plays it
