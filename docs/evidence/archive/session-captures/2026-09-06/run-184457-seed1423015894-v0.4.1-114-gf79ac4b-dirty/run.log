@@ -1,0 +1,8 @@
+nappy run log  2026-09-06T18:44:58  version v0.4.1-114-gf79ac4b-dirty
+
+day 1  act 1  run seed 1423015894  city seed 1423015894  length 180.0s
+   0.0  plan     closed: accident h(3,2)
+   0.0  plan     calm: 1 park, 2 quiet_square, 3 courtyard, 3 forest
+   0.0  plan     events: cafe_tables x106, cat_dash x8, chatting_mother x2, delivery_van x136, dog_walker x20, homeless_yeller x8, leaf_blower x20, loose_dog x19, market_stall x112, pigeon_flock x5, playground
+   0.0  start    doorstep (80,84), facing south
+   3.5  shot     asked for a picture at (76,87) | exc 0, sleep 0 | playing
