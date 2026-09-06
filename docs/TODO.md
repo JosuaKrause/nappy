@@ -14,11 +14,14 @@ mid-way through.
 
 ## The order
 
-1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M82** — the ending screen drops its continue button: the one M82 item found after the rest of
+   the milestone had already landed. **First because it is one line and a screenshot**, and the
+   milestone it belongs to is otherwise done.
+2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-2. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
+3. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
    be watched.
-3. **M56** — the resistance is noticed.
+4. **M56** — the resistance is noticed.
 
 **Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
 deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
@@ -36,10 +39,11 @@ presentation change with the lattice left cardinal — and it is written down an
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
 
-**[PLAYTEST-28.md](PLAYTEST-28.md)'s three findings are built** — the game has one control scheme
-and no question about which: a press sets a direction she walks until the next press, a press on
-her stops her, a double press runs, and the pause button in the top right is the only thing drawn.
-The record is in `DECISIONS.md` under M82.
+**[PLAYTEST-28.md](PLAYTEST-28.md)'s first three findings are built** — the game has one control
+scheme and no question about which: a press sets a direction she walks until the next press, a
+press on her stops her, a double press runs, and the pause button in the top right is the only
+thing drawn. The record is in `DECISIONS.md` under M82. **Its fourth finding is what is left**: the
+ending screen still offers a continue button that means nothing there, above.
 
 **[PLAYTEST-27.md](PLAYTEST-27.md) is the second session on the released page and the first played
 on both a laptop browser and a phone, and every one of its six findings is built.** The release
@@ -105,6 +109,31 @@ which proves only that the controls stay *off* where they should.
       careful-versus-careless survives a blunter instrument, and it is answered by playing it rather
       than by arguing it.** The three smaller things a real device would also settle — the catch
       radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
+
+---
+
+## M82 — The ending screen drops its continue button · asked for 2026-09-06
+
+[PLAYTEST-28.md](PLAYTEST-28.md) finding 4, found after the rest of M82 had already landed:
+*"the game over screen cannot have a continue button."* `DaySummary.show_ending()` calls
+`_refresh_buttons()`, which is one line — `_buttons.visible = _touch` — and that row holds both the
+continue and the restart button, so the same pair that ends a *day* also appears under an *ending*,
+on any device with a touchscreen.
+
+- [ ] **Continue means nothing on an ending and the screen already says so.** Everywhere else the
+      continue button carries on into tomorrow; on an ending there is no tomorrow. The hint under
+      it reads *"tap to start again"*, and `main._on_summary_continued()` takes a finished run back
+      to the title screen — so the button is drawn as *continue* and does *start over*, which are
+      not the same promise. Hide it on an ending; the row itself stays, for the restart button.
+
+      **The restart button stays, hold and all** *(2026-09-06, asked whether the 1.0s hold still
+      makes sense on a screen with no day left to protect: "the restart button, hold and all")* —
+      one interaction to learn wherever it is met, rather than a button that looks the same and
+      behaves differently on the last screen of a run.
+
+      **The catch-all underneath is untouched.** A press anywhere on the ending still starts again,
+      which is what the screen did before any button existed and is what the *"tap to start again"*
+      hint describes.
 
 ---
 
