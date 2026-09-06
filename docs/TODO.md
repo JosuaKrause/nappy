@@ -37,6 +37,11 @@ is why M77 and M78 stand apart from M64 and M65 rather than inside them.
 **M76 is not covered by the deferral** — *(2026-09-06: "this is not game graphics. buttons are just
 UI")*. A control nobody can see is a control that does not work.
 
+**M79 waits on the overhaul rather than behind it.** It is the city seen at an angle — a
+presentation change with the lattice left cardinal — and it is written down and tabled so that
+whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
+is not rejected.
+
 **[PLAYTEST-25.md](PLAYTEST-25.md) is the freshest report and its nine findings are built** — the
 first phone session on the built mobile game and the first human verdict on the sealed city. The
 record is in `DECISIONS.md` under M73, M74 and M75. **What it leaves open is a played question and
@@ -1499,6 +1504,116 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       has no row for it — so a reader of a run log meets a kind the documentation does not admit
       exists. One row, and the check that would have caught it is whether anything asserts the two
       lists agree
+
+---
+
+## M79 — The city seen at an angle · tabled 2026-09-06
+
+**Tabled, and the reason is sequencing rather than doubt.** *(2026-09-06: "let's write down the
+findings about the diagonal grid but table it for now".)* Nothing here is rejected; it is written
+down so the graphics overhaul can decide the projection with the code's constraints in front of it
+rather than after committing to art. **What would make it worth picking up**: the overhaul reaching
+the point where it chooses a projection, and M60's rotation fix landing — not a complaint about how
+the city looks today.
+
+The reference the player gave is `docs/evidence/reference-isometric-street-2026-09-06.jpeg`: a 2:1
+isometric street with buildings as tall volumes, pedestrians, cars and a pram. **Its HUD is not part
+of this.** *(2026-09-06: "ignore the hud in the image".)* That picture's bottom bar carries verbs —
+Feed, Soothe, Order Pizza — and this game has one verb, which is where you walk.
+
+**The instruction is a presentation change and nothing else.** *(2026-09-06: "the logical layout
+would stay the same only the presentation would rotate".)*
+
+- [ ] **Only the world-to-screen transform changes; the lattice does not.** The tile grid stays
+      cardinal `Vector2i`, so the lattice, `RouteTree`, `ClosurePlanner`, `SealPlanner`, the crowd's
+      lanes and every test are untouched. **This is the whole reason a diagonal *lattice* is not
+      what is being asked for**, and it is worth stating why that alternative is closed: `CityMap`'s
+      layout is a modulo — its own comment, *"a coordinate's position within its period tells you
+      which it is"*, over a period of `BLOCK_SIZE + STREET_WIDTH` tiles — and a 45° street has no
+      period in tile coordinates. Every segment is horizontal or vertical down to the vocabulary
+      (`closure.segment.horizontal`, logged as `h(7,4)` and `v(8,6)`), the crowd is built on
+      `travelling_vertically()` and `make_lane_key(vertical, corridor, lane, direction)`, and
+      `TrafficLight.arm_is_vertical` even picks a different sprite. A diagonal lattice is a rewrite
+      of the city that buys nothing the route decision can feel — she still chooses between streets
+
+- [ ] **The buildings are already 2.5D, which is what makes this cheap.** `Building` is *"a 2.5D
+      extruded block, assembled from 32px facade and roof tiles"* — a front wall in elevation plus a
+      roof, from `wall.svg`, `wall_edge_w/e.svg`, `roof.svg` and `roof_edge_n.svg`, and each one is
+      its own `StaticBody2D` node in `City._spawn_buildings()`. So the facade vocabulary exists and
+      is not top-down art to re-author, and per-building translucency is `modulate` on one node
+      rather than a restructure
+
+- [ ] **What rotation destroys is a guarantee, and replacing it is the actual work.** `Building`'s
+      class doc: *"nothing can ever legitimately be **behind** a building, so nothing sorts against
+      one."* The layout guarantees there is no walkable ground behind a building's mass, so occlusion
+      never has to be solved and no real y-sorting is needed. **Rotate and that is gone** — a rotated
+      lot puts its own pavement behind its own wall. So this item is: replace a layout guarantee with
+      a runtime rule, and add the y-sorting nothing does today
+
+- [ ] **Buildings in front fade or vanish, and "when necessary" is wider than the player.**
+      *(2026-09-06: "buildings in front could become translucent or disappear when it becomes
+      necessary".)* The standard answer is *"when it hides the character"*, and that is too narrow
+      here: the route decision depends on seeing the things you route around. The must-see set is the
+      player, any event carrying a mark (`EventInstance.wants_a_mark()`), anything `DangerEdge` would
+      badge if it were off screen — an occluded thing is that same question in a new form — and the
+      home arrow's target during the return. Cost is a per-frame test of a few dozen buildings
+      against a handful of points, the same order as the event scan `CLAUDE.md` already calls free.
+
+      Two calls inside it: **fade or vanish** — fade keeps a street legible as a street, vanishing is
+      unambiguous but flickers at the threshold — and **whether a fading building is itself a cue**.
+      If you learn *something is there* because a wall went translucent, the **cues** rules govern it
+      and it owes the same discipline as the rest of the danger vocabulary
+
+- [ ] **It must be a real camera transform, not faked in `_draw()`.** `TapControls._on_tap()` maps a
+      tap to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, and
+      `DangerEdge` and `HomeArrow` both go the other way every frame from the same transform. A real
+      transform keeps all three working; a fake one breaks every one of them. Two more that follow:
+      `main.gd`'s camera fit sets zoom from an axis-aligned bound and would be fitting a diamond, and
+      `city.gd` draws kerbs, centre lines and zebras as axis-aligned rects off `STREET_WIDTH`
+
+- [ ] **The gameplay cost is the keyboard, and it is the one real objection.** *(2026-09-06: "what
+      would be the implication on gameplay? if down the line tap becomes the default it's fine. but
+      keyboard controls become clunky in diagonal".)*
+
+      **The collision and the physics do not change at all** — the world stays cardinal and only the
+      camera turns, so pavements, lanes, bodies and every fairness contract are untouched. What
+      changes is that `Stroller` reads `Input.get_vector("move_left", "move_right", "move_up",
+      "move_down")`, a normalised vector **in world space**, so a key press stops pointing where she
+      visibly goes. There is no arrangement that avoids this, only a choice of which way it hurts:
+
+      - **Keys on world axes** (one key follows a street exactly, and on screen she sets off at 45°
+        to the key pressed). Correct for the game — a street is the thing you walk — and it is what
+        most isometric games do, but it is exactly the clunkiness named above.
+      - **Keys rotated to the screen** (up walks up the screen). Reads right for one second and then
+        walks her diagonally into buildings, since up-the-screen is a world diagonal and no street
+        goes that way. She would slide along walls constantly.
+
+      **And it inverts what two keys mean.** Today holding two gives a true diagonal along open
+      ground. Rotated, with keys on world axes, a single key follows a street and **two keys point
+      between buildings** — so the combination a player reaches for becomes the useless one.
+
+      **Tap has none of this.** `TapControls._on_tap()` already maps a screen point to a world point
+      through `get_viewport().get_canvas_transform().affine_inverse()`, so a rotated camera is
+      handled by the transform and costs the design nothing: you tap where you want to be.
+
+      **So this item is coupled to which control scheme is the default**, and that is a decision
+      rather than a consequence. The player's own condition is written above — *if tap becomes the
+      default it's fine* — and it does not overturn M68's verdict that both schemes are keepers
+      (*"I like both control modes equally"*): both would still ship, and M76's title screen would
+      still ask. What would change is which one a fresh install starts from. **Settle that before
+      this is scheduled**, because if the answer is that the keyboard stays the default, the
+      objection above stands unanswered and the whole item should stay tabled
+
+      *(The on-screen stick has the same problem and the same fix: `TouchControls` drives the four
+      `move_*` actions from its own screen-space vector, and `ScreenOrientation.to_design_space()`
+      already does exactly this correction for the 90° portrait case, so the machinery exists.)*
+
+- [ ] **Sequence it after M60's rotation fix.** `ScreenOrientation` already carries a rotation for
+      the portrait phone, M60's first item is that rotation being *"implemented three times"* and
+      producing *"three different rotations in one picture"*, and this composes a fourth onto it.
+      **Fix that first, then spike the transform alone on the existing square art** — proving
+      tap-to-world, the edge cues, the zoom fit and y-sorting survive, with no new art — because that
+      is what de-risks the expensive half before anybody draws anything
 
 ---
 
