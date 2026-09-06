@@ -20,8 +20,15 @@ shopt -s nullglob
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# More than this buys nothing: the wall clock cannot go below the slowest single suite, and that
-# is `test_events.gd` at about two minutes. Override for a machine with a different shape.
+# **More than this buys nothing, and the arithmetic says why.** The wall clock cannot go below the
+# slowest single suite, and `test_events.gd` alone is about 259s against roughly 905s of total
+# work — so four shards have about 215s each to do beside it and the run is already bounded by the
+# one suite rather than by the split. A fifth shard would divide 905 into 181s pieces and still
+# wait 259s for `test_events.gd`. Going *below* four is what costs: three shards is 302s of
+# arithmetic per shard, and that is above the floor.
+#
+# So the only thing that would make the full run meaningfully faster is splitting `test_events.gd`
+# itself. Override for a machine with a different shape.
 SHARDS="${TEST_SHARDS:-4}"
 
 if [[ ! -x "$GODOT" ]]; then
@@ -59,6 +66,15 @@ fi
 ## decide *which shard* it lands in. A stale number costs some balance and no correctness — the
 ## worst a wrong cost can do is make one shard finish later than another.
 ##
+## **A missing row costs far more than a stale one, and that is the case to watch.** A suite
+## nobody lists is planned at the default below, so a genuinely heavy one lands in a shard that
+## was already full and adds its whole weight to the wall clock. That is why the numbers here are
+## re-read off a real `tools/test.sh` run whenever one is to hand: the rows are cheap to refresh
+## and the failure mode is invisible — the run is still correct, still green, and just slow.
+##
+## **Refresh them from the `-- suite ms` lines of a full run**, which is exactly what this table
+## is a copy of, rounded to the nearest second.
+##
 ## **A `case` rather than an associative array, because macOS ships bash 3.2** — the last GPLv2
 ## release, which has no `declare -A`. It does not fail on one either: it quietly makes an
 ## *indexed* array, and every `${COST[test_events.gd]}` then gets its subscript evaluated as
@@ -67,22 +83,26 @@ fi
 ## serial and looked fine apart from being no faster.
 _cost_of() {
 	case "$1" in
-		test_events.gd)      echo 127000 ;;
-		test_routes.gd)      echo  90000 ;;
-		test_generator.gd)   echo  79000 ;;
-		test_crowd.gd)       echo  55000 ;;
-		test_balance.gd)     echo  22000 ;;
-		test_full_run.gd)    echo  20000 ;;
-		test_telemetry.gd)   echo  18000 ;;
-		test_route_tree.gd)  echo  11000 ;;
-		test_acts.gd)        echo   8000 ;;
-		test_event_manager.gd) echo 8000 ;;
-		test_blocks.gd)      echo   5000 ;;
-		test_reachability_grid.gd) echo 4000 ;;
-		test_heat.gd)        echo   2000 ;;
-		# What an unlisted suite is assumed to cost. Deliberately not tiny: a new suite nobody
-		# has measured is planned for as though it were middling, rather than being swept into
-		# whichever shard is already fullest.
+		test_events.gd)      echo 259000 ;;
+		test_routes.gd)      echo 164000 ;;
+		test_generator.gd)   echo 155000 ;;
+		test_seals.gd)       echo  90000 ;;
+		test_crowd.gd)       echo  66000 ;;
+		test_full_run.gd)    echo  35000 ;;
+		test_telemetry.gd)   echo  35000 ;;
+		test_balance.gd)     echo  29000 ;;
+		test_route_tree.gd)  echo  22000 ;;
+		test_event_manager.gd) echo 13000 ;;
+		test_acts.gd)        echo  12000 ;;
+		test_blocks.gd)      echo  11000 ;;
+		test_reachability_grid.gd) echo 5000 ;;
+		test_heat.gd)        echo   3000 ;;
+		test_day_loop.gd)    echo   1000 ;;
+		# What an unlisted suite is assumed to cost. **Deliberately larger than any suite it
+		# currently applies to** — every unit suite left off this table came in under a second
+		# on the last full run, and the rows above are everything that did not. The headroom is
+		# for the case the default exists for: a new suite nobody has measured is planned for as
+		# though it were middling rather than swept into whichever shard is already fullest.
 		*)                   echo   5000 ;;
 	esac
 }

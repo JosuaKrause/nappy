@@ -33,12 +33,19 @@ and lands broken. Watch `main`'s own CI run after a batch rather than assuming t
 spoke for it.
 
 ```sh
-./tools/test.sh          # the full headless suite, ~200s — CI's job, not a local gate
+./tools/test.sh          # the full headless suite, minutes — CI's job, not a local gate
 ./tools/check.sh         # boots the project, fails on any script error
 ./tools/lint.sh          # the governed docs, for sentences that go stale on their own
 ./tools/run.sh           # plays it
+./tools/serve-web.sh     # plays the *web* build, locally, in a browser
 ./tools/telemetry.sh     # what the last run actually did, in order
 ```
+
+**`tools/serve-web.sh` is the only way to run the web build without deploying it.** A Godot web
+export cannot be opened from `file://` — the browser refuses the WASM and pack fetches — so a static
+server is the requirement rather than a convenience. It exports **debug** and serves `build/web`
+over plain HTTP, printing an address rather than opening a browser, and the debug half is
+load-bearing: a debug build is the only one where the URL modifiers answer at all.
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
 
@@ -280,20 +287,36 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   about them is still unknown: whether a thumb can hold the 20px line between two pavement lanes,
   whether the catch radii feel right, whether `RUN` is legible at phone DPI, and whether the new
   pause button at the top right is reachable without covering something.
-- **A phone held upright gets a rotated game made of three disagreeing rotations.** The live build
-  no longer asks anybody to turn their phone — it presents rotated instead — and playtest 23 is the
-  first phone session on it: the controls are right, the world is 180° from them, the text is not
-  rotated at all, and turning auto-rotate on latches a portrait-shaped play area that a reload is
-  the only escape from. It is M60's first item and the deployed build has all four.
+- **A phone held upright gets one rotation now, and nobody has held a phone since.** The three
+  disagreeing rotations playtest 23 met are gone: one transform is applied to every `CanvasLayer`,
+  the camera is no longer a second implementation, and the choice is re-asked every frame rather
+  than on a `size_changed` that could arrive stale. The record is in `DECISIONS.md` under M60.
+  **The one thing a rig cannot settle is the one that shipped three of those four symptoms** —
+  `tests/test_orientation.gd` proves the input remap by construction and says outright that it
+  cannot catch a sign error the transform and the drawing share. `tools/shot.sh` takes a resolution
+  now, so the rotated branch can at least be photographed; it wants a person holding a phone.
 - **The social card has never been unfurled.** The Open Graph tags and the image copy into
   `build/web` are correct as far as a local check can tell, and nothing has pasted the address into
   a chat client to see what comes back.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
-  running behind it — and it now asks one question: two buttons, and picking one is also the start.
-  That is the whole of it: no options, no seed box, no load game. **Nobody has met the question on a
-  phone**, which is where it was asked for, so whether two buttons read as a choice or as an
-  obstacle between a player and the game is unanswered. A run started with `--controls` or
-  `?controls=` skips the question by design and is therefore the path least likely to be tested.
+  running behind it — and it asks one question: two circular icon buttons, and picking one is also
+  the start. That is the whole of it: no options, no seed box, no load game. **Nobody has met
+  the question on a phone**, which is where it was asked for, so whether two buttons read as a
+  choice or as an obstacle between a player and the game is unanswered. A run started with
+  `--controls`, or with `?controls=` on a **debug** web build, skips the question by design and is
+  therefore the path least likely to be tested.
+- **The two title icons have been judged by reading the files, not by anybody meeting them.**
+  `assets/ui/joystick.svg` and `assets/ui/tap.svg` are legible at their rendered 46px radius, which
+  is what the **cues** rule *a picture is an asset, never code* buys — the SVG is the thing you look
+  at. Whether they read as *joystick* and *tap* to somebody who has not been told is the part no
+  file settles and a person does; the reference is
+  `docs/evidence/reference-buttons-2026-09-06.jpeg`. Replacing either is copying a file over that
+  path, since `ModeButton` loads both by path and draws nothing itself.
+- **A release build carries no modifiers, and nothing has confirmed that on a real release build.**
+  `?controls=` and `?telemetry=1` answer only when `OS.is_debug_build()` is true. The four-case truth
+  table is asserted in the suites, so the *predicate* is proven; the build type itself has no seam to
+  fake and is therefore untested. **The deployed page is the first real check**, and what to watch is
+  that it still starts and still logs nothing.
 - **The city just got much cheaper to walk through and nobody has walked it.** Five barrier rows
   emit nothing at all now and the two that kept a field had their reach roughly halved, against a
   day that plans several hundred of exactly those bodies. **Whether the day is still losable on the

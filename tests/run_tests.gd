@@ -26,8 +26,15 @@ func _ready() -> void:
 		var suite: Object = (load(path) as GDScript).new()
 		suite.run(self)
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
-		# the integration suites can be three orders of magnitude heavier than the rest.
-		print("-- %-24s %5d ms" % [path.get_file(), Time.get_ticks_msec() - started])
+		# the integration suites can be five orders of magnitude heavier than the rest: the
+		# spread runs from `test_quit_option.gd` at 3ms to `test_events.gd` at about 259_000.
+		#
+		# **Both columns are sized for the worst case rather than the common one**, since a
+		# single overflowing row pushes only its own line and the misalignment reads as a
+		# glitch rather than as the outlier it is pointing at. 26 clears the longest name on
+		# disk (`test_reachability_grid.gd`, 25) with a space to spare; 7 digits reach nearly
+		# three hours, which no suite will approach without that being the news.
+		print("-- %-26s %7d ms" % [path.get_file(), Time.get_ticks_msec() - started])
 
 	print("")
 	for failure in failures:
