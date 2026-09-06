@@ -46,6 +46,14 @@ reference, including vehicles, street furniture, storefront density and pedestri
 `evidence/graphics-reference-cardinal.jpeg` is the floor for the available cardinal perspective,
 not the illustrated style or detail target.
 
+## Street reference alignment — 2026-09-06
+
+> "but the street ones could be improved and be more aligned with the reference"
+
+The cardinal street gate remains approved as direction and composition, but its ground, frontage,
+roof and prop artwork needs a reference-conditioned improvement pass. The authoritative urban
+images set the linework, materials, storefront density and street-furniture standard.
+
 ## The first approach is rejected
 
 > "are you kidding me? your thought of improving graphics is to make the outlines of existing assets thicker? I'm talking about a full overhaul of the graphics as if nothing had existed before. also, one major thing you apparently missed is that we currently have *no animations*"

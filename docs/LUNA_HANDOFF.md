@@ -94,6 +94,8 @@ The standalone `scenes/dev/illustrated_street_review.tscn` consumes the layered 
 camera-specific shortened north depth and stable dotted roof reveal are a player-review gate, not a
 live renderer or a substitute for movement review. `GENERATION_RECORD.md` retains the built-in
 generation prompts; facade, roof and props have verified alpha, while the ground plate is opaque.
+Its generated street layers need a reference-conditioned improvement pass against the authoritative
+urban images before their style is extended elsewhere.
 
 Review coordinate units before integration: the gait draft's configurable limb lengths are not
 proof of logical-pixel sizing. Test foot anchors in world space and apply drawing height only
