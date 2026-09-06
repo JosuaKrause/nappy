@@ -79,26 +79,32 @@ So pushing `main` no longer publishes. Completed work may be pushed without aski
 the live site is whatever the newest tag pointed at — `git tag --list 'v*'` and `tools/release.sh`'s
 own dry run say which.
 
-**The invincibility bug is fixed on `main`, and a fix on `main` is not a fix on the site.** The
-release `v0.2.0` carried a day that ends without saying so — the clock stops, no summary appears,
-the player keeps walking and nothing can end the day again — from one untyped array literal in
-`main.gd`'s `_on_day_finished()`. The record is in `DECISIONS.md` under M73. **The site serves
-whatever the newest tag points at**, so check `git tag --list 'v*'` and `tools/release.sh`'s dry run
-against the commit that fixed it before telling anybody the page is well.
+**A fix on `main` is not a fix on the site, and that is the sentence to keep in mind before telling
+anybody the page is well.** The site serves whatever the newest tag points at, so `git tag --list
+'v*'` and `tools/release.sh`'s dry run are what say whether a given commit is actually out there.
+A release has carried a game-ending bug before; the record is in `DECISIONS.md` under M73.
+
+**A browser now goes back for a new release, and it did not before.** The export publishes
+`index.js`, `index.wasm` and `index.pck` under a directory named for the release tag, because
+GitHub Pages sends `Cache-Control: max-age=600` on everything with no header surface to change it —
+under fixed names each file's ten minutes ran independently, so a reload could pair a fresh
+`index.html` against the previous release's `index.pck`. **That means a stale report is now worth
+believing rather than explaining away.** The record is in `DECISIONS.md` under M80.
 
 ## What to do next
 
-**Start with [PLAYTEST-27.md](PLAYTEST-27.md) and the three milestones it fills.** It is the second
-session on the released page and the first played on both a laptop browser and a phone, and none of
-its six findings is built. Two of them are about the published page rather than about the game and
-are checked with `curl` rather than with the suite: **the site's files are served with
-`Cache-Control: max-age=600` under names that never change between releases**, so a browser can
-serve a mixed build — a fresh `index.html` against last release's `index.pck` — and a shared link
-unfurls with no picture. That is **M80**, and it is first in `TODO.md`'s order for a reason worth
-repeating here: a fix a browser does not go back for is a fix nobody receives, so every other
-milestone below it is invisible until it lands. **M76** (the continue and restart buttons, now asked
-for three times, plus a press that says it was heard) and **M81** (tap mode does nothing on a
-release web build, and the drag stick becomes a joystick that is aimed rather than gripped) follow.
+**Start with [PLAYTEST-27.md](PLAYTEST-27.md) and M81, which is what is left of it.** It is the
+second session on the released page and the first played on both a laptop browser and a phone. Four
+of its six findings are built and released: the export now publishes `index.js`, `index.wasm` and
+`index.pck` under a directory named for the release tag, so Pages' unchangeable
+`Cache-Control: max-age=600` can no longer serve a **mixed** build; the shared card is opaque and
+declares its dimensions; and both the pause screen and the day summary carry a continue button and a
+held restart that acknowledges the press before the day it starts blocks the frame.
+
+**M81 is the rest, and both halves are control schemes.** Tap mode has no input at all on a release
+web build — `TapControls` reads a mouse click only behind `OS.is_debug_build()`, and
+`tools/serve-web.sh` exports *debug*, which is why every local check passed — and the drag stick
+becomes a joystick that is aimed rather than gripped.
 
 **One rule arrived with playtest 27 that is wider than any of them**: *"there is no way to walk
 slowly — that is intentional — there should only ever be one speed (plus a second via running)"*.
@@ -301,9 +307,12 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   `tests/test_orientation.gd` proves the input remap by construction and says outright that it
   cannot catch a sign error the transform and the drawing share. `tools/shot.sh` takes a resolution
   now, so the rotated branch can at least be photographed; it wants a person holding a phone.
-- **The social card has never been unfurled.** The Open Graph tags and the image copy into
-  `build/web` are correct as far as a local check can tell, and nothing has pasted the address into
-  a chat client to see what comes back.
+- **The social card has been unfurled once, in a messaging app, and it failed.** The cause was the
+  image's alpha channel — its transparent pixels carry RGB `(0, 0, 0)`, so a client that ignores
+  alpha paints the card black — and the published copy is now flattened onto an opaque background,
+  with its dimensions and type declared and a `twitter:image` beside the `og:` pair. **The fix has
+  not itself been unfurled.** Paste the address into a chat client and see what comes back; the
+  record of what was wrong and what was ruled out is in `DECISIONS.md` under M80.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
   running behind it — and it asks one question: two circular icon buttons, and picking one is also
   the start. That is the whole of it: no options, no seed box, no load game. **Nobody has met
