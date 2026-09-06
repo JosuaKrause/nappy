@@ -28,6 +28,9 @@ func run(t) -> void:
 	_test_the_pause_quit_key_matches_the_platform(t)
 	_test_a_tap_advances_every_screen(t)
 	_test_the_title_hint_and_body_match_the_platform(t)
+	_test_the_title_asks_when_nothing_forces_an_answer(t)
+	_test_pressing_a_title_button_both_chooses_and_starts(t)
+	_test_the_title_choice_reaches_the_keyboard_too(t)
 	_test_the_title_names_a_version(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
 	_test_the_summary_hint_matches_the_platform(t)
@@ -185,7 +188,7 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 
 	var started := [0]
 	var quit := [0]
-	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
 	title.quit_requested.connect(func() -> void: quit[0] += 1)
 	title._unhandled_input(_accept())
 	t.check(started[0] == 1, "space begins the run")
@@ -262,6 +265,10 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
+	# This is the skip-the-question shape a `--controls` flag or a `?controls=` URL forces; a test
+	# process forces neither, so it is set directly, the same way `_can_quit` and `_touch` already
+	# are for their own platform questions.
+	title._asking_controls = false
 
 	title._touch = false
 	title._refresh_body()
@@ -277,6 +284,55 @@ func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	t.check("Drag the stick" in title._body.text,
 			"and the body names the stick and the run button ('%s')" % title._body.text)
 	t.check(not "Shift" in title._body.text, "and drops the key it does not have")
+
+	title.close()
+	title.queue_free()
+
+## *(2026-09-05, playtest 25 finding 3: "I like both control modes equally let the player choose on
+## the title screen (instead of tap the screen to start have two buttons to choose from)".)* A
+## test process forces neither `--controls` nor a `?controls=` URL, so a freshly instanced title
+## always lands here — which is deliberately also the shape a fresh install shows, unless launched
+## with a flag.
+func _test_the_title_asks_when_nothing_forces_an_answer(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	t.check(title._asking_controls, "a title with no forcing flag asks the question")
+	t.check(title._choice.visible and not title._body.visible,
+			"and shows the two buttons instead of the one paragraph")
+	title.queue_free()
+
+## **One press, not a menu then a start.** Each button both names its own control scheme and starts
+## the run in it, the same way the single hint used to before this milestone — there is no
+## separate "confirm" step.
+func _test_pressing_a_title_button_both_chooses_and_starts(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var chosen: Array = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: chosen.append(mode))
+	title.open()
+
+	title._tap_button.pressed.emit()
+	t.check(chosen == [ControlsMode.Mode.TAP], "pressing the tap button starts in tap mode")
+
+	title._stick_button.pressed.emit()
+	t.check(chosen == [ControlsMode.Mode.TAP, ControlsMode.Mode.STICK],
+			"and the stick button starts in stick mode")
+
+	title.close()
+	title.queue_free()
+
+## Touch and keyboard both have to reach the choice. `T` is the keyboard's own way to reach the tap
+## button without a mouse or a finger — see `_unhandled_input()`'s own doc for why a bare space or
+## tap instead falls back to the stick rather than doing nothing.
+func _test_the_title_choice_reaches_the_keyboard_too(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var chosen: Array = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: chosen.append(mode))
+	title.open()
+
+	title._unhandled_input(_key(KEY_T))
+	t.check(chosen == [ControlsMode.Mode.TAP], "T picks the tap button from the keyboard")
 
 	title.close()
 	title.queue_free()
@@ -368,7 +424,7 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started := [0]
-	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
 	title.open()
 	title._unhandled_input(_touch(false))
 	t.check(started[0] == 0, "lifting a finger does nothing on the title")
