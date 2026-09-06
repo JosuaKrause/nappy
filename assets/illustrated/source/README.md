@@ -20,9 +20,9 @@ sheet. The front/three-quarter/back silhouettes are useful for style and proport
 direction remapping and registration remain open.
 
 The tool's first correction attempt produced an RGBA PNG but replaced the checkerboard with an
-opaque dark gradient; it was rejected and is not copied into this checkout. A separate modular
-parts sheet was not generated because the handoff direction arrived after the final turnaround
-attempt; it remains open work.
+opaque dark gradient; it was rejected and is not copied into this checkout. The registered modular
+source replacement is recorded under [`assets/illustrated/modular/`](../modular/), with its prompts,
+manifests and alpha-validation record beside the PNGs.
 
 ## Exact generation prompt
 
@@ -38,9 +38,8 @@ ABSOLUTE OUTPUT REQUIREMENT: a true transparent PNG cutout. Outside every figure
 
 ## Remaining work for Luna
 
-- Generate or extract a genuine RGBA turnaround with alpha 0 outside every figure and registered
-  equal cells.
-- Generate a matching separable-parts source sheet for head/hair, coat/torso, arms, legs and shoes;
-  keep parts registered and do not draw runtime primitives into it.
-- Validate the replacement visually and with an alpha-aware image tool before treating either sheet
-  as a source for modular animation.
+- Treat `mother-turnaround-v1.png` as the historical style draft only; it still has baked
+  checkerboard pixels and implicit cell registration.
+- Review `assets/illustrated/modular/mother-parts-v2.png` and `pram-parts-v2.png` in the eventual
+  compositor before treating the generated art as runtime-ready.
+- Build the compositor and grounded gait tests; these PNGs are source art and do not wire gameplay.
