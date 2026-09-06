@@ -33,7 +33,11 @@ func run(t) -> void:
 	_test_the_title_hint_and_body_match_the_platform(t)
 	_test_the_title_asks_when_nothing_forces_an_answer(t)
 	_test_pressing_a_title_button_both_chooses_and_starts(t)
-	_test_the_title_choice_reaches_the_keyboard_too(t)
+	_test_the_dropped_key_chooses_nothing(t)
+	_test_an_arrow_key_chooses_the_stick(t)
+	_test_a_click_away_from_the_buttons_chooses_tap(t)
+	_test_the_forced_controls_path_ignores_the_new_inputs(t)
+	_test_the_title_hint_names_the_new_inputs(t)
 	_test_the_title_buttons_carry_their_own_symbol(t)
 	_test_the_title_names_a_version(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
@@ -325,10 +329,11 @@ func _test_pressing_a_title_button_both_chooses_and_starts(t) -> void:
 	title.close()
 	title.queue_free()
 
-## Touch and keyboard both have to reach the choice. `T` is the keyboard's own way to reach the tap
-## button without a mouse or a finger — see `_unhandled_input()`'s own doc for why a bare space or
-## tap instead falls back to the stick rather than doing nothing.
-func _test_the_title_choice_reaches_the_keyboard_too(t) -> void:
+## *(2026-09-06, playtest 26 finding 2: "on the local clicking should choose the tap and arrow
+## keys should choose the controls ... t I'm not so sure since it's a move from keyboard to
+## mouse".)* The player closed their own uncertainty by taking `T` out — no key selects the scheme
+## played with a mouse, so the letter that used to reach the tap button now reaches nothing.
+func _test_the_dropped_key_chooses_nothing(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var chosen: Array = []
@@ -336,7 +341,86 @@ func _test_the_title_choice_reaches_the_keyboard_too(t) -> void:
 	title.open()
 
 	title._unhandled_input(_key(KEY_T))
-	t.check(chosen == [ControlsMode.Mode.TAP], "T picks the tap button from the keyboard")
+	t.check(chosen.is_empty(), "t no longer chooses anything")
+
+	title.close()
+	title.queue_free()
+
+## An arrow key **is** the stick scheme on a desktop, so pressing one is a choice rather than
+## something this screen ignores — see `_unhandled_input()`'s own doc. `ui_left` is checked as the
+## representative of the four; `_is_arrow_key()` is the same one condition for all of them.
+func _test_an_arrow_key_chooses_the_stick(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var chosen: Array = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: chosen.append(mode))
+	title.open()
+
+	title._unhandled_input(_action("ui_left"))
+	t.check(chosen == [ControlsMode.Mode.STICK], "an arrow key picks the stick")
+
+	title.close()
+	title.queue_free()
+
+## Clicking a button **is** tap-to-walk, so a left click that lands nowhere near either `Button`
+## chooses tap on its own — the mirror of the arrow key above, and the reason `T` could be dropped
+## rather than replaced: a click already reaches this screen unconsumed, since `Root`'s own
+## `mouse_filter = 2` (`IGNORE`) lets it pass rather than a `Button`'s default of stopping it.
+func _test_a_click_away_from_the_buttons_chooses_tap(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var chosen: Array = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: chosen.append(mode))
+	title.open()
+
+	title._unhandled_input(_left_click())
+	t.check(chosen == [ControlsMode.Mode.TAP], "a click away from the buttons picks tap")
+
+	title.close()
+	title.queue_free()
+
+## The one case a run started with a flag must not be asked again: neither of the two new inputs
+## does anything once `ControlsMode.is_forced()` has already answered the question, and the
+## screen falls back to exactly the shape it had before this milestone — `ui_accept` still chooses
+## whichever mode the flag fixed.
+func _test_the_forced_controls_path_ignores_the_new_inputs(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	title._asking_controls = false
+	title._controls_mode = ControlsMode.Mode.TAP
+	var chosen: Array = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: chosen.append(mode))
+	title.open()
+
+	title._unhandled_input(_action("ui_left"))
+	t.check(chosen.is_empty(), "an arrow key does nothing once a flag has already answered")
+	title._unhandled_input(_left_click())
+	t.check(chosen.is_empty(), "and neither does a click")
+	title._unhandled_input(_accept())
+	t.check(chosen == [ControlsMode.Mode.TAP],
+			"space still starts the mode the flag fixed, unchanged")
+
+	title.close()
+	title.queue_free()
+
+## *(2026-09-06, playtest 26 finding 2.)* The hint has to state the new shape rather than the
+## dropped `"space or t to choose"`, in both the `_can_quit` and not-`_can_quit` shapes the `·`
+## separator already composes — see `_test_the_title_quit_key_matches_the_platform` for why that
+## suffix rule itself is unchanged.
+func _test_the_title_hint_names_the_new_inputs(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+
+	title._can_quit = true
+	title.open()
+	t.check(title._hint.text == "arrows or space for stick, click for tap     ·     q to quit",
+			"the hint names both routes and keeps q where quitting works ('%s')"
+					% title._hint.text)
+
+	title._can_quit = false
+	title.open()
+	t.check(title._hint.text == "arrows or space for stick, click for tap",
+			"and drops the quit suffix where quitting is impossible ('%s')" % title._hint.text)
 
 	title.close()
 	title.queue_free()
@@ -495,4 +579,13 @@ func _action(name: StringName) -> InputEventAction:
 func _touch(pressed: bool) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()
 	event.pressed = pressed
+	return event
+
+## A left mouse click, pressed — the shape `_unhandled_input()` reads to choose tap. Godot's own
+## GUI routing keeps this away from `_unhandled_input()` whenever it actually lands on a `Button`,
+## so every click this helper builds behaves as one that missed both.
+func _left_click() -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = true
 	return event

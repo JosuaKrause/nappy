@@ -142,12 +142,14 @@ func open(again := false) -> void:
 	visible = true
 	if _asking_controls:
 		# The buttons are the affordance; this line is only for whoever has neither a mouse nor a
-		# finger free to press one directly — `T` reaches the tap button, and a bare space or tap
-		# anywhere on the screen keeps the pre-existing "every screen advances on a tap" contract by
-		# falling back to the stick, the same default an unanswered `ControlsMode.from_word("")`
+		# finger free to press one directly. The input each key or click names is the mode it
+		# picks — an arrow key or `space` is the stick scheme, a click is tap-to-walk — so the
+		# hint states the two keyboard/mouse routes rather than a single verb, and a bare tap
+		# anywhere on the screen keeps the pre-existing "every screen advances on a tap" contract
+		# by falling back to the stick, the same default an unanswered `ControlsMode.from_word("")`
 		# already falls back to. See `_unhandled_input()`.
-		_hint.text = "space or t to choose     ·     q to quit" if _can_quit \
-				else "space or t to choose"
+		_hint.text = "arrows or space for stick, click for tap     ·     q to quit" if _can_quit \
+				else "arrows or space for stick, click for tap"
 		return
 	var verb := "tap" if _touch else "space"
 	var start := "%s to walk again" % verb if again else "%s to begin" % verb
@@ -156,15 +158,28 @@ func open(again := false) -> void:
 func close() -> void:
 	visible = false
 
-## `Space` starts, and so does a tap — handled as the touch event itself rather than as a synthetic
-## click, so a mouse is not taught a gesture nobody asked it to have and the desktop is unchanged.
-## **While the two buttons are up, both still fall back to the stick** rather than doing nothing:
-## a bare space or a tap that does not land on either button is not a choice, but the screen has
-## advanced on any tap since before this milestone and a flag-free run still needs a keyboard path
-## that asks for nothing more than the one key it always took. `T` is the keyboard's own way to
-## reach the other button without a mouse or a finger; the buttons themselves fire through their
-## own `pressed` signal (`_choose`, connected in `_ready()`) rather than through here, since Godot's
-## own GUI input already consumes a click or a tap that actually lands on one.
+## The device you answer the controls question with is the device you are answering about: an
+## arrow key or `space` **is** the stick scheme, and a click **is** tap-to-walk, so each choice can
+## be made by doing the thing it selects rather than by reading a label.
+##
+## **While asking**, an arrow key (`ui_left`/`ui_right`/`ui_up`/`ui_down`, the same built-in
+## defaults `ui_accept` already was without either appearing in `project.godot`) or `ui_accept`
+## chooses the stick, and a left click chooses tap — except a click that lands on either `Button`,
+## which still fires that button's own `pressed` signal (`_choose`, connected in `_ready()`) and
+## never reaches here, since Godot's own GUI input already consumes a click or a tap that actually
+## lands on one. No key selects tap: it is a mouse's own scheme, the same reasoning that drops the
+## `T` this screen used to offer.
+##
+## **A bare tap still falls back to the stick** rather than doing nothing, the same fallback
+## `ui_accept` gives a keyboard with no mouse and no arrow keys pressed: the screen has advanced on
+## any tap since before this milestone, and a flag-free run still needs a touch path that asks for
+## nothing more than the one gesture it always took. This is the one place left where touching does
+## not mean tapping — see `docs/TODO.md`'s M76 queue.
+##
+## **Once a flag has already answered the question** (`not _asking_controls`), the screen falls
+## back to exactly its pre-existing shape: `ui_accept` or a tap chooses whichever mode the flag
+## fixed, and neither the arrow keys nor a click do anything new — a run a flag already started
+## must not be asked again.
 ##
 ## `Q` leaves, **except on the web**, where `QuitOption.available()` is false and the key is not
 ## offered or handled at all — pressing it on a platform where quitting is impossible would be a
@@ -174,20 +189,36 @@ func close() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if event.is_action_pressed("ui_accept") \
+	if _asking_controls:
+		if event.is_action_pressed("ui_accept") or _is_arrow_key(event):
+			get_viewport().set_input_as_handled()
+			_choose(ControlsMode.Mode.STICK)
+			return
+		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
+				and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			get_viewport().set_input_as_handled()
+			_choose(ControlsMode.Mode.TAP)
+			return
+		if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+			get_viewport().set_input_as_handled()
+			_choose(ControlsMode.Mode.STICK)
+			return
+	elif event.is_action_pressed("ui_accept") \
 			or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed):
 		get_viewport().set_input_as_handled()
 		_choose(ControlsMode.Mode.STICK)
-		return
-	if _asking_controls and event is InputEventKey and event.pressed \
-			and (event as InputEventKey).keycode == KEY_T:
-		get_viewport().set_input_as_handled()
-		_choose(ControlsMode.Mode.TAP)
 		return
 	if _can_quit and event is InputEventKey and event.pressed \
 			and (event as InputEventKey).keycode == KEY_Q:
 		get_viewport().set_input_as_handled()
 		quit_requested.emit()
+
+## Whether `event` is a press of one of the four built-in directional actions — pulled out because
+## the choice reads as one condition ("an arrow key") rather than four `is_action_pressed()` calls
+## inline.
+static func _is_arrow_key(event: InputEvent) -> bool:
+	return event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right") \
+			or event.is_action_pressed("ui_up") or event.is_action_pressed("ui_down")
 
 ## The one place `start_requested` is actually emitted — a bare key, a bare tap, or one of the two
 ## buttons' own `pressed` signal, all funnelled through here so there is exactly one answer per
