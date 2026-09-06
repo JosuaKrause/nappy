@@ -62,8 +62,13 @@ Semver, and **`major` is reserved for a change that breaks or fundamentally alte
 So pushing `main` no longer publishes. Completed work may be pushed without asking; see the
 **committing** skill for what *completed* means. **Publishing is a separate, deliberate act**, and
 the live site is whatever the newest tag pointed at — `git tag --list 'v*'` and `tools/release.sh`'s
-own dry run say which. **The site currently serves a build nobody has played**: the sealed city and
-everything under "What to distrust" reached it by measurement, not by a played day.
+own dry run say which.
+
+**The live site is broken and the fix is known.** `v0.2.0` is what `https://nappy.josuakrause.com/`
+serves, and on it the day ends without saying so: the clock stops, no summary appears, the player
+keeps walking and nothing can end the day again. One untyped array literal at `src/main.gd:464`,
+diagnosed in full under M70 in [TODO.md](TODO.md). **Cutting a release is the last step of that
+milestone, not a separate errand** — until it is cut, everybody who opens the page meets it.
 
 ## What to do next
 
