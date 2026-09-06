@@ -119,14 +119,13 @@ func _ready() -> void:
 		_ensure_touch_layer()
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
-	_summary.continued.connect(_on_summary_continued)
 
 	# Deliberately not `_pauses_with_the_game`: a pause screen that pauses with the game cannot
 	# unpause it. It inherits ALWAYS from this node, which is what it wants.
 	_pause = PAUSE_SCREEN.instantiate()
 	add_child(_pause)
-	_pause.quit_requested.connect(_quit)
-	_pause.restart_requested.connect(_restart_run)
+
+	_connect_summary_and_pause_signals()
 
 	# Same reasoning, one screen further out. See `TitleScreen`.
 	_title = TITLE_SCREEN.instantiate()
@@ -185,6 +184,23 @@ func _ready() -> void:
 	if (screenshot or "--no-title" in args) and not "--title" in args:
 		return
 	_open_the_title()
+
+## Both screens' own restart reaches the one thing that means it, and both screens' own way out
+## reaches the same quit — pulled into its own function, called once `_summary` and `_pause` both
+## exist, rather than left as four lines split across each screen's own instantiation.
+##
+## **This is the fix for the day summary's own restart button holding, filling its bar, firing its
+## signal, and being heard by nobody** — `_summary.restart_requested` had no connection at all next
+## to `_pause.restart_requested.connect(_restart_run)`, which is the shape
+## `_test_the_summary_and_pause_restart_signals_are_both_connected` now holds so a screen added
+## later cannot repeat it silently: a green `check.sh` and a green suite both passed with the day
+## summary's restart doing nothing, because nothing before this ever asked whether the signal was
+## connected rather than only whether pressing the button emitted it.
+func _connect_summary_and_pause_signals() -> void:
+	_summary.continued.connect(_on_summary_continued)
+	_summary.restart_requested.connect(_restart_run)
+	_pause.quit_requested.connect(_quit)
+	_pause.restart_requested.connect(_restart_run)
 
 ## Dev flag: `-- --ending bad|neutral|good` puts the last screen of a run on screen at boot.
 ##

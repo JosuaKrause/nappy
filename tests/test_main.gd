@@ -10,6 +10,8 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
+const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
+const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 const SEED := 4242
@@ -18,6 +20,7 @@ func run(t) -> void:
 	_test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	_test_add_touch_controls_picks_the_stick_or_the_tap_reader_by_controls_mode(t)
 	_test_resolve_controls_mode_defers_until_something_answers(t)
+	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -128,3 +131,29 @@ func _test_resolve_controls_mode_defers_until_something_answers(t) -> void:
 
 	main.free()
 	hud.free()
+
+## **Caught only by asking the connection, not by pressing the button.** The day summary's own
+## restart button held, filled its bar, fired `restart_requested`, and reached nobody — a green
+## `check.sh` and a green suite both passed the whole time, because both screens' *own* tests only
+## ever check that they emit the signal, never that anything downstream is listening. `main._ready()`
+## is never run here — see this file's own class comment for why — so this calls
+## `main._connect_summary_and_pause_signals()` directly against two real, hand-built screens rather
+## than the whole world `_ready()` would otherwise build first.
+func _test_the_summary_and_pause_restart_signals_are_both_connected(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._summary = DAY_SUMMARY_SCENE.instantiate()
+	main._pause = PAUSE_SCREEN_SCENE.instantiate()
+	main._connect_summary_and_pause_signals()
+
+	t.check(main._summary.restart_requested.is_connected(main._restart_run),
+			"the day summary's own restart button reaches main._restart_run()")
+	t.check(main._pause.restart_requested.is_connected(main._restart_run),
+			"and so does the pause screen's — the one that already worked")
+	t.check(main._summary.continued.is_connected(main._on_summary_continued),
+			"continuing from the summary still reaches the day loop")
+	t.check(main._pause.quit_requested.is_connected(main._quit),
+			"and the pause screen's quit still reaches somewhere")
+
+	main._summary.queue_free()
+	main._pause.queue_free()
+	main.free()

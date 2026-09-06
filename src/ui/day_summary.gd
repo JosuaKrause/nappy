@@ -4,9 +4,9 @@ extends CanvasLayer
 ## Also the pause: the tree is paused while this is up, so the city keeps its state and the
 ## day can simply be restarted rather than rebuilt.
 ##
-## **`restart_requested` has no listener yet.** `PauseScreen.restart_requested` is wired in
-## `main._ready()` to `main._restart_run()`; this signal asks for the same thing from the other
-## screen, built to the same contract, so that connecting it is the whole of what is left.
+## `restart_requested` is wired in `main._connect_summary_and_pause_signals()` to the same
+## `main._restart_run()` `PauseScreen.restart_requested` reaches — see that function's own doc for
+## why the wiring is pulled into one place rather than left beside each screen's own instantiation.
 
 signal continued()
 signal restart_requested()
