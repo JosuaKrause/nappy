@@ -95,8 +95,14 @@ jobs:
       - name: Write the release version into the export
         run: sed -i "s/^config\/version=.*/config\/version=\"${GITHUB_REF_NAME}\"/" project.godot
 
+      # RELEASE_TAG names the build/web/<tag>/ directory tools/export-web.sh moves index.js,
+      # index.wasm and index.pck into, so their URLs change with every release and GitHub
+      # Pages' Cache-Control: max-age=600 — which nothing in this repo can turn off — can no
+      # longer serve a stale or, worse, mixed build inside that window (docs/PLAYTEST-27.md
+      # finding 1). github.ref_name is the tag itself on a tag push (e.g. "v1.2.3"), the same
+      # value the version-writing step above already uses.
       - name: Export the Web build
-        run: GODOT="$HOME/godot/godot-bin" ./tools/export-web.sh
+        run: GODOT="$HOME/godot/godot-bin" RELEASE_TAG="$GITHUB_REF_NAME" ./tools/export-web.sh
 
       # The Web export packs everything under assets/ into the .pck, so nothing there is served
       # as a loose file. og:image in export_presets.cfg's html/head_include points at
