@@ -32,11 +32,13 @@ no frame is ever drawn and there is no viewport texture to save. `AutoScreenshot
 and quits non-zero rather than waiting — `can_photograph(DisplayServer.get_name())` is the guard,
 and `"headless"` is the name Godot gives that null server.
 
-**A sub-agent working in a background worktree is usually in exactly that position.** Its headless
-suites and `check.sh` run fine; a screenshot does not. **So the picture is the orchestrating
-session's to take**, on the branch the agent pushed, rather than something to ask the agent for and
-receive as unverified. Say which shot you want and with which flags; do not treat a missing
-screenshot from an agent as a failure of the change.
+**Whether a sub-agent can take one is a property of its environment, not of being a sub-agent** —
+some background worktrees reach a display and photograph the game perfectly well. So do not assume
+either way: **the guard is what answers it**, because a run with no display now says so and exits
+instead of sitting there. If an agent reports that capture "stalls" or hangs, that is the message it
+should have got, and the branch is worth pulling and photographing from a session that does have a
+display. A missing screenshot from an agent is a missing check, never evidence that the change is
+wrong.
 
 ---
 
