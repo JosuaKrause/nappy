@@ -10,6 +10,8 @@ func run(t) -> void:
 	_test_visual_state_does_not_own_body(t)
 	_test_live_owner_coordinate_binding(t)
 	_test_short_walk_stop_turn_sequence(t)
+	_test_walker_manifest_and_variants(t)
+	_test_walker_consumes_actual_displacement(t)
 
 func _rig(t) -> ModularPerson:
 	var rig := ModularPerson.new()
@@ -177,3 +179,49 @@ func _test_short_walk_stop_turn_sequence(t) -> void:
 		str(rig.gait.foot_world(1))])
 	t.check(rig.direction == DirectionalParts.Direction.W, "short sequence turns to west")
 	rig.free()
+
+func _test_walker_manifest_and_variants(t) -> void:
+	var walker := ModularWalker.new()
+	t.add_child(walker)
+	t.check(walker.manifest.part_count() == 8, "walker has two upper variants and six articulated lower parts")
+	for variant: String in ["mustard_bob", "rust_curls"]:
+		var registration := walker.manifest.require_part("upper_body", variant)
+		t.check(registration.rects.size() == 8, "%s upper body has eight authored views" % variant)
+		for index: int in 8:
+			t.check(registration.rect_for(index).size.x > 0.0 and registration.pivot_for(index) != Vector2.ZERO,
+				"%s direction %d has a non-empty region and shared pivot" % [variant, index])
+	for part_id: String in ["left_upper_leg", "right_upper_leg", "left_lower_leg", "right_lower_leg", "left_shoe", "right_shoe"]:
+		var lower := walker.manifest.require_part(part_id)
+		t.check(lower.rects.size() == 8, "%s has eight authored views and a registered pivot" % part_id)
+	t.check(walker.manifest.require_part("left_upper_leg").pivot_for(0) == Vector2(67.0, 18.0),
+		"upper leg pivot is the local hip attachment")
+	t.check(walker.manifest.require_part("left_lower_leg").pivot_for(0) == Vector2(67.0, 12.0),
+		"lower leg pivot is the local knee attachment")
+	t.check(walker.manifest.require_part("left_shoe").pivot_for(0) == Vector2(67.0, 214.0),
+		"shoe pivot is the local sole anchor")
+	walker.set_variant("rust_curls")
+	t.check(walker.variant == "rust_curls", "walker can switch interchangeable upper variation")
+	walker.free()
+
+func _test_walker_consumes_actual_displacement(t) -> void:
+	var walker := ModularWalker.new()
+	t.add_child(walker)
+	walker.reset_at(Vector2(20.0, 40.0), Vector2.RIGHT)
+	walker.apply_displacement(Vector2.ZERO, Vector2(20.0, 40.0), 1.0, Vector2.RIGHT)
+	t.check(walker.last_displacement == Vector2.ZERO, "stopped walker receives zero applied displacement")
+	walker.apply_displacement(Vector2(15.0, 0.0), Vector2(35.0, 40.0), 0.1, Vector2.RIGHT)
+	t.check(walker.last_displacement == Vector2(15.0, 0.0) and walker.gait.is_stepping(),
+			"walker gait is driven by actual applied displacement")
+	walker.apply_displacement(Vector2(5.0, 0.0), Vector2(40.0, 40.0), 0.1, Vector2.RIGHT)
+	t.check(walker.position == Vector2.ZERO, "walker presentation never moves its owner origin")
+	var swing := walker.gait.step_foot()
+	var swing_name: String = "left" if swing == PlantedGait.LEFT_FOOT else "right"
+	var stance_name: String = "right" if swing == PlantedGait.LEFT_FOOT else "left"
+	t.check(walker.sprites[swing_name + "_shoe"].position.y < walker.last_pose[swing_name + "_foot"].y,
+		"swing shoe consumes solved lift")
+	t.check(walker.sprites[stance_name + "_shoe"].position.is_equal_approx(walker.last_pose[stance_name + "_foot"]),
+		"stance shoe remains on solved ground anchor")
+	walker.recycle_at(Vector2(100.0, 40.0), Vector2.UP)
+	t.check(walker.last_displacement == Vector2.ZERO and walker.direction == DirectionalParts.Direction.N,
+			"recycle resets applied displacement and heading")
+	walker.free()
