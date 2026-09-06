@@ -164,19 +164,19 @@ control that turned out to be the wrong guess.
 
 A tap computes a heading once — `(target - position)`, normalised — and presses it through
 `TouchControls._set_axis()` (static, shared by both) exactly as the stick presses its own
-deflection, never re-aiming. Arrival is the plane through the target at right angles to that
-heading, `(target - position).dot(direction) <= 0`, not a radius, so a shove that knocks her
-sideways off the line still terminates the leg. A double tap needs both a time window
+deflection, never re-aiming. There is no target and nothing to arrive at: she walks the heading
+until the next tap changes it. A tap within `TapControls.STOP_RADIUS` of her own world position —
+generous, since the pram rides up to `PRAM_DISTANCE` (34px) off to one side of her — stops her
+instead of setting a direction. A double tap needs both a time window
 (`TapControls.DOUBLE_TAP_SECONDS`) and a distance window (`TapControls.DOUBLE_TAP_DISTANCE`) to
-read as a modifier on the same destination rather than a new one. The screen tap itself is mapped
-to a world position with `get_viewport().get_canvas_transform().affine_inverse()` — the reverse of
-what `DangerEdge` and `HomeArrow` already do forwards every frame — so it tracks the camera, the
-zoom and the rotated presentation for free.
+read as a modifier on the same direction rather than a new one, and holds `run` until the next tap
+changes the direction or stops her. The screen tap itself is mapped to a world position with
+`get_viewport().get_canvas_transform().affine_inverse()` — the reverse of what `DangerEdge` and
+`HomeArrow` already do forwards every frame — so it tracks the camera, the zoom and the rotated
+presentation for free, and the stop radius is compared in that same world space rather than on
+screen.
 
-Arriving starts a clock (`TapControls.ARRIVAL_PAUSE_AFTER`) rather than pausing immediately, so the
-ordinary loop of arriving and tapping on never stutters; only a genuine stand opens the same
-`PauseScreen` the stick's own pause button opens, through the same
-`TouchControls._send_pause_action()`. `ControlsMode.resolve()` reads `DevFlags.controls_override()`
+`ControlsMode.resolve()` reads `DevFlags.controls_override()`
 (`--controls tap|stick`) first, then the page's own `?controls=` query parameter through
 `JavaScriptBridge.eval("window.location.search")`, and falls back to the stick if neither answers.
 Both routes are gated behind `DevFlags.enabled()` (`OS.is_debug_build()`): a release build answers

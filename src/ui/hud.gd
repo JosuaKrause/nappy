@@ -209,9 +209,8 @@ func _teach_the_day(day: int) -> void:
 ## that waiting is not a plan.
 ##
 ## **Has nothing to say in tap mode**, and does not run there at all: there is no pause key on a
-## phone and no button to point at — `TapControls` itself pauses when she stands at a destination
-## long enough (`TapControls.ARRIVAL_PAUSE_AFTER`), every time rather than once, because that is
-## how the mode works rather than a cue to be taught once and then left alone.
+## phone, and tap mode's own stand-still pause was removed along with the destination it depended
+## on, with nothing standing in for it yet.
 func _teach_the_pause(delta: float) -> void:
 	if _taught_pause or _controls_mode == ControlsMode.Mode.TAP:
 		return

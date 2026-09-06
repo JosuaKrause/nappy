@@ -1,46 +1,48 @@
 class_name TapControls
 extends Node
-## The tap-to-walk reader: a tap decides a straight line and a double tap runs it, standing in
-## for the on-screen stick in the other of the two control schemes `ControlsMode` chooses between.
+## The direction reader: a press sets a heading and it is walked with nothing held down until the
+## next press changes it, standing in for the on-screen stick in the other of the two control
+## schemes `ControlsMode` chooses between.
 ##
-## **Nothing here re-aims.** The heading is worked out once, at the tap, and pressed the way
+## **This deletes the destination.** A press used to fix a heading *and* a target, walk the
+## straight line, and stop at the plane through the target — there is no target now and nothing to
+## arrive at. She walks the heading until the next press changes it. *(2026-09-06: "let's do mouse
+## mode to behave the same way that she keeps walking in the direction indefinitely".)*
+##
+## **Nothing here re-aims.** The heading is worked out once, at the press, and pressed the way
 ## `TouchControls._set_axis()` presses the stick's own deflection — the components of a fixed unit
 ## vector, not a direction recomputed every frame — so a shove that knocks her off the line does
 ## not silently correct itself. Walking into a wall and stopping is the player's mistake to make
 ## here exactly as it is with the stick: nothing routes around what is in the way, and nothing
-## times out either. She presses until she arrives or until the next tap.
+## times out either.
 ##
-## **Arrival is the plane through the target, not a distance.** `has_arrived()` is
-## `(target - position).dot(direction) <= 0` — the plane at right angles to the heading fixed at
-## the tap. That terminates cleanly even when a shove pushes her sideways off the line, where a
-## distance test would have her pressing forever past a target she was knocked around.
+## **A press on her stops her**, *(2026-09-06: "also, to stop her just click on her")* — this
+## replaces both arriving, which used to release the movement actions and no longer exists, and
+## playtest 27's own stop target, a tap on the drawn joystick's centre, which cannot survive the
+## drawing being deleted. `STOP_RADIUS` is compared in world space, since she moves and the camera
+## follows, and is generous rather than exact the way every other catch radius in this game is.
 ##
-## A double tap is two windows: `DOUBLE_TAP_SECONDS` decides *soon enough*, and `DOUBLE_TAP_DISTANCE`
-## decides *close enough* to the first tap to read as the same destination doubled rather than a
-## new one — without the second window, a tap somewhere else a moment later would make her run to
-## the wrong place. Both are plain constants here, the way `TouchControls.RUN_CATCH_RADIUS` (how
-## near the RUN button a thumb must land) is a plain constant there rather than a balance number in
-## `Tuning`.
-##
-## **Arriving starts a clock, and the clock pauses.** Pausing on arrival itself would stutter the
-## ordinary loop — arrive, tap on — so `ARRIVAL_PAUSE_AFTER` only fires the pause if she is still
-## standing when it expires, and a tap before then is simply the next leg. It is gated on
-## *arriving*, not on standing still: something blocking her never crosses the plane and so never
-## starts the clock, consistent with "walking into a wall and stopping is the player's mistake to
-## make" above — nothing here detects being stuck, and nothing is meant to. The pause it opens is
-## `TouchControls._send_pause_action()`'s own real `InputEventAction`, the same one the stick's
-## pause button sends, so `main._unhandled_input()` opens the same `PauseScreen` either way.
+## A double press is two windows: `DOUBLE_TAP_SECONDS` decides *soon enough*, and
+## `DOUBLE_TAP_DISTANCE` decides *close enough* to the first press to read as the same direction
+## doubled into a run rather than a new one — without the second window, a press somewhere else a
+## moment later would make her run the wrong way. Both are plain constants here, the way
+## `TouchControls.RUN_CATCH_RADIUS` (how near the RUN button a thumb must land) is a plain
+## constant there rather than a balance number in `Tuning`. Running holds until the next press
+## changes the direction or stops her — there is nothing left to arrive at that would release it
+## on its own.
 
-## How soon a second tap has to land to read as a double, in seconds.
+## How soon a second press has to land to read as a double, in seconds.
 const DOUBLE_TAP_SECONDS := 0.35
-## How close the second tap has to land to the first, in screen px, to read as the same
-## destination rather than a new one. Generous like `TouchControls.RUN_CATCH_RADIUS`, because a
-## thumb tapping twice does not land on the same pixel either time.
+## How close the second press has to land to the first, in screen px, to read as the same
+## direction doubled rather than a new one. Generous like `TouchControls.RUN_CATCH_RADIUS`, because
+## a thumb pressing twice does not land on the same pixel either time.
 const DOUBLE_TAP_DISTANCE := 60.0
-## How long she can stand at a destination before the game pauses on her behalf. Longer than
-## `HUD.TEACH_PAUSE_AFTER` (3s) on purpose — this is a feel number, the only way to set it is to
-## walk with it, and it moves against a played day.
-const ARRIVAL_PAUSE_AFTER := 5.0
+## How close a press has to land to her, in world px, to read as *stop* rather than a direction.
+## Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram rides up to `PRAM_DISTANCE` (34px)
+## off to one side of her, and a press that lands on the pram is a press on her — with room to
+## spare for a thumb that does not land on the same pixel twice, the way every catch radius in this
+## game is generous rather than exact.
+const STOP_RADIUS := 48.0
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `TouchControls._touch` is — and the reason the mouse stand-in below checks it: Godot emulates a
@@ -53,29 +55,19 @@ var _touch := TouchInput.available()
 ## signal carries.
 var _rig: Node2D
 
-## Fixed at the tap that started the current leg; never touched again until the next tap or
-## arrival releases them.
+## Locked in at the last press; never touched again until the next press releases or replaces it.
 var _direction := Vector2.ZERO
-var _target := Vector2.ZERO
 var _walking := false
 
-## The previous tap's own moment and screen position, for the double-tap windows. `-INF` reads as
-## "no earlier tap this run", which can never fall inside either window.
+## The previous press's own moment and screen position, for the double-tap windows. `-INF` reads as
+## "no earlier press this run", which can never fall inside either window.
 var _last_tap_at := -INF
 var _last_tap_screen_position := Vector2.ZERO
 
-## Counts down once she has arrived and is standing; `<= 0.0` while walking or once the pause has
-## already fired for this stand.
-var _stand_left := 0.0
-## Whether the pause currently up is the one `_stand_left` raised, as opposed to Esc, the day
-## ending, or a screen with nothing to do with tap mode. Only "our own" pause is a tap's to
-## dismiss — see `_on_tap()` — and only an unrelated one needs its own held direction force-released
-## the way `TouchControls._release_all()` already forces one on every kind of hiding.
-var _own_pause := false
 var _was_paused := false
 
 func _ready() -> void:
-	# Has to keep reading a tap through the arrival pause it can itself raise, the same reason
+	# Has to keep reading a press through any pause Esc or the day raises, the same reason
 	# `TouchControls` stays ALWAYS rather than the inherited PAUSABLE.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
@@ -98,81 +90,67 @@ func _input(event: InputEvent) -> void:
 		if click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
 			_on_tap(click.position, Time.get_ticks_msec() / 1000.0)
 
-## A tap arrived at `screen_position` -- the same canvas-space coordinate the event itself carries,
-## whatever the window's own rotation -- at moment `now`.
+## A press arrived at `screen_position` -- the same canvas-space coordinate the event itself
+## carries, whatever the window's own rotation -- at moment `now`.
 ##
 ## `get_viewport().get_canvas_transform().affine_inverse()` maps it to a world position: the exact
 ## reverse of what `DangerEdge` and `HomeArrow` already do every frame to place a screen cue from a
 ## world one, so this tracks the camera, the zoom and the rotated presentation with nothing of its
 ## own to keep in step -- no separate remap through `ScreenOrientation` the way `TouchControls` has
-## to for its own fixed screen constants, because a tap has no fixed constant to compare against.
+## to for its own fixed screen constants, because a press has no fixed constant to compare against.
 ##
 ## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
 ## window still instead of racing the engine clock -- `_input()` is the one real caller and is what
 ## supplies it from `Time.get_ticks_msec()`.
 ##
-## **While paused for a reason of its own making, a tap both unpauses and sets the next
-## destination** -- a tap is the only input this mode has, and two taps to resume-then-walk would
-## collide with the double tap that means *run*. The event is left unhandled either way, so the
-## same raw touch also reaches `PauseScreen._unhandled_input()`, which already closes on any touch
-## press; this does not have to know how to close that screen itself. Paused for any other
-## reason -- Esc, the day ending, the title -- a tap here does nothing, the same as the stick's own
-## controls drawing nothing on any of those screens.
+## **Paused, a press does nothing at all**, the same as the stick's own controls drawing nothing on
+## the title, the pause and the between-days summary. The event is left unhandled either way, so
+## the same raw touch also reaches whichever of those screens is actually up — `PauseScreen`,
+## `DaySummary` and `TitleScreen` each close or begin on a touch or a click of their own, so this
+## does not have to know how to dismiss any of them itself.
 func _on_tap(screen_position: Vector2, now: float) -> void:
-	if get_tree().paused and not _own_pause:
+	if get_tree().paused:
+		return
+	if not _rig:
+		_rig = get_tree().get_first_node_in_group("player") as Node2D
+	if not _rig:
 		return
 	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
 	var double := is_double_tap(now - _last_tap_at,
 			screen_position.distance_to(_last_tap_screen_position))
 	_last_tap_at = now
 	_last_tap_screen_position = screen_position
-	walk_to(world, double)
+	if world.distance_to(_rig.global_position) <= STOP_RADIUS:
+		_stop()
+		return
+	set_direction(world, double)
 
-func _process(delta: float) -> void:
+## A pause landing force-releases whatever direction was held, the same leak
+## `TouchControls._release_all()` already guards its own controls against — there is nothing left
+## here that raises a pause of its own to tell apart from one that is not.
+func _process(_delta: float) -> void:
 	var paused := get_tree().paused
-	if paused and not _was_paused and not _own_pause:
-		# Esc, the day ending, or a screen with nothing to do with tap mode -- not the clock below.
-		# A direction left pressed into whatever comes next is the same leak
-		# `TouchControls._release_all()` already guards its own controls against.
+	if paused and not _was_paused:
 		_walking = false
-		_stand_left = 0.0
 		_release()
-	elif not paused and _was_paused:
-		_own_pause = false
 	_was_paused = paused
 
-	if _walking:
-		if not _rig:
-			_rig = get_tree().get_first_node_in_group("player") as Node2D
-		if _rig and has_arrived(_target, _rig.global_position, _direction):
-			_walking = false
-			_release()
-			_stand_left = ARRIVAL_PAUSE_AFTER
-		return
-	if _stand_left <= 0.0:
-		return
-	_stand_left = maxf(0.0, _stand_left - delta)
-	if _stand_left <= 0.0:
-		_own_pause = true
-		# The tap that dismisses this pause must read as a fresh single tap, not a double against
-		# whatever was tapped minutes ago to get here.
-		_last_tap_at = -INF
-		TouchControls._send_pause_action()
-
-## Starts a leg toward `target`, computed once here and never again. `run` holds the same `run`
-## action the button and Shift do, until she arrives or the next tap lets go of it.
+## Locks in the heading toward `target`, computed once here and never again. `run` holds the same
+## `run` action the button and Shift do, until the next press changes the direction or stops her —
+## there is nothing to arrive at that would let go of it on its own.
 ##
-## A tap that lands on her own position has no line to walk and is a no-op — there is nothing for
-## `_process()` to test an arrival against.
-func walk_to(target: Vector2, run: bool) -> void:
+## A press exactly on her own position has no heading to compute and stops her instead, the same
+## case `_on_tap()`'s own `STOP_RADIUS` check already catches for anything a thumb's-width away —
+## this is the fallback for the one caller (a test) that calls straight in with an exact point.
+func set_direction(target: Vector2, run: bool) -> void:
 	if not _rig:
 		_rig = get_tree().get_first_node_in_group("player") as Node2D
 	if not _rig:
 		return
 	var direction := heading_to(target, _rig.global_position)
 	if direction == Vector2.ZERO:
+		_stop()
 		return
-	_target = target
 	_direction = direction
 	_walking = true
 	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
@@ -182,21 +160,22 @@ func walk_to(target: Vector2, run: bool) -> void:
 	else:
 		Input.action_release(&"run")
 
+## A press on her: lets go of whatever direction and `run` were held, with nothing pressed in
+## their place.
+func _stop() -> void:
+	_walking = false
+	_direction = Vector2.ZERO
+	_release()
+
 func _release() -> void:
 	TouchControls._release_movement()
 
-## Whether a straight walk toward `target`, heading `direction`, has reached the plane through the
-## target at right angles to that heading — see the class doc for why this is a plane and not a
-## radius.
-static func has_arrived(target: Vector2, position: Vector2, direction: Vector2) -> bool:
-	return (target - position).dot(direction) <= 0.0
-
-## The unit vector from `from` to `target`, or `Vector2.ZERO` for a tap with nowhere to go.
+## The unit vector from `from` to `target`, or `Vector2.ZERO` for a press with nowhere to go.
 static func heading_to(target: Vector2, from: Vector2) -> Vector2:
 	var offset := target - from
 	return offset.normalized() if offset.length() > 0.001 else Vector2.ZERO
 
 ## Whether a second tap `distance` px from the first, `elapsed` seconds after it, reads as the
-## same destination doubled rather than a new one.
+## same direction doubled into a run rather than a new one.
 static func is_double_tap(elapsed: float, distance: float) -> bool:
 	return elapsed <= DOUBLE_TAP_SECONDS and distance <= DOUBLE_TAP_DISTANCE
