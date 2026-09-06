@@ -105,11 +105,14 @@ jobs:
         run: GODOT="$HOME/godot/godot-bin" RELEASE_TAG="$GITHUB_REF_NAME" ./tools/export-web.sh
 
       # The Web export packs everything under assets/ into the .pck, so nothing there is served
-      # as a loose file. og:image in export_presets.cfg's html/head_include points at
-      # social-card.png beside index.html, and this is what puts it there — the wordmark at
-      # assets/logo.png, published under the name the head markup already expects.
+      # as a loose file. og:image/twitter:image in export_presets.cfg's html/head_include point
+      # at social-card.png beside index.html, and this is what puts it there — assets/social-card.png,
+      # a copy of the assets/logo.png wordmark already flattened onto an opaque background
+      # (docs/PLAYTEST-27.md finding 5: logo.png's transparent pixels carry RGB (0,0,0), so a
+      # client that ignores alpha paints the card black rather than showing nothing). Copied
+      # rather than flattened here so the workflow needs no image-processing tool of its own.
       - name: Publish the social card image
-        run: cp assets/logo.png build/web/social-card.png
+        run: cp assets/social-card.png build/web/social-card.png
 
       - name: Upload the Pages artifact
         uses: actions/upload-pages-artifact@v3
