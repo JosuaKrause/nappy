@@ -854,7 +854,7 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
 
 # ---------------------------------------------------------------- one folder ---
-# *(docs/TODO.md, M70, "all the files of one run live in one folder": the run identity moved from
+# *(docs/DECISIONS.md, M70 "A run is a folder": the run identity moved from
 # a shared filename stem to a folder, `<day>/<minute>/<run>/`, and a day played twice — a nerve
 # retries a lost day without the calendar advancing — has to write a second picture rather than
 # overwrite the first's.)*

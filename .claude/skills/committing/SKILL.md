@@ -23,6 +23,32 @@ request**, on the merge result, which is the tree that actually matters.
 What may not happen is `main` carrying an unfinished milestone: `main` is the thing a fresh clone
 gets, and this project's own handoff tells that reader to trust the tools over any sentence.
 
+## A pull request is self-contained
+
+**A pull request carries every document its own changes make false.** Not a follow-up, not a
+cleanup pass afterwards, not a note for the next session: the doc edit is part of the change and
+lands in the same PR. That covers `docs/TODO.md` and `docs/HANDOFF.md` — the two that go stale
+fastest, because one holds the queue the PR just shortened and the other describes the tree the PR
+just moved — and it covers every other governed doc the change touches: `CITY`, `EVENTS`,
+`MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`, `README`, `CLAUDE.md`, the skills, and the
+docstrings on anything edited. **A PR that finishes a milestone also files that milestone's history
+in `docs/DECISIONS.md` and removes its section from `TODO.md`**, because `TODO.md` holds open work
+only and the entry stops being open the moment the PR merges.
+
+**Why:** a PR is reviewed once, against a tree where the reason for each doc edit is visible in the
+same diff. Deferred, the reason is gone and only somebody who already knows what changed can tell
+which sentence went stale — which is nobody, a week later. Several PRs merged in a row each leaving
+their own doc debt is how three files come to carry three different answers to one question, and
+the pass that untangles it is a milestone rather than a review comment.
+
+**The test is the same one the docs rule uses:** if `main` at the merge commit would hand a fresh
+reader a sentence that is no longer true, the PR is not finished. Read `HANDOFF.md` and the
+milestone's own `TODO.md` entry before proposing, not after.
+
+The **session-cleanup** skill still runs at the end of a session — it catches drift that no single
+change is responsible for, reassesses long-open items and re-reads the numbers. It is not where a
+PR's own doc work goes.
+
 ## Branches
 
 **One branch per milestone**, named `feature/<thing>`, merged to `main` with `--no-ff`. The merge
