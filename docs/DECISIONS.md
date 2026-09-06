@@ -30,8 +30,8 @@ The player asked to review the proposed graphics and identified the study's sing
 as inappropriate for a city. The apartment-block direction became explicit in VISUALS.md and the
 architecture expansion paused for review; projection and other independent implementation could
 continue. Revised-lighting captures were offered as review material, not approved art:
-`evidence/graphics-study-review-day1.png`, `evidence/graphics-study-review-day14.png`, and
-`evidence/graphics-study-review-motion.mp4`. These came from standalone street-study revision
+`evidence/archive/rejected-graphics/graphics-study-review-day1.png`, `evidence/archive/rejected-graphics/graphics-study-review-day14.png`, and
+`evidence/archive/rejected-graphics/graphics-study-review-motion.mp4`. These came from standalone street-study revision
 `05d3924` with corrected actor revision `7dfab84`, captured in one bounded Compatibility run.
 The motion file encodes its 24 captured frames at 12 fps; it is not a gameplay demonstration.
 
@@ -41,7 +41,7 @@ suites and lint passed. Initial articulated model work and its wheel/gait correc
 into the draft; the live game renderer was not replaced.
 
 A single externally bounded windowed street-study capture exited normally. Its early frame is
-`evidence/graphics-study-first-render.png`, rendered from `2c5c713` with the Compatibility backend,
+`evidence/archive/rejected-graphics/graphics-study-first-render.png`, rendered from `2c5c713` with the Compatibility backend,
 1280x720 window and `--preview-capture`. Review rejected it as a production target: paving and
 facades were washed out, roof planes lacked material detail, shadows were visibly jagged, and
 actors were too small. `Camera3D.size = 20` had treated a desired horizontal span as the default
@@ -5389,7 +5389,7 @@ exception) and `leaf_blower` (20.0 over 40/200px) kept their fields. The scale i
 plans 147 `cafe_tables`, 124 `market_stall` and 84 `delivery_van` — 355 static bodies, because
 sealing puts a barrier on every street off the day's route tree — and fields sum, so the measured
 symptom was excitement going **35 → 69 in fifteen seconds of calm ground** in the player's own run
-(`docs/evidence/run-181812-seed3038142309-v0.2.0-6-gedeed04-dirty/`), with the log reading
+(`docs/evidence/archive/session-captures/2026-09-05/run-181812-seed3038142309-v0.2.0-6-gedeed04-dirty/`), with the log reading
 `near market_stall 184px … in 14.2/s (crowd 3.6, events 10.6)`.
 
 **Two of the five kept a field instead of losing it, and that is a narrower answer than the item
@@ -7408,8 +7408,8 @@ project now has the instrument to say whether it closed.
 
       **The picture is the check, and it is the finding's own instrument.** The same day either side
       of the change is in `docs/evidence/`:
-      [before](evidence/rig-2026-09-01T014558-seed4242-f604488-dirty-map-day01.png) and
-      [after](evidence/rig-2026-09-01T014420-seed4242-f604488-dirty-map-day01.png), seed 4242, day 1.
+      [before](evidence/archive/session-captures/2026-09-01/rig-2026-09-01T014558-seed4242-f604488-dirty-map-day01.png) and
+      [after](evidence/archive/session-captures/2026-09-01/rig-2026-09-01T014420-seed4242-f604488-dirty-map-day01.png), seed 4242, day 1.
       The yellow crosses gather onto the streets between the parallel purple strands and a good half
       of those streets are still bare. **Nothing was added to the map to show this**, deliberately:
       a gap that got a wall is a wall mark between two corridor lines and a gap that got nothing is
@@ -7449,9 +7449,9 @@ project now has the instrument to say whether it closed.
 
       Checked by eye, which is this project's own policy for layout and colour, and the pictures
       are in `docs/evidence/`:
-      [before](evidence/shot-2026-09-01-seed4242-d69631a-corner-nw-before.png) and
-      [after](evidence/shot-2026-09-01-seed4242-d69631a-corner-nw-after.png) at the north-west
-      corner, and [the south-east](evidence/shot-2026-09-01-seed4242-d69631a-corner-se-after.png)
+      [before](evidence/archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-before.png) and
+      [after](evidence/archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-after.png) at the north-west
+      corner, and [the south-east](evidence/archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-se-after.png)
       for the other pair of bands.
 
       **`--spawn corner:nw|ne|sw|se` is new and is half of why this was found by a player rather

@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://1yf4ny7iisdl"
-path="res://.godot/imported/graphics-redesign-concept.png-88eb424f8e473da571e37fef635f249c.ctex"
+path="res://.godot/imported/graphics-redesign-concept.png-6f90437aff560ab5cf04bb6bbe72aa2e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/evidence/graphics-redesign-concept.png"
-dest_files=["res://.godot/imported/graphics-redesign-concept.png-88eb424f8e473da571e37fef635f249c.ctex"]
+source_file="res://docs/evidence/archive/rejected-graphics/graphics-redesign-concept.png"
+dest_files=["res://.godot/imported/graphics-redesign-concept.png-6f90437aff560ab5cf04bb6bbe72aa2e.ctex"]
 
 [params]
 

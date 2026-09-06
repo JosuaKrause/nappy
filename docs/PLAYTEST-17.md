@@ -4,7 +4,7 @@ Reported on 2026-08-31 and 2026-09-01, in five messages, during the session that
 shapes. Not a played run: the player was reading **this session's own telemetry map** — seed 8000,
 day 1, on `feature/the-calm-has-a-shape` at `7367ab0` — plus answers carried over from playtest 16's
 build. The map is in the repo at
-[evidence/run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png](evidence/run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png),
+[evidence/archive/session-captures/2026-08-31/run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png](evidence/archive/session-captures/2026-08-31/run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png),
 which is finding 10's rule applied to finding 1 on the way in.
 
 **The wording below is the player's, verbatim.** Everything under a *"What this side reads into it"*

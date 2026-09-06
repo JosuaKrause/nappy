@@ -1,7 +1,7 @@
 # Playtest 20
 
 Played on 2026-09-03, on a local build, a full seven-day run of seed 4070543669 at commit `5d342c9`.
-The trace is `docs/evidence/run-2026-09-03T002310-seed4070543669-5d342c9.log`, and the fourteen
+The trace is `docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log`, and the fourteen
 telemetry maps that came with it — a day map and a dusk map for each of the seven days — are the
 `run-2026-09-03T002310-seed4070543669-5d342c9-map-day0*.png` files beside it.
 

@@ -856,13 +856,13 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 
 # ---------------------------------------------------------------- one folder ---
 # *(docs/DECISIONS.md, M70 "A run is a folder": the run identity moved from
-# a shared filename stem to a folder, `<day>/<minute>/<run>/`, and a day played twice — a nerve
+# a shared filename stem to a folder, `<day>/<run>/`, and a day played twice — a nerve
 # retries a lost day without the calendar advancing — has to write a second picture rather than
 # overwrite the first's.)*
 
 ## Deletes a real path this suite wrote, so a test that opens a real run — the only way to check
 ## a folder actually landed where `begin_run()` says it does — leaves nothing behind for a person
-## to find later. Also removes the `<minute>` and `<day>` ancestors once they are empty: nothing in
+## to find later. Also removes the `<day>` ancestor once it is empty: nothing in
 ## the game does that any more (2026-09-03: "no automatic cleanup anymore"), but the suite is a
 ## guest in the real telemetry directory and should not scatter empty folders through it.
 func _delete_recursive(path: String) -> void:
@@ -873,7 +873,7 @@ func _delete_recursive(path: String) -> void:
 		for file in dir.get_files():
 			DirAccess.remove_absolute("%s/%s" % [path, file])
 	DirAccess.remove_absolute(path)
-	for ancestor in [path.get_base_dir(), path.get_base_dir().get_base_dir()]:
+	for ancestor in [path.get_base_dir()]:
 		var above := DirAccess.open(ancestor)
 		if above and above.get_files().is_empty() and above.get_directories().is_empty():
 			DirAccess.remove_absolute(ancestor)
@@ -896,9 +896,9 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 	t.check(run_dir.get_file().ends_with("-" + Telemetry._file_tag()),
 			"and its own name ends with the commit it was played on (got '%s', wanted suffix '-%s')"
 			% [run_dir.get_file(), Telemetry._file_tag()])
-	var minute_dir := run_dir.get_base_dir().get_file()
-	t.check(minute_dir.length() == 4 and minute_dir.is_valid_int(),
-			"its parent is the minute folder, HHMM (got '%s')" % minute_dir)
+	var day_dir := run_dir.get_base_dir().get_file()
+	t.check(day_dir.count("-") == 2 and day_dir.length() == 10,
+			"its parent is the calendar day folder (got '%s')" % day_dir)
 
 	Telemetry.begin_day(1, 1, 778812345, 778812345, 10.0)
 	Telemetry.write_map(map, 1)

@@ -75,6 +75,9 @@ case "$path" in
 	*/docs/evidence/archive/rejected-graphics/*) wanted+=(rejected-graphics) ;;
 esac
 case "$path" in
+	*/docs/evidence/archive/session-captures/*) wanted+=(session-captures) ;;
+esac
+case "$path" in
 	*/autoload/tuning.gd)      wanted+=(balance) ;;
 esac
 case "$path" in

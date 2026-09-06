@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c6tmg5ycrt6n6"
-path="res://.godot/imported/graphics-study-review-day1.png-bd138c39171024cbe89b50dd73adb182.ctex"
+path="res://.godot/imported/graphics-study-review-day1.png-e87b8dc85d116494d1b7a4475a64c00a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/evidence/graphics-study-review-day1.png"
-dest_files=["res://.godot/imported/graphics-study-review-day1.png-bd138c39171024cbe89b50dd73adb182.ctex"]
+source_file="res://docs/evidence/archive/rejected-graphics/graphics-study-review-day1.png"
+dest_files=["res://.godot/imported/graphics-study-review-day1.png-e87b8dc85d116494d1b7a4475a64c00a.ctex"]
 
 [params]
 

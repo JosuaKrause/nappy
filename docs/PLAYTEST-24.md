@@ -44,7 +44,7 @@ over ground that is no longer a building.
 **It reproduces, and there is a seed.** *(2026-09-05: "this seed has an alley with floating door".)*
 `--seed 3199523899`, day 1, standing on the doorstep at dawn — no walking needed, it is the opening
 frame, so this costs a screenshot rather than a played day.
-`docs/evidence/shot-2026-09-05-seed3199523899-c354776-home-alley-floating-door.png` is that seed on
+`docs/evidence/archive/session-captures/2026-09-05/shot-2026-09-05-seed3199523899-c354776-home-alley-floating-door.png` is that seed on
 the merged tree; the run it came from was taken on a dirty tree, and the city regenerates from the
 seed alone, so the picture rules that out as the cause.
 

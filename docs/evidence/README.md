@@ -1,13 +1,16 @@
 # Evidence
 
-**Every log, telemetry map or screenshot a doc in this repo refers to lives here.** *(Asked for on
+**Every log, telemetry map or screenshot a doc in this repo refers to lives in this evidence tree.** *(Asked for on
 2026-09-01: "when referencing an image or log make sure to copy the files into the repo so the
 reference doesn't get lost when cleaning up. make sure all current references are in the repo so I
 can clean up the log folder.")*
 
 The rule is in `CLAUDE.md` under "A reference to a file outside the repo is not a reference". The
 short version: `user://telemetry/` is a scratch directory the player has to be able to empty, and a
-finding whose evidence was in it stops being checkable the moment they do.
+finding whose evidence was in it stops being checkable the moment they do. Approved design
+references stay at this level; historical runtime captures are organized by date under
+[`archive/session-captures/`](archive/session-captures/), and rejected graphics are under the
+guarded [`archive/rejected-graphics/`](archive/rejected-graphics/) archive.
 
 Keep the original filename. It carries the run's timestamp, seed and commit, which is most of what
 makes the file worth having.
@@ -16,12 +19,12 @@ makes the file worth having.
 
 | file | what it is | referenced by |
 | --- | --- | --- |
-| `run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png` | Day 1's plan on `feature/the-calm-has-a-shape` at `7367ab0`, seed 8000. Purple is the day's corridor, blue friction, yellow walls, green calm outlines, orange the spine. | [PLAYTEST-17.md](../PLAYTEST-17.md), finding 1 |
-| `rig-2026-09-01T014558-seed4242-f604488-dirty-map-day01.png` | Day 1 of seed 4242 **before** the gap weighting — the pair below is the same day either side of one change, so the two are told apart by their timestamp and by nothing else. Both say `f604488-dirty`, because the "before" was taken with the change stashed rather than on a commit of its own. Walls (yellow) are scattered over the whole map. | [DECISIONS.md](../DECISIONS.md), M55, "Something between parallel strands of corridor" |
-| `rig-2026-09-01T014420-seed4242-f604488-dirty-map-day01.png` | The same day **after**. The walls have gathered onto the streets between the parallel purple strands, and about half of those streets still have nothing on them. | [DECISIONS.md](../DECISIONS.md), M55, "Something between parallel strands of corridor" |
-| `shot-2026-09-01-seed4242-d69631a-corner-nw-before.png` | The north-west corner of the map **before** M55's corner fix, `tools/shot.sh --spawn corner:nw`. The grass and forest step diagonally into the scree and mountain. | [DECISIONS.md](../DECISIONS.md), M55, "The corners of the world stop going diagonal" |
-| `shot-2026-09-01-seed4242-d69631a-corner-nw-after.png` | The same corner **after**: the mountain runs the full width and the seam is straight. | [DECISIONS.md](../DECISIONS.md), M55, "The corners of the world stop going diagonal" |
-| `shot-2026-09-01-seed4242-d69631a-corner-se-after.png` | The south-east corner after, which is the other pair of bands — the bulkhead and the water carry on under the forest. | [DECISIONS.md](../DECISIONS.md), M55, "The corners of the world stop going diagonal" |
+| `archive/session-captures/2026-08-31/run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png` | Day 1's plan on `feature/the-calm-has-a-shape` at `7367ab0`, seed 8000. | [PLAYTEST-17.md](../PLAYTEST-17.md), finding 1 |
+| `archive/session-captures/2026-09-01/rig-2026-09-01T014558-seed4242-f604488-dirty-map-day01.png` | Day 1 of seed 4242 before M55's gap weighting. | [DECISIONS.md](../DECISIONS.md), M55 |
+| `archive/session-captures/2026-09-01/rig-2026-09-01T014420-seed4242-f604488-dirty-map-day01.png` | The same day after M55's gap weighting. | [DECISIONS.md](../DECISIONS.md), M55 |
+| `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-before.png` | North-west corner before M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
+| `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-after.png` | North-west corner after M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
+| `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-se-after.png` | South-east corner after M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
 
 ## Why a lost log stays lost
 

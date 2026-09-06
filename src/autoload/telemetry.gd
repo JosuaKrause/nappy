@@ -26,8 +26,8 @@ extends Node
 ##
 ## **The game never deletes anything under here.** *(2026-09-03: "no automatic cleanup anymore",
 ## "the folder structure allows for easily deleting old days/commits".)* Every run gets its own
-## folder, `<day>/<minute>/<run>/` (see `begin_run()`), precisely so a person can `rm -rf` a whole
-## day, a few minutes of a busy one, or a single run by hand once the directory is bigger than they
+## folder, `<day>/<run>/` (see `begin_run()`), precisely so a person can `rm -rf` a whole
+## day or a single run by hand once the directory is bigger than they
 ## want — a run's own name carries the commit too, so a glob on that picks out every run played on a
 ## build that no longer exists. That is a decision for whoever is looking at the directory, not one
 ## the game makes behind them — `tools/telemetry.sh -p` is the one tool that still deletes anything,
@@ -60,7 +60,7 @@ func is_active() -> bool:
 ## else — a system that wants to be traced calls `note()` and lets this decide whether anyone is
 ## listening.
 ##
-## **The folder is `<day>/<minute>/<run>/`, and each level is there to be deleted on its own.**
+## **The folder is `<day>/<run>`; the date and each run are independently removable.**
 ## *(2026-09-03: "hmm, the commit hash makes it hard to find a run maybe let's remove it from the
 ## folder structure" — a level per commit split a day's runs across folders, so listing a day did
 ## not list its runs; "and add a more granular timestamp as an intermediate folder", "minute
@@ -68,9 +68,6 @@ func is_active() -> bool:
 ##
 ## - `<day>` is the calendar date the run was played (not the in-game day), so a bad week can go
 ##   with one `rm -rf` of its date folders.
-## - `<minute>` is `HHMM`, the run's own start time truncated to the minute — a colon-free spelling,
-##   chosen because a colon in a path is trouble on macOS, where Finder renders one as `/` — so a
-##   busy sitting can be thinned to the minutes worth keeping without opening a single run.
 ## - `<run>` is the individual run, and its name now carries what used to be split across two
 ##   folder levels: `run-` or `rig-` (see `played` below — the distinction `tools/stats.sh` counts
 ##   separately and `tools/telemetry.sh -l` lists), the full `HHMMSS` time of day, the seed, and
@@ -80,7 +77,7 @@ func is_active() -> bool:
 ##   the hour and minute the parent folder already carries is a few redundant characters, and what
 ##   it buys is that the run folder still identifies itself once copied out on its own — into
 ##   `docs/evidence/`, or pasted into a message. The version goes **last** so that sorting the
-##   folder names within one `<day>/<minute>` still sorts by age, the time leading the name.
+##   folder names within one `<day>` still sorts by age, the time leading the name.
 ## - The log itself is `run.log`, directly in the run's folder rather than a suffix on a shared
 ##   stem — the folder is what says which run a file belongs to now, so the file only has to say
 ##   which file *within* the run it is.
@@ -151,8 +148,7 @@ func begin_run(run_seed: int, played := true) -> void:
 	var stamp := Time.get_datetime_string_from_system(false, false)
 	var day_folder := stamp.get_slice("T", 0)
 	var time_part := stamp.get_slice("T", 1).replace(":", "")
-	var minute_folder := time_part.substr(0, 4)
-	_run_dir = "%s/%s/%s/%s-%s-seed%d-%s" % [DIRECTORY, day_folder, minute_folder,
+	_run_dir = "%s/%s/%s-%s-seed%d-%s" % [DIRECTORY, day_folder,
 			"run" if played else "rig", time_part, run_seed, _file_tag()]
 	if DirAccess.make_dir_recursive_absolute(_run_dir) != OK:
 		push_warning("telemetry: cannot create %s" % _run_dir)

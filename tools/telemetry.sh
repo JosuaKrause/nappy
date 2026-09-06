@@ -9,7 +9,7 @@
 #   tools/telemetry.sh -p           # say what is stale; -p yes actually deletes it
 #   tools/telemetry.sh 3            # print the third-newest run
 #
-# **A run is a folder**, `<day>/<minute>/<run>/`, with `run.log` directly inside it and its
+# **A run is a folder**, `<day>/<run>/`, with `run.log` directly inside it and its
 # pictures in `auto/`, `maps/` and `asked/` beside that — see docs/TELEMETRY.md and
 # `Telemetry.begin_run()`. Every level exists to be deleted on its own: a whole day, a few minutes
 # of a busy one, or one run.
@@ -56,9 +56,7 @@ if [[ ! -d "$DIR" ]]; then
     exit 1
 fi
 
-# Every run folder, `$DIR/<day>/<minute>/<run>`, newest first. Neither a plain path sort nor
-# `<day>/<run>` gives that, and the second is the trap: the minute folder sits *between* the day and
-# the run, so a path sort interleaves two minutes of one day — but a run folder's name leads with
+# Every run folder, `$DIR/<day>/<run>`, newest first. A run folder's name leads with
 # `run-` or `rig-` rather than with its clock, so keying on the whole name sorts every playtest
 # above every rig whatever time either happened. **The key is the day and the run's `HHMMSS` with
 # that prefix cut off**, which is the only part of the name that is a time. Read in a loop rather
@@ -68,9 +66,9 @@ LOGS=()
 while IFS= read -r line; do
     LOGS+=("$line")
 done < <(
-    find "$DIR" -mindepth 3 -maxdepth 3 -type d \( -name 'run-*' -o -name 'rig-*' \) 2>/dev/null |
+	find "$DIR" -mindepth 2 -maxdepth 2 -type d \( -name 'run-*' -o -name 'rig-*' \) 2>/dev/null |
     while IFS= read -r path; do
-        day="$(basename "$(dirname "$(dirname "$path")")")"
+		day="$(basename "$(dirname "$path")")"
         run="$(basename "$path")"
         printf '%s/%s\t%s\n' "$day" "${run#*-}" "$path"
     done | sort -r | cut -f2-
@@ -115,7 +113,7 @@ size_of() {
     if [[ -f "$1/run.log" ]]; then wc -c < "$1/run.log" | tr -d ' '; else echo 0; fi
 }
 
-# A run's path, relative to $DIR — `<day>/<minute>/<run>`, which is the whole identity a folder
+# A run's path, relative to $DIR — `<day>/<run>`, which is the whole identity a folder
 # needs to be found and deleted by hand.
 rel_of() { echo "${1#"$DIR"/}"; }
 
@@ -125,7 +123,7 @@ case "${1:-}" in
             printf '%3d  %7s  %-5s  %s\n' "$((i + 1))" \
                 "$(size_of "${LOGS[$i]}")" "$(kind_of "${LOGS[$i]}")" "$(rel_of "${LOGS[$i]}")"
         done
-        echo "     bytes   kind   day/minute/run (HEAD is $HEAD_COMMIT)" >&2
+		echo "     bytes   kind   day/run (HEAD is $HEAD_COMMIT)" >&2
         ;;
     -p)
         DOOMED=()
@@ -158,12 +156,10 @@ case "${1:-}" in
         fi
         for run in "${DOOMED[@]}"; do
             rm -rf "$run"
-            # The `<minute>` and `<day>` folders above it, only if deleting this run left them
-            # empty — nothing else in the game ever removes them, so this is the one place an
+			# The `<day>` folder above it, only if deleting this run left it
+			# empty — nothing else in the game ever removes it, so this is the one place an
             # empty ancestor is cleaned up, and only because a person asked for `yes`.
-            minute_dir="$(dirname "$run")"
-            rmdir "$minute_dir" 2>/dev/null || true
-            day_dir="$(dirname "$minute_dir")"
+			day_dir="$(dirname "$run")"
             rmdir "$day_dir" 2>/dev/null || true
         done
         echo "deleted ${#DOOMED[@]} runs and their pictures" >&2
