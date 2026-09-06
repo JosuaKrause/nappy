@@ -16,6 +16,6 @@ tools/shot.sh /private/tmp/nappy-shot.png 4 --seed 4242 --spawn arterial --walk 
 
 Inspect the PNG, then copy it into `docs/evidence/archive/session-captures/YYYY-MM-DD/` with a name
 that identifies its source and scenario. Add provenance in the dated folder only when needed; put
-the reusable workflow here. Agents may capture when their environment has a usable display. If
-capture aborts or the environment is headless, report that limitation instead of fabricating a
-frame. Update every in-repo link when moving an existing capture.
+the reusable workflow here. If capture aborts or the environment is headless, report that
+limitation instead of fabricating a frame. Update every in-repo link when moving an existing
+capture.
