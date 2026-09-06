@@ -94,19 +94,31 @@ func is_active() -> bool:
 ## `?controls=` — the one channel that reaches a Web export at all, since the page it runs on has no
 ## command line for `DevFlags` to parse.
 ##
-## **Not gated behind `DevFlags.enabled()`, the same exception `?controls=` already is and for the
-## same reason.** That gate is `OS.is_debug_build()`, `false` for the release template the deployed
-## page runs, so a check behind it could never be crossed on the one platform this override exists
-## for. What keeps it safe is its scope rather than a build gate: it can only send this run's own
-## log to `user://` in the browser that is asking — where a run already goes on every other
-## platform — and it reaches nothing else.
+## **Gated behind `DevFlags.enabled()` (`OS.is_debug_build()`), the same as every other developer
+## flag now.** *(2026-09-06, the player: "I never asked for telemetry on web. you added that to
+## debug in a browser. that browser build should be dev only the CI build is release.")* A release
+## build must answer nothing here — the published page collecting from a stranger's browser because
+## of a query string nobody documented is exactly what a release build carrying no modifiers rules
+## out. A debug build answers immediately, with nothing else to unlock: the browser used to debug a
+## web build is its own debug export (`tools/export-web.sh debug`), and the published build is the
+## release export. `_reads_the_url()` below is the gate itself, pulled out to a pure function so the
+## promise is a truth table a test can check rather than a build type nothing can fake.
 static func _web_override_requested() -> bool:
-	if OS.get_name() != "Web":
+	if not _reads_the_url(DevFlags.enabled(), OS.get_name() == "Web"):
 		return false
 	var search: Variant = JavaScriptBridge.eval("window.location.search")
 	if typeof(search) != TYPE_STRING:
 		return false
 	return _telemetry_flag_from_query(search)
+
+## The decision behind `_web_override_requested()`'s own gate, pulled out to a pure function of its
+## two inputs — the same shape `ControlsMode._reads_the_url()` uses for `?controls=`, duplicated
+## rather than shared: a one-line boolean `and` is not worth a module both files would have to
+## import for two call sites, and the next modifier this project gains should have an obvious
+## static function to copy, not a dependency to go find. debug and web is the one case `?telemetry=1`
+## exists for; release and web — the published page — is the case the promise is actually about.
+static func _reads_the_url(is_debug: bool, on_web: bool) -> bool:
+	return is_debug and on_web
 
 ## `"?telemetry=1"` (with or without a leading `?`, alongside any other parameter) reads as "log
 ## this run"; anything else — absent, or any other value — leaves the platform's own default in

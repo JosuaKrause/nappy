@@ -110,46 +110,6 @@ what to press where it should be offering something to press.
 drawing work.** *(2026-09-06: "we deprioritize graphics works or bugs for now since a graphics
 overhaul is in-flight".)* A control nobody can see is a control that does not work.
 
-- [ ] **The title screen's two buttons do not read as buttons.** *(2026-09-06: "the choice on the
-      title screen is not at all obvious. those should be proper buttons".)* They already **are**
-      `Button` nodes — `Stick` and `Tap` under `Root/Bottom/Lines/Choice` in
-      `scenes/ui/title_screen.tscn` — so nothing has to be added. What the scene gives them is a
-      380x100 minimum size, a 15px font and wrapping, and nothing else, so they take Godot's default
-      flat theme and sit on the title's scrim looking like more of the label text directly above
-      them.
-
-      **Each carries a symbol for the mode it selects.** *(2026-09-06: "build buttons with symbols
-      indicating the mode (joystick for keyboard controls and something else for taps)".)* A
-      joystick for the stick scheme; the tap scheme's symbol is not chosen and is this item's one
-      open design question. The symbol is what makes the choice readable without the label being
-      read, which is the whole of the finding.
-
-      **Nothing in this game has ever drawn an interactive control in a `Control` node**, so there
-      is no house style to copy. The one place that draws a control at all is `TouchControls`, which
-      renders its stick, `RUN` and pause with its own `_draw()` and its own constants — worth
-      reading for the visual vocabulary before inventing a second one. **Decide whether a theme or a
-      `_draw()` is the right home before writing either**, because the item below needs the same
-      answer on two more screens, and three screens with three button styles is the failure this
-      milestone exists to stop
-
-- [ ] **The input you choose with should be the input you play with.** *(2026-09-06: "on the local
-      clicking should choose the tap and arrow keys should choose the controls".)* The principle is
-      stronger than the two mappings and it is the player's: clicking a button *is* tap-to-walk, and
-      pressing an arrow key *is* the stick scheme on a desktop, so each choice can be made by doing
-      the thing it selects — which means the screen stops needing to be read at all.
-
-      What `TitleScreen._unhandled_input()` does now: `ui_accept` (`space` and `enter`) chooses
-      stick, `t` chooses tap, a screen touch anywhere chooses stick, and a click chooses whichever
-      button it lands on through that `Button`'s own `pressed` signal. So **a click anywhere** must
-      come to mean tap, and **the arrow keys**, which do nothing on this screen today, must come to
-      mean stick.
-
-      **`space` stays** — *"we can keep space too I guess"* — and under the principle it means the
-      stick, which is what it already does. **`t` is dropped** *(2026-09-06, the player closing
-      their own "t I'm not so sure since it's a move from keyboard to mouse")*, which leaves the
-      principle without an exception: no key selects the scheme that is played with a mouse. The
-      hint loses *"space or t to choose"* and has to say the new shape instead
-
 - [ ] **A summary has to be tapped on its text, and the code says it should not.** *(2026-09-06:
       "on mobile when the day ends or one dies you have to tap on the text right now I should be
       able to tap anywhere or it should be obvious where I need to tap".)*

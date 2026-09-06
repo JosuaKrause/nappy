@@ -6,6 +6,7 @@ extends RefCounted
 func run(t) -> void:
 	_test_from_word_only_tap_reads_as_tap(t)
 	_test_word_from_query_finds_the_controls_key_among_others(t)
+	_test_reads_the_url_only_when_debug_and_web(t)
 
 func _test_from_word_only_tap_reads_as_tap(t) -> void:
 	t.check(ControlsMode.from_word("tap") == ControlsMode.Mode.TAP,
@@ -30,3 +31,18 @@ func _test_word_from_query_finds_the_controls_key_among_others(t) -> void:
 	t.check(ControlsMode._word_from_query("?seed=4242") == "",
 			"a query with no controls key answers empty rather than guessing")
 	t.check(ControlsMode._word_from_query("") == "", "no query at all is also empty")
+
+## *(2026-09-06, the player: "for dev you need it to be controllable from the getgo -- for release
+## there should be no modifiers".)* `_url_word()`'s own gate used to be welded into an `if` as
+## `DevFlags.enabled() or OS.get_name() != "Web"` — a build type and a platform, neither of which a
+## test can fake — so `_reads_the_url()` exists to make that promise a truth table instead. All four
+## combinations, with no build type or Web export involved in reaching any of them.
+func _test_reads_the_url_only_when_debug_and_web(t) -> void:
+	t.check(ControlsMode._reads_the_url(true, true),
+			"a debug build on the web reads the query string -- the one case the flag exists for")
+	t.check(not ControlsMode._reads_the_url(false, true),
+			"a release build on the web does not -- the deployed page, and the promise being made")
+	t.check(not ControlsMode._reads_the_url(true, false),
+			"a debug build off the web does not -- there is no address bar to ask")
+	t.check(not ControlsMode._reads_the_url(false, false),
+			"and neither does a release build off the web")
