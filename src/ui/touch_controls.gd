@@ -273,22 +273,33 @@ func _draw() -> void:
 	_draw_pause_button()
 
 func _draw_stick() -> void:
-	draw_circle(STICK_CENTRE, STICK_RADIUS, Color(1.0, 1.0, 1.0, 0.16))
-	draw_arc(STICK_CENTRE, STICK_RADIUS, 0.0, TAU, 32, Color(1.0, 1.0, 1.0, 0.4), 2.0)
+	var base := Color("172735")
+	var paper := Color("f3e8d4")
+	var rust := Color("c56b54")
+	draw_circle(STICK_CENTRE, STICK_RADIUS, Color(base.r, base.g, base.b, 0.76))
+	draw_arc(STICK_CENTRE, STICK_RADIUS, 0.0, TAU, 32,
+		Color(paper.r, paper.g, paper.b, 0.52), 2.0)
+	draw_arc(STICK_CENTRE, STICK_RADIUS - 9.0, -PI * 0.75, -PI * 0.25, 18,
+		Color(rust.r, rust.g, rust.b, 0.8), 3.0)
 	var knob := STICK_CENTRE + _stick_vector * STICK_RADIUS
 	var held := _stick_touch != -1
-	draw_circle(knob, STICK_KNOB_RADIUS, Color(1.0, 1.0, 1.0, 0.42 if held else 0.28))
+	draw_circle(knob, STICK_KNOB_RADIUS, Color(rust.r, rust.g, rust.b, 0.94 if held else 0.72))
+	draw_circle(knob, STICK_KNOB_RADIUS - 6.0, Color(paper.r, paper.g, paper.b, 0.2))
 
 func _draw_run_button() -> void:
 	var held := _run_touch != -1
-	draw_circle(RUN_CENTRE, RUN_RADIUS, Color(1.0, 1.0, 1.0, 0.32 if held else 0.16))
-	draw_arc(RUN_CENTRE, RUN_RADIUS, 0.0, TAU, 32, Color(1.0, 1.0, 1.0, 0.4), 2.0)
+	var base := Color("172735")
+	var paper := Color("f3e8d4")
+	var rust := Color("c56b54")
+	draw_circle(RUN_CENTRE, RUN_RADIUS, Color(base.r, base.g, base.b, 0.8))
+	draw_arc(RUN_CENTRE, RUN_RADIUS, 0.0, TAU, 32,
+		Color(rust.r, rust.g, rust.b, 0.92 if held else 0.62), 3.0)
 	var label := "RUN"
 	var font := ThemeDB.fallback_font
 	var font_size := 15
 	var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 	draw_string(font, RUN_CENTRE + Vector2(-width * 0.5, font_size * 0.35), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1.0, 1.0, 1.0, 0.8))
+			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(paper.r, paper.g, paper.b, 0.9))
 
 ## Two bars, the same shape `hud.gd`'s touch teach line then names in words — drawn rather than
 ## set in a font glyph, because a vector shape always renders and a Unicode pause glyph is not
@@ -297,12 +308,16 @@ func _draw_run_button() -> void:
 ## spelling.
 func _draw_pause_button() -> void:
 	var held := _pause_touch != -1
-	draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Color(1.0, 1.0, 1.0, 0.32 if held else 0.16))
-	draw_arc(PAUSE_CENTRE, PAUSE_RADIUS, 0.0, TAU, 24, Color(1.0, 1.0, 1.0, 0.4), 2.0)
+	var base := Color("172735")
+	var paper := Color("f3e8d4")
+	var rust := Color("c56b54")
+	draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Color(base.r, base.g, base.b, 0.86))
+	draw_arc(PAUSE_CENTRE, PAUSE_RADIUS, 0.0, TAU, 24,
+		Color(rust.r, rust.g, rust.b, 0.95 if held else 0.7), 2.0)
 	var bar_height := PAUSE_RADIUS * 0.8
 	var bar_width := PAUSE_RADIUS * 0.22
 	var gap := PAUSE_RADIUS * 0.22
 	for side in [-1.0, 1.0]:
 		var bar_centre := PAUSE_CENTRE + Vector2(side * (gap * 0.5 + bar_width * 0.5), 0.0)
 		draw_rect(Rect2(bar_centre - Vector2(bar_width, bar_height) * 0.5,
-				Vector2(bar_width, bar_height)), Color(1.0, 1.0, 1.0, 0.8))
+				Vector2(bar_width, bar_height)), Color(paper.r, paper.g, paper.b, 0.9))

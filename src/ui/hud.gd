@@ -16,6 +16,7 @@ extends CanvasLayer
 ## `content_scale_size` currently reports — see `ScreenOrientation.pin_to_design_box()`.
 @onready var _root: Control = $Root
 @onready var _meters: Control = $Root/Meters
+@onready var _meter_plate: Control = $Root/MeterPlate
 @onready var _sleepiness: MeterBar = $Root/Meters/Sleepiness
 @onready var _excitement: MeterBar = $Root/Meters/Excitement
 @onready var _state_label: Label = $Root/Meters/State
@@ -125,6 +126,15 @@ func _reposition_meters_for_touch() -> void:
 	_meters.offset_right = 298.0
 	_meters.offset_bottom = 154.0
 	_meters.grow_vertical = Control.GROW_DIRECTION_END
+	_meter_plate.anchor_left = 0.0
+	_meter_plate.anchor_top = 0.0
+	_meter_plate.anchor_right = 0.0
+	_meter_plate.anchor_bottom = 0.0
+	_meter_plate.offset_left = 12.0
+	_meter_plate.offset_top = 32.0
+	_meter_plate.offset_right = 304.0
+	_meter_plate.offset_bottom = 162.0
+	_meter_plate.grow_vertical = Control.GROW_DIRECTION_END
 
 # ---------------------------------------------------------------- teaching ---
 # Day 1 introduces the arrow keys; day 3 introduces running, which is possible before then and

@@ -1,6 +1,27 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://src/ui/title_screen.gd" id="1_title"]
+[ext_resource type="Script" path="res://src/ui/screen_art.gd" id="2_art"]
+[ext_resource type="Texture2D" path="res://assets/icon_stroller.svg" id="3_icon"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_title_card"]
+bg_color = Color(0.09, 0.15, 0.2, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.95, 0.91, 0.84, 0.18)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0.02, 0.04, 0.06, 0.46)
+shadow_size = 18
+shadow_offset = Vector2(0, 8)
+content_margin_left = 44.0
+content_margin_top = 32.0
+content_margin_right = 44.0
+content_margin_bottom = 32.0
 
 [node name="TitleScreen" type="CanvasLayer"]
 layer = 95
@@ -9,57 +30,108 @@ script = ExtResource("1_title")
 [node name="Root" type="Control" parent="."]
 mouse_filter = 2
 
+[node name="Backdrop" type="ColorRect" parent="Root"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.055, 0.09, 0.12, 0.78)
+
+[node name="Art" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_art")
+style = "title"
+
+[node name="Card" type="Panel" parent="Root"]
+offset_left = 72.0
+offset_top = 58.0
+offset_right = 710.0
+offset_bottom = 662.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_title_card")
+
+[node name="Rule" type="ColorRect" parent="Root/Card"]
+offset_left = 44.0
+offset_top = 26.0
+offset_right = 132.0
+offset_bottom = 30.0
+color = Color(0.77, 0.42, 0.33, 1)
+
+[node name="Mark" type="TextureRect" parent="Root"]
+offset_left = 116.0
+offset_top = 112.0
+offset_right = 228.0
+offset_bottom = 224.0
+mouse_filter = 2
+texture = ExtResource("3_icon")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="TopScrim" type="ColorRect" parent="Root"]
 anchor_right = 1.0
 anchor_bottom = 0.5
-color = Color(0.04, 0.04, 0.06, 0.62)
+mouse_filter = 2
+color = Color(0.04, 0.04, 0.06, 0)
 
 [node name="BottomScrim" type="ColorRect" parent="Root"]
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.04, 0.04, 0.06, 0.62)
+mouse_filter = 2
+color = Color(0.04, 0.04, 0.06, 0)
 
 [node name="Top" type="CenterContainer" parent="Root"]
-anchor_right = 1.0
-anchor_bottom = 0.5
+offset_left = 250.0
+offset_top = 104.0
+offset_right = 642.0
+offset_bottom = 258.0
 
 [node name="Lines" type="VBoxContainer" parent="Root/Top"]
-theme_override_constants/separation = 18
+theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="Root/Top/Lines"]
 horizontal_alignment = 1
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 64
+theme_override_colors/font_color = Color(0.95, 0.91, 0.84, 1)
+theme_override_colors/font_outline_color = Color(0.09, 0.15, 0.2, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 72
 text = "Nappy"
 
 [node name="Line" type="Label" parent="Root/Top/Lines"]
+custom_minimum_size = Vector2(370, 0)
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.72, 0.69, 0.64, 1)
-theme_override_font_sizes/font_size = 18
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.76, 0.7, 1)
+theme_override_font_sizes/font_size = 15
 text = "Fourteen days. One pram. Get her to sleep and get her home."
 
 [node name="Bottom" type="CenterContainer" parent="Root"]
-anchor_top = 0.5
-anchor_right = 1.0
+offset_left = 116.0
+offset_top = 360.0
+offset_right = 666.0
 anchor_bottom = 1.0
 
 [node name="Lines" type="VBoxContainer" parent="Root/Bottom"]
-theme_override_constants/separation = 20
+theme_override_constants/separation = 24
 
 [node name="Body" type="Label" parent="Root/Bottom/Lines"]
+custom_minimum_size = Vector2(500, 0)
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
-theme_override_font_sizes/font_size = 16
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.87, 0.79, 1)
+theme_override_font_sizes/font_size = 17
 text = "Arrows or WASD to walk.
 Hold Shift to run — it wakes her, so it is rarely worth it.
 Walk to calm ground and stay moving; standing still settles nothing."
 
 [node name="Hint" type="Label" parent="Root/Bottom/Lines"]
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.62, 0.6, 0.58, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.77, 0.69, 0.58, 1)
+theme_override_font_sizes/font_size = 14
 text = "space to begin"
 
 [node name="Version" type="Label" parent="Root"]

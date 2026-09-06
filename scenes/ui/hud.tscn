@@ -1,8 +1,40 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://src/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://src/ui/meter_bar.gd" id="2_meter"]
 [ext_resource type="Script" path="res://src/ui/home_arrow.gd" id="3_arrow"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_hud_top"]
+bg_color = Color(0.08, 0.13, 0.17, 0.88)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.95, 0.91, 0.84, 0.22)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+shadow_color = Color(0.02, 0.04, 0.06, 0.28)
+shadow_size = 7
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_hud_meters"]
+bg_color = Color(0.08, 0.13, 0.17, 0.82)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.95, 0.91, 0.84, 0.2)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+shadow_color = Color(0.02, 0.04, 0.06, 0.3)
+shadow_size = 8
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
 
 [node name="Hud" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -15,6 +47,14 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("3_arrow")
+
+[node name="TopPlate" type="Panel" parent="Root"]
+offset_left = 12.0
+offset_top = 9.0
+offset_right = 428.0
+offset_bottom = 53.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_hud_top")
 
 [node name="Teach" type="Label" parent="Root"]
 anchor_left = 0.5
@@ -53,7 +93,7 @@ offset_top = 14.0
 offset_right = 60.0
 offset_bottom = 44.0
 grow_horizontal = 2
-theme_override_colors/font_color = Color(1, 1, 1, 0.9)
+theme_override_colors/font_color = Color(0.95, 0.91, 0.84, 0.96)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
 theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 22
@@ -69,6 +109,15 @@ offset_right = 298.0
 offset_bottom = -18.0
 grow_vertical = 0
 theme_override_constants/separation = 6
+
+[node name="MeterPlate" type="Panel" parent="Root"]
+offset_left = 12.0
+offset_top = 576.0
+offset_right = 304.0
+offset_bottom = 706.0
+z_index = -1
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_hud_meters")
 
 [node name="Sleepiness" type="Control" parent="Root/Meters"]
 custom_minimum_size = Vector2(280, 33)
