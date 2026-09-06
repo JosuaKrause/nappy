@@ -94,19 +94,31 @@ believing rather than explaining away.** The record is in `DECISIONS.md` under M
 
 ## What to do next
 
-**Start with M83, and read [PLAYTEST-29.md](PLAYTEST-29.md) before anything else in this file.**
-The controls have been played on a phone and the buttons M76 and M82 built do not work: `ModeButton`
-is a `Button`, whose `mouse_filter` defaults to `MOUSE_FILTER_STOP`, and Godot's GUI layer eats the
-raw `InputEventScreenTouch` before `PauseScreen`/`DaySummary._unhandled_input()` — the one place
-either screen reads a press — ever sees it, so a press on a button does nothing while a press
-anywhere else works. That, plus four instructions the project read as repealed and one new design
-for how a touch is aimed, is [TODO.md](TODO.md)'s M83. **What the rest of this section describes as
-built is still built; it is what the player found on top of it that comes first.**
+**The game has one control scheme, one set of buttons on every device, and no key named anywhere on
+screen.** A press sets a direction she walks until the next press; a press within a generous radius
+of her stops her; a double press sets the direction and runs it. **Where the direction is measured
+from is the one place a mouse and a finger differ**: a mouse aims from her own world position, and a
+real touch aims from whichever of two fixed points — `TouchControls.FOCUS_LEFT` (360, 360) and
+`FOCUS_RIGHT` (920, 360) in the 1280x720 design box — is nearer the press, so a thumb never has to
+reach across the phone to say *up*. A press within the same stop radius of either focus stops her
+too. **Nothing is drawn for those two points**, and whether they can be found by feel is the open
+question the next report answers.
 
-**M82 is built: the game has one control scheme and no question about which.** A press sets a
-direction, measured from her own world position, that she walks until the next press; a press
-within a generous radius of her stops her; a double press sets the direction and runs it; a pause
-button, top right, is the only thing drawn, and only on a touch device. The drag stick, the aimed
+**The continue button, the held restart and the pause button are drawn on every device**, and a
+press on one now reaches the screen underneath it: `ModeButton` sets `mouse_filter =
+MOUSE_FILTER_IGNORE`, because Godot's GUI layer consumes a raw `InputEventScreenTouch` that lands on
+a `MOUSE_FILTER_STOP` control and both screens read every press in `_unhandled_input()`. The restart
+hold fills the disc itself as a radial sweep rather than a bar beside it, and the pause button is
+`assets/ui/pause.svg` rather than `_draw()` primitives.
+
+**The keyboard still works and nothing on screen says so.** Arrows, `WASD`, `Shift`, `Esc`, `space`,
+`R` and `Q` all press what they always did; no label, hint or teach line names a key, and the baked
+`.tscn` defaults were cleared too so a scene file does not say one either. Quitting has no in-game
+button on purpose — the window's own close button is its pointer route, and the web build has no
+quit at all. The record for all of this is in `DECISIONS.md` under M83, and the session it came from
+is [PLAYTEST-29.md](PLAYTEST-29.md).
+
+**M82 is what it sits on**: one scheme rather than a choice between two. The drag stick, the aimed
 joystick playtest 27 specified and never built, the `RUN` button and the title screen's two mode
 buttons are all deleted rather than one replacing another. The record is in `DECISIONS.md` under
 M82.
@@ -128,7 +140,7 @@ against 92 as *the* walking speed. Deleting the drag stick is what makes the rul
 true.
 
 **The most useful thing anybody can do now is play a day on the new controls, then play a whole run
-on the layers under it**, and none of the following has been touched by a thumb since M82 landed.
+on the layers under it**, and none of the following has been touched by a thumb since M83 landed.
 
 **Playtest 25's nine findings are all built and none of them has been walked.** The barrier rows
 stopped charging the meter, two ambient reaches were cut roughly in half, the cat and the dog hit
