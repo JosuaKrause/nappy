@@ -17,6 +17,7 @@ signal restart_requested()
 @onready var _body: Label = $Root/Center/Lines/Body
 @onready var _hint: Label = $Root/Center/Lines/Hint
 @onready var _buttons: HBoxContainer = $Root/Center/Lines/Buttons
+@onready var _continue_column: VBoxContainer = $Root/Center/Lines/Buttons/ContinueColumn
 @onready var _continue_button: ModeButton = $Root/Center/Lines/Buttons/ContinueColumn/Continue
 @onready var _restart_button: ModeButton = $Root/Center/Lines/Buttons/RestartColumn/Restart
 
@@ -80,16 +81,31 @@ func _ready() -> void:
 	_refresh_buttons()
 	_root.hide()
 
+## Whether the screen currently up is the ending — read by `_refresh_buttons()` to decide whether
+## `_continue_column` shows, and set before `_present()` runs rather than passed as an argument to
+## it, since `_present()` is also what `_restart_button.cancel_hold()` and `_continuing`'s own reset
+## share and neither of those needs to know which screen raised it.
+var _showing_ending := false
+
 ## The continue/restart pair only replaces a sentence where there is a thumb to press it with —
 ## see `PauseScreen._refresh_buttons()`, the same split on the same platform question. Its own
 ## function for the same reason: a test can flip `_touch` and call this again.
+##
+## **Continue does not show on an ending.** *(Playtest 28 finding 4: "the game over screen cannot
+## have a continue button".)* Every other screen this row appears on carries on into a day that
+## still has one; an ending has none, and the button was drawn as *continue* while doing exactly
+## what the catch-all underneath it already does — restart the run. `_buttons` itself stays
+## visible for `_restart_button` even here: *"the restart button, hold and all"* is the player's
+## own answer to whether the hold still earns its keep with no day left to protect.
 func _refresh_buttons() -> void:
 	_buttons.visible = _touch
+	_continue_column.visible = not _showing_ending
 
 func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int) -> void:
 	# A lost *day* is not the end of a run — there are nerves left, and the screen says so two lines
 	# down. The heading belongs to the screen that ends the run and to nothing else.
 	_heading.hide()
+	_showing_ending = false
 	_title.text = _DAY_TITLE.get(result, "The day ends.")
 	var lines: Array[String] = ["Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]]
 	if reason != "":
@@ -152,6 +168,7 @@ func show_ending(ending: GameEnums.Ending) -> void:
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
 	_body.text = _ENDING_BODY.get(ending, "")
 	_hint.text = _hint_text("start again")
+	_showing_ending = true
 	_present()
 
 func _present() -> void:

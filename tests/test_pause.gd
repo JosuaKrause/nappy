@@ -40,6 +40,7 @@ func run(t) -> void:
 	_test_the_restart_button_is_a_hold(t)
 	_test_a_touch_away_from_restart_still_carries_on(t)
 	_test_the_summary_hint_matches_the_platform(t)
+	_test_an_ending_has_no_continue_button(t)
 	_test_the_summary_restart_button_is_a_hold(t)
 	_test_a_continue_press_flashes_before_it_is_acted_on(t)
 	t.get_tree().paused = was_paused
@@ -514,7 +515,37 @@ func _test_the_summary_hint_matches_the_platform(t) -> void:
 
 	summary.show_ending(GameEnums.Ending.GOOD)
 	t.check(summary._hint.text == "", "and the ending screen agrees too ('%s')" % summary._hint.text)
-	t.check(summary._buttons.visible, "carrying the same pair of buttons")
+	t.check(summary._buttons.visible, "the row still shows, for the restart button")
+	t.check(not summary._continue_column.visible,
+			"but not the continue button — see _test_an_ending_has_no_continue_button")
+
+	t.get_tree().paused = false
+	summary.queue_free()
+
+## *(Playtest 28 finding 4: "the game over screen cannot have a continue button".)* Every other
+## screen this row appears on carries on into a day that still has one; an ending has none, and the
+## button was drawn as *continue* while doing exactly what the catch-all underneath it already
+## does — restart the run. The restart button stays, hold and all — *(2026-09-06, asked directly:
+## "the restart button, hold and all")* — since a screen with no day left to protect still owes one
+## interaction learned everywhere it is met.
+func _test_an_ending_has_no_continue_button(t) -> void:
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	summary._touch = true
+
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	t.check(summary._continue_column.visible, "an ordinary day summary still offers continue")
+
+	summary.show_ending(GameEnums.Ending.BAD)
+	t.check(not summary._continue_column.visible, "but the ending screen does not")
+	t.check(summary._restart_button.get_parent().visible,
+			"the restart button stays, hold and all")
+
+	# The row returns to its ordinary shape once a fresh run's own day summary shows — the flag
+	# belongs to the screen currently up, not to whatever was up last.
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	t.check(summary._continue_column.visible,
+			"and a later day summary is not left thinking it is still an ending")
 
 	t.get_tree().paused = false
 	summary.queue_free()

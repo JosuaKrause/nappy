@@ -83,19 +83,43 @@ subtract anything from.
 (a laptop, on the released, non-debug build) was two defects in one: `TapControls._input()` read a
 mouse click only behind `OS.is_debug_build()`, so the one build a player ever loads had no mouse
 input at all; and `TitleScreen`, `DaySummary` and `PauseScreen` accepted only `ui_accept` or a real
-touch, so the keyboard was the only way past any of them regardless of scheme. Both are fixed the
-same way: `TouchInput.is_press()` reads a touch or a left-mouse click, on every build, and every
-screen ORs it in beside `ui_accept`. `DaySummary`'s own reason for reading touch directly —
-*"rather than turned into a synthetic click, so a stray mouse press elsewhere on the desktop still
-cannot skip a summary a player has not read"* — is overturned deliberately: it was true only while
-no scheme invited a player to use the mouse, and the pointer scheme now does everywhere.
+touch, so the keyboard was the only way past any of them regardless of scheme. `TouchInput.is_press()`
+(a touch or a left-mouse click) is what `TitleScreen` and `PauseScreen`'s own plain "carry on" ORs in
+beside `ui_accept` on every build. `DaySummary` needed its own explicit `not _touch`-gated mouse
+branch instead of that same helper: `_acknowledge_and_continue()`'s two-frame delay leaves
+`is_showing()` true long enough for a real touch's own emulated mouse click to arrive while the
+screen is still open, and folding that click into `TouchInput.is_press()` unconditionally would
+have fired `continued` a second time underneath the very guard (`_continuing`) built to prevent it.
+`DaySummary`'s own former reason for reading touch directly — *"rather than turned into a synthetic
+click, so a stray mouse press elsewhere on the desktop still cannot skip a summary a player has not
+read"* — is overturned deliberately: it was true only while no scheme invited a player to use the
+mouse, and the pointer scheme now does everywhere.
 
 **`ControlsMode` and the title screen's two circular buttons are deleted, not deprecated.** With one
 scheme there is nothing for `--controls`/`?controls=` to select, nothing for `is_forced()` to mean,
 and nothing for the title to ask — it returns to the single "space/tap to begin" hint it had before
-the buttons existed. `assets/ui/joystick.svg` and `tap.svg` go with it; `ModeButton` keeps its
-`RESTART`/`CONTINUE` reservations (unbuilt, for a later item) but loses the `STICK`/`TAP` symbols
-that used them.
+the buttons existed. `assets/ui/joystick.svg` and `tap.svg` go with it; `ModeButton` loses the
+`STICK`/`TAP` symbols and their SVGs, but not the class — M76 (`#26`) landed while this milestone was
+in flight and built `RESTART`/`CONTINUE` in full, hold-fill bar and all, on both the pause screen
+and the day summary. Merging the two meant re-indexing `Symbol` down to `{ RESTART, CONTINUE }`,
+which changed what the serialized `symbol = N` in `scenes/ui/day_summary.tscn` and
+`pause_screen.tscn` meant — caught only by a screenshot, since nothing in the suite constructs a
+`ModeButton` from its own scene file's saved int. M76's own restart/continue buttons read a touch
+position directly rather than through a `Button`'s `pressed` signal, for the same "Godot delivers
+both a real touch and an emulated mouse event" reason `DaySummary._acknowledge_and_continue()` does
+— so they needed the identical mouse extension, gated `not _touch`, that the plain "carry on" path
+got.
+
+**Playtest 28's fourth finding, found once the rest of this milestone had already landed:** *"the
+game over screen cannot have a continue button."* `DaySummary.show_ending()` shared
+`_refresh_buttons()` with `show_day()`, which shows both the continue and the restart button on any
+touch device — but continue on an ending is drawn as *continue* and does *start over*, the same
+promise the restart button already makes honestly. `_showing_ending` (set by `show_day()`/
+`show_ending()` before `_present()`) is what `_refresh_buttons()` now reads to hide `_continue_column`
+specifically, leaving the row itself, and `_restart_button`, exactly as before — *"the restart
+button, hold and all"* is the player's own answer to whether the hold still earns its keep with no
+day left to protect. The catch-all underneath — a press anywhere on the ending still starts again —
+is untouched.
 
 **Not built as specified: the SVG-icon conversion the `cues` rule asks for.** Editing
 `touch_controls.gd` anyway is exactly the trigger `cues` names for converting the pause button's
