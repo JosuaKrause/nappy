@@ -21,12 +21,11 @@ animation and every screen. SVG polish is a separate small PR, not this overhaul
 The rendering medium and earlier visual restrictions are open to reassessment by the player's
 instruction. [VISUALS.md](VISUALS.md) carries the design and implementation gates.
 
-- [ ] Review the illustrated PNG target in the representative non-diagonal apartment street.
-      `scenes/dev/illustrated_street_review.tscn` carries layered PNG ground, frontage, roof depth
-      and props for this gate. The diagonal investigation remains tabled; match its reference art's
-      style, not its grid. Present its apartment-block architecture for player review; the detached-
-      house prototype is not the city's target. See PLAYTEST-27's architecture feedback and
-      VISUALS.md.
+- [ ] Bind the approved illustrated PNG target to live movement, starting with the mother and pram.
+      `scenes/dev/illustrated_street_review.tscn` carries the accepted non-diagonal apartment
+      street direction. The logical body, collision, route rules and gameplay RNG remain owned by
+      the existing game; presentation receives only applied displacement. The diagonal
+      investigation remains tabled. See PLAYTEST-27's architecture feedback and VISUALS.md.
 - [ ] Rebuild architecture, terrain, nature, people, pram, vehicles, all events and closures.
       Include walk/run/idle/turn and event animations, roof depth and stylized occlusion reveal.
 - [ ] Build eight-direction PNG sheets with shared anchors and manifests; split characters into

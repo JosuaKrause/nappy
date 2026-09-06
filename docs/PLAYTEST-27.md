@@ -9,6 +9,14 @@ and pram, crowds, events, and interface screens. Existing visual defects are par
 The alley floor, roofless slivers, floating home door and tunnel mouth are also recorded in
 [PLAYTEST-24.md](PLAYTEST-24.md); the fence and junction paint are recorded under M49.
 
+## Cardinal apartment-street review — 2026-09-06
+
+> "looks good continue"
+
+This approves the representative cardinal apartment-street direction: illustrated PNG ground,
+continuous apartment frontage, roof depth and stable dotted occlusion. It does not approve the
+whole renderer or replace the required movement, event, city, deterioration and screen work.
+
 ## The first approach is rejected
 
 > "are you kidding me? your thought of improving graphics is to make the outlines of existing assets thicker? I'm talking about a full overhaul of the graphics as if nothing had existed before. also, one major thing you apparently missed is that we currently have *no animations*"

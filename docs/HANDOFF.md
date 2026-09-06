@@ -105,6 +105,8 @@ proof; live player/crowd binding remains open. `assets/illustrated/street/` and
 layered PNG ground, frontage, roof depth and props with a stable dotted roof reveal. It is not live
 gameplay and awaits player art review before it is extended. The earlier SVG actors/events polish
 has its own separate PR workflow and is not the full overhaul.
+The cardinal apartment-street direction is approved; bind the grounded modular mother and pram to
+the live player next, without changing collision, movement or gameplay RNG.
 Review assembled artwork and actual foot contact before extending it to the whole city and every
 screen. Implementation belongs to Luna agents.
 Preserve the title's control selection, truthful meter display and event-cost behavior while

@@ -104,16 +104,13 @@ screen experiment predates some of this and must not simply replace current titl
 
 ## Next work order
 
-1. Obtain art feedback on `illustrated_street_review.tscn`'s cardinal apartment street before
-   extending its presentation. Review roof depth and the dotted occlusion treatment at gameplay
-   scale; it is deliberately not another all-in-one concept image.
-2. Bind the validated presentation to the live player/crowd and expand by event family. Every
+1. Bind the approved presentation to the live player/crowd and expand by event family. Every
    catalogue look needs its own identity and state-appropriate animation; a generic placeholder
    must be recorded as unfinished, never quietly substituted.
-3. Add seeded deterioration, truthful contribution cues and objective guidance. The baby already
+2. Add seeded deterioration, truthful contribution cues and objective guidance. The baby already
    receives event/crowd contributions: consume those facts instead of inventing nearest-source
    attribution or copying meter arithmetic. Silent barriers remain silent.
-4. Rebuild all screens while preserving the current main behavior, then verify busy scenes,
+3. Rebuild all screens while preserving the current main behavior, then verify busy scenes,
    portrait/touch, pauses/transitions and the browser. Keep the full TODO scope visible throughout.
 
 The separate SVG polish is an independent small PR. Review its existing asset-only diff and finish

@@ -58,6 +58,12 @@ occlusion reveal, actual excitement-source feedback, late-game deterioration and
 objective guidance. Full wording is in `PLAYTEST-27.md`; `PLAYTEST-25.md` is reserved for the
 separate mobile playtest on the other development branch.
 
+The player approved the standalone cardinal apartment-street review with "looks good continue".
+The accepted gate is the illustrated PNG ground, continuous apartment frontage, roof depth and
+stable dotted occlusion; binding it to the live player is the next implementation slice. Approval
+does not turn the review scene into a completed overhaul or approve the still-open presentation
+families.
+
 The initial SVG polish is preserved in a local stash and isolated worktrees, not adopted as the
 new art direction. The prior keep-every-roof-inside-its-lot restriction and SVG-only assumption are
 open to replacement under the player's explicit instruction to rethink graphics and challenge
