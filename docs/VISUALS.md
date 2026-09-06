@@ -7,11 +7,21 @@ together. Luna agents implement bounded pieces; the orchestrating session owns d
 
 ## Visual target
 
-A small, inhabited city with the tactile quality of an architectural miniature. Plaster has broad
-painted variation, stone has edges and occasional wear, roofs have actual planes and eaves, and
-trees have asymmetric volumes. Shapes have restrained bevels and lighting, rather than universal
-black outlines. People have articulated bodies and identifiable poses. The mother and pram remain
-legible through their silhouette, movement and contrasting rust/navy colors.
+A detailed illustrated urban city, following the user's references in
+`evidence/graphics-reference-urban-01.jpeg` and `graphics-reference-urban-02.jpeg`: fine ink
+contours, painted brick and plaster, substantial apartment facades, readable shopfronts, clothing
+folds, identifiable faces and detailed vehicles. The cardinal-layout draft in
+`evidence/graphics-reference-cardinal.jpeg` is useful for composition but does not lower the art
+target. The reference action buttons, minimap and portrait HUD are not requested features.
+
+**Keep the current non-diagonal presentation.** Match the diagonal references' illustration,
+detail and inhabited-city character without rotating the grid. M79's diagonal investigation is
+tabled, not an implementation task. The logical street layout, controls and route rules stay intact.
+
+The mother follows `evidence/graphics-reference-mother.jpeg`: brown hair in a high bun, green
+coat, patterned scarf, jeans and practical dark shoes. Give her an expressive, drawn face and a
+detailed dark stroller with a warm bundled baby, not a rectangle and circle standing in for a
+person. Portrait UI remains outside this task.
 
 The camera stays high enough to read both pavements, crossings, entrances and alley mouths.
 Buildings feel tall without taking the street out of view. Angled light carries ordinary paving
@@ -33,10 +43,11 @@ the architecture library. The current detached-house study is not an approved bu
 
 ## Medium and architecture
 
-The first experiment is a native orthographic 3D street with articulated actors. Godot can provide
-the prototype's meshes, lighting and animation without Blender. Blender is the preferred authoring
-tool if the experiment establishes that a modeled asset pipeline is worthwhile; report its absence
-before installation. Models ship as glTF/GLB so playing or exporting does not require Blender.
+Use illustrated PNG assets with layered character animation. No new SVG artwork. The 3D studies
+are retained as experiments, not the art target or a required runtime dependency. A 3D authoring
+rig remains an option only where it makes creating the drawings easier. Asset quality is judged
+from the fixed gameplay camera, not in a modeling tool: shorten a building's hidden north depth,
+warp its apparent height, or separate its front to keep the adjacent street legible.
 
 The logical city remains the source of tiles, routes, collision, events and costs. A presentation
 adapter reads those facts; it must not create a second simulation. A standalone scene establishes
@@ -44,47 +55,48 @@ the look, then a projection adapter proves alignment before replacing the live r
 display, touch picking and screen cues use one coordinate mapping, including camera smoothing,
 look-ahead and portrait presentation.
 
-Use the web-compatible Compatibility renderer: a shadowed sun, simple materials and shared meshes.
+Use the web-compatible Compatibility renderer with shared atlas textures.
 Draw the visible neighborhood and batch static repetition. Paused gameplay pauses world animation;
 the title has an explicit independent animation clock. Cosmetic randomness never advances gameplay
-RNG. Native 3D must earn its runtime cost in the browser as well as on desktop.
+RNG. The illustrated renderer must meet the mobile/browser budget as well as the desktop budget.
 
 | Content | Working format |
 | --- | --- |
-| Articulated people, pram, vehicles, roof forms | Meshes and animation; exported GLB for authored models |
+| People, pram, vehicles, buildings and props | PNG sheets with explicit pivots, bounds and direction metadata |
 | Plaster, stone, roof wear and ground variation | Small PNG atlases with broad tonal shapes |
-| Papers, smoke, leaves and small distant details | Mesh particles or PNG flipbooks, selected by cost |
-| Typography, simple interface symbols and masks | Font resources, vector or procedural drawing |
+| Papers, smoke, leaves and small distant details | PNG flipbooks or animated PNG cutouts |
+| Typography, simple interface symbols and masks | Fonts, PNG symbols, engine layout and shaders |
 | Painted title/ending accents | PNG where painted texture adds value |
 
-If native 3D cannot meet the mobile/browser budget, render the same models to directional PNG
-animation atlases. This is a measured alternative, not a return to static SVG placeholders.
+Prepare draft sheets for player-applied style transfer if generated art does not meet the target.
+That fallback keeps dimensions, alpha, part registration, anchors and frame layout unchanged.
 A concept image establishes style; only a rendered scene establishes feasibility and motion quality.
 
 ### Projection adapter contract
 
-Keep the live `Camera2D` as the source of the logical ground transform, including its smoothing,
-limits and look-ahead. Present the 3D world through a fixed-design-size `SubViewport` on a layer
-behind the interface; rotate that layer through `ScreenOrientation` alongside the other furniture.
-The logical world continues processing even when its old drawing is hidden.
+Keep the live `Camera2D` and its canvas transform, smoothing, limits, look-ahead and portrait
+composition. New sprite parts share one logical ground anchor; their drawn heights do not move
+that anchor. Tap picking, danger cues and home guidance use the same existing transform. Test
+direction/frame changes for anchor stability rather than adjusting collision to accommodate art.
+The experimental orthographic mapping remains preserved in branch history; it is not live wiring.
 
-For a camera pitch of 65 degrees and one model unit per 32 logical pixels, map a logical point
-`(x, y)` to `(x / 32, 0, y / (32 * sin(65 degrees)))`. Apply the same mapping to the camera's
-ground target. With `Camera3D.KEEP_HEIGHT`, orthographic size is the design viewport height divided
-by logical zoom and tile size: 11.25 units for 720 design pixels at zoom 2. A size of 20 describes
-the width at that scale, not the height. Read the actual camera transform instead of assuming the
-player position is its center. Unrotate the canvas transform into design space before comparing
-it with the 3D viewport.
+### Directional and modular sheet contract
 
-Prove agreement between logical-to-screen, screen-to-logical and `Camera3D.unproject_position`
-for ground points at the center, corners and building edges, through camera motion and both
-orientations. Tap picking keeps the same ground destination. Elevation affects only the drawing;
-warning anchors can use model height, but warning conditions still use logical positions.
+Author eight real views in a consistent clockwise order: N, NE, E, SE, S, SW, W, NW. A direction
+not used by today's animation still gets a slot and artwork, not a mirrored placeholder. Static
+rotationally symmetric assets may explicitly share equivalent views; record that equivalence
+rather than silently borrowing a different facing. Ground textures do not acquire a false facing.
 
-The adapter owns presentation streaming and mesh lifetime, never movement, event clocks or costs.
-Batch repetitive static geometry by material and visible chunk; do not instantiate the whole city
-as individual tile nodes. A debug override may select either renderer while integration is
-incomplete, but an incomplete replacement is not the ordinary playable default.
+Separate head, hair, torso/clothing, arms/hands, legs and shoes into interchangeable registered
+parts. Keep pram body, canopy, baby and wheels separately animatable. Start with a few compatible
+pedestrian variants, not a large combinatorial catalogue. Shared attachment points, scale, cell
+size and direction-dependent layer order make combinations fit. A variant changes art, never
+physics, warnings or route costs. Keep authored-event silhouettes distinct from generic crowds.
+
+Each sheet has explicit pixel rectangles, logical anchor, attachment pivots, direction order and
+layer order in a manifest. Style transfer can replace the PNG without changing that manifest.
+Review an assembled character as well as individual parts: independently attractive parts can
+still leave seams, mismatched lighting or disconnected hands when composed.
 
 The [concept reference](evidence/graphics-redesign-concept.png) is generated art, not a capture of
 the game. It establishes material, depth and early/late contrast; its density and camera framing
@@ -108,6 +120,12 @@ must not snap between unrelated still images. Event animation reads the event cl
 never promises time the actual encounter does not allow. Animation does not move the logical body,
 retune an encounter or hide a warning. A reduced-motion setting quiets decoration while retaining
 meaningful state changes.
+
+Foot contact is a constraint, not a sine wave. During stance, a foot remains planted on a logical
+ground point while the body travels over it; during swing it lifts and lands at the next reachable
+point. Solve knees from hip and ankle positions. Acceleration, stopping, reversing and collision
+must not slide a planted foot or continue a treadmill gait. Test actual world-space foot drift
+and review several consecutive rendered frames. Wheel rotation likewise follows actual travel.
 
 ## Roof depth and occlusion
 

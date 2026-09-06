@@ -137,7 +137,10 @@ reason.
 ## A picture is an asset, never code
 
 ***"Never draw in code -- at the very least use svgs."* Anything that is a *picture* — a glyph, an
-icon, a silhouette, a symbol — is authored as an SVG under `assets/` and drawn as a texture.** Not
+icon, a silhouette, a symbol — is authored as an image under `assets/` and drawn as a texture.**
+The graphics overhaul uses PNG sheets, per the player's explicit no-new-SVG instruction. Existing
+SVG assets remain supported while the replacement is incomplete; their small polish PR is separate.
+Not
 assembled at runtime out of `draw_circle`, `draw_rect`, `draw_line`, `draw_arc` or
 `draw_colored_polygon`.
 

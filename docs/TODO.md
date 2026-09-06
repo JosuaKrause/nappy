@@ -17,16 +17,20 @@ mid-way through.
 ## Visual overhaul
 
 Requested in [PLAYTEST-27.md](PLAYTEST-27.md). **Rebuild the graphics from the ground up**, including
-animation and every screen. Thickening the existing SVG outlines is explicitly rejected.
+animation and every screen. SVG polish is a separate small PR, not this overhaul.
 The rendering medium and earlier visual restrictions are open to reassessment by the player's
 instruction. [VISUALS.md](VISUALS.md) carries the design and implementation gates.
 
-- [ ] Establish the visual target with a representative animated street, comparing an orthographic
-      3D presentation against 2D before scaling the asset work. Assess tools and mobile/web cost.
+- [ ] Establish the illustrated PNG target with a representative animated, non-diagonal street.
+      The diagonal investigation remains tabled; match its reference art's style, not its grid.
       Present apartment-block architecture for player review; the detached-house prototype is not
       the city's target. See PLAYTEST-27's architecture feedback and VISUALS.md.
 - [ ] Rebuild architecture, terrain, nature, people, pram, vehicles, all events and closures.
       Include walk/run/idle/turn and event animations, roof depth and stylized occlusion reveal.
+- [ ] Build eight-direction PNG sheets with shared anchors and manifests; split characters into
+      interchangeable head/hair/clothing/limb parts with a few initial pedestrian variations.
+      Match the mother reference and prove grounded foot contact during walking, stops and turns.
+      Offer registered draft sheets for player style transfer if generated art is inadequate.
 - [ ] Show the city deteriorating through persistent litter, local surface damage, building wear
       and windblown papers, with cosmetic effects separated from route and excitement rules.
 - [ ] Show actual excitement contributors subtly and provide a coherent way to locate the current
@@ -1427,6 +1431,28 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
 ---
 
 ## M79 — The city seen at an angle · tabled 2026-09-06
+
+**Graphics-review additions, still tabled:** the latest instruction is to keep the non-diagonal
+view while adopting the illustrated reference style. Eight-direction asset preparation does not
+authorize a diagonal renderer or a control change.
+
+The transform is only part of the cost. A 45-degree rotation is not a 2:1 dimetric projection:
+the latter also compresses a ground axis while leaving upright facades and people uncompressed.
+Rotating/shearing a finished sprite rotates/shears its height too, so new facing artwork or a
+separate upright layer is still required. Existing facade pieces provide content, not proof that
+the art conversion is cheap.
+
+Per-building origin sorting is insufficient for long projected footprints. Order or split facade
+segments against their occupied ground, and test actor overlap near both ends. Occlusion must
+consider the complete player/pram and approaching threat silhouette, not only their foot points.
+Local stippling, shortened hidden depth and a foreground cutaway remain alternatives; all need
+stable entry/exit thresholds and must not erase the visible evidence of an impassable wall.
+
+A separate presentation adapter is viable only if picking and every world-anchored cue consume
+its shared forward/inverse transform. Otherwise retain the canvas-transform contract described
+below. Recalculate visible logical bounds from inverse-projected viewport corners: unchanged
+screen-space radii can stream actors or threats into view too late after compression. Test camera
+limits, look-ahead, portrait composition and frame/part anchors together before scheduling this.
 
 **Tabled, and the reason is sequencing rather than doubt.** *(2026-09-06: "let's write down the
 findings about the diagonal grid but table it for now".)* Nothing here is rejected; it is written
