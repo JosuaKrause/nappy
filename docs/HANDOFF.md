@@ -97,8 +97,10 @@ The mother follows the supplied green-coat/scarf/bun reference. M79's diagonal i
 tabled. The 3D street and actor studies are experiments, not the accepted art target; rejected
 work is recoverable from this branch's ancestry, indexed in DECISIONS.md, rather than dangling
 branches. The playable game still uses its existing renderer. Luna worktrees hold the PNG source
-art and grounded modular animation implementation. The earlier SVG actors/events polish has its
-own separate PR workflow and is not the full overhaul.
+art and grounded modular animation implementation. The first registered, real-alpha mother and
+pram part sheets and their gameplay-scale contact review are in `assets/illustrated/modular/`; the
+compositor and live binding remain open. The earlier SVG actors/events polish has its own separate
+PR workflow and is not the full overhaul.
 Review assembled artwork and actual foot contact before extending it to the whole city and every
 screen. Implementation belongs to Luna agents.
 Preserve the title's control selection, truthful meter display and event-cost behavior while
