@@ -187,6 +187,21 @@ static func _playground() -> EventDef:
 ## time it crosses the middle of the road it is reliably behind her rather than in front.
 ## `EventDef.ahead_of_player_lead()` prices the hold in as walking distance instead, so the siting
 ## is where she will actually be when the cat is.
+##
+## **Intensity 17, not 15 — a startle spike, judged against the fixed baseline rather than the old
+## one.** *(Playtest 25, finding 6: "dashing cat and dog (not pursuing) are basically useless right
+## now -- they need a bigger impact.")* There is no `impulse` field and none is added: `CLAUDE.md`'s
+## standing decision is that a sharp spike is a short `duration` at high `intensity`, and 1.8s is
+## already as short as a crossing this wide can be. **Kept under `Tuning.MARK_WORTH_A_DETOUR` on
+## purpose** — `tests/test_danger.gd` names this row explicitly as one that costs too little for a
+## caret, on the reasoning that the crouch is its own silhouette and needs no second cue. A bigger
+## number than this crosses that line and would give the cat a caret for the first time, which is a
+## real design question and not one this item decides; left as an open fork rather than assumed.
+## **Judged against what item 1 leaves behind, not what it started against**: the evidence that
+## this row was ever "useless" is a `cat_dash` at the *old*, lower intensity finishing off a day
+## whose baseline was already pinned near 100 by the barrier fields the earlier items just silenced
+## — raising it while that was still true would have made it an instant loss on contact, which is
+## not what was asked for.
 static func _cat_dash() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cat_dash"
@@ -194,7 +209,7 @@ static func _cat_dash() -> EventDef:
 	def.look = EventDef.Look.CAT
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
-	def.intensity = 15.0
+	def.intensity = 17.0
 	def.inner_radius = 30.0
 	def.outer_radius = 120.0
 	# Long enough to carry it the whole way across the street it starts at the edge of:
@@ -297,6 +312,19 @@ static func _dog_walker() -> EventDef:
 ## a crossing. `construction` does the same job from day 2 and is the loud version of it; this one is
 ## pleasant, which is worse: nothing about it looks like a hazard and it still costs the street.
 ## Stationary, so it can never pin the player the way a moving obstruction could.
+##
+## **Keeps a field, tightened to the tables themselves.** *"restaurants should only increase your
+## excitement when you're actually close... but they should nonetheless"* — a café is a real source
+## of chatter and not a piece of scenery, but 170px reached across the block and billed a player who
+## was never near the tables. 90px is a real band beyond the 24px the tables themselves obstruct and
+## the 40px of full intensity — one and a half tiles past the frontage on a two-tile (64px) pavement,
+## comfortably short of the 448px block period so a café never bills the far side of the street it is
+## on. **Expected to move again once a field takes the shape of its body** — M61's third item, where
+## the field becomes the Minkowski sum of the body and a disc, so a frontage gets a capsule instead
+## of a circle. This number is the stopgap for that and has to be re-derived rather than reused: a
+## circle this tight
+## still over-reaches perpendicular to the frontage and under-reaches along it, which is the wrong
+## shape for a source that sits across a stretch of pavement rather than at a point.
 static func _cafe_tables() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cafe_tables"
@@ -305,7 +333,7 @@ static func _cafe_tables() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 12.0
 	def.inner_radius = 40.0
-	def.outer_radius = 170.0
+	def.outer_radius = 90.0
 	def.telegraph_time = 1.6
 	def.pulse_period = 6.0
 	def.obstructs_radius = 24.0
@@ -325,6 +353,11 @@ static func _cafe_tables() -> EventDef:
 ## a traffic lane the crowd knows nothing about and drives straight through, blocking a route nobody
 ## walks. At the kerb it is on the pavement she is actually using and it takes it — `VEHICLE_BODY` is
 ## 22px, so 44px of van across a 64px footway, and the answer is the other side of the street.
+##
+## **Silent.** *"static blockages in general shouldn't increase excitement"* — its whole job is
+## standing in the way, and `obstructs_radius` already prices that as a route cost. It is one of
+## `SealPlanner`'s soft-seal candidates, placed on every real street off the day's route tree, so an
+## ambient field here used to bill several hundred bodies a day for nothing she could see or avoid.
 static func _delivery_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "delivery_van"
@@ -332,7 +365,7 @@ static func _delivery_van() -> EventDef:
 	def.look = EventDef.Look.DELIVERY_VAN
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
-	def.intensity = 8.0
+	def.intensity = 0.0
 	def.inner_radius = 40.0
 	def.outer_radius = 150.0
 	def.telegraph_time = 1.3
@@ -366,6 +399,12 @@ static func _busker() -> EventDef:
 ## The only Act I event that is physically in the way. Blocking the sidewalk forces a
 ## reroute rather than merely inviting one — and since a street is sidewalk|road|sidewalk,
 ## the road is always still there, so it costs time and exposure, never the day.
+##
+## **Silent.** *"static blockages in general shouldn't increase excitement"* — a hoarding is not a
+## source, it is a thing to walk around, and `obstructs_radius` already prices the detour. It is one
+## of `SealPlanner`'s soft-seal candidates, so it stands on every real street off the day's route
+## tree; an ambient field on it billed the meter for a wall of boards a street away with nothing to
+## point at.
 static func _construction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "construction"
@@ -373,7 +412,7 @@ static func _construction() -> EventDef:
 	def.look = EventDef.Look.ROADWORKS
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
-	def.intensity = 11.0
+	def.intensity = 0.0
 	def.inner_radius = 46.0
 	def.outer_radius = 200.0
 	def.telegraph_time = 1.8
@@ -481,7 +520,15 @@ static func _burnt_shell() -> EventDef:
 ##
 ## Not lethal, deliberately. Act I gets exactly two things that end the day and this is not one
 ## of them: a loose dog is loud and it is chaos, and the day it ruins is ruined through the
-## meter, which is where most of the game lives.
+## meter, which is where most of the game lives. That decision is untouched by the intensity below.
+##
+## **Intensity 32, not 24 — the same startle-spike ask as `cat_dash`, judged the same way.**
+## *(Playtest 25, finding 6.)* A real meeting already costs more than the walk-through table
+## suggests, since the whole point of `TOWARD_PLAYER` is that she dodges rather than walks the
+## line — but the player met it and called it inconsequential, so the number moves. No new field:
+## it is the other half of day 1's wall pool alongside `leaf_blower`, and it stays comfortably over
+## `Tuning.WALL_WORTH_OF_COST` before and after, so raising it changes nothing about which pool it
+## is drawn from or how often it is placed.
 static func _loose_dog() -> EventDef:
 	var def := EventDef.new()
 	def.id = "loose_dog"
@@ -489,7 +536,7 @@ static func _loose_dog() -> EventDef:
 	def.look = EventDef.Look.LOOSE_DOG
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
-	def.intensity = 24.0
+	def.intensity = 32.0
 	def.inner_radius = 30.0
 	def.outer_radius = 140.0
 	# Faster than a walk, so the escape distance is the whole radius: 140/92 = 1.52s.
@@ -510,6 +557,13 @@ static func _loose_dog() -> EventDef:
 ## **One obstacle repeated eighteen times is a rule, not a decision**, which is why day 1 needs a
 ## second one. This is louder and wider than `cafe_tables` and on the other side of pleasant: a café
 ## you squeeze past is a nuisance, a market is a crowd.
+##
+## **Keeps a field, tightened to the stall itself** — the same "close only" treatment as
+## `cafe_tables`, on the same reasoning: a market is a real crowd, not scenery, but the reach has to
+## match the source. 95px is a touch wider than the café's 90, matching its own slightly bigger
+## `inner_radius` (44 against 40) and `obstructs_radius` (28 against 24), and stays well inside the
+## 448px block period. **Expected to move again once a field takes the shape of its body**, and to be
+## re-derived rather than shrunk again — see `cafe_tables` and M61's third item.
 static func _market_stall() -> EventDef:
 	var def := EventDef.new()
 	def.id = "market_stall"
@@ -518,7 +572,7 @@ static func _market_stall() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.intensity = 14.0
 	def.inner_radius = 44.0
-	def.outer_radius = 185.0
+	def.outer_radius = 95.0
 	def.telegraph_time = 1.7
 	def.pulse_period = 8.0
 	def.obstructs_radius = 28.0
@@ -646,10 +700,20 @@ static func _pigeon_flock() -> EventDef:
 ## The fairness contract does the work and it is expensive here — `hard_fail` doubles the margin
 ## and the speed means the whole radius counts, so the bell has to ring for (145/92) x 2 = 3.15s
 ## before it arrives. That is right: it is audible from down the street, she has three seconds
-## and one step to make, and stepping off a pavement is a step. It is also why the radius is
+## and one step to make, and stepping off a pavement is a step. It is also why the field is
 ## small — a wider one would need a bell you could hear across the district. The same distance
 ## is why it can be sited only `Tuning.SIGHT_AHEAD` (200px) in front of her rather than further —
 ## `EventDef.validate()` refuses a `TOWARD_PLAYER` row whose own field would already reach that far.
+##
+## **`inner_radius` is 33px, not the 26 a bike's own width would suggest.** *(Playtest 25, finding
+## 7: "biker currently is also basically inconsequential. when hit it should be dayending" — and the
+## report was from the local desktop build, where dying otherwise demonstrably works, so the miss was
+## the radius rather than the day loop.)* 26px sits *under* the 32px spacing between the two lanes of
+## a two-tile pavement (`Tuning.TILE_SIZE`, a lane on its own tile centre), the same gap that let
+## `chatting_mother`'s `detain_radius` be walked past on the far lane — see that row for the shared
+## reasoning. Both are "it catches you" rows reported as catching nobody, and both move to the same
+## 33px: past the lane spacing, under `outer_radius` with room to spare, so the far lane of her own
+## pavement no longer answers a bike coming down it for free.
 ##
 ## Day 2 rather than day 1 on purpose. Day 1 is allowed to be easy as long as the difficulty then
 ## climbs, and this is the plainest possible way to say it climbed: day 2 is the day the streets
@@ -663,7 +727,7 @@ static func _cyclist() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	def.intensity = 18.0
-	def.inner_radius = 26.0
+	def.inner_radius = 33.0
 	def.outer_radius = 145.0
 	# hard_fail and faster than a walk: 145/92 * 2 = 3.15s.
 	def.telegraph_time = 3.3
@@ -773,10 +837,18 @@ static func _reversing_lorry() -> EventDef:
 ## `detain_radius` of an instance that has not yet chatted locks the stroller's own movement input
 ## for `detain_seconds` (`Stroller.detain()`), and the meter cost during that lock is priced
 ## entirely by `EventInstance.current_intensity()` reading the baby's state, never by anything
-## authored here. `detain_radius` (26px) is chosen under the **32px** spacing between the two lanes
-## of a pavement (`Tuning.TILE_SIZE`, since a lane sits on its own tile centre) — see
-## `EventDef.detain_radius` — so the far lane of a two-tile pavement can never trigger it and
-## distance stays the counterplay it is everywhere else in the catalogue.
+## authored here.
+##
+## **`detain_radius` is 33px, not 26 — the far-lane rule is overturned, and it is the player's own
+## overturn to make.** *(Playtest 25, finding 4: "the chatting lady has a way too small capture
+## radius in should be much bigger. right now I can basically walk up to her without consequence.")*
+## 26px was chosen to sit *under* the **32px** spacing between the two lanes of a pavement
+## (`Tuning.TILE_SIZE`, since a lane sits on its own tile centre), so the far lane of a two-tile
+## pavement could never trigger a conversation. The whole content of this row is that she catches
+## you, and a radius the far lane clears by construction is a row with a free answer — which is
+## exactly what got reported. **What this gives up, stated rather than silently dropped**: walking
+## the far lane of her own pavement no longer avoids her. 33px sits just past the lane spacing and
+## still strictly inside `inner_radius` (34), which `EventDef.validate()` requires.
 ##
 ## `first_day` 1: act I is the social act, and `test_balance.gd` still passes with her live on it —
 ## she is `SIDEWALK`-only, so she never contests the calm ground the balance suite measures.
@@ -803,7 +875,7 @@ static func _chatting_mother() -> EventDef:
 	def.weight = 2.0
 	def.max_per_day = 2
 	def.detain_seconds = 5.0
-	def.detain_radius = 26.0
+	def.detain_radius = 33.0
 	return def
 
 ## **The one thing in the game you have to run from, and it arrives on day 3.**
@@ -1136,6 +1208,11 @@ static func _military_convoy() -> EventDef:
 	return def
 
 ## Left where a convoy stopped, and left there for the rest of the run.
+##
+## **Silent.** *"static blockages in general shouldn't increase excitement"* — this is the widest
+## hard seal in the game (`obstructs_radius` 62, the whole street), so its route cost is already
+## the largest in the catalogue; an ambient field on top billed nothing she could see past the wall
+## itself.
 static func _barricade() -> EventDef:
 	var def := EventDef.new()
 	def.id = "barricade"
@@ -1144,7 +1221,7 @@ static func _barricade() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.BARRICADE
 	def.act_tag = 4
-	def.intensity = 6.0
+	def.intensity = 0.0
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9

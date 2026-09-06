@@ -36,11 +36,17 @@ var _debug := OS.is_debug_build()
 ## layer draws instead of a `SHIFT` key a touch device does not have.
 var _touch := TouchInput.available()
 
-## Which of the two control schemes is driving this run. Read once from `ControlsMode`, the same
-## pattern `_touch` follows, so the walking and running lessons name a tap rather than a control
-## tap mode does not draw, and so the pause lesson knows to say nothing at all — see
-## `_teach_the_pause()`.
-var _controls_mode := ControlsMode.resolve()
+## Which of the two control schemes is driving this run, so the walking and running lessons name a
+## tap rather than a control tap mode does not draw, and so the pause lesson knows to say nothing
+## at all — see `_teach_the_pause()`.
+##
+## **Not read from `ControlsMode` at `_ready()`.** The title screen may still be asking when day 1
+## already starts behind it (see `main._open_the_title()`), so there is no answer to cache yet —
+## `main` calls `set_controls_mode()` the moment there is one, whether that is immediately (a flag
+## or a URL skipped the question) or once the player has pressed one of the title's own two
+## buttons. Defaults to the stick, the same fallback `ControlsMode.from_word("")` itself falls back
+## to, so a test that never calls the setter still gets a sensible shape.
+var _controls_mode := ControlsMode.Mode.STICK
 
 var _baby: Baby
 var _contact_step := 0
@@ -346,6 +352,22 @@ func _refresh_resistance() -> void:
 		if step:
 			line += "   somewhere out there: %s" % step.title.to_lower()
 	_resistance_label.text = line
+
+## `main`'s own answer to which control scheme is driving this run — see `_controls_mode`'s own
+## doc for why this is a setter rather than something read here at `_ready()`.
+##
+## **Re-announces day 1's opening line if it already went out.** `_teach_the_day(1)` fires from
+## `EventBus.day_started` the moment the day is built, which for the very first day is *before* an
+## interactively-asked title screen has closed — so that line may have already guessed the stick
+## from the still-default `_controls_mode` above. The HUD is hidden behind the title for the whole
+## of that wait, so nobody has read the guess yet; redoing it here, now that the real answer
+## exists, is free and is what keeps the line honest once the HUD becomes visible again. A day
+## already under way when this is called (every day but the first) is left alone — its own opening
+## line is long past and nothing here should replay it.
+func set_controls_mode(mode: ControlsMode.Mode) -> void:
+	_controls_mode = mode
+	if GameState.day == 1:
+		_teach_the_day(GameState.day)
 
 ## Forwarded from `main._apply_orientation()`. `HomeArrow` is the one child here that computes a
 ## screen position from a world one every frame rather than sitting still under `_root`'s own

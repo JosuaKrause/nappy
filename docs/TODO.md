@@ -44,6 +44,14 @@ instruction. [VISUALS.md](VISUALS.md) carries the design and implementation gate
 2. **M65** — the chalk mark is findable, and silent until it is found.
 3. **M56** — the resistance is noticed.
 
+**[PLAYTEST-25.md](PLAYTEST-25.md) is the freshest report and its nine findings are built** — the
+first phone session on the built mobile game and the first human verdict on the sealed city. The
+record is in `DECISIONS.md` under M73, M74 and M75. **What it leaves open is a played question and
+a shaped one.** Played: the barrier rows are silent and the two ambient radii are tight, and nobody
+has walked a city that costs what this one now costs. Shaped: **M61**, which is what the tightened
+radii are a stopgap for — the player's *"that number was so big because it was a point source
+before"* is the reason those numbers move again once a field takes the shape of its body.
+
 **The instrument they are read with now exists.** The dusk map draws the walk over the plan — where
 she went, where she ran, and which events actually reached her — so *did the corridor have to be
 walked* and *what did a day cost* are questions a picture can answer. See `DECISIONS.md` under M66,
@@ -698,9 +706,86 @@ thing than behind it.
       pointed at her that is a different sum, and a version stated over the mean radius would pass
       while the encounter it describes is unfair — the same failure `Tuning.pursuit_standoff()`
       exists to stop, one system over
-- [ ] **A stationary thing keeps its circle**, by construction: eccentricity from speed means zero
-      speed is a disc. So the change is *only* about the mobile rows, which is a much smaller blast
-      radius than it first reads as — and the pursuers are where it will be felt
+- [ ] **A field is the Minkowski sum of the body and a disc.** *(2026-09-05: "horizontal barriers
+      need a combination of rectangular and circular fields ... a rounded rectangle if you will ...
+      since they are not point sources", and then the general form: "basically for every base shape
+      the minkowsky sum of a circle and the shape should be the influence field".)*
+
+      **One rule, and every shape falls out of it**: the falloff is a function of the distance to
+      the **body**, not to a point. A point body gives the circle every field in the game already
+      has and nothing moves; a line segment gives a capsule — the "rounded rectangle"; a rectangle
+      gives a rectangle with rounded corners; any polygon gives itself offset outward.
+
+      **And the other operand is what folds this milestone's original instruction into the same
+      rule** *(2026-09-05: "that's for static objects. for moving objects one side of the sum is an
+      oval")*. The field is always `body ⊕ kernel`; only the kernel changes — a **disc** standing
+      still, an **ellipse** moving, eccentricity from speed. So the ellipse this milestone was
+      opened for is the second half of one sum rather than a system of its own, and a capsule that
+      is also eccentric is composition rather than a special case.
+
+      **Nobody has to compute a general Minkowski sum of two convex shapes** *(2026-09-05: "but most
+      moving objects are small enough to be a point")*. The two cases are disjoint in practice and
+      each collapses: a static body ⊕ a disc is a capsule, and a moving point ⊕ an ellipse is just
+      the ellipse. The cat, the loose dog, the cyclist, the flock and every pursuer are points. Only
+      something both large and moving — a vehicle — would want the general form, and whether any row
+      is worth it is a question for then rather than a reason to build it now.
+
+      **Keep M61's own offset when the kernel is an ellipse.** The original instruction says *"the
+      entity itself lives in one of the focus points"*, not at the centre, and that is load-bearing:
+      a kernel centred on the body is symmetric front to back and delivers none of the rationale it
+      was asked for — *"an entity moving towards you has more of an effect than if it moves away or
+      orthogonal"*. The offset buys the asymmetry; eccentricity alone does not.
+
+      The rows it changes are the ones drawn as a spread along a pavement — `cafe_tables` through
+      `EventInstance._draw_cafe`, and `construction`, `market_stall`, `barricade` and `delivery_van`
+      through `_draw_spread`. A café frontage currently prices somebody across the street exactly as
+      it prices somebody standing at the tables, reaching far perpendicular to itself and falling
+      short along its own length.
+
+      **The bodies, so this is not sized off a guess.** A spread is drawn `obstructs_radius` either
+      side of centre (`_draw_spread` and `_draw_cafe` both take `half = max(11, obstructs_radius)`),
+      so the frontages are 48px for `cafe_tables`, 56px for `market_stall`, 64px for `construction`,
+      44px for `delivery_van` and 124px for `barricade`.
+
+      **Only two of those five still emit**, and they are the two this bullet is really about:
+      `cafe_tables` carries 12.0 over 40/90px and `market_stall` 14.0 over 44/95px, so each is a
+      short body wearing a circle a little under twice its own length. `construction`,
+      `delivery_van` and `barricade` are at intensity 0 — their radii are dead numbers that price
+      nothing, and giving one of them a shape means first deciding it should emit again, which is a
+      separate question and one the player has already answered no to.
+
+      **The radii change meaning, and that has to be settled before any code**: `inner_radius` and
+      `outer_radius` stop meaning *distance from the centre* and start meaning *distance from the
+      body*. Identical for a point, not for a spread — so **carrying a number across unchanged
+      silently inflates it**: 90px kept as-is stops meaning 90px from the café's centre and starts
+      meaning 90px beyond the whole 48px frontage, a wider field than the one standing there today.
+      M75 tightened those radii *for* this change, and this is the way to undo its work by
+      accident — the number has to be re-derived from the body, not reused.
+
+      **Which way they should actually move is the player's own point** *(2026-09-05: "that number
+      was so big because it was a point source before")*: a field computed from one point has to be
+      wide enough to stand in for a thing that is not a point, so the radius was doing the body's
+      job. Once the shape carries the body, that job goes away and the number comes **down** — by
+      at least what the body was worth, and further wherever the reach was never justified. Every
+      row with a body gets its radii **derived**, never carried over. This is not the refactor it
+      looks like.
+
+      **This overturns the bullet that used to stand here** — *"a stationary thing keeps its circle,
+      by construction: eccentricity from speed means zero speed is a disc"*, and with it the
+      conclusion that this milestone touches only the mobile rows. *Overturned on 2026-09-05 by the
+      player, because a body's shape and a body's motion are two independent sources of shape, and
+      only the second one goes to zero when the thing stands still.* Whether the two compose — a
+      capsule that is also eccentric — is open, and nothing needs it answered while every capsule
+      row is stationary.
+
+      **It is M75's "close only" item seen from the other side, and that item has landed.**
+      `cafe_tables` went from a 170px reach to 90 and `market_stall` from 185 to 95, on the
+      reasoning that a café should bill somebody at the tables and not somebody across the street.
+      That is the stopgap; this is the fix. **The stopgap is now the thing to beat**: a 90px circle
+      still over-reaches perpendicular to a 48px frontage and under-reaches along it, so the number
+      to derive is not a shrink of 170 but a fresh answer measured from the body. The two rows'
+      catalogue docstrings say so where the numbers are, and expect both to move again when this
+      lands
 - [ ] **And it has to be visible.** The falloff is invisible today and that is fine because it is
       symmetric; a field that is stronger in front of a van is a routing fact the player can only
       learn by being told or by dying. Ask what draws it before deciding it is free

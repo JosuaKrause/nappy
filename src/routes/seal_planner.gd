@@ -79,7 +79,10 @@ extends RefCounted
 ## is a through-alley's *mouth*, and only when neither street it connects to is on today's tree:
 ## an alley that touches the corridor at either end is the way round a wall the design asks for,
 ## and one that touches it at neither end would only ever bridge two sealed streets — a second
-## city behind the walls rather than a door through them. See `_seal_alley_mouths`.
+## city behind the walls rather than a door through them. **And even then, only sometimes** —
+## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` rolls each qualifying alley rather than sealing every one of
+## them every day, so the alley reads as an occasional exception rather than a wall of its own. See
+## `_seal_alley_mouths`.
 
 enum Strength { HARD, SOFT }
 
@@ -147,7 +150,7 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 		else:
 			planned.append_array(placed)
 	planned.append_array(_thin_soft_pairs(soft_pairs, rng))
-	planned.append_array(_seal_alley_mouths(map, tree, day))
+	planned.append_array(_seal_alley_mouths(map, tree, day, rng))
 	return planned
 
 ## Whether `segment` is the main road. See the class doc: never a seal candidate, because
@@ -312,13 +315,17 @@ static func _hard_positions(map: CityMap, segment: StreetNetwork.Segment,
 
 # ----------------------------------------------------------------------- alleys ---
 
-## Seals the mouths of every through-alley that touches the tree at neither end. See the class
-## doc, "What alleys are for" — the smallest reading of a detail the design leaves open, taken
+## Seals the mouths of every through-alley that touches the tree at neither end — and only a
+## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` fraction of those, rolled once per qualifying alley. See the
+## class doc, "What alleys are for" — the smallest reading of a detail the design leaves open, taken
 ## rather than guessed at: an alley that touches the corridor at either end is kept open outright
-## (the way round a wall), and one that touches it at neither is walled at both ends rather than
-## left as a shortcut between two sealed streets.
+## (the way round a wall), and one that touches it at neither is a *candidate* to be walled at both
+## ends rather than left as a shortcut between two sealed streets. **A candidate, not a certainty**
+## — *(playtest 25, finding 5: "the probability of blocking off alleys should be way lower")* — since
+## walling every one of them, every day, is what made an alley read as closed off wholesale rather
+## than as the occasional exception the design wants.
 static func _seal_alley_mouths(map: CityMap, tree: RouteTree,
-		day: int) -> Array[EventScheduler.Planned]:
+		day: int, rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
 	var planned: Array[EventScheduler.Planned] = []
 	var def_id := _best_alley_mouth_def(day)
 	if def_id == "":
@@ -339,6 +346,11 @@ static func _seal_alley_mouths(map: CityMap, tree: RouteTree,
 		var a_rejoins := segment_a != null and tree.is_on_the_tree(segment_a.key())
 		var b_rejoins := segment_b != null and tree.is_on_the_tree(segment_b.key())
 		if a_rejoins or b_rejoins:
+			continue
+		# The roll is per qualifying alley, after the tree-connectivity rule already decided which
+		# alleys are candidates at all — so the fraction is of "alleys that would have been sealed",
+		# not of every alley in the city.
+		if rng.randf() >= Tuning.ALLEY_MOUTH_SEAL_CHANCE:
 			continue
 		planned.append(_alley_mouth_plan(map, rect, vertical, true, mouth_def))
 		planned.append(_alley_mouth_plan(map, rect, vertical, false, mouth_def))

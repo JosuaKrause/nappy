@@ -27,6 +27,13 @@ static func resolve() -> Mode:
 		word = _url_word()
 	return from_word(word)
 
+## Whether the command line or the URL has already answered the question, which is the one case a
+## run started with one must not be asked — *"a flag is how you skip the question"*. `TitleScreen`
+## reads this once at `_ready()` to decide whether it shows the two buttons or the single "space/tap
+## to begin" hint it always used to.
+static func is_forced() -> bool:
+	return DevFlags.controls_override() != "" or _url_word() != ""
+
 ## The bare mapping from a raw word — `DevFlags.controls_override()`'s or `_url_word()`'s own —
 ## onto a `Mode`. Pulled out so a test can ask the mapping directly without a real command line or
 ## a Web export to answer through.
