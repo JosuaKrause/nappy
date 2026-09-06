@@ -14,12 +14,33 @@ mid-way through.
 
 ## The order
 
-1. **M64** — off the path is closed, not dear. The sealing is built and every fairness defect
-   playtest 22 found in it is fixed; what is left is the eight seal pictures, so that no single
-   barrier becomes the city's signature, and the off-screen arrivals item. **Its open question is a
-   played one** — whether a walled city reads as a route decision or as a maze.
-2. **M65** — the chalk mark is findable, and silent until it is found.
-3. **M56** — the resistance is noticed.
+1. **M76** — a screen offers something to press: the title's choice reads as buttons, the input you
+   choose with is the input you play with, a summary takes a tap anywhere, and the restart that has
+   now been asked for twice gets built.
+2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+   never on screen counts as never placed.
+3. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
+   be watched.
+4. **M56** — the resistance is noticed.
+
+**Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
+deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
+other things")*. That is about the order and not about the worth of the items, so each keeps its
+entry and its reasoning and comes back when the overhaul lands.
+
+**Deferred by it, and each is a milestone of only its drawings**: **M64** (eight seal pictures, so
+no single barrier becomes the city's signature), **M65** (a protester who points at the objective),
+**M53** (the bollard, so a street that meets a precinct stops against something). **A milestone
+holds either drawings or not**, so that deferring one never parks work that needs no artist — which
+is why M77 and M78 stand apart from M64 and M65 rather than inside them.
+
+**M76 is not covered by the deferral** — *(2026-09-06: "this is not game graphics. buttons are just
+UI")*. A control nobody can see is a control that does not work.
+
+**M79 waits on the overhaul rather than behind it.** It is the city seen at an angle — a
+presentation change with the lattice left cardinal — and it is written down and tabled so that
+whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
+is not rejected.
 
 **[PLAYTEST-25.md](PLAYTEST-25.md) is the freshest report and its nine findings are built** — the
 first phone session on the built mobile game and the first human verdict on the sealed city. The
@@ -77,7 +98,182 @@ which proves only that the controls stay *off* where they should.
 
 ---
 
-## M64 — Nothing off the path · asked for 2026-09-02
+## M76 — A screen offers something to press · asked for 2026-09-06
+
+[PLAYTEST-26.md](PLAYTEST-26.md)'s four findings, and they are one complaint: **every screen in this
+game states its controls as a sentence, and a sentence is not a control.** The title screen's
+choice, the summary's dismissal and the missing restart are the same shape from three angles, which
+is why they are one milestone — fixing any one of them alone leaves the game still telling a player
+what to press where it should be offering something to press.
+
+**This is interface, not art, and that distinction is what keeps it in front of the deprioritised
+drawing work.** *(2026-09-06: "we deprioritize graphics works or bugs for now since a graphics
+overhaul is in-flight".)* A control nobody can see is a control that does not work.
+
+- [ ] **The title screen's two buttons do not read as buttons.** *(2026-09-06: "the choice on the
+      title screen is not at all obvious. those should be proper buttons".)* They already **are**
+      `Button` nodes — `Stick` and `Tap` under `Root/Bottom/Lines/Choice` in
+      `scenes/ui/title_screen.tscn` — so nothing has to be added. What the scene gives them is a
+      380x100 minimum size, a 15px font and wrapping, and nothing else, so they take Godot's default
+      flat theme and sit on the title's scrim looking like more of the label text directly above
+      them.
+
+      **Each carries a symbol for the mode it selects.** *(2026-09-06: "build buttons with symbols
+      indicating the mode (joystick for keyboard controls and something else for taps)".)* A
+      joystick for the stick scheme; the tap scheme's symbol is not chosen and is this item's one
+      open design question. The symbol is what makes the choice readable without the label being
+      read, which is the whole of the finding.
+
+      **Nothing in this game has ever drawn an interactive control in a `Control` node**, so there
+      is no house style to copy. The one place that draws a control at all is `TouchControls`, which
+      renders its stick, `RUN` and pause with its own `_draw()` and its own constants — worth
+      reading for the visual vocabulary before inventing a second one. **Decide whether a theme or a
+      `_draw()` is the right home before writing either**, because the item below needs the same
+      answer on two more screens, and three screens with three button styles is the failure this
+      milestone exists to stop
+
+- [ ] **The input you choose with should be the input you play with.** *(2026-09-06: "on the local
+      clicking should choose the tap and arrow keys should choose the controls".)* The principle is
+      stronger than the two mappings and it is the player's: clicking a button *is* tap-to-walk, and
+      pressing an arrow key *is* the stick scheme on a desktop, so each choice can be made by doing
+      the thing it selects — which means the screen stops needing to be read at all.
+
+      What `TitleScreen._unhandled_input()` does now: `ui_accept` (`space` and `enter`) chooses
+      stick, `t` chooses tap, a screen touch anywhere chooses stick, and a click chooses whichever
+      button it lands on through that `Button`'s own `pressed` signal. So **a click anywhere** must
+      come to mean tap, and **the arrow keys**, which do nothing on this screen today, must come to
+      mean stick.
+
+      **`space` stays** — *"we can keep space too I guess"* — and under the principle it means the
+      stick, which is what it already does. **`t` is dropped** *(2026-09-06, the player closing
+      their own "t I'm not so sure since it's a move from keyboard to mouse")*, which leaves the
+      principle without an exception: no key selects the scheme that is played with a mouse. The
+      hint loses *"space or t to choose"* and has to say the new shape instead
+
+- [ ] **A summary has to be tapped on its text, and the code says it should not.** *(2026-09-06:
+      "on mobile when the day ends or one dies you have to tap on the text right now I should be
+      able to tap anywhere or it should be obvious where I need to tap".)*
+
+      **Find the cause before designing anything**, because the report contradicts the source.
+      `DaySummary._unhandled_input()` already accepts any pressed `InputEventScreenTouch` with no
+      position test of any kind, so there is no region to widen. And neither touch handler is
+      swallowing it as far as reading them goes: `TapControls._input()` and `TouchControls._input()`
+      both run before `_unhandled_input`, but **neither file calls `set_input_as_handled()`
+      anywhere**, and `TouchControls._input()` returns immediately when it is not visible, which it
+      is not over a summary.
+
+      So the first half of this item is an investigation on a real device or a rig that reproduces
+      one. **The second half depends on the answer**: if tap-anywhere is broken, fix it; if it works
+      and was simply not discoverable, the player's own alternative is the design — *"or it should
+      be obvious where I need to tap"* — and that is the first item above, on a different screen
+
+- [ ] **The restart, asked for twice and designed once.** *(2026-09-06: "and there is no restart
+      button still", after 2026-09-05: "we need a dedicated button for restart from the pause
+      menu".)* **Do not design this again.** This milestone owns it on both screens, because the
+      two askings put the same control on each and one interaction learned once is the point. The
+      design: a **hold** that fills over about a second, chosen over a one-tap button and over
+      arm-then-confirm, labelled `hold to restart`, and tested against the
+      touch position before the catch-all that reads any touch on the pause screen as *carry on*.
+      Build that.
+
+      **It is both screens, with one pair of buttons.** *(2026-09-06: "on the day end and pause
+      screen show two buttons continue (arrow to the right maybe?) and restart game (must be held
+      down so a bar needs to fill up while pressing; maybe a circular arrow?)".)* That closes the
+      question of whether the queued pause-screen control was the whole answer: the day-end and
+      pause screens get **the same two buttons as each other**, so there is one interaction to learn
+      rather than two.
+
+      **Continue** is a tap, suggested as an arrow to the right. **Restart** is held, with a bar
+      that fills while it is pressed, suggested as a circular arrow — both symbols offered as
+      suggestions rather than decisions. The hold is what M60 had already chosen over a one-tap
+      button and over arm-then-confirm, on the reasoning that **every other pixel of those screens
+      means carry on**, so a brushed thumb would otherwise end a fourteen-day walk with no save in
+      it; this session repeats it independently and extends it to the summary.
+
+      **What that replaces**: the ending's *"tap to start again"*, a lost day's *"tap to go on"* and
+      *"tap to try again"*, and the pause screen's *"tap to carry on"* — sentences, every one, which
+      is this milestone's first item again.
+
+      **The trap is the catch-all.** `PauseScreen._unhandled_input` treats any pressed
+      `InputEventScreenTouch` exactly as `space` and closes the screen, and `DaySummary` does the
+      same, so a touch anywhere already means *carry on* on both. A held button has to be tested
+      against the touch position **before** that branch, the way `TouchControls._input` checks a
+      touch against its own catch radii before anything else claims it. **Do not rely on a `Button`
+      node consuming it**: Godot delivers the screen touch *and* an emulated mouse event, and these
+      screens read the touch itself on purpose, so the `Button` would eat the click while the raw
+      touch resumed underneath it.
+
+      **The keyboard keeps `R` and is not given a hold.** Nothing about the key is broken, and
+      `PauseScreen._refresh_hint()` already says the right thing per platform
+
+---
+
+## M77 — Everything arrives from off screen · asked for 2026-09-02
+
+**This stands apart from M64's seal pictures because it shares no code with them**: the pictures are
+drawings appended to a candidate list, and this is where a director sites a row. So the overhaul
+deferring the drawings does not reach it.
+
+- [ ] **Nothing arrives from off screen, and everything should.** *(2026-09-02: "the charging dog
+      doesn't have an offscreen indication it should start further away and appear first as
+      offscreen indicator", and "bikers / unleashed dogs all pop in in front of the player instead
+      of starting off screen".)* One defect across every director-sited row: a thing that
+      materialises inside the view has no approach, so the warning it owes is spent before the
+      player can watch it being spent. `DangerEdge` already draws the screen-edge badge for anything
+      off screen worth one, so the second half may be a consequence of the first — a dog sited
+      inside the view has no offscreen phase to be announced in.
+
+      **The care needed is the day-3 lesson.** `charging_dog` is deliberately unavoidable on the day
+      it teaches running, and a dog that starts further away is a dog with more room to be walked
+      around — which is the thing that placement was chosen to prevent
+
+---
+
+## M78 — The chalk mark can be found · asked for 2026-09-02
+
+Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
+should not be, and it cannot be found when it should be. **Neither needs a drawing**, which is why
+they stand apart from the protester's pointing pose in M65 — that one is deferred with the rest of
+the graphics work and these two are not.
+
+**The mark lives on an alley wall, and that was confirmed rather than newly decided.** *(2026-09-03:
+"let's use them as option to avoid obstacles and as chalk mark carriers".)* It is already the
+design — `docs/PLAYTEST-02.md` describes the mark as chalk on an alley wall, and the re-placement
+rule below is stated in the player's own words as *"the next alley the player comes close to"*. What
+the confirmation adds is the other half of the same sentence: under M64 an alley is also the way
+round a wall, so the ground the resistance is written on is ground the sealing already gives her a
+reason to enter. See M64, "What alleys are for, then, is going round a wall".
+
+- [ ] **The first chalk mark is named in the status line.** *(2026-09-02: "the first chalk mark is
+      written in the status when it should not be.")* Seen in the screenshot as
+      `resistance ....   somewhere out there: a chalk mark`, before the player had found anything.
+      **This is the no-hint rule leaking**, and that rule is in `CLAUDE.md` under things
+      deliberately not done: *the **first** encounter comes with no hint at all, because finding the
+      difficulty dial is meant to be the player's own doing. After that the resistance speaks.* The
+      HUD line is fed by `resistance_contact_available`, which does not distinguish the first mark
+      from the rest
+- [ ] **A mark that was never on screen was never placed.** *(2026-09-02: "it's hard to find the
+      chalk mark remember it should be dynamically placed on the path where the player can see it.
+      if it was placed but never on screen it should count as not placed and be placed on the next
+      alley the player comes close to.")* *"Remember"* is right — placing it on the path is already
+      the design; what is new is the **re-placement rule**, and it is a shape nothing in the game
+      has: `ClosurePlanner` and `EventScheduler` both decide at dawn and stand, and this follows the
+      player through the day.
+
+      It is also what makes finding 1's silence fair: a first encounter with no hint is only
+      reasonable if the thing can actually be come across
+
+---
+
+## M64 — Eight seal pictures · asked for 2026-09-02
+
+**Deferred while the graphics overhaul is in flight**, because all that remains here is eight
+drawings. The sealing itself is built and its record is in `DECISIONS.md` under M64; the off-screen
+arrivals item this milestone also carried is M77 and is not held behind the pictures.
+
+**Its open question is a played one and does not wait on either** — whether a walled city reads as a
+route decision or as a maze. Everything below is the reasoning the pictures are drawn against.
+
 
 > "there is almost never anything when leaving a path. all events are on the path (restaurant
 > yeller etc are all *for* the path they force you to switch street sides) but there is *nothing*
@@ -397,22 +593,14 @@ looking at plans before the director sites them rather than a day with no set pi
 
 The probe that produced all of this is kept on this milestone's own branch, so that *measure it
 again after* means running the same thing rather than reinventing it.
-- [ ] **Nothing arrives from off screen, and everything should.** *(2026-09-02: "the charging dog
-      doesn't have an offscreen indication it should start further away and appear first as
-      offscreen indicator", and "bikers / unleashed dogs all pop in in front of the player instead
-      of starting off screen".)* One defect across every director-sited row: a thing that
-      materialises inside the view has no approach, so the warning it owes is spent before the
-      player can watch it being spent. `DangerEdge` already draws the screen-edge badge for anything
-      off screen worth one, so the second half may be a consequence of the first — a dog sited
-      inside the view has no offscreen phase to be announced in.
-
-      **The care needed is the day-3 lesson.** `charging_dog` is deliberately unavoidable on the day
-      it teaches running, and a dog that starts further away is a dog with more room to be walked
-      around — which is the thing that placement was chosen to prevent
 
 ---
 
-## M53 — The precinct is for walking
+## M53 — The bollard
+
+**All that remains here is one drawing**, so it is deferred while the graphics overhaul is in
+flight, alongside M64's seal pictures and M65's pointing protester. Everything else about the
+precinct is built.
 
 A precinct is paving frontage to frontage with nothing driving on it, on either axis, and a street
 that meets one ends at its edge. What remains is that the ending is not *drawn* as anything.
@@ -431,37 +619,17 @@ that meets one ends at its edge. What remains is that the ending is not *drawn* 
 
 ---
 
-## M65 — The chalk mark is findable, and silent until it is found · asked for 2026-09-02
+## M65 — A protester points at the objective · asked for 2026-09-03
 
-Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
-should not be, and it cannot be found when it should be.
+**Deferred while the graphics overhaul is in flight**, because the pose is a drawing. The two
+findings this milestone was opened for — the first mark being announced, and a mark that was never
+on screen — are M78 and are not held behind it.
 
-**The mark lives on an alley wall, and that was confirmed rather than newly decided.** *(2026-09-03:
-"let's use them as option to avoid obstacles and as chalk mark carriers".)* It is already the
-design — `docs/PLAYTEST-02.md` describes the mark as chalk on an alley wall, and the re-placement
-rule below is stated in the player's own words as *"the next alley the player comes close to"*. What
-the confirmation adds is the other half of the same sentence: under M64 an alley is also the way
-round a wall, so the ground the resistance is written on is ground the sealing already gives her a
-reason to enter. See M64, "What alleys are for, then, is going round a wall".
+**Half of this item needs no drawing at all**, and is worth lifting into M78 if the mark is still
+hard to find once the re-placement rule lands: raising how often a protester appears is a density
+change, and the player's own reason it is cheap is that a protester obstructs nothing and pursues
+nothing, so it does not compete for the catalogue's placement budget.
 
-- [ ] **The first chalk mark is named in the status line.** *(2026-09-02: "the first chalk mark is
-      written in the status when it should not be.")* Seen in the screenshot as
-      `resistance ....   somewhere out there: a chalk mark`, before the player had found anything.
-      **This is the no-hint rule leaking**, and that rule is in `CLAUDE.md` under things
-      deliberately not done: *the **first** encounter comes with no hint at all, because finding the
-      difficulty dial is meant to be the player's own doing. After that the resistance speaks.* The
-      HUD line is fed by `resistance_contact_available`, which does not distinguish the first mark
-      from the rest
-- [ ] **A mark that was never on screen was never placed.** *(2026-09-02: "it's hard to find the
-      chalk mark remember it should be dynamically placed on the path where the player can see it.
-      if it was placed but never on screen it should count as not placed and be placed on the next
-      alley the player comes close to.")* *"Remember"* is right — placing it on the path is already
-      the design; what is new is the **re-placement rule**, and it is a shape nothing in the game
-      has: `ClosurePlanner` and `EventScheduler` both decide at dawn and stand, and this follows the
-      player through the day.
-
-      It is also what makes finding 1's silence fair: a first encounter with no hint is only
-      reasonable if the thing can actually be come across
 - [ ] **A protester points at the objective, and there are more of them.** *(2026-09-03, playtest
       20: "the chalk is currently unfindable I spent almost a full day searching for it. let's make
       the protesters point into the direction (with their arms or something) of the current
@@ -541,110 +709,12 @@ record — including why the pause button is the one control that sends an event
 an action — is in `DECISIONS.md` under M60. **Three things are left, and two of them want a real
 device or the real address:**
 
-- [ ] **The rotated presentation is three different rotations in one picture.** *(2026-09-05,
-      [PLAYTEST-23.md](PLAYTEST-23.md), the first phone session on it: "controls are the only things
-      that are rotated correctly".)* The standing instruction is that the game **always does**
-      landscape — *"the game should be rotated in the viewport — so when I'm looking at it it should
-      be sideways"* — and a portrait phone does now get a rotated game. What it does not get is one
-      rotated game. Four things are wrong and they are one root: **the rotation is implemented three
-      separate times, so the three can disagree, and two of them do.**
+**The restart button this screen needs is M76's**, together with the day-end screen's, because the
+same pair of controls was asked for on both and one interaction learned once is the point of putting
+them there. It is not an item here and nothing about it is recorded here: the hold, the label, the
+catch-all it has to be tested before, and why `R` keeps the keyboard to itself are all in M76's
+fourth item.
 
-      - **The world is 180° from the controls.** *("the game area is rotated 180 from that".)*
-        `Stroller.set_screen_rotation()` turns the world by setting `Camera2D.rotation` to +90° and
-        clearing `ignore_rotation`; `TouchControls._draw` turns the buttons by setting
-        `ScreenOrientation.rotation_transform()` — a +90° rotation and a recentre — for the whole
-        draw call. **A camera turning one way swings the world the other way on screen**, so two
-        +90°s land 180° apart. The controls are the half the player says is right, so the camera is
-        the half that flips.
-      - **The text is not rotated at all.** *("the text is not rotated at all".)* The HUD (the clock,
-        the two meters, the resistance line, the developer readout), the pause screen, the day
-        summary and the title screen are `Control` nodes under `CanvasLayer`s, and nothing in the
-        change touched them. It was named as a known limitation before release and published anyway.
-        **It is not a limitation, it is the feature half-built:** upright text is the largest, most
-        readable thing on the screen, and it is saying the screen is not sideways.
-      - **Auto-rotate on stops the rotation and leaves the play area portrait-shaped, and it does not
-        recover.** *("if I turn on auto rotate it behaves correctly (stops rotating in game) but the
-        viewport is now higher than wide and the game is stretched vertically", and then "if I then
-        rotate back it stays like that".)* `main._apply_orientation()` sets the content box, the
-        camera and the controls from one boolean, so those three cannot disagree *inside* one call —
-        but it runs only at startup and on the window's `size_changed`. A signal that arrives with a
-        stale size, or does not arrive at all, latches the wrong content box until a reload. With
-        `window/stretch/aspect="keep"` in `project.godot`, a 720×1280 content box left in force on a
-        landscape window is a tall strip down the middle, which is the shape being reported.
-
-      **The fix is one rotation, applied once, to everything on the screen.** Every `CanvasLayer`
-      carries `ScreenOrientation.rotation_transform()` and every layer's children are laid out
-      against the 1280×720 design box rather than against the swapped viewport — three of the five
-      scene layers already have the single `Root` `Control` that needs, so the HUD is the one that
-      wants a root inserted. Then `TouchControls`' own `draw_set_transform_matrix` is redundant and
-      goes, the camera stops being a second implementation, and there is no third place for the text
-      to be forgotten in.
-
-      **And the decision is re-asked continuously rather than on a signal**, since a missed or
-      early-fired `size_changed` is exactly what the latch is made of. Recomputing
-      `ScreenOrientation.wants_rotation()` every frame and applying only on change costs a vector
-      comparison.
-
-      **The device's own orientation is never touched.** *(2026-09-05: "don't try to **change**
-      landscape/portrait mode — work with what you have".)* No orientation lock, no manifest
-      orientation, no fullscreen request — only how the game lays itself out in the viewport it is
-      given. That is also why it works on iOS Safari in a tab, which has no orientation API at all.
-
-      **The two rejected levers, named so they are cheap to pick up if this one disappoints:**
-      writing the PWA manifest (`progressive_web_app/enabled=false` today, so
-      `progressive_web_app/orientation=1` is written into nothing) would give a real lock to an
-      installed web app; and moving `screen.orientation.lock` onto the first tap after requesting
-      fullscreen — it is called from `DOMContentLoaded` today, outside the gesture and the
-      fullscreen it requires, so it is rejected every time — would give one to Chrome for Android.
-      **Both are ruled out by the instruction rather than by cost:** each one *changes* the device's
-      orientation mode, and a phone whose owner turned auto-rotate off has said what they want.
-
-      **It has to be photographed, and it was one shell argument away from being photographable.**
-      `--touch` already forces `TouchInput.available()` true in a debug build — it is how M60's
-      on-screen stick and `RUN` button were looked at — but `tools/shot.sh` passes a hardcoded
-      `--resolution 1280x720`, so every picture the rig can take is of the landscape branch, which
-      was already correct. **`shot.sh` takes a resolution**, and the rotated branch is looked at in a
-      portrait window before anything is called done. A test that asserts a transform cannot catch a
-      sign error the transform and the drawing share — that is how three of these four shipped
-
-- [ ] **A phone cannot start the run again, and wants a button on the pause screen that can.**
-      *(2026-09-05: "we need a dedicated button for restart from the pause menu".)* Restarting is
-      `R`, a key, and `PauseScreen._refresh_hint()` deliberately drops it from the touch hint — which
-      reads only *"tap to carry on"* — on the correct grounds that naming a key a device has not got
-      is *"the same defect class `q to quit` was"*. The drop is real and not cosmetic: the restart
-      arm of `_unhandled_input` is reached only through an `InputEventKey`, so with no keyboard there
-      is no restart at all. **The two ways off a phone today are to spend all five nerves and take
-      the ending, whose summary offers *"tap to start again"*, or to reload the page.** The pause
-      screen's own reasoning is what this fails: `R` exists because *"a run is also abandonable long
-      before it has ended — a day gone wrong on a city you do not want to walk any more is exactly
-      when somebody reaches for the pause"*, and the touch build is the one shape where that argument
-      does not land.
-
-      **It is held, not tapped.** *(2026-09-05, chosen over a one-tap button and over an arm-then-
-      confirm second tap.)* A press that fills over about a second and restarts on completion. The
-      existing note that `R` is *"deliberately not confirmed"* rests on *"`R` is not next to `Esc`"*
-      — and that is exactly what stops being true on a screen where **every other pixel means carry
-      on**, so a brushed thumb would end a fourteen-day walk with no save in it. A hold cannot be
-      triggered by a brush, and it needs no second screen state.
-
-      **The label is the instruction: `hold to restart`.** *(2026-09-05: "just make the description
-      'hold to restart' or something like that".)* Nothing else in the game teaches a hold, so the
-      one thing that makes it discoverable is the button saying so on its face — the same shape the
-      rest of this screen already uses, where the hint names the action rather than leaving it to be
-      found.
-
-      **The trap is the catch-all above it.** `PauseScreen._unhandled_input` treats any pressed
-      `InputEventScreenTouch` exactly as `space` and closes the screen, so a touch anywhere resumes.
-      A restart control has to be tested against the touch position **before** that branch, the way
-      `TouchControls._input` checks a touch against `RUN_CATCH_RADIUS` (how near the `RUN` button a
-      thumb must land) before anything else claims it. **Do not rely on a `Button` node consuming
-      it**: Godot delivers the screen touch *and* an emulated mouse event, and this screen reads the
-      touch itself on purpose — *"the touch event itself, not a synthetic click, so the desktop keeps
-      behaving as it always has"* — so the `Button` would eat the click and the raw touch would still
-      resume underneath it.
-
-      **The keyboard keeps `R` and is not given a hold.** Nothing about the key is broken, and the
-      hint already says the right thing on each platform from `_refresh_hint()`
 - [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
       pointing home, and the stick and the run button sit at that height on both sides — so during
       the return phase the one cue that says *this way home* can be under the finger steering her
@@ -960,9 +1030,9 @@ and something has to walk her to it — which is the first real question this mi
 the game's only verb is *where do I walk* and a tap that pathfinds is the game choosing the route
 she takes through the thing the whole design is about.
 
-**Sequence this after M60's rotation fix.** Both rewrite `src/ui/touch_controls.gd` and
-`src/main.gd`, so run them one after the other rather than side by side; two agents in those two
-files is a merge conflict scheduled in advance.
+**Do not run this beside anything else that touches `src/ui/touch_controls.gd` or `src/main.gd`** —
+two agents in those two files is a merge conflict scheduled in advance, and both are where the
+rotated presentation and the control schemes already meet.
 
 - [ ] **What a tap means: a straight line, and nothing cleverer.** *(2026-09-02: "the tap should
       just be a straight path — no collision avoiding path.")* A single tap walks to the point, a
@@ -1368,6 +1438,121 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
       has no row for it — so a reader of a run log meets a kind the documentation does not admit
       exists. One row, and the check that would have caught it is whether anything asserts the two
       lists agree
+
+---
+
+## M79 — The city seen at an angle · tabled 2026-09-06
+
+**Tabled, and the reason is sequencing rather than doubt.** *(2026-09-06: "let's write down the
+findings about the diagonal grid but table it for now".)* Nothing here is rejected; it is written
+down so the graphics overhaul can decide the projection with the code's constraints in front of it
+rather than after committing to art. **What would make it worth picking up**: the overhaul reaching
+the point where it chooses a projection, and somebody confirming the existing rotated presentation
+on a real phone — not a complaint about how the city looks today.
+
+The reference the player gave is `docs/evidence/reference-isometric-street-2026-09-06.jpeg`: a 2:1
+isometric street with buildings as tall volumes, pedestrians, cars and a pram. **Its HUD is not part
+of this.** *(2026-09-06: "ignore the hud in the image".)* That picture's bottom bar carries verbs —
+Feed, Soothe, Order Pizza — and this game has one verb, which is where you walk.
+
+**The instruction is a presentation change and nothing else.** *(2026-09-06: "the logical layout
+would stay the same only the presentation would rotate".)*
+
+- [ ] **Only the world-to-screen transform changes; the lattice does not.** The tile grid stays
+      cardinal `Vector2i`, so the lattice, `RouteTree`, `ClosurePlanner`, `SealPlanner`, the crowd's
+      lanes and every test are untouched. **This is the whole reason a diagonal *lattice* is not
+      what is being asked for**, and it is worth stating why that alternative is closed: `CityMap`'s
+      layout is a modulo — its own comment, *"a coordinate's position within its period tells you
+      which it is"*, over a period of `BLOCK_SIZE + STREET_WIDTH` tiles — and a 45° street has no
+      period in tile coordinates. Every segment is horizontal or vertical down to the vocabulary
+      (`closure.segment.horizontal`, logged as `h(7,4)` and `v(8,6)`), the crowd is built on
+      `travelling_vertically()` and `make_lane_key(vertical, corridor, lane, direction)`, and
+      `TrafficLight.arm_is_vertical` even picks a different sprite. A diagonal lattice is a rewrite
+      of the city that buys nothing the route decision can feel — she still chooses between streets
+
+- [ ] **The buildings are already 2.5D, which is what makes this cheap.** `Building` is *"a 2.5D
+      extruded block, assembled from 32px facade and roof tiles"* — a front wall in elevation plus a
+      roof, from `wall.svg`, `wall_edge_w/e.svg`, `roof.svg` and `roof_edge_n.svg`, and each one is
+      its own `StaticBody2D` node in `City._spawn_buildings()`. So the facade vocabulary exists and
+      is not top-down art to re-author, and per-building translucency is `modulate` on one node
+      rather than a restructure
+
+- [ ] **What rotation destroys is a guarantee, and replacing it is the actual work.** `Building`'s
+      class doc: *"nothing can ever legitimately be **behind** a building, so nothing sorts against
+      one."* The layout guarantees there is no walkable ground behind a building's mass, so occlusion
+      never has to be solved and no real y-sorting is needed. **Rotate and that is gone** — a rotated
+      lot puts its own pavement behind its own wall. So this item is: replace a layout guarantee with
+      a runtime rule, and add the y-sorting nothing does today
+
+- [ ] **Buildings in front fade or vanish, and "when necessary" is wider than the player.**
+      *(2026-09-06: "buildings in front could become translucent or disappear when it becomes
+      necessary".)* The standard answer is *"when it hides the character"*, and that is too narrow
+      here: the route decision depends on seeing the things you route around. The must-see set is the
+      player, any event carrying a mark (`EventInstance.wants_a_mark()`), anything `DangerEdge` would
+      badge if it were off screen — an occluded thing is that same question in a new form — and the
+      home arrow's target during the return. Cost is a per-frame test of a few dozen buildings
+      against a handful of points, the same order as the event scan `CLAUDE.md` already calls free.
+
+      Two calls inside it: **fade or vanish** — fade keeps a street legible as a street, vanishing is
+      unambiguous but flickers at the threshold — and **whether a fading building is itself a cue**.
+      If you learn *something is there* because a wall went translucent, the **cues** rules govern it
+      and it owes the same discipline as the rest of the danger vocabulary
+
+- [ ] **It must be a real camera transform, not faked in `_draw()`.** `TapControls._on_tap()` maps a
+      tap to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, and
+      `DangerEdge` and `HomeArrow` both go the other way every frame from the same transform. A real
+      transform keeps all three working; a fake one breaks every one of them. Two more that follow:
+      `main.gd`'s camera fit sets zoom from an axis-aligned bound and would be fitting a diamond, and
+      `city.gd` draws kerbs, centre lines and zebras as axis-aligned rects off `STREET_WIDTH`
+
+- [ ] **The gameplay cost is the keyboard, and it is the one real objection.** *(2026-09-06: "what
+      would be the implication on gameplay? if down the line tap becomes the default it's fine. but
+      keyboard controls become clunky in diagonal".)*
+
+      **The collision and the physics do not change at all** — the world stays cardinal and only the
+      camera turns, so pavements, lanes, bodies and every fairness contract are untouched. What
+      changes is that `Stroller` reads `Input.get_vector("move_left", "move_right", "move_up",
+      "move_down")`, a normalised vector **in world space**, so a key press stops pointing where she
+      visibly goes. There is no arrangement that avoids this, only a choice of which way it hurts:
+
+      - **Keys on world axes** (one key follows a street exactly, and on screen she sets off at 45°
+        to the key pressed). Correct for the game — a street is the thing you walk — and it is what
+        most isometric games do, but it is exactly the clunkiness named above.
+      - **Keys rotated to the screen** (up walks up the screen). Reads right for one second and then
+        walks her diagonally into buildings, since up-the-screen is a world diagonal and no street
+        goes that way. She would slide along walls constantly.
+
+      **And it inverts what two keys mean.** Today holding two gives a true diagonal along open
+      ground. Rotated, with keys on world axes, a single key follows a street and **two keys point
+      between buildings** — so the combination a player reaches for becomes the useless one.
+
+      **Tap has none of this.** `TapControls._on_tap()` already maps a screen point to a world point
+      through `get_viewport().get_canvas_transform().affine_inverse()`, so a rotated camera is
+      handled by the transform and costs the design nothing: you tap where you want to be.
+
+      **So this item is coupled to which control scheme is the default**, and that is a decision
+      rather than a consequence. The player's own condition is written above — *if tap becomes the
+      default it's fine* — and it does not overturn M68's verdict that both schemes are keepers
+      (*"I like both control modes equally"*): both would still ship, and M76's title screen would
+      still ask. What would change is which one a fresh install starts from. **Settle that before
+      this is scheduled**, because if the answer is that the keyboard stays the default, the
+      objection above stands unanswered and the whole item should stay tabled
+
+      *(The on-screen stick has the same problem and the same fix: `TouchControls` drives the four
+      `move_*` actions from its own screen-space vector, and `ScreenOrientation.to_design_space()`
+      already does exactly this correction for the 90° portrait case, so the machinery exists.)*
+
+- [ ] **Spike the transform alone on the existing square art before anybody draws anything** —
+      proving tap-to-world, the edge cues, the zoom fit and y-sorting survive, with no new art,
+      because that is what de-risks the expensive half.
+
+      **The rotation it composes with is already one rotation**, which is what makes the spike
+      worth doing rather than doomed: `ScreenOrientation` carries a single transform applied to
+      every `CanvasLayer`, `main._process()` re-asks `wants_rotation()` every frame and reapplies
+      only on change, and `TouchControls` no longer turns itself. **What is not settled is a sign
+      error the world and the drawing could share**, which `tests/test_orientation.gd` says outright
+      it cannot catch — so the spike is looked at in a portrait window with `tools/shot.sh`'s
+      resolution argument, not judged from a passing suite
 
 ---
 
