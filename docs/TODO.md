@@ -14,14 +14,19 @@ mid-way through.
 
 ## The order
 
-1. **M76** — a screen offers something to press: the title's choice reads as buttons, the input you
-   choose with is the input you play with, a summary takes a tap anywhere, and the restart that has
-   now been asked for twice gets built.
-2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M80** — the page a player opens is the release that was cut, and a shared link carries its
+   picture. **First because every other fix in this file is invisible until it is**: the site serves
+   a build the browser may not go back for, so a milestone that lands is not a milestone that
+   arrives.
+2. **M76** — a screen offers something to press: a summary takes a tap anywhere, the restart that
+   has now been asked for three times gets built, and a press says it was heard.
+3. **M81** — the scheme you chose is the scheme you can play: tap mode does nothing on a laptop,
+   and the drag stick becomes a joystick that is aimed rather than gripped.
+4. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-3. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
+5. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
    be watched.
-4. **M56** — the resistance is noticed.
+6. **M56** — the resistance is noticed.
 
 **Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
 deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
@@ -42,7 +47,18 @@ presentation change with the lattice left cardinal — and it is written down an
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
 
-**[PLAYTEST-25.md](PLAYTEST-25.md) is the freshest report and its nine findings are built** — the
+**[PLAYTEST-27.md](PLAYTEST-27.md) is the freshest report**, the second session on the released
+page and the first played on both a laptop browser and a phone. Its six findings are M80 (a build
+that does not arrive, and a shared link with no picture), M76 (a press that is not acknowledged, and
+the continue and restart buttons asked for a third time) and M81 (tap mode dead on a laptop, and the
+joystick that is aimed rather than gripped). **Nothing in it is built.** Read it before picking up
+any of those three.
+
+**[PLAYTEST-26.md](PLAYTEST-26.md) is the one before it**, and half of it is built: the title
+screen's two circular buttons and the input-you-choose-with rule shipped, the summary's tap and the
+restart did not — they are M76's two open items.
+
+**[PLAYTEST-25.md](PLAYTEST-25.md)'s nine findings are built** — the
 first phone session on the built mobile game and the first human verdict on the sealed city. The
 record is in `DECISIONS.md` under M73, M74 and M75. **What it leaves open is a played question and
 a shaped one.** Played: the barrier rows are silent and the two ambient radii are tight, and nobody
@@ -56,7 +72,7 @@ walked* and *what did a day cost* are questions a picture can answer. See `DECIS
 and `docs/TELEMETRY.md` for what the map draws. This is also the instrument playtest 20 was read
 with — a full seven-day run's fourteen maps, copied into `docs/evidence/`.
 
-**Playtest 22 is the freshest thing in this file and every one of its findings is built** — the two
+**Playtest 22's findings are every one of them built** — the two
 barrier-placement defects, the doorstep that could be sealed in, the winnability check that proved
 reachability rather than survivability, the route that ran alongside the main road, and the seals
 thinned so the guidance stops reading as guardrails. The record is in `DECISIONS.md` under M64.
@@ -98,6 +114,91 @@ which proves only that the controls stay *off* where they should.
 
 ---
 
+## M80 — The release arrives, and the link carries its picture · asked for 2026-09-06
+
+[PLAYTEST-27.md](PLAYTEST-27.md)'s first and fifth findings. Both are about the **published page**
+rather than about the game, which is why they are one milestone: neither is reachable from
+`tools/run.sh`, both are settled in `export_presets.cfg` and `.github/workflows/deploy.yml`, and
+both are checked with `curl` against the live site rather than with the suite.
+
+**It is first in the order because everything else in this file depends on it.** A fix that a
+browser does not go back for is a fix nobody receives, and the next playtest would be run on a build
+that is partly the last one.
+
+- [ ] **The browser serves a stale — or mixed — build after a release.** *(2026-09-06: "the browser
+      doesn't automatically refresh to the newest release I think the caching is not based on
+      etag?".)*
+
+      **The mechanism, measured against the live site.** GitHub Pages sends an `ETag` for every file
+      *and* `Cache-Control: max-age=600` beside it. `max-age` is what decides whether the browser
+      asks at all: inside those ten minutes the cached copy is considered fresh and no request is
+      made, so the `ETag` is never offered and never compared. The player's guess is right in
+      effect — the page is not refreshing on an `ETag` because there is no request for one to ride
+      on.
+
+      **The worse half is that the four files expire independently.** The export is `index.html`,
+      `index.js`, `index.wasm` (39.5 MB) and `index.pck` (2.4 MB), all under fixed names that never
+      change between releases — the generated `index.html` carries `"executable":"index"` in its
+      `GODOT_CONFIG` and the engine appends `.wasm` and `.pck`. Each file's ten minutes starts when
+      that file was last fetched, so a reload part-way through can pair a fresh `index.html` against
+      last release's `index.pck`. That is a **mixed** build, not a stale one, and it would present
+      as the game behaving strangely rather than as anything anybody would call a cache problem.
+
+      **No header fix exists.** GitHub Pages has no `_headers`, no `.htaccess` and no configuration
+      surface; `max-age=600` is the host's and cannot be changed from this repository. **So the fix
+      is in the names**: the URLs have to change when the release changes, which makes a cached copy
+      irrelevant rather than merely stale.
+
+      **The shape to build, and the one constraint that decides it.** Put the three large files in a
+      directory named for the release tag — `build/web/<tag>/index.{js,wasm,pck}` — and leave
+      `index.html` alone at the root as the only unversioned file, where a ten-minute window is
+      harmless because it is 6 KB and always fetched before anything else. `deploy.yml` already
+      knows the tag (`github.ref_name`, which it writes into `project.godot` for the version label),
+      so the move plus a rewrite of the `<script src="index.js">` line and of `GODOT_CONFIG`'s
+      `"executable"` is what publishes it. **The constraint is that the engine builds the wasm and
+      pack URLs by concatenating `executable` with `.wasm` and `.pck`**, so a query string
+      (`index.js?v=…`) cannot be used for those two — a path prefix can, because `"v0.3.0/index"`
+      concatenates correctly. Check that against the exported shell before building on it.
+
+      **What makes it verifiable**: after a release, `curl -sI https://nappy.josuakrause.com/<tag>/index.pck`
+      answers 200, and the root `index.html` names that path and no other
+
+- [ ] **A shared link unfurls with no picture.** *(2026-09-06: "the social media images don't load.
+      are they properly set? compare with josuakrause.com".)* Seen in a messaging app
+      *(2026-09-06, asked where: WhatsApp / Signal / iMessage)*.
+
+      **The image is published and reachable, so this is markup and file format rather than a
+      missing file.** `https://nappy.josuakrause.com/social-card.png` answers 200 with
+      `Content-Type: image/png` and 49,894 bytes, for an ordinary browser and for each of
+      `facebookexternalhit`, `Twitterbot`, `WhatsApp` and `Slackbot-LinkExpanding`. The `og:image` is
+      an absolute `https://` URL and it is in the head.
+
+      **Four differences against `josuakrause.com`, which is the comparison that was asked for**, and
+      the messaging-app answer says the first two matter most:
+
+      - **The card carries an alpha channel and the reference does not.** `assets/logo.png` is
+        `PNG image data, 1280 x 640, 8-bit/color RGBA`; `josuakrause.com`'s
+        `img/photo_675x630.png` is `8-bit/color RGB`. A transparent PNG is the classic reason a
+        messaging client drops a card image or paints it black. **Flatten it onto an opaque
+        background** — and flatten the *published* copy in `deploy.yml`, or keep a separate opaque
+        card asset, rather than changing `assets/logo.png`, which is also the README's image.
+      - **The dimensions and type are not declared.** Add `og:image:type`, `og:image:width` (1280)
+        and `og:image:height` (640) to `html/head_include`. `josuakrause.com` sends all three; a
+        client that would otherwise have to fetch and measure the image itself often just skips it.
+      - **There is no `twitter:image`.** The page sets `twitter:card` to `summary_large_image` and
+        then names no image under the `twitter:` prefix at all. Add `twitter:image` and
+        `twitter:title` beside the `og:` pair.
+      - **There are two `<title>` elements.** Godot's own shell writes `<title>Nappy</title>` and
+        `html/head_include` adds a second, longer one after it, so a scraper that takes the first
+        gets `Nappy` rather than the sentence written for it. This does not explain a missing image
+        and is wrong on its own account.
+
+      **The quoting trap is already recorded and still applies**: `html/head_include` is one long
+      double-quoted `.cfg` value, so every attribute inside it is single-quoted — a literal `"`
+      ends the string early and presents as a broken export rather than as a quoting bug
+
+---
+
 ## M76 — A screen offers something to press · asked for 2026-09-06
 
 [PLAYTEST-26.md](PLAYTEST-26.md)'s four findings, and they are one complaint: **every screen in this
@@ -109,6 +210,11 @@ what to press where it should be offering something to press.
 **This is interface, not art, and that distinction is what keeps it in front of the deprioritised
 drawing work.** *(2026-09-06: "we deprioritize graphics works or bugs for now since a graphics
 overhaul is in-flight".)* A control nobody can see is a control that does not work.
+
+**The title screen's half of it is built and released; the rest is not.** What shipped is the two
+circular `ModeButton`s and the rule that the device you answer with is the device you are answering
+about. [PLAYTEST-27.md](PLAYTEST-27.md) re-reported the missing restart a third time and added a
+third item — a press that says it was heard — so all three below are open together.
 
 - [ ] **A summary has to be tapped on its text, and the code says it should not.** *(2026-09-06:
       "on mobile when the day ends or one dies you have to tap on the text right now I should be
@@ -165,6 +271,109 @@ overhaul is in-flight".)* A control nobody can see is a control that does not wo
 
       **The keyboard keeps `R` and is not given a hold.** Nothing about the key is broken, and
       `PauseScreen._refresh_hint()` already says the right thing per platform
+
+- [ ] **A press has to say it was heard.** *(2026-09-06: "after pressing a button there is a
+      significant delay before the game starts/resumes. we need to indicate that the button press is
+      registered".)* [PLAYTEST-27.md](PLAYTEST-27.md)'s third finding, and it belongs here because
+      **the two buttons above are the thing that does the acknowledging** — a screen whose only
+      control is *tap anywhere* has nothing that can light up, so this is unbuildable until they
+      exist and nearly free once they do.
+
+      **The design is the player's and it is the acknowledgement, not the delay.** A press with no
+      feedback reads as a press that missed, and the next thing a player does is press again. So
+      every one of these controls — the title's two `ModeButton`s, and continue and restart on both
+      screens — changes visibly on *touch down*, before any work the press causes has run.
+
+      **The delay is a separate investigation and does not block it.** What is known from reading,
+      with nothing measured on a phone: day one is placed during boot (`main._ready()` ends with
+      `_start_day()`), so the title's start is not obviously where a wait comes from; continuing from
+      a summary runs `main._start_day()`, which plans the day's closures, places every event and
+      streams the world around the doorstep on the frame the button was pressed; and restarting runs
+      `main._restart_run()`, which reloads the scene and regenerates the city — the step `main`
+      already times and prints as `[Main] city generated in N ms`. A fourth candidate is the browser
+      rather than the game: shader compilation and texture uploads on the first frames after a
+      screen closes. **Measure before moving any of it**, and print the same `N ms` for the day-start
+      path so there is a number rather than an impression
+
+---
+
+## M81 — The scheme you chose is the scheme you can play · asked for 2026-09-06
+
+[PLAYTEST-27.md](PLAYTEST-27.md)'s second and sixth findings. Both are `ControlsMode` work — one
+scheme does nothing on the device that was invited to pick it, and the other is replaced outright at
+the player's request.
+
+- [ ] **Tap mode does nothing on a laptop browser.** *(2026-09-06: "tap mode doesn't work on a
+      laptop browser. I click on the tap button and I have to use keyboard anyway".)*
+
+      **Diagnosed by reading, not by running the released build.** `TapControls._input()` reads a
+      real finger's `InputEventScreenTouch` always, and a mouse click's `InputEventMouseButton` only
+      behind `OS.is_debug_build() and not _touch`. The published page is a **release** export —
+      `tools/export-web.sh` with no argument, which is what `deploy.yml` runs — so
+      `OS.is_debug_build()` is false there and the mouse branch is dead code on the only build a
+      player ever loads. Choosing tap on a laptop therefore selects a scheme with **no input at
+      all**, which is why the keyboard is what was left.
+
+      **It is invisible to every local check**, which is worth knowing before trusting one:
+      `tools/serve-web.sh` is the only way to run the web build without deploying, and it exports
+      **debug** on purpose — the one build where the mouse branch is live.
+
+      **The fix is to drop the `OS.is_debug_build()` gate, and that overturns a written decision
+      with the player's own words.** The comment on that branch says the mouse click is *"a way to
+      try the mode out on a desktop, not a control an exported build owes a mouse"* — taken when the
+      only way to reach tap mode was a URL parameter somebody had to know about. *(2026-09-06:
+      asked for X · overturned to Y, because the title screen now **offers** tap as one of two
+      buttons on a desktop, and the player reported the result as broken.)* **Keep the `not _touch`
+      half.** It is load-bearing for a different reason and is not part of this: Godot emulates a
+      mouse click from every real touch, so without it a single tap on a phone would arrive twice
+      and read as its own double tap — which is *run*.
+
+      **Verify it on a release export**, not on `serve-web.sh`'s debug one, or the check passes for
+      the same reason the bug survived
+
+- [ ] **The drag stick becomes a joystick that is aimed rather than gripped.** *(2026-09-06: "since
+      the tap mode now works really nice I want to try an alternative joystick mode …" — the full
+      sentence, with every specific, is [PLAYTEST-27.md](PLAYTEST-27.md)'s sixth finding.)*
+
+      **It replaces the drag stick, which is deleted** *(2026-09-06, asked whether this was a third
+      scheme or a replacement: "replaces the drag stick")*. The title screen keeps exactly two
+      buttons and its joystick glyph still tells the truth, because what it selects is still a
+      joystick — aimed at rather than gripped. There is no third control path to keep alive.
+
+      **The scheme.** A tap **anywhere in the left two thirds of the screen** is read as a
+      direction — the vector from the drawn joystick's centre to where the tap landed — and that
+      direction is **locked in** and walked with nothing held down, until another tap changes it.
+      The stick is a compass rose the whole left of the screen aims through.
+
+      - **The joystick moves**, *"more towards the middle vertically and a little bit more inside
+        from the left"*: today `TouchControls.STICK_CENTRE` is `(130, 500)` in the fixed 1280x720
+        design box, so up toward 360 and right from 130.
+      - **The catch region is a half-plane, not a radius**: x < 853, two thirds of the 1280-wide box.
+      - **Stopping is a tap on the joystick's own centre**, with a target the size of the knob —
+        *"doesn't have to be dead on"* — so a 24px radius, `TouchControls.STICK_KNOB_RADIUS`.
+      - **`RUN` and pause are unchanged**, at `(1150, 500)` held and `(1218, 62)` fired on a clean
+        release. Both sit in the right third, outside every aiming tap.
+
+      **One speed, and this is what makes that true.** *(2026-09-06: "there is no way to walk slowly
+      -- that is intentional -- there should only ever be one speed (plus a second via running)".)*
+      Distance from the centre sets nothing; every aiming tap presses a **unit** vector.
+      `Stroller._physics_process()` moves toward `input_dir * top_speed` with the **raw**
+      `Input.get_vector(...)` — deliberately, so running can never be reached by pushing a stick
+      further — and `TouchControls._update_stick()` is the only input path in the game that can
+      press a partial one: `offset.limit_length(60) / 60`, so a thumb resting half way out walks at
+      46 px/s instead of `Tuning.WALK_SPEED`'s 92. **That is not only a feel problem.** Every lead
+      time and stand-off in `src/autoload/tuning.gd` is computed against 92 as *the* walking speed —
+      a pursuit speed is required to sit strictly between `WALK_SPEED + PURSUIT_MIN_MARGIN` and
+      `RUN_SPEED - PURSUIT_MIN_MARGIN`, 112 to 148 px/s, so that walking away always loses ground
+      slowly and running always gains it. Half-deflecting the stick puts the player outside all of
+      them silently. **Deleting the drag stick is what closes it**, and a test that asserts no input
+      path can produce a vector shorter than 1.0 is what keeps it closed.
+
+      **Two things to carry over from the code being replaced**, because both were bought with a
+      played session: `process_mode` stays `ALWAYS` so a direction is force-released on the frame a
+      pause lands rather than one frame late, and every raw touch still goes through
+      `ScreenOrientation.to_design_space(position, rotated)` before being compared to a design-box
+      constant — a rotated portrait presentation delivers touches in the swapped 720x1280 box
 
 ---
 
