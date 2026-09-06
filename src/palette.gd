@@ -92,22 +92,24 @@ const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")
 
 # ------------------------------------------------------------------ buttons ---
-# `ModeButton` draws its own fill, border and symbol rather than taking a theme — see its class
-# comment — and reads these rather than deciding a colour at the draw call.
+# `ModeButton` draws a solid filled disc with a white glyph on top, one colour per mode. The
+# pressed and hover shades are derived from the fill at draw time (`Color.darkened()`/
+# `lightened()`) rather than kept as their own constants, the same way `TouchControls._draw_stick()`
+# varies its own alpha for held vs not without a second constant per state.
 
-## Warm and opaque enough to read as a surface rather than another layer of scrim: the title
-## screen's `TopScrim`/`BottomScrim` are `Color(0.04, 0.04, 0.06, 0.62)`, near-black, so anything
-## that dark would still look like more of the dimness behind it rather than something to press.
-const BUTTON_FILL := Color(0.18, 0.15, 0.13, 0.88)
-## Lighter than `BUTTON_FILL`, for a pointer resting on the button before it is pressed.
-const BUTTON_FILL_HOVER := Color(0.24, 0.2, 0.17, 0.92)
-## Darker than `BUTTON_FILL`, for the moment it is actually held down — a button that only ever
-## lightens never reads as pushed in.
-const BUTTON_FILL_PRESSED := Color(0.11, 0.09, 0.08, 0.95)
-## The outline and the symbol drawn on top of the fill, off-white so both read against every fill
-## state above.
-const BUTTON_BORDER := Color(0.86, 0.82, 0.76, 0.9)
-const BUTTON_SYMBOL := Color(0.92, 0.88, 0.82, 0.95)
+## The glyph colour drawn on top of every mode's own fill.
+const BUTTON_SYMBOL := Color(0.97, 0.96, 0.94, 1.0)
+
+## The stick scheme's own fill. Shifted to a more yellow, less saturated hue than either
+## `SIGNAL_AMBER` (`f0a92e`, hue ~38°) or `MARK_COSTLY` (`e8b64a`, hue ~41°) on purpose: the player's
+## own visual reference called for "amber/yellow" here, and both of those hues already mean
+## something on this screen's own city behind it — one is "you may not go", the other is "worth a
+## detour" — so a third meaning at the same hue would borrow a colour a player has already learned
+## something from. This sits at hue ~50°, closer to a muted gold.
+const MODE_STICK := Color(0.8, 0.71, 0.28)
+## The tap scheme's own fill — purple, and nothing else this file names lands anywhere near it, so
+## it borrows no existing meaning.
+const MODE_TAP := Color(0.56, 0.4, 0.68)
 
 # --------------------------------------------------------------- buildings ---
 # One asset set covers every building: the near-white wall and roof tiles are multiplied by
