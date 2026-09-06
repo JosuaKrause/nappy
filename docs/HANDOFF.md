@@ -94,6 +94,15 @@ believing rather than explaining away.** The record is in `DECISIONS.md` under M
 
 ## What to do next
 
+**Start with M83, and read [PLAYTEST-29.md](PLAYTEST-29.md) before anything else in this file.**
+The controls have been played on a phone and the buttons M76 and M82 built do not work: `ModeButton`
+is a `Button`, whose `mouse_filter` defaults to `MOUSE_FILTER_STOP`, and Godot's GUI layer eats the
+raw `InputEventScreenTouch` before `PauseScreen`/`DaySummary._unhandled_input()` — the one place
+either screen reads a press — ever sees it, so a press on a button does nothing while a press
+anywhere else works. That, plus four instructions the project read as repealed and one new design
+for how a touch is aimed, is [TODO.md](TODO.md)'s M83. **What the rest of this section describes as
+built is still built; it is what the player found on top of it that comes first.**
+
 **M82 is built: the game has one control scheme and no question about which.** A press sets a
 direction, measured from her own world position, that she walks until the next press; a press
 within a generous radius of her stops her; a double press sets the direction and runs it; a pause

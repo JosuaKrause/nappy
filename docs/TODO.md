@@ -14,11 +14,15 @@ mid-way through.
 
 ## The order
 
-1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M83** — one set of controls, everywhere, that actually answers a press: the buttons show on
+   every device and stop swallowing the touch that lands on them, the keyboard goes quiet, the
+   hold fills the button itself, the pause button becomes an asset, and a touch aims from one of
+   two fixed focal points rather than from her.
+2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-2. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
+3. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
    be watched.
-3. **M56** — the resistance is noticed.
+4. **M56** — the resistance is noticed.
 
 **Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
 deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
@@ -35,6 +39,11 @@ is why M77 and M78 stand apart from M64 and M65 rather than inside them.
 presentation change with the lattice left cardinal — and it is written down and tabled so that
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
+
+**[PLAYTEST-29.md](PLAYTEST-29.md) is the newest session and none of its seven findings is built.**
+It is M83 below, and three of its findings are instructions the project already had and read as
+repealed by something else — read it before anything here, because two of its sentences are the
+player saying so.
 
 **[PLAYTEST-28.md](PLAYTEST-28.md)'s four findings are built** — the game has one control scheme
 and no question about which: a press sets a direction she walks until the next press, a press on
@@ -86,6 +95,123 @@ paint) and the small items (the robber in a building).
 M53's one remaining piece is specified and unordered — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
+
+---
+
+## M83 — One set of controls, everywhere, that answers a press · asked for 2026-09-06
+
+**Every item here is [PLAYTEST-29.md](PLAYTEST-29.md), and three of them are instructions the
+project already had.** Read that file first: it opens with *"I did not approve any of this"*, aimed
+at a status report that listed two of these as known and deliberate. Nothing here is a design
+question — finding 6 is new and is specified in full, and the only open thing in the milestone is
+whether two unmarked focal points can be found by feel, which is played rather than argued.
+
+- [ ] **The continue and restart buttons show on every device.** *(2026-09-06: "the mobile buttons
+      don't show up on the local version", and "I specifically said that now all controls are
+      treated the same across platforms so the buttons should show in *every* environment".)*
+      `PauseScreen._refresh_buttons()` and `DaySummary._refresh_buttons()` are each
+      `_buttons.visible = _touch`, where `_touch` is `TouchInput.available()` — a laptop answers
+      false and gets no buttons. **This overturns M76's own reason with the player's agreement**:
+      *"The continue/restart pair only replaces a sentence where there is a thumb to press it
+      with"* was taken while a device chose between two control schemes, and M82 deleted the
+      choice.
+
+      **The pause button is in the same sentence.** `TouchControls._process()` sets
+      `visible = _touch and not get_tree().paused`, so the one control drawn during a day is also
+      absent on a laptop where the same click already walks her. Showing it everywhere also means
+      the top-right corner stops being an aiming surface on a desktop — `_on_touch()` already
+      subtracts it only while the button is `visible`, so that follows with no second decision.
+
+      Continue stays hidden on an ending, which is playtest 28's fourth finding and is unchanged
+- [ ] **A press on a button reaches the screen underneath it.** *(2026-09-06: "the buttons do *not*
+      work at all. in the pause and day screen on mobile I have to click anything but the buttons.
+      the buttons themselves do nothing. that is exactly the opposite of what I was requesting".)*
+      **Root cause found and reproduced**: `ModeButton` extends `Button`, whose `mouse_filter`
+      defaults to `MOUSE_FILTER_STOP`, and Godot's GUI layer — which runs between `_input` and
+      `_unhandled_input` — consumes a raw `InputEventScreenTouch` that lands on a `STOP` control.
+      `PauseScreen._unhandled_input()` and `DaySummary._unhandled_input()` are where every press in
+      this game is actually read, and the press never gets there. The button's own `pressed` signal
+      is deliberately connected to nothing.
+
+      Setting `mouse_filter = Control.MOUSE_FILTER_IGNORE` on the button fixes it, measured: with
+      the default the press on continue fires nothing and a press elsewhere carries on, and with
+      `IGNORE` both fire. **The comment above `PauseScreen._handle_restart_touch()` asserts the
+      opposite** — *"a `Button` consuming the emulated click would not stop the raw touch from
+      reaching the catch-all underneath it"* — and has to be corrected rather than left standing.
+
+      **It owes a test that pushes a real event**, because the whole suite calls
+      `_unhandled_input()` directly and that is the one path that skips the GUI layer. Use
+      `get_viewport().push_input(event, true)`; **the second argument is load-bearing** — without
+      it the viewport applies the window's stretch transform to the position, and a headless
+      window is not 1280x720, so the press lands somewhere else and the test passes for the wrong
+      reason
+- [ ] **The pause button becomes an SVG asset.** *(2026-09-06: "neither should the buttons use draw
+      commands -- I *explicitly* said that icons/symbols do *not* count as graphics", closing
+      2026-09-06's "never draw in code -- at the very least use svgs".)*
+      `TouchControls._draw_pause_button()` paints a filled circle, an arc for the rim and two
+      rectangles for the bars. `ModeButton` already does this right — a `StyleBoxFlat` disc and a
+      preloaded SVG glyph under `assets/ui/` tinted through `icon_normal_color`.
+
+      **The deprioritisation of drawing work does not cover a control's icon**, and reading it as
+      cover is what this closes. `DECISIONS.md` under M82 records the deferral as *"Not built as
+      specified: the SVG-icon conversion the `cues` rule asks for"*; that entry stops being true
+      when this lands
+- [ ] **The keyboard stays but nothing on screen names a key.** *(2026-09-06: "I said to remove the
+      keyboard inputs altogether but I'm willing to compromise on letting them stay *silently*".)*
+      **M82 read this the other way and flagged it as the one thing worth being told about** — *"The
+      keyboard is not a mode and stays"* — and the reading was wrong. Arrows, `WASD`, `Shift`, `Esc`,
+      `space`, `R` and `Q` keep working; every sentence that names one goes:
+      `PauseScreen._BODY_KEYBOARD`'s first two lines (the third, *"Walk to calm ground and stay
+      moving; standing still settles nothing"*, is not about a key and stays) and its desktop hint
+      *"space or esc to carry on · r to start again"*; `DaySummary._hint_text()`'s *"space to go
+      on"*/*"try again"*/*"start again"*; `TitleScreen`'s `_BODY_KEYBOARD` and its *"space to
+      begin"* hint; and `hud.gd`'s three teach lines, which each branch on `_touch` between a tap
+      and a key — the touch half is now the only half.
+
+      **`q to quit` goes with them**, on the title and pause screens both. It is the one verb no
+      button carries, so a desktop player is left with the window's own close button. Stated
+      because it is the one thing this costs
+- [ ] **The hold fills the button, not a bar beside it.** *(2026-09-06: "the hold button should fill
+      up in its entirety while holding *not* have a separate bar".)* `ModeButton._draw()` paints a
+      6px track 10px under the disc and fills it left to right as `hold_progress` runs 0→1 over
+      `RESTART_HOLD_SECONDS` (1.0s). The disc itself fills instead and the track goes, which also
+      returns the 16px the bar reserved in `custom_minimum_size`
+- [ ] **A touch aims from one of two fixed focal points, not from her.** *(2026-09-06: "let's not
+      make the directions in relation to the player but define two points equally apart from the
+      border on each side (same distance from top/bottom/and its side) and use those as reference
+      whichever is closer to the touch. tapping in their center or on the player should stop the
+      player still. this is because right now the finger needs to reach over half the phone to be
+      able to input an up or down direction".)*
+
+      **The complaint is one-handed reach.** `TouchControls.set_direction()` takes
+      `heading_to(world_target, rig.global_position)`, so *up* means pressing above her wherever
+      she is standing, and a thumb cannot get above a player near the top of the view.
+
+      **The geometry is determined by the sentence.** Same distance from top and bottom puts both
+      points at y = 360 in the 1280x720 box every screen is authored against; the same distance
+      from its own side makes that distance 360. So the points are **(360, 360)** and **(920, 360)**,
+      and each half of the screen is a full 360° dial around its own focus. A press takes the
+      nearer focus and the heading is from that focus to the press.
+
+      **Stopping keeps both doors.** A press within a stop radius of either focus stops her, and a
+      press on her still stops her — *"tapping in their center or on the player should stop the
+      player still"*.
+
+      **Touch only.** *(2026-09-06: "that two focal point mode should only exist for the touch
+      enabled version *not* the mouse version where the direction uses the player as reference".)*
+      With a mouse the heading stays measured from her exactly as M82 built it, so this is the one
+      place the two devices differ on purpose.
+
+      **Nothing is drawn for them.** *"for now we don't need visuals to indicate those two reference
+      points -- I think they will be fairly intuitive. will have to test it out though."* Whether
+      they can be felt without being seen is the played question this milestone leaves open.
+
+      **The focal points are in design space and the heading has to end up in world space**, which
+      is the one trap here: the presentation rotates on a portrait phone
+      (`ScreenOrientation.rotation_transform()`), so a heading computed in the 1280x720 authoring
+      box is not a world heading. `TouchControls._on_tap()` already maps a press through
+      `get_viewport().get_canvas_transform().affine_inverse()`, which carries the rotation; the
+      focus has to make the same trip rather than being subtracted in design space
 
 ---
 
