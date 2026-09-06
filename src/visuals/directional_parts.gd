@@ -23,7 +23,13 @@ class PartRegistration extends RefCounted:
 	var rects: Array[Rect2]
 	var anchor: Vector2
 	var pivot: Vector2
+	var pivots: Array[Vector2]
 	var z_orders: Array[int]
+
+	func pivot_for(direction: int) -> Vector2:
+		if direction < 0 or direction >= pivots.size():
+			return pivot
+		return pivots[direction]
 
 	func rect_for(direction: int) -> Rect2:
 		if direction < 0 or direction >= DirectionalParts.DIRECTION_NAMES.size():
@@ -41,7 +47,7 @@ class SpriteManifest extends RefCounted:
 	var errors: Array[String] = []
 
 	func register_part(part_id: String, texture: Texture2D, rects: Array[Rect2],
-			anchor: Vector2, pivot: Vector2, z_orders: Array[int], variant: String = "default") -> bool:
+			anchor: Vector2, pivot: Variant, z_orders: Array[int], variant: String = "default") -> bool:
 		var key: String = _key(part_id, variant)
 		if part_id.is_empty():
 			return _fail("part id is empty")
@@ -62,13 +68,14 @@ class SpriteManifest extends RefCounted:
 		registration.texture = texture
 		registration.rects = rects.duplicate()
 		registration.anchor = anchor
-		registration.pivot = pivot
+		registration.pivots = _pivots(pivot)
+		registration.pivot = registration.pivots[0]
 		registration.z_orders = z_orders.duplicate()
 		_parts[key] = registration
 		return true
 
 	func register_variant(part_id: String, variant: String, texture: Texture2D, rects: Array[Rect2],
-			anchor: Vector2, pivot: Vector2, z_orders: Array[int]) -> bool:
+			anchor: Vector2, pivot: Variant, z_orders: Array[int]) -> bool:
 		return register_part(part_id, texture, rects, anchor, pivot, z_orders, variant)
 
 	func has_part(part_id: String, variant: String = "default") -> bool:
@@ -94,7 +101,7 @@ class SpriteManifest extends RefCounted:
 		sprite.region_enabled = true
 		sprite.region_rect = registration.rect_for(direction)
 		sprite.centered = false
-		sprite.offset = -registration.pivot
+		sprite.offset = -registration.pivot_for(direction)
 		sprite.position = registration.anchor
 		sprite.z_index = registration.z_for(direction)
 		return sprite
@@ -110,7 +117,7 @@ class SpriteManifest extends RefCounted:
 		sprite.region_enabled = true
 		sprite.region_rect = registration.rect_for(direction)
 		sprite.centered = false
-		sprite.offset = -registration.pivot
+		sprite.offset = -registration.pivot_for(direction)
 		sprite.z_index = registration.z_for(direction)
 		return true
 
@@ -119,6 +126,20 @@ class SpriteManifest extends RefCounted:
 
 	func _key(part_id: String, variant: String) -> String:
 		return "%s\u001f%s" % [variant, part_id]
+
+	func _pivots(value: Variant) -> Array[Vector2]:
+		var result: Array[Vector2] = []
+		if value is Array:
+			for item: Variant in value:
+				if item is Vector2:
+					result.append(item)
+		if result.size() == DirectionalParts.DIRECTION_NAMES.size():
+			return result
+		result.clear()
+		var fallback: Vector2 = value as Vector2
+		for _direction in DirectionalParts.DIRECTION_NAMES.size():
+			result.append(fallback)
+		return result
 
 	func _fail(message: String) -> bool:
 		errors.append(message)
