@@ -125,7 +125,9 @@ platform axis rather than the build one, since a debug Web build has the same de
 release one — the same axis `Telemetry.begin_run()` already uses to stay silent on the web.
 `TitleScreen` and `PauseScreen` each read it once into their own `_can_quit`, so their hint text
 and their `Q` handler always agree, and so a test — never itself a web export — can set the member
-and drive both platform shapes.
+and drive both platform shapes. A debug build can preview the web shape without a real export:
+`--web` forces `QuitOption.available()` false, the same role `TouchInput`'s own `--touch` plays
+for its platform fact.
 
 ### Playing on a touch device
 
@@ -212,7 +214,9 @@ The run log: one plain-text file per run, written as it happens. **Inert until
 `begin_run()`**, which only `main.gd` calls — so the test suite, which never calls it, writes
 no files and pays nothing. `begin_run()` is also inert on a web export
 (`OS.has_feature("web")`), since `user://` there is a stranger's browser storage that nothing
-ever prunes. See `docs/TELEMETRY.md` for the format and what belongs in it.
+ever prunes — **unless the page's own `?telemetry=1` asks otherwise**, which is the one telemetry
+switch not gated behind `DevFlags.enabled()`, because the deployed page has no command line for
+that gate to read. See `docs/TELEMETRY.md` for the format and what belongs in it.
 
 The rule that governs it is one line long: **telemetry must not touch gameplay.** No RNG, no
 `day_rng()` stream, nothing that changes a placement or a roll. Where a system logs a random
