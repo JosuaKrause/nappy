@@ -1,17 +1,18 @@
 # Playtest 28 — 2026-09-06
 
 The third session on the released page and the second of the day, played on a laptop browser
-against `v0.4.1`, given as notes in one conversation. **Three findings, all of them about the
-scheme the player calls *mouse mode*** — the tap scheme, chosen with the tap button and played
-with a mouse rather than a finger.
+against `v0.4.1`, given as notes in one conversation. **Four findings.** Three are about the scheme
+the player calls *mouse mode* — the tap scheme, chosen with the tap button and played with a mouse
+rather than a finger. The fourth is about a button that means the wrong thing on the last screen of
+a run.
 
-One is a thing that is wrong. Two are a design: what mouse mode should do instead of what it does,
-and the control it needs once it does that. **Four more specifics came back in the same session,
+Two are things that are wrong. Two are a design: what mouse mode should do instead of what it does,
+and the control it needs once it does that. **Five more specifics came back in the same session,
 in answer to questions asked before anything was built**, and between them they make this the
-largest change to the controls the project has made — there is one scheme now. They are in
-*The four answers* below, and each is quoted where it lands.
+largest change to the controls the project has made — there is one scheme now. Four are in
+*The four answers* below and the fifth is inside finding 4; each is quoted where it lands.
 
-**All three are diagnosed from reading the source, not from instrumenting the released build.**
+**All four are diagnosed from reading the source, not from instrumenting the released build.**
 Where a claim comes from reading it is said so in the finding.
 
 ---
@@ -98,6 +99,30 @@ direction was the point; a 26px disc in the corner is now a place a press means 
 Playtest 27's sixth finding already accepted that trade for the joystick scheme — it reads the left
 two thirds of the screen and leaves the pause *"still in the top right"* — so the corner is already
 spoken for there, and this makes the two schemes agree.
+
+## 4. The game over screen cannot have a continue button
+
+> "the game over screen cannot have a continue button"
+
+**It has one, and it arrived with M76 rather than being an old mistake.**
+`DaySummary.show_ending()` — the last screen of a run, which writes the ending's heading, title and
+body — calls `_refresh_buttons()`, and that function is one line: `_buttons.visible = _touch`. The
+`Buttons` row holds both the continue and the restart button, so the same pair that ends a *day*
+also appears under an *ending*, on any device with a touchscreen.
+
+**Continue means nothing there and the screen already says so.** Everywhere else the continue button
+carries on into tomorrow. On an ending there is no tomorrow: the hint under it reads *"tap to start
+again"*, and `main._on_summary_continued()` takes a finished run back to the title screen. So the
+button is drawn as *continue* and does *start over*, which are not the same promise.
+
+**What stays is the restart button, hold and all** *(2026-09-06, asked whether the 1.0s hold still
+makes sense on a screen with no day left to protect: **the restart button, hold and all**)*. One
+interaction to learn wherever it is met — a 1.0s hold with a filling bar — rather than a button that
+looks the same and behaves differently on the last screen of a run.
+
+**The catch-all underneath is untouched.** A press anywhere on the ending still starts again, which
+is what the screen did before any button existed and is what the *"tap to start again"* hint
+describes.
 
 ---
 
