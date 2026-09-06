@@ -43,6 +43,13 @@ const ROOF_EDGE_W := preload("res://assets/buildings/roof_edge_w.svg")
 const ROOF_EDGE_E := preload("res://assets/buildings/roof_edge_e.svg")
 const WINDOW_DARK := preload("res://assets/buildings/window_dark.svg")
 const WINDOW_LIT := preload("res://assets/buildings/window_lit.svg")
+const ROOF_CAP := preload("res://assets/buildings/roof_cap.svg")
+const FACADE_BALCONY := preload("res://assets/buildings/facade_balcony.svg")
+const FACADE_AWNING := preload("res://assets/buildings/facade_awning.svg")
+const FACADE_SHUTTERS := preload("res://assets/buildings/facade_shutters.svg")
+const FACADE_CIVIC := preload("res://assets/buildings/facade_civic.svg")
+const FACADE_INDUSTRIAL := preload("res://assets/buildings/facade_industrial.svg")
+const FACADE_BOARDED := preload("res://assets/buildings/facade_boarded.svg")
 
 ## Share of the wall cells that are lit at all. Fixed at build time, never per frame.
 const LIT_WINDOW_CHANCE := 0.28
@@ -65,6 +72,13 @@ const LIT_WINDOW_CHANCE := 0.28
 	set(value):
 		variant = value
 		_rebuild()
+
+## Starting district identity, used only for façade dressing. It remains fixed while a block's
+## daily condition changes, so a civic building can burn without becoming a generic house.
+@export var district := 0:
+	set(value):
+		district = value
+		queue_redraw()
 
 ## What has happened to this building's block. The footprint never changes — the street
 ## lattice and the block boundaries are fixed for the run — so a block that goes dark or
@@ -164,8 +178,13 @@ func _draw() -> void:
 				draw_texture(WALL_EDGE_E, at)
 			if row == 0:
 				draw_texture(WALL_BASE, at)
-			# With no roof at all, the parapet is what stops the wall.
+			_draw_facade_detail(at, col, row, wall_rows)
+			if condition == Condition.BOARDED:
+				draw_texture(FACADE_BOARDED, at)
+			# A one-tile sliver still owns a roof cap. The cap stays inside the lot rather
+			# than implying an overhanging second footprint.
 			if roof_rows == 0 and row == wall_rows - 1:
+				draw_texture(ROOF_CAP, at, roof_colour)
 				draw_texture(ROOF_EDGE_N, at)
 
 	for row in roof_rows:
@@ -184,3 +203,28 @@ func _draw() -> void:
 ## Top-left corner of a cell, counting rows northward from the ground line.
 func _cell(col: int, row: int) -> Vector2:
 	return Vector2(-columns() * TILE * 0.5 + col * TILE, -(row + 1) * TILE)
+
+## Draws one restrained architectural accent per building family. The pattern is derived from
+## the generated variant and cell position, so a deterministic city keeps its landmarks.
+func _draw_facade_detail(at: Vector2, col: int, row: int, wall_rows: int) -> void:
+	if condition != Condition.LIVED_IN or wall_rows <= 0:
+		return
+	var family := posmod(variant, 3)
+	var marker := posmod(variant + col * 3 + row * 5, 5)
+	if marker != 0 and district != GameEnums.BlockPurpose.CIVIC \
+			and district != GameEnums.BlockPurpose.INDUSTRIAL:
+		return
+	if district == GameEnums.BlockPurpose.CIVIC:
+		draw_texture(FACADE_CIVIC, at)
+		return
+	if district == GameEnums.BlockPurpose.INDUSTRIAL:
+		draw_texture(FACADE_INDUSTRIAL, at)
+		return
+	match family:
+		0:
+			draw_texture(FACADE_SHUTTERS, at)
+		1:
+			draw_texture(FACADE_AWNING, at)
+		_:
+			if row == wall_rows - 1:
+				draw_texture(FACADE_BALCONY, at)

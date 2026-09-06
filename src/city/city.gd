@@ -96,6 +96,7 @@ func build(city_map: CityMap) -> void:
 	_spawn_home()
 	_spawn_boundary()
 	_spawn_the_edge_of_the_city()
+	_spawn_precinct_bollards()
 	signals = TrafficSignals.new(map)
 	_spawn_signal_heads()
 	events = EventManager.new()
@@ -217,17 +218,57 @@ func total_excitement_at(world_position: Vector2) -> float:
 ## passes in front of it the way she passes in front of any other wall.
 func _spawn_home() -> void:
 	var stoop := map.tile_rect_to_world(map.home_rect)
+	var frontage := home_door_frontage(map)
+	var frontage_rect: Rect2i = frontage[0]
+	var side: int = frontage[1]
 	var door := Sprite2D.new()
 	door.texture = DOOR_TEXTURE
-	# Feet-anchored like everything else: the NODE sits on the ground plane at the back of
-	# the notch and the art is offset upward from there. Putting the node at the sprite's
-	# top instead makes y-sort compare the wrong edge, and the player walks in front of a
-	# door she is standing north of. (Buildings cannot occlude it: they are a layer of their own,
-	# underneath the entities.)
-	door.centered = false
-	door.offset = Vector2(-DOOR_TEXTURE.get_width() * 0.5, -DOOR_TEXTURE.get_height())
-	door.position = Vector2(stoop.get_center().x, stoop.position.y)
+	if side == 0:
+		# The usual case is a north-facing facade. Feet sit on the wall line and the
+		# sprite rises into the building, so its anchor agrees with the building layer.
+		door.centered = false
+		door.offset = Vector2(-DOOR_TEXTURE.get_width() * 0.5, -DOOR_TEXTURE.get_height())
+		door.position = Vector2(stoop.get_center().x,
+				float(map.home_rect.position.y * Tuning.TILE_SIZE))
+	else:
+		# A through-alley can remove that north wall. In that case the nearest real
+		# frontage is the side wall of the notch; rotate the small door to sit on it.
+		door.centered = true
+		door.rotation = PI * 0.5
+		var x := float(map.home_rect.position.x * Tuning.TILE_SIZE) \
+				if side < 0 else float(map.home_rect.end.x * Tuning.TILE_SIZE)
+		var y := float(clampi((map.home_rect.position.y + map.home_rect.size.y / 2),
+				frontage_rect.position.y, frontage_rect.end.y) * Tuning.TILE_SIZE)
+		door.position = Vector2(x, y)
 	_entities.add_child(door)
+
+## Returns the nearest actual building frontage around the home notch and its facing axis:
+## `0` is north-facing, `-1` west-facing and `1` east-facing. The door is never painted over
+## an alley or another walkable tile.
+static func home_door_frontage(map: CityMap) -> Array:
+	var home := map.home_rect
+	var best := Rect2i()
+	var side := 0
+	var overlap := -1
+	for rect in map.building_rects:
+		var vertical := mini(rect.end.y, home.end.y) - maxi(rect.position.y, home.position.y)
+		if vertical > overlap and rect.end.x == home.position.x:
+			best = rect
+			side = -1
+			overlap = vertical
+		if vertical > overlap and rect.position.x == home.end.x:
+			best = rect
+			side = 1
+			overlap = vertical
+	if overlap >= 0:
+		return [best, side]
+	for rect in map.building_rects:
+		var horizontal := mini(rect.end.x, home.end.x) - maxi(rect.position.x, home.position.x)
+		if horizontal > overlap and rect.end.y == home.position.y:
+			best = rect
+			side = 0
+			overlap = horizontal
+	return [best, side]
 
 ## What is on the far side of the streets that run along the boundary.
 ##
@@ -271,6 +312,25 @@ func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 		_entities.add_child(exit)
 	else:
 		_buildings_layer.add_child(exit)
+
+## A pair of visual bollards marks each end of a pedestrian precinct. They are scenery only:
+## the street-kind data already tells traffic where to divert, while the posts tell the player
+## why the carriageway stops being asphalt.
+func _spawn_precinct_bollards() -> void:
+	for span: Vector4i in map.precinct_spans:
+		var vertical := span.x == 1
+		var across := span.y * CityMap.period() + Tuning.STREET_WIDTH * 0.5
+		var starts := span.z * CityMap.period() + Tuning.STREET_WIDTH
+		var ends := (span.w + 1) * CityMap.period()
+		for along in [starts, ends]:
+			var bollard := Prop.new()
+			bollard.kind = Prop.Kind.BOLLARD
+			bollard.position = (Vector2(across, along) if vertical else Vector2(along, across)) \
+					* float(Tuning.TILE_SIZE)
+			if not vertical:
+				bollard.rotation = PI * 0.5
+			_props.append(bollard)
+			_entities.add_child(bollard)
 
 ## A signal head on every arm of every junction the spine passes through.
 ##
@@ -322,6 +382,7 @@ func _spawn_buildings() -> void:
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.footprint = world.size
 		building.variant = _variant_for(rect)
+		building.district = int(map.starting_purpose(_block_of(rect)))
 		building.height = _height_for(rect, rect.size.y)
 		building.lot = rect
 		# Their own layer, under the entities — see the note at the top of this file. They still

@@ -173,7 +173,12 @@ static func _road_variant(map: CityMap, tile: Vector2i) -> int:
 ## offset is the outer one, which is what `% SIDEWALK_WIDTH` is asking.
 static func _crossing_variant(map: CityMap, tile: Vector2i) -> int:
 	var across_x := CityMap.is_road_offset(CityMap.corridor_offset(tile.x))
-	var main := map.street_kind_at(across_x, tile) == GameEnums.StreetKind.MAIN
+	# A signal belongs to the junction, not merely to the carriageway being crossed. At
+	# a main-road junction all four approaches are timed, so the side arms use dotted
+	# crossing language instead of promising that traffic will yield there.
+	var x_main := map.street_kind_at(true, tile) == GameEnums.StreetKind.MAIN
+	var y_main := map.street_kind_at(false, tile) == GameEnums.StreetKind.MAIN
+	var main := x_main or y_main
 	if not main:
 		return CROSSING_V if across_x else CROSSING_H
 	if across_x:

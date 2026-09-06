@@ -1,0 +1,8 @@
+<!-- Civic stone surround: a restrained pediment and seal for public buildings. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"
+     shape-rendering="crispEdges">
+  <path d="M4 8h24l-3 3H7z" fill="#eee3ce" fill-opacity="0.72"/>
+  <rect x="6" y="11" width="20" height="2" fill="#221f28" fill-opacity="0.42"/>
+  <rect x="14" y="4" width="4" height="4" fill="#d7b56e" fill-opacity="0.84"/>
+  <rect x="15" y="5" width="2" height="2" fill="#8f5d4c" fill-opacity="0.9"/>
+</svg>

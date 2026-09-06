@@ -96,8 +96,8 @@ const HOME_ARROW := Color("8fb4d9")
 # the variant's colour. These therefore still decide what a building looks like.
 
 const _ROOFS: Array[Color] = [
-	Color("c2a179"), Color("b08968"), Color("a8907a"),
-	Color("cbb391"), Color("9d7f68"), Color("bda386"),
+	Color("b8614b"), Color("a87559"), Color("687683"),
+	Color("c4865b"), Color("81776d"), Color("a65349"),
 ]
 
 ## Roof colour for a building variant index.
@@ -106,7 +106,7 @@ static func building_roof(variant: int) -> Color:
 
 ## The visible front face is the roof colour in shade.
 static func building_wall(variant: int) -> Color:
-	return building_roof(variant).darkened(0.42)
+	return building_roof(variant).darkened(0.32)
 
 ## A burnt-out block keeps its own colour underneath, drained and darkened, so the corner is
 ## recognisably the corner it was — which is the whole point of a scar.

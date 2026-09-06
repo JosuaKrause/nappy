@@ -1,12 +1,7 @@
-<!-- Forest floor: darker than park grass, with leaf litter. The quietest ground there is. -->
+<!-- Forest floor: deep green leaf litter with small pockets of filtered light. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <rect x="0" y="0" width="32" height="32" fill="#4d6b45"/>
-  <rect x="4" y="6" width="3" height="1" fill="#5e7a52"/>
-  <rect x="19" y="3" width="4" height="1" fill="#5e7a52"/>
-  <rect x="11" y="14" width="3" height="1" fill="#3f5a3a"/>
-  <rect x="25" y="18" width="3" height="1" fill="#5e7a52"/>
-  <rect x="7" y="24" width="4" height="1" fill="#3f5a3a"/>
-  <rect x="20" y="27" width="3" height="1" fill="#5e7a52"/>
-  <rect x="15" y="9" width="2" height="1" fill="#6a5b3e"/>
-  <rect x="2" y="19" width="2" height="1" fill="#6a5b3e"/>
+  <rect x="0" y="0" width="32" height="32" fill="#4e7048"/>
+  <path d="M4 8h4l-2 2zM19 5h5l-3 2zM25 20h4l-2 2zM7 26h5l-3 2z" fill="#78965c" fill-opacity="0.72"/>
+  <path d="M11 15h4l-2 2zM20 29h4l-2 2zM2 21h3l-2 2z" fill="#354f39"/>
+  <rect x="15" y="10" width="3" height="1" fill="#ac8a56" fill-opacity="0.7"/>
 </svg>

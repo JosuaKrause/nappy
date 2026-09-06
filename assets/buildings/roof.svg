@@ -1,11 +1,9 @@
-<!-- Roof fill: flat felt-and-gravel. Near-white for the same reason as wall.svg. -->
+<!-- Roof fill: warm clay or slate tile texture, multiplied by the building variant. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
   <rect x="0" y="0" width="32" height="32" fill="#ffffff"/>
-  <rect x="3" y="5" width="2" height="2" fill="#f4f2ef"/>
-  <rect x="18" y="2" width="2" height="2" fill="#f4f2ef"/>
-  <rect x="25" y="12" width="2" height="2" fill="#f4f2ef"/>
-  <rect x="9" y="19" width="2" height="2" fill="#f4f2ef"/>
-  <rect x="21" y="26" width="2" height="2" fill="#f4f2ef"/>
-  <rect x="13" y="10" width="1" height="1" fill="#f4f2ef"/>
-  <rect x="29" y="22" width="1" height="1" fill="#f4f2ef"/>
+  <path d="M0 6h32M0 14h32M0 22h32M0 30h32" stroke="#e9e3d9" stroke-width="1"/>
+  <path d="M4 0v6M15 0v6M27 0v6M9 8v6M22 8v6M3 16v6M16 16v6M28 16v6M10 24v6M22 24v6"
+        stroke="#f3eee6" stroke-width="1"/>
+  <rect x="2" y="2" width="5" height="1" fill="#ffffff" fill-opacity="0.42"/>
+  <rect x="19" y="17" width="6" height="1" fill="#ffffff" fill-opacity="0.34"/>
 </svg>

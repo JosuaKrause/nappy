@@ -1,6 +1,10 @@
-<!-- Alley floor: wet, dark, and not paved to the same standard as the street. -->
+<!-- Alley floor: darker stone with an angled-lit threshold and a damp central gutter. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <rect x="0" y="0" width="32" height="32" fill="#3c3a42"/>
-  <rect x="0" y="10" width="32" height="1" fill="#343139"/>
-  <rect x="0" y="24" width="32" height="1" fill="#343139"/>
+  <rect x="0" y="0" width="32" height="32" fill="#514d4d"/>
+  <rect x="0" y="0" width="32" height="5" fill="#71695c" fill-opacity="0.52"/>
+  <rect x="0" y="5" width="32" height="2" fill="#625b52" fill-opacity="0.72"/>
+  <rect x="0" y="12" width="32" height="1" fill="#403d42"/>
+  <rect x="0" y="24" width="32" height="3" fill="#37353c"/>
+  <rect x="4" y="17" width="9" height="1" fill="#625d58"/>
+  <rect x="20" y="20" width="7" height="1" fill="#625d58"/>
 </svg>

@@ -1,10 +1,11 @@
-<!-- Facade fill. Authored near-white so the per-variant wall colour can be multiplied
-     over it; the detail here is only the courses that break up a flat face. -->
+<!-- Stucco and warm stone facade. The near-white base is multiplied by the district variant. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
   <rect x="0" y="0" width="32" height="32" fill="#ffffff"/>
-  <rect x="0" y="7" width="32" height="1" fill="#f0eeeb"/>
-  <rect x="0" y="15" width="32" height="1" fill="#f0eeeb"/>
-  <rect x="0" y="23" width="32" height="1" fill="#f0eeeb"/>
-  <rect x="0" y="31" width="32" height="1" fill="#f0eeeb"/>
-  <rect x="0" y="24" width="32" height="8" fill="#f8f6f4"/>
+  <rect x="0" y="7" width="32" height="1" fill="#ebe5dc"/>
+  <rect x="0" y="15" width="32" height="1" fill="#ebe5dc"/>
+  <rect x="0" y="23" width="32" height="1" fill="#ebe5dc"/>
+  <rect x="0" y="31" width="32" height="1" fill="#ebe5dc"/>
+  <rect x="0" y="24" width="32" height="8" fill="#faf5eb"/>
+  <rect x="3" y="3" width="7" height="1" fill="#ffffff" fill-opacity="0.32"/>
+  <rect x="20" y="11" width="5" height="1" fill="#ffffff" fill-opacity="0.26"/>
 </svg>
