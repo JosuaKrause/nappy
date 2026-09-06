@@ -339,7 +339,7 @@ func _capture() -> void:
 ## Whether a run driving the display server called `display_name` has a frame to photograph.
 ##
 ## A parameter rather than a call to `DisplayServer.get_name()` inside, for the same reason
-## `ControlsMode._reads_the_url(is_debug, on_web)` takes its two: the display server is one of the
+## `Telemetry._reads_the_url(is_debug, on_web)` takes its two: the display server is one of the
 ## few things a test cannot fake, so welding it in would make the guard itself the untestable part
 ## of the guard. `"headless"` is the name Godot gives the null display server that `--headless`
 ## selects, and it is the name `main.gd` and `Telemetry` already compare against for the same
