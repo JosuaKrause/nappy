@@ -52,9 +52,10 @@ unfinished family remains visibly unfinished until it has its own assets and bin
 
 Run `./tools/check.sh` and the focused affected suites; the full suite is CI's job. Inspect
 `project.godot` after imports. A visual change also needs one purposeful bounded capture when the
-environment permits. Check real gameplay scale, y-sorting, occlusion/cue legibility, and contact
-between feet/wheels and ground. If capture aborts or is unavailable, report that visual validation
-as unverified rather than claiming it passed.
+environment permits. A sub-agent may take the capture when its environment has a usable display;
+agent identity is not a restriction. Check real gameplay scale, y-sorting, occlusion/cue legibility,
+and contact between feet/wheels and ground. If capture aborts or is unavailable, report that visual
+validation as unverified rather than claiming it passed.
 
 Do not extend a reviewed asset family to other gameplay families until the player has seen and
 accepted the gate that applies to it.
