@@ -49,17 +49,18 @@ load-bearing: a debug build is the only one where the URL modifiers answer at al
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
 
-**`check.sh`'s import pass rewrites `docs/ARCHITECTURE.md`'s file tree as a side effect**, turning a
-run of spaces into a tab on whichever lines it feels like — the file's tree is indented with spaces
-and it converts some of them every time. It is not a one-off; it has happened in three separate
-sessions. **Run `git status` after `check.sh` and revert anything you did not mean to change**,
-rather than assuming only the files you touched moved.
+**`check.sh`'s import pass rewrites two files that have nothing to do with the check, and `check.sh`
+now puts them back.** It turns runs of spaces into tabs in `docs/ARCHITECTURE.md`'s file tree, and it
+makes the editor rewrite `project.godot`, which loses more than whitespace — every `;` comment is
+stripped and a setting can go outright, one run having taken `window/stretch/aspect="keep"`, which is
+load-bearing for the presentation. `check.sh` records whether each was clean before it ran and
+reverts it afterwards if it was, printing which file it reverted; the revert runs from an `EXIT`
+trap, so it also happens when the check fails.
 
-**`project.godot` is the other one, and it loses more than whitespace.** Anything that makes the
-editor rewrite it — the import pass, and `tools/export-web.sh` — strips every `;` comment in the
-file and can drop a setting outright; a single run took `window/stretch/aspect="keep"` with it,
-which is load-bearing for the presentation. Nothing warns. Same rule, higher stakes: `git status`
-after, and `git diff project.godot` before believing it is only comments.
+**A file you had already edited yourself is left alone and named**, because reverting it would delete
+real work to fix a whitespace bug — that case still prints a note and is still yours to read with
+`git diff`. **And `tools/export-web.sh` rewrites `project.godot` the same way with no such guard**,
+so `git status` after an export is still the rule there.
 
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
@@ -88,24 +89,27 @@ against the commit that fixed it before telling anybody the page is well.
 
 ## What to do next
 
-**Start with [PLAYTEST-27.md](PLAYTEST-27.md) and the three milestones it fills.** It is the second
-session on the released page and the first played on both a laptop browser and a phone, and none of
-its six findings is built. Two of them are about the published page rather than about the game and
-are checked with `curl` rather than with the suite: **the site's files are served with
-`Cache-Control: max-age=600` under names that never change between releases**, so a browser can
-serve a mixed build — a fresh `index.html` against last release's `index.pck` — and a shared link
-unfurls with no picture. That is **M80**, and it is first in `TODO.md`'s order for a reason worth
-repeating here: a fix a browser does not go back for is a fix nobody receives, so every other
-milestone below it is invisible until it lands. **M76** (the continue and restart buttons, now asked
-for three times, plus a press that says it was heard) and **M81** (tap mode does nothing on a
-release web build, and the drag stick becomes a joystick that is aimed rather than gripped) follow.
+**Start with [PLAYTEST-28.md](PLAYTEST-28.md), which is the whole of M82 and is first in
+`TODO.md`'s order.** It is a laptop session on `v0.4.1`, and between its three findings and the four
+answers under them **the game ends up with one control scheme and no question about which**: a press
+sets a direction she walks until the next press, a press on her stops her, a double press runs, the
+pause button in the top right is the only thing drawn, and every other scheme — the drag stick, and
+playtest 27's aimed joystick that was to replace it — is deleted rather than one replacing the
+other. *(2026-09-06: "get rid of all other modes".)* **It comes before the open pull request**,
+asked for in those words: *"do those before merging"*.
+
+**Then [PLAYTEST-27.md](PLAYTEST-27.md)**, the session before it, whose remaining milestone is
+**M76** — the continue and restart buttons, now asked for three times, plus a press that says it was
+heard. Read playtest 27's sixth finding before building M82 anyway: the walking rule M82 keeps is
+specified there, in full, rather than in playtest 28.
 
 **One rule arrived with playtest 27 that is wider than any of them**: *"there is no way to walk
 slowly — that is intentional — there should only ever be one speed (plus a second via running)"*.
 `Stroller` moves toward `input_dir * top_speed` with the raw input vector, so the drag stick's
 partial deflection is the one input path in the game that can walk her at anything other than
 `Tuning.WALK_SPEED` (92 px/s) — and every pursuit lead time in `src/autoload/tuning.gd` is computed
-against 92 as *the* walking speed. Deleting the drag stick under M81 is what makes the rule true.
+against 92 as *the* walking speed. Deleting the drag stick under M82 is what makes the rule true,
+and a test that no input path can press a vector shorter than 1.0 is what keeps it true.
 
 **After that, the most useful thing anybody can do is play a day**, and there are two unplayed layers
 of change rather than one.
