@@ -1,7 +1,7 @@
 <!-- The same barrier seen along its length, for the mouth of an east-west street: in this
      oblique view a fence running away from the camera projects to a vertical band, so it is
      drawn as one and tiled down the screen. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="26" viewBox="0 0 14 26" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="14" height="26" viewBox="0 0 14 26" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="4" y="18" width="3" height="8" fill="#6b6357"/>
   <rect x="2" y="0" width="10" height="20" fill="#e8e2d4"/>
   <rect x="2" y="0" width="10" height="5" fill="#e0932f"/>

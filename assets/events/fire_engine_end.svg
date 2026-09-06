@@ -1,11 +1,11 @@
 <!-- The fire engine seen along its length. The ladder is what the side view is read by and it is
      end-on here, so what carries the row instead is the width: it is the widest thing on the road
      and the only red one, with the beacon on the roof where the ladder used to be. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="34" height="52" viewBox="0 0 34 52" shape-rendering="crispEdges">
-  <rect x="3" y="6" width="28" height="36" fill="#c4503c"/>
-  <rect x="3" y="6" width="28" height="4" fill="#d96a52"/>
-  <rect x="7" y="10" width="20" height="6" fill="#454e5c"/>
-  <rect x="7" y="33" width="20" height="6" fill="#a03c2c"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="34" height="52" viewBox="0 0 34 52" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M7 5 Q17 2 27 5 Q31 8 31 13 L31 41 Q17 45 3 41 L3 13 Q3 8 7 5 Z" fill="#c4503c"/>
+  <path d="M7 5 Q17 2 27 5 L30 10 L4 10 Z" fill="#d96a52"/>
+  <path d="M7 11 Q17 8 27 11 L27 16 L7 16 Z" fill="#454e5c"/>
+  <path d="M7 33 Q17 36 27 33 L27 39 Q17 42 7 39 Z" fill="#a03c2c"/>
   <rect x="5" y="18" width="24" height="4" fill="#3a3f4a"/>
   <rect x="13" y="2" width="8" height="4" fill="#4a7fc4"/>
   <rect x="3" y="39" width="28" height="3" fill="#221f28"/>

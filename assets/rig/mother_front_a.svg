@@ -1,17 +1,18 @@
 <!-- The mother walking toward the viewer, mid-stride. Feet on the bottom edge. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="46" viewBox="0 0 24 46" shape-rendering="crispEdges">
-  <rect x="6" y="32" width="5" height="12" fill="#46506b"/>
-  <rect x="13" y="32" width="5" height="12" fill="#3c4560"/>
-  <rect x="5" y="44" width="7" height="2" fill="#2f2a2c"/>
-  <rect x="13" y="44" width="7" height="2" fill="#2f2a2c"/>
-  <rect x="4" y="13" width="16" height="20" fill="#b0574f"/>
-  <rect x="4" y="27" width="16" height="6" fill="#8e433d"/>
-  <rect x="1" y="16" width="4" height="14" fill="#b0574f"/>
-  <rect x="19" y="16" width="4" height="14" fill="#b0574f"/>
-  <rect x="1" y="28" width="4" height="3" fill="#d9a878"/>
-  <rect x="19" y="28" width="4" height="3" fill="#d9a878"/>
-  <circle cx="12" cy="8" r="7" fill="#d9a878"/>
-  <path d="M5 8 A7 7 0 0 1 19 8 Z" fill="#3a2b26"/>
-  <rect x="9" y="8" width="2" height="2" fill="#221f28"/>
-  <rect x="14" y="8" width="2" height="2" fill="#221f28"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="46" viewBox="0 0 24 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M6 31 L11 31 L10 43 L5 43 Z" fill="#46506b"/>
+  <path d="M13 31 L18 31 L19 43 L14 43 Z" fill="#3c4560"/>
+  <path d="M4 43 L11 43 L10 46 L3 46 Z" fill="#2f2a2c"/>
+  <path d="M13 43 L19 43 L21 46 L13 46 Z" fill="#2f2a2c"/>
+  <path d="M5 13 Q12 10 19 13 L21 28 Q19 33 12 34 Q5 33 3 28 Z" fill="#b0574f"/>
+  <path d="M4 27 Q12 30 20 27 L20 33 Q12 36 4 32 Z" fill="#8e433d"/>
+  <path d="M4 16 Q1 18 1 27 L5 30 L7 19 Z" fill="#b0574f"/>
+  <path d="M20 16 Q23 18 23 27 L19 30 L17 19 Z" fill="#b0574f"/>
+  <path d="M1 27 L5 29 L5 32 L1 30 Z M19 29 L23 27 L23 30 L19 32 Z" fill="#d9a878"/>
+  <path d="M12 1 Q19 1 19 8 Q19 15 12 15 Q5 15 5 8 Q5 1 12 1 Z" fill="#d9a878"/>
+  <path d="M5 7 Q6 1 12 1 Q18 1 19 7 Q16 5 12 5 Q8 5 5 7 Z" fill="#3a2b26"/>
+  <path d="M8 3 Q12 0 16 3" fill="none" stroke="#634035" stroke-width="1.2"/>
+  <circle cx="9" cy="8" r="1" fill="#221f28"/>
+  <circle cx="15" cy="8" r="1" fill="#221f28"/>
+  <path d="M10 11 Q12 12 14 11" fill="none" stroke="#9b5e54" stroke-width="0.8"/>
 </svg>

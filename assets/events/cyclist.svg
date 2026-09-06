@@ -1,7 +1,7 @@
 <!-- A kid on a bike, side on, leaning into it. The one act I event that can end the day, so
      the silhouette has to read as *moving fast* from across a street: the lean, the low bars
      and the two wheels are the whole of it. Nothing else in act I has wheels this small. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="40" height="42" viewBox="0 0 40 42" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="42" viewBox="0 0 40 42" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <circle cx="8" cy="34" r="7" fill="none" stroke="#221f28" stroke-width="2"/>
   <circle cx="31" cy="34" r="7" fill="none" stroke="#221f28" stroke-width="2"/>
   <rect x="10" y="26" width="19" height="3" fill="#c4503c"/>
