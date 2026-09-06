@@ -232,7 +232,7 @@ func _update_sprites() -> void:
 		var source_pivot: Vector2 = mother_manifest.require_part(part_id).pivot_for(direction)
 		var body_position: Vector2 = hip_center + (Vector2(80.0, 66.0) - source_hip_center) * MOTHER_SCALE
 		if part_id == "head_hair":
-			body_position += Vector2(0.0, -24.0)
+			body_position += Vector2(0.0, -10.0)
 		elif part_id == "arms_hands":
 			body_position += Vector2(0.0, 2.0)
 		sprite.position = body_position + (source_pivot - Vector2(80.0, 66.0)) * MOTHER_SCALE

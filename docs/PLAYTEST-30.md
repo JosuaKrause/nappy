@@ -34,6 +34,10 @@ The original rendering is therefore a side-by-side calibration reference for eac
 object, shifted by one explicit fixed horizontal offset. It is not a second gameplay object and it
 does not change simulation or collision placement.
 
+The first calibration pass uses the legacy figure's 38px source height as the pedestrian scale
+reference and keeps the player head on the torso's attachment line instead of lifting it by a
+separate full-body offset.
+
 The player also supplied a second current-state capture from the same review session at
 `evidence/archive/session-captures/2026-09-06/run-184457-seed1423015894-v0.4.1-114-gf79ac4b-dirty/`:
 

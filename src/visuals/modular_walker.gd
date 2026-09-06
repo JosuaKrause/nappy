@@ -7,7 +7,7 @@ const LEGS_TEXTURE: Texture2D = preload("res://assets/illustrated/walkers/legs-d
 const MANIFEST_PATH := "res://assets/illustrated/walkers/MANIFEST.json"
 const UPPER_SIZE := Vector2(2172.0, 724.0)
 const LEGS_SIZE := Vector2(2172.0, 724.0)
-const VISUAL_SCALE := 0.05
+const VISUAL_SCALE := 0.065
 const COMPARISON_OFFSET := 96.0
 
 var direction: int = DirectionalParts.Direction.S
