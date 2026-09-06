@@ -33,6 +33,7 @@ signal start_requested(mode: ControlsMode.Mode)
 signal quit_requested()
 
 @onready var _root: Control = $Root
+@onready var _art: ScreenArt = $Root/Art
 @onready var _name: Label = $Root/Top/Lines/Title
 @onready var _body: Label = $Root/Bottom/Lines/Body
 @onready var _choice: HBoxContainer = $Root/Bottom/Lines/Choice
@@ -73,6 +74,22 @@ func _ready() -> void:
 	# the name of the game is only the biggest of them. `Palette.TITLE_TEXT` is the doorstep it is
 	# standing in front of; see the note there for why it is not one of the danger colours.
 	_name.add_theme_color_override("font_color", Palette.TITLE_TEXT)
+	_name.add_theme_color_override("font_shadow_color", Color(0.06, 0.09, 0.11, 0.72))
+	_name.add_theme_constant_override("shadow_offset_x", 4)
+	_name.add_theme_constant_override("shadow_offset_y", 5)
+	_name.add_theme_color_override("font_outline_color", PresentationTheme.NAVY_DEEP)
+	_name.add_theme_constant_override("outline_size", 10)
+	_body.add_theme_color_override("font_color", PresentationTheme.PAPER)
+	_hint.add_theme_color_override("font_color", PresentationTheme.PAPER_MUTED)
+	_version.add_theme_color_override("font_color", Color(PresentationTheme.PAPER_MUTED, 0.58))
+	for button in [_stick_button, _tap_button]:
+		button.add_theme_color_override("font_color", PresentationTheme.PAPER)
+		button.add_theme_color_override("font_hover_color", Color.WHITE)
+		button.add_theme_font_size_override("font_size", 15)
+		button.add_theme_stylebox_override("normal", PresentationTheme.button()["normal"])
+		button.add_theme_stylebox_override("hover", PresentationTheme.button()["hover"])
+		button.add_theme_stylebox_override("pressed", PresentationTheme.button()["pressed"])
+		button.add_theme_stylebox_override("focus", PresentationTheme.button()["focus"])
 	if _asking_controls:
 		_body.visible = false
 		_choice.visible = true
@@ -140,6 +157,9 @@ func is_open() -> bool:
 ## behind the scrims, is `main`'s decision — see `main._open_the_title()`.
 func open(again := false) -> void:
 	visible = true
+	_root.modulate.a = 0.0
+	_root.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(
+			_root, "modulate:a", 1.0, 0.28)
 	if _asking_controls:
 		# The buttons are the affordance; this line is only for whoever has neither a mouse nor a
 		# finger free to press one directly — `T` reaches the tap button, and a bare space or tap

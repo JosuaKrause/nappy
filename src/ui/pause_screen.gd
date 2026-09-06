@@ -19,6 +19,8 @@ signal restart_requested()
 signal quit_requested()
 
 @onready var _root: Control = $Root
+@onready var _art: ScreenArt = $Root/Art
+@onready var _card: Panel = $Root/Card
 @onready var _dim: ColorRect = $Root/Dim
 @onready var _standing: Label = $Root/Center/Lines/Standing
 @onready var _body: Label = $Root/Center/Lines/Body
@@ -48,6 +50,13 @@ func _ready() -> void:
 	# `ScreenOrientation.pin_to_design_box()`.
 	ScreenOrientation.pin_to_design_box(_root)
 	visible = false
+	_card.add_theme_stylebox_override("panel", PresentationTheme.card(
+			Color(0.11, 0.16, 0.2, 0.93), 20, Color(0.95, 0.91, 0.84, 0.24), 1))
+	_standing.add_theme_color_override("font_color", PresentationTheme.OCHRE)
+	_standing.add_theme_constant_override("outline_size", 4)
+	_standing.add_theme_color_override("font_outline_color", PresentationTheme.NAVY_DEEP)
+	_body.add_theme_color_override("font_color", PresentationTheme.PAPER)
+	_hint.add_theme_color_override("font_color", PresentationTheme.PAPER_MUTED)
 	_refresh_body()
 	_refresh_hint()
 
@@ -93,6 +102,9 @@ func _show_where_the_run_stands() -> void:
 
 func open() -> void:
 	visible = true
+	_root.modulate.a = 0.0
+	_root.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(
+			_root, "modulate:a", 1.0, 0.2)
 	_show_where_the_run_stands()
 	_was_paused = get_tree().paused
 	# Over the stopped city the dim is a scrim and the street behind it is worth seeing. Over

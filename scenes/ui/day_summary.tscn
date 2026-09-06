@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/ui/day_summary.gd" id="1_summary"]
+[ext_resource type="Script" path="res://src/ui/screen_art.gd" id="2_art"]
 
 [node name="DaySummary" type="CanvasLayer"]
 layer = 10
@@ -9,38 +10,79 @@ script = ExtResource("1_summary")
 [node name="Root" type="Control" parent="."]
 mouse_filter = 2
 
-[node name="Dim" type="ColorRect" parent="Root"]
+[node name="Art" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.04, 0.04, 0.06, 0.86)
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+variant = 2
+script = ExtResource("2_art")
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.055, 0.08, 0.1, 0.84)
+
+[node name="Card" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 12
+anchor_left = 0.075
+anchor_top = 0.14
+anchor_right = 0.67
+anchor_bottom = 0.86
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="Center" type="CenterContainer" parent="Root"]
-anchor_right = 1.0
-anchor_bottom = 1.0
+layout_mode = 1
+anchors_preset = 12
+anchor_left = 0.1
+anchor_top = 0.18
+anchor_right = 0.64
+anchor_bottom = 0.82
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Lines" type="VBoxContainer" parent="Root/Center"]
-theme_override_constants/separation = 22
+custom_minimum_size = Vector2(620, 0)
+layout_mode = 2
+theme_override_constants/separation = 18
 
 [node name="Heading" type="Label" parent="Root/Center/Lines"]
 visible = false
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 88
+layout_mode = 2
+theme_override_colors/font_color = Color(0.74, 0.26, 0.29, 1)
+theme_override_colors/font_outline_color = Color(0.06, 0.08, 0.1, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 68
 text = "GAME OVER"
 
 [node name="Title" type="Label" parent="Root/Center/Lines"]
-horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.94, 0.9, 0.83, 1)
-theme_override_font_sizes/font_size = 40
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.92, 0.86, 1)
+theme_override_font_sizes/font_size = 42
+autowrap_mode = 2
 text = "Day"
 
 [node name="Body" type="Label" parent="Root/Center/Lines"]
-horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
+custom_minimum_size = Vector2(560, 100)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.83, 0.79, 0.71, 1)
 theme_override_font_sizes/font_size = 17
+autowrap_mode = 2
 text = "body"
 
 [node name="Hint" type="Label" parent="Root/Center/Lines"]
-horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.62, 0.6, 0.58, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.79, 0.75, 0.68, 1)
 theme_override_font_sizes/font_size = 13
 text = "space to go on"

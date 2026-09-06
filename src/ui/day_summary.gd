@@ -7,6 +7,8 @@ extends CanvasLayer
 signal continued()
 
 @onready var _root: Control = $Root
+@onready var _art: ScreenArt = $Root/Art
+@onready var _card: Panel = $Root/Card
 @onready var _heading: Label = $Root/Center/Lines/Heading
 @onready var _title: Label = $Root/Center/Lines/Title
 @onready var _body: Label = $Root/Center/Lines/Body
@@ -69,12 +71,18 @@ func _ready() -> void:
 	# Coloured here rather than in the scene so `Palette` stays the one place a runtime colour is
 	# decided — which is what its own class comment asks for.
 	_heading.add_theme_color_override("font_color", Palette.GAME_OVER)
+	_card.add_theme_stylebox_override("panel", PresentationTheme.card(
+			Color(0.11, 0.16, 0.2, 0.95), 20, Color(0.95, 0.91, 0.84, 0.24), 1))
+	_title.add_theme_color_override("font_color", PresentationTheme.PAPER)
+	_body.add_theme_color_override("font_color", PresentationTheme.PAPER)
+	_hint.add_theme_color_override("font_color", PresentationTheme.PAPER_MUTED)
 	_root.hide()
 
 func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int) -> void:
 	# A lost *day* is not the end of a run — there are nerves left, and the screen says so two lines
 	# down. The heading belongs to the screen that ends the run and to nothing else.
 	_heading.hide()
+	_art.variant = ScreenArt.Variant.SUMMARY
 	_title.text = _DAY_TITLE.get(result, "The day ends.")
 	var lines: Array[String] = ["Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]]
 	if reason != "":
@@ -126,15 +134,26 @@ func _resistance_line() -> String:
 ## the only way out. Space dismisses every other screen in the game, so it is the key this one owes
 ## rather than a new one.
 func show_ending(ending: GameEnums.Ending) -> void:
+	match ending:
+		GameEnums.Ending.GOOD:
+			_art.variant = ScreenArt.Variant.ENDING_GOOD
+		GameEnums.Ending.NEUTRAL:
+			_art.variant = ScreenArt.Variant.ENDING_NEUTRAL
+		GameEnums.Ending.BAD:
+			_art.variant = ScreenArt.Variant.ENDING_BAD
 	_heading.text = _ENDING_HEADING.get(ending, "THE END")
 	_heading.show()
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
 	_body.text = _ENDING_BODY.get(ending, "")
+	_heading.add_theme_color_override("font_color", PresentationTheme.RUST if ending == GameEnums.Ending.BAD else PresentationTheme.PAPER)
 	_hint.text = "tap to start again" if _touch else "space to start again"
 	_present()
 
 func _present() -> void:
 	_root.show()
+	_root.modulate.a = 0.0
+	_root.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(
+			_root, "modulate:a", 1.0, 0.26)
 	get_tree().paused = true
 
 func dismiss() -> void:
