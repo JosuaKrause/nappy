@@ -92,6 +92,15 @@ func _ready() -> void:
 	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color",
 			"icon_hover_pressed_color", "icon_focused_color", "icon_disabled_color"]:
 		add_theme_color_override(state, Palette.BUTTON_SYMBOL)
+	# **The bug, and the fix.** *(Playtest 29 finding 2: "the buttons do *not* work at all... the
+	# buttons themselves do nothing.")* A `Control`'s own `mouse_filter` defaults to `STOP`, and
+	# Godot's GUI layer — which runs between `_input` and `_unhandled_input` — consumes a raw
+	# `InputEventScreenTouch` that lands on a `STOP` control. `PauseScreen` and `DaySummary` read
+	# every press in `_unhandled_input()`, which a `STOP` button never lets the touch reach. This
+	# button is driven entirely by the screens' own raw-touch reading — `catch_rect()` plus
+	# `begin_hold()`/`end_hold()` above — never by `Button`'s own `pressed` signal, so it must not
+	# claim the event at all: `IGNORE` lets it fall straight through to the screen underneath.
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _process(_delta: float) -> void:
 	if _held_by == -1:

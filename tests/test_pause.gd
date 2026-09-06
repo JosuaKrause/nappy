@@ -38,10 +38,14 @@ func run(t) -> void:
 	_test_the_pause_hint_and_body_match_the_platform(t)
 	_test_the_buttons_show_on_every_device(t)
 	_test_the_restart_button_is_a_hold(t)
+	_test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t)
+	_test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t)
 	_test_a_touch_away_from_restart_still_carries_on(t)
 	_test_the_summary_hint_matches_the_platform(t)
 	_test_an_ending_has_no_continue_button(t)
 	_test_the_summary_restart_button_is_a_hold(t)
+	_test_a_real_touch_on_the_continue_button_reaches_the_summary(t)
+	_test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t)
 	_test_a_continue_press_flashes_before_it_is_acted_on(t)
 	t.get_tree().paused = was_paused
 
@@ -469,6 +473,91 @@ func _test_the_restart_button_is_a_hold(t) -> void:
 	t.get_tree().paused = false
 	pause.queue_free()
 
+## **The regression test playtest 29 finding 2 owes.** Every touch test above drives
+## `_unhandled_input()` directly, which is exactly the one path that skips Godot's GUI layer — the
+## layer that runs between `_input` and `_unhandled_input` and consumes a raw
+## `InputEventScreenTouch` landing on a `Control` whose `mouse_filter` is the default `STOP`. That
+## is what made every button on this screen unusable until `ModeButton._ready()` set
+## `MOUSE_FILTER_IGNORE` — nothing calling `_unhandled_input()` by hand could ever have caught it.
+## `get_viewport().push_input(event, true)` is the one call that actually goes through the GUI
+## layer, so it is the one call that would fail here if `mouse_filter` regressed to `STOP`.
+##
+## **The second argument is load-bearing.** Without it the viewport applies the window's own
+## stretch transform to the event position, and a headless test window is not the 1280x720 design
+## box every screen is authored against, so an untransformed push would land the touch somewhere
+## else entirely and the test would pass for the wrong reason.
+##
+## The button's rect is set directly rather than read after a frame of container sorting — see
+## `_test_the_restart_button_is_a_hold` for why that is safe — but the press position is still the
+## button's own real `get_global_rect().get_center()`, not a hard-coded number, so this is asserting
+## against the button's actual on-screen shape rather than an assumption about it.
+func _test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var resumed := [0]
+	pause.resumed.connect(func() -> void: resumed[0] += 1)
+
+	pause._touch = true
+	pause._refresh_buttons()
+	t.get_tree().paused = false
+	pause.open()
+	pause._continue_button.position = Vector2(300.0, 400.0)
+	pause._continue_button.size = Vector2(92.0, 92.0)
+
+	var at: Vector2 = pause._continue_button.get_global_rect().get_center()
+	var touch := InputEventScreenTouch.new()
+	touch.position = at
+	touch.pressed = true
+	touch.index = 0
+	pause.get_viewport().push_input(touch, true)
+
+	t.check(resumed[0] == 1,
+			"a real touch pushed through the viewport on the continue button's own rect reaches "
+			+ "the screen (this fails if mouse_filter regresses to STOP)")
+	t.check(not pause.is_open(), "and closes it, the same as any other press")
+
+	t.get_tree().paused = false
+	pause.queue_free()
+
+## The other half of the same regression: a hold has to survive the GUI layer on both its press
+## and its matching release, not only its press — see the test above for why `push_input(event,
+## true)` is what exercises that layer at all.
+func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var restarts := [0]
+	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
+
+	pause._touch = true
+	pause._refresh_buttons()
+	t.get_tree().paused = false
+	pause.open()
+	pause._restart_button.position = Vector2(500.0, 400.0)
+	pause._restart_button.size = Vector2(92.0, 108.0)
+
+	var at: Vector2 = pause._restart_button.get_global_rect().get_center()
+	var press := InputEventScreenTouch.new()
+	press.position = at
+	press.pressed = true
+	press.index = 0
+	pause.get_viewport().push_input(press, true)
+	t.check(pause._restart_button.is_held_by(0),
+			"a real touch pushed through the viewport on the restart button's own rect starts a "
+			+ "hold (this fails if mouse_filter regresses to STOP)")
+
+	pause._restart_button._held_since = \
+			Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	var release := InputEventScreenTouch.new()
+	release.position = at
+	release.pressed = false
+	release.index = 0
+	pause.get_viewport().push_input(release, true)
+	t.check(restarts[0] == 1, "held the full duration through a real, GUI-routed event, it fires")
+
+	pause.close()
+	t.get_tree().paused = false
+	pause.queue_free()
+
 ## A touch that lands away from the restart button is not this button's business at all — the
 ## catch-all below still reads it as carrying on, exactly as any other tap on this screen already
 ## does.
@@ -593,6 +682,74 @@ func _test_the_summary_restart_button_is_a_hold(t) -> void:
 	t.get_tree().paused = false
 	summary.queue_free()
 
+## **The regression test playtest 29 finding 2 owes, the summary's own half.** See `PauseScreen`'s
+## `_test_a_real_touch_on_the_continue_button_reaches_the_pause_screen` for the full reasoning:
+## every other touch test in this file drives `_unhandled_input()` directly, which skips the GUI
+## layer that consumed the raw touch before `ModeButton._ready()` set `MOUSE_FILTER_IGNORE`, so
+## `get_viewport().push_input(event, true)` is the one call that would fail here if that regressed.
+func _test_a_real_touch_on_the_continue_button_reaches_the_summary(t) -> void:
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	var carried_on := [0]
+	summary.continued.connect(func() -> void: carried_on[0] += 1)
+
+	summary._touch = true
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary._continue_button.position = Vector2(300.0, 400.0)
+	summary._continue_button.size = Vector2(92.0, 92.0)
+
+	var at: Vector2 = summary._continue_button.get_global_rect().get_center()
+	var touch := InputEventScreenTouch.new()
+	touch.position = at
+	touch.pressed = true
+	touch.index = 0
+	summary.get_viewport().push_input(touch, true)
+
+	# Acknowledged two frames ahead of itself — see `_test_a_tap_advances_every_screen` for why.
+	t.check(carried_on[0] == 0, "the press is acknowledged before it is acted on")
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	t.check(carried_on[0] == 1,
+			"a real touch pushed through the viewport on the continue button's own rect reaches "
+			+ "the screen (this fails if mouse_filter regresses to STOP)")
+
+	t.get_tree().paused = false
+	summary.queue_free()
+
+## The other half: a hold has to survive the GUI layer on both its press and its matching release.
+func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t) -> void:
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	var restarts := [0]
+	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
+
+	summary._touch = true
+	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary._restart_button.position = Vector2(500.0, 400.0)
+	summary._restart_button.size = Vector2(92.0, 108.0)
+
+	var at: Vector2 = summary._restart_button.get_global_rect().get_center()
+	var press := InputEventScreenTouch.new()
+	press.position = at
+	press.pressed = true
+	press.index = 0
+	summary.get_viewport().push_input(press, true)
+	t.check(summary._restart_button.is_held_by(0),
+			"a real touch pushed through the viewport on the restart button's own rect starts a "
+			+ "hold (this fails if mouse_filter regresses to STOP)")
+
+	summary._restart_button._held_since = \
+			Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	var release := InputEventScreenTouch.new()
+	release.position = at
+	release.pressed = false
+	release.index = 0
+	summary.get_viewport().push_input(release, true)
+	t.check(restarts[0] == 1, "held the full duration through a real, GUI-routed event, it fires")
+
+	t.get_tree().paused = false
+	summary.queue_free()
+
 ## **The ordering fix 2 exists for**, asserted directly rather than only screenshotted: the
 ## continue button's own resting colour changes the instant a tap lands, stays changed across the
 ## one frame boundary that renders it, and only reverts — together with the day actually starting —
@@ -660,6 +817,11 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
 	t.get_tree().paused = false
 	pause.open()
+	# Moved off the origin so its own (still unlaid-out) default rect at (0, 0) does not swallow a
+	# tap at (0, 0) as a restart-button press — see `_test_the_restart_button_is_a_hold` for why
+	# every other test that presses a specific point on this screen already does the same.
+	pause._restart_button.position = Vector2(500.0, 400.0)
+	pause._restart_button.size = Vector2(92.0, 108.0)
 	pause._unhandled_input(_touch(true))
 	t.check(resumed[0] == 1 and not pause.is_open(), "and a tap carries on from the pause")
 	t.get_tree().paused = false
@@ -668,6 +830,9 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
 	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	# See above: kept off the origin for the same reason.
+	summary._restart_button.position = Vector2(500.0, 400.0)
+	summary._restart_button.size = Vector2(92.0, 108.0)
 	var carried_on := [0]
 	summary.continued.connect(func() -> void: carried_on[0] += 1)
 	summary._unhandled_input(_touch(true))
@@ -710,6 +875,9 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
 	t.get_tree().paused = false
 	pause.open()
+	# See `_test_a_tap_advances_every_screen` for why the restart button is moved off the origin.
+	pause._restart_button.position = Vector2(500.0, 400.0)
+	pause._restart_button.size = Vector2(92.0, 108.0)
 	pause._unhandled_input(_left_click())
 	t.check(resumed[0] == 1 and not pause.is_open(), "and a click carries on from the pause")
 	t.get_tree().paused = false
@@ -718,6 +886,8 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
 	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary._restart_button.position = Vector2(500.0, 400.0)
+	summary._restart_button.size = Vector2(92.0, 108.0)
 	var carried_on := [0]
 	summary.continued.connect(func() -> void: carried_on[0] += 1)
 	summary._unhandled_input(_left_click())

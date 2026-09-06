@@ -198,7 +198,9 @@ func _wants_rotation() -> bool:
 ## guards against: `_unhandled_input`'s catch-all below reads **any** pressed touch or click as
 ## *carry on*, so a held button has to be tested against the press position before that branch ever
 ## sees the event. A left click holds it too, gated on `not _touch` for the same reason
-## `PauseScreen._handle_restart_touch()`'s own mouse branch is — see that function's own doc.
+## `PauseScreen._handle_restart_touch()`'s own mouse branch is — see that function's own doc,
+## including the corrected reasoning for why this reads the raw event rather than a `Button`'s own
+## `pressed` signal (Playtest 29 finding 2, `ModeButton._ready()`'s `mouse_filter` fix).
 func _handle_restart_touch(event: InputEvent) -> bool:
 	if not _buttons.visible:
 		return false

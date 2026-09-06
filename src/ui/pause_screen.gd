@@ -144,14 +144,18 @@ func _wants_rotation() -> bool:
 
 ## The trap this milestone's own design names: `_unhandled_input`'s catch-all below reads **any**
 ## pressed touch or click as *carry on*, so a held button has to be tested against the press
-## position before that branch ever sees the event — the same way `TouchControls._on_touch()`
-## checks a touch against its own catch radii before anything else claims it.
+## position before that branch ever sees the event — the same way `TouchControls._on_pointer()`
+## checks a press against its own catch radii before anything else claims it.
 ##
 ## **Not a `Button`'s own `pressed`/`button_down` signals.** Godot delivers the screen touch *and*
-## an emulated mouse event, and this screen reads the raw touch on purpose — a `Button` consuming
-## the emulated click would not stop the raw touch from reaching the catch-all underneath it, which
-## is exactly the trap. So this reads the same raw event `_unhandled_input` already does, before the
-## catch-all gets a look at it.
+## an emulated mouse event, and this screen reads the raw touch on purpose. *(Playtest 29 finding
+## 2: the comment here used to claim "a `Button` consuming the emulated click would not stop the
+## raw touch from reaching the catch-all underneath it" — the raw touch is exactly what a `STOP`
+## `mouse_filter` stops, which is what made the buttons unusable until `ModeButton._ready()` set
+## `MOUSE_FILTER_IGNORE`.)* With the button no longer claiming anything, this still reads the same
+## raw event `_unhandled_input` already does, before the catch-all gets a look at it — the read
+## has to happen here regardless of the button's own filter, since a hold spans a press and a
+## release and `Button` has no signal for "held for about a second".
 ##
 ## **A left click holds it too, on a build with no touch hardware** — the same `not _touch` gate
 ## `TouchControls._input()` uses for its own mouse branch, and for the same reason: a real touch
