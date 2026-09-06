@@ -1,7 +1,8 @@
 extends RefCounted
-## The on-screen stick and run button, and the two things a screenshot cannot show: that they
-## disappear on the platforms and the screens they must, and that a finger on either presses the
-## same actions a keyboard does.
+## `TouchControls`' own geometry: that the pause button shows only where and when it should, that
+## a finger on it presses the same real `pause` action a keyboard does, and that a press anywhere
+## else — a finger or a mouse click — sets a direction, stops her, or runs it, exactly the parts a
+## screenshot cannot check.
 ##
 ## `_touch` is read once into a member exactly the way `QuitOption.available()` and `hud._debug`
 ## are — a headless test process is never a touch device, so a gate asked of `TouchInput` at each
@@ -11,14 +12,27 @@ const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 
 func run(t) -> void:
 	var was_paused: bool = t.get_tree().paused
-	_test_the_stick_shows_only_on_a_touch_device_with_a_day_running(t)
-	_test_the_stick_presses_the_move_actions(t)
-	_test_hiding_the_stick_releases_everything_it_held(t)
-	_test_the_run_button_holds_run_independently_of_the_stick(t)
-	_test_hiding_the_controls_releases_the_run_button_too(t)
+	_test_process_mode_stays_always(t)
+	_test_the_button_shows_only_on_a_touch_device_with_a_day_running(t)
 	_test_the_pause_button_sends_a_real_action_event(t)
 	_test_the_pause_button_fires_on_release_inside_and_not_outside(t)
 	_test_the_pause_button_tracks_its_own_touch_index(t)
+	_test_hiding_the_controls_releases_a_held_direction(t)
+	_test_heading_to_is_the_unit_vector_and_zero_for_a_tap_on_herself(t)
+	_test_is_double_tap_needs_both_windows(t)
+	_test_set_direction_presses_the_components_of_the_heading(t)
+	_test_set_direction_on_her_own_position_stops_rather_than_pressing(t)
+	_test_a_tap_within_the_stop_radius_stops_her(t)
+	_test_a_direction_stays_locked_in_with_nothing_held_down(t)
+	_test_a_tap_maps_its_screen_position_through_the_viewports_canvas_transform(t)
+	_test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t)
+	_test_a_tap_during_a_pause_does_nothing(t)
+	_test_a_pause_force_releases_a_held_direction(t)
+	_test_a_mouse_click_stands_in_for_a_tap(t)
+	_test_a_touch_devices_own_emulated_click_is_ignored(t)
+	_test_a_press_on_the_pause_button_is_not_also_a_direction(t)
+	_test_the_corner_is_an_ordinary_direction_press_where_the_button_is_not_drawn(t)
+	_test_no_input_path_presses_a_vector_shorter_than_one(t)
 	t.get_tree().paused = was_paused
 	_release_actions()
 
@@ -28,17 +42,34 @@ func _controls(t) -> TouchControls:
 	controls.set_process(false)
 	return controls
 
+## **Carried over from the code being replaced, bought with a played session.** A `PAUSABLE` node
+## stops running the instant the tree pauses, which is one frame too late to let go of whatever
+## direction was pressed when the pause landed — see `_release_all()`. `_ready()` sets this
+## explicitly rather than trusting it stays true across a rewrite.
+func _test_process_mode_stays_always(t) -> void:
+	var controls := _controls(t)
+	t.check(controls.process_mode == Node.PROCESS_MODE_ALWAYS,
+			"the merged controls still process through a pause, the same as the stick did")
+	controls.queue_free()
+
+func _rig_at(t, position: Vector2) -> Node2D:
+	var rig := Node2D.new()
+	rig.global_position = position
+	rig.add_to_group("player")
+	t.add_child(rig)
+	return rig
+
 ## **Both gates, independently.** Neither a keyboard-and-mouse desktop nor a phone mid-pause should
-## ever see the stick — the first because `TouchInput.available()` says there is no touch hardware
+## ever see the button — the first because `TouchInput.available()` says there is no touch hardware
 ## to draw it for, the second because `get_tree().paused` is what the title, the pause and the
-## between-days summary all set, and none of the three has anything for a thumb to steer.
-func _test_the_stick_shows_only_on_a_touch_device_with_a_day_running(t) -> void:
+## between-days summary all set, and none of the three has anything for a thumb to press.
+func _test_the_button_shows_only_on_a_touch_device_with_a_day_running(t) -> void:
 	var controls := _controls(t)
 
 	controls._touch = false
 	t.get_tree().paused = false
 	controls._process(0.0)
-	t.check(not controls.visible, "no touch hardware means no stick, even mid-day")
+	t.check(not controls.visible, "no touch hardware means no button, even mid-day")
 
 	controls._touch = true
 	t.get_tree().paused = true
@@ -52,106 +83,9 @@ func _test_the_stick_shows_only_on_a_touch_device_with_a_day_running(t) -> void:
 
 	controls.queue_free()
 
-## The whole point of the stick: it presses `Input.get_vector`'s own four actions, with the raw
-## deflection as the strength, so `Stroller` never has to learn a thumb was involved.
-func _test_the_stick_presses_the_move_actions(t) -> void:
-	var controls := _controls(t)
-	controls.visible = true
-
-	controls._input(_touch_event(0, TouchControls.STICK_CENTRE + Vector2(0.0, -1.0), true))
-	t.check(Input.is_action_pressed("move_up"), "pressing straight up presses move_up")
-	t.check(not Input.is_action_pressed("move_down"), "and not the opposite direction on that axis")
-	t.check(not Input.is_action_pressed("move_left") and not Input.is_action_pressed("move_right"),
-			"nor anything on the other axis")
-
-	# Dragging the same touch index out to the full radius is a full-strength push, the same
-	# reading a fully-tilted analogue stick gives `Input.get_vector`'s own deadzone.
-	controls._input(_drag_event(0,
-			TouchControls.STICK_CENTRE + Vector2(0.0, -TouchControls.STICK_RADIUS)))
-	t.close_to(Input.get_action_strength("move_up"), 1.0,
-			"a full deflection presses at full strength")
-
-	# A drag under a different index is not the finger that grabbed the stick.
-	controls._input(_drag_event(1, TouchControls.STICK_CENTRE + Vector2(80.0, 0.0)))
-	t.check(Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_right"),
-			"a second finger dragging elsewhere does not steal the stick")
-
-	controls._input(_touch_event(0, Vector2.ZERO, false))
-	t.check(not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down")
-			and not Input.is_action_pressed("move_left")
-			and not Input.is_action_pressed("move_right"),
-			"letting go of the stick's own finger centres it and releases every direction")
-
-	controls.queue_free()
-
-## **A finger still down when the day ends must not carry into the day after it.** The stick has no
-## way to be told the tree is about to pause mid-gesture — the summary just sets it — so it is the
-## stick's own job to let go of everything the instant it notices, on the same check that hides it.
-func _test_hiding_the_stick_releases_everything_it_held(t) -> void:
-	var controls := _controls(t)
-	controls._touch = true
-	t.get_tree().paused = false
-	controls._process(0.0)
-
-	controls._input(_touch_event(0,
-			TouchControls.STICK_CENTRE + Vector2(TouchControls.STICK_RADIUS, 0.0), true))
-	t.check(Input.is_action_pressed("move_right"), "the stick is holding a direction")
-
-	t.get_tree().paused = true
-	controls._process(0.0)
-	t.check(not controls.visible, "the stick disappears with the tree paused")
-	t.check(not Input.is_action_pressed("move_right"),
-			"and lets go of the direction rather than carrying it into tomorrow")
-
-	controls.queue_free()
-
-## **Never the far end of the stick's own push.** The button is a separate touch index on the
-## opposite side of the screen, so both this and a full stick deflection can be held at once,
-## exactly as `Shift` and an arrow key can — which is the whole reason a stick threshold was
-## rejected: `Stroller` reads the stick's raw deflection, and a threshold on it would have made
-## the one deliberate act in the game a gradient a thumb could cross by accident.
-func _test_the_run_button_holds_run_independently_of_the_stick(t) -> void:
-	var controls := _controls(t)
-	controls.visible = true
-
-	controls._input(_touch_event(0,
-			TouchControls.STICK_CENTRE + Vector2(0.0, -TouchControls.STICK_RADIUS), true))
-	t.check(Input.is_action_pressed("move_up") and not Input.is_action_pressed("run"),
-			"the stick alone does not hold run")
-
-	controls._input(_touch_event(1, TouchControls.RUN_CENTRE, true))
-	t.check(Input.is_action_pressed("run") and Input.is_action_pressed("move_up"),
-			"a second finger on the button holds run alongside the stick's own direction")
-
-	controls._input(_touch_event(1, Vector2.ZERO, false))
-	t.check(not Input.is_action_pressed("run") and Input.is_action_pressed("move_up"),
-			"letting go of the button releases run and leaves the stick alone")
-
-	controls._input(_touch_event(0, Vector2.ZERO, false))
-	controls.queue_free()
-
-## The same guarantee the stick gets, extended to the button: a thumb still holding it down when a
-## day ends must not run the whole of tomorrow's opening stride for free.
-func _test_hiding_the_controls_releases_the_run_button_too(t) -> void:
-	var controls := _controls(t)
-	controls._touch = true
-	t.get_tree().paused = false
-	controls._process(0.0)
-
-	controls._input(_touch_event(0, TouchControls.RUN_CENTRE, true))
-	t.check(Input.is_action_pressed("run"), "the button is holding run")
-
-	t.get_tree().paused = true
-	controls._process(0.0)
-	t.check(not controls.visible, "the controls disappear with the tree paused")
-	t.check(not Input.is_action_pressed("run"),
-			"and run is let go of rather than carried into tomorrow")
-
-	controls.queue_free()
-
 ## **The pause is not a held action, and firing it needs a real propagated event, not polled
 ## state.** `main._unhandled_input()` reads `event.is_action_pressed("pause")` off the event
-## itself, so `Input.action_press(&"pause")` — the mechanism the stick and RUN use — would set
+## itself, so `Input.action_press(&"pause")` — the mechanism a held direction uses — would set
 ## polled state and be heard by nothing, the same trap `AutoScreenshot._tap()`'s own comment names
 ## for `--press`. Checked directly on `_send_pause_action()`'s own returned event, so this does not
 ## depend on when the tree gets around to propagating anything — nothing else in this suite does
@@ -166,9 +100,8 @@ func _test_the_pause_button_sends_a_real_action_event(t) -> void:
 	controls.queue_free()
 
 ## **Fires on a clean tap, not on touch-down — and a thumb that lands wrong can slide off and lift
-## for free.** The stick and RUN commit the instant a thumb lands; the pause button waits for the
-## matching release, and only counts one still over the button, the opposite of the stick and RUN
-## on purpose — pressed once a day at most, a false fire costs more than a missed one.
+## for free.** The button waits for the matching release, and only counts one still over the
+## button — pressed once a day at most, a false fire costs more than a missed one.
 ##
 ## Asserted on `_pause_fires()` directly, the pure geometry question `_on_touch()`'s release branch
 ## asks before ever touching `Input`. **A first version of this test asserted
@@ -199,21 +132,328 @@ func _test_the_pause_button_tracks_its_own_touch_index(t) -> void:
 			"and releasing lets go of the index again, whether it fired or not")
 
 	controls.queue_free()
+	Input.action_release(&"pause")
 
+## **A finger still down when the day ends must not carry into the day after it.** Nothing here
+## has a way to be told the tree is about to pause mid-gesture — the summary just sets it — so it
+## is this node's own job to let go of everything the instant a pause lands, on every device, not
+## only where the button is drawn.
+func _test_hiding_the_controls_releases_a_held_direction(t) -> void:
+	var controls := _controls(t)
+	controls._touch = false
+	var rig := _rig_at(t, Vector2.ZERO)
+
+	controls.set_direction(Vector2(100.0, 0.0), false)
+	t.check(Input.is_action_pressed("move_right"), "a direction is held")
+
+	t.get_tree().paused = true
+	controls._process(0.0)
+	t.check(not Input.is_action_pressed("move_right"),
+			"and lets go of it rather than carrying it into tomorrow, even with no button drawn")
+
+	t.get_tree().paused = false
+	controls.queue_free()
+	rig.free()
+
+func _test_heading_to_is_the_unit_vector_and_zero_for_a_tap_on_herself(t) -> void:
+	var direction := TouchControls.heading_to(Vector2(0.0, 100.0), Vector2.ZERO)
+	t.close_to(direction.length(), 1.0, "the heading is a unit vector")
+	t.check(direction.is_equal_approx(Vector2.DOWN), "pointing straight at the target")
+	t.check(TouchControls.heading_to(Vector2(10.0, 10.0), Vector2(10.0, 10.0)) == Vector2.ZERO,
+			"a tap on her own position has no line to walk")
+
+func _test_is_double_tap_needs_both_windows(t) -> void:
+	t.check(TouchControls.is_double_tap(0.1, 10.0), "soon and close reads as a double tap")
+	t.check(not TouchControls.is_double_tap(1.0, 10.0), "close but late is a new single tap")
+	t.check(not TouchControls.is_double_tap(0.1, 400.0),
+			"soon but far away is a new direction, not a modifier on the old one")
+
+func _test_set_direction_presses_the_components_of_the_heading(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+
+	controls.set_direction(Vector2(100.0, -100.0), false)
+	t.check(Input.is_action_pressed("move_right") and Input.is_action_pressed("move_up"),
+			"a diagonal press presses both components of its own unit vector")
+	t.check(not Input.is_action_pressed("run"), "a single press does not hold run")
+
+	controls.set_direction(Vector2(-100.0, -100.0), true)
+	t.check(Input.is_action_pressed("move_left") and not Input.is_action_pressed("move_right"),
+			"a new press the other way releases the axis it no longer wants")
+	t.check(Input.is_action_pressed("run"), "a double press holds run")
+
+	controls.queue_free()
+	rig.free()
+
+## `set_direction()`'s own fallback for the degenerate case: a target exactly on top of her has no
+## heading to compute, and it now stops her rather than doing nothing — see the class doc for why
+## that is strictly more useful and is what was asked for.
+func _test_set_direction_on_her_own_position_stops_rather_than_pressing(t) -> void:
+	# Leftover state from the previous test's own double press, not this one's concern to leave held.
+	_release_actions()
+	var rig := _rig_at(t, Vector2(50.0, 50.0))
+	var controls := _controls(t)
+
+	controls.set_direction(Vector2(100.0, 0.0), true)
+	t.check(Input.is_action_pressed("move_right") and Input.is_action_pressed("run"),
+			"walking first, so there is something for landing on her to let go of")
+
+	controls.set_direction(Vector2(50.0, 50.0), false)
+	t.check(not Input.is_action_pressed("move_left") and not Input.is_action_pressed("move_right")
+			and not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down")
+			and not Input.is_action_pressed("run"),
+			"landing exactly on her own position stops her rather than pressing nothing")
+	t.check(not controls._walking, "and she is no longer walking")
+
+	controls.queue_free()
+	rig.free()
+
+## **The generous radius, not the exact pixel.** *(2026-09-06: "also, to stop her just click on
+## her".)* `STOP_RADIUS` is wide enough to catch a press on the pram, which rides up to
+## `PRAM_DISTANCE` off to one side of her, not only a press on her own exact world position.
+func _test_a_tap_within_the_stop_radius_stops_her(t) -> void:
+	var rig := _rig_at(t, Vector2(200.0, 200.0))
+	var controls := _controls(t)
+	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
+
+	controls._on_tap(transform * Vector2(500.0, 200.0), 0.0)
+	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
+
+	# 30px off her own position -- within STOP_RADIUS (48px), covering the pram at PRAM_DISTANCE
+	# (34px) as well as her own PLAYER_BODY_RADIUS (14px).
+	controls._on_tap(transform * Vector2(230.0, 200.0), 1.0)
+	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
+			"a press near her, not only exactly on her, stops her")
+
+	# Well outside the radius sets a direction instead.
+	controls._on_tap(transform * Vector2(500.0, 200.0), 2.0)
+	t.check(Input.is_action_pressed("move_right") and controls._walking,
+			"a press outside the stop radius sets a direction instead")
+
+	controls.queue_free()
+	rig.free()
+
+## **There is no arrival any more.** A direction pressed once stays held, unrenewed, however long
+## `_process()` is asked to run — the whole of what "she walks it until the next press" means.
+func _test_a_direction_stays_locked_in_with_nothing_held_down(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+
+	controls.set_direction(Vector2(100.0, 0.0), true)
+	t.check(Input.is_action_pressed("move_right") and Input.is_action_pressed("run"),
+			"walking holds the direction and, on a double press, run")
+
+	rig.global_position = Vector2(500.0, 0.0)
+	for _i in 100:
+		controls._process(0.016)
+	t.check(Input.is_action_pressed("move_right") and Input.is_action_pressed("run"),
+			"walking well past where a target used to sit still holds the same direction")
+
+	controls.queue_free()
+	rig.free()
+
+## **The test a screenshot cannot be**: `_on_tap()`'s own reverse of the transform `DangerEdge` and
+## `HomeArrow` already read forwards. Constructed from the viewport's own real
+## `get_canvas_transform()` rather than an assumed identity, so this would still catch a camera
+## offset or a rotation the way a hard-coded expectation would not.
+func _test_a_tap_maps_its_screen_position_through_the_viewports_canvas_transform(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+
+	var world_target := Vector2(120.0, -40.0)
+	var screen_position: Vector2 = controls.get_viewport().get_canvas_transform() * world_target
+	controls._on_tap(screen_position, 0.0)
+	t.check(Input.is_action_pressed("move_right"),
+			"a tap's own screen position maps back to the world position it was aimed at")
+
+	controls.queue_free()
+	rig.free()
+
+## The double-tap windows again, now through the real entry point rather than the pure function
+## directly -- a close tap soon after runs, and either window failing on its own falls back to a
+## fresh single tap.
+func _test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
+
+	controls._on_tap(transform * Vector2(100.0, 0.0), 10.0)
+	t.check(not Input.is_action_pressed("run"), "the first tap of a run only walks")
+
+	controls._on_tap(transform * Vector2(100.0, 0.0), 10.2)
+	t.check(Input.is_action_pressed("run"), "soon and on the same spot reads as a double tap")
+
+	controls._on_tap(transform * Vector2(500.0, 500.0), 10.4)
+	t.check(not Input.is_action_pressed("run"),
+			"soon but far away is a new direction, not a double tap on the old one")
+
+	controls._on_tap(transform * Vector2(500.0, 500.0), 12.0)
+	t.check(not Input.is_action_pressed("run"), "close but late is also a new single tap")
+
+	controls.queue_free()
+	rig.free()
+
+## Paused for any reason -- Esc, the day ending, the title -- a tap does nothing, the same as every
+## one of those screens already leaving the controls drawing nothing.
+func _test_a_tap_during_a_pause_does_nothing(t) -> void:
+	# Leftover state from the previous test's own tap, not this one's concern to leave held.
+	_release_actions()
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	t.get_tree().paused = true
+
+	controls._on_tap(controls.get_viewport().get_canvas_transform() * Vector2(50.0, 0.0), 0.0)
+	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
+			"a tap during a pause does nothing at all")
+
+	t.get_tree().paused = false
+	controls.queue_free()
+	rig.free()
+
+## A direction left pressed into whatever comes next is the same leak `_release_all()` already
+## guards its own controls against on every kind of hiding.
+func _test_a_pause_force_releases_a_held_direction(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+
+	controls.set_direction(Vector2(100.0, 0.0), true)
+	t.check(Input.is_action_pressed("move_right") and Input.is_action_pressed("run"),
+			"walking holds a direction and, on a double press, run")
+
+	t.get_tree().paused = true
+	controls._process(0.016)
+	t.check(not Input.is_action_pressed("move_right") and not Input.is_action_pressed("run"),
+			"Esc or any other pause force-releases whatever was held")
+	t.check(not controls._walking, "and abandons the direction rather than merely pausing mid-stride")
+
+	t.get_tree().paused = false
+	controls.queue_free()
+	rig.free()
+
+## "On non-mobile we can try clicking with the mouse instead of tapping" -- a left click reaches
+## `_on_tap()` exactly the way a finger's own `InputEventScreenTouch` does. This suite's own process
+## is always a debug build, the same as every other dev-only path in this project, so the gate
+## itself is not what this checks; only that a click is read at all.
+func _test_a_mouse_click_stands_in_for_a_tap(t) -> void:
+	# Leftover pause from the previous test's own pause check, not this one's concern.
+	t.get_tree().paused = false
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = controls.get_viewport().get_canvas_transform() * Vector2(100.0, 0.0)
+	controls._input(click)
+	t.check(Input.is_action_pressed("move_right"), "a left click walks exactly as a tap would")
+
+	# A right click, or the release half of a left one, is not a tap.
+	var release := click.duplicate()
+	release.pressed = false
+	controls._input(release)
+	var other_button := InputEventMouseButton.new()
+	other_button.button_index = MOUSE_BUTTON_RIGHT
+	other_button.pressed = true
+	other_button.position = controls.get_viewport().get_canvas_transform() * Vector2(-100.0, 0.0)
+	controls._input(other_button)
+	t.check(not Input.is_action_pressed("move_left"), "only a left click's own press is a tap")
+
+	controls.queue_free()
+	rig.free()
+
+## **The gate that makes the mouse stand-in safe on a real touch device.** Godot emulates a mouse
+## click from every real touch by default (`input_devices/pointing/emulate_mouse_from_touch`), so
+## without `not _touch` a single tap would fire `_on_tap()` twice, once through each event, at the
+## same place and the same instant -- close enough on both windows to read as its own double tap.
+## This is the bug a first version of `--tap` actually hit: a lone `--tap` on a screenshot rig run
+## with `--touch` came back running, not walking.
+func _test_a_touch_devices_own_emulated_click_is_ignored(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	controls._touch = true
+
+	var touch := InputEventScreenTouch.new()
+	touch.position = controls.get_viewport().get_canvas_transform() * Vector2(100.0, 0.0)
+	touch.pressed = true
+	controls._input(touch)
+	t.check(not Input.is_action_pressed("run"), "the real touch alone only walks")
+
+	# The engine's own emulated click, same place, same instant -- exactly what a real touch device
+	# would also deliver right behind the touch above.
+	var emulated := InputEventMouseButton.new()
+	emulated.button_index = MOUSE_BUTTON_LEFT
+	emulated.pressed = true
+	emulated.position = touch.position
+	controls._input(emulated)
+	t.check(not Input.is_action_pressed("run"),
+			"a touch device's own emulated click is not read as a second, doubling tap")
+
+	controls.queue_free()
+	rig.free()
+
+## **The cost the no-UI decision was protecting, now paid deliberately.** *(2026-09-06: "and then
+## it also needs the pause button in the top right".)* A touch press that lands on the button,
+## while it is showing, must not also lock in a direction toward the corner.
+func _test_a_press_on_the_pause_button_is_not_also_a_direction(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	controls.visible = true
+
+	controls._input(_touch_event(0, TouchControls.PAUSE_CENTRE, true))
+	t.check(controls._pause_touch == 0, "the press is caught by the button")
+	t.check(not controls._walking, "and is not read as a direction toward the corner")
+
+	controls._input(_touch_event(0, TouchControls.PAUSE_CENTRE, false))
 	Input.action_release(&"pause")
 	controls.queue_free()
+	rig.free()
+
+## **Only where the button is actually there to press.** A keyboard-and-mouse desktop never draws
+## it — `Esc` is its pause — so a press in the same corner there is an ordinary direction press,
+## not a dead zone nobody can walk into.
+func _test_the_corner_is_an_ordinary_direction_press_where_the_button_is_not_drawn(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	controls._touch = false
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = TouchControls.PAUSE_CENTRE
+	controls._input(click)
+	t.check(controls._walking, "a press in the corner sets a direction when no button is drawn there")
+
+	controls.queue_free()
+	rig.free()
+
+## *(2026-09-06: "there is no way to walk slowly -- that is intentional -- there should only ever
+## be one speed (plus a second via running)".)* The drag stick was the one input path that could
+## press a partial vector — `offset.limit_length(STICK_RADIUS) / STICK_RADIUS` walked her at less
+## than `Tuning.WALK_SPEED` whenever a thumb rested short of the stick's own rim, which is exactly
+## the gap every pursuit lead time in `src/autoload/tuning.gd` is computed assuming cannot exist.
+## With the stick deleted, `set_direction()`'s own heading is the only vector any press can produce,
+## and `heading_to()` always normalises — so this asks the real entry point, across a full circle of
+## targets, whether the actions it ends up pressing ever combine to less than a unit vector.
+func _test_no_input_path_presses_a_vector_shorter_than_one(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+
+	for degrees in range(0, 360, 15):
+		var direction := Vector2.RIGHT.rotated(deg_to_rad(float(degrees)))
+		controls.set_direction(direction * 200.0, false)
+		var pressed := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
+		t.check(pressed.length() >= 1.0 - 0.001,
+				"a press at %d degrees still presses a full unit vector (got length %.4f)"
+						% [degrees, pressed.length()])
+
+	controls.queue_free()
+	rig.free()
 
 func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()
 	event.index = index
 	event.position = position
 	event.pressed = pressed
-	return event
-
-func _drag_event(index: int, position: Vector2) -> InputEventScreenDrag:
-	var event := InputEventScreenDrag.new()
-	event.index = index
-	event.position = position
 	return event
 
 ## However a check above failed or passed, the movement actions, `run` and `pause` are global

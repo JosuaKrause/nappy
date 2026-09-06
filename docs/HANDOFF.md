@@ -12,7 +12,7 @@ progress-tracking, which lives there too.
 Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex's entry point is `AGENTS.md`.
 Its repository hooks need review through `/hooks` before they execute.
 
-**M64's measurement probes,
+One branch is unmerged and that is deliberate rather than in progress: **M64's measurement probes,
 `tests/test_zz_m64_measure.gd` and `tests/test_zz_m64_density.gd`, are kept off `main` on a branch
 of their own** so that *measure it again afterwards* means running the same thing rather than
 reinventing it. They are the only files on it, they print rather than assert, and they are the
@@ -49,17 +49,18 @@ load-bearing: a debug build is the only one where the URL modifiers answer at al
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
 
-**`check.sh`'s import pass rewrites `docs/ARCHITECTURE.md`'s file tree as a side effect**, turning a
-run of spaces into a tab on whichever lines it feels like — the file's tree is indented with spaces
-and it converts some of them every time. It is not a one-off; it has happened in three separate
-sessions. **Run `git status` after `check.sh` and revert anything you did not mean to change**,
-rather than assuming only the files you touched moved.
+**`check.sh`'s import pass rewrites two files that have nothing to do with the check, and `check.sh`
+now puts them back.** It turns runs of spaces into tabs in `docs/ARCHITECTURE.md`'s file tree, and it
+makes the editor rewrite `project.godot`, which loses more than whitespace — every `;` comment is
+stripped and a setting can go outright, one run having taken `window/stretch/aspect="keep"`, which is
+load-bearing for the presentation. `check.sh` records whether each was clean before it ran and
+reverts it afterwards if it was, printing which file it reverted; the revert runs from an `EXIT`
+trap, so it also happens when the check fails.
 
-**`project.godot` is the other one, and it loses more than whitespace.** Anything that makes the
-editor rewrite it — the import pass, and `tools/export-web.sh` — strips every `;` comment in the
-file and can drop a setting outright; a single run took `window/stretch/aspect="keep"` with it,
-which is load-bearing for the presentation. Nothing warns. Same rule, higher stakes: `git status`
-after, and `git diff project.godot` before believing it is only comments.
+**A file you had already edited yourself is left alone and named**, because reverting it would delete
+real work to fix a whitespace bug — that case still prints a note and is still yours to read with
+`git diff`. **And `tools/export-web.sh` rewrites `project.godot` the same way with no such guard**,
+so `git status` after an export is still the rule there.
 
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
@@ -79,43 +80,46 @@ So pushing `main` no longer publishes. Completed work may be pushed without aski
 the live site is whatever the newest tag pointed at — `git tag --list 'v*'` and `tools/release.sh`'s
 own dry run say which.
 
-**The invincibility bug is fixed on `main`, and a fix on `main` is not a fix on the site.** The
-release `v0.2.0` carried a day that ends without saying so — the clock stops, no summary appears,
-the player keeps walking and nothing can end the day again — from one untyped array literal in
-`main.gd`'s `_on_day_finished()`. The record is in `DECISIONS.md` under M73. **The site serves
-whatever the newest tag points at**, so check `git tag --list 'v*'` and `tools/release.sh`'s dry run
-against the commit that fixed it before telling anybody the page is well.
+**A fix on `main` is not a fix on the site, and that is the sentence to keep in mind before telling
+anybody the page is well.** The site serves whatever the newest tag points at, so `git tag --list
+'v*'` and `tools/release.sh`'s dry run are what say whether a given commit is actually out there.
+A release has carried a game-ending bug before; the record is in `DECISIONS.md` under M73.
+
+**A browser now goes back for a new release, and it did not before.** The export publishes
+`index.js`, `index.wasm` and `index.pck` under a directory named for the release tag, because
+GitHub Pages sends `Cache-Control: max-age=600` on everything with no header surface to change it —
+under fixed names each file's ten minutes ran independently, so a reload could pair a fresh
+`index.html` against the previous release's `index.pck`. **That means a stale report is now worth
+believing rather than explaining away.** The record is in `DECISIONS.md` under M80.
 
 ## What to do next
 
-**The active request is the ground-up graphics overhaul in [PLAYTEST-27.md](PLAYTEST-27.md).**
-**For the Luna takeover, read [LUNA_HANDOFF.md](LUNA_HANDOFF.md)** for the current decisions,
-reference assets, implementation checkpoint, verification limits and concrete next work order.
-[VISUALS.md](VISUALS.md) describes its target, not a completed renderer: illustrated PNG art,
-eight-direction sheets and interchangeable character parts on the existing non-diagonal view.
-The mother follows the supplied green-coat/scarf/bun reference. M79's diagonal investigation stays
-tabled. The 3D street and actor studies are experiments, not the accepted art target; rejected
-work is recoverable from this branch's ancestry, indexed in DECISIONS.md, rather than dangling
-branches. The playable game still uses its existing renderer. Luna worktrees hold the PNG source
-art and grounded modular animation implementation. The first registered, real-alpha mother and
-pram part sheets and their gameplay-scale contact review are in `assets/illustrated/modular/`.
-The standalone compositor now has articulated lower-body source parts and a headless planted-gait
-proof; live player/crowd binding remains open. `assets/illustrated/street/` and
-`scenes/dev/illustrated_street_review.tscn` add the first cardinal apartment-street review gate:
-layered PNG ground, frontage, roof depth and props with a stable dotted roof reveal. It is not live
-gameplay and awaits player art review before it is extended. The earlier SVG actors/events polish
-has its own separate PR workflow and is not the full overhaul.
-The cardinal apartment-street direction is approved, and the grounded modular mother, pram and
-illustrated crowd walkers consume applied displacement without changing collision, movement or
-gameplay RNG. Event, city and screen presentation remain open.
-Review assembled artwork and actual foot contact before extending it to the whole city and every
-screen. Implementation belongs to Luna agents.
-Preserve the title's control selection, truthful meter display and event-cost behavior while
-replacing their presentation. Use `git worktree list` and each checkout's status to locate unfinished
-work; do not treat the earlier SVG polish as the requested overhaul.
+**M82 is built: the game has one control scheme and no question about which.** A press sets a
+direction, measured from her own world position, that she walks until the next press; a press
+within a generous radius of her stops her; a double press sets the direction and runs it; a pause
+button, top right, is the only thing drawn, and only on a touch device. The drag stick, the aimed
+joystick playtest 27 specified and never built, the `RUN` button and the title screen's two mode
+buttons are all deleted rather than one replacing another. The record is in `DECISIONS.md` under
+M82.
 
-**For route and balance work, the most useful next check is a played day**, with two unplayed layers
-of change rather than one.
+**M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
+continue button and a held restart that acknowledges the press before the day it starts blocks the
+frame; the export publishes `index.js`, `index.wasm` and `index.pck` under a directory named for the
+release tag, so Pages' unchangeable `Cache-Control: max-age=600` can no longer serve a **mixed**
+build; and the shared card is opaque and declares its dimensions. The record is in `DECISIONS.md`
+under M76 and M80. **Follow `TODO.md`'s own order for what is next.**
+
+**The rule playtest 27 raised alongside the joystick is now also enforced by a test**: *"there is no
+way to walk slowly — that is intentional — there should only ever be one speed (plus a second via
+running)"*. `Stroller` moves toward `input_dir * top_speed` with the raw input vector, so the drag
+stick's partial deflection was the one input path that could walk her at anything other than
+`Tuning.WALK_SPEED` (92 px/s) — and every pursuit lead time in `src/autoload/tuning.gd` is computed
+against 92 as *the* walking speed. Deleting the drag stick is what makes the rule true, and
+`tests/test_touch.gd`'s `_test_no_input_path_presses_a_vector_shorter_than_one` is what keeps it
+true.
+
+**The most useful thing anybody can do now is play a day on the new controls, then play a whole run
+on the layers under it**, and none of the following has been touched by a thumb since M82 landed.
 
 **Playtest 25's nine findings are all built and none of them has been walked.** The barrier rows
 stopped charging the meter, two ambient reaches were cut roughly in half, the cat and the dog hit
@@ -295,11 +299,12 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 - **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
   address; what has not been checked is frame rate at the game's scale on a machine that is not the
   one it was built on, and whether a stranger arriving at the page understands what it is.
-- **The touch controls have been played once, briefly.** One phone session on the deployed build
-  produced one finding — the run lesson named a key the device has not got — and everything else
-  about them is still unknown: whether a thumb can hold the 20px line between two pavement lanes,
-  whether the catch radii feel right, whether `RUN` is legible at phone DPI, and whether the new
-  pause button at the top right is reachable without covering something.
+- **The touch controls have been played once, briefly, and that was the deleted scheme.** One phone
+  session found the run lesson naming a key the device has not got. M82 has since replaced the
+  whole of what a thumb does — a press sets a direction and a double press runs it, rather than a
+  drag stick and a held `RUN` circle — and none of it has been played: whether a press lands where
+  it was meant to, whether `STOP_RADIUS` (48px) reads as a deliberate stop or a missed direction,
+  and whether the pause button at the top right is reachable without covering something.
 - **A phone held upright gets one rotation now, and nobody has held a phone since.** The three
   disagreeing rotations playtest 23 met are gone: one transform is applied to every `CanvasLayer`,
   the camera is no longer a second implementation, and the choice is re-asked every frame rather
@@ -308,28 +313,23 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   `tests/test_orientation.gd` proves the input remap by construction and says outright that it
   cannot catch a sign error the transform and the drawing share. `tools/shot.sh` takes a resolution
   now, so the rotated branch can at least be photographed; it wants a person holding a phone.
-- **The social card has never been unfurled.** The Open Graph tags and the image copy into
-  `build/web` are correct as far as a local check can tell, and nothing has pasted the address into
-  a chat client to see what comes back.
+- **The social card has been unfurled once, in a messaging app, and it failed.** The cause was the
+  image's alpha channel — its transparent pixels carry RGB `(0, 0, 0)`, so a client that ignores
+  alpha paints the card black — and the published copy is now flattened onto an opaque background,
+  with its dimensions and type declared and a `twitter:image` beside the `og:` pair. **The fix has
+  not itself been unfurled.** Paste the address into a chat client and see what comes back; the
+  record of what was wrong and what was ruled out is in `DECISIONS.md` under M80.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
-  running behind it — and it asks one question: two circular icon buttons, and picking one is also
-  the start. That is the whole of it: no options, no seed box, no load game. **Nobody has met
-  the question on a phone**, which is where it was asked for, so whether two buttons read as a
-  choice or as an obstacle between a player and the game is unanswered. A run started with
-  `--controls`, or with `?controls=` on a **debug** web build, skips the question by design and is
-  therefore the path least likely to be tested.
-- **The two title icons have been judged by reading the files, not by anybody meeting them.**
-  `assets/ui/joystick.svg` and `assets/ui/tap.svg` are legible at their rendered 46px radius, which
-  is what the **cues** rule *a picture is an asset, never code* buys — the SVG is the thing you look
-  at. Whether they read as *joystick* and *tap* to somebody who has not been told is the part no
-  file settles and a person does; the reference is
-  `docs/evidence/reference-buttons-2026-09-06.jpeg`. Replacing either is copying a file over that
-  path, since `ModeButton` loads both by path and draws nothing itself.
+  running behind it — and it asks nothing: a press, a tap or a click begins the run, since there is
+  one scheme to begin it in. That is the whole of it: no options, no seed box, no load game.
+  **Nobody has met this screen on a phone** since the two circular mode buttons it used to show
+  were deleted, so whether a bare "tap to begin" reads clearly with no button to press is
+  unanswered.
 - **A release build carries no modifiers, and nothing has confirmed that on a real release build.**
-  `?controls=` and `?telemetry=1` answer only when `OS.is_debug_build()` is true. The four-case truth
-  table is asserted in the suites, so the *predicate* is proven; the build type itself has no seam to
-  fake and is therefore untested. **The deployed page is the first real check**, and what to watch is
-  that it still starts and still logs nothing.
+  `?telemetry=1` answers only when `OS.is_debug_build()` is true. The truth table is asserted in the
+  suites, so the *predicate* is proven; the build type itself has no seam to fake and is therefore
+  untested. **The deployed page is the first real check**, and what to watch is that it still starts
+  and still logs nothing.
 - **The city just got much cheaper to walk through and nobody has walked it.** Five barrier rows
   emit nothing at all now and the two that kept a field had their reach roughly halved, against a
   day that plans several hundred of exactly those bodies. **Whether the day is still losable on the

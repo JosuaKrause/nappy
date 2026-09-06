@@ -1,8 +1,8 @@
 extends RefCounted
 ## `QuitOption._web_override()`, the pure check `available()` runs through — pulled out so this can
 ## be driven with a synthetic command line and a chosen build kind rather than a real debug build
-## carrying `--web` on its own, the same split `tests/test_controls_mode.gd` takes on
-## `ControlsMode._word_from_query()`.
+## carrying `--web` on its own, the same split `tests/test_telemetry.gd` takes on
+## `Telemetry._reads_the_url()`.
 
 func run(t) -> void:
 	_test_web_override_needs_both_a_debug_build_and_the_flag(t)

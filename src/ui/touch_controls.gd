@@ -1,71 +1,45 @@
 class_name TouchControls
 extends Control
-## The on-screen stick, run button and pause button that make the game playable with a thumb.
+## The one control scheme a pointer drives, and the pause button it draws.
 ##
-## The stick and the run button press the same actions a keyboard does —
-## `Input.action_press("move_left", strength)` and its three siblings for the stick, `"run"` held
-## for the button — so `Stroller`'s own
-## `Input.get_vector("move_left", "move_right", "move_up", "move_down")` and
-## `Input.is_action_pressed("run")` never have to learn where either came from. The stick is
-## already analogue with a 0.2 deadzone in the input map, so a partial deflection is a slower walk
-## exactly the way a half-pressed key never was and a half-tilted stick already is.
+## A press — a finger, or (on a device with no touch hardware of its own) a mouse click —
+## sets a direction, measured from her own world position, that is locked in and walked with
+## nothing held down until the next press changes it; a press within `STOP_RADIUS` of her stops
+## her instead; a double press sets the direction and holds `run` until the next press changes or
+## releases it. See `set_direction()`, `_stop()` and `is_double_tap()` — that half of this file
+## used to be `TapControls`, a second node with nothing to draw, and is folded in here because it
+## needs something to draw now: the pause button, the one thing left standing once the drag stick
+## and the held `RUN` circle are deleted.
 ##
-## **The pause button is not that kind of control**, and it is the one exception in this file:
-## `main._unhandled_input()` reads `event.is_action_pressed("pause")` off the propagated *event*,
-## not off polled state, so `Input.action_press(&"pause")` would set the state and be heard by
-## nothing — the same trap `AutoScreenshot._tap()` already names in its own comment for exactly
-## this action. See `_send_pause_action()`.
+## **The pause button is not that kind of control.** `main._unhandled_input()` reads
+## `event.is_action_pressed("pause")` off the propagated *event*, not off polled state, so
+## `Input.action_press(&"pause")` would set the state and be heard by nothing — the same trap
+## `AutoScreenshot._tap()` already names in its own comment for exactly this action. See
+## `_send_pause_action()`.
 ##
-## **Running is never the far end of the stick's own push, on purpose.** `Stroller` moves toward
-## `input_dir * top_speed` with the *raw* vector, so a stick threshold would make the one
-## deliberate act in the game — the run key, held — into a gradient a thumb could cross by
-## accident. It is a separate button instead, exactly as `Shift` already is, planted on the
-## opposite side of the screen from the stick: the two are read from independent touch indices, so
-## a thumb steering the stick never has to cross the one holding the button down, and vice versa.
-##
-## Drawn overlaying the city rather than in a letterbox bar, because a letterbox bar is outside the
-## drawable viewport — the two meter bars and the optional goal already occupy the bottom-left and
-## bottom-centre of the HUD, so the stick sits above the meters and the button sits at the matching
-## height on the right, out of the way of both.
-##
-## Shown only on a touch device (`TouchInput.available()`) and only while a day is actually being
-## walked. `get_tree().paused` is the one fact the title screen, the pause and the between-days
-## summary all set, and checking it here is what keeps the stick off every one of those three
-## screens without a wire from `main` telling it so on each — the same fact that already decides
-## whether the player is being driven at all.
+## **Drawn only on a touch device** (`TouchInput.available()`) **and only while a day is actually
+## being walked.** `get_tree().paused` is the one fact the title screen, the pause and the
+## between-days summary all set, and checking it here is what keeps the button off every one of
+## those three screens without a wire from `main` telling it so on each. A keyboard-and-mouse
+## desktop never draws it at all: `Esc` is its pause, exactly as it always was, and pressing
+## anywhere else on such a device still sets a direction or stops her — the corner is only ever
+## subtracted from the aiming surface where the button is actually there to press. Direction
+## presses themselves are read whether or not the button is drawn, since a keyboard device is
+## exactly where the mouse half of this file has to keep working.
 ##
 ## `process_mode` stays `ALWAYS`, like the three screens it has to disappear under: a `PAUSABLE`
 ## node stops running the instant the tree pauses, which is one frame too late to let go of
 ## whatever direction was pressed when the pause landed. Every action this holds is force-released
-## the moment it goes invisible for any reason, so a finger still on the stick when a day ends is
-## never still on it once the next one begins.
+## the moment the tree pauses, for any reason, so a finger still down when a day ends is never
+## still down once the next one begins.
 
-## How far the knob can travel from the stick's centre before the deflection reads as full push —
-## the analogue range the 0.2 deadzone in the input map then trims.
-const STICK_RADIUS := 60.0
-const STICK_KNOB_RADIUS := 24.0
-## Well past the visible base: a thumb does not land on a drawn circle to the pixel, and a stick
-## that only grabs where it is drawn is a stick that is frequently missed.
-const STICK_CATCH_RADIUS := 100.0
-## Above the meter bars (`hud.tscn`'s `Meters`, the last 132px of screen height in its own
-## 280px-wide column) rather than beside them, and on the same side a left thumb rests on.
-const STICK_CENTRE := Vector2(130.0, 500.0)
-
-const RUN_RADIUS := 50.0
-## As generous as the stick's own catch radius, for the same reason: a thumb does not land on a
-## button to the pixel.
-const RUN_CATCH_RADIUS := 76.0
-## The mirror of `STICK_CENTRE` — same height, the opposite side of the screen, far enough from the
-## HUD's own `Teach` label (centred, 380px to 900px wide in the same space) that neither the
-## walking lesson nor the optional-goal line ever falls under it.
-const RUN_CENTRE := Vector2(1150.0, 500.0)
-
-## Smaller than the stick or `RUN`: it is pressed once a day at most, so it does not want either
-## one's reach into the walking hand's own space.
+## Smaller than the drag stick and `RUN` button this file used to also draw: it is pressed once a
+## day at most, so it does not want either one's old reach into the walking hand's own space.
 const PAUSE_RADIUS := 26.0
-## As generous as the stick's and `RUN`'s own catch radii, for the same reason — and also the
-## radius a *release* has to land inside to fire, so a thumb that lands wrong can slide off and
-## lift without stopping the day. See `_on_touch()`.
+## As generous as the catch radii this file's own now-deleted stick and `RUN` button used to
+## carry, for the same reason a thumb does not land on a button to the pixel — and also the radius
+## a *release* has to land inside to fire, so a thumb that lands wrong can slide off and lift
+## without stopping the day. See `_on_touch()`.
 const PAUSE_CATCH_RADIUS := 46.0
 ## Top right, in the corner both `DangerEdge` and `HomeArrow` keep clear on purpose rather than in
 ## front of them: `DangerEdge.MARGIN` (104/116/104/148, left/top/right/bottom) never draws a chevron
@@ -85,30 +59,50 @@ const PAUSE_CATCH_RADIUS := 46.0
 ## this margin further moves the arrow again; the two numbers are one decision.
 const PAUSE_CENTRE := Vector2(1218.0, 62.0)
 
+## How soon a second press has to land to read as a double, in seconds.
+const DOUBLE_TAP_SECONDS := 0.35
+## How close the second press has to land to the first, in screen px, to read as the same
+## direction doubled rather than a new one. Generous, because a thumb pressing twice does not land
+## on the same pixel either time.
+const DOUBLE_TAP_DISTANCE := 60.0
+## How close a press has to land to her, in world px, to read as *stop* rather than a direction.
+## Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram rides up to `PRAM_DISTANCE` (34px)
+## off to one side of her, and a press that lands on the pram is a press on her — with room to
+## spare for a thumb that does not land on the same pixel twice, the way every catch radius in this
+## game is generous rather than exact.
+const STOP_RADIUS := 48.0
+
 var _touch := TouchInput.available()
 
 ## Whether `main` has decided a portrait touch window is presenting rotated — see
 ## `ScreenOrientation`. Set from outside rather than asked here, the same way `_touch` is a read
 ## of a platform fact rather than a query at each use site: `main._apply_orientation()` is the one
-## place that knows the window's own shape, and every consumer of a raw touch position here goes
-## through `ScreenOrientation.to_design_space()` with this flag before comparing it to
-## `STICK_CENTRE` and friends, which stay authored in the unrotated 1280x720 box regardless. A real
-## touch still arrives in the swapped 720x1280 box even though this node's own drawing no longer
-## needs a transform of its own — see `_draw()`.
+## place that knows the window's own shape, and the pause button's own touch handling goes through
+## `ScreenOrientation.to_design_space()` with this flag before comparing a raw press to
+## `PAUSE_CENTRE`, which stays authored in the unrotated 1280x720 box regardless. A direction press
+## needs no such remap — it is turned straight into a world position through the viewport's own
+## canvas transform, which already carries the rotation.
 var rotated := false
 
-## The touch index currently driving the stick, or -1 when nothing is.
-var _stick_touch := -1
-## Current deflection, each axis in [-1, 1]. `Vector2.ZERO` is centred.
-var _stick_vector := Vector2.ZERO
-## The touch index currently holding the run button, or -1 when nothing is. Tracked independently
-## of the stick's own index, since the whole point of a separate button is that both can be down
-## together.
-var _run_touch := -1
-## The touch index currently down on the pause button, or -1 when nothing is. Unlike the stick and
-## `RUN`, going down does not press anything — see `_on_touch()` for why the action only fires on
-## release, and only if that release is still over the button.
+## The touch index currently down on the pause button, or -1 when nothing is. Going down does not
+## press anything — see `_on_touch()` for why the action only fires on release, and only if that
+## release is still over the button.
 var _pause_touch := -1
+
+## The rig, found the same way `HUD._rig` is: a state of the player rather than something a
+## signal carries.
+var _rig: Node2D
+
+## Locked in at the last press; never touched again until the next press releases or replaces it.
+var _direction := Vector2.ZERO
+var _walking := false
+
+## The previous press's own moment and screen position, for the double-tap windows. `-INF` reads as
+## "no earlier press this run", which can never fall inside either window.
+var _last_tap_at := -INF
+var _last_tap_screen_position := Vector2.ZERO
+
+var _was_paused := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -120,80 +114,151 @@ func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(self)
 	visible = false
 
+## The pause button's own visibility, gated on device and pause exactly as it always was; a
+## direction press is read whether or not this ever turns true, so a keyboard-and-mouse desktop —
+## which never shows the button — still walks on a click. Any pause landing, on any device,
+## force-releases whatever direction and `run` were held: the tree pausing is the one signal both
+## halves of this file share, so it is what `_release_all()` is hung off rather than the
+## visibility toggle alone.
 func _process(_delta: float) -> void:
-	var showing := _touch and not get_tree().paused
+	var paused := get_tree().paused
+	var showing := _touch and not paused
 	if showing != visible:
 		visible = showing
-		if not showing:
-			_release_all()
 		queue_redraw()
+	if paused and not _was_paused:
+		_release_all()
+	_was_paused = paused
 
+## Every real touch, always; a mouse click stands in for one too, on every build including a
+## release export — *(2026-09-06, on a laptop: "I still need to press space even in mouse mode",
+## and the same session: "let's do mouse mode to behave the same way that she keeps walking in the
+## direction indefinitely")* — since a laptop with no touchscreen has no other way to choose this
+## scheme at all. **Gated on `not _touch`, and that gate is load-bearing, not a nicety**: Godot
+## emulates a mouse click from every real touch by default, so on an actual touch device a single
+## tap would otherwise arrive here twice, once as each event type, close enough together in space
+## and time to read as its own double tap — see `_test_a_touch_devices_own_emulated_click_is_ignored`
+## in `tests/test_touch.gd`. Neither branch is gated on `visible`: the pause button only ever
+## matters while it is shown, which `_on_touch()` checks for itself, but a direction press has to
+## keep working on a device that never draws anything at all.
 func _input(event: InputEvent) -> void:
-	if not visible:
-		return
 	if event is InputEventScreenTouch:
 		_on_touch(event as InputEventScreenTouch)
-	elif event is InputEventScreenDrag:
-		_on_drag(event as InputEventScreenDrag)
+	elif not _touch and event is InputEventMouseButton:
+		var click := event as InputEventMouseButton
+		if click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+			_on_tap(click.position, Time.get_ticks_msec() / 1000.0)
 
+## A touch press or release. **The corner is subtracted from the aiming surface only while the
+## button is actually showing** (`visible`, `_touch and not get_tree().paused`) — pressing where it
+## would be on a device that never draws it is an ordinary direction press, same as anywhere else.
 func _on_touch(event: InputEventScreenTouch) -> void:
-	# The one correction a rotated presentation needs on the input side — see
-	# `ScreenOrientation`'s own doc for why this is the only file in `src/ui/` that needs it.
-	var position := ScreenOrientation.to_design_space(event.position, rotated)
 	if event.pressed:
-		if _stick_touch == -1 and position.distance_to(STICK_CENTRE) <= STICK_CATCH_RADIUS:
-			_stick_touch = event.index
-			_update_stick(position)
-		elif _run_touch == -1 and position.distance_to(RUN_CENTRE) <= RUN_CATCH_RADIUS:
-			_run_touch = event.index
-			Input.action_press(&"run", 1.0)
-			queue_redraw()
-		elif _pause_touch == -1 \
-				and position.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS:
-			# Only grabs the touch index here — see `_send_pause_action()`'s doc for why nothing
-			# fires until the matching release.
-			_pause_touch = event.index
-			queue_redraw()
+		if visible:
+			# The one correction a rotated presentation needs on the input side — see
+			# `ScreenOrientation`'s own doc for why this is the only file in `src/ui/` that needs it.
+			var design := ScreenOrientation.to_design_space(event.position, rotated)
+			if _pause_touch == -1 and design.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS:
+				# Only grabs the touch index here — see `_send_pause_action()`'s doc for why
+				# nothing fires until the matching release.
+				_pause_touch = event.index
+				queue_redraw()
+				return
+		_on_tap(event.position, Time.get_ticks_msec() / 1000.0)
 		return
-	if event.index == _stick_touch:
-		_stick_touch = -1
-		_stick_vector = Vector2.ZERO
-		_apply_stick()
-		queue_redraw()
-	elif event.index == _run_touch:
-		_run_touch = -1
-		Input.action_release(&"run")
-		queue_redraw()
-	elif event.index == _pause_touch:
+	if event.index == _pause_touch:
 		_pause_touch = -1
 		queue_redraw()
 		# Fires on release rather than on touch-down, and only when the release itself is still
-		# over the button: a thumb that lands wrong can slide off and lift without stopping the
-		# day, the opposite of the stick and RUN, which commit the moment a thumb lands.
-		if _pause_fires(position):
+		# over the button, so a thumb that lands wrong can slide off and lift without stopping the
+		# day.
+		var design := ScreenOrientation.to_design_space(event.position, rotated)
+		if _pause_fires(design):
 			_send_pause_action()
 
-func _on_drag(event: InputEventScreenDrag) -> void:
-	if event.index == _stick_touch:
-		_update_stick(ScreenOrientation.to_design_space(event.position, rotated))
+## A press arrived at `screen_position` -- the same canvas-space coordinate the event itself
+## carries, whatever the window's own rotation -- at moment `now`.
+##
+## `get_viewport().get_canvas_transform().affine_inverse()` maps it to a world position: the exact
+## reverse of what `DangerEdge` and `HomeArrow` already do every frame to place a screen cue from a
+## world one, so this tracks the camera, the zoom and the rotated presentation with nothing of its
+## own to keep in step. A press within `STOP_RADIUS` of her stops her; otherwise it locks in the
+## heading toward it.
+##
+## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
+## window still instead of racing the engine clock -- `_input()` and `_on_touch()` are the real
+## callers and supply it from `Time.get_ticks_msec()`.
+##
+## **Paused, a press does nothing at all**, the same as this file's controls drawing nothing on the
+## title, the pause and the between-days summary. The event is left unhandled either way, so the
+## same raw touch also reaches whichever of those screens is actually up — `PauseScreen`,
+## `DaySummary` and `TitleScreen` each close or begin on a touch or a click of their own, so this
+## does not have to know how to dismiss any of them itself.
+func _on_tap(screen_position: Vector2, now: float) -> void:
+	if get_tree().paused:
+		return
+	if not _rig:
+		_rig = get_tree().get_first_node_in_group("player") as Node2D
+	if not _rig:
+		return
+	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
+	var double := is_double_tap(now - _last_tap_at,
+			screen_position.distance_to(_last_tap_screen_position))
+	_last_tap_at = now
+	_last_tap_screen_position = screen_position
+	if world.distance_to(_rig.global_position) <= STOP_RADIUS:
+		_stop()
+		return
+	set_direction(world, double)
 
-func _update_stick(at: Vector2) -> void:
-	var offset := at - STICK_CENTRE
-	_stick_vector = offset.limit_length(STICK_RADIUS) / STICK_RADIUS
-	_apply_stick()
-	queue_redraw()
+## Locks in the heading toward `target`, computed once here and never again — nothing here
+## re-aims, so a shove that knocks her off the line does not silently correct itself, the same way
+## walking into a wall and stopping is the player's mistake to make. `run` holds the same `run`
+## action Shift does, until the next press changes the direction or stops her — there is nothing
+## to arrive at that would let go of it on its own.
+##
+## A press exactly on her own position has no heading to compute and stops her instead, the same
+## case `_on_tap()`'s own `STOP_RADIUS` check already catches for anything a thumb's-width away —
+## this is the fallback for the one caller (a test) that calls straight in with an exact point.
+func set_direction(target: Vector2, run: bool) -> void:
+	if not _rig:
+		_rig = get_tree().get_first_node_in_group("player") as Node2D
+	if not _rig:
+		return
+	var direction := heading_to(target, _rig.global_position)
+	if direction == Vector2.ZERO:
+		_stop()
+		return
+	_direction = direction
+	_walking = true
+	_set_axis(&"move_left", &"move_right", direction.x)
+	_set_axis(&"move_up", &"move_down", direction.y)
+	if run:
+		Input.action_press(&"run")
+	else:
+		Input.action_release(&"run")
 
-## Presses the two axis actions the way a keyboard would, one direction at a time: only one of
+## A press on her: lets go of whatever direction and `run` were held, with nothing pressed in
+## their place.
+func _stop() -> void:
+	_walking = false
+	_direction = Vector2.ZERO
+	_release_movement()
+
+## The unit vector from `from` to `target`, or `Vector2.ZERO` for a press with nowhere to go.
+static func heading_to(target: Vector2, from: Vector2) -> Vector2:
+	var offset := target - from
+	return offset.normalized() if offset.length() > 0.001 else Vector2.ZERO
+
+## Whether a second tap `distance` px from the first, `elapsed` seconds after it, reads as the
+## same direction doubled into a run rather than a new one.
+static func is_double_tap(elapsed: float, distance: float) -> bool:
+	return elapsed <= DOUBLE_TAP_SECONDS and distance <= DOUBLE_TAP_DISTANCE
+
+## Presses one signed value onto a pair of opposite actions, one direction at a time: only one of
 ## `move_left`/`move_right` can be true on a keyboard, and the other is explicitly released rather
-## than left to decay on its own, or a stick flicked hard the other way would fight its own
-## trailing strength for a frame.
-func _apply_stick() -> void:
-	_set_axis(&"move_left", &"move_right", _stick_vector.x)
-	_set_axis(&"move_up", &"move_down", _stick_vector.y)
-
-## Static, and reused by `TapControls`: pressing one signed value onto a pair of opposite actions
-## is exactly what a tap's own fixed heading needs too — the stick's own deflection and a tap's
-## own unit vector are pressed through the same one line either way.
+## than left to decay on its own. Static, since it is pure — a direction's own components are what
+## every caller here presses through it.
 static func _set_axis(negative: StringName, positive: StringName, value: float) -> void:
 	if value > 0.0:
 		Input.action_press(positive, value)
@@ -205,25 +270,23 @@ static func _set_axis(negative: StringName, positive: StringName, value: float) 
 		Input.action_release(negative)
 		Input.action_release(positive)
 
-## Lets go of everything this node might be holding down. Called whenever the controls go
-## invisible, for whatever reason, so a finger caught mid-gesture by a pause or a day ending never
-## leaves a direction — or the run key — pressed into the day that follows.
+## Lets go of everything this node might be holding down. Called whenever the tree pauses, for
+## whatever reason, so a finger caught mid-gesture by a pause or a day ending never leaves a
+## direction — or the run key — pressed into the day that follows.
 ##
 ## `_pause_touch` only needs resetting here, not releasing: nothing was ever pressed for it, since
 ## the pause fires once on a clean release rather than holding a state — see
-## `_send_pause_action()`. A pause opening is one of the ways the controls go invisible in the
-## first place, so a finger still down on the button when that happens must not fire it a second
-## time on whatever it lands on next.
+## `_send_pause_action()`. A pause opening is one of the moments this is called for, so a finger
+## still down on the button when that happens must not fire it a second time on whatever it lands
+## on next.
 func _release_all() -> void:
-	_stick_touch = -1
-	_stick_vector = Vector2.ZERO
-	_run_touch = -1
 	_pause_touch = -1
+	_walking = false
 	_release_movement()
 
-## The four `move_*` actions and `run`, released together — the shape both this and `TapControls`
-## need at the moment either mode has to let go of a direction that is not the player's own doing:
-## the day ending, a pause opening, or a leg of a tap arriving.
+## The four `move_*` actions and `run`, released together — the shape needed at the moment a
+## direction has to be let go of that is not the player's own doing: the day ending, or a pause
+## opening.
 static func _release_movement() -> void:
 	Input.action_release(&"move_left")
 	Input.action_release(&"move_right")
@@ -248,9 +311,6 @@ static func _pause_fires(at: Vector2) -> bool:
 ##
 ## Returns the event it sent, so a test can inspect its shape directly rather than depend on when
 ## the tree gets around to propagating or polling it.
-##
-## Static, and reused by `TapControls` for its own arrival clock: opening the pause is the same
-## action either way, sent the same way, whichever control scheme raised it.
 static func _send_pause_action() -> InputEventAction:
 	var event := InputEventAction.new()
 	event.action = &"pause"
@@ -258,43 +318,16 @@ static func _send_pause_action() -> InputEventAction:
 	Input.parse_input_event(event)
 	return event
 
+## The only thing this file draws, and the only thing on screen this scheme ever needs: every
+## pixel of the city is a direction, so there is nothing left to draw for that half of it.
 func _draw() -> void:
 	if not visible:
 		return
-	# No transform here: every `draw_*` call below keeps using its own unrotated design-space
-	# coordinate (`STICK_CENTRE` and friends, untouched), and this node's own `CanvasLayer` — set
-	# up in `main._add_touch_controls()`, pinned to the fixed design box by
-	# `ScreenOrientation.pin_to_design_box()` — already carries the rotation for the whole layer,
-	# text included, the same way it does for the HUD and every other layer of screen furniture.
-	# A second `draw_set_transform_matrix()` here would compose with that and rotate everything
-	# twice over.
-	_draw_stick()
-	_draw_run_button()
 	_draw_pause_button()
-
-func _draw_stick() -> void:
-	draw_circle(STICK_CENTRE, STICK_RADIUS, Color(1.0, 1.0, 1.0, 0.16))
-	draw_arc(STICK_CENTRE, STICK_RADIUS, 0.0, TAU, 32, Color(1.0, 1.0, 1.0, 0.4), 2.0)
-	var knob := STICK_CENTRE + _stick_vector * STICK_RADIUS
-	var held := _stick_touch != -1
-	draw_circle(knob, STICK_KNOB_RADIUS, Color(1.0, 1.0, 1.0, 0.42 if held else 0.28))
-
-func _draw_run_button() -> void:
-	var held := _run_touch != -1
-	draw_circle(RUN_CENTRE, RUN_RADIUS, Color(1.0, 1.0, 1.0, 0.32 if held else 0.16))
-	draw_arc(RUN_CENTRE, RUN_RADIUS, 0.0, TAU, 32, Color(1.0, 1.0, 1.0, 0.4), 2.0)
-	var label := "RUN"
-	var font := ThemeDB.fallback_font
-	var font_size := 15
-	var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-	draw_string(font, RUN_CENTRE + Vector2(-width * 0.5, font_size * 0.35), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1.0, 1.0, 1.0, 0.8))
 
 ## Two bars, the same shape `hud.gd`'s touch teach line then names in words — drawn rather than
 ## set in a font glyph, because a vector shape always renders and a Unicode pause glyph is not
-## guaranteed to be in `ThemeDB.fallback_font` at all. `RUN`'s own label is plain text and safe for
-## the same reason text always is; this is one step more careful for a symbol that has no ASCII
-## spelling.
+## guaranteed to be in `ThemeDB.fallback_font` at all.
 func _draw_pause_button() -> void:
 	var held := _pause_touch != -1
 	draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Color(1.0, 1.0, 1.0, 0.32 if held else 0.16))

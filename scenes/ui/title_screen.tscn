@@ -1,7 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://src/ui/title_screen.gd" id="1_title"]
-[ext_resource type="Script" path="res://src/ui/mode_button.gd" id="2_mode_button"]
 
 [node name="TitleScreen" type="CanvasLayer"]
 layer = 95
@@ -56,47 +55,6 @@ theme_override_font_sizes/font_size = 16
 text = "Arrows or WASD to walk.
 Hold Shift to run — it wakes her, so it is rarely worth it.
 Walk to calm ground and stay moving; standing still settles nothing."
-
-[node name="Choice" type="HBoxContainer" parent="Root/Bottom/Lines"]
-visible = false
-alignment = 1
-theme_override_constants/separation = 64
-
-[node name="StickColumn" type="VBoxContainer" parent="Root/Bottom/Lines/Choice"]
-alignment = 1
-theme_override_constants/separation = 10
-
-[node name="Stick" type="Button" parent="Root/Bottom/Lines/Choice/StickColumn"]
-size_flags_horizontal = 4
-script = ExtResource("2_mode_button")
-symbol = 0
-
-[node name="StickCaption" type="Label" parent="Root/Bottom/Lines/Choice/StickColumn"]
-custom_minimum_size = Vector2(220, 0)
-mouse_filter = 2
-horizontal_alignment = 1
-autowrap_mode = 3
-theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
-theme_override_font_sizes/font_size = 15
-text = ""
-
-[node name="TapColumn" type="VBoxContainer" parent="Root/Bottom/Lines/Choice"]
-alignment = 1
-theme_override_constants/separation = 10
-
-[node name="Tap" type="Button" parent="Root/Bottom/Lines/Choice/TapColumn"]
-size_flags_horizontal = 4
-script = ExtResource("2_mode_button")
-symbol = 1
-
-[node name="TapCaption" type="Label" parent="Root/Bottom/Lines/Choice/TapColumn"]
-custom_minimum_size = Vector2(220, 0)
-mouse_filter = 2
-horizontal_alignment = 1
-autowrap_mode = 3
-theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
-theme_override_font_sizes/font_size = 15
-text = ""
 
 [node name="Hint" type="Label" parent="Root/Bottom/Lines"]
 horizontal_alignment = 1

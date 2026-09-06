@@ -1,0 +1,12 @@
+<!-- The restart symbol: a circular arrow, three quarters of a ring with an arrowhead at the open
+     end so the loop reads as motion rather than as a broken circle. White fill and stroke on a
+     transparent ground, tinted by ModeButton's own icon_normal_color theme override
+     (Palette.BUTTON_SYMBOL), the same way joystick.svg and tap.svg are.
+     Authored on the same 128 grid as every other button glyph, with antialiasing left on — see
+     ModeButton's class comment for why a small grid with crispEdges was rejected here too: the arc
+     is the one part of this whole set that most needs the curve, not a staircase. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <path d="M41.4 41.4 A32 32 0 1 1 41.4 86.6" fill="none" stroke="#ffffff" stroke-width="12"
+      stroke-linecap="round"/>
+  <path d="M30.1 75.3 L49.2 78.9 L33.6 94.4 Z" fill="#ffffff"/>
+</svg>

@@ -64,14 +64,13 @@ extends Node
 ##     tools/shot.sh restart.png 6 --press pause 2 --press key:r 3.5
 ##
 ## `--tap X Y` sends one synthetic tap at the raw screen position `(X, Y)`, the moment the run
-## starts — `TapControls` reads a mouse click the same way it reads a finger in a debug build (see
-## its own `_input()`), so this is what makes tap mode photographable, the way `--walk` is what
-## makes the stick mode photographable. `X` and `Y` are in whatever box the window is actually
-## presenting — the unrotated 1280x720 one by default, or the rotated 720x1280 one under
-## `RESOLUTION=720x1280 ... --touch`, in which case give a point `ScreenOrientation
+## starts — `TouchControls` reads it as a real `InputEventScreenTouch` (see its own `_input()`),
+## which is what makes the direction it sets photographable. `X` and `Y` are in whatever box the
+## window is actually presenting — the unrotated 1280x720 one by default, or the rotated 720x1280
+## one under `RESOLUTION=720x1280 ... --touch`, in which case give a point `ScreenOrientation
 ## .to_presented_space()` already maps one from, the same box a real touch would arrive in.
 ##
-##     tools/shot.sh tap.png 4 --touch --controls tap --tap 900 500
+##     tools/shot.sh tap.png 4 --touch --tap 900 500
 
 const DEFAULT_SECONDS := 1.5
 
@@ -284,7 +283,7 @@ func _tap(what: String) -> void:
 			event = action
 		Input.parse_input_event(event)
 
-## `TapControls` maps a tap through `get_viewport().get_canvas_transform()`, which is the
+## `TouchControls` maps a tap through `get_viewport().get_canvas_transform()`, which is the
 ## follow camera's own — and a `Camera2D` has not positioned itself even once on the very first
 ## frame its owner enters the tree, the frame this node's own `_ready()` runs on. A tap sent that
 ## early reads a stale, camera-less transform and lands nowhere near the player, unlike `--walk`
@@ -295,7 +294,7 @@ func _send_tap_once_the_camera_has_positioned() -> void:
 	_tap_screen(_tap_at)
 
 ## `--tap X Y`: one synthetic tap at `position`, press then release, the same shape a real finger's
-## own `InputEventScreenTouch` takes — `TapControls` reads only the press half.
+## own `InputEventScreenTouch` takes — `TouchControls` reads only the press half.
 func _tap_screen(position: Vector2) -> void:
 	for pressed in [true, false]:
 		var event := InputEventScreenTouch.new()
@@ -311,7 +310,21 @@ func _turn_and_run() -> void:
 		Input.action_press(_holding)
 	Input.action_press("run")
 
+## **Refuses a headless run rather than hanging in it.** `RenderingServer.frame_post_draw` fires
+## after a frame is drawn, and a headless process never draws one — so the await below never
+## resumes, the process sits there forever, and nothing is printed while it does. That is
+## indistinguishable from a slow run, and it is reached more easily than it looks: `tools/shot.sh`
+## runs Godot *without* `--headless` on purpose, so a caller with no window server to open a window
+## against falls back to headless and lands here instead of failing.
+##
+## There is nothing to save either way — a headless viewport has no texture — so the only thing the
+## await could ever buy is the wait itself.
 func _capture() -> void:
+	if not can_photograph(DisplayServer.get_name()):
+		printerr("[AutoScreenshot] nothing to photograph: this run is headless, so no frame is " +
+				"ever drawn and %s cannot be written. tools/shot.sh needs a display." % _path)
+		get_tree().quit(1)
+		return
 	# The viewport texture is only valid once the frame has actually been drawn.
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
@@ -322,3 +335,14 @@ func _capture() -> void:
 		print("[AutoScreenshot] wrote %s (%dx%d) after %.1fs"
 				% [_path, image.get_width(), image.get_height(), _elapsed])
 	get_tree().quit()
+
+## Whether a run driving the display server called `display_name` has a frame to photograph.
+##
+## A parameter rather than a call to `DisplayServer.get_name()` inside, for the same reason
+## `Telemetry._reads_the_url(is_debug, on_web)` takes its two: the display server is one of the
+## few things a test cannot fake, so welding it in would make the guard itself the untestable part
+## of the guard. `"headless"` is the name Godot gives the null display server that `--headless`
+## selects, and it is the name `main.gd` and `Telemetry` already compare against for the same
+## question.
+static func can_photograph(display_name: String) -> bool:
+	return display_name != "headless"

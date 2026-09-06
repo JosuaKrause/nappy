@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/ui/day_summary.gd" id="1_summary"]
+[ext_resource type="Script" path="res://src/ui/mode_button.gd" id="2_mode_button"]
 
 [node name="DaySummary" type="CanvasLayer"]
 layer = 10
@@ -44,3 +45,40 @@ horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.62, 0.6, 0.58, 1)
 theme_override_font_sizes/font_size = 13
 text = "space to go on"
+
+[node name="Buttons" type="HBoxContainer" parent="Root/Center/Lines"]
+visible = false
+alignment = 1
+theme_override_constants/separation = 64
+
+[node name="ContinueColumn" type="VBoxContainer" parent="Root/Center/Lines/Buttons"]
+alignment = 1
+theme_override_constants/separation = 10
+
+[node name="Continue" type="Button" parent="Root/Center/Lines/Buttons/ContinueColumn"]
+size_flags_horizontal = 4
+script = ExtResource("2_mode_button")
+symbol = 1
+
+[node name="ContinueCaption" type="Label" parent="Root/Center/Lines/Buttons/ContinueColumn"]
+mouse_filter = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
+theme_override_font_sizes/font_size = 13
+text = "continue"
+
+[node name="RestartColumn" type="VBoxContainer" parent="Root/Center/Lines/Buttons"]
+alignment = 1
+theme_override_constants/separation = 10
+
+[node name="Restart" type="Button" parent="Root/Center/Lines/Buttons/RestartColumn"]
+size_flags_horizontal = 4
+script = ExtResource("2_mode_button")
+symbol = 0
+
+[node name="RestartCaption" type="Label" parent="Root/Center/Lines/Buttons/RestartColumn"]
+mouse_filter = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
+theme_override_font_sizes/font_size = 13
+text = "hold to restart"

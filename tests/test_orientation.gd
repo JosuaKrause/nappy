@@ -1,13 +1,13 @@
 extends RefCounted
 ## The rotated presentation for a portrait touch window — see `ScreenOrientation`.
 ##
-## The one thing that can break silently: the stick, the run button and the pause button all
-## grab a touch by comparing its position to a fixed constant, so a rotation that draws the
-## controls in the right place while the remap it needs is missing, wrong, or falls out of sync
-## with the draw transform would pass every visual screenshot check and still put a thumb's press
-## under the wrong control. This suite proves the remap by construction: a touch sent at the
-## exact screen position `ScreenOrientation.to_presented_space()` says a design-space point ends
-## up at, while rotated, must be read back by `TouchControls` as that same design-space point.
+## The one thing that can break silently: the pause button grabs a touch by comparing its position
+## to a fixed constant, so a rotation that draws it in the right place while the remap it needs is
+## missing, wrong, or falls out of sync with the draw transform would pass every visual screenshot
+## check and still put a thumb's press under the wrong control. This suite proves the remap by
+## construction: a touch sent at the exact screen position `ScreenOrientation.to_presented_space()`
+## says a design-space point ends up at, while rotated, must be read back by `TouchControls` as
+## that same design-space point.
 ##
 ## **What none of that can prove is a sign error the world and the drawing share** — playtest 23's
 ## finding, on a build this suite's earlier checks all passed. A test can assert a transform;
@@ -30,9 +30,8 @@ func run(t) -> void:
 	_test_content_scale_size_matches_the_rotated_or_unrotated_design_box(t)
 	_test_the_transform_sends_the_design_centre_to_the_rotated_centre(t)
 	_test_the_transform_round_trips(t)
-	_test_a_rotated_touch_still_grabs_the_stick(t)
-	_test_a_rotated_touch_still_holds_the_run_button(t)
 	_test_a_rotated_touch_still_fires_the_pause_button(t)
+	_test_a_rotated_touch_outside_the_button_still_sets_a_direction(t)
 	_test_pin_to_design_box_gives_a_fixed_rect_regardless_of_any_parent(t)
 	_test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t)
 	_test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(t)
@@ -77,48 +76,11 @@ func _test_the_transform_sends_the_design_centre_to_the_rotated_centre(t: Node) 
 ## back must be the identity, for several points including ones outside the design box (where a
 ## touch on the letterboxed edge of a non-16:9 window would land).
 func _test_the_transform_round_trips(t: Node) -> void:
-	for point in [TouchControls.STICK_CENTRE, TouchControls.RUN_CENTRE, TouchControls.PAUSE_CENTRE,
-			Vector2.ZERO, Vector2(-40.0, 800.0)]:
+	for point in [TouchControls.PAUSE_CENTRE, Vector2.ZERO, Vector2(-40.0, 800.0)]:
 		var there := ScreenOrientation.to_presented_space(point, true)
 		var back := ScreenOrientation.to_design_space(there, true)
 		t.check(back.is_equal_approx(point),
 				"round-tripping %s through the rotation lands back on itself" % point)
-
-## **The test that proves the thing a screenshot cannot**: a touch at the screen position the
-## stick is actually drawn at while rotated must still grab the stick, and must still read the
-## deflection in the same direction a keyboard's `move_up` would.
-func _test_a_rotated_touch_still_grabs_the_stick(t: Node) -> void:
-	var controls := _controls(t)
-	controls.rotated = true
-
-	var design_touch := TouchControls.STICK_CENTRE + Vector2(0.0, -1.0)
-	var screen_touch := ScreenOrientation.to_presented_space(design_touch, true)
-	controls._input(_touch_event(0, screen_touch, true))
-	t.check(Input.is_action_pressed("move_up"),
-			"a rotated touch at the stick's own screen position still presses move_up")
-
-	var design_drag := TouchControls.STICK_CENTRE + Vector2(0.0, -TouchControls.STICK_RADIUS)
-	var screen_drag := ScreenOrientation.to_presented_space(design_drag, true)
-	controls._input(_drag_event(0, screen_drag))
-	t.close_to(Input.get_action_strength("move_up"), 1.0,
-			"a full deflection at its own rotated screen position still reads full strength")
-
-	controls._input(_touch_event(0, ScreenOrientation.to_presented_space(Vector2.ZERO, true),
-			false))
-	controls.queue_free()
-
-func _test_a_rotated_touch_still_holds_the_run_button(t: Node) -> void:
-	var controls := _controls(t)
-	controls.rotated = true
-
-	var screen_run := ScreenOrientation.to_presented_space(TouchControls.RUN_CENTRE, true)
-	controls._input(_touch_event(0, screen_run, true))
-	t.check(Input.is_action_pressed("run"),
-			"a rotated touch at the run button's own screen position holds run")
-
-	controls._input(_touch_event(0, screen_run, false))
-	t.check(not Input.is_action_pressed("run"), "and releasing there lets go of it again")
-	controls.queue_free()
 
 func _test_a_rotated_touch_still_fires_the_pause_button(t: Node) -> void:
 	var controls := _controls(t)
@@ -128,6 +90,8 @@ func _test_a_rotated_touch_still_fires_the_pause_button(t: Node) -> void:
 	controls._input(_touch_event(0, screen_pause, true))
 	t.check(controls._pause_touch == 0,
 			"a rotated touch at the pause button's own screen position grabs its index")
+	t.check(not controls._walking,
+			"and is caught by the button rather than also locking in a direction toward the corner")
 
 	controls._input(_touch_event(0, screen_pause, false))
 	t.check(controls._pause_touch == -1, "and releasing there lets the index go again")
@@ -140,6 +104,25 @@ func _test_a_rotated_touch_still_fires_the_pause_button(t: Node) -> void:
 
 	controls.queue_free()
 	Input.action_release(&"pause")
+
+## **A direction press needs no remap of its own** — see `TouchControls.set_direction()`'s own
+## class doc for why — but the pause corner it must *not* be read as still does, so a touch well
+## away from the button, at its own rotated screen position, must still set a direction rather
+## than being swallowed by a stale, unrotated comparison to `PAUSE_CENTRE`.
+func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: Node) -> void:
+	var rig := Node2D.new()
+	rig.add_to_group("player")
+	t.add_child(rig)
+	var controls := _controls(t)
+	controls.rotated = true
+
+	var screen_point := ScreenOrientation.to_presented_space(Vector2(400.0, 400.0), true)
+	controls._input(_touch_event(0, screen_point, true))
+	t.check(controls._walking, "a rotated touch well clear of the button sets a direction")
+
+	controls.queue_free()
+	rig.free()
+	_release_actions()
 
 ## `pin_to_design_box()` has to give the same fixed rect whatever it is asked to pin — that is the
 ## whole point of using fixed (rather than fractional) anchors: a `Control`'s own offsets then
@@ -253,12 +236,6 @@ func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScr
 	event.index = index
 	event.position = position
 	event.pressed = pressed
-	return event
-
-func _drag_event(index: int, position: Vector2) -> InputEventScreenDrag:
-	var event := InputEventScreenDrag.new()
-	event.index = index
-	event.position = position
 	return event
 
 ## Global `Input` state, same reason `test_touch.gd` cleans it up: nothing here is scoped to this

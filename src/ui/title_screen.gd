@@ -13,40 +13,23 @@ extends CanvasLayer
 ##
 ## **What is behind it is the game, running.** Not a still, not a menu over black: the
 ## doorstep the run starts on, with the traffic driving and the events playing out on it and nobody
-## pushing a pram through them. The screen itself is therefore only two scrims, a handful of labels
-## and — while asking the controls question — the two circular `ModeButton`s: the title across the
-## top half, the controls across the bottom, and the street visible through both.
-## `main._open_the_title()` is the half that makes the city keep moving while everything that is a
-## *day* stops; this class owns two keys and nothing else.
+## pushing a pram through them. The screen itself is therefore only two scrims and a handful of
+## labels: the title across the top half, the controls across the bottom, and the street visible
+## through both. `main._open_the_title()` is the half that makes the city keep moving while
+## everything that is a *day* stops; this class owns one key and nothing else.
 ##
 ## What it is not is a main menu. There are no options, no seed box and no load game, and none of
 ## those is what this screen exists for.
 ##
-## **Starting is also the controls question, unless a flag already answered it.** With nothing
-## forcing an answer (`ControlsMode.is_forced()` false — no `--controls` flag, no `?controls=` on
-## the page), the single "space/tap to begin" hint is replaced by two buttons, one per control
-## scheme, each naming what pressing it does rather than an internal mode's name. Picking one is
-## the start: one press, not a menu then a start, which is the player's own design for this
-## screen. A flag or a URL still skips the question outright — the run it started with one must
-## not be asked, so the screen falls back to exactly the shape it had before this choice existed.
+## **There is one control scheme, so there is no question to ask.** A press — a tap, a mouse click
+## or `space` — begins the run in it.
 
-signal start_requested(mode: ControlsMode.Mode)
+signal start_requested()
 signal quit_requested()
 
 @onready var _root: Control = $Root
 @onready var _name: Label = $Root/Top/Lines/Title
 @onready var _body: Label = $Root/Bottom/Lines/Body
-@onready var _choice: HBoxContainer = $Root/Bottom/Lines/Choice
-@onready var _stick_button: Button = $Root/Bottom/Lines/Choice/StickColumn/Stick
-@onready var _tap_button: Button = $Root/Bottom/Lines/Choice/TapColumn/Tap
-## The paragraph each button used to carry as its own `text`. A sibling `Label` rather than a
-## child of the `Button`, and not a click target — `mouse_filter = 2` (`IGNORE`) in the scene lets
-## a press on the caption fall through to whatever is behind it, the same as a press on the scrim
-## — because a caption dense enough to collide with a badge drawn inside the button (see
-## `ModeButton`'s own class comment) is dense enough that "is this button or is this text" should
-## never be a question a click has to answer.
-@onready var _stick_caption: Label = $Root/Bottom/Lines/Choice/StickColumn/StickCaption
-@onready var _tap_caption: Label = $Root/Bottom/Lines/Choice/TapColumn/TapCaption
 @onready var _hint: Label = $Root/Bottom/Lines/Hint
 @onready var _version: Label = $Root/Version
 
@@ -55,26 +38,13 @@ signal quit_requested()
 var _can_quit := QuitOption.available()
 ## Whether this device has a touchscreen. Read once from `TouchInput`, for the same reason
 ## `_can_quit` is: a test process is never a touch device, and the body and the hint both have to
-## agree with whatever drew — or did not draw — the stick and the run button.
+## agree with whatever the game is actually played with.
 var _touch := TouchInput.available()
-## Which of the two control schemes is driving this run. Only meaningful — and only read — when
-## `_asking_controls` is false: a flag or a URL has already answered the question, so the body
-## names that mode instead of showing the two buttons. See `_asking_controls`.
-var _controls_mode := ControlsMode.Mode.STICK
-## Whether nothing has answered the controls question yet, read once from `ControlsMode.is_forced()`
-## the same way `_can_quit` and `_touch` are read once from their own platform questions — so a
-## test that wants the other shape sets this directly instead of faking a command line or a URL.
-## True in every ordinary build with no flag and no query string: that is the case this milestone
-## adds, and it is why the two buttons are what a fresh install actually shows.
-var _asking_controls := not ControlsMode.is_forced()
 
 const _BODY_KEYBOARD := "Arrows or WASD to walk.\n" \
 		+ "Hold Shift to run — it wakes her, so it is rarely worth it.\n" \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
-const _BODY_TOUCH := "Drag the stick to walk.\n" \
-		+ "Hold RUN to run — it wakes her, so it is rarely worth it.\n" \
-		+ "Walk to calm ground and stay moving; standing still settles nothing."
-const _BODY_TAP := "Tap to walk there, double tap to run.\n" \
+const _BODY_TOUCH := "Tap to walk that way, tap her to stop, double tap to run.\n" \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:
@@ -82,15 +52,7 @@ func _ready() -> void:
 	# the name of the game is only the biggest of them. `Palette.TITLE_TEXT` is the doorstep it is
 	# standing in front of; see the note there for why it is not one of the danger colours.
 	_name.add_theme_color_override("font_color", Palette.TITLE_TEXT)
-	if _asking_controls:
-		_body.visible = false
-		_choice.visible = true
-		_refresh_choice()
-		_stick_button.pressed.connect(_choose.bind(ControlsMode.Mode.STICK))
-		_tap_button.pressed.connect(_choose.bind(ControlsMode.Mode.TAP))
-	else:
-		_controls_mode = ControlsMode.resolve()
-		_refresh_body()
+	_refresh_body()
 	_version.text = version_text()
 	# Above the pause screen: this is the outermost frame the game runs inside, and nothing should
 	# ever be able to cover it.
@@ -105,23 +67,9 @@ func _ready() -> void:
 ## A screen that names a key with no space is the same defect `QuitOption` exists to close for
 ## `Q` — the body baked into the scene is the keyboard's own three lines, and this is the one
 ## other shape it can be. Its own function, rather than inline in `_ready()`, so a test can flip
-## `_touch` and call this again the way `PauseScreen._refresh_hint()` already does for its hint.
+## `_touch` and call this again the way `PauseScreen._refresh_body()` already does.
 func _refresh_body() -> void:
-	if _controls_mode == ControlsMode.Mode.TAP:
-		_body.text = _BODY_TAP
-	else:
-		_body.text = _BODY_TOUCH if _touch else _BODY_KEYBOARD
-
-## The two captions' own shape of the same information `_refresh_body()` gives a single mode: one
-## paragraph per scheme, naming what pressing it does rather than an internal mode's name — the
-## exact wording `_refresh_body()` already uses for whichever mode a flag forced, so the two never
-## say the choice differently depending on which path answered it. Written onto `_stick_caption`/
-## `_tap_caption` rather than the buttons themselves — see `_stick_caption`'s own doc for why the
-## paragraph is no longer inside either `Button`. Its own function for the same reason
-## `_refresh_body()` is one: a test can flip `_touch` and call it again.
-func _refresh_choice() -> void:
-	_stick_caption.text = _BODY_TOUCH if _touch else _BODY_KEYBOARD
-	_tap_caption.text = _BODY_TAP
+	_body.text = _BODY_TOUCH if _touch else _BODY_KEYBOARD
 
 ## The one line on this screen that is not addressed to the player, so it is small, dim and in the
 ## bottom corner rather than anywhere near the three lines that are — see the **cues** rule that a
@@ -151,14 +99,6 @@ func is_open() -> bool:
 ## behind the scrims, is `main`'s decision — see `main._open_the_title()`.
 func open(again := false) -> void:
 	visible = true
-	if _asking_controls:
-		# The two circular buttons are the only pointer route to a choice — a press that misses
-		# both does nothing, see `_unhandled_input()`'s own doc — so this line is only for a
-		# keyboard with neither a mouse nor a finger free to press one directly: an arrow key or
-		# `space` is the stick scheme, the same thing pressing the stick button does.
-		_hint.text = "arrows or space for stick     ·     q to quit" if _can_quit \
-				else "arrows or space for stick"
-		return
 	var verb := "tap" if _touch else "space"
 	var start := "%s to walk again" % verb if again else "%s to begin" % verb
 	_hint.text = "%s     ·     q to quit" % start if _can_quit else start
@@ -166,62 +106,20 @@ func open(again := false) -> void:
 func close() -> void:
 	visible = false
 
-## The device you answer the controls question with is the device you are answering about: an
-## arrow key or `space` **is** the stick scheme, and clicking a button **is** the mode it draws —
-## so each choice can be made by doing the thing it selects rather than by reading a label.
-##
-## **While asking**, an arrow key (`ui_left`/`ui_right`/`ui_up`/`ui_down`, the same built-in
-## defaults `ui_accept` already was without either appearing in `project.godot`) or `ui_accept`
-## chooses the stick. `T` is gone: no key selects the scheme played with a mouse, which is the
-## same reasoning that dropped it here in the first place.
-##
-## **A pointer press that does not land on either `ModeButton` does nothing at all**, asked for
-## directly: *"clicking anywhere else should do nothing."* The two buttons are the only pointer
-## route to a choice, through their own `pressed` signal (`_choose`, connected in `_ready()`) —
-## Godot's own GUI input already consumes a click or a tap that actually lands on one, so neither
-## reaches here, and nothing in this function has to special-case them. This replaces two earlier
-## shapes: a click anywhere choosing tap, and a touch anywhere falling back to the stick. Both were
-## a pointer silently answering a question that now has two obvious, visible buttons to press
-## instead — the whole point of the buttons existing at all.
-##
-## **Once a flag has already answered the question** (`not _asking_controls`), the screen falls
-## back to exactly its pre-existing shape: `ui_accept` or a bare tap chooses whichever mode the
-## flag fixed, unchanged — a run a flag already started must not be asked again, and a flag-started
-## web build still has to be startable by touch.
-##
-## `Q` leaves, **except on the web**, where `QuitOption.available()` is false and the key is not
-## offered or handled at all — pressing it on a platform where quitting is impossible would be a
-## key the hint never even mentions doing nothing. `Esc` is deliberately not handled: `main` will
-## not open the pause over this, because a pause over a game that has not started is a screen with
-## nothing behind it to stop.
+## `space`, a tap or a left click begins the run — the one thing this screen offers, since there is
+## only one control scheme to begin it in. `Q` leaves, **except on the web**, where
+## `QuitOption.available()` is false and the key is not offered or handled at all — pressing it on
+## a platform where quitting is impossible would be a key the hint never even mentions doing
+## nothing. `Esc` is deliberately not handled: `main` will not open the pause over this, because a
+## pause over a game that has not started is a screen with nothing behind it to stop.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if _asking_controls:
-		if event.is_action_pressed("ui_accept") or _is_arrow_key(event):
-			get_viewport().set_input_as_handled()
-			_choose(ControlsMode.Mode.STICK)
-			return
-	elif event.is_action_pressed("ui_accept") \
-			or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed):
+	if event.is_action_pressed("ui_accept") or TouchInput.is_press(event):
 		get_viewport().set_input_as_handled()
-		_choose(ControlsMode.Mode.STICK)
+		start_requested.emit()
 		return
 	if _can_quit and event is InputEventKey and event.pressed \
 			and (event as InputEventKey).keycode == KEY_Q:
 		get_viewport().set_input_as_handled()
 		quit_requested.emit()
-
-## Whether `event` is a press of one of the four built-in directional actions — pulled out because
-## the choice reads as one condition ("an arrow key") rather than four `is_action_pressed()` calls
-## inline.
-static func _is_arrow_key(event: InputEvent) -> bool:
-	return event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right") \
-			or event.is_action_pressed("ui_up") or event.is_action_pressed("ui_down")
-
-## The one place `start_requested` is actually emitted — a bare key, a bare tap, or one of the two
-## buttons' own `pressed` signal, all funnelled through here so there is exactly one answer per
-## press rather than three call sites that could disagree. `mode` is `_controls_mode` itself when a
-## flag or a URL already fixed it, so the skip-the-question path emits the same thing it always did.
-func _choose(mode: ControlsMode.Mode) -> void:
-	start_requested.emit(_controls_mode if not _asking_controls else mode)

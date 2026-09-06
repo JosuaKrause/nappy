@@ -90,9 +90,8 @@ func is_active() -> bool:
 ## a great many plays that never happened, and every inference drawn from it is skewed.
 ##
 ## Whether the deployed page has asked, this run, to be logged anyway. Read through
-## `JavaScriptBridge.eval("window.location.search")` the same way `ControlsMode._url_word()` reads
-## `?controls=` — the one channel that reaches a Web export at all, since the page it runs on has no
-## command line for `DevFlags` to parse.
+## `JavaScriptBridge.eval("window.location.search")` — the one channel that reaches a Web export at
+## all, since the page it runs on has no command line for `DevFlags` to parse.
 ##
 ## **Gated behind `DevFlags.enabled()` (`OS.is_debug_build()`), the same as every other developer
 ## flag now.** *(2026-09-06, the player: "I never asked for telemetry on web. you added that to
@@ -112,10 +111,10 @@ static func _web_override_requested() -> bool:
 	return _telemetry_flag_from_query(search)
 
 ## The decision behind `_web_override_requested()`'s own gate, pulled out to a pure function of its
-## two inputs — the same shape `ControlsMode._reads_the_url()` uses for `?controls=`, duplicated
-## rather than shared: a one-line boolean `and` is not worth a module both files would have to
-## import for two call sites, and the next modifier this project gains should have an obvious
-## static function to copy, not a dependency to go find. debug and web is the one case `?telemetry=1`
+## two inputs so the promise is a truth table a test can check rather than a build type nothing can
+## fake: a one-line boolean `and` is not worth a module this file would have to import for one call
+## site, and the next modifier this project gains should have an obvious static function to copy,
+## not a dependency to go find. debug and web is the one case `?telemetry=1`
 ## exists for; release and web — the published page — is the case the promise is actually about.
 static func _reads_the_url(is_debug: bool, on_web: bool) -> bool:
 	return is_debug and on_web

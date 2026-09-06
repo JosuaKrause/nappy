@@ -14,44 +14,11 @@ mid-way through.
 
 ## The order
 
-## Visual overhaul
-
-Requested in [PLAYTEST-27.md](PLAYTEST-27.md). **Rebuild the graphics from the ground up**, including
-animation and every screen. SVG polish is a separate small PR, not this overhaul.
-The rendering medium and earlier visual restrictions are open to reassessment by the player's
-instruction. [VISUALS.md](VISUALS.md) carries the design and implementation gates.
-
-- [ ] Extend the approved illustrated PNG target from the live mother and pram to crowd and events.
-      `scenes/dev/illustrated_street_review.tscn` carries the accepted non-diagonal apartment
-      street direction. The logical body, collision, route rules and gameplay RNG remain owned by
-      the existing game; presentation receives only applied displacement. The diagonal
-      investigation remains tabled. See PLAYTEST-27's architecture feedback and VISUALS.md.
-- [ ] Rebuild architecture, terrain, nature, people, pram, vehicles, all events and closures.
-      Include walk/run/idle/turn and event animations, roof depth and stylized occlusion reveal.
-- [ ] Build eight-direction PNG sheets with shared anchors and manifests; split characters into
-      interchangeable head/hair/clothing/limb parts with a few initial pedestrian variations.
-      Match the mother reference and prove grounded foot contact during walking, stops and turns.
-      Offer registered draft sheets for player style transfer if generated art is inadequate.
-- [ ] Show the city deteriorating through persistent litter, local surface damage, building wear
-      and windblown papers, with cosmetic effects separated from route and excitement rules.
-- [ ] Show actual excitement contributors subtly and provide a coherent way to locate the current
-      objective. Reassess protesters and chalk breadcrumbs; preserve first discovery unless the
-      redesign explicitly makes and records a different decision.
-- [ ] Rebuild the title, control selection, pause, day summaries, endings, HUD and touch presentation
-      around the new visual direction. Preserve the title's existing control-selection behavior.
-- [ ] Integrate with current main, verify behavior headlessly, review bounded rendered captures and
-      check the browser presentation. Actual implementation is delegated to Luna agents.
-
-## Route work order
-
-1. **M76** — a screen offers something to press: the title's choice reads as buttons, the input you
-   choose with is the input you play with, a summary takes a tap anywhere, and the restart that has
-   now been asked for twice gets built.
-2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-3. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
+2. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
    be watched.
-4. **M56** — the resistance is noticed.
+3. **M56** — the resistance is noticed.
 
 **Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
 deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
@@ -64,15 +31,29 @@ no single barrier becomes the city's signature), **M65** (a protester who points
 holds either drawings or not**, so that deferring one never parks work that needs no artist — which
 is why M77 and M78 stand apart from M64 and M65 rather than inside them.
 
-**M76 is not covered by the deferral** — *(2026-09-06: "this is not game graphics. buttons are just
-UI")*. A control nobody can see is a control that does not work.
-
 **M79 waits on the overhaul rather than behind it.** It is the city seen at an angle — a
 presentation change with the lattice left cardinal — and it is written down and tabled so that
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
 
-**[PLAYTEST-25.md](PLAYTEST-25.md) is the latest route-and-balance report and its nine findings are built** — the
+**[PLAYTEST-28.md](PLAYTEST-28.md)'s four findings are built** — the game has one control scheme
+and no question about which: a press sets a direction she walks until the next press, a press on
+her stops her, a double press runs, and the pause button in the top right is the only thing drawn.
+The ending screen's own continue button, which meant nothing there, is gone too. The record is in
+`DECISIONS.md` under M82.
+
+**[PLAYTEST-27.md](PLAYTEST-27.md) is the second session on the released page and the first played
+on both a laptop browser and a phone, and every one of its six findings is built.** The release
+arrives under versioned URLs, the shared link carries an opaque card, the continue and restart
+buttons are on both screens, a press acknowledges itself before the day it starts blocks the frame,
+and the two findings about the controls themselves — tap mode dead on a laptop, and the drag stick
+— are answered the same way M82 answers playtest 28: one scheme, chosen nowhere, that a mouse
+click drives on every build. The record is in `DECISIONS.md` under M76, M80 and M82.
+
+**[PLAYTEST-26.md](PLAYTEST-26.md) is the one before it and every finding in it is built**, across
+the two halves of M76 and M82's own deletion of the title screen's two circular mode buttons.
+
+**[PLAYTEST-25.md](PLAYTEST-25.md)'s nine findings are built** — the
 first phone session on the built mobile game and the first human verdict on the sealed city. The
 record is in `DECISIONS.md` under M73, M74 and M75. **What it leaves open is a played question and
 a shaped one.** Played: the barrier rows are silent and the two ambient radii are tight, and nobody
@@ -86,7 +67,7 @@ walked* and *what did a day cost* are questions a picture can answer. See `DECIS
 and `docs/TELEMETRY.md` for what the map draws. This is also the instrument playtest 20 was read
 with — a full seven-day run's fourteen maps, copied into `docs/evidence/`.
 
-**Playtest 22's findings are built** — the two
+**Playtest 22's findings are every one of them built** — the two
 barrier-placement defects, the doorstep that could be sealed in, the winnability check that proved
 reachability rather than survivability, the route that ran alongside the main road, and the seals
 thinned so the guidance stops reading as guardrails. The record is in `DECISIONS.md` under M64.
@@ -125,76 +106,6 @@ which proves only that the controls stay *off* where they should.
       careful-versus-careless survives a blunter instrument, and it is answered by playing it rather
       than by arguing it.** The three smaller things a real device would also settle — the catch
       radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
-
----
-
-## M76 — A screen offers something to press · asked for 2026-09-06
-
-[PLAYTEST-26.md](PLAYTEST-26.md)'s four findings, and they are one complaint: **every screen in this
-game states its controls as a sentence, and a sentence is not a control.** The title screen's
-choice, the summary's dismissal and the missing restart are the same shape from three angles, which
-is why they are one milestone — fixing any one of them alone leaves the game still telling a player
-what to press where it should be offering something to press.
-
-**This is interface, not art, and that distinction is what keeps it in front of the deprioritised
-drawing work.** *(2026-09-06: "we deprioritize graphics works or bugs for now since a graphics
-overhaul is in-flight".)* A control nobody can see is a control that does not work.
-
-- [ ] **A summary has to be tapped on its text, and the code says it should not.** *(2026-09-06:
-      "on mobile when the day ends or one dies you have to tap on the text right now I should be
-      able to tap anywhere or it should be obvious where I need to tap".)*
-
-      **Find the cause before designing anything**, because the report contradicts the source.
-      `DaySummary._unhandled_input()` already accepts any pressed `InputEventScreenTouch` with no
-      position test of any kind, so there is no region to widen. And neither touch handler is
-      swallowing it as far as reading them goes: `TapControls._input()` and `TouchControls._input()`
-      both run before `_unhandled_input`, but **neither file calls `set_input_as_handled()`
-      anywhere**, and `TouchControls._input()` returns immediately when it is not visible, which it
-      is not over a summary.
-
-      So the first half of this item is an investigation on a real device or a rig that reproduces
-      one. **The second half depends on the answer**: if tap-anywhere is broken, fix it; if it works
-      and was simply not discoverable, the player's own alternative is the design — *"or it should
-      be obvious where I need to tap"* — and that is the first item above, on a different screen
-
-- [ ] **The restart, asked for twice and designed once.** *(2026-09-06: "and there is no restart
-      button still", after 2026-09-05: "we need a dedicated button for restart from the pause
-      menu".)* **Do not design this again.** This milestone owns it on both screens, because the
-      two askings put the same control on each and one interaction learned once is the point. The
-      design: a **hold** that fills over about a second, chosen over a one-tap button and over
-      arm-then-confirm, labelled `hold to restart`, and tested against the
-      touch position before the catch-all that reads any touch on the pause screen as *carry on*.
-      Build that.
-
-      **It is both screens, with one pair of buttons.** *(2026-09-06: "on the day end and pause
-      screen show two buttons continue (arrow to the right maybe?) and restart game (must be held
-      down so a bar needs to fill up while pressing; maybe a circular arrow?)".)* That closes the
-      question of whether the queued pause-screen control was the whole answer: the day-end and
-      pause screens get **the same two buttons as each other**, so there is one interaction to learn
-      rather than two.
-
-      **Continue** is a tap, suggested as an arrow to the right. **Restart** is held, with a bar
-      that fills while it is pressed, suggested as a circular arrow — both symbols offered as
-      suggestions rather than decisions. The hold is what M60 had already chosen over a one-tap
-      button and over arm-then-confirm, on the reasoning that **every other pixel of those screens
-      means carry on**, so a brushed thumb would otherwise end a fourteen-day walk with no save in
-      it; this session repeats it independently and extends it to the summary.
-
-      **What that replaces**: the ending's *"tap to start again"*, a lost day's *"tap to go on"* and
-      *"tap to try again"*, and the pause screen's *"tap to carry on"* — sentences, every one, which
-      is this milestone's first item again.
-
-      **The trap is the catch-all.** `PauseScreen._unhandled_input` treats any pressed
-      `InputEventScreenTouch` exactly as `space` and closes the screen, and `DaySummary` does the
-      same, so a touch anywhere already means *carry on* on both. A held button has to be tested
-      against the touch position **before** that branch, the way `TouchControls._input` checks a
-      touch against its own catch radii before anything else claims it. **Do not rely on a `Button`
-      node consuming it**: Godot delivers the screen touch *and* an emulated mouse event, and these
-      screens read the touch itself on purpose, so the `Button` would eat the click while the raw
-      touch resumed underneath it.
-
-      **The keyboard keeps `R` and is not given a hold.** Nothing about the key is broken, and
-      `PauseScreen._refresh_hint()` already says the right thing per platform
 
 ---
 
@@ -699,11 +610,11 @@ record — including why the pause button is the one control that sends an event
 an action — is in `DECISIONS.md` under M60. **Three things are left, and two of them want a real
 device or the real address:**
 
-**The restart button this screen needs is M76's**, together with the day-end screen's, because the
+**The restart button this screen needs is built**, together with the day-end screen's, because the
 same pair of controls was asked for on both and one interaction learned once is the point of putting
-them there. It is not an item here and nothing about it is recorded here: the hold, the label, the
-catch-all it has to be tested before, and why `R` keeps the keyboard to itself are all in M76's
-fourth item.
+them there. It was never an item here and nothing about it is recorded here: the hold, the label,
+the catch-all it has to be tested before, and why `R` keeps the keyboard to itself are all in
+`DECISIONS.md` under M76.
 
 - [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
       pointing home, and the stick and the run button sit at that height on both sides — so during
@@ -1433,28 +1344,6 @@ Small, real, nobody's milestone. Each has sat since the milestone that deferred 
 
 ## M79 — The city seen at an angle · tabled 2026-09-06
 
-**Graphics-review additions, still tabled:** the latest instruction is to keep the non-diagonal
-view while adopting the illustrated reference style. Eight-direction asset preparation does not
-authorize a diagonal renderer or a control change.
-
-The transform is only part of the cost. A 45-degree rotation is not a 2:1 dimetric projection:
-the latter also compresses a ground axis while leaving upright facades and people uncompressed.
-Rotating/shearing a finished sprite rotates/shears its height too, so new facing artwork or a
-separate upright layer is still required. Existing facade pieces provide content, not proof that
-the art conversion is cheap.
-
-Per-building origin sorting is insufficient for long projected footprints. Order or split facade
-segments against their occupied ground, and test actor overlap near both ends. Occlusion must
-consider the complete player/pram and approaching threat silhouette, not only their foot points.
-Local stippling, shortened hidden depth and a foreground cutaway remain alternatives; all need
-stable entry/exit thresholds and must not erase the visible evidence of an impassable wall.
-
-A separate presentation adapter is viable only if picking and every world-anchored cue consume
-its shared forward/inverse transform. Otherwise retain the canvas-transform contract described
-below. Recalculate visible logical bounds from inverse-projected viewport corners: unchanged
-screen-space radii can stream actors or threats into view too late after compression. Test camera
-limits, look-ahead, portrait composition and frame/part anchors together before scheduling this.
-
 **Tabled, and the reason is sequencing rather than doubt.** *(2026-09-06: "let's write down the
 findings about the diagonal grid but table it for now".)* Nothing here is rejected; it is written
 down so the graphics overhaul can decide the projection with the code's constraints in front of it
@@ -1510,7 +1399,7 @@ would stay the same only the presentation would rotate".)*
       If you learn *something is there* because a wall went translucent, the **cues** rules govern it
       and it owes the same discipline as the rest of the danger vocabulary
 
-- [ ] **It must be a real camera transform, not faked in `_draw()`.** `TapControls._on_tap()` maps a
+- [ ] **It must be a real camera transform, not faked in `_draw()`.** `TouchControls._on_tap()` maps a
       tap to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, and
       `DangerEdge` and `HomeArrow` both go the other way every frame from the same transform. A real
       transform keeps all three working; a fake one breaks every one of them. Two more that follow:
@@ -1538,21 +1427,17 @@ would stay the same only the presentation would rotate".)*
       ground. Rotated, with keys on world axes, a single key follows a street and **two keys point
       between buildings** — so the combination a player reaches for becomes the useless one.
 
-      **Tap has none of this.** `TapControls._on_tap()` already maps a screen point to a world point
-      through `get_viewport().get_canvas_transform().affine_inverse()`, so a rotated camera is
-      handled by the transform and costs the design nothing: you tap where you want to be.
+      **The pointer scheme has none of this.** `TouchControls._on_tap()` already maps a screen point
+      to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, so a
+      rotated camera is handled by the transform and costs the design nothing: a press already
+      means *go there*, in world space, whatever the camera's own angle.
 
-      **So this item is coupled to which control scheme is the default**, and that is a decision
-      rather than a consequence. The player's own condition is written above — *if tap becomes the
-      default it's fine* — and it does not overturn M68's verdict that both schemes are keepers
-      (*"I like both control modes equally"*): both would still ship, and M76's title screen would
-      still ask. What would change is which one a fresh install starts from. **Settle that before
-      this is scheduled**, because if the answer is that the keyboard stays the default, the
-      objection above stands unanswered and the whole item should stay tabled
-
-      *(The on-screen stick has the same problem and the same fix: `TouchControls` drives the four
-      `move_*` actions from its own screen-space vector, and `ScreenOrientation.to_design_space()`
-      already does exactly this correction for the 90° portrait case, so the machinery exists.)*
+      **So the objection is the keyboard alone, now that there is one control scheme rather than a
+      choice between two** (M82 deleted the drag stick and the title screen's own question). A
+      fresh install has nothing to default to any more — every device gets the same pointer scheme,
+      and the keyboard sits beside it as arrows/WASD always have. **Settle whether the diagonal
+      clunkiness above is acceptable on a keyboard before this is scheduled**, because that is now
+      the whole of what standing in the way of a rotated presentation.
 
 - [ ] **Spike the transform alone on the existing square art before anybody draws anything** —
       proving tap-to-world, the edge cues, the zoom fit and y-sorting survive, with no new art,
