@@ -88,7 +88,26 @@ against the commit that fixed it before telling anybody the page is well.
 
 ## What to do next
 
-**The most useful thing anybody can do next is play a day**, and there are now two unplayed layers
+**Start with [PLAYTEST-27.md](PLAYTEST-27.md) and the three milestones it fills.** It is the second
+session on the released page and the first played on both a laptop browser and a phone, and none of
+its six findings is built. Two of them are about the published page rather than about the game and
+are checked with `curl` rather than with the suite: **the site's files are served with
+`Cache-Control: max-age=600` under names that never change between releases**, so a browser can
+serve a mixed build — a fresh `index.html` against last release's `index.pck` — and a shared link
+unfurls with no picture. That is **M80**, and it is first in `TODO.md`'s order for a reason worth
+repeating here: a fix a browser does not go back for is a fix nobody receives, so every other
+milestone below it is invisible until it lands. **M76** (the continue and restart buttons, now asked
+for three times, plus a press that says it was heard) and **M81** (tap mode does nothing on a
+release web build, and the drag stick becomes a joystick that is aimed rather than gripped) follow.
+
+**One rule arrived with playtest 27 that is wider than any of them**: *"there is no way to walk
+slowly — that is intentional — there should only ever be one speed (plus a second via running)"*.
+`Stroller` moves toward `input_dir * top_speed` with the raw input vector, so the drag stick's
+partial deflection is the one input path in the game that can walk her at anything other than
+`Tuning.WALK_SPEED` (92 px/s) — and every pursuit lead time in `src/autoload/tuning.gd` is computed
+against 92 as *the* walking speed. Deleting the drag stick under M81 is what makes the rule true.
+
+**After that, the most useful thing anybody can do is play a day**, and there are two unplayed layers
 of change rather than one.
 
 **Playtest 25's nine findings are all built and none of them has been walked.** The barrier rows
