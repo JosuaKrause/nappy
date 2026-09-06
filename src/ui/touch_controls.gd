@@ -59,6 +59,9 @@ const PAUSE_CATCH_RADIUS := 46.0
 ## this margin further moves the arrow again; the two numbers are one decision.
 const PAUSE_CENTRE := Vector2(1218.0, 62.0)
 
+## The disc, the rim and the two bars, baked into one asset — see `_draw_pause_button()`.
+const _PAUSE_ICON: Texture2D = preload("res://assets/ui/pause.svg")
+
 ## How soon a second press has to land to read as a double, in seconds.
 const DOUBLE_TAP_SECONDS := 0.35
 ## How close the second press has to land to the first, in screen px, to read as the same
@@ -327,24 +330,24 @@ static func _send_pause_action() -> InputEventAction:
 	Input.parse_input_event(event)
 	return event
 
-## The only thing this file draws, and the only thing on screen this scheme ever needs: every
-## pixel of the city is a direction, so there is nothing left to draw for that half of it.
+## The one thing this file still draws itself rather than as a `ModeButton`, and the only thing on
+## screen this scheme ever needs: every pixel of the city is a direction, so there is nothing left
+## to draw for that half of it.
 func _draw() -> void:
 	if not visible:
 		return
 	_draw_pause_button()
 
-## Two bars, the same shape `hud.gd`'s touch teach line then names in words — drawn rather than
-## set in a font glyph, because a vector shape always renders and a Unicode pause glyph is not
-## guaranteed to be in `ThemeDB.fallback_font` at all.
+## The disc, its rim and the two bars — a preloaded SVG asset (`assets/ui/pause.svg`), not painted
+## in code. *(Playtest 29 finding 3: "neither should the buttons use draw commands -- I explicitly
+## said that icons/symbols do not count as graphics".)* This is not a `ModeButton`, so there is no
+## `Button` icon or `icon_normal_color` to tint through here; the held/idle contrast the old
+## `draw_circle()`/`draw_arc()`/`draw_rect()` calls carried as two different alpha values on the
+## disc alone is instead one overall alpha `draw_texture_rect()`'s own modulate colour multiplies
+## the whole texture by, which is why `pause.svg`'s own three shapes already carry their relative
+## opacities against each other (dim disc, mid rim, bright bars) — see that file's own comment.
 func _draw_pause_button() -> void:
 	var held := _pause_touch != -1
-	draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Color(1.0, 1.0, 1.0, 0.32 if held else 0.16))
-	draw_arc(PAUSE_CENTRE, PAUSE_RADIUS, 0.0, TAU, 24, Color(1.0, 1.0, 1.0, 0.4), 2.0)
-	var bar_height := PAUSE_RADIUS * 0.8
-	var bar_width := PAUSE_RADIUS * 0.22
-	var gap := PAUSE_RADIUS * 0.22
-	for side in [-1.0, 1.0]:
-		var bar_centre := PAUSE_CENTRE + Vector2(side * (gap * 0.5 + bar_width * 0.5), 0.0)
-		draw_rect(Rect2(bar_centre - Vector2(bar_width, bar_height) * 0.5,
-				Vector2(bar_width, bar_height)), Color(1.0, 1.0, 1.0, 0.8))
+	var size := Vector2(PAUSE_RADIUS, PAUSE_RADIUS) * 2.0
+	draw_texture_rect(_PAUSE_ICON, Rect2(PAUSE_CENTRE - size * 0.5, size), false,
+			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
