@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_there_is_a_way_out_of_a_finished_run(t)
 	_test_a_press_soon_after_a_restart_is_swallowed_not_started(t)
 	_test_the_title_screen_does_not_stop_the_city(t)
+	_test_every_walking_key_begins_the_run(t)
 	_test_the_title_quit_key_matches_the_platform(t)
 	_test_the_pause_quit_key_matches_the_platform(t)
 	_test_a_tap_advances_every_screen(t)
@@ -239,6 +240,22 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 	title.close()
 	title._unhandled_input(_accept())
 	t.check(started[0] == 1, "a closed title screen answers nothing")
+	title.queue_free()
+
+## **Every direction key begins a run too.** *(2026-09-07: "awsd and arrows should start the game
+## in addition to space".)* `WASD` and the arrows are bound to all four `move_*` actions, so a
+## single `move_left` press stands in for the rest of them.
+func _test_every_walking_key_begins_the_run(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var started := [0]
+	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.open()
+
+	title._unhandled_input(_action("move_left"))
+	t.check(started[0] == 1, "a direction key begins the run exactly as space or a tap does")
+
+	title.close()
 	title.queue_free()
 
 ## **"For the web version remove Q (quit) and its mentions since it doesn't have any effect. Only

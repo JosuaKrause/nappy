@@ -159,10 +159,16 @@ func close() -> void:
 ## deliberate press is never felt to be slow, since this only ever fires in the first fraction of a
 ## second after a restart-triggered reload and never on an ordinary boot (`_restarted_at_msec`
 ## starts at `-INF`, so nothing here fires until the first restart actually happens).
+##
+## **Every direction key begins a run too, silently.** *(2026-09-07: "awsd and arrows should start
+## the game in addition to space".)* `WASD` and the arrows are bound to the four `move_*` actions,
+## which this screen never read before — so the keys that walk her once a day has begun did not
+## start one. This names no key on screen and does not want to: the hint stays `tap to begin`, the
+## same way the keyboard has always walked and run with nothing on screen naming a key for either.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if event.is_action_pressed("ui_accept") or TouchInput.is_press(event):
+	if event.is_action_pressed("ui_accept") or TouchInput.is_press(event) or _is_a_walk_key(event):
 		if (Time.get_ticks_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
 			get_viewport().set_input_as_handled()
 			return
@@ -173,3 +179,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			and (event as InputEventKey).keycode == KEY_Q:
 		get_viewport().set_input_as_handled()
 		quit_requested.emit()
+
+## The four `move_*` actions — `WASD` and the arrows both, since each is bound to all four. Asked
+## as a loop over the action list rather than four `or`ed `is_action_pressed()` calls, so a fifth
+## walking action added later needs only a new entry in `_WALK_ACTIONS` here.
+const _WALK_ACTIONS: Array[StringName] = [&"move_left", &"move_right", &"move_up", &"move_down"]
+
+static func _is_a_walk_key(event: InputEvent) -> bool:
+	for action in _WALK_ACTIONS:
+		if event.is_action_pressed(action):
+			return true
+	return false
