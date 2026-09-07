@@ -60,3 +60,76 @@ static func select_sources(instances: Array[EventInstance], at: Vector2) -> Arra
 	for i in mini(ranked.size(), MAX_SOURCES):
 		picked.append(ranked[i][1])
 	return picked
+
+# ------------------------------------------------------------------ drawing ---
+# One node, one shader, fed the active sources as uniform arrays — not one shape per event. The
+# sources compose by addition in `EventManager.total_excitement_at()`, so the halo has to as well:
+# two overlapping fields must cost more where they overlap, which one disc per event could not
+# show and the shader's own per-fragment sum does. See
+# `assets/shaders/excitement_halo.gdshader`.
+
+const SHADER := preload("res://assets/shaders/excitement_halo.gdshader")
+
+var _events: EventManager
+var _player: Node2D
+var _material: ShaderMaterial
+## What `_draw()` fills with the shader material this frame, in this node's own local space —
+## which is world space, since this node never moves. Empty while nothing clears the floor.
+var _bounds := Rect2()
+var _drawing := false
+
+func setup(events: EventManager, player: Node2D) -> void:
+	_events = events
+	_player = player
+
+func _ready() -> void:
+	_material = ShaderMaterial.new()
+	_material.shader = SHADER
+	material = _material
+
+func _process(_delta: float) -> void:
+	if not _events or not _player:
+		return
+	_update_sources(select_sources(_events.instances(), _player.global_position))
+	queue_redraw()
+
+## Writes the shader's uniform arrays and works out how much ground `_draw()` needs to cover.
+##
+## The arrays are fixed at `MAX_SOURCES` because a Godot shader array uniform is fixed-size —
+## unused slots past `picked.size()` are written with a harmless zero intensity and never read,
+## since the shader's own loop stops at `source_count`.
+func _update_sources(picked: Array[EventInstance]) -> void:
+	var positions := PackedVector2Array()
+	var inners := PackedFloat32Array()
+	var outers := PackedFloat32Array()
+	var intensities := PackedFloat32Array()
+	positions.resize(MAX_SOURCES)
+	inners.resize(MAX_SOURCES)
+	outers.resize(MAX_SOURCES)
+	intensities.resize(MAX_SOURCES)
+	var bounds := Rect2()
+	for i in picked.size():
+		var instance := picked[i]
+		var at := to_local(instance.global_position)
+		positions[i] = at
+		inners[i] = instance.def.inner_radius
+		outers[i] = instance.def.outer_radius
+		intensities[i] = instance.current_intensity()
+		var reach := Rect2(at - Vector2.ONE * instance.def.outer_radius,
+				Vector2.ONE * instance.def.outer_radius * 2.0)
+		bounds = reach if i == 0 else bounds.merge(reach)
+	_drawing = not picked.is_empty()
+	_bounds = bounds
+	_material.set_shader_parameter("source_position", positions)
+	_material.set_shader_parameter("source_inner_radius", inners)
+	_material.set_shader_parameter("source_outer_radius", outers)
+	_material.set_shader_parameter("source_intensity", intensities)
+	_material.set_shader_parameter("source_count", picked.size())
+
+func _draw() -> void:
+	if not _drawing:
+		return
+	# The rect is only what `_update_sources()` says is worth covering, not the whole screen: the
+	# shader's own sum is only ever nonzero inside it, so anything wider is overdraw with nothing
+	# to show for it.
+	draw_rect(_bounds, Color.WHITE)
