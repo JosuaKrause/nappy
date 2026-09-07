@@ -364,7 +364,7 @@ about to be tagged already carries a version tag.**
 
 ## M87 — A direction is not one of four · asked for 2026-09-07
 
-**Unordered.** Opened from a question rather than a complaint *(2026-09-07: "how does the telemetry
+**Both halves are wanted and go to an agent of their own.** Opened from a question rather than a complaint *(2026-09-07: "how does the telemetry
 handle directions? also, is there a cli way to set the directions? it was only nswe before")*, and
 the answer to both halves is that four is all there is.
 
@@ -388,10 +388,15 @@ produces are diagonal, and both halves below still speak in quarters.
       **The detection underneath is not quantised and does not need changing.**
       `TelemetryObserver._watch_direction()` compares real vectors with `angle_to()` against
       `TURN_ANGLE` (120°) and eases the committed heading at `TURN_FOLLOW_RATE` (1.5/s), and the dusk
-      map draws the walk itself. **Only the noun is lossy**, so this is a formatting change and the
-      thing to decide is what replaces four words — eight, or a bearing in degrees beside the word,
-      or the word with the vector after it. A bearing is exact and a word is readable; the log is
-      read by people, so do not silently drop the word
+      map draws the walk itself. **Only the noun is lossy**, so this is a formatting change.
+
+      **It stops quantising rather than quantising more finely.** *(2026-09-07: "the telemetry
+      shouldn't quantize".)* So eight words is not the answer either: what goes in the log is the
+      **bearing itself**, exact enough that two headings a player can tell apart are two readings in
+      the log. Degrees is the readable exact form; the convention has to be stated where it is
+      written, because +y is south here and a bearing that does not say which way zero points is a
+      number nobody can check. `nowhere` stays for a genuinely zero vector — that is not a rounded
+      direction, it is the absence of one
 - [ ] **No rig can drive a heading that is not an axis, or a drag, or a double tap.**
       `AutoScreenshot` offers `--walk north|south|east|west`, which holds one `move_*` action for the
       whole run, and `--walk 1s5e`, a script of `<seconds><letter>` steps with letters `n`/`s`/`e`/`w`
@@ -405,11 +410,24 @@ produces are diagonal, and both halves below still speak in quarters.
       the game. It also means `tools/shot.sh --walk 3s15e` can no longer reproduce a route a player
       would actually walk, since a player's route is now mostly diagonal.
 
-      What it wants is a script that speaks the scheme the game actually has: a timed sequence of
-      presses at screen positions, with a hold-and-move step and a double press, alongside the
-      existing `move_*` one. **Keep the existing vocabulary working** — `1s5e` is what the M64
-      density figures and several evidence captures were taken with, and a rig whose old scripts stop
-      reproducing is a rig that invalidates its own back catalogue
+      **A script step can name an angle.** *(2026-09-07: "the script should be able to specify
+      angles".)* So `--walk` gains a step that is a duration and a bearing rather than a duration and
+      a letter, in the same left-to-right sequence the existing one runs in.
+
+      **It presses the same two `move_*` axes at fractional strength, which is how one speed
+      survives.** `Input.action_press(action, strength)` takes a strength, and
+      `TouchControls._set_axis()` already drives the scheme exactly this way — a 45° step presses
+      `move_right` and `move_up` at 0.707 each, and the vector is unit length, so the rig walks at
+      `Tuning.WALK_SPEED` (92 px/s) like everything else. **A step must never press a vector shorter
+      than one**, which is the same rule `tests/test_touch.gd` holds for the input paths.
+
+      **Keep the existing vocabulary working** — `1s5e` is what the M64 density figures and several
+      evidence captures were taken with, and a rig whose old scripts stop reproducing is a rig that
+      invalidates its own back catalogue. The letters become shorthand for four particular bearings
+      rather than a separate mechanism.
+
+      A drag and a double press are the other two shapes the scheme has and neither can be scripted
+      at all; whether they land here or later is for the build to say
 
 ---
 
