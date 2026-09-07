@@ -65,13 +65,21 @@ func _write(line: String) -> void:
 static func tile(at: Vector2i) -> String:
 	return "(%d,%d)" % [at.x, at.y]
 
-## Which way something is pointing, in words. +y is south: the city is drawn from above.
+## Which way something is pointing, as a compass bearing in whole degrees rather than a word.
+## +y is south — the city is drawn from above — so the bearing runs clockwise from north (-y)
+## at 0°, through east (+x) at 90°, south (+y) at 180° and west (-x) at 270°, the same way a
+## real compass reads. A press now sets an arbitrary unit vector
+## (`TouchControls.heading_to()`), so most headings are diagonal, and a word would either lose
+## the difference between two headings a player can tell apart or invent a ninth word for every
+## one of them; the bearing is exact instead. `nowhere` stays for a genuinely zero vector — the
+## absence of a direction, not a rounded one.
 static func compass(direction: Vector2) -> String:
 	if direction.length_squared() < 0.0001:
 		return "nowhere"
-	if absf(direction.x) > absf(direction.y):
-		return "east" if direction.x > 0.0 else "west"
-	return "south" if direction.y > 0.0 else "north"
+	var degrees := roundi(rad_to_deg(atan2(direction.x, -direction.y))) % 360
+	if degrees < 0:
+		degrees += 360
+	return "%d°" % degrees
 
 static func purpose(which: GameEnums.BlockPurpose) -> String:
 	return GameEnums.BlockPurpose.keys()[which].to_lower()

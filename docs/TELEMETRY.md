@@ -117,9 +117,9 @@ day 6  act 2  run seed 4242  city seed 4242  length 144.0s
    0.0  plan     closed: cordoned off h(2,5), cordoned off h(4,7)
    0.0  plan     calm: 2 forest, 2 park, 3 courtyard
    0.0  plan     events: cat_dash x3, dog_walker x3, homeless_yeller, playground x2, ...
-   0.0  start    doorstep (24,84), facing south
+   0.0  start    doorstep (24,84), facing 180°
    0.7  cross    stepped into the road at (24,86), mid-block
-   3.5  turn     doubled back north
+   3.5  turn     doubled back 46°
   14.6  near     dog_walker at (23,99), 129px, exc 25, in 12.0/s (crowd 0.0, events 0.0), sleep 5
   15.3  near     dog_walker at (23,99), 19px, exc 33, in 15.1/s (crowd 0.0, events 6.1), sleep 5
   15.4  freeze   sleep stopped filling | exc 35, in 15.4/s (...), sleep 5 | near: dog_walker 15px
@@ -267,7 +267,12 @@ window is exactly the run worth reading and a buffered log of it would be empty.
    from the table above rather than inventing a synonym for one.
 3. Format positions with `TelemetryLog.tile()`, directions with `TelemetryLog.compass()` and
    block purposes with `TelemetryLog.purpose()`. Two spellings of a position in one log is
-   two things to grep for.
+   two things to grep for. `compass()` writes the exact bearing in whole degrees rather than a
+   word — a press sets an arbitrary unit vector, so most headings are diagonal and a four- or
+   eight-word vocabulary would lose the difference between two headings a player can tell
+   apart. **+y is south**, so the bearing runs clockwise from north (-y) at 0°, through east
+   (+x) at 90°, south (+y) at 180° and west (-x) at 270°, the same way a real compass reads.
+   `nowhere` stays for a genuinely zero vector — the absence of a direction, not a rounded one.
 4. If it is a random outcome, hoist the roll — never add one — and print the roll *and* the
    threshold. `0.42 >= 0.33` is checkable; "did not fire" is not.
 5. Add a row to the table above.
