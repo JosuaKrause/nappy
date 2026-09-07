@@ -20,10 +20,9 @@ mid-way through.
 2. **M85** — one press, answered: the two focal points move and are drawn, a held finger re-aims,
    the middle of the screen stops her instead of steering her, and the screens around a run say and
    do what was asked of them.
-3. **M86** — `tools/release.sh` refuses a commit that has already been released.
-4. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+3. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-5. **M56** — the resistance is noticed.
+4. **M56** — the resistance is noticed.
 
 **Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
 deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
@@ -44,8 +43,8 @@ is not rejected.
 **[PLAYTEST-33.md](PLAYTEST-33.md) is the newest session and none of its thirteen findings is built.**
 It is the report M83 asked for: the two focal points a touch aims from were built and drawn as
 nothing, and the answer is that they move outward and downward and are drawn. Eight of the thirteen
-are M85, four raise and extend M77, and the one question in it is M86. **Read it before any of the
-three.**
+are M85 and four raise and extend M77; the one question in it was M86 and is answered in
+`DECISIONS.md`. **Read it before either of the two.**
 
 **[PLAYTEST-29.md](PLAYTEST-29.md)'s seven findings are all built.** Three of them were instructions
 the project already had and had read as repealed by something else, and the file is worth reading for
@@ -331,34 +330,6 @@ circles are the shape a control already has, the way `MeterBar`'s own fill is.
       and reads nothing else, so `WASD` and the arrows — bound to the four `move_*` actions — do not
       start her. This names no key on screen and does not want to: the hint stays `tap to begin`,
       and the keys keep working silently the way every other keyboard control in the game does
-
----
-
-## M86 — `release.sh` refuses a commit already released · asked for 2026-09-07
-
-> "btw what happens when running release twice? it should block if main is on a current release"
-
-**What happens today**: `tools/release.sh patch push` run twice from an unchanged `main` cuts two
-tags from the **same commit** and publishes the same build twice. Every refusal the script has is
-about the tree and the branch — a dirty working tree, a branch other than `main`, and a `main` that
-is not level with `origin/main` — plus a wait on the `test` check. **Nothing asks whether the commit
-about to be tagged already carries a version tag.**
-
-- [ ] **A commit that is already the current release is not releasable again.** The refusal is on
-      the **commit**, not on the version: if `origin/main`'s HEAD is what the newest `v*` tag points
-      at, there is nothing to publish and the script stops with a message saying which tag already
-      names it.
-
-      **It has to fire in the dry run too**, because that is the script's own stated contract —
-      *"every refusal fires whether or not `push` was given, so the dry run tells the truth about
-      whether the real thing would work."* A refusal that only appeared under `push` would make the
-      dry run lie in exactly the case somebody runs it for.
-
-      **One escape hatch is worth considering and is not assumed**: a re-release of the same commit
-      is what somebody reaches for when a deploy failed after the tag was pushed. The existing
-      failure path already covers that — a rejected push leaves the annotated tag in place and tells
-      the operator to retry `git push origin <tag>` — so the refusal does not need to be overridable
-      unless a real case turns up
 
 ---
 
