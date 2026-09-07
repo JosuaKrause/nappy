@@ -3,12 +3,12 @@ extends Control
 ## The one control scheme a pointer drives, and the pause button it draws.
 ##
 ## A press — a finger, or (on a device with no touch hardware of its own) a mouse click — sets a
-## direction that is locked in and walked with nothing held down until the next press changes it;
-## a press within `STOP_RADIUS` of her stops her instead; a double press sets the direction and
-## holds `run` until the next press changes or releases it. See `set_direction()`, `_stop()` and
-## `is_double_tap()` — that half of this file used to be `TapControls`, a second node with nothing
-## to draw, and is folded in here because it needs something to draw now: the pause button, the one
-## thing left standing once the drag stick and the held `RUN` circle are deleted.
+## direction that is locked in and walked with nothing held down until the next press changes it,
+## or stops her instead if it lands close enough to the right ground; a double press sets the
+## direction and holds `run` until the next press changes or releases it. See `set_direction()`,
+## `_stop()` and `is_double_tap()` — that half of this file used to be `TapControls`, a second node
+## with nothing to draw, and is folded in here because it needs something to draw now: the pause
+## button, the one thing left standing once the drag stick and the held `RUN` circle are deleted.
 ##
 ## **Where the direction is measured from is the one place a mouse and a real finger disagree.**
 ## *(Playtest 29 finding 6: "let's not make the directions in relation to the player but define
@@ -377,13 +377,14 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 ## would let go of it on its own.
 ##
 ## `from` defaults to `Vector2.INF`, read as "her own world position" — the mouse's own aiming
-## point, and every existing caller's, since `Vector2.INF` can never be a real focus or a real
-## press. `_on_tap()` is the one caller that ever passes something else: a focus already converted
-## to world space, for a real touch.
+## point, and every caller's that never sets it explicitly, since `Vector2.INF` can never be a
+## real focus or a real press. `_on_tap()` and `_on_drag()` are the only two callers that ever pass
+## something else: a focus already converted to world space, for a real touch.
 ##
 ## A press exactly on `from` has no heading to compute and stops her instead, the same case
-## `_on_tap()`'s own `STOP_RADIUS` check already catches for anything a thumb's-width away from her
-## — this is the fallback for the one caller (a test) that calls straight in with an exact point.
+## `_on_tap()`'s own `STOP_RADIUS` check already catches for a mouse click a pixel's-width away
+## from her — this is the fallback for the one caller (a test) that calls straight in with an
+## exact point.
 func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 	if not _rig:
 		_rig = get_tree().get_first_node_in_group("player") as Node2D
@@ -429,9 +430,9 @@ static func nearer_focus(design_position: Vector2) -> Vector2:
 			<= design_position.distance_to(FOCUS_RIGHT) else FOCUS_RIGHT
 
 ## Whether `design_position` (already in design space) lands within `STOP_RADIUS` of either focal
-## point — the other door `_on_tap()` stops her through on a touch device, alongside a press near
-## her own world position. *(2026-09-06, the player: "tapping in their center or on the player
-## should stop the player still".)*
+## point — one of the two doors `_on_tap()` and `_on_drag()` stop her through on a touch device,
+## alongside the stop band (`is_in_stop_band()`). *(2026-09-06, the player: "tapping in their
+## center or on the player should stop the player still".)*
 static func is_on_a_focus(design_position: Vector2) -> bool:
 	return design_position.distance_to(FOCUS_LEFT) <= STOP_RADIUS \
 			or design_position.distance_to(FOCUS_RIGHT) <= STOP_RADIUS
