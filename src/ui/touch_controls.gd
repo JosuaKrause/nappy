@@ -137,6 +137,21 @@ var _walking := false
 var _last_tap_at := -INF
 var _last_tap_screen_position := Vector2.ZERO
 
+## The pointer index currently re-aiming a held direction with every motion event — a real touch's
+## own `InputEventScreenTouch.index`, or `_MOUSE_POINTER_INDEX` for a held left mouse button — or
+## -1 when nothing is. Set the moment a press locks in a direction (not a stop, not the pause
+## button) and cleared on the matching release, in `_on_pointer()`. *(2026-09-07: "dragging the
+## finger doesn't work anymore but should", and "although dragging a mouse should reaim as well".)*
+var _drag_pointer_index := -1
+## Where `_drag_pointer_index`'s own heading is measured from, for every motion event until the
+## next press replaces it — a focus already converted to world space for a real touch, or
+## `Vector2.INF` ("her own position") for a mouse, the same sentinel `set_direction()`'s own `from`
+## parameter already reads that way. Set once, at the press that started the drag, in `_on_tap()`.
+var _drag_origin_world := Vector2.INF
+## Whether `_drag_pointer_index`'s own press doubled into a run — carried through every motion
+## event so re-aiming never itself starts or stops holding `run`; only a fresh press does.
+var _drag_run := false
+
 var _was_paused := false
 
 func _ready() -> void:
@@ -179,10 +194,22 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var touch := event as InputEventScreenTouch
 		_on_pointer(touch.position, touch.pressed, touch.index)
+	elif event is InputEventScreenDrag:
+		# A finger still down, moving — see `_on_drag()`'s own doc. Godot never sends this for a
+		# mouse; a held left button's own motion arrives as `InputEventMouseMotion` below instead.
+		var drag := event as InputEventScreenDrag
+		_on_drag(drag.position, drag.index)
 	elif not _touch and event is InputEventMouseButton:
 		var click := event as InputEventMouseButton
 		if click.button_index == MOUSE_BUTTON_LEFT:
 			_on_pointer(click.position, click.pressed, _MOUSE_POINTER_INDEX)
+	elif not _touch and event is InputEventMouseMotion:
+		# The mouse's own half of the drag — *(2026-09-07: "although dragging a mouse should reaim
+		# as well".)* Only while the left button is actually held: `button_mask` is a snapshot of
+		# every button down at the moment of this motion, not just the one that started a press.
+		var motion := event as InputEventMouseMotion
+		if motion.button_mask & MOUSE_BUTTON_MASK_LEFT:
+			_on_drag(motion.position, _MOUSE_POINTER_INDEX)
 
 ## Stands in for the touch index a mouse event carries none of — the same role `PauseScreen
 ## ._MOUSE_HOLD_INDEX` plays for the restart button's own hold. Needed now that the pause button is
@@ -210,7 +237,15 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 				queue_redraw()
 				return
 		_on_tap(position, Time.get_ticks_msec() / 1000.0)
+		# A direction was set, not a stop — see `_on_tap()`'s own doc for where
+		# `_drag_origin_world`/`_drag_run` were just set for this same press. A stop leaves
+		# `_walking` false, so a press on her, on a focus, or in the stop band never starts a
+		# drag that would only re-open the direction it just closed.
+		if _walking:
+			_drag_pointer_index = index
 		return
+	if index == _drag_pointer_index:
+		_drag_pointer_index = -1
 	if index == _pause_touch:
 		_pause_touch = -1
 		queue_redraw()
@@ -269,6 +304,8 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 		_stop()
 		return
 	if not _touch:
+		_drag_origin_world = Vector2.INF
+		_drag_run = double
 		set_direction(world, double)
 		return
 	# Touch only, past here — see the class doc and this function's own doc above.
@@ -278,7 +315,29 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 		return
 	var focus_world := get_viewport().get_canvas_transform().affine_inverse() \
 			* ScreenOrientation.to_presented_space(nearer_focus(design), rotated)
+	_drag_origin_world = focus_world
+	_drag_run = double
 	set_direction(world, double, focus_world)
+
+## A finger or a held left mouse button, still down and moving, at `screen_position` — the drag
+## stick's replacement, and the reason it survives
+## `_test_no_input_path_presses_a_vector_shorter_than_one` is the whole of the difference from it:
+## this recomputes a heading through `set_direction()`, which always normalises, rather than
+## pressing a partial vector for a thumb short of some rim. *(2026-09-07: "dragging the finger
+## doesn't work anymore but should", and "although dragging a mouse should reaim as well".)*
+##
+## Every motion event for `_drag_pointer_index` moves the heading toward wherever the pointer now
+## is, from `_drag_origin_world` — the same focus `_on_tap()` chose for a touch, or her own
+## position for a mouse, exactly as the initial press that started this drag was measured. The
+## direction locks in as it stands the moment the pointer lifts, since nothing further happens on
+## release beyond forgetting the index in `_on_pointer()`.
+func _on_drag(screen_position: Vector2, index: int) -> void:
+	if index != _drag_pointer_index or get_tree().paused:
+		return
+	if not _rig:
+		return
+	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
+	set_direction(world, _drag_run, _drag_origin_world)
 
 ## Locks in the heading toward `target` from `from` — computed once here and never again, so a
 ## shove that knocks her off the line does not silently correct itself, the same way walking into a
@@ -377,6 +436,7 @@ static func _set_axis(negative: StringName, positive: StringName, value: float) 
 ## on next.
 func _release_all() -> void:
 	_pause_touch = -1
+	_drag_pointer_index = -1
 	_walking = false
 	_direction = Vector2.ZERO
 	_release_movement()

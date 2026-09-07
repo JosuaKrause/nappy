@@ -40,6 +40,11 @@ func run(t) -> void:
 	_test_a_press_at_a_focus_centre_stops_her_on_touch(t)
 	_test_a_press_on_her_still_stops_her_on_touch(t)
 	_test_a_mouse_click_still_aims_from_her_not_a_focus(t)
+	_test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t)
+	_test_a_stop_press_does_not_start_a_drag(t)
+	_test_a_double_tap_that_then_drags_keeps_running(t)
+	_test_a_mouse_drag_reaims_from_her_own_position(t)
+	_test_a_mouse_motion_without_the_button_held_does_nothing(t)
 	t.get_tree().paused = was_paused
 	_release_actions()
 
@@ -586,11 +591,138 @@ func _test_a_mouse_click_still_aims_from_her_not_a_focus(t) -> void:
 	controls.queue_free()
 	rig.free()
 
+## **A held finger keeps re-aiming, and the direction it presses is still a full unit vector at
+## every step** — the same guarantee `_test_no_input_path_presses_a_vector_shorter_than_one` holds
+## for a single press, now asked of the drag that replaces the stick, since a drag is the other new
+## path that could in principle press a partial vector and does not. *(2026-09-07: "dragging the
+## finger doesn't work anymore but should".)*
+func _test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
+	t.check(Input.is_action_pressed("move_left"), "the press itself walks west of the focus")
+	t.check(controls._drag_pointer_index == 0, "and the same finger is now tracked for the drag")
+
+	for degrees in range(0, 360, 30):
+		var offset := Vector2.RIGHT.rotated(deg_to_rad(float(degrees))) * 150.0
+		controls._input(_drag_event(0, TouchControls.FOCUS_LEFT + offset))
+		var pressed := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
+		t.check(pressed.length() >= 1.0 - 0.001,
+				"a drag at %d degrees around the focus still presses a full unit vector (got %.4f)"
+						% [degrees, pressed.length()])
+
+	controls._input(_drag_event(0, TouchControls.FOCUS_LEFT + Vector2(150.0, 0.0)))
+	t.check(Input.is_action_pressed("move_right") and not Input.is_action_pressed("move_left"),
+			"the last drag step, due east of the focus, is what is currently held")
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(150.0, 0.0), false))
+	t.check(controls._drag_pointer_index == -1, "lifting the finger stops tracking the drag")
+	t.check(Input.is_action_pressed("move_right"),
+			"and the direction locks in as it stood, unrenewed by the release itself")
+
+	controls.queue_free()
+	rig.free()
+
+## **A press dead on a focus stops her, and does not also start a drag** that would only re-open
+## the direction the press just closed the moment the same finger moves again.
+func _test_a_stop_press_does_not_start_a_drag(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT, true))
+	t.check(controls._drag_pointer_index == -1, "a stop press tracks no drag")
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT, false))
+	controls.queue_free()
+	rig.free()
+
+## **A double tap that then drags holds `run` the same way a double tap already does.**
+## *(2026-09-07: "A double press that then drags holds run the same way a double press already
+## does".)*
+func _test_a_double_tap_that_then_drags_keeps_running(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), false))
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
+	t.check(Input.is_action_pressed("run"), "the double tap itself runs")
+
+	controls._input(_drag_event(0, TouchControls.FOCUS_LEFT + Vector2(0.0, -150.0)))
+	t.check(Input.is_action_pressed("run"), "and dragging afterward keeps holding run")
+	t.check(Input.is_action_pressed("move_up"), "while the heading itself keeps updating")
+
+	controls.queue_free()
+	rig.free()
+
+## **The mouse's own half of the drag.** *(2026-09-07: "although dragging a mouse should reaim as
+## well".)* Its origin is her own position, not a focus — the one place a mouse and a finger keep
+## disagreeing — carried through every motion event exactly as `_drag_origin_world` recorded it at
+## the click that started this drag.
+func _test_a_mouse_drag_reaims_from_her_own_position(t) -> void:
+	var rig := _rig_at(t, Vector2(300.0, 300.0))
+	var controls := _controls(t)
+	controls._touch = false
+	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = transform * Vector2(500.0, 300.0)
+	controls._input(click)
+	t.check(Input.is_action_pressed("move_right"), "the click itself walks east of her")
+
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	motion.position = transform * Vector2(300.0, 100.0)
+	controls._input(motion)
+	t.check(Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_right"),
+			"dragging the held button re-aims from her own position, not a fixed focus")
+
+	var release := click.duplicate()
+	release.pressed = false
+	release.position = transform * Vector2(300.0, 100.0)
+	controls._input(release)
+	t.check(controls._drag_pointer_index == -1, "releasing the button stops tracking the drag")
+
+	controls.queue_free()
+	rig.free()
+
+## A mouse simply moving, with no button held, is not a drag — `button_mask` is what tells the two
+## apart, and every ordinary mouse movement in the game carries no mask at all.
+func _test_a_mouse_motion_without_the_button_held_does_nothing(t) -> void:
+	# Leftover state from the previous test's own drag, not this one's concern to leave held.
+	_release_actions()
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	controls._touch = false
+
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = 0
+	motion.position = Vector2(999.0, 999.0)
+	controls._input(motion)
+	t.check(not Input.is_action_pressed("move_right") and not Input.is_action_pressed("move_left")
+			and not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
+			"idle mouse movement never sets a direction")
+
+	controls.queue_free()
+	rig.free()
+
 func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()
 	event.index = index
 	event.position = position
 	event.pressed = pressed
+	return event
+
+func _drag_event(index: int, position: Vector2) -> InputEventScreenDrag:
+	var event := InputEventScreenDrag.new()
+	event.index = index
+	event.position = position
 	return event
 
 ## However a check above failed or passed, the movement actions, `run` and `pause` are global
