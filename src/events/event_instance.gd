@@ -1058,6 +1058,21 @@ const HALO_MARGIN := 4.0
 ## **Rides the same bob `_draw()` gives the entity itself** (`_current_bob()`), or a walking
 ## entity's outline would slide off the sprite it is tracing. Each offset gets its own
 ## `draw_set_transform()`, reset once at the end the way `_draw()` already resets its own.
+## The drop shadow under an entity, drawn for the entity itself and skipped for its halo.
+##
+## *(2026-09-07, the player: "the halo should not include the shadow".)* `_draw_halo()` re-runs
+## `_draw_body()` on `_halo` to trace the silhouette, and the shadow is the first thing
+## `_draw_body()` puts down — so without this the ellipse got traced too, putting a soft amber lobe
+## on the pavement beside every glowing entity. **The shadow is not part of the thing**: it is the
+## ground under it, and a cue that means *this is charging you* has nothing to say about the ground.
+##
+## Routed through here rather than guarded at each of the fifteen call sites, so a `_draw_*` helper
+## added later gets the rule by using the same function every other one uses.
+func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
+	if canvas == _halo:
+		return
+	Sprites.draw_shadow(canvas, at, radius)
+
 func _draw_halo() -> void:
 	if is_finished or _halo_strength <= 0.0:
 		return
@@ -1255,14 +1270,14 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 ## The badge itself keeps the **side** view, which is deliberate: an icon is read at 40px against a
 ## row of other icons, and a vehicle end-on is a box at any size.
 func _draw_vehicle(side: Texture2D, end: Texture2D, shadow: float, canvas: CanvasItem = self) -> void:
-	Sprites.draw_shadow(canvas, Vector2.ZERO, shadow)
+	_draw_shadow(canvas, Vector2.ZERO, shadow)
 	if absf(_heading.y) > absf(_heading.x):
 		Sprites.draw_standing(canvas, end, Vector2.ZERO, Vector2.ZERO, false)
 		return
 	Sprites.draw_standing(canvas, side, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 func _draw_simple(texture: Texture2D, shadow: float, canvas: CanvasItem = self) -> void:
-	Sprites.draw_shadow(canvas, Vector2.ZERO, shadow)
+	_draw_shadow(canvas, Vector2.ZERO, shadow)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## The dog, and the lead it is no longer on.
@@ -1272,7 +1287,7 @@ func _draw_simple(texture: Texture2D, shadow: float, canvas: CanvasItem = self) 
 ## behind one body, and the difference between the two pictures is the whole event.
 func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 	var behind := Vector2(26.0 if _heading_is_west() else -26.0, 0.0)
-	Sprites.draw_shadow(canvas, Vector2.ZERO, 9.0)
+	_draw_shadow(canvas, Vector2.ZERO, 9.0)
 	# On the ground and slack, not held up at hip height. Nobody is holding it.
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
 	Sprites.draw_standing(canvas, DOG, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
@@ -1296,7 +1311,7 @@ func _draw_birds(canvas: CanvasItem = self) -> void:
 		if bird.lift < BIRD_SHADOW_CEILING:
 			# Smaller and fainter the higher it is, and gone by the time it is over the rooftops.
 			var faded := 1.0 - bird.lift / BIRD_SHADOW_CEILING
-			Sprites.draw_shadow(canvas, bird.at, 5.0 * faded)
+			_draw_shadow(canvas, bird.at, 5.0 * faded)
 		var wings := PIGEON if sin(bird.phase) >= 0.0 else PIGEON_DOWN
 		if bird.lift <= 0.0:
 			# Standing. The upstroke is a bird in flight, and a pavement full of them is a flock
@@ -1313,7 +1328,7 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
 	# telegraph, so the two silhouettes have to differ at a glance, not by a scale factor.
 	var texture := CAT_CROUCHED if is_telegraphing() else CAT_RUNNING
-	Sprites.draw_shadow(canvas, Vector2.ZERO, 7.0)
+	_draw_shadow(canvas, Vector2.ZERO, 7.0)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Hood up and hands in the coat while he is only somewhere; leaning out over a forward leg once
@@ -1326,7 +1341,7 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 ## frame he notices her, before the telegraph has finished and well before he moves.
 func _draw_robber(canvas: CanvasItem = self) -> void:
 	var texture := ROBBER_WAITING if is_waiting() else ROBBER_LUNGING
-	Sprites.draw_shadow(canvas, Vector2.ZERO, 9.0)
+	_draw_shadow(canvas, Vector2.ZERO, 9.0)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars.
@@ -1334,7 +1349,7 @@ func _draw_fire(canvas: CanvasItem = self) -> void:
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.2, 1.0)
-	Sprites.draw_shadow(canvas, Vector2.ZERO, 22.0)
+	_draw_shadow(canvas, Vector2.ZERO, 22.0)
 	for i in 5:
 		var offset := (i - 2.0) * 11.0
 		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
@@ -1363,7 +1378,7 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## equal the obstructed one, matching the segments above rather than overhanging them.
 func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	Sprites.draw_shadow(canvas, Vector2.ZERO, half * 0.9)
+	_draw_shadow(canvas, Vector2.ZERO, half * 0.9)
 	var segment := segment_texture.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -1404,7 +1419,7 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 ## rather than turning with the spread.
 func _draw_cafe(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	Sprites.draw_shadow(canvas, Vector2.ZERO, half * 0.9)
+	_draw_shadow(canvas, Vector2.ZERO, half * 0.9)
 	var segment := CAFE_TABLE.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -1433,7 +1448,7 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 ## would be a second cue saying the same thing.
 func _draw_protest(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	Sprites.draw_shadow(canvas, Vector2.ZERO, half * 0.95)
+	_draw_shadow(canvas, Vector2.ZERO, half * 0.95)
 	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
 	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
 	# which is the lie `_draw_spread` exists to avoid in the other direction.
@@ -1457,7 +1472,7 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 ## thing to time a run past, and `can_be_timed()` already says so.
 func _draw_firefight(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	Sprites.draw_shadow(canvas, Vector2.ZERO, half)
+	_draw_shadow(canvas, Vector2.ZERO, half)
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.0, 1.0)
@@ -1485,8 +1500,8 @@ const MUZZLE_FLASH := Color("e8b64a")
 func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 	var reach := def.inner_radius * 0.8
 	var to_the_dog := Vector2(-reach if _heading_is_west() else reach, 0.0)
-	Sprites.draw_shadow(canvas, Vector2.ZERO, 8.0)
-	Sprites.draw_shadow(canvas, to_the_dog, 9.0)
+	_draw_shadow(canvas, Vector2.ZERO, 8.0)
+	_draw_shadow(canvas, to_the_dog, 9.0)
 	# Slack in the middle, so it reads as a lead rather than as a bar.
 	canvas.draw_line(Vector2(0.0, -26.0), to_the_dog + Vector2(0.0, -6.0), Palette.OUTLINE, 2.0)
 	Sprites.draw_standing(canvas, PERSON, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
@@ -1510,7 +1525,7 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 		var standing := Vector2(
 				-VICTIM_STANDING_OFFSET if _heading_is_west() else VICTIM_STANDING_OFFSET, 0.0)
 		var at := standing.lerp(Vector2.ZERO, through)
-		Sprites.draw_shadow(canvas, at, 8.0)
+		_draw_shadow(canvas, at, 8.0)
 		Sprites.draw_standing(canvas, VAN_VICTIM, at, Vector2.ZERO, _heading_is_west())
 	_draw_vehicle(UNMARKED_VAN, UNMARKED_VAN_END, 21.0, canvas)
 
@@ -1520,7 +1535,7 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 ## because she is a cost rather than a threat and that mark is spoken for. See
 ## `docs/EVENTS.md`, "The visual vocabulary".
 func _draw_chatting_mother(canvas: CanvasItem = self) -> void:
-	Sprites.draw_shadow(canvas, Vector2.ZERO, 14.0)
+	_draw_shadow(canvas, Vector2.ZERO, 14.0)
 	var texture := CHATTING_MOTHER_TALKING if is_chatting() else CHATTING_MOTHER_WALKING
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
