@@ -137,12 +137,17 @@ reason.
 ## A picture is an asset, never code
 
 ***"Never draw in code -- at the very least use svgs."* Anything that is a *picture* — a glyph, an
-icon, a silhouette, a symbol — is authored as an image under `assets/` and drawn as a texture.**
-The graphics overhaul uses PNG sheets, per the player's explicit no-new-SVG instruction. Existing
-SVG assets remain supported while the replacement is incomplete; their small polish PR is separate.
-Not
-assembled at runtime out of `draw_circle`, `draw_rect`, `draw_line`, `draw_arc` or
-`draw_colored_polygon`.
+icon, a silhouette, a symbol — is authored as an image file under `assets/` and drawn as a texture,
+never assembled at runtime out of `draw_circle`, `draw_rect`, `draw_line`, `draw_arc` or
+`draw_colored_polygon`.**
+
+**SVG or PNG, and which one is the asset's own question rather than this rule's.** SVG is the
+default for a glyph or a flat symbol, because it stays hand-editable; a painted or generated sheet
+is a PNG, and both satisfy the rule for the same reason — a file a person can open.
+
+**An icon or a symbol on a control is not the graphics work the overhaul defers.** *(2026-09-06:
+"icons/symbols do *not* count as graphics".)* So "drawing work is deprioritised while the graphics
+overhaul is in flight" is never cover for painting a button in `_draw()`.
 
 **The reason is the feedback loop, and it is decisive:** *(2026-09-06: "that way you can evaluate
 the assets independently of running code".)* An SVG can be opened and looked at — by a person, or by

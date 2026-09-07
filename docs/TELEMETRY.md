@@ -57,11 +57,11 @@ user://telemetry/2026-09-03/run-205437-seed2102613802-v0.0.0-49-gdb09693-dirty/
   version tag, commits since, and the abbreviated hash the run was played on
   (`v0.0.0-49-gab12cd3`), with `-dirty` appended if the tree was not clean, the same mark as the
   log's own first line. `tools/telemetry.sh -p` compares that tail against the same `git describe`,
-  by path alone, to say what is stale. Repeating the parent folder's hour and minute in the run's
-  own name is a few redundant characters, and what it buys is that a run folder still identifies
-  itself once copied out on its own — into `docs/evidence/`, or pasted into a message. The version
-  goes **last**, so sorting the run folders within one `<day>` by name still sorts them by
-  age, because the time leads the name.
+  by path alone, to say what is stale. The full time of day in the run's own name is the only clock
+  anywhere in the path — the parent folder carries the calendar date and nothing finer — and it is
+  what lets a run folder still identify itself once copied out on its own, into `docs/evidence/` or
+  pasted into a message. The version goes **last**, so sorting the run folders within one `<day>`
+  by name still sorts them by age, because the time leads the name.
 - **`run.log` sits directly in the run's folder**, not in a subfolder of its own — it is the one
   artefact every run has, so it needs nothing to distinguish it from a sibling of its own kind.
 - **The three picture kinds each get their own subfolder**, so a directory listing separates them
