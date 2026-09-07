@@ -145,9 +145,9 @@ never assembled at runtime out of `draw_circle`, `draw_rect`, `draw_line`, `draw
 default for a glyph or a flat symbol, because it stays hand-editable; a painted or generated sheet
 is a PNG, and both satisfy the rule for the same reason — a file a person can open.
 
-**An icon or a symbol on a control is not the graphics work the overhaul defers.** *(2026-09-06:
-"icons/symbols do *not* count as graphics".)* So "drawing work is deprioritised while the graphics
-overhaul is in flight" is never cover for painting a button in `_draw()`.
+**An icon or a symbol on a control is not "graphics" in the sense anything else in this project
+uses the word.** *(2026-09-06: "icons/symbols do *not* count as graphics".)* So no argument about
+where drawing work sits in the queue is ever cover for painting a button in `_draw()`.
 
 **The reason is the feedback loop, and it is decisive:** *(2026-09-06: "that way you can evaluate
 the assets independently of running code".)* An SVG can be opened and looked at — by a person, or by
