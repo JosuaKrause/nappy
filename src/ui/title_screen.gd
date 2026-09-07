@@ -35,16 +35,17 @@ signal quit_requested()
 
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
 ## each use site, so a test — never itself a web export — can set this and drive both shapes.
+## Gates only whether the key is **handled** in `_unhandled_input()` below; it no longer names
+## itself on screen — see `open()`'s own doc.
 var _can_quit := QuitOption.available()
-## Whether this device has a touchscreen. Read once from `TouchInput`, for the same reason
-## `_can_quit` is: a test process is never a touch device, and the body and the hint both have to
-## agree with whatever the game is actually played with.
-var _touch := TouchInput.available()
 
-const _BODY_KEYBOARD := "Arrows or WASD to walk.\n" \
-		+ "Hold Shift to run — it wakes her, so it is rarely worth it.\n" \
-		+ "Walk to calm ground and stay moving; standing still settles nothing."
-const _BODY_TOUCH := "Tap to walk that way, tap her to stop, double tap to run.\n" \
+## One body for every device — see `PauseScreen._BODY`'s own doc for the same collapse made
+## there. *(2026-09-06, the player: "in fact I said to remove the keyboard inputs altogether but
+## I'm willing to compromise on letting them stay silently".)* The keyboard still walks and runs;
+## nothing on screen names a key for it any more. `TouchInput.available()` used to choose between
+## this and a keyboard body — with only one body left, this screen has no more use for that fact
+## and keeps no member for it.
+const _BODY := "Tap to walk that way, tap her to stop, double tap to run.\n" \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:
@@ -64,12 +65,11 @@ func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(_root)
 	visible = false
 
-## A screen that names a key with no space is the same defect `QuitOption` exists to close for
-## `Q` — the body baked into the scene is the keyboard's own three lines, and this is the one
-## other shape it can be. Its own function, rather than inline in `_ready()`, so a test can flip
-## `_touch` and call this again the way `PauseScreen._refresh_body()` already does.
+## Its own function, rather than inline in `_ready()`, matching `PauseScreen._refresh_body()` —
+## kept even though `_BODY` no longer varies, so a test can call this again rather than reaching
+## for a fresh scene.
 func _refresh_body() -> void:
-	_body.text = _BODY_TOUCH if _touch else _BODY_KEYBOARD
+	_body.text = _BODY
 
 ## The one line on this screen that is not addressed to the player, so it is small, dim and in the
 ## bottom corner rather than anywhere near the three lines that are — see the **cues** rule that a
@@ -97,21 +97,25 @@ func is_open() -> bool:
 ## It does **not** touch `get_tree().paused`, which is where it differs from `PauseScreen` and why:
 ## a pause stops the world and this one deliberately does not. What stops, and what carries on
 ## behind the scrims, is `main`'s decision — see `main._open_the_title()`.
+##
+## **The one hint in the game that is never empty.** This screen has no buttons — there is nothing
+## else on it to press — so unlike `PauseScreen`/`DaySummary`'s now-always-blank hint, it still
+## needs to say *press to begin*. `tap`, on every device: *(2026-09-06: "never should it be
+## mentioned to the user".)* `q to quit` no longer appears here even though the key still works —
+## `_can_quit` now gates `_unhandled_input()` alone.
 func open(again := false) -> void:
 	visible = true
-	var verb := "tap" if _touch else "space"
-	var start := "%s to walk again" % verb if again else "%s to begin" % verb
-	_hint.text = "%s     ·     q to quit" % start if _can_quit else start
+	_hint.text = "tap to walk again" if again else "tap to begin"
 
 func close() -> void:
 	visible = false
 
 ## `space`, a tap or a left click begins the run — the one thing this screen offers, since there is
 ## only one control scheme to begin it in. `Q` leaves, **except on the web**, where
-## `QuitOption.available()` is false and the key is not offered or handled at all — pressing it on
-## a platform where quitting is impossible would be a key the hint never even mentions doing
-## nothing. `Esc` is deliberately not handled: `main` will not open the pause over this, because a
-## pause over a game that has not started is a screen with nothing behind it to stop.
+## `QuitOption.available()` is false and the key is not handled at all — nothing on screen ever
+## named it (see `open()`'s own doc), so there is no sentence to keep in step with the gate. `Esc`
+## is deliberately not handled: `main` will not open the pause over this, because a pause over a
+## game that has not started is a screen with nothing behind it to stop.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return

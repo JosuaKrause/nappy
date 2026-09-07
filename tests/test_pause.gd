@@ -36,12 +36,16 @@ func run(t) -> void:
 	_test_the_title_names_a_version(t)
 	_test_mode_button_restart_hold_state_machine(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
-	_test_the_buttons_only_show_on_touch(t)
+	_test_the_buttons_show_on_every_device(t)
 	_test_the_restart_button_is_a_hold(t)
+	_test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t)
+	_test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t)
 	_test_a_touch_away_from_restart_still_carries_on(t)
 	_test_the_summary_hint_matches_the_platform(t)
 	_test_an_ending_has_no_continue_button(t)
 	_test_the_summary_restart_button_is_a_hold(t)
+	_test_a_real_touch_on_the_continue_button_reaches_the_summary(t)
+	_test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t)
 	_test_a_continue_press_flashes_before_it_is_acted_on(t)
 	t.get_tree().paused = was_paused
 
@@ -211,10 +215,10 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 
 ## **"For the web version remove Q (quit) and its mentions since it doesn't have any effect. Only
 ## for the online version, for the local version Q needs to exist still."** `SceneTree.quit()` is
-## a no-op on a Web export, so the hint and the key have to agree in both platform shapes rather
-## than each asking `OS.has_feature("web")` on its own — `title._can_quit` is read once so a test
-## can drive both. Both directions are checked: the key must fire where the hint offers it, and
-## must emit nothing where the hint does not.
+## a no-op on a Web export, so `_can_quit` gates whether the key does anything at all rather than
+## each asking `OS.has_feature("web")` on its own — read once so a test can drive both. *(Playtest
+## 29 finding 4: "never should it be mentioned to the user" — the hint this test used to also check
+## no longer names the key on either platform, so only the key's own effect is asserted here now.)*
 func _test_the_title_quit_key_matches_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
@@ -223,23 +227,19 @@ func _test_the_title_quit_key_matches_the_platform(t) -> void:
 
 	title._can_quit = true
 	title.open()
-	t.check("q to quit" in title._hint.text, "the hint offers q where quitting works")
 	title._unhandled_input(_key(KEY_Q))
-	t.check(quit[0] == 1, "and the key does something there")
+	t.check(quit[0] == 1, "the key does something where quitting works")
 
 	title._can_quit = false
 	title.open()
-	t.check(not "q to quit" in title._hint.text,
-			"and the hint drops it where quitting is impossible ('%s')" % title._hint.text)
 	title._unhandled_input(_key(KEY_Q))
-	t.check(quit[0] == 1, "pressing it there emits nothing at all")
+	t.check(quit[0] == 1, "and pressing it where quitting is impossible emits nothing at all")
 
 	title.close()
 	title.queue_free()
 
-## The same agreement, one screen further in. Unlike the title, the pause screen's hint was never
-## rebuilt on open — `_refresh_hint()` is what a test can call after flipping `_can_quit` to reach
-## the shape `_ready()` would have produced on the other platform.
+## The same agreement, one screen further in — see `_test_the_title_quit_key_matches_the_platform`
+## for why only the key's own effect is asserted, not a hint that no longer names it.
 func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
 	t.add_child(pause)
@@ -248,48 +248,41 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	t.get_tree().paused = false
 
 	pause._can_quit = true
-	pause._refresh_hint()
 	pause.open()
-	t.check("q to quit" in pause._hint.text, "the hint offers q where quitting works")
 	pause._unhandled_input(_key(KEY_Q))
-	t.check(quit[0] == 1, "and the key does something there")
+	t.check(quit[0] == 1, "the key does something where quitting works")
 	pause.close()
 
 	pause._can_quit = false
-	pause._refresh_hint()
 	pause.open()
-	t.check(not "q to quit" in pause._hint.text,
-			"and the hint drops it where quitting is impossible ('%s')" % pause._hint.text)
 	pause._unhandled_input(_key(KEY_Q))
-	t.check(quit[0] == 1, "pressing it there emits nothing at all")
+	t.check(quit[0] == 1, "and pressing it where quitting is impossible emits nothing at all")
 
 	pause.close()
 	t.get_tree().paused = false
 	pause.queue_free()
 
-## **The controls appear only where they are used, and every hint agrees with them** — a screen
-## that says `space to begin` on a device with no space is the same defect `q to quit` was on the
-## web. `title._touch` is read once so a test can drive both platform shapes, exactly as
-## `_can_quit` already does for the quit key.
+## **One hint, one body, on every device.** *(Playtest 29 finding 4: "in fact I said to remove the
+## keyboard inputs altogether but I'm willing to compromise on letting them stay silently" — no
+## key may be named on screen.)* This screen has no buttons, so it still needs a hint that says
+## *press to begin* — `title._touch` used to choose between "space to begin" and "tap to begin";
+## now there is only the tap wording, and `TitleScreen` keeps no `_touch` member at all, since
+## nothing left in this file depends on it.
 func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 
-	title._touch = false
-	title._refresh_body()
 	title.open()
-	t.check("space to begin" in title._hint.text, "the keyboard hint says space")
-	t.check("Arrows or WASD" in title._body.text, "and the body names the keys")
+	t.check("tap to begin" in title._hint.text,
+			"the hint says tap, on every device ('%s')" % title._hint.text)
+	t.check("Tap to walk" in title._body.text,
+			"and the body names the tap rather than a key ('%s')" % title._body.text)
+	t.check(not "Shift" in title._body.text, "no key is named")
+	t.check(not "q to quit" in title._hint.text, "and neither is q, even where it works")
 
-	title._touch = true
-	title._refresh_body()
 	title.open(true)
 	t.check("tap to walk again" in title._hint.text,
-			"the touch hint says tap ('%s')" % title._hint.text)
-	t.check("Tap to walk" in title._body.text,
-			"and the body names the tap rather than a control it does not draw ('%s')"
-					% title._body.text)
-	t.check(not "Shift" in title._body.text, "and drops the key it does not have")
+			"a returning run gets the same tap wording ('%s')" % title._hint.text)
 
 	title.close()
 	title.queue_free()
@@ -365,7 +358,12 @@ func _test_the_title_names_a_version(t) -> void:
 	title.close()
 	title.queue_free()
 
-## The same agreement, one screen further in.
+## **One hint (always empty), one body, on every device.** *(Playtest 29 finding 4: "never should
+## it be mentioned to the user".)* `_touch` used to choose between a keyboard body/hint and a touch
+## one; now `_body` is the touch wording on both flag values and `_hint` is always blank — the
+## continue/restart pair says what a press does instead. `Esc`, `space`, `r` and `q` all keep
+## working regardless (see `_test_there_is_a_way_out_of_a_finished_run` and the quit-key tests);
+## only the sentences naming them are gone.
 func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
 	t.add_child(pause)
@@ -373,24 +371,22 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 
 	pause._touch = false
 	pause._refresh_body()
-	pause._refresh_hint()
 	pause.open()
-	t.check("space or esc to carry on" in pause._hint.text, "the keyboard hint names both keys")
-	t.check("r to start again" in pause._hint.text, "and the restart key")
-	t.check("Arrows or WASD" in pause._body.text, "and the body names the keys")
+	t.check(pause._hint.text == "",
+			"the hint says nothing at all, even on a keyboard-and-mouse desktop ('%s')"
+					% pause._hint.text)
+	t.check("Tap to walk" in pause._body.text,
+			"and the body names the tap rather than a key, even here ('%s')" % pause._body.text)
+	t.check(not "Shift" in pause._body.text and not "Arrows" in pause._body.text,
+			"no key is named")
 	pause.close()
 
-	# `_can_quit` is fixed to `false` here so this assertion is only about `_touch` — the two
-	# platform questions are independent and `_test_the_pause_quit_key_matches_the_platform`
-	# already covers `q to quit` composing correctly on top of either shape.
 	pause._touch = true
-	pause._can_quit = false
 	pause._refresh_body()
-	pause._refresh_hint()
 	pause._refresh_buttons()
 	pause.open()
 	t.check(pause._hint.text == "",
-			"the touch hint says nothing at all — the buttons say it now ('%s')" % pause._hint.text)
+			"the touch hint says nothing either — the buttons say it now ('%s')" % pause._hint.text)
 	t.check("Tap to walk" in pause._body.text,
 			"and the body names the tap rather than a control it does not draw")
 	t.check(pause._buttons.visible, "and the continue/restart pair is what shows instead")
@@ -400,21 +396,23 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 	pause.queue_free()
 
 ## *(2026-09-06, playtest 26 finding 4 and playtest 27 finding 4: a restart control asked for on
-## the pause screen and re-asked once the touch buttons existed but this one still had none.)* A
-## keyboard never sees the buttons — `space`/`esc`/`r` already read as controls there — so the pair
-## is touch-only, the same split `_refresh_hint()` makes for its own sentence.
-func _test_the_buttons_only_show_on_touch(t) -> void:
+## the pause screen and re-asked once the touch buttons existed but this one still had none; then
+## playtest 29 finding 1: "I specifically said that now all controls are treated the same across
+## platforms so the buttons should show in *every* environment".)* The pair shows on every device —
+## there is one control scheme now, and a press sets a direction on a keyboard-and-mouse desktop
+## exactly as it does on a phone, so the same buttons are a control there too.
+func _test_the_buttons_show_on_every_device(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
 	t.add_child(pause)
 	t.get_tree().paused = false
 
 	pause._touch = false
 	pause._refresh_buttons()
-	t.check(not pause._buttons.visible, "a keyboard gets no buttons")
+	t.check(pause._buttons.visible, "a keyboard-and-mouse desktop gets the buttons too")
 
 	pause._touch = true
 	pause._refresh_buttons()
-	t.check(pause._buttons.visible, "and a touch device gets both")
+	t.check(pause._buttons.visible, "and so does a touch device")
 
 	t.get_tree().paused = false
 	pause.queue_free()
@@ -467,6 +465,91 @@ func _test_the_restart_button_is_a_hold(t) -> void:
 	t.get_tree().paused = false
 	pause.queue_free()
 
+## **The regression test playtest 29 finding 2 owes.** Every touch test above drives
+## `_unhandled_input()` directly, which is exactly the one path that skips Godot's GUI layer — the
+## layer that runs between `_input` and `_unhandled_input` and consumes a raw
+## `InputEventScreenTouch` landing on a `Control` whose `mouse_filter` is the default `STOP`. That
+## is what made every button on this screen unusable until `ModeButton._ready()` set
+## `MOUSE_FILTER_IGNORE` — nothing calling `_unhandled_input()` by hand could ever have caught it.
+## `get_viewport().push_input(event, true)` is the one call that actually goes through the GUI
+## layer, so it is the one call that would fail here if `mouse_filter` regressed to `STOP`.
+##
+## **The second argument is load-bearing.** Without it the viewport applies the window's own
+## stretch transform to the event position, and a headless test window is not the 1280x720 design
+## box every screen is authored against, so an untransformed push would land the touch somewhere
+## else entirely and the test would pass for the wrong reason.
+##
+## The button's rect is set directly rather than read after a frame of container sorting — see
+## `_test_the_restart_button_is_a_hold` for why that is safe — but the press position is still the
+## button's own real `get_global_rect().get_center()`, not a hard-coded number, so this is asserting
+## against the button's actual on-screen shape rather than an assumption about it.
+func _test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var resumed := [0]
+	pause.resumed.connect(func() -> void: resumed[0] += 1)
+
+	pause._touch = true
+	pause._refresh_buttons()
+	t.get_tree().paused = false
+	pause.open()
+	pause._continue_button.position = Vector2(300.0, 400.0)
+	pause._continue_button.size = Vector2(92.0, 92.0)
+
+	var at: Vector2 = pause._continue_button.get_global_rect().get_center()
+	var touch := InputEventScreenTouch.new()
+	touch.position = at
+	touch.pressed = true
+	touch.index = 0
+	pause.get_viewport().push_input(touch, true)
+
+	t.check(resumed[0] == 1,
+			"a real touch pushed through the viewport on the continue button's own rect reaches "
+			+ "the screen (this fails if mouse_filter regresses to STOP)")
+	t.check(not pause.is_open(), "and closes it, the same as any other press")
+
+	t.get_tree().paused = false
+	pause.queue_free()
+
+## The other half of the same regression: a hold has to survive the GUI layer on both its press
+## and its matching release, not only its press — see the test above for why `push_input(event,
+## true)` is what exercises that layer at all.
+func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t) -> void:
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	var restarts := [0]
+	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
+
+	pause._touch = true
+	pause._refresh_buttons()
+	t.get_tree().paused = false
+	pause.open()
+	pause._restart_button.position = Vector2(500.0, 400.0)
+	pause._restart_button.size = Vector2(92.0, 108.0)
+
+	var at: Vector2 = pause._restart_button.get_global_rect().get_center()
+	var press := InputEventScreenTouch.new()
+	press.position = at
+	press.pressed = true
+	press.index = 0
+	pause.get_viewport().push_input(press, true)
+	t.check(pause._restart_button.is_held_by(0),
+			"a real touch pushed through the viewport on the restart button's own rect starts a "
+			+ "hold (this fails if mouse_filter regresses to STOP)")
+
+	pause._restart_button._held_since = \
+			Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	var release := InputEventScreenTouch.new()
+	release.position = at
+	release.pressed = false
+	release.index = 0
+	pause.get_viewport().push_input(release, true)
+	t.check(restarts[0] == 1, "held the full duration through a real, GUI-routed event, it fires")
+
+	pause.close()
+	t.get_tree().paused = false
+	pause.queue_free()
+
 ## A touch that lands away from the restart button is not this button's business at all — the
 ## catch-all below still reads it as carrying on, exactly as any other tap on this screen already
 ## does.
@@ -498,19 +581,21 @@ func _touch_at(position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	event.index = 0
 	return event
 
-## The between-days summary and the ending it leads to both say `space` today and `tap` on a touch
-## device, the same agreement the title and the pause hints keep.
+## The between-days summary and the ending it leads to say nothing at all — the continue/restart
+## pair says it instead, on every device. *(Playtest 29 finding 4: "never should it be mentioned
+## to the user.")* `space` still carries on regardless of what the hint says.
 func _test_the_summary_hint_matches_the_platform(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
 
 	summary._touch = false
 	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
-	t.check("space to go on" in summary._hint.text, "the keyboard hint says space")
+	t.check(summary._hint.text == "",
+			"the hint says nothing, even on a keyboard-and-mouse desktop ('%s')" % summary._hint.text)
 
 	summary._touch = true
 	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
-	t.check(summary._hint.text == "", "the touch hint says nothing — the buttons say it now")
+	t.check(summary._hint.text == "", "the touch hint says nothing either — the buttons say it now")
 	t.check(summary._buttons.visible, "and the continue/restart pair is what shows instead")
 
 	summary.show_ending(GameEnums.Ending.GOOD)
@@ -591,6 +676,74 @@ func _test_the_summary_restart_button_is_a_hold(t) -> void:
 	t.get_tree().paused = false
 	summary.queue_free()
 
+## **The regression test playtest 29 finding 2 owes, the summary's own half.** See `PauseScreen`'s
+## `_test_a_real_touch_on_the_continue_button_reaches_the_pause_screen` for the full reasoning:
+## every other touch test in this file drives `_unhandled_input()` directly, which skips the GUI
+## layer that consumed the raw touch before `ModeButton._ready()` set `MOUSE_FILTER_IGNORE`, so
+## `get_viewport().push_input(event, true)` is the one call that would fail here if that regressed.
+func _test_a_real_touch_on_the_continue_button_reaches_the_summary(t) -> void:
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	var carried_on := [0]
+	summary.continued.connect(func() -> void: carried_on[0] += 1)
+
+	summary._touch = true
+	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary._continue_button.position = Vector2(300.0, 400.0)
+	summary._continue_button.size = Vector2(92.0, 92.0)
+
+	var at: Vector2 = summary._continue_button.get_global_rect().get_center()
+	var touch := InputEventScreenTouch.new()
+	touch.position = at
+	touch.pressed = true
+	touch.index = 0
+	summary.get_viewport().push_input(touch, true)
+
+	# Acknowledged two frames ahead of itself — see `_test_a_tap_advances_every_screen` for why.
+	t.check(carried_on[0] == 0, "the press is acknowledged before it is acted on")
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	t.check(carried_on[0] == 1,
+			"a real touch pushed through the viewport on the continue button's own rect reaches "
+			+ "the screen (this fails if mouse_filter regresses to STOP)")
+
+	t.get_tree().paused = false
+	summary.queue_free()
+
+## The other half: a hold has to survive the GUI layer on both its press and its matching release.
+func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t) -> void:
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	var restarts := [0]
+	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
+
+	summary._touch = true
+	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary._restart_button.position = Vector2(500.0, 400.0)
+	summary._restart_button.size = Vector2(92.0, 108.0)
+
+	var at: Vector2 = summary._restart_button.get_global_rect().get_center()
+	var press := InputEventScreenTouch.new()
+	press.position = at
+	press.pressed = true
+	press.index = 0
+	summary.get_viewport().push_input(press, true)
+	t.check(summary._restart_button.is_held_by(0),
+			"a real touch pushed through the viewport on the restart button's own rect starts a "
+			+ "hold (this fails if mouse_filter regresses to STOP)")
+
+	summary._restart_button._held_since = \
+			Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	var release := InputEventScreenTouch.new()
+	release.position = at
+	release.pressed = false
+	release.index = 0
+	summary.get_viewport().push_input(release, true)
+	t.check(restarts[0] == 1, "held the full duration through a real, GUI-routed event, it fires")
+
+	t.get_tree().paused = false
+	summary.queue_free()
+
 ## **The ordering fix 2 exists for**, asserted directly rather than only screenshotted: the
 ## continue button's own resting colour changes the instant a tap lands, stays changed across the
 ## one frame boundary that renders it, and only reverts — together with the day actually starting —
@@ -658,6 +811,11 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
 	t.get_tree().paused = false
 	pause.open()
+	# Moved off the origin so its own (still unlaid-out) default rect at (0, 0) does not swallow a
+	# tap at (0, 0) as a restart-button press — see `_test_the_restart_button_is_a_hold` for why
+	# every other test that presses a specific point on this screen already does the same.
+	pause._restart_button.position = Vector2(500.0, 400.0)
+	pause._restart_button.size = Vector2(92.0, 108.0)
 	pause._unhandled_input(_touch(true))
 	t.check(resumed[0] == 1 and not pause.is_open(), "and a tap carries on from the pause")
 	t.get_tree().paused = false
@@ -666,6 +824,9 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
 	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	# See above: kept off the origin for the same reason.
+	summary._restart_button.position = Vector2(500.0, 400.0)
+	summary._restart_button.size = Vector2(92.0, 108.0)
 	var carried_on := [0]
 	summary.continued.connect(func() -> void: carried_on[0] += 1)
 	summary._unhandled_input(_touch(true))
@@ -708,6 +869,9 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
 	t.get_tree().paused = false
 	pause.open()
+	# See `_test_a_tap_advances_every_screen` for why the restart button is moved off the origin.
+	pause._restart_button.position = Vector2(500.0, 400.0)
+	pause._restart_button.size = Vector2(92.0, 108.0)
 	pause._unhandled_input(_left_click())
 	t.check(resumed[0] == 1 and not pause.is_open(), "and a click carries on from the pause")
 	t.get_tree().paused = false
@@ -716,6 +880,8 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
 	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary._restart_button.position = Vector2(500.0, 400.0)
+	summary._restart_button.size = Vector2(92.0, 108.0)
 	var carried_on := [0]
 	summary.continued.connect(func() -> void: carried_on[0] += 1)
 	summary._unhandled_input(_left_click())

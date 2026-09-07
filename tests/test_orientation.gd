@@ -32,6 +32,7 @@ func run(t) -> void:
 	_test_the_transform_round_trips(t)
 	_test_a_rotated_touch_still_fires_the_pause_button(t)
 	_test_a_rotated_touch_outside_the_button_still_sets_a_direction(t)
+	_test_a_rotated_touch_still_aims_from_the_nearer_focus_correctly(t)
 	_test_pin_to_design_box_gives_a_fixed_rect_regardless_of_any_parent(t)
 	_test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t)
 	_test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(t)
@@ -119,6 +120,44 @@ func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: Node) ->
 	var screen_point := ScreenOrientation.to_presented_space(Vector2(400.0, 400.0), true)
 	controls._input(_touch_event(0, screen_point, true))
 	t.check(controls._walking, "a rotated touch well clear of the button sets a direction")
+
+	controls.queue_free()
+	rig.free()
+	_release_actions()
+
+## **The one hard part of the two-focus scheme, proven under actual rotation.** *(Playtest 29
+## finding 6: "the focal points are in design space and the heading has to end up in world space
+## ... the presentation rotates on a portrait phone".)* `main._apply_orientation()` rotates the
+## camera the opposite way `ScreenOrientation.rotation_transform()` rotates the presentation
+## (`Stroller.set_screen_rotation()`: `_camera.rotation = -radians`), so the two cancel and a
+## design-space direction survives the round trip unchanged. Proven here by giving a bare rig the
+## same compensating camera rotation `main.gd` would, rather than assuming `canvas_transform` is
+## identity the way this suite's other rotation tests can — neither of those ever touches a focus.
+func _test_a_rotated_touch_still_aims_from_the_nearer_focus_correctly(t: Node) -> void:
+	var rig := Node2D.new()
+	rig.add_to_group("player")
+	t.add_child(rig)
+	var camera := Camera2D.new()
+	# `Camera2D.ignore_rotation` defaults to `true` — see `Stroller.set_screen_rotation()`'s own
+	# doc for why a camera's own rotation does nothing to the canvas transform unless this is
+	# turned off, which is exactly the mistake a first version of this test made.
+	camera.ignore_rotation = false
+	camera.rotation = -deg_to_rad(90.0)
+	rig.add_child(camera)
+
+	var controls := _controls(t)
+	controls.rotated = true
+	controls._touch = true
+
+	# West of the left focus, in design space -- the same offset `test_touch.gd`'s own (unrotated)
+	# equivalent test uses.
+	var design_press := TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0)
+	var screen_point := ScreenOrientation.to_presented_space(design_press, true)
+	controls._input(_touch_event(0, screen_point, true))
+	t.check(Input.is_action_pressed("move_left") and not Input.is_action_pressed("move_right"),
+			"a rotated touch west of the left focus still walks west")
+	t.check(not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
+			"and not north or south")
 
 	controls.queue_free()
 	rig.free()

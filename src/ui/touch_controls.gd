@@ -2,14 +2,25 @@ class_name TouchControls
 extends Control
 ## The one control scheme a pointer drives, and the pause button it draws.
 ##
-## A press — a finger, or (on a device with no touch hardware of its own) a mouse click —
-## sets a direction, measured from her own world position, that is locked in and walked with
-## nothing held down until the next press changes it; a press within `STOP_RADIUS` of her stops
-## her instead; a double press sets the direction and holds `run` until the next press changes or
-## releases it. See `set_direction()`, `_stop()` and `is_double_tap()` — that half of this file
-## used to be `TapControls`, a second node with nothing to draw, and is folded in here because it
-## needs something to draw now: the pause button, the one thing left standing once the drag stick
-## and the held `RUN` circle are deleted.
+## A press — a finger, or (on a device with no touch hardware of its own) a mouse click — sets a
+## direction that is locked in and walked with nothing held down until the next press changes it;
+## a press within `STOP_RADIUS` of her stops her instead; a double press sets the direction and
+## holds `run` until the next press changes or releases it. See `set_direction()`, `_stop()` and
+## `is_double_tap()` — that half of this file used to be `TapControls`, a second node with nothing
+## to draw, and is folded in here because it needs something to draw now: the pause button, the one
+## thing left standing once the drag stick and the held `RUN` circle are deleted.
+##
+## **Where the direction is measured from is the one place a mouse and a real finger disagree.**
+## *(Playtest 29 finding 6: "let's not make the directions in relation to the player but define
+## two points equally apart from the border on each side ... this is because right now the finger
+## needs to reach over half the phone to be able to input an up or down direction".)* A mouse click
+## still aims from her own world position, exactly as before. A real touch instead aims from
+## whichever of the two fixed focal points, `FOCUS_LEFT` (360, 360) or `FOCUS_RIGHT` (920, 360) in
+## the 1280x720 design box, is nearer the press — see `nearer_focus()` and `_on_tap()`'s own doc for
+## the coordinate-space trip a focus has to take to become a world heading. A press within
+## `STOP_RADIUS` of either focus stops her too, alongside a press near her own position — see
+## `is_on_a_focus()`. Nothing is drawn for the two focal points; whether they can be found by feel
+## alone is a played question, not a built one.
 ##
 ## **The pause button is not that kind of control.** `main._unhandled_input()` reads
 ## `event.is_action_pressed("pause")` off the propagated *event*, not off polled state, so
@@ -17,15 +28,15 @@ extends Control
 ## `AutoScreenshot._tap()` already names in its own comment for exactly this action. See
 ## `_send_pause_action()`.
 ##
-## **Drawn only on a touch device** (`TouchInput.available()`) **and only while a day is actually
-## being walked.** `get_tree().paused` is the one fact the title screen, the pause and the
-## between-days summary all set, and checking it here is what keeps the button off every one of
-## those three screens without a wire from `main` telling it so on each. A keyboard-and-mouse
-## desktop never draws it at all: `Esc` is its pause, exactly as it always was, and pressing
-## anywhere else on such a device still sets a direction or stops her — the corner is only ever
-## subtracted from the aiming surface where the button is actually there to press. Direction
-## presses themselves are read whether or not the button is drawn, since a keyboard device is
-## exactly where the mouse half of this file has to keep working.
+## **Drawn on every device, and only while a day is actually being walked.** *(2026-09-06: "I
+## specifically said that now all controls are treated the same across platforms so the buttons
+## should show in *every* environment.")* `get_tree().paused` is the one fact the title screen, the
+## pause and the between-days summary all set, and checking it here is what keeps the button off
+## every one of those three screens without a wire from `main` telling it so on each. A
+## keyboard-and-mouse desktop draws it too, now that a click sets a direction or stops her the same
+## way a finger does: pressing the corner presses the button there exactly as it does on a phone,
+## so the corner is subtracted from the aiming surface on every device that shows the button rather
+## than only a touch one — see `_on_pointer()`'s own doc for that consequence.
 ##
 ## `process_mode` stays `ALWAYS`, like the three screens it has to disappear under: a `PAUSABLE`
 ## node stops running the instant the tree pauses, which is one frame too late to let go of
@@ -39,7 +50,7 @@ const PAUSE_RADIUS := 26.0
 ## As generous as the catch radii this file's own now-deleted stick and `RUN` button used to
 ## carry, for the same reason a thumb does not land on a button to the pixel — and also the radius
 ## a *release* has to land inside to fire, so a thumb that lands wrong can slide off and lift
-## without stopping the day. See `_on_touch()`.
+## without stopping the day. See `_on_pointer()`.
 const PAUSE_CATCH_RADIUS := 46.0
 ## Top right, in the corner both `DangerEdge` and `HomeArrow` keep clear on purpose rather than in
 ## front of them: `DangerEdge.MARGIN` (104/116/104/148, left/top/right/bottom) never draws a chevron
@@ -59,6 +70,9 @@ const PAUSE_CATCH_RADIUS := 46.0
 ## this margin further moves the arrow again; the two numbers are one decision.
 const PAUSE_CENTRE := Vector2(1218.0, 62.0)
 
+## The disc, the rim and the two bars, baked into one asset — see `_draw_pause_button()`.
+const _PAUSE_ICON: Texture2D = preload("res://assets/ui/pause.svg")
+
 ## How soon a second press has to land to read as a double, in seconds.
 const DOUBLE_TAP_SECONDS := 0.35
 ## How close the second press has to land to the first, in screen px, to read as the same
@@ -69,8 +83,21 @@ const DOUBLE_TAP_DISTANCE := 60.0
 ## Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram rides up to `PRAM_DISTANCE` (34px)
 ## off to one side of her, and a press that lands on the pram is a press on her — with room to
 ## spare for a thumb that does not land on the same pixel twice, the way every catch radius in this
-## game is generous rather than exact.
+## game is generous rather than exact. Also the radius `is_on_a_focus()` uses, in design-space px,
+## for a press near one of the two focal points below — the milestone that added them named no
+## separate number, and this is the one "how close counts as *stop*" radius the file already has.
 const STOP_RADIUS := 48.0
+
+## The two fixed points a touch device aims from — see the class doc's own paragraph on why a real
+## finger and a mouse disagree here. *(2026-09-06, the player: "define two points equally apart
+## from the border on each side (same distance from top/bottom/and its own side)".)* Same distance
+## from the top and the bottom of the 1280x720 design box puts both at y = 360; the same distance
+## from each one's own side as well makes that distance 360 too — so `(360, 360)` and `(920, 360)`,
+## each a full 360° dial around its own half of the screen. Authored in **design space**, not world
+## space: they are a fixed place on the glass, not a place in the city, so they have to make the
+## same design→presented→world trip a raw touch's own position does — see `_on_tap()`'s own doc.
+const FOCUS_LEFT := Vector2(360.0, 360.0)
+const FOCUS_RIGHT := Vector2(920.0, 360.0)
 
 var _touch := TouchInput.available()
 
@@ -84,9 +111,9 @@ var _touch := TouchInput.available()
 ## canvas transform, which already carries the rotation.
 var rotated := false
 
-## The touch index currently down on the pause button, or -1 when nothing is. Going down does not
-## press anything — see `_on_touch()` for why the action only fires on release, and only if that
-## release is still over the button.
+## The touch or pointer index currently down on the pause button, or -1 when nothing is. Going down
+## does not press anything — see `_on_pointer()` for why the action only fires on release, and only
+## if that release is still over the button.
 var _pause_touch := -1
 
 ## The rig, found the same way `HUD._rig` is: a state of the player rather than something a
@@ -114,15 +141,13 @@ func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(self)
 	visible = false
 
-## The pause button's own visibility, gated on device and pause exactly as it always was; a
-## direction press is read whether or not this ever turns true, so a keyboard-and-mouse desktop —
-## which never shows the button — still walks on a click. Any pause landing, on any device,
-## force-releases whatever direction and `run` were held: the tree pausing is the one signal both
-## halves of this file share, so it is what `_release_all()` is hung off rather than the
-## visibility toggle alone.
+## The pause button's own visibility, gated on pause only — every device shows it now, not only a
+## touch one. Any pause landing, on any device, force-releases whatever direction and `run` were
+## held: the tree pausing is the one signal both halves of this file share, so it is what
+## `_release_all()` is hung off rather than the visibility toggle alone.
 func _process(_delta: float) -> void:
 	var paused := get_tree().paused
-	var showing := _touch and not paused
+	var showing := not paused
 	if showing != visible:
 		visible = showing
 		queue_redraw()
@@ -138,41 +163,52 @@ func _process(_delta: float) -> void:
 ## emulates a mouse click from every real touch by default, so on an actual touch device a single
 ## tap would otherwise arrive here twice, once as each event type, close enough together in space
 ## and time to read as its own double tap — see `_test_a_touch_devices_own_emulated_click_is_ignored`
-## in `tests/test_touch.gd`. Neither branch is gated on `visible`: the pause button only ever
-## matters while it is shown, which `_on_touch()` checks for itself, but a direction press has to
-## keep working on a device that never draws anything at all.
+## in `tests/test_touch.gd`. Both branches feed `_on_pointer()`, which is what checks `visible`
+## for the pause button: the button is drawn on every device now, so a mouse press has to be
+## checked against it exactly as a finger's press is, not only a direction press kept working on a
+## device that never draws anything at all.
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
-		_on_touch(event as InputEventScreenTouch)
+		var touch := event as InputEventScreenTouch
+		_on_pointer(touch.position, touch.pressed, touch.index)
 	elif not _touch and event is InputEventMouseButton:
 		var click := event as InputEventMouseButton
-		if click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
-			_on_tap(click.position, Time.get_ticks_msec() / 1000.0)
+		if click.button_index == MOUSE_BUTTON_LEFT:
+			_on_pointer(click.position, click.pressed, _MOUSE_POINTER_INDEX)
 
-## A touch press or release. **The corner is subtracted from the aiming surface only while the
-## button is actually showing** (`visible`, `_touch and not get_tree().paused`) — pressing where it
-## would be on a device that never draws it is an ordinary direction press, same as anywhere else.
-func _on_touch(event: InputEventScreenTouch) -> void:
-	if event.pressed:
+## Stands in for the touch index a mouse event carries none of — the same role `PauseScreen
+## ._MOUSE_HOLD_INDEX` plays for the restart button's own hold. Needed now that the pause button is
+## drawn on every device: a mouse press near the corner has to be tracked by `_pause_touch` the same
+## way a finger holding it would be, rather than always falling through to `_on_tap()`.
+const _MOUSE_POINTER_INDEX := -2
+
+## A press or release, from a real finger or — now that the button is drawn on every device — a
+## left click standing in for one. **The corner is subtracted from the aiming surface only while
+## the button is actually showing** (`visible`, `not get_tree().paused`) — pressing where it would
+## be while the button is not currently drawn is an ordinary direction press, same as anywhere
+## else. `index` is `InputEventScreenTouch.index` for a real finger or `_MOUSE_POINTER_INDEX` for a
+## click, so both share the one piece of state (`_pause_touch`) that tracks which of them is
+## currently holding the button.
+func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
+	if pressed:
 		if visible:
 			# The one correction a rotated presentation needs on the input side — see
 			# `ScreenOrientation`'s own doc for why this is the only file in `src/ui/` that needs it.
-			var design := ScreenOrientation.to_design_space(event.position, rotated)
+			var design := ScreenOrientation.to_design_space(position, rotated)
 			if _pause_touch == -1 and design.distance_to(PAUSE_CENTRE) <= PAUSE_CATCH_RADIUS:
-				# Only grabs the touch index here — see `_send_pause_action()`'s doc for why
+				# Only grabs the index here — see `_send_pause_action()`'s doc for why
 				# nothing fires until the matching release.
-				_pause_touch = event.index
+				_pause_touch = index
 				queue_redraw()
 				return
-		_on_tap(event.position, Time.get_ticks_msec() / 1000.0)
+		_on_tap(position, Time.get_ticks_msec() / 1000.0)
 		return
-	if event.index == _pause_touch:
+	if index == _pause_touch:
 		_pause_touch = -1
 		queue_redraw()
-		# Fires on release rather than on touch-down, and only when the release itself is still
-		# over the button, so a thumb that lands wrong can slide off and lift without stopping the
-		# day.
-		var design := ScreenOrientation.to_design_space(event.position, rotated)
+		# Fires on release rather than on press, and only when the release itself is still over
+		# the button, so a press that lands wrong can slide off and lift without stopping the day.
+		var design := ScreenOrientation.to_design_space(position, rotated)
 		if _pause_fires(design):
 			_send_pause_action()
 
@@ -182,11 +218,26 @@ func _on_touch(event: InputEventScreenTouch) -> void:
 ## `get_viewport().get_canvas_transform().affine_inverse()` maps it to a world position: the exact
 ## reverse of what `DangerEdge` and `HomeArrow` already do every frame to place a screen cue from a
 ## world one, so this tracks the camera, the zoom and the rotated presentation with nothing of its
-## own to keep in step. A press within `STOP_RADIUS` of her stops her; otherwise it locks in the
-## heading toward it.
+## own to keep in step. A press within `STOP_RADIUS` of her stops her; otherwise it locks in a
+## heading.
+##
+## **Where that heading is measured from is the one place a mouse and a real finger disagree.**
+## *(Playtest 29 finding 6.)* A mouse click (`not _touch`) aims from her own world position,
+## exactly as before. A real touch instead aims from the nearer of `FOCUS_LEFT`/`FOCUS_RIGHT` —
+## and this is the one place the coordinate-space trap in those constants' own doc actually has to
+## be walked through, because the two spaces cannot be mixed:
+## - "which focus is nearer" and "is this press on a focus" are asked in **design space**, the
+##   1280x720 box the two constants are authored in and where "half the screen" means half the
+##   screen — `ScreenOrientation.to_design_space(screen_position, rotated)` is what gets there.
+## - the heading itself needs the focus in **world space**, the same space `target` (the press) is
+##   already in. A design-space subtraction would ignore the camera, the zoom and — on a rotated
+##   presentation — literally point the wrong way, since the design box does not carry the
+##   rotation. So the chosen focus makes the same round trip a raw touch's own position takes, the
+##   other direction: design → presented (`ScreenOrientation.to_presented_space()`, the inverse of
+##   `to_design_space()`) → world (the same canvas-transform inverse used above).
 ##
 ## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
-## window still instead of racing the engine clock -- `_input()` and `_on_touch()` are the real
+## window still instead of racing the engine clock -- `_input()` and `_on_pointer()` are the real
 ## callers and supply it from `Time.get_ticks_msec()`.
 ##
 ## **Paused, a press does nothing at all**, the same as this file's controls drawing nothing on the
@@ -209,23 +260,39 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 	if world.distance_to(_rig.global_position) <= STOP_RADIUS:
 		_stop()
 		return
-	set_direction(world, double)
+	if not _touch:
+		set_direction(world, double)
+		return
+	# Touch only, past here — see the class doc and this function's own doc above.
+	var design := ScreenOrientation.to_design_space(screen_position, rotated)
+	if is_on_a_focus(design):
+		_stop()
+		return
+	var focus_world := get_viewport().get_canvas_transform().affine_inverse() \
+			* ScreenOrientation.to_presented_space(nearer_focus(design), rotated)
+	set_direction(world, double, focus_world)
 
-## Locks in the heading toward `target`, computed once here and never again — nothing here
-## re-aims, so a shove that knocks her off the line does not silently correct itself, the same way
-## walking into a wall and stopping is the player's mistake to make. `run` holds the same `run`
-## action Shift does, until the next press changes the direction or stops her — there is nothing
-## to arrive at that would let go of it on its own.
+## Locks in the heading toward `target` from `from` — computed once here and never again, so a
+## shove that knocks her off the line does not silently correct itself, the same way walking into a
+## wall and stopping is the player's mistake to make. `run` holds the same `run` action Shift does,
+## until the next press changes the direction or stops her — there is nothing to arrive at that
+## would let go of it on its own.
 ##
-## A press exactly on her own position has no heading to compute and stops her instead, the same
-## case `_on_tap()`'s own `STOP_RADIUS` check already catches for anything a thumb's-width away —
-## this is the fallback for the one caller (a test) that calls straight in with an exact point.
-func set_direction(target: Vector2, run: bool) -> void:
+## `from` defaults to `Vector2.INF`, read as "her own world position" — the mouse's own aiming
+## point, and every existing caller's, since `Vector2.INF` can never be a real focus or a real
+## press. `_on_tap()` is the one caller that ever passes something else: a focus already converted
+## to world space, for a real touch.
+##
+## A press exactly on `from` has no heading to compute and stops her instead, the same case
+## `_on_tap()`'s own `STOP_RADIUS` check already catches for anything a thumb's-width away from her
+## — this is the fallback for the one caller (a test) that calls straight in with an exact point.
+func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 	if not _rig:
 		_rig = get_tree().get_first_node_in_group("player") as Node2D
 	if not _rig:
 		return
-	var direction := heading_to(target, _rig.global_position)
+	var origin := _rig.global_position if from == Vector2.INF else from
+	var direction := heading_to(target, origin)
 	if direction == Vector2.ZERO:
 		_stop()
 		return
@@ -249,6 +316,23 @@ func _stop() -> void:
 static func heading_to(target: Vector2, from: Vector2) -> Vector2:
 	var offset := target - from
 	return offset.normalized() if offset.length() > 0.001 else Vector2.ZERO
+
+## The nearer of `FOCUS_LEFT`/`FOCUS_RIGHT` to `design_position`, which must already be in the
+## 1280x720 design box — see `_on_tap()`'s own doc for the coordinate-space trip that takes. Pure
+## and static, like `heading_to()`/`is_double_tap()`, so this geometry is testable with no viewport
+## and no rig at all. Ties go to `FOCUS_LEFT`; the two are 560px apart and a tie only happens
+## exactly on the design box's own centre line, which is not a press either focus would rather own.
+static func nearer_focus(design_position: Vector2) -> Vector2:
+	return FOCUS_LEFT if design_position.distance_to(FOCUS_LEFT) \
+			<= design_position.distance_to(FOCUS_RIGHT) else FOCUS_RIGHT
+
+## Whether `design_position` (already in design space) lands within `STOP_RADIUS` of either focal
+## point — the other door `_on_tap()` stops her through on a touch device, alongside a press near
+## her own world position. *(2026-09-06, the player: "tapping in their center or on the player
+## should stop the player still".)*
+static func is_on_a_focus(design_position: Vector2) -> bool:
+	return design_position.distance_to(FOCUS_LEFT) <= STOP_RADIUS \
+			or design_position.distance_to(FOCUS_RIGHT) <= STOP_RADIUS
 
 ## Whether a second tap `distance` px from the first, `elapsed` seconds after it, reads as the
 ## same direction doubled into a run rather than a new one.
@@ -318,24 +402,24 @@ static func _send_pause_action() -> InputEventAction:
 	Input.parse_input_event(event)
 	return event
 
-## The only thing this file draws, and the only thing on screen this scheme ever needs: every
-## pixel of the city is a direction, so there is nothing left to draw for that half of it.
+## The one thing this file still draws itself rather than as a `ModeButton`, and the only thing on
+## screen this scheme ever needs: every pixel of the city is a direction, so there is nothing left
+## to draw for that half of it.
 func _draw() -> void:
 	if not visible:
 		return
 	_draw_pause_button()
 
-## Two bars, the same shape `hud.gd`'s touch teach line then names in words — drawn rather than
-## set in a font glyph, because a vector shape always renders and a Unicode pause glyph is not
-## guaranteed to be in `ThemeDB.fallback_font` at all.
+## The disc, its rim and the two bars — a preloaded SVG asset (`assets/ui/pause.svg`), not painted
+## in code. *(Playtest 29 finding 3: "neither should the buttons use draw commands -- I explicitly
+## said that icons/symbols do not count as graphics".)* This is not a `ModeButton`, so there is no
+## `Button` icon or `icon_normal_color` to tint through here; the held/idle contrast the old
+## `draw_circle()`/`draw_arc()`/`draw_rect()` calls carried as two different alpha values on the
+## disc alone is instead one overall alpha `draw_texture_rect()`'s own modulate colour multiplies
+## the whole texture by, which is why `pause.svg`'s own three shapes already carry their relative
+## opacities against each other (dim disc, mid rim, bright bars) — see that file's own comment.
 func _draw_pause_button() -> void:
 	var held := _pause_touch != -1
-	draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Color(1.0, 1.0, 1.0, 0.32 if held else 0.16))
-	draw_arc(PAUSE_CENTRE, PAUSE_RADIUS, 0.0, TAU, 24, Color(1.0, 1.0, 1.0, 0.4), 2.0)
-	var bar_height := PAUSE_RADIUS * 0.8
-	var bar_width := PAUSE_RADIUS * 0.22
-	var gap := PAUSE_RADIUS * 0.22
-	for side in [-1.0, 1.0]:
-		var bar_centre := PAUSE_CENTRE + Vector2(side * (gap * 0.5 + bar_width * 0.5), 0.0)
-		draw_rect(Rect2(bar_centre - Vector2(bar_width, bar_height) * 0.5,
-				Vector2(bar_width, bar_height)), Color(1.0, 1.0, 1.0, 0.8))
+	var size := Vector2(PAUSE_RADIUS, PAUSE_RADIUS) * 2.0
+	draw_texture_rect(_PAUSE_ICON, Rect2(PAUSE_CENTRE - size * 0.5, size), false,
+			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))

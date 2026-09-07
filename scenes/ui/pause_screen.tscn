@@ -38,15 +38,14 @@ text = "Stopped on the pavement."
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
 theme_override_font_sizes/font_size = 16
-text = "Arrows or WASD to walk.
-Hold Shift to run — it wakes her, so it is rarely worth it.
+text = "Tap to walk that way, tap her to stop, double tap to run.
 Walk to calm ground and stay moving; standing still settles nothing."
 
 [node name="Hint" type="Label" parent="Root/Center/Lines"]
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.62, 0.6, 0.58, 1)
 theme_override_font_sizes/font_size = 13
-text = "space or esc to carry on     ·     r to start again"
+text = ""
 
 [node name="Buttons" type="HBoxContainer" parent="Root/Center/Lines"]
 visible = false
