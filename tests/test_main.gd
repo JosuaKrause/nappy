@@ -19,6 +19,7 @@ const SEED := 4242
 func run(t) -> void:
 	_test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	_test_add_touch_controls_builds_the_one_control_reader(t)
+	_test_on_title_start_sets_the_controls_mode(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
@@ -80,9 +81,12 @@ func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
 	stroller.free()
 	city.free()
 
-## **One node goes into the tree, not a choice between two.** `_add_touch_controls()` no longer
-## branches on `_controls_mode` — `TouchControls` is the whole of the one scheme left — so it
-## builds the same thing regardless of what the title screen goes on to answer.
+## **One node goes into the tree, not a choice between two.** `TouchControls` is the whole of the
+## pointer scheme regardless of which aiming mode is chosen — `_add_touch_controls()` builds the
+## one node either way and hands it a starting mode through `set_mode(ControlsMode.resolve())`,
+## which the title screen goes on to override once a player actually presses a button (see
+## `main._on_title_start()`). `ControlsMode.resolve()` answers `TAP` here, with neither `--controls`
+## nor a URL query present in this suite's own process.
 func _test_add_touch_controls_builds_the_one_control_reader(t) -> void:
 	var main: Node2D = MAIN_SCRIPT.new()
 	t.check(main._touch_controls == null, "nothing is built before _ready() runs")
@@ -91,8 +95,45 @@ func _test_add_touch_controls_builds_the_one_control_reader(t) -> void:
 	t.check(main._touch_controls != null, "and _add_touch_controls() builds it")
 	t.check(main._touch_controls.get_parent() == main._touch_layer,
 			"parented under the layer it builds alongside it")
+	t.check(main._touch_controls._mode == ControlsMode.Mode.TAP,
+			"and gives it ControlsMode.resolve()'s own answer as a starting mode")
 
 	main.free()
+
+## `main._on_title_start()` is the one seam that lets the title screen's own button press reach the
+## node `_add_touch_controls()` already built — nothing else in `main` ever calls `set_mode()`. The
+## stroller is built the same way `_test_the_readout_is_not_assembled_outside_a_debug_build` above
+## builds one: a real `Camera2D` child named `Camera2D`, added to the tree so `_ready()` wires up
+## `Stroller._camera`, which `step_back_in()` needs.
+func _test_on_title_start_sets_the_controls_mode(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._add_touch_controls()
+
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	var stroller := Stroller.new()
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+
+	main._player = stroller
+	main._city = City.new()
+	main._hud = CanvasLayer.new()
+	main._edge_layer = CanvasLayer.new()
+	main._status = Label.new()
+	main._title = TitleScreen.new()
+
+	main._on_title_start(ControlsMode.Mode.JOYSTICK)
+	t.check(main._touch_controls._mode == ControlsMode.Mode.JOYSTICK,
+			"pressing the joystick button on the title screen sets that mode on the one control reader")
+
+	main._status.free()
+	main._title.free()
+	main._edge_layer.free()
+	main._hud.free()
+	main._city.free()
+	main.free()
+	stroller.free()
 
 ## **Caught only by asking the connection, not by pressing the button.** The day summary's own
 ## restart button held, filled its bar, fired `restart_requested`, and reached nobody — a green
