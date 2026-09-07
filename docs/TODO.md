@@ -14,25 +14,27 @@ mid-way through.
 
 ## The order
 
-1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M88** — the player chooses the controls: the two mode buttons come back, joystick and tap are
+   both offered on every device, and pressing one of them is the only way a pointer begins a run.
+2. **M89** — a soft halo around whatever is actually costing her, so the meter going up has a
+   visible cause to walk away from.
+3. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-2. **M56** — the resistance is noticed.
+4. **M56** — the resistance is noticed.
 
-**Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
-deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
-other things")*. That is about the order and not about the worth of the items, so each keeps its
-entry and its reasoning and comes back when the overhaul lands.
+**Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
+about not working on graphics because it causes much confusion.")* Every item is ordered on what it
+does to the route decision, the same as everything else. **M64** (eight seal pictures, so no single
+barrier becomes the city's signature), **M65** (a protester who points at the objective) and
+**M53** (the bollard, so a street that meets a precinct stops against something) are each a
+milestone of only its drawings, and each is ordinary open work.
 
-**Deferred by it, and each is a milestone of only its drawings**: **M64** (eight seal pictures, so
-no single barrier becomes the city's signature), **M65** (a protester who points at the objective),
-**M53** (the bollard, so a street that meets a precinct stops against something). **A milestone
-holds either drawings or not**, so that deferring one never parks work that needs no artist — which
-is why M78 stands apart from M65 rather than inside it.
+**A milestone still holds either drawings or not**, so that ordering one never parks work that needs
+no artist — which is why M78 stands apart from M65 rather than inside it.
 
-**M79 waits on the overhaul rather than behind it.** It is the city seen at an angle — a
-presentation change with the lattice left cardinal — and it is written down and tabled so that
-whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
-is not rejected.
+**M79 is tabled rather than queued.** It is the city seen at an angle — a presentation change with
+the lattice left cardinal — and it is written down so that whoever chooses the projection does it
+with the code's constraints in hand. It is not queued and it is not rejected.
 
 **[PLAYTEST-33.md](PLAYTEST-33.md) is the newest session and every one of its thirteen findings is
 built.** It is the report M83 asked for: the two focal points a touch aims from were built and drawn
@@ -119,12 +121,170 @@ which proves only that the controls stay *off* where they should.
 
 ---
 
+## M88 — The player chooses the controls · asked for 2026-09-07
+
+> "let's make the controls a player choice and bring back the two buttons (joystick vs tap) to
+> choose the input mode everywhere (independent of whether tap is available). joystick is the two
+> focal point mode and tap is the mouse mode. both modes for in both settings so let's let the
+> player choose instead of forcing one. that should also solve the issue with the missing title
+> screen since the only way to start the game will be clicking on one of the buttons (using awsd or
+> arrow keys will start the game with tap mode)"
+
+**This overturns M82's central decision, and the player is the one overturning it.** *Asked for one
+scheme chosen nowhere on 2026-09-06 ("get rid of all other modes") · overturned to two schemes the
+player picks between on 2026-09-07.* M82 deleted `ControlsMode`, the `--controls`/`?controls=`
+doors, the title screen's two `ModeButton` discs and their `Choice`/`StickColumn`/`TapColumn` nodes,
+`assets/ui/joystick.svg` and `tap.svg`, and `ModeButton`'s own `STICK`/`TAP` symbols. **All of it is
+recoverable from that commit rather than rewritten**: `git show 0e6817a^:src/ui/controls_mode.gd`
+and the same path for `scenes/ui/title_screen.tscn` and the two SVGs.
+
+**What the two words mean now is not what they meant then, and that is the one thing to get right.**
+Under M82 "stick" was a dragged analog stick and "tap" was a tap that walked her to a *destination*;
+both of those mechanisms are gone and neither is coming back — the destination in particular, since
+*"a tap that pathfinds hands the route decision to the game"* and the whole design is that verb. The
+two modes now are the **two aiming origins the one scheme already has**, split apart and offered:
+
+- **joystick** is the two-focal-point mode — a press aims from whichever of `TouchControls
+  .FOCUS_LEFT` (240, 480) or `FOCUS_RIGHT` (1040, 480) in the 1280x720 design box is nearer, both
+  circles are drawn, the stop band down the middle of the screen stops her, and a press on her does
+  not.
+- **tap** is the mouse mode — a press aims from her own world position, nothing is drawn for it, a
+  press within `STOP_RADIUS` (48px) of her stops her, and there is no band.
+
+Everything else is shared and unchanged: one press sets a heading, a double press runs, a held
+pointer re-aims, and every heading is normalised so there is exactly one walking speed.
+
+**This closes M68, which asked for the same switch.** *(2026-09-02: "should be easy to toggle both
+mobile modes ... so we can experiment with both".)* Its destination-walking half was built and then
+deleted by M82; its switch half is this. The record of what was built and unbuilt is in
+`DECISIONS.md` under M63, M68 and M82.
+
+- [ ] **`ControlsMode` comes back with two modes and no device gate.** *"Both modes for in both
+      settings"*, and *"independent of whether tap is available"* — so `TouchInput.available()`
+      stops deciding which aiming origin is used and goes back to answering only what it is named
+      for: whether this device has touch hardware. **Every place that currently branches on `_touch`
+      to choose behaviour has to be re-read one at a time**, because some of those branches are
+      genuinely about hardware and some are about the mode, and they look identical:
+      `TouchControls._on_tap()` (aiming origin, stop door), `_on_drag()` (the band), `_draw()` (the
+      focus circles) are the mode; the `InputEventScreenTouch`/`InputEventMouseButton` split in
+      `_input()` is the hardware and must stay hardware, since a touch device still delivers touches
+      whichever mode is chosen
+- [ ] **The two buttons come back on the title screen, and pressing one is the only pointer way in.**
+      *"The only way to start the game will be clicking on one of the buttons."* So
+      `TitleScreen._unhandled_input()` stops beginning a run on any press: a pointer press begins a
+      run only when it lands on a button, which is what makes the ending-screen leak structurally
+      impossible rather than raced. The buttons are `ModeButton`s with `Symbol.JOYSTICK` and
+      `Symbol.TAP` and their two restored SVGs, read by raw touch position through `catch_rect()`
+      the way `PauseScreen` and `DaySummary` already read theirs — `mouse_filter = IGNORE` means a
+      `Button`'s own `pressed` signal never fires for a real touch.
+
+      **Each button needs a caption that says what it is**, since a joystick glyph and a tap glyph
+      do not say *aims from two fixed points* and *aims from her* on their own. The old scene has
+      the two caption labels already; what they say is this milestone's to write.
+
+      **The restart guard M85 added stays.** It fires on a press within `DOUBLE_TAP_SECONDS` (0.35s)
+      of a restart-triggered scene reload, and with a press-anywhere start gone it is no longer the
+      only thing standing between an ending tap and the next run — but a stray press can still land
+      *on a button*, which is the case it still answers. Keep it and say so, rather than deleting it
+      because the headline defect moved
+- [ ] **A direction key begins a run in tap mode.** *"Using awsd or arrow keys will start the game
+      with tap mode."* `TitleScreen` already begins a run on `WASD`, the arrows and `ui_accept`; what
+      is new is that beginning it that way also **chooses tap**. Read it as *the keyboard is a
+      desktop and a desktop is a mouse*, which is the same reasoning that makes tap the mouse mode
+      at all — `ui_accept` (space) takes the same branch, since a player pressing space has told you
+      nothing about a thumb either. **Still names no key on screen**, the same way nothing in the
+      game ever has
+- [ ] **A rig and a dev build can still say which mode.** `--controls joystick|tap` on the command
+      line and `?controls=` on a debug web build were both deleted with `ControlsMode` and both come
+      back with it, resolved command line first, then URL, then the title screen's own answer.
+      **Both stay behind `DevFlags.enabled()` (`OS.is_debug_build()`)**: the reason the URL door was
+      once exempt was that the deployed page had no other way to ask the question, and the title
+      screen asking it outright is exactly what removes that reason — which is the same argument
+      that was made when the gate was added, and it survives this milestone unchanged.
+
+      **Every rig that skips the title screen needs a default**, since `--no-title` and the
+      screenshot rigs never reach a button. Tap is the one to default to: it is what every existing
+      capture and every `--walk` script was taken under, so a rig's back catalogue keeps reproducing
+- [ ] **The teaching line has to be true in both modes, and it currently names neither.** `HUD
+      ._teach_the_day()`, `TitleScreen._BODY` and `PauseScreen._BODY` all say `Tap to walk, double
+      tap to run.` — which playtest 33 asked for in exactly those words and which is still true of
+      both modes. **So the smallest reading is that nothing changes here**, and it is written down
+      as a decision rather than an omission: the difference between the modes is *where a press is
+      measured from*, and the two drawn circles are what say that in joystick mode
+
+---
+
+## M89 — A halo says what is costing her · asked for 2026-09-07
+
+> "lastly, let's create a shader (if that is possible in godot) to create a soft halo surrounding
+> entities that are currently actively causing excitement. this is meant as a hint to the player so
+> they know what to walk away from and what is causing excitement to go up"
+
+**Yes, a shader is possible**: Godot 4 has `canvas_item` shaders in its own language, authored as a
+`.gdshader` file and attached as a `ShaderMaterial` — so this is a real option rather than a
+workaround, and the file is an asset a person can open, which is what the **cues** rule asks of a
+picture.
+
+**This overturns a standing decision, and the reason it is allowed is that the player took it.**
+*Asked for no rings and no drawn fields, held since the vocabulary was written · overturned on
+2026-09-07 for one specific cue, because "this is meant as a hint to the player so they know what to
+walk away from".* The **cues** rule says *"No circles around entities ... a ring communicates a
+falloff radius, which is a number. A silhouette communicates a threat"*, and *"Nothing draws a
+field"*. That reasoning is about **danger** — what a thing will do to you — and it stands. This cue
+answers a different question that the vocabulary has never had an answer to: **the meter is going up
+right now and nothing on screen says which of the six things around her is doing it.**
+
+- [ ] **The halo marks what is actually reaching her, not what exists.** This is the **cues** rule's
+      second rule arriving in a new place — *a cue that marks everything says nothing* — and it is
+      the whole design risk here, because a day plans several hundred bodies and most of them are
+      standing in the street doing nothing to her. The set to draw is the events whose
+      `EventInstance.contribution_at(her position)` is currently above a floor: that is a handful at
+      a time by construction, it is the exact question *"what is causing excitement to go up"* asks,
+      and it goes to zero the moment she walks out of reach, which is the *"what to walk away from"*
+      half answering itself.
+
+      **The floor is a felt number and there is no way to pick it but to look at it.** Start at
+      something small enough that a thing genuinely pushing the meter is never silent, and move it
+      against a screenshot
+- [ ] **What is drawn is the falloff itself, which is why it is a shader rather than a texture.**
+      `Tuning.falloff()` is what prices the ground she is standing on — flat inside `inner_radius`,
+      easing to nothing at `outer_radius` — and a halo that is *that curve* is a picture of the
+      thing the meter is reading rather than a decoration near it. A gradient texture cannot be it,
+      because the inner/outer ratio differs per row.
+
+      **The sources compose by addition and the halo should too.** `EventManager
+      .total_excitement_at()` is a plain sum over instances, so two overlapping fields cost more
+      where they overlap, and a halo drawn as one shape per event would show two rings crossing
+      where the game charges a bright middle. **One node with one shader, fed the active sources as
+      uniform arrays** (position, inner, outer, current intensity), is what draws the sum. Cap the
+      array and say what happens past the cap
+- [ ] **Soft, and under everything.** *"A soft halo surrounding entities"* — so it is a glow rather
+      than a rim, and it draws beneath the entity, the crowd and the player rather than over them,
+      or the thing it is pointing at is the thing it hides. The **cues** vocabulary's existing marks
+      — the caret over a costly event, the exclamation mark over her — are unchanged and keep
+      meaning what they mean: this says *this is charging you now*, and those say *this is worth a
+      detour* and *the contract is now about you*. **Three cues, three sentences, and the entry for
+      each has to say which**
+- [ ] **The colour is not a new hue.** A saturated colour in this game already means something
+      (`Palette.SIGNAL_RED`/`AMBER`/`GREEN` are the traffic lights, `MARK_COSTLY`/`MARK_LETHAL` are
+      what an event costs), so a fourth vocabulary is the **cues** rule's own warning about a second
+      hand-drawn language, aimed at colour. Pick from what the meter already uses for excitement, so
+      the halo and the bar it fills are visibly the same fact
+- [ ] **Every doc that says the game draws no field has to stop saying it.** `.claude/skills/cues/
+      SKILL.md` opens with *"No circles around entities. Standing decision"* and closes the list with
+      *"Nothing draws a field"*; `docs/EVENTS.md` carries "The visual vocabulary". **Both are wrong
+      the moment this lands**, and the rule that replaces them has to be narrow enough to still
+      refuse the next ring somebody wants: the exception is *one cue, for the cost being charged
+      right now, drawn as the summed field it is reading* — not a licence to draw a radius
+
+---
+
 ## M78 — The chalk mark can be found · asked for 2026-09-02
 
 Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
 should not be, and it cannot be found when it should be. **Neither needs a drawing**, which is why
-they stand apart from the protester's pointing pose in M65 — that one is deferred with the rest of
-the graphics work and these two are not.
+they stand apart from the protester's pointing pose in M65 — that one is a milestone of its own
+drawing and these two are placement.
 
 **The mark lives on an alley wall, and that was confirmed rather than newly decided.** *(2026-09-03:
 "let's use them as option to avoid obstacles and as chalk mark carriers".)* It is already the
@@ -157,12 +317,12 @@ reason to enter. See M64, "What alleys are for, then, is going round a wall".
 
 ## M64 — Eight seal pictures · asked for 2026-09-02
 
-**Deferred while the graphics overhaul is in flight**, because all that remains here is eight
-drawings. The sealing itself is built and its record is in `DECISIONS.md` under M64; the off-screen
-arrivals item this milestone also carried became M77 and is built, recorded there too.
+**All that remains here is eight drawings.** The sealing itself is built and its record is in
+`DECISIONS.md` under M64; the off-screen arrivals item this milestone also carried became M77 and is
+built, recorded there too.
 
-**Its open question is a played one and does not wait on either** — whether a walled city reads as a
-route decision or as a maze. Everything below is the reasoning the pictures are drawn against.
+**Its open question is a played one** — whether a walled city reads as a route decision or as a
+maze. Everything below is the reasoning the pictures are drawn against.
 
 
 > "there is almost never anything when leaving a path. all events are on the path (restaurant
@@ -488,9 +648,8 @@ again after* means running the same thing rather than reinventing it.
 
 ## M53 — The bollard
 
-**All that remains here is one drawing**, so it is deferred while the graphics overhaul is in
-flight, alongside M64's seal pictures and M65's pointing protester. Everything else about the
-precinct is built.
+**All that remains here is one drawing**, alongside M64's seal pictures and M65's pointing
+protester. Everything else about the precinct is built.
 
 A precinct is paving frontage to frontage with nothing driving on it, on either axis, and a street
 that meets one ends at its edge. What remains is that the ending is not *drawn* as anything.
@@ -511,9 +670,8 @@ that meets one ends at its edge. What remains is that the ending is not *drawn* 
 
 ## M65 — A protester points at the objective · asked for 2026-09-03
 
-**Deferred while the graphics overhaul is in flight**, because the pose is a drawing. The two
-findings this milestone was opened for — the first mark being announced, and a mark that was never
-on screen — are M78 and are not held behind it.
+**All that remains here is the pose, which is a drawing.** The two findings this milestone was
+opened for — the first mark being announced, and a mark that was never on screen — are M78.
 
 **Half of this item needs no drawing at all**, and is worth lifting into M78 if the mark is still
 hard to find once the re-placement rule lands: raising how often a protester appears is a density
@@ -903,145 +1061,6 @@ Two things it forces, and neither is optional:
 - [ ] **What it does to the corridor.** `RouteTree` grows the day's routes and `Corridor` answers
       *is this tile on one*. A toll is a cost on an edge, and the route tree has never had one —
       check whether it can express "passable, at a price" before assuming it can
-
-## M68 — Tap to walk, as an experiment with a switch · asked for 2026-09-02
-
-*(2026-09-02: "we want to experiment with tap to walk — ie I tap on the screen and she walks there
-— I double tap she runs there. should be easy to toggle both mobile modes (tap vs on screen button)
-so we can experiment with both. the real / web version doesn't get to choose but it must be easy to
-switch in the dev mode so we can try both out (on non-mobile we can try clicking with the mouse
-instead of tapping) ... but it should also be possible to test it on mobile so we kind of need a
-secret url flag for now or something like that.")*
-
-**A second way to say where she goes, and the point is the comparison, not the winner.** The stick
-and the `RUN` button press the same four `move_*` actions a keyboard does, so nothing downstream
-knows a thumb is driving. A tap that means *walk there* is a different shape: it is a destination,
-and something has to walk her to it — which is the first real question this milestone asks, because
-the game's only verb is *where do I walk* and a tap that pathfinds is the game choosing the route
-she takes through the thing the whole design is about.
-
-**Do not run this beside anything else that touches `src/ui/touch_controls.gd` or `src/main.gd`** —
-two agents in those two files is a merge conflict scheduled in advance, and both are where the
-rotated presentation and the control schemes already meet.
-
-- [ ] **What a tap means: a straight line, and nothing cleverer.** *(2026-09-02: "the tap should
-      just be a straight path — no collision avoiding path.")* A single tap walks to the point, a
-      double tap runs to it, and she goes **straight at it**. *(2026-09-02: "calculate the direction
-      and press that direction until it reaches the target.")* The direction is worked out **once,
-      at the tap**, and pressed as the same `move_*` actions the stick presses until she arrives —
-      not re-aimed every frame. So a shove that knocks her off the line does not silently correct
-      itself, and that is the honest version: what she is doing stays exactly as legible as a held
-      key, and the player taps again. Nothing routes around what is in the way. **That is the whole
-      reason it may exist at all**:
-      the game's only verb is *where do I walk*, and a tap that pathfinds hands the route decision
-      to the game. Walking into a wall and stopping is the player's mistake to make, exactly as it
-      is with the stick
-
-      **It presses at the true angle, not one of eight, and that needs no new input path.**
-      `Input.action_press()` takes a strength, and `Stroller._physics_process` reads its heading as
-      `Input.get_vector("move_left", "move_right", "move_up", "move_down")` — an analog vector, not
-      four booleans. `TouchControls._set_axis()` already exploits this, pressing `move_left` or
-      `move_right` with the stick's own x component and explicitly releasing the opposite one so a
-      reversal cannot leave both held. A tap presses the same way with the components of the unit
-      vector from her to the target, so the tap mode is the stick mode holding one fixed vector.
-
-      **Arrival is the plane, not a radius.** She has arrived when what is left of the journey stops
-      pointing forwards — `(target - global_position).dot(direction) <= 0`, the plane through the
-      target at right angles to the heading fixed at the tap. That needs no tolerance constant and
-      it still terminates when a shove pushes her sideways off the line, where a distance test would
-      leave her pressing forever past a target she was knocked around.
-
-      **Blocked is not a case.** She presses until she arrives or until the next tap; nothing times
-      out and nothing gives up, because that is what holding a key into a wall already does. The one
-      release that is not the player's is the end of the day — `TouchControls._release_everything()`
-      exists for exactly that ("leaves a direction — or the run key — pressed into the day that
-      follows") and the tap mode uses it unchanged.
-
-      **A double tap is two windows, and the second one matters.** A time window decides *double*,
-      and a **distance** window decides whether the second tap is a modifier or a new destination —
-      without it, a tap somewhere else a moment later makes her run to the wrong place. Both are
-      plain constants in the tap file, the way `RUN_CATCH_RADIUS` (how near the `RUN` button a thumb
-      must land) is a plain constant in `TouchControls`, rather than balance numbers in `Tuning`
-- [ ] **A tap is a screen position and the target is a world one.**
-      `get_viewport().get_canvas_transform().affine_inverse()` maps the one to the other. That is
-      the same transform `DangerEdge` and `HomeArrow` already read every frame to place a screen cue
-      from a world position, run backwards — so it tracks the camera, the zoom and the rotated
-      presentation with nothing of its own to keep in step
-- [ ] **Both modes exist at once and one is chosen.** Not a rewrite of `TouchControls` — the stick
-      build and the tap build are two ways of feeding the same actions, and the experiment needs
-      them side by side. Whatever holds the choice is read once, the way `TouchInput.available()`
-      already is.
-
-      **Tap mode draws nothing at all.** *(2026-09-05: "tap mode is 'I click on the screen and then
-      the player moves to that location on a straight line' — this mode does not have UI
-      elements".)* No stick, no `RUN`, and **no pause button** — the whole screen is the control, so
-      there is nothing on it to catch a thumb, and every pixel of the city is a destination rather
-      than a place a hidden button might be. That is also why the tap reader is its own node rather
-      than a branch inside `TouchControls`: in tap mode `TouchControls` is not there.
-
-      **No pause button is needed, because arriving is the pause.** *(2026-09-05: "when the player
-      reaches a location and stops movement — normally the pause hint would show up — in this mode
-      it just pauses".)* The moment already exists and is already guarded: `HUD._teach_the_pause()`
-      watches for the first time she stops **of her own accord** — she has walked today, nothing is
-      holding her still (`chatting_mother`'s `detain()` locks her input and lets friction carry her
-      to a standstill, which is not the same claim as *she stopped*), and no screen that already
-      pauses is up — and after `TEACH_PAUSE_AFTER` (3s) it offers the pause key once per run. **Tap
-      mode takes the same moment and pauses instead of saying anything.**
-
-      **Arrival starts a clock; the clock pauses.** *(2026-09-05: "that would be very unpleasant UX
-      — pause should only start after a few seconds — probably even later than the teach hint", and
-      "the 5s timer should start *after* arrival".)* Pausing the instant she reaches the point would
-      stutter the game on every single leg, since the ordinary loop is to arrive and tap on. So
-      arrival — the plane test above, which is also what releases the movement keys — starts a timer
-      rather than pausing, and the pause comes only if she is still standing when it expires. A tap
-      before then is the next leg and cancels it, so the ordinary loop never pauses at all: it fires
-      only when the player genuinely stopped to think.
-
-      **5s to start with, and it is longer than the hint's on purpose.** `TEACH_PAUSE_AFTER` is 3s.
-      This is a feel number, the only way to set it is to walk with it, and it moves against a
-      played day.
-
-      **It is gated on arrival, not on standing still, and that has one consequence worth stating.**
-      Being blocked is not arriving — she presses into an obstacle nothing routes around, never
-      crosses the plane, and so never pauses. That is consistent with the rest of the design, where
-      *"walking into a wall and stopping is the player's mistake to make, exactly as it is with the
-      stick"*, and the next tap is still the way out. It does mean nothing detects being stuck, and
-      nothing is meant to.
-
-      **It fires every time, not once per run.** The hint is a keybinding taught once; this is how
-      the mode works, so it is the loop rather than a cue: tap, walk, arrive, wait, pause, tap.
-
-      And `_teach_the_pause()`'s own hint has nothing to say in tap mode — there is no pause key on a
-      phone and no button to point at — so it does not run there.
-
-      **Two details the instruction is silent on. Smallest reading taken, both cheap to overturn:**
-      a tap while paused both unpauses and sets the next destination, since a tap is the only input
-      the mode has and two taps to start walking would collide with the double tap that means *run*;
-      and arriving shows the existing `PauseScreen` unchanged. **Whether that screen's text every few
-      seconds is right, or whether arrival should stop time and draw nothing, is a played question**
-      — it is the difference between a route planner that lets you think and a screen that keeps
-      interrupting
-- [ ] **Switchable in the dev build, fixed in the release.** *"The real / web version doesn't get to
-      choose."* `DevFlags` already answers nothing outside a debug build and already parses
-      `-- --flag` arguments, so a `--controls tap|stick` flag is the shape that exists
-- [ ] **And switchable on a phone, which no command line reaches.** The one case the existing dev
-      flags cannot serve: a phone opens a URL and nothing else. A query parameter on the deployed
-      page — `JavaScriptBridge.eval("window.location.search")`, which nothing in the project uses
-      yet and which answers only in a web build — is what "a secret URL flag for now" means. **It is
-      a dev door on a public page**, so it turns nothing on that a player could hit by accident, and
-      what it may switch is the control scheme and nothing else.
-
-      **So this one flag cannot live behind `DevFlags`, and that is the point rather than an
-      oversight.** `DevFlags.enabled()` is `OS.is_debug_build()`, which is false for the exported
-      release template `tools/export-web.sh` produces — the property that makes a public build
-      unable to reveal a seed or jump to a day. The deployed page is precisely where the URL flag
-      has to work, so gating it there would build it dead. **What keeps it safe is its scope, not a
-      build gate:** it chooses between two control schemes that both ship and are both playable, and
-      it can reach nothing else
-- [ ] **Testable without a phone.** *"On non-mobile we can try clicking with the mouse instead of
-      tapping."* An `InputEventMouseButton` stands in for a tap in the dev build, which is also what
-      lets the test rigs drive it at all — and a rig flag that taps a given point is what makes the
-      mode photographable, the way `--walk` is what makes the stick mode photographable
 
 ## M50 — What the corridor still owes
 

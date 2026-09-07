@@ -162,6 +162,15 @@ release tag, so Pages' unchangeable `Cache-Control: max-age=600` can no longer s
 build; and the shared card is opaque and declares its dimensions. The record is in `DECISIONS.md`
 under M76 and M80. **Follow `TODO.md`'s own order for what is next.**
 
+**The two milestones at the front of that order both overturn something on purpose, and each entry
+says who did the overturning.** **M88** gives the two control schemes back to the player as a choice
+— *asked for one scheme chosen nowhere on 2026-09-06 · overturned on 2026-09-07* — which is M82's
+central decision going the other way, and the pieces it needs are recovered from that commit rather
+than rewritten. **M89** draws a soft halo around whatever is currently charging the meter, which the
+**cues** rule has refused since the vocabulary was written: *no circles around entities, nothing
+draws a field.* That reasoning is about **danger** and it stands; the halo answers a question the
+vocabulary never had an answer to — *which of the six things around her is pushing the number up.*
+
 **The rule playtest 27 raised alongside the joystick is now also enforced by a test**: *"there is no
 way to walk slowly — that is intentional — there should only ever be one speed (plus a second via
 running)"*. `Stroller` moves toward `input_dir * top_speed` with the raw input vector, so the drag
@@ -253,10 +262,9 @@ for is one half of that sum; it is also what the tightened café and market radi
 (the corridor's density; placeholders step 3; the four-street building), **M47** (the 2×2 courtyard
 complex; calm-area adjacency; multi-block calm re-derived for 121 blocks; the main road as a soft
 block), **M45** (closures that point), **M43** (the tutorial dog after day 3; the one-contact cliff
-at 90; `RUN_TAUGHT_DAY` 3 → 2), **M49** (the fence, the vanishing border-walkers), **M68** (tap to
-walk as a switchable experiment), **M60**'s last two (the home arrow under a thumb, the browser smoke
-pass), **M25** (patrols for the empty acts), **M26** (teaching the controls), a shortlist of small
-items, and **M10** (polish).
+at 90; `RUN_TAUGHT_DAY` 3 → 2), **M49** (the fence, the vanishing border-walkers), **M60**'s last
+two (the home arrow under a thumb, the browser smoke pass), **M25** (patrols for the empty acts),
+**M26** (teaching the controls), a shortlist of small items, and **M10** (polish).
 
 ## What to distrust
 
