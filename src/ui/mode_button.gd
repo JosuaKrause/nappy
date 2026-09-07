@@ -34,6 +34,19 @@ extends Button
 ## `Symbol.JOYSTICK` and `Symbol.TAP` are the title screen's own pair, one per aiming origin —
 ## see `TitleScreen` and `ControlsMode`. Neither ever holds: a press chooses the mode outright, so
 ## `hold_progress` and the `_draw()` sweep below stay meaningful only for `RESTART`.
+##
+## **Pressed and hovered are driven from outside, not from `Button`'s own draw state.**
+## *(Playtest 34 finding 1: "buttons still don't light up when pressed or hovered.")* `_ready()`'s
+## own `mouse_filter = MOUSE_FILTER_IGNORE` — load-bearing, see its own comment — means Godot's GUI
+## layer never claims an event for this control, so `Button` never enters its own hover or pressed
+## draw mode and the `hover`/`pressed`/`hover_pressed` styleboxes `_apply_disc_style()` installs are
+## never selected. `force_pressed_look()`/`clear_forced_press()` and `set_hovered()` below answer
+## both questions from the same raw-touch and raw-mouse reading the owning screen already does
+## through `catch_rect()` — `begin_hold()`/`end_hold()`/`cancel_hold()` route through the first pair
+## too, so `RESTART`'s own timed hold gets the same fill as an ordinary press with no second
+## mechanism. Hover is a laptop's question — there is no hover on a phone — and answered by the same
+## `InputEventMouseMotion` a screen reads for nothing else, since `MOUSE_FILTER_IGNORE` also
+## silences `mouse_entered`/`mouse_exited`.
 
 ## The mode this button's icon names. **`JOYSTICK` and `TAP` are appended after the other two,
 ## not inserted before them** — `RESTART` and `CONTINUE` are serialized as bare ints
@@ -134,6 +147,7 @@ func begin_hold(touch_index: int) -> bool:
 	_held_by = touch_index
 	_held_since = Time.get_ticks_msec() / 1000.0
 	hold_progress = 0.0
+	force_pressed_look()
 	return true
 
 ## Whether `touch_index` is the one currently holding this button — what the caller checks on a
@@ -151,6 +165,7 @@ func end_hold(touch_index: int) -> bool:
 	var held := Time.get_ticks_msec() / 1000.0 - _held_since
 	_held_by = -1
 	hold_progress = 0.0
+	clear_forced_press()
 	return held >= RESTART_HOLD_SECONDS
 
 ## Lets go of whatever this button is holding without completing it — for a screen that closes, or
@@ -158,21 +173,56 @@ func end_hold(touch_index: int) -> bool:
 func cancel_hold() -> void:
 	_held_by = -1
 	hold_progress = 0.0
+	clear_forced_press()
+
+## Whether a real press or `RESTART`'s own timed hold currently forces the pressed fill, and
+## whether the mouse currently sits over this button — the two inputs `_refresh_look()` resolves
+## into the one stylebox `Button` will actually draw. Pressed beats hovered beats resting, the same
+## precedence a native `Button` would give its own draw modes if `MOUSE_FILTER_IGNORE` ever let it
+## reach them.
+var _pressed_look := false
+var _hovered_look := false
 
 ## Shows this disc as pressed with no real press behind it — for a catch-all press that landed
 ## somewhere else on the screen entirely, which is most of them: `DaySummary`'s own continue never
 ## required landing on this button, so a `Button`'s native pressed state, which only ever answers
 ## for a press that actually hit it, covers the minority case and nothing else. Paired with
-## `clear_forced_press()`, which every caller has to call before this button is shown again — this
-## overrides the *resting* state itself rather than the momentary one, so it does not clear on its
-## own the way a real press does.
+## `clear_forced_press()`, which every caller has to call before this button is shown again.
+## `begin_hold()` calls this too, so `RESTART`'s own timed hold gets the fill immediately rather
+## than waiting on `hold_progress` to paint anything.
 func force_pressed_look() -> void:
-	add_theme_stylebox_override("normal", _disc_style(Palette.BUTTON_PRESSED))
+	_pressed_look = true
+	_refresh_look()
 
-## Puts the disc back to its three ordinary states — `_apply_disc_style()` is idempotent, so this
-## is that call again rather than a second implementation of what "normal" looks like.
+## Puts the disc back to whichever of resting or hovered `_hovered_look` still says is true —
+## `clear_forced_press()` is not `_apply_disc_style()` again, because a mouse can still be sitting
+## over the button the instant a press on it ends.
 func clear_forced_press() -> void:
-	_apply_disc_style()
+	_pressed_look = false
+	_refresh_look()
+
+## Whether the mouse currently sits over this button — a laptop's own question, answered by the
+## same raw `InputEventMouseMotion` the owning screen reads for nothing else, since
+## `MOUSE_FILTER_IGNORE` silences `mouse_entered`/`mouse_exited` the same way it silences a click.
+## A pressed look still wins over this one — see `_refresh_look()`.
+func set_hovered(hovered: bool) -> void:
+	if hovered == _hovered_look:
+		return
+	_hovered_look = hovered
+	_refresh_look()
+
+## The one place the disc's own resting stylebox is written, so pressed and hovered can never
+## clobber each other the way two independent `add_theme_stylebox_override("normal", ...)` calls
+## would. Only `"normal"` is ever selected for drawing — `Button`'s own `hover`/`pressed`/
+## `hover_pressed` styleboxes are installed by `_apply_disc_style()` for completeness but never
+## reached, since `MOUSE_FILTER_IGNORE` keeps this control out of `Button`'s own draw-mode switch.
+func _refresh_look() -> void:
+	var fill := Palette.BUTTON_FILL
+	if _pressed_look:
+		fill = Palette.BUTTON_PRESSED
+	elif _hovered_look:
+		fill = Palette.BUTTON_HOVER
+	add_theme_stylebox_override("normal", _disc_style(fill))
 
 ## The one thing this button paints — see the class comment for why a fill that is not a drawing
 ## of anything is not a picture. A radial sweep from 12 o'clock clockwise, drawn as a triangle fan

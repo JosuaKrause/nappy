@@ -113,6 +113,13 @@ func open() -> void:
 	visible = true
 	_show_where_the_run_stands()
 	_restart_button.cancel_hold()
+	# A press that closed this screen before can leave the continue button's own forced-pressed
+	# look set — see `_acknowledge_and_resume()`'s own doc for why the frame that would clear it may
+	# never actually run before this screen hides. Cleared on the way back in rather than left to
+	# leak into the next open.
+	_continue_button.clear_forced_press()
+	_continue_button.set_hovered(false)
+	_restart_button.set_hovered(false)
 	_was_paused = get_tree().paused
 	# Over the stopped city the dim is a scrim and the street behind it is worth seeing. Over
 	# another screen — which is what an already-paused tree means — it is two paragraphs of
@@ -202,6 +209,47 @@ func _handle_restart_touch(event: InputEvent) -> bool:
 ## held") and from any real touch index, which `InputEventScreenTouch.index` never gives as negative.
 const _MOUSE_HOLD_INDEX := -2
 
+## A laptop's own question — there is no hover on a phone, which is why the one call site above is
+## gated `not _touch` rather than this. *(Playtest 34 finding 1: "buttons still don't light up when
+## pressed or hovered.")* `ModeButton.set_hovered()` is the answer `MOUSE_FILTER_IGNORE` already
+## needs for a press, reused here since it silences `mouse_entered`/`mouse_exited` exactly as it
+## silences a click.
+func _update_hover(position: Vector2) -> void:
+	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
+	_continue_button.set_hovered(_buttons.visible and _continue_button.catch_rect().has_point(at))
+	_restart_button.set_hovered(_buttons.visible and _restart_button.catch_rect().has_point(at))
+
+## Whether an acknowledge-and-resume coroutine is already in flight — guards the same double-fire a
+## real touch device's own emulated mouse click could otherwise cause, since `TouchInput.is_press()`
+## reads both event types and a device with real touch hardware delivers one of each for a single
+## finger.
+var _resuming := false
+
+## Flashes the continue button pressed for two frame boundaries before actually resuming — the same
+## shape `DaySummary._acknowledge_and_continue()` already uses and for the same reason. *(Playtest
+## 34 finding 1: "buttons still don't light up when pressed or hovered.")* `close()` used to run
+## synchronously inside the same input-processing pass that set the pressed fill, and Godot never
+## draws a frame between one call and the next within a single input dispatch, so the fill was set
+## and then hidden again — by `close()`'s own `visible = false` — without a frame ever rendering it.
+## Two `process_frame` awaits, not one: `SceneTree.process_frame` fires *before* the frame it names
+## is drawn, so the second is what actually lands after the draw that happens between them.
+##
+## **Fires for a tap or a click anywhere on this screen, not only on the continue button.** The
+## catch-all this replaces read any pointer press as *carry on* with nothing tying it to a
+## particular button; the flash follows that — landing off the button still shows what a press
+## does, the same way `DaySummary`'s own flash already does for its own catch-all.
+func _acknowledge_and_resume() -> void:
+	if _resuming:
+		return
+	_resuming = true
+	_continue_button.force_pressed_look()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_continue_button.clear_forced_press()
+	_resuming = false
+	close()
+	resumed.emit()
+
 ## `Esc` **or `space`** closes it, `R` starts the whole run again and `Q` leaves the game —
 ## **except on the web**, where `QuitOption.available()` is false and the key is not handled at
 ## all. None of the four is named on screen any more — see `_hint`'s own doc — so a keyboard
@@ -229,14 +277,23 @@ func _unhandled_input(event: InputEvent) -> void:
 	if (event is InputEventScreenTouch or event is InputEventMouseButton) \
 			and _handle_restart_touch(event):
 		return
-	# A tap or a mouse click carries on exactly as space does. *(2026-09-06: "I still need to press
-	# space even in mouse mode".)* The pointer scheme reads a click everywhere now, so this screen
-	# has to accept one too rather than leaving the keyboard as the only way past it.
-	if event.is_action_pressed("pause") or event.is_action_pressed("ui_accept") \
-			or TouchInput.is_press(event):
+	# `Esc` and `space` carry on synchronously, exactly as they always have — a keyboard has no
+	# button on screen to flash and no frame needs holding open for it, see
+	# `_acknowledge_and_resume()`'s own doc for the one that does.
+	if event.is_action_pressed("pause") or event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		close()
 		resumed.emit()
+		return
+	# A tap or a mouse click carries on exactly as space does. *(2026-09-06: "I still need to press
+	# space even in mouse mode".)* The pointer scheme reads a click everywhere now, so this screen
+	# has to accept one too rather than leaving the keyboard as the only way past it.
+	if TouchInput.is_press(event):
+		get_viewport().set_input_as_handled()
+		_acknowledge_and_resume()
+		return
+	if not _touch and event is InputEventMouseMotion:
+		_update_hover((event as InputEventMouseMotion).position)
 		return
 	if not (event is InputEventKey and event.pressed):
 		return

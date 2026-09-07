@@ -39,6 +39,8 @@ func run(t) -> void:
 	_test_the_button_fill_states_are_distinguishable(t)
 	_test_the_title_names_a_version(t)
 	_test_mode_button_restart_hold_state_machine(t)
+	_test_mode_button_pressed_and_hovered_drive_the_stylebox(t)
+	_test_hover_lights_up_the_button_under_the_mouse(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
 	_test_the_buttons_show_on_every_device(t)
 	_test_the_restart_button_is_a_hold(t)
@@ -270,6 +272,10 @@ func _test_every_walking_key_begins_the_run(t) -> void:
 ## will be clicking on one of the buttons".)* Positions are set directly rather than read after a
 ## frame of container sorting, the same reason `_test_the_restart_button_is_a_hold` gives for doing
 ## the same on the pause screen — `catch_rect()` still answers off whatever rect is actually set.
+##
+## Acknowledged two frames ahead of itself, the same as every other button that fires and closes
+## its own screen — see `TitleScreen._acknowledge_and_begin()` for why, and
+## `_test_a_tap_advances_every_screen` for why both `process_frame`s are emitted manually.
 func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
@@ -283,11 +289,16 @@ func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
 
 	var joystick_at: Vector2 = title._joystick_button.catch_rect().get_center()
 	title._unhandled_input(_touch_at(joystick_at, true))
+	t.check(started_modes.is_empty(), "the press is acknowledged before it is acted on")
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
 	t.check(started_modes == [ControlsMode.Mode.JOYSTICK],
 			"pressing the joystick button starts a run in Mode.JOYSTICK")
 
 	var tap_at: Vector2 = title._tap_button.catch_rect().get_center()
 	title._unhandled_input(_touch_at(tap_at, true))
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
 	t.check(started_modes == [ControlsMode.Mode.JOYSTICK, ControlsMode.Mode.TAP],
 			"and pressing the tap button starts a second run in Mode.TAP")
 
@@ -315,6 +326,10 @@ func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t) -> void:
 	touch.index = 0
 	title.get_viewport().push_input(touch, true)
 
+	# Acknowledged two frames ahead of itself — see `_test_a_tap_advances_every_screen` for why.
+	t.check(started_modes.is_empty(), "the press is acknowledged before it is acted on")
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
 	t.check(started_modes == [ControlsMode.Mode.JOYSTICK],
 			"a real touch pushed through the viewport on the joystick button's own rect reaches "
 			+ "the screen (this fails if mouse_filter regresses to STOP)")
@@ -452,6 +467,108 @@ func _test_mode_button_restart_hold_state_machine(t) -> void:
 	t.close_to(button.hold_progress, 0.0, "and below 0")
 
 	button.free()
+
+## **The fix playtest 34 finding 1 asks for, asserted on the stylebox `Button` actually draws.**
+## *(2026-09-07: "buttons still don't light up when pressed or hovered.")* `MOUSE_FILTER_IGNORE`
+## means `Button`'s own hover/pressed draw state is never reached, so `force_pressed_look()` and
+## `set_hovered()` write the `"normal"` stylebox directly instead — this reads it back the same way
+## `_test_a_continue_press_flashes_before_it_is_acted_on` already does for the flash.
+## `begin_hold()`/`end_hold()`/`cancel_hold()` route through the same two functions, so `RESTART`'s
+## own timed hold is covered by the same assertions rather than a second set.
+func _test_mode_button_pressed_and_hovered_drive_the_stylebox(t) -> void:
+	var button := ModeButton.new()
+	button.symbol = ModeButton.Symbol.CONTINUE
+
+	var resting: Color = (button._disc_style(Palette.BUTTON_FILL)).bg_color
+	button.force_pressed_look()
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == Palette.BUTTON_PRESSED,
+			"force_pressed_look() paints the pressed fill")
+	button.clear_forced_press()
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == resting,
+			"clear_forced_press() puts the resting fill back")
+
+	button.set_hovered(true)
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == Palette.BUTTON_HOVER,
+			"set_hovered(true) paints the hover fill")
+	button.set_hovered(false)
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == resting,
+			"and set_hovered(false) puts the resting fill back")
+
+	button.set_hovered(true)
+	button.force_pressed_look()
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == Palette.BUTTON_PRESSED,
+			"pressed wins over hovered while both are true")
+	button.clear_forced_press()
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == Palette.BUTTON_HOVER,
+			"clearing the press falls back to hovered rather than straight to resting")
+
+	button.begin_hold(0)
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == Palette.BUTTON_PRESSED,
+			"begin_hold() paints the same pressed fill a real press does")
+	button.end_hold(0)
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == Palette.BUTTON_HOVER,
+			"end_hold() clears it back through the same hover-aware path")
+
+	button.begin_hold(0)
+	button.cancel_hold()
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == Palette.BUTTON_HOVER,
+			"cancel_hold() clears it the same way")
+
+	button.free()
+
+## **Hover is new and answered from the same raw mouse motion the press already reads.**
+## *(Playtest 34 finding 1: "buttons still don't light up when pressed or hovered." Hover is "a
+## laptop's question" per the TODO's own note — there is no hover on a phone, and
+## `MOUSE_FILTER_IGNORE` silences `mouse_entered`/`mouse_exited` the same way it silences a click.)*
+## Checked on the title screen's own two buttons and the pause screen's continue button —
+## `DaySummary` shares the identical `_update_hover()` shape and is not re-checked here.
+func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	title._touch = false
+	title.open()
+	title._joystick_button.position = Vector2(300.0, 400.0)
+	title._joystick_button.size = Vector2(92.0, 92.0)
+	title._tap_button.position = Vector2(700.0, 400.0)
+	title._tap_button.size = Vector2(92.0, 92.0)
+
+	var over_joystick := InputEventMouseMotion.new()
+	over_joystick.position = title._joystick_button.catch_rect().get_center()
+	title._unhandled_input(over_joystick)
+	t.check((title._joystick_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+				== Palette.BUTTON_HOVER,
+			"the mouse sitting over the joystick button lights it up")
+	t.check((title._tap_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+				!= Palette.BUTTON_HOVER,
+			"and not the other button, which the mouse is not over")
+
+	var away := InputEventMouseMotion.new()
+	away.position = Vector2(20.0, 20.0)
+	title._unhandled_input(away)
+	t.check((title._joystick_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+				!= Palette.BUTTON_HOVER,
+			"and moving away turns it off again")
+
+	title.close()
+	title.queue_free()
+
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	t.get_tree().paused = false
+	pause.open()
+	pause._continue_button.position = Vector2(300.0, 400.0)
+	pause._continue_button.size = Vector2(92.0, 92.0)
+
+	var over_continue := InputEventMouseMotion.new()
+	over_continue.position = pause._continue_button.catch_rect().get_center()
+	pause._unhandled_input(over_continue)
+	t.check((pause._continue_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+				== Palette.BUTTON_HOVER,
+			"the same reading lights up the pause screen's own continue button")
+
+	pause.close()
+	t.get_tree().paused = false
+	pause.queue_free()
 
 ## The version line is the one thing on this screen not addressed to the player — see
 ## `TitleScreen.version_text()`, which prefers `Telemetry.source_version()` (the `git describe`
@@ -629,6 +746,10 @@ func _test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t) -> vo
 	touch.index = 0
 	pause.get_viewport().push_input(touch, true)
 
+	# Acknowledged two frames ahead of itself — see `PauseScreen._acknowledge_and_resume()`.
+	t.check(resumed[0] == 0, "the press is acknowledged before it is acted on")
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
 	t.check(resumed[0] == 1,
 			"a real touch pushed through the viewport on the continue button's own rect reaches "
 			+ "the screen (this fails if mouse_filter regresses to STOP)")
@@ -695,6 +816,9 @@ func _test_a_touch_away_from_restart_still_carries_on(t) -> void:
 	pause._restart_button.size = Vector2(92.0, 108.0)
 
 	pause._unhandled_input(_touch_at(Vector2(20.0, 20.0), true))
+	# Acknowledged two frames ahead of itself — see `PauseScreen._acknowledge_and_resume()`.
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
 	t.check(resumed[0] == 1, "a touch nowhere near the restart button still carries on")
 
 	t.get_tree().paused = false
@@ -948,6 +1072,14 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	pause._restart_button.position = Vector2(500.0, 400.0)
 	pause._restart_button.size = Vector2(92.0, 108.0)
 	pause._unhandled_input(_touch(true))
+	# A touch resume is acknowledged two frames before it fires too — see
+	# `PauseScreen._acknowledge_and_resume()` for why, and `DaySummary._acknowledge_and_continue()`
+	# for why it is two `process_frame`s rather than one. Emitted manually rather than awaited:
+	# `run_tests.gd` calls every suite synchronously, so an `await` in a test would return control
+	# before the rest of the test ran.
+	t.check(resumed[0] == 0, "the press is acknowledged before it is acted on")
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
 	t.check(resumed[0] == 1 and not pause.is_open(), "and a tap carries on from the pause")
 	t.get_tree().paused = false
 	pause.queue_free()
@@ -964,9 +1096,7 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	# A touch continue is acknowledged two frames before it fires — see
 	# `DaySummary._acknowledge_and_continue()` for why it is two `process_frame`s rather than one:
 	# the signal fires *before* the frame it names is drawn, so the second is what actually lands
-	# after the draw that happens between them. Emitted manually rather than awaited: `run_tests.gd`
-	# calls every suite synchronously, so an `await` in a test would return control before the rest
-	# of the test ran.
+	# after the draw that happens between them.
 	t.check(carried_on[0] == 0, "the press is acknowledged before it is acted on")
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
@@ -1007,6 +1137,11 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 	pause._restart_button.position = Vector2(500.0, 400.0)
 	pause._restart_button.size = Vector2(92.0, 108.0)
 	pause._unhandled_input(_left_click())
+	# Acknowledged two frames ahead of itself, same as a tap — see
+	# `_test_a_tap_advances_every_screen` for why.
+	t.check(resumed[0] == 0, "the click is acknowledged before it is acted on")
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
 	t.check(resumed[0] == 1 and not pause.is_open(), "and a click carries on from the pause")
 	t.get_tree().paused = false
 	pause.queue_free()
@@ -1019,6 +1154,12 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 	var carried_on := [0]
 	summary.continued.connect(func() -> void: carried_on[0] += 1)
 	summary._unhandled_input(_left_click())
+	# A mouse click continue is acknowledged two frames ahead of itself too now — see
+	# `DaySummary._unhandled_input()`'s own doc for why the mouse branch was folded into
+	# `_acknowledge_and_continue()` here.
+	t.check(carried_on[0] == 0, "the click is acknowledged before it is acted on")
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
 	t.check(carried_on[0] == 1, "and a click goes on from the between-days summary")
 	t.get_tree().paused = false
 	summary.queue_free()
