@@ -147,7 +147,7 @@ func _test_a_rotated_touch_still_aims_from_the_nearer_focus_correctly(t: Node) -
 
 	var controls := _controls(t)
 	controls.rotated = true
-	controls._touch = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
 
 	# West of the left focus, in design space -- the same offset `test_touch.gd`'s own (unrotated)
 	# equivalent test uses.

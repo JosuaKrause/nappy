@@ -248,7 +248,21 @@ func _open_the_title() -> void:
 
 ## The title screen has been pressed, which is also the start: hand the city back to the day it
 ## belongs to.
-func _on_title_start() -> void:
+##
+## `mode` is the player's own answer to the controls question — a press on `TitleScreen`'s
+## `Symbol.JOYSTICK`/`Symbol.TAP` button, or `Mode.TAP` when a key began the run instead. Handed
+## straight to `_touch_controls.set_mode()`, which overrides whatever `_add_touch_controls()` set
+## from `ControlsMode.resolve()` at boot — see that function's own doc for why a rig that never
+## reaches this screen keeps that earlier answer instead.
+##
+## Guarded with `is_inside_tree()` the same way `_process()` already guards `get_window()`: false
+## for the script-only instance `tests/test_main.gd` drives straight through this function with no
+## tree behind it at all — `get_tree()` itself logs an engine-level error when called off-tree,
+## which `is_inside_tree()` never does, so this is the check to make rather than a null check on
+## `get_tree()`'s own return. Never false in the running game, where this only ever fires on a real
+## `main` already in the tree.
+func _on_title_start(mode: ControlsMode.Mode) -> void:
+	_touch_controls.set_mode(mode)
 	_in_the_title = false
 	_title.close()
 	_player.step_back_in()
@@ -259,7 +273,8 @@ func _on_title_start() -> void:
 	# of build, since `_open_the_title()` always turns it off and this was the only place that
 	# turned it back on.
 	_status.visible = _debug
-	get_tree().paused = false
+	if is_inside_tree():
+		get_tree().paused = false
 
 ## The screen-edge half of the danger vocabulary, in its own layer.
 ##
@@ -287,6 +302,12 @@ func _add_danger_edge() -> void:
 ## `get_tree().paused`, which is what a title screen, the pause and the between-days summary all
 ## set. That is one fact main already produces for other reasons rather than a second wire main
 ## would have to remember to pull on every one of those screens.
+##
+## `set_mode(ControlsMode.resolve())` gives it the mode a rig gets if the title screen is never
+## reached at all (`--no-title`, a screenshot rig) — the command line, then the page's own URL,
+## then `TAP`. This is only ever the **pre-title** answer: `_title` does not exist yet at this
+## point in `_ready()`, and `main._on_title_start()` overrides it the moment a player actually
+## presses one of the title screen's own two buttons.
 func _add_touch_controls() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "TouchControls"
@@ -295,6 +316,7 @@ func _add_touch_controls() -> void:
 	_touch_controls = TOUCH_CONTROLS.instantiate()
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
+	_touch_controls.set_mode(ControlsMode.resolve())
 
 ## Presents the game rotated 90° when the real window is a portrait touch screen, so a phone
 ## with auto-rotate off shows a full-size landscape game rather than a thin letterboxed strip of
