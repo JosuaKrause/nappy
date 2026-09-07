@@ -25,9 +25,9 @@ extends RefCounted
 ## carries no modifiers of any kind; a debug build carries every one of them immediately, with
 ## nothing further to unlock. This class gates a batch of capabilities at once — an arbitrary seed,
 ## a chosen day, a spawn point beside any event, forced meters, a compressed day, a forced ending,
-## and (through `AutoScreenshot.from_command_line()`'s own copy of this same gate) scripted input
-## and a screenshot written to disk — where `?telemetry=1` reaches exactly one bounded,
-## already-shipped choice. An override here would reach all of the above at once from any
+## a forced control scheme, and (through `AutoScreenshot.from_command_line()`'s own copy of this
+## same gate) scripted input and a screenshot written to disk — where `?telemetry=1` reaches exactly
+## one bounded, already-shipped choice. An override here would reach all of the above at once from any
 ## visitor's address bar, which is precisely "reveal a seed, jump to a day... nobody documented for
 ## a player" — the exact outcome this class exists to prevent. The entry point stays what it
 ## already is: run a debug build.
@@ -135,6 +135,16 @@ static func day_length_override() -> float:
 static func ending_override() -> String:
 	var args := _args()
 	var index := args.find("--ending")
+	if index == -1 or index + 1 >= args.size():
+		return ""
+	return args[index + 1]
+
+## `--controls joystick|tap` — the raw word, or "" if none was given. Mapping it onto
+## `ControlsMode.Mode` stays in `ControlsMode.resolve()`, the only caller, alongside the page's own
+## `?controls=` query — this is only ever the command-line half of that same question.
+static func controls_override() -> String:
+	var args := _args()
+	var index := args.find("--controls")
 	if index == -1 or index + 1 >= args.size():
 		return ""
 	return args[index + 1]
