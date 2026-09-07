@@ -96,14 +96,27 @@ believing rather than explaining away.** The record is in `DECISIONS.md` under M
 ## What to do next
 
 **The game has one control scheme, one set of buttons on every device, and no key named anywhere on
-screen.** A press sets a direction she walks until the next press; a press within a generous radius
-of her stops her; a double press sets the direction and runs it. **Where the direction is measured
-from is the one place a mouse and a finger differ**: a mouse aims from her own world position, and a
-real touch aims from whichever of two fixed points — `TouchControls.FOCUS_LEFT` (360, 360) and
-`FOCUS_RIGHT` (920, 360) in the 1280x720 design box — is nearer the press, so a thumb never has to
-reach across the phone to say *up*. A press within the same stop radius of either focus stops her
-too. **Nothing is drawn for those two points**, and whether they can be found by feel is the open
-question the next report answers.
+screen.** A press sets a direction she walks until the next press; a double press sets the direction
+and runs it; **and a pointer held down keeps re-aiming**, continuously, locking in as it stands when
+it lifts. Always at `Tuning.WALK_SPEED` (92 px/s): the heading is normalised on every re-aim, so
+deflection distance means nothing and the deleted drag stick's slow walk cannot come back.
+
+**Where the heading is measured from is what a mouse and a finger disagree about, and all three of
+their differences have that one cause.** A mouse aims from her own world position; a real touch aims
+from whichever of two fixed points — `TouchControls.FOCUS_LEFT` (240, 480) and `FOCUS_RIGHT`
+(1040, 480) in the 1280x720 design box — is nearer the press, so a thumb never has to reach across
+the phone to say *up*. **Both focal circles are drawn on a touch build**, as a ring at `STOP_RADIUS`
+(48px) with a knob offset by the heading currently locked in — centred reads as stopped, brighter and
+larger while `run` is held. A mouse build draws neither, since a circle there would name a point that
+means nothing.
+
+**There are three doors into *stop* and which ones exist depends on the pointer.** A press within
+`STOP_RADIUS` of either focus stops her, on touch. **A band down the middle of the screen** — 48px
+either side of the design box's centre line, not drawn — stops her too, on touch, during a drag as
+well as on a press: the nearer focus flips the instant a finger crosses that line, so the middle is
+declared not-a-direction rather than damped. **A mouse click on her stops her and a touch on her no
+longer does** — the camera sits on her, so her screen position already *is* the band's centre line,
+and a drag crossing her by accident used to stop her by surprise.
 
 **The continue button, the held restart and the pause button are drawn on every device**, and a
 press on one now reaches the screen underneath it: `ModeButton` sets `mouse_filter =
@@ -339,12 +352,22 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 - **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
   address; what has not been checked is frame rate at the game's scale on a machine that is not the
   one it was built on, and whether a stranger arriving at the page understands what it is.
-- **The touch controls have been played once, briefly, and that was the deleted scheme.** One phone
-  session found the run lesson naming a key the device has not got. M82 has since replaced the
-  whole of what a thumb does — a press sets a direction and a double press runs it, rather than a
-  drag stick and a held `RUN` circle — and none of it has been played: whether a press lands where
-  it was meant to, whether `STOP_RADIUS` (48px) reads as a deliberate stop or a missed direction,
-  and whether the pause button at the top right is reachable without covering something.
+- **The scheme a thumb actually drives has been walked once, and every part of it has moved since.**
+  Playtest 33 is the one session on it, and it is what M85 answers — so the focal points are 120px
+  out and 120px down from where that thumb met them, both circles are drawn where nothing was, a
+  held finger re-aims where it did not, and the middle of the screen stops her where it used to
+  steer her. **Four questions only a thumb settles.** Whether a drawn ring at `STOP_RADIUS` (48px)
+  with a knob in it is read as *this is what is locked in* or as furniture. Whether a stop band
+  nobody can see reads as a deliberate stop or as the game dropping an input. Whether the band and
+  the two focus discs together take enough of the screen that ordinary aiming gets refused. And
+  whether losing *tap her to stop* on touch is felt as a loss at all, since the band is the same
+  ground and the lesson no longer teaches either.
+- **The whole restart path is guarded by 0.35 seconds and nobody has fumbled a tap at it.** A press
+  landing on the title screen within `TouchControls.DOUBLE_TAP_SECONDS` of a restart-triggered
+  reload is swallowed. **"Often" was the player's own word**, so the defect is a race and the fix is
+  a window — which means the window is the thing to distrust in both directions: too short and the
+  ending screen still lands in the game, too long and a deliberate press to begin feels ignored. It
+  is one constant and it is meant to move against a played run, not an argument.
 - **A phone held upright gets one rotation now, and nobody has held a phone since.** The three
   disagreeing rotations playtest 23 met are gone: one transform is applied to every `CanvasLayer`,
   the camera is no longer a second implementation, and the choice is re-asked every frame rather
@@ -364,7 +387,8 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   one scheme to begin it in. That is the whole of it: no options, no seed box, no load game.
   **Nobody has met this screen on a phone** since the two circular mode buttons it used to show
   were deleted, so whether a bare "tap to begin" reads clearly with no button to press is
-  unanswered.
+  unanswered. `WASD` and the arrows begin a run too, and nothing on screen says so — deliberately,
+  the same way nothing in the game names a key.
 - **A release build carries no modifiers, and nothing has confirmed that on a real release build.**
   `?telemetry=1` answers only when `OS.is_debug_build()` is true. The truth table is asserted in the
   suites, so the *predicate* is proven; the build type itself has no seam to fake and is therefore
