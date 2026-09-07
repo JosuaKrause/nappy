@@ -509,8 +509,15 @@ func _on_summary_continued() -> void:
 ## Deferred because it is called from inside input handling on a screen that is about to be freed,
 ## and the tree is unpaused first: `reload_current_scene` builds the new scene into the same tree,
 ## and a paused one would open the title screen over a game that could never start.
+##
+## `TitleScreen.note_restart_requested()` is called here, before the deferred reload, so the fresh
+## title screen the reload builds knows the frame or two after its own `_ready()` is exactly the
+## window a stray press crossing the reload could land in — see that function's own doc, and
+## `TitleScreen._unhandled_input()`'s for what it guards against. *(2026-09-07: "tapping on the
+## game over screen often goes directly back to the game skipping the title screen".)*
 func _restart_run() -> void:
 	Telemetry.end_run()
+	TitleScreen.note_restart_requested()
 	get_tree().paused = false
 	get_tree().call_deferred("reload_current_scene")
 

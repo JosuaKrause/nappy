@@ -27,6 +27,25 @@ extends CanvasLayer
 signal start_requested()
 signal quit_requested()
 
+## The instant `main._restart_run()` last asked for a scene reload, or `-INF` before the first one
+## this process. A `static var` on the class rather than a member on the node: `reload_current_scene()`
+## frees this screen's own instance and builds a fresh one, but the script class itself is never
+## unloaded, so this is the one place a fact can survive the freeing that crosses it — the same
+## thing an autoload would give, with no autoload added to hold it. See `_unhandled_input()`'s own
+## doc for what it guards.
+static var _restarted_at_msec := -INF
+
+## Called by `main._restart_run()`, immediately before it defers the reload — see that function's
+## own doc and this class's `_unhandled_input()`.
+static func note_restart_requested() -> void:
+	_restarted_at_msec = Time.get_ticks_msec()
+
+## How long after a restart-triggered reload a press is swallowed rather than started — see
+## `_unhandled_input()`'s own doc. Reuses `TouchControls.DOUBLE_TAP_SECONDS` rather than a number
+## invented for this file, since both ask the same question of a press this close in time to
+## another: is this the same gesture as the one just before it.
+const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
+
 @onready var _root: Control = $Root
 @onready var _name: Label = $Root/Top/Lines/Title
 @onready var _body: Label = $Root/Bottom/Lines/Body
@@ -122,10 +141,31 @@ func close() -> void:
 ## named it (see `open()`'s own doc), so there is no sentence to keep in step with the gate. `Esc`
 ## is deliberately not handled: `main` will not open the pause over this, because a pause over a
 ## game that has not started is a screen with nothing behind it to stop.
+##
+## **A press within `_RESTART_GUARD_SECONDS` of the last scene reload is swallowed rather than
+## started.** *(2026-09-07: "tapping on the game over screen often goes directly back to the game
+## skipping the title screen".)* The route is `DaySummary` emitting `continued` →
+## `main._on_summary_continued()` → `_restart_run()` → `get_tree().call_deferred("reload_current_scene")`
+## → this screen's own fresh `_ready()` → `main._open_the_title()`, and this screen is up within a
+## frame or two of the press that dismissed the ending — so a fumbled double tap, or the matching
+## release of a touch already spent dismissing the summary, can land here and read as a fresh press
+## to begin.
+##
+## **"Often" rather than always is the shape of a race, so the guard is a window rather than a
+## reorder** — nothing about the route above can be made to happen in a different sequence, only
+## made to ignore the frames right after it. See `_restarted_at_msec`'s own doc for what survives
+## the reload and `_RESTART_GUARD_SECONDS`'s for the window's own size. **Chosen where the design
+## was silent, and cheap to overturn** if a played day finds the window wrong: short enough that a
+## deliberate press is never felt to be slow, since this only ever fires in the first fraction of a
+## second after a restart-triggered reload and never on an ordinary boot (`_restarted_at_msec`
+## starts at `-INF`, so nothing here fires until the first restart actually happens).
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
 	if event.is_action_pressed("ui_accept") or TouchInput.is_press(event):
+		if (Time.get_ticks_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
+			get_viewport().set_input_as_handled()
+			return
 		get_viewport().set_input_as_handled()
 		start_requested.emit()
 		return

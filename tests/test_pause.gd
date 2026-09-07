@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_space_carries_on_from_every_screen(t)
 	_test_the_pause_says_where_the_run_stands(t)
 	_test_there_is_a_way_out_of_a_finished_run(t)
+	_test_a_press_soon_after_a_restart_is_swallowed_not_started(t)
 	_test_the_title_screen_does_not_stop_the_city(t)
 	_test_the_title_quit_key_matches_the_platform(t)
 	_test_the_pause_quit_key_matches_the_platform(t)
@@ -183,6 +184,33 @@ func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
 			"and space carries on from it, rather than leaving the run with no key on it at all")
 	t.get_tree().paused = false
 	summary.queue_free()
+
+## **A press within the guard window of a restart-triggered reload is swallowed, not started.**
+## *(2026-09-07: "tapping on the game over screen often goes directly back to the game skipping the
+## title screen".)* `TitleScreen._restarted_at_msec` is a `static var` — the one place this survives
+## the reload that frees the node under test itself — so the guard has to be driven through it
+## directly rather than through `main._restart_run()`, which cannot safely be called from a test:
+## it defers a real `reload_current_scene()`, which nothing in this suite can afford to trigger.
+func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var started := [0]
+	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.open()
+
+	TitleScreen.note_restart_requested()
+	title._unhandled_input(_accept())
+	t.check(started[0] == 0, "a press right after a restart-triggered reload does not start a run")
+
+	TitleScreen._restarted_at_msec -= (TitleScreen._RESTART_GUARD_SECONDS + 1.0) * 1000.0
+	title._unhandled_input(_accept())
+	t.check(started[0] == 1, "and the same key works again once the guard window has passed")
+
+	# Reset for every other test in this file that presses the title screen — a `static var` is
+	# process-wide state, not scoped to this test's own node.
+	TitleScreen._restarted_at_msec = -INF
+	title.close()
+	title.queue_free()
 
 ## The title screen is **not** a pause, and the difference is the whole of what is behind it.
 ## *(M38: "as title screen just use the home and street in front without player and let act I events
