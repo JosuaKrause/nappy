@@ -30,17 +30,29 @@ extends Button
 ## learned once rather than a different control on each screen. `RESTART`'s own hold fill lives
 ## here too, so both screens drive the same drawing through `hold_progress` rather than each screen
 ## painting its own.
+##
+## `Symbol.JOYSTICK` and `Symbol.TAP` are the title screen's own pair, one per aiming origin —
+## see `TitleScreen` and `ControlsMode`. Neither ever holds: a press chooses the mode outright, so
+## `hold_progress` and the `_draw()` sweep below stay meaningful only for `RESTART`.
 
-## The mode this button's icon names.
-enum Symbol { RESTART, CONTINUE }
+## The mode this button's icon names. **`JOYSTICK` and `TAP` are appended after the other two,
+## not inserted before them** — `RESTART` and `CONTINUE` are serialized as bare ints
+## (`symbol = 0`/`symbol = 1`) in `pause_screen.tscn` and `day_summary.tscn`, and M82's own note on
+## this enum names exactly this trap: re-indexing it changes what an already-saved `symbol = N`
+## means everywhere it is used, caught only by a screenshot rather than by anything in the suite.
+enum Symbol { RESTART, CONTINUE, JOYSTICK, TAP }
 @export var symbol: Symbol = Symbol.RESTART
 
 const _RESTART_ICON: Texture2D = preload("res://assets/ui/restart.svg")
 const _CONTINUE_ICON: Texture2D = preload("res://assets/ui/continue.svg")
+const _JOYSTICK_ICON: Texture2D = preload("res://assets/ui/joystick.svg")
+const _TAP_ICON: Texture2D = preload("res://assets/ui/tap.svg")
 
 const _ICON_BY_SYMBOL := {
 	Symbol.RESTART: _RESTART_ICON,
 	Symbol.CONTINUE: _CONTINUE_ICON,
+	Symbol.JOYSTICK: _JOYSTICK_ICON,
+	Symbol.TAP: _TAP_ICON,
 }
 
 ## `TouchControls.PAUSE_CATCH_RADIUS` (46px) is the one catch radius left in the game, now that the
