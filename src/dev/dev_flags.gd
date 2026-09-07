@@ -104,6 +104,45 @@ static func follow_target() -> String:
 		return ""
 	return args[index + 1]
 
+## `--force <event id> [seconds]` — the raw id, or "" if none was given.
+##
+## **The flag for checking one row rather than one city.** `EventDirector` hands out the day's own
+## `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` plans on an 11–26s interval while she walks, so a row you
+## want to look at — a `cyclist`'s lethal radius, a `charging_dog`'s lead time — arrives when it
+## arrives, mixed into everything else, and a day may not have bought one at all. Under this flag
+## the director hands out **that row and nothing else**, refilled as fast as it is spent, at
+## `forced_interval()` rather than the ordinary band.
+##
+## It bypasses `first_day` and the day's budget on purpose: the question it exists for is *what
+## does this row do when it reaches her*, which is a question about the row and not about whether
+## today's plan contains one. `--seed` and `--day` still decide the city and the act, so everything
+## around the row is the ordinary game.
+static func forced_row() -> String:
+	var args := _args()
+	var index := args.find("--force")
+	if index == -1 or index + 1 >= args.size():
+		return ""
+	return args[index + 1]
+
+## Seconds between two forced rows — the optional second argument to `--force`, or
+## `_FORCED_INTERVAL_DEFAULT` when it is absent or is the next flag rather than a number.
+##
+## Short, because the point of the flag is to see the same encounter several times in a row without
+## walking a day for each one, and long enough that two are never on screen together: a `cyclist`
+## sited 565px out and closing at 257px/s takes about 2.2s to arrive, so 6s leaves the last one
+## finished and gone before the next is placed.
+static func forced_interval() -> float:
+	var args := _args()
+	var index := args.find("--force")
+	if index == -1 or index + 2 >= args.size():
+		return _FORCED_INTERVAL_DEFAULT
+	var word := args[index + 2]
+	if not word.is_valid_float():
+		return _FORCED_INTERVAL_DEFAULT
+	return maxf(float(word), 0.5)
+
+const _FORCED_INTERVAL_DEFAULT := 6.0
+
 ## `--meters <sleepiness> <excitement>`, clamped into range — or `(-1, -1)` if the flag is
 ## absent, malformed, or unreadable outside a debug build. Negative is not a valid meter reading,
 ## so it costs nothing extra to reuse as the "not given" sentinel.

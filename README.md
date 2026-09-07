@@ -80,6 +80,7 @@ godot --path . -- --seed 12345 --day 9 --overview
 | `--spawn event[:id]` | Drop the player beside a live event |
 | `--spawn arterial\|zone[:n]\|signal\|landmark\|closure[:n]\|edge[:s\|e\|w]\|corner[:nw\|ne\|sw\|se]` | Drop her at one of the places worth photographing: the busiest pavement, a multi-block calm zone (`zone:1` for the second one, which is where a 2×1 will be), a signalled junction on the spine, a big building, a closed street seen from its junction, one of the ways out of the map, or a corner of it where two bands of the border meet |
 | `--follow <event id>` | Park a camera on an event wherever it goes |
+| `--force <event id> [seconds]` | Hand out **only** that row, over and over, every `seconds` (default 6) of walking — for looking at one encounter rather than one city. Bypasses `first_day` and the day's budget; `--seed` and `--day` still decide everything around it |
 | `--overview` | Frame the whole city at once |
 | `--screenshot out.png --after N` | Render for N **seconds**, save a PNG, quit |
 | `--walk north\|south\|east\|west\|<script>` | Hold a direction down for the whole run, or walk a script of timed steps — `1s5e` is one second south then five east, and `3@45@2e` is three seconds at a bearing of 45° then two east. A bearing is degrees clockwise from north, delimited by a pair of `@`s so its digits do not run into the next step's |
