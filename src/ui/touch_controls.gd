@@ -548,8 +548,18 @@ func _draw() -> void:
 ## disc alone is instead one overall alpha `draw_texture_rect()`'s own modulate colour multiplies
 ## the whole texture by, which is why `pause.svg`'s own three shapes already carry their relative
 ## opacities against each other (dim disc, mid rim, bright bars) — see that file's own comment.
+##
+## **The held alpha step (0.7 idle, 1.0 held) is not what "lights up white" asks for on its own.**
+## *(2026-09-07: "buttons should light up white when pressed.")* Going more opaque makes the icon
+## solid, not bright — a `ModeButton`'s own pressed answer is a **fill**, `Palette.BUTTON_PRESSED`,
+## behind its glyph, and this button has no `StyleBox` to hold one. `draw_circle()` behind the icon
+## is that fill's own shape, in the same colour every other pressed button now reaches for, layout
+## rather than a picture — the same reading the **cues** rule's own exception gives
+## `_draw_focus_circles()`'s ring.
 func _draw_pause_button() -> void:
 	var held := _pause_touch != -1
+	if held:
+		draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2(PAUSE_RADIUS, PAUSE_RADIUS) * 2.0
 	draw_texture_rect(_PAUSE_ICON, Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
