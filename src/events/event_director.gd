@@ -210,6 +210,16 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## for exactly this one moment and is created only when it is due, so there is no cost to sitting it
 ## further than a `MAP` row ever would be.
 ##
+## **The line is straightened onto the pavement she is standing on, when she is standing on one.**
+## *(2026-09-07: "also biker should be on the same side of the road not the other side".)* Sited
+## along her literal heading, a hundreds-of-pixels lead drifts across the carriageway from a heading
+## only a little off the corridor's own axis — a diagonal drag on the touch controls crosses a
+## six-tile street well before a `hard_fail` row's own lead reaches it, landing the row on the far
+## sidewalk, where it reads as scenery rather than as a lane she has to answer for. `_onto_her_side()`
+## below is the preference, not a requirement: where there is no pavement edge to prefer — the
+## carriageway, a junction, open ground — or the heading has no along-corridor component to send it
+## down, the literal heading is used exactly as before.
+##
 ## The far end of the route runs the same distance **behind** her rather than stopping where she
 ## is standing: it has to still be going somewhere when it reaches her, or `EventInstance` reads
 ## the end of its path as *arrived* and leaves right where it met her, which is exactly the
@@ -220,14 +230,38 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## retry the near point only, because a route that starts on the pavement and ends in a wall is not
 ## a route either.
 func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
+	var site_heading := _onto_her_side(at, heading)
 	var closing := def.speed + Tuning.WALK_SPEED
-	var lead := Tuning.outlasting_telegraph_lead(heading, closing, def.telegraph_time,
+	var lead := Tuning.outlasting_telegraph_lead(site_heading, closing, def.telegraph_time,
 				def.offscreen_notice) \
-			if def.hard_fail else Tuning.offscreen_lead(heading, closing, def.offscreen_notice)
-	var far := at + heading * lead
+			if def.hard_fail else Tuning.offscreen_lead(site_heading, closing, def.offscreen_notice)
+	var far := at + site_heading * lead
 	if not _map.is_walkable(_map.world_to_tile(far)):
 		return PackedVector2Array()
-	var behind := at - heading * lead
+	var behind := at - site_heading * lead
 	if not _map.in_bounds(_map.world_to_tile(behind)):
 		return PackedVector2Array()
 	return PackedVector2Array([far, behind])
+
+## Swaps a heading with a lateral drift for the corridor's own axis, when she is standing on a plain
+## pavement edge — `CityMap.pavement_inward()` names which side of a corridor a sidewalk tile is on,
+## and its own axis (`RIGHT`/`LEFT` for a corridor running north-south, `DOWN`/`UP` for one running
+## east-west) is the only one a `TOWARD_PLAYER` row's approach has to answer to. Zeroing the
+## heading's component on that axis and keeping only the along-corridor part sends the row straight
+## down *her* pavement instead of wherever her literal heading happens to point, so it approaches
+## from ahead along the street rather than drifting across it — which is what a bike riding down a
+## street already does, whatever diagonal she happens to be walking at.
+##
+## Returns `heading` unchanged in the two cases where there is nothing to prefer: she is not on a
+## plain sidewalk edge (the carriageway, a junction, open ground — `pavement_inward()` answers
+## `Vector2i.ZERO`), or her heading has no along-corridor component at all, which is walking straight
+## across the street and leaves no corridor line to send the row down.
+func _onto_her_side(at: Vector2, heading: Vector2) -> Vector2:
+	var inward := _map.pavement_inward(_map.world_to_tile(at))
+	if inward == Vector2i.ZERO:
+		return heading
+	var along := Vector2(inward.y, inward.x)
+	var component := heading.dot(along)
+	if is_zero_approx(component):
+		return heading
+	return along * signf(component)
