@@ -460,20 +460,22 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 ##
 ## Two things have to agree and neither knows about the other: the stand-off is where it stops, and
 ## the director decides where it starts. If the stand-off ever grows past the least the director
-## could ever site it at — `Tuning.min_offscreen_boundary()`, the worst case over every heading she
+## could ever site it at — `Tuning.min_offscreen_lead()`, the worst case over every heading she
 ## might be walking — a pursuer *backs away* through its own telegraph instead of closing, which is
 ## a dog that visibly reverses down the street in front of her.
 ##
-## The relationship is asserted rather than left as a coincidence: a change to the stand-off or to
-## `VIEW_HALF_EXTENT` has moved both numbers before without anybody checking they still agree.
+## The relationship is asserted rather than left as a coincidence: a change to the stand-off, to
+## `VIEW_HALF_EXTENT` or to `OFFSCREEN_NOTICE` has moved these numbers before without anybody
+## checking they still agree.
 func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 	for def in EventCatalogue.all():
 		if not def.pursues:
 			continue
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-		t.check(standoff < Tuning.min_offscreen_boundary(),
+		var floor_lead := Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED)
+		t.check(standoff < floor_lead,
 				"'%s' stands off at %.0fpx, inside the %.0fpx it is sited at even on the worst axis"
-				% [def.id, standoff, Tuning.min_offscreen_boundary()])
+				% [def.id, standoff, floor_lead])
 		if def.pursues_within > 0.0:
 			# A place, not a moment: the director never sites it, so what has to hold is that its
 			# trigger is outside its stand-off — which `validate_pursuit` also checks, from the
@@ -614,14 +616,15 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 ## or just inside the trigger for something that has been standing there.
 ##
 ## The director's own siting depends on the heading she happens to be walking
-## (`Tuning.offscreen_boundary(heading)`), so this asks for the worst case over every heading rather
-## than one of them — `Tuning.min_offscreen_boundary()`, the vertical axis, which is the smaller of
-## the two and therefore the least ground the contract can ever rely on. A rig checked against a more
-## generous heading would pass on an encounter the game can still produce on a worse one.
+## (`Tuning.offscreen_lead(heading, closing_speed)`), so this asks for the worst case over every
+## heading rather than one of them — `Tuning.min_offscreen_lead()`, the vertical axis plus 200ms of
+## closing at the row's own `pursue_speed` against `WALK_SPEED`, which is the least ground the
+## contract can ever rely on. A rig checked against a more generous heading would pass on an
+## encounter the game can still produce on a worse one.
 func _sited_at(def: EventDef) -> float:
 	if def.pursues_within > 0.0:
 		return def.pursues_within - 10.0
-	return Tuning.min_offscreen_boundary()
+	return Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED)
 
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.

@@ -1012,6 +1012,30 @@ func offscreen_boundary(heading: Vector2) -> float:
 func min_offscreen_boundary() -> float:
 	return VIEW_HALF_EXTENT.y
 
+## How long a row travelling toward her has to still be off screen once it is sited, at the speed
+## the gap is actually closing. *(2026-09-07: "events that go towards the player (biker / pursuing
+## dog) should at least be 200ms off screen with a warning.")*
+const OFFSCREEN_NOTICE := 0.2
+
+## Where `EventDirector` sites a row that travels toward her — a pursuer or a `TOWARD_PLAYER` row —
+## along `heading`: outside the view (`offscreen_boundary()`) and `OFFSCREEN_NOTICE` seconds further
+## still, at `closing_speed`.
+##
+## **`closing_speed` is the row's own speed plus `WALK_SPEED`, not the row's speed alone** — she is
+## usually walking into it, so the gap between the siting and the boundary closes at both speeds
+## together. For `cyclist` (165px/s) that is 257px/s, 51px of margin; for `charging_dog` (130px/s
+## pursuing) that is 222px/s, 44px. Neither number is authored anywhere else — this function is
+## where the 200ms turns into pixels, per row, per heading.
+func offscreen_lead(heading: Vector2, closing_speed: float) -> float:
+	return offscreen_boundary(heading) + closing_speed * OFFSCREEN_NOTICE
+
+## The least `offscreen_lead()` can be for a row closing at `closing_speed`, whichever way she is
+## heading — `min_offscreen_boundary()` plus the same margin. What `EventDef.validate()` needs for
+## the same reason `min_offscreen_boundary()` does: a per-row floor that does not depend on a
+## heading nothing at validation time has chosen yet.
+func min_offscreen_lead(closing_speed: float) -> float:
+	return min_offscreen_boundary() + closing_speed * OFFSCREEN_NOTICE
+
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".
 const AHEAD_MIN_SPEED := 40.0

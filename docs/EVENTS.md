@@ -120,6 +120,23 @@ not against a flat number sized for one axis of it.** The camera sits on her at 
 actually reaches first, so a row sited while she walks east is genuinely off screen on that axis
 rather than merely off the narrower one the old flat number was sized for.
 
+**And it stays off screen for at least 200ms of its own closing, not merely past the edge.**
+*(2026-09-07: "events that go towards the player (biker / pursuing dog) should at least be 200ms
+off screen with a warning.")* `Tuning.offscreen_lead(heading, closing_speed)` adds
+`Tuning.OFFSCREEN_NOTICE` (0.2s) of `closing_speed` on top of the boundary — the row's own speed
+plus `WALK_SPEED`, because she is usually walking into it. For `cyclist` (165px/s) that is
+165 + 92 = 257px/s, 51px past the boundary; for `charging_dog` pursuing (130px/s) it is
+130 + 92 = 222px/s, 44px. The unit is **time**, and the pixels are what it costs at each row's own
+speed — a slower row buys the same 200ms with fewer of them.
+
+**The margin applies to what travels toward her, not to a crossing.** `cat_dash` and
+`pigeon_flock` keep `AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()` unchanged: a crossing
+row's whole content is a three-second interruption she reacts to as it happens, not an approach she
+watches close, so there is no "closing speed" for the margin to be stated over. **Chosen as the
+smaller reading of a silence** — the instruction named "events that go towards the player", not
+every director-sited row, and a crossing already pays its own fairness in the reaction-window rule
+above rather than in an offscreen phase.
+
 **The screen-edge badge is what makes the offscreen phase worth anything.** `DangerEdge` already
 draws one for anything lethal or faster than a walk that is off screen and closing under its own
 steam; a pursuer sited outside the view is exactly that for as long as it stays there, so
