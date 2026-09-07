@@ -203,7 +203,7 @@ longer what answers *can she get there today*.
    the guidance stops reading as guardrails. The record is in `DECISIONS.md` under M64.
 
    What is left is the eight seal pictures — variety, so no single barrier becomes the city's
-   signature, each costing one appended candidate and no code — and the off-screen arrivals item.
+   signature, each costing one appended candidate and no code.
 
    **Hard seals are act IV only**, because `barricade` is the sole catalogue row wide enough to span
    a street; days 1–11 seal soft, both pavements taken with the carriageway still walkable. Three of
@@ -292,6 +292,21 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   whole of *being taken* is carried by it walking in and disappearing over 2.5 seconds, which a
   still cannot show and nobody has watched. The hunting half came out better — end-on, closing,
   and not comic.
+- **Everything that comes at her now starts off screen, and nobody has watched one arrive.** A
+  pursuer and a `TOWARD_PLAYER` row are sited past the edge of the view along the heading she is
+  actually walking, plus 200ms of closing speed — 51px past the boundary for `cyclist` (165px/s,
+  closing at 257 against her 92), 44px for `charging_dog` (130px/s, closing at 222) — and a
+  `hard_fail` row goes further still so its telegraph ends before it arrives, which for the
+  cyclist's 3.3s telegraph is 900px. **Two things a rig cannot answer.** Whether the screen-edge
+  badge actually reads as *something is coming* for the whole of a longer approach, rather than as a
+  mark that sits there — and **whether the day-3 dog still teaches running**, since it was
+  deliberately sited too close to walk around and now is not. *"Unavoidability, if it is still
+  wanted, has to come from somewhere other than siting it too close to see coming"* is written down
+  and not built.
+- **A biker can now end the day, and no biker has hit anybody.** The row declared `hard_fail` all
+  along and could never fire it: `EventInstance.is_lethal_at()` refuses while the event
+  `is_telegraphing()`, and the old siting delivered it in 0.78s against a 3.3s telegraph. It is real
+  now, and *lethal on contact with a 33px band* has never been felt at the speed a bike travels.
 - **A hunting van drives along the footway.** A pursuer steers straight at her over any walkable
   tile, which every pursuer in this game already does; this is the first time the thing doing it is
   a van. Whether that reads as menace or as a bug is a question for somebody watching it.

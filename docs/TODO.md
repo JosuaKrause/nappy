@@ -14,15 +14,12 @@ mid-way through.
 
 ## The order
 
-1. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
-   be watched. *(Raised to the front on 2026-09-07: "we need to prioritize the "events must spawn
-   offscreen" work item.")*
-2. **M85** — one press, answered: the two focal points move and are drawn, a held finger re-aims,
+1. **M85** — one press, answered: the two focal points move and are drawn, a held finger re-aims,
    the middle of the screen stops her instead of steering her, and the screens around a run say and
    do what was asked of them.
-3. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-4. **M56** — the resistance is noticed.
+3. **M56** — the resistance is noticed.
 
 **Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
 deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
@@ -33,18 +30,18 @@ entry and its reasoning and comes back when the overhaul lands.
 no single barrier becomes the city's signature), **M65** (a protester who points at the objective),
 **M53** (the bollard, so a street that meets a precinct stops against something). **A milestone
 holds either drawings or not**, so that deferring one never parks work that needs no artist — which
-is why M77 and M78 stand apart from M64 and M65 rather than inside them.
+is why M78 stands apart from M65 rather than inside it.
 
 **M79 waits on the overhaul rather than behind it.** It is the city seen at an angle — a
 presentation change with the lattice left cardinal — and it is written down and tabled so that
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
 
-**[PLAYTEST-33.md](PLAYTEST-33.md) is the newest session and none of its thirteen findings is built.**
-It is the report M83 asked for: the two focal points a touch aims from were built and drawn as
-nothing, and the answer is that they move outward and downward and are drawn. Eight of the thirteen
-are M85 and four raise and extend M77; the one question in it was M86 and is answered in
-`DECISIONS.md`. **Read it before either of the two.**
+**[PLAYTEST-33.md](PLAYTEST-33.md) is the newest session and eight of its thirteen findings are still
+open.** It is the report M83 asked for: the two focal points a touch aims from were built and drawn
+as nothing, and the answer is that they move outward and downward and are drawn. Those eight are
+M85; the four that raised and extended M77 and the one question that became M86 are both built and
+recorded in `DECISIONS.md`. **Read it before M85.**
 
 **[PLAYTEST-29.md](PLAYTEST-29.md)'s seven findings are all built.** Three of them were instructions
 the project already had and had read as repealed by something else, and the file is worth reading for
@@ -121,68 +118,6 @@ which proves only that the controls stay *off* where they should.
       careful-versus-careless survives a blunter instrument, and it is answered by playing it rather
       than by arguing it.** The three smaller things a real device would also settle — the catch
       radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
-
----
-
-## M77 — Everything arrives from off screen · asked for 2026-09-02
-
-**This stands apart from M64's seal pictures because it shares no code with them**: the pictures are
-drawings appended to a candidate list, and this is where a director sites a row. So the overhaul
-deferring the drawings does not reach it.
-
-- [ ] **Nothing arrives from off screen, and everything should.** *(2026-09-02: "the charging dog
-      doesn't have an offscreen indication it should start further away and appear first as
-      offscreen indicator", and "bikers / unleashed dogs all pop in in front of the player instead
-      of starting off screen".)* One defect across every director-sited row: a thing that
-      materialises inside the view has no approach, so the warning it owes is spent before the
-      player can watch it being spent. `DangerEdge` already draws the screen-edge badge for anything
-      off screen worth one, so the second half may be a consequence of the first — a dog sited
-      inside the view has no offscreen phase to be announced in.
-
-      **The care needed is the day-3 lesson, and the player has now taken the trade it was
-      protecting.** `charging_dog` is deliberately unavoidable on the day it teaches running, and a
-      dog that starts further away is a dog with more room to be walked around — which is the thing
-      that placement was chosen to prevent. *Asked for a close, unavoidable teaching dog · overturned
-      to a further one on 2026-09-07, because "the run tutorial spawns inside the visible area making
-      the headsup way too short now (tap controls are slower than awsd and arrows)".* So the dog
-      moves out with everything else, and **unavoidability, if it is still wanted, has to come from
-      somewhere other than siting it too close to see coming** — that is an open question for the
-      build rather than a thing to quietly drop
-- [ ] **Anything coming at her starts at least 200ms off screen, and the badge announces it.**
-      *(2026-09-07: "events that go towards the player (biker / pursuing dog) should at least be
-      200ms off screen with a warning.")*
-
-      **The unit is time, measured at the closing speed rather than at the event's own**, because
-      she is usually walking into it. `cyclist` moves at 165 px/s and `charging_dog` chases at 130,
-      against `Tuning.WALK_SPEED` (92 px/s), so 200ms is **51px** past the view boundary for the
-      cyclist and **44px** for the dog.
-
-      **What has to change is that the siting stops being one flat number.**
-      `EventDirector._crossing_ahead_of()` sites a pursuer at `Tuning.SIGHT_AHEAD` (200px) flat and
-      `_toward_her()` sites a `TOWARD_PLAYER` row at the same 200px, and that constant is explicitly
-      *"the furthest ahead of her something may be sited and still be **on screen** when it gets
-      there"* — sized for the worst axis, since the camera sits on her at zoom 2 over a 1280x720
-      viewport, so the visible world is 640x360 and the boundary is 320px away sideways and 180px
-      away vertically. The new siting is **the distance to the view boundary along her heading, plus
-      200ms of closing speed**, which is a different number on each axis and a different number per
-      row.
-
-      **The warning is the half that makes the first half fair**, and it is the same sentence as the
-      item above: `DangerEdge` already draws a screen-edge badge for anything off screen worth one,
-      so a row sited outside the view finally has an offscreen phase to be announced in. A row moved
-      out without the badge following it is a row with *less* warning than it has now
-- [ ] **A biker hit is lethal, and today it is not.** *(2026-09-07: "also a biker hit should be
-      lethal.")* `_cyclist()` already carries `hard_fail = true` and a 33px `inner_radius`, so the
-      row is **declared** lethal — and `EventInstance.is_lethal_at()` returns false while
-      `is_telegraphing()`, with the cyclist's `telegraph_time` at 3.3s. Sited at `SIGHT_AHEAD`
-      (200px) and closing at 257 px/s it arrives in **0.78s**, still inside its own telegraph, and
-      rides straight through her.
-
-      **This is the item above seen from the other side**: a row whose warning is longer than its
-      approach has neither a warning nor a bite. Fixing the siting so the approach genuinely outlasts
-      the telegraph is what makes the declared lethality real, and the two are checked together
-      rather than one patched around the other — a shortened telegraph with the old siting would buy
-      the lethality by taking the notice away
 
 ---
 
@@ -442,7 +377,7 @@ reason to enter. See M64, "What alleys are for, then, is going round a wall".
 
 **Deferred while the graphics overhaul is in flight**, because all that remains here is eight
 drawings. The sealing itself is built and its record is in `DECISIONS.md` under M64; the off-screen
-arrivals item this milestone also carried is M77 and is not held behind the pictures.
+arrivals item this milestone also carried became M77 and is built, recorded there too.
 
 **Its open question is a played one and does not wait on either** — whether a walled city reads as a
 route decision or as a maze. Everything below is the reasoning the pictures are drawn against.
