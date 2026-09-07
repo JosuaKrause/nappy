@@ -18,7 +18,8 @@ mid-way through.
    be watched. *(Raised to the front on 2026-09-07: "we need to prioritize the "events must spawn
    offscreen" work item.")*
 2. **M85** — one press, answered: the two focal points move and are drawn, a held finger re-aims,
-   and the screens around a run say and do what was asked of them.
+   the middle of the screen stops her instead of steering her, and the screens around a run say and
+   do what was asked of them.
 3. **M86** — `tools/release.sh` refuses a commit that has already been released.
 4. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
@@ -40,9 +41,9 @@ presentation change with the lattice left cardinal — and it is written down an
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
 
-**[PLAYTEST-33.md](PLAYTEST-33.md) is the newest session and none of its twelve findings is built.**
+**[PLAYTEST-33.md](PLAYTEST-33.md) is the newest session and none of its thirteen findings is built.**
 It is the report M83 asked for: the two focal points a touch aims from were built and drawn as
-nothing, and the answer is that they move outward and downward and are drawn. Seven of the twelve
+nothing, and the answer is that they move outward and downward and are drawn. Eight of the thirteen
 are M85, four raise and extend M77, and the one question in it is M86. **Read it before any of the
 three.**
 
@@ -188,7 +189,7 @@ deferring the drawings does not reach it.
 
 ## M85 — One press, answered · asked for 2026-09-07
 
-Seven findings from [PLAYTEST-33.md](PLAYTEST-33.md), and they are one milestone because they are one
+Eight findings from [PLAYTEST-33.md](PLAYTEST-33.md), and they are one milestone because they are one
 subject: **what a press does, and what the screens around a run say about it.** None of them needs a
 drawing an artist would have to make, so none is held behind the graphics overhaul — the two control
 circles are the shape a control already has, the way `MeterBar`'s own fill is.
@@ -248,11 +249,36 @@ circles are the shape a control already has, the way `MeterBar`'s own fill is.
       goes through. `STOP_RADIUS` is 48px, so the band is `absf(design.x - 640.0) <= STOP_RADIUS`,
       which is `x ∈ [592, 688]` in the 1280x720 design box.
 
-      **Reading *"size of the stop circle"* as its diameter is a choice and it is the one taken**,
-      because it gives the band the same reach either side of the line that the stop circle has
-      around its own centre. The band is in **design space**, like the two focal points and unlike a
-      raw touch — the same `ScreenOrientation.to_design_space()` trip `is_on_a_focus()` already
-      makes. Whether it is drawn is open; the two circles are what item 2 asks for by name
+      **The diameter reading is the player's own and the band is not drawn.** *(2026-09-07: "the
+      band doesn't get drawn and yes it's the diameter in size.")* So it is `STOP_RADIUS` either side
+      of the line rather than half that, and the two control circles item 2 asks for by name stay the
+      only things this scheme draws besides the pause button.
+
+      The band is in **design space**, like the two focal points and unlike a raw touch — the same
+      `ScreenOrientation.to_design_space()` trip `is_on_a_focus()` already makes — and it has to
+      apply **during a drag**, not only on the initial press, since a drag wandering into the middle
+      is the whole of what it is for
+- [ ] **Tapping her to stop goes away, because the band already is that area.** *(2026-09-07: "with
+      that we can remove tap the player to stop since it's the same area and if a movement
+      accidentally goes over the player it might become surprising to see her stop.")*
+
+      **"The same area" is literally true, and the camera is what makes it so.** The camera sits on
+      her, so she is at the centre of the screen — `x = 640` in the design box, the middle of the
+      band. `TouchControls._on_tap()`'s world-space check,
+      `world.distance_to(_rig.global_position) <= STOP_RADIUS`, is a second name for ground the band
+      already covers. **And with a drag it stops being harmless**: a press on her was deliberate,
+      but a finger sweeping across the screen crosses her without meaning to, and an unasked-for stop
+      mid-drag is the surprise the player names.
+
+      **The mouse is the part to get right.** A click aims from her own world position rather than
+      from a focal point, so this world check is currently the *only* way a desktop player stops her.
+      The band is screen space and a click lands in screen space, so **a click inside the band has to
+      stop her too** — otherwise removing the world check takes stopping away from a mouse
+      altogether.
+
+      Nothing on screen needs changing to say so: the movement lesson already loses *"tap her to
+      stop"* two items down. `set_direction()`'s own fallback for a press exactly on `from` stays —
+      it is what the one test that calls straight in with an exact point relies on
 - [ ] **The movement lesson says two things and nothing else.** *(2026-09-07: "the movement tutorial
       should just say "Tap to walk" and "Double tap to run". no mention of tapping her or "that
       way".")* Three places carry the wording: `HUD._teach_the_day()` says

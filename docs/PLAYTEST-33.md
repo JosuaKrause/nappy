@@ -1,12 +1,12 @@
 # Playtest 33 — 2026-09-07
 
-A session on the build M83 left, given as notes in one conversation. **Twelve findings and one
-question.** Seven are about the controls and the screens around them — the focal points M83 added
+A session on the build M83 left, given as notes in one conversation. **Thirteen findings and one
+question.** Eight are about the controls and the screens around them — the focal points M83 added
 but drew nothing for, the drag that went with the deleted stick, the stop band the drag needs under
-it, the wording of the movement lesson, the pressed look of a button, a tap on the ending screen
-that lands in the game, and the keys that begin a run. Four are about where events arrive from, and
-they raise M77 to the front of the queue. One is a lethality defect on the cyclist. The question is
-about `tools/release.sh`.
+it, the tap-to-stop that band replaces, the wording of the movement lesson, the pressed look of a
+button, a tap on the ending screen that lands in the game, and the keys that begin a run. Four are
+about where events arrive from, and they raise M77 to the front of the queue. One is a lethality
+defect on the cyclist. The question is about `tools/release.sh`.
 
 ---
 
@@ -187,9 +187,35 @@ not a direction at all**. A band centred on the centre line, as wide across as t
 stops her — the same thing a press on her or on a focal point already does.
 
 `TouchControls.STOP_RADIUS` is 48px, so the stop circle is 96px across and the band is
-`x ∈ [592, 688]` in the 1280x720 design box: `absf(design.x - 640.0) <= STOP_RADIUS`. Reading
-*"size of the stop circle"* as its **diameter** is the choice being made here, and it is the one
-that makes the band the same reach either side that the stop circle has.
+`x ∈ [592, 688]` in the 1280x720 design box: `absf(design.x - 640.0) <= STOP_RADIUS`.
+
+**The diameter reading is confirmed and the band is not drawn.** *(2026-09-07: "the band doesn't get
+drawn and yes it's the diameter in size.")* So the two control circles item 2 asks for by name are
+the only things this scheme draws besides the pause button.
+
+## 13. Tapping her to stop goes away, because the band already is that area
+
+> "with that we can remove tap the player to stop since it's the same area and if a movement
+> accidentally goes over the player it might become surprising to see her stop"
+
+**"The same area" is literally true, and it is the camera that makes it so.** The camera sits on her,
+so she is at the centre of the screen — `x = 640` in the design box — which is the middle of the stop
+band. The world-space check that stops her, `world.distance_to(_rig.global_position) <= STOP_RADIUS`
+in `TouchControls._on_tap()`, is therefore a second name for ground the band already covers.
+
+**And with a drag it stops being harmless.** A press that lands on her was a deliberate act; a finger
+sweeping across the screen passes over her without meaning to, and a stop nobody asked for in the
+middle of a drag is the surprise the player names. So the band replaces it rather than sitting
+alongside it.
+
+**It reaches the mouse too, and that is the part to get right.** A mouse click aims from her own
+world position rather than from a focal point, so the world-space check is currently the *only* way
+a desktop player stops her. The band is screen space and a mouse click lands in screen space, so a
+click in the middle band has to stop her as well — otherwise removing the world check takes stopping
+away from a mouse entirely.
+
+Nothing on screen has to change to say so: the movement lesson is already losing *"tap her to
+stop"* under finding 4.
 
 ---
 
