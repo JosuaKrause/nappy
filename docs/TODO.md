@@ -362,6 +362,57 @@ about to be tagged already carries a version tag.**
 
 ---
 
+## M87 — A direction is not one of four · asked for 2026-09-07
+
+**Unordered.** Opened from a question rather than a complaint *(2026-09-07: "how does the telemetry
+handle directions? also, is there a cli way to set the directions? it was only nswe before")*, and
+the answer to both halves is that four is all there is.
+
+**The cause is that M82 changed what a heading is and neither the log nor the rig followed.** Under
+arrow keys a heading really was one of eight and four of those were the axes, so a four-way
+vocabulary lost almost nothing. A press now sets an **arbitrary unit vector** — `TouchControls
+.heading_to()` normalises the offset from her or from a focal point — so most headings a player
+produces are diagonal, and both halves below still speak in quarters.
+
+- [ ] **The run log rounds every heading to one of four words.** `TelemetryLog.compass()` answers
+      `nowhere` for an essentially zero vector, then `east`/`west` when `absf(x) > absf(y)` and
+      `south`/`north` otherwise (+y is south, since the city is drawn from above). Two entries use
+      it: `start`, which writes `doorstep (x,y), facing <compass>` off `Stroller.facing`, and `turn`,
+      which writes `doubled back <compass>` off `velocity.normalized()`.
+
+      **What that costs now that headings are continuous**: 44° logs `east`, 46° logs `north`, and
+      exactly 45° takes the `north`/`south` branch because `absf(x) > absf(y)` is false. Two runs
+      that went visibly different ways can write the same word, and one run can change the word
+      without turning at all.
+
+      **The detection underneath is not quantised and does not need changing.**
+      `TelemetryObserver._watch_direction()` compares real vectors with `angle_to()` against
+      `TURN_ANGLE` (120°) and eases the committed heading at `TURN_FOLLOW_RATE` (1.5/s), and the dusk
+      map draws the walk itself. **Only the noun is lossy**, so this is a formatting change and the
+      thing to decide is what replaces four words — eight, or a bearing in degrees beside the word,
+      or the word with the vector after it. A bearing is exact and a word is readable; the log is
+      read by people, so do not silently drop the word
+- [ ] **No rig can drive a heading that is not an axis, or a drag, or a double tap.**
+      `AutoScreenshot` offers `--walk north|south|east|west`, which holds one `move_*` action for the
+      whole run, and `--walk 1s5e`, a script of `<seconds><letter>` steps with letters `n`/`s`/`e`/`w`
+      — **one action per step, so no step presses two and no diagonal is expressible.** `--tap X Y`
+      does go through the new scheme and can set any angle, but it is a single synthetic
+      `InputEventScreenTouch` fired the moment the run starts: no sequence, no drag, no double tap.
+
+      **This is what makes it urgent rather than tidy.** M85 adds a drag that re-aims continuously
+      and a stop band down the middle of the screen, and **nothing in the rigs can exercise either**
+      — while the **verify** rule is that verification lives in the test rigs rather than in watching
+      the game. It also means `tools/shot.sh --walk 3s15e` can no longer reproduce a route a player
+      would actually walk, since a player's route is now mostly diagonal.
+
+      What it wants is a script that speaks the scheme the game actually has: a timed sequence of
+      presses at screen positions, with a hold-and-move step and a double press, alongside the
+      existing `move_*` one. **Keep the existing vocabulary working** — `1s5e` is what the M64
+      density figures and several evidence captures were taken with, and a rig whose old scripts stop
+      reproducing is a rig that invalidates its own back catalogue
+
+---
+
 ## M78 — The chalk mark can be found · asked for 2026-09-02
 
 Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
