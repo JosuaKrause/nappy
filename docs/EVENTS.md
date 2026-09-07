@@ -662,10 +662,10 @@ alone is answering a narrower question than it thinks.
 | `police_patrol` | +15.9 | +46.2 | |
 | `market_stall` | +16.5 | +28.3 | |
 | `charging_dog` * | +16.9 | — | ●● |
+| `cyclist` * | +20.9 | +29.7 | ●● |
 | `cat_dash` | +24.1 | +37.5 | |
 | `playground` | +25.5 | +44.3 | — |
 | `checkpoint` | +29.0 | +59.4 | ● |
-| `cyclist` * | +30.2 | +45.9 | ●● |
 | `homeless_yeller` | +31.2 | +59.6 | ● |
 | `ice_cream_van` | +31.5 | +65.8 | ● |
 | `reversing_lorry` * | +32.6 | +53.3 | ●● |
