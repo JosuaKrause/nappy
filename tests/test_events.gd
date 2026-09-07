@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_a_pursuer_leaves_room_to_answer(t)
 	_test_the_answer_is_priced_by_how_soon_it_is_given(t)
 	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
+	_test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 	_test_a_pursuer_can_wait(t)
 	_test_a_pursuer_stops_at_walls(t)
 	_test_a_retried_day_is_the_same_day(t)
@@ -486,6 +487,49 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 		t.check(_sited_at(def) >= standoff,
 				"'%s' is sited at %.0fpx, at or beyond the %.0fpx it stops at, so it closes rather "
 				% [def.id, _sited_at(def), standoff] + "than backing away through its own telegraph")
+
+## **A row declared lethal has to actually get the chance to be lethal.** *(2026-09-07: "also a
+## biker hit should be lethal.")* `cyclist` carries `hard_fail = true`, but
+## `EventInstance.is_lethal_at()` returns false for the whole of `is_telegraphing()` — so a
+## `TOWARD_PLAYER` row sited close enough to reach her before its own telegraph ends rides straight
+## through, declared lethal and never once able to fire. `EventDirector._toward_her()` sites a
+## `hard_fail` row at `Tuning.outlasting_telegraph_lead()` rather than the plain offscreen margin
+## precisely so this cannot happen; this checks the contract directly, at the instance level, rather
+## than trusting the siting alone.
+##
+## Walks every `hard_fail` `TOWARD_PLAYER` row in the catalogue rather than naming `cyclist`, so a
+## second row of the same shape is covered by construction rather than by remembering to add it.
+func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t) -> void:
+	var checked := 0
+	for def in EventCatalogue.all():
+		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER or not def.hard_fail:
+			continue
+		checked += 1
+		var closing := def.speed + Tuning.WALK_SPEED
+		var lead := Tuning.outlasting_telegraph_lead(Vector2.RIGHT, closing, def.telegraph_time)
+		# The same construction `_toward_her` uses: sited `lead` ahead along the heading, routed the
+		# same distance behind so it is still going somewhere when it reaches her.
+		var path := PackedVector2Array([Vector2(lead, 0.0), Vector2(-lead, 0.0)])
+		var instance := EventInstance.new()
+		instance.setup(def, path[0], path)
+		var her := Vector2.ZERO
+		var was_lethal := false
+		var elapsed := 0.0
+		# Generous over the time they would meet at, so a regression that undershoots the lead only
+		# a little still gets caught rather than timing the loop out first.
+		var limit := lead / closing * 1.5
+		while elapsed < limit and not instance.is_finished:
+			her.x += Tuning.WALK_SPEED * STEP
+			instance._process(STEP)
+			if instance.is_lethal_at(her):
+				was_lethal = true
+				break
+			elapsed += STEP
+		t.check(was_lethal,
+				"'%s' is declared hard_fail but the approach never once outlasts its own %.1fs "
+				% [def.id, def.telegraph_time] + "telegraph before it reaches her")
+		instance.free()
+	t.check(checked > 0, "there is at least one hard_fail TOWARD_PLAYER row to check ('cyclist')")
 
 ## **A retried day is the same day.** *(M39, playtest 10 finding 5: "the tutorial dog on day 3 only
 ## appeared once (I died) then it didn't appear again.")*

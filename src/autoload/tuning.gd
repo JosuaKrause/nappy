@@ -1036,6 +1036,27 @@ func offscreen_lead(heading: Vector2, closing_speed: float) -> float:
 func min_offscreen_lead(closing_speed: float) -> float:
 	return min_offscreen_boundary() + closing_speed * OFFSCREEN_NOTICE
 
+## Where a `hard_fail` row travelling toward her has to be sited so its own telegraph is over
+## *before* it reaches her, not merely so it starts off screen.
+##
+## **A declared `hard_fail` that arrives while still `is_telegraphing()` is not lethal at all** —
+## `EventInstance.is_lethal_at()` refuses the whole time, so a row sited close enough rides straight
+## through her, "declared" lethal and never once able to fire. *(2026-09-07: "also a biker hit
+## should be lethal.")* `cyclist` (`telegraph_time` 3.3s) sited at the old flat 200px and closing at
+## 257px/s arrived in 0.78s — nowhere near outlasting a 3.3s telegraph.
+##
+## So the siting is whichever is further: `offscreen_lead()` (the ordinary offscreen margin every
+## `TOWARD_PLAYER` row gets), or the distance that takes `telegraph_time + OFFSCREEN_NOTICE` to
+## close at `closing_speed` — the same 200ms margin restated over the telegraph instead of the view
+## boundary, so the approach outlasts it by a real amount rather than by a coin flip of frame
+## timing. For `cyclist` the telegraph term dominates: `(3.3 + 0.2) * 257` = 900px, against a
+## `offscreen_lead()` of 371px on the widest axis — the telegraph is the binding constraint, not the
+## screen.
+func outlasting_telegraph_lead(heading: Vector2, closing_speed: float,
+		telegraph_time: float) -> float:
+	return maxf(offscreen_lead(heading, closing_speed),
+			(telegraph_time + OFFSCREEN_NOTICE) * closing_speed)
+
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".
 const AHEAD_MIN_SPEED := 40.0

@@ -198,6 +198,15 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## axis; this is not, on either axis — for `cyclist` at 165px/s the closing speed is 165 + 92 =
 ## 257px/s, 51px of margin past the boundary.
 ##
+## **A `hard_fail` row is sited further still, so its own telegraph is over before it arrives.**
+## *(2026-09-07: "also a biker hit should be lethal.")* `Tuning.outlasting_telegraph_lead()` takes
+## whichever is further: the ordinary offscreen margin, or the distance that takes
+## `telegraph_time + OFFSCREEN_NOTICE` to close. `cyclist`'s 3.3s telegraph is the binding term —
+## `(3.3 + 0.2) * 257` = 900px — against a 371px offscreen margin on the widest axis. A row this far
+## out is well past `EVENT_STREAM_RADIUS`'s own concerns; it exists for exactly this one moment and
+## is created only when it is due, so there is no cost to sitting it further than a `MAP` row ever
+## would be.
+##
 ## The far end of the route runs the same distance **behind** her rather than stopping where she
 ## is standing: it has to still be going somewhere when it reaches her, or `EventInstance` reads
 ## the end of its path as *arrived* and leaves right where it met her, which is exactly the
@@ -208,7 +217,9 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## retry the near point only, because a route that starts on the pavement and ends in a wall is not
 ## a route either.
 func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
-	var lead := Tuning.offscreen_lead(heading, def.speed + Tuning.WALK_SPEED)
+	var closing := def.speed + Tuning.WALK_SPEED
+	var lead := Tuning.outlasting_telegraph_lead(heading, closing, def.telegraph_time) \
+			if def.hard_fail else Tuning.offscreen_lead(heading, closing)
 	var far := at + heading * lead
 	if not _map.is_walkable(_map.world_to_tile(far)):
 		return PackedVector2Array()

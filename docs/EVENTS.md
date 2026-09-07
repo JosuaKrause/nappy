@@ -143,6 +143,17 @@ steam; a pursuer sited outside the view is exactly that for as long as it stays 
 `DangerEdge._is_worth_an_arrow` announces it the same way it announces `TOWARD_PLAYER` — a row moved
 further out without the badge following it would have *less* warning than it had before, not more.
 
+**A `hard_fail` `TOWARD_PLAYER` row is sited further still, so its telegraph is over before it
+arrives.** `EventInstance.is_lethal_at()` refuses the whole time an event `is_telegraphing()`, so a
+row sited only past the offscreen margin can close the gap and ride straight through her while
+still telegraphing — declared lethal and never once able to fire. *(2026-09-07: "also a biker hit
+should be lethal.")* `Tuning.outlasting_telegraph_lead()` takes whichever is further: the ordinary
+offscreen margin, or the distance that takes `telegraph_time + OFFSCREEN_NOTICE` to close at the
+row's own closing speed. For `cyclist` (telegraph 3.3s, closing 257px/s) the telegraph term wins:
+`(3.3 + 0.2) * 257` = 900px, against a 371px offscreen margin on the widest axis — the fix is the
+siting, not a shortened telegraph, which would have bought the lethality back by taking the notice
+away.
+
 ## Solid things are solid
 
 `obstructs_radius` is not a field to reach for when a particular event wants to block a pavement.

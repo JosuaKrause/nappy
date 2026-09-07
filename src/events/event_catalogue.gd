@@ -707,6 +707,15 @@ static func _pigeon_flock() -> EventDef:
 ## (231px at this row's 165px/s — 180 for the vertical axis plus 51 for 200ms of closing), which
 ## 145 sits comfortably under.
 ##
+## **`hard_fail` has to survive its own telegraph, or the "ends your day" above is not true.**
+## *(2026-09-07: "also a biker hit should be lethal.")* `EventInstance.is_lethal_at()` refuses the
+## whole time an event `is_telegraphing()`, and this row's telegraph is 3.3s: sited at the ordinary
+## offscreen margin alone (371px on the widest axis) it would close the 257px/s gap in 1.4s and ride
+## straight through her, still telegraphing. `EventDirector._toward_her()` sites a `hard_fail` row
+## at `Tuning.outlasting_telegraph_lead()` instead, which for this row is the telegraph term rather
+## than the offscreen one: `(3.3 + 0.2) * 257` = 900px, closing in 3.5s — 0.2s past the telegraph
+## rather than a coin flip of frame timing.
+##
 ## **`inner_radius` is 33px, not the 26 a bike's own width would suggest.** *(Playtest 25, finding
 ## 7: "biker currently is also basically inconsequential. when hit it should be dayending" — and the
 ## report was from the local desktop build, where dying otherwise demonstrably works, so the miss was
