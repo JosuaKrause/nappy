@@ -53,6 +53,7 @@ func run(t) -> void:
 	_test_only_cars_go_over_the_bridge(t)
 	_test_the_crowd_agrees_a_zone_absorbed_the_corridor(t)
 	_test_agents_do_not_overrun_an_ordinary_edge(t)
+	_test_walkers_follow_the_selected_presentation(t)
 
 	_city.free()
 
@@ -78,6 +79,26 @@ func _test_population_follows_the_act(t) -> void:
 				== Tuning.crowd_pedestrians(act) + Tuning.crowd_cars(act),
 				"day %d (act %d) puts the act's whole population on the streets"
 				% [day, act])
+
+func _test_walkers_follow_the_selected_presentation(t) -> void:
+	_city.crowd.start_day(1, _rng(1))
+	var illustrated := DevFlags.illustrated_requested()
+	var walkers := 0
+	var cars := 0
+	for agent: CrowdAgent in _city.crowd.agents():
+		if agent.kind == CrowdAgent.Kind.WALKER:
+			walkers += 1
+			t.check((agent.walker_visual != null) == illustrated,
+				"walker presentation follows the explicit graphics selection")
+			if illustrated:
+				t.check(agent.walker_visual.global_position == agent.global_position and
+					agent.walker_visual.position == Vector2.ZERO,
+					"illustrated walker presentation shares owner coordinates without an offset")
+		else:
+			cars += 1
+			t.check(agent.walker_visual == null and not agent.has_node("ModularWalker"),
+				"car retains its legacy presentation")
+	t.check(walkers > 0 and cars > 0, "walker presentation invariant covers both live kinds")
 
 ## The point of the number, not the number: from act III there is nobody left going out, and
 ## the city becomes an easier place to put a baby to sleep. If that ever inverts, the horror

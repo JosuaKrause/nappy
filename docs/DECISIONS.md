@@ -1,5 +1,102 @@
 # Decisions
 
+## M84 — Opt-in illustrated presentation · 2026-09-06
+
+PLAYTEST-31 asked for the large graphics-overhaul branch to merge while its initial illustrated
+runtime remains reviewable rather than becoming the published look. The baseline is therefore the
+legacy SVG presentation. `--illustrated` opts into the illustrated runtime on the command line and
+`?illustrated=1` does so on web builds; an absent argument or `illustrated=0` remains legacy. The
+web query is deliberately outside developer-flag gating because an exported build is where the
+review must happen. It selects presentation only: movement, collision, crowd behavior and gameplay
+randomness remain the same simulation.
+
+The character repair restored the mother sheet's measured hip and knee pivots after the preceding
+scale adjustment shortened them, and derives the pram lift from its wheel pivot and the sheet's
+ground baseline. Focused headless contracts cover parser defaults, opt-in selection, legacy
+bindings, joint registration and wheel grounding. The illustrated result is not visually approved:
+a display-capable review still needs to inspect mother/pram scale, leg attachment, foot and wheel
+contact, and layer ordering while the opt-in is active.
+
+## Illustrated assets and experiment preservation — 2026-09-06
+
+PLAYTEST-30 preserves the full reference discussion. The player briefly chose a diagonal grid, then explicitly tabled it again:
+"let's not go diagonal for now but try to match the diagonal artworks style". The implemented
+projection is not changed. Main's M79 investigation was read and supplemented with the distinction
+between rotation and dimetric compression, upright artwork, long-footprint sorting, silhouette
+occlusion and inverse-projected streaming bounds.
+
+The selected next sample is illustrated 2.5D PNG art with modular character parts and eight views,
+not primitive 3D geometry. The mother follows the supplied green-coat, scarf and bun reference.
+Foot planting must follow actual world travel; distance-driven oscillation alone did not satisfy
+the player's gait feedback. The supplied cardinal mockup is a composition reference, not a change
+away from the richer illustrated style. Minimap, portraits and bottom-bar action verbs were not
+adopted. All four distinct supplied reference files were committed.
+
+Before direction-changing edits, every graphics worktree was committed and pushed, including
+rejected experiments. The player then requested that rejected histories be kept inside the one
+overhaul branch, with no dangling branches. The snapshot commits are: SVG actors/events
+`de81fc7`, earlier city `9215a9a`, earlier UI `38036ac`, 3D projection `1dace44`, articulated animals
+`9ef72e3`, and the newer screen study `d9b6ad9`. The original stash also received a remote backup.
+These histories are preserved through ancestry-only merges where their content is not adopted;
+`git show <commit>:<path>` retrieves the exact experiment. The SVG actors/events polish remains
+eligible for its separately requested PR, not evidence that the full overhaul is complete.
+## Graphics prototype review — 2026-09-06
+
+The player asked to review the proposed graphics and identified the study's single-family houses
+as inappropriate for a city. The apartment-block direction became explicit in VISUALS.md and the
+architecture expansion paused for review; projection and other independent implementation could
+continue. Revised-lighting captures were offered as review material, not approved art:
+`evidence/archive/rejected-graphics/graphics-study-review-day1.png`, `evidence/archive/rejected-graphics/graphics-study-review-day14.png`, and
+`evidence/archive/rejected-graphics/graphics-study-review-motion.mp4`. These came from standalone street-study revision
+`05d3924` with corrected actor revision `7dfab84`, captured in one bounded Compatibility run.
+The motion file encodes its 24 captured frames at 12 fps; it is not a gameplay demonstration.
+
+The graphics draft integrated main through `2bac221` and opened PR #19 at the player's request
+as a tracking draft, not a completed overhaul. The headless boot, focused HUD/main/pause/quit
+suites and lint passed. Initial articulated model work and its wheel/gait corrections were merged
+into the draft; the live game renderer was not replaced.
+
+A single externally bounded windowed street-study capture exited normally. Its early frame is
+`evidence/archive/rejected-graphics/graphics-study-first-render.png`, rendered from `2c5c713` with the Compatibility backend,
+1280x720 window and `--preview-capture`. Review rejected it as a production target: paving and
+facades were washed out, roof planes lacked material detail, shadows were visibly jagged, and
+actors were too small. `Camera3D.size = 20` had treated a desired horizontal span as the default
+vertical span. Corrections returned to the Luna city agent before live renderer integration.
+The roof-reveal and browser-performance gates remained open. This evidence is a standalone art
+study, not a gameplay trace or a claim that the whole overhaul was present.
+
+## Graphics redesign — 2026-09-05
+
+The player requested a whole-game overhaul and explicitly rejected the first implementation's
+SVG outline and polish approach: "a full overhaul of the graphics as if nothing had existed
+before". The correction includes animation, every screen, projecting roof depth with stylized
+occlusion reveal, actual excitement-source feedback, late-game deterioration and reconsidered
+objective guidance. Full wording is in `PLAYTEST-30.md`; `PLAYTEST-25.md` is reserved for the
+separate mobile playtest on the other development branch.
+
+The player approved the standalone cardinal apartment-street review with "looks good continue".
+The accepted gate is the illustrated PNG ground, continuous apartment frontage, roof depth and
+stable dotted occlusion; binding it to the live player is the next implementation slice. Approval
+does not turn the review scene into a completed overhaul or approve the still-open presentation
+families.
+
+The initial SVG polish is preserved in a local stash and isolated worktrees, not adopted as the
+new art direction. The prior keep-every-roof-inside-its-lot restriction and SVG-only assumption are
+open to replacement under the player's explicit instruction to rethink graphics and challenge
+earlier guidelines. Collision and route guarantees still describe gameplay and are not repealed
+by an artistic roof projection.
+
+`VISUALS.md` specifies the redesign from the player's supplied urban, cardinal-layout and mother
+references. The first implementation experiment uses native orthographic 3D and articulated models
+with Godot's Compatibility renderer. Native 3D must pass a rendered movement and browser-cost
+review before it defines the production pipeline; rendered PNG animation atlases from the same
+models are the fallback worth measuring. Blender is absent on this machine and is not installed by
+the experiment.
+
+The requested main update brought in the release-tag pinning fix. The separate branches for the
+mobile playtest and event costs also contain relevant title/control and field instructions, so
+the new presentation must coordinate with them rather than overwrite them.
+
 **This file is the history. Nothing in it describes the game as it is now.**
 
 Every other document in this repo states the current state and only the current state. When one of
@@ -5420,7 +5517,7 @@ exception) and `leaf_blower` (20.0 over 40/200px) kept their fields. The scale i
 plans 147 `cafe_tables`, 124 `market_stall` and 84 `delivery_van` — 355 static bodies, because
 sealing puts a barrier on every street off the day's route tree — and fields sum, so the measured
 symptom was excitement going **35 → 69 in fifteen seconds of calm ground** in the player's own run
-(`docs/evidence/run-181812-seed3038142309-v0.2.0-6-gedeed04-dirty/`), with the log reading
+(`docs/evidence/archive/session-captures/2026-09-05/run-181812-seed3038142309-v0.2.0-6-gedeed04-dirty/`), with the log reading
 `near market_stall 184px … in 14.2/s (crowd 3.6, events 10.6)`.
 
 **Two of the five kept a field instead of losing it, and that is a narrower answer than the item
@@ -7439,8 +7536,8 @@ project now has the instrument to say whether it closed.
 
       **The picture is the check, and it is the finding's own instrument.** The same day either side
       of the change is in `docs/evidence/`:
-      [before](evidence/rig-2026-09-01T014558-seed4242-f604488-dirty-map-day01.png) and
-      [after](evidence/rig-2026-09-01T014420-seed4242-f604488-dirty-map-day01.png), seed 4242, day 1.
+      [before](evidence/archive/session-captures/2026-09-01/rig-2026-09-01T014558-seed4242-f604488-dirty-map-day01.png) and
+      [after](evidence/archive/session-captures/2026-09-01/rig-2026-09-01T014420-seed4242-f604488-dirty-map-day01.png), seed 4242, day 1.
       The yellow crosses gather onto the streets between the parallel purple strands and a good half
       of those streets are still bare. **Nothing was added to the map to show this**, deliberately:
       a gap that got a wall is a wall mark between two corridor lines and a gap that got nothing is
@@ -7480,9 +7577,9 @@ project now has the instrument to say whether it closed.
 
       Checked by eye, which is this project's own policy for layout and colour, and the pictures
       are in `docs/evidence/`:
-      [before](evidence/shot-2026-09-01-seed4242-d69631a-corner-nw-before.png) and
-      [after](evidence/shot-2026-09-01-seed4242-d69631a-corner-nw-after.png) at the north-west
-      corner, and [the south-east](evidence/shot-2026-09-01-seed4242-d69631a-corner-se-after.png)
+      [before](evidence/archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-before.png) and
+      [after](evidence/archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-after.png) at the north-west
+      corner, and [the south-east](evidence/archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-se-after.png)
       for the other pair of bands.
 
       **`--spawn corner:nw|ne|sw|se` is new and is half of why this was found by a player rather

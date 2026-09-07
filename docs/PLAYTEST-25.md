@@ -233,7 +233,7 @@ a decision the player cannot see and therefore cannot make. That is the opposite
 danger cue in this game exists to do.
 
 **The player supplied the run**, and it is copied into
-`docs/evidence/run-181812-seed3038142309-v0.2.0-6-gedeed04-dirty/` — a played desktop run on
+`docs/evidence/archive/session-captures/2026-09-05/run-181812-seed3038142309-v0.2.0-6-gedeed04-dirty/` — a played desktop run on
 `v0.2.0-6-gedeed04`, seed 3038142309, with its dawn and dusk maps and the two loss screenshots.
 
 **What the log shows, and it is not subtle.** Day 1 plans **147 `cafe_tables`, 124 `market_stall`

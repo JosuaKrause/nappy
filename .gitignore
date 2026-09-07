@@ -18,5 +18,8 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Python tooling environment, managed by uv from pyproject.toml and uv.lock.
+.venv/
+
 # Agent worktrees (full checkouts; never content of the repo itself)
 .claude/worktrees/

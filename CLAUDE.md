@@ -2,11 +2,52 @@
 
 Working guidelines for this repo. The *game* is documented in `docs/`.
 
-**These guidelines and `.claude/skills/` are shared by Claude Code and Codex.** Codex
-starts at [AGENTS.md](AGENTS.md), which explains how to load the same rules and adapt
-Claude-specific tools. Claude uses `.claude/settings.json`; Codex uses `.codex/hooks.json`
-and an adapter that runs the same rule-loading and lint scripts. Codex discovers the
-same skills through `.agents/skills`, which links to `.claude/skills`.
+**These guidelines and `.claude/skills/` are shared by Claude Code and Codex.** Claude uses
+`.claude/settings.json`; Codex uses `.codex/hooks.json` and an adapter that runs the same
+rule-loading and lint scripts. Codex discovers the same skills through `.agents/skills`, which
+links to `.claude/skills`.
+
+## Codex integration
+
+Claude Code's hooks in `.claude/settings.json` and Codex's hooks in `.codex/hooks.json` supply the
+same rule text through their native lifecycle events. Codex uses `tools/codex-hooks.py` to
+translate patch payloads to the existing Claude hook scripts. It loads rules for every patch path,
+including rename destinations, and lints edited docs. Session start, resume, compaction and
+subagent start reload the startup rules.
+
+The hooks need Python 3.9+, Bash and jq. In Codex, trust the repository and review the hooks
+through `/hooks`; untrusted or disabled hooks do not execute. Restart Codex if new hooks or skills
+do not appear. If a rule has not actually arrived in context, read its file explicitly before
+doing the governed work.
+
+At session start, read `.claude/skills/orchestrating/SKILL.md` before deciding how to divide the
+work. Delegation is recommended for specified implementation, using the cheaper-model defaults in
+`.codex/config.toml` and the skill's model-selection guidance. Keep design and final review in the
+orchestrating session. Before editing any file, consult `.claude/hooks/project-rules.sh`, the
+executable path-to-skill mapping, and read each matching `.claude/skills/<skill>/SKILL.md` in full.
+All matches apply: an event GDScript file requires both `events` and `godot`. These rules apply to
+edits through any tool, including patches and scripts.
+
+Also load `feedback` before responding to playtest feedback or design instructions, `committing`
+before git mutations or commit messages, and `session-cleanup` before the final report. Read any
+other skill whose description matches the task, and follow its referenced resources as needed. An
+explicit request for a repository skill means reading its file directly even if it is absent from
+the skill picker. Resolve relative resource paths from that skill's directory. Re-read rules after
+context loss if their contents are no longer available. Hooks observe nested tool calls made
+through code mode as well.
+
+If `.claude/rules/` is added, read its unscoped Markdown rules at startup and its path-scoped rules
+before work on matching files, respecting their `paths` frontmatter. Read any nested `CLAUDE.md`
+governing files you touch. The system, developer and user instructions take precedence over
+repository guidance.
+
+Codex uses file-reading tools or shell reads where a rule says `Read`, and `apply_patch` where it
+says `Edit` or `Write`. Preserve reviewable diffs and failures on stale matches. Where a skill
+names Claude's `Agent`/`Task` tools or Sonnet, use the available Codex delegation tools and models;
+preserve scope fences and verification requirements, and do not assume an agent has an isolated
+worktree unless one was actually created. Ordinary edits use patches; arbitrary shell scripts are
+for tools, git and inspection. Run `./tools/lint.sh` before committing even when post-edit lint
+hooks ran; it includes this entry point. A request for a PR ends with a reviewable PR.
 
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is

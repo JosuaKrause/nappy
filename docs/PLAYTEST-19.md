@@ -1,7 +1,7 @@
 # Playtest 19
 
 Played on 2026-09-02, on the deployed build, day 7 of seed 422405261. The trace is
-`docs/evidence/run-2026-09-02T174532-seed422405261-45552a7.log` and two screenshots came with it —
+`docs/evidence/archive/session-captures/2026-09-02/run-2026-09-02T174532-seed422405261-45552a7.log` and two screenshots came with it —
 a street-level shot of a barrier at a junction, and a telemetry map of the whole city.
 
 **The wording below is the player's, verbatim.** Everything under a *"What this side reads into
@@ -140,7 +140,7 @@ one.**
 > park) and an improperly closed off side (towards the south it should be closed off but isn't)"
 
 **Reproduced with a picture**, sent when this side had still not managed it from a rig:
-`docs/evidence/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png` — seed 2927659514,
+`docs/evidence/archive/session-captures/2026-09-02/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png` — seed 2927659514,
 day 1, standing at tile (80,1). The zebras on the north–south streets run all the way to the border
 and a crossing box is painted on an arm with nothing beyond it, **and the same frame has a car and
 two pedestrians standing on the out-of-bounds ground above the top pavement**. Both halves of this

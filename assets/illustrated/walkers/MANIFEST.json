@@ -1,0 +1,23 @@
+{
+  "direction_order": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+  "source_columns": ["S", "SE", "E", "NE", "N", "NW", "W", "SW"],
+  "symmetry": [],
+  "parts": {
+    "upper_body": {
+      "variants": {
+        "mustard_bob": {"file": "upper-mustard-bob-v1.png", "size": [2172, 724]},
+        "rust_curls": {"file": "upper-rust-curls-v1.png", "size": [2172, 724]}
+      },
+      "regions": "eight equal-width cells, floor-boundaries at x = floor(width*i/8)",
+      "pivot": "cell center x, 94% of cell height"
+    },
+    "left_upper_leg": {"file": "legs-denim-sneakers-v1.png", "row": [0, 240], "eight_regions": true, "pivot": "hip"},
+    "right_upper_leg": {"file": "legs-denim-sneakers-v1.png", "row": [0, 240], "eight_regions": true, "pivot": "hip"},
+    "left_lower_leg": {"file": "legs-denim-sneakers-v1.png", "row": [240, 500], "eight_regions": true, "pivot": "knee"},
+    "right_lower_leg": {"file": "legs-denim-sneakers-v1.png", "row": [240, 500], "eight_regions": true, "pivot": "knee"},
+    "left_shoe": {"file": "legs-denim-sneakers-v1.png", "row": [500, 724], "eight_regions": true, "pivot": "sole"},
+    "right_shoe": {"file": "legs-denim-sneakers-v1.png", "row": [500, 724], "eight_regions": true, "pivot": "sole"}
+  },
+  "ordering": "upper legs z=10, lower legs z=20, shoes z=30, upper body z=40; all remain children of the agent so y-sorting uses the agent origin",
+  "binding": "only CrowdAgent.Kind.WALKER creates ModularWalker; cars retain legacy SVG"
+}

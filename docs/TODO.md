@@ -552,7 +552,7 @@ nothing, so it does not compete for the catalogue's placement budget.
 
       **Measured, the same run:** a chalk mark is rolled and guarded by a nearby robber on every one
       of the four days it becomes eligible
-      (`docs/evidence/run-2026-09-03T002310-seed4070543669-5d342c9.log:240`, `:364`, `:546`, `:602`),
+      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log:240`, `:364`, `:546`, `:602`),
       and the run ends *"bad on day 7 — resistance 0/4, sabotage not done"* (`:701`) — not found once
       across the whole run, on every day one existed to find
 
@@ -1188,7 +1188,7 @@ direction, not distance.**
       **Measured, playtest 20** *(2026-09-03: "for some reason pursuing dogs after the run tutorial
       have a shorter lead up time making them much harder to react to.")*: across five
       `charging_dog` encounters in one seven-day run
-      (`docs/evidence/run-2026-09-03T002310-seed4070543669-5d342c9.log`), the day 3 tutorial
+      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log`), the day 3 tutorial
       encounter and every encounter afterward that ended in evasion all ran **1.5 seconds** from the
       `chase` starting to the dog giving up. The two encounters that instead killed her — one on day
       4, one on a day 5 retry — ran **0.8 and 0.9 seconds**, roughly half, with the dog closing
@@ -1225,7 +1225,7 @@ direction, not distance.**
 - [ ] **Junctions are four-way where an arm dead-ends — reproduced, with a picture.**
       *(2026-09-02, from play: "the intersections are not t intersections", of the **north edge**.)*
       **Seed 2927659514, day 1, standing at tile (80,1)** —
-      `docs/evidence/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png`. The zebras on the
+      `docs/evidence/archive/session-captures/2026-09-02/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png`. The zebras on the
       north–south streets run all the way to the border and a crossing box is painted on an arm with
       nothing beyond it. Three earlier candidates were checked and were correct, which is why this
       sat as *not reproduced* for so long: the map's own border is the one place an arm genuinely

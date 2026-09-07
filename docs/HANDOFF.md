@@ -123,6 +123,24 @@ joystick playtest 27 specified and never built, the `RUN` button and the title s
 buttons are all deleted rather than one replacing another. The record is in `DECISIONS.md` under
 M82.
 
+**The illustrated presentation exists behind a flag, and it is rejected as it stands.** The game
+draws its legacy SVG graphics unless `--illustrated` (locally) or `?illustrated=1` (on the web)
+opts in, and neither changes gameplay. The focused parser, legacy-binding, grounding and boot
+checks pass; the display review does not.
+
+The concept capture is [illustrated-street-review.png](evidence/archive/session-captures/2026-09-06/illustrated-street-review.png).
+The street study is completely off and must be redone from scratch: it has no coherence or sense,
+and it uses reference imagery that does not fit the game's art style. It is not an approved visual
+direction or a basis for extending the asset family.
+
+The gameplay capture is [illustrated-gameplay-review.png](evidence/archive/session-captures/2026-09-06/illustrated-gameplay-review.png).
+It shows disconnected limbs in the wrong topological order, with positions incorrect relative to
+their owners and ground anchors. The compositor needs its layer order, pivots and placement rebuilt
+before another acceptance review. The record is in `DECISIONS.md` under M84.
+
+[Illustrated gameplay repair instructions](ILLUSTRATED-GAMEPLAY-FIXES.md) specify the asset,
+attachment, gait and sorting repairs, their order, and the visual acceptance checks for this capture.
+
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the
 frame; the export publishes `index.js`, `index.wasm` and `index.pck` under a directory named for the

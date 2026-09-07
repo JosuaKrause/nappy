@@ -108,10 +108,10 @@ Evidence cannot be recovered by replaying: **a run log is a record of what a pla
 not a function of the seed.** Regenerating gives a different run with the same city.
 
 **Copy the whole `<run>/` folder under `docs/evidence/`.** A run *is* a folder —
-`user://telemetry/<day>/<minute>/<run>/`, holding `run.log` and its `maps/`, `auto/` and `asked/`
+`user://telemetry/<day>/<run>/`, holding `run.log` and its `maps/`, `auto/` and `asked/`
 pictures — and **the run folder's own name carries the time, the seed and the commit**, since no
 single file inside it does. That name is self-describing on purpose, so the copy does not need its
-`<day>/<minute>/` ancestors to be identifiable. A lone picture lifted out of it is evidence with its
+`<day>/` ancestor to be identifiable. A lone picture lifted out of it is evidence with its
 ancestry left behind: nothing in the copy says which run it came from or what the code was when it
 was taken.
 

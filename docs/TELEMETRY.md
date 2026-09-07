@@ -30,11 +30,11 @@ The absolute path of the run's own folder is also printed to stdout at the start
 Both the script and the print exist for the same reason: a trace nobody can find is a trace
 nobody reads, and on macOS the directory is inside `~/Library`, which Finder hides by default.
 
-**A run is a folder, `<day>/<minute>/<run>/`, and every level is there to be deleted by hand.**
+**A run is a folder, `<day>/<run>/`, and the date and run are independently removable.**
 For example:
 
 ```
-user://telemetry/2026-09-03/2054/run-205437-seed2102613802-v0.0.0-49-gdb09693-dirty/
+user://telemetry/2026-09-03/run-205437-seed2102613802-v0.0.0-49-gdb09693-dirty/
 ├── run.log
 ├── maps/
 │   ├── day01-attempt1.png
@@ -50,9 +50,6 @@ user://telemetry/2026-09-03/2054/run-205437-seed2102613802-v0.0.0-49-gdb09693-di
 
 - **`<day>`** is the calendar date the run was played (not the in-game day the log talks about),
   so a bad week of testing can be cleared with one `rm -rf` of its date folders.
-- **`<minute>`** is `HHMM`, the run's own start time truncated to the minute — a colon-free
-  spelling, chosen because a colon in a path is trouble on macOS, where Finder renders one as `/` —
-  so a busy sitting can be thinned to the minutes worth keeping without opening a single run.
 - **`<run>`** is the individual run, and its name carries what a level per commit used to split
   across two folders: `run-` when a person was at the controls, `rig-` for a headless boot or
   anything driven by `--screenshot`, `--walk`, `--flee` or `--press`; the full `HHMMSS` time of day
@@ -60,11 +57,11 @@ user://telemetry/2026-09-03/2054/run-205437-seed2102613802-v0.0.0-49-gdb09693-di
   version tag, commits since, and the abbreviated hash the run was played on
   (`v0.0.0-49-gab12cd3`), with `-dirty` appended if the tree was not clean, the same mark as the
   log's own first line. `tools/telemetry.sh -p` compares that tail against the same `git describe`,
-  by path alone, to say what is stale. Repeating the parent folder's hour and minute in the run's
-  own name is a few redundant characters, and what it buys is that a run folder still identifies
-  itself once copied out on its own — into `docs/evidence/`, or pasted into a message. The version
-  goes **last**, so sorting the run folders within one `<day>/<minute>` by name still sorts them by
-  age, because the time leads the name.
+  by path alone, to say what is stale. The full time of day in the run's own name is the only clock
+  anywhere in the path — the parent folder carries the calendar date and nothing finer — and it is
+  what lets a run folder still identify itself once copied out on its own, into `docs/evidence/` or
+  pasted into a message. The version goes **last**, so sorting the run folders within one `<day>`
+  by name still sorts them by age, because the time leads the name.
 - **`run.log` sits directly in the run's folder**, not in a subfolder of its own — it is the one
   artefact every run has, so it needs nothing to distinguish it from a sibling of its own kind.
 - **The three picture kinds each get their own subfolder**, so a directory listing separates them
@@ -77,8 +74,8 @@ user://telemetry/2026-09-03/2054/run-205437-seed2102613802-v0.0.0-49-gdb09693-di
 
 **The game never deletes anything under `user://telemetry/`.** *(2026-09-03: "no automatic cleanup
 anymore", "the folder structure allows for easily deleting old days/commits".)* The directory grows
-without bound on purpose: `<day>/<minute>/<run>/` is a hierarchy built to be cut into by hand, and
-clearing it — a day, a few minutes of one, or everything — is a decision for whoever is looking at
+without bound on purpose: `<day>/<run>/` is a hierarchy built to be cut into by hand, and
+clearing it — a day, one run, or everything — is a decision for whoever is looking at
 the directory, not one the game makes behind them. `tools/telemetry.sh -p` (`-p yes` to actually
 delete) is the one thing that still removes anything, and it does that because a person ran it.
 
@@ -487,7 +484,7 @@ the picture existing — where she actually went, held next to where the day exp
 marks are blended into the ground rather than painted over it for the same reason: a trail solid
 enough to hide the corridor underneath it would answer only half the question.
 
-**`docs/evidence/rig-2026-09-02T233549-seed4242-3c6d4b4-dirty-map-day01-dusk.png`** is the trail
+**`docs/evidence/archive/session-captures/2026-09-02/rig-2026-09-02T233549-seed4242-3c6d4b4-dirty-map-day01-dusk.png`** is the trail
 reading rather than being argued for: day 1 of seed 4242, walked from the real doorstep with
 `AutoScreenshot`'s `--walk 3s15e` — three seconds of south to clear the notch, then fifteen of east
 along the pavement. The trail turns once, south into east, and runs continuously for about forty

@@ -113,6 +113,7 @@ var _junction := -1
 var _picture := Vector2i(-1, -1)
 ## Whether the horn caret was up last frame, so it gets one redraw to come off with.
 var _was_horning := false
+var walker_visual: ModularWalker
 
 ## The speed this agent wants to be doing. A car brakes toward 0 for a crossing somebody is
 ## waiting at and accelerates back to `_cruise` afterwards; walkers never use it.
@@ -179,6 +180,12 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 		axis_roll = _rng.randf()
 	_settle_junction()
 	colour = _colour()
+	if kind == Kind.WALKER and DevFlags.illustrated_requested():
+		walker_visual = ModularWalker.new()
+		walker_visual.name = "ModularWalker"
+		add_child(walker_visual)
+		walker_visual.set_variant("rust_curls" if abs(seed_value) % 3 == 0 else "mustard_bob")
+		walker_visual.reset_at(position, heading())
 
 ## Marks the junction this agent is standing in, if it is standing in one, so that it does not
 ## roll a turn on its very first frame.
@@ -215,6 +222,7 @@ func _stands_on_a_street() -> bool:
 	return _map.is_street(tile)
 
 func _process(delta: float) -> void:
+	var before_position := position
 	_jolt = maxf(0.0, _jolt - delta)
 	if _detour_left > 0.0:
 		_detour_left = maxf(0.0, _detour_left - delta)
@@ -230,8 +238,12 @@ func _process(delta: float) -> void:
 	_look_ahead()
 	if _blocked_in <= LOOKAHEAD_TILES:
 		_divert()
+	var recycled := false
 	if _has_left_the_field():
 		_recycle()
+		recycled = true
+	if walker_visual and not recycled:
+		walker_visual.apply_displacement(position - before_position, position, delta, heading())
 	# Moving a Node2D does not invalidate its draw list — the transform is applied when it
 	# is replayed — so an agent only redraws when its picture actually changes. At this
 	# population that is the difference between five hundred redraws a frame and a handful.
@@ -1006,6 +1018,8 @@ func _recycle() -> void:
 	gap_ahead = INF
 	junction_hold = INF
 	_keep_within_the_room_beyond_the_map()
+	if walker_visual:
+		walker_visual.recycle_at(position, heading())
 
 ## However the rolls above landed, an entry point may not sit further past the map's true edge
 ## than this agent is allowed to travel before it is recycled again — the same room
@@ -1088,6 +1102,12 @@ func _draw() -> void:
 		Sprites.draw_standing(self, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
 		Sprites.draw_standing(self, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
 		_draw_horn_mark()
+		return
+	if walker_visual:
+		Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
+		var comparison_at := Vector2(ModularWalker.COMPARISON_OFFSET, 0.0)
+		Sprites.draw_standing(self, WALKER_BODY[frame], comparison_at, Vector2.ZERO, flip, colour)
+		Sprites.draw_standing(self, WALKER_TRIM[frame], comparison_at, Vector2.ZERO, flip)
 		return
 	Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
 	Sprites.draw_standing(self, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)

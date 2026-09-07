@@ -1,11 +1,25 @@
 extends RefCounted
-## The one decision `_draw_mother()` and `_draw_pram()` must never disagree about: whether she is
-## drawn side-on or front-or-back. `Stroller._update_view()` makes that decision once a frame,
-## with hysteresis rather than a single switching angle, into the shared `_side_view` member both
-## draw functions read — this suite drives `facing` and calls `_update_view()` directly, the way
-## `_physics_process()` does, without stepping physics or a canvas.
+## `Stroller`'s legacy SVG presentation, and the one thing the illustrated opt-in owes the baseline.
+##
+## **The hysteresis half of this suite runs only while the legacy presentation is the live one**
+## (`not DevFlags.illustrated_requested()`, which a headless test process is unless `--illustrated`
+## is passed). `_update_view()` and the `_side_view` member it writes decide which family of
+## drawing `_draw_mother()` and `_draw_pram()` show, and they exist for the legacy sprites alone —
+## the illustrated compositor poses a body from displacement and has no such decision to make. So
+## the contracts below are stated against the presentation that owns them rather than against
+## whichever one happens to be running, and `_test_the_illustrated_compositor_is_opt_in()` is the
+## one check that holds either way.
+##
+## The decision the two draw functions must never disagree about is *whether she is drawn side-on
+## or front-or-back*. `Stroller._update_view()` makes it once a frame, with hysteresis rather than
+## a single switching angle, into the shared `_side_view` member both read — this suite drives
+## `facing` and calls `_update_view()` directly, the way `_physics_process()` does, without
+## stepping physics or a canvas.
 
 func run(t) -> void:
+	_test_the_illustrated_compositor_is_opt_in(t)
+	if DevFlags.illustrated_requested():
+		return
 	_test_the_default_facing_is_front_or_back(t)
 	_test_a_slow_sweep_up_through_the_diagonal_switches_once(t)
 	_test_a_slow_sweep_down_through_the_diagonal_switches_once(t)
@@ -20,6 +34,19 @@ func _rig(t) -> Stroller:
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	return rig
+
+## The baseline is the legacy presentation, and nothing but an explicit `--illustrated` or
+## `?illustrated=1` changes that — so a rig built with neither carries no `ModularPerson` child at
+## all. The one check here that is asserted under both presentations, since it is the gate itself
+## rather than anything downstream of it.
+func _test_the_illustrated_compositor_is_opt_in(t) -> void:
+	var rig := _rig(t)
+	rig.reset_at(Vector2(80.0, 120.0))
+	t.check(rig.facing == Vector2.DOWN, "reset keeps the default south-facing owner heading")
+	t.check((rig.get_node_or_null("ModularPerson") != null)
+			== DevFlags.illustrated_requested(),
+			"the illustrated compositor exists exactly when it was opted into")
+	rig.free()
 
 ## Before she has moved, `facing` is `Vector2.DOWN` — 90° off the horizontal axis, squarely
 ## inside the front-or-back half of the band — so there is nothing to settle before the first
