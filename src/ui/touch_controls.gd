@@ -135,6 +135,17 @@ const STOP_RADIUS := 48.0
 ## (14px) alone, for a pointer that does not land on the same world pixel twice.
 const TAP_STOP_RADIUS := STOP_RADIUS / 2.0
 
+## How far above her feet `_near_her()` centres the stop circle — half `Stroller.FIGURE_HEIGHT`
+## (46px, her own drawn height from the ground point her sprite is anchored at, over the 24x46
+## `mother_front_a.svg`). *(Playtest 35 finding 1: "the stop circle for the player is at her feet --
+## should be at the center of the sprite -- right now I can click below her to stop.")* `Sprites`'
+## own doc states the anchoring this circle used to ignore: "a node's position is where its feet
+## are, and its art rises from there." Measured from her bare `global_position`, `TAP_STOP_RADIUS`
+## (24px) covered 24px of pavement *below* her feet while her head, 46px above them, sat entirely
+## outside it. Centred here instead, the same radius reaches from her shoes to her shoulders and
+## stops one pixel below her feet — no new radius, only a new centre.
+const TAP_STOP_CENTRE_LIFT := Stroller.FIGURE_HEIGHT / 2.0
+
 ## The two fixed points `Mode.JOYSTICK` aims from — see the class doc's own paragraph on why the two
 ## modes disagree here. *(2026-09-06, the player: "define two points equally apart
 ## from the border on each side (same distance from top/bottom/and its own side)".)* M83 put each
@@ -423,13 +434,15 @@ func _focus_world(focus_design: Vector2) -> Vector2:
 	return get_viewport().get_canvas_transform().affine_inverse() \
 			* ScreenOrientation.to_presented_space(focus_design, rotated)
 
-## Whether `world` lands within `TAP_STOP_RADIUS` of her — `Mode.TAP`'s own door into `_stop()`,
-## asked identically by `_on_tap()`'s opening press and by `_on_drag()`'s own live boundary
-## crossing (playtest 34 finding 8's "in the centre is stopped, out of it is walking that way, and
-## crossing the boundary either way changes it live", read as applying to `Mode.TAP`'s one door the
-## same way it applies to `Mode.JOYSTICK`'s two).
+## Whether `world` lands within `TAP_STOP_RADIUS` of the centre of her sprite — `TAP_STOP_CENTRE_LIFT`
+## above her feet, not her bare `global_position` (see that constant's own doc for why) —
+## `Mode.TAP`'s own door into `_stop()`, asked identically by `_on_tap()`'s opening press and by
+## `_on_drag()`'s own live boundary crossing (playtest 34 finding 8's "in the centre is stopped, out
+## of it is walking that way, and crossing the boundary either way changes it live", read as applying
+## to `Mode.TAP`'s one door the same way it applies to `Mode.JOYSTICK`'s two).
 func _near_her(world: Vector2) -> bool:
-	return world.distance_to(_rig.global_position) <= TAP_STOP_RADIUS
+	var centre := _rig.global_position - Vector2(0.0, TAP_STOP_CENTRE_LIFT)
+	return world.distance_to(centre) <= TAP_STOP_RADIUS
 
 ## A finger or a held left mouse button, still down and moving, at `screen_position` — the drag
 ## stick's replacement, and the reason it survives

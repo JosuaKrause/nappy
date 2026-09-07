@@ -241,6 +241,11 @@ func _test_set_direction_on_her_own_position_stops_rather_than_pressing(t) -> vo
 ## Replaces the old, device-agnostic version of this test rather than sitting beside it — the
 ## `Mode.JOYSTICK` half of what it asserted is now
 ## `_test_a_touch_near_her_own_position_no_longer_stops_her`, further down.
+##
+## **Also the regression test for playtest 35 finding 1**: the circle is centred `TAP_STOP_CENTRE_LIFT`
+## (23px) above her feet, not on them, so a click straight below her feet — inside the old,
+## feet-anchored radius — no longer stops her, and a click on her head — outside the old radius
+## entirely — now does.
 func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	var rig := _rig_at(t, Vector2(200.0, 200.0))
 	var controls := _controls(t)
@@ -250,17 +255,41 @@ func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	controls._on_tap(transform * Vector2(500.0, 200.0), 0.0)
 	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
 
-	# 15px off her own position -- within TAP_STOP_RADIUS (24px).
-	controls._on_tap(transform * Vector2(215.0, 200.0), 1.0)
+	# 15px off the centre of her sprite (200, 177 -- TAP_STOP_CENTRE_LIFT above her feet at
+	# 200, 200) -- within TAP_STOP_RADIUS (24px) of the middle of her, not of her feet.
+	controls._on_tap(transform * Vector2(215.0, 177.0), 1.0)
 	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
-			"a click near her, not only exactly on her, stops her")
+			"a click near the centre of her sprite, not only near her feet, stops her")
 
 	controls._on_tap(transform * Vector2(500.0, 200.0), 2.0)
 	t.check(Input.is_action_pressed("move_right"),
+			"walking again, so the two boundary clicks below have something to undo")
+
+	# 20px straight below her feet -- within the old, feet-anchored TAP_STOP_RADIUS but 43px from
+	# the true, lifted centre. This is playtest 35 finding 1 itself: "right now I can click below
+	# her to stop."
+	controls._on_tap(transform * Vector2(200.0, 220.0), 3.0)
+	t.check(Input.is_action_pressed("move_down") and controls._walking,
+			"a click below her feet no longer stops her -- it used to, and that was the bug")
+
+	controls._on_tap(transform * Vector2(500.0, 200.0), 4.0)
+	t.check(Input.is_action_pressed("move_right"),
+			"walking again, so the head click below has something to undo")
+
+	# 46px straight above her feet -- her own head, Stroller.FIGURE_HEIGHT up -- 23px from the
+	# lifted centre and therefore within TAP_STOP_RADIUS, where the old feet-anchored circle missed
+	# it entirely.
+	controls._on_tap(transform * Vector2(200.0, 154.0), 5.0)
+	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
+			"and a click on her head, 46px above her feet, now stops her too")
+
+	controls._on_tap(transform * Vector2(500.0, 200.0), 6.0)
+	t.check(Input.is_action_pressed("move_right"),
 			"walking again, so the pram click below has something to undo")
 
-	# 34px off -- Stroller.PRAM_DISTANCE, and past TAP_STOP_RADIUS (24px): the pram is not her.
-	controls._on_tap(transform * Vector2(166.0, 200.0), 3.0)
+	# 34px off -- Stroller.PRAM_DISTANCE -- and past TAP_STOP_RADIUS (24px) of either her feet or
+	# the lifted centre: the pram is not her.
+	controls._on_tap(transform * Vector2(166.0, 200.0), 7.0)
 	t.check(Input.is_action_pressed("move_left") and controls._walking,
 			"a click on the pram is not a click on her any more -- it sets a direction instead")
 
@@ -719,10 +748,12 @@ func _test_a_tap_mode_drag_stops_and_resumes_crossing_her_own_stop_radius(t) -> 
 
 	var motion := InputEventMouseMotion.new()
 	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
-	motion.position = transform * Vector2(310.0, 300.0) # within TAP_STOP_RADIUS (24px) of her
+	# Within TAP_STOP_RADIUS (24px) of the centre of her sprite (300, 277 -- TAP_STOP_CENTRE_LIFT
+	# above her feet at 300, 300), not of her feet.
+	motion.position = transform * Vector2(310.0, 280.0)
 	controls._input(motion)
 	t.check(not controls._walking and not Input.is_action_pressed("move_right"),
-			"dragging back near her stops her live")
+			"dragging back near the centre of her stops her live")
 
 	motion.position = transform * Vector2(500.0, 300.0)
 	controls._input(motion)
