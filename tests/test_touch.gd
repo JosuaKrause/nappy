@@ -48,7 +48,8 @@ func run(t) -> void:
 	_test_a_touch_near_her_own_position_no_longer_stops_her(t)
 	_test_a_mouse_click_still_aims_from_her_not_a_focus(t)
 	_test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t)
-	_test_a_stop_press_does_not_start_a_drag(t)
+	_test_a_press_at_a_focus_centre_starts_a_drag_that_can_leave_and_return(t)
+	_test_a_tap_mode_drag_stops_and_resumes_crossing_her_own_stop_radius(t)
 	_test_a_double_tap_that_then_drags_keeps_running(t)
 	_test_a_mouse_drag_reaims_from_her_own_position(t)
 	_test_a_mouse_motion_without_the_button_held_does_nothing(t)
@@ -668,18 +669,66 @@ func _test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t) -
 	controls.queue_free()
 	rig.free()
 
-## **A press dead on a focus stops her, and does not also start a drag** that would only re-open
-## the direction the press just closed the moment the same finger moves again.
-func _test_a_stop_press_does_not_start_a_drag(t) -> void:
+## **A press dead on a focus stops her, and now also starts a tracked drag** — the rule that used
+## to be deleted was "a stop does not start a drag," not the stop itself. *(Playtest 34 finding 8:
+## "when I start dragging from the center of the joystick nothing happens it should behave the same
+## as if I move to the center and back stop while I'm in the center and move when I'm back.")*
+func _test_a_press_at_a_focus_centre_starts_a_drag_that_can_leave_and_return(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
 	controls._touch = true
 	controls._mode = ControlsMode.Mode.JOYSTICK
 
 	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT, true))
-	t.check(controls._drag_pointer_index == -1, "a stop press tracks no drag")
+	t.check(not controls._walking, "a press dead on a focus still stops her")
+	t.check(controls._drag_pointer_index == 0,
+			"but the same finger is now tracked, where it used to be dropped entirely")
+
+	controls._input(_drag_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0)))
+	t.check(controls._walking and Input.is_action_pressed("move_left"),
+			"dragging out of the centre starts walking that way")
+
+	controls._input(_drag_event(0, TouchControls.FOCUS_LEFT))
+	t.check(not controls._walking and not Input.is_action_pressed("move_left"),
+			"and dragging back into the centre stops her again, live")
 
 	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT, false))
+	controls.queue_free()
+	rig.free()
+
+## **`Mode.TAP`'s one door gets the same live crossing `Mode.JOYSTICK`'s two get** — the general
+## reading of finding 8's "crossing the boundary either way changes it live" applied to the door
+## `_near_her()` answers rather than only to a focus.
+func _test_a_tap_mode_drag_stops_and_resumes_crossing_her_own_stop_radius(t) -> void:
+	var rig := _rig_at(t, Vector2(300.0, 300.0))
+	var controls := _controls(t)
+	controls._touch = false
+	controls._mode = ControlsMode.Mode.TAP
+	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = transform * Vector2(500.0, 300.0)
+	controls._input(click)
+	t.check(Input.is_action_pressed("move_right"), "the click itself walks east of her")
+
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	motion.position = transform * Vector2(310.0, 300.0) # within STOP_RADIUS (48px) of her
+	controls._input(motion)
+	t.check(not controls._walking and not Input.is_action_pressed("move_right"),
+			"dragging back near her stops her live")
+
+	motion.position = transform * Vector2(500.0, 300.0)
+	controls._input(motion)
+	t.check(controls._walking and Input.is_action_pressed("move_right"),
+			"and dragging back out resumes steering")
+
+	var release := click.duplicate()
+	release.pressed = false
+	release.position = transform * Vector2(500.0, 300.0)
+	controls._input(release)
 	controls.queue_free()
 	rig.free()
 
@@ -795,7 +844,9 @@ func _test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t) ->
 
 	controls._input(_drag_event(0, TouchControls.FOCUS_RIGHT + Vector2(150.0, 0.0)))
 	t.check(Input.is_action_pressed("move_right") and controls._walking,
-			"and dragging back out of the band resumes steering, now from the nearer focus")
+			"and dragging back out of the band resumes steering, still from the focus the press " +
+			"opened this drag from (FOCUS_LEFT) — both focuses sit on the same y, so this alone " +
+			"cannot tell that apart from a reselected FOCUS_RIGHT")
 
 	controls.queue_free()
 	rig.free()

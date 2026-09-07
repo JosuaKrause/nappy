@@ -103,11 +103,12 @@ const DOUBLE_TAP_SECONDS := 0.35
 ## on the same pixel either time.
 const DOUBLE_TAP_DISTANCE := 60.0
 ## How close a press has to land to her, in world px, to read as *stop* rather than a direction in
-## `Mode.TAP` — `_on_tap()`'s own `_mode == ControlsMode.Mode.TAP` branch is the only place this
-## still measures a distance to her. Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram
-## rides up to `PRAM_DISTANCE` (34px) off to one side of her, and a press that lands on the pram is
-## a press on her — with room to spare for a pointer that does not land on the same pixel twice, the
-## way every catch radius in this game is generous rather than exact.
+## `Mode.TAP` — `_near_her()` is the only place this still measures a distance to her, called from
+## both `_on_tap()`'s opening press and `_on_drag()`'s own live boundary crossing (playtest 34
+## finding 8). Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram rides up to
+## `PRAM_DISTANCE` (34px) off to one side of her, and a press that lands on the pram is a press on
+## her — with room to spare for a pointer that does not land on the same pixel twice, the way every
+## catch radius in this game is generous rather than exact.
 ##
 ## Also the one radius `is_on_a_focus()` and `is_in_stop_band()` measure in **design-space** px, in
 ## `Mode.JOYSTICK` — the same "how close counts as *stop*" number reused rather than a second one
@@ -190,16 +191,26 @@ var _last_tap_screen_position := Vector2.ZERO
 
 ## The pointer index currently re-aiming a held direction with every motion event — a real touch's
 ## own `InputEventScreenTouch.index`, or `_MOUSE_POINTER_INDEX` for a held left mouse button — or
-## -1 when nothing is. Set the moment a press locks in a direction (not a stop, not the pause
-## button) and cleared on the matching release, in `_on_pointer()`. *(2026-09-07: "dragging the
-## finger doesn't work anymore but should", and "although dragging a mouse should reaim as well".)*
+## -1 when nothing is. Set at every press that reaches `_on_tap()` (a stop as much as a walk — see
+## its own doc), and cleared on the matching release, in `_on_pointer()`. *(2026-09-07: "dragging
+## the finger doesn't work anymore but should", and "although dragging a mouse should reaim as
+## well".)*
 var _drag_pointer_index := -1
-## Where `_drag_pointer_index`'s own heading is measured from, for every motion event until the
-## next press replaces it — a focus already converted to world space in `Mode.JOYSTICK`, or
-## `Vector2.INF` ("her own position") in `Mode.TAP`, the same sentinel `set_direction()`'s own
-## `from` parameter already reads that way. Set once, at the press that started the drag, in
-## `_on_tap()`.
-var _drag_origin_world := Vector2.INF
+## Which focus `_drag_pointer_index`'s own heading is measured from, in **design space** — the
+## fixed place on the glass `_on_tap()` chose in `Mode.JOYSTICK` (`nearer_focus()`, at the moment
+## the press landed), or `Vector2.INF` ("her own position") in `Mode.TAP`, the same sentinel
+## `set_direction()`'s own `from` parameter already reads that way.
+##
+## **Design space, not world, and that is the whole of the fix playtest 34 findings 7 and 9 asked
+## for.** *(2026-09-07: "I cannot drag around the joystick circle and it follows the whole way. it
+## moves a bit and then moves completely differently from what my movement is.")* A focus is a
+## fixed place on the glass, not a place in the city — converting it to world space once, the way
+## the very first version of this drag did, leaves that world point behind in the street the moment
+## she starts walking and the camera moves with her, so the reference drifts out from under the
+## thumb a heading later. Kept in design space here, `_on_drag()` redoes the same design→presented→
+## world trip `_on_tap()` makes, every motion event instead of once, so the reference stays under
+## the drawn ring for exactly as long as the ring stays under the thumb.
+var _drag_origin_focus := Vector2.INF
 ## Whether `_drag_pointer_index`'s own press doubled into a run — carried through every motion
 ## event so re-aiming never itself starts or stops holding `run`; only a fresh press does.
 var _drag_run := false
@@ -289,12 +300,14 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 				queue_redraw()
 				return
 		_on_tap(position, Time.get_ticks_msec() / 1000.0)
-		# A direction was set, not a stop — see `_on_tap()`'s own doc for where
-		# `_drag_origin_world`/`_drag_run` were just set for this same press. A stop leaves
-		# `_walking` false, so a press on her, on a focus, or in the stop band never starts a
-		# drag that would only re-open the direction it just closed.
-		if _walking:
-			_drag_pointer_index = index
+		# Tracked whether this press walked or stopped her — see `_on_tap()`'s own doc for where
+		# `_drag_origin_focus`/`_drag_run` were just set for this same press. *(Playtest 34 finding
+		# 8: "when I start dragging from the center of the joystick nothing happens it should
+		# behave the same as if I move to the center and back stop while I'm in the center and move
+		# when I'm back.")* A stop used to leave nothing tracked, so a finger landing in a circle
+		# was never followed and every motion event after it was discarded — see `_on_drag()`'s own
+		# doc for the boundary crossing this now makes live in both directions.
+		_drag_pointer_index = index
 		return
 	if index == _drag_pointer_index:
 		_drag_pointer_index = -1
@@ -338,7 +351,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ##   presentation — literally point the wrong way, since the design box does not carry the
 ##   rotation. So the chosen focus makes the same round trip a raw touch's own position takes, the
 ##   other direction: design → presented (`ScreenOrientation.to_presented_space()`, the inverse of
-##   `to_design_space()`) → world (the same canvas-transform inverse used above).
+##   `to_design_space()`) → world (`_focus_world()`, the same canvas-transform inverse used above).
 ##
 ## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
 ## window still instead of racing the engine clock -- `_input()` and `_on_pointer()` are the real
@@ -362,23 +375,44 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 	_last_tap_at = now
 	_last_tap_screen_position = screen_position
 	if _mode == ControlsMode.Mode.TAP:
-		if world.distance_to(_rig.global_position) <= STOP_RADIUS:
+		# Set before the stop check, not after — see `_drag_origin_focus`'s own doc. A stop is now
+		# tracked into a drag exactly as a walk is (playtest 34 finding 8), so both branches leave a
+		# correct reference behind for `_on_drag()` to pick up.
+		_drag_origin_focus = Vector2.INF
+		_drag_run = double
+		if _near_her(world):
 			_stop()
 			return
-		_drag_origin_world = Vector2.INF
-		_drag_run = double
 		set_direction(world, double)
 		return
 	# Mode.JOYSTICK, past here — see the class doc and this function's own doc above.
 	var design := ScreenOrientation.to_design_space(screen_position, rotated)
+	var focus := nearer_focus(design)
+	_drag_origin_focus = focus
+	_drag_run = double
 	if is_on_a_focus(design) or is_in_stop_band(design):
 		_stop()
 		return
-	var focus_world := get_viewport().get_canvas_transform().affine_inverse() \
-			* ScreenOrientation.to_presented_space(nearer_focus(design), rotated)
-	_drag_origin_world = focus_world
-	_drag_run = double
-	set_direction(world, double, focus_world)
+	set_direction(world, double, _focus_world(focus))
+
+## The design→presented→world trip a fixed focus takes to become a heading's own origin — the same
+## trip `_on_tap()`'s own doc walks through, pulled out here so `_on_drag()` can redo it every
+## motion event instead of once. `focus_design` is a **design-space** point (`FOCUS_LEFT`,
+## `FOCUS_RIGHT`, or whatever `nearer_focus()` chose); the camera, the zoom and any rotation are
+## applied fresh each call, which is what keeps the reference under the drawn ring for as long as
+## the ring stays under the thumb — see `_drag_origin_focus`'s own doc for what goes wrong when
+## this trip is made once and cached instead.
+func _focus_world(focus_design: Vector2) -> Vector2:
+	return get_viewport().get_canvas_transform().affine_inverse() \
+			* ScreenOrientation.to_presented_space(focus_design, rotated)
+
+## Whether `world` lands within `STOP_RADIUS` of her — `Mode.TAP`'s own door into `_stop()`,
+## asked identically by `_on_tap()`'s opening press and by `_on_drag()`'s own live boundary
+## crossing (playtest 34 finding 8's "in the centre is stopped, out of it is walking that way, and
+## crossing the boundary either way changes it live", read as applying to `Mode.TAP`'s one door the
+## same way it applies to `Mode.JOYSTICK`'s two).
+func _near_her(world: Vector2) -> bool:
+	return world.distance_to(_rig.global_position) <= STOP_RADIUS
 
 ## A finger or a held left mouse button, still down and moving, at `screen_position` — the drag
 ## stick's replacement, and the reason it survives
@@ -388,25 +422,30 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 ## doesn't work anymore but should", and "although dragging a mouse should reaim as well".)*
 ##
 ## Every motion event for `_drag_pointer_index` moves the heading toward wherever the pointer now
-## is, from `_drag_origin_world` — the same focus `_on_tap()` chose in `Mode.JOYSTICK`, or her own
-## position in `Mode.TAP`, exactly as the initial press that started this drag was measured. The
-## direction locks in as it stands the moment the pointer lifts, since nothing further happens on
-## release beyond forgetting the index in `_on_pointer()`.
+## is, from `_drag_origin_focus` — the same focus `_on_tap()` chose in `Mode.JOYSTICK` (converted
+## to world space fresh, through `_focus_world()`, rather than once at the press — see that
+## variable's own doc), or her own live position in `Mode.TAP`. **Crossing back into the stop door
+## mid-drag stops her, and dragging back out resumes steering, live** — playtest 34 finding 8's own
+## words, and the reason this checks the same doors `_on_tap()` does rather than only the band.
+## The direction otherwise locks in as it stands the moment the pointer lifts, since nothing
+## further happens on release beyond forgetting the index in `_on_pointer()`.
 func _on_drag(screen_position: Vector2, index: int) -> void:
 	if index != _drag_pointer_index or get_tree().paused:
 		return
 	if not _rig:
 		return
-	# The stop band, Mode.JOYSTICK only — a pointer wandering into the middle of the screen
-	# mid-drag is the whole reason the band exists (see `is_in_stop_band()`'s own doc); a
-	# `Mode.TAP` drag has no equivalent door, since its own aiming origin is her position rather
-	# than a focus that could flip underneath it.
-	if _mode == ControlsMode.Mode.JOYSTICK \
-			and is_in_stop_band(ScreenOrientation.to_design_space(screen_position, rotated)):
+	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
+	if _mode == ControlsMode.Mode.JOYSTICK:
+		var design := ScreenOrientation.to_design_space(screen_position, rotated)
+		if is_on_a_focus(design) or is_in_stop_band(design):
+			_stop()
+			return
+		set_direction(world, _drag_run, _focus_world(_drag_origin_focus))
+		return
+	if _near_her(world):
 		_stop()
 		return
-	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
-	set_direction(world, _drag_run, _drag_origin_world)
+	set_direction(world, _drag_run)
 
 ## Locks in the heading toward `target` from `from` — computed once here and never again, so a
 ## shove that knocks her off the line does not silently correct itself, the same way walking into a
