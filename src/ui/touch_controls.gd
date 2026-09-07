@@ -15,7 +15,7 @@ extends Control
 ## two points equally apart from the border on each side ... this is because right now the finger
 ## needs to reach over half the phone to be able to input an up or down direction".)* A mouse click
 ## still aims from her own world position, exactly as before. A real touch instead aims from
-## whichever of the two fixed focal points, `FOCUS_LEFT` (360, 360) or `FOCUS_RIGHT` (920, 360) in
+## whichever of the two fixed focal points, `FOCUS_LEFT` (240, 480) or `FOCUS_RIGHT` (1040, 480) in
 ## the 1280x720 design box, is nearer the press — see `nearer_focus()` and `_on_tap()`'s own doc for
 ## the coordinate-space trip a focus has to take to become a world heading. A press within
 ## `STOP_RADIUS` of either focus stops her too, alongside a press near her own position — see
@@ -90,14 +90,22 @@ const STOP_RADIUS := 48.0
 
 ## The two fixed points a touch device aims from — see the class doc's own paragraph on why a real
 ## finger and a mouse disagree here. *(2026-09-06, the player: "define two points equally apart
-## from the border on each side (same distance from top/bottom/and its own side)".)* Same distance
-## from the top and the bottom of the 1280x720 design box puts both at y = 360; the same distance
-## from each one's own side as well makes that distance 360 too — so `(360, 360)` and `(920, 360)`,
-## each a full 360° dial around its own half of the screen. Authored in **design space**, not world
-## space: they are a fixed place on the glass, not a place in the city, so they have to make the
-## same design→presented→world trip a raw touch's own position does — see `_on_tap()`'s own doc.
-const FOCUS_LEFT := Vector2(360.0, 360.0)
-const FOCUS_RIGHT := Vector2(920.0, 360.0)
+## from the border on each side (same distance from top/bottom/and its own side)".)* M83 put each
+## the same distance from the top, the bottom and its own side, which made that distance 360 in the
+## 1280x720 design box — `(360, 360)` and `(920, 360)`. *(2026-09-07: "Move the center of the focal
+## points 1/3 towards the sides and 1/3 towards the bottom of the screen.")* A third of the
+## remaining gap to each edge is 120px, so `(240, 480)` and `(1040, 480)` — each still a full 360°
+## dial around its own half of the screen, just no longer centred edge-to-edge in either direction.
+## Authored in **design space**, not world space: they are a fixed place on the glass, not a place
+## in the city, so they have to make the same design→presented→world trip a raw touch's own
+## position does — see `_on_tap()`'s own doc.
+const FOCUS_LEFT := Vector2(240.0, 480.0)
+const FOCUS_RIGHT := Vector2(1040.0, 480.0)
+
+## The knob `_draw_focus_circles()` offsets from each focus, at rest. Sized off `PAUSE_RADIUS`'s
+## own third — small enough that a knob pressed out to `STOP_RADIUS * 0.6` still sits well inside
+## its own ring rather than crowding the rim.
+const _FOCUS_KNOB_RADIUS := PAUSE_RADIUS / 3.0
 
 var _touch := TouchInput.available()
 
@@ -304,13 +312,17 @@ func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 		Input.action_press(&"run")
 	else:
 		Input.action_release(&"run")
+	# The two focal circles read `_direction` and `run` straight off this node — see
+	# `_draw_focus_circles()` — and `_draw()` only re-runs on request.
+	queue_redraw()
 
-## A press on her: lets go of whatever direction and `run` were held, with nothing pressed in
-## their place.
+## Lets go of whatever direction and `run` were held, with nothing pressed in their place — the
+## door every one of `_on_tap()`'s own stop conditions goes through.
 func _stop() -> void:
 	_walking = false
 	_direction = Vector2.ZERO
 	_release_movement()
+	queue_redraw()
 
 ## The unit vector from `from` to `target`, or `Vector2.ZERO` for a press with nowhere to go.
 static func heading_to(target: Vector2, from: Vector2) -> Vector2:
@@ -366,7 +378,9 @@ static func _set_axis(negative: StringName, positive: StringName, value: float) 
 func _release_all() -> void:
 	_pause_touch = -1
 	_walking = false
+	_direction = Vector2.ZERO
 	_release_movement()
+	queue_redraw()
 
 ## The four `move_*` actions and `run`, released together — the shape needed at the moment a
 ## direction has to be let go of that is not the player's own doing: the day ending, or a pause
@@ -402,13 +416,15 @@ static func _send_pause_action() -> InputEventAction:
 	Input.parse_input_event(event)
 	return event
 
-## The one thing this file still draws itself rather than as a `ModeButton`, and the only thing on
-## screen this scheme ever needs: every pixel of the city is a direction, so there is nothing left
-## to draw for that half of it.
+## The pause button, and — on a touch build — the two focal circles. Not every pixel of the city is
+## an undrawn direction any more: see `_draw_focus_circles()`'s own doc for why a touch needed
+## something to read the locked-in state off, and why a mouse does not.
 func _draw() -> void:
 	if not visible:
 		return
 	_draw_pause_button()
+	if _touch:
+		_draw_focus_circles()
 
 ## The disc, its rim and the two bars — a preloaded SVG asset (`assets/ui/pause.svg`), not painted
 ## in code. *(Playtest 29 finding 3: "neither should the buttons use draw commands -- I explicitly
@@ -423,3 +439,31 @@ func _draw_pause_button() -> void:
 	var size := Vector2(PAUSE_RADIUS, PAUSE_RADIUS) * 2.0
 	draw_texture_rect(_PAUSE_ICON, Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
+
+## Both focal points, always, on a touch build — M83 drew nothing for them and left *whether they
+## can be found by feel* as the played question the next report would answer; the answer is no.
+## *(2026-09-07: "show the control circles again on both sides so the user can see what is
+## currently locked in.")*
+##
+## **What is drawn is the state, not only the place.** Each ring is `STOP_RADIUS` itself — the same
+## radius a press has to land inside to stop her — so the ring's own edge is the boundary between
+## the two doors a press through it can open, rather than an arbitrary aesthetic size. The knob
+## inside is `_direction`, the one heading this whole scheme ever holds, read identically off
+## either circle: there is one direction locked in, not one per focus, so the two always agree.
+## Centred (no offset) reads as *stopped*; a knob toward the rim reads as *walking that way*;
+## brighter and larger while `run` is held, since a hold on the run action is as much a part of
+## "what is locked in" as the heading is.
+##
+## **Primitives, not an SVG, and that is the cues rule's own exception rather than a violation of
+## it.** A knob whose offset is a continuous function of `_direction` cannot be a static asset any
+## more than `ModeButton`'s own hold-progress sweep can — see that class's comment for the same call
+## made there: "a fill that is not a drawing of anything is not a picture." This ring and its knob
+## are that shape, not a glyph's.
+func _draw_focus_circles() -> void:
+	var running := Input.is_action_pressed(&"run")
+	var knob_radius := _FOCUS_KNOB_RADIUS * (1.3 if running else 1.0)
+	var knob_colour := Color(1.0, 1.0, 1.0, 1.0 if running else 0.8)
+	var offset := _direction * (STOP_RADIUS * 0.6)
+	for focus in [FOCUS_LEFT, FOCUS_RIGHT]:
+		draw_arc(focus, STOP_RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, 0.35), 2.0, true)
+		draw_circle(focus + offset, knob_radius, knob_colour)
