@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://coebna331idn1"
-path="res://.godot/imported/shot-2026-09-07-seed4242-dbee575-halo-day6-overlap.png-9aae59e5e9eb23b6e224942ae23a7380.ctex"
+uid="uid://f8ex3maw4g8j"
+path="res://.godot/imported/shot-2026-09-07-seed4242-halo-entity-glow-negative.png-0f92e49e5b02208eb23e119cb3633115.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/evidence/shot-2026-09-07-seed4242-dbee575-halo-day6-overlap.png"
-dest_files=["res://.godot/imported/shot-2026-09-07-seed4242-dbee575-halo-day6-overlap.png-9aae59e5e9eb23b6e224942ae23a7380.ctex"]
+source_file="res://docs/evidence/shot-2026-09-07-seed4242-halo-entity-glow-negative.png"
+dest_files=["res://.godot/imported/shot-2026-09-07-seed4242-halo-entity-glow-negative.png-0f92e49e5b02208eb23e119cb3633115.ctex"]
 
 [params]
 

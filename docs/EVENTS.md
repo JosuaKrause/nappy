@@ -740,17 +740,26 @@ draw, so on a normal street a few things would be ringed, most would not, and no
 the difference. **A cue that marks everything says nothing**, and every rule below exists to keep
 the replacement from becoming that.
 
-**One row in the table below is a field, drawn on purpose, and it answers a question the rest of
-this vocabulary never had a cue for.** *Asked for no rings and no drawn fields, held since this
-vocabulary was written · overturned on 2026-09-07 for the "Ground halo" row only, because the
+**One row in the table below draws a glow rather than a ring, and it answers a question the rest
+of this vocabulary never had a cue for.** *Asked for no rings and no drawn fields, held since this
+vocabulary was written · overturned on 2026-09-07 for the "Entity halo" row only, because the
 player asked for exactly this:* "let's create a shader ... to create a soft halo surrounding
 entities that are currently actively causing excitement ... so they know what to walk away from
 and what is causing excitement to go up." The reasoning quoted above is about *danger* — what a
 thing will do to you — and stays true of every other row here: nothing is ringed to say how bad it
-is. The halo answers a different question, *what is charging the meter right now*, drawn as the
-sum `EventManager.total_excitement_at()` already reads rather than as a radius round any one
-entity. `.claude/skills/cues/SKILL.md`, "One field, and it answers one question" is the narrow
-version of this exception, kept narrow enough to still refuse the next ring somebody wants.
+is. The halo answers a different question, *which of these things is charging the meter right now*,
+and **it is the thing's own outline that decides its size, not the thing's reach**. *(2026-09-07,
+the player: "halo meaning only the outline of the object not the influence radius ... the halo
+should not extend more than a few pixels beyond the object's outline.")*
+`ExcitementHalo.glow_radius()` is `EventDef.obstructs_radius` — half the silhouette — plus 4px, so
+a busker glows at 15px and a barricade at 66px. **A field-sized halo was built and rejected on the
+screenshots**: `EventDef.outer_radius` reaches up to 200px against a visible world of 640x360, so
+drawing it painted most of the frame, and three brightness curves in a row failed to rescue it
+because the footprint rather than the curve was the defect.
+`EventInstance.contribution_at(her position)` still decides how bright each glow reads, which is
+the half of "what is causing excitement to go up" the field-sized version got right.
+`.claude/skills/cues/SKILL.md`, "A glow, not a field" is the narrow version of this exception, kept
+narrow enough to still refuse the next ring somebody wants.
 
 | Cue | Means | Where |
 | --- | --- | --- |
@@ -759,7 +768,7 @@ version of this exception, kept narrow enough to still refuse the next ring some
 | **Its colour** | **Amber** = go round it. **Deep red, doubled** = it ends your day. Two colours, and they are a scale rather than a sequence. | `EventInstance.mark_colour()` |
 | **Its flash** | *It has not started yet.* The telegraph phase, and the only channel carrying it — the colour cannot, because a telegraph is usually over before the event is on screen, so an amber that meant *telegraphing* would only ever be seen on the rows sited in front of the player and would read as *near*. | `EventInstance._draw_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
-| **Ground halo** | *This is charging you right now.* A soft glow, drawn under the entities, the crowd and the player rather than over them, summed from every live source whose `contribution_at()` her own position clears a floor — brighter where two fields overlap, because the meter reading underneath it is a sum too, and gone the instant she is out of reach of all of them. | `ExcitementHalo`, `assets/shaders/excitement_halo.gdshader` |
+| **Entity halo** | *This is charging you right now.* A soft glow hugging the thing's own outline — `obstructs_radius` plus 4px, never its reach — drawn under the entities, the crowd and the player rather than over them, for every live source whose `contribution_at()` at her own position clears a floor. Brighter the more that source is actually costing her, brighter still where two glows overlap, and gone the instant she is out of reach of all of them. | `ExcitementHalo`, `assets/shaders/excitement_halo.gdshader` |
 | **Edge badge** | Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
 | **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live, she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the day, **and the gap is closing at the speeds in play**. Not *inside the outer radius*, which for a cyclist is thirty times the area that can hurt her and stays true while the bike rides away. | `EventManager._warn_about_the_ground_she_is_on()` |
@@ -770,10 +779,11 @@ version of this exception, kept narrow enough to still refuse the next ring some
 
 **Nothing is ringed for danger, and that is the rule.** It is a standing decision rather than a
 preference: if something new needs signalling, reach for one of the rows above; if none of them
-fits, that is a design conversation and not a licence to draw a radius. The one field in the
-table — the ground halo — is not that licence exercised again: it is one cue, for the cost being
-charged right now, drawn as the summed field it is reading, and it leaves the caret, the badge and
-the exclamation mark meaning exactly what they meant before it existed.
+fits, that is a design conversation and not a licence to draw a radius. The one glow in the
+table — the entity halo — is not that licence exercised again, and the reason is its size: it is
+one cue, for the cost being charged right now, drawn at the thing's own outline and nowhere near
+the radius that thing reaches. It leaves the caret, the badge and the exclamation mark meaning
+exactly what they meant before it existed.
 
 Three rules underneath the table, in the order they matter:
 

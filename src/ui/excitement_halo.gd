@@ -1,14 +1,27 @@
 class_name ExcitementHalo
 extends Node2D
-## A soft glow under the world, showing the summed excitement field of whatever is actually
-## charging the meter right now — the hint the meter itself cannot give, because a number says
-## *how much* and never *which of the six things around her*.
+## A soft glow around whatever is actually charging the meter right now — an identification cue,
+## not a map. It answers *which of the six things around her*, which the meter itself cannot: a
+## number says how much, never which.
 ##
-## Two questions decide what gets drawn, and both are answered by a pure query rather than by a
-## picture of every event on the day's plan: which sources count, and how bright the sum reads.
-## See `select_sources()` for the first and `docs/EVENTS.md`, "The visual vocabulary", for how
-## this cue sits beside the caret, the badge and the exclamation mark rather than replacing any
-## of them.
+## **It traces the thing's own outline and stops four pixels past it.** *(2026-09-07, the player:
+## "halo meaning only the outline of the object not the influence radius. it's only meant to show
+## which objects currently affect the player (and how much depending on the strength of the halo).
+## the halo should not extend more than a few pixels beyond the object's outline.")*
+## `EventDef.outer_radius` — how far a source's excitement actually reaches — is a large fraction of
+## what the camera shows at all, a 640x360 world view at the game's own zoom against radii up to
+## 200px, so drawing *that* paints most of the screen however the brightness inside it is shaped.
+## `glow_radius()` reads `EventDef.obstructs_radius`, half the thing's silhouette, instead.
+##
+## **Size answers *which*, brightness answers *how much*, and neither answers the other.** Brightness
+## is `EventInstance.contribution_at(her position)` — the real excitement model, the one part of the
+## first reading of "what is causing excitement to go up" that was right — so a source that barely
+## clears the floor glows faintly and one near its own peak glows close to full, each at its own
+## body's size either way.
+##
+## Two questions decide what gets drawn: which sources count (`select_sources()`) and how bright
+## each one's own circle reads. See `docs/EVENTS.md`, "The visual vocabulary", for how this cue
+## sits beside the caret, the badge and the exclamation mark rather than replacing any of them.
 
 ## Excitement/s a source has to reach at her own position before it earns a place in the halo.
 ##
@@ -62,13 +75,48 @@ static func select_sources(instances: Array[EventInstance], at: Vector2) -> Arra
 	return picked
 
 # ------------------------------------------------------------------ drawing ---
-# One node, one shader, fed the active sources as uniform arrays — not one shape per event. The
-# sources compose by addition in `EventManager.total_excitement_at()`, so the halo has to as well:
-# two overlapping fields must cost more where they overlap, which one disc per event could not
-# show and the shader's own per-fragment sum does. See
+# One node, one shader, fed the active sources as uniform arrays — not one shape per event, so
+# two sources standing close together still sum in the shader's own per-fragment total and read
+# brighter where their small circles cross. It is no longer a picture of `EventManager
+# .total_excitement_at()` the way an earlier version of this file was — that sum is a field
+# spanning each source's whole `outer_radius`, and a field is nearly the whole screen at this
+# camera's zoom. What is drawn now is a compact glow per source, sized in `glow_radius()` below,
+# with `EventInstance.contribution_at()` deciding only how bright each one's own circle is. See
 # `assets/shaders/excitement_halo.gdshader`.
 
 const SHADER := preload("res://assets/shaders/excitement_halo.gdshader")
+
+## Excitement/s at which a source's own glow reads at its brightest. Shared with
+## `Tuning.MARK_WORTH_A_DETOUR` (25/s) — the same line the caret already draws between
+## "ignorable" and "worth a detour" — so the halo and the caret agree on what counts as loud.
+const SATURATES_AT := 25.0
+
+## How far past a source's own outline its glow may reach, in world px. *(2026-09-07, the player:
+## "halo meaning only the outline of the object not the influence radius ... the halo should not
+## extend more than a few pixels beyond the object's outline.")* **Four pixels is "a few" at this
+## game's scale**: the whole visible world is 640x360 at zoom 2, and a person's own half-width
+## (`EventCatalogue.PERSON_BODY`, 11px) is barely more than twice it — so the glow reads as light
+## coming off the silhouette rather than as a disc the thing is standing in.
+const GLOW_BODY_MARGIN := 4.0
+## What a row with no outline to trace gets, before the margin above is added. Every `mobile` row
+## is exempt from carrying an `obstructs_radius` at all (`docs/EVENTS.md`, "Anything that stands
+## still is solid at the width it is drawn") — a `dog_walker` and a `homeless_yeller` are both
+## people-shaped on screen and both would otherwise glow at zero — so they are treated as the
+## person they are drawn as, `EventCatalogue.PERSON_BODY` (11px).
+const GLOW_BODYLESS_RADIUS := 11.0
+
+## The radius one source's glow is drawn at: **its own outline plus `GLOW_BODY_MARGIN` (4px), and
+## nothing else.**
+##
+## `EventDef.obstructs_radius` is "half the silhouette" for anything that stands still
+## (`docs/EVENTS.md`, "Solid things are solid"), so it is the one number already on a def that means
+## *how big is the thing* rather than *how far does it reach* — which is the whole distinction this
+## cue rests on. A busker (`PERSON_BODY`, 11px) glows at 15px and a `barricade` (62px) at 66px:
+## **there is no ceiling, because a ceiling would draw a big thing's halo inside its own outline**,
+## which is the one shape this is not allowed to be.
+static func glow_radius(def: EventDef) -> float:
+	var outline := def.obstructs_radius if def.obstructs_radius > 0.0 else GLOW_BODYLESS_RADIUS
+	return outline + GLOW_BODY_MARGIN
 
 var _events: EventManager
 var _player: Node2D
@@ -88,45 +136,46 @@ func _ready() -> void:
 	# The same amber the excitement bar itself fills with — see Palette.EXCITEMENT_FIELD's own
 	# doc — so the glow and the number it is a picture of read as one fact rather than two.
 	_material.set_shader_parameter("halo_colour", Palette.EXCITEMENT_FIELD)
+	_material.set_shader_parameter("saturates_at", SATURATES_AT)
 	material = _material
 
 func _process(_delta: float) -> void:
 	if not _events or not _player:
 		return
-	_update_sources(select_sources(_events.instances(), _player.global_position))
+	var here := _player.global_position
+	_update_sources(select_sources(_events.instances(), here), here)
 	queue_redraw()
 
 ## Writes the shader's uniform arrays and works out how much ground `_draw()` needs to cover.
 ##
 ## The arrays are fixed at `MAX_SOURCES` because a Godot shader array uniform is fixed-size —
-## unused slots past `picked.size()` are written with a harmless zero intensity and never read,
-## since the shader's own loop stops at `source_count`.
-func _update_sources(picked: Array[EventInstance]) -> void:
+## unused slots past `picked.size()` are written with a harmless zero radius and brightness and
+## never read, since the shader's own loop stops at `source_count`.
+func _update_sources(picked: Array[EventInstance], here: Vector2) -> void:
 	var positions := PackedVector2Array()
-	var inners := PackedFloat32Array()
-	var outers := PackedFloat32Array()
-	var intensities := PackedFloat32Array()
+	var radii := PackedFloat32Array()
+	var brightness := PackedFloat32Array()
 	positions.resize(MAX_SOURCES)
-	inners.resize(MAX_SOURCES)
-	outers.resize(MAX_SOURCES)
-	intensities.resize(MAX_SOURCES)
+	radii.resize(MAX_SOURCES)
+	brightness.resize(MAX_SOURCES)
 	var bounds := Rect2()
 	for i in picked.size():
 		var instance := picked[i]
 		var at := to_local(instance.global_position)
+		var radius := glow_radius(instance.def)
 		positions[i] = at
-		inners[i] = instance.def.inner_radius
-		outers[i] = instance.def.outer_radius
-		intensities[i] = instance.current_intensity()
-		var reach := Rect2(at - Vector2.ONE * instance.def.outer_radius,
-				Vector2.ONE * instance.def.outer_radius * 2.0)
+		radii[i] = radius
+		# What is actually reaching her, not the source's own peak: a source she can only just
+		# feel glows faintly at its own body, one near its centre glows near full, and both are
+		# the same size — the size answers *which thing*, the brightness answers *how much*.
+		brightness[i] = instance.contribution_at(here)
+		var reach := Rect2(at - Vector2.ONE * radius, Vector2.ONE * radius * 2.0)
 		bounds = reach if i == 0 else bounds.merge(reach)
 	_drawing = not picked.is_empty()
 	_bounds = bounds
 	_material.set_shader_parameter("source_position", positions)
-	_material.set_shader_parameter("source_inner_radius", inners)
-	_material.set_shader_parameter("source_outer_radius", outers)
-	_material.set_shader_parameter("source_intensity", intensities)
+	_material.set_shader_parameter("source_radius", radii)
+	_material.set_shader_parameter("source_brightness", brightness)
 	_material.set_shader_parameter("source_count", picked.size())
 
 func _draw() -> void:

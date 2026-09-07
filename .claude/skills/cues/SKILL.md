@@ -25,13 +25,13 @@ The vocabulary is in `docs/EVENTS.md`, "The visual vocabulary":
 - above the **player**, a flashing exclamation mark for a soon-to-be-bad spot, doubled and red for
   danger already on her
 - over the **pram**, the only cue that is not about the world — four states of the baby herself
-- a **soft halo under the entities**, summed from every live source currently charging the meter —
-  see "One field, and it answers one question" below
+- a **soft glow around an entity that is charging the meter right now**, out to that entity's own
+  outline and no further — see "A glow, not a field" below
 
 **The ban on a ring round a threat is untouched.** Every reason above still holds against one: a
 ring is a number and a silhouette is a threat, whatever new thing needs signalling next.
 
-## One field, and it answers one question
+## A glow, not a field
 
 *Asked for no rings and no drawn fields, held since the vocabulary was written · overturned on
 2026-09-07 for one specific cue, because the player asked for exactly this:* "lastly, let's create
@@ -45,26 +45,41 @@ why this is not a ring round any one entity. What it answers is a question the v
 had a cue for: *the meter is going up right now and nothing on screen says which of the six things
 around her is doing it.*
 
+**A field-sized halo is the version of this that does not work, and it was built and looked at
+before that was obvious.** *(2026-09-07, the player: "halo meaning only the outline of the object
+not the influence radius. it's only meant to show which objects currently affect the player (and
+how much depending on the strength of the halo). the halo should not extend more than a few pixels
+beyond the object's outline.")* A source's `outer_radius` reaches up to 200px against a visible
+world of 640x360 at zoom 2, so a halo drawn at that radius covers most of the frame — **and no
+brightness curve on top of it fixes that**, which is the part worth remembering: linear, squared and
+cubed mappings were each tried against the same two screenshots, and the cube that finally killed
+the wash also dimmed a lone source to nothing. **The footprint was the defect, not the curve.**
+
 **The exception is narrow, and the narrowness is what stops it from being the next ring somebody
 wants:**
 
-- **One cue, `ExcitementHalo`, not a general licence to draw.** Nothing else in the vocabulary
-  gets a field of its own by analogy to this one.
-- **For the cost being charged right now, not for what exists.** The set it draws is
-  `EventInstance.contribution_at(her position)` above a floor — a handful at a time by
-  construction, the same *"a cue that marks everything says nothing"* rule the caret already
-  answers to, restated over a field instead of a mark.
-- **Drawn as the summed field it is reading, in one shader.**
-  `EventManager.total_excitement_at()` is a plain sum, so the halo is that sum evaluated per pixel
-  — one node, one `.gdshader` — rather than one ring per source, which could only ever show two
-  circles crossing where the game charges a bright middle. See
+- **One cue, `ExcitementHalo`, not a general licence to draw.** Nothing else in the vocabulary gets
+  a glow of its own by analogy to this one.
+- **Sized to the thing, never to its reach.** `ExcitementHalo.glow_radius()` is
+  `EventDef.obstructs_radius` — half the silhouette, the one number on a def that means *how big is
+  this* — plus a 4px margin, with no ceiling, so a person glows at 15px and a barricade at 66px. **A
+  radius that means anything about reach is the ring this exception does not authorise.**
+- **For the cost being charged right now, not for what exists.** The set it draws is the sources
+  whose `EventInstance.contribution_at(her position)` clears a floor — a handful at a time by
+  construction, the same *"a cue that marks everything says nothing"* rule the caret already answers
+  to. It goes to nothing the moment she walks out of reach, which is the *"what to walk away from"*
+  half answering itself.
+- **Brightness is the real model, and it is the only thing that is.** How bright a glow reads is
+  that same `contribution_at()`, so *how much* is honest even though *how big* is decorative — and
+  two sources close together still sum per fragment in one shader, so a spot between two things that
+  are both costing her reads brighter than either alone. One node, one `.gdshader`; see
   `assets/shaders/excitement_halo.gdshader`.
 - **Soft and under everything.** The entities, the crowd and the player draw over it, never under
   it, so it stays a hint rather than a wall — and the caret, the badge and the exclamation mark
   keep meaning exactly what they meant before it existed: *worth a detour*, *something is coming*,
   *the contract is now about you*. Three sentences, one apiece, unchanged by a fourth.
 
-If something new wants a field of its own, that is a design conversation this one has not already
+If something new wants a glow of its own, that is a design conversation this one has not already
 settled.
 
 ## Four rules that are the whole reason it beats the rings
