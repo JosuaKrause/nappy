@@ -14,11 +14,16 @@ mid-way through.
 
 ## The order
 
-1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
+   be watched. *(Raised to the front on 2026-09-07: "we need to prioritize the "events must spawn
+   offscreen" work item.")*
+2. **M85** — one press, answered: the two focal points move and are drawn, a held finger re-aims,
+   the middle of the screen stops her instead of steering her, and the screens around a run say and
+   do what was asked of them.
+3. **M86** — `tools/release.sh` refuses a commit that has already been released.
+4. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-2. **M77** — everything arrives from off screen, so a thing that costs the day has an approach to
-   be watched.
-3. **M56** — the resistance is noticed.
+5. **M56** — the resistance is noticed.
 
 **Drawing work is deprioritised while the graphics overhaul is in flight** *(2026-09-06: "we
 deprioritize graphics works or bugs for now since a graphics overhaul is in-flight. let's focus on
@@ -36,12 +41,16 @@ presentation change with the lattice left cardinal — and it is written down an
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
 
-**[PLAYTEST-29.md](PLAYTEST-29.md) is the newest session and all seven of its findings are built.**
-Three of them were instructions the project already had and had read as repealed by something else,
-and the file is worth reading for that alone — two of its sentences are the player saying so. What
-it leaves open is played rather than built: **nothing is drawn for the two focal points a touch now
-aims from**, and whether they can be found by feel is the next report's question. The record is in
-`DECISIONS.md` under M83.
+**[PLAYTEST-33.md](PLAYTEST-33.md) is the newest session and none of its thirteen findings is built.**
+It is the report M83 asked for: the two focal points a touch aims from were built and drawn as
+nothing, and the answer is that they move outward and downward and are drawn. Eight of the thirteen
+are M85, four raise and extend M77, and the one question in it is M86. **Read it before any of the
+three.**
+
+**[PLAYTEST-29.md](PLAYTEST-29.md)'s seven findings are all built.** Three of them were instructions
+the project already had and had read as repealed by something else, and the file is worth reading for
+that alone — two of its sentences are the player saying so. The record is in `DECISIONS.md` under
+M83.
 
 **[PLAYTEST-28.md](PLAYTEST-28.md)'s four findings are built** — the game has one control scheme
 and no question about which: a press sets a direction she walks until the next press, a press on
@@ -131,9 +140,294 @@ deferring the drawings does not reach it.
       off screen worth one, so the second half may be a consequence of the first — a dog sited
       inside the view has no offscreen phase to be announced in.
 
-      **The care needed is the day-3 lesson.** `charging_dog` is deliberately unavoidable on the day
-      it teaches running, and a dog that starts further away is a dog with more room to be walked
-      around — which is the thing that placement was chosen to prevent
+      **The care needed is the day-3 lesson, and the player has now taken the trade it was
+      protecting.** `charging_dog` is deliberately unavoidable on the day it teaches running, and a
+      dog that starts further away is a dog with more room to be walked around — which is the thing
+      that placement was chosen to prevent. *Asked for a close, unavoidable teaching dog · overturned
+      to a further one on 2026-09-07, because "the run tutorial spawns inside the visible area making
+      the headsup way too short now (tap controls are slower than awsd and arrows)".* So the dog
+      moves out with everything else, and **unavoidability, if it is still wanted, has to come from
+      somewhere other than siting it too close to see coming** — that is an open question for the
+      build rather than a thing to quietly drop
+- [ ] **Anything coming at her starts at least 200ms off screen, and the badge announces it.**
+      *(2026-09-07: "events that go towards the player (biker / pursuing dog) should at least be
+      200ms off screen with a warning.")*
+
+      **The unit is time, measured at the closing speed rather than at the event's own**, because
+      she is usually walking into it. `cyclist` moves at 165 px/s and `charging_dog` chases at 130,
+      against `Tuning.WALK_SPEED` (92 px/s), so 200ms is **51px** past the view boundary for the
+      cyclist and **44px** for the dog.
+
+      **What has to change is that the siting stops being one flat number.**
+      `EventDirector._crossing_ahead_of()` sites a pursuer at `Tuning.SIGHT_AHEAD` (200px) flat and
+      `_toward_her()` sites a `TOWARD_PLAYER` row at the same 200px, and that constant is explicitly
+      *"the furthest ahead of her something may be sited and still be **on screen** when it gets
+      there"* — sized for the worst axis, since the camera sits on her at zoom 2 over a 1280x720
+      viewport, so the visible world is 640x360 and the boundary is 320px away sideways and 180px
+      away vertically. The new siting is **the distance to the view boundary along her heading, plus
+      200ms of closing speed**, which is a different number on each axis and a different number per
+      row.
+
+      **The warning is the half that makes the first half fair**, and it is the same sentence as the
+      item above: `DangerEdge` already draws a screen-edge badge for anything off screen worth one,
+      so a row sited outside the view finally has an offscreen phase to be announced in. A row moved
+      out without the badge following it is a row with *less* warning than it has now
+- [ ] **A biker hit is lethal, and today it is not.** *(2026-09-07: "also a biker hit should be
+      lethal.")* `_cyclist()` already carries `hard_fail = true` and a 33px `inner_radius`, so the
+      row is **declared** lethal — and `EventInstance.is_lethal_at()` returns false while
+      `is_telegraphing()`, with the cyclist's `telegraph_time` at 3.3s. Sited at `SIGHT_AHEAD`
+      (200px) and closing at 257 px/s it arrives in **0.78s**, still inside its own telegraph, and
+      rides straight through her.
+
+      **This is the item above seen from the other side**: a row whose warning is longer than its
+      approach has neither a warning nor a bite. Fixing the siting so the approach genuinely outlasts
+      the telegraph is what makes the declared lethality real, and the two are checked together
+      rather than one patched around the other — a shortened telegraph with the old siting would buy
+      the lethality by taking the notice away
+
+---
+
+## M85 — One press, answered · asked for 2026-09-07
+
+Eight findings from [PLAYTEST-33.md](PLAYTEST-33.md), and they are one milestone because they are one
+subject: **what a press does, and what the screens around a run say about it.** None of them needs a
+drawing an artist would have to make, so none is held behind the graphics overhaul — the two control
+circles are the shape a control already has, the way `MeterBar`'s own fill is.
+
+- [ ] **The two focal points move a third of the way out and a third of the way down.**
+      *(2026-09-07: "Move the center of the focal points 1/3 towards the sides and 1/3 towards the
+      bottom of the screen.")* `TouchControls.FOCUS_LEFT` and `FOCUS_RIGHT` are the fixed points a
+      real touch aims a heading from, at `(360, 360)` and `(920, 360)` in the 1280x720 design box —
+      M83 put each the same distance from the top, the bottom and its own side, which made that
+      distance 360 every way. A third of the remaining gap is 120px in each case, so
+      `FOCUS_LEFT` becomes `(240, 480)` and `FOCUS_RIGHT` becomes `(1040, 480)`.
+
+      `STOP_RADIUS` (48px, the radius a press has to land inside to stop her rather than steer her)
+      is measured from these, so the two "press the middle to stop" discs move with them and nothing
+      else in the file is authored against either constant
+- [ ] **Both control circles are drawn, and they say what is locked in.** *(2026-09-07: "also, show
+      the control circles again on both sides so the user can see what is currently locked in.")*
+      M83 drew nothing for the focal points and left *whether they can be found by feel* as the
+      question the next report answers; this is that report and the answer is no. **What is drawn is
+      the state and not only the place**: the direction currently held — `TouchControls._direction`,
+      the unit vector locked in at the last press — read off the circle rather than off watching her.
+
+      Both circles, always, on a touch build, and under the same `visible` gate the pause button
+      already uses so they disappear behind the title, the pause and the day summary. Whether a
+      desktop mouse build draws them too is a question for the build: a click aims from her own
+      position there, so a circle would name a point that means nothing
+- [ ] **A held finger keeps re-aiming.** *(2026-09-07: "dragging the finger doesn't work anymore but
+      should.")* Press and hold, and the heading updates continuously from the nearer focal point to
+      wherever the finger currently is; it locks in as it stands when the finger lifts. **Always at
+      `Tuning.WALK_SPEED` (92 px/s) — deflection distance means nothing.** A double press that then
+      drags holds `run` the same way a double press already does.
+
+      **This is not the drag stick coming back, and the difference is the whole reason it is
+      allowed.** M82 deleted that stick because partial deflection was the one input path in the game
+      that could walk her at anything other than 92 px/s, and every pursuit lead time in
+      `src/autoload/tuning.gd` is computed against 92 as *the* walking speed; playtest 27's rule —
+      *"there is no way to walk slowly — that is intentional — there should only ever be one speed
+      (plus a second via running)"* — is held by
+      `tests/test_touch.gd`'s `_test_no_input_path_presses_a_vector_shorter_than_one`, **and that
+      test must still pass**. *The overlap was put to the player as a question on 2026-09-07 rather
+      than inferred, and they chose live re-aim at one speed over the analog stick and over aiming
+      from her own position.*
+
+      **A mouse drags too, and it re-aims from her rather than from a focus.** *(2026-09-07:
+      "although dragging a mouse should reaim as well.")* Holding the left button and moving the
+      pointer updates the heading continuously from her own world position, locking in on release, at
+      the same one speed. So the re-aiming is shared and only its **origin** differs — which is the
+      one difference between a mouse and a finger this scheme already had, and no new one is being
+      introduced
+- [ ] **A stop band down the middle of the screen.** *(2026-09-07: "there should be a narrow band in
+      the middle of the screen (size of the stop circle) that stops the player. this is to prevent
+      moving the finger over the middle of the screen and quickly flicking back and forth.")*
+
+      **This only exists once the drag above does, and it is what makes the drag usable.** A held
+      finger aims from whichever focal point is nearer, and which one that is flips the instant the
+      finger crosses the design box's centre line at x = 640 — so a drag wandering over the middle
+      swaps a heading measured from `(240, 480)` for one measured from `(1040, 480)`, pointing
+      somewhere entirely different, and a finger hovering there snaps the direction back and forth
+      while barely moving.
+
+      The answer asked for is not hysteresis or a stickier focus: **the middle of the screen is not
+      a direction at all.** A band centred on the centre line, as wide across as the stop circle,
+      stops her — the third door into the same `_stop()` a press on her or on a focal point already
+      goes through. `STOP_RADIUS` is 48px, so the band is `absf(design.x - 640.0) <= STOP_RADIUS`,
+      which is `x ∈ [592, 688]` in the 1280x720 design box.
+
+      **The diameter reading is the player's own and the band is not drawn.** *(2026-09-07: "the
+      band doesn't get drawn and yes it's the diameter in size.")* So it is `STOP_RADIUS` either side
+      of the line rather than half that, and the two control circles item 2 asks for by name stay the
+      only things this scheme draws besides the pause button.
+
+      The band is in **design space**, like the two focal points and unlike a raw touch — the same
+      `ScreenOrientation.to_design_space()` trip `is_on_a_focus()` already makes — and it has to
+      apply **during a drag**, not only on the initial press, since a drag wandering into the middle
+      is the whole of what it is for
+- [ ] **Tapping her to stop goes away, because the band already is that area.** *(2026-09-07: "with
+      that we can remove tap the player to stop since it's the same area and if a movement
+      accidentally goes over the player it might become surprising to see her stop.")*
+
+      **"The same area" is literally true, and the camera is what makes it so.** The camera sits on
+      her, so she is at the centre of the screen — `x = 640` in the design box, the middle of the
+      band. `TouchControls._on_tap()`'s world-space check,
+      `world.distance_to(_rig.global_position) <= STOP_RADIUS`, is a second name for ground the band
+      already covers. **And with a drag it stops being harmless**: a press on her was deliberate,
+      but a finger sweeping across the screen crosses her without meaning to, and an unasked-for stop
+      mid-drag is the surprise the player names.
+
+      **The removal is touch only, and the mouse keeps clicking her to stop.** *(2026-09-07: "mouse
+      click doesn't have the band and will keep the click the player to stop behavior.")* So the
+      world-space check stays on the `not _touch` branch and the band is never asked of a click.
+
+      **That is the third place a mouse and a finger disagree, and all three have one cause**: a
+      mouse aims from her own world position and a finger aims from a focal point. A finger's stop
+      moves to the band because the band is exactly where the focal geometry breaks down; a mouse
+      never had that problem, its aiming origin *is* her, and clicking the thing you are steering is
+      the obvious way to stop it.
+
+      Nothing on screen needs changing to say so: the movement lesson already loses *"tap her to
+      stop"* two items down. `set_direction()`'s own fallback for a press exactly on `from` stays —
+      it is what the one test that calls straight in with an exact point relies on
+- [ ] **The movement lesson says two things and nothing else.** *(2026-09-07: "the movement tutorial
+      should just say "Tap to walk" and "Double tap to run". no mention of tapping her or "that
+      way".")* Three places carry the wording: `HUD._teach_the_day()` says
+      `Tap to walk, double tap to run` on day 1, and `TitleScreen._BODY` and `PauseScreen._BODY`
+      both open with `Tap to walk that way, tap her to stop, double tap to run.` — the two clauses
+      being struck are in that one sentence, on both screens.
+
+      **Stopping still works and simply stops being taught.** A press within `STOP_RADIUS` of her or
+      of a focal point still lets go of everything, and the game says nothing about it, the same way
+      the keyboard still walks and runs with nothing on screen naming a key
+- [ ] **A pressed button lights up white.** *(2026-09-07: "buttons should light up white when
+      pressed.")* `Palette.BUTTON_PRESSED` is `Color(0.11, 0.09, 0.08, 0.95)` — **darker** than
+      `BUTTON_FILL` (`0.18, 0.15, 0.13, 0.88`), with a comment beside it arguing that darker is what
+      pressed reads as. *That reasoning is overturned on 2026-09-07 by the player: pressed is bright.*
+
+      **It reaches three things, not two.** The two `ModeButton` symbols (continue and restart) take
+      it through `_apply_disc_style()`; `DaySummary._acknowledge_and_continue()` calls
+      `force_pressed_look()` for a press that landed anywhere on the screen at all, which is the
+      flash that acknowledges a tap before the day it starts blocks the frame, and it is the one a
+      player actually sees most often; and the pause button in
+      `TouchControls._draw_pause_button()` says the same thing with alpha (0.7 idle, 1.0 held)
+      rather than with a stylebox, so it needs its own answer rather than inheriting one
+- [ ] **A tap on the ending screen must not land in the game.** *(2026-09-07: "tapping on the game
+      over screen often goes directly back to the game skipping the title screen.")* The route is
+      `DaySummary` emitting `continued` → `main._on_summary_continued()` → `_restart_run()` →
+      `get_tree().call_deferred("reload_current_scene")` → the new scene's `_ready()` →
+      `main._open_the_title()`. The title screen begins the run on any press —
+      `TitleScreen._unhandled_input()` reads `TouchInput.is_press(event)` — and it is up within a
+      frame or two of the press that dismissed the ending.
+
+      **"Often" rather than always is the shape of a race, so the fix is a guard rather than a
+      reorder.** `DaySummary` already has `_continuing` to stop a fumbled double tap starting the day
+      twice; nothing plays that role across the scene reload, because the node holding the flag is
+      the one being freed. Whatever is chosen has to survive `reload_current_scene()`, and it must
+      not make the title screen *slow* to answer a deliberate press — the screen's whole content is
+      "press to begin"
+- [ ] **Every direction key begins a run.** *(2026-09-07: "awsd and arrows should start the game in
+      addition to space.")* `TitleScreen._unhandled_input()` accepts `ui_accept` and a pointer press
+      and reads nothing else, so `WASD` and the arrows — bound to the four `move_*` actions — do not
+      start her. This names no key on screen and does not want to: the hint stays `tap to begin`,
+      and the keys keep working silently the way every other keyboard control in the game does
+
+---
+
+## M86 — `release.sh` refuses a commit already released · asked for 2026-09-07
+
+> "btw what happens when running release twice? it should block if main is on a current release"
+
+**What happens today**: `tools/release.sh patch push` run twice from an unchanged `main` cuts two
+tags from the **same commit** and publishes the same build twice. Every refusal the script has is
+about the tree and the branch — a dirty working tree, a branch other than `main`, and a `main` that
+is not level with `origin/main` — plus a wait on the `test` check. **Nothing asks whether the commit
+about to be tagged already carries a version tag.**
+
+- [ ] **A commit that is already the current release is not releasable again.** The refusal is on
+      the **commit**, not on the version: if `origin/main`'s HEAD is what the newest `v*` tag points
+      at, there is nothing to publish and the script stops with a message saying which tag already
+      names it.
+
+      **It has to fire in the dry run too**, because that is the script's own stated contract —
+      *"every refusal fires whether or not `push` was given, so the dry run tells the truth about
+      whether the real thing would work."* A refusal that only appeared under `push` would make the
+      dry run lie in exactly the case somebody runs it for.
+
+      **One escape hatch is worth considering and is not assumed**: a re-release of the same commit
+      is what somebody reaches for when a deploy failed after the tag was pushed. The existing
+      failure path already covers that — a rejected push leaves the annotated tag in place and tells
+      the operator to retry `git push origin <tag>` — so the refusal does not need to be overridable
+      unless a real case turns up
+
+---
+
+## M87 — A direction is not one of four · asked for 2026-09-07
+
+**Both halves are wanted and go to an agent of their own.** Opened from a question rather than a complaint *(2026-09-07: "how does the telemetry
+handle directions? also, is there a cli way to set the directions? it was only nswe before")*, and
+the answer to both halves is that four is all there is.
+
+**The cause is that M82 changed what a heading is and neither the log nor the rig followed.** Under
+arrow keys a heading really was one of eight and four of those were the axes, so a four-way
+vocabulary lost almost nothing. A press now sets an **arbitrary unit vector** — `TouchControls
+.heading_to()` normalises the offset from her or from a focal point — so most headings a player
+produces are diagonal, and both halves below still speak in quarters.
+
+- [ ] **The run log rounds every heading to one of four words.** `TelemetryLog.compass()` answers
+      `nowhere` for an essentially zero vector, then `east`/`west` when `absf(x) > absf(y)` and
+      `south`/`north` otherwise (+y is south, since the city is drawn from above). Two entries use
+      it: `start`, which writes `doorstep (x,y), facing <compass>` off `Stroller.facing`, and `turn`,
+      which writes `doubled back <compass>` off `velocity.normalized()`.
+
+      **What that costs now that headings are continuous**: 44° logs `east`, 46° logs `north`, and
+      exactly 45° takes the `north`/`south` branch because `absf(x) > absf(y)` is false. Two runs
+      that went visibly different ways can write the same word, and one run can change the word
+      without turning at all.
+
+      **The detection underneath is not quantised and does not need changing.**
+      `TelemetryObserver._watch_direction()` compares real vectors with `angle_to()` against
+      `TURN_ANGLE` (120°) and eases the committed heading at `TURN_FOLLOW_RATE` (1.5/s), and the dusk
+      map draws the walk itself. **Only the noun is lossy**, so this is a formatting change.
+
+      **It stops quantising rather than quantising more finely.** *(2026-09-07: "the telemetry
+      shouldn't quantize".)* So eight words is not the answer either: what goes in the log is the
+      **bearing itself**, exact enough that two headings a player can tell apart are two readings in
+      the log. Degrees is the readable exact form; the convention has to be stated where it is
+      written, because +y is south here and a bearing that does not say which way zero points is a
+      number nobody can check. `nowhere` stays for a genuinely zero vector — that is not a rounded
+      direction, it is the absence of one
+- [ ] **No rig can drive a heading that is not an axis, or a drag, or a double tap.**
+      `AutoScreenshot` offers `--walk north|south|east|west`, which holds one `move_*` action for the
+      whole run, and `--walk 1s5e`, a script of `<seconds><letter>` steps with letters `n`/`s`/`e`/`w`
+      — **one action per step, so no step presses two and no diagonal is expressible.** `--tap X Y`
+      does go through the new scheme and can set any angle, but it is a single synthetic
+      `InputEventScreenTouch` fired the moment the run starts: no sequence, no drag, no double tap.
+
+      **This is what makes it urgent rather than tidy.** M85 adds a drag that re-aims continuously
+      and a stop band down the middle of the screen, and **nothing in the rigs can exercise either**
+      — while the **verify** rule is that verification lives in the test rigs rather than in watching
+      the game. It also means `tools/shot.sh --walk 3s15e` can no longer reproduce a route a player
+      would actually walk, since a player's route is now mostly diagonal.
+
+      **A script step can name an angle.** *(2026-09-07: "the script should be able to specify
+      angles".)* So `--walk` gains a step that is a duration and a bearing rather than a duration and
+      a letter, in the same left-to-right sequence the existing one runs in.
+
+      **It presses the same two `move_*` axes at fractional strength, which is how one speed
+      survives.** `Input.action_press(action, strength)` takes a strength, and
+      `TouchControls._set_axis()` already drives the scheme exactly this way — a 45° step presses
+      `move_right` and `move_up` at 0.707 each, and the vector is unit length, so the rig walks at
+      `Tuning.WALK_SPEED` (92 px/s) like everything else. **A step must never press a vector shorter
+      than one**, which is the same rule `tests/test_touch.gd` holds for the input paths.
+
+      **Keep the existing vocabulary working** — `1s5e` is what the M64 density figures and several
+      evidence captures were taken with, and a rig whose old scripts stop reproducing is a rig that
+      invalidates its own back catalogue. The letters become shorthand for four particular bearings
+      rather than a separate mechanism.
+
+      A drag and a double press are the other two shapes the scheme has and neither can be scripted
+      at all; whether they land here or later is for the build to say
 
 ---
 
