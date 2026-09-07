@@ -66,8 +66,11 @@ An event that is somewhere is half of what makes a route a decision. It can be r
 and finding out it is there is what walking a street is for.
 
 **`AHEAD_OF_PLAYER`, which is the cat, the flock and the charging dog.** No tile. The day budgets it
-at the same cost as everything else, and `EventDirector` sites it across her line,
-`AHEAD_LEAD_DISTANCE` in front of her, while she is walking.
+at the same cost as everything else, and `EventDirector` sites it while she is walking. A crossing
+row — the cat, the flock — is sited across her line, `AHEAD_LEAD_DISTANCE` in front of her. A
+pursuer — `charging_dog` — is sited down her line instead, outside the view along the heading she is
+actually walking (`Tuning.offscreen_boundary()`), so it has an offscreen approach to close before it
+reaches its stand-off; see "Everything arrives from off screen" below.
 
 That is a real distinction and not a placement trick. A café spilling across a pavement is a
 *place*. A cat bolting is not: you cannot plan around three seconds, and a cat sited on a tile at
@@ -90,21 +93,66 @@ Three rules on it, in the order they matter:
    street.
 
 **`TOWARD_PLAYER`, which is the cyclist and the loose dog.** Also no tile, also sited by
-`EventDirector` while she walks — but *down* her own line instead of across it, `SIGHT_AHEAD`
-(200px) ahead of her and coming the other way, so she meets it by continuing to walk rather than by
-being crossed. It is neither of the other two: `MAP` sites it at dawn, on a street the day has no
-way of knowing she will ever walk, so a bike sited that way is a bike she may never see; and an
-`AHEAD_OF_PLAYER` crossing is gone in three seconds and asks her to react, not to plan. A bike on
-her own pavement is a road, and the answer to a road is a route decision — cross to the other side,
-or turn — made with the warning the screen-edge badge already gives anything faster than a walk.
+`EventDirector` while she walks — but *down* her own line instead of across it, outside the view
+along her heading (`Tuning.offscreen_boundary()`) and coming the other way, so she meets it by
+continuing to walk rather than by being crossed. It is neither of the other two: `MAP` sites it at
+dawn, on a street the day has no way of knowing she will ever walk, so a bike sited that way is a
+bike she may never see; and an `AHEAD_OF_PLAYER` crossing is gone in three seconds and asks her to
+react, not to plan. A bike on her own pavement is a road, and the answer to a road is a route
+decision — cross to the other side, or turn — made with the warning the screen-edge badge already
+gives anything faster than a walk.
 
 It does not adjust to her the way a pursuer does. `pursues` backs off, holds a stand-off and gives
 up if she runs; `TOWARD_PLAYER` is traffic, not an ambush — it travels the straight line it was
 sited on, at its own `speed`, whether or not she is in it. The same two rules bind it as bind
 `AHEAD_OF_PLAYER`: the clock only runs while she is walking, and `EventDef.validate()` refuses one
-whose `obstructs_radius` is nonzero, or whose `outer_radius` reaches all the way to `SIGHT_AHEAD` —
-a field that wide would already be on her the moment it appeared, which is the one thing "she gets
-close and it arrives" cannot mean.
+whose `obstructs_radius` is nonzero, or whose `outer_radius` reaches `Tuning.min_offscreen_boundary()`
+(180px, the vertical axis, the narrower of the two the director ever sites against) — a field that
+wide would already be on her the moment it appeared, which is the one thing "she gets close and it
+arrives" cannot mean.
+
+### Everything arrives from off screen
+
+**A row that travels toward her — a pursuer or a `TOWARD_PLAYER` row — is sited outside the view,
+not against a flat number sized for one axis of it.** The camera sits on her at zoom 2 over a
+1280x720 viewport, so the visible world is 640x360: 320px to the edge sideways, 180px vertically.
+`Tuning.offscreen_boundary(heading)` is a ray to whichever of those two edges the heading in play
+actually reaches first, so a row sited while she walks east is genuinely off screen on that axis
+rather than merely off the narrower one the old flat number was sized for.
+
+**And it stays off screen for at least 200ms of its own closing, not merely past the edge.**
+*(2026-09-07: "events that go towards the player (biker / pursuing dog) should at least be 200ms
+off screen with a warning.")* `Tuning.offscreen_lead(heading, closing_speed)` adds
+`Tuning.OFFSCREEN_NOTICE` (0.2s) of `closing_speed` on top of the boundary — the row's own speed
+plus `WALK_SPEED`, because she is usually walking into it. For `cyclist` (165px/s) that is
+165 + 92 = 257px/s, 51px past the boundary; for `charging_dog` pursuing (130px/s) it is
+130 + 92 = 222px/s, 44px. The unit is **time**, and the pixels are what it costs at each row's own
+speed — a slower row buys the same 200ms with fewer of them.
+
+**The margin applies to what travels toward her, not to a crossing.** `cat_dash` and
+`pigeon_flock` keep `AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()` unchanged: a crossing
+row's whole content is a three-second interruption she reacts to as it happens, not an approach she
+watches close, so there is no "closing speed" for the margin to be stated over. **Chosen as the
+smaller reading of a silence** — the instruction named "events that go towards the player", not
+every director-sited row, and a crossing already pays its own fairness in the reaction-window rule
+above rather than in an offscreen phase.
+
+**The screen-edge badge is what makes the offscreen phase worth anything.** `DangerEdge` already
+draws one for anything lethal or faster than a walk that is off screen and closing under its own
+steam; a pursuer sited outside the view is exactly that for as long as it stays there, so
+`DangerEdge._is_worth_an_arrow` announces it the same way it announces `TOWARD_PLAYER` — a row moved
+further out without the badge following it would have *less* warning than it had before, not more.
+
+**A `hard_fail` `TOWARD_PLAYER` row is sited further still, so its telegraph is over before it
+arrives.** `EventInstance.is_lethal_at()` refuses the whole time an event `is_telegraphing()`, so a
+row sited only past the offscreen margin can close the gap and ride straight through her while
+still telegraphing — declared lethal and never once able to fire. *(2026-09-07: "also a biker hit
+should be lethal.")* `Tuning.outlasting_telegraph_lead()` takes whichever is further: the ordinary
+offscreen margin, or the distance that takes `telegraph_time + OFFSCREEN_NOTICE` to close at the
+row's own closing speed. For `cyclist` (telegraph 3.3s, closing 257px/s) the telegraph term wins:
+`(3.3 + 0.2) * 257` = 900px, against a 371px offscreen margin on the widest axis — the fix is the
+siting, not a shortened telegraph, which would have bought the lethality back by taking the notice
+away.
 
 ## Solid things are solid
 

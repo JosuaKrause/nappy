@@ -64,12 +64,12 @@ func _test_it_is_off_until_a_run_asks_for_it(t) -> void:
 ## the moment a line is formatted by hand somewhere else.
 func _test_a_line_is_a_time_a_kind_and_a_sentence(t) -> void:
 	var log := TelemetryLog.new()
-	log.note(0.0, "start", "doorstep (52,88), facing north")
+	log.note(0.0, "start", "doorstep (52,88), facing 0°")
 	log.note(96.42, "home", "WON")
 	log.note(1234.5, "near", "busker 62px")
 
 	t.check(log.lines.size() == 3, "three notes make three lines")
-	t.check(log.lines[0] == "   0.0  start    doorstep (52,88), facing north",
+	t.check(log.lines[0] == "   0.0  start    doorstep (52,88), facing 0°",
 			"a line is a right-aligned time, two spaces, a padded kind, then the sentence")
 	t.check(log.lines[1].begins_with("  96.4  home"), "the time is one decimal place")
 	# A four-digit timestamp is a run far longer than fourteen days, but the column must not
@@ -99,12 +99,21 @@ func _test_the_formatting_helpers(t) -> void:
 	t.check(TelemetryLog.tile(Vector2i(3, 5)) == "(3,5)", "a tile has no space in it")
 	# The city is drawn from above with +y downward, so south is *down*. Getting this backwards
 	# would put every `turn` entry in the log 180 degrees out and nothing would ever say so.
-	t.check(TelemetryLog.compass(Vector2.DOWN) == "south", "+y is south")
-	t.check(TelemetryLog.compass(Vector2.UP) == "north", "-y is north")
-	t.check(TelemetryLog.compass(Vector2.RIGHT) == "east", "+x is east")
-	t.check(TelemetryLog.compass(Vector2.LEFT) == "west", "-x is west")
-	t.check(TelemetryLog.compass(Vector2(3.0, -1.0)) == "east",
-			"a diagonal is named by its longer axis")
+	t.check(TelemetryLog.compass(Vector2.DOWN) == "180°", "+y is a bearing of 180°, south")
+	t.check(TelemetryLog.compass(Vector2.UP) == "0°", "-y is a bearing of 0°, north")
+	t.check(TelemetryLog.compass(Vector2.RIGHT) == "90°", "+x is a bearing of 90°, east")
+	t.check(TelemetryLog.compass(Vector2.LEFT) == "270°", "-x is a bearing of 270°, west")
+	t.check(TelemetryLog.compass(Vector2(3.0, -1.0)) == "72°",
+			"a diagonal keeps its own exact bearing rather than rounding to the nearer axis")
+	# Two headings four degrees apart used to both read as "east" under the old
+	# `absf(x) > absf(y)` split — 44° took it, 46° crossed into "north" — which is the
+	# quantisation this format exists to remove: two walks a player can tell apart must not
+	# write the same word.
+	var at_44 := Vector2(sin(deg_to_rad(44.0)), -cos(deg_to_rad(44.0)))
+	var at_46 := Vector2(sin(deg_to_rad(46.0)), -cos(deg_to_rad(46.0)))
+	t.check(TelemetryLog.compass(at_44) == "44°", "44° reads as its own bearing")
+	t.check(TelemetryLog.compass(at_46) == "46°",
+			"and a heading two degrees off reads as a different one rather than the same word")
 	t.check(TelemetryLog.compass(Vector2.ZERO) == "nowhere", "and standing still is nowhere")
 	t.check(TelemetryLog.purpose(GameEnums.BlockPurpose.QUIET_SQUARE) == "quiet_square",
 			"a purpose is its enum name, lower case")
@@ -262,8 +271,8 @@ func _test_a_stuck_player_is_logged_once(t) -> void:
 			"pressing into a wall for 2s writes exactly one blocked entry (got %d)"
 			% blocked.size())
 	if not blocked.is_empty():
-		t.check(blocked[0].contains("east"),
-				"and it names the direction pressed (got '%s')" % blocked[0])
+		t.check(blocked[0].contains("90°"),
+				"and it names the bearing pressed (got '%s')" % blocked[0])
 	observer.free()
 
 ## The same held key, but she is actually covering ground — `here` advances every step by more
