@@ -41,6 +41,10 @@ no artist — which is why M78 stands apart from M65 rather than inside it.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
+**"The crowd has no halo" is tabled the same way**, and it is the one open question M89 leaves: the
+halo reads the event list, so the largest ordinary contributor on a busy pavement glows at nothing.
+The measurement is in that section and the three possible answers are written out; none is chosen.
+
 **[PLAYTEST-34.md](PLAYTEST-34.md) is the newest session and none of its ten findings is built** —
 seven are M90 and three are M91. It is the played answer M88 and M87 were waiting for, and it is
 mostly a report of things that do not respond: a button that never changes under a press, a stop
@@ -326,6 +330,43 @@ now visibly wrong at both ends.
       heading with nothing in it preferring *her* pavement over the one across the carriageway. **A
       biker on the far pavement is scenery**: the road between them is already ground she does not
       cross casually, so the whole content of the row — *get out of its lane* — never arrives
+
+---
+
+## The crowd has no halo · a question, asked 2026-09-07
+
+**Not queued and not rejected. It is a question, and it is written down so that whoever answers it
+does so with the measurement in hand.** *(2026-09-07, on being shown the gap: "Queue it as its own
+question.")*
+
+**The halo M89 builds reads the event list and nothing else, so the crowd is silent under it.**
+Measured on the arterial pavement on day 6 of seed 4242, standing still: the excitement bar at 48
+and the debug line reading `incoming 20.22 /s`, with **nothing glowing anywhere in frame**. The
+cause is not a bug — pedestrians are `CrowdAgent`s rather than `EventInstance`s, and
+`ExcitementHalo.select_sources()` is given `EventManager.instances()`. So the cue answers *which of
+these things is charging the meter* for events, and says nothing at all about the largest ordinary
+contributor on a busy street.
+
+**The plumbing exists, which is exactly why this needs deciding rather than building.**
+`CrowdAgent` already carries its own `contribution_at(world_position)`, so extending the selection
+to the crowd is a small change. What it would do to the screen is not small: a day fields a couple
+of hundred walkers, a busy pavement puts dozens inside her reach at once, and **a cue that marks
+everything says nothing** — the **cues** rule's second rule, and the one the halo's floor and its
+eight-source cap already exist to satisfy.
+
+Three shapes an answer could take, none of them chosen:
+
+- **Leave it to events.** The crowd is the *noise floor* rather than a thing to walk away from, and
+  the meter's own number is what reports it. The limit gets written into `docs/EVENTS.md` and the
+  cue stops pretending to be a complete answer.
+- **Glow the crowd under one combined outline**, not one per walker — a knot of people reads as a
+  knot, which is what she actually has to route around.
+- **Raise the floor for crowd agents specifically**, so only a genuinely dense cluster earns
+  anything.
+
+**What would make it worth discussing again is a played session**, not a screenshot: whether a
+player on a busy street reads the silent crowd as *the crowd is free* — which it is not — is a
+question about what they conclude, and nothing here can answer it.
 
 ---
 
