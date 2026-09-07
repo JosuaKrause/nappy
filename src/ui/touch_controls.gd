@@ -37,7 +37,8 @@ extends Control
 ## into either — see `is_on_a_focus()`, `is_in_stop_band()` and `_on_drag()`.
 ##
 ## **`Mode.TAP` aims from her own world position instead, and draws nothing.** A press within
-## `STOP_RADIUS` of her stops her; the band and the focal circles do not exist in this mode at all.
+## `TAP_STOP_RADIUS` of her stops her; the band and the focal circles do not exist in this mode at
+## all.
 ## *(Playtest 29 finding 6, on why a real touch in `JOYSTICK` mode no longer stops on a press near
 ## her own position: the camera sits on her, so her own screen position already is the band's own
 ## centre line, and covering that ground twice made a drag crossing her by accident stop her by
@@ -102,21 +103,29 @@ const DOUBLE_TAP_SECONDS := 0.35
 ## direction doubled rather than a new one. Generous, because a thumb pressing twice does not land
 ## on the same pixel either time.
 const DOUBLE_TAP_DISTANCE := 60.0
-## How close a press has to land to her, in world px, to read as *stop* rather than a direction in
-## `Mode.TAP` — `_near_her()` is the only place this still measures a distance to her, called from
-## both `_on_tap()`'s opening press and `_on_drag()`'s own live boundary crossing (playtest 34
-## finding 8). Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram rides up to
-## `PRAM_DISTANCE` (34px) off to one side of her, and a press that lands on the pram is a press on
-## her — with room to spare for a pointer that does not land on the same pixel twice, the way every
-## catch radius in this game is generous rather than exact.
+## How close a press has to land to a focus or to the middle band, in **design-space** px, to read
+## as *stop* rather than a direction in `Mode.JOYSTICK` — `is_on_a_focus()` and `is_in_stop_band()`
+## are the only two places this is compared now, and both are design-space questions:
+## `is_on_a_focus()` is also the radius `_draw_focus_circles()` draws each ring at, so the ring's
+## own edge **is** the boundary between the two doors a press through it can open, rather than an
+## arbitrary aesthetic size. The three milestones that added these two doors never named a separate
+## figure for either, so one number does both jobs.
 ##
-## Also the one radius `is_on_a_focus()` and `is_in_stop_band()` measure in **design-space** px, in
-## `Mode.JOYSTICK` — the same "how close counts as *stop*" number reused rather than a second one
-## invented for either door, since none of the three milestones that added them named a separate
-## figure. This mode had this same world-space door once too, until the stop band replaced it —
-## *(2026-09-07: "with that we can remove tap the player to stop since it's the same area".)* See
-## `is_in_stop_band()`'s own doc for why that removal is `Mode.JOYSTICK` only.
+## **`Mode.TAP`'s own door used to reuse this same number as a world-space distance — see
+## `TAP_STOP_RADIUS` for what it uses now.** *(Playtest 34 finding 5: "the stop circle on the
+## player should exactly be the size of the joystick stop circle nothing bigger.")* The camera sits
+## on her at zoom 2, so 48 world px covered 96 design px on the glass — twice the ring this constant
+## actually draws.
 const STOP_RADIUS := 48.0
+
+## How close a press has to land to her, in **world** px, to read as *stop* rather than a direction
+## in `Mode.TAP` — `_near_her()` is the only place this is compared, since `Mode.TAP`'s aiming
+## origin is her own live position rather than a fixed place on the glass, unlike `STOP_RADIUS`'s
+## own design-space doors. Half of `STOP_RADIUS` (48 design px): the camera sits on her at zoom 2
+## over a 1280x720 viewport (`Tuning.OUT_OF_SIGHT`'s own doc states the same fact for the sight
+## radii), so 24 world px covers exactly the same ground on screen as `STOP_RADIUS`'s own drawn
+## ring, rather than the 96 design px a bare `STOP_RADIUS` compared in world space used to cover.
+const TAP_STOP_RADIUS := STOP_RADIUS / 2.0
 
 ## The two fixed points `Mode.JOYSTICK` aims from — see the class doc's own paragraph on why the two
 ## modes disagree here. *(2026-09-06, the player: "define two points equally apart
@@ -333,8 +342,8 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ## 2026-09-07: "with that we can remove tap the player to stop since it's the same area ... mouse
 ## click doesn't have the band and will keep the click the player to stop behavior".)* `Mode.TAP`
 ## aims from her own world position, exactly as a mouse always has, and a press within
-## `STOP_RADIUS` of that same position stops her rather than steering her — the one door this mode
-## has, since its aiming origin already *is* her. `Mode.JOYSTICK` instead aims from the nearer of
+## `TAP_STOP_RADIUS` of that same position stops her rather than steering her — the one door this
+## mode has, since its aiming origin already *is* her. `Mode.JOYSTICK` instead aims from the nearer of
 ## `FOCUS_LEFT`/`FOCUS_RIGHT`, and is stopped by a press on either focus (`is_on_a_focus()`) or in
 ## the stop band down the middle of the screen (`is_in_stop_band()`) — not by a press near her own
 ## position any more, since the band already covers that ground (the camera sits on her, so her own
@@ -406,13 +415,13 @@ func _focus_world(focus_design: Vector2) -> Vector2:
 	return get_viewport().get_canvas_transform().affine_inverse() \
 			* ScreenOrientation.to_presented_space(focus_design, rotated)
 
-## Whether `world` lands within `STOP_RADIUS` of her — `Mode.TAP`'s own door into `_stop()`,
+## Whether `world` lands within `TAP_STOP_RADIUS` of her — `Mode.TAP`'s own door into `_stop()`,
 ## asked identically by `_on_tap()`'s opening press and by `_on_drag()`'s own live boundary
 ## crossing (playtest 34 finding 8's "in the centre is stopped, out of it is walking that way, and
 ## crossing the boundary either way changes it live", read as applying to `Mode.TAP`'s one door the
 ## same way it applies to `Mode.JOYSTICK`'s two).
 func _near_her(world: Vector2) -> bool:
-	return world.distance_to(_rig.global_position) <= STOP_RADIUS
+	return world.distance_to(_rig.global_position) <= TAP_STOP_RADIUS
 
 ## A finger or a held left mouse button, still down and moving, at `screen_position` — the drag
 ## stick's replacement, and the reason it survives
@@ -459,8 +468,8 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 ## something else: a focus already converted to world space, in `Mode.JOYSTICK`.
 ##
 ## A press exactly on `from` has no heading to compute and stops her instead, the same case
-## `_on_tap()`'s own `STOP_RADIUS` check already catches for a `Mode.TAP` press a pixel's-width away
-## from her — this is the fallback for the one caller (a test) that calls straight in with an
+## `_near_her()`'s own `TAP_STOP_RADIUS` check already catches for a `Mode.TAP` press a pixel's-width
+## away from her — this is the fallback for the one caller (a test) that calls straight in with an
 ## exact point.
 func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 	if not _rig:

@@ -234,11 +234,12 @@ func _test_set_direction_on_her_own_position_stops_rather_than_pressing(t) -> vo
 	rig.free()
 
 ## **The generous radius, not the exact pixel — and `Mode.TAP` only now.** *(2026-09-06: "also,
-## to stop her just click on her".)* `STOP_RADIUS` is wide enough to catch a click on the pram,
-## which rides up to `PRAM_DISTANCE` off to one side of her, not only a click on her own exact
-## world position. *(2026-09-07: "mouse click doesn't have the band and will keep the click the
-## player to stop behavior".)* Replaces the old, device-agnostic version of this test rather than
-## sitting beside it — the `Mode.JOYSTICK` half of what it asserted is now
+## to stop her just click on her".)* `TAP_STOP_RADIUS` catches a pointer that does not land on the
+## same world pixel as her twice, but — unlike the wider, doubled number it replaced — not a click
+## on the pram, which rides up to `PRAM_DISTANCE` off to one side of her. *(Playtest 34 finding 6:
+## "if I click on the stroller it shouldn't stop only when I click on the body of the player.")*
+## Replaces the old, device-agnostic version of this test rather than sitting beside it — the
+## `Mode.JOYSTICK` half of what it asserted is now
 ## `_test_a_touch_near_her_own_position_no_longer_stops_her`, further down.
 func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	var rig := _rig_at(t, Vector2(200.0, 200.0))
@@ -249,16 +250,19 @@ func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	controls._on_tap(transform * Vector2(500.0, 200.0), 0.0)
 	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
 
-	# 30px off her own position -- within STOP_RADIUS (48px), covering the pram at PRAM_DISTANCE
-	# (34px) as well as her own PLAYER_BODY_RADIUS (14px).
-	controls._on_tap(transform * Vector2(230.0, 200.0), 1.0)
+	# 15px off her own position -- within TAP_STOP_RADIUS (24px).
+	controls._on_tap(transform * Vector2(215.0, 200.0), 1.0)
 	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
 			"a click near her, not only exactly on her, stops her")
 
-	# Well outside the radius sets a direction instead.
 	controls._on_tap(transform * Vector2(500.0, 200.0), 2.0)
-	t.check(Input.is_action_pressed("move_right") and controls._walking,
-			"a click outside the stop radius sets a direction instead")
+	t.check(Input.is_action_pressed("move_right"),
+			"walking again, so the pram click below has something to undo")
+
+	# 34px off -- Stroller.PRAM_DISTANCE, and past TAP_STOP_RADIUS (24px): the pram is not her.
+	controls._on_tap(transform * Vector2(166.0, 200.0), 3.0)
+	t.check(Input.is_action_pressed("move_left") and controls._walking,
+			"a click on the pram is not a click on her any more -- it sets a direction instead")
 
 	controls.queue_free()
 	rig.free()
@@ -715,7 +719,7 @@ func _test_a_tap_mode_drag_stops_and_resumes_crossing_her_own_stop_radius(t) -> 
 
 	var motion := InputEventMouseMotion.new()
 	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
-	motion.position = transform * Vector2(310.0, 300.0) # within STOP_RADIUS (48px) of her
+	motion.position = transform * Vector2(310.0, 300.0) # within TAP_STOP_RADIUS (24px) of her
 	controls._input(motion)
 	t.check(not controls._walking and not Input.is_action_pressed("move_right"),
 			"dragging back near her stops her live")
