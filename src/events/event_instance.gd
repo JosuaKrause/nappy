@@ -162,6 +162,16 @@ var _map: CityMap
 ## `_process()` has dropped it. See `is_solid()`.
 var _obstruction: StaticBody2D
 
+## The child that re-draws this event's own body in a ring of offsets — see `_build_halo()` and
+## `_draw_halo()`. Built in `_ready()`, same as `_obstruction`, so it is never `null` once the
+## instance is live.
+var _halo: Node2D
+
+## 0..1, current excitement over `ExcitementHalo.SATURATES_AT`, written once a frame by
+## `ExcitementHalo._process()` through `set_halo_strength()` — nonzero for the handful
+## `select_sources()` picked, zero for everything else. Read only by `_draw_halo()`.
+var _halo_strength := 0.0
+
 ## Whether `_draw_spread` and `_draw_cafe` lay their segments along local Y rather than local X.
 ## Decided once, in `setup()`, from the street the instance stands on — see `_spread_is_vertical`.
 ## Never a per-row field: two rows on the same street face the same way for the same reason, and a
@@ -241,6 +251,7 @@ func _ready() -> void:
 		_build_obstruction()
 	if def.flock_size > 0:
 		_build_the_flock()
+	_build_halo()
 
 ## Some events are physically in the way. The body is a child so it travels with a mobile
 ## event and disappears with the instance.
@@ -253,6 +264,36 @@ func _build_obstruction() -> void:
 	body.add_child(shape)
 	add_child(body)
 	_obstruction = body
+
+## Built once for every instance, whether or not `ExcitementHalo` ever picks it — a `city_wide`
+## source is excluded by kind (see `ExcitementHalo.select_sources()`) and simply never draws, which
+## is cheaper to leave true by construction than to special-case here.
+##
+## A plain `Node2D` rather than a second script: it has no `_draw()` to override, so `_draw_halo()`
+## is connected to its "draw" signal instead — the substitute Godot's own docs name for a canvas
+## item with no script of its own. `show_behind_parent` is the "soft, and under everything" rule
+## the cue already owed its field-sized version; `z_as_relative` stays default (true), so it draws
+## at the entity's own place in the y-sort rather than one z layer away from the body it traces.
+func _build_halo() -> void:
+	_halo = Node2D.new()
+	_halo.name = "Halo"
+	_halo.show_behind_parent = true
+	_halo.material = _halo_material()
+	_halo.draw.connect(_draw_halo)
+	add_child(_halo)
+
+## One `ShaderMaterial`, shared by every instance's halo child rather than built per instance: the
+## shader (`assets/shaders/excitement_halo.gdshader`) reads no uniform of its own — the flat colour
+## and the strength both arrive as this node's own `modulate`, which is a property of the `Node2D`
+## `_build_halo()` just made, not of the material. A second `ShaderMaterial` per event would be a
+## second copy of a resource that never differs from the first.
+static var _shared_halo_material: ShaderMaterial
+
+static func _halo_material() -> ShaderMaterial:
+	if not _shared_halo_material:
+		_shared_halo_material = ShaderMaterial.new()
+		_shared_halo_material.shader = preload("res://assets/shaders/excitement_halo.gdshader")
+	return _shared_halo_material
 
 ## Whether this instance is solid right now. True from `_ready()` for anything with
 ## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()`.
@@ -951,18 +992,7 @@ func is_lethal_at(world_position: Vector2) -> bool:
 func _draw() -> void:
 	if is_finished:
 		return
-	# **A moving event has to look like it is moving.** Without a gait a dog walker at 32px/s — a
-	# tile a second, against the player's three — slides along without a leg moving and reads as
-	# parked, which gets reported as *the dog walkers are not moving* when the movement is fine.
-	#
-	# A bob rather than a stride, because the art has legs drawn into it and a sprite cannot swing
-	# its own. Driven by **distance covered**, not by time, so it is the movement itself that shows:
-	# something stopped is still, and something fast bobs faster.
-	var bob := 0.0
-	if def.pursues or is_leaving:
-		bob = -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
-	elif def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
-		bob = -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
+	var bob := _current_bob()
 	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2.ONE)
 	_draw_body()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -976,6 +1006,82 @@ func is_telegraphing_still() -> bool:
 ## Sized against a walking pace rather than a running one — 34px is roughly a step.
 const BOB_PER_PX := PI / 34.0
 const BOB_HEIGHT := 2.5
+
+## **A moving event has to look like it is moving.** Without a gait a dog walker at 32px/s — a
+## tile a second, against the player's three — slides along without a leg moving and reads as
+## parked, which gets reported as *the dog walkers are not moving* when the movement is fine.
+##
+## A bob rather than a stride, because the art has legs drawn into it and a sprite cannot swing
+## its own. Driven by **distance covered**, not by time, so it is the movement itself that shows:
+## something stopped is still, and something fast bobs faster.
+##
+## Pulled out of `_draw()` so `_draw_halo()` can ride the same lift: a walking entity's ring of
+## re-drawn bodies has to bob with it, or the outline slides off the sprite it is meant to trace.
+func _current_bob() -> float:
+	if def.pursues or is_leaving:
+		return -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
+	if def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
+		return -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
+	return 0.0
+
+# ------------------------------------------------------------------ the halo ---
+# **The outline is the sprite's own, not a radius.** *(2026-09-07, the player: "it should use the
+# outline of the sprite. that's why it needs to be a shader. or draw the sprite in a uniform color
+# multiple times".)* A `canvas_item` shader on this entity's own sprite cannot bloom outward — it
+# can only write inside the rect it is given, tight to the art, so a dilation would be clipped at
+# the silhouette's own edge and read as an inward outline rather than a glow around it. And this
+# entity draws many sprites of many shapes through `_draw_body()`, so there is no one texture to
+# outline in the first place. `_halo` re-runs that same `_draw_body()` at a ring of offsets instead
+# — "draw the sprite in a uniform colour multiple times," made cheap by a shader that flattens
+# every one of those redraws to a flat silhouette rather than the game tracing an outline itself.
+
+## How many directions the ring redraws the body in. Tried at 8 first, checked against the leaf
+## blower's own silhouette (a concave one — the arm breaks the body's own outline) and already read
+## as a smooth rim rather than a facetted one at this scale. 12 is kept anyway, in the middle of the
+## "eight to sixteen" range this cue was asked to land in: the offsets are a fixed 4px translation
+## regardless of the body they redraw, so a long straight run — a barricade's segments, a protest's
+## rank of placards — is the shape most likely to show the gap between two adjacent copies, and it
+## was not screenshotted here. The extra four offsets cost nothing at the handful of instances this
+## ever runs for (`ExcitementHalo.MAX_SOURCES`, 8).
+const HALO_OFFSETS := 12
+
+## How far past the sprite's own edge each offset copy sits, in world px. *(2026-09-07, the player:
+## "the halo should not extend more than a few pixels beyond the object's outline.")* The same 4px
+## the field-sized version of this cue margined its circles by — "a few pixels" did not change
+## between the two shapes, only what the margin is measured from.
+const HALO_MARGIN := 4.0
+
+## `_halo`'s own "draw" signal handler. A plain `Node2D` has no `_draw()` to override, so this is
+## connected instead of overridden — Godot's own documented substitute for a canvas item with no
+## script of its own.
+##
+## **Rides the same bob `_draw()` gives the entity itself** (`_current_bob()`), or a walking
+## entity's outline would slide off the sprite it is tracing. Each offset gets its own
+## `draw_set_transform()`, reset once at the end the way `_draw()` already resets its own.
+func _draw_halo() -> void:
+	if is_finished or _halo_strength <= 0.0:
+		return
+	var bob := _current_bob()
+	for i in HALO_OFFSETS:
+		var angle := TAU * float(i) / float(HALO_OFFSETS)
+		var offset := Vector2(cos(angle), sin(angle)) * HALO_MARGIN
+		_halo.draw_set_transform(Vector2(0.0, bob) + offset, 0.0, Vector2.ONE)
+		_draw_body(_halo)
+	_halo.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+## Called by `ExcitementHalo` once a frame for every live instance — above zero for the handful
+## `select_sources()` picked, zero for everything else. Sets `_halo`'s own `halo_colour` instance
+## uniform (see `assets/shaders/excitement_halo.gdshader`): the amber the excitement bar itself
+## fills with, at an alpha of `strength` — an `instance uniform` rather than `modulate`, because a
+## fragment function that writes `COLOR` is not re-multiplied by the node's own modulate afterward,
+## only `set_instance_shader_parameter()` reaches a shared material per instance. This is the only
+## place a saturated source's ring reads any brighter than a barely clearing one.
+func set_halo_strength(strength: float) -> void:
+	_halo_strength = strength
+	_halo.set_instance_shader_parameter("halo_colour",
+			Color(Palette.EXCITEMENT_FIELD.r, Palette.EXCITEMENT_FIELD.g,
+					Palette.EXCITEMENT_FIELD.b, strength))
+	_halo.queue_redraw()
 
 # ------------------------------------------------------------------ the mark ---
 # **Nothing draws a field.** A ring communicates a falloff radius, which is a number, and a number
@@ -1069,66 +1175,66 @@ func _draw_mark() -> void:
 		Sprites.draw_caret(self, at - Vector2(0.0, MARK_WIDTH * scale * 0.85),
 				MARK_WIDTH * scale, mark_colour())
 
-func _draw_body() -> void:
+func _draw_body(canvas: CanvasItem = self) -> void:
 	match def.look:
 		EventDef.Look.CAT:
-			_draw_cat()
+			_draw_cat(canvas)
 		EventDef.Look.YELLER:
-			_draw_simple(YELLER, 9.0)
+			_draw_simple(YELLER, 9.0, canvas)
 		EventDef.Look.DOG_WALKER:
-			_draw_dog_walker()
+			_draw_dog_walker(canvas)
 		EventDef.Look.CAFE:
-			_draw_cafe()
+			_draw_cafe(canvas)
 		EventDef.Look.DELIVERY_VAN:
-			_draw_simple(DELIVERY_VAN, 20.0)
+			_draw_simple(DELIVERY_VAN, 20.0, canvas)
 		EventDef.Look.BUSKER:
-			_draw_simple(BUSKER, 9.0)
+			_draw_simple(BUSKER, 9.0, canvas)
 		EventDef.Look.ROADWORKS:
-			_draw_spread(BARRIER_SEGMENT, BARRIER_END)
+			_draw_spread(BARRIER_SEGMENT, BARRIER_END, canvas)
 		EventDef.Look.FIRE_ENGINE:
-			_draw_vehicle(FIRE_ENGINE, FIRE_ENGINE_END, 26.0)
+			_draw_vehicle(FIRE_ENGINE, FIRE_ENGINE_END, 26.0, canvas)
 		EventDef.Look.BURNING_BUILDING:
-			_draw_fire()
+			_draw_fire(canvas)
 		EventDef.Look.BURNT_SHELL:
-			_draw_spread(RUBBLE)
+			_draw_spread(RUBBLE, null, canvas)
 		EventDef.Look.LOOSE_DOG:
-			_draw_loose_dog()
+			_draw_loose_dog(canvas)
 		EventDef.Look.STALL:
-			_draw_spread(STALL)
+			_draw_spread(STALL, null, canvas)
 		EventDef.Look.LEAF_BLOWER:
-			_draw_simple(LEAF_BLOWER, 8.0)
+			_draw_simple(LEAF_BLOWER, 8.0, canvas)
 		EventDef.Look.BIRDS:
-			_draw_birds()
+			_draw_birds(canvas)
 		EventDef.Look.CYCLIST:
-			_draw_simple(CYCLIST, 12.0)
+			_draw_simple(CYCLIST, 12.0, canvas)
 		EventDef.Look.ICE_CREAM_VAN:
-			_draw_simple(ICE_CREAM_VAN, 20.0)
+			_draw_simple(ICE_CREAM_VAN, 20.0, canvas)
 		EventDef.Look.LORRY:
-			_draw_simple(LORRY, 26.0)
+			_draw_simple(LORRY, 26.0, canvas)
 		EventDef.Look.CHARGING_DOG:
-			_draw_simple(CHARGING_DOG, 13.0)
+			_draw_simple(CHARGING_DOG, 13.0, canvas)
 		EventDef.Look.CHATTING_MOTHER:
-			_draw_chatting_mother()
+			_draw_chatting_mother(canvas)
 		EventDef.Look.POLICE_CAR:
-			_draw_vehicle(POLICE_CAR, POLICE_CAR_END, 19.0)
+			_draw_vehicle(POLICE_CAR, POLICE_CAR_END, 19.0, canvas)
 		EventDef.Look.POSTER_CREW:
-			_draw_simple(POSTER_CREW, 9.0)
+			_draw_simple(POSTER_CREW, 9.0, canvas)
 		EventDef.Look.CHECKPOINT:
-			_draw_spread(CHECKPOINT_BLOCK)
+			_draw_spread(CHECKPOINT_BLOCK, null, canvas)
 		EventDef.Look.UNMARKED_VAN:
-			_draw_abduction()
+			_draw_abduction(canvas)
 		EventDef.Look.ROBBER:
-			_draw_robber()
+			_draw_robber(canvas)
 		EventDef.Look.RIOT_VAN:
-			_draw_simple(RIOT_VAN, 23.0)
+			_draw_simple(RIOT_VAN, 23.0, canvas)
 		EventDef.Look.ARMY_TRUCK:
-			_draw_vehicle(ARMY_TRUCK, ARMY_TRUCK_END, 26.0)
+			_draw_vehicle(ARMY_TRUCK, ARMY_TRUCK_END, 26.0, canvas)
 		EventDef.Look.BARRICADE:
-			_draw_spread(BARRICADE_PILE)
+			_draw_spread(BARRICADE_PILE, null, canvas)
 		EventDef.Look.PROTEST:
-			_draw_protest()
+			_draw_protest(canvas)
 		EventDef.Look.FIREFIGHT:
-			_draw_firefight()
+			_draw_firefight(canvas)
 		EventDef.Look.NONE:
 			pass
 
@@ -1148,28 +1254,28 @@ func _draw_body() -> void:
 ##
 ## The badge itself keeps the **side** view, which is deliberate: an icon is read at 40px against a
 ## row of other icons, and a vehicle end-on is a box at any size.
-func _draw_vehicle(side: Texture2D, end: Texture2D, shadow: float) -> void:
-	Sprites.draw_shadow(self, Vector2.ZERO, shadow)
+func _draw_vehicle(side: Texture2D, end: Texture2D, shadow: float, canvas: CanvasItem = self) -> void:
+	Sprites.draw_shadow(canvas, Vector2.ZERO, shadow)
 	if absf(_heading.y) > absf(_heading.x):
-		Sprites.draw_standing(self, end, Vector2.ZERO, Vector2.ZERO, false)
+		Sprites.draw_standing(canvas, end, Vector2.ZERO, Vector2.ZERO, false)
 		return
-	Sprites.draw_standing(self, side, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	Sprites.draw_standing(canvas, side, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
-func _draw_simple(texture: Texture2D, shadow: float) -> void:
-	Sprites.draw_shadow(self, Vector2.ZERO, shadow)
-	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+func _draw_simple(texture: Texture2D, shadow: float, canvas: CanvasItem = self) -> void:
+	Sprites.draw_shadow(canvas, Vector2.ZERO, shadow)
+	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## The dog, and the lead it is no longer on.
 ##
 ## Read against `_draw_dog_walker()`, which draws the lead *taut between two bodies*: that is
 ## the span it owns and the reason to cross the street. Here the same lead trails on the ground
 ## behind one body, and the difference between the two pictures is the whole event.
-func _draw_loose_dog() -> void:
+func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 	var behind := Vector2(26.0 if _heading_is_west() else -26.0, 0.0)
-	Sprites.draw_shadow(self, Vector2.ZERO, 9.0)
+	Sprites.draw_shadow(canvas, Vector2.ZERO, 9.0)
 	# On the ground and slack, not held up at hip height. Nobody is holding it.
-	draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
-	Sprites.draw_standing(self, DOG, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
+	Sprites.draw_standing(canvas, DOG, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Every bird, drawn where it actually is.
 ##
@@ -1180,7 +1286,7 @@ func _draw_loose_dog() -> void:
 ##
 ## The shadow is what sells the height, and it is the reason a bird 40px up does not simply read as
 ## a bird standing 40px further north.
-func _draw_birds() -> void:
+func _draw_birds(canvas: CanvasItem = self) -> void:
 	var order: Array[int] = []
 	for i in _flock.size():
 		order.append(i)
@@ -1190,25 +1296,25 @@ func _draw_birds() -> void:
 		if bird.lift < BIRD_SHADOW_CEILING:
 			# Smaller and fainter the higher it is, and gone by the time it is over the rooftops.
 			var faded := 1.0 - bird.lift / BIRD_SHADOW_CEILING
-			Sprites.draw_shadow(self, bird.at, 5.0 * faded)
+			Sprites.draw_shadow(canvas, bird.at, 5.0 * faded)
 		var wings := PIGEON if sin(bird.phase) >= 0.0 else PIGEON_DOWN
 		if bird.lift <= 0.0:
 			# Standing. The upstroke is a bird in flight, and a pavement full of them is a flock
 			# that has already gone — which is the thing the telegraph exists to show her instead.
 			wings = PIGEON_DOWN
-		Sprites.draw_standing(self, wings, bird.at - Vector2(0.0, bird.lift),
+		Sprites.draw_standing(canvas, wings, bird.at - Vector2(0.0, bird.lift),
 				Vector2.ZERO, bird.heading.x < 0.0)
 
 ## How high a bird's shadow survives to. Roughly first-floor height: above it, there is nothing on
 ## the pavement to cast one onto that the player can see.
 const BIRD_SHADOW_CEILING := 46.0
 
-func _draw_cat() -> void:
+func _draw_cat(canvas: CanvasItem = self) -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
 	# telegraph, so the two silhouettes have to differ at a glance, not by a scale factor.
 	var texture := CAT_CROUCHED if is_telegraphing() else CAT_RUNNING
-	Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
-	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	Sprites.draw_shadow(canvas, Vector2.ZERO, 7.0)
+	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Hood up and hands in the coat while he is only somewhere; leaning out over a forward leg once
 ## he has taken an interest.
@@ -1218,22 +1324,22 @@ func _draw_cat() -> void:
 ## the line between them. What the player has to be able to see from an alley mouth is not "there
 ## is a man there" but *which of the two men that is* — so the change of posture happens on the
 ## frame he notices her, before the telegraph has finished and well before he moves.
-func _draw_robber() -> void:
+func _draw_robber(canvas: CanvasItem = self) -> void:
 	var texture := ROBBER_WAITING if is_waiting() else ROBBER_LUNGING
-	Sprites.draw_shadow(self, Vector2.ZERO, 9.0)
-	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	Sprites.draw_shadow(canvas, Vector2.ZERO, 9.0)
+	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars.
-func _draw_fire() -> void:
+func _draw_fire(canvas: CanvasItem = self) -> void:
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.2, 1.0)
-	Sprites.draw_shadow(self, Vector2.ZERO, 22.0)
+	Sprites.draw_shadow(canvas, Vector2.ZERO, 22.0)
 	for i in 5:
 		var offset := (i - 2.0) * 11.0
 		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
 		var height := (34.0 + i % 2 * 14.0) * strength * flicker
-		Sprites.draw_standing(self, FLAME, Vector2(offset, 0.0), Vector2(18.0, height))
+		Sprites.draw_standing(canvas, FLAME, Vector2(offset, 0.0), Vector2(18.0, height))
 
 ## A point `offset` along whichever axis `_spread_vertical` says this instance spreads on — local X
 ## by default, local Y on an east-west street. See `_spread_is_vertical`.
@@ -1255,16 +1361,16 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## barrier obstructs 64px and used to draw 70 — which is the picture claiming ground the collision
 ## does not hold. Insetting so the cap's *outer* edge lands on `±half` instead makes the drawn extent
 ## equal the obstructed one, matching the segments above rather than overhanging them.
-func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null) -> void:
+func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.9)
+	Sprites.draw_shadow(canvas, Vector2.ZERO, half * 0.9)
 	var segment := segment_texture.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
 	var segments := maxi(1, ceili(half * 2.0 / along_natural))
 	var width := half * 2.0 / segments
 	for i in segments:
-		Sprites.draw_standing(self, segment_texture,
+		Sprites.draw_standing(canvas, segment_texture,
 				_spread_at(-half + width * (i + 0.5)), _spread_extent(width, thickness))
 	if not cap:
 		return
@@ -1272,7 +1378,7 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null) -> void:
 	var cap_along := cap_size.y if _spread_vertical else cap_size.x
 	var cap_thickness := cap_size.x if _spread_vertical else cap_size.y
 	for side in [-1.0, 1.0]:
-		Sprites.draw_standing(self, cap, _spread_at(_cap_offset(half, cap_along, side)),
+		Sprites.draw_standing(canvas, cap, _spread_at(_cap_offset(half, cap_along, side)),
 				_spread_extent(cap_along, cap_thickness))
 
 ## The along-axis offset for one end cap, inset from `±half` by half the cap's own extent on that
@@ -1296,9 +1402,9 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 ## the spread axis, same as the table it sits beside; the −7 lift is a fixed screen-depth nudge that
 ## puts a sitter visibly behind their table whichever way the row runs, so it stays a plain Y offset
 ## rather than turning with the spread.
-func _draw_cafe() -> void:
+func _draw_cafe(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.9)
+	Sprites.draw_shadow(canvas, Vector2.ZERO, half * 0.9)
 	var segment := CAFE_TABLE.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -1308,10 +1414,10 @@ func _draw_cafe() -> void:
 		var along := -half + width * (i + 0.5)
 		# The chair is drawn at one end of the table sprite and turns round with it.
 		var chair_along := along + width * (0.26 if i % 2 == 1 else -0.26)
-		Sprites.draw_standing(self, CAFE_SITTER, _spread_at(chair_along) + Vector2(0.0, -7.0))
+		Sprites.draw_standing(canvas, CAFE_SITTER, _spread_at(chair_along) + Vector2(0.0, -7.0))
 	for i in segments:
 		var along := -half + width * (i + 0.5)
-		Sprites.draw_standing(self, CAFE_TABLE,
+		Sprites.draw_standing(canvas, CAFE_TABLE,
 				_spread_at(along), _spread_extent(width, thickness), i % 2 == 1)
 
 ## A rank of placards as wide as the ground it takes.
@@ -1325,9 +1431,9 @@ func _draw_cafe() -> void:
 ## back rank is drawn first and higher up the screen. Nothing here grows with `intensity_ramp` —
 ## the caret over it already breathes with what it is emitting, and a crowd that visibly recruits
 ## would be a second cue saying the same thing.
-func _draw_protest() -> void:
+func _draw_protest(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	Sprites.draw_shadow(self, Vector2.ZERO, half * 0.95)
+	Sprites.draw_shadow(canvas, Vector2.ZERO, half * 0.95)
 	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
 	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
 	# which is the lie `_draw_spread` exists to avoid in the other direction.
@@ -1339,7 +1445,7 @@ func _draw_protest() -> void:
 		var shift := step * 0.5 if back else 0.0
 		for i in across - (1 if back else 0):
 			var x := -half + step * (i + 0.5) + shift
-			Sprites.draw_standing(self, PROTESTER, Vector2(x, lift))
+			Sprites.draw_standing(canvas, PROTESTER, Vector2(x, lift))
 
 ## People behind cover, shooting at each other. Not a building on fire, which is what it drew for
 ## fourteen milestones — the same five flames as `burning_building`, on the one event in the
@@ -1349,22 +1455,22 @@ func _draw_protest() -> void:
 ## and they are timed off the pulse envelope so they land on the beat the meter is already moving
 ## on. Between beats there is nothing but two shapes behind sandbags, which is the point: it is a
 ## thing to time a run past, and `can_be_timed()` already says so.
-func _draw_firefight() -> void:
+func _draw_firefight(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	Sprites.draw_shadow(self, Vector2.ZERO, half)
+	Sprites.draw_shadow(canvas, Vector2.ZERO, half)
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.0, 1.0)
 	for side in [-1.0, 1.0]:
 		var at := Vector2(side * half * 0.62, 0.0)
-		Sprites.draw_standing(self, GUNMAN, at, Vector2.ZERO, side > 0.0)
+		Sprites.draw_standing(canvas, GUNMAN, at, Vector2.ZERO, side > 0.0)
 		# Sized off the current emission and jittered per side, so the two are never in step.
 		var flare := strength * (0.6 + 0.4 * sin(age * 17.0 + side * 2.1))
 		if flare <= 0.25:
 			continue
 		var muzzle := at + Vector2(side * 15.0, -12.0)
-		draw_circle(muzzle, 3.0 + 4.0 * flare, MUZZLE_FLASH)
-		draw_circle(muzzle, 1.5 + 2.0 * flare, Color.WHITE)
+		canvas.draw_circle(muzzle, 3.0 + 4.0 * flare, MUZZLE_FLASH)
+		canvas.draw_circle(muzzle, 1.5 + 2.0 * flare, Color.WHITE)
 
 ## A muzzle flash is a *light*, and it must not borrow the amber the danger vocabulary uses for its
 ## marks. Two things that mean different things must not share a constant, or a rebalance of one
@@ -1376,15 +1482,15 @@ const MUZZLE_FLASH := Color("e8b64a")
 ## The lead is drawn because it is the mechanic: what makes a dog walker worth crossing the
 ## street for is the span it owns, and a span you cannot see is a span you walk into. The dog
 ## leads on the side the walker is heading, so the pair reads as being dragged along.
-func _draw_dog_walker() -> void:
+func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 	var reach := def.inner_radius * 0.8
 	var to_the_dog := Vector2(-reach if _heading_is_west() else reach, 0.0)
-	Sprites.draw_shadow(self, Vector2.ZERO, 8.0)
-	Sprites.draw_shadow(self, to_the_dog, 9.0)
+	Sprites.draw_shadow(canvas, Vector2.ZERO, 8.0)
+	Sprites.draw_shadow(canvas, to_the_dog, 9.0)
 	# Slack in the middle, so it reads as a lead rather than as a bar.
-	draw_line(Vector2(0.0, -26.0), to_the_dog + Vector2(0.0, -6.0), Palette.OUTLINE, 2.0)
-	Sprites.draw_standing(self, PERSON, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
-	Sprites.draw_standing(self, DOG, to_the_dog, Vector2.ZERO, _heading_is_west())
+	canvas.draw_line(Vector2(0.0, -26.0), to_the_dog + Vector2(0.0, -6.0), Palette.OUTLINE, 2.0)
+	Sprites.draw_standing(canvas, PERSON, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	Sprites.draw_standing(canvas, DOG, to_the_dog, Vector2.ZERO, _heading_is_west())
 
 ## The van, and the bystander it is taking while there is one to draw.
 ##
@@ -1398,25 +1504,25 @@ func _draw_dog_walker() -> void:
 ## needed an end-on picture, but a hunting one steers straight at her and that is not always down
 ## a pavement — `_draw_vehicle`'s own note is that one side-on sprite mirrored east and west shows
 ## a patrol car heading north its own flank, and the same is true of a van.
-func _draw_abduction() -> void:
+func _draw_abduction(canvas: CanvasItem = self) -> void:
 	if is_taking_a_victim():
 		var through := (age - _victim_taken_at) / VICTIM_TAKEN_OVER
 		var standing := Vector2(
 				-VICTIM_STANDING_OFFSET if _heading_is_west() else VICTIM_STANDING_OFFSET, 0.0)
 		var at := standing.lerp(Vector2.ZERO, through)
-		Sprites.draw_shadow(self, at, 8.0)
-		Sprites.draw_standing(self, VAN_VICTIM, at, Vector2.ZERO, _heading_is_west())
-	_draw_vehicle(UNMARKED_VAN, UNMARKED_VAN_END, 21.0)
+		Sprites.draw_shadow(canvas, at, 8.0)
+		Sprites.draw_standing(canvas, VAN_VICTIM, at, Vector2.ZERO, _heading_is_west())
+	_draw_vehicle(UNMARKED_VAN, UNMARKED_VAN_END, 21.0, canvas)
 
 ## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
 ## whole of her beat; talking is what she looks like for exactly the `detain_seconds` of a
 ## conversation, and it is the only telegraph that mechanic gets — there is no exclamation mark,
 ## because she is a cost rather than a threat and that mark is spoken for. See
 ## `docs/EVENTS.md`, "The visual vocabulary".
-func _draw_chatting_mother() -> void:
-	Sprites.draw_shadow(self, Vector2.ZERO, 14.0)
+func _draw_chatting_mother(canvas: CanvasItem = self) -> void:
+	Sprites.draw_shadow(canvas, Vector2.ZERO, 14.0)
 	var texture := CHATTING_MOTHER_TALKING if is_chatting() else CHATTING_MOTHER_WALKING
-	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Which way a mobile event is travelling, for art that has a front and a back. A
 ## stationary event never flips.

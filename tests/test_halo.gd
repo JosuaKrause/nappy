@@ -1,17 +1,18 @@
 extends RefCounted
-## `ExcitementHalo`: which live events earn a place in the halo, and how big each one is drawn.
+## `ExcitementHalo`: which live events earn a place in the halo.
 ##
-## Whether the result *reads* — the colour, the softness, whether a glow picks an entity out of a
-## busy corner — is a screenshot's question and is out of this suite on purpose, the same line
-## `docs/DECISIONS.md`'s testing policy draws for every other cue: "not tested, checked by eye:
-## layout, colour, readability."
+## Whether the result *reads* — the colour, the softness, whether a ring picks an entity's own
+## silhouette out of a busy corner — is a screenshot's question and is out of this suite on
+## purpose, the same line `docs/DECISIONS.md`'s testing policy draws for every other cue: "not
+## tested, checked by eye: layout, colour, readability." *(2026-09-07, the player, on this cue
+## specifically: "proof for the UI is my playtest don't try to come up with a complicated rig to
+## test it. that's wasted effort.")* That is why the size — a ring of offsets around each entity's
+## own re-drawn body, in `EventInstance._draw_halo()` — has no test here: there is no arithmetic
+## version of "does the rim hug the sprite," only a look.
 ##
-## **Two things here are not that, and both would rot silently.** The selection
-## (`select_sources()`), because a day plans several hundred bodies and only a handful may ever earn
-## a glow or the cue marks everything and says nothing. And the size (`glow_radius()`), because the
-## whole of this cue's licence to exist is that it draws the *thing* rather than the thing's
-## *reach* — a size that crept out toward `outer_radius` would be the ring the **cues** rule
-## refuses, and nothing on screen would announce it as one.
+## **What is left is the one thing here that is not that, and would rot silently.** The selection,
+## `select_sources()`: a day plans several hundred bodies and only a handful may ever earn a halo,
+## or the cue marks everything and says nothing.
 
 const STEP := 1.0 / 60.0
 
@@ -21,10 +22,6 @@ func run(t) -> void:
 	_test_it_goes_to_zero_out_of_reach(t)
 	_test_a_city_wide_source_is_never_drawn_at_a_point(t)
 	_test_the_cap_keeps_the_strongest(t)
-	_test_a_glow_is_the_outline_plus_a_few_pixels(t)
-	_test_a_bodyless_row_glows_at_a_persons_size(t)
-	_test_a_big_body_glows_big(t)
-	_test_no_row_in_the_catalogue_glows_as_far_as_it_reaches(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -108,48 +105,3 @@ func _test_the_cap_keeps_the_strongest(t) -> void:
 
 	for instance in instances:
 		instance.free()
-
-# ------------------------------------------------------------------- the size ---
-# `glow_radius()` is pure and takes a def, so all four of these are arithmetic with no viewport,
-# no rig and no instance — the cheap half of a cue whose expensive half is a screenshot.
-
-func _test_a_glow_is_the_outline_plus_a_few_pixels(t) -> void:
-	var def := _def("busker", 9.0)
-	def.obstructs_radius = 11.0
-	t.check(is_equal_approx(ExcitementHalo.glow_radius(def), 15.0),
-			"a person-sized body glows at its own 11px outline plus the 4px margin")
-
-func _test_a_bodyless_row_glows_at_a_persons_size(t) -> void:
-	# Every `mobile` row is exempt from carrying an `obstructs_radius`, so this is most pursuers
-	# and every walker — they are drawn as people and glow as people rather than at zero.
-	var def := _def("dog_walker", 9.0)
-	def.obstructs_radius = 0.0
-	t.check(is_equal_approx(ExcitementHalo.glow_radius(def),
-			ExcitementHalo.GLOW_BODYLESS_RADIUS + ExcitementHalo.GLOW_BODY_MARGIN),
-			"a row with no outline to trace glows at a person's size, not at nothing")
-
-func _test_a_big_body_glows_big(t) -> void:
-	# The reason there is no ceiling: a clamp would draw a barricade's halo *inside* the barricade,
-	# which is the one shape a cue meaning "this thing" is not allowed to be.
-	var def := _def("barricade", 20.0)
-	def.obstructs_radius = 62.0
-	t.check(is_equal_approx(ExcitementHalo.glow_radius(def), 66.0),
-			"a wide body glows wide — the outline decides the size, with nothing capping it")
-
-func _test_no_row_in_the_catalogue_glows_as_far_as_it_reaches(t) -> void:
-	# The whole licence this cue has to exist is that it draws the *thing* and not the thing's
-	# *reach*. Nothing on screen would announce a size that crept out toward `outer_radius`, so it
-	# is asserted over every row rather than trusted to stay true as rows are added.
-	var worst := ""
-	var worst_ratio := 0.0
-	for def in EventCatalogue.all():
-		if def.city_wide:
-			# No position to draw a halo around, so `select_sources()` excludes it by kind.
-			continue
-		var ratio := ExcitementHalo.glow_radius(def) / maxf(def.outer_radius, 0.001)
-		if ratio > worst_ratio:
-			worst_ratio = ratio
-			worst = def.id
-	t.check(worst_ratio < 1.0,
-			"every row's glow stays inside its own outer_radius — worst is %s at %.2f of it"
-					% [worst, worst_ratio])
