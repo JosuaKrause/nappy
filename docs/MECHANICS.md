@@ -200,13 +200,20 @@ Controls: arrow keys or WASD to walk, hold **Shift** to run, **Esc** to pause. T
 interact key — touching a resistance chalk mark or a task's own contact is what completes it. The
 keyboard is a device rather than a scheme and works this way regardless of what a pointer does.
 
-A press — a finger, or a mouse click on any build — sets a direction that is locked in and walked
-with nothing held down until the next press changes it; a double press sets the direction and holds
-**run** until the next press changes or releases it, the same deliberate act **Shift** is rather
-than a gradient a thumb could cross by accident. Held down and moved, a finger or the left mouse
-button keeps re-aiming continuously until it lifts. There is no partial-strength walk on any input
-path: every press or motion event presses a full-speed unit vector, so the only two speeds in the
-game are the walk and the run.
+The title screen offers a choice of two pointer schemes, picked by pressing one of its two buttons
+— a direction key or `space` begins a run in the **tap** scheme instead. Both share the same shape:
+a press sets a direction that is locked in and walked with nothing held down until the next press
+changes it; a double press sets the direction and holds **run** until the next press changes or
+releases it, the same deliberate act **Shift** is rather than a gradient a thumb could cross by
+accident. Held down and moved, the pointer keeps re-aiming continuously until it lifts. There is no
+partial-strength walk on any input path: every press or motion event presses a full-speed unit
+vector, so the only two speeds in the game are the walk and the run.
+
+The two schemes differ only in where that press is measured from. **Tap** aims from wherever she is
+standing, the way a mouse always has, and a press within a generous radius of her stops her.
+**Joystick** aims from whichever of two fixed points on the screen is nearer the press — both drawn
+as a ring — and is stopped by a press on either point or in a band down the screen's own middle
+instead. Neither scheme is tied to a touchscreen or a mouse: either can be picked on either device.
 
 Where a heading is measured from, and what stops her, are the one place a mouse and a real finger
 disagree. A mouse aims from her own world position, and a click within a generous radius of that
