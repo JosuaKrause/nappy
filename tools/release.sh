@@ -76,6 +76,26 @@ else
 fi
 CURRENT="v${CUR_MAJOR}.${CUR_MINOR}.${CUR_PATCH}"
 
+# The refusal is on the commit, not the version: if TARGET_SHA is what LATEST already names, there
+# is nothing to publish. An annotated tag's own object is not the commit it points at, so this
+# dereferences with `^{commit}` before comparing -- comparing the tag object's sha against
+# TARGET_SHA would silently never match. And because this script runs under `set -uo pipefail`
+# without `-e`, a `git rev-parse` that fails leaves LATEST_SHA empty rather than stopping the
+# script, which would read as "not the same commit" and let a second release through -- so a
+# failure to resolve the tag is refused explicitly rather than left to fall through.
+if [[ -n "$LATEST" ]]; then
+    LATEST_SHA="$(git rev-parse "${LATEST}^{commit}" 2>/dev/null)"
+    if [[ -z "$LATEST_SHA" ]]; then
+        echo "refusing: could not resolve $LATEST to a commit" >&2
+        exit 1
+    fi
+    if [[ "$LATEST_SHA" == "$TARGET_SHA" ]]; then
+        echo "refusing: $TARGET_SHA is already released as $LATEST" >&2
+        echo "there is nothing to publish -- push a new commit to main first" >&2
+        exit 1
+    fi
+fi
+
 case "$PART" in
     major) NEXT="v$((CUR_MAJOR + 1)).0.0" ;;
     minor) NEXT="v${CUR_MAJOR}.$((CUR_MINOR + 1)).0" ;;

@@ -71,9 +71,10 @@ waits for the other, and because a tag can point at any commit.
 
 **Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest version tag and
 prints what it would do. It only acts when given a second literal `push` argument, and it refuses a
-dirty tree, any branch but `main`, and a `main` that is not level with `origin/main` — every refusal
-fires in the dry run too, so the dry run tells the truth about whether the real thing would work.
-Semver, and **`major` is reserved for a change that breaks or fundamentally alters the game**.
+dirty tree, any branch but `main`, a `main` that is not level with `origin/main`, and a commit that
+already carries the newest `v*` tag — every refusal fires in the dry run too, so the dry run tells
+the truth about whether the real thing would work. Semver, and **`major` is reserved for a change
+that breaks or fundamentally alters the game**.
 
 So pushing `main` no longer publishes. Completed work may be pushed without asking; see the
 **committing** skill for what *completed* means. **Publishing is a separate, deliberate act**, and
