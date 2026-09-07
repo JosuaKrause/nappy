@@ -95,28 +95,39 @@ believing rather than explaining away.** The record is in `DECISIONS.md` under M
 
 ## What to do next
 
-**The game has one control scheme, one set of buttons on every device, and no key named anywhere on
-screen.** A press sets a direction she walks until the next press; a double press sets the direction
-and runs it; **and a pointer held down keeps re-aiming**, continuously, locking in as it stands when
-it lifts. Always at `Tuning.WALK_SPEED` (92 px/s): the heading is normalised on every re-aim, so
-deflection distance means nothing and the deleted drag stick's slow walk cannot come back.
+**The game has two control schemes and the player picks one on the title screen, on every device.**
+A press sets a direction she walks until the next press; a double press sets the direction and runs
+it; **and a pointer held down keeps re-aiming**, continuously, locking in as it stands when it
+lifts. Always at `Tuning.WALK_SPEED` (92 px/s): the heading is normalised on every re-aim, so
+deflection distance means nothing and the deleted drag stick's slow walk cannot come back. No key is
+named anywhere on screen.
 
-**Where the heading is measured from is what a mouse and a finger disagree about, and all three of
-their differences have that one cause.** A mouse aims from her own world position; a real touch aims
-from whichever of two fixed points — `TouchControls.FOCUS_LEFT` (240, 480) and `FOCUS_RIGHT`
-(1040, 480) in the 1280x720 design box — is nearer the press, so a thumb never has to reach across
-the phone to say *up*. **Both focal circles are drawn on a touch build**, as a ring at `STOP_RADIUS`
-(48px) with a knob offset by the heading currently locked in — centred reads as stopped, brighter and
-larger while `run` is held. A mouse build draws neither, since a circle there would name a point that
-means nothing.
+**The two schemes are the two aiming origins, and everything else about a press is shared.**
+`ControlsMode.Mode.JOYSTICK` aims from whichever of two fixed points — `TouchControls.FOCUS_LEFT`
+(240, 480) and `FOCUS_RIGHT` (1040, 480) in the 1280x720 design box — is nearer the press, so a
+thumb never has to reach across the phone to say *up*. `Mode.TAP` aims from her own world position.
+**Neither is gated on the hardware**: `TouchInput.available()` now answers only whether the device
+has touch, which is what routes a raw `InputEventScreenTouch` rather than an
+`InputEventMouseButton`, and nothing else. A mouse can drive joystick mode and a thumb can drive tap
+mode.
 
-**There are three doors into *stop* and which ones exist depends on the pointer.** A press within
-`STOP_RADIUS` of either focus stops her, on touch. **A band down the middle of the screen** — 48px
-either side of the design box's centre line, not drawn — stops her too, on touch, during a drag as
-well as on a press: the nearer focus flips the instant a finger crosses that line, so the middle is
-declared not-a-direction rather than damped. **A mouse click on her stops her and a touch on her no
-longer does** — the camera sits on her, so her screen position already *is* the band's centre line,
-and a drag crossing her by accident used to stop her by surprise.
+**Which doors into *stop* exist follows from the mode, not from the pointer.** In joystick mode a
+press within `STOP_RADIUS` (48px) of either focus stops her, and so does **a band down the middle of
+the screen** — 48px either side of the design box's centre line, not drawn — during a drag as well as
+on a press, because the nearer focus flips the instant a finger crosses that line and the middle is
+declared not-a-direction rather than damped. In tap mode a press within the same radius **of her**
+stops her, which is the same reasoning seen from the other side: the aiming origin is her, so
+pressing the thing you are steering is the obvious way to stop it.
+
+**Both focal circles are drawn in joystick mode**, as a ring at `STOP_RADIUS` with a knob offset by
+the heading currently locked in — centred reads as stopped, brighter and larger while `run` is held.
+Tap mode draws neither, since a circle there would name a point that means nothing.
+
+**Pressing one of the two title-screen discs is the only way a pointer begins a run**, which is what
+makes an ending-screen tap unable to fall through into the next day rather than merely unlikely to.
+`WASD`, the arrows and `space` begin a run too and choose **tap**, silently. `--controls
+joystick|tap` and `?controls=` on a debug web build set the pre-title default a rig gets when it
+skips the screen; that default is tap, so every existing capture and `--walk` script reproduces.
 
 **The continue button, the held restart and the pause button are drawn on every device**, and a
 press on one now reaches the screen underneath it: `ModeButton` sets `mouse_filter =
@@ -132,10 +143,12 @@ button on purpose — the window's own close button is its pointer route, and th
 quit at all. The record for all of this is in `DECISIONS.md` under M83, and the session it came from
 is [PLAYTEST-29.md](PLAYTEST-29.md).
 
-**M82 is what it sits on**: one scheme rather than a choice between two. The drag stick, the aimed
-joystick playtest 27 specified and never built, the `RUN` button and the title screen's two mode
-buttons are all deleted rather than one replacing another. The record is in `DECISIONS.md` under
-M82.
+**What is gone and is not coming back is the two *mechanisms* M82 deleted**, as opposed to the
+choice between schemes, which M88 gave back: the drag stick, the aimed joystick playtest 27
+specified and never built, the `RUN` button, and a tap that walked her to a **destination**. The
+last of those is the load-bearing one — *a tap that pathfinds hands the route decision to the
+game*, and the route decision is the whole design. The records are in `DECISIONS.md` under M82 and
+M88.
 
 **The illustrated presentation exists behind a flag, and it is rejected as it stands.** The game
 draws its legacy SVG graphics unless `--illustrated` (locally) or `?illustrated=1` (on the web)
@@ -386,14 +399,24 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   with a knob in it is read as *this is what is locked in* or as furniture. Whether a stop band
   nobody can see reads as a deliberate stop or as the game dropping an input. Whether the band and
   the two focus discs together take enough of the screen that ordinary aiming gets refused. And
-  whether losing *tap her to stop* on touch is felt as a loss at all, since the band is the same
-  ground and the lesson no longer teaches either.
-- **The whole restart path is guarded by 0.35 seconds and nobody has fumbled a tap at it.** A press
-  landing on the title screen within `TouchControls.DOUBLE_TAP_SECONDS` of a restart-triggered
-  reload is swallowed. **"Often" was the player's own word**, so the defect is a race and the fix is
-  a window — which means the window is the thing to distrust in both directions: too short and the
-  ending screen still lands in the game, too long and a deliberate press to begin feels ignored. It
-  is one constant and it is meant to move against a played run, not an argument.
+  whether losing *tap her to stop* in joystick mode is felt as a loss at all, since the band is the
+  same ground and the lesson no longer teaches either.
+- **Nobody has chosen a mode, and the choice is now the first thing the game asks.** M88 offers
+  joystick and tap on every device, so **tap on a phone and joystick on a desktop are both playable
+  for the first time and neither has been played** — a thumb aiming from her own position across a
+  whole phone screen is exactly the reach problem the two focal points were invented to solve, and a
+  mouse driving a focal point is a hand that never had the reach problem being asked to use the
+  answer to it. **The captions are the other half of it.** Two sentences on a title screen are all a
+  first-time player gets to tell the modes apart, and whether *"aims from the nearer of two fixed
+  points"* means anything before you have played either one is a question no rig can answer.
+- **The restart path is guarded twice now and nobody has fumbled a tap at it.** A stray press after
+  an ending can no longer begin a run just by landing anywhere, since only the two mode discs do
+  that — but it can still land *on a disc*, so the 0.35s window (`TouchControls
+  .DOUBLE_TAP_SECONDS`) that swallows a press right after a restart-triggered reload is kept rather
+  than deleted along with the headline defect. **"Often" was the player's own word**, so what is left
+  is a race with a much smaller target, and the window is still the thing to distrust in both
+  directions: too short and an ending tap still reaches a disc, too long and a deliberate press
+  feels ignored.
 - **A phone held upright gets one rotation now, and nobody has held a phone since.** The three
   disagreeing rotations playtest 23 met are gone: one transform is applied to every `CanvasLayer`,
   the camera is no longer a second implementation, and the choice is re-asked every frame rather
@@ -409,12 +432,12 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   not itself been unfurled.** Paste the address into a chat client and see what comes back; the
   record of what was wrong and what was ruled out is in `DECISIONS.md` under M80.
 - **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
-  running behind it — and it asks nothing: a press, a tap or a click begins the run, since there is
-  one scheme to begin it in. That is the whole of it: no options, no seed box, no load game.
-  **Nobody has met this screen on a phone** since the two circular mode buttons it used to show
-  were deleted, so whether a bare "tap to begin" reads clearly with no button to press is
-  unanswered. `WASD` and the arrows begin a run too, and nothing on screen says so — deliberately,
-  the same way nothing in the game names a key.
+  running behind it — and it asks exactly one question: which of the two control schemes. Two
+  circular discs with a caption each, and the hint under them reads `press a button to begin`. That
+  is the whole of it: no options, no seed box, no load game. `WASD`, the arrows and `space` begin a
+  run too and choose tap, and nothing on screen says so — deliberately, the same way nothing in the
+  game names a key. **Nobody has met this screen on a phone**, so whether two discs and two
+  sentences are enough to pick between schemes you have not played is unanswered.
 - **A release build carries no modifiers, and nothing has confirmed that on a real release build.**
   `?telemetry=1` answers only when `OS.is_debug_build()` is true. The truth table is asserted in the
   suites, so the *predicate* is proven; the build type itself has no seam to fake and is therefore

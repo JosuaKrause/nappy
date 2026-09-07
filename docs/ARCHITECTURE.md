@@ -106,7 +106,7 @@ windowed, saves the viewport after N frames and quits.
 ### Dev flags and release builds
 
 `DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
-`--overview`, `--day-length` and `--ending`; `src/dev/auto_screenshot.gd` parses `--screenshot`
+`--overview`, `--day-length`, `--ending` and `--controls`; `src/dev/auto_screenshot.gd` parses `--screenshot`
 and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`, `--tap`) itself, and gates its own
 entry point the same way rather than moving that parsing out. Both read `OS.is_debug_build()`,
 which is `false` for an exported release template, so none of this furniture — nor the snapshot
@@ -138,25 +138,41 @@ phone browser and a desktop browser — `has_feature("mobile")` is a tag baked i
 cannot vary with the device that opens the page, while `is_touchscreen_available()` asks the
 browser what the visiting device actually has. `TitleScreen`, `PauseScreen`, `DaySummary` and
 `TouchControls` each read it once into their own `_touch`, the same shape `_can_quit` uses, so a
-test can drive both platform shapes.
+test can drive both platform shapes. **This is a hardware fact only.** It decides whether a real
+`InputEventScreenTouch` is on offer at all — and so whether a same-instant emulated
+`InputEventMouseButton` from that same finger has to be ignored rather than read as a second,
+doubling press — and nothing about where a heading is measured from.
 
-`TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme, and a mouse and a
-real touch disagree about where a heading is measured from. A mouse click sets a direction toward
-its own world position, aimed from wherever she currently stands, and a click within `STOP_RADIUS`
-of her stops her instead. A real touch instead aims from whichever of two fixed points,
-`FOCUS_LEFT` or `FOCUS_RIGHT`, is nearer the press — each drawn as a ring at `STOP_RADIUS` with a
-knob at the currently-held direction — and is stopped by a press on either focus or in a band down
-the middle of the screen (`is_in_stop_band()`) rather than by a press near her own position, which
-no longer stops a touch at all. Either way the direction locked in is walked with nothing held down
+### Choosing the controls
+
+`ControlsMode` (`src/ui/controls_mode.gd`) is the player's own choice of aiming origin, independent
+of `_touch`: a touchscreen can be set to `TAP` and a mouse can be set to `JOYSTICK`. `TitleScreen`'s
+two `ModeButton`s (`Symbol.JOYSTICK`/`Symbol.TAP`) are the only pointer way into a run — a press
+that lands anywhere else on the screen does nothing — and a direction key or `space` begins one in
+`Mode.TAP` instead, on the reasoning that a player pressing a key has told the screen nothing about
+a thumb. `main._add_touch_controls()` gives `TouchControls` a starting mode from
+`ControlsMode.resolve()` (the command line's `--controls joystick|tap`, then the page's own
+`?controls=`, then `TAP`) before the title screen exists at all — the answer a rig gets if it skips
+the title (`--no-title`, a screenshot rig) — and `main._on_title_start()` overrides it the moment a
+player actually presses a button. Both `resolve()`'s own doors stay behind `DevFlags.enabled()`.
+
+`TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme, and the two modes
+disagree about where a heading is measured from. `Mode.TAP` sets a direction toward its own world
+position, aimed from wherever she currently stands, and a press within `STOP_RADIUS` of her stops
+her instead. `Mode.JOYSTICK` instead aims from whichever of two fixed points, `FOCUS_LEFT` or
+`FOCUS_RIGHT`, is nearer the press — each drawn as a ring at `STOP_RADIUS` with a knob at the
+currently-held direction — and is stopped by a press on either focus or in a band down the middle
+of the screen (`is_in_stop_band()`) rather than by a press near her own position, which does not
+stop her in this mode at all. Either way the direction locked in is walked with nothing held down
 until the next press changes it, and a double press holds `run` until the next press changes or
 releases it. Held down and moved, a finger or a mouse button keeps re-aiming continuously —
 `_on_drag()` — always at one speed, since `set_direction()` always normalises and no input path may
 press a vector shorter than one. It also draws a pause button top right, shown only when
-`TouchInput.available()` and `get_tree().paused` is false, which keeps it off the title, the pause
-and the between-days summary without a wire from `main` telling it so on each: that flag is the one
-thing all three already set. The three screens also handle a touch or a left click directly
-alongside `ui_accept` (through `TouchInput.is_press()`), so either advances each of them the way
-`space` does.
+`get_tree().paused` is false, which keeps it off the title, the pause and the between-days summary
+without a wire from `main` telling it so on each: that flag is the one thing all three already set.
+`PauseScreen` and `DaySummary` also handle a touch or a left click directly alongside `ui_accept`
+(through `TouchInput.is_press()`), so either advances each of them the way `space` does —
+`TitleScreen` does not, since only its two buttons may begin a run by pointer.
 
 A press or a drag computes a heading — `(target - origin)`, normalised — and presses it through
 `_set_axis()`, one signed value onto a pair of opposite actions. There is no target and nothing to
@@ -175,11 +191,12 @@ reverse, before it can be subtracted from or used as the heading's own origin. *
 own corner is the other place this remap is needed**: a touch there is subtracted from the aiming
 surface, but only while the button is actually showing, against the fixed `PAUSE_CENTRE` — a mouse
 click never needs the remap for anything else, since the button (and so the corner) is drawn for it
-too now that one scheme answers every device.
+too now that every device shows the same pair of controls.
 
-A real touch device emulates a mouse click from every tap it makes, so the mouse branch is gated on
-`not TouchInput.available()` — without that gate a single real tap would fire twice, once through
-each event, and read as its own double tap. `--tap X Y` (`src/dev/auto_screenshot.gd`) sends one
+A real touch device emulates a mouse click from every tap it makes, so every mouse branch in
+`TouchControls`, `TitleScreen`, `PauseScreen` and `DaySummary` is gated on `not TouchInput.available()`
+— without that gate a single real tap would fire twice, once through each event, and read as its
+own double tap (or a doubled button press). `--tap X Y` (`src/dev/auto_screenshot.gd`) sends one
 synthetic touch the same way a finger would, which is what makes the direction it sets
 photographable — `tools/shot.sh out.png 3 --touch --tap 640 420`.
 

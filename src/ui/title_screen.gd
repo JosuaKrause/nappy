@@ -8,23 +8,34 @@ extends CanvasLayer
 ## already running and no moment to read the two lines that say what the controls are.
 ##
 ## One screen answers both, because a run that is over goes back to where a run begins. There is
-## deliberately no separate "restart" screen and no menu: this is a title, three lines of controls
-## and a key.
+## deliberately no separate "restart" screen and no menu: this is a title, two lines of controls,
+## and the two buttons that choose between them.
 ##
 ## **What is behind it is the game, running.** Not a still, not a menu over black: the
 ## doorstep the run starts on, with the traffic driving and the events playing out on it and nobody
-## pushing a pram through them. The screen itself is therefore only two scrims and a handful of
-## labels: the title across the top half, the controls across the bottom, and the street visible
-## through both. `main._open_the_title()` is the half that makes the city keep moving while
-## everything that is a *day* stops; this class owns one key and nothing else.
+## pushing a pram through them. The screen itself is therefore only two scrims, a handful of labels
+## and the two `ModeButton`s: the title across the top half, the controls across the bottom, and
+## the street visible through both. `main._open_the_title()` is the half that makes the city keep
+## moving while everything that is a *day* stops; this class owns its two buttons and a small
+## handful of keys and nothing else.
 ##
 ## What it is not is a main menu. There are no options, no seed box and no load game, and none of
 ## those is what this screen exists for.
 ##
-## **There is one control scheme, so there is no question to ask.** A press — a tap, a mouse click
-## or `space` — begins the run in it.
+## **Starting is also the controls question, and the two buttons are how it is answered.**
+## *(2026-09-07, the player: "let's make the controls a player choice and bring back the two
+## buttons ... that should also solve the issue with the missing title screen since the only way to
+## start the game will be clicking on one of the buttons".)* `_joystick_button` and `_tap_button`
+## are `ModeButton`s with `Symbol.JOYSTICK`/`Symbol.TAP` and their own two captions underneath —
+## see `_handle_mode_button_press()`. **A pointer press begins a run only when it lands on one of
+## them**, never on the bare scrim: with the buttons as the only pointer way in, a stray tap that
+## dismissed the ending screen a frame earlier can no longer restart the game just by landing
+## anywhere on this one — the restart guard (`_RESTART_GUARD_SECONDS`) stays for the narrower case
+## that remains, a stray press landing squarely on a button. A keyboard has no button to press, so
+## `space` and every direction key still begin the run outright — see `_unhandled_input()`'s own
+## doc for why that always chooses `Mode.TAP`.
 
-signal start_requested()
+signal start_requested(mode: ControlsMode.Mode)
 signal quit_requested()
 
 ## The instant `main._restart_run()` last asked for a scene reload, or `-INF` before the first one
@@ -49,6 +60,8 @@ const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 @onready var _root: Control = $Root
 @onready var _name: Label = $Root/Top/Lines/Title
 @onready var _body: Label = $Root/Bottom/Lines/Body
+@onready var _joystick_button: ModeButton = $Root/Bottom/Lines/Choice/JoystickColumn/Joystick
+@onready var _tap_button: ModeButton = $Root/Bottom/Lines/Choice/TapColumn/Tap
 @onready var _hint: Label = $Root/Bottom/Lines/Hint
 @onready var _version: Label = $Root/Version
 
@@ -57,6 +70,12 @@ const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 ## Gates only whether the key is **handled** in `_unhandled_input()` below; it no longer names
 ## itself on screen — see `open()`'s own doc.
 var _can_quit := QuitOption.available()
+
+## Whether this device has touch hardware — read once the same way `PauseScreen._touch` and
+## `DaySummary._touch` are, so `_handle_mode_button_press()` can gate its own mouse branch on
+## `not _touch` for the same reason theirs do: a real touch device also emits an emulated mouse
+## click from the same finger, and without the gate a single press on a button would be read twice.
+var _touch := TouchInput.available()
 
 ## One body for every device — see `PauseScreen._BODY`'s own doc for the same collapse made
 ## there. *(2026-09-06, the player: "in fact I said to remove the keyboard inputs altogether but
@@ -96,6 +115,15 @@ func _ready() -> void:
 func _refresh_body() -> void:
 	_body.text = _BODY
 
+## Whether the screen's own layer is presenting rotated — computed fresh rather than pushed in from
+## `main`, the same reason `PauseScreen._wants_rotation()` and `DaySummary._wants_rotation()` are:
+## `TouchControls` is the only file `main._apply_orientation()` reaches with a `rotated` property,
+## and `ScreenOrientation.wants_rotation()` is a pure function of the same two facts `main` itself
+## asks it with. Needed now that `_handle_mode_button_press()` reads a raw press position rather
+## than only an action or a bare `TouchInput.is_press()`.
+func _wants_rotation() -> bool:
+	return ScreenOrientation.wants_rotation(get_window().size, _touch)
+
 ## The one line on this screen that is not addressed to the player, so it is small, dim and in the
 ## bottom corner rather than anywhere near the three lines that are — see the **cues** rule that a
 ## short vocabulary stays short, which this deliberately stays outside of: it is not a danger cue,
@@ -123,57 +151,56 @@ func is_open() -> bool:
 ## a pause stops the world and this one deliberately does not. What stops, and what carries on
 ## behind the scrims, is `main`'s decision — see `main._open_the_title()`.
 ##
-## **The one hint in the game that is never empty.** This screen has no buttons — there is nothing
-## else on it to press — so unlike `PauseScreen`/`DaySummary`'s now-always-blank hint, it still
-## needs to say *press to begin*. `tap`, on every device: *(2026-09-06: "never should it be
-## mentioned to the user".)* `q to quit` no longer appears here even though the key still works —
-## `_can_quit` now gates `_unhandled_input()` alone.
+## **The one hint in the game that is never empty, and it has to name the thing that actually
+## works.** *(2026-09-07, on review: "a bare tap no longer begins anything ... the screen instructs
+## the player to do the one thing that will not work".)* `tap to begin` was true when any press
+## anywhere began a run; once only the two buttons do, it sends a first-time player looking for
+## something a tap on the scrim will never do. `press a button` is what is actually true and what
+## still says nothing about a key, the same way `tap` never did *(2026-09-06: "never should it be
+## mentioned to the user".)* — it also points the sentence at the two discs themselves, which are
+## otherwise the only thing on this screen that does anything. `q to quit` still does not appear
+## here even though the key still works — `_can_quit` gates `_unhandled_input()` alone.
 func open(again := false) -> void:
 	visible = true
-	_hint.text = "tap to walk again" if again else "tap to begin"
+	_hint.text = "press a button to walk again" if again else "press a button to begin"
 
 func close() -> void:
 	visible = false
 
-## `space`, a tap or a left click begins the run — the one thing this screen offers, since there is
-## only one control scheme to begin it in. `Q` leaves, **except on the web**, where
-## `QuitOption.available()` is false and the key is not handled at all — nothing on screen ever
-## named it (see `open()`'s own doc), so there is no sentence to keep in step with the gate. `Esc`
-## is deliberately not handled: `main` will not open the pause over this, because a pause over a
-## game that has not started is a screen with nothing behind it to stop.
+## `space` or a direction key begins the run **in `Mode.TAP`**, and a press on one of the two
+## buttons begins it in whichever mode that button names. *(2026-09-07: "using awsd or arrow keys
+## will start the game with tap mode".)* Read as *the keyboard is a desktop and a desktop is a
+## mouse* — the same reasoning that makes `TAP` the mouse mode at all: a player pressing `space` or
+## an arrow has told this screen nothing about a thumb either. `Q` leaves, **except on the web**,
+## where `QuitOption.available()` is false and the key is not handled at all — nothing on screen
+## ever named it (see `open()`'s own doc), so there is no sentence to keep in step with the gate.
+## `Esc` is deliberately not handled: `main` will not open the pause over this, because a pause
+## over a game that has not started is a screen with nothing behind it to stop.
 ##
-## **A press within `_RESTART_GUARD_SECONDS` of the last scene reload is swallowed rather than
-## started.** *(2026-09-07: "tapping on the game over screen often goes directly back to the game
-## skipping the title screen".)* The route is `DaySummary` emitting `continued` →
-## `main._on_summary_continued()` → `_restart_run()` → `get_tree().call_deferred("reload_current_scene")`
-## → this screen's own fresh `_ready()` → `main._open_the_title()`, and this screen is up within a
-## frame or two of the press that dismissed the ending — so a fumbled double tap, or the matching
-## release of a touch already spent dismissing the summary, can land here and read as a fresh press
-## to begin.
+## **A pointer press that does not land on either button does nothing at all.** *(2026-09-07: "the
+## only way to start the game will be clicking on one of the buttons".)* This is the property that
+## makes the ending-screen leak M85 patched with a guard structurally impossible instead: a bare
+## tap or click anywhere on the scrim used to begin a run outright, which is exactly what let a
+## press dismissing the day summary land here a frame later and read as a fresh one. With no
+## catch-all left, that particular race is gone by construction — see `_handle_mode_button_press()`.
 ##
-## **"Often" rather than always is the shape of a race, so the guard is a window rather than a
-## reorder** — nothing about the route above can be made to happen in a different sequence, only
-## made to ignore the frames right after it. See `_restarted_at_msec`'s own doc for what survives
-## the reload and `_RESTART_GUARD_SECONDS`'s for the window's own size. **Chosen where the design
-## was silent, and cheap to overturn** if a played day finds the window wrong: short enough that a
-## deliberate press is never felt to be slow, since this only ever fires in the first fraction of a
-## second after a restart-triggered reload and never on an ordinary boot (`_restarted_at_msec`
-## starts at `-INF`, so nothing here fires until the first restart actually happens).
-##
-## **Every direction key begins a run too, silently.** *(2026-09-07: "awsd and arrows should start
-## the game in addition to space".)* `WASD` and the arrows are bound to the four `move_*` actions,
-## which this screen never read before — so the keys that walk her once a day has begun did not
-## start one. This names no key on screen and does not want to: the hint stays `tap to begin`, the
-## same way the keyboard has always walked and run with nothing on screen naming a key for either.
+## **The restart guard still stays, for the narrower case that remains.** A press within
+## `_RESTART_GUARD_SECONDS` of the last scene reload is swallowed rather than started — the route is
+## `DaySummary` emitting `continued` → `main._on_summary_continued()` → `_restart_run()` →
+## `get_tree().call_deferred("reload_current_scene")` → this screen's own fresh `_ready()` →
+## `main._open_the_title()`, and this screen is up within a frame or two of the press that dismissed
+## the ending. A stray press can still land squarely on a button — the two are drawn in the same
+## screen region a catch-all used to cover — so the guard answers exactly that case now rather than
+## every press on the screen. See `_restarted_at_msec`'s own doc for what survives the reload and
+## `_RESTART_GUARD_SECONDS`'s for the window's own size.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if event.is_action_pressed("ui_accept") or TouchInput.is_press(event) or _is_a_walk_key(event):
-		if (Time.get_ticks_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
-			get_viewport().set_input_as_handled()
-			return
+	if event.is_action_pressed("ui_accept") or _is_a_walk_key(event):
 		get_viewport().set_input_as_handled()
-		start_requested.emit()
+		_begin(ControlsMode.Mode.TAP)
+		return
+	if _handle_mode_button_press(event):
 		return
 	if _can_quit and event is InputEventKey and event.pressed \
 			and (event as InputEventKey).keycode == KEY_Q:
@@ -190,3 +217,53 @@ static func _is_a_walk_key(event: InputEvent) -> bool:
 		if event.is_action_pressed(action):
 			return true
 	return false
+
+## A press landing inside `_joystick_button.catch_rect()` or `_tap_button.catch_rect()` — read by
+## raw touch or mouse position, the way `PauseScreen._handle_restart_touch()` and
+## `DaySummary._handle_restart_touch()` already read theirs, rather than through `Button.pressed`:
+## `ModeButton._ready()` sets `mouse_filter = MOUSE_FILTER_IGNORE` on every symbol, so Godot's GUI
+## layer never claims the event and a `Button`'s own signal never fires for a real touch.
+##
+## Unlike the restart button's hold, this fires on the press itself, not a matching release — there
+## is no fill to track and nothing to cancel. **The mouse branch is gated on `not _touch`**, the
+## same reason `TouchControls._input()`'s own is: a real touch device also emits an emulated mouse
+## click from the same finger, and without the gate a single press on a button would be read twice.
+##
+## Returns whether the press belonged to a button at all, so `_unhandled_input()` knows not to fall
+## through to the quit key check for the same event — though with no catch-all left on this screen,
+## a press that misses both buttons simply does nothing, which is exactly what was asked for.
+func _handle_mode_button_press(event: InputEvent) -> bool:
+	var position: Vector2
+	var pressed: bool
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		position = touch.position
+		pressed = touch.pressed
+	elif not _touch and event is InputEventMouseButton \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var click := event as InputEventMouseButton
+		position = click.position
+		pressed = click.pressed
+	else:
+		return false
+	if not pressed:
+		return false
+	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
+	if _joystick_button.catch_rect().has_point(at):
+		get_viewport().set_input_as_handled()
+		_begin(ControlsMode.Mode.JOYSTICK)
+		return true
+	if _tap_button.catch_rect().has_point(at):
+		get_viewport().set_input_as_handled()
+		_begin(ControlsMode.Mode.TAP)
+		return true
+	return false
+
+## The one place `start_requested` is actually emitted — a walk key, `space`, or one of the two
+## buttons, all funnelled through here so the restart guard is asked exactly once regardless of
+## which of them fired. See `_unhandled_input()`'s own doc for what the guard still answers now
+## that a bare press elsewhere on the screen can no longer reach this function at all.
+func _begin(mode: ControlsMode.Mode) -> void:
+	if (Time.get_ticks_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
+		return
+	start_requested.emit(mode)

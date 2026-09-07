@@ -29,6 +29,8 @@ func run(t) -> void:
 	_test_a_press_soon_after_a_restart_is_swallowed_not_started(t)
 	_test_the_title_screen_does_not_stop_the_city(t)
 	_test_every_walking_key_begins_the_run(t)
+	_test_a_press_on_either_title_button_starts_a_run_in_that_mode(t)
+	_test_a_real_touch_on_a_title_button_reaches_the_title_screen(t)
 	_test_the_title_quit_key_matches_the_platform(t)
 	_test_the_pause_quit_key_matches_the_platform(t)
 	_test_a_tap_advances_every_screen(t)
@@ -196,7 +198,7 @@ func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started := [0]
-	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
 	title.open()
 
 	TitleScreen.note_restart_requested()
@@ -230,7 +232,7 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 
 	var started := [0]
 	var quit := [0]
-	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
 	title.quit_requested.connect(func() -> void: quit[0] += 1)
 	title._unhandled_input(_accept())
 	t.check(started[0] == 1, "space begins the run")
@@ -242,18 +244,80 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 	t.check(started[0] == 1, "a closed title screen answers nothing")
 	title.queue_free()
 
-## **Every direction key begins a run too.** *(2026-09-07: "awsd and arrows should start the game
-## in addition to space".)* `WASD` and the arrows are bound to all four `move_*` actions, so a
-## single `move_left` press stands in for the rest of them.
+## **Every direction key begins a run too, in `Mode.TAP`.** *(2026-09-07: "awsd and arrows should
+## start the game in addition to space", and "using awsd or arrow keys will start the game with tap
+## mode".)* `WASD` and the arrows are bound to all four `move_*` actions, so a single `move_left`
+## press stands in for the rest of them. Read as *the keyboard is a desktop and a desktop is a
+## mouse* — a player pressing a direction key has told this screen nothing about a thumb either, the
+## same reasoning that makes `TAP` the mouse mode at all.
 func _test_every_walking_key_begins_the_run(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
-	var started := [0]
-	title.start_requested.connect(func() -> void: started[0] += 1)
+	var started_modes: Array[ControlsMode.Mode] = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: started_modes.append(mode))
 	title.open()
 
 	title._unhandled_input(_action("move_left"))
-	t.check(started[0] == 1, "a direction key begins the run exactly as space or a tap does")
+	t.check(started_modes.size() == 1, "a direction key begins the run exactly as space does")
+	t.check(started_modes[0] == ControlsMode.Mode.TAP, "and always chooses tap, never joystick")
+
+	title.close()
+	title.queue_free()
+
+## **The two buttons are the only pointer way in, and each answers the mode it names.**
+## *(2026-09-07: "let's make the controls a player choice and bring back the two buttons ... that
+## should also solve the issue with the missing title screen since the only way to start the game
+## will be clicking on one of the buttons".)* Positions are set directly rather than read after a
+## frame of container sorting, the same reason `_test_the_restart_button_is_a_hold` gives for doing
+## the same on the pause screen — `catch_rect()` still answers off whatever rect is actually set.
+func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var started_modes: Array[ControlsMode.Mode] = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: started_modes.append(mode))
+	title.open()
+	title._joystick_button.position = Vector2(300.0, 400.0)
+	title._joystick_button.size = Vector2(92.0, 92.0)
+	title._tap_button.position = Vector2(700.0, 400.0)
+	title._tap_button.size = Vector2(92.0, 92.0)
+
+	var joystick_at: Vector2 = title._joystick_button.catch_rect().get_center()
+	title._unhandled_input(_touch_at(joystick_at, true))
+	t.check(started_modes == [ControlsMode.Mode.JOYSTICK],
+			"pressing the joystick button starts a run in Mode.JOYSTICK")
+
+	var tap_at: Vector2 = title._tap_button.catch_rect().get_center()
+	title._unhandled_input(_touch_at(tap_at, true))
+	t.check(started_modes == [ControlsMode.Mode.JOYSTICK, ControlsMode.Mode.TAP],
+			"and pressing the tap button starts a second run in Mode.TAP")
+
+	title.close()
+	title.queue_free()
+
+## **The regression test playtest 29 finding 2 owes, the title screen's own half.** See
+## `PauseScreen._test_a_real_touch_on_the_continue_button_reaches_the_pause_screen` for the full
+## reasoning: driving `_unhandled_input()` directly skips Godot's GUI layer, the one place that
+## consumed a raw `InputEventScreenTouch` before `ModeButton._ready()` set `MOUSE_FILTER_IGNORE`, so
+## `get_viewport().push_input(event, true)` is the one call that would fail here if that regressed.
+func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var started_modes: Array[ControlsMode.Mode] = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: started_modes.append(mode))
+	title.open()
+	title._joystick_button.position = Vector2(300.0, 400.0)
+	title._joystick_button.size = Vector2(92.0, 92.0)
+
+	var at: Vector2 = title._joystick_button.catch_rect().get_center()
+	var touch := InputEventScreenTouch.new()
+	touch.position = at
+	touch.pressed = true
+	touch.index = 0
+	title.get_viewport().push_input(touch, true)
+
+	t.check(started_modes == [ControlsMode.Mode.JOYSTICK],
+			"a real touch pushed through the viewport on the joystick button's own rect reaches "
+			+ "the screen (this fails if mouse_filter regresses to STOP)")
 
 	title.close()
 	title.queue_free()
@@ -307,19 +371,21 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	t.get_tree().paused = false
 	pause.queue_free()
 
-## **One hint, one body, on every device.** *(Playtest 29 finding 4: "in fact I said to remove the
-## keyboard inputs altogether but I'm willing to compromise on letting them stay silently" — no
-## key may be named on screen.)* This screen has no buttons, so it still needs a hint that says
-## *press to begin* — `title._touch` used to choose between "space to begin" and "tap to begin";
-## now there is only the tap wording, and `TitleScreen` keeps no `_touch` member at all, since
-## nothing left in this file depends on it.
+## **The hint has to name the thing that actually works.** *(2026-09-07, on review: "a bare tap no
+## longer begins anything ... the screen instructs the player to do the one thing that will not
+## work".)* `tap to begin` was true when a bare press anywhere began a run; once only the two
+## buttons do, `press a button` is what replaces it — still no key named, the same way `tap` never
+## named one *(Playtest 29 finding 4: "in fact I said to remove the keyboard inputs altogether but
+## I'm willing to compromise on letting them stay silently".)* Each caption says what its own
+## button does rather than naming the mode — see `_BODY`'s doc for why the teaching line itself does
+## not change here at all (2026-09-07's M88 asked for the buttons back, not a new lesson).
 func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 
 	title.open()
-	t.check("tap to begin" in title._hint.text,
-			"the hint says tap, on every device ('%s')" % title._hint.text)
+	t.check("press a button to begin" in title._hint.text,
+			"the hint names the thing that actually works ('%s')" % title._hint.text)
 	t.check("Tap to walk" in title._body.text,
 			"and the body names the tap rather than a key ('%s')" % title._body.text)
 	t.check(not "Shift" in title._body.text, "no key is named")
@@ -330,10 +396,12 @@ func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 			"and the body says two things and nothing else ('%s')" % title._body.text)
 	t.check(not "that way" in title._body.text and not "tap her" in title._body.text,
 			"no mention of tapping her or 'that way' — stopping still works, it just is not taught")
+	t.check(title._joystick_button.visible and title._tap_button.visible,
+			"both buttons are on screen, the only pointer way to begin a run")
 
 	title.open(true)
-	t.check("tap to walk again" in title._hint.text,
-			"a returning run gets the same tap wording ('%s')" % title._hint.text)
+	t.check("press a button to walk again" in title._hint.text,
+			"a returning run gets the same wording, naming the buttons again ('%s')" % title._hint.text)
 
 	title.close()
 	title.queue_free()
@@ -456,8 +524,9 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 ## the pause screen and re-asked once the touch buttons existed but this one still had none; then
 ## playtest 29 finding 1: "I specifically said that now all controls are treated the same across
 ## platforms so the buttons should show in *every* environment".)* The pair shows on every device —
-## there is one control scheme now, and a press sets a direction on a keyboard-and-mouse desktop
-## exactly as it does on a phone, so the same buttons are a control there too.
+## both pointer schemes work on every device now, and a press sets a direction on a
+## keyboard-and-mouse desktop exactly as it does on a phone, so the same buttons are a control
+## there too.
 func _test_the_buttons_show_on_every_device(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
 	t.add_child(pause)
@@ -845,20 +914,25 @@ func _test_a_continue_press_flashes_before_it_is_acted_on(t) -> void:
 	t.get_tree().paused = false
 	summary.queue_free()
 
-## **Every screen advances on a tap** — a phone has no `space`, and nothing before this fired
-## anything for a touch at all. Checked on all three screens the game can come to rest on, the same
-## shape `_test_space_carries_on_from_every_screen` already checks for the key, and a release is
-## checked to do nothing so a finger lifted off elsewhere cannot be read as a dismissal.
+## **A tap advances the pause and the summary** — a phone has no `space`, and nothing before this
+## fired anything for a touch at all. Checked on both screens a tap may dismiss, the same shape
+## `_test_space_carries_on_from_every_screen` already checks for the key, and a release is checked
+## to do nothing so a finger lifted off elsewhere cannot be read as a dismissal.
+##
+## **The title screen is not a third case here any more.** *(2026-09-07: "the only way to start the
+## game will be clicking on one of the buttons".)* A bare tap that lands on neither button does
+## nothing at all — see `_test_a_press_on_either_title_button_starts_a_run_in_that_mode` for the
+## case that does.
 func _test_a_tap_advances_every_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started := [0]
-	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
 	title.open()
 	title._unhandled_input(_touch(false))
 	t.check(started[0] == 0, "lifting a finger does nothing on the title")
 	title._unhandled_input(_touch(true))
-	t.check(started[0] == 1, "and pressing one starts the run, once a flag has already answered")
+	t.check(started[0] == 0, "and neither does pressing one, since it lands on neither button")
 	title.close()
 	title.queue_free()
 
@@ -900,23 +974,26 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	t.get_tree().paused = false
 	summary.queue_free()
 
-## **Every screen advances on a left click too, on every build.** *(2026-09-06, on a laptop: "I
-## still need to press space even in mouse mode".)* This overturns each screen's own earlier
-## reason for reading only the raw touch — a stray desktop mouse press was a real risk when no
-## scheme invited the mouse; the pointer scheme now reads a click everywhere, so a laptop player is
-## expected to click and every screen has to accept the one they send.
+## **The pause and the summary advance on a left click too, on every build.** *(2026-09-06, on a
+## laptop: "I still need to press space even in mouse mode".)* This overturns each screen's own
+## earlier reason for reading only the raw touch — a stray desktop mouse press was a real risk when
+## no scheme invited the mouse; the pointer scheme now reads a click everywhere, so a laptop player
+## is expected to click and both screens have to accept the one they send.
+##
+## **The title screen is not a third case here either** — see `_test_a_tap_advances_every_screen`'s
+## own doc for why a bare click, same as a bare tap, now does nothing on this screen.
 func _test_a_mouse_click_advances_every_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started := [0]
-	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
 	title.open()
 	var release := _left_click()
 	release.pressed = false
 	title._unhandled_input(release)
 	t.check(started[0] == 0, "releasing a click does nothing on the title")
 	title._unhandled_input(_left_click())
-	t.check(started[0] == 1, "and pressing one starts the run, once a flag has already answered")
+	t.check(started[0] == 0, "and neither does pressing one, since it lands on neither button")
 	title.close()
 	title.queue_free()
 

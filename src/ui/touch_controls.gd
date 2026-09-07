@@ -1,35 +1,49 @@
 class_name TouchControls
 extends Control
-## The one control scheme a pointer drives, and the pause button it draws.
+## The one control scheme a pointer drives, in either of two chosen modes, and the pause button
+## it draws.
 ##
-## A press — a finger, or (on a device with no touch hardware of its own) a mouse click — sets a
-## direction that is locked in and walked with nothing held down until the next press changes it,
-## or stops her instead if it lands close enough to the right ground; a double press sets the
-## direction and holds `run` until the next press changes or releases it. See `set_direction()`,
-## `_stop()` and `is_double_tap()` — that half of this file used to be `TapControls`, a second node
-## with nothing to draw, and is folded in here because it needs something to draw now: the pause
-## button, the one thing left standing once the drag stick and the held `RUN` circle are deleted.
+## A press — a finger, or a mouse click, on any device — sets a direction that is locked in and
+## walked with nothing held down until the next press changes it, or stops her instead if it lands
+## close enough to the right ground; a double press sets the direction and holds `run` until the
+## next press changes or releases it. See `set_direction()`, `_stop()` and `is_double_tap()` — that
+## half of this file used to be `TapControls`, a second node with nothing to draw, and is folded in
+## here because it needs something to draw now: the pause button, the one thing left standing once
+## the drag stick and the held `RUN` circle are deleted.
 ##
-## **Where the direction is measured from is the one place a mouse and a real finger disagree.**
-## *(Playtest 29 finding 6: "let's not make the directions in relation to the player but define
-## two points equally apart from the border on each side ... this is because right now the finger
-## needs to reach over half the phone to be able to input an up or down direction".)* A mouse click
-## still aims from her own world position, exactly as before. A real touch instead aims from
-## whichever of the two fixed focal points, `FOCUS_LEFT` (240, 480) or `FOCUS_RIGHT` (1040, 480) in
-## the 1280x720 design box, is nearer the press — see `nearer_focus()` and `_on_tap()`'s own doc for
-## the coordinate-space trip a focus has to take to become a world heading. **Both focal points are
-## drawn, on a touch build**, as a ring at `STOP_RADIUS` with a knob at `_direction` — see
-## `_draw_focus_circles()`'s own doc.
+## **Two things decide different questions here, and only one of them is about the mode.**
+## `_touch` (`TouchInput.available()`) is a hardware fact: whether this device has touch hardware
+## of its own, read once the same way `hud._debug` is. It answers exactly one question, in
+## `_input()` — whether a real `InputEventScreenTouch` is on offer at all, and therefore whether a
+## same-instant emulated `InputEventMouseButton` from that same finger has to be ignored rather
+## than read as a second, doubling press (`_test_a_touch_devices_own_emulated_click_is_ignored`).
+## It decides **nothing** about where a heading is measured from any more.
 ##
-## A press within `STOP_RADIUS` of either focus stops her too, and so does one in the stop band
-## down the middle of the screen, or a held finger dragged into either — see `is_on_a_focus()`,
-## `is_in_stop_band()` and `_on_drag()`. **A mouse click near her own position still stops her, and
-## a real touch no longer does**: the camera sits on her, so her own screen position already is the
-## band's own centre line, and covering that ground twice made a drag crossing her by accident stop
-## her by surprise — see `_on_tap()`'s own doc. Held down and moved, a finger or a mouse button
-## keeps re-aiming: the heading updates continuously until the pointer lifts, always at one speed,
-## never a partial vector — see `_on_drag()`'s own doc for why that is not the deleted drag stick
-## returning.
+## **`_mode` (`ControlsMode.Mode`) is the player's own choice, set once from outside through
+## `set_mode()` — see that function's own doc — and it is what `_on_tap()`, `_on_drag()` and
+## `_draw()` actually branch on.** *(2026-09-07, the player: "joystick is the two focal point mode
+## and tap is the mouse mode. both modes for in both settings so let's let the player choose
+## instead of forcing one ... independent of whether tap is available".)* A touchscreen set to
+## `TAP` aims from her own world position exactly as a mouse always has; a mouse set to `JOYSTICK`
+## aims from a fixed focal point exactly as a real finger does. See `ControlsMode` for what each
+## mode means and why neither is tied to a device.
+##
+## **`Mode.JOYSTICK` aims from whichever of the two fixed focal points, `FOCUS_LEFT` (240, 480) or
+## `FOCUS_RIGHT` (1040, 480) in the 1280x720 design box, is nearer the press** — see `nearer_focus()`
+## and `_on_tap()`'s own doc for the coordinate-space trip a focus has to take to become a world
+## heading. **Both focal points are drawn**, as a ring at `STOP_RADIUS` with a knob at `_direction`
+## — see `_draw_focus_circles()`'s own doc. A press within `STOP_RADIUS` of either focus stops her
+## too, and so does one in the stop band down the middle of the screen, or a held pointer dragged
+## into either — see `is_on_a_focus()`, `is_in_stop_band()` and `_on_drag()`.
+##
+## **`Mode.TAP` aims from her own world position instead, and draws nothing.** A press within
+## `STOP_RADIUS` of her stops her; the band and the focal circles do not exist in this mode at all.
+## *(Playtest 29 finding 6, on why a real touch in `JOYSTICK` mode no longer stops on a press near
+## her own position: the camera sits on her, so her own screen position already is the band's own
+## centre line, and covering that ground twice made a drag crossing her by accident stop her by
+## surprise — see `_on_tap()`'s own doc.)* Held down and moved, a pointer in either mode keeps
+## re-aiming: the heading updates continuously until it lifts, always at one speed, never a partial
+## vector — see `_on_drag()`'s own doc for why that is not the deleted drag stick returning.
 ##
 ## **The pause button is not that kind of control.** `main._unhandled_input()` reads
 ## `event.is_action_pressed("pause")` off the propagated *event*, not off polled state, so
@@ -88,23 +102,23 @@ const DOUBLE_TAP_SECONDS := 0.35
 ## direction doubled rather than a new one. Generous, because a thumb pressing twice does not land
 ## on the same pixel either time.
 const DOUBLE_TAP_DISTANCE := 60.0
-## How close a **mouse click** has to land to her, in world px, to read as *stop* rather than a
-## direction — `_on_tap()`'s own `not _touch` branch is the only place this still measures a
-## distance to her. Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram rides up to
-## `PRAM_DISTANCE` (34px) off to one side of her, and a press that lands on the pram is a press on
-## her — with room to spare for a pointer that does not land on the same pixel twice, the way every
-## catch radius in this game is generous rather than exact.
+## How close a press has to land to her, in world px, to read as *stop* rather than a direction in
+## `Mode.TAP` — `_on_tap()`'s own `_mode == ControlsMode.Mode.TAP` branch is the only place this
+## still measures a distance to her. Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram
+## rides up to `PRAM_DISTANCE` (34px) off to one side of her, and a press that lands on the pram is
+## a press on her — with room to spare for a pointer that does not land on the same pixel twice, the
+## way every catch radius in this game is generous rather than exact.
 ##
-## Also the one radius `is_on_a_focus()` and `is_in_stop_band()` measure in **design-space** px, for
-## a touch device — the same "how close counts as *stop*" number reused rather than a second one
+## Also the one radius `is_on_a_focus()` and `is_in_stop_band()` measure in **design-space** px, in
+## `Mode.JOYSTICK` — the same "how close counts as *stop*" number reused rather than a second one
 ## invented for either door, since none of the three milestones that added them named a separate
-## figure. A real touch had this same world-space door once too, until the stop band replaced it —
+## figure. This mode had this same world-space door once too, until the stop band replaced it —
 ## *(2026-09-07: "with that we can remove tap the player to stop since it's the same area".)* See
-## `is_in_stop_band()`'s own doc for why that removal is touch only.
+## `is_in_stop_band()`'s own doc for why that removal is `Mode.JOYSTICK` only.
 const STOP_RADIUS := 48.0
 
-## The two fixed points a touch device aims from — see the class doc's own paragraph on why a real
-## finger and a mouse disagree here. *(2026-09-06, the player: "define two points equally apart
+## The two fixed points `Mode.JOYSTICK` aims from — see the class doc's own paragraph on why the two
+## modes disagree here. *(2026-09-06, the player: "define two points equally apart
 ## from the border on each side (same distance from top/bottom/and its own side)".)* M83 put each
 ## the same distance from the top, the bottom and its own side, which made that distance 360 in the
 ## 1280x720 design box — `(360, 360)` and `(920, 360)`. *(2026-09-07: "Move the center of the focal
@@ -122,7 +136,29 @@ const FOCUS_RIGHT := Vector2(1040.0, 480.0)
 ## its own ring rather than crowding the rim.
 const _FOCUS_KNOB_RADIUS := PAUSE_RADIUS / 3.0
 
+## Hardware only — see the class doc's own paragraph on what this decides and what it no longer
+## does. Read once into a member the same way `TouchInput.available()` already is everywhere else
+## it is asked, since a headless test process is never a touch device.
 var _touch := TouchInput.available()
+
+## The player's own choice of aiming origin — see the class doc and `ControlsMode`. Defaults to
+## `TAP`, the same default `ControlsMode.resolve()` falls back to, so a test or a rig that never
+## calls `set_mode()` gets the mode every existing screenshot and `--walk` script was taken under.
+## In the running game this default is never actually observed: `main._add_touch_controls()` calls
+## `set_mode(ControlsMode.resolve())` immediately after building this node, and
+## `main._on_title_start()` calls it again the moment a player actually presses one of the title
+## screen's two buttons — see those functions' own docs for why this cannot be read once at
+## `_ready()` the way `_touch` is: the title screen answers the question at runtime, well after
+## this node already exists.
+var _mode := ControlsMode.Mode.TAP
+
+## Sets the aiming origin a press and a drag measure their heading from — the one seam `main` uses
+## to hand this node the player's own choice, since nothing here can read a title screen's button
+## press on its own. `queue_redraw()` because `_draw()` only re-runs on request and the focal
+## circles (`_draw_focus_circles()`) exist only in `Mode.JOYSTICK`.
+func set_mode(mode: ControlsMode.Mode) -> void:
+	_mode = mode
+	queue_redraw()
 
 ## Whether `main` has decided a portrait touch window is presenting rotated — see
 ## `ScreenOrientation`. Set from outside rather than asked here, the same way `_touch` is a read
@@ -159,9 +195,10 @@ var _last_tap_screen_position := Vector2.ZERO
 ## finger doesn't work anymore but should", and "although dragging a mouse should reaim as well".)*
 var _drag_pointer_index := -1
 ## Where `_drag_pointer_index`'s own heading is measured from, for every motion event until the
-## next press replaces it — a focus already converted to world space for a real touch, or
-## `Vector2.INF` ("her own position") for a mouse, the same sentinel `set_direction()`'s own `from`
-## parameter already reads that way. Set once, at the press that started the drag, in `_on_tap()`.
+## next press replaces it — a focus already converted to world space in `Mode.JOYSTICK`, or
+## `Vector2.INF` ("her own position") in `Mode.TAP`, the same sentinel `set_direction()`'s own
+## `from` parameter already reads that way. Set once, at the press that started the drag, in
+## `_on_tap()`.
 var _drag_origin_world := Vector2.INF
 ## Whether `_drag_pointer_index`'s own press doubled into a run — carried through every motion
 ## event so re-aiming never itself starts or stops holding `run`; only a fresh press does.
@@ -278,18 +315,18 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ## world one, so this tracks the camera, the zoom and the rotated presentation with nothing of its
 ## own to keep in step. Otherwise it locks in a heading.
 ##
-## **Where that heading is measured from, and what stops her instead, are the two places a mouse
-## and a real finger disagree — and both are the same disagreement seen twice.** *(Playtest 29
-## finding 6; 2026-09-07: "with that we can remove tap the player to stop since it's the same area
-## ... mouse click doesn't have the band and will keep the click the player to stop behavior".)* A
-## mouse click (`not _touch`) aims from her own world position, exactly as before, and a click
-## within `STOP_RADIUS` of that same position stops her rather than steering her — the one door a
-## mouse still has, since its aiming origin already *is* her. A real touch instead aims from the
-## nearer of `FOCUS_LEFT`/`FOCUS_RIGHT`, and is stopped by a press on either focus
-## (`is_on_a_focus()`) or in the stop band down the middle of the screen (`is_in_stop_band()`) —
-## not by a press near her own position any more, since the band already covers that ground (the
-## camera sits on her, so her own screen position is the band's own centre line) and covering it
-## twice is what made a drag crossing her by accident stop her by surprise.
+## **Where that heading is measured from, and what stops her instead, are the two places the two
+## modes disagree — and both are the same disagreement seen twice.** *(Playtest 29 finding 6;
+## 2026-09-07: "with that we can remove tap the player to stop since it's the same area ... mouse
+## click doesn't have the band and will keep the click the player to stop behavior".)* `Mode.TAP`
+## aims from her own world position, exactly as a mouse always has, and a press within
+## `STOP_RADIUS` of that same position stops her rather than steering her — the one door this mode
+## has, since its aiming origin already *is* her. `Mode.JOYSTICK` instead aims from the nearer of
+## `FOCUS_LEFT`/`FOCUS_RIGHT`, and is stopped by a press on either focus (`is_on_a_focus()`) or in
+## the stop band down the middle of the screen (`is_in_stop_band()`) — not by a press near her own
+## position any more, since the band already covers that ground (the camera sits on her, so her own
+## screen position is the band's own centre line) and covering it twice is what made a drag crossing
+## her by accident stop her by surprise.
 ##
 ## Locating the nearer focus is the one place the coordinate-space trap in those constants' own doc
 ## actually has to be walked through, because the two spaces cannot be mixed:
@@ -324,7 +361,7 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 			screen_position.distance_to(_last_tap_screen_position))
 	_last_tap_at = now
 	_last_tap_screen_position = screen_position
-	if not _touch:
+	if _mode == ControlsMode.Mode.TAP:
 		if world.distance_to(_rig.global_position) <= STOP_RADIUS:
 			_stop()
 			return
@@ -332,7 +369,7 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 		_drag_run = double
 		set_direction(world, double)
 		return
-	# Touch only, past here — see the class doc and this function's own doc above.
+	# Mode.JOYSTICK, past here — see the class doc and this function's own doc above.
 	var design := ScreenOrientation.to_design_space(screen_position, rotated)
 	if is_on_a_focus(design) or is_in_stop_band(design):
 		_stop()
@@ -351,8 +388,8 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 ## doesn't work anymore but should", and "although dragging a mouse should reaim as well".)*
 ##
 ## Every motion event for `_drag_pointer_index` moves the heading toward wherever the pointer now
-## is, from `_drag_origin_world` — the same focus `_on_tap()` chose for a touch, or her own
-## position for a mouse, exactly as the initial press that started this drag was measured. The
+## is, from `_drag_origin_world` — the same focus `_on_tap()` chose in `Mode.JOYSTICK`, or her own
+## position in `Mode.TAP`, exactly as the initial press that started this drag was measured. The
 ## direction locks in as it stands the moment the pointer lifts, since nothing further happens on
 ## release beyond forgetting the index in `_on_pointer()`.
 func _on_drag(screen_position: Vector2, index: int) -> void:
@@ -360,11 +397,12 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 		return
 	if not _rig:
 		return
-	# The stop band, touch only — a finger wandering into the middle of the screen mid-drag is the
-	# whole reason the band exists (see `is_in_stop_band()`'s own doc); a mouse drag has no
-	# equivalent door, since its own aiming origin is her position rather than a focus that could
-	# flip underneath it.
-	if _touch and is_in_stop_band(ScreenOrientation.to_design_space(screen_position, rotated)):
+	# The stop band, Mode.JOYSTICK only — a pointer wandering into the middle of the screen
+	# mid-drag is the whole reason the band exists (see `is_in_stop_band()`'s own doc); a
+	# `Mode.TAP` drag has no equivalent door, since its own aiming origin is her position rather
+	# than a focus that could flip underneath it.
+	if _mode == ControlsMode.Mode.JOYSTICK \
+			and is_in_stop_band(ScreenOrientation.to_design_space(screen_position, rotated)):
 		_stop()
 		return
 	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
@@ -376,13 +414,13 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 ## until the next press changes the direction or stops her — there is nothing to arrive at that
 ## would let go of it on its own.
 ##
-## `from` defaults to `Vector2.INF`, read as "her own world position" — the mouse's own aiming
+## `from` defaults to `Vector2.INF`, read as "her own world position" — `Mode.TAP`'s own aiming
 ## point, and every caller's that never sets it explicitly, since `Vector2.INF` can never be a
 ## real focus or a real press. `_on_tap()` and `_on_drag()` are the only two callers that ever pass
-## something else: a focus already converted to world space, for a real touch.
+## something else: a focus already converted to world space, in `Mode.JOYSTICK`.
 ##
 ## A press exactly on `from` has no heading to compute and stops her instead, the same case
-## `_on_tap()`'s own `STOP_RADIUS` check already catches for a mouse click a pixel's-width away
+## `_on_tap()`'s own `STOP_RADIUS` check already catches for a `Mode.TAP` press a pixel's-width away
 ## from her — this is the fallback for the one caller (a test) that calls straight in with an
 ## exact point.
 func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
@@ -430,7 +468,7 @@ static func nearer_focus(design_position: Vector2) -> Vector2:
 			<= design_position.distance_to(FOCUS_RIGHT) else FOCUS_RIGHT
 
 ## Whether `design_position` (already in design space) lands within `STOP_RADIUS` of either focal
-## point — one of the two doors `_on_tap()` and `_on_drag()` stop her through on a touch device,
+## point — one of the two doors `_on_tap()` and `_on_drag()` stop her through in `Mode.JOYSTICK`,
 ## alongside the stop band (`is_in_stop_band()`). *(2026-09-06, the player: "tapping in their
 ## center or on the player should stop the player still".)*
 static func is_on_a_focus(design_position: Vector2) -> bool:
@@ -531,14 +569,14 @@ static func _send_pause_action() -> InputEventAction:
 	Input.parse_input_event(event)
 	return event
 
-## The pause button, and — on a touch build — the two focal circles. Not every pixel of the city is
-## an undrawn direction any more: see `_draw_focus_circles()`'s own doc for why a touch needed
-## something to read the locked-in state off, and why a mouse does not.
+## The pause button, and — in `Mode.JOYSTICK` — the two focal circles. Not every pixel of the city
+## is an undrawn direction any more: see `_draw_focus_circles()`'s own doc for why that mode needs
+## something to read the locked-in state off, and why `Mode.TAP` does not.
 func _draw() -> void:
 	if not visible:
 		return
 	_draw_pause_button()
-	if _touch:
+	if _mode == ControlsMode.Mode.JOYSTICK:
 		_draw_focus_circles()
 
 ## The disc, its rim and the two bars — a preloaded SVG asset (`assets/ui/pause.svg`), not painted
@@ -565,7 +603,7 @@ func _draw_pause_button() -> void:
 	draw_texture_rect(_PAUSE_ICON, Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
 
-## Both focal points, always, on a touch build — M83 drew nothing for them and left *whether they
+## Both focal points, always, in `Mode.JOYSTICK` — M83 drew nothing for them and left *whether they
 ## can be found by feel* as the played question the next report would answer; the answer is no.
 ## *(2026-09-07: "show the control circles again on both sides so the user can see what is
 ## currently locked in.")*

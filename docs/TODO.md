@@ -14,13 +14,11 @@ mid-way through.
 
 ## The order
 
-1. **M88** — the player chooses the controls: the two mode buttons come back, joystick and tap are
-   both offered on every device, and pressing one of them is the only way a pointer begins a run.
-2. **M89** — a soft halo around whatever is actually costing her, so the meter going up has a
+1. **M89** — a soft halo around whatever is actually costing her, so the meter going up has a
    visible cause to walk away from.
-3. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-4. **M56** — the resistance is noticed.
+3. **M56** — the resistance is noticed.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
@@ -118,99 +116,6 @@ which proves only that the controls stay *off* where they should.
       careful-versus-careless survives a blunter instrument, and it is answered by playing it rather
       than by arguing it.** The three smaller things a real device would also settle — the catch
       radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
-
----
-
-## M88 — The player chooses the controls · asked for 2026-09-07
-
-> "let's make the controls a player choice and bring back the two buttons (joystick vs tap) to
-> choose the input mode everywhere (independent of whether tap is available). joystick is the two
-> focal point mode and tap is the mouse mode. both modes for in both settings so let's let the
-> player choose instead of forcing one. that should also solve the issue with the missing title
-> screen since the only way to start the game will be clicking on one of the buttons (using awsd or
-> arrow keys will start the game with tap mode)"
-
-**This overturns M82's central decision, and the player is the one overturning it.** *Asked for one
-scheme chosen nowhere on 2026-09-06 ("get rid of all other modes") · overturned to two schemes the
-player picks between on 2026-09-07.* M82 deleted `ControlsMode`, the `--controls`/`?controls=`
-doors, the title screen's two `ModeButton` discs and their `Choice`/`StickColumn`/`TapColumn` nodes,
-`assets/ui/joystick.svg` and `tap.svg`, and `ModeButton`'s own `STICK`/`TAP` symbols. **All of it is
-recoverable from that commit rather than rewritten**: `git show 0e6817a^:src/ui/controls_mode.gd`
-and the same path for `scenes/ui/title_screen.tscn` and the two SVGs.
-
-**What the two words mean now is not what they meant then, and that is the one thing to get right.**
-Under M82 "stick" was a dragged analog stick and "tap" was a tap that walked her to a *destination*;
-both of those mechanisms are gone and neither is coming back — the destination in particular, since
-*"a tap that pathfinds hands the route decision to the game"* and the whole design is that verb. The
-two modes now are the **two aiming origins the one scheme already has**, split apart and offered:
-
-- **joystick** is the two-focal-point mode — a press aims from whichever of `TouchControls
-  .FOCUS_LEFT` (240, 480) or `FOCUS_RIGHT` (1040, 480) in the 1280x720 design box is nearer, both
-  circles are drawn, the stop band down the middle of the screen stops her, and a press on her does
-  not.
-- **tap** is the mouse mode — a press aims from her own world position, nothing is drawn for it, a
-  press within `STOP_RADIUS` (48px) of her stops her, and there is no band.
-
-Everything else is shared and unchanged: one press sets a heading, a double press runs, a held
-pointer re-aims, and every heading is normalised so there is exactly one walking speed.
-
-**This closes M68, which asked for the same switch.** *(2026-09-02: "should be easy to toggle both
-mobile modes ... so we can experiment with both".)* Its destination-walking half was built and then
-deleted by M82; its switch half is this. The record of what was built and unbuilt is in
-`DECISIONS.md` under M63, M68 and M82.
-
-- [ ] **`ControlsMode` comes back with two modes and no device gate.** *"Both modes for in both
-      settings"*, and *"independent of whether tap is available"* — so `TouchInput.available()`
-      stops deciding which aiming origin is used and goes back to answering only what it is named
-      for: whether this device has touch hardware. **Every place that currently branches on `_touch`
-      to choose behaviour has to be re-read one at a time**, because some of those branches are
-      genuinely about hardware and some are about the mode, and they look identical:
-      `TouchControls._on_tap()` (aiming origin, stop door), `_on_drag()` (the band), `_draw()` (the
-      focus circles) are the mode; the `InputEventScreenTouch`/`InputEventMouseButton` split in
-      `_input()` is the hardware and must stay hardware, since a touch device still delivers touches
-      whichever mode is chosen
-- [ ] **The two buttons come back on the title screen, and pressing one is the only pointer way in.**
-      *"The only way to start the game will be clicking on one of the buttons."* So
-      `TitleScreen._unhandled_input()` stops beginning a run on any press: a pointer press begins a
-      run only when it lands on a button, which is what makes the ending-screen leak structurally
-      impossible rather than raced. The buttons are `ModeButton`s with `Symbol.JOYSTICK` and
-      `Symbol.TAP` and their two restored SVGs, read by raw touch position through `catch_rect()`
-      the way `PauseScreen` and `DaySummary` already read theirs — `mouse_filter = IGNORE` means a
-      `Button`'s own `pressed` signal never fires for a real touch.
-
-      **Each button needs a caption that says what it is**, since a joystick glyph and a tap glyph
-      do not say *aims from two fixed points* and *aims from her* on their own. The old scene has
-      the two caption labels already; what they say is this milestone's to write.
-
-      **The restart guard M85 added stays.** It fires on a press within `DOUBLE_TAP_SECONDS` (0.35s)
-      of a restart-triggered scene reload, and with a press-anywhere start gone it is no longer the
-      only thing standing between an ending tap and the next run — but a stray press can still land
-      *on a button*, which is the case it still answers. Keep it and say so, rather than deleting it
-      because the headline defect moved
-- [ ] **A direction key begins a run in tap mode.** *"Using awsd or arrow keys will start the game
-      with tap mode."* `TitleScreen` already begins a run on `WASD`, the arrows and `ui_accept`; what
-      is new is that beginning it that way also **chooses tap**. Read it as *the keyboard is a
-      desktop and a desktop is a mouse*, which is the same reasoning that makes tap the mouse mode
-      at all — `ui_accept` (space) takes the same branch, since a player pressing space has told you
-      nothing about a thumb either. **Still names no key on screen**, the same way nothing in the
-      game ever has
-- [ ] **A rig and a dev build can still say which mode.** `--controls joystick|tap` on the command
-      line and `?controls=` on a debug web build were both deleted with `ControlsMode` and both come
-      back with it, resolved command line first, then URL, then the title screen's own answer.
-      **Both stay behind `DevFlags.enabled()` (`OS.is_debug_build()`)**: the reason the URL door was
-      once exempt was that the deployed page had no other way to ask the question, and the title
-      screen asking it outright is exactly what removes that reason — which is the same argument
-      that was made when the gate was added, and it survives this milestone unchanged.
-
-      **Every rig that skips the title screen needs a default**, since `--no-title` and the
-      screenshot rigs never reach a button. Tap is the one to default to: it is what every existing
-      capture and every `--walk` script was taken under, so a rig's back catalogue keeps reproducing
-- [ ] **The teaching line has to be true in both modes, and it currently names neither.** `HUD
-      ._teach_the_day()`, `TitleScreen._BODY` and `PauseScreen._BODY` all say `Tap to walk, double
-      tap to run.` — which playtest 33 asked for in exactly those words and which is still true of
-      both modes. **So the smallest reading is that nothing changes here**, and it is written down
-      as a decision rather than an omission: the difference between the modes is *where a press is
-      measured from*, and the two drawn circles are what say that in joystick mode
 
 ---
 

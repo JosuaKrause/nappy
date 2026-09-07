@@ -7,6 +7,13 @@ extends RefCounted
 ## `_touch` is read once into a member exactly the way `QuitOption.available()` and `hud._debug`
 ## are — a headless test process is never a touch device, so a gate asked of `TouchInput` at each
 ## use site would leave this whole class asserted by nothing.
+##
+## **`_touch` and `_mode` answer different questions, and a test that wants `Mode.JOYSTICK`'s own
+## focus-based aiming has to set `_mode` — setting `_touch` no longer does anything to it.** `_touch`
+## only decides which raw event type `_input()` reads and whether a touch device's own emulated
+## mouse click is ignored; every test below that calls `_on_tap()`/`_on_drag()` directly bypasses
+## `_input()` entirely, so `_touch` was never anything but a mode selector for those, back when the
+## two were the same flag. See `ControlsMode` and `TouchControls.set_mode()`.
 
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 
@@ -225,17 +232,17 @@ func _test_set_direction_on_her_own_position_stops_rather_than_pressing(t) -> vo
 	controls.queue_free()
 	rig.free()
 
-## **The generous radius, not the exact pixel — and a mouse click only now.** *(2026-09-06: "also,
+## **The generous radius, not the exact pixel — and `Mode.TAP` only now.** *(2026-09-06: "also,
 ## to stop her just click on her".)* `STOP_RADIUS` is wide enough to catch a click on the pram,
 ## which rides up to `PRAM_DISTANCE` off to one side of her, not only a click on her own exact
 ## world position. *(2026-09-07: "mouse click doesn't have the band and will keep the click the
 ## player to stop behavior".)* Replaces the old, device-agnostic version of this test rather than
-## sitting beside it — the touch half of what it asserted is now
+## sitting beside it — the `Mode.JOYSTICK` half of what it asserted is now
 ## `_test_a_touch_near_her_own_position_no_longer_stops_her`, further down.
 func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	var rig := _rig_at(t, Vector2(200.0, 200.0))
 	var controls := _controls(t)
-	controls._touch = false
+	controls._mode = ControlsMode.Mode.TAP
 	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
 
 	controls._on_tap(transform * Vector2(500.0, 200.0), 0.0)
@@ -540,7 +547,7 @@ func _test_is_in_stop_band_catches_the_middle_and_only_the_middle(t) -> void:
 func _test_a_touch_aims_from_the_nearer_focus_not_from_her(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
 	var controls := _controls(t)
-	controls._touch = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
 
 	# West of the left focus, in the design box `_on_tap()` reads a non-rotated press in directly.
 	controls._on_tap(TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), 0.0)
@@ -560,7 +567,7 @@ func _test_a_touch_aims_from_the_nearer_focus_not_from_her(t) -> void:
 func _test_a_press_at_a_focus_centre_stops_her_on_touch(t) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := _controls(t)
-	controls._touch = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
 
 	controls.set_direction(Vector2(100.0, 0.0), false)
 	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
@@ -572,7 +579,7 @@ func _test_a_press_at_a_focus_centre_stops_her_on_touch(t) -> void:
 	controls.queue_free()
 	rig.free()
 
-## **The world-space door is gone on a touch device, replaced by the band.** *(2026-09-06, the
+## **The world-space door is gone in `Mode.JOYSTICK`, replaced by the band.** *(2026-09-06, the
 ## player: "tapping in their center or on the player should stop the player still" — the finding
 ## M83 built this test for. 2026-09-07, overturning it: "with that we can remove tap the player to
 ## stop since it's the same area and if a movement accidentally goes over the player it might
@@ -583,7 +590,7 @@ func _test_a_press_at_a_focus_centre_stops_her_on_touch(t) -> void:
 func _test_a_touch_near_her_own_position_no_longer_stops_her(t) -> void:
 	var rig := _rig_at(t, Vector2(300.0, 300.0))
 	var controls := _controls(t)
-	controls._touch = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
 	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
 
 	controls.set_direction(Vector2(400.0, 300.0), false)
@@ -601,13 +608,18 @@ func _test_a_touch_near_her_own_position_no_longer_stops_her(t) -> void:
 	controls.queue_free()
 	rig.free()
 
-## **The one place a mouse and a real finger disagree, and only there.** *(2026-09-06, the player:
-## "that two focal point mode should only exist for the touch enabled version not the mouse
-## version where the direction uses the player as reference".)*
+## **`Mode.TAP` aims from her regardless of the device that sent the click.** *(2026-09-06, the
+## player: "that two focal point mode should only exist for the touch enabled version not the mouse
+## version where the direction uses the player as reference" — read now as the mode, not the
+## hardware, the player asked to keep separate: see `docs/DECISIONS.md` under M88.)* Driven through
+## `_input()` rather than `_on_tap()` directly, so this also exercises the hardware routing a mouse
+## click takes on a non-touch device (`_touch = false`) — the two are independent, and both are set
+## explicitly here so the test does not lean on either one's default.
 func _test_a_mouse_click_still_aims_from_her_not_a_focus(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
 	controls._touch = false
+	controls._mode = ControlsMode.Mode.TAP
 	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
 
 	var click := InputEventMouseButton.new()
@@ -630,6 +642,7 @@ func _test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t) -
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
 	var controls := _controls(t)
 	controls._touch = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
 
 	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
 	t.check(Input.is_action_pressed("move_left"), "the press itself walks west of the focus")
@@ -661,6 +674,7 @@ func _test_a_stop_press_does_not_start_a_drag(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
 	controls._touch = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
 
 	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT, true))
 	t.check(controls._drag_pointer_index == -1, "a stop press tracks no drag")
@@ -676,6 +690,7 @@ func _test_a_double_tap_that_then_drags_keeps_running(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
 	controls._touch = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
 
 	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
 	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), false))
@@ -689,14 +704,15 @@ func _test_a_double_tap_that_then_drags_keeps_running(t) -> void:
 	controls.queue_free()
 	rig.free()
 
-## **The mouse's own half of the drag.** *(2026-09-07: "although dragging a mouse should reaim as
-## well".)* Its origin is her own position, not a focus — the one place a mouse and a finger keep
+## **`Mode.TAP`'s own half of the drag.** *(2026-09-07: "although dragging a mouse should reaim as
+## well".)* Its origin is her own position, not a focus — the one place the two modes keep
 ## disagreeing — carried through every motion event exactly as `_drag_origin_world` recorded it at
 ## the click that started this drag.
 func _test_a_mouse_drag_reaims_from_her_own_position(t) -> void:
 	var rig := _rig_at(t, Vector2(300.0, 300.0))
 	var controls := _controls(t)
 	controls._touch = false
+	controls._mode = ControlsMode.Mode.TAP
 	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
 
 	var click := InputEventMouseButton.new()
@@ -742,13 +758,13 @@ func _test_a_mouse_motion_without_the_button_held_does_nothing(t) -> void:
 	controls.queue_free()
 	rig.free()
 
-## A press dead in the middle of the screen stops her on a touch device, the third door into
+## A press dead in the middle of the screen stops her in `Mode.JOYSTICK`, the third door into
 ## `_stop()` beside a press on either focus. *(2026-09-07: "there should be a narrow band in the
 ## middle of the screen ... that stops the player".)*
 func _test_a_tap_in_the_stop_band_stops_her_on_touch(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
-	controls._touch = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
 
 	controls._on_tap(TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), 0.0)
 	t.check(Input.is_action_pressed("move_left"), "walking first, so a stop has something to undo")
@@ -768,6 +784,7 @@ func _test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t) ->
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
 	controls._touch = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
 
 	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
 	t.check(Input.is_action_pressed("move_left"), "the press itself walks west of the focus")
