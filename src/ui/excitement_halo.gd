@@ -85,6 +85,9 @@ func setup(events: EventManager, player: Node2D) -> void:
 func _ready() -> void:
 	_material = ShaderMaterial.new()
 	_material.shader = SHADER
+	# The same amber the excitement bar itself fills with — see Palette.EXCITEMENT_FIELD's own
+	# doc — so the glow and the number it is a picture of read as one fact rather than two.
+	_material.set_shader_parameter("halo_colour", Palette.EXCITEMENT_FIELD)
 	material = _material
 
 func _process(_delta: float) -> void:

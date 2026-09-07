@@ -66,6 +66,16 @@ const SPOILED_GROUND := Color("6b6357")
 const MARK_COSTLY := Color("e8b64a")
 const MARK_LETHAL := Color("8f2f38")
 
+## The excitement field, drawn under the world by `ExcitementHalo` as the sum
+## `EventManager.total_excitement_at()` is reading. **Not a fourth danger hue** — it is the same
+## amber the excitement bar itself fills with (`hud.gd`'s `_excitement.fill_colour`), so the halo
+## and the number it is a picture of are visibly the same fact rather than a second vocabulary
+## reaching for its own colour. Kept as its own constant rather than a shared reference because
+## `hud.gd`'s bar colours are its own literals, chosen once when the HUD was built and not
+## threaded through this file; matching the value by hand is the smallest way to keep the two in
+## agreement without wiring the HUD through `Palette` for a shade nothing else there needs yet.
+const EXCITEMENT_FIELD := Color("d9a648")
+
 ## The three lamps of a signal head. **Not** the mark colours, deliberately: a caret says how bad
 ## a thing is and a lamp says whether you may go, and borrowing `MARK_LETHAL` for a red light
 ## would make the one instruction in the game that is about permission look like a threat. These
