@@ -4,8 +4,13 @@ extends CharacterBody2D
 ##
 ## `position` is the mother's feet on the ground plane; everything is drawn upward from
 ## there so that y-sorting against buildings and props matches where she actually stands.
-## The live mother and pram use the optional `ModularPerson` compositor when
-## `DevFlags.illustrated_requested()` is true; this node remains the logical body either way.
+## The pram is drawn as an offset in the facing direction, foreshortened on Y by `OBLIQUE_Y` to
+## sell the oblique view (docs/CITY.md, "Rendering").
+##
+## **Two presentations, and the legacy one is the baseline.** The SVG mother and pram below are
+## what a build draws unless `--illustrated` or a web `?illustrated=1` opts into the `ModularPerson`
+## compositor. This node is the logical body either way: the compositor is given only displacement
+## that survived collision and shove resolution, and never moves anything itself.
 
 ## How far ahead of the mother the pram sits, on the ground plane.
 const PRAM_DISTANCE := 34.0
@@ -16,9 +21,18 @@ const FACING_TURN_SPEED := 12.0
 ## How far the camera leads the player, in px.
 const CAMERA_LOOK_AHEAD := 46.0
 
-## Legacy SVG presentation: two stride frames and three cardinal silhouettes.
+## The hysteresis band `_update_view()` holds `_side_view` across. Below this many degrees off
+## the horizontal axis she is drawn side-on; above `FRONT_OR_BACK_VIEW_ABOVE_DEGREES` she is
+## drawn front-or-back; in between, whatever was drawn last frame stands. A single switching
+## angle sits exactly on the diagonal, where the facing's two components are equal to within
+## float noise as she turns through it, so a straight 45° walk flips the drawing every frame a
+## strict comparison is asked. Forty and fifty are wide enough apart that a facing crossing the
+## band takes several frames at `FACING_TURN_SPEED`, not one.
 const SIDE_VIEW_BELOW_DEGREES := 40.0
 const FRONT_OR_BACK_VIEW_ABOVE_DEGREES := 50.0
+
+## The SVG presentation, and the one a build draws unless the illustrated compositor is opted
+## into. Two frames per direction: mid-stride, then feet passing.
 const MOTHER_FRONT: Array[Texture2D] = [
 	preload("res://assets/rig/mother_front_a.svg"), preload("res://assets/rig/mother_front_b.svg")]
 const MOTHER_BACK: Array[Texture2D] = [
@@ -79,7 +93,24 @@ enum Alert {
 @onready var _baby: Baby = get_node_or_null("Baby")
 var _modular_person: ModularPerson
 
+## Which presentation this rig draws, read **once** here rather than asked at each use site.
+##
+## **Why once:** `DevFlags.illustrated_requested()` reaches `JavaScriptBridge.eval(
+## "window.location.search")` on a web export, and this file would otherwise ask it twice every
+## physics frame and again in `_draw()` — a JavaScript round trip per frame, on the only build the
+## project actually distributes, to answer a question that cannot change during a run. `CrowdAgent`
+## reads it once in `setup()` for the same reason. It also follows the pattern `TouchControls
+## ._touch` and `hud._debug` already use: a platform fact is read into a member, so a test can
+## drive both shapes without the platform.
+var _illustrated := DevFlags.illustrated_requested()
+
 var facing := Vector2.DOWN
+## Which family of drawing `_draw_mother()` and `_draw_pram()` show: side-on when `true`,
+## front-or-back when `false`. Computed once a frame by `_update_view()` into this single member
+## rather than asked separately by each draw function, so the two can never disagree about which
+## way she faces. Starts `false` to match the default `facing` of `Vector2.DOWN` — squarely in
+## the front-or-back band, not near the diagonal, so there is nothing to settle before she has
+## moved.
 var _side_view := false
 var _walk_phase := 0.0
 ## How long her own movement input stays ignored, set by `detain()`. Velocity is not touched here —
@@ -102,13 +133,13 @@ var _alert_source := &""
 
 func _ready() -> void:
 	add_to_group("player")
-	if not DevFlags.illustrated_requested():
+	if not _illustrated:
 		return
 	_ensure_modular_person()
 	_modular_person.reset_at(global_position, facing)
 
 func _ensure_modular_person() -> void:
-	if not DevFlags.illustrated_requested():
+	if not _illustrated:
 		return
 	if is_instance_valid(_modular_person):
 		return
@@ -179,7 +210,7 @@ func _physics_process(delta: float) -> void:
 		_shove = _shove.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
 	_walk_phase = wrapf(_walk_phase + velocity.length() * delta * 0.09, 0.0, TAU)
 
-	if DevFlags.illustrated_requested():
+	if _illustrated:
 		_ensure_modular_person()
 		# Only displacement that survived collision and shove resolution drives the gait. Input,
 		# velocity and elapsed time alone must never advance a planted foot.
@@ -349,9 +380,6 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	global_position = where
 	velocity = Vector2.ZERO
 	facing = look.normalized()
-	# Not left to hold across the reset: a rewound or new day did not walk here, so there is no
-	# "last frame" of hysteresis worth keeping, and `look`'s default of `Vector2.DOWN` is squarely
-	# in the front-or-back band regardless.
 	_shove = Vector2.ZERO
 	_detained_for = 0.0
 	_alert = Alert.NONE
@@ -360,10 +388,14 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	if _camera:
 		_camera.offset = Vector2.ZERO
 		_camera.reset_smoothing()
+	# The view and the stride are settled from scratch rather than left to hold across the reset:
+	# a rewound or new day did not walk here, so there is no "last frame" of hysteresis worth
+	# keeping, and `look`'s default of `Vector2.DOWN` is squarely in the front-or-back band
+	# regardless.
 	_side_view = false
 	_update_view()
 	_walk_phase = 0.0
-	if DevFlags.illustrated_requested():
+	if _illustrated:
 		_ensure_modular_person()
 		_modular_person.reset_at(global_position, facing)
 	queue_redraw()
@@ -419,7 +451,7 @@ func _draw() -> void:
 	# Shadows belong to the ground plane, so they always go underneath both figures.
 	Sprites.draw_shadow(self, Vector2.ZERO, 9.0)
 	Sprites.draw_shadow(self, pram_offset, 12.0)
-	if not DevFlags.illustrated_requested():
+	if not _illustrated:
 		var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
 		if facing.y < 0.0:
 			_draw_pram(pram_offset)
@@ -442,6 +474,10 @@ func _draw() -> void:
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
 
+## The stride is two frames rather than a procedural swing: with the legs drawn into the sprite
+## there is nothing left to swing. The frames carry the body's bob too, which is why nothing here
+## offsets her vertically. `origin` is `Vector2.ZERO` for the presentation as played; the
+## illustrated opt-in passes the comparison offset so the two can be judged side by side.
 func _draw_mother(gait: float, origin := Vector2.ZERO) -> void:
 	var stepping := gait > 0.05 and sin(_walk_phase * 2.0) > 0.0
 	var frame := 1 if stepping else 0
@@ -456,20 +492,34 @@ func _draw_mother(gait: float, origin := Vector2.ZERO) -> void:
 		texture = MOTHER_BACK[frame]
 	Sprites.draw_standing(self, texture, origin, Vector2.ZERO, flip)
 
+## Three profiles rather than one drawing with the hood nudged sideways. Sliding the hood along a
+## fixed basket made it overhang the end of the pram whenever she turned, which is what "the canopy
+## is offset going sideways" was: the hood was drawn at the rear, but the basket underneath it
+## never changed shape, so the two stopped agreeing.
 func _draw_pram(at: Vector2) -> void:
 	if _side_view:
+		# Authored travelling east, hood at the rear; mirrored to travel west.
 		Sprites.draw_standing(self, PRAM_SIDE, at, Vector2.ZERO, facing.x < 0.0)
 	elif facing.y > 0.0:
 		Sprites.draw_standing(self, PRAM_FRONT, at)
 	else:
 		Sprites.draw_standing(self, PRAM_BACK, at)
 
+## Decides `_side_view` for this frame, with hysteresis rather than a single switching angle. See
+## `SIDE_VIEW_BELOW_DEGREES`.
+##
+## The east/west mirror the side view picks by the sign of `facing.x` needs no hysteresis of its
+## own: turning between facing mostly-east and mostly-west at `FACING_TURN_SPEED` sweeps through
+## facing mostly-north-or-south on the way, which is deep in the front-or-back band, not near
+## either switching angle — so `_side_view` has already dropped to `false` and settled back to
+## `true` with the new sign already decided by the time either draw function reads it.
 func _update_view() -> void:
 	var degrees_off_horizontal := rad_to_deg(atan2(absf(facing.y), absf(facing.x)))
 	if degrees_off_horizontal < SIDE_VIEW_BELOW_DEGREES:
 		_side_view = true
 	elif degrees_off_horizontal > FRONT_OR_BACK_VIEW_ABOVE_DEGREES:
 		_side_view = false
+	# Between the two: keep whatever was drawn last frame.
 
 ## How the baby is, drawn where the player is already looking — a zzz above the stroller when the
 ## baby is asleep, and something louder as the excitement approaches full, rather than a number
