@@ -232,6 +232,13 @@ circles are the shape a control already has, the way `MeterBar`'s own fill is.
       test must still pass**. *The overlap was put to the player as a question on 2026-09-07 rather
       than inferred, and they chose live re-aim at one speed over the analog stick and over aiming
       from her own position.*
+
+      **A mouse drags too, and it re-aims from her rather than from a focus.** *(2026-09-07:
+      "although dragging a mouse should reaim as well.")* Holding the left button and moving the
+      pointer updates the heading continuously from her own world position, locking in on release, at
+      the same one speed. So the re-aiming is shared and only its **origin** differs — which is the
+      one difference between a mouse and a finger this scheme already had, and no new one is being
+      introduced
 - [ ] **A stop band down the middle of the screen.** *(2026-09-07: "there should be a narrow band in
       the middle of the screen (size of the stop circle) that stops the player. this is to prevent
       moving the finger over the middle of the screen and quickly flicking back and forth.")*
@@ -270,11 +277,15 @@ circles are the shape a control already has, the way `MeterBar`'s own fill is.
       but a finger sweeping across the screen crosses her without meaning to, and an unasked-for stop
       mid-drag is the surprise the player names.
 
-      **The mouse is the part to get right.** A click aims from her own world position rather than
-      from a focal point, so this world check is currently the *only* way a desktop player stops her.
-      The band is screen space and a click lands in screen space, so **a click inside the band has to
-      stop her too** — otherwise removing the world check takes stopping away from a mouse
-      altogether.
+      **The removal is touch only, and the mouse keeps clicking her to stop.** *(2026-09-07: "mouse
+      click doesn't have the band and will keep the click the player to stop behavior.")* So the
+      world-space check stays on the `not _touch` branch and the band is never asked of a click.
+
+      **That is the third place a mouse and a finger disagree, and all three have one cause**: a
+      mouse aims from her own world position and a finger aims from a focal point. A finger's stop
+      moves to the band because the band is exactly where the focal geometry breaks down; a mouse
+      never had that problem, its aiming origin *is* her, and clicking the thing you are steering is
+      the obvious way to stop it.
 
       Nothing on screen needs changing to say so: the movement lesson already loses *"tap her to
       stop"* two items down. `set_direction()`'s own fallback for a press exactly on `from` stays —

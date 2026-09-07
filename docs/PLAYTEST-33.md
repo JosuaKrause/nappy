@@ -208,14 +208,19 @@ sweeping across the screen passes over her without meaning to, and a stop nobody
 middle of a drag is the surprise the player names. So the band replaces it rather than sitting
 alongside it.
 
-**It reaches the mouse too, and that is the part to get right.** A mouse click aims from her own
-world position rather than from a focal point, so the world-space check is currently the *only* way
-a desktop player stops her. The band is screen space and a mouse click lands in screen space, so a
-click in the middle band has to stop her as well — otherwise removing the world check takes stopping
-away from a mouse entirely.
+**It does not reach the mouse, and the mouse keeps clicking her to stop.** *(2026-09-07: "mouse
+click doesn't have the band and will keep the click the player to stop behavior. although dragging a
+mouse should reaim as well.")* So the removal is **touch only**, and the world-space check stays on
+the `not _touch` branch.
 
-Nothing on screen has to change to say so: the movement lesson is already losing *"tap her to
-stop"* under finding 4.
+**That is the third place a mouse and a finger disagree, and each of the three has the same cause**:
+a mouse aims from her own world position and a finger aims from a focal point. A finger's stop moves
+to the band because the band is where the focal geometry breaks down; a mouse never had that problem,
+its aiming origin *is* her, and clicking the thing you are steering is the obvious way to stop it.
+
+**Dragging re-aims on a mouse too.** Finding 3's live re-aim is not touch-only: holding the left
+button and moving the pointer updates the heading continuously from her own world position, locking
+in on release, at the one walking speed like everything else.
 
 ---
 
