@@ -52,7 +52,7 @@ theme_override_constants/separation = 20
 [node name="Body" type="Label" parent="Root/Bottom/Lines"]
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 32
 text = "Tap to walk, double tap to run.
 Walk to calm ground and stay moving; standing still settles nothing."
 
