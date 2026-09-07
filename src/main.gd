@@ -291,10 +291,12 @@ func _add_danger_edge() -> void:
 ##
 ## `z_index = 1` puts it above `City`'s `Ground` (default 0) and below its `Entities` (2, the
 ## y-sorted layer the player, the crowd and every event live on) — under everything the cue is
-## meant to be under, without joining the y-sort itself, since a glow on the ground plane has no
-## silhouette to sort against a person standing on it. `_pauses_with_the_game()` is the same
-## reasoning `_city` gets: while the tree is paused nothing it reads is moving either, so freezing
-## alongside the world it draws needs no case of its own.
+## required to be under: the entities, the crowd and the player, none of which can ever read as
+## lit from beneath. It ties `Buildings` (also 1) rather than sitting under it as well, which a
+## glow can afford to: a wall the field happens to reach warms slightly, the way it would under
+## any coloured light near it, and nothing the cue exists to protect is a wall.
+## `_pauses_with_the_game()` is the same reasoning `_city` gets: while the tree is paused nothing
+## it reads is moving either, so freezing alongside the world it draws needs no case of its own.
 func _add_excitement_halo() -> void:
 	_halo = ExcitementHalo.new()
 	_halo.name = "ExcitementHalo"
