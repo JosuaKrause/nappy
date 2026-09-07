@@ -139,23 +139,38 @@ func _roll_interval() -> float:
 ## it comes down it, so a path is the wrong shape for it entirely — and building one anyway puts
 ## the day-3 dog a street's width off to one side of the place this function has just checked,
 ## 266px away and diagonal, which on a 640x360 view is at the corner of the screen or past it. What
-## she is owed is the sight of it coming, and it has to be sited where that can be seen.
+## she is owed is the sight of it coming, and it has to be sited where that can be seen — but the
+## seeing is now a screen-edge badge's job for as long as the dog is off screen, not the dog's own
+## silhouette, which is the overturn below.
 ##
-## **And a pursuer is sited as far ahead as it can be seen from**, which is `Tuning.SIGHT_AHEAD`
-## flat rather than a clamp against `AHEAD_LEAD_DISTANCE`: that is a *cat's* reaction window and has
-## nothing to do with a chase, and everything between the siting and the stand-off is the only
-## notice a pursuit has left to give.
+## **And a pursuer is sited at least `Tuning.OFFSCREEN_NOTICE` (200ms) outside the view along the
+## heading in play, not against a flat number sized for one axis.** *(2026-09-07: "bikers /
+## unleashed dogs all pop in in front of the player instead of starting off screen", "events that go
+## towards the player (biker / pursuing dog) should at least be 200ms off screen with a warning",
+## and, of the day-3 dog specifically, "the run tutorial spawns inside the visible area making the
+## headsup way too short now".)* A flat 200px sits inside the 320px horizontal boundary, so a dog
+## sited while she walked east or west had no offscreen phase at all — it appeared already on
+## screen. `Tuning.offscreen_lead(heading, closing_speed)` asks the real question instead: how far
+## to the edge of the view *this* heading actually reaches, plus how far it and she together cover
+## in 200ms — for `charging_dog` at 130px/s pursuing, closing at 130 + `WALK_SPEED` (92) = 222px/s,
+## that margin is 44px.
 ##
-## The arithmetic is why it is the cap rather than a choice. The lunge is fired by
-## **proximity** — see `EventInstance._lunged` — so the notice a player gets is the time it takes
-## the gap to fall from the lead to `Tuning.pursuit_standoff()`, and she is usually walking *into*
-## it, so that gap closes at her speed plus its own. There are 96px of it at 200px of lead and
-## 80px at 184, which is the difference between 0.43s and 0.38s: small, and it is all there is.
-## Siting further out is not available at any price — the visible world is 360px tall, and a dog
-## telegraphing off the top of the screen has no telegraph at all.
+## **Unavoidable, on purpose, was the day-3 dog's whole point** — a dog starting further away is a
+## dog with more room to be walked around, which is exactly what siting it close was for.
+## *(2026-09-07: asked for a close, unavoidable teaching dog · overturned to a further one, because
+## the tap-controlled heads-up was too short at the old distance.)* So the dog moves out with
+## everything else, and whatever keeps the lesson forceful now has to come from somewhere other than
+## siting it too close to see coming — an open question, not one this function answers.
+##
+## The arithmetic that used to cap the siting no longer applies: the lunge is still fired by
+## **proximity** (see `EventInstance._lunged`), but the notice a player gets is no longer "how much
+## ground lies between the siting and the stand-off while both are on screen" — the screen-edge
+## badge (`DangerEdge`) now carries the notice for the whole of the offscreen approach, and the
+## on-screen closing to the stand-off is what it always was.
 func _crossing_ahead_of(at: Vector2, heading: Vector2,
 		def: EventDef = null) -> PackedVector2Array:
-	var lead := Tuning.SIGHT_AHEAD if def and def.pursues \
+	var lead := Tuning.offscreen_lead(heading, def.pursue_speed + Tuning.WALK_SPEED) \
+			if def and def.pursues \
 			else (def.ahead_of_player_lead() if def else Tuning.AHEAD_LEAD_DISTANCE)
 	var centre := at + heading * lead
 	if not _map.is_walkable(_map.world_to_tile(centre)):
@@ -172,11 +187,25 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 		return PackedVector2Array()
 	return PackedVector2Array([from, to])
 
-## A run straight *down* her own line rather than across it: `TOWARD_PLAYER`'s whole point. Sited
-## `Tuning.SIGHT_AHEAD` in front of her — outside every current row's own reach, which
-## `EventDef.validate()` requires — and travelling back down the same line she is walking, so
-## a rig that keeps going meets it on a genuine collision course rather than a near miss that
-## depends on nobody moving.
+## A run straight *down* her own line rather than across it: `TOWARD_PLAYER`'s whole point. Sited at
+## least `Tuning.OFFSCREEN_NOTICE` (200ms) outside the view along her heading —
+## `Tuning.offscreen_lead(heading, def.speed + Tuning.WALK_SPEED)`, since she is usually walking
+## into it — and travelling back down the same line she is walking, so a rig that keeps going meets
+## it on a genuine collision course rather than a near miss that depends on nobody moving.
+## *(2026-09-07: "bikers / unleashed dogs all pop in in front of the player instead of starting off
+## screen", and "events that go towards the player (biker / pursuing dog) should at least be 200ms
+## off screen with a warning".)* A row sited at a flat 200px was already on screen on the horizontal
+## axis; this is not, on either axis — for `cyclist` at 165px/s the closing speed is 165 + 92 =
+## 257px/s, 51px of margin past the boundary.
+##
+## **A `hard_fail` row is sited further still, so its own telegraph is over before it arrives.**
+## *(2026-09-07: "also a biker hit should be lethal.")* `Tuning.outlasting_telegraph_lead()` takes
+## whichever is further: the ordinary offscreen margin, or the distance that takes
+## `telegraph_time + OFFSCREEN_NOTICE` to close. `cyclist`'s 3.3s telegraph is the binding term —
+## `(3.3 + 0.2) * 257` = 900px — against a 371px offscreen margin on the widest axis. A row this far
+## out is well past `EVENT_STREAM_RADIUS`'s own concerns; it exists for exactly this one moment and
+## is created only when it is due, so there is no cost to sitting it further than a `MAP` row ever
+## would be.
 ##
 ## The far end of the route runs the same distance **behind** her rather than stopping where she
 ## is standing: it has to still be going somewhere when it reaches her, or `EventInstance` reads
@@ -188,7 +217,9 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## retry the near point only, because a route that starts on the pavement and ends in a wall is not
 ## a route either.
 func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
-	var lead := Tuning.SIGHT_AHEAD
+	var closing := def.speed + Tuning.WALK_SPEED
+	var lead := Tuning.outlasting_telegraph_lead(heading, closing, def.telegraph_time) \
+			if def.hard_fail else Tuning.offscreen_lead(heading, closing)
 	var far := at + heading * lead
 	if not _map.is_walkable(_map.world_to_tile(far)):
 		return PackedVector2Array()
