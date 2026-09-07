@@ -75,9 +75,9 @@ The playable game uses the existing renderer by default. `--illustrated` or a we
 `?illustrated=1` query opts into the initial illustrated character runtime for review; neither
 argument changes simulation. A missing argument remains legacy, so this is not an approval or a
 release switch.
-The `src/visual3d/` street and actor files are isolated experiments. Additional 3D animal,
-projection and screen attempts are preserved in ancestry, indexed in `docs/DECISIONS.md` under
-Illustrated assets and experiment preservation. Do not revive their design by mistake.
+The 3D street and actor experiments are preserved in ancestry, indexed in `docs/DECISIONS.md`
+under Illustrated assets and experiment preservation, and are not in the tree. Do not revive their
+design by mistake.
 
 The modular sprite work is a standalone, tested presentation component, not live gameplay:
 
