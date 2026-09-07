@@ -22,7 +22,7 @@ func run(t) -> void:
 	_test_is_double_tap_needs_both_windows(t)
 	_test_set_direction_presses_the_components_of_the_heading(t)
 	_test_set_direction_on_her_own_position_stops_rather_than_pressing(t)
-	_test_a_tap_within_the_stop_radius_stops_her(t)
+	_test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t)
 	_test_a_direction_stays_locked_in_with_nothing_held_down(t)
 	_test_a_tap_maps_its_screen_position_through_the_viewports_canvas_transform(t)
 	_test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t)
@@ -38,7 +38,7 @@ func run(t) -> void:
 	_test_is_on_a_focus_catches_the_stop_radius_around_either_point(t)
 	_test_a_touch_aims_from_the_nearer_focus_not_from_her(t)
 	_test_a_press_at_a_focus_centre_stops_her_on_touch(t)
-	_test_a_press_on_her_still_stops_her_on_touch(t)
+	_test_a_touch_near_her_own_position_no_longer_stops_her(t)
 	_test_a_mouse_click_still_aims_from_her_not_a_focus(t)
 	_test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t)
 	_test_a_stop_press_does_not_start_a_drag(t)
@@ -225,12 +225,17 @@ func _test_set_direction_on_her_own_position_stops_rather_than_pressing(t) -> vo
 	controls.queue_free()
 	rig.free()
 
-## **The generous radius, not the exact pixel.** *(2026-09-06: "also, to stop her just click on
-## her".)* `STOP_RADIUS` is wide enough to catch a press on the pram, which rides up to
-## `PRAM_DISTANCE` off to one side of her, not only a press on her own exact world position.
-func _test_a_tap_within_the_stop_radius_stops_her(t) -> void:
+## **The generous radius, not the exact pixel — and a mouse click only now.** *(2026-09-06: "also,
+## to stop her just click on her".)* `STOP_RADIUS` is wide enough to catch a click on the pram,
+## which rides up to `PRAM_DISTANCE` off to one side of her, not only a click on her own exact
+## world position. *(2026-09-07: "mouse click doesn't have the band and will keep the click the
+## player to stop behavior".)* Replaces the old, device-agnostic version of this test rather than
+## sitting beside it — the touch half of what it asserted is now
+## `_test_a_touch_near_her_own_position_no_longer_stops_her`, further down.
+func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	var rig := _rig_at(t, Vector2(200.0, 200.0))
 	var controls := _controls(t)
+	controls._touch = false
 	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
 
 	controls._on_tap(transform * Vector2(500.0, 200.0), 0.0)
@@ -240,12 +245,12 @@ func _test_a_tap_within_the_stop_radius_stops_her(t) -> void:
 	# (34px) as well as her own PLAYER_BODY_RADIUS (14px).
 	controls._on_tap(transform * Vector2(230.0, 200.0), 1.0)
 	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
-			"a press near her, not only exactly on her, stops her")
+			"a click near her, not only exactly on her, stops her")
 
 	# Well outside the radius sets a direction instead.
 	controls._on_tap(transform * Vector2(500.0, 200.0), 2.0)
 	t.check(Input.is_action_pressed("move_right") and controls._walking,
-			"a press outside the stop radius sets a direction instead")
+			"a click outside the stop radius sets a direction instead")
 
 	controls.queue_free()
 	rig.free()
@@ -567,11 +572,15 @@ func _test_a_press_at_a_focus_centre_stops_her_on_touch(t) -> void:
 	controls.queue_free()
 	rig.free()
 
-## **Both doors, not one instead of the other.** *(2026-09-06, the player: "tapping in their
-## center or on the player should stop the player still".)* A press near her own world position
-## stops her on a touch device too, even though the direction she would otherwise have walked is
-## now measured from a focus rather than from her.
-func _test_a_press_on_her_still_stops_her_on_touch(t) -> void:
+## **The world-space door is gone on a touch device, replaced by the band.** *(2026-09-06, the
+## player: "tapping in their center or on the player should stop the player still" — the finding
+## M83 built this test for. 2026-09-07, overturning it: "with that we can remove tap the player to
+## stop since it's the same area and if a movement accidentally goes over the player it might
+## become surprising to see her stop".)* The camera sits on her, so her own screen position already
+## sits on the stop band's own centre line — covering the ground twice is what made a drag crossing
+## her by accident stop her by surprise. A press near her own world position, off both focal points
+## and off the band, now walks toward the nearer focus instead of stopping.
+func _test_a_touch_near_her_own_position_no_longer_stops_her(t) -> void:
 	var rig := _rig_at(t, Vector2(300.0, 300.0))
 	var controls := _controls(t)
 	controls._touch = true
@@ -580,10 +589,14 @@ func _test_a_press_on_her_still_stops_her_on_touch(t) -> void:
 	controls.set_direction(Vector2(400.0, 300.0), false)
 	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
 
-	# Well away from either focus in design space, but within STOP_RADIUS of her in world space.
+	# Well away from either focus and the middle band in design space, and within the old
+	# world-space STOP_RADIUS of her -- the exact case the deleted door used to catch.
 	controls._on_tap(transform * Vector2(310.0, 300.0), 1.0)
-	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
-			"a press on her still stops her on a touch device")
+	t.check(controls._walking,
+			"a press near her walks toward the nearer focus instead of stopping")
+	t.check(controls._direction.is_equal_approx(TouchControls.heading_to(
+			Vector2(310.0, 300.0), TouchControls.FOCUS_LEFT)),
+			"toward FOCUS_LEFT specifically, the nearer of the two")
 
 	controls.queue_free()
 	rig.free()

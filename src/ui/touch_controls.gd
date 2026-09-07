@@ -21,12 +21,15 @@ extends Control
 ## drawn, on a touch build**, as a ring at `STOP_RADIUS` with a knob at `_direction` — see
 ## `_draw_focus_circles()`'s own doc.
 ##
-## A press within `STOP_RADIUS` of either focus stops her too, alongside a press near her own
-## position — see `is_on_a_focus()` — and so does one in the stop band down the middle of the
-## screen, or a held finger dragged into either — see `is_in_stop_band()` and `_on_drag()`. Held
-## down and moved, a finger or a mouse button keeps re-aiming: the heading updates continuously
-## until the pointer lifts, always at one speed, never a partial vector — see `_on_drag()`'s own
-## doc for why that is not the deleted drag stick returning.
+## A press within `STOP_RADIUS` of either focus stops her too, and so does one in the stop band
+## down the middle of the screen, or a held finger dragged into either — see `is_on_a_focus()`,
+## `is_in_stop_band()` and `_on_drag()`. **A mouse click near her own position still stops her, and
+## a real touch no longer does**: the camera sits on her, so her own screen position already is the
+## band's own centre line, and covering that ground twice made a drag crossing her by accident stop
+## her by surprise — see `_on_tap()`'s own doc. Held down and moved, a finger or a mouse button
+## keeps re-aiming: the heading updates continuously until the pointer lifts, always at one speed,
+## never a partial vector — see `_on_drag()`'s own doc for why that is not the deleted drag stick
+## returning.
 ##
 ## **The pause button is not that kind of control.** `main._unhandled_input()` reads
 ## `event.is_action_pressed("pause")` off the propagated *event*, not off polled state, so
@@ -85,13 +88,19 @@ const DOUBLE_TAP_SECONDS := 0.35
 ## direction doubled rather than a new one. Generous, because a thumb pressing twice does not land
 ## on the same pixel either time.
 const DOUBLE_TAP_DISTANCE := 60.0
-## How close a press has to land to her, in world px, to read as *stop* rather than a direction.
-## Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram rides up to `PRAM_DISTANCE` (34px)
-## off to one side of her, and a press that lands on the pram is a press on her — with room to
-## spare for a thumb that does not land on the same pixel twice, the way every catch radius in this
-## game is generous rather than exact. Also the radius `is_on_a_focus()` uses, in design-space px,
-## for a press near one of the two focal points below — the milestone that added them named no
-## separate number, and this is the one "how close counts as *stop*" radius the file already has.
+## How close a **mouse click** has to land to her, in world px, to read as *stop* rather than a
+## direction — `_on_tap()`'s own `not _touch` branch is the only place this still measures a
+## distance to her. Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram rides up to
+## `PRAM_DISTANCE` (34px) off to one side of her, and a press that lands on the pram is a press on
+## her — with room to spare for a pointer that does not land on the same pixel twice, the way every
+## catch radius in this game is generous rather than exact.
+##
+## Also the one radius `is_on_a_focus()` and `is_in_stop_band()` measure in **design-space** px, for
+## a touch device — the same "how close counts as *stop*" number reused rather than a second one
+## invented for either door, since none of the three milestones that added them named a separate
+## figure. A real touch had this same world-space door once too, until the stop band replaced it —
+## *(2026-09-07: "with that we can remove tap the player to stop since it's the same area".)* See
+## `is_in_stop_band()`'s own doc for why that removal is touch only.
 const STOP_RADIUS := 48.0
 
 ## The two fixed points a touch device aims from — see the class doc's own paragraph on why a real
@@ -267,14 +276,23 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ## `get_viewport().get_canvas_transform().affine_inverse()` maps it to a world position: the exact
 ## reverse of what `DangerEdge` and `HomeArrow` already do every frame to place a screen cue from a
 ## world one, so this tracks the camera, the zoom and the rotated presentation with nothing of its
-## own to keep in step. A press within `STOP_RADIUS` of her stops her; otherwise it locks in a
-## heading.
+## own to keep in step. Otherwise it locks in a heading.
 ##
-## **Where that heading is measured from is the one place a mouse and a real finger disagree.**
-## *(Playtest 29 finding 6.)* A mouse click (`not _touch`) aims from her own world position,
-## exactly as before. A real touch instead aims from the nearer of `FOCUS_LEFT`/`FOCUS_RIGHT` —
-## and this is the one place the coordinate-space trap in those constants' own doc actually has to
-## be walked through, because the two spaces cannot be mixed:
+## **Where that heading is measured from, and what stops her instead, are the two places a mouse
+## and a real finger disagree — and both are the same disagreement seen twice.** *(Playtest 29
+## finding 6; 2026-09-07: "with that we can remove tap the player to stop since it's the same area
+## ... mouse click doesn't have the band and will keep the click the player to stop behavior".)* A
+## mouse click (`not _touch`) aims from her own world position, exactly as before, and a click
+## within `STOP_RADIUS` of that same position stops her rather than steering her — the one door a
+## mouse still has, since its aiming origin already *is* her. A real touch instead aims from the
+## nearer of `FOCUS_LEFT`/`FOCUS_RIGHT`, and is stopped by a press on either focus
+## (`is_on_a_focus()`) or in the stop band down the middle of the screen (`is_in_stop_band()`) —
+## not by a press near her own position any more, since the band already covers that ground (the
+## camera sits on her, so her own screen position is the band's own centre line) and covering it
+## twice is what made a drag crossing her by accident stop her by surprise.
+##
+## Locating the nearer focus is the one place the coordinate-space trap in those constants' own doc
+## actually has to be walked through, because the two spaces cannot be mixed:
 ## - "which focus is nearer" and "is this press on a focus" are asked in **design space**, the
 ##   1280x720 box the two constants are authored in and where "half the screen" means half the
 ##   screen — `ScreenOrientation.to_design_space(screen_position, rotated)` is what gets there.
@@ -306,10 +324,10 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 			screen_position.distance_to(_last_tap_screen_position))
 	_last_tap_at = now
 	_last_tap_screen_position = screen_position
-	if world.distance_to(_rig.global_position) <= STOP_RADIUS:
-		_stop()
-		return
 	if not _touch:
+		if world.distance_to(_rig.global_position) <= STOP_RADIUS:
+			_stop()
+			return
 		_drag_origin_world = Vector2.INF
 		_drag_run = double
 		set_direction(world, double)
