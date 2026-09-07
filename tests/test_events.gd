@@ -473,7 +473,8 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 		if not def.pursues:
 			continue
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-		var floor_lead := Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED)
+		var floor_lead := Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED,
+				def.offscreen_notice)
 		t.check(standoff < floor_lead,
 				"'%s' stands off at %.0fpx, inside the %.0fpx it is sited at even on the worst axis"
 				% [def.id, standoff, floor_lead])
@@ -506,7 +507,8 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 			continue
 		checked += 1
 		var closing := def.speed + Tuning.WALK_SPEED
-		var lead := Tuning.outlasting_telegraph_lead(Vector2.RIGHT, closing, def.telegraph_time)
+		var lead := Tuning.outlasting_telegraph_lead(Vector2.RIGHT, closing, def.telegraph_time,
+				def.offscreen_notice)
 		# The same construction `_toward_her` uses: sited `lead` ahead along the heading, routed the
 		# same distance behind so it is still going somewhere when it reaches her.
 		var path := PackedVector2Array([Vector2(lead, 0.0), Vector2(-lead, 0.0)])
@@ -660,15 +662,15 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 ## or just inside the trigger for something that has been standing there.
 ##
 ## The director's own siting depends on the heading she happens to be walking
-## (`Tuning.offscreen_lead(heading, closing_speed)`), so this asks for the worst case over every
-## heading rather than one of them — `Tuning.min_offscreen_lead()`, the vertical axis plus 200ms of
-## closing at the row's own `pursue_speed` against `WALK_SPEED`, which is the least ground the
-## contract can ever rely on. A rig checked against a more generous heading would pass on an
-## encounter the game can still produce on a worse one.
+## (`Tuning.offscreen_lead(heading, closing_speed, def.offscreen_notice)`), so this asks for the
+## worst case over every heading rather than one of them — `Tuning.min_offscreen_lead()`, the
+## vertical axis plus the row's own notice of closing at its `pursue_speed` against `WALK_SPEED`,
+## which is the least ground the contract can ever rely on. A rig checked against a more generous
+## heading would pass on an encounter the game can still produce on a worse one.
 func _sited_at(def: EventDef) -> float:
 	if def.pursues_within > 0.0:
 		return def.pursues_within - 10.0
-	return Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED)
+	return Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED, def.offscreen_notice)
 
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.

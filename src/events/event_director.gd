@@ -143,17 +143,20 @@ func _roll_interval() -> float:
 ## seeing is now a screen-edge badge's job for as long as the dog is off screen, not the dog's own
 ## silhouette, which is the overturn below.
 ##
-## **And a pursuer is sited at least `Tuning.OFFSCREEN_NOTICE` (200ms) outside the view along the
+## **And a pursuer is sited at least `def.offscreen_notice` seconds outside the view along the
 ## heading in play, not against a flat number sized for one axis.** *(2026-09-07: "bikers /
 ## unleashed dogs all pop in in front of the player instead of starting off screen", "events that go
 ## towards the player (biker / pursuing dog) should at least be 200ms off screen with a warning",
 ## and, of the day-3 dog specifically, "the run tutorial spawns inside the visible area making the
 ## headsup way too short now".)* A flat 200px sits inside the 320px horizontal boundary, so a dog
 ## sited while she walked east or west had no offscreen phase at all — it appeared already on
-## screen. `Tuning.offscreen_lead(heading, closing_speed)` asks the real question instead: how far
-## to the edge of the view *this* heading actually reaches, plus how far it and she together cover
-## in 200ms — for `charging_dog` at 130px/s pursuing, closing at 130 + `WALK_SPEED` (92) = 222px/s,
-## that margin is 44px.
+## screen. `Tuning.offscreen_lead(heading, closing_speed, def.offscreen_notice)` asks the real
+## question instead: how far to the edge of the view *this* heading actually reaches, plus how far
+## it and she together cover in the row's own notice — for `charging_dog` at 130px/s pursuing,
+## closing at 130 + `WALK_SPEED` (92) = 222px/s, `EventDef.offscreen_notice` of 0.5s buys 111px, sized
+## against playtest 20's own measurement of how much closing an evasion needed. See that field's own
+## reasoning for why the dog carries a different notice than the rest of the catalogue, and its own
+## `telegraph_time` for what pays for the longer approach.
 ##
 ## **Unavoidable, on purpose, was the day-3 dog's whole point** — a dog starting further away is a
 ## dog with more room to be walked around, which is exactly what siting it close was for.
@@ -169,7 +172,8 @@ func _roll_interval() -> float:
 ## on-screen closing to the stand-off is what it always was.
 func _crossing_ahead_of(at: Vector2, heading: Vector2,
 		def: EventDef = null) -> PackedVector2Array:
-	var lead := Tuning.offscreen_lead(heading, def.pursue_speed + Tuning.WALK_SPEED) \
+	var lead := Tuning.offscreen_lead(heading, def.pursue_speed + Tuning.WALK_SPEED,
+				def.offscreen_notice) \
 			if def and def.pursues \
 			else (def.ahead_of_player_lead() if def else Tuning.AHEAD_LEAD_DISTANCE)
 	var centre := at + heading * lead
@@ -188,24 +192,33 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 	return PackedVector2Array([from, to])
 
 ## A run straight *down* her own line rather than across it: `TOWARD_PLAYER`'s whole point. Sited at
-## least `Tuning.OFFSCREEN_NOTICE` (200ms) outside the view along her heading —
-## `Tuning.offscreen_lead(heading, def.speed + Tuning.WALK_SPEED)`, since she is usually walking
-## into it — and travelling back down the same line she is walking, so a rig that keeps going meets
-## it on a genuine collision course rather than a near miss that depends on nobody moving.
-## *(2026-09-07: "bikers / unleashed dogs all pop in in front of the player instead of starting off
-## screen", and "events that go towards the player (biker / pursuing dog) should at least be 200ms
-## off screen with a warning".)* A row sited at a flat 200px was already on screen on the horizontal
-## axis; this is not, on either axis — for `cyclist` at 165px/s the closing speed is 165 + 92 =
-## 257px/s, 51px of margin past the boundary.
+## least `def.offscreen_notice` seconds outside the view along her heading —
+## `Tuning.offscreen_lead(heading, def.speed + Tuning.WALK_SPEED, def.offscreen_notice)`, since she
+## is usually walking into it — and travelling back down the same line she is walking, so a rig that
+## keeps going meets it on a genuine collision course rather than a near miss that depends on nobody
+## moving. *(2026-09-07: "bikers / unleashed dogs all pop in in front of the player instead of
+## starting off screen", and "events that go towards the player (biker / pursuing dog) should at
+## least be 200ms off screen with a warning".)* A row sited at a flat 200px was already on screen on
+## the horizontal axis; this is not, on either axis — for `cyclist` at 165px/s the closing speed is
+## 165 + 92 = 257px/s, 51px of margin past the boundary at the default notice.
 ##
 ## **A `hard_fail` row is sited further still, so its own telegraph is over before it arrives.**
 ## *(2026-09-07: "also a biker hit should be lethal.")* `Tuning.outlasting_telegraph_lead()` takes
 ## whichever is further: the ordinary offscreen margin, or the distance that takes
-## `telegraph_time + OFFSCREEN_NOTICE` to close. `cyclist`'s 3.3s telegraph is the binding term —
-## `(3.3 + 0.2) * 257` = 900px — against a 371px offscreen margin on the widest axis. A row this far
-## out is well past `EVENT_STREAM_RADIUS`'s own concerns; it exists for exactly this one moment and
-## is created only when it is due, so there is no cost to sitting it further than a `MAP` row ever
-## would be.
+## `telegraph_time + def.offscreen_notice` to close. `cyclist`'s telegraph is the binding term on
+## every heading. A row this far out is well past `EVENT_STREAM_RADIUS`'s own concerns; it exists
+## for exactly this one moment and is created only when it is due, so there is no cost to sitting it
+## further than a `MAP` row ever would be.
+##
+## **The line is straightened onto the pavement she is standing on, when she is standing on one.**
+## *(2026-09-07: "also biker should be on the same side of the road not the other side".)* Sited
+## along her literal heading, a hundreds-of-pixels lead drifts across the carriageway from a heading
+## only a little off the corridor's own axis — a diagonal drag on the touch controls crosses a
+## six-tile street well before a `hard_fail` row's own lead reaches it, landing the row on the far
+## sidewalk, where it reads as scenery rather than as a lane she has to answer for. `_onto_her_side()`
+## below is the preference, not a requirement: where there is no pavement edge to prefer — the
+## carriageway, a junction, open ground — or the heading has no along-corridor component to send it
+## down, the literal heading is used exactly as before.
 ##
 ## The far end of the route runs the same distance **behind** her rather than stopping where she
 ## is standing: it has to still be going somewhere when it reaches her, or `EventInstance` reads
@@ -217,13 +230,38 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## retry the near point only, because a route that starts on the pavement and ends in a wall is not
 ## a route either.
 func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
+	var site_heading := _onto_her_side(at, heading)
 	var closing := def.speed + Tuning.WALK_SPEED
-	var lead := Tuning.outlasting_telegraph_lead(heading, closing, def.telegraph_time) \
-			if def.hard_fail else Tuning.offscreen_lead(heading, closing)
-	var far := at + heading * lead
+	var lead := Tuning.outlasting_telegraph_lead(site_heading, closing, def.telegraph_time,
+				def.offscreen_notice) \
+			if def.hard_fail else Tuning.offscreen_lead(site_heading, closing, def.offscreen_notice)
+	var far := at + site_heading * lead
 	if not _map.is_walkable(_map.world_to_tile(far)):
 		return PackedVector2Array()
-	var behind := at - heading * lead
+	var behind := at - site_heading * lead
 	if not _map.in_bounds(_map.world_to_tile(behind)):
 		return PackedVector2Array()
 	return PackedVector2Array([far, behind])
+
+## Swaps a heading with a lateral drift for the corridor's own axis, when she is standing on a plain
+## pavement edge — `CityMap.pavement_inward()` names which side of a corridor a sidewalk tile is on,
+## and its own axis (`RIGHT`/`LEFT` for a corridor running north-south, `DOWN`/`UP` for one running
+## east-west) is the only one a `TOWARD_PLAYER` row's approach has to answer to. Zeroing the
+## heading's component on that axis and keeping only the along-corridor part sends the row straight
+## down *her* pavement instead of wherever her literal heading happens to point, so it approaches
+## from ahead along the street rather than drifting across it — which is what a bike riding down a
+## street already does, whatever diagonal she happens to be walking at.
+##
+## Returns `heading` unchanged in the two cases where there is nothing to prefer: she is not on a
+## plain sidewalk edge (the carriageway, a junction, open ground — `pavement_inward()` answers
+## `Vector2i.ZERO`), or her heading has no along-corridor component at all, which is walking straight
+## across the street and leaves no corridor line to send the row down.
+func _onto_her_side(at: Vector2, heading: Vector2) -> Vector2:
+	var inward := _map.pavement_inward(_map.world_to_tile(at))
+	if inward == Vector2i.ZERO:
+		return heading
+	var along := Vector2(inward.y, inward.x)
+	var component := heading.dot(along)
+	if is_zero_approx(component):
+		return heading
+	return along * signf(component)
