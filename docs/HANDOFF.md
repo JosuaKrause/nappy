@@ -221,8 +221,11 @@ read alongside the run's own log, they are what turned "barriers don't work" int
 citable numbers now in `TODO.md` (the day-4 `charging_dog` killing her in 0.8s against every other
 encounter's 1.5s; the chalk mark going unfound on all four days it existed, `resistance 0/4`). **A
 rig can walk a route now**, so a picture of a specific route is cheap: `--walk` takes a script of
-timed presses — `--walk 3s15e` is three seconds south then fifteen east — and the same script on the
-same seed walks the same way every time.
+timed steps — `--walk 3s15e` is three seconds south then fifteen east, and `--walk 3@45@2e` is three
+seconds at a bearing of 45° then two east — and the same script on the same seed walks the same way
+every time. **The bearing form is the one that reproduces a route a player would actually walk**,
+since a press sets an arbitrary unit vector and most headings are diagonal; the run log writes the
+bearing in whole degrees for the same reason.
 
 M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
 bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.

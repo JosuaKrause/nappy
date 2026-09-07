@@ -5,7 +5,8 @@ extends Node
 ## Headless runs never call `_draw()`, so a clean headless boot says nothing about whether
 ## the game looks right. This gives a windowed run a way to produce a checkable image.
 ##
-##     godot --path . -- --screenshot out.png [--after 4.0] [--walk north|south|east|west|1s5e]
+##     godot --path . -- --screenshot out.png [--after 4.0]
+##                                            [--walk north|south|east|west|1s5e|3@45@2e]
 ##                                            [--flee [delay]]
 ##
 ## `--after` is in SECONDS, not frames. It counted frames at first, which was quietly
@@ -23,13 +24,25 @@ extends Node
 ## **A bare direction holds it for the whole run, which walks the rig into the first building on
 ## that heading and leaves it there** — the doorstep is a notch with one exit, so every direction
 ## but the one the notch opens onto stops within a body-width. `1s5e` is the other shape: a script
-## of timed presses, one second of south then five of east, read left to right and run in order
-## before the node lets go of the last one. A number is seconds and a letter is the initial of a
-## `--walk` word (`n`/`s`/`e`/`w`) rather than a second vocabulary, and it presses the same
-## `move_*` action a bare direction does — nothing downstream can tell a scripted press from a
-## held key. It is what makes a rig's trail worth photographing instead of a speck: a route with a
-## turn in it, deterministic over the same seed, so the same script is reproducible evidence rather
-## than one run that happened to go somewhere.
+## of timed steps, read left to right and run in order before the node lets go of the last one.
+## Each step is a duration and either a letter (`n`/`s`/`e`/`w`, one of `--walk`'s own words) or a
+## bearing in whole degrees clockwise from north between a pair of `@`s — `3@45@2e` is three
+## seconds at 45° then two seconds east, and the `@`s are what let a bearing's own digits sit next
+## to the next step's without either swallowing the other, the same way a letter already ends a
+## step's digits without a separator.
+##
+## **The letters are shorthand for four particular bearings, not a second mechanism.** Every step
+## — lettered or angled — presses through `TouchControls._set_axis()`, the exact call the real
+## touch scheme presses `move_left`/`move_right` and `move_up`/`move_down` through, at the step's
+## own fractional strength: a 45° step presses both axes at 0.707 each rather than one axis at
+## 1.0, so the vector stays unit length and the rig still walks at `Tuning.WALK_SPEED` (92px/s)
+## like every other press in the game — a step that pressed a shorter vector would reintroduce the
+## slow walk M82 deleted. A letter's own bearing (0°, 90°, 180° or 270°) presses exactly one axis
+## at full strength, which is the same press a bare direction already makes — nothing downstream
+## can tell a scripted press from a held key, whichever shape asked for it. It is what makes a
+## rig's trail worth photographing instead of a speck: a route with a turn in it, deterministic
+## over the same seed, so the same script is reproducible evidence rather than one run that
+## happened to go somewhere.
 ##
 ## `--flee` turns round and runs **when something starts chasing her**, and it exists for exactly
 ## one thing: the game has one encounter with a **right answer**, and a rig that can only hold a
@@ -77,10 +90,14 @@ const DEFAULT_SECONDS := 1.5
 const _DIRECTIONS := {
 	"north": "move_up", "south": "move_down", "east": "move_right", "west": "move_left",
 }
-## The same four actions, keyed by the single letter a script step ends in — `1s5e`'s `s` and `e`
-## rather than `--walk`'s own words, so a script is not a second vocabulary to learn.
+## The same four bearings a `@`-step could name (0°, 90°, 180°, 270°), keyed by the single letter
+## a script step ends in — `1s5e`'s `s` and `e` rather than `--walk`'s own words, so a script is
+## not a second vocabulary to learn. Written as the exact unit vector rather than routed through
+## `_bearing_to_direction()`'s trig, so a letter step presses precisely one axis at strength 1.0 —
+## bit-for-bit what a bare direction already presses — and the M64 density figures and evidence
+## captures taken with `1s5e` keep reproducing exactly rather than merely closely.
 const _LETTERS := {
-	"n": "move_up", "s": "move_down", "e": "move_right", "w": "move_left",
+	"n": Vector2.UP, "s": Vector2.DOWN, "e": Vector2.RIGHT, "w": Vector2.LEFT,
 }
 const _OPPOSITE := {
 	"move_up": "move_down", "move_down": "move_up",
@@ -91,9 +108,14 @@ var _path := ""
 var _seconds_to_wait := DEFAULT_SECONDS
 var _elapsed := 0.0
 var _holding := ""
-## A script of timed presses — `[{ "action": String, "seconds": float }]`, in the order `1s5e`
-## gave them. Empty for a bare direction, which is still held by `_holding` alone; see
-## `_advance_script`.
+## The script's own currently-pressed direction, or `Vector2.ZERO` when no script step is
+## holding anything — see `_hold_direction()` / `_release_direction()`. A separate field from
+## `_holding` rather than a reuse of it: `_holding` is a `move_*` action name and a script step
+## presses two axes at once, so there is no single action name to hold it in.
+var _holding_direction := Vector2.ZERO
+## A script of timed steps — `[{ "direction": Vector2, "seconds": float }]`, in the order `1s5e`
+## or `3@45@2e` gave them. Empty for a bare direction, which is still held by `_holding` alone;
+## see `_advance_script`.
 var _script: Array[Dictionary] = []
 var _script_index := 0
 ## `_elapsed` at the moment the current script step started, so each step is timed against the
@@ -170,15 +192,17 @@ static func from_command_line() -> AutoScreenshot:
 ## What marks a `--press` argument as a raw key rather than an input action.
 const KEY_PREFIX := "key:"
 
-## `1s5e` into `[{"action": "move_down", "seconds": 1.0}, {"action": "move_right", "seconds": 5.0}]`,
-## or an empty array for anything that is not a run of `<seconds><letter>` pairs — which is also
-## what a plain typo in a direction word (`"suth"`) parses as, so the caller warns on empty the
-## same way it always warned on an unrecognised word.
+## `1s5e` into `[{"direction": Vector2.DOWN, "seconds": 1.0}, {"direction": Vector2.RIGHT, "seconds": 5.0}]`,
+## `3@45@2e` into three seconds at bearing 45° then two seconds east, or an empty array for
+## anything that is not a run of `<seconds><letter>` and `<seconds>@<degrees>@` steps — which is
+## also what a plain typo in a direction word (`"suth"`) parses as, so the caller warns on empty
+## the same way it always warned on an unrecognised word.
 ##
-## A number with no letter after it, a letter with no digits before it, an unknown letter or a
-## zero-or-negative duration all fail the whole script rather than skipping the one bad step: a
-## script that silently drops a step walks a different route than the one asked for, which is the
-## exact failure determinism exists to rule out.
+## A number with no letter or `@…@` after it, a letter with no digits before it, an unknown
+## letter, an `@` with no digits or no closing `@`, or a zero-or-negative duration all fail the
+## whole script rather than skipping the one bad step: a script that silently drops a step walks
+## a different route than the one asked for, which is the exact failure determinism exists to
+## rule out.
 static func _parse_script(word: String) -> Array[Dictionary]:
 	var steps: Array[Dictionary] = []
 	var i := 0
@@ -189,17 +213,38 @@ static func _parse_script(word: String) -> Array[Dictionary]:
 		if i == digits_start or i >= word.length():
 			return []
 		var seconds := float(word.substr(digits_start, i - digits_start))
-		var action: String = _LETTERS.get(word[i], "")
-		if action == "" or seconds <= 0.0:
+		if seconds <= 0.0:
 			return []
-		i += 1
-		steps.append({"action": action, "seconds": seconds})
+		var direction: Vector2
+		if word[i] == "@":
+			i += 1
+			var degrees_start := i
+			while i < word.length() and word[i].is_valid_int():
+				i += 1
+			if i == degrees_start or i >= word.length() or word[i] != "@":
+				return []
+			direction = _bearing_to_direction(float(word.substr(degrees_start, i - degrees_start)))
+			i += 1
+		elif _LETTERS.has(word[i]):
+			direction = _LETTERS[word[i]]
+			i += 1
+		else:
+			return []
+		steps.append({"direction": direction, "seconds": seconds})
 	return steps
+
+## The unit vector `degrees` clockwise from north (-y) points along — the inverse of what
+## `TelemetryLog.compass()` reads back off a vector, and the same convention: +y is south, so 0°
+## is north, 90° is east, 180° is south and 270° is west. `.normalized()` on the way out is what
+## makes "a step must never press a vector shorter than one" true by construction rather than by
+## trusting `sin`/`cos` to land on exactly 1.0.
+static func _bearing_to_direction(degrees: float) -> Vector2:
+	var radians := deg_to_rad(degrees)
+	return Vector2(sin(radians), -cos(radians)).normalized()
 
 func _ready() -> void:
 	if not _script.is_empty():
-		_holding = String(_script[0]["action"])
-		Input.action_press(_holding)
+		_hold_direction(_script[0]["direction"])
 	elif _holding != "":
 		Input.action_press(_holding)
 	if _flees:
@@ -207,13 +252,31 @@ func _ready() -> void:
 	if _tap_at != Vector2.INF:
 		_send_tap_once_the_camera_has_positioned()
 
+## Presses `direction` through the same call the real touch scheme drives —
+## `TouchControls._set_axis()` on both axes, at `direction`'s own fractional strength, rather than
+## `Input.action_press()` on a single `move_*` action. A diagonal step needs both axes pressed at
+## once, which one action name cannot express.
+func _hold_direction(direction: Vector2) -> void:
+	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
+	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
+	_holding_direction = direction
+
+## Lets go of whatever `_hold_direction()` last pressed. A no-op when nothing is held, so callers
+## never need to guard it themselves.
+func _release_direction() -> void:
+	if _holding_direction == Vector2.ZERO:
+		return
+	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
+	TouchControls._set_axis(&"move_up", &"move_down", 0.0)
+	_holding_direction = Vector2.ZERO
+
 ## Steps the script forward against `_elapsed`, the same clock `--after` and `--flee` already read,
 ## rather than a timer of its own. `while` and not `if`: a step shorter than one frame's delta must
 ## still be seen, or a script of short steps silently skips some of them on a slow machine.
 ##
 ## Stops advancing once a pursuit has taken over (`_fled`), because `_turn_and_run` has already
-## repurposed `_holding` for the one encounter with a right answer — a script resuming underneath
-## that would fight it for the same held key.
+## repurposed `_holding_direction` for the one encounter with a right answer — a script resuming
+## underneath that would fight it for the same pressed axes.
 func _advance_script() -> void:
 	if _fled:
 		return
@@ -221,15 +284,11 @@ func _advance_script() -> void:
 		var step: Dictionary = _script[_script_index]
 		if _elapsed - _script_step_started < float(step["seconds"]):
 			return
-		if _holding != "":
-			Input.action_release(_holding)
+		_release_direction()
 		_script_step_started += float(step["seconds"])
 		_script_index += 1
 		if _script_index < _script.size():
-			_holding = String(_script[_script_index]["action"])
-			Input.action_press(_holding)
-		else:
-			_holding = ""
+			_hold_direction(_script[_script_index]["direction"])
 
 func _on_telegraphed(instance: EventInstance) -> void:
 	if _fled or _flee_at < INF or not instance.def.pursues:
@@ -251,6 +310,7 @@ func _process(delta: float) -> void:
 	set_process(false)
 	if _holding != "":
 		Input.action_release(_holding)
+	_release_direction()
 	Input.action_release("run")
 	_capture()
 
@@ -302,12 +362,18 @@ func _tap_screen(position: Vector2) -> void:
 		event.pressed = pressed
 		Input.parse_input_event(event)
 
-## The one answer the game asks for: about-turn, and hold shift.
+## The one answer the game asks for: about-turn, and hold shift. Reverses whichever of the two
+## holding mechanisms is currently pressing something — a bare direction's single action, or a
+## script's own axes — since a script can be mid-step when the pursuit starts. Turning round is
+## the same operation either way, negating what is pressed; `_OPPOSITE` is that negation spelled
+## out for a single action, and flipping `direction`'s own sign is it for two axes at once.
 func _turn_and_run() -> void:
 	if _holding != "":
 		Input.action_release(_holding)
 		_holding = String(_OPPOSITE.get(_holding, _holding))
 		Input.action_press(_holding)
+	elif _holding_direction != Vector2.ZERO:
+		_hold_direction(-_holding_direction)
 	Input.action_press("run")
 
 ## **Refuses a headless run rather than hanging in it.** `RenderingServer.frame_post_draw` fires
