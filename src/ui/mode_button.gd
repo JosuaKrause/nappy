@@ -136,11 +136,27 @@ func _process(_delta: float) -> void:
 	if _held_by == -1:
 		return
 	hold_progress = (Time.get_ticks_msec() / 1000.0 - _held_since) / RESTART_HOLD_SECONDS
+	# **Where the pressed flash actually drops — see `begin_hold()`'s own doc for why it is not
+	# dropped there.** *(Playtest 35 finding 2: "the light up of the reset button conflicts with the
+	# bar filling up.")* The instant `hold_progress` moves past zero is the instant `_draw()` starts
+	# painting a wedge of `_HOLD_FILL` at all (`segments := maxi(1, ceili(...))` draws a sliver from
+	# the first nonzero progress on), so this is the earliest frame the sweep has anything to fight
+	# with the pressed fill over — and the last frame the pressed fill is allowed to still be showing.
+	if _pressed_look and hold_progress > 0.0:
+		clear_forced_press()
 
 ## Starts tracking a hold from `touch_index`, unless something else already holds this button.
 ## Returns whether it was accepted — the caller (`PauseScreen`/`DaySummary`) treats a `false` here
 ## exactly as "this touch is none of this button's business" and lets it fall through to its own
 ## catch-all, the same as a press that missed `catch_rect()` entirely.
+##
+## **`force_pressed_look()` here is a flash on contact, not the fill for the whole hold.**
+## *(Playtest 35 finding 2: "the light up of the reset button conflicts with the bar filling up."
+## Resolved by the player's own choice among three offered: "Pressed fill only until the hold
+## starts".)* `_process()` drops it again the instant `hold_progress` moves past zero — the same
+## moment `_draw()` starts painting the sweep — so the disc reads pressed for the acknowledgement
+## every other button gives and then leaves the sweep alone on the resting disc for the rest of the
+## hold, rather than fighting a pale fill underneath it for the whole second.
 func begin_hold(touch_index: int) -> bool:
 	if _held_by != -1:
 		return false

@@ -39,6 +39,7 @@ func run(t) -> void:
 	_test_the_button_fill_states_are_distinguishable(t)
 	_test_the_title_names_a_version(t)
 	_test_mode_button_restart_hold_state_machine(t)
+	_test_the_restart_hold_drops_its_pressed_fill_once_the_sweep_starts(t)
 	_test_mode_button_pressed_and_hovered_drive_the_stylebox(t)
 	_test_hover_lights_up_the_button_under_the_mouse(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
@@ -475,6 +476,32 @@ func _test_mode_button_restart_hold_state_machine(t) -> void:
 	button.hold_progress = -2.0
 	t.close_to(button.hold_progress, 0.0, "and below 0")
 
+	button.free()
+
+## **The fix playtest 35 finding 2 asks for.** *(2026-09-07: "the light up of the reset button
+## conflicts with the bar filling up." Resolved by the player's own choice among three offered:
+## "Pressed fill only until the hold starts".)* The pressed fill used to stay under the sweep for the
+## whole second-long hold, and a pale sweep over a near-white fill had nothing to read against.
+## `begin_hold()` still flashes pressed on contact — the acknowledgement every other button gives —
+## but `_process()` now drops it the instant `hold_progress` moves past zero, the same moment
+## `_draw()` starts painting the sweep at all, leaving the sweep alone on the resting disc for the
+## rest of the hold. Asserted on the stylebox directly, the same way
+## `_test_mode_button_pressed_and_hovered_drive_the_stylebox` reads every other state transition.
+func _test_the_restart_hold_drops_its_pressed_fill_once_the_sweep_starts(t) -> void:
+	var button := ModeButton.new()
+	button.symbol = ModeButton.Symbol.RESTART
+
+	button.begin_hold(0)
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color == Palette.BUTTON_PRESSED,
+			"the flash on contact is the same pressed fill any other button gives")
+
+	button._held_since -= 0.1
+	button._process(0.0)
+	t.check(button.hold_progress > 0.0, "the hold's own timer has started")
+	t.check((button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color != Palette.BUTTON_PRESSED,
+			"and the pressed fill has already dropped back, leaving the sweep alone on the disc")
+
+	button.cancel_hold()
 	button.free()
 
 ## **The fix playtest 34 finding 1 asks for, asserted on the stylebox `Button` actually draws.**
