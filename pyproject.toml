@@ -7,5 +7,7 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "pillow>=11,<12",
+    "pillow-heif>=0.18",
     "PyYAML>=6.0,<7",
 ]

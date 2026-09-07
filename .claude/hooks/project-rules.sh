@@ -77,6 +77,13 @@ esac
 case "$path" in
 	*/docs/evidence/archive/session-captures/*) wanted+=(session-captures) ;;
 esac
+# A backstop rather than the main door. Reference material arrives through `tools/reference.sh`,
+# which is a Bash call with no `file_path` for this hook to see, so what this actually catches is
+# somebody editing or hand-copying inside the folder — which is the case the rules most need to
+# reach, since a hand-copied phone photo is the one that still has its GPS coordinates in it.
+case "$path" in
+	*/docs/reference/*)        wanted+=(reference-photos) ;;
+esac
 case "$path" in
 	*/autoload/tuning.gd)      wanted+=(balance) ;;
 esac
