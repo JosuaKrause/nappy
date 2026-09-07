@@ -17,10 +17,16 @@ extends Control
 ## still aims from her own world position, exactly as before. A real touch instead aims from
 ## whichever of the two fixed focal points, `FOCUS_LEFT` (240, 480) or `FOCUS_RIGHT` (1040, 480) in
 ## the 1280x720 design box, is nearer the press — see `nearer_focus()` and `_on_tap()`'s own doc for
-## the coordinate-space trip a focus has to take to become a world heading. A press within
-## `STOP_RADIUS` of either focus stops her too, alongside a press near her own position — see
-## `is_on_a_focus()`. Nothing is drawn for the two focal points; whether they can be found by feel
-## alone is a played question, not a built one.
+## the coordinate-space trip a focus has to take to become a world heading. **Both focal points are
+## drawn, on a touch build**, as a ring at `STOP_RADIUS` with a knob at `_direction` — see
+## `_draw_focus_circles()`'s own doc.
+##
+## A press within `STOP_RADIUS` of either focus stops her too, alongside a press near her own
+## position — see `is_on_a_focus()` — and so does one in the stop band down the middle of the
+## screen, or a held finger dragged into either — see `is_in_stop_band()` and `_on_drag()`. Held
+## down and moved, a finger or a mouse button keeps re-aiming: the heading updates continuously
+## until the pointer lifts, always at one speed, never a partial vector — see `_on_drag()`'s own
+## doc for why that is not the deleted drag stick returning.
 ##
 ## **The pause button is not that kind of control.** `main._unhandled_input()` reads
 ## `event.is_action_pressed("pause")` off the propagated *event*, not off polled state, so
@@ -310,7 +316,7 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 		return
 	# Touch only, past here — see the class doc and this function's own doc above.
 	var design := ScreenOrientation.to_design_space(screen_position, rotated)
-	if is_on_a_focus(design):
+	if is_on_a_focus(design) or is_in_stop_band(design):
 		_stop()
 		return
 	var focus_world := get_viewport().get_canvas_transform().affine_inverse() \
@@ -335,6 +341,13 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 	if index != _drag_pointer_index or get_tree().paused:
 		return
 	if not _rig:
+		return
+	# The stop band, touch only — a finger wandering into the middle of the screen mid-drag is the
+	# whole reason the band exists (see `is_in_stop_band()`'s own doc); a mouse drag has no
+	# equivalent door, since its own aiming origin is her position rather than a focus that could
+	# flip underneath it.
+	if _touch and is_in_stop_band(ScreenOrientation.to_design_space(screen_position, rotated)):
+		_stop()
 		return
 	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
 	set_direction(world, _drag_run, _drag_origin_world)
@@ -404,6 +417,29 @@ static func nearer_focus(design_position: Vector2) -> Vector2:
 static func is_on_a_focus(design_position: Vector2) -> bool:
 	return design_position.distance_to(FOCUS_LEFT) <= STOP_RADIUS \
 			or design_position.distance_to(FOCUS_RIGHT) <= STOP_RADIUS
+
+## Whether `design_position` (already in design space) lands in the stop band down the middle of
+## the screen — the third door into `_stop()`, beside a press on her and a press on either focus.
+## *(2026-09-07: "there should be a narrow band in the middle of the screen (size of the stop
+## circle) that stops the player. this is to prevent moving the finger over the middle of the
+## screen and quickly flicking back and forth.")*
+##
+## **This is what makes the drag usable, not a decoration on top of it.** `nearer_focus()` flips
+## the instant a press crosses the design box's own centre line, so a finger wandering near the
+## middle mid-drag would otherwise swap a heading measured from `FOCUS_LEFT` for one measured from
+## `FOCUS_RIGHT` — pointing somewhere entirely different — and snap back and forth while barely
+## moving. Declaring the middle "not a direction at all" removes the flip rather than damping it.
+##
+## `STOP_RADIUS` either side of the centre line, reading *"size of the stop circle"* as its
+## **diameter** — confirmed by the player rather than inferred — so the band has the same reach
+## either side of the line that a stop circle has around its own centre. The centre line is
+## `ScreenOrientation.DESIGN_SIZE.x / 2.0` (640 in the 1280x720 design box) rather than a bare
+## 640, so this stays correct if the design box's own width ever does not. **Not drawn** —
+## *(2026-09-07: "the band doesn't get drawn and yes it's the diameter in size".)* the two focal
+## circles are what item 2 asked for by name, and stay the only things this scheme draws besides
+## the pause button.
+static func is_in_stop_band(design_position: Vector2) -> bool:
+	return absf(design_position.x - ScreenOrientation.DESIGN_SIZE.x / 2.0) <= STOP_RADIUS
 
 ## Whether a second tap `distance` px from the first, `elapsed` seconds after it, reads as the
 ## same direction doubled into a run rather than a new one.

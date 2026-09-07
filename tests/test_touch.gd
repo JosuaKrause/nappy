@@ -45,6 +45,9 @@ func run(t) -> void:
 	_test_a_double_tap_that_then_drags_keeps_running(t)
 	_test_a_mouse_drag_reaims_from_her_own_position(t)
 	_test_a_mouse_motion_without_the_button_held_does_nothing(t)
+	_test_is_in_stop_band_catches_the_middle_and_only_the_middle(t)
+	_test_a_tap_in_the_stop_band_stops_her_on_touch(t)
+	_test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t)
 	t.get_tree().paused = was_paused
 	_release_actions()
 
@@ -511,6 +514,20 @@ func _test_is_on_a_focus_catches_the_stop_radius_around_either_point(t) -> void:
 	t.check(not TouchControls.is_on_a_focus(Vector2(640.0, 360.0)),
 			"exactly between the two, past both radii, is neither")
 
+## Pure geometry, no viewport needed — the same shape `is_on_a_focus()` is tested in.
+## *(2026-09-07: "there should be a narrow band in the middle of the screen (size of the stop
+## circle) that stops the player".)*
+func _test_is_in_stop_band_catches_the_middle_and_only_the_middle(t) -> void:
+	t.check(TouchControls.is_in_stop_band(Vector2(640.0, 0.0)), "dead centre, at any height, stops")
+	t.check(TouchControls.is_in_stop_band(Vector2(640.0, 719.0)), "even right at the bottom edge")
+	t.check(TouchControls.is_in_stop_band(Vector2(640.0 + TouchControls.STOP_RADIUS, 360.0)),
+			"and STOP_RADIUS to either side, at the diameter's own edge")
+	t.check(not TouchControls.is_in_stop_band(
+			Vector2(640.0 + TouchControls.STOP_RADIUS + 1.0, 360.0)),
+			"but just past that edge is an ordinary direction press")
+	t.check(not TouchControls.is_in_stop_band(TouchControls.FOCUS_LEFT),
+			"and neither focus itself is anywhere near the middle band")
+
 ## **The reach the two focal points exist to fix.** *(2026-09-06, the player: "right now the
 ## finger needs to reach over half the phone to be able to input an up or down direction".)* A
 ## press west of a focus walks west, and above it walks north, no matter where she is standing —
@@ -708,6 +725,47 @@ func _test_a_mouse_motion_without_the_button_held_does_nothing(t) -> void:
 	t.check(not Input.is_action_pressed("move_right") and not Input.is_action_pressed("move_left")
 			and not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
 			"idle mouse movement never sets a direction")
+
+	controls.queue_free()
+	rig.free()
+
+## A press dead in the middle of the screen stops her on a touch device, the third door into
+## `_stop()` beside a press on either focus. *(2026-09-07: "there should be a narrow band in the
+## middle of the screen ... that stops the player".)*
+func _test_a_tap_in_the_stop_band_stops_her_on_touch(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls._on_tap(TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), 0.0)
+	t.check(Input.is_action_pressed("move_left"), "walking first, so a stop has something to undo")
+
+	controls._on_tap(Vector2(640.0, 200.0), 1.0)
+	t.check(not Input.is_action_pressed("move_left") and not controls._walking,
+			"a press in the middle band stops her rather than steering toward either focus")
+
+	controls.queue_free()
+	rig.free()
+
+## **A drag that wanders into the band stops her rather than steering her**, which is the whole
+## reason the band exists: without it, a finger drifting past the centre line would swap which
+## focus it steers from and snap the heading to somewhere else entirely. Leaving the band resumes
+## steering, since the door only closes while the finger is actually standing in it.
+func _test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
+	t.check(Input.is_action_pressed("move_left"), "the press itself walks west of the focus")
+
+	controls._input(_drag_event(0, Vector2(660.0, 480.0)))
+	t.check(not Input.is_action_pressed("move_left") and not controls._walking,
+			"dragging into the band stops her rather than steering her toward the right focus")
+
+	controls._input(_drag_event(0, TouchControls.FOCUS_RIGHT + Vector2(150.0, 0.0)))
+	t.check(Input.is_action_pressed("move_right") and controls._walking,
+			"and dragging back out of the band resumes steering, now from the nearer focus")
 
 	controls.queue_free()
 	rig.free()
