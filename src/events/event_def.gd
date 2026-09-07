@@ -446,14 +446,15 @@ func validate() -> bool:
 		push_error("event '%s' is director-sited and obstructs %.0fpx: nothing checks "
 				% [id, obstructs_radius] + "that it leaves a route to a park")
 		return false
-	# `EventDirector` sites a `TOWARD_PLAYER` row `Tuning.SIGHT_AHEAD` in front of her — the same
-	# distance a pursuer is sited at, because that is what "as far ahead as it can be seen from"
-	# means — so a row whose own field already reaches that far would appear already inside its
-	# own outer radius, which is the one thing "she gets close and it arrives" cannot mean.
-	if spawn_mode == SpawnMode.TOWARD_PLAYER and outer_radius >= Tuning.SIGHT_AHEAD:
+	# `EventDirector` sites a `TOWARD_PLAYER` row at least `Tuning.offscreen_boundary(heading)` in
+	# front of her, which is never less than `Tuning.min_offscreen_boundary()` (180px, the vertical
+	# axis) whatever she is facing — so a row whose own field reaches that far would appear already
+	# inside its own outer radius on the one heading the director cannot avoid, which is the one
+	# thing "she gets close and it arrives" cannot mean.
+	if spawn_mode == SpawnMode.TOWARD_PLAYER and outer_radius >= Tuning.min_offscreen_boundary():
 		push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
-				% [id, outer_radius] + "%.0fpx it is sited at: it would arrive already inside "
-				% Tuning.SIGHT_AHEAD + "its own reach")
+				% [id, outer_radius] + "%.0fpx it is sited at on the worst axis: it would arrive "
+				% Tuning.min_offscreen_boundary() + "already inside its own reach there")
 		return false
 	# **A lethal radius and a solid body are the same mechanism**, and putting both on one event
 	# is a way of turning the first one off. She is stopped with her centre `obstructs_radius +

@@ -456,24 +456,24 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 		t.check(window > 0.0,
 				"the window to answer '%s' at the lunge itself is %.2fs" % [def.id, window])
 
-## **A pursuer has to be sited where it can be seen doing it.** *(M39, finding 13.)*
+## **A pursuer has to be sited where it actually closes on her rather than backing away.**
 ##
-## Three things have to agree and none of them knows about the other two: the stand-off is where it
-## stops, the director decides where it starts, and the viewport decides what is on screen. If the
-## stand-off ever grows past the lead the director gives it, a pursuer *backs away* through its own
-## telegraph instead of closing; if the lead grows past `SIGHT_AHEAD`, the whole telegraph happens
-## off the top of the screen when she walks north or south, and the notice is the sight of it.
+## Two things have to agree and neither knows about the other: the stand-off is where it stops, and
+## the director decides where it starts. If the stand-off ever grows past the least the director
+## could ever site it at — `Tuning.min_offscreen_boundary()`, the worst case over every heading she
+## might be walking — a pursuer *backs away* through its own telegraph instead of closing, which is
+## a dog that visibly reverses down the street in front of her.
 ##
-## M39 moved the stand-off from 104px to 174 and would have broken the first of those silently — the
-## dog was sited at 184 — so the relationship is asserted rather than left as a coincidence.
+## The relationship is asserted rather than left as a coincidence: a change to the stand-off or to
+## `VIEW_HALF_EXTENT` has moved both numbers before without anybody checking they still agree.
 func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 	for def in EventCatalogue.all():
 		if not def.pursues:
 			continue
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-		t.check(standoff < Tuning.SIGHT_AHEAD,
-				"'%s' stands off at %.0fpx, inside the %.0fpx that is still on screen"
-				% [def.id, standoff, Tuning.SIGHT_AHEAD])
+		t.check(standoff < Tuning.min_offscreen_boundary(),
+				"'%s' stands off at %.0fpx, inside the %.0fpx it is sited at even on the worst axis"
+				% [def.id, standoff, Tuning.min_offscreen_boundary()])
 		if def.pursues_within > 0.0:
 			# A place, not a moment: the director never sites it, so what has to hold is that its
 			# trigger is outside its stand-off — which `validate_pursuit` also checks, from the
@@ -613,17 +613,15 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 ## Where the encounter actually starts, in px: where the director sites something that comes at her,
 ## or just inside the trigger for something that has been standing there.
 ##
-## *(M39.)* It was `AHEAD_LEAD_DISTANCE` for the first case, which stopped being true when the
-## stand-off grew past it — the director sites a pursuer beyond its own stand-off now, and a rig
-## measuring from the cat's lead would have been measuring an encounter the game cannot produce.
-##
-## *(M43.)* And it is `SIGHT_AHEAD` flat now rather than a clamp, because the notice a pursuit
-## gives is exactly the ground between the siting and the stand-off. It has to keep matching
-## `EventDirector._crossing_ahead_of`, which is the reason this is one line and not a formula.
+## The director's own siting depends on the heading she happens to be walking
+## (`Tuning.offscreen_boundary(heading)`), so this asks for the worst case over every heading rather
+## than one of them — `Tuning.min_offscreen_boundary()`, the vertical axis, which is the smaller of
+## the two and therefore the least ground the contract can ever rely on. A rig checked against a more
+## generous heading would pass on an encounter the game can still produce on a worse one.
 func _sited_at(def: EventDef) -> float:
 	if def.pursues_within > 0.0:
 		return def.pursues_within - 10.0
-	return Tuning.SIGHT_AHEAD
+	return Tuning.min_offscreen_boundary()
 
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.

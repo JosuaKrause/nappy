@@ -66,8 +66,11 @@ An event that is somewhere is half of what makes a route a decision. It can be r
 and finding out it is there is what walking a street is for.
 
 **`AHEAD_OF_PLAYER`, which is the cat, the flock and the charging dog.** No tile. The day budgets it
-at the same cost as everything else, and `EventDirector` sites it across her line,
-`AHEAD_LEAD_DISTANCE` in front of her, while she is walking.
+at the same cost as everything else, and `EventDirector` sites it while she is walking. A crossing
+row — the cat, the flock — is sited across her line, `AHEAD_LEAD_DISTANCE` in front of her. A
+pursuer — `charging_dog` — is sited down her line instead, outside the view along the heading she is
+actually walking (`Tuning.offscreen_boundary()`), so it has an offscreen approach to close before it
+reaches its stand-off; see "Everything arrives from off screen" below.
 
 That is a real distinction and not a placement trick. A café spilling across a pavement is a
 *place*. A cat bolting is not: you cannot plan around three seconds, and a cat sited on a tile at
@@ -90,21 +93,38 @@ Three rules on it, in the order they matter:
    street.
 
 **`TOWARD_PLAYER`, which is the cyclist and the loose dog.** Also no tile, also sited by
-`EventDirector` while she walks — but *down* her own line instead of across it, `SIGHT_AHEAD`
-(200px) ahead of her and coming the other way, so she meets it by continuing to walk rather than by
-being crossed. It is neither of the other two: `MAP` sites it at dawn, on a street the day has no
-way of knowing she will ever walk, so a bike sited that way is a bike she may never see; and an
-`AHEAD_OF_PLAYER` crossing is gone in three seconds and asks her to react, not to plan. A bike on
-her own pavement is a road, and the answer to a road is a route decision — cross to the other side,
-or turn — made with the warning the screen-edge badge already gives anything faster than a walk.
+`EventDirector` while she walks — but *down* her own line instead of across it, outside the view
+along her heading (`Tuning.offscreen_boundary()`) and coming the other way, so she meets it by
+continuing to walk rather than by being crossed. It is neither of the other two: `MAP` sites it at
+dawn, on a street the day has no way of knowing she will ever walk, so a bike sited that way is a
+bike she may never see; and an `AHEAD_OF_PLAYER` crossing is gone in three seconds and asks her to
+react, not to plan. A bike on her own pavement is a road, and the answer to a road is a route
+decision — cross to the other side, or turn — made with the warning the screen-edge badge already
+gives anything faster than a walk.
 
 It does not adjust to her the way a pursuer does. `pursues` backs off, holds a stand-off and gives
 up if she runs; `TOWARD_PLAYER` is traffic, not an ambush — it travels the straight line it was
 sited on, at its own `speed`, whether or not she is in it. The same two rules bind it as bind
 `AHEAD_OF_PLAYER`: the clock only runs while she is walking, and `EventDef.validate()` refuses one
-whose `obstructs_radius` is nonzero, or whose `outer_radius` reaches all the way to `SIGHT_AHEAD` —
-a field that wide would already be on her the moment it appeared, which is the one thing "she gets
-close and it arrives" cannot mean.
+whose `obstructs_radius` is nonzero, or whose `outer_radius` reaches `Tuning.min_offscreen_boundary()`
+(180px, the vertical axis, the narrower of the two the director ever sites against) — a field that
+wide would already be on her the moment it appeared, which is the one thing "she gets close and it
+arrives" cannot mean.
+
+### Everything arrives from off screen
+
+**A row that travels toward her — a pursuer or a `TOWARD_PLAYER` row — is sited outside the view,
+not against a flat number sized for one axis of it.** The camera sits on her at zoom 2 over a
+1280x720 viewport, so the visible world is 640x360: 320px to the edge sideways, 180px vertically.
+`Tuning.offscreen_boundary(heading)` is a ray to whichever of those two edges the heading in play
+actually reaches first, so a row sited while she walks east is genuinely off screen on that axis
+rather than merely off the narrower one the old flat number was sized for.
+
+**The screen-edge badge is what makes the offscreen phase worth anything.** `DangerEdge` already
+draws one for anything lethal or faster than a walk that is off screen and closing under its own
+steam; a pursuer sited outside the view is exactly that for as long as it stays there, so
+`DangerEdge._is_worth_an_arrow` announces it the same way it announces `TOWARD_PLAYER` — a row moved
+further out without the badge following it would have *less* warning than it had before, not more.
 
 ## Solid things are solid
 

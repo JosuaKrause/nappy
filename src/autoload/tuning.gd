@@ -981,18 +981,36 @@ const OUT_OF_SIGHT := 420.0
 ## window* stated as a distance: at `WALK_SPEED` it is the two seconds she gets between seeing
 ## the cat crouch and reaching the place it bolts through.
 const AHEAD_LEAD_DISTANCE := 184.0
-## The furthest ahead of her something may be sited and still be **on screen** when it gets there.
+## Half the visible view along each axis, in px, from her: the camera sits on her at zoom 2 over a
+## 1280x720 viewport, so the visible world is 640x360 — 320px sideways, 180px vertically.
 ##
-## The camera sits on her at zoom 2 over a 1280x720 viewport, so the visible world is
-## 640x360 and the worst axis is the vertical one: 180px, plus about 32 of camera look-ahead. A
-## pursuer is sited beyond its own stand-off so that it visibly closes into it, and this is the cap
-## on that — a dog telegraphing off the top of the screen is a dog with no telegraph, and the sight
-## of it is the whole cue.
-##
-## Not to be confused with `OUT_OF_SIGHT`, which is the *other* end of the same measurement and is
-## deliberately more generous: nothing may be watched out of existence, so that number is the far
-## corner of the view and this one is the near edge of it.
-const SIGHT_AHEAD := 200.0
+## **This replaces a flat cap that was sized for one axis and applied to both.** The old
+## `SIGHT_AHEAD` (200px) put anything `EventDirector` sited on the horizontal axis 120px inside the
+## boundary there — on screen the moment it appeared, whatever the vertical arithmetic said —
+## which is exactly *"bikers / unleashed dogs all pop in in front of the player instead of starting
+## off screen"* (playtest 33, finding 8). `offscreen_boundary()` below asks the real question
+## instead: how far to the edge of this box *along the heading actually in play*.
+const VIEW_HALF_EXTENT := Vector2(320.0, 180.0)
+
+## Distance from her to the edge of the view along `heading` — a ray to the edge of the
+## `VIEW_HALF_EXTENT` box, the same arithmetic `DangerEdge._distance_to_edge` already draws the
+## screen-edge badge with. `EventDirector` sites a row that travels toward her — a pursuer or a
+## `TOWARD_PLAYER` row — at least this far out, so it starts genuinely off screen whichever way she
+## is walking rather than only on the one axis a flat number happened to cover.
+func offscreen_boundary(heading: Vector2) -> float:
+	var boundary := INF
+	if not is_zero_approx(heading.x):
+		boundary = minf(boundary, VIEW_HALF_EXTENT.x / absf(heading.x))
+	if not is_zero_approx(heading.y):
+		boundary = minf(boundary, VIEW_HALF_EXTENT.y / absf(heading.y))
+	return boundary
+
+## The least `offscreen_boundary()` can be for any heading — the vertical axis, since 180 is
+## smaller than the 320 the horizontal one gives. What a fairness check needs when it has no
+## particular heading to ask about: `EventDef.validate()` checks a row's own geometry against the
+## worst case the director could ever site it in, not the case a given walk happens to produce.
+func min_offscreen_boundary() -> float:
+	return VIEW_HALF_EXTENT.y
 
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".

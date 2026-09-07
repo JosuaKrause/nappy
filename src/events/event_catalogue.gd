@@ -701,9 +701,10 @@ static func _pigeon_flock() -> EventDef:
 ## and the speed means the whole radius counts, so the bell has to ring for (145/92) x 2 = 3.15s
 ## before it arrives. That is right: it is audible from down the street, she has three seconds
 ## and one step to make, and stepping off a pavement is a step. It is also why the field is
-## small — a wider one would need a bell you could hear across the district. The same distance
-## is why it can be sited only `Tuning.SIGHT_AHEAD` (200px) in front of her rather than further —
-## `EventDef.validate()` refuses a `TOWARD_PLAYER` row whose own field would already reach that far.
+## small — a field this wide sited any nearer would already be on her the moment it appeared, on
+## the axis `EventDirector` sites it closest to the view: `EventDef.validate()` refuses a
+## `TOWARD_PLAYER` row whose own field reaches `Tuning.min_offscreen_boundary()` (180px, the
+## vertical axis), which 145 sits comfortably under.
 ##
 ## **`inner_radius` is 33px, not the 26 a bike's own width would suggest.** *(Playtest 25, finding
 ## 7: "biker currently is also basically inconsequential. when hit it should be dayending" — and the
