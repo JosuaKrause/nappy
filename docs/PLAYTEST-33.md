@@ -1,11 +1,12 @@
 # Playtest 33 — 2026-09-07
 
-A session on the build M83 left, given as notes in one conversation. **Eleven findings and one
-question.** Six are about the controls and the screens around them — the focal points M83 added but
-drew nothing for, the drag that went with the deleted stick, the wording of the movement lesson, the
-pressed look of a button, a tap on the ending screen that lands in the game, and the keys that begin
-a run. Four are about where events arrive from, and they raise M77 to the front of the queue. One is
-a lethality defect on the cyclist. The question is about `tools/release.sh`.
+A session on the build M83 left, given as notes in one conversation. **Twelve findings and one
+question.** Seven are about the controls and the screens around them — the focal points M83 added
+but drew nothing for, the drag that went with the deleted stick, the stop band the drag needs under
+it, the wording of the movement lesson, the pressed look of a button, a tap on the ending screen
+that lands in the game, and the keys that begin a run. Four are about where events arrive from, and
+they raise M77 to the front of the queue. One is a lethality defect on the cyclist. The question is
+about `tools/release.sh`.
 
 ---
 
@@ -167,6 +168,28 @@ This is finding 10 seen from the other side: a row whose warning is longer than 
 warning and no bite. Fixing the siting so the approach is genuinely longer than the telegraph is
 what makes the declared lethality real, and the two should be checked together rather than one
 patched around the other.
+
+## 12. A stop band down the middle of the screen
+
+> "there should be a narrow band in the middle of the screen (size of the stop circle) that stops
+> the player. this is to prevent moving the finger over the middle of the screen and quickly
+> flicking back and forth"
+
+**This is a consequence of finding 3 and it only exists once the drag does.** A held finger aims
+from *whichever* focal point is nearer, and which one that is flips the instant the finger crosses
+the design box's own centre line at x = 640 — so a drag that wanders across the middle swaps a
+heading measured from `(240, 480)` for one measured from `(1040, 480)`, which points somewhere
+entirely different. A finger hovering near the middle therefore snaps the direction back and forth
+with no movement of its own worth speaking of.
+
+The fix asked for is not a hysteresis or a stickier focus: it is that **the middle of the screen is
+not a direction at all**. A band centred on the centre line, as wide across as the stop circle,
+stops her — the same thing a press on her or on a focal point already does.
+
+`TouchControls.STOP_RADIUS` is 48px, so the stop circle is 96px across and the band is
+`x ∈ [592, 688]` in the 1280x720 design box: `absf(design.x - 640.0) <= STOP_RADIUS`. Reading
+*"size of the stop circle"* as its **diameter** is the choice being made here, and it is the one
+that makes the band the same reach either side that the stop circle has.
 
 ---
 

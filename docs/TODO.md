@@ -40,10 +40,10 @@ presentation change with the lattice left cardinal — and it is written down an
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
 
-**[PLAYTEST-33.md](PLAYTEST-33.md) is the newest session and none of its eleven findings is built.**
+**[PLAYTEST-33.md](PLAYTEST-33.md) is the newest session and none of its twelve findings is built.**
 It is the report M83 asked for: the two focal points a touch aims from were built and drawn as
-nothing, and the answer is that they move outward and downward and are drawn. Six of the eleven are
-M85, four raise and extend M77, and the one question in it is M86. **Read it before any of the
+nothing, and the answer is that they move outward and downward and are drawn. Seven of the twelve
+are M85, four raise and extend M77, and the one question in it is M86. **Read it before any of the
 three.**
 
 **[PLAYTEST-29.md](PLAYTEST-29.md)'s seven findings are all built.** Three of them were instructions
@@ -188,7 +188,7 @@ deferring the drawings does not reach it.
 
 ## M85 — One press, answered · asked for 2026-09-07
 
-Six findings from [PLAYTEST-33.md](PLAYTEST-33.md), and they are one milestone because they are one
+Seven findings from [PLAYTEST-33.md](PLAYTEST-33.md), and they are one milestone because they are one
 subject: **what a press does, and what the screens around a run say about it.** None of them needs a
 drawing an artist would have to make, so none is held behind the graphics overhaul — the two control
 circles are the shape a control already has, the way `MeterBar`'s own fill is.
@@ -231,6 +231,28 @@ circles are the shape a control already has, the way `MeterBar`'s own fill is.
       test must still pass**. *The overlap was put to the player as a question on 2026-09-07 rather
       than inferred, and they chose live re-aim at one speed over the analog stick and over aiming
       from her own position.*
+- [ ] **A stop band down the middle of the screen.** *(2026-09-07: "there should be a narrow band in
+      the middle of the screen (size of the stop circle) that stops the player. this is to prevent
+      moving the finger over the middle of the screen and quickly flicking back and forth.")*
+
+      **This only exists once the drag above does, and it is what makes the drag usable.** A held
+      finger aims from whichever focal point is nearer, and which one that is flips the instant the
+      finger crosses the design box's centre line at x = 640 — so a drag wandering over the middle
+      swaps a heading measured from `(240, 480)` for one measured from `(1040, 480)`, pointing
+      somewhere entirely different, and a finger hovering there snaps the direction back and forth
+      while barely moving.
+
+      The answer asked for is not hysteresis or a stickier focus: **the middle of the screen is not
+      a direction at all.** A band centred on the centre line, as wide across as the stop circle,
+      stops her — the third door into the same `_stop()` a press on her or on a focal point already
+      goes through. `STOP_RADIUS` is 48px, so the band is `absf(design.x - 640.0) <= STOP_RADIUS`,
+      which is `x ∈ [592, 688]` in the 1280x720 design box.
+
+      **Reading *"size of the stop circle"* as its diameter is a choice and it is the one taken**,
+      because it gives the band the same reach either side of the line that the stop circle has
+      around its own centre. The band is in **design space**, like the two focal points and unlike a
+      raw touch — the same `ScreenOrientation.to_design_space()` trip `is_on_a_focus()` already
+      makes. Whether it is drawn is open; the two circles are what item 2 asks for by name
 - [ ] **The movement lesson says two things and nothing else.** *(2026-09-07: "the movement tutorial
       should just say "Tap to walk" and "Double tap to run". no mention of tapping her or "that
       way".")* Three places carry the wording: `HUD._teach_the_day()` says
