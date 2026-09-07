@@ -34,7 +34,10 @@ extends Control
 ## heading. **Both focal points are drawn**, as a ring at `STOP_RADIUS` with a knob at `_direction`
 ## — see `_draw_focus_circles()`'s own doc. A press within `STOP_RADIUS` of either focus stops her
 ## too, and so does one in the stop band down the middle of the screen, or a held pointer dragged
-## into either — see `is_on_a_focus()`, `is_in_stop_band()` and `_on_drag()`.
+## into either — see `is_on_a_focus()`, `is_in_stop_band()` and `_on_drag()`. **A drag that leaves the
+## band re-picks which focus its heading is measured from, for whichever side it left on** — see
+## `_drag_origin_focus`'s own doc for why crossing the band is safe to retarget on where a bare
+## `nearer_focus()` on every motion event was not.
 ##
 ## **`Mode.TAP` aims from her own world position instead, and draws nothing.** A press within
 ## `TAP_STOP_RADIUS` of her stops her; the band and the focal circles do not exist in this mode at
@@ -238,7 +241,40 @@ var _drag_pointer_index := -1
 ## thumb a heading later. Kept in design space here, `_on_drag()` redoes the same design→presented→
 ## world trip `_on_tap()` makes, every motion event instead of once, so the reference stays under
 ## the drawn ring for exactly as long as the ring stays under the thumb.
+##
+## **Sticky for the whole drag, except across the stop band.** *(Playtest 35 finding 4: "dragging
+## from one side of the screen to the other side of the screen keeps the reference on the original
+## side. this might make sense were it not for the stop gap in the middle... I think we should
+## retarget to the other side when that happens.")* M85 made this sticky in the first place because
+## `nearer_focus()` on every motion event flipped the instant a press crossed the design box's own
+## centre line — a heading measured from `FOCUS_LEFT` swapping for one from `FOCUS_RIGHT`, and back,
+## while the thumb barely moved; its own note records hysteresis and a stickier focus as rejected,
+## in favour of declaring the middle "not a direction at all." **The band is what makes retargeting
+## safe now, where a bare crossing was not**: a pointer cannot reach the far side of the centre line
+## without first passing through `STOP_RADIUS` either side of it, and inside that band she is
+## stopped — so a crossing is a discrete, already-stopped event with a defined middle, not a
+## continuous slide between two references with nothing between them to flip against. `_drag_in_band`
+## is what `_on_drag()` reads to fire the re-pick exactly once, on the frame the pointer actually
+## leaves the band, rather than on every motion event inside or outside it — see that variable's own
+## doc for why a pointer wiggling at the band's own edge cannot oscillate between the two foci.
 var _drag_origin_focus := Vector2.INF
+
+## Whether the drag `_drag_pointer_index` is tracking currently has its pointer standing inside the
+## stop band — `Mode.JOYSTICK` only, since `Mode.TAP` has no band. Set the moment a press or a drag
+## step lands in the band, cleared the moment one leaves it; `_on_drag()` reads the falling edge —
+## band **and now not** — to re-pick `_drag_origin_focus` via `nearer_focus()` for whichever side the
+## pointer left on, and nowhere else, so the sticky rule still holds for a drag that never enters the
+## band at all.
+##
+## **Why a pointer cannot oscillate between the two foci by wiggling at the band's own edge.**
+## `nearer_focus()` ties only exactly on the design box's own centre line (640, the midpoint of
+## `FOCUS_LEFT` and `FOCUS_RIGHT`), which sits 48px inside either edge of the band — so *every* point
+## outside the band already lies unambiguously nearer to whichever focus is on its own side. Leaving
+## the band can therefore only ever re-pick the focus that matches the side actually left on; picking
+## the *other* focus would require the pointer to cross the band's full 96px width in one step, which
+## is exactly the deliberate, already-stopped crossing this feature exists to retarget on, not a
+## flicker at one edge of it.
+var _drag_in_band := false
 ## Whether `_drag_pointer_index`'s own press doubled into a run — carried through every motion
 ## event so re-aiming never itself starts or stops holding `run`; only a fresh press does.
 var _drag_run := false
@@ -417,6 +453,7 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 	var design := ScreenOrientation.to_design_space(screen_position, rotated)
 	var focus := nearer_focus(design)
 	_drag_origin_focus = focus
+	_drag_in_band = is_in_stop_band(design)
 	_drag_run = double
 	if is_on_a_focus(design) or is_in_stop_band(design):
 		_stop()
@@ -459,6 +496,13 @@ func _near_her(world: Vector2) -> bool:
 ## words, and the reason this checks the same doors `_on_tap()` does rather than only the band.
 ## The direction otherwise locks in as it stands the moment the pointer lifts, since nothing
 ## further happens on release beyond forgetting the index in `_on_pointer()`.
+##
+## **Leaving the band re-picks `_drag_origin_focus`, once, on the falling edge of `_drag_in_band`.**
+## *(Playtest 35 finding 4.)* Landing in the band sets `_drag_in_band` and stops her, exactly as
+## before; the first motion event that lands outside it again re-picks the focus through
+## `nearer_focus()` before steering resumes, and every motion event after that — until the band is
+## entered again — leaves `_drag_origin_focus` alone, which is the sticky rule surviving everywhere
+## else. See that variable's own doc for why this cannot flip-flap at the band's own edge.
 func _on_drag(screen_position: Vector2, index: int) -> void:
 	if index != _drag_pointer_index or get_tree().paused:
 		return
@@ -467,9 +511,16 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
 	if _mode == ControlsMode.Mode.JOYSTICK:
 		var design := ScreenOrientation.to_design_space(screen_position, rotated)
-		if is_on_a_focus(design) or is_in_stop_band(design):
+		if is_in_stop_band(design):
+			_drag_in_band = true
 			_stop()
 			return
+		if is_on_a_focus(design):
+			_stop()
+			return
+		if _drag_in_band:
+			_drag_origin_focus = nearer_focus(design)
+			_drag_in_band = false
 		set_direction(world, _drag_run, _focus_world(_drag_origin_focus))
 		return
 	if _near_her(world):
@@ -564,6 +615,18 @@ static func is_on_a_focus(design_position: Vector2) -> bool:
 ## *(2026-09-07: "the band doesn't get drawn and yes it's the diameter in size".)* the two focal
 ## circles are what item 2 asked for by name, and stay the only things this scheme draws besides
 ## the pause button.
+##
+## **Asked for the focus sticky for the whole drag · overturned to re-picking it on 2026-09-07,
+## because the band this constant governs turns a crossing into a discrete, already-stopped event
+## with nothing left in the middle to flip against.** M85 made the focus sticky because a bare
+## `nearer_focus()` on every motion event flipped the instant a press crossed the design box's own
+## centre line, snapping the heading to the other side while a thumb barely moved, and recorded
+## hysteresis and a stickier focus as rejected in favour of this band. Playtest 35 finding 4 asks for
+## the crossing back on the strength of the band itself: a pointer cannot reach the far side of the
+## centre line without passing through this band first, and inside it she is already stopped, so
+## leaving it — not merely touching the centre line — is safe to re-pick a focus on. See
+## `_drag_origin_focus`'s own doc for the safety argument and `_on_drag()` for where the re-pick
+## fires.
 static func is_in_stop_band(design_position: Vector2) -> bool:
 	return absf(design_position.x - ScreenOrientation.DESIGN_SIZE.x / 2.0) <= STOP_RADIUS
 

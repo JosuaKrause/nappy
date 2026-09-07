@@ -56,6 +56,7 @@ func run(t) -> void:
 	_test_is_in_stop_band_catches_the_middle_and_only_the_middle(t)
 	_test_a_tap_in_the_stop_band_stops_her_on_touch(t)
 	_test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t)
+	_test_leaving_the_band_at_the_same_edge_twice_never_flips_focus(t)
 	t.get_tree().paused = was_paused
 	_release_actions()
 
@@ -860,10 +861,14 @@ func _test_a_tap_in_the_stop_band_stops_her_on_touch(t) -> void:
 	controls.queue_free()
 	rig.free()
 
-## **A drag that wanders into the band stops her rather than steering her**, which is the whole
-## reason the band exists: without it, a finger drifting past the centre line would swap which
-## focus it steers from and snap the heading to somewhere else entirely. Leaving the band resumes
-## steering, since the door only closes while the finger is actually standing in it.
+## **A drag that wanders into the band stops her rather than steering her**, and leaving the band
+## re-picks which focus she steers from for whichever side the pointer left on. *(Playtest 35
+## finding 4: "dragging from one side of the screen to the other side of the screen keeps the
+## reference on the original side... since there is a gap in the middle that stops I think we
+## should retarget to the other side when that happens.")* The exit point is chosen so the two foci
+## disagree about which way it is — `FOCUS_LEFT` would still read "east" (`move_right`), `FOCUS_RIGHT`
+## reads "west" (`move_left`) — so landing on `move_left` is what proves the retarget actually
+## happened rather than merely permitting a direction both foci would have agreed on.
 func _test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
@@ -877,11 +882,32 @@ func _test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t) ->
 	t.check(not Input.is_action_pressed("move_left") and not controls._walking,
 			"dragging into the band stops her rather than steering her toward the right focus")
 
-	controls._input(_drag_event(0, TouchControls.FOCUS_RIGHT + Vector2(150.0, 0.0)))
-	t.check(Input.is_action_pressed("move_right") and controls._walking,
-			"and dragging back out of the band resumes steering, still from the focus the press " +
-			"opened this drag from (FOCUS_LEFT) — both focuses sit on the same y, so this alone " +
-			"cannot tell that apart from a reselected FOCUS_RIGHT")
+	controls._input(_drag_event(0, Vector2(750.0, 480.0)))
+	t.check(Input.is_action_pressed("move_left") and controls._walking,
+			"leaving the band re-picks FOCUS_RIGHT for the side the pointer actually left on")
+
+	controls.queue_free()
+	rig.free()
+
+## **The band's own edge cannot flip-flap between the two foci.** `nearer_focus()` ties only exactly
+## on the design box's centre line (640), which sits 48px inside either edge of the band — so every
+## point outside the band already lies unambiguously on one side of it. Leaving the same edge twice
+## re-picks the same focus both times; only actually crossing the whole band re-picks the other one.
+func _test_leaving_the_band_at_the_same_edge_twice_never_flips_focus(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls._touch = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
+	controls._input(_drag_event(0, Vector2(660.0, 480.0))) # into the band
+	controls._input(_drag_event(0, Vector2(750.0, 480.0))) # out the right edge -- picks FOCUS_RIGHT
+	t.check(Input.is_action_pressed("move_left"), "the first exit on the right side picks FOCUS_RIGHT")
+
+	controls._input(_drag_event(0, Vector2(660.0, 480.0))) # wiggling back into the band
+	controls._input(_drag_event(0, Vector2(750.0, 480.0))) # and back out the same right edge
+	t.check(Input.is_action_pressed("move_left"),
+			"wiggling back into the band and out the same edge picks FOCUS_RIGHT again, not FOCUS_LEFT")
 
 	controls.queue_free()
 	rig.free()
