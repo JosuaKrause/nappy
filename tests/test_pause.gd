@@ -413,6 +413,15 @@ func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 			"no mention of tapping her or 'that way' — stopping still works, it just is not taught")
 	t.check(title._joystick_button.visible and title._tap_button.visible,
 			"both buttons are on screen, the only pointer way to begin a run")
+	# *(Playtest 34 finding 10: "call the modes 'On-screen Controls' and 'Tap to Go' no further
+	# explanations".)* The captions under the two buttons are the names and nothing else.
+	var joystick_caption: Label = title.get_node(
+			"Root/Bottom/Lines/Choice/JoystickColumn/JoystickCaption")
+	var tap_caption: Label = title.get_node("Root/Bottom/Lines/Choice/TapColumn/TapCaption")
+	t.check(joystick_caption.text == "On-screen Controls",
+			"the joystick mode is named and not explained ('%s')" % joystick_caption.text)
+	t.check(tap_caption.text == "Tap to Go",
+			"and the tap mode is named and not explained ('%s')" % tap_caption.text)
 
 	title.open(true)
 	t.check("press a button to walk again" in title._hint.text,

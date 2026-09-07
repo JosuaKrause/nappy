@@ -26,12 +26,16 @@ extends CanvasLayer
 ## *(2026-09-07, the player: "let's make the controls a player choice and bring back the two
 ## buttons ... that should also solve the issue with the missing title screen since the only way to
 ## start the game will be clicking on one of the buttons".)* `_joystick_button` and `_tap_button`
-## are `ModeButton`s with `Symbol.JOYSTICK`/`Symbol.TAP` and their own two captions underneath —
-## see `_handle_mode_button_press()`. **A pointer press begins a run only when it lands on one of
-## them**, never on the bare scrim: with the buttons as the only pointer way in, a stray tap that
-## dismissed the ending screen a frame earlier can no longer restart the game just by landing
-## anywhere on this one — the restart guard (`_RESTART_GUARD_SECONDS`) stays for the narrower case
-## that remains, a stray press landing squarely on a button. A keyboard has no button to press, so
+## are `ModeButton`s with `Symbol.JOYSTICK`/`Symbol.TAP`, each named underneath — "On-screen
+## Controls", "Tap to Go" — and nothing else. *(2026-09-07, the player: "call the modes 'On-screen
+## Controls' and 'Tap to Go' no further explanations".)* Two earlier sentences in the same session
+## asked for the explanations simplified and for no mention of stopping; both are read as replaced
+## by the third, which is later, strictly narrower, and leaves nothing for either to apply to.
+## **A pointer press begins a run only when it lands on one of them**, never on the bare scrim: with
+## the buttons as the only pointer way in, a stray tap that dismissed the ending screen a frame
+## earlier can no longer restart the game just by landing anywhere on this one — the restart guard
+## (`_RESTART_GUARD_SECONDS`) stays for the narrower case that remains, a stray press landing
+## squarely on a button. A keyboard has no button to press, so
 ## `space` and every direction key still begin the run outright — see `_unhandled_input()`'s own
 ## doc for why that always chooses `Mode.TAP`.
 
