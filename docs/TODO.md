@@ -36,6 +36,13 @@ presentation change with the lattice left cardinal — and it is written down an
 whoever chooses the projection does it with the code's constraints in hand. It is not queued and it
 is not rejected.
 
+**[PLAYTEST-29.md](PLAYTEST-29.md) is the newest session and all seven of its findings are built.**
+Three of them were instructions the project already had and had read as repealed by something else,
+and the file is worth reading for that alone — two of its sentences are the player saying so. What
+it leaves open is played rather than built: **nothing is drawn for the two focal points a touch now
+aims from**, and whether they can be found by feel is the next report's question. The record is in
+`DECISIONS.md` under M83.
+
 **[PLAYTEST-28.md](PLAYTEST-28.md)'s four findings are built** — the game has one control scheme
 and no question about which: a press sets a direction she walks until the next press, a press on
 her stops her, a double press runs, and the pause button in the top right is the only thing drawn.

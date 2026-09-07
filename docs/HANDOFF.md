@@ -94,11 +94,39 @@ believing rather than explaining away.** The record is in `DECISIONS.md` under M
 
 ## What to do next
 
-**M84 is built on the graphics-overhaul branch, but the illustrated presentation is rejected and
-remains review-only.** The normal game remains on its legacy SVG graphics. `--illustrated` selects
-the new character runtime locally and `?illustrated=1` selects it in a web build; neither changes
-gameplay. The focused parser, legacy-binding, grounding and boot checks pass, but the display review
-does not.
+**The game has one control scheme, one set of buttons on every device, and no key named anywhere on
+screen.** A press sets a direction she walks until the next press; a press within a generous radius
+of her stops her; a double press sets the direction and runs it. **Where the direction is measured
+from is the one place a mouse and a finger differ**: a mouse aims from her own world position, and a
+real touch aims from whichever of two fixed points — `TouchControls.FOCUS_LEFT` (360, 360) and
+`FOCUS_RIGHT` (920, 360) in the 1280x720 design box — is nearer the press, so a thumb never has to
+reach across the phone to say *up*. A press within the same stop radius of either focus stops her
+too. **Nothing is drawn for those two points**, and whether they can be found by feel is the open
+question the next report answers.
+
+**The continue button, the held restart and the pause button are drawn on every device**, and a
+press on one now reaches the screen underneath it: `ModeButton` sets `mouse_filter =
+MOUSE_FILTER_IGNORE`, because Godot's GUI layer consumes a raw `InputEventScreenTouch` that lands on
+a `MOUSE_FILTER_STOP` control and both screens read every press in `_unhandled_input()`. The restart
+hold fills the disc itself as a radial sweep rather than a bar beside it, and the pause button is
+`assets/ui/pause.svg` rather than `_draw()` primitives.
+
+**The keyboard still works and nothing on screen says so.** Arrows, `WASD`, `Shift`, `Esc`, `space`,
+`R` and `Q` all press what they always did; no label, hint or teach line names a key, and the baked
+`.tscn` defaults were cleared too so a scene file does not say one either. Quitting has no in-game
+button on purpose — the window's own close button is its pointer route, and the web build has no
+quit at all. The record for all of this is in `DECISIONS.md` under M83, and the session it came from
+is [PLAYTEST-29.md](PLAYTEST-29.md).
+
+**M82 is what it sits on**: one scheme rather than a choice between two. The drag stick, the aimed
+joystick playtest 27 specified and never built, the `RUN` button and the title screen's two mode
+buttons are all deleted rather than one replacing another. The record is in `DECISIONS.md` under
+M82.
+
+**The illustrated presentation exists behind a flag, and it is rejected as it stands.** The game
+draws its legacy SVG graphics unless `--illustrated` (locally) or `?illustrated=1` (on the web)
+opts in, and neither changes gameplay. The focused parser, legacy-binding, grounding and boot
+checks pass; the display review does not.
 
 The concept capture is [illustrated-street-review.png](evidence/archive/session-captures/2026-09-06/illustrated-street-review.png).
 The street study is completely off and must be redone from scratch: it has no coherence or sense,
@@ -112,14 +140,6 @@ before another acceptance review. The record is in `DECISIONS.md` under M84.
 
 [Illustrated gameplay repair instructions](ILLUSTRATED-GAMEPLAY-FIXES.md) specify the asset,
 attachment, gait and sorting repairs, their order, and the visual acceptance checks for this capture.
-
-**M82 is built: the game has one control scheme and no question about which.** A press sets a
-direction, measured from her own world position, that she walks until the next press; a press
-within a generous radius of her stops her; a double press sets the direction and runs it; a pause
-button, top right, is the only thing drawn, and only on a touch device. The drag stick, the aimed
-joystick playtest 27 specified and never built, the `RUN` button and the title screen's two mode
-buttons are all deleted rather than one replacing another. The record is in `DECISIONS.md` under
-M82.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the
@@ -138,7 +158,7 @@ against 92 as *the* walking speed. Deleting the drag stick is what makes the rul
 true.
 
 **The most useful thing anybody can do now is play a day on the new controls, then play a whole run
-on the layers under it**, and none of the following has been touched by a thumb since M82 landed.
+on the layers under it**, and none of the following has been touched by a thumb since M83 landed.
 
 **Playtest 25's nine findings are all built and none of them has been walked.** The barrier rows
 stopped charging the meter, two ambient reaches were cut roughly in half, the cat and the dog hit
