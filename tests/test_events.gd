@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_a_pursuer_leaves_room_to_answer(t)
 	_test_the_answer_is_priced_by_how_soon_it_is_given(t)
 	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
+	_test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 	_test_a_pursuer_can_wait(t)
 	_test_a_pursuer_stops_at_walls(t)
 	_test_a_retried_day_is_the_same_day(t)
@@ -456,24 +457,26 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 		t.check(window > 0.0,
 				"the window to answer '%s' at the lunge itself is %.2fs" % [def.id, window])
 
-## **A pursuer has to be sited where it can be seen doing it.** *(M39, finding 13.)*
+## **A pursuer has to be sited where it actually closes on her rather than backing away.**
 ##
-## Three things have to agree and none of them knows about the other two: the stand-off is where it
-## stops, the director decides where it starts, and the viewport decides what is on screen. If the
-## stand-off ever grows past the lead the director gives it, a pursuer *backs away* through its own
-## telegraph instead of closing; if the lead grows past `SIGHT_AHEAD`, the whole telegraph happens
-## off the top of the screen when she walks north or south, and the notice is the sight of it.
+## Two things have to agree and neither knows about the other: the stand-off is where it stops, and
+## the director decides where it starts. If the stand-off ever grows past the least the director
+## could ever site it at — `Tuning.min_offscreen_lead()`, the worst case over every heading she
+## might be walking — a pursuer *backs away* through its own telegraph instead of closing, which is
+## a dog that visibly reverses down the street in front of her.
 ##
-## M39 moved the stand-off from 104px to 174 and would have broken the first of those silently — the
-## dog was sited at 184 — so the relationship is asserted rather than left as a coincidence.
+## The relationship is asserted rather than left as a coincidence: a change to the stand-off, to
+## `VIEW_HALF_EXTENT` or to `OFFSCREEN_NOTICE` has moved these numbers before without anybody
+## checking they still agree.
 func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 	for def in EventCatalogue.all():
 		if not def.pursues:
 			continue
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-		t.check(standoff < Tuning.SIGHT_AHEAD,
-				"'%s' stands off at %.0fpx, inside the %.0fpx that is still on screen"
-				% [def.id, standoff, Tuning.SIGHT_AHEAD])
+		var floor_lead := Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED)
+		t.check(standoff < floor_lead,
+				"'%s' stands off at %.0fpx, inside the %.0fpx it is sited at even on the worst axis"
+				% [def.id, standoff, floor_lead])
 		if def.pursues_within > 0.0:
 			# A place, not a moment: the director never sites it, so what has to hold is that its
 			# trigger is outside its stand-off — which `validate_pursuit` also checks, from the
@@ -484,6 +487,49 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 		t.check(_sited_at(def) >= standoff,
 				"'%s' is sited at %.0fpx, at or beyond the %.0fpx it stops at, so it closes rather "
 				% [def.id, _sited_at(def), standoff] + "than backing away through its own telegraph")
+
+## **A row declared lethal has to actually get the chance to be lethal.** *(2026-09-07: "also a
+## biker hit should be lethal.")* `cyclist` carries `hard_fail = true`, but
+## `EventInstance.is_lethal_at()` returns false for the whole of `is_telegraphing()` — so a
+## `TOWARD_PLAYER` row sited close enough to reach her before its own telegraph ends rides straight
+## through, declared lethal and never once able to fire. `EventDirector._toward_her()` sites a
+## `hard_fail` row at `Tuning.outlasting_telegraph_lead()` rather than the plain offscreen margin
+## precisely so this cannot happen; this checks the contract directly, at the instance level, rather
+## than trusting the siting alone.
+##
+## Walks every `hard_fail` `TOWARD_PLAYER` row in the catalogue rather than naming `cyclist`, so a
+## second row of the same shape is covered by construction rather than by remembering to add it.
+func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t) -> void:
+	var checked := 0
+	for def in EventCatalogue.all():
+		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER or not def.hard_fail:
+			continue
+		checked += 1
+		var closing := def.speed + Tuning.WALK_SPEED
+		var lead := Tuning.outlasting_telegraph_lead(Vector2.RIGHT, closing, def.telegraph_time)
+		# The same construction `_toward_her` uses: sited `lead` ahead along the heading, routed the
+		# same distance behind so it is still going somewhere when it reaches her.
+		var path := PackedVector2Array([Vector2(lead, 0.0), Vector2(-lead, 0.0)])
+		var instance := EventInstance.new()
+		instance.setup(def, path[0], path)
+		var her := Vector2.ZERO
+		var was_lethal := false
+		var elapsed := 0.0
+		# Generous over the time they would meet at, so a regression that undershoots the lead only
+		# a little still gets caught rather than timing the loop out first.
+		var limit := lead / closing * 1.5
+		while elapsed < limit and not instance.is_finished:
+			her.x += Tuning.WALK_SPEED * STEP
+			instance._process(STEP)
+			if instance.is_lethal_at(her):
+				was_lethal = true
+				break
+			elapsed += STEP
+		t.check(was_lethal,
+				"'%s' is declared hard_fail but the approach never once outlasts its own %.1fs "
+				% [def.id, def.telegraph_time] + "telegraph before it reaches her")
+		instance.free()
+	t.check(checked > 0, "there is at least one hard_fail TOWARD_PLAYER row to check ('cyclist')")
 
 ## **A retried day is the same day.** *(M39, playtest 10 finding 5: "the tutorial dog on day 3 only
 ## appeared once (I died) then it didn't appear again.")*
@@ -613,17 +659,16 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 ## Where the encounter actually starts, in px: where the director sites something that comes at her,
 ## or just inside the trigger for something that has been standing there.
 ##
-## *(M39.)* It was `AHEAD_LEAD_DISTANCE` for the first case, which stopped being true when the
-## stand-off grew past it — the director sites a pursuer beyond its own stand-off now, and a rig
-## measuring from the cat's lead would have been measuring an encounter the game cannot produce.
-##
-## *(M43.)* And it is `SIGHT_AHEAD` flat now rather than a clamp, because the notice a pursuit
-## gives is exactly the ground between the siting and the stand-off. It has to keep matching
-## `EventDirector._crossing_ahead_of`, which is the reason this is one line and not a formula.
+## The director's own siting depends on the heading she happens to be walking
+## (`Tuning.offscreen_lead(heading, closing_speed)`), so this asks for the worst case over every
+## heading rather than one of them — `Tuning.min_offscreen_lead()`, the vertical axis plus 200ms of
+## closing at the row's own `pursue_speed` against `WALK_SPEED`, which is the least ground the
+## contract can ever rely on. A rig checked against a more generous heading would pass on an
+## encounter the game can still produce on a worse one.
 func _sited_at(def: EventDef) -> float:
 	if def.pursues_within > 0.0:
 		return def.pursues_within - 10.0
-	return Tuning.SIGHT_AHEAD
+	return Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED)
 
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.

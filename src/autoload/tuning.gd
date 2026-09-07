@@ -981,18 +981,81 @@ const OUT_OF_SIGHT := 420.0
 ## window* stated as a distance: at `WALK_SPEED` it is the two seconds she gets between seeing
 ## the cat crouch and reaching the place it bolts through.
 const AHEAD_LEAD_DISTANCE := 184.0
-## The furthest ahead of her something may be sited and still be **on screen** when it gets there.
+## Half the visible view along each axis, in px, from her: the camera sits on her at zoom 2 over a
+## 1280x720 viewport, so the visible world is 640x360 — 320px sideways, 180px vertically.
 ##
-## The camera sits on her at zoom 2 over a 1280x720 viewport, so the visible world is
-## 640x360 and the worst axis is the vertical one: 180px, plus about 32 of camera look-ahead. A
-## pursuer is sited beyond its own stand-off so that it visibly closes into it, and this is the cap
-## on that — a dog telegraphing off the top of the screen is a dog with no telegraph, and the sight
-## of it is the whole cue.
+## **This replaces a flat cap that was sized for one axis and applied to both.** The old
+## `SIGHT_AHEAD` (200px) put anything `EventDirector` sited on the horizontal axis 120px inside the
+## boundary there — on screen the moment it appeared, whatever the vertical arithmetic said —
+## which is exactly *"bikers / unleashed dogs all pop in in front of the player instead of starting
+## off screen"* (playtest 33, finding 8). `offscreen_boundary()` below asks the real question
+## instead: how far to the edge of this box *along the heading actually in play*.
+const VIEW_HALF_EXTENT := Vector2(320.0, 180.0)
+
+## Distance from her to the edge of the view along `heading` — a ray to the edge of the
+## `VIEW_HALF_EXTENT` box, the same arithmetic `DangerEdge._distance_to_edge` already draws the
+## screen-edge badge with. `EventDirector` sites a row that travels toward her — a pursuer or a
+## `TOWARD_PLAYER` row — at least this far out, so it starts genuinely off screen whichever way she
+## is walking rather than only on the one axis a flat number happened to cover.
+func offscreen_boundary(heading: Vector2) -> float:
+	var boundary := INF
+	if not is_zero_approx(heading.x):
+		boundary = minf(boundary, VIEW_HALF_EXTENT.x / absf(heading.x))
+	if not is_zero_approx(heading.y):
+		boundary = minf(boundary, VIEW_HALF_EXTENT.y / absf(heading.y))
+	return boundary
+
+## The least `offscreen_boundary()` can be for any heading — the vertical axis, since 180 is
+## smaller than the 320 the horizontal one gives. What a fairness check needs when it has no
+## particular heading to ask about: `EventDef.validate()` checks a row's own geometry against the
+## worst case the director could ever site it in, not the case a given walk happens to produce.
+func min_offscreen_boundary() -> float:
+	return VIEW_HALF_EXTENT.y
+
+## How long a row travelling toward her has to still be off screen once it is sited, at the speed
+## the gap is actually closing. *(2026-09-07: "events that go towards the player (biker / pursuing
+## dog) should at least be 200ms off screen with a warning.")*
+const OFFSCREEN_NOTICE := 0.2
+
+## Where `EventDirector` sites a row that travels toward her — a pursuer or a `TOWARD_PLAYER` row —
+## along `heading`: outside the view (`offscreen_boundary()`) and `OFFSCREEN_NOTICE` seconds further
+## still, at `closing_speed`.
 ##
-## Not to be confused with `OUT_OF_SIGHT`, which is the *other* end of the same measurement and is
-## deliberately more generous: nothing may be watched out of existence, so that number is the far
-## corner of the view and this one is the near edge of it.
-const SIGHT_AHEAD := 200.0
+## **`closing_speed` is the row's own speed plus `WALK_SPEED`, not the row's speed alone** — she is
+## usually walking into it, so the gap between the siting and the boundary closes at both speeds
+## together. For `cyclist` (165px/s) that is 257px/s, 51px of margin; for `charging_dog` (130px/s
+## pursuing) that is 222px/s, 44px. Neither number is authored anywhere else — this function is
+## where the 200ms turns into pixels, per row, per heading.
+func offscreen_lead(heading: Vector2, closing_speed: float) -> float:
+	return offscreen_boundary(heading) + closing_speed * OFFSCREEN_NOTICE
+
+## The least `offscreen_lead()` can be for a row closing at `closing_speed`, whichever way she is
+## heading — `min_offscreen_boundary()` plus the same margin. What `EventDef.validate()` needs for
+## the same reason `min_offscreen_boundary()` does: a per-row floor that does not depend on a
+## heading nothing at validation time has chosen yet.
+func min_offscreen_lead(closing_speed: float) -> float:
+	return min_offscreen_boundary() + closing_speed * OFFSCREEN_NOTICE
+
+## Where a `hard_fail` row travelling toward her has to be sited so its own telegraph is over
+## *before* it reaches her, not merely so it starts off screen.
+##
+## **A declared `hard_fail` that arrives while still `is_telegraphing()` is not lethal at all** —
+## `EventInstance.is_lethal_at()` refuses the whole time, so a row sited close enough rides straight
+## through her, "declared" lethal and never once able to fire. *(2026-09-07: "also a biker hit
+## should be lethal.")* `cyclist` (`telegraph_time` 3.3s) sited at the old flat 200px and closing at
+## 257px/s arrived in 0.78s — nowhere near outlasting a 3.3s telegraph.
+##
+## So the siting is whichever is further: `offscreen_lead()` (the ordinary offscreen margin every
+## `TOWARD_PLAYER` row gets), or the distance that takes `telegraph_time + OFFSCREEN_NOTICE` to
+## close at `closing_speed` — the same 200ms margin restated over the telegraph instead of the view
+## boundary, so the approach outlasts it by a real amount rather than by a coin flip of frame
+## timing. For `cyclist` the telegraph term dominates: `(3.3 + 0.2) * 257` = 900px, against a
+## `offscreen_lead()` of 371px on the widest axis — the telegraph is the binding constraint, not the
+## screen.
+func outlasting_telegraph_lead(heading: Vector2, closing_speed: float,
+		telegraph_time: float) -> float:
+	return maxf(offscreen_lead(heading, closing_speed),
+			(telegraph_time + OFFSCREEN_NOTICE) * closing_speed)
 
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".

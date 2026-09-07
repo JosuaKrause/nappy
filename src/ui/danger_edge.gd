@@ -206,16 +206,24 @@ func _is_worth_an_arrow(instance: EventInstance) -> bool:
 	# currently in that position, and this is here so that adding one is a decision.
 	if _icon_for(instance.def.look) == null:
 		return false
-	# An `AHEAD_OF_PLAYER` event is sited across her line by the director, a fixed lead ahead of
+	# An `AHEAD_OF_PLAYER` crossing is sited across her line by the director, a fixed lead ahead of
 	# her, and its entire content is *the moment it happens to you* — three seconds of cat is not
 	# a place. Announcing it from the edge of the screen before it arrives gives a badge that
 	# appears and vanishes in the same second as the thing walks into view — and takes away the
 	# moment, which is the whole row. Its fairness is paid in geometry.
 	#
+	# **A pursuer is the exception, because it is no longer a moment once it is sited off screen.**
+	# `charging_dog` carries `spawn_mode == AHEAD_OF_PLAYER` for the same siting the director gives
+	# every other crossing row, but `EventDirector` now sites it outside the view and lets it close
+	# in — so for as long as it is off screen it is exactly the thing this function exists to
+	# announce, and the moment it crosses into view the ordinary "no badge for what is already
+	# visible" filter in `_measure()` takes over. A row sited close and gone in three seconds still
+	# has nothing to announce; a row sited off screen and coming does.
+	#
 	# **`TOWARD_PLAYER` is the opposite case and falls through on purpose.** It is a road, not an
 	# ambush — she is meant to see it coming and choose a side or a turn before it arrives — so the
 	# badge is exactly the warning the row is designed around rather than a spoiler of it.
-	if instance.def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
+	if instance.def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and not instance.def.pursues:
 		return false
 	if instance.def.hard_fail:
 		return true

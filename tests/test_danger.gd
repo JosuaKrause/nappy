@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
 	_test_only_what_she_cannot_outwalk_earns_an_arrow(t)
+	_test_a_director_sited_pursuer_earns_an_arrow(t)
 	_test_the_screen_edge_is_the_same_size_for_everyone(t)
 	_test_the_badge_measures_the_things_own_speed(t)
 	_test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
@@ -358,6 +359,33 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 
 	t.check(DangerEdge.MOST_AT_ONCE <= 3,
 			"and at most a handful at once, or the edge of the screen becomes wallpaper")
+	edge.free()
+
+## **A pursuer sited off screen has to have something announcing it while it is off screen.**
+## `charging_dog` carries `spawn_mode == AHEAD_OF_PLAYER`, the same as the cat's three-second
+## crossing that the badge deliberately never announces — but `EventDirector` now sites the dog
+## outside the view and lets it close in, so unlike the cat it has an offscreen phase worth
+## something to warn about. A row moved further out without the badge following it would have
+## *less* warning than the old close siting gave, not more.
+func _test_a_director_sited_pursuer_earns_an_arrow(t) -> void:
+	var edge := DangerEdge.new()
+	var dog := EventCatalogue.by_id("charging_dog")
+	t.check(dog != null and dog.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and dog.pursues,
+			"charging_dog is still a director-sited pursuer")
+	if dog:
+		var instance := _instance(dog)
+		t.check(edge._is_worth_an_arrow(instance),
+				"the day-3 dog is announced off screen once it is sited there")
+		instance.free()
+
+	# And the cat it shares a spawn mode with still is not — the exemption is for a pursuer only,
+	# not for the whole spawn mode.
+	var cat := EventCatalogue.by_id("cat_dash")
+	if cat:
+		var instance := _instance(cat)
+		t.check(not edge._is_worth_an_arrow(instance),
+				"a three-second crossing still has nothing to announce before it arrives")
+		instance.free()
 	edge.free()
 
 ## `MARGIN` and `SCREEN_MARGIN` are screen px, which is only a fair unit if every player's screen
