@@ -728,8 +728,8 @@ is not a telegraph, and `Tuning.validate_event()` cannot tell the difference.
 
 ### The visual vocabulary
 
-**Nothing is ringed, and that is a standing decision rather than a style.** The reason is worth
-keeping rather than merely acting on:
+**No entity is ringed for danger, and that is a standing decision rather than a style.** The
+reason is worth keeping rather than merely acting on:
 
 > A ring communicates a falloff radius, which is a number. A silhouette communicates a threat.
 > How dangerous a thing is should be visible from looking at *the thing*.
@@ -739,6 +739,18 @@ the field it is drawn for: a crowd agent has no def to ring, and a `city_wide` s
 draw, so on a normal street a few things would be ringed, most would not, and nothing would explain
 the difference. **A cue that marks everything says nothing**, and every rule below exists to keep
 the replacement from becoming that.
+
+**One row in the table below is a field, drawn on purpose, and it answers a question the rest of
+this vocabulary never had a cue for.** *Asked for no rings and no drawn fields, held since this
+vocabulary was written · overturned on 2026-09-07 for the "Ground halo" row only, because the
+player asked for exactly this:* "let's create a shader ... to create a soft halo surrounding
+entities that are currently actively causing excitement ... so they know what to walk away from
+and what is causing excitement to go up." The reasoning quoted above is about *danger* — what a
+thing will do to you — and stays true of every other row here: nothing is ringed to say how bad it
+is. The halo answers a different question, *what is charging the meter right now*, drawn as the
+sum `EventManager.total_excitement_at()` already reads rather than as a radius round any one
+entity. `.claude/skills/cues/SKILL.md`, "One field, and it answers one question" is the narrow
+version of this exception, kept narrow enough to still refuse the next ring somebody wants.
 
 | Cue | Means | Where |
 | --- | --- | --- |
@@ -756,9 +768,12 @@ the replacement from becoming that.
 | **HUD line** | For a `city_wide` source, which has no position and therefore nothing to stand under. | `hud.gd` |
 | **Sound lines** | Concentric arcs thrown off a source on the rising edge of a pulse — the visual form of a discrete noise (a yell, a bark, a beep, a siren whoop) | not built; queued in `docs/TODO.md` |
 
-**Nothing draws a field.** That is the rule, and it is a standing decision rather than a
-preference. If something new needs signalling, reach for one of the rows above; if none of them
-fits, that is a design conversation and not a licence to draw a radius.
+**Nothing is ringed for danger, and that is the rule.** It is a standing decision rather than a
+preference: if something new needs signalling, reach for one of the rows above; if none of them
+fits, that is a design conversation and not a licence to draw a radius. The one field in the
+table — the ground halo — is not that licence exercised again: it is one cue, for the cost being
+charged right now, drawn as the summed field it is reading, and it leaves the caret, the badge and
+the exclamation mark meaning exactly what they meant before it existed.
 
 Three rules underneath the table, in the order they matter:
 

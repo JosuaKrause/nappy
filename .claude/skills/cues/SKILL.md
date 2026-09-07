@@ -7,8 +7,8 @@ description: The visual danger vocabulary — what may be drawn to signal danger
 
 ## No circles around entities
 
-**Standing decision. Do not add one, and do not reach for a ring when something new needs
-signalling.**
+**Standing decision for danger. Do not add a ring, and do not reach for one when something new
+needs signalling.**
 
 > How dangerous a thing is has to be visible from looking at **the thing**.
 
@@ -25,8 +25,47 @@ The vocabulary is in `docs/EVENTS.md`, "The visual vocabulary":
 - above the **player**, a flashing exclamation mark for a soon-to-be-bad spot, doubled and red for
   danger already on her
 - over the **pram**, the only cue that is not about the world — four states of the baby herself
+- a **soft halo under the entities**, summed from every live source currently charging the meter —
+  see "One field, and it answers one question" below
 
-**Nothing draws a field.**
+**The ban on a ring round a threat is untouched.** Every reason above still holds against one: a
+ring is a number and a silhouette is a threat, whatever new thing needs signalling next.
+
+## One field, and it answers one question
+
+*Asked for no rings and no drawn fields, held since the vocabulary was written · overturned on
+2026-09-07 for one specific cue, because the player asked for exactly this:* "lastly, let's create
+a shader ... to create a soft halo surrounding entities that are currently actively causing
+excitement. this is meant as a hint to the player so they know what to walk away from and what is
+causing excitement to go up."
+
+**The reasoning above is about danger — what a thing will do to you — and it is not what this cue
+answers.** A ring still communicates a falloff radius and a number is still not a threat, which is
+why this is not a ring round any one entity. What it answers is a question the vocabulary never
+had a cue for: *the meter is going up right now and nothing on screen says which of the six things
+around her is doing it.*
+
+**The exception is narrow, and the narrowness is what stops it from being the next ring somebody
+wants:**
+
+- **One cue, `ExcitementHalo`, not a general licence to draw.** Nothing else in the vocabulary
+  gets a field of its own by analogy to this one.
+- **For the cost being charged right now, not for what exists.** The set it draws is
+  `EventInstance.contribution_at(her position)` above a floor — a handful at a time by
+  construction, the same *"a cue that marks everything says nothing"* rule the caret already
+  answers to, restated over a field instead of a mark.
+- **Drawn as the summed field it is reading, in one shader.**
+  `EventManager.total_excitement_at()` is a plain sum, so the halo is that sum evaluated per pixel
+  — one node, one `.gdshader` — rather than one ring per source, which could only ever show two
+  circles crossing where the game charges a bright middle. See
+  `assets/shaders/excitement_halo.gdshader`.
+- **Soft and under everything.** The entities, the crowd and the player draw over it, never under
+  it, so it stays a hint rather than a wall — and the caret, the badge and the exclamation mark
+  keep meaning exactly what they meant before it existed: *worth a detour*, *something is coming*,
+  *the contract is now about you*. Three sentences, one apiece, unchanged by a fourth.
+
+If something new wants a field of its own, that is a design conversation this one has not already
+settled.
 
 ## Four rules that are the whole reason it beats the rings
 
