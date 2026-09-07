@@ -151,15 +151,18 @@ func is_open() -> bool:
 ## a pause stops the world and this one deliberately does not. What stops, and what carries on
 ## behind the scrims, is `main`'s decision — see `main._open_the_title()`.
 ##
-## **The one hint in the game that is never empty.** Unlike `PauseScreen`/`DaySummary`'s
-## now-always-blank hint, this one still needs to say *press to begin* — the two buttons are the
-## only pointer way in, but a keyboard has neither to press, so the hint still speaks for it.
-## `tap`, on every device: *(2026-09-06: "never should it be mentioned to the user".)* `q to quit`
-## no longer appears here even though the key still works — `_can_quit` now gates
-## `_unhandled_input()` alone.
+## **The one hint in the game that is never empty, and it has to name the thing that actually
+## works.** *(2026-09-07, on review: "a bare tap no longer begins anything ... the screen instructs
+## the player to do the one thing that will not work".)* `tap to begin` was true when any press
+## anywhere began a run; once only the two buttons do, it sends a first-time player looking for
+## something a tap on the scrim will never do. `press a button` is what is actually true and what
+## still says nothing about a key, the same way `tap` never did *(2026-09-06: "never should it be
+## mentioned to the user".)* — it also points the sentence at the two discs themselves, which are
+## otherwise the only thing on this screen that does anything. `q to quit` still does not appear
+## here even though the key still works — `_can_quit` gates `_unhandled_input()` alone.
 func open(again := false) -> void:
 	visible = true
-	_hint.text = "tap to walk again" if again else "tap to begin"
+	_hint.text = "press a button to walk again" if again else "press a button to begin"
 
 func close() -> void:
 	visible = false

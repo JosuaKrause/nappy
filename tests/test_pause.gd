@@ -371,20 +371,21 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	t.get_tree().paused = false
 	pause.queue_free()
 
-## **One hint, one body, on every device — and now two buttons besides.** *(Playtest 29 finding 4:
-## "in fact I said to remove the keyboard inputs altogether but I'm willing to compromise on
-## letting them stay silently" — no key may be named on screen.)* The hint still says *press to
-## begin*, even though the two buttons are the only pointer way in: a keyboard has neither to
-## press, so the tap wording still speaks for it. Each caption says what its own button does rather
-## than naming the mode — see `_BODY`'s doc for why the teaching line itself does not change here at
-## all (2026-09-07's M88 asked for the buttons back, not a new lesson).
+## **The hint has to name the thing that actually works.** *(2026-09-07, on review: "a bare tap no
+## longer begins anything ... the screen instructs the player to do the one thing that will not
+## work".)* `tap to begin` was true when a bare press anywhere began a run; once only the two
+## buttons do, `press a button` is what replaces it — still no key named, the same way `tap` never
+## named one *(Playtest 29 finding 4: "in fact I said to remove the keyboard inputs altogether but
+## I'm willing to compromise on letting them stay silently".)* Each caption says what its own
+## button does rather than naming the mode — see `_BODY`'s doc for why the teaching line itself does
+## not change here at all (2026-09-07's M88 asked for the buttons back, not a new lesson).
 func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 
 	title.open()
-	t.check("tap to begin" in title._hint.text,
-			"the hint says tap, on every device ('%s')" % title._hint.text)
+	t.check("press a button to begin" in title._hint.text,
+			"the hint names the thing that actually works ('%s')" % title._hint.text)
 	t.check("Tap to walk" in title._body.text,
 			"and the body names the tap rather than a key ('%s')" % title._body.text)
 	t.check(not "Shift" in title._body.text, "no key is named")
@@ -399,8 +400,8 @@ func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 			"both buttons are on screen, the only pointer way to begin a run")
 
 	title.open(true)
-	t.check("tap to walk again" in title._hint.text,
-			"a returning run gets the same tap wording ('%s')" % title._hint.text)
+	t.check("press a button to walk again" in title._hint.text,
+			"a returning run gets the same wording, naming the buttons again ('%s')" % title._hint.text)
 
 	title.close()
 	title.queue_free()
