@@ -200,20 +200,28 @@ Controls: arrow keys or WASD to walk, hold **Shift** to run, **Esc** to pause. T
 interact key — touching a resistance chalk mark or a task's own contact is what completes it. The
 keyboard is a device rather than a scheme and works this way regardless of what a pointer does.
 
-A press — a finger, or a mouse click on any build — sets a direction, measured from her own world
-position, that is locked in and walked with nothing held down until the next press changes it; a
-press within a generous radius of her stops her instead; a double press sets the direction and
-holds **run** until the next press changes or releases it, the same deliberate act **Shift** is
-rather than a gradient a thumb could cross by accident. There is no partial-strength walk on any
-input path: every press is a full-speed unit vector, so the only two speeds in the game are the
-walk and the run.
+A press — a finger, or a mouse click on any build — sets a direction that is locked in and walked
+with nothing held down until the next press changes it; a double press sets the direction and holds
+**run** until the next press changes or releases it, the same deliberate act **Shift** is rather
+than a gradient a thumb could cross by accident. Held down and moved, a finger or the left mouse
+button keeps re-aiming continuously until it lifts. There is no partial-strength walk on any input
+path: every press or motion event presses a full-speed unit vector, so the only two speeds in the
+game are the walk and the run.
 
-The one thing drawn is a pause button, top right, shown only on a touch device: a real
+Where a heading is measured from, and what stops her, are the one place a mouse and a real finger
+disagree. A mouse aims from her own world position, and a click within a generous radius of that
+position stops her. A real touch instead aims from whichever of two fixed points on the screen is
+nearer the press — drawn as a ring with a knob at the currently-held direction, so what is locked in
+can be read off the glass without watching her — and is stopped by a press on either point or by one
+in a band down the screen's own middle, never by a press near her own position: the camera keeps her
+at the middle of the screen, so that ground is the band's own.
+
+The pause button, top right, is shown on every device once a day is actually running: a real
 `InputEventAction` for `pause` through `Input.parse_input_event()` rather than held state, since
 `main` reads the pause off the propagated event and would hear nothing from `Input.action_press()`
-alone. It fires on release rather than on touch-down, and only when the release is still over the
-button, so a thumb that lands wrong can slide off without stopping the day. A keyboard device never
-draws it — **Esc** is its pause.
+alone. It fires on release rather than on press, and only when the release is still over the button,
+so a thumb that lands wrong can slide off without stopping the day. **Esc** pauses too, on every
+device, silently.
 
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.
@@ -611,12 +619,12 @@ fixture that moves. The price is its body — anything mobile is exempt from "so
 because a moving wall on a two-tile pavement pins her against a building. What stops you walking
 through a man shouting is the meter: intensity 14 over 210px.
 
-**Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 teaches the arrow keys and says nothing
-about running; day 3 is when something comes after the pram, and the HUD says *Hold SHIFT to run*
-— or, on a touch device, *Hold RUN to run*, naming the held `RUN` circle the touch layer draws
-instead of a key that device does not have — on the frame the **first** pursuit of that day
-telegraphs, rather than at dawn — a line of text at dawn is a control list, and the same line over
-a dog at the pram is an instruction.
+**Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 says *Tap to walk, double tap to run* and
+nothing more; day 3 is when something comes after the pram, and the HUD says *Double tap to run* —
+naming no key on any device, since the keyboard's own **Shift** works silently like every other key
+this game never puts on screen — on the frame the **first** pursuit of that day telegraphs, rather
+than at dawn — a line of text at dawn is a control list, and the same line over a dog at the pram is
+an instruction.
 `EventDirector` moves that first pursuit to the head of its queue, so the lesson is not left to a
 weight of 1.4. The hint says nothing again for the rest of the run: it is the lesson, not a running
 commentary on the mechanic, so every later pursuit — a second dog the same day, `alley_robbery`

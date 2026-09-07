@@ -22,7 +22,7 @@ func run(t) -> void:
 	_test_is_double_tap_needs_both_windows(t)
 	_test_set_direction_presses_the_components_of_the_heading(t)
 	_test_set_direction_on_her_own_position_stops_rather_than_pressing(t)
-	_test_a_tap_within_the_stop_radius_stops_her(t)
+	_test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t)
 	_test_a_direction_stays_locked_in_with_nothing_held_down(t)
 	_test_a_tap_maps_its_screen_position_through_the_viewports_canvas_transform(t)
 	_test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t)
@@ -38,8 +38,16 @@ func run(t) -> void:
 	_test_is_on_a_focus_catches_the_stop_radius_around_either_point(t)
 	_test_a_touch_aims_from_the_nearer_focus_not_from_her(t)
 	_test_a_press_at_a_focus_centre_stops_her_on_touch(t)
-	_test_a_press_on_her_still_stops_her_on_touch(t)
+	_test_a_touch_near_her_own_position_no_longer_stops_her(t)
 	_test_a_mouse_click_still_aims_from_her_not_a_focus(t)
+	_test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t)
+	_test_a_stop_press_does_not_start_a_drag(t)
+	_test_a_double_tap_that_then_drags_keeps_running(t)
+	_test_a_mouse_drag_reaims_from_her_own_position(t)
+	_test_a_mouse_motion_without_the_button_held_does_nothing(t)
+	_test_is_in_stop_band_catches_the_middle_and_only_the_middle(t)
+	_test_a_tap_in_the_stop_band_stops_her_on_touch(t)
+	_test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t)
 	t.get_tree().paused = was_paused
 	_release_actions()
 
@@ -217,12 +225,17 @@ func _test_set_direction_on_her_own_position_stops_rather_than_pressing(t) -> vo
 	controls.queue_free()
 	rig.free()
 
-## **The generous radius, not the exact pixel.** *(2026-09-06: "also, to stop her just click on
-## her".)* `STOP_RADIUS` is wide enough to catch a press on the pram, which rides up to
-## `PRAM_DISTANCE` off to one side of her, not only a press on her own exact world position.
-func _test_a_tap_within_the_stop_radius_stops_her(t) -> void:
+## **The generous radius, not the exact pixel — and a mouse click only now.** *(2026-09-06: "also,
+## to stop her just click on her".)* `STOP_RADIUS` is wide enough to catch a click on the pram,
+## which rides up to `PRAM_DISTANCE` off to one side of her, not only a click on her own exact
+## world position. *(2026-09-07: "mouse click doesn't have the band and will keep the click the
+## player to stop behavior".)* Replaces the old, device-agnostic version of this test rather than
+## sitting beside it — the touch half of what it asserted is now
+## `_test_a_touch_near_her_own_position_no_longer_stops_her`, further down.
+func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	var rig := _rig_at(t, Vector2(200.0, 200.0))
 	var controls := _controls(t)
+	controls._touch = false
 	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
 
 	controls._on_tap(transform * Vector2(500.0, 200.0), 0.0)
@@ -232,12 +245,12 @@ func _test_a_tap_within_the_stop_radius_stops_her(t) -> void:
 	# (34px) as well as her own PLAYER_BODY_RADIUS (14px).
 	controls._on_tap(transform * Vector2(230.0, 200.0), 1.0)
 	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
-			"a press near her, not only exactly on her, stops her")
+			"a click near her, not only exactly on her, stops her")
 
 	# Well outside the radius sets a direction instead.
 	controls._on_tap(transform * Vector2(500.0, 200.0), 2.0)
 	t.check(Input.is_action_pressed("move_right") and controls._walking,
-			"a press outside the stop radius sets a direction instead")
+			"a click outside the stop radius sets a direction instead")
 
 	controls.queue_free()
 	rig.free()
@@ -506,6 +519,20 @@ func _test_is_on_a_focus_catches_the_stop_radius_around_either_point(t) -> void:
 	t.check(not TouchControls.is_on_a_focus(Vector2(640.0, 360.0)),
 			"exactly between the two, past both radii, is neither")
 
+## Pure geometry, no viewport needed — the same shape `is_on_a_focus()` is tested in.
+## *(2026-09-07: "there should be a narrow band in the middle of the screen (size of the stop
+## circle) that stops the player".)*
+func _test_is_in_stop_band_catches_the_middle_and_only_the_middle(t) -> void:
+	t.check(TouchControls.is_in_stop_band(Vector2(640.0, 0.0)), "dead centre, at any height, stops")
+	t.check(TouchControls.is_in_stop_band(Vector2(640.0, 719.0)), "even right at the bottom edge")
+	t.check(TouchControls.is_in_stop_band(Vector2(640.0 + TouchControls.STOP_RADIUS, 360.0)),
+			"and STOP_RADIUS to either side, at the diameter's own edge")
+	t.check(not TouchControls.is_in_stop_band(
+			Vector2(640.0 + TouchControls.STOP_RADIUS + 1.0, 360.0)),
+			"but just past that edge is an ordinary direction press")
+	t.check(not TouchControls.is_in_stop_band(TouchControls.FOCUS_LEFT),
+			"and neither focus itself is anywhere near the middle band")
+
 ## **The reach the two focal points exist to fix.** *(2026-09-06, the player: "right now the
 ## finger needs to reach over half the phone to be able to input an up or down direction".)* A
 ## press west of a focus walks west, and above it walks north, no matter where she is standing —
@@ -545,11 +572,15 @@ func _test_a_press_at_a_focus_centre_stops_her_on_touch(t) -> void:
 	controls.queue_free()
 	rig.free()
 
-## **Both doors, not one instead of the other.** *(2026-09-06, the player: "tapping in their
-## center or on the player should stop the player still".)* A press near her own world position
-## stops her on a touch device too, even though the direction she would otherwise have walked is
-## now measured from a focus rather than from her.
-func _test_a_press_on_her_still_stops_her_on_touch(t) -> void:
+## **The world-space door is gone on a touch device, replaced by the band.** *(2026-09-06, the
+## player: "tapping in their center or on the player should stop the player still" — the finding
+## M83 built this test for. 2026-09-07, overturning it: "with that we can remove tap the player to
+## stop since it's the same area and if a movement accidentally goes over the player it might
+## become surprising to see her stop".)* The camera sits on her, so her own screen position already
+## sits on the stop band's own centre line — covering the ground twice is what made a drag crossing
+## her by accident stop her by surprise. A press near her own world position, off both focal points
+## and off the band, now walks toward the nearer focus instead of stopping.
+func _test_a_touch_near_her_own_position_no_longer_stops_her(t) -> void:
 	var rig := _rig_at(t, Vector2(300.0, 300.0))
 	var controls := _controls(t)
 	controls._touch = true
@@ -558,10 +589,14 @@ func _test_a_press_on_her_still_stops_her_on_touch(t) -> void:
 	controls.set_direction(Vector2(400.0, 300.0), false)
 	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
 
-	# Well away from either focus in design space, but within STOP_RADIUS of her in world space.
+	# Well away from either focus and the middle band in design space, and within the old
+	# world-space STOP_RADIUS of her -- the exact case the deleted door used to catch.
 	controls._on_tap(transform * Vector2(310.0, 300.0), 1.0)
-	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
-			"a press on her still stops her on a touch device")
+	t.check(controls._walking,
+			"a press near her walks toward the nearer focus instead of stopping")
+	t.check(controls._direction.is_equal_approx(TouchControls.heading_to(
+			Vector2(310.0, 300.0), TouchControls.FOCUS_LEFT)),
+			"toward FOCUS_LEFT specifically, the nearer of the two")
 
 	controls.queue_free()
 	rig.free()
@@ -586,11 +621,179 @@ func _test_a_mouse_click_still_aims_from_her_not_a_focus(t) -> void:
 	controls.queue_free()
 	rig.free()
 
+## **A held finger keeps re-aiming, and the direction it presses is still a full unit vector at
+## every step** — the same guarantee `_test_no_input_path_presses_a_vector_shorter_than_one` holds
+## for a single press, now asked of the drag that replaces the stick, since a drag is the other new
+## path that could in principle press a partial vector and does not. *(2026-09-07: "dragging the
+## finger doesn't work anymore but should".)*
+func _test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
+	t.check(Input.is_action_pressed("move_left"), "the press itself walks west of the focus")
+	t.check(controls._drag_pointer_index == 0, "and the same finger is now tracked for the drag")
+
+	for degrees in range(0, 360, 30):
+		var offset := Vector2.RIGHT.rotated(deg_to_rad(float(degrees))) * 150.0
+		controls._input(_drag_event(0, TouchControls.FOCUS_LEFT + offset))
+		var pressed := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
+		t.check(pressed.length() >= 1.0 - 0.001,
+				"a drag at %d degrees around the focus still presses a full unit vector (got %.4f)"
+						% [degrees, pressed.length()])
+
+	controls._input(_drag_event(0, TouchControls.FOCUS_LEFT + Vector2(150.0, 0.0)))
+	t.check(Input.is_action_pressed("move_right") and not Input.is_action_pressed("move_left"),
+			"the last drag step, due east of the focus, is what is currently held")
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(150.0, 0.0), false))
+	t.check(controls._drag_pointer_index == -1, "lifting the finger stops tracking the drag")
+	t.check(Input.is_action_pressed("move_right"),
+			"and the direction locks in as it stood, unrenewed by the release itself")
+
+	controls.queue_free()
+	rig.free()
+
+## **A press dead on a focus stops her, and does not also start a drag** that would only re-open
+## the direction the press just closed the moment the same finger moves again.
+func _test_a_stop_press_does_not_start_a_drag(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT, true))
+	t.check(controls._drag_pointer_index == -1, "a stop press tracks no drag")
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT, false))
+	controls.queue_free()
+	rig.free()
+
+## **A double tap that then drags holds `run` the same way a double tap already does.**
+## *(2026-09-07: "A double press that then drags holds run the same way a double press already
+## does".)*
+func _test_a_double_tap_that_then_drags_keeps_running(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), false))
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
+	t.check(Input.is_action_pressed("run"), "the double tap itself runs")
+
+	controls._input(_drag_event(0, TouchControls.FOCUS_LEFT + Vector2(0.0, -150.0)))
+	t.check(Input.is_action_pressed("run"), "and dragging afterward keeps holding run")
+	t.check(Input.is_action_pressed("move_up"), "while the heading itself keeps updating")
+
+	controls.queue_free()
+	rig.free()
+
+## **The mouse's own half of the drag.** *(2026-09-07: "although dragging a mouse should reaim as
+## well".)* Its origin is her own position, not a focus — the one place a mouse and a finger keep
+## disagreeing — carried through every motion event exactly as `_drag_origin_world` recorded it at
+## the click that started this drag.
+func _test_a_mouse_drag_reaims_from_her_own_position(t) -> void:
+	var rig := _rig_at(t, Vector2(300.0, 300.0))
+	var controls := _controls(t)
+	controls._touch = false
+	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = transform * Vector2(500.0, 300.0)
+	controls._input(click)
+	t.check(Input.is_action_pressed("move_right"), "the click itself walks east of her")
+
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	motion.position = transform * Vector2(300.0, 100.0)
+	controls._input(motion)
+	t.check(Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_right"),
+			"dragging the held button re-aims from her own position, not a fixed focus")
+
+	var release := click.duplicate()
+	release.pressed = false
+	release.position = transform * Vector2(300.0, 100.0)
+	controls._input(release)
+	t.check(controls._drag_pointer_index == -1, "releasing the button stops tracking the drag")
+
+	controls.queue_free()
+	rig.free()
+
+## A mouse simply moving, with no button held, is not a drag — `button_mask` is what tells the two
+## apart, and every ordinary mouse movement in the game carries no mask at all.
+func _test_a_mouse_motion_without_the_button_held_does_nothing(t) -> void:
+	# Leftover state from the previous test's own drag, not this one's concern to leave held.
+	_release_actions()
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	controls._touch = false
+
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = 0
+	motion.position = Vector2(999.0, 999.0)
+	controls._input(motion)
+	t.check(not Input.is_action_pressed("move_right") and not Input.is_action_pressed("move_left")
+			and not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
+			"idle mouse movement never sets a direction")
+
+	controls.queue_free()
+	rig.free()
+
+## A press dead in the middle of the screen stops her on a touch device, the third door into
+## `_stop()` beside a press on either focus. *(2026-09-07: "there should be a narrow band in the
+## middle of the screen ... that stops the player".)*
+func _test_a_tap_in_the_stop_band_stops_her_on_touch(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls._on_tap(TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), 0.0)
+	t.check(Input.is_action_pressed("move_left"), "walking first, so a stop has something to undo")
+
+	controls._on_tap(Vector2(640.0, 200.0), 1.0)
+	t.check(not Input.is_action_pressed("move_left") and not controls._walking,
+			"a press in the middle band stops her rather than steering toward either focus")
+
+	controls.queue_free()
+	rig.free()
+
+## **A drag that wanders into the band stops her rather than steering her**, which is the whole
+## reason the band exists: without it, a finger drifting past the centre line would swap which
+## focus it steers from and snap the heading to somewhere else entirely. Leaving the band resumes
+## steering, since the door only closes while the finger is actually standing in it.
+func _test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls._touch = true
+
+	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
+	t.check(Input.is_action_pressed("move_left"), "the press itself walks west of the focus")
+
+	controls._input(_drag_event(0, Vector2(660.0, 480.0)))
+	t.check(not Input.is_action_pressed("move_left") and not controls._walking,
+			"dragging into the band stops her rather than steering her toward the right focus")
+
+	controls._input(_drag_event(0, TouchControls.FOCUS_RIGHT + Vector2(150.0, 0.0)))
+	t.check(Input.is_action_pressed("move_right") and controls._walking,
+			"and dragging back out of the band resumes steering, now from the nearer focus")
+
+	controls.queue_free()
+	rig.free()
+
 func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()
 	event.index = index
 	event.position = position
 	event.pressed = pressed
+	return event
+
+func _drag_event(index: int, position: Vector2) -> InputEventScreenDrag:
+	var event := InputEventScreenDrag.new()
+	event.index = index
+	event.position = position
 	return event
 
 ## However a check above failed or passed, the movement actions, `run` and `pause` are global

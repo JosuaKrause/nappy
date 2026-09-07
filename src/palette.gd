@@ -106,10 +106,13 @@ const HOME_ARROW := Color("8fb4d9")
 const BUTTON_FILL := Color(0.18, 0.15, 0.13, 0.88)
 ## Lighter than `BUTTON_FILL`, for a pointer resting on the button before it is pressed.
 const BUTTON_HOVER := Color(0.24, 0.2, 0.17, 0.92)
-## Darker than `BUTTON_FILL`, for the moment it is actually held down. With one hue doing every
-## button, hover and pressed are the only feedback left that a press registered at all, so the two
-## have to stay clearly apart from each other as well as from the resting fill.
-const BUTTON_PRESSED := Color(0.11, 0.09, 0.08, 0.95)
+## Brighter than both, for the moment a button is actually held down. *(2026-09-07: "buttons
+## should light up white when pressed" — overturning the earlier reasoning here, that darker was
+## the pressed reading.)* With one hue doing every button, hover and pressed are the only feedback
+## left that a press registered at all, so the two have to stay clearly apart from each other as
+## well as from the resting fill — bright rather than merely lighter is what makes a press read as
+## a flash rather than as one more shade of hover.
+const BUTTON_PRESSED := Color(0.95, 0.93, 0.88, 0.95)
 ## The glyph colour drawn on top of every button's fill.
 const BUTTON_SYMBOL := Color(0.97, 0.96, 0.94, 1.0)
 

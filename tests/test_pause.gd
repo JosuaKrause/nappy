@@ -26,7 +26,9 @@ func run(t) -> void:
 	_test_space_carries_on_from_every_screen(t)
 	_test_the_pause_says_where_the_run_stands(t)
 	_test_there_is_a_way_out_of_a_finished_run(t)
+	_test_a_press_soon_after_a_restart_is_swallowed_not_started(t)
 	_test_the_title_screen_does_not_stop_the_city(t)
+	_test_every_walking_key_begins_the_run(t)
 	_test_the_title_quit_key_matches_the_platform(t)
 	_test_the_pause_quit_key_matches_the_platform(t)
 	_test_a_tap_advances_every_screen(t)
@@ -184,6 +186,33 @@ func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
 	t.get_tree().paused = false
 	summary.queue_free()
 
+## **A press within the guard window of a restart-triggered reload is swallowed, not started.**
+## *(2026-09-07: "tapping on the game over screen often goes directly back to the game skipping the
+## title screen".)* `TitleScreen._restarted_at_msec` is a `static var` — the one place this survives
+## the reload that frees the node under test itself — so the guard has to be driven through it
+## directly rather than through `main._restart_run()`, which cannot safely be called from a test:
+## it defers a real `reload_current_scene()`, which nothing in this suite can afford to trigger.
+func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var started := [0]
+	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.open()
+
+	TitleScreen.note_restart_requested()
+	title._unhandled_input(_accept())
+	t.check(started[0] == 0, "a press right after a restart-triggered reload does not start a run")
+
+	TitleScreen._restarted_at_msec -= (TitleScreen._RESTART_GUARD_SECONDS + 1.0) * 1000.0
+	title._unhandled_input(_accept())
+	t.check(started[0] == 1, "and the same key works again once the guard window has passed")
+
+	# Reset for every other test in this file that presses the title screen — a `static var` is
+	# process-wide state, not scoped to this test's own node.
+	TitleScreen._restarted_at_msec = -INF
+	title.close()
+	title.queue_free()
+
 ## The title screen is **not** a pause, and the difference is the whole of what is behind it.
 ## *(M38: "as title screen just use the home and street in front without player and let act I events
 ## play out.")* It shows and hides and owns two keys; deciding what keeps running is `main`'s, and a
@@ -211,6 +240,22 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 	title.close()
 	title._unhandled_input(_accept())
 	t.check(started[0] == 1, "a closed title screen answers nothing")
+	title.queue_free()
+
+## **Every direction key begins a run too.** *(2026-09-07: "awsd and arrows should start the game
+## in addition to space".)* `WASD` and the arrows are bound to all four `move_*` actions, so a
+## single `move_left` press stands in for the rest of them.
+func _test_every_walking_key_begins_the_run(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var started := [0]
+	title.start_requested.connect(func() -> void: started[0] += 1)
+	title.open()
+
+	title._unhandled_input(_action("move_left"))
+	t.check(started[0] == 1, "a direction key begins the run exactly as space or a tap does")
+
+	title.close()
 	title.queue_free()
 
 ## **"For the web version remove Q (quit) and its mentions since it doesn't have any effect. Only
@@ -279,6 +324,12 @@ func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 			"and the body names the tap rather than a key ('%s')" % title._body.text)
 	t.check(not "Shift" in title._body.text, "no key is named")
 	t.check(not "q to quit" in title._hint.text, "and neither is q, even where it works")
+	# *(2026-09-07: "the movement tutorial should just say 'Tap to walk' and 'Double tap to run'.
+	# no mention of tapping her or 'that way'".)*
+	t.check(title._body.text.begins_with("Tap to walk, double tap to run."),
+			"and the body says two things and nothing else ('%s')" % title._body.text)
+	t.check(not "that way" in title._body.text and not "tap her" in title._body.text,
+			"no mention of tapping her or 'that way' — stopping still works, it just is not taught")
 
 	title.open(true)
 	t.check("tap to walk again" in title._hint.text,
@@ -379,6 +430,12 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 			"and the body names the tap rather than a key, even here ('%s')" % pause._body.text)
 	t.check(not "Shift" in pause._body.text and not "Arrows" in pause._body.text,
 			"no key is named")
+	# *(2026-09-07: "the movement tutorial should just say 'Tap to walk' and 'Double tap to run'.
+	# no mention of tapping her or 'that way'".)*
+	t.check(pause._body.text.begins_with("Tap to walk, double tap to run."),
+			"and the body says two things and nothing else ('%s')" % pause._body.text)
+	t.check(not "that way" in pause._body.text and not "tap her" in pause._body.text,
+			"no mention of tapping her or 'that way' — stopping still works, it just is not taught")
 	pause.close()
 
 	pause._touch = true

@@ -140,32 +140,42 @@ browser what the visiting device actually has. `TitleScreen`, `PauseScreen`, `Da
 `TouchControls` each read it once into their own `_touch`, the same shape `_can_quit` uses, so a
 test can drive both platform shapes.
 
-`TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme: a press — a
-finger, or a mouse click on any build including a release export — sets a direction, measured from
-her own world position, that is locked in and walked with nothing held down until the next press
-changes it; a press within `STOP_RADIUS` of her stops her instead; a double press sets the
-direction and holds `run` until the next press changes or releases it. It draws one thing, a pause
-button top right, shown only when `TouchInput.available()` and `get_tree().paused` is false, which
-keeps it off the title, the pause and the between-days summary without a wire from `main` telling
-it so on each: that flag is the one thing all three already set. The three screens also handle a
-touch or a left click directly alongside `ui_accept` (through `TouchInput.is_press()`), so either
-advances each of them the way `space` does.
+`TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme, and a mouse and a
+real touch disagree about where a heading is measured from. A mouse click sets a direction toward
+its own world position, aimed from wherever she currently stands, and a click within `STOP_RADIUS`
+of her stops her instead. A real touch instead aims from whichever of two fixed points,
+`FOCUS_LEFT` or `FOCUS_RIGHT`, is nearer the press — each drawn as a ring at `STOP_RADIUS` with a
+knob at the currently-held direction — and is stopped by a press on either focus or in a band down
+the middle of the screen (`is_in_stop_band()`) rather than by a press near her own position, which
+no longer stops a touch at all. Either way the direction locked in is walked with nothing held down
+until the next press changes it, and a double press holds `run` until the next press changes or
+releases it. Held down and moved, a finger or a mouse button keeps re-aiming continuously —
+`_on_drag()` — always at one speed, since `set_direction()` always normalises and no input path may
+press a vector shorter than one. It also draws a pause button top right, shown only when
+`TouchInput.available()` and `get_tree().paused` is false, which keeps it off the title, the pause
+and the between-days summary without a wire from `main` telling it so on each: that flag is the one
+thing all three already set. The three screens also handle a touch or a left click directly
+alongside `ui_accept` (through `TouchInput.is_press()`), so either advances each of them the way
+`space` does.
 
-A press computes a heading once — `(target - position)`, normalised — and presses it through
-`_set_axis()`, one signed value onto a pair of opposite actions, never re-aiming. There is no
-target and nothing to arrive at: she walks the heading until the next press changes it. A press
-within `STOP_RADIUS` of her own world position — generous, since the pram rides up to
-`PRAM_DISTANCE` (34px) off to one side of her — stops her instead of setting a direction. A double
-press needs both a time window (`DOUBLE_TAP_SECONDS`) and a distance window (`DOUBLE_TAP_DISTANCE`)
-to read as a modifier on the same direction rather than a new one, and holds `run` until the next
-press changes the direction or stops her. The screen press itself is mapped to a world position
-with `get_viewport().get_canvas_transform().affine_inverse()` — the reverse of what `DangerEdge`
-and `HomeArrow` already do forwards every frame — so it tracks the camera, the zoom and the rotated
-presentation for free, and the stop radius is compared in that same world space rather than on
-screen. **The one exception is the pause button's own corner**: a touch there is subtracted from
-the aiming surface, but only while the button is actually showing, through
-`ScreenOrientation.to_design_space()` against the fixed `PAUSE_CENTRE` — a mouse click never needs
-that remap, since the button (and so the corner) is never drawn on a device with no touch hardware.
+A press or a drag computes a heading — `(target - origin)`, normalised — and presses it through
+`_set_axis()`, one signed value onto a pair of opposite actions. There is no target and nothing to
+arrive at: she walks the heading until the next press or motion event changes it. A double press
+needs both a time window (`DOUBLE_TAP_SECONDS`) and a distance window (`DOUBLE_TAP_DISTANCE`) to
+read as a modifier on the same direction rather than a new one, and holds `run` until the next
+press changes the direction or stops her; a drag that started on a doubled press keeps holding
+`run` through every motion event. The screen press itself is mapped to a world position with
+`get_viewport().get_canvas_transform().affine_inverse()` — the reverse of what `DangerEdge` and
+`HomeArrow` already do forwards every frame — so it tracks the camera, the zoom and the rotated
+presentation for free. Which focus is nearer, and whether a press lands on a focus or in the stop
+band, are asked in **design space** instead, through `ScreenOrientation.to_design_space()`, since
+that is where "half the screen" and "the middle of the screen" mean what they say — the chosen
+focus then makes the same design→presented→world trip a raw touch's own position already takes, in
+reverse, before it can be subtracted from or used as the heading's own origin. **The pause button's
+own corner is the other place this remap is needed**: a touch there is subtracted from the aiming
+surface, but only while the button is actually showing, against the fixed `PAUSE_CENTRE` — a mouse
+click never needs the remap for anything else, since the button (and so the corner) is drawn for it
+too now that one scheme answers every device.
 
 A real touch device emulates a mouse click from every tap it makes, so the mouse branch is gated on
 `not TouchInput.available()` — without that gate a single real tap would fire twice, once through
