@@ -94,7 +94,7 @@ believing rather than explaining away.** The record is in `DECISIONS.md` under M
 
 ## What to do next
 
-**M83 is built on the graphics-overhaul branch, but the illustrated presentation is rejected and
+**M84 is built on the graphics-overhaul branch, but the illustrated presentation is rejected and
 remains review-only.** The normal game remains on its legacy SVG graphics. `--illustrated` selects
 the new character runtime locally and `?illustrated=1` selects it in a web build; neither changes
 gameplay. The focused parser, legacy-binding, grounding and boot checks pass, but the display review
@@ -108,7 +108,7 @@ direction or a basis for extending the asset family.
 The gameplay capture is [illustrated-gameplay-review.png](evidence/archive/session-captures/2026-09-06/illustrated-gameplay-review.png).
 It shows disconnected limbs in the wrong topological order, with positions incorrect relative to
 their owners and ground anchors. The compositor needs its layer order, pivots and placement rebuilt
-before another acceptance review. The record is in `DECISIONS.md` under M83.
+before another acceptance review. The record is in `DECISIONS.md` under M84.
 
 [Illustrated gameplay repair instructions](ILLUSTRATED-GAMEPLAY-FIXES.md) specify the asset,
 attachment, gait and sorting repairs, their order, and the visual acceptance checks for this capture.

@@ -5,7 +5,7 @@ The capture is dated evidence, not an approved art reference. These are implemen
 instructions from inspection of that frame, its source sheets and the current compositors;
 they are not a claim that repairs are implemented or visually accepted.
 
-Read `CLAUDE.md`, `HANDOFF.md`, `PLAYTEST-27.md`, `VISUALS.md` and the M83 record in
+Read `CLAUDE.md`, `HANDOFF.md`, `PLAYTEST-30.md`, `VISUALS.md` and the M84 record in
 `DECISIONS.md` first. The handoff identifies the illustrated presentation and street study as
 rejected; descriptions elsewhere of an approved street gate do not authorize reusing that study.
 Use the supplied mother and urban reference images named in `VISUALS.md` for art direction.

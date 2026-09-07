@@ -1,8 +1,8 @@
 # Decisions
 
-## M83 — Opt-in illustrated presentation · 2026-09-06
+## M84 — Opt-in illustrated presentation · 2026-09-06
 
-PLAYTEST-29 asked for the large graphics-overhaul branch to merge while its initial illustrated
+PLAYTEST-31 asked for the large graphics-overhaul branch to merge while its initial illustrated
 runtime remains reviewable rather than becoming the published look. The baseline is therefore the
 legacy SVG presentation. `--illustrated` opts into the illustrated runtime on the command line and
 `?illustrated=1` does so on web builds; an absent argument or `illustrated=0` remains legacy. The
@@ -19,8 +19,7 @@ contact, and layer ordering while the opt-in is active.
 
 ## Illustrated assets and experiment preservation — 2026-09-06
 
-PLAYTEST-27 preserves the full reference discussion (renumbered to avoid main's independent
-controls playtest 26). The player briefly chose a diagonal grid, then explicitly tabled it again:
+PLAYTEST-30 preserves the full reference discussion. The player briefly chose a diagonal grid, then explicitly tabled it again:
 "let's not go diagonal for now but try to match the diagonal artworks style". The implemented
 projection is not changed. Main's M79 investigation was read and supplemented with the distinction
 between rotation and dimetric compression, upright artwork, long-footprint sorting, silhouette
@@ -72,7 +71,7 @@ The player requested a whole-game overhaul and explicitly rejected the first imp
 SVG outline and polish approach: "a full overhaul of the graphics as if nothing had existed
 before". The correction includes animation, every screen, projecting roof depth with stylized
 occlusion reveal, actual excitement-source feedback, late-game deterioration and reconsidered
-objective guidance. Full wording is in `PLAYTEST-27.md`; `PLAYTEST-25.md` is reserved for the
+objective guidance. Full wording is in `PLAYTEST-30.md`; `PLAYTEST-25.md` is reserved for the
 separate mobile playtest on the other development branch.
 
 The player approved the standalone cardinal apartment-street review with "looks good continue".

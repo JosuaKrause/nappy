@@ -1,4 +1,4 @@
-# Playtest 29
+# Playtest 31 — 2026-09-06
 
 ## Graphics-overhaul integration · 2026-09-06
 
