@@ -45,13 +45,19 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 halo reads the event list, so the largest ordinary contributor on a busy pavement glows at nothing.
 The measurement is in that section and the three possible answers are written out; none is chosen.
 
-**[PLAYTEST-34.md](PLAYTEST-34.md) is the newest session and none of its ten findings is built** —
-seven are M90 and three are M91. It is the played answer M88 and M87 were waiting for, and it is
-mostly a report of things that do not respond: a button that never changes under a press, a stop
-circle at twice its drawn size, and a joystick drag whose reference point walks away with the
-camera. **Two of its findings are re-reports** — the pressed button was asked for in playtest 33 and
-the dog's short notice was measured in playtest 20 — and each entry says so rather than designing
-it a second time.
+**[PLAYTEST-35.md](PLAYTEST-35.md) is the newest session, and none of its five findings is queued
+here on purpose** — the two milestones they land in had not merged when they were reported, so
+they are built inside M90 and M89 rather than filed against them. Four are about the controls,
+three of those about work M90 itself introduced, and the fifth settles the one question M89 left
+open. **Nothing merges carrying a defect that was already found**, which is the whole reason they
+are not on this list.
+
+**[PLAYTEST-34.md](PLAYTEST-34.md)'s ten findings are all built** — seven as M90 and three as M91.
+It is the played answer M88 and M87 were waiting for, and it is mostly a report of things that do
+not respond: a button that never changes under a press, a stop circle at twice its drawn size, and
+a joystick drag whose reference point walks away with the camera. **Two of its findings are
+re-reports** — the pressed button was asked for in playtest 33 and the dog's short notice was
+measured in playtest 20 — and each entry says so rather than designing it a second time.
 
 **[PLAYTEST-33.md](PLAYTEST-33.md)'s thirteen findings are all built.** It is the report M83 asked
 for: the two focal points a touch aims from were built and drawn as nothing, and the answer is that
