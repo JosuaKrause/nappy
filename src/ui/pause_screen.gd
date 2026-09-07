@@ -48,7 +48,13 @@ var _touch := TouchInput.available()
 ## `move_*`/`run`/`pause` actions a key presses — but nothing on screen names a key any more, so
 ## the keyboard and touch bodies collapse to the one shape that was always the touch body: naming
 ## the tap is naming a control every device actually has, since a mouse click reads as one too.
-const _BODY := "Tap to walk that way, tap her to stop, double tap to run.\n" \
+##
+## **Says two things and nothing else.** *(2026-09-07: "the movement tutorial should just say 'Tap
+## to walk' and 'Double tap to run'. no mention of tapping her or 'that way'.")* The struck clauses
+## named a stop she can still ask for — a press within `STOP_RADIUS` of a focal point, or a mouse
+## click on her — the same way nothing here has ever named a key: stopping still works, and the
+## game simply stops teaching it, exactly as `HUD._teach_the_day()`'s own day-1 line already reads.
+const _BODY := "Tap to walk, double tap to run.\n" \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:

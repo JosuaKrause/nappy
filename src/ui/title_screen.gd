@@ -45,7 +45,13 @@ var _can_quit := QuitOption.available()
 ## nothing on screen names a key for it any more. `TouchInput.available()` used to choose between
 ## this and a keyboard body — with only one body left, this screen has no more use for that fact
 ## and keeps no member for it.
-const _BODY := "Tap to walk that way, tap her to stop, double tap to run.\n" \
+##
+## **Says two things and nothing else.** *(2026-09-07: "the movement tutorial should just say 'Tap
+## to walk' and 'Double tap to run'. no mention of tapping her or 'that way'.")* The struck clauses
+## named a stop she can still ask for — a press within `STOP_RADIUS` of a focal point, or a mouse
+## click on her — the same way nothing here has ever named a key: stopping still works, and the
+## game simply stops teaching it, exactly as `HUD._teach_the_day()`'s own day-1 line already reads.
+const _BODY := "Tap to walk, double tap to run.\n" \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:

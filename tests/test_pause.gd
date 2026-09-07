@@ -279,6 +279,12 @@ func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 			"and the body names the tap rather than a key ('%s')" % title._body.text)
 	t.check(not "Shift" in title._body.text, "no key is named")
 	t.check(not "q to quit" in title._hint.text, "and neither is q, even where it works")
+	# *(2026-09-07: "the movement tutorial should just say 'Tap to walk' and 'Double tap to run'.
+	# no mention of tapping her or 'that way'".)*
+	t.check(title._body.text.begins_with("Tap to walk, double tap to run."),
+			"and the body says two things and nothing else ('%s')" % title._body.text)
+	t.check(not "that way" in title._body.text and not "tap her" in title._body.text,
+			"no mention of tapping her or 'that way' — stopping still works, it just is not taught")
 
 	title.open(true)
 	t.check("tap to walk again" in title._hint.text,
@@ -379,6 +385,12 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 			"and the body names the tap rather than a key, even here ('%s')" % pause._body.text)
 	t.check(not "Shift" in pause._body.text and not "Arrows" in pause._body.text,
 			"no key is named")
+	# *(2026-09-07: "the movement tutorial should just say 'Tap to walk' and 'Double tap to run'.
+	# no mention of tapping her or 'that way'".)*
+	t.check(pause._body.text.begins_with("Tap to walk, double tap to run."),
+			"and the body says two things and nothing else ('%s')" % pause._body.text)
+	t.check(not "that way" in pause._body.text and not "tap her" in pause._body.text,
+			"no mention of tapping her or 'that way' — stopping still works, it just is not taught")
 	pause.close()
 
 	pause._touch = true
