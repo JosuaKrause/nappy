@@ -125,6 +125,14 @@ const STOP_RADIUS := 48.0
 ## over a 1280x720 viewport (`Tuning.OUT_OF_SIGHT`'s own doc states the same fact for the sight
 ## radii), so 24 world px covers exactly the same ground on screen as `STOP_RADIUS`'s own drawn
 ## ring, rather than the 96 design px a bare `STOP_RADIUS` compared in world space used to cover.
+##
+## **Deliberately short of `Stroller.PRAM_DISTANCE` (34px), not merely short of it by accident.**
+## *(Playtest 34 finding 6: "if I click on the stroller it shouldn't stop only when I click on the
+## body of the player.")* An earlier version of this doc argued the opposite — that a wider radius
+## catching the pram was correct, because a press on the pram is a press on her. It is not: the
+## pram is not her, so widening this back toward `PRAM_DISTANCE` to "fix" a stop that looks
+## generous undoes exactly what was asked for. Still generous against `Tuning.PLAYER_BODY_RADIUS`
+## (14px) alone, for a pointer that does not land on the same world pixel twice.
 const TAP_STOP_RADIUS := STOP_RADIUS / 2.0
 
 ## The two fixed points `Mode.JOYSTICK` aims from — see the class doc's own paragraph on why the two
