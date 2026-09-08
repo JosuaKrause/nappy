@@ -45,12 +45,19 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 halo reads the event list, so the largest ordinary contributor on a busy pavement glows at nothing.
 The measurement is in that section and the three possible answers are written out; none is chosen.
 
-**[PLAYTEST-35.md](PLAYTEST-35.md) is the newest session, and none of its five findings is queued
-here on purpose** — the two milestones they land in had not merged when they were reported, so
-they are built inside M90 and M89 rather than filed against them. Four are about the controls,
-three of those about work M90 itself introduced, and the fifth settles the one question M89 left
-open. **Nothing merges carrying a defect that was already found**, which is the whole reason they
-are not on this list.
+**[PLAYTEST-35.md](PLAYTEST-35.md) is the newest session, and only one of its seven findings is
+queued here** — the milestones the rest land in had not merged when they were reported, so they are
+built inside M90 and M89 rather than filed against them. **Nothing merges carrying a defect that was
+already found**, which is the whole reason they are not on this list.
+
+**The one that is queued is finding 7, and it is queued because the player parked it**
+*(2026-09-07: "the hover highlight showed a bug that the button is currently a square and not the
+circle -- although nothing we need to fix right now")*: `ModeButton._disc_style()` sets every
+`corner_radius_*` to `_RADIUS` (46), which draws a circle only while the button's rect is exactly
+92x92 — and `custom_minimum_size` is a *minimum*, so a container that stretches it wider leaves a
+rounded rectangle. **It has always been true and the near-white hover only made it visible**, so it
+is an old defect exposed rather than a regression. It has no milestone of its own; whoever next
+opens `src/ui/mode_button.gd` should take it.
 
 **[PLAYTEST-34.md](PLAYTEST-34.md)'s ten findings are all built** — seven as M90 and three as M91.
 It is the played answer M88 and M87 were waiting for, and it is mostly a report of things that do

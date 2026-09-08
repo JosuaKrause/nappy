@@ -1,8 +1,9 @@
 # Playtest 35 — 2026-09-07
 
 The first session played on the M90 controls and the first look at M89's halo, given as notes in
-one conversation. **Five findings.** Four are about the controls M90 had just fixed — three of them
-about work M90 itself introduced — and one settles a question M89 left open.
+one conversation. **Seven findings and one answered question.** Four are about the controls M90 had
+just fixed — three of them about work M90 itself introduced — one settles a question M89 left open,
+one asks for a size, and one is parked by the player on sight.
 
 **Neither milestone had merged when this was reported, so all five are built inside them** rather
 than queued: M90's four on `feature/the-controls-do-what-the-hand-does`, and finding 5 on
@@ -104,3 +105,56 @@ the ground beside every glowing entity. Seen on the leaf-blower capture the cue 
 from.
 
 The halo pass skips the shadow. Everything else about the trace is unchanged.
+
+## 6. The movement lesson is twice the size
+
+> "can you double the size of the tutorial text?"
+
+**Three labels, not one**, because the lesson appears in three places and only one of them is read
+while walking: the title screen's body and the pause screen's body (16pt), and `HUD`'s own `Teach`
+line during play (19pt). All doubled.
+
+**The HUD line needed its box grown as well as its font.** It is a fixed rect rather than a
+container child — 520x30 — and "Tap to walk, double tap to run" at 38pt is wider than 520, so it
+would have clipped. It is 1040x60 now, still centred on the bottom edge. Its outline goes 6 to 12
+in step, because an outline sized for 19pt reads as a smudge under 38pt, and this is the one lesson
+drawn over a moving street rather than over a panel.
+
+## 7. The buttons are rounded rectangles, not circles — parked
+
+> "the hover highlight showed a bug that the button is currently a square and not the circle --
+> although nothing we need to fix right now"
+
+**Parked by the player on sight, and recorded so it is not rediscovered.** `ModeButton._disc_style()`
+sets every `corner_radius_*` to `_RADIUS` (46), which renders a circle only while the button's rect
+is exactly 92x92. `custom_minimum_size` is a *minimum*, so any container that stretches the button
+wider leaves a rounded rectangle instead.
+
+**It has always been true; the hover fill is only what made it visible.** The resting and hover
+browns were close enough to the panel behind them that the corners did not read, and a near-white
+hover shows the silhouette outright. **So this is not a regression from the hover change** — it is
+an old defect that the hover change exposed, which is the more useful half of the finding.
+
+---
+
+## The question: does the dog ever give up while she walks?
+
+> "the pursuing dog should never stop pursuing when I walk is that the case? I checked and I
+> couldn't walk away but I wanted to make sure"
+
+**Answered from the code: no, walking can never end a chase.** `EventInstance._chase()` gives up on
+exactly one condition — `_outrun_for >= Tuning.PURSUIT_SHAKEN_OFF` (0.35s of the gap *opening*) and
+`chase_age() >= Tuning.PURSUIT_MIN_NOTICE` (1.5s, the floor that stops a chase ending before it was
+a threat). A pursuer runs at 130px/s against `WALK_SPEED` 92, so walking always closes the gap and
+`_outrun_for` never accumulates; only `RUN_SPEED` (168) opens it. The code says so in as many
+words: *"Walking away cannot end a chase at any distance, and running away always ends one in
+`Tuning.PURSUIT_SHAKEN_OFF` seconds regardless of how big the thing chasing her is."*
+
+**One margin was raised as a risk and accepted.** *(2026-09-07, on being shown it: "getting lucky
+once is fine.")* A chase still ends when the row's own clock runs out — `telegraph_time + duration`,
+4.5s + 3.0s after M91 — and M91 sized the telegraph so that walking away still loses inside that
+window, closing the worst-case gap at `pursue_speed - WALK_SPEED` (38px/s) in about 7.0s against
+7.5s available. **That is half a second of margin**, so on the worst siting geometry a walking
+player could outlast the clock rather than being caught. The player's own reading is that a rare
+escape is not a defect; it is written down here so that a future report of *"the dog gave up and I
+never ran"* is recognised as this and not as a new bug.
