@@ -34,11 +34,9 @@ no artist — which is why M78 stands apart from M65 rather than inside it.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**"The crowd has no halo" is tabled the same way**, and **M92 answers half of it**: anything the game
-already draws a caret over earns a halo, which covers a honking car and a startled walker. What stays
-tabled is the *ambient* crowd — the pavement full of people who are marked by nothing — and the player
-said so in as many words: "we can discuss the details about general crowd floors later, though". The
-measurement is in that section and the three possible answers are written out; none is chosen.
+**"The crowd has no halo" was a question and is now answered, inside M92**: the whole crowd is a halo
+candidate on the same terms as an event, because *a busy sidewalk is noisy because of people* and the
+noise is attributable. The player's words and what was checked before answering are in that section.
 
 **[PLAYTEST-36.md](PLAYTEST-36.md) is the newest session, and all three of its findings are M92** —
 a session on the halo M89 had just built, and together they are one change: the cue gets a second
@@ -215,9 +213,8 @@ actually landed on her — and the reasoning is the whole design.
       thing clears `CONTRIBUTION_FLOOR` at her position — because if it can be marked without
       clearing the floor then the floor is what needs changing.
 
-      **The ambient crowd floor is still the open question** under "The crowd has no halo" below,
-      and is explicitly not settled by this: *"we can discuss the details about general crowd floors
-      later, though"*
+      **The ambient crowd is in the set too** — see "The crowd has a halo" below, where the player
+      settled the question that was left open here
 - [ ] **The halo pass has to be reachable from both classes.** Today it is
       `EventInstance._draw_halo()`, a child `Node2D` with `show_behind_parent` that re-runs
       `_draw_body(canvas)` at a ring of offsets. `CrowdAgent` needs the same, so the ring and its
@@ -236,40 +233,38 @@ actually landed on her — and the reasoning is the whole design.
 
 ---
 
-## The crowd has no halo · a question, asked 2026-09-07
+## The crowd has a halo · answered 2026-09-08
 
-**Not queued and not rejected. It is a question, and it is written down so that whoever answers it
-does so with the measurement in hand.** *(2026-09-07, on being shown the gap: "Queue it as its own
-question.")*
+**Asked as a question on 2026-09-07 and answered by the player on 2026-09-08, inside M92.** The
+question was whether the ordinary crowd — pedestrians and cars that are `CrowdAgent`s rather than
+`EventInstance`s — should earn a halo at all, given that a busy pavement puts dozens inside her
+reach and *a cue that marks everything says nothing*. The measurement that raised it: the arterial
+pavement on day 6 of seed 4242, the bar at 48 and `incoming 20.22 /s`, nothing glowing.
 
-**The halo M89 builds reads the event list and nothing else, so the crowd is silent under it.**
-Measured on the arterial pavement on day 6 of seed 4242, standing still: the excitement bar at 48
-and the debug line reading `incoming 20.22 /s`, with **nothing glowing anywhere in frame**. The
-cause is not a bug — pedestrians are `CrowdAgent`s rather than `EventInstance`s, and
-`ExcitementHalo.select_sources()` is given `EventManager.instances()`. So the cue answers *which of
-these things is charging the meter* for events, and says nothing at all about the largest ordinary
-contributor on a busy street.
+**The answer is that the crowd *is* the noise, so it is attributable.** *(2026-09-08: "it was an
+easy shortcut to introduce a background noise dependent on flooring. we can keep that to some
+degree (eg alleys) but excitement should come from visible objects. a busy street is noisy because
+of cars and a busy sidewalk is noisy because of people ... that will allow us to attribute the
+source exactly and in turn properly integrate/aggregate the excitement magnitude over a given
+timeframe which informs the color of the halo. honking car halos fall out of this for free".)*
 
-**The plumbing exists, which is exactly why this needs deciding rather than building.**
-`CrowdAgent` already carries its own `contribution_at(world_position)`, so extending the selection
-to the crowd is a small change. What it would do to the screen is not small: a day fields a couple
-of hundred walkers, a busy pavement puts dozens inside her reach at once, and **a cue that marks
-everything says nothing** — the **cues** rule's second rule, and the one the halo's floor and its
-eight-source cap already exist to satisfy.
+**What the code already did, checked before answering:** incoming excitement has no ground-based
+floor — every walker and car emits its own field, `docs/MECHANICS.md` says *"there is no city-wide
+background noise number anywhere"*, and the only ground-based source is the alley's flat 3.0/s,
+which stays. What is ground-based is the **decay** multiplier (park 2.2, precinct 1.5, ordinary
+1.0, main road 0.6), and that stays too: *(2026-09-08: "we can leave the decay multipliers alone
+they make different places feel different. that is good. that way an alley doesn't ease the nerves
+as well as a park.")*
 
-Three shapes an answer could take, none of them chosen:
-
-- **Leave it to events.** The crowd is the *noise floor* rather than a thing to walk away from, and
-  the meter's own number is what reports it. The limit gets written into `docs/EVENTS.md` and the
-  cue stops pretending to be a complete answer.
-- **Glow the crowd under one combined outline**, not one per walker — a knot of people reads as a
-  knot, which is what she actually has to route around.
-- **Raise the floor for crowd agents specifically**, so only a genuinely dense cluster earns
-  anything.
-
-**What would make it worth discussing again is a played session**, not a screenshot: whether a
-player on a busy street reads the silent crowd as *the crowd is free* — which it is not — is a
-question about what they conclude, and nothing here can answer it.
+**So M92's candidate set is every source, events and the whole crowd alike**, with the floor and
+the cap doing the work of keeping a busy pavement legible. And what the colour reads is fixed in
+the same exchange: *(2026-09-08: "what matters is how much mass landed on the player. don't derive
+it from the source numbers but trace an increase in excitement back to its constituents. if a
+honking car caused 35 excitement to the player that's the number that informs the color of the
+halo. with 1/3 of the bar that's pretty red already".)* Points that actually reached the meter,
+traced from the meter's own sum, over a true five-second window, red at about 40 of the 100-point
+bar. The three shapes the question had offered — leave it to events, one combined outline, a
+higher floor for the crowd — are none of them taken.
 
 ---
 
