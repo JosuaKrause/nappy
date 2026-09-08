@@ -19,6 +19,7 @@ var step_span: float = 24.0
 var swing_height: float = 8.0
 var ankle_height: float = 4.0
 var reach_scale: float = 1.2
+var rest_length_scales: Array[float] = [1.0, 1.0]
 
 var _initialized: bool = false
 var _body_world: Vector2 = Vector2.ZERO
@@ -49,6 +50,11 @@ func configure(hips: Array[Vector2], upper_length: float, lower_length: float,
 	reach_scale = maxf(1.0, allowed_reach_scale)
 	if feet.size() == 2:
 		foot_offsets = feet.duplicate()
+	var nominal_length: float = upper_leg_length + lower_leg_length
+	for foot: int in [LEFT_FOOT, RIGHT_FOOT]:
+		var rest_ankle: Vector2 = foot_offsets[foot] + Vector2(0.0, -ankle_height)
+		rest_length_scales[foot] = clampf(
+			hip_offsets[foot].distance_to(rest_ankle) / nominal_length, 0.001, reach_scale)
 	var available_reach: float = _available_reach()
 	step_trigger = minf(maxf(0.001, trigger), available_reach * 0.4)
 	# One foot remains planted through the other foot's complete swing. Keeping one and a
@@ -128,8 +134,10 @@ func pose(world_position: Vector2 = Vector2.INF) -> Dictionary:
 	var right_ankle: Vector2 = right_foot + Vector2(0.0, -ankle_height - right_height)
 	var left_hip: Vector2 = at + hip_offsets[LEFT_FOOT]
 	var right_hip: Vector2 = at + hip_offsets[RIGHT_FOOT]
-	var left_knee: Vector2 = _solve_reachable_knee(left_hip, left_ankle, -1.0)
-	var right_knee: Vector2 = _solve_reachable_knee(right_hip, right_ankle, 1.0)
+	var left_knee: Vector2 = _solve_reachable_knee(
+		left_hip, left_ankle, LEFT_FOOT, 1.0)
+	var right_knee: Vector2 = _solve_reachable_knee(
+		right_hip, right_ankle, RIGHT_FOOT, -1.0)
 	return {
 		"left_foot_world": left_foot,
 		"right_foot_world": right_foot,
@@ -215,9 +223,10 @@ func _foot_height(index: int) -> float:
 	return sin(progress * PI) * swing_height
 
 
-func _solve_reachable_knee(hip: Vector2, ankle: Vector2, bend_side: float) -> Vector2:
+func _solve_reachable_knee(hip: Vector2, ankle: Vector2, foot: int,
+		bend_side: float) -> Vector2:
 	var needed_scale: float = ankle.distance_to(hip) / (upper_leg_length + lower_leg_length)
-	var extension: float = clampf(needed_scale, 1.0, reach_scale)
+	var extension: float = clampf(needed_scale, rest_length_scales[foot], reach_scale)
 	return solve_knee(hip, ankle, upper_leg_length * extension,
 		lower_leg_length * extension, bend_side)
 

@@ -5,6 +5,7 @@ extends RefCounted
 func run(t) -> void:
 	_test_slanted_axis_endpoints(t)
 	_test_axes_must_be_complete_and_crop_local(t)
+	_test_neutral_knees_follow_their_own_leg_axes(t)
 	_test_walker_painted_bounds_and_static_attachments(t)
 	_test_walker_motion_stays_connected_and_reachable(t)
 
@@ -72,6 +73,34 @@ func _test_axes_must_be_complete_and_crop_local(t) -> void:
 	t.check(not manifest.register_part("outside", texture, rects, Vector2.ZERO,
 		Vector2.ZERO, z_orders, "default", outside, valid_ends),
 		"whole-sheet coordinates cannot pass as crop-local segment endpoints")
+
+
+func _test_neutral_knees_follow_their_own_leg_axes(t) -> void:
+	var walker := ModularWalker.new()
+	t.add_child(walker)
+	for direction: int in DirectionalParts.DIRECTION_NAMES.size():
+		walker.reset_at(Vector2.ZERO, DirectionalParts.DIRECTION_VECTORS[direction])
+		for side: String in ["left", "right"]:
+			var hip: Vector2 = walker.last_pose[side + "_hip"]
+			var ankle: Vector2 = walker.last_pose[side + "_ankle"]
+			var knee: Vector2 = walker.last_pose[side + "_knee"]
+			var axis: Vector2 = ankle - hip
+			var along: float = (knee - hip).dot(axis) / axis.length_squared()
+			var bend: float = axis.cross(knee - hip)
+			t.check(_knee_cross_track(hip, knee, ankle) < 0.12,
+				"%s %s idle knee is nearly collinear with its hip and ankle" % [
+					DirectionalParts.direction_name(direction), side])
+			t.check(along > 0.0 and along < 1.0,
+				"%s %s idle knee stays between its own hip and ankle" % [
+					DirectionalParts.direction_name(direction), side])
+			t.check(knee.x >= minf(hip.x, ankle.x) - 0.12 \
+					and knee.x <= maxf(hip.x, ankle.x) + 0.12,
+				"%s %s idle knee stays in its same-side horizontal envelope" % [
+					DirectionalParts.direction_name(direction), side])
+			t.check(bend > 0.0 if side == "left" else bend < 0.0,
+				"%s %s knee bends outward instead of crossing the other leg" % [
+					DirectionalParts.direction_name(direction), side])
+	walker.free()
 
 
 func _test_walker_painted_bounds_and_static_attachments(t) -> void:
@@ -144,6 +173,7 @@ func _test_walker_motion_stays_connected_and_reachable(t) -> void:
 	t.add_child(walker)
 	var legs_image: Image = preload(
 		"res://assets/illustrated/walkers/legs-denim-sneakers-v1.png").get_image()
+	var saw_lifted_flex: bool = false
 	for direction: int in DirectionalParts.DIRECTION_NAMES.size():
 		var facing: Vector2 = DirectionalParts.DIRECTION_VECTORS[direction]
 		var body := Vector2.ZERO
@@ -157,6 +187,13 @@ func _test_walker_motion_stays_connected_and_reachable(t) -> void:
 			var displacement: Vector2 = facing * distance
 			body += displacement
 			walker.apply_displacement(displacement, body, 1.0 / 60.0, facing)
+			var swing: int = walker.gait.step_foot()
+			if swing >= 0:
+				var swing_side: String = "left" if swing == PlantedGait.LEFT_FOOT else "right"
+				saw_lifted_flex = saw_lifted_flex or _knee_cross_track(
+					walker.last_pose[swing_side + "_hip"],
+					walker.last_pose[swing_side + "_knee"],
+					walker.last_pose[swing_side + "_ankle"]) > 0.25
 			if swing_before >= 0 and walker.gait.step_foot() == swing_before:
 				t.check(_rendered_sole_world(walker, stance_before, body).is_equal_approx(
 					planted_before), "%s stance shoe sole stays planted in world space" %
@@ -198,6 +235,7 @@ func _test_walker_motion_stays_connected_and_reachable(t) -> void:
 		walker.recycle_at(Vector2(60.0, -25.0), facing)
 		_assert_walker_attachments(t, walker, legs_image,
 			"%s recycle" % DirectionalParts.direction_name(direction))
+	t.check(saw_lifted_flex, "a lifted swing can bend visibly away from its resting leg axis")
 	walker.free()
 
 
@@ -236,6 +274,11 @@ func _assert_pose_reach(t, walker: ModularWalker, context: String) -> void:
 		var reach: float = hip.distance_to(ankle)
 		t.check(reach <= walker.gait.max_reach() + 0.02,
 			"%s %s rendered hip-to-ankle reach stays bounded" % [context, side])
+
+
+func _knee_cross_track(hip: Vector2, knee: Vector2, ankle: Vector2) -> float:
+	var axis: Vector2 = ankle - hip
+	return absf(axis.cross(knee - hip)) / axis.length()
 
 
 func _rendered_sole_world(walker: ModularWalker, foot: int, body: Vector2) -> Vector2:
