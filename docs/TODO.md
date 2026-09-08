@@ -16,9 +16,7 @@ mid-way through.
 
 1. **M92** — the halo says how much a thing has cost her and how close she is standing to it,
    and anything the game already marks earns one.
-2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
-   never on screen counts as never placed.
-3. **M56** — the resistance is noticed.
+2. **M56** — the resistance is noticed.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
@@ -28,7 +26,7 @@ barrier becomes the city's signature), **M65** (a protester who points at the ob
 milestone of only its drawings, and each is ordinary open work.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
-no artist — which is why M78 stands apart from M65 rather than inside it.
+no artist.
 
 **M79 is tabled rather than queued.** It is the city seen at an angle — a presentation change with
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
@@ -270,42 +268,6 @@ Three shapes an answer could take, none of them chosen:
 **What would make it worth discussing again is a played session**, not a screenshot: whether a
 player on a busy street reads the silent crowd as *the crowd is free* — which it is not — is a
 question about what they conclude, and nothing here can answer it.
-
----
-
-## M78 — The chalk mark can be found · asked for 2026-09-02
-
-Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
-should not be, and it cannot be found when it should be. **Neither needs a drawing**, which is why
-they stand apart from the protester's pointing pose in M65 — that one is a milestone of its own
-drawing and these two are placement.
-
-**The mark lives on an alley wall, and that was confirmed rather than newly decided.** *(2026-09-03:
-"let's use them as option to avoid obstacles and as chalk mark carriers".)* It is already the
-design — `docs/PLAYTEST-02.md` describes the mark as chalk on an alley wall, and the re-placement
-rule below is stated in the player's own words as *"the next alley the player comes close to"*. What
-the confirmation adds is the other half of the same sentence: under M64 an alley is also the way
-round a wall, so the ground the resistance is written on is ground the sealing already gives her a
-reason to enter. See M64, "What alleys are for, then, is going round a wall".
-
-- [ ] **The first chalk mark is named in the status line.** *(2026-09-02: "the first chalk mark is
-      written in the status when it should not be.")* Seen in the screenshot as
-      `resistance ....   somewhere out there: a chalk mark`, before the player had found anything.
-      **This is the no-hint rule leaking**, and that rule is in `CLAUDE.md` under things
-      deliberately not done: *the **first** encounter comes with no hint at all, because finding the
-      difficulty dial is meant to be the player's own doing. After that the resistance speaks.* The
-      HUD line is fed by `resistance_contact_available`, which does not distinguish the first mark
-      from the rest
-- [ ] **A mark that was never on screen was never placed.** *(2026-09-02: "it's hard to find the
-      chalk mark remember it should be dynamically placed on the path where the player can see it.
-      if it was placed but never on screen it should count as not placed and be placed on the next
-      alley the player comes close to.")* *"Remember"* is right — placing it on the path is already
-      the design; what is new is the **re-placement rule**, and it is a shape nothing in the game
-      has: `ClosurePlanner` and `EventScheduler` both decide at dawn and stand, and this follows the
-      player through the day.
-
-      It is also what makes finding 1's silence fair: a first encounter with no hint is only
-      reasonable if the thing can actually be come across
 
 ---
 
@@ -665,10 +627,12 @@ that meets one ends at its edge. What remains is that the ending is not *drawn* 
 ## M65 — A protester points at the objective · asked for 2026-09-03
 
 **All that remains here is the pose, which is a drawing.** The two findings this milestone was
-opened for — the first mark being announced, and a mark that was never on screen — are M78.
+opened for — the first mark being announced, and a mark that was never on screen — are built; the
+record is in `DECISIONS.md` under M78, and the played question it leaves is whether a mark that
+follows her until seen is now findable at all.
 
-**Half of this item needs no drawing at all**, and is worth lifting into M78 if the mark is still
-hard to find once the re-placement rule lands: raising how often a protester appears is a density
+**Half of this item needs no drawing at all**, and is worth doing on its own if the mark is still
+hard to find now that it follows her: raising how often a protester appears is a density
 change, and the player's own reason it is cheap is that a protester obstructs nothing and pursues
 nothing, so it does not compete for the catalogue's placement budget.
 
