@@ -81,9 +81,9 @@ func _check_all_facings(t, rig: ModularPerson) -> void:
 		t.check(absf(bounds.end.y) <= 1.25,
 			"%s painted shoes finish at the actor ground" %
 				DirectionalParts.DIRECTION_NAMES[direction])
-		var chassis_bounds := _painted_sprite_bounds(rig.pram_sprites["chassis"])
-		t.close_to(chassis_bounds.size.y, 30.0,
-			"%s chassis retains the 30px painted height" %
+		var pram_bounds := _painted_pram_bounds(rig)
+		t.close_to(pram_bounds.size.y, 30.0,
+			"%s complete pram retains the 30px painted height" %
 				DirectionalParts.DIRECTION_NAMES[direction], 0.4)
 		_check_sibling_order(t, rig, facing)
 
@@ -237,6 +237,19 @@ func _painted_body_bounds(rig: ModularPerson) -> Rect2:
 		else:
 			bounds = bounds.merge(part_bounds)
 	return bounds.merge(_polygon_bounds(rig._torso_polygon))
+
+
+func _painted_pram_bounds(rig: ModularPerson) -> Rect2:
+	var bounds := Rect2()
+	var initialized := false
+	for part_id: String in rig.registered_pram_part_ids():
+		var part_bounds := _painted_sprite_bounds(rig.pram_sprites[part_id])
+		if not initialized:
+			bounds = part_bounds
+			initialized = true
+		else:
+			bounds = bounds.merge(part_bounds)
+	return bounds
 
 
 func _painted_sprite_bounds(sprite: Sprite2D) -> Rect2:

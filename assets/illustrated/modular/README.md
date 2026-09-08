@@ -19,8 +19,8 @@ The torso source includes painted sleeves. The runtime uses each manifest's cent
 sibling positions. This keeps the source coat while avoiding a duplicate outer sleeve layer.
 
 The 1448×1086 pram source has four independently packed bands: chassis, seat, canopy and baby.
-Each direction has a tight crop, a measured scale that keeps the chassis at the 30px legacy painted
-height, and a shared assembly target. The chassis registers two crop-local grip contacts. The
+Each direction has a tight crop and a measured scale that keeps the complete assembly at the 30px
+legacy painted height. The chassis registers two crop-local grip contacts. The
 mother's shoulder-to-hand segments terminate at those live transformed contacts.
 
 All visible pieces share one z plane and are reordered as siblings for each direction. This keeps

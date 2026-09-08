@@ -34,9 +34,12 @@ knees against the raised ankle, lower legs end at that ankle, and shoes continue
 sole. This keeps a planted sole on ground and lifts the full shoe during a swing.
 
 The approved 1448×1086 pram source uses chassis 0–350, seat 350–600, canopy 600–800 and baby
-800–1086 as inspection bands. Tight per-direction crops follow alpha-visible art. Chassis scales
-come from each drawing's painted top-to-wheel-baseline span, while seat, canopy and baby pivots map
-to shared assembly contacts.
+800–1086 as inspection bands. Tight per-direction crops follow alpha-visible art. Per-direction
+scale comes from the complete connected assembly's painted alpha bounds and retains the 30px
+legacy pram height. Profile seat pivots meet the same
+large round frame hinges in the chassis drawing. The N and S views hide that side hinge, so their
+center lower seat supports meet the center upper chassis support crossbars visible in both source
+pieces. Canopy and baby pivots map to their matching painted seat contacts.
 
 The torso drawing contains sleeves outside the reusable coat core. Per-direction texture polygons
 retain the central painted coat and exclude those outer sleeves. Pixels hidden inside the original

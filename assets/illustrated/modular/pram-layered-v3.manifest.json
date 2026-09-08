@@ -6,20 +6,20 @@
   "directions": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
   "source_columns": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
   "legacy_height_px": 30.0,
-  "scale_by_direction": [0.1477832512, 0.1442307692, 0.1376146789, 0.1304347826, 0.1357466063, 0.1304347826, 0.1382488479, 0.1449275362],
+  "scale_by_direction": [0.1224489796, 0.125, 0.1149425287, 0.1176470588, 0.1038062284, 0.1224489796, 0.1140684411, 0.1282051282],
   "draw_order": ["chassis", "seat", "canopy", "baby"],
   "parts": {
     "chassis": {
       "crops": [[17, 107, 152, 207], [191, 106, 160, 212], [363, 100, 167, 222], [546, 99, 174, 234], [755, 99, 118, 225], [908, 99, 177, 234], [1097, 101, 162, 221], [1274, 107, 153, 211]],
       "pivots": [[76, 205], [80, 210], [84, 220], [87, 232], [59, 223], [89, 232], [81, 219], [77, 209]],
       "assembly_targets": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]],
-      "seat_contacts": [[76, 162], [55, 166], [77, 170], [87, 179], [59, 171], [88, 179], [91, 169], [84, 165]],
+      "seat_contacts": [[76, 113], [128, 90], [81, 93], [107, 95], [59, 119], [68, 95], [100, 93], [38, 98]],
       "left_hand_contacts": [[34, 17], [26, 22], [15, 28], [23, 18], [49, 10], [117, 17], [145, 20], [79, 12]],
       "right_hand_contacts": [[88, 11], [70, 11], [26, 13], [56, 12], [97, 14], [145, 17], [157, 20], [127, 18]]
     },
     "seat": {
       "crops": [[30, 386, 126, 178], [201, 380, 153, 188], [366, 383, 169, 187], [557, 382, 156, 191], [760, 372, 112, 195], [918, 381, 156, 192], [1095, 387, 168, 183], [1278, 382, 152, 186]],
-      "pivots": [[63, 174], [116, 172], [117, 181], [110, 185], [56, 191], [42, 185], [50, 177], [40, 174]],
+      "pivots": [[63, 120], [141, 96], [69, 100], [93, 83], [56, 133], [67, 72], [100, 100], [20, 98]],
       "canopy_contacts": [[8, 65], [136, 85], [96, 75], [69, 78], [8, 77], [27, 94], [69, 72], [16, 85]],
       "baby_contacts": [[63, 115], [90, 115], [100, 112], [90, 118], [56, 120], [65, 118], [70, 112], [62, 115]]
     },
@@ -43,5 +43,5 @@
     "NW": ["chassis", "seat", "canopy", "baby"]
   },
   "symmetry": "none; all eight directions are independently authored and the source starts at N",
-  "notes": "The four source rows occupy independent measured bands: chassis 0..350, seat 350..600, canopy 600..800, and baby 800..1086. Crops follow alpha-visible art rather than a 271.5px row grid. Each chassis wheel baseline maps to logical pram ground. Seat pivots meet measured chassis seat_contacts; canopy and baby pivots meet measured canopy_contacts and baby_contacts on the rendered seat."
+  "notes": "The four source rows occupy independent measured bands: chassis 0..350, seat 350..600, canopy 600..800, and baby 800..1086. Crops follow alpha-visible art rather than a 271.5px row grid. Each chassis wheel baseline maps to logical pram ground. Seat pivots meet measured chassis seat_contacts; canopy and baby pivots meet measured canopy_contacts and baby_contacts on the rendered seat. Per-direction scale is calibrated from the complete assembled alpha bounds to the 30px legacy pram height."
 }
