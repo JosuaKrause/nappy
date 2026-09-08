@@ -774,16 +774,17 @@ draw, so on a normal street a few things would be ringed, most would not, and no
 the difference. **A cue that marks everything says nothing**, and every rule below exists to keep
 the replacement from becoming that.
 
-**One row in the table below draws a ring rather than a circle, and it answers a question the rest
+**One row in the table below draws a ring rather than a circle, and it answers questions the rest
 of this vocabulary never had a cue for.** *Asked for no rings and no drawn fields, held since this
 vocabulary was written · overturned on 2026-09-07 for the "Entity halo" row only, because the
 player asked for exactly this:* "it should use the outline of the sprite. that's why it needs to be
 a shader. or draw the sprite in a uniform color multiple times." The reasoning quoted above is about
 *danger* — what a thing will do to you — and stays true of every other row here: nothing is ringed
-to say how bad it is. The halo answers a different question, *which of these things is charging the
-meter right now*, and **it traces each entity's own silhouette rather than any radius drawn from a
-def.** *(2026-09-07, the player: "halo meaning only the outline of the object not the influence
-radius ... the halo should not extend more than a few pixels beyond the object's outline.")*
+to say how bad it is. The halo answers two different questions instead, one per axis:
+*which of these things is charging the meter right now* and *how much has this one actually cost
+her.* **It traces each entity's own silhouette rather than any radius drawn from a def.**
+*(2026-09-07, the player: "halo meaning only the outline of the object not the influence radius ...
+the halo should not extend more than a few pixels beyond the object's outline.")*
 `EventInstance._draw_halo()` re-runs the entity's own `_draw_body()` at a ring of twelve offsets,
 `HALO_MARGIN` (4px) out, so a busker's rim is its own 11px body and a barricade's is its own run of
 segments — a shape a circle could never draw for either of them.
@@ -793,11 +794,24 @@ screenshots before this one.** The field spanned `EventDef.outer_radius` (up to 
 640x360 view) and painted most of the frame whatever brightness curve sat on top of it; the circle
 fixed the footprint but was still a number's shape rather than the thing's, and a barricade's own
 circle read smaller than the barricade the moment a ceiling was tried to stop a busker's from
-swallowing the street. `EventInstance.contribution_at(her position)` still decides how bright the
-ring reads — through `EventInstance.set_halo_strength()`, called by `ExcitementHalo` once a
-frame — which is the one part every version of this cue kept. `.claude/skills/cues/SKILL.md`, "A
-glow, not a field" is the narrow version of this exception, kept narrow enough to still refuse the
-next ring somebody wants.
+swallowing the street.
+
+**Brightness and colour answer different questions, and a played session is what separated them.**
+*(2026-09-07, the player: "the color of the halo should be determined by the absolute magnitude
+with red being strong and light yellow being weak and the faseout should be by the fraction of
+its value ... the intensity of the halo states how far away I am. the color should state how
+dangerous it is.")* `ExcitementHalo.alpha_for()` is the fraction of a source's own peak reaching
+her right now — `contribution_at(her position) / contribution_at(its own position)` — so a busker
+at arm's length reads exactly as bright as a burning building at arm's length, and only colour
+tells them apart. `ExcitementHalo.colour_for()` is a pale-to-red ramp (`Palette.HALO_WEAK` to
+`Palette.HALO_STRONG`) over `landed()`, the excitement points a source has actually delivered to
+her over a five-second window (`ExcitementHalo.WINDOW`) — not the row's own declared `intensity`,
+which was proposed and rejected first: *"magnitude of how much actually landed at the player --
+track it over a time window -- then you have the real cost."* A protest she skirted the edge of
+and a protest she walked through are the same row and correctly different colours.
+`EventInstance.set_halo_strength()`, called by `ExcitementHalo` once a frame, is what carries both
+numbers to the shader. `.claude/skills/cues/SKILL.md`, "A glow, not a field" is the narrow version
+of this exception, kept narrow enough to still refuse the next ring somebody wants.
 
 | Cue | Means | Where |
 | --- | --- | --- |
@@ -806,7 +820,7 @@ next ring somebody wants.
 | **Its colour** | **Amber** = go round it. **Deep red, doubled** = it ends your day. Two colours, and they are a scale rather than a sequence. | `EventInstance.mark_colour()` |
 | **Its flash** | *It has not started yet.* The telegraph phase, and the only channel carrying it — the colour cannot, because a telegraph is usually over before the event is on screen, so an amber that meant *telegraphing* would only ever be seen on the rows sited in front of the player and would read as *near*. | `EventInstance._draw_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
-| **Entity halo** | *This is charging you right now.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius — drawn under the entities, the crowd and the player rather than over them, for every live source whose `contribution_at()` at her own position clears a floor. Brighter the more that source is actually costing her, and gone the instant she is out of reach of all of them. | `ExcitementHalo`, `EventInstance._draw_halo()`, `assets/shaders/excitement_halo.gdshader` |
+| **Entity halo** | *This is charging you right now, this close, and it has cost you this much.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius — for every live source whose `contribution_at()` at her own position clears a floor. **Brightness** is the fraction of the source's own peak reaching her (close vs. far); **colour** is pale-to-red over what it has actually delivered to her in the last five seconds (harmless vs. costly). Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EventInstance._draw_halo()`, `assets/shaders/excitement_halo.gdshader` |
 | **Edge badge** | Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
 | **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live, she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the day, **and the gap is closing at the speeds in play**. Not *inside the outer radius*, which for a cyclist is thirty times the area that can hurt her and stays true while the bike rides away. | `EventManager._warn_about_the_ground_she_is_on()` |

@@ -81,14 +81,20 @@ wants:**
   construction, the same *"a cue that marks everything says nothing"* rule the caret already answers
   to. It goes to nothing the moment she walks out of reach, which is the *"what to walk away from"*
   half answering itself.
-- **Brightness is the real model, and it is the only thing that is.** How bright a ring reads is
-  that same `contribution_at()`, reaching the shader as an `instance uniform` — one shared material,
-  one value per entity, set through `set_instance_shader_parameter()` rather than `modulate` (which
-  a custom fragment function does not see) — so *how much* is honest even though *how big*
-  (`HALO_MARGIN`) is not. Each entity's ring
-  is its own translucent layer now rather than one shader's summed field, so two overlapping rings
-  read brighter where they cross the ordinary way two half-transparent things do, not because
-  anything sums their numbers.
+- **Two axes now, and each is the real model for its own half.** *(2026-09-07, the player: "the
+  intensity of the halo states how far away I am. the color should state how dangerous it is.")*
+  **Brightness** is `ExcitementHalo.alpha_for()`, the fraction of a source's own peak reaching her
+  right now — a busker at arm's length reads exactly as bright as a burning building at arm's
+  length, and brightness alone can no longer tell them apart. **Colour** is
+  `ExcitementHalo.colour_for()`, a pale-to-red ramp over `landed()` — what a source has actually
+  delivered to her over a five-second window, not its row's own declared `intensity`, which was
+  proposed and rejected first: *"magnitude of how much actually landed at the player -- track it
+  over a time window -- then you have the real cost."* Both reach the shader as an `instance
+  uniform` — one shared material, one value per entity, set through
+  `set_instance_shader_parameter()` rather than `modulate` (which a custom fragment function does
+  not see). Each entity's ring is its own translucent layer rather than one shader's summed field,
+  so two overlapping rings read brighter where they cross the ordinary way two half-transparent
+  things do, not because anything sums their numbers.
 - **Soft and under everything.** Each ring is a child of its own entity with `show_behind_parent`,
   so it draws behind that entity — and Y-sort, which reaches down through the whole tree, places it
   behind the crowd and the player the same way it already places that entity's own shadow. The

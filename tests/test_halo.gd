@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_the_cap_keeps_the_strongest(t)
 	_test_landed_accumulates_and_decays(t)
 	_test_colour_for_the_ramp_ends(t)
+	_test_alpha_for_is_the_falloff_fraction(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -167,3 +168,20 @@ func _test_colour_for_the_ramp_ends(t) -> void:
 	var half := ExcitementHalo.colour_for(saturated * 0.5)
 	t.check(not half.is_equal_approx(Palette.HALO_WEAK) and not half.is_equal_approx(Palette.HALO_STRONG),
 			"halfway to saturation reads as neither end of the ramp")
+
+# ---------------------------------------------------------------- brightness ---
+
+func _test_alpha_for_is_the_falloff_fraction(t) -> void:
+	t.check(is_equal_approx(ExcitementHalo.alpha_for(10.0, 10.0), ExcitementHalo.MAX_ALPHA),
+			"at a source's own peak, alpha is MAX_ALPHA")
+	t.check(is_equal_approx(ExcitementHalo.alpha_for(1000.0, 1000.0), ExcitementHalo.MAX_ALPHA),
+			"a source three orders of magnitude stronger reads exactly as bright at its own peak")
+	var weak_near_rim := ExcitementHalo.alpha_for(0.5, 10.0)
+	var strong_near_rim := ExcitementHalo.alpha_for(50.0, 1000.0)
+	t.check(is_equal_approx(weak_near_rim, strong_near_rim),
+			"a weak and a strong source at the same fraction of their own reach read equally " +
+			"bright -- brightness is decoupled from strength, only colour tells them apart")
+	t.check(weak_near_rim < 0.1 * ExcitementHalo.MAX_ALPHA,
+			"just inside the rim (5% of a source's own peak) alpha is near zero")
+	t.check(is_equal_approx(ExcitementHalo.alpha_for(5.0, 0.0), 0.0),
+			"a non-positive peak never divides by zero")

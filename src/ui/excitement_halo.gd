@@ -92,16 +92,31 @@ static func select_sources(instances: Array[EventInstance], at: Vector2) -> Arra
 	return picked
 
 # ------------------------------------------------------------------ brightness ---
-# Size is each entity's own outline now (`EventInstance._draw_halo()`), decided over there, so the
-# only question left here is *how much*: `EventInstance.contribution_at(her position)`, over a
-# saturation point, clamped and capped — the same arithmetic the field-sized version's own shader
-# used to do, moved here because the shader that is left has no uniform of its own to hold it (see
-# `assets/shaders/excitement_halo.gdshader`).
 
 ## Excitement/s at which a source's own halo reads at its brightest. Shared with
 ## `Tuning.MARK_WORTH_A_DETOUR` (25/s) — the same line the caret already draws between
 ## "ignorable" and "worth a detour" — so the halo and the caret agree on what counts as loud.
 const SATURATES_AT := 25.0
+
+## The most opaque any halo may ever draw, at a source standing on its own field's own peak, so
+## even the brightest rim is a glow rather than a solid ring — see docs/EVENTS.md, "Soft, and
+## under everything."
+const MAX_ALPHA := 0.75
+
+## How brightly a source's own rim reads: the fraction of its own peak that is actually reaching
+## her, capped at `MAX_ALPHA`. **Brightness answers only "how close", never "how much"** — a
+## busker at arm's length reads exactly as bright as a burning building at arm's length, and only
+## `colour_for()` tells them apart. That is what *"the intensity of the halo states how far away I
+## am"* (docs/PLAYTEST-36.md) asks for, and it is the opposite of what this cue did before it.
+##
+## `peak` is the source's own `contribution_at(its own global_position)` — no separate per-class
+## notion of a centre is needed: it is `current_intensity()` for a point body, the field's own
+## peak for a spread, and the middle of the overlap for a flock, which is where a flock's own body
+## actually is densest.
+static func alpha_for(contribution: float, peak: float) -> float:
+	if peak <= 0.0:
+		return 0.0
+	return clampf(contribution / peak, 0.0, 1.0) * MAX_ALPHA
 
 # -------------------------------------------------------------------- colour ---
 
@@ -120,10 +135,6 @@ const SATURATES_AT := 25.0
 static func colour_for(landed: float) -> Color:
 	var t := clampf(landed / (SATURATES_AT * WINDOW), 0.0, 1.0)
 	return Palette.HALO_WEAK.lerp(Palette.HALO_STRONG, t)
-
-## The most opaque any halo may ever draw, at a saturated source's own peak, so even a saturated
-## source is a glow rather than a solid ring — see docs/EVENTS.md, "Soft, and under everything."
-const MAX_ALPHA := 0.75
 
 var _events: EventManager
 var _player: Node2D
@@ -146,7 +157,8 @@ func _process(delta: float) -> void:
 	var picked := select_sources(instances, here)
 	for instance in instances:
 		if instance in picked:
-			var ratio := clampf(instance.contribution_at(here) / SATURATES_AT, 0.0, 1.0)
-			instance.set_halo_strength(ratio * MAX_ALPHA, colour_for(instance.landed()))
+			var peak := instance.contribution_at(instance.global_position)
+			instance.set_halo_strength(alpha_for(instance.contribution_at(here), peak),
+					colour_for(instance.landed()))
 		else:
 			instance.set_halo_strength(0.0, Palette.HALO_WEAK)
