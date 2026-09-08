@@ -138,7 +138,8 @@ contact is invisible, riding silently on the ordinary-looking thing it rides on.
 brief is the only channel that ever tells her what is next — touching a mark reads its
 words back to her on the following day's screen — and the HUD carries one terse line,
 *somewhere out there* and what she is looking for. How far in she is belongs between days
-rather than during one. That is the whole of it.
+rather than during one. **That line is silent until the first mark has been touched** —
+the first encounter comes with no hint at all, and only later ones are named.
 
 ## Endings
 
