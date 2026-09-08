@@ -172,6 +172,13 @@ var _halo: Node2D
 ## `select_sources()` picked, zero for everything else. Read only by `_draw_halo()`.
 var _halo_strength := 0.0
 
+## Excitement points landed on her from this event over `ExcitementHalo.WINDOW`, and the
+## wall-clock time (`Time.get_ticks_msec()`) `landed()` last decayed it from. Duck-typed with
+## `CrowdAgent`'s own copy — see `ExcitementHalo`'s class doc for the whole shape. See
+## `accumulate_landed()` and `landed()`.
+var _landed := 0.0
+var _landed_updated_ms := 0
+
 ## Whether `_draw_spread` and `_draw_cafe` lay their segments along local Y rather than local X.
 ## Decided once, in `setup()`, from the street the instance stands on — see `_spread_is_vertical`.
 ## Never a per-row field: two rows on the same street face the same way for the same reason, and a
@@ -949,6 +956,25 @@ func current_intensity() -> float:
 	if is_telegraphing() and def.pursues_within <= 0.0:
 		value *= Tuning.TELEGRAPH_INTENSITY_FRACTION
 	return value
+
+## Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s class doc. Folds
+## `contribution * delta` into a `WINDOW`-second exponential moving sum: `landed = landed *
+## exp(-delta / WINDOW) + contribution * delta`. Called once a frame by
+## `ExcitementHalo._process()` for every candidate it considers, whether or not this one is
+## actually picked — `landed()` has to keep accumulating for something dropped from the picked set
+## or its colour next time it is picked would be honest about the wrong stretch of time.
+func accumulate_landed(contribution: float, delta: float) -> void:
+	_landed = _landed * exp(-delta / ExcitementHalo.WINDOW) + contribution * delta
+	_landed_updated_ms = Time.get_ticks_msec()
+
+## `_landed`, decayed by however long it has been since the last `accumulate_landed()` call — the
+## laziness that lets a source dropped from the candidate set fade out on its own rather than
+## needing anybody to keep visiting it to bring it down.
+func landed() -> float:
+	var elapsed := float(Time.get_ticks_msec() - _landed_updated_ms) / 1000.0
+	if elapsed <= 0.0:
+		return _landed
+	return _landed * exp(-elapsed / ExcitementHalo.WINDOW)
 
 ## Excitement per second this event contributes at a point.
 func contribution_at(world_position: Vector2) -> float:

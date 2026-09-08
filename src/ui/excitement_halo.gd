@@ -18,6 +18,27 @@ extends Node2D
 ## each one's own ring reads (`set_halo_strength()`, called on the instance itself, once a frame,
 ## for every live instance). See `docs/EVENTS.md`, "The visual vocabulary", for how this cue sits
 ## beside the caret, the badge and the exclamation mark rather than replacing any of them.
+##
+## **A source also carries `accumulate_landed(contribution: float, delta: float) -> void` and
+## `landed() -> float`** — a duck-typed pair (GDScript has no interface), currently implemented
+## identically on `EventInstance` and due on `CrowdAgent` as this cue's candidate set widens. They
+## fold what a source has actually delivered to her into a `WINDOW`-second exponential moving sum,
+## which is what will let its colour answer *how much this has cost her* rather than only its
+## brightness answering *how close*.
+
+## The time constant of the moving sum `accumulate_landed()`/`landed()` keep, in seconds.
+##
+## **A time constant, not a boxcar window, and the two are not the same sentence.** `landed =
+## landed * exp(-delta / WINDOW) + contribution * delta` forgets continuously — there is no instant
+## at which a five-second-old contribution drops out all at once — but its steady state for a
+## constant rate `r` is the same `r * WINDOW` a true five-second running sum would give, so the
+## number means the same thing either way. Said here because "a 5s window" is what the next reader
+## assumes from the name, and it is not the shape this is.
+##
+## **Chosen to be looked at, not derived.** *(2026-09-07: "5s sounds good for now".)* `cat_dash` is
+## a three-second interruption and `busker` is continuous, so it has to be long enough that a brief
+## scare colours at all and short enough that a source she has walked away from stops promptly.
+const WINDOW := 5.0
 
 ## Excitement/s a source has to reach at her own position before it earns a place in the halo.
 ##
@@ -93,14 +114,17 @@ func setup(events: EventManager, player: Node2D) -> void:
 	_events = events
 	_player = player
 
-## Every frame: pick the sources, tell each one how bright its own ring reads, and tell everything
-## else zero. `EventInstance.set_halo_strength()` is what actually stores it and queues that
-## instance's own halo child for redraw — this node has no `_draw()` of its own left to call.
-func _process(_delta: float) -> void:
+## Every frame: accumulate what actually landed on every live instance, pick the sources, tell
+## each one how bright its own ring reads, and tell everything else zero.
+## `EventInstance.set_halo_strength()` is what actually stores it and queues that instance's own
+## halo child for redraw — this node has no `_draw()` of its own left to call.
+func _process(delta: float) -> void:
 	if not _events or not _player:
 		return
 	var here := _player.global_position
 	var instances := _events.instances()
+	for instance in instances:
+		instance.accumulate_landed(instance.contribution_at(here), delta)
 	var picked := select_sources(instances, here)
 	for instance in instances:
 		if instance in picked:

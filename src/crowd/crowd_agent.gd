@@ -128,6 +128,12 @@ var _jolt_intensity := 0.0
 var _jolt_inner := 0.0
 var _jolt_outer := 0.0
 
+## Excitement points landed on her from this agent over `ExcitementHalo.WINDOW`, and the
+## wall-clock time (`Time.get_ticks_msec()`) `landed()` last decayed it from. Duck-typed with
+## `EventInstance`'s own copy — see `ExcitementHalo`'s class doc for the whole shape.
+var _landed := 0.0
+var _landed_updated_ms := 0
+
 ## A sidestep held for a moment after being walked into: how far across its own corridor, and how
 ## long is left on it. See `step_aside()`.
 ## The way ahead, and the state it was worked out for. See `_look_ahead`.
@@ -276,6 +282,22 @@ func contribution_at(world_position: Vector2) -> float:
 		total += Tuning.falloff(distance, _jolt_intensity * (_jolt / _jolt_for),
 				_jolt_inner, _jolt_outer)
 	return total
+
+## Duck-typed with `EventInstance`'s own copy — see `ExcitementHalo`'s class doc. Folds
+## `contribution * delta` into a `WINDOW`-second exponential moving sum, called once a frame by
+## `ExcitementHalo._process()` for every candidate it considers.
+func accumulate_landed(contribution: float, delta: float) -> void:
+	_landed = _landed * exp(-delta / ExcitementHalo.WINDOW) + contribution * delta
+	_landed_updated_ms = Time.get_ticks_msec()
+
+## `_landed`, decayed by however long it has been since the last `accumulate_landed()` call, so an
+## agent that stopped being a candidate — the jolt wore off, or the cap dropped it — fades out on
+## its own rather than needing anybody to keep visiting it.
+func landed() -> float:
+	var elapsed := float(Time.get_ticks_msec() - _landed_updated_ms) / 1000.0
+	if elapsed <= 0.0:
+		return _landed
+	return _landed * exp(-elapsed / ExcitementHalo.WINDOW)
 
 ## Startles this agent for `seconds`. The only way anything outside the crowd adds excitement
 ## to the world, and it deliberately adds it to a *body* rather than to the baby.
