@@ -14,17 +14,15 @@ mid-way through.
 
 ## The order
 
-1. **M89** — a soft halo around whatever is actually costing her, so the meter going up has a
-   visible cause to walk away from.
-2. **M90** — the controls do what the hand does: a button that shows a press, a stop circle the size
+1. **M90** — the controls do what the hand does: a button that shows a press, a stop circle the size
    it is drawn, and a joystick drag that follows the thumb.
-3. **M91** — notice, per pursuer: the dog gives more of it and the biker far less, and the biker
+2. **M91** — notice, per pursuer: the dog gives more of it and the biker far less, and the biker
    arrives on her own side of the road.
-4. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+3. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-5. **M56** — the resistance is noticed.
+4. **M56** — the resistance is noticed.
 
-**M90 is second because it is the scheme a player touches before anything else**, and every one of
+**M90 is first because it is the scheme a player touches before anything else**, and every one of
 its findings is the build answering a press with nothing.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
@@ -135,71 +133,6 @@ which proves only that the controls stay *off* where they should.
       careful-versus-careless survives a blunter instrument, and it is answered by playing it rather
       than by arguing it.** The three smaller things a real device would also settle — the catch
       radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
-
----
-
-## M89 — A halo says what is costing her · asked for 2026-09-07
-
-> "lastly, let's create a shader (if that is possible in godot) to create a soft halo surrounding
-> entities that are currently actively causing excitement. this is meant as a hint to the player so
-> they know what to walk away from and what is causing excitement to go up"
-
-**Yes, a shader is possible**: Godot 4 has `canvas_item` shaders in its own language, authored as a
-`.gdshader` file and attached as a `ShaderMaterial` — so this is a real option rather than a
-workaround, and the file is an asset a person can open, which is what the **cues** rule asks of a
-picture.
-
-**This overturns a standing decision, and the reason it is allowed is that the player took it.**
-*Asked for no rings and no drawn fields, held since the vocabulary was written · overturned on
-2026-09-07 for one specific cue, because "this is meant as a hint to the player so they know what to
-walk away from".* The **cues** rule says *"No circles around entities ... a ring communicates a
-falloff radius, which is a number. A silhouette communicates a threat"*, and *"Nothing draws a
-field"*. That reasoning is about **danger** — what a thing will do to you — and it stands. This cue
-answers a different question that the vocabulary has never had an answer to: **the meter is going up
-right now and nothing on screen says which of the six things around her is doing it.**
-
-- [ ] **The halo marks what is actually reaching her, not what exists.** This is the **cues** rule's
-      second rule arriving in a new place — *a cue that marks everything says nothing* — and it is
-      the whole design risk here, because a day plans several hundred bodies and most of them are
-      standing in the street doing nothing to her. The set to draw is the events whose
-      `EventInstance.contribution_at(her position)` is currently above a floor: that is a handful at
-      a time by construction, it is the exact question *"what is causing excitement to go up"* asks,
-      and it goes to zero the moment she walks out of reach, which is the *"what to walk away from"*
-      half answering itself.
-
-      **The floor is a felt number and there is no way to pick it but to look at it.** Start at
-      something small enough that a thing genuinely pushing the meter is never silent, and move it
-      against a screenshot
-- [ ] **What is drawn is the falloff itself, which is why it is a shader rather than a texture.**
-      `Tuning.falloff()` is what prices the ground she is standing on — flat inside `inner_radius`,
-      easing to nothing at `outer_radius` — and a halo that is *that curve* is a picture of the
-      thing the meter is reading rather than a decoration near it. A gradient texture cannot be it,
-      because the inner/outer ratio differs per row.
-
-      **The sources compose by addition and the halo should too.** `EventManager
-      .total_excitement_at()` is a plain sum over instances, so two overlapping fields cost more
-      where they overlap, and a halo drawn as one shape per event would show two rings crossing
-      where the game charges a bright middle. **One node with one shader, fed the active sources as
-      uniform arrays** (position, inner, outer, current intensity), is what draws the sum. Cap the
-      array and say what happens past the cap
-- [ ] **Soft, and under everything.** *"A soft halo surrounding entities"* — so it is a glow rather
-      than a rim, and it draws beneath the entity, the crowd and the player rather than over them,
-      or the thing it is pointing at is the thing it hides. The **cues** vocabulary's existing marks
-      — the caret over a costly event, the exclamation mark over her — are unchanged and keep
-      meaning what they mean: this says *this is charging you now*, and those say *this is worth a
-      detour* and *the contract is now about you*. **Three cues, three sentences, and the entry for
-      each has to say which**
-- [ ] **The colour is not a new hue.** A saturated colour in this game already means something
-      (`Palette.SIGNAL_RED`/`AMBER`/`GREEN` are the traffic lights, `MARK_COSTLY`/`MARK_LETHAL` are
-      what an event costs), so a fourth vocabulary is the **cues** rule's own warning about a second
-      hand-drawn language, aimed at colour. Pick from what the meter already uses for excitement, so
-      the halo and the bar it fills are visibly the same fact
-- [ ] **Every doc that says the game draws no field has to stop saying it.** `.claude/skills/cues/
-      SKILL.md` opens with *"No circles around entities. Standing decision"* and closes the list with
-      *"Nothing draws a field"*; `docs/EVENTS.md` carries "The visual vocabulary". **Both are wrong
-      the moment this lands**, and the rule that replaces them has to be narrow enough to still
-      refuse the next ring somebody wants: the exception is *one cue, for the cost being charged
-      right now, drawn as the summed field it is reading* — not a licence to draw a radius
 
 ---
 
