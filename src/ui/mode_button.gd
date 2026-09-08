@@ -132,6 +132,15 @@ func _ready() -> void:
 	# claim the event at all: `IGNORE` lets it fall straight through to the screen underneath.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+## The corner radius is a function of the rect, so it has to be rewritten whenever the rect
+## changes — a stylebox is data Godot keeps, not something re-derived per frame. `_refresh_look()`
+## follows because `_apply_disc_style()` resets `"normal"` to the resting fill, and a resize must
+## not silently un-press or un-hover a button that is currently either.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_apply_disc_style()
+		_refresh_look()
+
 func _process(_delta: float) -> void:
 	if _held_by == -1:
 		return
@@ -249,7 +258,11 @@ func _refresh_look() -> void:
 func _draw() -> void:
 	if symbol != Symbol.RESTART or hold_progress <= 0.0:
 		return
-	var centre := Vector2(_RADIUS, _RADIUS)
+	# The rect's own middle and the rect's own radius, for the same reason the stylebox reads them
+	# rather than `_RADIUS`: a stretched button would otherwise sweep a circle off to one side of
+	# itself. See `_drawn_radius()`.
+	var centre := size * 0.5
+	var radius := _drawn_radius()
 	# -PI/2 is straight up in this control's own local space (y grows downward), so the sweep
 	# starts at 12 o'clock; increasing the angle from there moves toward 3, 6 and 9 o'clock in
 	# turn, which is clockwise once y is flipped back the way a player actually sees it.
@@ -260,7 +273,7 @@ func _draw() -> void:
 	points.append(centre)
 	for i in segments + 1:
 		var angle := start + sweep * (float(i) / float(segments))
-		points.append(centre + Vector2(cos(angle), sin(angle)) * _RADIUS)
+		points.append(centre + Vector2(cos(angle), sin(angle)) * radius)
 	draw_colored_polygon(points, _HOLD_FILL)
 
 ## A thumb does not land on a drawn disc to the pixel — `TouchControls.PAUSE_CATCH_RADIUS` is more
@@ -275,8 +288,10 @@ func catch_rect() -> Rect2:
 
 ## The disc itself: one `StyleBoxFlat` per visual state, so the fill comes from data Godot already
 ## knows how to switch on rather than from a paint call keyed off `get_draw_mode()`.
-## `corner_radius_*` at `_RADIUS` — half this button's own `_DIAMETER` — turns the square `Button`
-## rect into a circle, the same way rounding a square's corners by half its side always does.
+## `corner_radius_*` comes from `_drawn_radius()` — half the button's own shorter side, whatever
+## the container gave it — which is what actually turns a rect into a circle, the same way
+## rounding a square's corners by half its side always does. Re-applied on every resize, in
+## `_notification()`, because a stylebox is stored data rather than something re-derived per frame.
 ## `content_margin_*` at `_ICON_INSET` is what makes the icon read at `_ICON_SIZE` instead of
 ## filling the whole disc: `expand_icon` scales the glyph to fill whatever content area the active
 ## stylebox leaves after its own margins, so the margin is the sizing knob.
@@ -287,13 +302,29 @@ func _apply_disc_style() -> void:
 	# Held down while still under the pointer reads as pressed, not as a third shade.
 	add_theme_stylebox_override("hover_pressed", _disc_style(Palette.BUTTON_PRESSED))
 
-static func _disc_style(fill: Color) -> StyleBoxFlat:
+## Half the button's own shorter side, which is the radius that actually rounds a rect into a
+## circle — **not `_RADIUS`, which is only that number while the rect happens to be 92x92.**
+##
+## *(2026-09-07, the player: "the hover highlight showed a bug that the button is currently a square
+## and not the circle".)* `custom_minimum_size` is a *minimum*: any container that hands this button
+## more room than it asked for leaves a rounded rectangle, and a fixed corner radius cannot know.
+## **The near-white hover is what made it visible rather than what caused it** — the resting and
+## hover browns sat close enough to the panel behind them that the corners never read.
+##
+## Falls back to `_RADIUS` before the first layout, when `size` is still zero and rounding by zero
+## would draw a plain square for one frame.
+func _drawn_radius() -> float:
+	var half := minf(size.x, size.y) * 0.5
+	return half if half > 0.0 else _RADIUS
+
+func _disc_style(fill: Color) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
+	var radius := int(_drawn_radius())
 	box.bg_color = fill
-	box.corner_radius_top_left = int(_RADIUS)
-	box.corner_radius_top_right = int(_RADIUS)
-	box.corner_radius_bottom_left = int(_RADIUS)
-	box.corner_radius_bottom_right = int(_RADIUS)
+	box.corner_radius_top_left = radius
+	box.corner_radius_top_right = radius
+	box.corner_radius_bottom_left = radius
+	box.corner_radius_bottom_right = radius
 	box.content_margin_left = _ICON_INSET
 	box.content_margin_right = _ICON_INSET
 	box.content_margin_top = _ICON_INSET
