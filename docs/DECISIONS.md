@@ -1,5 +1,122 @@
 # Decisions
 
+## M91 — Notice, per pursuer, and the biker's own side of the road · built 2026-09-07
+
+Three findings from [PLAYTEST-34.md](PLAYTEST-34.md), and the headline is that **one rule was wrong
+at both ends at once**: M87 gave every approaching row the same `OFFSCREEN_NOTICE` (0.2s of closing
+on top of the ray to the edge of the view), and the player asked for two rows to move in **opposite**
+directions on the same day. *(2026-09-07: "pursuing dog is still too short notice while biker is now
+too long notice.")* So notice became per-row — `EventDef.offscreen_notice`, defaulting to the old
+shared constant.
+
+| row | field | was | now |
+|---|---|---|---|
+| `charging_dog` | `offscreen_notice` | 0.2s | **0.5s** |
+| `charging_dog` | `telegraph_time` | 2.4s | **4.5s** |
+| `cyclist` | `telegraph_time` | 3.3s | **2.0s** |
+| `cyclist` | `outer_radius` | 145px | **90px** |
+
+**Two of those four are consequences rather than choices, and both are the kind of thing that gets
+"fixed" back by somebody who does not know why.**
+
+**The dog's telegraph had to nearly double.** Siting it further out gives a player who only walks
+more ground to retreat across before the row's own budget runs out, and `tests/test_events.gd`'s
+*"walking away is not enough"* went red. **Raising `duration` was tried and reverted**: the suite
+holds every pursuer's duration to `Tuning.PURSUIT_TIME` exactly, tighter than `validate_pursuit`'s
+own 2x ceiling, so that lever does not exist. Closing the worst-case gap at 38px/s
+(`pursue_speed - WALK_SPEED`) takes about 7.0s, inside the 7.5s the new `telegraph_time + duration`
+allows.
+
+**That leaves half a second of margin, and it was put to the player rather than quietly accepted.**
+*(2026-09-07: "getting lucky once is fine.")* On the worst siting geometry a walking player could
+outlast the clock rather than being caught. Recorded so a later report of *"the dog gave up and I
+never ran"* is recognised as this rather than investigated as a new defect — and see
+[PLAYTEST-35.md](PLAYTEST-35.md) for the full answer to *does the dog ever give up while she walks*:
+the give-up condition is 0.35s of the gap **opening**, which only a run can produce.
+
+**The biker's field had to shrink to let its telegraph shrink.** `telegraph_time` is tied to
+`outer_radius` by a fixed `hard_fail` margin (`outer_radius * TELEGRAPH_HARD_FAIL_MARGIN /
+WALK_SPEED`), and 3.3s was already only 0.15s above the floor for a 145px field — there was no room
+to shorten the telegraph alone. **This is an explicit overturn of M87's own recorded rejection**,
+which refused to shorten this telegraph because doing so *"buys the lethality back by taking the
+notice away"*; the complaint has flipped for this row and the player flipped it. The cyclist's
+walk-through cost falls from +30.2 to +20.9 and its row moves up `docs/EVENTS.md`'s cost table.
+
+**The lethality defect did not come back.** `EventInstance.is_lethal_at()` still refuses for the
+whole telegraph and the telegraph term still binds the siting, so the arrival lands after the
+telegraph ends — the failure playtest 33 finding 11 named.
+
+**The biker's side of the road was a lead problem, not a placement one.** *(2026-09-07: "also biker
+should be on the same side of the road not the other side".)* `placement` was already
+`[SIDEWALK, SQUARE]`; the row was sited hundreds of pixels out along her **literal** heading, and a
+heading only slightly off the corridor axis drifts across a six-tile street long before that lead
+ends — a diagonal on the touch controls is enough. `EventDirector._onto_her_side()` straightens the
+siting heading onto the corridor's own axis first, using `CityMap.pavement_inward()`'s axis-aligned
+normal. **A preference and not a requirement, deliberately**: off a plain sidewalk edge, or walking
+straight across the street, the literal heading is used exactly as before, because a `TOWARD_PLAYER`
+row that cannot be sited is an encounter that silently does not happen.
+
+## M90 — The controls do what the hand does · built 2026-09-07
+
+Seven findings from [PLAYTEST-34.md](PLAYTEST-34.md) and four more from
+[PLAYTEST-35.md](PLAYTEST-35.md), which arrived while this branch was still open and were built into
+it rather than queued against it — **nothing merges carrying a defect that was already found**.
+
+**Two root causes, and neither is visible in the diff that fixed it.**
+
+**The joystick drag's reference point walked away with the camera.** `_on_tap()` converted the
+chosen focus to world space **once**, into `_drag_origin_world`, and every later heading was measured
+from that stale point — so as she walked, the camera carried the drawn ring away from the reference.
+That is playtest 34's *"it moves a bit and then moves completely differently from what my movement
+is"* exactly. The focus is stored in **design space** now and re-projected through
+design->presented->world on every motion event. It also turned out to be the whole of a second
+finding — *"the two joysticks are broken ... only the left joystick should be used as reference"* —
+which was checked after this landed and needed nothing built.
+
+**The pressed button was never a colour problem.** `ModeButton._ready()` sets
+`mouse_filter = MOUSE_FILTER_IGNORE`, so a `Button` that ignores the mouse never enters its own
+hover or pressed draw state: the near-white `Palette.BUTTON_PRESSED` M85 installed was correct and
+had never once been selected. **The `IGNORE` is load-bearing** — it is playtest 29's fix for Godot's
+GUI layer eating a raw touch before `_unhandled_input()` sees it, which is where all three screens
+read their presses — so the look is driven from the screens' own raw reading through `catch_rect()`
+instead.
+
+**A third defect surfaced while fixing that one.** Buttons that fire on press close their screen in
+the same input dispatch that sets the pressed fill, and **Godot draws no frame in between**, so the
+flash was set and hidden without ever rendering. `DaySummary` had already found and fixed this for
+its own touch path; the same two-`process_frame` shape now covers `TitleScreen` and `PauseScreen`.
+
+**Numbers that moved:** `TAP_STOP_RADIUS` is `STOP_RADIUS / 2.0` (24 world px), because `STOP_RADIUS`
+(48) was being compared in **world** space for `Mode.TAP` and in **design** space for the focus
+rings — at zoom 2 that made the door round her twice the size of the drawn circle. Its centre then
+moved up `Stroller.FIGURE_HEIGHT / 2.0` (23px), because everything in this game is feet-anchored and
+the circle was covering 24px of pavement below her while her head sat outside it. Together those two
+put the pram (34px away) outside the door, which is what *"if I click on the stroller it shouldn't
+stop"* asked for — **and the docstring arguing the opposite went with them**, or the next reader
+widens it back. `Palette.BUTTON_HOVER` became the midpoint of resting and pressed,
+`(0.57, 0.54, 0.51, 0.92)`.
+
+**Crossing the middle band re-targets the drag, overturning an M85 decision on the player's own
+reasoning.** *Asked for a focus that sticks for the whole drag on 2026-09-07 (M85 recorded hysteresis
+and a stickier focus as rejected, because the focus otherwise flipped as a pointer crossed the centre
+line and snapped back and forth) · overturned on 2026-09-07, because "since there is a gap in the
+middle that stops I think we should retarget to the other side when that happens".* **The stop band
+is what makes it safe**: a pointer cannot cross the centre line without passing through `STOP_RADIUS`
+either side of it, where she is stopped, so the crossing is a discrete event with a defined middle
+rather than a continuous slide between two references. The re-pick happens on **leaving** the band,
+not on crossing the bare line, and `nearer_focus()` ties only exactly on the centre line — 48px
+inside either edge — so a pointer at the band's edge is already unambiguously on one side and cannot
+oscillate. Sticky survives everywhere else.
+
+**The two modes are named and not explained.** *(2026-09-07: "call the modes 'On-screen Controls'
+and 'Tap to Go' no further explanations".)* Two earlier sentences in the same session asked to
+simplify the captions and to stop mentioning stopping; the third is read as replacing both, being
+later and strictly narrower. The `Tap to walk, double tap to run.` teaching line is a different
+sentence and was left alone — and then **doubled in size, in all three places it appears**
+*(2026-09-07: "can you double the size of the tutorial text?")*: the title body and pause body
+16 -> 32, and `HUD`'s own `Teach` line 19 -> 38, which needed its fixed 520x30 rect grown to 1040x60
+or the line would have clipped.
+
 ## M88 — The player chooses the controls · built 2026-09-07
 
 *Asked for one scheme chosen nowhere on 2026-09-06 ("get rid of all other modes") · overturned to
