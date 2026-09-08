@@ -158,41 +158,43 @@ last of those is the load-bearing one — *a tap that pathfinds hands the route 
 game*, and the route decision is the whole design. The records are in `DECISIONS.md` under M82 and
 M88.
 
-**The illustrated presentation exists behind a flag, and it is rejected as it stands.** The game
-draws its legacy SVG graphics unless `--illustrated` (locally) or `?illustrated=1` (on the web)
-opts in, and neither changes gameplay. The focused parser, legacy-binding, grounding and boot
-checks pass; the display review does not.
+**The illustrated presentation remains opt-in and awaits visual acceptance.** The game draws
+its legacy SVG graphics unless `--illustrated` (locally) or `?illustrated=1` (on the web) opts in.
+The compositor consumes applied displacement without changing gameplay. The full graphics
+overhaul is not ready for release.
 
 The concept capture is [illustrated-street-review.png](evidence/archive/session-captures/2026-09-06/illustrated-street-review.png).
 The street study is completely off and must be redone from scratch: it has no coherence or sense,
 and it uses reference imagery that does not fit the game's art style. It is not an approved visual
 direction or a basis for extending the asset family.
 
-The gameplay capture is [illustrated-gameplay-review.png](evidence/archive/session-captures/2026-09-06/illustrated-gameplay-review.png).
-It shows disconnected limbs in the wrong topological order, with positions incorrect relative to
-their owners and ground anchors. The compositor needs its layer order, pivots and placement rebuilt
-before another acceptance review. The record is in `DECISIONS.md` under M84.
-
 [Illustrated gameplay repair instructions](ILLUSTRATED-GAMEPLAY-FIXES.md) specify the asset,
-attachment, gait and sorting repairs, their order, and the visual acceptance checks for this capture.
-The next asset gate is versioned modular sheets with complete directions and isolated parts:
-the current pram groups and inferred walker limb cuts cannot supply reliable registrations.
-The open implementation order is in TODO.md under Illustrated actor registration and assembly;
-the source/runtime audit and its limitations are in DECISIONS.md under Illustrated registration
-audit. Preserve the fixed-offset legacy comparisons while reviewing replacement art.
-`scenes/dev/illustrated_actor_review.tscn` supplies the stationary eight-direction calibration
-view; the repair brief gives its screenshot command. Its current actors remain visibly broken.
+attachment, gait and sorting contracts. The open work is in TODO.md under Illustrated actor
+registration and assembly; the source audit and repair reasoning are in DECISIONS.md under
+Illustrated registration audit and Limb attachment repair.
 
-The current actor-registration branch contains a measured upper-body walker calibration and
-focused visual checks, but it is not accepted: the lower-body sheet still crosses inferred crop
-boundaries, and the assembled lower limbs have not passed a rendered joint review. The mother and
-pram still use source sheets whose anatomy and pram groups are not reliably registered.
-PLAYTEST-37 approves the layered pram drawings for scripted checkerboard removal. Their opaque
-originals remain in the archive as extraction inputs; the approval does not establish a shared
-layer coordinate system. Transparent copies and the reproducible extraction command are listed in
-`assets/illustrated/modular/pram-alpha-extraction-2026-09-08.md`; no runtime manifest consumes them.
-Review the walker diff, keep valid painted-bound measurements, and
-register the pram layers before claiming a complete eight-direction actor.
+The actor manifests use measured per-facing crops and crop-local joints. The shared segment
+transform maps painted endpoints to solved joints, including the lifted ankle and sole. The gait
+retains unfinished steps across stops, bounds stride against leg reach and fits neutral knees to
+the configured rest geometry. Review complete assembled bodies against the legacy drawings at
+the fixed 96-world-pixel offset.
+
+The mother uses a textured torso core and separate shoulder-to-hand arm registrations. The pram
+manifest consumes PLAYTEST-37's selected `pram-layered-v3-draft-transparent.png`, with independent
+chassis, seat, canopy and baby registration. The approved PNG remains unchanged; its extraction
+record is `assets/illustrated/modular/pram-alpha-extraction-2026-09-08.md`.
+
+Source limitations remain explicit: some profile arms and walker legs reuse one same-facing
+drawing, and diagonal walker crops share painted edge pixels. Distinct isolated parts and authored
+facing refinements remain an art gate. The stationary `scenes/dev/illustrated_actor_review.tscn`
+and sampled `scenes/dev/illustrated_motion_review.tscn` expose assembly at gameplay scale; their
+commands and limitations are in the repair brief. Live overlaps, roof reveal and a coherent
+illustrated street still need their own review.
+
+The visual and attachment suites pass in the illustrated mode, and the visual suite also checks
+the legacy binding without the flag. The dated contact review and its build provenance are in
+DECISIONS.md; that image predates the tested resting-knee correction. Visual acceptance of the
+current pose and smooth motion remains open.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the

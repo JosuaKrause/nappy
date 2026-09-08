@@ -186,9 +186,10 @@ godot --path . res://scenes/dev/illustrated_actor_review.tscn --resolution 1280x
 ```
 
 Use an external timeout for a windowed capture. This is a static registration diagnostic;
-it cannot establish motion quality, live-world sorting or visual acceptance. The dated
-[calibration capture](evidence/archive/session-captures/2026-09-08/illustrated-actor-calibration.png)
-shows the unresolved source and attachment defects.
+it cannot establish motion quality, live-world sorting or visual acceptance. Light actor-row
+backdrops expose the dark frame and limb contours. Dated captures and their exact build limits,
+including the [contact review](evidence/archive/session-captures/2026-09-08/illustrated-limbs-contact-review.png),
+are indexed in DECISIONS.md under Limb attachment repair.
 
 `scenes/dev/illustrated_motion_review.tscn` samples the compositors through applied-displacement
 sequences: idle, initial stride, each foot in mid-swing, sustained walk, run, blocked stop,
@@ -198,12 +199,13 @@ The virtual owner position accumulates travel while each display cell stays fixe
 scene with the same bounded screenshot command, substituting its scene path and output name.
 It checks sampled assembly poses; it does not establish smooth motion or live city sorting.
 
-Run the focused visual suite with `./tools/test.sh visuals --illustrated` and also exercise its
-legacy path without the flag. The live-owner test must account for the opt-in child being absent
-in legacy mode. A zero-failure assertion summary does not excuse a script error.
+Run `./tools/test.sh visuals limb_attachments mother_attachments --illustrated` for the focused
+registration, rendered-endpoint and displacement checks. Exercise the legacy path with
+`./tools/test.sh visuals`. The live-owner test checks that the opt-in child is absent in legacy
+mode. A zero-failure assertion summary does not excuse a script error.
 
 Implement in bounded sequential pieces: sheet/manifest repair, static assembly, gait and sorting,
-then environment integration. Use isolated Luna implementation worktrees under the orchestration
+then environment integration. Use isolated implementation worktrees under the orchestration
 rules; the orchestrator owns queue changes and visual acceptance. Load the path-matched skills,
 especially illustrated-PNG, Godot and verification; load city/crowd/cues rules if those areas change.
 

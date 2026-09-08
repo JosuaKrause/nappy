@@ -21,26 +21,19 @@ PLAYTEST-32's connected-body and legacy comparison requirements, and the M84 rec
 DECISIONS.md. Keep the illustrated renderer opt-in. The supplied urban/mother illustrations
 define style; `docs/reference/` supplies real-world structure and posture.
 
-- [ ] Author versioned replacement modular sheets with eight complete views, clean alpha and
-      isolated anatomy. The source-sheet audit is recorded in DECISIONS.md under Illustrated
-      registration audit. Preserve the requested interchangeable parts; complete flattened cards
-      are not a replacement for the layered animation contract. The pram transparent copies
-      documented in `assets/illustrated/modular/pram-alpha-extraction-2026-09-08.md` are available
-      for registration; see DECISIONS.md under Pram checkerboard extraction.
-- [ ] Make per-direction part registration authoritative and reject incomplete registrations.
-      PLAYTEST-37 accepts the pram transparency and requests the v3 stroller in this repair:
-      use `pram-layered-v3-draft-transparent.png` and register chassis, seat, canopy and baby.
-      Fit a stationary mother/pram and pedestrian to measured attachment points, preserving the
-      legacy comparison at one fixed horizontal offset. Do not claim complete actors where source
-      sheets cannot supply the anatomy or directions.
-- [ ] Verify rendered joints and ground contact through walk, stop, turn and reset before expanding
-      variants. Review complete actors at gameplay scale in all eight directions. The limb repair
-      uses measured crop-local hip, knee, ankle and sole points, maps each painted segment to its
-      rendered joints, and includes swing height in the shin's ankle target. Dimension stride
-      targets in world pixels from the actor's leg geometry so continuous walking and running
-      cannot leave a planted foot arbitrarily far behind the body. Preserve stationary soles
-      during stance and stop animation when applied displacement is zero.
-- [ ] Integrate whole-actor sorting and roof reveal, then a representative illustrated live street.
+- [ ] Finish the modular source-art gate with eight complete views, clean alpha and isolated
+      anatomy. The manifests identify same-facing arm/profile-leg reuse, shared diagonal walker
+      edge pixels and the mustard SW facing ambiguity. Replace those source limitations while
+      preserving interchangeable parts; flattened cards do not satisfy layered animation.
+      Preserve PLAYTEST-37's selected transparent v3 pram. See DECISIONS.md under Illustrated
+      registration audit and Limb attachment repair for the source findings and implemented fit.
+- [ ] Review the registered actors at gameplay scale before expanding variants. Inspect all eight
+      facings and smooth walk, run, stop, turn and reset, including the corrected resting knees.
+      The static contact review in DECISIONS.md predates the resting-knee correction. Headless
+      attachment and displacement checks do not establish motion quality or visual acceptance.
+      Keep the legacy drawings at their fixed horizontal comparison offset.
+- [ ] Review whole-actor sorting in live overlaps and integrate roof reveal, then a representative
+      illustrated live street.
       Preserve current joystick/tap choice and the event silhouette halo; crowd halos remain a
       separate tabled question. Extend vehicles, authored events, environment and screens only
       after their prerequisite visual gates.
@@ -50,10 +43,10 @@ define style; `docs/reference/` supplies real-world structure and posture.
 1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
 2. **M56** — the resistance is noticed.
-3. **Illustrated actor registration and scale** — repair the modular body and pram joint
-   transforms, then calibrate their assembled size against the legacy SVG sprites. The current
-   calibration scene demonstrates both defects; see [PLAYTEST-36.md](PLAYTEST-36.md) and
-   [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md).
+3. **Illustrated actor review** — review the registered bodies and complete pram against the
+   legacy SVG sprites, then resolve the documented source-art and live-motion gaps. See
+   [PLAYTEST-36.md](PLAYTEST-36.md), [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md)
+   and DECISIONS.md under Limb attachment repair.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it

@@ -79,6 +79,7 @@ func _draw() -> void:
 	draw_string(ThemeDB.fallback_font, Vector2(34.0, 34.0), "ILLUSTRATED ACTOR REGISTRATION · STATIC EIGHT-FACING REVIEW", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22, Color("#ffe8b5"))
 	draw_string(ThemeDB.fallback_font, Vector2(36.0, 58.0), "CURRENT PNG COMPOSITOR  |  LEGACY SVG AT +96 WORLD PX  |  LOGICAL SCALE 1×", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Color("#cfc1a2"))
 	for y: float in [MOTHER_Y, MUSTARD_Y, RUST_Y]:
+		draw_rect(Rect2(0.0, y - 75.0, 1280.0, 110.0), Color("#c8c1ae"))
 		for index: int in DIRECTIONS.size():
 			var x := COLUMN_X + float(index) * COLUMN_STEP
 			draw_line(Vector2(x - 60.0, y), Vector2(x + 130.0, y), Color("#806d54"), 1.0)
