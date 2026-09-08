@@ -189,6 +189,15 @@ const _CAUSES := {
 func spawn_extra(def: EventDef, at: Vector2) -> EventInstance:
 	return _spawn_unplanned(def, at)
 
+## Retires one unplanned instance outside the day's own closures and events — the resistance
+## director's own use, when a chalk mark moves and the guard standing over the old spot has
+## to go with it. Same path `silence_city_wide()` takes per instance: mark it finished and
+## let `_retire_finished()`'s ordinary sweep free it, rather than freeing it here and risking
+## a reference something else still holds this frame.
+func retire(instance: EventInstance) -> void:
+	if instance and is_instance_valid(instance) and not instance.is_finished:
+		instance._finish()
+
 ## Retires every city-wide source. The loudspeakers cut out mid-sentence, and for the
 ## first time since the masts went up on day 5 there is no floor under the meter — the
 ## good ending's reward is that the last walk home is the easiest in the game.
