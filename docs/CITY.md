@@ -56,7 +56,10 @@ itself is two spines, and a precinct you meet on every third street is what a st
 one main road because there is nowhere else it could be,
 and a precinct is three blocks with an end you can see — one along the southern shore, one inland.
 A span covers its blocks and the junctions between them and stops short of the crossroads at either
-end, which is where the bollards are. **Nothing drives on the span itself, on either axis.** A
+end, which is where the bollards are: a line of posts across the carriageway at each mouth, so the
+street reads as closed on purpose rather than as the road running out. The pavements either side of
+the posts run straight past them onto the precinct's own paving — a pram walks through, a car does
+not. **Nothing drives on the span itself, on either axis.** A
 street crossing it internally meets paving rather than a carriageway and gets no zebra — the box is
 brick from edge to edge — so what would be a crossroads elsewhere is a T at a precinct's edge, the
 precinct's own pavement continuing past it as the third arm.

@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_no_single_street_closure_isolates_the_parks(t)
 	_test_a_missing_arm_has_no_crossing_on_it(t)
 	_test_nothing_goes_into_a_precinct(t)
+	_test_bollards_stand_where_the_paving_begins(t)
 	_test_an_alley_is_exactly_one_cell_wide(t)
 	_test_even_offset_is_always_even(t)
 
@@ -632,6 +633,45 @@ func _tile_is_hard_blocked(map: CityMap, tile: Vector2i) -> bool:
 		if (map.built_over[key] as Rect2i).has_point(tile):
 			return true
 	return false
+
+## Every precinct span gets a line of posts at each end, standing exactly where the paving
+## begins: `City.bollard_positions` is geometry alone, so this holds it without a scene.
+func _test_bollards_stand_where_the_paving_begins(t) -> void:
+	var seeds := 25
+	for i in seeds:
+		var map := CityGenerator.generate(_seed(i))
+		var positions := City.bollard_positions(map)
+		for span in map.precinct_spans:
+			var vertical := span.x == 1
+			var corridor: int = span.y
+			var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH
+			var hi := (span.w + 1) * CityMap.period()
+			var rows := {}
+			for at in positions:
+				var tile := map.world_to_tile(at)
+				var across: int = tile.x if vertical else tile.y
+				if CityMap.junction_index(across) != corridor:
+					continue
+				var along: int = tile.y if vertical else tile.x
+				if along != lo and along != hi - 1:
+					continue
+				rows[along] = true
+				t.check(map.street_kind_at(vertical, tile) == GameEnums.StreetKind.PEDESTRIAN,
+						"seed %d: a bollard in span %s stands on paving" % [_seed(i), span])
+				var offset := CityMap.corridor_offset(across)
+				t.check(offset >= Tuning.SIDEWALK_WIDTH
+						and offset < Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH,
+						"seed %d: a bollard in span %s stands on the carriageway, not the pavement"
+						% [_seed(i), span])
+				var step := 1 if along == hi - 1 else -1
+				var beyond := Vector2i(tile.x, tile.y + step) if vertical \
+						else Vector2i(tile.x + step, tile.y)
+				t.check(map.street_kind_at(vertical, beyond) != GameEnums.StreetKind.PEDESTRIAN,
+						"seed %d: the row just past a bollard in span %s is still paving"
+						% [_seed(i), span])
+			t.check(rows.size() == 2,
+					"seed %d: span %s gets exactly two rows of bollards (got %d)"
+					% [_seed(i), span, rows.size()])
 
 ## An alley is `ALLEY_WIDTH_TILES` (2) tiles wide, and its offset from the lot edge is rolled even
 ## so it lands exactly on a cell boundary — one cell wide under `ReachabilityGrid`, never two. Both

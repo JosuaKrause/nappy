@@ -57,6 +57,11 @@ const _TREES := {
 	GameEnums.BlockPurpose.COURTYARD: 3,
 }
 
+## Gap between adjacent bollards across a precinct's mouth, in px. Inside the 12-16px range
+## that reads as a deliberate line without crowding the 64px carriageway band `bollard_positions`
+## spaces them over.
+const BOLLARD_SPACING := 14.0
+
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
 @onready var _ground: TileMapLayer = $Ground
@@ -440,6 +445,7 @@ func _dress_blocks(state: CityState) -> void:
 	for block: Vector2i in map.block_plans:
 		var purpose := state.purpose_of(map.block_plans, block)
 		_dress_block(block, purpose)
+	_dress_precincts()
 	for building in _buildings:
 		building.condition = _condition_for(
 				state.purpose_of(map.block_plans, _block_of(building.lot)))
@@ -500,6 +506,47 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 		tree.scale_factor = rng.randf_range(0.75, 1.25)
 		_add_prop(tree)
 		placed += 1
+
+## A line of posts across the carriageway at each mouth of every precinct, so a street that
+## meets one reads as closed on purpose rather than as the road running out. Placed from the map
+## alone, with no rng: a closed mouth is geometry, not a roll, so `bollard_positions` needs no
+## seed and a test can call it without building a scene.
+func _dress_precincts() -> void:
+	for at in bollard_positions(map):
+		var bollard := Prop.new()
+		bollard.kind = Prop.Kind.BOLLARD
+		bollard.position = at
+		_add_prop(bollard)
+
+## Where the posts across a precinct's mouth stand, in world space. One row on the first tile of
+## paving at each end of every span (`CityMap.precinct_spans`), spread across the carriageway
+## band only — the middle two tiles of the corridor's `Tuning.STREET_WIDTH` — so the pavements on
+## either side stay open for a pram while the road itself reads as stopped.
+##
+## Static, and stated entirely over `map`: a bollard's position is a fact about the lattice, not
+## about the day, so nothing here reaches for a seed the way `_dress_block`'s trees do.
+static func bollard_positions(map: CityMap) -> Array[Vector2]:
+	var positions: Array[Vector2] = []
+	var tile := float(Tuning.TILE_SIZE)
+	var band_tiles := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH * 2
+	var band_px := band_tiles * tile
+	var count := maxi(2, floori(band_px / BOLLARD_SPACING) + 1)
+	var margin := (band_px - float(count - 1) * BOLLARD_SPACING) * 0.5
+	for span in map.precinct_spans:
+		var vertical := span.x == 1
+		var corridor: int = span.y
+		# The paving begins where the street's own tiles end and runs to the far crossroads —
+		# see `CityMap.precinct_spans`'s own doc comment for the same two coordinates.
+		var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH
+		var hi := (span.w + 1) * CityMap.period()
+		var band_start := (corridor * CityMap.period() + Tuning.SIDEWALK_WIDTH) * tile
+		for along_tile: int in [lo, hi - 1]:
+			var along_px := (along_tile + 0.5) * tile
+			for i in count:
+				var across_px := band_start + margin + i * BOLLARD_SPACING
+				positions.append(Vector2(across_px, along_px) if vertical
+						else Vector2(along_px, across_px))
+	return positions
 
 func _add_prop(prop: Node2D) -> void:
 	_props.append(prop)
