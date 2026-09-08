@@ -1012,29 +1012,34 @@ func offscreen_boundary(heading: Vector2) -> float:
 func min_offscreen_boundary() -> float:
 	return VIEW_HALF_EXTENT.y
 
-## How long a row travelling toward her has to still be off screen once it is sited, at the speed
-## the gap is actually closing. *(2026-09-07: "events that go towards the player (biker / pursuing
-## dog) should at least be 200ms off screen with a warning.")*
+## The default seconds a row travelling toward her has to still be off screen once it is sited, at
+## the speed the gap is actually closing. *(2026-09-07: "events that go towards the player (biker /
+## pursuing dog) should at least be 200ms off screen with a warning.")*
+##
+## **Per-row rather than universal**, since playtest 34 asked for two rows to move in opposite
+## directions on the same day: `charging_dog` needs more of it (finding 2) and `cyclist` needs less
+## overall notice, bought a different way (finding 3, see `EventDef.offscreen_notice`'s own
+## reasoning). This constant stays as the default every row gets unless it overrides.
 const OFFSCREEN_NOTICE := 0.2
 
 ## Where `EventDirector` sites a row that travels toward her — a pursuer or a `TOWARD_PLAYER` row —
-## along `heading`: outside the view (`offscreen_boundary()`) and `OFFSCREEN_NOTICE` seconds further
-## still, at `closing_speed`.
+## along `heading`: outside the view (`offscreen_boundary()`) and `notice` seconds further still, at
+## `closing_speed`.
 ##
 ## **`closing_speed` is the row's own speed plus `WALK_SPEED`, not the row's speed alone** — she is
 ## usually walking into it, so the gap between the siting and the boundary closes at both speeds
-## together. For `cyclist` (165px/s) that is 257px/s, 51px of margin; for `charging_dog` (130px/s
-## pursuing) that is 222px/s, 44px. Neither number is authored anywhere else — this function is
-## where the 200ms turns into pixels, per row, per heading.
-func offscreen_lead(heading: Vector2, closing_speed: float) -> float:
-	return offscreen_boundary(heading) + closing_speed * OFFSCREEN_NOTICE
+## together. At the default 200ms of `notice`, that is 51px of margin for `cyclist` (165px/s) and
+## 44px for `charging_dog` (130px/s pursuing) — neither number is authored anywhere else, this
+## function is where a row's own notice turns into pixels, per heading.
+func offscreen_lead(heading: Vector2, closing_speed: float, notice: float = OFFSCREEN_NOTICE) -> float:
+	return offscreen_boundary(heading) + closing_speed * notice
 
-## The least `offscreen_lead()` can be for a row closing at `closing_speed`, whichever way she is
-## heading — `min_offscreen_boundary()` plus the same margin. What `EventDef.validate()` needs for
-## the same reason `min_offscreen_boundary()` does: a per-row floor that does not depend on a
-## heading nothing at validation time has chosen yet.
-func min_offscreen_lead(closing_speed: float) -> float:
-	return min_offscreen_boundary() + closing_speed * OFFSCREEN_NOTICE
+## The least `offscreen_lead()` can be for a row closing at `closing_speed` and giving `notice`
+## seconds of it, whichever way she is heading — `min_offscreen_boundary()` plus the same margin.
+## What `EventDef.validate()` needs for the same reason `min_offscreen_boundary()` does: a per-row
+## floor that does not depend on a heading nothing at validation time has chosen yet.
+func min_offscreen_lead(closing_speed: float, notice: float = OFFSCREEN_NOTICE) -> float:
+	return min_offscreen_boundary() + closing_speed * notice
 
 ## Where a `hard_fail` row travelling toward her has to be sited so its own telegraph is over
 ## *before* it reaches her, not merely so it starts off screen.
@@ -1046,16 +1051,15 @@ func min_offscreen_lead(closing_speed: float) -> float:
 ## 257px/s arrived in 0.78s — nowhere near outlasting a 3.3s telegraph.
 ##
 ## So the siting is whichever is further: `offscreen_lead()` (the ordinary offscreen margin every
-## `TOWARD_PLAYER` row gets), or the distance that takes `telegraph_time + OFFSCREEN_NOTICE` to
-## close at `closing_speed` — the same 200ms margin restated over the telegraph instead of the view
-## boundary, so the approach outlasts it by a real amount rather than by a coin flip of frame
-## timing. For `cyclist` the telegraph term dominates: `(3.3 + 0.2) * 257` = 900px, against a
-## `offscreen_lead()` of 371px on the widest axis — the telegraph is the binding constraint, not the
-## screen.
+## `TOWARD_PLAYER` row gets), or the distance that takes `telegraph_time + notice` to close at
+## `closing_speed` — the same margin restated over the telegraph instead of the view boundary, so
+## the approach outlasts it by a real amount rather than by a coin flip of frame timing. At `cyclist`'s
+## current 2.0s telegraph the telegraph term still dominates: `(2.0 + 0.2) * 257` = 565px, against an
+## `offscreen_lead()` of at most 371px on the widest axis.
 func outlasting_telegraph_lead(heading: Vector2, closing_speed: float,
-		telegraph_time: float) -> float:
-	return maxf(offscreen_lead(heading, closing_speed),
-			(telegraph_time + OFFSCREEN_NOTICE) * closing_speed)
+		telegraph_time: float, notice: float = OFFSCREEN_NOTICE) -> float:
+	return maxf(offscreen_lead(heading, closing_speed, notice),
+			(telegraph_time + notice) * closing_speed)
 
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".

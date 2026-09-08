@@ -133,6 +133,26 @@ enum SpawnMode {
 
 @export var spawn_mode := SpawnMode.MAP
 
+## Seconds of closing this row needs beyond the screen edge before `EventDirector` will site it —
+## `Tuning.OFFSCREEN_NOTICE` (0.2) unless a row overrides it. Only `AHEAD_OF_PLAYER` (`pursues`) and
+## `TOWARD_PLAYER` rows read this; a `MAP` row is placed at dawn and never asks.
+##
+## **Per-row because two rows needed to move in opposite directions on the same day.**
+## *(2026-09-07: "pursuing dog is still too short notice", "while biker is now too long notice".)*
+## `charging_dog` sets this to 0.5: at its 130px/s pursuing (222px/s closing against `WALK_SPEED`),
+## the default 0.2 buys only 44px of approach — playtest 20 measured a 1.5s chase as the shortest
+## one that ended in evasion and 0.8-0.9s as the two that killed her, so 0.5 is sized to close from
+## its worst-case siting to `Tuning.pursuit_standoff()` (104px) in under a second at the combined
+## closing speed she usually gives it, well clear of the 0.8-0.9s that failed.
+##
+## **A further siting needs a longer `telegraph_time` to spend it in**, or a player who only walks
+## can outlast the row's own budget before it ever gets to catch her — `duration` stays at
+## `Tuning.PURSUIT_TIME` (`tests/test_events.gd` holds every pursuer to that exact ceiling), so the
+## room has to come from the telegraph instead. See that field on the same row for the arithmetic.
+## `cyclist` is left at the default: its own notice is bought back a different way, in
+## `outer_radius` and `telegraph_time` — see the reasoning on that row.
+@export var offscreen_notice := Tuning.OFFSCREEN_NOTICE
+
 ## Moves along a path at `speed` px/s. The scheduler builds the path.
 @export var mobile := false
 @export var speed := 0.0
@@ -447,13 +467,14 @@ func validate() -> bool:
 				% [id, obstructs_radius] + "that it leaves a route to a park")
 		return false
 	# `EventDirector` sites a `TOWARD_PLAYER` row at least `Tuning.offscreen_lead(heading,
-	# closing_speed)` in front of her, which is never less than `Tuning.min_offscreen_lead()` at the
-	# row's own closing speed (its `speed` plus `WALK_SPEED`, since she is usually walking into it)
-	# whatever she is facing — so a row whose own field reaches that far would appear already inside
-	# its own outer radius on the one heading and moment the director cannot avoid, which is the one
-	# thing "she gets close and it arrives" cannot mean.
+	# closing_speed, offscreen_notice)` in front of her, which is never less than
+	# `Tuning.min_offscreen_lead()` at the row's own closing speed (its `speed` plus `WALK_SPEED`,
+	# since she is usually walking into it) and its own notice, whatever she is facing — so a row
+	# whose own field reaches that far would appear already inside its own outer radius on the one
+	# heading and moment the director cannot avoid, which is the one thing "she gets close and it
+	# arrives" cannot mean.
 	if spawn_mode == SpawnMode.TOWARD_PLAYER:
-		var floor_lead := Tuning.min_offscreen_lead(speed + Tuning.WALK_SPEED)
+		var floor_lead := Tuning.min_offscreen_lead(speed + Tuning.WALK_SPEED, offscreen_notice)
 		if outer_radius >= floor_lead:
 			push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
 					% [id, outer_radius] + "%.0fpx it is sited at on the worst axis: it would arrive "

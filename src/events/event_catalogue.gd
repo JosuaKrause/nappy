@@ -697,24 +697,31 @@ static func _pigeon_flock() -> EventDef:
 ## meeting it on a street the day chose at dawn, before it knew whether she would ever walk down it.
 ## It does not `pursue`: a bike does not chase, it rides straight through wherever she was standing.
 ##
-## The fairness contract does the work and it is expensive here — `hard_fail` doubles the margin
-## and the speed means the whole radius counts, so the bell has to ring for (145/92) x 2 = 3.15s
-## before it arrives. That is right: it is audible from down the street, she has three seconds
-## and one step to make, and stepping off a pavement is a step. It is also why the field is
-## small — a field this wide sited any nearer would already be on her the moment it appeared, on
-## the axis and moment `EventDirector` sites it closest to: `EventDef.validate()` refuses a
-## `TOWARD_PLAYER` row whose own field reaches `Tuning.min_offscreen_lead(speed + WALK_SPEED)`
-## (231px at this row's 165px/s — 180 for the vertical axis plus 51 for 200ms of closing), which
-## 145 sits comfortably under.
+## The fairness contract does the work — `hard_fail` doubles the margin and the speed means the
+## whole radius counts, so the bell has to ring for (90/92) x 2 = 1.96s before it arrives. That is
+## right: it is audible from down the street, she has two seconds and one step to make, and stepping
+## off a pavement is a step. It is also why the field is this size — a field wider than
+## `Tuning.min_offscreen_lead(speed + WALK_SPEED)` (231px at this row's 165px/s — 180 for the
+## vertical axis plus 51 for 200ms of closing) would already be on her the moment it appeared on the
+## axis and moment `EventDirector` sites it closest to; `EventDef.validate()` refuses that
+## arrangement and 90 sits comfortably under it.
 ##
 ## **`hard_fail` has to survive its own telegraph, or the "ends your day" above is not true.**
 ## *(2026-09-07: "also a biker hit should be lethal.")* `EventInstance.is_lethal_at()` refuses the
-## whole time an event `is_telegraphing()`, and this row's telegraph is 3.3s: sited at the ordinary
-## offscreen margin alone (371px on the widest axis) it would close the 257px/s gap in 1.4s and ride
-## straight through her, still telegraphing. `EventDirector._toward_her()` sites a `hard_fail` row
-## at `Tuning.outlasting_telegraph_lead()` instead, which for this row is the telegraph term rather
-## than the offscreen one: `(3.3 + 0.2) * 257` = 900px, closing in 3.5s — 0.2s past the telegraph
-## rather than a coin flip of frame timing.
+## whole time an event `is_telegraphing()`, so `EventDirector._toward_her()` sites a `hard_fail` row
+## at `Tuning.outlasting_telegraph_lead()` rather than the ordinary offscreen margin — for this row
+## the telegraph term dominates on every heading: `(2.0 + 0.2) * 257` = 565px, against at most 371px
+## from the offscreen margin alone.
+##
+## **The field stays this size rather than wider, because `outer_radius` and `telegraph_time` are
+## one number under the doubled `hard_fail` margin: how long she is warned for and how far it can be
+## felt from move together, at the fixed ratio `Tuning.TELEGRAPH_HARD_FAIL_MARGIN` sets against
+## `WALK_SPEED`.** *(2026-09-07: "while biker is now too long notice" — the player reversing the
+## caution this row was built with, that shortening the telegraph "buys the lethality back by taking
+## the notice away". The complaint has flipped for this row: not too little warning, but watching it
+## close from off screen for over three seconds. `EventInstance.is_lethal_at()` still refuses the
+## whole telegraph, so the arrival still has to land after it ends — this row's siting is what keeps
+## that true at any size, and it is why the field moved rather than only the telegraph.)*
 ##
 ## **`inner_radius` is 33px, not the 26 a bike's own width would suggest.** *(Playtest 25, finding
 ## 7: "biker currently is also basically inconsequential. when hit it should be dayending" — and the
@@ -739,9 +746,9 @@ static func _cyclist() -> EventDef:
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	def.intensity = 18.0
 	def.inner_radius = 33.0
-	def.outer_radius = 145.0
-	# hard_fail and faster than a walk: 145/92 * 2 = 3.15s.
-	def.telegraph_time = 3.3
+	def.outer_radius = 90.0
+	# hard_fail and faster than a walk: 90/92 * 2 = 1.96s.
+	def.telegraph_time = 2.0
 	def.mobile = true
 	def.speed = 165.0
 	def.hard_fail = true
@@ -941,13 +948,22 @@ static func _charging_dog() -> EventDef:
 	# reach". `validate_pursuit` refuses the arrangement.
 	def.outer_radius = 150.0
 	# The chase proper, once it can end the day. `Tuning.PURSUIT_TIME` is the cap and the reason
-	# for it is the price of running, not the fiction.
+	# for it is the price of running, not the fiction — `tests/test_events.gd` holds every pursuer
+	# to this exact ceiling rather than `validate_pursuit`'s looser one, so this is not a lever a
+	# further siting may reach for; `telegraph_time` below is.
 	def.duration = Tuning.PURSUIT_TIME
-	# Its whole notice, spent visibly closing. Comfortably over `PURSUIT_MIN_NOTICE`, because this
-	# is the first time the game asks for a key it has spent two days punishing.
-	def.telegraph_time = 2.4
+	# Its whole notice, spent visibly closing. Comfortably over `PURSUIT_MIN_NOTICE`, and longer than
+	# every other pursuer's own reasoning would suggest — see `offscreen_notice` below for why a
+	# further siting needs a longer telegraph to spend it in.
+	def.telegraph_time = 4.5
 	def.pursues = true
 	def.pursue_speed = 130.0
+	# How far outside the view it starts. See `EventDef.offscreen_notice` for the reasoning behind
+	# 0.5 — a playtest-measured notice, well up from the catalogue default. `telegraph_time` above is
+	# what pays for the longer approach: closing the worst-case gap at the rate walking away still
+	# loses by (`pursue_speed` - `WALK_SPEED` = 38px/s) takes about 7.0s, inside the 7.5s
+	# `telegraph_time` + `duration` gives it.
+	def.offscreen_notice = 0.5
 	# And it trots off rather than blinking out — *nothing vanishes while you are looking at it*, and
 	# a dog that gives up in front of her and then is not there says the chase was never real.
 	def.departs_at = 110.0
