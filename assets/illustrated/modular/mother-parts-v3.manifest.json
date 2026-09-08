@@ -3,76 +3,119 @@
   "texture": "mother-parts-v3.png",
   "format": "RGBA PNG",
   "sheet_px": [1280, 1536],
-  "cell_px": [160, 192],
-  "columns": 8,
-  "rows": 8,
   "directions": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
   "source_columns": ["S", "SE", "E", "NE", "N", "NW", "W", "SW"],
-  "rows_by_layer": [
-    "head_hair",
-    "torso_clothing",
-    "arms_hands",
-    "left_upper_leg",
-    "left_lower_leg",
-    "right_upper_leg",
-    "right_lower_leg",
-    "shoe_pair_preview"
-  ],
-  "shoe_layers": {
-    "row": 7,
-    "rects_by_direction": {
-      "N": {"left_shoe": [27, 19, 46, 63], "right_shoe": [86, 19, 44, 63]},
-      "NE": {"left_shoe": [38, 18, 49, 61], "right_shoe": [102, 34, 54, 56]},
-      "E": {"left_shoe": [45, 33, 56, 52], "right_shoe": [102, 49, 58, 49]},
-      "SE": {"left_shoe": [46, 20, 56, 79], "right_shoe": [102, 34, 56, 65]},
-      "S": {"left_shoe": [24, 19, 51, 48], "right_shoe": [85, 54, 44, 48]},
-      "SW": {"left_shoe": [19, 48, 55, 48], "right_shoe": [75, 19, 51, 49]},
-      "W": {"left_shoe": [0, 21, 58, 78], "right_shoe": [52, 34, 60, 65]},
-      "NW": {"left_shoe": [0, 37, 84, 56], "right_shoe": [85, 11, 45, 52]}
-    },
-    "coordinate_space": "relative to each 160x192 direction cell; add [column*160, 7*192] for sheet pixels",
-    "perspective": "left/right are actor perspective, so actor-left is the viewer's right in a front-facing N view"
+  "legacy_height_px": 46.0,
+  "base_scale": 0.0707692308,
+  "skeleton": {
+    "ground": [0.0, 0.0],
+    "hip_height": 20.0,
+    "neck_height": 36.2,
+    "shoulder_height": 33.2,
+    "upper_leg_length": 12.3,
+    "lower_leg_length": 7.1,
+    "shoe_ankle_height": 3.05,
+    "left_hip_offset": [-1.5, -20.0],
+    "right_hip_offset": [1.5, -20.0],
+    "left_sole_offset": [-3.2, 0.0],
+    "right_sole_offset": [3.2, 0.0],
+    "shoulders_by_direction": [
+      [[-3.5, -33.2], [3.5, -33.2]],
+      [[-2.5, -33.2], [2.5, -33.0]],
+      [[-1.3, -33.2], [1.3, -33.0]],
+      [[-2.5, -33.2], [2.5, -33.0]],
+      [[-3.5, -33.2], [3.5, -33.2]],
+      [[-2.5, -33.0], [2.5, -33.2]],
+      [[-1.3, -33.0], [1.3, -33.2]],
+      [[-2.5, -33.0], [2.5, -33.2]]
+    ]
   },
   "draw_order": [
     "left_upper_leg", "left_lower_leg", "right_upper_leg", "right_lower_leg",
-    "torso_clothing", "head_hair", "arms_hands", "left_shoe", "right_shoe"
+    "torso_clothing", "head_hair", "left_arm", "right_arm", "left_shoe", "right_shoe"
   ],
-  "ground_y": 184,
-  "pivots": {
-    "head": [80, 28],
-    "torso": [80, 66],
-    "left_shoulder": [52, 77],
-    "right_shoulder": [108, 77],
-    "left_hip": [68, 116],
-    "right_hip": [92, 116],
-    "left_hip_by_direction": [
-      [68, 116], [68, 116], [68, 116], [68, 116], [68, 116], [68, 116], [68, 116], [68, 116]
-    ],
-    "right_hip_by_direction": [
-      [92, 116], [92, 116], [92, 116], [92, 116], [92, 116], [92, 116], [92, 116], [92, 116]
-    ],
-    "left_knee": [
-      [68, 150], [66, 148], [64, 146], [62, 144], [68, 150], [72, 148], [74, 146], [72, 148]
-    ],
-    "right_knee": [
-      [92, 150], [94, 148], [96, 146], [98, 144], [92, 150], [88, 148], [86, 146], [88, 148]
-    ],
-    "left_ankle": [
-      [54, 178], [52, 176], [50, 174], [48, 172], [54, 178], [58, 176], [60, 174], [58, 176]
-    ],
-    "right_ankle": [
-      [106, 178], [108, 176], [110, 174], [112, 172], [106, 178], [102, 176], [100, 174], [102, 176]
-    ],
-    "left_sole": [
-      [50, 184], [48, 184], [46, 184], [44, 184], [50, 184], [54, 184], [56, 184], [54, 184]
-    ],
-    "right_sole": [
-      [110, 184], [112, 184], [114, 184], [116, 184], [110, 184], [106, 184], [104, 184], [106, 184]
-    ],
-    "per_direction_order": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
-    "anchor_measurement_note": "Hip pivots are the declared torso registration points; knee and ankle points are the measured segment-junction registration used by the source rows; sole points are the measured planted-foot baseline anchors. All coordinates are cell-local pixels in the direction order above."
+  "parts": {
+    "head_hair": {
+      "crops": [[640, 0, 160, 195], [480, 0, 160, 195], [320, 0, 160, 195], [160, 0, 160, 195], [0, 0, 160, 195], [1120, 0, 160, 195], [960, 0, 160, 195], [800, 0, 160, 195]],
+      "pivots": [[80, 182], [81, 181], [93, 182], [91, 186], [84, 190], [73, 180], [62, 181], [74, 182]]
+    },
+    "torso_clothing": {
+      "crops": [[640, 195, 160, 235], [480, 195, 160, 235], [320, 195, 160, 235], [160, 195, 160, 235], [0, 195, 160, 235], [1120, 195, 160, 235], [960, 195, 160, 235], [800, 195, 160, 235]],
+      "pivots": [[80, 20], [80, 20], [80, 20], [80, 20], [80, 20], [80, 20], [80, 20], [80, 20]],
+      "axis_start": [[80, 20], [80, 20], [80, 20], [80, 20], [80, 20], [80, 20], [80, 20], [80, 20]],
+      "axis_end": [[80, 215], [77, 211], [78, 214], [80, 212], [80, 206], [82, 216], [82, 216], [82, 216]],
+      "core_polygons": [
+        [[52, 16], [108, 16], [121, 62], [121, 202], [108, 216], [52, 216], [39, 202], [39, 62]],
+        [[50, 16], [109, 16], [122, 60], [119, 204], [102, 211], [42, 211], [35, 190], [39, 60]],
+        [[51, 16], [108, 16], [119, 62], [113, 207], [99, 214], [43, 214], [38, 191], [40, 62]],
+        [[50, 15], [109, 15], [121, 61], [119, 203], [104, 212], [42, 212], [36, 191], [39, 61]],
+        [[52, 16], [108, 16], [121, 62], [121, 203], [108, 216], [52, 216], [39, 203], [39, 62]],
+        [[51, 16], [110, 16], [122, 62], [121, 204], [106, 216], [43, 216], [37, 191], [39, 62]],
+        [[52, 16], [109, 16], [120, 62], [116, 208], [101, 216], [44, 216], [39, 190], [40, 62]],
+        [[51, 16], [109, 16], [121, 62], [119, 206], [103, 216], [42, 216], [36, 191], [39, 62]]
+      ]
+    },
+    "left_arm": {
+      "crops": [[640, 443, 56, 134], [182, 439, 83, 143], [351, 440, 96, 138], [191, 448, 93, 132], [14, 452, 50, 122], [1120, 449, 59, 126], [988, 445, 94, 138], [832, 443, 103, 136]],
+      "pivots": [[27, 5], [35, 13], [33, 5], [32, 4], [29, 2], [28, 3], [71, 4], [81, 4]],
+      "axis_start": [[27, 5], [35, 13], [33, 5], [32, 4], [29, 2], [28, 3], [71, 4], [81, 4]],
+      "axis_end": [[22, 113], [60, 119], [72, 115], [67, 109], [27, 100], [22, 108], [26, 117], [26, 113]],
+      "source_reuse": ["independent", "single_profile_arm", "single_profile_arm", "single_profile_arm", "independent", "independent", "single_profile_arm", "single_profile_arm"]
+    },
+    "right_arm": {
+      "crops": [[737, 443, 57, 134], [182, 439, 83, 143], [351, 440, 96, 138], [191, 448, 93, 132], [114, 451, 46, 123], [1212, 448, 55, 124], [988, 445, 94, 138], [832, 443, 103, 136]],
+      "pivots": [[29, 5], [35, 13], [33, 5], [32, 4], [19, 8], [23, 8], [71, 4], [81, 4]],
+      "axis_start": [[29, 5], [35, 13], [33, 5], [32, 4], [19, 8], [23, 8], [71, 4], [81, 4]],
+      "axis_end": [[35, 111], [60, 119], [72, 115], [67, 109], [24, 101], [27, 106], [26, 117], [26, 113]],
+      "source_reuse": ["independent", "single_profile_arm", "single_profile_arm", "single_profile_arm", "independent", "independent", "single_profile_arm", "single_profile_arm"]
+    },
+    "left_upper_leg": {
+      "crops": [[640, 600, 160, 190], [480, 600, 160, 190], [320, 600, 160, 190], [160, 600, 160, 190], [0, 600, 160, 190], [1120, 600, 160, 190], [960, 600, 160, 190], [800, 600, 160, 190]],
+      "pivots": [[81, 16], [94, 17], [100, 16], [90, 12], [69, 16], [80, 19], [58, 11], [62, 13]],
+      "axis_start": [[81, 16], [94, 17], [100, 16], [90, 12], [69, 16], [80, 19], [58, 11], [62, 13]],
+      "axis_end": [[83, 183], [78, 179], [91, 181], [81, 179], [61, 178], [67, 181], [62, 181], [76, 181]]
+    },
+    "left_lower_leg": {
+      "crops": [[640, 790, 160, 125], [480, 790, 160, 125], [320, 790, 160, 125], [160, 790, 160, 125], [0, 790, 160, 125], [1120, 790, 160, 125], [960, 790, 160, 125], [800, 790, 160, 125]],
+      "pivots": [[80, 20], [72, 17], [78, 16], [77, 13], [62, 12], [78, 12], [79, 15], [82, 18]],
+      "axis_start": [[80, 20], [72, 17], [78, 16], [77, 13], [62, 12], [78, 12], [79, 15], [82, 18]],
+      "axis_end": [[74, 113], [67, 111], [81, 113], [78, 111], [65, 112], [79, 111], [77, 110], [78, 110]]
+    },
+    "right_upper_leg": {
+      "crops": [[640, 915, 160, 206], [480, 915, 160, 206], [320, 915, 160, 206], [160, 915, 160, 206], [0, 915, 160, 206], [1120, 915, 160, 206], [960, 915, 160, 206], [800, 915, 160, 206]],
+      "pivots": [[81, 23], [72, 21], [73, 18], [77, 18], [65, 15], [88, 11], [77, 19], [77, 19]],
+      "axis_start": [[81, 23], [72, 21], [73, 18], [77, 18], [65, 15], [88, 11], [77, 19], [77, 19]],
+      "axis_end": [[89, 199], [82, 187], [88, 188], [80, 190], [92, 187], [67, 189], [65, 190], [73, 189]]
+    },
+    "right_lower_leg": {
+      "crops": [[640, 1131, 160, 125], [480, 1131, 160, 125], [320, 1131, 160, 125], [160, 1131, 160, 125], [0, 1131, 160, 125], [1120, 1131, 160, 125], [960, 1131, 160, 125], [800, 1131, 160, 125]],
+      "pivots": [[80, 20], [74, 21], [79, 17], [78, 16], [83, 18], [77, 16], [77, 16], [74, 19]],
+      "axis_start": [[80, 20], [74, 21], [79, 17], [78, 16], [83, 18], [77, 16], [77, 16], [74, 19]],
+      "axis_end": [[77, 116], [67, 113], [72, 114], [77, 114], [81, 111], [82, 114], [83, 114], [84, 114]]
+    },
+    "left_shoe": {
+      "crops": [[673, 1274, 42, 56], [516, 1275, 70, 55], [365, 1275, 65, 56], [199, 1271, 52, 62], [24, 1272, 52, 58], [1125, 1274, 73, 56], [960, 1271, 67, 60], [808, 1273, 69, 59]],
+      "pivots": [[19, 4], [29, 5], [27, 8], [23, 6], [23, 6], [35, 6], [32, 9], [27, 9]],
+      "axis_start": [[19, 4], [29, 5], [27, 8], [23, 6], [23, 6], [35, 6], [32, 9], [32, 13]],
+      "axis_end": [[19, 52], [37, 49], [33, 46], [23, 58], [23, 54], [35, 52], [35, 56], [30, 55]]
+    },
+    "right_shoe": {
+      "crops": [[724, 1274, 46, 56], [570, 1275, 70, 55], [415, 1275, 65, 56], [254, 1277, 66, 58], [86, 1274, 52, 58], [1198, 1271, 62, 59], [1012, 1271, 68, 60], [860, 1273, 64, 59]],
+      "pivots": [[20, 5], [35, 17], [30, 8], [31, 5], [26, 6], [26, 6], [40, 9], [44, 9]],
+      "axis_start": [[20, 5], [35, 17], [30, 8], [31, 5], [26, 6], [26, 6], [40, 9], [44, 9]],
+      "axis_end": [[20, 52], [50, 49], [35, 52], [31, 54], [26, 54], [26, 48], [41, 43], [44, 45]]
+    }
   },
-  "symmetry": "none; all eight views are independently authored and no view is mirrored",
-  "direction_order_is_clockwise": true,
-  "notes": "The final row is a shoe-pair registration row because each 160x192 cell contains separate left and right shoe sub-art. The leg rows are independently movable upper/lower segments for each side; the compositor must use the shoe sub-art as separate left_shoe and right_shoe sprites."
+  "per_direction_order": {
+    "N": ["right_arm", "right_upper_leg", "right_lower_leg", "right_shoe", "left_upper_leg", "left_lower_leg", "left_shoe", "torso_clothing", "left_arm", "head_hair"],
+    "NE": ["right_arm", "right_upper_leg", "right_lower_leg", "right_shoe", "left_upper_leg", "left_lower_leg", "left_shoe", "torso_clothing", "head_hair", "left_arm"],
+    "E": ["right_arm", "right_upper_leg", "right_lower_leg", "right_shoe", "left_upper_leg", "left_lower_leg", "left_shoe", "torso_clothing", "head_hair", "left_arm"],
+    "SE": ["right_arm", "right_upper_leg", "right_lower_leg", "right_shoe", "left_upper_leg", "left_lower_leg", "left_shoe", "torso_clothing", "head_hair", "left_arm"],
+    "S": ["left_upper_leg", "left_lower_leg", "left_shoe", "right_upper_leg", "right_lower_leg", "right_shoe", "torso_clothing", "head_hair", "left_arm", "right_arm"],
+    "SW": ["left_upper_leg", "left_lower_leg", "left_shoe", "right_upper_leg", "right_lower_leg", "right_shoe", "right_arm", "torso_clothing", "head_hair", "left_arm"],
+    "W": ["left_upper_leg", "left_lower_leg", "left_shoe", "right_upper_leg", "right_lower_leg", "right_shoe", "right_arm", "torso_clothing", "head_hair", "left_arm"],
+    "NW": ["right_upper_leg", "right_lower_leg", "right_shoe", "left_upper_leg", "left_lower_leg", "left_shoe", "right_arm", "torso_clothing", "head_hair", "left_arm"]
+  },
+  "symmetry": "none; all eight source views are independently authored and mapped by visible facing",
+  "notes": "Row bands, shoe crops, pivots and segment endpoints are measured in the PNG. Full-width rigid-part crops retain edge antialiasing where a drawing reaches a direction boundary. Segment endpoints are crop-local painted seams. N, S and SW provide two independent arm paintings; profile directions provide one visible arm, recorded by source_reuse and reused for the two independently transformed shoulder-to-hand segments. The torso core polygon excludes the outer painted sleeves so the registered arm layers do not draw a second pair; pixels hidden beneath the painted sleeve-to-coat joins cannot be reconstructed from this source."
 }

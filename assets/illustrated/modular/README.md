@@ -1,29 +1,30 @@
-# Mother modular source v2
+# Illustrated modular mother and pram
 
-These are generated source PNGs for the mother and pram. They are not wired to the runtime.
-The two part sheets have real RGBA transparency; the review contact sheet intentionally keeps a
-warm neutral review background and ground baselines so foot and wheel contact can be judged.
+The runtime assembles the mother from `mother-parts-v3.png` and the pram from
+`pram-layered-v3-draft-transparent.png`. Both files are RGBA PNGs with eight independently
+authored directions. Their adjacent JSON manifests are the machine-readable source registration.
 
-## Registration
+The canonical runtime order is `N, NE, E, SE, S, SW, W, NW`. The mother source columns read
+`S, SE, E, NE, N, NW, W, SW`; the pram source columns already use the canonical order. Runtime
+registration performs this mapping explicitly and never substitutes or mirrors a direction.
 
-Both part sheets use clockwise direction order `N, NE, E, SE, S, SW, W, NW` from left to right.
-The mother sheet is `1280×960` with 8 columns × 5 rows of `160×192` cells. Rows are, top to
-bottom: `head_hair`, `torso_clothing`, `arms_hands`, `legs`, `shoes`. The logical ground line is
-`y=184` in each cell. Mother attachment pivots are `(80,28)` head, `(80,66)` torso, `(52,77)` and
-`(108,77)` shoulders, `(80,116)` hips, and foot anchors at the shoe soles on `y=184`.
+The 1280×1536 mother sheet uses independently packed horizontal bands for the head, torso, arms,
+two upper legs, two lower legs and shoes. Tight arm and shoe crops isolate named painted anatomy.
+Each articulated part records crop-local proximal and distal landmarks. The N, S and SW drawings
+contain separate left and right arms. A profile drawing contains one visible arm, so that exact
+same-facing crop is explicitly reused for the independently transformed near and far arms.
 
-The pram sheet is `1280×384` with 8 columns × 3 rows of `160×128` cells. Rows are, top to bottom:
-`pram_body_basket`, `canopy_baby`, `wheels_frame`. Its logical ground line is `y=118`; body pivot
-is `(80,74)`, canopy/baby attachment is `(80,34)`, and wheel centers lie on `y=112`.
+The torso source includes painted sleeves. The runtime uses each manifest's central
+`core_polygons` mask for the coat body and draws the registered arm segments at their directional
+sibling positions. This keeps the source coat while avoiding a duplicate outer sleeve layer.
 
-Per-direction draw order for the assembled mother is `legs → torso_clothing → head_hair →
-arms_hands → shoes`, with `shoes` last to keep sole contact legible. Per-direction pram order is
-`wheels_frame → pram_body_basket → canopy_baby`; the pram is composited beside the mother and the
-handle overlays the mother's hands where the views meet. These orders are constant for all eight
-directions; the authored views are individually drawn rather than mirrored. No genuine symmetry is
-claimed. The `N` and `S` views are separate front/back drawings, and each three-quarter view has
-its own bun, scarf, coat-fold, hand, wheel and canopy placement.
+The 1448×1086 pram source has four independently packed bands: chassis, seat, canopy and baby.
+Each direction has a tight crop, a measured scale that keeps the chassis at the 30px legacy painted
+height, and a shared assembly target. The chassis registers two crop-local grip contacts. The
+mother's shoulder-to-hand segments terminate at those live transformed contacts.
 
-The contact sheet is a review image only. Its two rows read `N, NE, E, SE / S, SW, W, NW`, and its
-baseline shows that shoes and pram wheels sit on the same gameplay ground plane.
+All visible pieces share one z plane and are reordered as siblings for each direction. This keeps
+the mother and pram together when their owning actor participates in scene y-sorting.
 
+The contact sheet is review evidence only. Its two rows read `N, NE, E, SE / S, SW, W, NW`, and
+its baseline is useful for judging shoe and wheel contact.
