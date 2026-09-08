@@ -435,6 +435,10 @@ func _validate_assembly_metadata() -> bool:
 			or pram_asset["scale_by_direction"].size() != DirectionalParts.DIRECTION_NAMES.size():
 		_manifest_error(PRAM_MANIFEST_PATH, "pram needs eight measured scales")
 		return false
+	for scale: Variant in pram_asset["scale_by_direction"]:
+		if float(scale) <= 0.0:
+			_manifest_error(PRAM_MANIFEST_PATH, "pram scales must be positive")
+			return false
 	var chassis: Dictionary = pram_asset["parts"]["chassis"]
 	var chassis_crops: Array = chassis["crops"]
 	var pram_image := PRAM_TEXTURE.get_image()
@@ -469,6 +473,16 @@ func _validate_assembly_metadata() -> bool:
 				_manifest_error(PRAM_MANIFEST_PATH,
 					"%s %s is not on painted seat art" % [
 						DirectionalParts.DIRECTION_NAMES[direction], key])
+				return false
+	for part_id: String in ["seat", "canopy", "baby"]:
+		var part: Dictionary = pram_asset["parts"][part_id]
+		for direction: int in DirectionalParts.DIRECTION_NAMES.size():
+			var crop := _rect(part["crops"][direction])
+			if not _source_has_alpha(pram_image,
+					crop.position + _point(part["pivots"][direction])):
+				_manifest_error(PRAM_MANIFEST_PATH,
+					"%s %s pivot is not on painted source art" % [
+						DirectionalParts.DIRECTION_NAMES[direction], part_id])
 				return false
 	return true
 
