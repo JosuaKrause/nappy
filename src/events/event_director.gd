@@ -50,10 +50,46 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 		if plan.def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER \
 				or plan.def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
 			_owed.append(plan.def)
+	_take_the_forced_row()
 	# The first one is not free: a cat on the doorstep before she has taken a step reads as the
 	# game starting badly rather than as something happening.
 	_next_in = _roll_interval()
+	if _forced:
+		return
 	_teach_the_run(day)
+
+## The row `--force <id>` names, or `null` when the flag is absent — see `DevFlags.forced_row()`
+## for what the flag is for. Debug builds only, like every other dev flag.
+var _forced: EventDef
+## Seconds between two forced rows, from `--force <id> [seconds]`.
+var _forced_interval := 0.0
+
+## Throws away the day's own owed list and replaces it with the one row `--force` names, so the
+## director hands out that row and nothing else for the whole day.
+##
+## **The day-3 run lesson is skipped while this is on**, in `start_day()` above: `_teach_the_run()`
+## exists to put `charging_dog` at the head of a real day's queue, and under this flag there is no
+## real queue to put it at the head of — every entry is already the forced row, so moving one to the
+## front would only mean the first encounter arrives at `LESSON_DELAY` instead of the interval that
+## was asked for.
+##
+## An unknown id is a loud failure rather than a silent no-op: `--force cylist` would otherwise look
+## exactly like a day that happened not to schedule one.
+func _take_the_forced_row() -> void:
+	_forced = null
+	if not DevFlags.enabled():
+		return
+	var id := DevFlags.forced_row()
+	if id == "":
+		return
+	var def := EventCatalogue.by_id(id)
+	if not def:
+		push_error("--force names no event in the catalogue: '%s'" % id)
+		return
+	_forced = def
+	_forced_interval = DevFlags.forced_interval()
+	_owed.clear()
+	_owed.append(def)
 
 ## Puts the day-3 lesson at the front of the queue: the day running becomes the answer opens with
 ## an incident that requires it.
@@ -121,9 +157,21 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 		_next_in = 1.0
 		return []
 	_next_in = _roll_interval()
-	return [_owed.pop_front() as EventDef, path]
+	var handed := _owed.pop_front() as EventDef
+	# Refilled rather than seeded with a hundred copies, so the queue length stays honest and
+	# `owed()` — which the HUD reads — says "one more coming" rather than a number that means
+	# nothing under this flag.
+	if _forced and _owed.is_empty():
+		_owed.append(_forced)
+	return [handed, path]
 
 func _roll_interval() -> float:
+	# Fixed rather than rolled under `--force`, and it does not touch `_rng`: the flag is for
+	# looking at one row several times, and a rolled 11-26s wait between looks is the thing it
+	# exists to remove. Leaving the stream alone also means a `--seed` city is bit-identical with
+	# the flag on and off, so what she walks past is the same city either way.
+	if _forced:
+		return _forced_interval
 	return _rng.randf_range(Tuning.AHEAD_INTERVAL.x, Tuning.AHEAD_INTERVAL.y)
 
 ## A run straight across her line, `AHEAD_LEAD_DISTANCE` in front of her.
