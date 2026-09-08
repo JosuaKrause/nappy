@@ -813,6 +813,15 @@ and a protest she walked through are the same row and correctly different colour
 numbers to the shader. `.claude/skills/cues/SKILL.md`, "A glow, not a field" is the narrow version
 of this exception, kept narrow enough to still refuse the next ring somebody wants.
 
+**The candidate set is every live event, plus any crowd body the game already marks with a
+caret.** *(2026-09-07, the player: "at the very least if something has a caret it needs a halo as
+well".)* A honking car and a bumped walker both draw a caret (`CrowdAgent._draw_horn_mark()`), so
+`ExcitementHalo.select_sources()` takes an untyped candidate array rather than one typed to
+`EventInstance` — a duck type, documented on `ExcitementHalo` itself since GDScript has no
+interface to lean on — and `Crowd.startled_agents()` offers the startled subset of the crowd
+alongside `EventManager.instances()`. **The ambient, unstartled crowd is still outside the
+candidate set by decision, not by omission** — see "The crowd has no halo" in `docs/TODO.md`.
+
 | Cue | Means | Where |
 | --- | --- | --- |
 | **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** It is a rule with a test rather than an aspiration — one picture per row, no two rows sharing one. See point 6 below. | the art, one `EventDef.Look` per row |
@@ -820,7 +829,7 @@ of this exception, kept narrow enough to still refuse the next ring somebody wan
 | **Its colour** | **Amber** = go round it. **Deep red, doubled** = it ends your day. Two colours, and they are a scale rather than a sequence. | `EventInstance.mark_colour()` |
 | **Its flash** | *It has not started yet.* The telegraph phase, and the only channel carrying it — the colour cannot, because a telegraph is usually over before the event is on screen, so an amber that meant *telegraphing* would only ever be seen on the rows sited in front of the player and would read as *near*. | `EventInstance._draw_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
-| **Entity halo** | *This is charging you right now, this close, and it has cost you this much.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius — for every live source whose `contribution_at()` at her own position clears a floor. **Brightness** is the fraction of the source's own peak reaching her (close vs. far); **colour** is pale-to-red over what it has actually delivered to her in the last five seconds (harmless vs. costly). Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EventInstance._draw_halo()`, `assets/shaders/excitement_halo.gdshader` |
+| **Entity halo** | *This is charging you right now, this close, and it has cost you this much.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius — for every live event and every startled crowd body (a honking car, a bumped walker) whose `contribution_at()` at her own position clears a floor. **Brightness** is the fraction of the source's own peak reaching her (close vs. far); **colour** is pale-to-red over what it has actually delivered to her in the last five seconds (harmless vs. costly). Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EventInstance._draw_halo()`, `assets/shaders/excitement_halo.gdshader` |
 | **Edge badge** | Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
 | **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live, she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the day, **and the gap is closing at the speeds in play**. Not *inside the outer radius*, which for a cyclist is thirty times the area that can hurt her and stays true while the bike rides away. | `EventManager._warn_about_the_ground_she_is_on()` |

@@ -69,18 +69,25 @@ rather than a glow around it.
 **The exception is narrow, and the narrowness is what stops it from being the next ring somebody
 wants:**
 
-- **One cue, not a general licence to draw.** Nothing else in the vocabulary gets a halo of its own
-  by analogy to this one. `ExcitementHalo` is the selector — `select_sources()` decides which
-  entities earn one, once a frame — and `EventInstance._draw_halo()` is the one place that draws.
+- **One cue, not a general licence to draw — and a caret is what admits something to it.** Nothing
+  else in the vocabulary gets a halo of its own by analogy to this one. `ExcitementHalo` is the
+  selector — `select_sources()` decides which entities earn one, once a frame, over an untyped
+  candidate array documented as a duck type on `ExcitementHalo` itself — and `EventInstance
+  ._draw_halo()` is the one place that draws. **The crowd's startled bodies are in that candidate
+  set because a caret already marks them**: a honking car and a bumped walker both draw one
+  (`CrowdAgent._draw_horn_mark()`), and *"at the very least if something has a caret it needs a
+  halo as well"* (2026-09-07) is the rule that put `Crowd.startled_agents()` beside
+  `EventManager.instances()` rather than opening the halo to the whole crowd. The **ambient**,
+  unstartled crowd stays outside it — see "The crowd has no halo" in `docs/TODO.md`.
 - **Traced from the thing, never sized to its reach.** A busker's rim is its own 11px body redrawn
   a ring out; a barricade's is its own run of segments. **A radius that means anything about reach
   is the ring this exception does not authorise**, and now there is no radius on a def deciding the
   size at all — only `HALO_MARGIN`, the same few pixels for every row.
 - **For the cost being charged right now, not for what exists.** The set it draws is the sources
-  whose `EventInstance.contribution_at(her position)` clears a floor — a handful at a time by
-  construction, the same *"a cue that marks everything says nothing"* rule the caret already answers
-  to. It goes to nothing the moment she walks out of reach, which is the *"what to walk away from"*
-  half answering itself.
+  whose `contribution_at(her position)` clears a floor — a handful at a time by construction, the
+  same *"a cue that marks everything says nothing"* rule the caret already answers to. It goes to
+  nothing the moment she walks out of reach, which is the *"what to walk away from"* half answering
+  itself.
 - **Two axes now, and each is the real model for its own half.** *(2026-09-07, the player: "the
   intensity of the halo states how far away I am. the color should state how dangerous it is.")*
   **Brightness** is `ExcitementHalo.alpha_for()`, the fraction of a source's own peak reaching her

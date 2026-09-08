@@ -73,20 +73,30 @@ const MAX_SOURCES := 8
 ## EVENTS.md`'s vocabulary already has its answer for that source: a HUD line, "for a `city_wide`
 ## source, which has no position and therefore nothing to stand under."
 ##
+## **The duck type a candidate has to answer to**, since `select_sources()` no longer takes
+## `Array[EventInstance]`: `contribution_at(world_position: Vector2) -> float`, plus
+## `accumulate_landed()`/`landed()` above and a `set_halo_strength(alpha: float, colour: Color)`
+## to be told the result. `EventInstance` already answers all of it; `CrowdAgent` is due to as its
+## own halo-drawing lands.
+##
+## **The one place the duck type is peeked under.** `city_wide` is an event-only concept — a crowd
+## body has no def and is never asked for it — so it is read only after `source is EventInstance`
+## says the object in hand actually is one.
+##
 ## Pulled out as a static function so a test can hold the selection, the floor and the drop order
 ## without a scene, a shader or a viewport — the same reason `DangerEdge.announces()` is static.
-static func select_sources(instances: Array[EventInstance], at: Vector2) -> Array[EventInstance]:
+static func select_sources(candidates: Array, at: Vector2) -> Array:
 	var ranked: Array = []
-	for instance in instances:
-		if instance.def.city_wide:
+	for source in candidates:
+		if source is EventInstance and source.def.city_wide:
 			continue
-		var contribution := instance.contribution_at(at)
+		var contribution: float = source.contribution_at(at)
 		if contribution > CONTRIBUTION_FLOOR:
-			ranked.append([contribution, instance])
+			ranked.append([contribution, source])
 	# Strongest first, so a cap keeps the sources that matter most to the sum and drops the ones
 	# that would have changed it least.
 	ranked.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0])
-	var picked: Array[EventInstance] = []
+	var picked: Array = []
 	for i in mini(ranked.size(), MAX_SOURCES):
 		picked.append(ranked[i][1])
 	return picked
@@ -137,10 +147,15 @@ static func colour_for(landed: float) -> Color:
 	return Palette.HALO_WEAK.lerp(Palette.HALO_STRONG, t)
 
 var _events: EventManager
+var _crowd: Crowd
 var _player: Node2D
 
-func setup(events: EventManager, player: Node2D) -> void:
+## `crowd` is stored but not yet a candidate source in `_process()` below — `CrowdAgent` does not
+## yet answer `set_halo_strength()`, so calling it on a picked agent would crash. Wiring it in is
+## the next commit's job, once `CrowdAgent` can actually draw a rim.
+func setup(events: EventManager, crowd: Crowd, player: Node2D) -> void:
 	_events = events
+	_crowd = crowd
 	_player = player
 
 ## Every frame: accumulate what actually landed on every live instance, pick the sources, tell

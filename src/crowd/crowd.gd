@@ -567,3 +567,15 @@ func agent_count() -> int:
 
 func agents() -> Array[CrowdAgent]:
 	return _agents
+
+## The startled subset of `agents()` — a caret already marks these (a honking car, a bumped
+## walker), so `ExcitementHalo` treats them as its other kind of candidate, alongside the events.
+## *(2026-09-07, the player: "at the very least if something has a caret it needs a halo as
+## well".)* The ambient, unstartled crowd is deliberately never offered at all; see "The crowd has
+## no halo" in `docs/TODO.md`.
+func startled_agents() -> Array[CrowdAgent]:
+	var startled: Array[CrowdAgent] = []
+	for agent in _agents:
+		if agent.is_startled():
+			startled.append(agent)
+	return startled

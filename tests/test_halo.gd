@@ -27,6 +27,9 @@ func run(t) -> void:
 	_test_landed_accumulates_and_decays(t)
 	_test_colour_for_the_ramp_ends(t)
 	_test_alpha_for_is_the_falloff_fraction(t)
+	_test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t)
+	_test_an_unstartled_agent_is_not_offered_at_all(t)
+	_test_select_sources_takes_a_mixed_candidate_set(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -185,3 +188,50 @@ func _test_alpha_for_is_the_falloff_fraction(t) -> void:
 			"just inside the rim (5% of a source's own peak) alpha is near zero")
 	t.check(is_equal_approx(ExcitementHalo.alpha_for(5.0, 0.0), 0.0),
 			"a non-positive peak never divides by zero")
+
+# ------------------------------------------------------------ the crowd joins ---
+
+func _test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t) -> void:
+	# CrowdAgent.contribution_at() reads only global_position, kind and the jolt fields -- none of
+	# which setup() touches -- so a bare .new() is enough, verified by reading the function rather
+	# than assumed.
+	var car := CrowdAgent.new()
+	car.kind = CrowdAgent.Kind.CAR
+	car.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
+			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
+	var at_inner_radius := Vector2(Tuning.CAR_HORN_INNER_RADIUS, 0.0)
+	t.check(car.contribution_at(at_inner_radius) > ExcitementHalo.CONTRIBUTION_FLOOR,
+			"a startled car clears the halo's floor at its own horn's inner radius -- a caret " +
+			"means a halo")
+	car.free()
+
+func _test_an_unstartled_agent_is_not_offered_at_all(t) -> void:
+	var startled_car := CrowdAgent.new()
+	startled_car.kind = CrowdAgent.Kind.CAR
+	startled_car.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
+			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
+	var ambient_car := CrowdAgent.new()
+	ambient_car.kind = CrowdAgent.Kind.CAR
+	var crowd := Crowd.new()
+	crowd._agents = [startled_car, ambient_car]
+	var startled := crowd.startled_agents()
+	t.check(startled.size() == 1 and startled[0] == startled_car,
+			"only the startled car is ever offered to the halo -- the ambient crowd floor, " +
+			"'the crowd has no halo' in TODO.md, stays tabled")
+	crowd.free()
+	startled_car.free()
+	ambient_car.free()
+
+func _test_select_sources_takes_a_mixed_candidate_set(t) -> void:
+	var instance := _instance_at(_def("busker", 10.0), Vector2.ZERO)
+	var car := CrowdAgent.new()
+	car.kind = CrowdAgent.Kind.CAR
+	car.position = Vector2(20.0, 0.0)
+	car.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
+			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
+	var picked := ExcitementHalo.select_sources([instance, car], Vector2.ZERO)
+	t.check(picked.size() == 2,
+			"select_sources() takes an event and a startled crowd agent in the same untyped " +
+			"array -- the duck type, not a shared base class, is what makes both candidates")
+	instance.free()
+	car.free()
