@@ -14,11 +14,9 @@ mid-way through.
 
 ## The order
 
-1. **M89** — a soft halo around whatever is actually costing her, so the meter going up has a
-   visible cause to walk away from.
-2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-3. **M56** — the resistance is noticed.
+2. **M56** — the resistance is noticed.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
@@ -144,68 +142,40 @@ which proves only that the controls stay *off* where they should.
 
 ---
 
-## M89 — A halo says what is costing her · asked for 2026-09-07
+## The crowd has no halo · a question, asked 2026-09-07
 
-> "lastly, let's create a shader (if that is possible in godot) to create a soft halo surrounding
-> entities that are currently actively causing excitement. this is meant as a hint to the player so
-> they know what to walk away from and what is causing excitement to go up"
+**Not queued and not rejected. It is a question, and it is written down so that whoever answers it
+does so with the measurement in hand.** *(2026-09-07, on being shown the gap: "Queue it as its own
+question.")*
 
-**Yes, a shader is possible**: Godot 4 has `canvas_item` shaders in its own language, authored as a
-`.gdshader` file and attached as a `ShaderMaterial` — so this is a real option rather than a
-workaround, and the file is an asset a person can open, which is what the **cues** rule asks of a
-picture.
+**The halo M89 builds reads the event list and nothing else, so the crowd is silent under it.**
+Measured on the arterial pavement on day 6 of seed 4242, standing still: the excitement bar at 48
+and the debug line reading `incoming 20.22 /s`, with **nothing glowing anywhere in frame**. The
+cause is not a bug — pedestrians are `CrowdAgent`s rather than `EventInstance`s, and
+`ExcitementHalo.select_sources()` is given `EventManager.instances()`. So the cue answers *which of
+these things is charging the meter* for events, and says nothing at all about the largest ordinary
+contributor on a busy street.
 
-**This overturns a standing decision, and the reason it is allowed is that the player took it.**
-*Asked for no rings and no drawn fields, held since the vocabulary was written · overturned on
-2026-09-07 for one specific cue, because "this is meant as a hint to the player so they know what to
-walk away from".* The **cues** rule says *"No circles around entities ... a ring communicates a
-falloff radius, which is a number. A silhouette communicates a threat"*, and *"Nothing draws a
-field"*. That reasoning is about **danger** — what a thing will do to you — and it stands. This cue
-answers a different question that the vocabulary has never had an answer to: **the meter is going up
-right now and nothing on screen says which of the six things around her is doing it.**
+**The plumbing exists, which is exactly why this needs deciding rather than building.**
+`CrowdAgent` already carries its own `contribution_at(world_position)`, so extending the selection
+to the crowd is a small change. What it would do to the screen is not small: a day fields a couple
+of hundred walkers, a busy pavement puts dozens inside her reach at once, and **a cue that marks
+everything says nothing** — the **cues** rule's second rule, and the one the halo's floor and its
+eight-source cap already exist to satisfy.
 
-- [ ] **The halo marks what is actually reaching her, not what exists.** This is the **cues** rule's
-      second rule arriving in a new place — *a cue that marks everything says nothing* — and it is
-      the whole design risk here, because a day plans several hundred bodies and most of them are
-      standing in the street doing nothing to her. The set to draw is the events whose
-      `EventInstance.contribution_at(her position)` is currently above a floor: that is a handful at
-      a time by construction, it is the exact question *"what is causing excitement to go up"* asks,
-      and it goes to zero the moment she walks out of reach, which is the *"what to walk away from"*
-      half answering itself.
+Three shapes an answer could take, none of them chosen:
 
-      **The floor is a felt number and there is no way to pick it but to look at it.** Start at
-      something small enough that a thing genuinely pushing the meter is never silent, and move it
-      against a screenshot
-- [ ] **What is drawn is the falloff itself, which is why it is a shader rather than a texture.**
-      `Tuning.falloff()` is what prices the ground she is standing on — flat inside `inner_radius`,
-      easing to nothing at `outer_radius` — and a halo that is *that curve* is a picture of the
-      thing the meter is reading rather than a decoration near it. A gradient texture cannot be it,
-      because the inner/outer ratio differs per row.
+- **Leave it to events.** The crowd is the *noise floor* rather than a thing to walk away from, and
+  the meter's own number is what reports it. The limit gets written into `docs/EVENTS.md` and the
+  cue stops pretending to be a complete answer.
+- **Glow the crowd under one combined outline**, not one per walker — a knot of people reads as a
+  knot, which is what she actually has to route around.
+- **Raise the floor for crowd agents specifically**, so only a genuinely dense cluster earns
+  anything.
 
-      **The sources compose by addition and the halo should too.** `EventManager
-      .total_excitement_at()` is a plain sum over instances, so two overlapping fields cost more
-      where they overlap, and a halo drawn as one shape per event would show two rings crossing
-      where the game charges a bright middle. **One node with one shader, fed the active sources as
-      uniform arrays** (position, inner, outer, current intensity), is what draws the sum. Cap the
-      array and say what happens past the cap
-- [ ] **Soft, and under everything.** *"A soft halo surrounding entities"* — so it is a glow rather
-      than a rim, and it draws beneath the entity, the crowd and the player rather than over them,
-      or the thing it is pointing at is the thing it hides. The **cues** vocabulary's existing marks
-      — the caret over a costly event, the exclamation mark over her — are unchanged and keep
-      meaning what they mean: this says *this is charging you now*, and those say *this is worth a
-      detour* and *the contract is now about you*. **Three cues, three sentences, and the entry for
-      each has to say which**
-- [ ] **The colour is not a new hue.** A saturated colour in this game already means something
-      (`Palette.SIGNAL_RED`/`AMBER`/`GREEN` are the traffic lights, `MARK_COSTLY`/`MARK_LETHAL` are
-      what an event costs), so a fourth vocabulary is the **cues** rule's own warning about a second
-      hand-drawn language, aimed at colour. Pick from what the meter already uses for excitement, so
-      the halo and the bar it fills are visibly the same fact
-- [ ] **Every doc that says the game draws no field has to stop saying it.** `.claude/skills/cues/
-      SKILL.md` opens with *"No circles around entities. Standing decision"* and closes the list with
-      *"Nothing draws a field"*; `docs/EVENTS.md` carries "The visual vocabulary". **Both are wrong
-      the moment this lands**, and the rule that replaces them has to be narrow enough to still
-      refuse the next ring somebody wants: the exception is *one cue, for the cost being charged
-      right now, drawn as the summed field it is reading* — not a licence to draw a radius
+**What would make it worth discussing again is a played session**, not a screenshot: whether a
+player on a busy street reads the silent crowd as *the crowd is free* — which it is not — is a
+question about what they conclude, and nothing here can answer it.
 
 ---
 

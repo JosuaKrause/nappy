@@ -33,6 +33,9 @@ var _hud: CanvasLayer
 ## is kept only so the title screen can take it off the street.
 var _edge: DangerEdge
 var _edge_layer: CanvasLayer
+## What is currently charging the meter, drawn under the world rather than over it — see
+## `_add_excitement_halo()`.
+var _halo: ExcitementHalo
 ## The pointer controls, on their own layer for the same reason the danger edge is: they have to
 ## sit above the world they are drawn over. Built in `_ready()`, alongside `_touch_layer`.
 var _touch_controls: TouchControls
@@ -99,6 +102,7 @@ func _ready() -> void:
 	_hud = HUD.instantiate()
 	add_child(_hud)
 	_add_danger_edge()
+	_add_excitement_halo()
 	_add_touch_controls()
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
@@ -295,6 +299,26 @@ func _add_danger_edge() -> void:
 	_edge.setup(_city.events, _player)
 	layer.add_child(_edge)
 	add_child(layer)
+
+## What is charging the meter right now, drawn in world space rather than in a `CanvasLayer` —
+## unlike `DangerEdge`, this cue is a picture of the ground itself, not screen furniture laid over
+## it, so it has to sit where the ground does and move with the same camera.
+##
+## `z_index = 1` puts it above `City`'s `Ground` (default 0) and below its `Entities` (2, the
+## y-sorted layer the player, the crowd and every event live on) — under everything the cue is
+## required to be under: the entities, the crowd and the player, none of which can ever read as
+## lit from beneath. It ties `Buildings` (also 1) rather than sitting under it as well, which a
+## glow can afford to: a wall the field happens to reach warms slightly, the way it would under
+## any coloured light near it, and nothing the cue exists to protect is a wall.
+## `_pauses_with_the_game()` is the same reasoning `_city` gets: while the tree is paused nothing
+## it reads is moving either, so freezing alongside the world it draws needs no case of its own.
+func _add_excitement_halo() -> void:
+	_halo = ExcitementHalo.new()
+	_halo.name = "ExcitementHalo"
+	_halo.z_index = 1
+	_halo.setup(_city.events, _player)
+	add_child(_halo)
+	_pauses_with_the_game(_halo)
 
 ## The one control scheme, in its own layer for the same reason the danger edge gets one: it has to
 ## sit above the world it overlays. One node goes into the tree rather than a choice between two —

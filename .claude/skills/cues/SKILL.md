@@ -7,8 +7,8 @@ description: The visual danger vocabulary — what may be drawn to signal danger
 
 ## No circles around entities
 
-**Standing decision. Do not add one, and do not reach for a ring when something new needs
-signalling.**
+**Standing decision for danger. Do not add a ring, and do not reach for one when something new
+needs signalling.**
 
 > How dangerous a thing is has to be visible from looking at **the thing**.
 
@@ -25,8 +25,80 @@ The vocabulary is in `docs/EVENTS.md`, "The visual vocabulary":
 - above the **player**, a flashing exclamation mark for a soon-to-be-bad spot, doubled and red for
   danger already on her
 - over the **pram**, the only cue that is not about the world — four states of the baby herself
+- a **thin rim tracing an entity's own silhouette while it is charging the meter right now**, a few
+  pixels out and no further — see "A glow, not a field" below
 
-**Nothing draws a field.**
+**The ban on a ring round a threat is untouched.** Every reason above still holds against one: a
+ring is a number and a silhouette is a threat, whatever new thing needs signalling next.
+
+## A glow, not a field
+
+*Asked for no rings and no drawn fields, held since the vocabulary was written · overturned on
+2026-09-07 for one specific cue, because the player asked for exactly this:* "lastly, let's create
+a shader ... to create a soft halo surrounding entities that are currently actively causing
+excitement. this is meant as a hint to the player so they know what to walk away from and what is
+causing excitement to go up."
+
+**The reasoning above is about danger — what a thing will do to you — and it is not what this cue
+answers.** A ring still communicates a falloff radius and a number is still not a threat, which is
+why this is not a ring round any one entity. What it answers is a question the vocabulary never
+had a cue for: *the meter is going up right now and nothing on screen says which of the six things
+around her is doing it.*
+
+**Two shapes were built and rejected on screenshots before this one.** A field-sized halo drawn at
+a source's own `outer_radius` (up to 200px against a visible world of 640x360 at zoom 2) painted
+most of the frame — **and no brightness curve on top of it fixed that**, which is the part worth
+remembering: linear, squared and cubed mappings were each tried against the same two screenshots,
+and the cube that finally killed the wash also dimmed a lone source to nothing. **The footprint was
+the defect, not the curve.** A compact circle sized off `EventDef.obstructs_radius` fixed the
+footprint but was still the shape of a number rather than the shape of the thing: *(2026-09-07, the
+player: "halo meaning only the outline of the object not the influence radius ... it should use the
+outline of the sprite. that's why it needs to be a shader. or draw the sprite in a uniform color
+multiple times".)* A protest's rank of placards or a barricade's run of segments has no single
+circle that is its outline.
+
+**So the halo is traced, not sized: `EventInstance._draw_halo()` re-runs the entity's own
+`_draw_body()` at a ring of offsets `HALO_MARGIN` (4px) out**, flattened to one colour by
+`assets/shaders/excitement_halo.gdshader` — "draw the sprite in a uniform colour multiple times,"
+the hack the player named, made cheap because the shader never has to trace an outline itself, only
+discard each redraw's own texture colours and keep its alpha. A `canvas_item` shader on the entity's
+own sprite could not have done this alone: it can only write inside the rect it is given, tight to
+the art, so a dilation would be clipped at the silhouette's own edge and read as an inward outline
+rather than a glow around it.
+
+**The exception is narrow, and the narrowness is what stops it from being the next ring somebody
+wants:**
+
+- **One cue, not a general licence to draw.** Nothing else in the vocabulary gets a halo of its own
+  by analogy to this one. `ExcitementHalo` is the selector — `select_sources()` decides which
+  entities earn one, once a frame — and `EventInstance._draw_halo()` is the one place that draws.
+- **Traced from the thing, never sized to its reach.** A busker's rim is its own 11px body redrawn
+  a ring out; a barricade's is its own run of segments. **A radius that means anything about reach
+  is the ring this exception does not authorise**, and now there is no radius on a def deciding the
+  size at all — only `HALO_MARGIN`, the same few pixels for every row.
+- **For the cost being charged right now, not for what exists.** The set it draws is the sources
+  whose `EventInstance.contribution_at(her position)` clears a floor — a handful at a time by
+  construction, the same *"a cue that marks everything says nothing"* rule the caret already answers
+  to. It goes to nothing the moment she walks out of reach, which is the *"what to walk away from"*
+  half answering itself.
+- **Brightness is the real model, and it is the only thing that is.** How bright a ring reads is
+  that same `contribution_at()`, reaching the shader as an `instance uniform` — one shared material,
+  one value per entity, set through `set_instance_shader_parameter()` rather than `modulate` (which
+  a custom fragment function does not see) — so *how much* is honest even though *how big*
+  (`HALO_MARGIN`) is not. Each entity's ring
+  is its own translucent layer now rather than one shader's summed field, so two overlapping rings
+  read brighter where they cross the ordinary way two half-transparent things do, not because
+  anything sums their numbers.
+- **Soft and under everything.** Each ring is a child of its own entity with `show_behind_parent`,
+  so it draws behind that entity — and Y-sort, which reaches down through the whole tree, places it
+  behind the crowd and the player the same way it already places that entity's own shadow. The
+  entities, the crowd and the player still draw over it, never under it, so it stays a hint rather
+  than a wall — and the caret, the badge and the exclamation mark keep meaning exactly what they
+  meant before it existed: *worth a detour*, *something is coming*, *the contract is now about you*.
+  Three sentences, one apiece, unchanged by a fourth.
+
+If something new wants a glow of its own, that is a design conversation this one has not already
+settled.
 
 ## Four rules that are the whole reason it beats the rings
 
