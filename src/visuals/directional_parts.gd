@@ -144,6 +144,7 @@ class SpriteManifest extends RefCounted:
 		sprite.name = part_id
 		sprite.texture = registration.texture
 		sprite.region_enabled = true
+		sprite.region_filter_clip_enabled = true
 		sprite.region_rect = registration.rect_for(direction)
 		sprite.centered = false
 		sprite.offset = -registration.pivot_for(direction)
@@ -162,6 +163,7 @@ class SpriteManifest extends RefCounted:
 			return false
 		sprite.texture = registration.texture
 		sprite.region_enabled = true
+		sprite.region_filter_clip_enabled = true
 		sprite.region_rect = registration.rect_for(direction)
 		sprite.centered = false
 		sprite.offset = -registration.pivot_for(direction)
