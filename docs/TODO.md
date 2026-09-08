@@ -14,6 +14,30 @@ mid-way through.
 
 ## The order
 
+### Illustrated actor registration and assembly
+
+The repair follows [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md),
+PLAYTEST-32's connected-body and legacy comparison requirements, and the M84 record in
+DECISIONS.md. Keep the illustrated renderer opt-in. The supplied urban/mother illustrations
+define style; `docs/reference/` supplies real-world structure and posture.
+
+- [ ] Author versioned replacement modular sheets with eight complete views, clean alpha and
+      isolated anatomy. The source-sheet audit is recorded in DECISIONS.md under Illustrated
+      registration audit. Preserve the requested interchangeable parts; complete flattened cards
+      are not a replacement for the layered animation contract.
+- [ ] Make per-direction part registration authoritative and reject incomplete registrations.
+      Fit a stationary mother/pram and pedestrian to measured attachment points, preserving the
+      legacy comparison at one fixed horizontal offset. Do not claim complete actors where source
+      sheets cannot supply the anatomy or directions.
+- [ ] Verify rendered joints and ground contact through walk, stop, turn and reset before expanding
+      variants. Review complete actors at gameplay scale in all eight directions.
+- [ ] Integrate whole-actor sorting and roof reveal, then a representative illustrated live street.
+      Preserve current joystick/tap choice and the event silhouette halo; crowd halos remain a
+      separate tabled question. Extend vehicles, authored events, environment and screens only
+      after their prerequisite visual gates.
+
+### Gameplay queue
+
 1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
 2. **M56** — the resistance is noticed.

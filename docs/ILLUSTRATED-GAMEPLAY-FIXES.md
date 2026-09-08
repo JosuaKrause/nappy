@@ -11,6 +11,28 @@ rejected; descriptions elsewhere of an approved street gate do not authorize reu
 Use the supplied mother and urban reference images named in `VISUALS.md` for art direction.
 Keep the cardinal camera, logical bodies, movement, collision, crowd density and gameplay RNG.
 
+## Current implementation boundary
+
+Runtime reads the mother/pram and walker JSON manifests and maps source columns to facings.
+Both compositors rotate leg segments relative to a downward axis. These mechanisms exist;
+their presence does not establish correct crops, measured painted axes or connected anatomy.
+Audit their output instead of treating the frame's original diagnosis as the current code.
+Registration remains split between manifests and hardcoded geometry in the compositors.
+
+PLAYTEST-32 requires the original drawing beside each illustrated object at a fixed horizontal
+offset. The compositors expose a 96-world-pixel comparison offset. Use the legacy yeller as the
+pedestrian scale comparison and judge complete assembled bodies, not transparent sheet bounds.
+
+The real-world inputs under `docs/reference/` supply stroller posture, continuous shopfronts,
+recessed entrances, awnings, fire escapes, flat roofs, parapets, skylights, ducts and equipment
+clusters. Translate their structure into the supplied illustrations' style. Keep references out
+of runtime assets. Inspect the stroller video for movement before making claims about its turns.
+
+Preserve the current joystick/tap choice and button behavior. Event artwork must also preserve
+the excitement halo that traces the actively contributing entity's silhouette: a layered PNG
+replacement needs the outline of the animated assembly, not an invisible legacy body. Keep the
+existing source selection and brightness behavior; the crowd-halo question is tabled separately.
+
 ## What the frame establishes
 
 | Visible issue | Repair priority |
@@ -51,6 +73,11 @@ Start in `assets/illustrated/modular/`, `assets/illustrated/walkers/` and
 - Use one authoritative machine-readable manifest for runtime registration and asset inspection.
   Include crop, crop-local attachment points, rest-axis endpoints, scale, actual facing and
   per-direction order. Validate texture bounds, required parts and missing directions loudly.
+  Stop construction cleanly after failed validation: callers must not ignore a failed
+  registration and dereference a null sprite. A missing file, duplicate source direction or
+  missing direction mapping must not silently select another view. Introduce strict endpoint
+  requirements together with valid replacement registrations, so the schema change and its
+  consumers agree in the same implementation item.
 
 The pram PNG reports an alpha channel, but its background visibly contains a checker pattern.
 An alpha channel alone does not prove clean transparency. Inspect alpha values in intended empty
@@ -64,10 +91,10 @@ into a complete static person/pram with no foreign fragments, checker rectangles
 
 ## 2. Rebuild attachment transforms from a common ground anchor
 
-`src/visuals/modular_person.gd` places head, torso and arms at the same node position after
-subtracting different pivots. It similarly places all pram layers at one position after
-subtracting different pivots. This aligns those different anatomical points to one spot instead
-of joining the parts. The gait's hip anchors and the rendered torso are also independent.
+`src/visuals/modular_person.gd` places upper-body parts using a shared source hip reference and
+part-specific offsets. Those offsets need measured attachment targets. It places all pram layers
+at one position after subtracting different pivots, aligning distinct chassis points to one spot
+instead of preserving the layers' designed offsets.
 
 - Define a per-direction rest skeleton relative to the owner's ground anchor: pelvis, neck,
   shoulders, hips, knees and ankles, plus hand and pram-handle contacts. Derive body placement
@@ -92,10 +119,10 @@ assembly away from its owner. Prove this before tuning a walk cycle.
 
 ## 3. Make rendered limbs follow the solved gait
 
-Both `ModularPerson` and `src/visuals/modular_walker.gd` calculate limb rotation by subtracting
-the actor's travel-direction angle. A drawn thigh's rest axis is not the direction the actor
-walks. Rotating a nearly vertical painted leg by that difference can turn it sideways or upside
-down. Fixed sprite scale also does not make the painted knee reach the solver's knee.
+Both `ModularPerson` and `src/visuals/modular_walker.gd` calculate limb rotation relative to a
+downward rest axis. A particular painted limb can differ from that assumed axis. Measure the
+actual endpoints per crop rather than relying on one orientation for every view. Fixed sprite
+scale also does not make the painted knee reach the solver's knee.
 
 - Measure proximal and distal attachment points for each limb crop. Compute rotation from its
   authored rest axis to the desired joint segment. Match the rendered segment length to the

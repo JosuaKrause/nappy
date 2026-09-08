@@ -175,6 +175,11 @@ before another acceptance review. The record is in `DECISIONS.md` under M84.
 
 [Illustrated gameplay repair instructions](ILLUSTRATED-GAMEPLAY-FIXES.md) specify the asset,
 attachment, gait and sorting repairs, their order, and the visual acceptance checks for this capture.
+The next asset gate is versioned modular sheets with complete directions and isolated parts:
+the current pram groups and inferred walker limb cuts cannot supply reliable registrations.
+The open implementation order is in TODO.md under Illustrated actor registration and assembly;
+the source/runtime audit and its limitations are in DECISIONS.md under Illustrated registration
+audit. Preserve the fixed-offset legacy comparisons while reviewing replacement art.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the
