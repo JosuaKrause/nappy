@@ -34,7 +34,12 @@ define style; `docs/reference/` supplies real-world structure and posture.
       legacy comparison at one fixed horizontal offset. Do not claim complete actors where source
       sheets cannot supply the anatomy or directions.
 - [ ] Verify rendered joints and ground contact through walk, stop, turn and reset before expanding
-      variants. Review complete actors at gameplay scale in all eight directions.
+      variants. Review complete actors at gameplay scale in all eight directions. The limb repair
+      uses measured crop-local hip, knee, ankle and sole points, maps each painted segment to its
+      rendered joints, and includes swing height in the shin's ankle target. Dimension stride
+      targets in world pixels from the actor's leg geometry so continuous walking and running
+      cannot leave a planted foot arbitrarily far behind the body. Preserve stationary soles
+      during stance and stop animation when applied displacement is zero.
 - [ ] Integrate whole-actor sorting and roof reveal, then a representative illustrated live street.
       Preserve current joystick/tap choice and the event silhouette halo; crowd halos remain a
       separate tabled question. Extend vehicles, authored events, environment and screens only
