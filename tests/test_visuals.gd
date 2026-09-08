@@ -2,6 +2,7 @@ extends RefCounted
 ## Focused headless contract tests for the standalone modular compositor and grounded gait.
 
 func run(t) -> void:
+	_test_manifest_rejects_invalid_registration(t)
 	_test_registered_regions_and_order(t)
 	_test_no_motion_is_stable(t)
 	_test_displacement_plants_and_lifts(t)
@@ -12,6 +13,26 @@ func run(t) -> void:
 	_test_short_walk_stop_turn_sequence(t)
 	_test_walker_manifest_and_variants(t)
 	_test_walker_consumes_actual_displacement(t)
+
+func _test_manifest_rejects_invalid_registration(t) -> void:
+	var manifest := DirectionalParts.new_manifest()
+	var texture: Texture2D = preload("res://assets/illustrated/modular/mother-parts-v3.png")
+	var rects: Array[Rect2] = []
+	var z_orders: Array[int] = []
+	for _direction in DirectionalParts.DIRECTION_NAMES.size():
+		rects.append(Rect2(0.0, 0.0, 16.0, 16.0))
+		z_orders.append(0)
+	t.check(manifest.register_part("valid", texture, rects, Vector2.ZERO, Vector2.ZERO, z_orders),
+		"a bounded registration with one shared pivot is accepted")
+	var outside: Array[Rect2] = rects.duplicate()
+	outside[DirectionalParts.Direction.N] = Rect2(1272.0, 0.0, 16.0, 16.0)
+	t.check(not manifest.register_part("outside", texture, outside, Vector2.ZERO, Vector2.ZERO, z_orders),
+		"a crop extending past the PNG is rejected")
+	var wrong_pivots: Array[Vector2] = [Vector2.ZERO]
+	t.check(not manifest.register_part("pivot_count", texture, rects, Vector2.ZERO, wrong_pivots, z_orders),
+		"a partial direction pivot list is rejected instead of silently falling back")
+	t.check(not manifest.register_part("blank_variant", texture, rects, Vector2.ZERO, Vector2.ZERO, z_orders, ""),
+		"an empty variant key is rejected")
 
 func _rig(t) -> ModularPerson:
 	var rig := ModularPerson.new()

@@ -48,18 +48,26 @@ class SpriteManifest extends RefCounted:
 
 	func register_part(part_id: String, texture: Texture2D, rects: Array[Rect2],
 			anchor: Vector2, pivot: Variant, z_orders: Array[int], variant: String = "default") -> bool:
-		var key: String = _key(part_id, variant)
 		if part_id.is_empty():
 			return _fail("part id is empty")
+		if variant.is_empty():
+			return _fail("part '%s' has an empty variant" % part_id)
 		if texture == null:
 			return _fail("part '%s' variant '%s' has no PNG texture" % [part_id, variant])
 		if rects.size() != DirectionalParts.DIRECTION_NAMES.size():
 			return _fail("part '%s' variant '%s' needs 8 direction rectangles, got %d" % [part_id, variant, rects.size()])
 		if z_orders.size() != DirectionalParts.DIRECTION_NAMES.size():
 			return _fail("part '%s' variant '%s' needs 8 direction z-orders, got %d" % [part_id, variant, z_orders.size()])
+		if not _valid_pivots(pivot):
+			return _fail("part '%s' variant '%s' needs one pivot or 8 direction pivots" % [part_id, variant])
+		var texture_size: Vector2 = texture.get_size()
 		for direction: int in DirectionalParts.DIRECTION_NAMES.size():
-			if rects[direction].size.x <= 0.0 or rects[direction].size.y <= 0.0:
+			var rect: Rect2 = rects[direction]
+			if rect.size.x <= 0.0 or rect.size.y <= 0.0:
 				return _fail("part '%s' variant '%s' has an empty %s direction rectangle" % [part_id, variant, DirectionalParts.DIRECTION_NAMES[direction]])
+			if rect.position.x < 0.0 or rect.position.y < 0.0 or rect.end.x > texture_size.x or rect.end.y > texture_size.y:
+				return _fail("part '%s' variant '%s' has an out-of-bounds %s direction rectangle" % [part_id, variant, DirectionalParts.DIRECTION_NAMES[direction]])
+		var key: String = _key(part_id, variant)
 		if _parts.has(key):
 			return _fail("part '%s' variant '%s' is already registered" % [part_id, variant])
 		var registration: PartRegistration = PartRegistration.new()
@@ -140,6 +148,19 @@ class SpriteManifest extends RefCounted:
 		for _direction in DirectionalParts.DIRECTION_NAMES.size():
 			result.append(fallback)
 		return result
+
+	func _valid_pivots(value: Variant) -> bool:
+		if value is Vector2:
+			return true
+		if not value is Array:
+			return false
+		var pivots: Array = value
+		if pivots.size() != DirectionalParts.DIRECTION_NAMES.size():
+			return false
+		for item: Variant in pivots:
+			if not item is Vector2:
+				return false
+		return true
 
 	func _fail(message: String) -> bool:
 		errors.append(message)
