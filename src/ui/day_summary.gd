@@ -178,6 +178,13 @@ func _present() -> void:
 	_root.show()
 	_refresh_buttons()
 	_restart_button.cancel_hold()
+	# A press that dismissed this screen before can leave the continue button's own forced-pressed
+	# look set — see `_acknowledge_and_continue()`'s own doc for why the frames that would clear it
+	# may never actually run before this screen hides. Cleared on the way back in rather than left
+	# to leak into the next day's own summary.
+	_continue_button.clear_forced_press()
+	_continue_button.set_hovered(false)
+	_restart_button.set_hovered(false)
 	_continuing = false
 	get_tree().paused = true
 
@@ -273,9 +280,13 @@ var _continuing := false
 ## the bare scrim with nothing to show for it. `force_pressed_look()` says the same thing regardless
 ## of where the touch landed.
 ##
-## **Touch only.** A keyboard has no button on screen to flash, and `space` needs no frame held open
-## for it — the keyboard branch below stays exactly as synchronous as it always was, since adding a
-## wait with nothing new to show for it is latency this path does not need.
+## **Touch and mouse, not the keyboard.** *(Playtest 34 finding 1: "buttons still don't light up
+## when pressed or hovered.")* A left click used to fire `continued` directly rather than through
+## here — see `_unhandled_input()`'s own doc for why that skipped the flash for a laptop player
+## specifically, which is exactly who found it missing. A keyboard has no button on screen to
+## flash, and `space` needs no frame held open for it — the keyboard branch below stays exactly as
+## synchronous as it always was, since adding a wait with nothing new to show for it is latency
+## this path does not need.
 func _acknowledge_and_continue() -> void:
 	if _continuing:
 		return
@@ -300,7 +311,11 @@ func _acknowledge_and_continue() -> void:
 ## window — long enough for the emulated click to arrive while it is still open. Reading it through
 ## the same `not _touch` gate `TouchControls` and `PauseScreen`'s own restart hold use means the
 ## emulated click never reaches a branch at all on a device where a real touch already has, so it
-## can never fire `continued` a second time underneath the delay `_continuing` exists to guard.
+## can never fire `continued` a second time underneath the delay `_continuing` exists to guard. It
+## calls the same `_acknowledge_and_continue()` the touch branch does rather than emitting directly
+## — see that function's own doc for why a laptop player needs the flash exactly as much as a
+## finger does, and why routing through the shared `_continuing` guard here is safe: this branch
+## can only ever run on a device with no touch hardware to emulate a click from in the first place.
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_showing():
 		return
@@ -315,8 +330,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			and (event as InputEventMouseButton).pressed \
 			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		get_viewport().set_input_as_handled()
-		continued.emit()
+		_acknowledge_and_continue()
+		return
+	if not _touch and event is InputEventMouseMotion:
+		_update_hover((event as InputEventMouseMotion).position)
 		return
 	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		continued.emit()
+
+## A laptop's own question — there is no hover on a phone. *(Playtest 34 finding 1: "buttons still
+## don't light up when pressed or hovered.")* `ModeButton.set_hovered()` is the answer
+## `MOUSE_FILTER_IGNORE` already needs for a press, reused here since it silences
+## `mouse_entered`/`mouse_exited` exactly as it silences a click.
+func _update_hover(position: Vector2) -> void:
+	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
+	_continue_button.set_hovered(_continue_column.visible \
+			and _continue_button.catch_rect().has_point(at))
+	_restart_button.set_hovered(_buttons.visible and _restart_button.catch_rect().has_point(at))

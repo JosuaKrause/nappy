@@ -26,12 +26,16 @@ extends CanvasLayer
 ## *(2026-09-07, the player: "let's make the controls a player choice and bring back the two
 ## buttons ... that should also solve the issue with the missing title screen since the only way to
 ## start the game will be clicking on one of the buttons".)* `_joystick_button` and `_tap_button`
-## are `ModeButton`s with `Symbol.JOYSTICK`/`Symbol.TAP` and their own two captions underneath —
-## see `_handle_mode_button_press()`. **A pointer press begins a run only when it lands on one of
-## them**, never on the bare scrim: with the buttons as the only pointer way in, a stray tap that
-## dismissed the ending screen a frame earlier can no longer restart the game just by landing
-## anywhere on this one — the restart guard (`_RESTART_GUARD_SECONDS`) stays for the narrower case
-## that remains, a stray press landing squarely on a button. A keyboard has no button to press, so
+## are `ModeButton`s with `Symbol.JOYSTICK`/`Symbol.TAP`, each named underneath — "On-screen
+## Controls", "Tap to Go" — and nothing else. *(2026-09-07, the player: "call the modes 'On-screen
+## Controls' and 'Tap to Go' no further explanations".)* Two earlier sentences in the same session
+## asked for the explanations simplified and for no mention of stopping; both are read as replaced
+## by the third, which is later, strictly narrower, and leaves nothing for either to apply to.
+## **A pointer press begins a run only when it lands on one of them**, never on the bare scrim: with
+## the buttons as the only pointer way in, a stray tap that dismissed the ending screen a frame
+## earlier can no longer restart the game just by landing anywhere on this one — the restart guard
+## (`_RESTART_GUARD_SECONDS`) stays for the narrower case that remains, a stray press landing
+## squarely on a button. A keyboard has no button to press, so
 ## `space` and every direction key still begin the run outright — see `_unhandled_input()`'s own
 ## doc for why that always chooses `Mode.TAP`.
 
@@ -163,6 +167,15 @@ func is_open() -> bool:
 func open(again := false) -> void:
 	visible = true
 	_hint.text = "press a button to walk again" if again else "press a button to begin"
+	# A press that closed this screen can leave a button's own forced-pressed look set — see
+	# `_acknowledge_and_begin()`'s own doc for why the release that would otherwise clear it may
+	# never reach `_unhandled_input()` at all, once `visible` has already gone false. Cleared here
+	# rather than left to leak into whatever this screen shows next, the same reason
+	# `PauseScreen.open()` calls `_restart_button.cancel_hold()`.
+	_joystick_button.clear_forced_press()
+	_tap_button.clear_forced_press()
+	_joystick_button.set_hovered(false)
+	_tap_button.set_hovered(false)
 
 func close() -> void:
 	visible = false
@@ -202,10 +215,23 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if _handle_mode_button_press(event):
 		return
+	if not _touch and event is InputEventMouseMotion:
+		_update_hover((event as InputEventMouseMotion).position)
+		return
 	if _can_quit and event is InputEventKey and event.pressed \
 			and (event as InputEventKey).keycode == KEY_Q:
 		get_viewport().set_input_as_handled()
 		quit_requested.emit()
+
+## A laptop's own question — there is no hover on a phone, which is why this is gated `not _touch`
+## at the one call site above rather than inside here. *(Playtest 34 finding 1: "buttons still
+## don't light up when pressed or hovered.")* `ModeButton.set_hovered()` is the answer
+## `MOUSE_FILTER_IGNORE` already needs for a press, reused here since it silences
+## `mouse_entered`/`mouse_exited` exactly as it silences a click — nothing native is left to ask.
+func _update_hover(position: Vector2) -> void:
+	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
+	_joystick_button.set_hovered(_joystick_button.catch_rect().has_point(at))
+	_tap_button.set_hovered(_tap_button.catch_rect().has_point(at))
 
 ## The four `move_*` actions — `WASD` and the arrows both, since each is bound to all four. Asked
 ## as a loop over the action list rather than four `or`ed `is_action_pressed()` calls, so a fifth
@@ -225,9 +251,9 @@ static func _is_a_walk_key(event: InputEvent) -> bool:
 ## layer never claims the event and a `Button`'s own signal never fires for a real touch.
 ##
 ## Unlike the restart button's hold, this fires on the press itself, not a matching release — there
-## is no fill to track and nothing to cancel. **The mouse branch is gated on `not _touch`**, the
-## same reason `TouchControls._input()`'s own is: a real touch device also emits an emulated mouse
-## click from the same finger, and without the gate a single press on a button would be read twice.
+## is no duration to track. **The mouse branch is gated on `not _touch`**, the same reason
+## `TouchControls._input()`'s own is: a real touch device also emits an emulated mouse click from
+## the same finger, and without the gate a single press on a button would be read twice.
 ##
 ## Returns whether the press belonged to a button at all, so `_unhandled_input()` knows not to fall
 ## through to the quit key check for the same event — though with no catch-all left on this screen,
@@ -251,13 +277,37 @@ func _handle_mode_button_press(event: InputEvent) -> bool:
 	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
 	if _joystick_button.catch_rect().has_point(at):
 		get_viewport().set_input_as_handled()
-		_begin(ControlsMode.Mode.JOYSTICK)
+		_acknowledge_and_begin(ControlsMode.Mode.JOYSTICK, _joystick_button)
 		return true
 	if _tap_button.catch_rect().has_point(at):
 		get_viewport().set_input_as_handled()
-		_begin(ControlsMode.Mode.TAP)
+		_acknowledge_and_begin(ControlsMode.Mode.TAP, _tap_button)
 		return true
 	return false
+
+## Whether an acknowledge-and-begin coroutine is already in flight — see `_acknowledge_and_begin()`.
+var _starting := false
+
+## Flashes `button` pressed for two frame boundaries before actually starting the run — the same
+## shape `DaySummary._acknowledge_and_continue()` already uses and for the same reason. *(Playtest
+## 34 finding 1: "buttons still don't light up when pressed or hovered.")* `_begin()` used to run
+## synchronously inside the same input-processing pass that also closes this screen
+## (`main._on_title_start()` → `_title.close()`), and Godot never draws a frame between one call and
+## the next within a single input dispatch — so the pressed fill was set and then hidden again
+## without a frame ever rendering it, the identical defect `DaySummary`'s own doc found for its
+## continue button. Two `process_frame` awaits, not one, for the reason that doc gives:
+## `SceneTree.process_frame` fires *before* the frame it names is drawn, so the second is what
+## actually lands after the draw that happens between them.
+func _acknowledge_and_begin(mode: ControlsMode.Mode, button: ModeButton) -> void:
+	if _starting:
+		return
+	_starting = true
+	button.force_pressed_look()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	button.clear_forced_press()
+	_starting = false
+	_begin(mode)
 
 ## The one place `start_requested` is actually emitted — a walk key, `space`, or one of the two
 ## buttons, all funnelled through here so the restart guard is asked exactly once regardless of
