@@ -41,6 +41,10 @@ define style; `docs/reference/` supplies real-world structure and posture.
 1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
 2. **M56** — the resistance is noticed.
+3. **Illustrated actor registration and scale** — repair the modular body and pram joint
+   transforms, then calibrate their assembled size against the legacy SVG sprites. The current
+   calibration scene demonstrates both defects; see [PLAYTEST-36.md](PLAYTEST-36.md) and
+   [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md).
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
