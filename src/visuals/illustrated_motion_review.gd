@@ -1,16 +1,10 @@
 extends Node2D
 ## Reproducible contact sheet for painted limb motion and ground contact.
 ##
-## Each cell owns a compositor whose virtual owner stays at Vector2.ZERO. The compositor is
-## advanced only with explicit applied displacement; the cell's Node2D supplies presentation
-## placement and never becomes a second movement simulation.
+## Each cell owns a compositor whose virtual owner advances through an explicit displacement
+## sequence. The cell's Node2D supplies fixed presentation placement and never becomes a second
+## movement simulation.
 
-const DIRECTIONS: PackedStringArray = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"]
-var headings: Array[Vector2] = [
-	Vector2.DOWN, Vector2(1.0, 1.0).normalized(), Vector2.RIGHT,
-	Vector2(1.0, -1.0).normalized(), Vector2.UP, Vector2(-1.0, -1.0).normalized(),
-	Vector2.LEFT, Vector2(-1.0, 1.0).normalized(),
-]
 const SAMPLES: PackedStringArray = [
 	"IDLE", "INITIAL\nSTRIDE", "MID SWING\nLEFT", "MID SWING\nRIGHT",
 	"SUSTAINED\nWALK", "RUN\nHIGH Δ", "BLOCKED /\nSTOP", "REVERSE /\nTURN", "RECYCLE /\nRESET",
@@ -35,22 +29,32 @@ func _build_sheet() -> void:
 	for row: int in 3:
 		for column: int in SAMPLES.size():
 			var actor: Node2D
+			var person: ModularPerson = null
+			var walker: ModularWalker = null
 			var pose: Dictionary
-			var heading: Vector2 = headings[column % headings.size()]
+			# Keep every phase on one facing so foot travel can be compared between columns.
+			# The static registration sheet covers all eight authored facings.
+			var heading: Vector2 = Vector2.DOWN
 			if row == 0:
-				var person := ModularPerson.new()
+				person = ModularPerson.new()
 				person.name = "MotionMother_%d_%d" % [row, column]
 				actor = person
-				pose = _person_sample(person, column, heading)
 			else:
-				var walker := ModularWalker.new()
+				walker = ModularWalker.new()
 				walker.name = "MotionWalker_%d_%d" % [row, column]
 				if row == 2:
 					walker.set_variant("rust_curls")
 				actor = walker
-				pose = _walker_sample(walker, column, heading)
 			actor.position = _cell_position(row, column)
 			add_child(actor)
+			if person != null:
+				pose = _person_sample(person, column, heading)
+				if pose != person.last_pose:
+					push_error("motion review marker does not match mother pose after ready")
+			else:
+				pose = _walker_sample(walker, column, heading)
+				if pose != walker.last_pose:
+					push_error("motion review marker does not match walker pose after ready")
 			_markers.append({"position": actor.position, "pose": pose, "row": row, "column": column})
 
 func _person_sample(actor: ModularPerson, sample: int, heading: Vector2) -> Dictionary:
@@ -77,7 +81,8 @@ func _person_sample(actor: ModularPerson, sample: int, heading: Vector2) -> Dict
 			return run_pose
 		6:
 			_advance_person(actor, heading * 18.0, heading)
-			return actor.apply_displacement(Vector2.ZERO, Vector2.ZERO, 0.0, heading)
+			var stopped_at: Vector2 = _virtual_positions[actor]
+			return actor.apply_displacement(Vector2.ZERO, stopped_at, 0.1, heading)
 		7:
 			_advance_person(actor, heading * 12.0, heading)
 			return _advance_person(actor, -heading * 8.0, -heading)
@@ -112,7 +117,8 @@ func _walker_sample(actor: ModularWalker, sample: int, heading: Vector2) -> Dict
 			return run_pose
 		6:
 			_advance_walker(actor, heading * 18.0, heading)
-			return actor.apply_displacement(Vector2.ZERO, Vector2.ZERO, 0.0, heading)
+			var stopped_at: Vector2 = _virtual_positions[actor]
+			return actor.apply_displacement(Vector2.ZERO, stopped_at, 0.1, heading)
 		7:
 			_advance_walker(actor, heading * 12.0, heading)
 			return _advance_walker(actor, -heading * 8.0, -heading)
@@ -155,11 +161,11 @@ func _cell_position(row: int, column: int) -> Vector2:
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, SHEET_SIZE), Color("#171522"))
 	draw_string(ThemeDB.fallback_font, Vector2(26.0, 30.0), "ILLUSTRATED LIMB MOTION · APPLIED DISPLACEMENT CONTACT SHEET", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 21, Color("#ffe8b5"))
-	draw_string(ThemeDB.fallback_font, Vector2(28.0, 52.0), "Each cell keeps its virtual owner at (0, 0); ticks are solved foot anchors. Swing cells require live gait state.", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color("#cfc1a2"))
+	draw_string(ThemeDB.fallback_font, Vector2(28.0, 52.0), "All phases face south for direct comparison; ticks are solved foot anchors. Swing cells require live gait state.", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color("#cfc1a2"))
 	for column: int in SAMPLES.size():
 		var x: float = CELL_ORIGIN.x + float(column) * CELL_STEP
 		_add_header(SAMPLES[column], Vector2(x - 50.0, 78.0))
-		_add_header(DIRECTIONS[column % DIRECTIONS.size()], Vector2(x - 9.0, 104.0), 11)
+		_add_header("S", Vector2(x - 9.0, 104.0), 11)
 	for row: int in 3:
 		var row_name := "MOTHER + PRAM" if row == 0 else ("MUSTARD WALKER" if row == 1 else "RUST WALKER")
 		draw_string(ThemeDB.fallback_font, Vector2(8.0, ROW_Y[row] - 68.0), row_name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 10, Color("#e4cda1"))
@@ -169,7 +175,7 @@ func _draw() -> void:
 		var left: Vector2 = at + pose["left_foot"]
 		var right: Vector2 = at + pose["right_foot"]
 		var ground_y: float = maxf(left.y, right.y)
-		draw_line(Vector2(at.x - CELL_WIDTH * 0.45, at.y + ground_y), Vector2(at.x + CELL_WIDTH * 0.45, at.y + ground_y), Color("#806d54"), 1.0)
+		draw_line(Vector2(at.x - CELL_WIDTH * 0.45, ground_y), Vector2(at.x + CELL_WIDTH * 0.45, ground_y), Color("#806d54"), 1.0)
 		_draw_contact_tick(left, Color("#f2c879"))
 		_draw_contact_tick(right, Color("#a8d6c2"))
 
@@ -178,4 +184,6 @@ func _draw_contact_tick(at: Vector2, color: Color) -> void:
 	draw_line(at + Vector2(0.0, -4.0), at + Vector2(0.0, 4.0), color, 1.0)
 
 func _add_header(value: String, at: Vector2, size: int = 9) -> void:
-	draw_string(ThemeDB.fallback_font, at, value, HORIZONTAL_ALIGNMENT_CENTER, 100.0, size, Color("#d8c8aa"))
+	var lines: PackedStringArray = value.split("\n")
+	for line: int in lines.size():
+		draw_string(ThemeDB.fallback_font, at + Vector2(0.0, float(line * (size + 2))), lines[line], HORIZONTAL_ALIGNMENT_CENTER, 100.0, size, Color("#d8c8aa"))
