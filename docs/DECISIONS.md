@@ -1,5 +1,33 @@
 # Decisions
 
+## Limb attachment repair — 2026-09-08
+
+The player asked "let's fix the limbs", continuing PLAYTEST-36's connected-body and SVG-scale
+review and PLAYTEST-37's selection of the transparent v3 pram. They also explicitly authorized
+committing, pushing and updating the existing draft PR #49. The overhaul remains opt-in; this
+request does not authorize its release or merge into the default game.
+
+Source inspection found that the mother's 1280×1536 sheet is independently packed. Painted head,
+torso and arm bands occupy approximately y=44–190, 205–413 and 440–582; the upper/lower leg sets
+occupy 603–787, 795–907, 920–1117 and 1131–1251, with two sets of shoes below them. Uniform
+192-pixel rows cut through those drawings. The approved 1448×1086 pram similarly uses unequal
+vertical packing: chassis 101–331, seat 375–571, canopy 640–770 and baby 844–1017. Its eight views
+begin with the rear, whereas the mother sheet begins with the front. Those approximate bands
+guide inspection; they are not substitutes for measured per-part registrations.
+
+The first implementation pass was rejected in code review. It retained inferred crop bands,
+guessed joints and the rejected upper-only scale calibration; its segment transform multiplied
+the target/source length ratio by the source-to-world scale again. Changing the tiny gait target
+to half a stride also did not prove that a stance leg stayed within reach. The repair gate
+therefore checks transformed source endpoints, painted extents and sustained displacement, not
+just the solver's own targets or literals repeated from a manifest.
+
+The movement contact sheet samples public compositor APIs with accumulated virtual owner
+positions, then displays each pose in a fixed cell. Review corrected initialization that reset
+sampled walkers when added to the tree, a blocked sample that accidentally teleported its owner,
+and a ground line that counted the cell offset twice. Its mid-swing samples must find an actual
+active swing; it is a diagnostic of sampled poses rather than proof of smooth live motion.
+
 ## Pram checkerboard extraction — 2026-09-08
 
 PLAYTEST-37 records the player's approval: "I find the pram layered pictures look good" and
