@@ -39,7 +39,12 @@ tabled is the *ambient* crowd — the pavement full of people who are marked by 
 said so in as many words: "we can discuss the details about general crowd floors later, though". The
 measurement is in that section and the three possible answers are written out; none is chosen.
 
-**[PLAYTEST-36.md](PLAYTEST-36.md) is the newest session, and all three of its findings are M92** —
+**[PLAYTEST-37.md](PLAYTEST-37.md) is the newest session, and its one finding is a re-report**: the
+bollards were built against *nothing marks the closure* when the 2026-09-02 instruction was that a
+road leading up to a precinct is a T-junction at the edge, and the crossroads at each end of a span
+is still a four-way with a zebra on the arm that leads in. It is queued under M53 below.
+
+**[PLAYTEST-36.md](PLAYTEST-36.md) is the session before it, and all three of its findings are M92** —
 a session on the halo M89 had just built, and together they are one change: the cue gets a second
 axis. It also records a fork the player closed **before** it was built, which is the part to read
 first: colour from a row's declared `intensity` was proposed and rejected in favour of what has
@@ -295,6 +300,45 @@ reason to enter. See M64, "What alleys are for, then, is going round a wall".
 
       It is also what makes finding 1's silence fair: a first encounter with no hint is only
       reasonable if the thing can actually be come across
+
+---
+
+## M53 — A precinct's end is a T-junction · re-reported 2026-09-08
+
+The instruction is from 2026-09-02 and was only half built: *"there should be no zebra cross
+markings or cars in a pedestrianized precinct — all roads leading up to a precinct should be
+t-junctions at the edge nothing should go in."* The junctions **inside** a span are paved and read
+as Ts. The crossroads at each **end** of a span is still an ordinary four-way, and its arm toward
+the precinct carries a zebra across a road stub that runs one pavement's width past the box and
+stops at the bollards. [PLAYTEST-37.md](PLAYTEST-37.md) has the capture and the player's words:
+*"the original complaint was that there is a zebra crossing at the edge of the precinct which
+shouldn't be there"*, and *"we can keep the bollards but it doesn't address the complaint"*.
+
+- [ ] **The box at each end of a span loses its arm into the precinct.** The spur — the precinct
+      corridor's road band where it crosses the box's sidewalk band on the precinct side — is
+      `CROSSING` today and becomes pavement, so the crossing street's road runs through the box
+      and the precinct's paving begins at the box's own road edge. `CityGenerator._seal_stub_crossings()`
+      does exactly this for a dead end, an absorbed corridor and a big building, over the rect of
+      ground that stopped being a street; a span's own tile rect (the one
+      `tests/test_generator.gd`'s precinct test builds from `lo`/`hi`) is that rect. The zebras
+      across the crossing street on the box's other sides stay — they cross a road that is there.
+
+      **The paint has to follow.** `GroundTiles._sidewalk_variant()` paints brick only where
+      `street_kind_at()` says `PEDESTRIAN`, and the sealed spur is outside the span's along-range,
+      so it would paint as ordinary grey pavement between the box and the brick. Either widen the
+      span's kind range by `SIDEWALK_WIDTH` at each end so the spur *is* precinct to every reader
+      (`is_driveable_at`, the paint, the tests), or paint the sealed spur as brick explicitly.
+      Chosen where the design is silent and open to overturn: **the spur is precinct** — one
+      definition, consistent everywhere, and it is what *the precinct's own pavement continuing
+      past it as the third arm* already says in `docs/CITY.md`.
+- [ ] **The bollards move to the box's road edge.** The first tile of paving is now the box's
+      precinct-side sidewalk band, `SIDEWALK_WIDTH` tiles nearer the crossroads than today, so
+      `City.bollard_positions()` and its test move with it. They still span the carriageway band
+      only.
+- [ ] **The test says it.** `_test_nothing_goes_into_a_precinct` (or one beside it) asserts that
+      the box's precinct-side band has no `CROSSING` on the precinct corridor's road band, and
+      that the box's centre is still `ROAD` where a driveable street crosses it — a T, not a
+      severed street.
 
 ---
 
