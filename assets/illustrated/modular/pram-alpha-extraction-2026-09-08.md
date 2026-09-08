@@ -23,5 +23,6 @@ It is a bounded neutral background heuristic; it does not claim mathematically l
 of an arbitrary checkerboard, and its outputs require visual review before runtime use.
 
 The script refuses to overwrite an existing destination; choose a fresh output path when rerunning.
-The dark/blue review sheet is `docs/evidence/pram-transparency-review.png`. These source sheets
-are available for registration, and no runtime manifest consumes them.
+The dark/blue review sheet is `docs/evidence/pram-transparency-review.png`. The runtime pram
+manifest consumes the approved transparent v3 draft; the alpha-attempt sibling remains review
+material.
