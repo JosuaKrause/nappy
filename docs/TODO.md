@@ -14,16 +14,9 @@ mid-way through.
 
 ## The order
 
-1. **M90** — the controls do what the hand does: a button that shows a press, a stop circle the size
-   it is drawn, and a joystick drag that follows the thumb.
-2. **M91** — notice, per pursuer: the dog gives more of it and the biker far less, and the biker
-   arrives on her own side of the road.
-3. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-4. **M56** — the resistance is noticed.
-
-**M90 is first because it is the scheme a player touches before anything else**, and every one of
-its findings is the build answering a press with nothing.
+2. **M56** — the resistance is noticed.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
@@ -146,136 +139,6 @@ which proves only that the controls stay *off* where they should.
       careful-versus-careless survives a blunter instrument, and it is answered by playing it rather
       than by arguing it.** The three smaller things a real device would also settle — the catch
       radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
-
----
-
-## M90 — The controls do what the hand does · asked for 2026-09-07
-
-Seven findings from [PLAYTEST-34.md](PLAYTEST-34.md), and one milestone because they are one
-subject: **the scheme M88 shipped is chosen and then does not answer.** A button that never changes
-under a press, a stop circle at twice its drawn size, a press on the pram that stops her, and three
-separate ways the joystick's drag disagrees with the thumb.
-
-**Read the findings before the items.** Three of them (7, 8 and 9 in the report) are very likely one
-defect seen from three angles, and the order below is the order that finds out.
-
-- [ ] **A drag measures from the focus that is under the thumb *now*, not the one that was there at
-      the press.** *(2026-09-07: "I cannot drag around the joystick circle and it follows the whole
-      way. it moves a bit and then moves completely differently from what my movement is.")*
-      `TouchControls._on_tap()` converts the chosen focal point to world space once into
-      `_drag_origin_world`, and `_on_drag()` measures every later heading from that stored world
-      point. **A focus is a fixed place on the glass, not a place in the city**, so once she walks
-      the camera carries the drawn circle away from the world point the heading is still being
-      measured from — which is exactly "moves a bit and then moves completely differently".
-
-      The fix is to redo the design→presented→world trip per motion event rather than once at the
-      press. **It is not the analog stick returning**: `set_direction()` still normalises every
-      heading, so `tests/test_touch.gd`'s
-      `_test_no_input_path_presses_a_vector_shorter_than_one` is untouched. **Do this one first** —
-      the next item may be nothing but this one's symptom
-- [ ] **Only the joystick on the side being pressed is the reference.** *(2026-09-07: "the two
-      joysticks are broken when I'm on the left side only the left joystick should be used as
-      reference and on the right side only the right one.")* `nearer_focus()` already computes
-      this — `FOCUS_LEFT` (240, 480) and `FOCUS_RIGHT` (1040, 480) share a `y`, so "nearer" is
-      simply which side of the design box's centre line a press is on. **So this is a check before
-      it is a build**: re-play it once the item above lands, and only design a fix if it survives
-- [ ] **A press in a focus's centre starts a drag, and the centre means *stopped* rather than
-      *nothing*.** *(2026-09-07: "when I start dragging from the center of the joystick nothing
-      happens it should behave the same as if I move to the center and back stop while I'm in the
-      center and move when I'm back.")* A press inside `STOP_RADIUS` (48px) of a focus goes through
-      `_stop()`, which leaves `_walking` false, and `_on_pointer()` only takes the drag index when
-      `_walking` is true — so the finger is never tracked and every motion event after it is
-      discarded.
-
-      The asked-for behaviour is what a drag starting *outside* a circle already does: in the
-      centre is stopped, out of it is walking that way, and crossing the boundary either way
-      changes it live. **What goes is the rule that a stop does not start a drag**, not the stop
-- [ ] **The stop circle around her is the same size on screen as a focus's ring.** *(2026-09-07:
-      "the stop circle on the player should exactly be the size of the joystick stop circle nothing
-      bigger.")* `STOP_RADIUS` is 48.0 and is compared in two different spaces: `is_on_a_focus()`
-      and `is_in_stop_band()` measure it in **design space**, matching the ring that is drawn, while
-      `Mode.TAP`'s own `_on_tap()` measures `world.distance_to(her position) <= STOP_RADIUS` in
-      **world space**. The camera sits on her at **zoom 2**, so 48 world px covers 96 design px on
-      the glass — twice the drawn circle. The asked-for size is 48 design px, which is **24 world
-      px**
-- [ ] **A press on the pram is not a press on her.** *(2026-09-07: "if I click on the stroller it
-      shouldn't stop only when I click on the body of the player.")* *Asked for a stop circle wide
-      enough to cover the pram on 2026-09-06 · overturned on 2026-09-07 by the player, because "it
-      shouldn't stop" there.* `STOP_RADIUS`'s own doc argues the opposite in as many words — *"the
-      pram rides up to `PRAM_DISTANCE` (34px) off to one side of her, and a press that lands on the
-      pram is a press on her"* — and that sentence goes with the change.
-
-      **The item above already answers this one**: 24 world px is clear of the pram at 34px and
-      still generous against `PLAYER_BODY_RADIUS` (14px). One number, both findings — but the
-      comment has to stop claiming the pram on purpose, or the next reader widens it back
-- [ ] **A button shows that it is pressed, and that it is hovered.** *(2026-09-07: "buttons still
-      don't light up when pressed or hovered.")* **This is playtest 33's own request coming back
-      because the fix changed the wrong half.** M85 set `Palette.BUTTON_PRESSED` to a near-white
-      `(0.95, 0.93, 0.88, 0.95)`, and `ModeButton._apply_disc_style()` installs it as the `pressed`
-      and `hover_pressed` stylebox — but `ModeButton._ready()` sets
-      `mouse_filter = Control.MOUSE_FILTER_IGNORE`, and **a `Button` that ignores the mouse never
-      enters its own hover or pressed draw state**, so only the resting `normal` fill is ever drawn.
-
-      **The `IGNORE` is load-bearing and must not just be reverted.** Its comment records why, from
-      playtest 29: Godot's GUI layer runs between `_input` and `_unhandled_input` and eats a raw
-      touch that lands on a `STOP` control, and `TitleScreen`, `PauseScreen` and `DaySummary` all
-      read every press in `_unhandled_input()` — a button that claims the event is a button whose
-      screen never hears the press. So **the look has to be driven by the same raw-touch reading the
-      screens already do**, through `ModeButton.catch_rect()`, the way `force_pressed_look()` and
-      `clear_forced_press()` already flash a disc for `DaySummary`.
-
-      **Hover is new and has never been asked for before.** It is a laptop's question — a phone has
-      no hover — and `MOUSE_FILTER_IGNORE` also means no `mouse_entered`/`mouse_exited`, so
-      whatever answers the press answers this too
-- [ ] **The two modes are called "On-screen Controls" and "Tap to Go", with no caption under
-      either.** *(2026-09-07: "call the modes 'On-screen Controls' and 'Tap to Go' no further
-      explanations".)* Two earlier sentences in the same session — *"the explanations for the two
-      modes are very convoluted simplify them and focus around how they make things different not
-      implementation details"* and *"also don't mention stopping"* — are **read as replaced by the
-      third**, which is later, strictly narrower, and leaves nothing for either to apply to. Say so
-      when building it; if a short line under each name is wanted after all, that is the player's
-      call and not an inference from these three sentences.
-
-      **The teaching line is a different sentence and is not in scope.** `Tap to walk, double tap to
-      run.` is what playtest 33 asked for in those words and it is true in both modes
-
----
-
-## M91 — Notice, per pursuer, and the biker's own side of the road · asked for 2026-09-07
-
-Three findings from [PLAYTEST-34.md](PLAYTEST-34.md). **Two of them point in opposite directions and
-that is the finding**: M87 made every approaching row start off screen by one rule, and one rule is
-now visibly wrong at both ends.
-
-- [ ] **The dog gives more notice than 200ms of closing buys it.** *(2026-09-07: "pursuing dog is
-      still too short notice".)* **A re-report, and the measurement is under M43's own open item
-      "The tutorial dog is not a tutorial after day 3" — read that before designing anything here.**
-      What is new is that M87's offscreen siting did not settle it:
-      `Tuning.offscreen_lead(heading, closing_speed)` adds `OFFSCREEN_NOTICE` (0.2s) of closing on
-      top of the ray to the edge of the view, and for `charging_dog` pursuing at 130px/s against a
-      222px/s closing speed that is **44px** of extra approach. So the number to move is this row's
-      own notice, not the siting rule that delivers it
-- [ ] **The biker gives far more notice than it should.** *(2026-09-07: "while biker is now too long
-      notice".)* *Asked for the cyclist's telegraph to be left alone on 2026-09-07, because
-      shortening it "buys the lethality back by taking the notice away" · overturned on 2026-09-07
-      by the player, because the complaint has flipped for this row.*
-      `Tuning.outlasting_telegraph_lead()` takes whichever is further, the ordinary offscreen margin
-      or `(telegraph_time + OFFSCREEN_NOTICE) * closing_speed`. `cyclist` carries a 3.3s
-      `telegraph_time` and closes at 257px/s (its own 165 plus `WALK_SPEED` 92), so the telegraph
-      term is **900px** against a 371px margin and it is the binding one — against a visible world
-      of 640x360 at zoom 2.
-
-      **The constraint that produced the 900px still holds and is the whole difficulty.**
-      `EventInstance.is_lethal_at()` returns false for the whole of `is_telegraphing()`, so a biker
-      that arrives before its telegraph ends is declared `hard_fail` and cannot hurt her — which is
-      the defect playtest 33 finding 11 was about. **The telegraph and the siting are one number**:
-      any shortening has to keep the arrival after the telegraph ends
-- [ ] **The biker rides on her own side of the road.** *(2026-09-07: "also biker should be on the
-      same side of the road not the other side".)* `cyclist`'s `placement` is `[SIDEWALK, SQUARE]`
-      and its `spawn_mode` is `TOWARD_PLAYER`, so the siting picks a sidewalk tile out along her
-      heading with nothing in it preferring *her* pavement over the one across the carriageway. **A
-      biker on the far pavement is scenery**: the road between them is already ground she does not
-      cross casually, so the whole content of the row — *get out of its lane* — never arrives
 
 ---
 

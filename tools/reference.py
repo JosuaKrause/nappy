@@ -53,6 +53,11 @@ MAX_SIZE = (1280, 720)
 # what makes committing one reasonable.
 JPEG_QUALITY = 88
 
+# A slug that is still a camera's own filename rather than a subject: `pxl-20260907-205519546`,
+# `img-4821`, `dsc01234`, `dscf0007`, `p1010042`, `20260907-142233`. Matched loosely on purpose --
+# a false positive costs one printed reminder, a false negative commits a timestamp.
+CAMERA_STEM = re.compile(r"^(pxl|img|dsc|dscf|dji|gopr|p\d{3})[-_]?\d|^\d{6,8}[-_]\d{4,}")
+
 STILLS = {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".bmp", ".heic", ".heif"}
 VIDEOS = {".mp4", ".mov", ".m4v", ".avi", ".mkv", ".webm"}
 
@@ -191,6 +196,19 @@ def main() -> int:
         before = source.stat().st_size / 1e6
         after = out.stat().st_size / 1e6
         print(f"  {source.name} -> docs/reference/{out.name}  ({before:.1f}MB -> {after:.1f}MB)")
+
+    # The one thing this script cannot do for you, said out loud rather than left in a rule
+    # somebody has to remember. A camera stem is frequently the capture timestamp -- Google's
+    # `PXL_YYYYMMDD_HHMMSSsss` is UTC to the millisecond -- so committing one puts back, in the
+    # filename, the `DateTime` the pass above just stripped out of the EXIF.
+    camera_named = sorted(p.name for p in FOLDER.iterdir()
+                          if p.suffix.lower() in {".jpg", ".png", ".mp4"}
+                          and CAMERA_STEM.match(p.stem))
+    if camera_named:
+        print(f"\n{len(camera_named)} file(s) still carry a camera stem, e.g. {camera_named[0]}")
+        print("  Rename them <subject>-<detail>-NN before committing -- a stem like "
+              "`pxl-20260907-205519546` is the capture time, which is the metadata this pass "
+              "exists to remove. See .claude/skills/reference-photos/SKILL.md.")
 
     if failures:
         print(f"{failures} failed", file=sys.stderr)

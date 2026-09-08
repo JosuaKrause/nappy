@@ -56,8 +56,71 @@ who never agreed to be recorded. 15fps is enough to read a movement and roughly 
 repository has to carry.
 
 A photo comes out as JPEG, or as PNG if the source had an alpha channel, because a cut-out with a
-transparent background is a different kind of thing from a photograph. Names are slugified
-(`IMG_4821 (2).HEIC` becomes `img-4821-2.jpg`), so they survive a URL and a shell.
+transparent background is a different kind of thing from a photograph.
+
+## Then rename it, and that is not optional either
+
+**The tool slugifies; it does not name.** `IMG_4821 (2).HEIC` becomes `img-4821-2.jpg` — lowercase,
+hyphens, safe in a URL and a shell — because nothing in a converter can know what a picture is of.
+**Renaming to say what the thing is happens before the commit**, and there are two separate reasons.
+
+**A camera stem is usually a timestamp, and that is the metadata the pass just removed.** Google's
+is `PXL_YYYYMMDD_HHMMSSsss`, in UTC to the millisecond — checked against a real file's own EXIF
+`DateTime`, which was the same instant offset by the capture's timezone. Stripping the tag and
+keeping the filename **puts the capture time back**, in the one place `ls` shows it. Apple's
+`IMG_####` and Canon's `DSC#####` are only counters rather than clocks, but they are equally
+useless, so the rule is one rule.
+
+*(The format, not an example: see "Never republish what the pass just stripped" below — a real
+stem here would be a real timestamp, published to prove that publishing timestamps is bad.)*
+
+**And reference is opened by subject.** Somebody is drawing a barricade, or a crosswalk, or a
+rooftop duct, and the folder is worth having only if typing that word finds it.
+
+**The scheme is `<subject>-<detail>-NN.<ext>`**, plain English, no date, no device, a two-digit
+counter that is unique within a subject across extensions — so a still and a video of one scene
+never share a stem, which the tool would read as a collision:
+
+```
+road-closed-barricade-01.jpg
+street-corner-crosswalk-01.jpg      street-corner-crosswalk-02.jpg
+storefront-row-taco-bell-01.jpg     bus-articulated-at-stop-01.jpg
+rooftop-ducts-over-street-01.jpg    rooftop-ducts-over-street-02.mp4
+```
+
+**No date, deliberately, and this is where reference differs from evidence.**
+`docs/evidence/shot-2026-09-07-seed4242-halo-outline-leaf-blower.png` earns every field it carries,
+because evidence exists to be *reproduced* and the date and seed are how. Reference is never
+reproduced; it is looked at. A date on it sorts the folder by when somebody happened to be out with
+a phone, which answers a question nobody asks.
+
+**Do not name a file after the `EventDef.Look` it is reference for.** `look-barricade-01.jpg` reads
+as the strongest possible link to the code and is a trap twice over: most frames are reference for
+several rows at once, and a filename tied to an enum member has to be renamed whenever the enum
+moves.
+
+## Never republish what the pass just stripped
+
+**Name the field, never the value.** A commit message, a pull request description, a doc or a
+report that proves the strip worked by pasting the `location=` line out of a source video has
+published the coordinate the strip existed to remove — into git history and onto a public pull
+request, where it outlives the file it came from and is indexed besides.
+
+**Including here.** This section does not quote the value either, and the first draft of it did:
+naming the field was written down as the rule and the rule's own example broke it in the same
+sentence. If an example is unavoidable, invent one.
+
+**This has already happened here once**, in the pull request for the first batch and in that
+branch's own commit message, and it was caught by the player rather than by anything in the
+process. Both were rewritten; the branch was unmerged, which is the only reason the fix was cheap.
+
+Write the evidence as **which fields were present and that they are gone**:
+
+> The stills carried `Make`, `Model`, `Software`, `DateTime` and eleven GPS tags apiece; the
+> committed files answer `getexif()` empty.
+
+That proves exactly as much and leaks nothing. **The same applies to a filename** — see the naming
+rule above, which exists because a camera stem is usually the capture timestamp.
 
 ## What must not be committed at all
 
