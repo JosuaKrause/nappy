@@ -2,9 +2,10 @@
 
 Notes given in one conversation, on the capture M53's bollards were reviewed with
 (`docs/evidence/archive/session-captures/2026-09-08/rig-190124-seed4242-v0.7.0-2-g7f9cc02-dirty/bollards-precinct-mouth.png`,
-seed 4242, the shore precinct's west mouth). One finding, and it is a re-report: the bollards were
-built as if the complaint were *nothing marks the closure*, and the complaint was that **a
-crossing is painted where no road is**.
+seed 4242, the shore precinct's west mouth). Three findings, and every one is a re-report: the
+bollards were built as if the complaint were *nothing marks the closure*, and the complaint was
+that **a crossing is painted where no road is** — at a precinct's edge, at the city's border, and
+on the main road's side arms.
 
 ---
 
@@ -40,3 +41,27 @@ each call over the ground that stopped being a street — *"the surviving juncti
 a T now, and the quarter of it on `gone`'s side is a two-tile spur of carriageway and zebra ... it
 becomes pavement and the road visibly ends at the junction."* A precinct span is ground that was
 never a street for cars, and its two ends are that case exactly.
+
+## 2. The border of the city grid is T-junctions too, except at the tunnel and the bridge
+
+> "while the agent is at it -- the border of the city grid also should have t-junctions (except
+> for tunnel and bridge)"
+
+**A re-report of M49's *"Junctions are four-way where an arm dead-ends — reproduced, with a
+picture"*** (`docs/TODO.md`, with the seed and the three captures), which already says *"the
+map's own border is the one place an arm genuinely dead-ends"* and *"it is every side, not the
+north one"*. What the player adds is the exception, stated: **the tunnel and the bridge** — the two
+ends of the spine, where `CityEdge` draws the road leaving the map and a car genuinely goes on —
+keep their arm. Every other junction on a boundary street has three arms, and the zebra painted
+on the fourth, running to the border, goes.
+
+## 3. The main road's crossings are the thin-line style on all four arms
+
+> "and the zebra crossings at the main street should be the thin line style in all four directions
+> (since all have traffic lights) not only the north south ones"
+
+**A re-report of M49's *"A main road's junction is four dotted crossings, not two"***, which
+already carries the reasoning: `GroundTiles._crossing_variant` draws the dotted pair only for a
+crossing across the main road's own carriageway, and the property belongs to the **junction**,
+since one light governs all four crossings where the spine meets a side street. The side street's
+two crossings are painted as a zebra — a promise to give way that the traffic there does not make.

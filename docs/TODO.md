@@ -340,6 +340,54 @@ shouldn't be there"*, and *"we can keep the bollards but it doesn't address the 
       that the box's centre is still `ROAD` where a driveable street crosses it — a T, not a
       severed street.
 
+**Playtest 37 re-reports two of M49's items in the same breath, and they are built here**, since
+they are the same rule — *a junction is made of the streets that actually meet at it* — at the
+city's border and on the spine. *(2026-09-08: "the border of the city grid also should have
+t-junctions (except for tunnel and bridge) and the zebra crossings at the main street should be the
+thin line style in all four directions (since all have traffic lights) not only the north south
+ones".)* The exception is the player's: **the tunnel and the bridge**, the spine's two exits where
+`CityEdge` draws the road going on, keep their arm.
+
+- [ ] **Junctions are four-way where an arm dead-ends — reproduced, with a picture.**
+      *(2026-09-02, from play: "the intersections are not t intersections", of the **north edge**.)*
+      **Seed 2927659514, day 1, standing at tile (80,1)** —
+      `docs/evidence/archive/session-captures/2026-09-02/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png`. The zebras on the
+      north–south streets run all the way to the border and a crossing box is painted on an arm with
+      nothing beyond it. Three earlier candidates were checked and were correct, which is why this
+      sat as *not reproduced* for so long: the map's own border is the one place an arm genuinely
+      dead-ends. **The same frame shows a car and two pedestrians standing on the out-of-bounds
+      ground above the top pavement**, so this and the vanishing-walkers entry above are one cause
+      seen twice — whatever decides what is beyond the last tile is answering *street* in both.
+
+      **It is every side, not the north one.** The same seed at tile (5,88) is the **west** border
+      with the identical painted crossings running into it —
+      `run-2026-09-02T181431-seed2927659514-ffa2830-045s-asked.png`. Whatever fixes this is stated
+      over *a border*, which is the item two above this one.
+
+      **And there is a working case to copy, in one frame with a broken one** —
+      `run-2026-09-02T181431-seed2927659514-ffa2830-030s-asked.png`, tile (13,87). *(2026-09-02:
+      "here is an example of a proper closed off side of the intersection (towards the right to the
+      park) and an improperly closed off side (towards the south it should be closed off but
+      isn't).")* The arm running **east into the park** is terminated correctly — the carriageway
+      stops and the pavement carries on across it — while the arm running **south**, with nothing
+      beyond it either, is drawn as though the street continued.
+
+      **That is the most useful thing anybody has said about this**, because it makes the question
+      *what is different between those two arms* rather than *where is the bug*. `docs/TODO.md`'s
+      own M49 wording already guesses at the answer — *"where the arm beyond is not a street at all
+      — a park, a calm zone's absorbed corridor, the shore"* — so the case that works is the one the
+      generator was told about explicitly, and the fix is to state it over *anything* that is not a
+      street rather than over the list of things somebody remembered
+- [ ] **A main road's junction is four dotted crossings, not two.** *(2026-09-02: "minor issue — for
+      a main street intersection all four crossings should be lines instead of zebra crossing since
+      all four are controlled by the traffic light".)* `GroundTiles._crossing_variant` already draws
+      the dotted pair rather than a zebra for a **main road's** crossing, with the reason recorded in
+      `CityGenerator._street_tile`: traffic on a main road obeys the light rather than giving way, so
+      the crossing is a *timing* problem and a zebra there is paint promising a gap-hunting one. The
+      player's point is that the property belongs to **the junction rather than the arm** — where the
+      spine crosses an ordinary street, one light governs all four crossings, so the two on the side
+      street are currently painted as a promise the traffic does not make
+
 ---
 
 ## M64 — Eight seal pictures · asked for 2026-09-02
@@ -1228,45 +1276,6 @@ direction, not distance.**
       against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
 - [ ] **Whatever fixes one border has to be stated over *a border*.** The first pass wrote four
       sides four times, which is one bug per side waiting to happen
-- [ ] **Junctions are four-way where an arm dead-ends — reproduced, with a picture.**
-      *(2026-09-02, from play: "the intersections are not t intersections", of the **north edge**.)*
-      **Seed 2927659514, day 1, standing at tile (80,1)** —
-      `docs/evidence/archive/session-captures/2026-09-02/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png`. The zebras on the
-      north–south streets run all the way to the border and a crossing box is painted on an arm with
-      nothing beyond it. Three earlier candidates were checked and were correct, which is why this
-      sat as *not reproduced* for so long: the map's own border is the one place an arm genuinely
-      dead-ends. **The same frame shows a car and two pedestrians standing on the out-of-bounds
-      ground above the top pavement**, so this and the vanishing-walkers entry above are one cause
-      seen twice — whatever decides what is beyond the last tile is answering *street* in both.
-
-      **It is every side, not the north one.** The same seed at tile (5,88) is the **west** border
-      with the identical painted crossings running into it —
-      `run-2026-09-02T181431-seed2927659514-ffa2830-045s-asked.png`. Whatever fixes this is stated
-      over *a border*, which is the item two above this one.
-
-      **And there is a working case to copy, in one frame with a broken one** —
-      `run-2026-09-02T181431-seed2927659514-ffa2830-030s-asked.png`, tile (13,87). *(2026-09-02:
-      "here is an example of a proper closed off side of the intersection (towards the right to the
-      park) and an improperly closed off side (towards the south it should be closed off but
-      isn't).")* The arm running **east into the park** is terminated correctly — the carriageway
-      stops and the pavement carries on across it — while the arm running **south**, with nothing
-      beyond it either, is drawn as though the street continued.
-
-      **That is the most useful thing anybody has said about this**, because it makes the question
-      *what is different between those two arms* rather than *where is the bug*. `docs/TODO.md`'s
-      own M49 wording already guesses at the answer — *"where the arm beyond is not a street at all
-      — a park, a calm zone's absorbed corridor, the shore"* — so the case that works is the one the
-      generator was told about explicitly, and the fix is to state it over *anything* that is not a
-      street rather than over the list of things somebody remembered
-- [ ] **A main road's junction is four dotted crossings, not two.** *(2026-09-02: "minor issue — for
-      a main street intersection all four crossings should be lines instead of zebra crossing since
-      all four are controlled by the traffic light".)* `GroundTiles._crossing_variant` already draws
-      the dotted pair rather than a zebra for a **main road's** crossing, with the reason recorded in
-      `CityGenerator._street_tile`: traffic on a main road obeys the light rather than giving way, so
-      the crossing is a *timing* problem and a zebra there is paint promising a gap-hunting one. The
-      player's point is that the property belongs to **the junction rather than the arm** — where the
-      spine crosses an ordinary street, one light governs all four crossings, so the two on the side
-      street are currently painted as a promise the traffic does not make
 - [ ] **Restate the main-road pacing question.** The design says she exhausts her own side of the
       spine before being forced across. **Is that emergent** — calm areas exist on both sides and
       spoiling burns the near ones over an act — **or does something have to withhold the far side
