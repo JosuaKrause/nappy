@@ -39,7 +39,15 @@ spoke for it.
 ./tools/run.sh           # plays it
 ./tools/serve-web.sh     # plays the *web* build, locally, in a browser
 ./tools/telemetry.sh     # what the last run actually did, in order
+./tools/reference.sh     # brings a real-world photo or video into docs/reference/
 ```
+
+**`tools/reference.sh` is the only way a photograph enters this repository.** It shrinks a file
+to fit inside the 1280x720 design box, strips every scrap of metadata, and takes the audio and
+two thirds of the frames off a video. The second of those is a privacy guarantee rather than a
+size one — the repository is public, and an untouched phone photo publishes the GPS coordinates
+and the timestamp of wherever it was taken. See the **reference-photos** rule for what may not be
+committed at all.
 
 **`tools/serve-web.sh` is the only way to run the web build without deploying it.** A Godot web
 export cannot be opened from `file://` — the browser refuses the WASM and pack fetches — so a static

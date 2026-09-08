@@ -102,6 +102,17 @@ react, not to plan. A bike on her own pavement is a road, and the answer to a ro
 decision — cross to the other side, or turn — made with the warning the screen-edge badge already
 gives anything faster than a walk.
 
+**And it comes down her own pavement, not the one across the carriageway.** *(2026-09-07: "also
+biker should be on the same side of the road not the other side".)* Sited along her literal heading,
+a lead of hundreds of pixels drifts across the road from a heading only a little off the corridor's
+own axis, landing the row on the far sidewalk, where it reads as scenery rather than as a lane she
+has to answer for. Where she is standing on a plain sidewalk edge, `EventDirector._toward_her()`
+straightens the siting heading onto the corridor's own axis first — `CityMap.pavement_inward()`
+names which side of the corridor she is on, and zeroing the heading's component on that axis keeps
+the row on her side for its whole approach. **A preference, not a requirement**: off a plain
+sidewalk edge — the carriageway, a junction, open ground — or heading straight across the street
+with no along-corridor component to send it down, the literal heading is used exactly as before.
+
 It does not adjust to her the way a pursuer does. `pursues` backs off, holds a stand-off and gives
 up if she runs; `TOWARD_PLAYER` is traffic, not an ambush — it travels the straight line it was
 sited on, at its own `speed`, whether or not she is in it. The same two rules bind it as bind
@@ -120,14 +131,30 @@ not against a flat number sized for one axis of it.** The camera sits on her at 
 actually reaches first, so a row sited while she walks east is genuinely off screen on that axis
 rather than merely off the narrower one the old flat number was sized for.
 
-**And it stays off screen for at least 200ms of its own closing, not merely past the edge.**
+**And it stays off screen for at least its own notice of closing, not merely past the edge.**
 *(2026-09-07: "events that go towards the player (biker / pursuing dog) should at least be 200ms
-off screen with a warning.")* `Tuning.offscreen_lead(heading, closing_speed)` adds
-`Tuning.OFFSCREEN_NOTICE` (0.2s) of `closing_speed` on top of the boundary — the row's own speed
-plus `WALK_SPEED`, because she is usually walking into it. For `cyclist` (165px/s) that is
-165 + 92 = 257px/s, 51px past the boundary; for `charging_dog` pursuing (130px/s) it is
-130 + 92 = 222px/s, 44px. The unit is **time**, and the pixels are what it costs at each row's own
-speed — a slower row buys the same 200ms with fewer of them.
+off screen with a warning.")* `Tuning.offscreen_lead(heading, closing_speed, notice)` adds
+`notice` seconds of `closing_speed` on top of the boundary — the row's own speed plus `WALK_SPEED`,
+because she is usually walking into it. The unit is **time**, and the pixels are what it costs at
+each row's own speed — a slower row buys the same notice with fewer of them.
+
+**The notice is per row, `EventDef.offscreen_notice`, because two rows needed to move in opposite
+directions on the same day.** *(2026-09-07: "pursuing dog is still too short notice", "while biker
+is now too long notice".)* `Tuning.OFFSCREEN_NOTICE` (0.2s) is the default every row gets unless it
+overrides. `charging_dog` carries 0.5s: at 130px/s pursuing (222px/s closing) the default buys only
+44px, and playtest 20 measured a 1.5s chase as the shortest one that ended in evasion against
+0.8-0.9s for the two that killed her — 0.5s of notice closes from its worst-case siting to
+`Tuning.pursuit_standoff()` in under a second at the closing speed she usually gives it while
+walking toward it, well clear of the 0.8-0.9s that failed.
+
+**A further siting needs a longer `telegraph_time` to spend it in**, or a player who only walks can
+outlast the row's own budget before it ever catches her. `duration` stays at `Tuning.PURSUIT_TIME`
+— `tests/test_events.gd` holds every pursuer to that exact ceiling, tighter than
+`validate_pursuit`'s own — so `charging_dog`'s `telegraph_time` rises to 4.5s instead: closing the
+whole worst-case gap at the rate walking away still loses by (`pursue_speed` − `WALK_SPEED` =
+38px/s) takes about 7.0s, inside the 7.5s `telegraph_time` + `duration` gives it. `cyclist` stays
+at the default notice; its own notice moved a different way, in its `outer_radius` and
+`telegraph_time` — see the next paragraph.
 
 **The margin applies to what travels toward her, not to a crossing.** `cat_dash` and
 `pigeon_flock` keep `AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()` unchanged: a crossing
@@ -148,11 +175,18 @@ arrives.** `EventInstance.is_lethal_at()` refuses the whole time an event `is_te
 row sited only past the offscreen margin can close the gap and ride straight through her while
 still telegraphing — declared lethal and never once able to fire. *(2026-09-07: "also a biker hit
 should be lethal.")* `Tuning.outlasting_telegraph_lead()` takes whichever is further: the ordinary
-offscreen margin, or the distance that takes `telegraph_time + OFFSCREEN_NOTICE` to close at the
-row's own closing speed. For `cyclist` (telegraph 3.3s, closing 257px/s) the telegraph term wins:
-`(3.3 + 0.2) * 257` = 900px, against a 371px offscreen margin on the widest axis — the fix is the
-siting, not a shortened telegraph, which would have bought the lethality back by taking the notice
-away.
+offscreen margin, or the distance that takes `telegraph_time + notice` to close at the row's own
+closing speed. For `cyclist` (telegraph 2.0s, closing 257px/s) the telegraph term wins on every
+heading: `(2.0 + 0.2) * 257` = 565px, against at most 371px from the offscreen margin alone.
+
+**How long that telegraph is is not a free choice — it is tied to `outer_radius` at a fixed
+`hard_fail` margin, and shortening one means shrinking the other.** *(2026-09-07: "while biker is
+now too long notice" — the player reversing the caution this row's own siting was built with, that
+shortening the telegraph "buys the lethality back by taking the notice away". The complaint flipped
+for this row: not too little warning, but watching it close from off screen for over three seconds.
+`EventInstance.is_lethal_at()` still refuses the whole telegraph, so the arrival still has to land
+after it ends, and the fairness floor above is what keeps that true at any size — so the field
+moved along with the telegraph rather than the telegraph moving on its own.)*
 
 ## Solid things are solid
 
@@ -456,10 +490,10 @@ neighbourhood's own rather than a patrol's.
 | `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, tightened to a 95px reach so it bills the crowd at the stall rather than the whole block. |
 | `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use. Swept in bursts, so there is a rhythm to time a pass through. |
 | `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that a director with a single trick makes every moment a cat. It is on the pavement for its whole telegraph, then up, then *away* — and it is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one. The only row in the game that is more than one source. |
-| `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 3.3s, which is what the doubled margin costs at 165px/s. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn and the same number as `chatting_mother`'s `detain_radius`. |
+| `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 2.0s, what the doubled margin costs at a 90px field — smaller than the fairness contract alone would allow, so the wait before it arrives stays a real reaction window rather than several seconds of watching it close from off screen. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn and the same number as `chatting_mother`'s `detain_radius`. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. It stands `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
-| `charging_dog` **`hard_fail`** | RECURRING (`AHEAD_OF_PLAYER`) | `RUN_TAUGHT_DAY` | **The one thing running is the answer to**, and the day the run is taught. It is sited in front of her, spends `telegraph_time` 2.4s visibly closing at the stand-off, then chases at 130px/s for `Tuning.PURSUIT_TIME`. Its 150px field is **wider than the stand-off** — a narrower one is a field the pursuer is never inside, so the warning would emit nothing at her and the `!` over her head would never go up; `validate_pursuit` refuses that. `max_per_day` 3, because a street with three of them turns the run button from an answer into a second walk speed. It trots off at 110px/s rather than blinking out: a dog that gives up in front of her and is then not there says the chase was never real. |
+| `charging_dog` **`hard_fail`** | RECURRING (`AHEAD_OF_PLAYER`) | `RUN_TAUGHT_DAY` | **The one thing running is the answer to**, and the day the run is taught. Sited 0.5s of closing outside the view (`offscreen_notice`), it spends `telegraph_time` 4.5s visibly closing at the stand-off, then chases at 130px/s for `Tuning.PURSUIT_TIME` — the further siting needs the longer telegraph so walking away still loses inside the row's own budget. Its 150px field is **wider than the stand-off** — a narrower one is a field the pursuer is never inside, so the warning would emit nothing at her and the `!` over her head would never go up; `validate_pursuit` refuses that. `max_per_day` 3, because a street with three of them turns the run button from an answer into a second walk speed. It trots off at 110px/s rather than blinking out: a dog that gives up in front of her and is then not there says the chase was never real. |
 | `chatting_mother` | RECURRING | 1 | Another mother with a pram, paced along eight tiles of pavement like `homeless_yeller`. Her ambient field is person-scale (intensity 4.5, near a passer-by's 4.2) and tight (34/70px), so a normal pass costs a normal close pass. Entering `detain_radius` (33px, past the 32px lane spacing so the far lane of a two-tile pavement can no longer clear it for free) of an instance that has not chatted yet locks the player's movement input for `detain_seconds` (5s) — the one mechanic in the catalogue that takes the controls away rather than costing a meter; the existing idle rules price the stop, so nothing new prices the time. While the conversation runs and the baby is **awake** it adds a flat `Tuning.CHAT_EXCITEMENT` (25) over the whole capture; **asleep** it adds nothing, gated on the baby's own state read from `EventInstance.baby_awake` rather than scaled through `SLEEPING_SENSITIVITY` — a *pure* time loss means exactly zero, not a smaller number. One conversation per instance: she is then spent as a detainer and departs like a `dog_walker`. |
 
 ### Act II — Something is off (days 4–7)
@@ -639,10 +673,10 @@ alone is answering a narrower question than it thinks.
 | `police_patrol` | +15.9 | +46.2 | |
 | `market_stall` | +16.5 | +28.3 | |
 | `charging_dog` * | +16.9 | — | ●● |
+| `cyclist` * | +20.9 | +29.7 | ●● |
 | `cat_dash` | +24.1 | +37.5 | |
 | `playground` | +25.5 | +44.3 | — |
 | `checkpoint` | +29.0 | +59.4 | ● |
-| `cyclist` * | +30.2 | +45.9 | ●● |
 | `homeless_yeller` | +31.2 | +59.6 | ● |
 | `ice_cream_van` | +31.5 | +65.8 | ● |
 | `reversing_lorry` * | +32.6 | +53.3 | ●● |

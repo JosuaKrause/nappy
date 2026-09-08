@@ -114,8 +114,13 @@ const HOME_ARROW := Color("8fb4d9")
 ## screen's own scrim (`TopScrim`/`BottomScrim`, `Color(0.04, 0.04, 0.06, 0.62)`, near-black) —
 ## anything that dark would still look like more of the dimness behind it.
 const BUTTON_FILL := Color(0.18, 0.15, 0.13, 0.88)
-## Lighter than `BUTTON_FILL`, for a pointer resting on the button before it is pressed.
-const BUTTON_HOVER := Color(0.24, 0.2, 0.17, 0.92)
+## The midpoint of `BUTTON_FILL` and `BUTTON_PRESSED`, for a pointer resting on the button before it
+## is pressed. *(Playtest 35 finding 3: "make the hover white more subtle (50% transparent compared
+## to the full click).")* The two used to be a shade apart from each other — `(0.24, 0.2, 0.17,
+## 0.92)`, barely lighter than `BUTTON_FILL` — with `BUTTON_PRESSED`'s near-white sitting off on its
+## own: a brown pair and a white outlier rather than one scale. Halfway between them puts hover and
+## pressed on that one scale instead — half the white, read against the same resting fill.
+const BUTTON_HOVER := Color(0.57, 0.54, 0.51, 0.92)
 ## Brighter than both, for the moment a button is actually held down. *(2026-09-07: "buttons
 ## should light up white when pressed" — overturning the earlier reasoning here, that darker was
 ## the pressed reading.)* With one hue doing every button, hover and pressed are the only feedback

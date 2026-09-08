@@ -34,10 +34,14 @@ extends Control
 ## heading. **Both focal points are drawn**, as a ring at `STOP_RADIUS` with a knob at `_direction`
 ## — see `_draw_focus_circles()`'s own doc. A press within `STOP_RADIUS` of either focus stops her
 ## too, and so does one in the stop band down the middle of the screen, or a held pointer dragged
-## into either — see `is_on_a_focus()`, `is_in_stop_band()` and `_on_drag()`.
+## into either — see `is_on_a_focus()`, `is_in_stop_band()` and `_on_drag()`. **A drag that leaves the
+## band re-picks which focus its heading is measured from, for whichever side it left on** — see
+## `_drag_origin_focus`'s own doc for why crossing the band is safe to retarget on where a bare
+## `nearer_focus()` on every motion event was not.
 ##
 ## **`Mode.TAP` aims from her own world position instead, and draws nothing.** A press within
-## `STOP_RADIUS` of her stops her; the band and the focal circles do not exist in this mode at all.
+## `TAP_STOP_RADIUS` of her stops her; the band and the focal circles do not exist in this mode at
+## all.
 ## *(Playtest 29 finding 6, on why a real touch in `JOYSTICK` mode no longer stops on a press near
 ## her own position: the camera sits on her, so her own screen position already is the band's own
 ## centre line, and covering that ground twice made a drag crossing her by accident stop her by
@@ -102,20 +106,48 @@ const DOUBLE_TAP_SECONDS := 0.35
 ## direction doubled rather than a new one. Generous, because a thumb pressing twice does not land
 ## on the same pixel either time.
 const DOUBLE_TAP_DISTANCE := 60.0
-## How close a press has to land to her, in world px, to read as *stop* rather than a direction in
-## `Mode.TAP` — `_on_tap()`'s own `_mode == ControlsMode.Mode.TAP` branch is the only place this
-## still measures a distance to her. Wider than `Tuning.PLAYER_BODY_RADIUS` (14px) alone — the pram
-## rides up to `PRAM_DISTANCE` (34px) off to one side of her, and a press that lands on the pram is
-## a press on her — with room to spare for a pointer that does not land on the same pixel twice, the
-## way every catch radius in this game is generous rather than exact.
+## How close a press has to land to a focus or to the middle band, in **design-space** px, to read
+## as *stop* rather than a direction in `Mode.JOYSTICK` — `is_on_a_focus()` and `is_in_stop_band()`
+## are the only two places this is compared now, and both are design-space questions:
+## `is_on_a_focus()` is also the radius `_draw_focus_circles()` draws each ring at, so the ring's
+## own edge **is** the boundary between the two doors a press through it can open, rather than an
+## arbitrary aesthetic size. The three milestones that added these two doors never named a separate
+## figure for either, so one number does both jobs.
 ##
-## Also the one radius `is_on_a_focus()` and `is_in_stop_band()` measure in **design-space** px, in
-## `Mode.JOYSTICK` — the same "how close counts as *stop*" number reused rather than a second one
-## invented for either door, since none of the three milestones that added them named a separate
-## figure. This mode had this same world-space door once too, until the stop band replaced it —
-## *(2026-09-07: "with that we can remove tap the player to stop since it's the same area".)* See
-## `is_in_stop_band()`'s own doc for why that removal is `Mode.JOYSTICK` only.
+## **`Mode.TAP`'s own door used to reuse this same number as a world-space distance — see
+## `TAP_STOP_RADIUS` for what it uses now.** *(Playtest 34 finding 5: "the stop circle on the
+## player should exactly be the size of the joystick stop circle nothing bigger.")* The camera sits
+## on her at zoom 2, so 48 world px covered 96 design px on the glass — twice the ring this constant
+## actually draws.
 const STOP_RADIUS := 48.0
+
+## How close a press has to land to her, in **world** px, to read as *stop* rather than a direction
+## in `Mode.TAP` — `_near_her()` is the only place this is compared, since `Mode.TAP`'s aiming
+## origin is her own live position rather than a fixed place on the glass, unlike `STOP_RADIUS`'s
+## own design-space doors. Half of `STOP_RADIUS` (48 design px): the camera sits on her at zoom 2
+## over a 1280x720 viewport (`Tuning.OUT_OF_SIGHT`'s own doc states the same fact for the sight
+## radii), so 24 world px covers exactly the same ground on screen as `STOP_RADIUS`'s own drawn
+## ring, rather than the 96 design px a bare `STOP_RADIUS` compared in world space used to cover.
+##
+## **Deliberately short of `Stroller.PRAM_DISTANCE` (34px), not merely short of it by accident.**
+## *(Playtest 34 finding 6: "if I click on the stroller it shouldn't stop only when I click on the
+## body of the player.")* An earlier version of this doc argued the opposite — that a wider radius
+## catching the pram was correct, because a press on the pram is a press on her. It is not: the
+## pram is not her, so widening this back toward `PRAM_DISTANCE` to "fix" a stop that looks
+## generous undoes exactly what was asked for. Still generous against `Tuning.PLAYER_BODY_RADIUS`
+## (14px) alone, for a pointer that does not land on the same world pixel twice.
+const TAP_STOP_RADIUS := STOP_RADIUS / 2.0
+
+## How far above her feet `_near_her()` centres the stop circle — half `Stroller.FIGURE_HEIGHT`
+## (46px, her own drawn height from the ground point her sprite is anchored at, over the 24x46
+## `mother_front_a.svg`). *(Playtest 35 finding 1: "the stop circle for the player is at her feet --
+## should be at the center of the sprite -- right now I can click below her to stop.")* `Sprites`'
+## own doc states the anchoring this circle used to ignore: "a node's position is where its feet
+## are, and its art rises from there." Measured from her bare `global_position`, `TAP_STOP_RADIUS`
+## (24px) covered 24px of pavement *below* her feet while her head, 46px above them, sat entirely
+## outside it. Centred here instead, the same radius reaches from her shoes to her shoulders and
+## stops one pixel below her feet — no new radius, only a new centre.
+const TAP_STOP_CENTRE_LIFT := Stroller.FIGURE_HEIGHT / 2.0
 
 ## The two fixed points `Mode.JOYSTICK` aims from — see the class doc's own paragraph on why the two
 ## modes disagree here. *(2026-09-06, the player: "define two points equally apart
@@ -190,16 +222,59 @@ var _last_tap_screen_position := Vector2.ZERO
 
 ## The pointer index currently re-aiming a held direction with every motion event — a real touch's
 ## own `InputEventScreenTouch.index`, or `_MOUSE_POINTER_INDEX` for a held left mouse button — or
-## -1 when nothing is. Set the moment a press locks in a direction (not a stop, not the pause
-## button) and cleared on the matching release, in `_on_pointer()`. *(2026-09-07: "dragging the
-## finger doesn't work anymore but should", and "although dragging a mouse should reaim as well".)*
+## -1 when nothing is. Set at every press that reaches `_on_tap()` (a stop as much as a walk — see
+## its own doc), and cleared on the matching release, in `_on_pointer()`. *(2026-09-07: "dragging
+## the finger doesn't work anymore but should", and "although dragging a mouse should reaim as
+## well".)*
 var _drag_pointer_index := -1
-## Where `_drag_pointer_index`'s own heading is measured from, for every motion event until the
-## next press replaces it — a focus already converted to world space in `Mode.JOYSTICK`, or
-## `Vector2.INF` ("her own position") in `Mode.TAP`, the same sentinel `set_direction()`'s own
-## `from` parameter already reads that way. Set once, at the press that started the drag, in
-## `_on_tap()`.
-var _drag_origin_world := Vector2.INF
+## Which focus `_drag_pointer_index`'s own heading is measured from, in **design space** — the
+## fixed place on the glass `_on_tap()` chose in `Mode.JOYSTICK` (`nearer_focus()`, at the moment
+## the press landed), or `Vector2.INF` ("her own position") in `Mode.TAP`, the same sentinel
+## `set_direction()`'s own `from` parameter already reads that way.
+##
+## **Design space, not world, and that is the whole of the fix playtest 34 findings 7 and 9 asked
+## for.** *(2026-09-07: "I cannot drag around the joystick circle and it follows the whole way. it
+## moves a bit and then moves completely differently from what my movement is.")* A focus is a
+## fixed place on the glass, not a place in the city — converting it to world space once, the way
+## the very first version of this drag did, leaves that world point behind in the street the moment
+## she starts walking and the camera moves with her, so the reference drifts out from under the
+## thumb a heading later. Kept in design space here, `_on_drag()` redoes the same design→presented→
+## world trip `_on_tap()` makes, every motion event instead of once, so the reference stays under
+## the drawn ring for exactly as long as the ring stays under the thumb.
+##
+## **Sticky for the whole drag, except across the stop band.** *(Playtest 35 finding 4: "dragging
+## from one side of the screen to the other side of the screen keeps the reference on the original
+## side. this might make sense were it not for the stop gap in the middle... I think we should
+## retarget to the other side when that happens.")* M85 made this sticky in the first place because
+## `nearer_focus()` on every motion event flipped the instant a press crossed the design box's own
+## centre line — a heading measured from `FOCUS_LEFT` swapping for one from `FOCUS_RIGHT`, and back,
+## while the thumb barely moved; its own note records hysteresis and a stickier focus as rejected,
+## in favour of declaring the middle "not a direction at all." **The band is what makes retargeting
+## safe now, where a bare crossing was not**: a pointer cannot reach the far side of the centre line
+## without first passing through `STOP_RADIUS` either side of it, and inside that band she is
+## stopped — so a crossing is a discrete, already-stopped event with a defined middle, not a
+## continuous slide between two references with nothing between them to flip against. `_drag_in_band`
+## is what `_on_drag()` reads to fire the re-pick exactly once, on the frame the pointer actually
+## leaves the band, rather than on every motion event inside or outside it — see that variable's own
+## doc for why a pointer wiggling at the band's own edge cannot oscillate between the two foci.
+var _drag_origin_focus := Vector2.INF
+
+## Whether the drag `_drag_pointer_index` is tracking currently has its pointer standing inside the
+## stop band — `Mode.JOYSTICK` only, since `Mode.TAP` has no band. Set the moment a press or a drag
+## step lands in the band, cleared the moment one leaves it; `_on_drag()` reads the falling edge —
+## band **and now not** — to re-pick `_drag_origin_focus` via `nearer_focus()` for whichever side the
+## pointer left on, and nowhere else, so the sticky rule still holds for a drag that never enters the
+## band at all.
+##
+## **Why a pointer cannot oscillate between the two foci by wiggling at the band's own edge.**
+## `nearer_focus()` ties only exactly on the design box's own centre line (640, the midpoint of
+## `FOCUS_LEFT` and `FOCUS_RIGHT`), which sits 48px inside either edge of the band — so *every* point
+## outside the band already lies unambiguously nearer to whichever focus is on its own side. Leaving
+## the band can therefore only ever re-pick the focus that matches the side actually left on; picking
+## the *other* focus would require the pointer to cross the band's full 96px width in one step, which
+## is exactly the deliberate, already-stopped crossing this feature exists to retarget on, not a
+## flicker at one edge of it.
+var _drag_in_band := false
 ## Whether `_drag_pointer_index`'s own press doubled into a run — carried through every motion
 ## event so re-aiming never itself starts or stops holding `run`; only a fresh press does.
 var _drag_run := false
@@ -289,12 +364,14 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 				queue_redraw()
 				return
 		_on_tap(position, Time.get_ticks_msec() / 1000.0)
-		# A direction was set, not a stop — see `_on_tap()`'s own doc for where
-		# `_drag_origin_world`/`_drag_run` were just set for this same press. A stop leaves
-		# `_walking` false, so a press on her, on a focus, or in the stop band never starts a
-		# drag that would only re-open the direction it just closed.
-		if _walking:
-			_drag_pointer_index = index
+		# Tracked whether this press walked or stopped her — see `_on_tap()`'s own doc for where
+		# `_drag_origin_focus`/`_drag_run` were just set for this same press. *(Playtest 34 finding
+		# 8: "when I start dragging from the center of the joystick nothing happens it should
+		# behave the same as if I move to the center and back stop while I'm in the center and move
+		# when I'm back.")* A stop used to leave nothing tracked, so a finger landing in a circle
+		# was never followed and every motion event after it was discarded — see `_on_drag()`'s own
+		# doc for the boundary crossing this now makes live in both directions.
+		_drag_pointer_index = index
 		return
 	if index == _drag_pointer_index:
 		_drag_pointer_index = -1
@@ -320,8 +397,8 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ## 2026-09-07: "with that we can remove tap the player to stop since it's the same area ... mouse
 ## click doesn't have the band and will keep the click the player to stop behavior".)* `Mode.TAP`
 ## aims from her own world position, exactly as a mouse always has, and a press within
-## `STOP_RADIUS` of that same position stops her rather than steering her — the one door this mode
-## has, since its aiming origin already *is* her. `Mode.JOYSTICK` instead aims from the nearer of
+## `TAP_STOP_RADIUS` of that same position stops her rather than steering her — the one door this
+## mode has, since its aiming origin already *is* her. `Mode.JOYSTICK` instead aims from the nearer of
 ## `FOCUS_LEFT`/`FOCUS_RIGHT`, and is stopped by a press on either focus (`is_on_a_focus()`) or in
 ## the stop band down the middle of the screen (`is_in_stop_band()`) — not by a press near her own
 ## position any more, since the band already covers that ground (the camera sits on her, so her own
@@ -338,7 +415,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ##   presentation — literally point the wrong way, since the design box does not carry the
 ##   rotation. So the chosen focus makes the same round trip a raw touch's own position takes, the
 ##   other direction: design → presented (`ScreenOrientation.to_presented_space()`, the inverse of
-##   `to_design_space()`) → world (the same canvas-transform inverse used above).
+##   `to_design_space()`) → world (`_focus_world()`, the same canvas-transform inverse used above).
 ##
 ## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
 ## window still instead of racing the engine clock -- `_input()` and `_on_pointer()` are the real
@@ -362,23 +439,47 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 	_last_tap_at = now
 	_last_tap_screen_position = screen_position
 	if _mode == ControlsMode.Mode.TAP:
-		if world.distance_to(_rig.global_position) <= STOP_RADIUS:
+		# Set before the stop check, not after — see `_drag_origin_focus`'s own doc. A stop is now
+		# tracked into a drag exactly as a walk is (playtest 34 finding 8), so both branches leave a
+		# correct reference behind for `_on_drag()` to pick up.
+		_drag_origin_focus = Vector2.INF
+		_drag_run = double
+		if _near_her(world):
 			_stop()
 			return
-		_drag_origin_world = Vector2.INF
-		_drag_run = double
 		set_direction(world, double)
 		return
 	# Mode.JOYSTICK, past here — see the class doc and this function's own doc above.
 	var design := ScreenOrientation.to_design_space(screen_position, rotated)
+	var focus := nearer_focus(design)
+	_drag_origin_focus = focus
+	_drag_in_band = is_in_stop_band(design)
+	_drag_run = double
 	if is_on_a_focus(design) or is_in_stop_band(design):
 		_stop()
 		return
-	var focus_world := get_viewport().get_canvas_transform().affine_inverse() \
-			* ScreenOrientation.to_presented_space(nearer_focus(design), rotated)
-	_drag_origin_world = focus_world
-	_drag_run = double
-	set_direction(world, double, focus_world)
+	set_direction(world, double, _focus_world(focus))
+
+## The design→presented→world trip a fixed focus takes to become a heading's own origin — the same
+## trip `_on_tap()`'s own doc walks through, pulled out here so `_on_drag()` can redo it every
+## motion event instead of once. `focus_design` is a **design-space** point (`FOCUS_LEFT`,
+## `FOCUS_RIGHT`, or whatever `nearer_focus()` chose); the camera, the zoom and any rotation are
+## applied fresh each call, which is what keeps the reference under the drawn ring for as long as
+## the ring stays under the thumb — see `_drag_origin_focus`'s own doc for what goes wrong when
+## this trip is made once and cached instead.
+func _focus_world(focus_design: Vector2) -> Vector2:
+	return get_viewport().get_canvas_transform().affine_inverse() \
+			* ScreenOrientation.to_presented_space(focus_design, rotated)
+
+## Whether `world` lands within `TAP_STOP_RADIUS` of the centre of her sprite — `TAP_STOP_CENTRE_LIFT`
+## above her feet, not her bare `global_position` (see that constant's own doc for why) —
+## `Mode.TAP`'s own door into `_stop()`, asked identically by `_on_tap()`'s opening press and by
+## `_on_drag()`'s own live boundary crossing (playtest 34 finding 8's "in the centre is stopped, out
+## of it is walking that way, and crossing the boundary either way changes it live", read as applying
+## to `Mode.TAP`'s one door the same way it applies to `Mode.JOYSTICK`'s two).
+func _near_her(world: Vector2) -> bool:
+	var centre := _rig.global_position - Vector2(0.0, TAP_STOP_CENTRE_LIFT)
+	return world.distance_to(centre) <= TAP_STOP_RADIUS
 
 ## A finger or a held left mouse button, still down and moving, at `screen_position` — the drag
 ## stick's replacement, and the reason it survives
@@ -388,25 +489,44 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 ## doesn't work anymore but should", and "although dragging a mouse should reaim as well".)*
 ##
 ## Every motion event for `_drag_pointer_index` moves the heading toward wherever the pointer now
-## is, from `_drag_origin_world` — the same focus `_on_tap()` chose in `Mode.JOYSTICK`, or her own
-## position in `Mode.TAP`, exactly as the initial press that started this drag was measured. The
-## direction locks in as it stands the moment the pointer lifts, since nothing further happens on
-## release beyond forgetting the index in `_on_pointer()`.
+## is, from `_drag_origin_focus` — the same focus `_on_tap()` chose in `Mode.JOYSTICK` (converted
+## to world space fresh, through `_focus_world()`, rather than once at the press — see that
+## variable's own doc), or her own live position in `Mode.TAP`. **Crossing back into the stop door
+## mid-drag stops her, and dragging back out resumes steering, live** — playtest 34 finding 8's own
+## words, and the reason this checks the same doors `_on_tap()` does rather than only the band.
+## The direction otherwise locks in as it stands the moment the pointer lifts, since nothing
+## further happens on release beyond forgetting the index in `_on_pointer()`.
+##
+## **Leaving the band re-picks `_drag_origin_focus`, once, on the falling edge of `_drag_in_band`.**
+## *(Playtest 35 finding 4.)* Landing in the band sets `_drag_in_band` and stops her, exactly as
+## before; the first motion event that lands outside it again re-picks the focus through
+## `nearer_focus()` before steering resumes, and every motion event after that — until the band is
+## entered again — leaves `_drag_origin_focus` alone, which is the sticky rule surviving everywhere
+## else. See that variable's own doc for why this cannot flip-flap at the band's own edge.
 func _on_drag(screen_position: Vector2, index: int) -> void:
 	if index != _drag_pointer_index or get_tree().paused:
 		return
 	if not _rig:
 		return
-	# The stop band, Mode.JOYSTICK only — a pointer wandering into the middle of the screen
-	# mid-drag is the whole reason the band exists (see `is_in_stop_band()`'s own doc); a
-	# `Mode.TAP` drag has no equivalent door, since its own aiming origin is her position rather
-	# than a focus that could flip underneath it.
-	if _mode == ControlsMode.Mode.JOYSTICK \
-			and is_in_stop_band(ScreenOrientation.to_design_space(screen_position, rotated)):
+	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
+	if _mode == ControlsMode.Mode.JOYSTICK:
+		var design := ScreenOrientation.to_design_space(screen_position, rotated)
+		if is_in_stop_band(design):
+			_drag_in_band = true
+			_stop()
+			return
+		if is_on_a_focus(design):
+			_stop()
+			return
+		if _drag_in_band:
+			_drag_origin_focus = nearer_focus(design)
+			_drag_in_band = false
+		set_direction(world, _drag_run, _focus_world(_drag_origin_focus))
+		return
+	if _near_her(world):
 		_stop()
 		return
-	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
-	set_direction(world, _drag_run, _drag_origin_world)
+	set_direction(world, _drag_run)
 
 ## Locks in the heading toward `target` from `from` — computed once here and never again, so a
 ## shove that knocks her off the line does not silently correct itself, the same way walking into a
@@ -420,8 +540,8 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 ## something else: a focus already converted to world space, in `Mode.JOYSTICK`.
 ##
 ## A press exactly on `from` has no heading to compute and stops her instead, the same case
-## `_on_tap()`'s own `STOP_RADIUS` check already catches for a `Mode.TAP` press a pixel's-width away
-## from her — this is the fallback for the one caller (a test) that calls straight in with an
+## `_near_her()`'s own `TAP_STOP_RADIUS` check already catches for a `Mode.TAP` press a pixel's-width
+## away from her — this is the fallback for the one caller (a test) that calls straight in with an
 ## exact point.
 func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 	if not _rig:
@@ -495,6 +615,18 @@ static func is_on_a_focus(design_position: Vector2) -> bool:
 ## *(2026-09-07: "the band doesn't get drawn and yes it's the diameter in size".)* the two focal
 ## circles are what item 2 asked for by name, and stay the only things this scheme draws besides
 ## the pause button.
+##
+## **Asked for the focus sticky for the whole drag · overturned to re-picking it on 2026-09-07,
+## because the band this constant governs turns a crossing into a discrete, already-stopped event
+## with nothing left in the middle to flip against.** M85 made the focus sticky because a bare
+## `nearer_focus()` on every motion event flipped the instant a press crossed the design box's own
+## centre line, snapping the heading to the other side while a thumb barely moved, and recorded
+## hysteresis and a stickier focus as rejected in favour of this band. Playtest 35 finding 4 asks for
+## the crossing back on the strength of the band itself: a pointer cannot reach the far side of the
+## centre line without passing through this band first, and inside it she is already stopped, so
+## leaving it — not merely touching the centre line — is safe to re-pick a focus on. See
+## `_drag_origin_focus`'s own doc for the safety argument and `_on_drag()` for where the re-pick
+## fires.
 static func is_in_stop_band(design_position: Vector2) -> bool:
 	return absf(design_position.x - ScreenOrientation.DESIGN_SIZE.x / 2.0) <= STOP_RADIUS
 
