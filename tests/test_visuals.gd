@@ -75,8 +75,9 @@ func _test_registered_regions_and_order(t) -> void:
 	var wheel_registration := rig.pram_manifest.require_part("wheels_frame")
 	var wheel_sprite: Sprite2D = rig.pram_sprites["wheels_frame"]
 	var wheel_baseline := wheel_sprite.position.y + (118.0 - wheel_registration.pivot_for(rig.direction).y) * rig.PRAM_SCALE
-	t.check(is_zero_approx(wheel_baseline),
-		"pram wheel bottom is grounded on the compositor baseline")
+	var pram_ground := Vector2(rig.heading.x, rig.heading.y * Stroller.OBLIQUE_Y) * Stroller.PRAM_DISTANCE
+	t.check(is_equal_approx(wheel_baseline, pram_ground.y),
+		"pram wheel bottom is grounded on its authored forward offset")
 	t.check(rig.mother_sprites["right_lower_leg"].z_index < rig.mother_sprites["left_shoe"].z_index,
 		"mother shoes draw over legs")
 	t.check(rig.pram_sprites["wheels_frame"].z_index < rig.pram_sprites["canopy_baby"].z_index,
@@ -87,8 +88,26 @@ func _test_registered_regions_and_order(t) -> void:
 	t.check(torso.position.is_equal_approx((rig.last_pose["left_hip"] + rig.last_pose["right_hip"]) * 0.5 +
 		(Vector2(80.0, 66.0) - Vector2(80.0, 116.0)) * rig.MOTHER_SCALE),
 		"mother torso is registered from the gait hip anchor")
-	t.check(rig.mother_sprites["head_hair"].position.y < torso.position.y - 15.0,
-		"mother head stays above the torso")
+	var head_pivot: Vector2 = rig.mother_manifest.require_part("head_hair").pivot_for(rig.direction)
+	t.check(rig.mother_sprites["head_hair"].position.is_equal_approx(
+		(rig.last_pose["left_hip"] + rig.last_pose["right_hip"]) * 0.5 +
+		(head_pivot - Vector2(80.0, 116.0)) * rig.MOTHER_SCALE),
+		"mother head pivot meets the authored skeleton")
+	var arms_pivot: Vector2 = rig.mother_manifest.require_part("arms_hands").pivot_for(rig.direction)
+	t.check(rig.mother_sprites["arms_hands"].position.is_equal_approx(
+		(rig.last_pose["left_hip"] + rig.last_pose["right_hip"]) * 0.5 +
+		(arms_pivot - Vector2(80.0, 116.0)) * rig.MOTHER_SCALE),
+		"mother hands pivot meets the authored shoulder point")
+	t.check(is_equal_approx(rig.MOTHER_SCALE * 192.0, 46.0),
+		"mother sheet height matches the legacy SVG height")
+	t.check(is_equal_approx(rig.PRAM_SCALE * 128.0, 30.0),
+		"pram sheet height matches the legacy SVG height")
+	var pram_ground_expected: Vector2 = Vector2(rig.heading.x, rig.heading.y * Stroller.OBLIQUE_Y) * Stroller.PRAM_DISTANCE
+	for part_id: String in rig.registered_pram_part_ids():
+		var pivot: Vector2 = rig.pram_manifest.require_part(part_id).pivot_for(rig.direction)
+		t.check(rig.pram_sprites[part_id].position.is_equal_approx(
+			pram_ground_expected + Vector2(0.0, (pivot.y - float(rig.pram_asset["ground_y"])) * rig.PRAM_SCALE)),
+			"pram %s keeps its authored chassis offset" % part_id)
 	rig.free()
 
 func _test_no_motion_is_stable(t) -> void:
@@ -241,8 +260,8 @@ func _test_walker_manifest_and_variants(t) -> void:
 	t.check(walker.manifest.require_part("left_shoe").pivot_for(0) == Vector2(67.0, 214.0),
 		"shoe pivot is the local sole anchor")
 	t.check(is_equal_approx(walker.sprites["upper_body"].scale.x, walker.VISUAL_SCALE) and
-		walker.VISUAL_SCALE > ModularPerson.MOTHER_SCALE / 3.0,
-		"walker art uses a readable gameplay scale")
+		is_equal_approx(walker.VISUAL_SCALE * 724.0, 38.0),
+		"walker sheet height matches the legacy SVG height")
 	t.check(walker.sprites["upper_body"].position.is_equal_approx(
 		(walker.last_pose["left_hip"] + walker.last_pose["right_hip"]) * 0.5),
 		"walker upper body is registered from the gait hip anchor")

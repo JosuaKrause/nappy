@@ -8,10 +8,12 @@ const MOTHER_TEXTURE: Texture2D = preload("res://assets/illustrated/modular/moth
 const PRAM_TEXTURE: Texture2D = preload("res://assets/illustrated/modular/pram-parts-v2.png")
 const MOTHER_MANIFEST_PATH := "res://assets/illustrated/modular/mother-parts-v3.manifest.json"
 const PRAM_MANIFEST_PATH := "res://assets/illustrated/modular/pram-parts-v2.manifest.json"
-const MOTHER_SCALE := 0.14
-const PRAM_SCALE := 0.28
+const MOTHER_SCALE := 46.0 / 192.0
+const PRAM_SCALE := 30.0 / 128.0
 const PRAM_SIDE_OFFSET := 34.0
 const COMPARISON_OFFSET := 96.0
+const MOTHER_HIP_OFFSETS: Array[Vector2] = [Vector2(-12.0, -68.0) * MOTHER_SCALE, Vector2(12.0, -68.0) * MOTHER_SCALE]
+const MOTHER_FOOT_OFFSETS: Array[Vector2] = [Vector2(-30.0, 0.0) * MOTHER_SCALE, Vector2(30.0, 0.0) * MOTHER_SCALE]
 var mother_order: Array[String] = []
 var pram_order: Array[String] = []
 const LEFT_HIPS: Array[Vector2] = [Vector2(68, 116), Vector2(68, 116), Vector2(68, 116), Vector2(68, 116), Vector2(68, 116), Vector2(68, 116), Vector2(68, 116), Vector2(68, 116)]
@@ -41,7 +43,10 @@ func _init() -> void:
 	mother_order = _string_array(mother_asset.get("draw_order", []))
 	pram_order = _string_array(pram_asset.get("draw_order", []))
 	# These world-pixel lengths keep a normal Stroller walk visible at gameplay scale.
-	gait.configure( [Vector2(-6.0, -34.0), Vector2(6.0, -34.0)], 17.0, 17.0, 14.0, 24.0, 8.0, [Vector2(-15.0, 0.0), Vector2(15.0, 0.0)])
+	# The solver uses the same ground, hip and sole measurements as the mother sheet.
+	gait.configure(MOTHER_HIP_OFFSETS,
+		34.0 * MOTHER_SCALE, 28.0 * MOTHER_SCALE, 14.0, 24.0, 8.0,
+		MOTHER_FOOT_OFFSETS)
 	_register_parts()
 	_create_sprites()
 
@@ -222,20 +227,14 @@ func _create_sprites() -> void:
 		pram_sprites[part_id] = sprite
 
 func _update_sprites() -> void:
-	var side := Vector2(-heading.y, heading.x)
-	var pram_anchor := side * PRAM_SIDE_OFFSET + Vector2(0.0, _pram_ground_lift())
+	var pram_anchor := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.PRAM_DISTANCE
 	var hip_center: Vector2 = (last_pose["left_hip"] + last_pose["right_hip"]) * 0.5
 	var source_hip_center: Vector2 = Vector2(80.0, 116.0)
 	for part_id: String in ["head_hair", "torso_clothing", "arms_hands"]:
 		var sprite: Sprite2D = mother_sprites[part_id]
 		mother_manifest.update_sprite(sprite, part_id, direction)
 		var source_pivot: Vector2 = mother_manifest.require_part(part_id).pivot_for(direction)
-		var body_position: Vector2 = hip_center + (Vector2(80.0, 66.0) - source_hip_center) * MOTHER_SCALE
-		if part_id == "head_hair":
-			body_position += Vector2(0.0, -10.0)
-		elif part_id == "arms_hands":
-			body_position += Vector2(0.0, 2.0)
-		sprite.position = body_position + (source_pivot - Vector2(80.0, 66.0)) * MOTHER_SCALE
+		sprite.position = hip_center + (source_pivot - source_hip_center) * MOTHER_SCALE
 		sprite.rotation = 0.0
 		sprite.scale = Vector2.ONE * MOTHER_SCALE
 	_update_leg("left", last_pose)
@@ -245,7 +244,9 @@ func _update_sprites() -> void:
 	for part_id: String in pram_order:
 		var sprite: Sprite2D = pram_sprites[part_id]
 		pram_manifest.update_sprite(sprite, part_id, direction)
-		sprite.position = pram_anchor
+		var pivot: Vector2 = pram_manifest.require_part(part_id).pivot_for(direction)
+		var ground_y: float = float(pram_asset.get("ground_y", 0.0))
+		sprite.position = pram_anchor + Vector2(0.0, (pivot.y - ground_y) * PRAM_SCALE)
 		sprite.rotation = 0.0
 		sprite.scale = Vector2.ONE * PRAM_SCALE
 
