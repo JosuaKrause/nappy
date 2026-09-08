@@ -253,11 +253,11 @@ func _test_walker_manifest_and_variants(t) -> void:
 	for part_id: String in ["left_upper_leg", "right_upper_leg", "left_lower_leg", "right_lower_leg", "left_shoe", "right_shoe"]:
 		var lower := walker.manifest.require_part(part_id)
 		t.check(lower.rects.size() == 8, "%s has eight authored views and a registered pivot" % part_id)
-	t.check(walker.manifest.require_part("left_upper_leg").pivot_for(0) == Vector2(67.0, 18.0),
+	t.check(walker.manifest.require_part("left_upper_leg").pivot_for(0) == Vector2(43.0, 18.0),
 		"upper leg pivot is the local hip attachment")
-	t.check(walker.manifest.require_part("left_lower_leg").pivot_for(0) == Vector2(67.0, 12.0),
+	t.check(walker.manifest.require_part("left_lower_leg").pivot_for(0) == Vector2(43.0, 12.0),
 		"lower leg pivot is the local knee attachment")
-	t.check(walker.manifest.require_part("left_shoe").pivot_for(0) == Vector2(67.0, 214.0),
+	t.check(walker.manifest.require_part("left_shoe").pivot_for(0) == Vector2(43.0, 214.0),
 		"shoe pivot is the local sole anchor")
 	t.check(is_equal_approx(walker.sprites["upper_body"].scale.x, walker.VISUAL_SCALE) and
 		is_equal_approx(walker.VISUAL_SCALE * 626.0, 38.0),
@@ -269,6 +269,12 @@ func _test_walker_manifest_and_variants(t) -> void:
 	t.check(walker.sprites["upper_body"].position.is_equal_approx(
 		(walker.last_pose["left_hip"] + walker.last_pose["right_hip"]) * 0.5),
 		"walker upper body is registered from the gait hip anchor")
+	var upper_leg_registration := walker.manifest.require_part("left_upper_leg")
+	var lower_leg_registration := walker.manifest.require_part("left_lower_leg")
+	t.check(upper_leg_registration.axis_end_for(0).y > upper_leg_registration.axis_start_for(0).y,
+		"upper leg records a measured rest axis")
+	t.check(lower_leg_registration.axis_end_for(0).y > lower_leg_registration.axis_start_for(0).y,
+		"lower leg records a measured rest axis")
 	walker.set_variant("rust_curls")
 	t.check(walker.variant == "rust_curls", "walker can switch interchangeable upper variation")
 	walker.free()
