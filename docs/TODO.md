@@ -48,16 +48,8 @@ actually landed on her.
 and M89 rather than being filed against them, because those milestones had not merged when the
 findings were reported — **nothing merges carrying a defect that was already found**. The seventh,
 the buttons that were rounded rectangles rather than circles, was parked by the player on sight and
-then turned out to be a two-line fix.
-
-**The one that is queued is finding 7, and it is queued because the player parked it**
-*(2026-09-07: "the hover highlight showed a bug that the button is currently a square and not the
-circle -- although nothing we need to fix right now")*: `ModeButton._disc_style()` sets every
-`corner_radius_*` to `_RADIUS` (46), which draws a circle only while the button's rect is exactly
-92x92 — and `custom_minimum_size` is a *minimum*, so a container that stretches it wider leaves a
-rounded rectangle. **It has always been true and the near-white hover only made it visible**, so it
-is an old defect exposed rather than a regression. It has no milestone of its own; whoever next
-opens `src/ui/mode_button.gd` should take it.
+then turned out to be a two-line fix; the record is in `DECISIONS.md` under "The disc is a circle
+at whatever size the container gives it".
 
 **[PLAYTEST-34.md](PLAYTEST-34.md)'s ten findings are all built** — seven as M90 and three as M91.
 It is the played answer M88 and M87 were waiting for, and it is mostly a report of things that do
