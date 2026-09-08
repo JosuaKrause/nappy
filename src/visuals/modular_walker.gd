@@ -7,8 +7,20 @@ const LEGS_TEXTURE: Texture2D = preload("res://assets/illustrated/walkers/legs-d
 const MANIFEST_PATH := "res://assets/illustrated/walkers/MANIFEST.json"
 const UPPER_SIZE := Vector2(2172.0, 724.0)
 const LEGS_SIZE := Vector2(2172.0, 724.0)
-const VISUAL_SCALE := 38.0 / 724.0
+## The painted actor spans 626 source pixels from the upper sheet's top to the
+## lowest complete shoe in the lower sheet. The legacy walker is 38 world pixels
+## tall, so transparent sheet padding is excluded from the calibration.
+const VISUAL_SCALE := 38.0 / 626.0
 const COMPARISON_OFFSET := 96.0
+
+## The jacket hem is the attachment point for the independently packed legs.
+## These are measured in each upper-body cell; 94% of the transparent cell is
+## not an anatomical joint.
+const UPPER_HIP_PIVOTS: Array[Vector2] = [
+	Vector2(135.5, 620.0), Vector2(407.0, 621.0), Vector2(678.5, 620.0),
+	Vector2(950.0, 615.0), Vector2(1221.5, 601.0), Vector2(1493.0, 616.0),
+	Vector2(1764.5, 615.0), Vector2(2036.0, 619.0),
+]
 
 var direction: int = DirectionalParts.Direction.S
 var heading := Vector2.DOWN
@@ -65,16 +77,16 @@ func registered_part_ids() -> Array[String]:
 
 func _register_parts() -> void:
 	manifest.register_variant("upper_body", "mustard_bob", MUSTARD_TEXTURE, _regions(UPPER_SIZE),
-		Vector2.ZERO, _pivots(UPPER_SIZE, 0.94), _z_orders(40))
+		Vector2.ZERO, UPPER_HIP_PIVOTS, _z_orders(40))
 	manifest.register_variant("upper_body", "rust_curls", RUST_TEXTURE, _regions(UPPER_SIZE),
-		Vector2.ZERO, _pivots(UPPER_SIZE, 0.94), _z_orders(40))
+		Vector2.ZERO, UPPER_HIP_PIVOTS, _z_orders(40))
 	for side: String in ["left", "right"]:
 		manifest.register_part(side + "_upper_leg", LEGS_TEXTURE, _leg_regions(0.0, 240.0, side),
-			Vector2.ZERO, _leg_pivots(18.0), _z_orders(10))
+			Vector2.ZERO, _leg_pivots(18.0, side), _z_orders(10))
 		manifest.register_part(side + "_lower_leg", LEGS_TEXTURE, _leg_regions(240.0, 500.0, side),
-			Vector2.ZERO, _leg_pivots(12.0), _z_orders(20))
+			Vector2.ZERO, _leg_pivots(12.0, side), _z_orders(20))
 		manifest.register_part(side + "_shoe", LEGS_TEXTURE, _leg_regions(500.0, 724.0, side),
-			Vector2.ZERO, _leg_pivots(214.0), _z_orders(30))
+			Vector2.ZERO, _leg_pivots(214.0, side), _z_orders(30))
 
 func _regions(size: Vector2) -> Array[Rect2]:
 	var result: Array[Rect2] = []
@@ -95,17 +107,12 @@ func _leg_regions(top: float, bottom: float, side: String) -> Array[Rect2]:
 		result.append(Rect2(left if side == "left" else left + half, top, half, bottom - top))
 	return result
 
-func _leg_pivots(y: float) -> Array[Vector2]:
+func _leg_pivots(y: float, side: String) -> Array[Vector2]:
 	var result: Array[Vector2] = []
 	for _direction in DirectionalParts.DIRECTION_NAMES.size():
-		# Each leg region is one half-cell, so its pivot is local to that half-cell.
-		result.append(Vector2(67.0, y))
-	return result
-
-func _pivots(size: Vector2, y_fraction: float) -> Array[Vector2]:
-	var result: Array[Vector2] = []
-	for _direction in DirectionalParts.DIRECTION_NAMES.size():
-		result.append(Vector2(size.x / 8.0 * 0.5, size.y * y_fraction))
+		# The right crop starts halfway through the cell; its attachment remains
+		# at the same painted source x as the left crop, in its own local space.
+		result.append(Vector2(67.0 if side == "left" else 67.0, y))
 	return result
 
 func _z_orders(value: int) -> Array[int]:

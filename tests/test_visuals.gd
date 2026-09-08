@@ -260,8 +260,12 @@ func _test_walker_manifest_and_variants(t) -> void:
 	t.check(walker.manifest.require_part("left_shoe").pivot_for(0) == Vector2(67.0, 214.0),
 		"shoe pivot is the local sole anchor")
 	t.check(is_equal_approx(walker.sprites["upper_body"].scale.x, walker.VISUAL_SCALE) and
-		is_equal_approx(walker.VISUAL_SCALE * 724.0, 38.0),
-		"walker sheet height matches the legacy SVG height")
+		is_equal_approx(walker.VISUAL_SCALE * 626.0, 38.0),
+		"walker painted height matches the legacy SVG height")
+	var upper_registration := walker.manifest.require_part("upper_body", "mustard_bob")
+	t.check(upper_registration.pivot_for(0) == Vector2(135.5, 620.0) and
+		upper_registration.pivot_for(4) == Vector2(1221.5, 601.0),
+		"walker upper body uses measured per-facing hem pivots")
 	t.check(walker.sprites["upper_body"].position.is_equal_approx(
 		(walker.last_pose["left_hip"] + walker.last_pose["right_hip"]) * 0.5),
 		"walker upper body is registered from the gait hip anchor")
