@@ -161,11 +161,11 @@ func _cell_position(row: int, column: int) -> Vector2:
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, SHEET_SIZE), Color("#171522"))
 	draw_string(ThemeDB.fallback_font, Vector2(26.0, 30.0), "ILLUSTRATED LIMB MOTION · APPLIED DISPLACEMENT CONTACT SHEET", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 21, Color("#ffe8b5"))
-	draw_string(ThemeDB.fallback_font, Vector2(28.0, 52.0), "All phases face south for direct comparison; ticks are solved foot anchors. Swing cells require live gait state.", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color("#cfc1a2"))
+	draw_string(ThemeDB.fallback_font, Vector2(28.0, 52.0), "South-facing phases with one northward reverse; ticks show solved foot anchors. Swing cells require live gait state.", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color("#cfc1a2"))
 	for column: int in SAMPLES.size():
 		var x: float = CELL_ORIGIN.x + float(column) * CELL_STEP
 		_add_header(SAMPLES[column], Vector2(x - 50.0, 78.0))
-		_add_header("S", Vector2(x - 9.0, 104.0), 11)
+		_add_header("N" if column == 7 else "S", Vector2(x - 9.0, 104.0), 11)
 	for row: int in 3:
 		var row_name := "MOTHER + PRAM" if row == 0 else ("MUSTARD WALKER" if row == 1 else "RUST WALKER")
 		draw_string(ThemeDB.fallback_font, Vector2(8.0, ROW_Y[row] - 68.0), row_name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 10, Color("#e4cda1"))

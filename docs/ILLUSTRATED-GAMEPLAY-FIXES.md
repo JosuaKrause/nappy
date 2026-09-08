@@ -193,6 +193,14 @@ it cannot establish motion quality, live-world sorting or visual acceptance. The
 [calibration capture](evidence/archive/session-captures/2026-09-08/illustrated-actor-calibration.png)
 shows the unresolved source and attachment defects.
 
+`scenes/dev/illustrated_motion_review.tscn` samples the compositors through applied-displacement
+sequences: idle, initial stride, each foot in mid-swing, sustained walk, run, blocked stop,
+reverse and reset. Most samples face south for comparison; the reverse faces north. Foot ticks
+show the solver's ground targets so the rendered shoe can be compared with its intended contact.
+The virtual owner position accumulates travel while each display cell stays fixed. Run this
+scene with the same bounded screenshot command, substituting its scene path and output name.
+It checks sampled assembly poses; it does not establish smooth motion or live city sorting.
+
 The focused visual suite's live-owner test expects the illustrated child to exist, so invoke
 `./tools/test.sh visuals --illustrated`. Without that opt-in the test dereferences a missing
 child even though its summary reports no assertion failures; read script errors as failures.
