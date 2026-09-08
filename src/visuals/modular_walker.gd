@@ -21,6 +21,8 @@ const UPPER_HIP_PIVOTS: Array[Vector2] = [
 	Vector2(950.0, 615.0), Vector2(1221.5, 601.0), Vector2(1493.0, 616.0),
 	Vector2(1764.5, 615.0), Vector2(2036.0, 619.0),
 ]
+const LEG_X: Array[float] = [55.0, 54.0, 52.0, 50.0, 55.0, 60.0, 62.0, 60.0]
+const LEG_END_X: Array[float] = [55.0, 56.0, 58.0, 60.0, 55.0, 50.0, 48.0, 50.0]
 
 var direction: int = DirectionalParts.Direction.S
 var heading := Vector2.DOWN
@@ -82,11 +84,14 @@ func _register_parts() -> void:
 		Vector2.ZERO, UPPER_HIP_PIVOTS, _z_orders(40))
 	for side: String in ["left", "right"]:
 		manifest.register_part(side + "_upper_leg", LEGS_TEXTURE, _leg_regions(0.0, 240.0, side),
-			Vector2.ZERO, _leg_pivots(18.0, side), _z_orders(10))
+			Vector2.ZERO, _leg_pivots(18.0, side), _z_orders(10),
+			"default", _axis_start(18.0, side), _axis_end(220.0, side))
 		manifest.register_part(side + "_lower_leg", LEGS_TEXTURE, _leg_regions(240.0, 500.0, side),
-			Vector2.ZERO, _leg_pivots(12.0, side), _z_orders(20))
+			Vector2.ZERO, _leg_pivots(12.0, side), _z_orders(20),
+			"default", _axis_start(12.0, side), _axis_end(248.0, side))
 		manifest.register_part(side + "_shoe", LEGS_TEXTURE, _leg_regions(500.0, 724.0, side),
-			Vector2.ZERO, _leg_pivots(214.0, side), _z_orders(30))
+			Vector2.ZERO, _leg_pivots(214.0, side), _z_orders(30),
+			"default", _axis_start(214.0, side), _axis_end(224.0, side))
 
 func _regions(size: Vector2) -> Array[Rect2]:
 	var result: Array[Rect2] = []
@@ -99,21 +104,45 @@ func _regions(size: Vector2) -> Array[Rect2]:
 
 func _leg_regions(top: float, bottom: float, side: String) -> Array[Rect2]:
 	var result: Array[Rect2] = []
+	var left_edges: Array[float] = [12.0, 14.0, 8.0, 10.0, 16.0, 22.0, 26.0, 20.0]
+	var right_edges: Array[float] = [132.0, 130.0, 128.0, 126.0, 134.0, 140.0, 142.0, 138.0]
 	for direction_index: int in DirectionalParts.DIRECTION_NAMES.size():
 		var source_column: int = _source_column(DirectionalParts.DIRECTION_NAMES[direction_index])
 		var left := floorf(LEGS_SIZE.x * float(source_column) / 8.0)
-		var right := floorf(LEGS_SIZE.x * float(source_column + 1) / 8.0)
-		var half := (right - left) * 0.5
-		result.append(Rect2(left if side == "left" else left + half, top, half, bottom - top))
+		var cell_width := floorf(LEGS_SIZE.x * float(source_column + 1) / 8.0) - left
+		var inset_left: float = left_edges[direction_index]
+		var inset_right: float = right_edges[direction_index]
+		if side == "left":
+			result.append(Rect2(left + inset_left, top, inset_right - inset_left, bottom - top))
+		else:
+			result.append(Rect2(left + cell_width - inset_right, top, inset_right - inset_left, bottom - top))
 	return result
 
 func _leg_pivots(y: float, side: String) -> Array[Vector2]:
 	var result: Array[Vector2] = []
-	for _direction in DirectionalParts.DIRECTION_NAMES.size():
-		# The right crop starts halfway through the cell; its attachment remains
-		# at the same painted source x as the left crop, in its own local space.
-		result.append(Vector2(67.0 if side == "left" else 67.0, y))
+	for direction_index: int in DirectionalParts.DIRECTION_NAMES.size():
+		result.append(Vector2(_crop_local_x(direction_index, side, LEG_X[direction_index]), y))
 	return result
+
+func _axis_start(y: float, side: String) -> Array[Vector2]:
+	var points: Array[Vector2] = []
+	for direction_index: int in DirectionalParts.DIRECTION_NAMES.size():
+		points.append(Vector2(_crop_local_x(direction_index, side, LEG_X[direction_index]), y))
+	return points
+
+func _axis_end(y: float, side: String) -> Array[Vector2]:
+	var points: Array[Vector2] = []
+	for direction_index: int in DirectionalParts.DIRECTION_NAMES.size():
+		points.append(Vector2(_crop_local_x(direction_index, side, LEG_END_X[direction_index]), y))
+	return points
+
+func _crop_local_x(direction_index: int, side: String, global_x: float) -> float:
+	var cell_width: float = floorf(LEGS_SIZE.x * float(_source_column(
+		DirectionalParts.DIRECTION_NAMES[direction_index]) + 1) / 8.0) - floorf(
+		LEGS_SIZE.x * float(_source_column(DirectionalParts.DIRECTION_NAMES[direction_index])) / 8.0)
+	var left_inset: float = [12.0, 14.0, 8.0, 10.0, 16.0, 22.0, 26.0, 20.0][direction_index]
+	var right_inset: float = [132.0, 130.0, 128.0, 126.0, 134.0, 140.0, 142.0, 138.0][direction_index]
+	return global_x - left_inset if side == "left" else right_inset - global_x
 
 func _z_orders(value: int) -> Array[int]:
 	var result: Array[int] = []
@@ -164,15 +193,13 @@ func _update_sprites() -> void:
 		var upper_leg: Sprite2D = sprites[side + "_upper_leg"]
 		var lower_leg: Sprite2D = sprites[side + "_lower_leg"]
 		var shoe: Sprite2D = sprites[side + "_shoe"]
-		manifest.update_sprite(upper_leg, side + "_upper_leg", direction)
-		manifest.update_sprite(lower_leg, side + "_lower_leg", direction)
 		manifest.update_sprite(shoe, side + "_shoe", direction)
-		upper_leg.position = hip
-		lower_leg.position = knee
-		shoe.position = foot + Vector2(0.0, -last_pose[side + "_foot_height"])
-		upper_leg.rotation = _segment_rotation(hip, knee)
-		lower_leg.rotation = _segment_rotation(knee, foot)
-		shoe.rotation = _segment_rotation(knee, foot) if last_pose[side + "_foot_height"] > 0.0 else 0.0
+		manifest.apply_segment(upper_leg, side + "_upper_leg", direction, hip, knee, VISUAL_SCALE)
+		var lifted_foot := foot + Vector2(0.0, -last_pose[side + "_foot_height"])
+		manifest.apply_segment(lower_leg, side + "_lower_leg", direction, knee, lifted_foot, VISUAL_SCALE)
+		shoe.position = lifted_foot
+		shoe.rotation = lower_leg.rotation if last_pose[side + "_foot_height"] > 0.0 else 0.0
+		shoe.scale = Vector2.ONE * VISUAL_SCALE
 
 func _segment_rotation(start: Vector2, finish: Vector2) -> float:
 	var segment := finish - start

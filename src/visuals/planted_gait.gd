@@ -161,7 +161,12 @@ func _begin_step(world_position: Vector2) -> void:
 	var side: Vector2 = Vector2(-forward.y, forward.x)
 	var left_or_right: float = -1.0 if _swing_foot == LEFT_FOOT else 1.0
 	_swing_start = _feet_world[_swing_foot]
-	_swing_target = world_position + forward * 0.26 + side * (0.12 * left_or_right)
+	# The landing point stays inside the two-bone reach envelope. It advances by half a
+	# stride and preserves the foot's side of the body; tiny literal offsets make a
+	# rendered leg stretch toward the actor origin during a normal walk.
+	var stride: float = minf(step_span * 0.5, upper_leg_length + lower_leg_length - 1.0)
+	var lateral: float = absf(foot_offsets[_swing_foot].x)
+	_swing_target = world_position + forward * stride + side * lateral * left_or_right
 	_swing_distance = 0.0
 	_stepping = true
 
