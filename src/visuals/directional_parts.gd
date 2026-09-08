@@ -24,6 +24,8 @@ class PartRegistration extends RefCounted:
 	var anchor: Vector2
 	var pivot: Vector2
 	var pivots: Array[Vector2]
+	var rest_axis_start: Array[Vector2]
+	var rest_axis_end: Array[Vector2]
 	var z_orders: Array[int]
 
 	func pivot_for(direction: int) -> Vector2:
@@ -41,13 +43,20 @@ class PartRegistration extends RefCounted:
 			return 0
 		return z_orders[direction]
 
+	func axis_start_for(direction: int) -> Vector2:
+		return rest_axis_start[direction] if direction >= 0 and direction < rest_axis_start.size() else Vector2.ZERO
+
+	func axis_end_for(direction: int) -> Vector2:
+		return rest_axis_end[direction] if direction >= 0 and direction < rest_axis_end.size() else Vector2.DOWN
+
 
 class SpriteManifest extends RefCounted:
 	var _parts: Dictionary = {}
 	var errors: Array[String] = []
 
 	func register_part(part_id: String, texture: Texture2D, rects: Array[Rect2],
-			anchor: Vector2, pivot: Variant, z_orders: Array[int], variant: String = "default") -> bool:
+			anchor: Vector2, pivot: Variant, z_orders: Array[int], variant: String = "default",
+			axis_start: Variant = null, axis_end: Variant = null) -> bool:
 		if part_id.is_empty():
 			return _fail("part id is empty")
 		if variant.is_empty():
@@ -79,6 +88,8 @@ class SpriteManifest extends RefCounted:
 		registration.pivots = _pivots(pivot)
 		registration.pivot = registration.pivots[0]
 		registration.z_orders = z_orders.duplicate()
+		registration.rest_axis_start = _optional_points(axis_start, registration.pivots, Vector2.ZERO)
+		registration.rest_axis_end = _optional_points(axis_end, registration.pivots, Vector2.DOWN)
 		_parts[key] = registration
 		return true
 
@@ -149,6 +160,19 @@ class SpriteManifest extends RefCounted:
 			result.append(fallback)
 		return result
 
+	func _optional_points(value: Variant, fallback: Array[Vector2], offset: Vector2) -> Array[Vector2]:
+		var result: Array[Vector2] = []
+		if value is Array:
+			for item: Variant in value:
+				if item is Vector2:
+					result.append(item)
+		if result.size() == DirectionalParts.DIRECTION_NAMES.size():
+			return result
+		result.clear()
+		for point: Vector2 in fallback:
+			result.append(point + offset)
+		return result
+
 	func _valid_pivots(value: Variant) -> bool:
 		if value is Vector2:
 			return true
@@ -166,6 +190,28 @@ class SpriteManifest extends RefCounted:
 		errors.append(message)
 		push_error(message)
 		return false
+
+	func apply_segment(sprite: Sprite2D, part_id: String, direction: int,
+			start: Vector2, end: Vector2, base_scale: float, width_scale: float = 1.0,
+			variant: String = "default") -> bool:
+		var registration := require_part(part_id, variant)
+		if registration == null or not update_sprite(sprite, part_id, direction, variant):
+			return false
+		var source_axis := registration.axis_end_for(direction) - registration.axis_start_for(direction)
+		var target_axis := end - start
+		if source_axis.length_squared() <= 0.000001 or target_axis.length_squared() <= 0.000001:
+			return false
+		var source_normal := Vector2(-source_axis.y, source_axis.x).normalized()
+		var target_normal := Vector2(-target_axis.y, target_axis.x).normalized()
+		var source_frame := Transform2D(source_normal, source_axis.normalized(), Vector2.ZERO)
+		var target_frame := Transform2D(target_normal, target_axis.normalized(), Vector2.ZERO)
+		var stretch := Transform2D(
+			Vector2(base_scale * width_scale, 0.0),
+			Vector2(0.0, base_scale * target_axis.length() / source_axis.length()),
+			Vector2.ZERO)
+		sprite.transform = Transform2D(target_frame * stretch * source_frame.affine_inverse()).translated(start)
+		sprite.offset = -registration.pivot_for(direction)
+		return true
 
 
 static func new_manifest() -> SpriteManifest:
