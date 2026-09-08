@@ -7,8 +7,9 @@ Read `CLAUDE.md`, `docs/HANDOFF.md`, `docs/TODO.md`'s Visual overhaul section, t
 the visuals document states the current target. Read the relevant skills before editing.
 The orchestration and committing rules still apply. Implementation uses Luna.
 
-The tracking pull request is [graphics overhaul PR #19](https://github.com/JosuaKrause/nappy/pull/19).
-Keep it draft. A prototype, source sheet or code scaffold is not a completed overhaul. Do not
+The actor repair review is [PR #49](https://github.com/JosuaKrause/nappy/pull/49).
+Keep it draft. Read `ILLUSTRATED-GAMEPLAY-FIXES.md` and `PLAYTEST-36.md` for the attachment and
+legacy-scale repair gate. A prototype, source sheet or code scaffold is not a completed overhaul. Do not
 release or merge the overhaul until the entire requested presentation is implemented and reviewed.
 
 ## Current decisions
@@ -53,15 +54,16 @@ All paths are relative to the repository root and are committed assets, not Down
 | `docs/evidence/graphics-reference-mother.jpeg` | Mother, clothing, face, pram and baby reference |
 | `assets/illustrated/source/mother-turnaround-v1.png` | Generated eight-view source draft; **not runtime-ready** |
 | `assets/illustrated/source/README.md` | Exact built-in generation prompt, inspection and remaining defects |
-| `assets/illustrated/modular/` | Registered, transparent mother/pram part sheets, articulated mother revision, contact reviews, manifests and generation records; **not runtime-wired** |
+| `assets/illustrated/modular/` | Mother/pram source sheets and manifests used by the opt-in compositor; source validity and assembly remain under repair |
 
 The original mother draft is materially closer in style, but has a **baked checkerboard and no
 alpha**. Its observed order is **S, SE, E, NE / N, NW, W, SW**, not the requested N-first ordering.
-It remains a style reference only. The registered replacement in `assets/illustrated/modular/`
-provides real-alpha mother and pram part sheets in `N, NE, E, SE, S, SW, W, NW` order, with
-manifests for cells, pivots, foot/wheel anchors and draw order. `mother-parts-v3.png` separates
-the mother’s leg segments and shoe cutouts so the compositor can show a planted foot and a lifted
-swing foot. The art and compositor are not live gameplay binding. The player explicitly offers to
+It is a source draft, not visual authority. The files in `assets/illustrated/modular/` include
+manifests for cells, pivots, foot/wheel anchors and draw order, but the declared cells do not
+establish valid anatomy. The mother has duplicate arm content and independently packed rows;
+the pram has seven groups and checkerboard contamination. `mother-parts-v3.png` supplies
+separate leg segments and shoe drawings whose registration needs source inspection.
+Both families are bound to the opt-in live player. The player explicitly offers to
 perform style transfer on usable draft sheets if generation does not achieve the target.
 
 Use the imagegen skill for generation/editing. Built-in mode does not require an API key. Do not
@@ -79,14 +81,15 @@ The 3D street and actor experiments are preserved in ancestry, indexed in `docs/
 under Illustrated assets and experiment preservation, and are not in the tree. Do not revive their
 design by mistake.
 
-The modular sprite work is a standalone, tested presentation component, not live gameplay:
+The modular sprite components also have opt-in live gameplay bindings:
 
 - `src/visuals/directional_parts.gd` registers eight-direction regions and per-direction pivots.
 - `src/visuals/planted_gait.gd` uses world-pixel stance/swing state and solved knees.
 - `src/visuals/modular_person.gd` consumes actual applied displacement without changing a logical
   body, collision or gameplay RNG.
-- `assets/illustrated/modular/` supplies registered mother and pram bundles, including articulated
-  lower-body parts. `tests/test_visuals.gd` exercises their regions and a walk/stop/turn sequence.
+- `assets/illustrated/modular/` supplies mother and pram source bundles, including articulated
+  lower-body parts. `tests/test_visuals.gd` exercises registration and displacement sequences;
+  passing those checks does not establish clean source crops or visual acceptance.
 - Under the illustrated opt-in, `Stroller` owns a zero-offset live `ModularPerson` child. It
   receives only displacement that survived collision and shove resolution, then resets the gait
   with every logical player reset. The legacy mother/pram SVG drawing remains the default, with
@@ -99,8 +102,9 @@ The standalone `scenes/dev/illustrated_street_review.tscn` consumes the layered 
 camera-specific shortened north depth and stable dotted roof reveal are a player-review gate, not a
 live renderer or a substitute for movement review. `GENERATION_RECORD.md` retains the built-in
 generation prompts; facade, roof and props have verified alpha, while the ground plate is opaque.
-Its generated street layers need a reference-conditioned improvement pass against the authoritative
-urban images before their style is extended elsewhere.
+The street study is rejected and needs rebuilding from the authoritative urban images. It is
+not an approved direction or a basis for extending the asset family; see `HANDOFF.md` and the
+M84 record in `DECISIONS.md`.
 
 Review coordinate units before integration: the gait draft's configurable limb lengths are not
 proof of logical-pixel sizing. Test foot anchors in world space and apply drawing height only
@@ -114,13 +118,17 @@ screen experiment predates some of this and must not simply replace current titl
 
 ## Next work order
 
-1. Bind the approved presentation to the live crowd and expand by event family. Every
+1. Repair static actor assembly and match assembled sizes to the legacy SVG actors in all eight
+   directions, then verify rendered ground contact through movement and overlap. The calibration
+   scene keeps the original drawing at a fixed horizontal comparison offset. Source replacement,
+   registration, gait and sorting precede expansion; follow `ILLUSTRATED-GAMEPLAY-FIXES.md`.
+2. After the actor gate, rebuild a representative live illustrated street and expand by family. Every
    catalogue look needs its own identity and state-appropriate animation; a generic placeholder
    must be recorded as unfinished, never quietly substituted.
-2. Add seeded deterioration, truthful contribution cues and objective guidance. The baby already
+3. Add seeded deterioration, truthful contribution cues and objective guidance. The baby already
    receives event/crowd contributions: consume those facts instead of inventing nearest-source
    attribution or copying meter arithmetic. Silent barriers remain silent.
-3. Rebuild all screens while preserving the current main behavior, then verify busy scenes,
+4. Rebuild all screens while preserving the current main behavior, then verify busy scenes,
    portrait/touch, pauses/transitions and the browser. Keep the full TODO scope visible throughout.
 
 The separate SVG polish is an independent small PR. Review its existing asset-only diff and finish

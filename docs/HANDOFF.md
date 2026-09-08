@@ -183,6 +183,15 @@ audit. Preserve the fixed-offset legacy comparisons while reviewing replacement 
 `scenes/dev/illustrated_actor_review.tscn` supplies the stationary eight-direction calibration
 view; the repair brief gives its screenshot command. Its current actors remain visibly broken.
 
+The current actor-registration branch contains a measured upper-body walker calibration and
+focused visual checks, but it is not accepted: the lower-body sheet still crosses inferred crop
+boundaries, and the assembled lower limbs have not passed a rendered joint review. The mother and
+pram still use source sheets whose anatomy and pram groups are not reliably registered. Two new
+pram generation attempts are archived as rejected because they returned opaque checkerboards and
+did not preserve a shared layer coordinate system. The next session should review the walker
+diff, keep any valid painted-bound measurements, and obtain clean replacement layered source art
+before claiming a complete eight-direction actor.
+
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the
 frame; the export publishes `index.js`, `index.wasm` and `index.pck` under a directory named for the

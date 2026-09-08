@@ -64,7 +64,8 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 halo reads the event list, so the largest ordinary contributor on a busy pavement glows at nothing.
 The measurement is in that section and the three possible answers are written out; none is chosen.
 
-**[PLAYTEST-35.md](PLAYTEST-35.md) is the newest session, and only one of its seven findings is
+**[PLAYTEST-35.md](PLAYTEST-35.md) is the newest gameplay session; the actor review is
+[PLAYTEST-36.md](PLAYTEST-36.md). Only one of playtest 35's seven findings is
 queued here** — the milestones the rest land in had not merged when they were reported, so they are
 built inside M90 and M89 rather than filed against them. **Nothing merges carrying a defect that was
 already found**, which is the whole reason they are not on this list.
