@@ -28,6 +28,8 @@ define style; `docs/reference/` supplies real-world structure and posture.
       documented in `assets/illustrated/modular/pram-alpha-extraction-2026-09-08.md` are available
       for registration; see DECISIONS.md under Pram checkerboard extraction.
 - [ ] Make per-direction part registration authoritative and reject incomplete registrations.
+      PLAYTEST-37 accepts the pram transparency and requests the v3 stroller in this repair:
+      use `pram-layered-v3-draft-transparent.png` and register chassis, seat, canopy and baby.
       Fit a stationary mother/pram and pedestrian to measured attachment points, preserving the
       legacy comparison at one fixed horizontal offset. Do not claim complete actors where source
       sheets cannot supply the anatomy or directions.
