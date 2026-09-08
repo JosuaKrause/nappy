@@ -178,6 +178,25 @@ street the live city. Do not report the environment fixed because its separate s
 
 ## Verification and handoff
 
+`scenes/dev/illustrated_actor_review.tscn` displays static mother/pram and both walker variants
+in all eight directions at logical scale, with ground baselines and the legacy drawing at the
+fixed comparison offset. It instantiates compositors only, so it does not move gameplay actors.
+Run it with Godot's normal scene argument; the existing screenshot flags work:
+
+```sh
+godot --path . res://scenes/dev/illustrated_actor_review.tscn --resolution 1280x720 \
+  -- --screenshot /private/tmp/illustrated-actor-review.png --after 1
+```
+
+Use an external timeout for a windowed capture. This is a static registration diagnostic;
+it cannot establish motion quality, live-world sorting or visual acceptance. The dated
+[calibration capture](evidence/archive/session-captures/2026-09-08/illustrated-actor-calibration.png)
+shows the unresolved source and attachment defects.
+
+The focused visual suite's live-owner test expects the illustrated child to exist, so invoke
+`./tools/test.sh visuals --illustrated`. Without that opt-in the test dereferences a missing
+child even though its summary reports no assertion failures; read script errors as failures.
+
 Implement in bounded sequential pieces: sheet/manifest repair, static assembly, gait and sorting,
 then environment integration. Use isolated Luna implementation worktrees under the orchestration
 rules; the orchestrator owns queue changes and visual acceptance. Load the path-matched skills,

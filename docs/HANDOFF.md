@@ -180,6 +180,8 @@ the current pram groups and inferred walker limb cuts cannot supply reliable reg
 The open implementation order is in TODO.md under Illustrated actor registration and assembly;
 the source/runtime audit and its limitations are in DECISIONS.md under Illustrated registration
 audit. Preserve the fixed-offset legacy comparisons while reviewing replacement art.
+`scenes/dev/illustrated_actor_review.tscn` supplies the stationary eight-direction calibration
+view; the repair brief gives its screenshot command. Its current actors remain visibly broken.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the
