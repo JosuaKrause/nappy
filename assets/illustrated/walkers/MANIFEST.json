@@ -1,23 +1,133 @@
 {
   "direction_order": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
   "source_columns": ["S", "SE", "E", "NE", "N", "NW", "W", "SW"],
-  "symmetry": [],
-  "parts": {
-    "upper_body": {
-      "variants": {
-        "mustard_bob": {"file": "upper-mustard-bob-v1.png", "size": [2172, 724]},
-        "rust_curls": {"file": "upper-rust-curls-v1.png", "size": [2172, 724]}
-      },
-      "regions": "eight equal-width cells, floor-boundaries at x = floor(width*i/8)",
-      "pivot": "cell center x, 94% of cell height"
-    },
-    "left_upper_leg": {"file": "legs-denim-sneakers-v1.png", "row": [0, 240], "eight_regions": true, "pivot": "hip"},
-    "right_upper_leg": {"file": "legs-denim-sneakers-v1.png", "row": [0, 240], "eight_regions": true, "pivot": "hip"},
-    "left_lower_leg": {"file": "legs-denim-sneakers-v1.png", "row": [240, 500], "eight_regions": true, "pivot": "knee"},
-    "right_lower_leg": {"file": "legs-denim-sneakers-v1.png", "row": [240, 500], "eight_regions": true, "pivot": "knee"},
-    "left_shoe": {"file": "legs-denim-sneakers-v1.png", "row": [500, 724], "eight_regions": true, "pivot": "sole"},
-    "right_shoe": {"file": "legs-denim-sneakers-v1.png", "row": [500, 724], "eight_regions": true, "pivot": "sole"}
+  "target_height": 38.0,
+  "hip_height": 18.0,
+  "comparison_offset": 96.0,
+  "source_limitations": {
+    "E": "one complete profile limb set is reused for both overlapping legs",
+    "W": "one complete profile limb set is reused for both overlapping legs",
+    "diagonals": "overlapping painted limbs cannot be isolated without shared edge pixels",
+    "mustard_SW": "the authored silhouette reads closer to SE than the rust SW view"
   },
-  "ordering": "upper legs z=10, lower legs z=20, shoes z=30, upper body z=40; all remain children of the agent so y-sorting uses the agent origin",
+  "upper_body": {
+    "mustard_bob": {
+      "file": "upper-mustard-bob-v1.png",
+      "views": {
+        "N":  {"crop": [1092, 110, 310, 497], "hem": [142.5, 480]},
+        "NE": {"crop": [853, 110, 239, 511], "hem": [140, 480]},
+        "E":  {"crop": [630, 110, 208, 516], "hem": [124, 480]},
+        "SE": {"crop": [337, 110, 284, 517], "hem": [161, 480]},
+        "S":  {"crop": [9, 109, 325, 517], "hem": [179.5, 481]},
+        "SW": {"crop": [1877, 110, 287, 515], "hem": [138.5, 475]},
+        "W":  {"crop": [1653, 110, 208, 511], "hem": [90, 480]},
+        "NW": {"crop": [1401, 110, 237, 512], "hem": [116, 480]}
+      }
+    },
+    "rust_curls": {
+      "file": "upper-rust-curls-v1.png",
+      "views": {
+        "N":  {"crop": [1077, 96, 281, 517], "hem": [174, 494]},
+        "NE": {"crop": [825, 95, 235, 521], "hem": [163, 495]},
+        "E":  {"crop": [588, 98, 220, 521], "hem": [94, 492]},
+        "SE": {"crop": [308, 95, 258, 531], "hem": [104.5, 495]},
+        "S":  {"crop": [4, 97, 287, 528], "hem": [113, 493]},
+        "SW": {"crop": [1881, 98, 286, 530], "hem": [162.5, 492]},
+        "W":  {"crop": [1656, 97, 210, 517], "hem": [118, 493]},
+        "NW": {"crop": [1375, 104, 253, 506], "hem": [148.5, 486]}
+      }
+    }
+  },
+  "limbs": {
+    "N": {
+      "side_order": ["left", "right"],
+      "left": {"z": 0,
+        "upper": {"crop": [1156, 51, 117, 285], "start": [59, 14], "end": [59, 277]},
+        "lower": {"crop": [1155, 343, 91, 177], "start": [41, 11], "end": [41, 167]},
+        "shoe": {"crop": [1155, 510, 91, 133], "start": [41, 25], "end": [41, 131]}},
+      "right": {"z": 0,
+        "upper": {"crop": [1281, 50, 118, 286], "start": [59, 14], "end": [59, 278]},
+        "lower": {"crop": [1305, 343, 92, 177], "start": [46, 11], "end": [47, 167]},
+        "shoe": {"crop": [1305, 510, 92, 133], "start": [47, 25], "end": [47, 131]}}
+    },
+    "NE": {
+      "side_order": ["left", "right"],
+      "left": {"z": 0,
+        "upper": {"crop": [878, 48, 105, 291], "start": [49, 14], "end": [42, 280]},
+        "lower": {"crop": [861, 319, 81, 185], "start": [39, 11], "end": [41, 175]},
+        "shoe": {"crop": [867, 509, 104, 85], "start": [51, 16], "end": [53, 83]}},
+      "right": {"z": 0,
+        "upper": {"crop": [950, 55, 125, 284], "start": [58, 13], "end": [68, 275]},
+        "lower": {"crop": [977, 347, 84, 202], "start": [42, 12], "end": [44, 192]},
+        "shoe": {"crop": [967, 555, 128, 95], "start": [51, 17], "end": [63, 93]}}
+    },
+    "E": {
+      "side_order": ["left", "right"],
+      "left": {"z": 0, "reuse": "profile_overlap",
+        "upper": {"crop": [681, 47, 107, 267], "start": [53, 13], "end": [53, 257]},
+        "lower": {"crop": [677, 320, 88, 204], "start": [41, 13], "end": [48, 194]},
+        "shoe": {"crop": [664, 532, 147, 95], "start": [68, 19], "end": [77, 93]}},
+      "right": {"z": 0, "reuse": "profile_overlap",
+        "upper": {"crop": [681, 47, 107, 267], "start": [53, 13], "end": [53, 257]},
+        "lower": {"crop": [677, 320, 88, 204], "start": [41, 13], "end": [48, 194]},
+        "shoe": {"crop": [664, 532, 147, 95], "start": [68, 19], "end": [77, 93]}}
+    },
+    "SE": {
+      "side_order": ["left", "right"],
+      "left": {"z": 0,
+        "upper": {"crop": [363, 47, 115, 275], "start": [44, 13], "end": [40, 262]},
+        "lower": {"crop": [350, 328, 130, 177], "start": [48, 11], "end": [50, 166]},
+        "shoe": {"crop": [350, 505, 130, 158], "start": [50, 24], "end": [64, 156]}},
+      "right": {"z": 0,
+        "upper": {"crop": [455, 54, 137, 268], "start": [51, 13], "end": [90, 255]},
+        "lower": {"crop": [497, 311, 82, 192], "start": [41, 12], "end": [42, 182]},
+        "shoe": {"crop": [495, 514, 122, 114], "start": [50, 18], "end": [61, 112]}}
+    },
+    "S": {
+      "side_order": ["left", "right"],
+      "left": {"z": 0,
+        "upper": {"crop": [38, 51, 113, 261], "start": [57, 14], "end": [59, 248]},
+        "lower": {"crop": [35, 319, 83, 186], "start": [41, 11], "end": [42, 176]},
+        "shoe": {"crop": [31, 513, 89, 150], "start": [45, 22], "end": [45, 147]}},
+      "right": {"z": 0,
+        "upper": {"crop": [167, 51, 112, 261], "start": [54, 14], "end": [60, 248]},
+        "lower": {"crop": [195, 319, 85, 186], "start": [41, 11], "end": [43, 176]},
+        "shoe": {"crop": [193, 513, 90, 150], "start": [41, 22], "end": [41, 147]}}
+    },
+    "SW": {
+      "side_order": ["right", "left"],
+      "left": {"z": 0,
+        "upper": {"crop": [1908, 46, 112, 278], "start": [42, 14], "end": [62, 266]},
+        "lower": {"crop": [1928, 311, 82, 192], "start": [40, 12], "end": [41, 182]},
+        "shoe": {"crop": [1898, 510, 121, 110], "start": [62, 17], "end": [65, 108]}},
+      "right": {"z": 0,
+        "upper": {"crop": [1998, 47, 132, 277], "start": [59, 14], "end": [94, 267]},
+        "lower": {"crop": [2056, 330, 84, 200], "start": [42, 12], "end": [42, 190]},
+        "shoe": {"crop": [2005, 537, 135, 134], "start": [70, 18], "end": [72, 132]}}
+    },
+    "W": {
+      "side_order": ["right", "left"],
+      "left": {"z": 0, "reuse": "profile_overlap",
+        "upper": {"crop": [1737, 49, 108, 272], "start": [54, 14], "end": [55, 262]},
+        "lower": {"crop": [1762, 325, 86, 204], "start": [43, 13], "end": [45, 194]},
+        "shoe": {"crop": [1702, 537, 150, 92], "start": [83, 17], "end": [78, 90]}},
+      "right": {"z": 0, "reuse": "profile_overlap",
+        "upper": {"crop": [1737, 49, 108, 272], "start": [54, 14], "end": [55, 262]},
+        "lower": {"crop": [1762, 325, 86, 204], "start": [43, 13], "end": [45, 194]},
+        "shoe": {"crop": [1702, 537, 150, 92], "start": [83, 17], "end": [78, 90]}}
+    },
+    "NW": {
+      "side_order": ["right", "left"],
+      "left": {"z": 0,
+        "upper": {"crop": [1469, 47, 105, 296], "start": [46, 14], "end": [49, 286]},
+        "lower": {"crop": [1476, 349, 86, 201], "start": [43, 13], "end": [45, 191]},
+        "shoe": {"crop": [1442, 555, 130, 95], "start": [77, 20], "end": [79, 93]}},
+      "right": {"z": 0,
+        "upper": {"crop": [1545, 47, 107, 296], "start": [57, 14], "end": [77, 283]},
+        "lower": {"crop": [1590, 317, 80, 182], "start": [41, 13], "end": [41, 172]},
+        "shoe": {"crop": [1573, 505, 94, 85], "start": [47, 18], "end": [48, 83]}}
+    }
+  },
+  "ordering": "all parts share actor-local z zero; per-direction sibling order draws each far leg as a unit, then the near leg and upper body",
   "binding": "only CrowdAgent.Kind.WALKER creates ModularWalker; cars retain legacy SVG"
 }
