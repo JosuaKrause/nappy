@@ -172,7 +172,15 @@ func _test_live_owner_coordinate_binding(t) -> void:
 	stroller.add_child(camera)
 	t.add_child(stroller)
 	stroller.reset_at(Vector2(137.0, 241.0), Vector2.RIGHT)
-	var compositor: ModularPerson = stroller.get_node("ModularPerson")
+	var compositor := stroller.get_node_or_null("ModularPerson") as ModularPerson
+	if not DevFlags.illustrated_requested():
+		t.check(compositor == null, "legacy presentation does not create the opt-in compositor")
+		stroller.free()
+		return
+	t.check(compositor != null, "illustrated presentation creates the live compositor")
+	if compositor == null:
+		stroller.free()
+		return
 	t.check(compositor.position == Vector2.ZERO, "live compositor stays at the owner's local origin")
 	t.check(compositor.global_position == stroller.global_position,
 		"live compositor origin is aligned with the owner's world position")
