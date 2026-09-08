@@ -14,9 +14,11 @@ mid-way through.
 
 ## The order
 
-1. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+1. **M92** — the halo says how much a thing has cost her and how close she is standing to it,
+   and anything the game already marks earns one.
+2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-2. **M56** — the resistance is noticed.
+3. **M56** — the resistance is noticed.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
@@ -32,14 +34,23 @@ no artist — which is why M78 stands apart from M65 rather than inside it.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**"The crowd has no halo" is tabled the same way**, and it is the one open question M89 leaves: the
-halo reads the event list, so the largest ordinary contributor on a busy pavement glows at nothing.
-The measurement is in that section and the three possible answers are written out; none is chosen.
+**"The crowd has no halo" is tabled the same way**, and **M92 answers half of it**: anything the game
+already draws a caret over earns a halo, which covers a honking car and a startled walker. What stays
+tabled is the *ambient* crowd — the pavement full of people who are marked by nothing — and the player
+said so in as many words: "we can discuss the details about general crowd floors later, though". The
+measurement is in that section and the three possible answers are written out; none is chosen.
 
-**[PLAYTEST-35.md](PLAYTEST-35.md) is the newest session, and only one of its seven findings is
-queued here** — the milestones the rest land in had not merged when they were reported, so they are
-built inside M90 and M89 rather than filed against them. **Nothing merges carrying a defect that was
-already found**, which is the whole reason they are not on this list.
+**[PLAYTEST-36.md](PLAYTEST-36.md) is the newest session, and all three of its findings are M92** —
+a session on the halo M89 had just built, and together they are one change: the cue gets a second
+axis. It also records a fork the player closed **before** it was built, which is the part to read
+first: colour from a row's declared `intensity` was proposed and rejected in favour of what has
+actually landed on her.
+
+**[PLAYTEST-35.md](PLAYTEST-35.md)'s seven findings are all built.** Six of them landed inside M90
+and M89 rather than being filed against them, because those milestones had not merged when the
+findings were reported — **nothing merges carrying a defect that was already found**. The seventh,
+the buttons that were rounded rectangles rather than circles, was parked by the player on sight and
+then turned out to be a two-line fix.
 
 **The one that is queued is finding 7, and it is queued because the player parked it**
 *(2026-09-07: "the hover highlight showed a bug that the button is currently a square and not the
@@ -139,6 +150,89 @@ which proves only that the controls stay *off* where they should.
       careful-versus-careless survives a blunter instrument, and it is answered by playing it rather
       than by arguing it.** The three smaller things a real device would also settle — the catch
       radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
+
+---
+
+## M92 — The halo says how much it cost and how close it is · asked for 2026-09-07
+
+Three findings from [PLAYTEST-36.md](PLAYTEST-36.md), and one milestone because they are one change:
+**the halo gets two axes instead of one.** Colour becomes *how much this thing has actually cost
+her*, brightness becomes *how far into its field she is standing*, and the set it draws stops being
+events-only.
+
+> "the color of the halo should be determined by the absolute magnitude with red being strong and
+> light yellow being weak and the faseout should be by the fraction of its value ... the intensity
+> of the halo states how far away I am. the color should state how dangerous it is"
+
+**Read PLAYTEST-36 before building.** It records a fork the player closed before it was built —
+colour from the row's *declared* `intensity` was proposed and rejected in favour of what has
+actually landed on her — and the reasoning is the whole design.
+
+- [ ] **Every source accumulates what it has actually delivered to her, over a five-second window.**
+      *(2026-09-07: "magnitude of how much actually landed at the player -- track it over a time
+      window", and "5s sounds good for now".)* The value is excitement-points, not a rate:
+      `contribution_at(her position)` integrated over the window.
+
+      **An exponential moving sum is the cheap shape and is worth preferring to a ring buffer**:
+      `landed = landed * exp(-delta / WINDOW) + contribution * delta`, one float per source and no
+      allocation. Its steady state for a constant rate `r` is `r * WINDOW`, which is the same scale
+      the true five-second sum would give, so the number means the same thing either way — say so
+      next to the constant, because "a 5s window" and "a 5s time constant" are not the same
+      sentence and the next reader will assume the first.
+
+      **Five seconds is a felt number and it is the player's**, chosen against `cat_dash`'s
+      three-second interruption at one end and a continuous `busker` at the other. Expect to move it
+      once it is on screen
+- [ ] **Colour is that accumulated total, pale to red.** Saturating at
+      `SATURATES_AT * WINDOW` — 25/s for the whole window, or 125 points — keeps the halo agreeing
+      with `Tuning.MARK_WORTH_A_DETOUR`, the same line the caret already draws between *ignorable*
+      and *worth a detour*.
+
+      **The two endpoints are a cues-rule decision, not a paint choice.** The palette already warns
+      that a hue in this game means something: `MARK_COSTLY` (amber) and `MARK_LETHAL` (deep red)
+      are what an event *costs*, and `SIGNAL_RED`/`AMBER`/`GREEN` are the traffic lights, with a
+      note beside them saying borrowing between the two would make permission look like a threat.
+      A ramp reading *how much has this cost me* is the caret's own axis, so it belongs to the
+      `MARK_*` family — but `MARK_LETHAL` is dark and desaturated, which is a mark colour rather
+      than a glow colour, and a glow that dark under an entity reads as a shadow. **Name two new
+      constants for the ramp's ends and say in their doc why they are not the mark colours
+      themselves**
+- [ ] **Brightness is the falloff fraction, and nothing else.**
+      `contribution_at(her position) / current_intensity()` — 1.0 at the centre of any field,
+      0 at its rim — times `MAX_ALPHA`. **This deliberately decouples brightness from strength**: a
+      busker at arm's length glows as brightly as a burning building at arm's length, and only the
+      colour separates them. That is what *"the intensity of the halo states how far away I am"*
+      asks for, and it is the opposite of what the cue does today
+- [ ] **Anything drawing a caret gets a halo, which means the crowd joins the candidate set.**
+      *(2026-09-07: "at the very least if something has a caret it needs a halo as well".)* A
+      honking car already draws a caret in `MARK_LETHAL` from `CrowdAgent._draw_horn_mark()` when
+      `_jolt > 0.0`, and the halo has never been able to see it, because `select_sources()` is
+      handed `EventManager.instances()`.
+
+      **Two cues that disagree about what they are about is the defect**, so the fix is the
+      candidate set rather than a special case: `CrowdAgent` already carries its own
+      `contribution_at()`. **Assert the implication rather than assuming it** — a caret means the
+      thing clears `CONTRIBUTION_FLOOR` at her position — because if it can be marked without
+      clearing the floor then the floor is what needs changing.
+
+      **The ambient crowd floor is still the open question** under "The crowd has no halo" below,
+      and is explicitly not settled by this: *"we can discuss the details about general crowd floors
+      later, though"*
+- [ ] **The halo pass has to be reachable from both classes.** Today it is
+      `EventInstance._draw_halo()`, a child `Node2D` with `show_behind_parent` that re-runs
+      `_draw_body(canvas)` at a ring of offsets. `CrowdAgent` needs the same, so the ring and its
+      shared `ShaderMaterial` want extracting into one small class that calls back into whichever
+      parent owns it — and `CrowdAgent`'s own drawing needs the same `canvas` parameter
+      `EventInstance`'s helpers already took.
+
+      **`select_sources()` stops being typed to `Array[EventInstance]`** and becomes generic over
+      "a `Node2D` that can answer `contribution_at()`". GDScript has no interface to lean on, so say
+      in its doc what the duck type is. The `city_wide` exclusion is an event-only concept and has
+      to stay one
+- [ ] **`MAX_SOURCES` (8) is a played question once the crowd is in it.** A busy pavement can put
+      far more than eight caret-worthy things inside her reach at once, and the cap currently keeps
+      the strongest — which is the right rule and possibly the wrong number. **Do not guess it**;
+      look at a capture on the arterial with the change in and say what the number should be
 
 ---
 
