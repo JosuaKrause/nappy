@@ -1,7 +1,7 @@
 # Illustrated walker source record
 
-The three PNGs are built-in image generation outputs with genuine RGBA alpha. No symmetry is
-claimed: every N, NE, E, SE, S, SW, W and NW view is authored and retained in that order.
+The three PNGs are built-in image generation outputs with genuine RGBA alpha. The runtime maps
+the authored N, NE, E, SE, S, SW, W and NW views explicitly; it does not mirror a facing.
 
 ## Prompts
 
@@ -32,5 +32,16 @@ watermark, extra views or mirrored substitutions.”
 
 The generator output reports `PNG ... 8-bit/color RGBA`. The transparent margins were inspected in
 the generated previews and the imported textures retain RGBA format. The asset contract rejects a
-baked checkerboard; no checkerboard pixels are present in the margins. `MANIFEST.json` records the
-exact dimensions and cell rule used by the runtime.
+baked checkerboard; no checkerboard pixels are present in the margins.
+
+`MANIFEST.json` records each upper-body silhouette's own alpha-supported bounding box rather than
+dividing the sheet into equal columns. Its crop-local hem is measured from the painted lower jacket
+edge. Each thigh, shin and shoe has an independent crop and crop-local proximal/distal axis. The
+shoe axis ends at the painted sole; its proximal point is the ankle where the shin attaches.
+
+The leg sheet has only one complete limb set in each E and W profile, so both overlapping legs
+explicitly reuse that same facing-specific source. The diagonal limbs remain separate registrations,
+but their painted edges overlap in the source and their tight crops include shared edge pixels.
+Those source limitations need new authored cutouts for fully independent profile and diagonal legs.
+The mustard SW upper silhouette also reads closer to SE than the rust SW view; it stays registered as
+the authored SW image instead of being relabelled or mirrored to disguise the source-facing issue.
