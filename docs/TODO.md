@@ -23,9 +23,8 @@ mid-way through.
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
 does to the route decision, the same as everything else. **M64** (eight seal pictures, so no single
-barrier becomes the city's signature), **M65** (a protester who points at the objective) and
-**M53** (the bollard, so a street that meets a precinct stops against something) are each a
-milestone of only its drawings, and each is ordinary open work.
+barrier becomes the city's signature) and **M65** (a protester who points at the objective) are
+each a milestone of only its drawings, and each is ordinary open work.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
 no artist — which is why M78 stands apart from M65 rather than inside it.
@@ -126,8 +125,6 @@ M47 (a calm-area spoiling inconsistency) and M43 (a measured lead-time gap on th
 **Playtest 19's nine findings are filed against the milestones that own them** — M64 and M65 are
 new, the barriers went to M48 and are built, and the rest went to M49 (the north edge, the junction
 paint) and the small items (the robber in a building).
-
-M53's one remaining piece is specified and unordered — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
 
@@ -637,28 +634,6 @@ looking at plans before the director sites them rather than a day with no set pi
 
 The probe that produced all of this is kept on this milestone's own branch, so that *measure it
 again after* means running the same thing rather than reinventing it.
-
----
-
-## M53 — The bollard
-
-**All that remains here is one drawing**, alongside M64's seal pictures and M65's pointing
-protester. Everything else about the precinct is built.
-
-A precinct is paving frontage to frontage with nothing driving on it, on either axis, and a street
-that meets one ends at its edge. What remains is that the ending is not *drawn* as anything.
-
-- [ ] **Nothing draws a bollard, and the street just stops.** Six comments across the city and the
-      crowd explain a precinct by saying a driver *"meeting a bollarded street"* diverts, and
-      `docs/CITY.md` says a span stops short of the crossroads at either end *"which is where the
-      bollards are"*. **There is no bollard anywhere in the game** — no sprite, no tile, no prop. The
-      carriageway simply ends flush against the paving, which reads as the road running out rather
-      than as a street that was closed on purpose. It is the same gap M48 closed for `construction`,
-      whose barrier boards were blue-grey with no hazard marking: one picture per row passes and the
-      picture still says nothing. What it wants is the smallest thing that says *this was done
-      deliberately* — a line
-      of posts across the mouth is the real-world answer and it is also the cheapest drawing in the
-      list
 
 ---
 

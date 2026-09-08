@@ -270,8 +270,8 @@ every time. **The bearing form is the one that reproduces a route a player would
 since a press sets an arbitrary unit vector and most headings are diagonal; the run log writes the
 bearing in whole degrees for the same reason.
 
-M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
-bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.
+A street that meets a precinct now stops against a line of bollards across the carriageway, and
+nobody has looked at one in play; the record is in `DECISIONS.md` under M53.
 
 ## Open beyond the order
 
@@ -463,9 +463,9 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   both meant to stop being walkable-past. The chatting mother's is the one to distrust: her radius
   now exceeds the 32px between a pavement's two walking lanes, **so walking her far lane no longer
   avoids her**, which is the trade the player accepted and nobody has felt.
-- **Nothing draws a bollard**, so a street that meets a precinct simply ends against the paving. The
-  city and the crowd both explain a precinct by saying a driver meets a bollarded street, and there
-  is no bollard anywhere in the game.
+- **The bollards are a placeholder drawing and have been seen once, in a rig capture.** Five posts
+  seen from above close each precinct mouth's carriageway; whether they read as *closed on purpose*
+  at a glance while walking, rather than as five dots, is a played question.
 
 ## The rule that matters most before starting anything
 

@@ -1,5 +1,37 @@
 # Decisions
 
+## M53 — The bollard · built 2026-09-08
+
+The milestone's last piece, a drawing: a street that met a precinct simply ended flush against the
+paving, which read as the road running out rather than as a street closed on purpose, while six
+code comments and `docs/CITY.md` explained the precinct by a driver *"meeting a bollarded street"*.
+Built by a sub-agent from a brief, with the player's leave to use **placeholder SVG graphics**
+*(2026-09-08: "if you need to you can create svg placeholder graphics")*.
+
+**A line of posts across the carriageway at each mouth, seen from above.** `assets/props/bollard.svg`
+is a 12px post-head — rim, body, offset highlight — in the house style, not a post in elevation
+turned on its side (the mistake M49 records for the fence). `Prop.Kind.BOLLARD` draws it through
+`Sprites.draw_standing` with the ordinary shadow, feet-anchored so it y-sorts.
+
+**Placement is geometry, not a roll.** `City.bollard_positions(map)` is static and stated over the
+map alone: for each span in `CityMap.precinct_spans` one row on the first tile of paving and one on
+the last, spread across the carriageway band only — the middle two tiles of the corridor — so the
+pavements run past the posts and a pram walks through where a car does not. `BOLLARD_SPACING`
+(14px) gives five posts on the 64px band; the count is derived from the cross-section rather than
+fixed. `tests/test_generator.gd` holds it over the precinct test's seeds: two rows per span, every
+post on a `PEDESTRIAN` tile of its own corridor and on the carriageway, and the tile one step past
+each row not precinct.
+
+**Chosen where the brief was silent, open to overturn:** the posts are rebuilt every `start_day`
+beside the trees rather than once per run, because they need no seed and `_dress_blocks` stays the
+one owner of every prop. The capture is
+`docs/evidence/archive/session-captures/2026-09-08/rig-190124-seed4242-v0.7.0-2-g7f9cc02-dirty/bollards-precinct-mouth.png`
+— seed 4242, day 1, the precinct's west mouth — and shows the five posts in a vertical line where
+the open paving meets an ordinary crossroads, the pavement strips unbroken on either side.
+
+**What is open.** Whether five dots read as *closed on purpose* while walking is a played question,
+and the asset is a placeholder the graphics overhaul may redraw.
+
 ## M89 — A halo says what is costing her · built 2026-09-07
 
 *Asked for on 2026-09-07: "lastly, let's create a shader (if that is possible in godot) to create a
