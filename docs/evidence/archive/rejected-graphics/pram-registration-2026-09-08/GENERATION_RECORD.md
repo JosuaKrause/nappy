@@ -1,7 +1,9 @@
 # Pram registration generation record
 
-These files are rejected generation outputs, preserved for posterity only. They are not style
-references or runtime assets. The current request and next work remain in the repair brief.
+These files preserve the opaque generation outputs. PLAYTEST-37 approves their layered drawings
+for scripted transparency extraction; this specific approval permits using them as extraction
+inputs despite the archive location. They are not runtime assets, and their layer registration
+still needs work. The current request and next work remain in the repair brief.
 
 ## Inputs and method
 
@@ -26,4 +28,3 @@ Use case: illustration-story. Asset type: production modular PNG sprite atlas fo
 ## Exact extraction prompt
 
 Use case: background-extraction. Edit target: the supplied pram sprite atlas. Remove the entire gray and white checkerboard background, including every opening inside wheels, spokes, handles and gaps between frame bars. Return an actual RGBA PNG with alpha=0 in all background pixels. DO NOT draw a replacement transparency checkerboard or any new backdrop. Preserve exact canvas dimensions, all 8 columns, all 4 rows, all painted objects, positions, colors, dark outlines, fine spokes, pale baby blankets and highlights. Only change background pixels and antialiased boundary contamination. This is a game sprite asset; opaque checkerboard pixels make it unusable. Genuine transparency is the only requested edit.
-

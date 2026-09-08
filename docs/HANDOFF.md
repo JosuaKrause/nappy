@@ -186,11 +186,13 @@ view; the repair brief gives its screenshot command. Its current actors remain v
 The current actor-registration branch contains a measured upper-body walker calibration and
 focused visual checks, but it is not accepted: the lower-body sheet still crosses inferred crop
 boundaries, and the assembled lower limbs have not passed a rendered joint review. The mother and
-pram still use source sheets whose anatomy and pram groups are not reliably registered. Two new
-pram generation attempts are archived as rejected because they returned opaque checkerboards and
-did not preserve a shared layer coordinate system. The next session should review the walker
-diff, keep any valid painted-bound measurements, and obtain clean replacement layered source art
-before claiming a complete eight-direction actor.
+pram still use source sheets whose anatomy and pram groups are not reliably registered.
+PLAYTEST-37 approves the layered pram drawings for scripted checkerboard removal. Their opaque
+originals remain in the archive as extraction inputs; the approval does not establish a shared
+layer coordinate system. Transparent copies and the reproducible extraction command are listed in
+`assets/illustrated/modular/pram-alpha-extraction-2026-09-08.md`; no runtime manifest consumes them.
+Review the walker diff, keep valid painted-bound measurements, and
+register the pram layers before claiming a complete eight-direction actor.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the

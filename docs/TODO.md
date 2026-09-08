@@ -24,7 +24,9 @@ define style; `docs/reference/` supplies real-world structure and posture.
 - [ ] Author versioned replacement modular sheets with eight complete views, clean alpha and
       isolated anatomy. The source-sheet audit is recorded in DECISIONS.md under Illustrated
       registration audit. Preserve the requested interchangeable parts; complete flattened cards
-      are not a replacement for the layered animation contract.
+      are not a replacement for the layered animation contract. The pram transparent copies
+      documented in `assets/illustrated/modular/pram-alpha-extraction-2026-09-08.md` are available
+      for registration; see DECISIONS.md under Pram checkerboard extraction.
 - [ ] Make per-direction part registration authoritative and reject incomplete registrations.
       Fit a stationary mother/pram and pedestrian to measured attachment points, preserving the
       legacy comparison at one fixed horizontal offset. Do not claim complete actors where source
