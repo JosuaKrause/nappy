@@ -1112,16 +1112,16 @@ func _draw_halo() -> void:
 
 ## Called by `ExcitementHalo` once a frame for every live instance — above zero for the handful
 ## `select_sources()` picked, zero for everything else. Sets `_halo`'s own `halo_colour` instance
-## uniform (see `assets/shaders/excitement_halo.gdshader`): the amber the excitement bar itself
-## fills with, at an alpha of `strength` — an `instance uniform` rather than `modulate`, because a
-## fragment function that writes `COLOR` is not re-multiplied by the node's own modulate afterward,
-## only `set_instance_shader_parameter()` reaches a shared material per instance. This is the only
-## place a saturated source's ring reads any brighter than a barely clearing one.
-func set_halo_strength(strength: float) -> void:
+## uniform (see `assets/shaders/excitement_halo.gdshader`) to `colour` at an alpha of `strength` —
+## an `instance uniform` rather than `modulate`, because a fragment function that writes `COLOR` is
+## not re-multiplied by the node's own modulate afterward, only `set_instance_shader_parameter()`
+## reaches a shared material per instance. `colour` is `ExcitementHalo.colour_for()`'s reading of
+## how much this event has actually cost her; `strength` is still the only thing that makes a
+## saturated source's ring read any brighter than a barely clearing one.
+func set_halo_strength(strength: float, colour: Color) -> void:
 	_halo_strength = strength
 	_halo.set_instance_shader_parameter("halo_colour",
-			Color(Palette.EXCITEMENT_FIELD.r, Palette.EXCITEMENT_FIELD.g,
-					Palette.EXCITEMENT_FIELD.b, strength))
+			Color(colour.r, colour.g, colour.b, strength))
 	_halo.queue_redraw()
 
 # ------------------------------------------------------------------ the mark ---

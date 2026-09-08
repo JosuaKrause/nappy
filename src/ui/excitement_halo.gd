@@ -103,6 +103,24 @@ static func select_sources(instances: Array[EventInstance], at: Vector2) -> Arra
 ## "ignorable" and "worth a detour" — so the halo and the caret agree on what counts as loud.
 const SATURATES_AT := 25.0
 
+# -------------------------------------------------------------------- colour ---
+
+## How red a source's own rim reads: pale for a source that has cost her almost nothing over its
+## own `WINDOW`, red for one that has actually hurt. `landed` is excitement points (rate × time),
+## not a rate, and it saturates at `SATURATES_AT * WINDOW` (125 — 25/s sustained for the whole
+## window), the same line `Tuning.MARK_WORTH_A_DETOUR` already draws between ignorable and worth a
+## detour.
+##
+## **This is the axis the row's own declared `intensity` was proposed for and rejected.** Put as a
+## fork — a lethal `cyclist` (18/s) glowing paler than a harmless `protest` (42/s) — the answer was
+## *"magnitude of how much actually landed at the player -- track it over a time window -- then
+## you have the real cost"*: what a row is declared to emit is a fact about the catalogue, and what
+## it has actually delivered is a fact about the encounter she just had, which is the only one this
+## cue should be reporting.
+static func colour_for(landed: float) -> Color:
+	var t := clampf(landed / (SATURATES_AT * WINDOW), 0.0, 1.0)
+	return Palette.HALO_WEAK.lerp(Palette.HALO_STRONG, t)
+
 ## The most opaque any halo may ever draw, at a saturated source's own peak, so even a saturated
 ## source is a glow rather than a solid ring — see docs/EVENTS.md, "Soft, and under everything."
 const MAX_ALPHA := 0.75
@@ -115,7 +133,7 @@ func setup(events: EventManager, player: Node2D) -> void:
 	_player = player
 
 ## Every frame: accumulate what actually landed on every live instance, pick the sources, tell
-## each one how bright its own ring reads, and tell everything else zero.
+## each one how bright its own ring reads and what colour it is, and tell everything else zero.
 ## `EventInstance.set_halo_strength()` is what actually stores it and queues that instance's own
 ## halo child for redraw — this node has no `_draw()` of its own left to call.
 func _process(delta: float) -> void:
@@ -129,6 +147,6 @@ func _process(delta: float) -> void:
 	for instance in instances:
 		if instance in picked:
 			var ratio := clampf(instance.contribution_at(here) / SATURATES_AT, 0.0, 1.0)
-			instance.set_halo_strength(ratio * MAX_ALPHA)
+			instance.set_halo_strength(ratio * MAX_ALPHA, colour_for(instance.landed()))
 		else:
-			instance.set_halo_strength(0.0)
+			instance.set_halo_strength(0.0, Palette.HALO_WEAK)

@@ -66,15 +66,18 @@ const SPOILED_GROUND := Color("6b6357")
 const MARK_COSTLY := Color("e8b64a")
 const MARK_LETHAL := Color("8f2f38")
 
-## The excitement field, drawn under the world by `ExcitementHalo` as the sum
-## `EventManager.total_excitement_at()` is reading. **Not a fourth danger hue** — it is the same
-## amber the excitement bar itself fills with (`hud.gd`'s `_excitement.fill_colour`), so the halo
-## and the number it is a picture of are visibly the same fact rather than a second vocabulary
-## reaching for its own colour. Kept as its own constant rather than a shared reference because
-## `hud.gd`'s bar colours are its own literals, chosen once when the HUD was built and not
-## threaded through this file; matching the value by hand is the smallest way to keep the two in
-## agreement without wiring the HUD through `Palette` for a shade nothing else there needs yet.
-const EXCITEMENT_FIELD := Color("d9a648")
+## The halo's own colour ramp — pale for a source that has cost her almost nothing over its own
+## `ExcitementHalo.WINDOW`, red for one that has actually hurt. See `ExcitementHalo.colour_for()`.
+##
+## **Not `MARK_COSTLY`/`MARK_LETHAL`.** A mark colour is drawn small and opaque over a caret; a
+## glow that dark under an entity reads as a shadow on the ground rather than as a glow around it,
+## which is the whole reason this ramp needs its own two constants rather than reaching for the
+## danger marks it otherwise resembles in *purpose*. **Not `SIGNAL_RED`/`AMBER`/`GREEN` either**,
+## for the reason given beside them below: a lamp says whether she may go and this ramp says what
+## a thing has already cost her, and borrowing between the two vocabularies is exactly what that
+## note exists to stop.
+const HALO_WEAK := Color("f3e0a0")
+const HALO_STRONG := Color("cf4235")
 
 ## The three lamps of a signal head. **Not** the mark colours, deliberately: a caret says how bad
 ## a thing is and a lamp says whether you may go, and borrowing `MARK_LETHAL` for a red light

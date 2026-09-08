@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_a_city_wide_source_is_never_drawn_at_a_point(t)
 	_test_the_cap_keeps_the_strongest(t)
 	_test_landed_accumulates_and_decays(t)
+	_test_colour_for_the_ramp_ends(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -152,3 +153,17 @@ func _test_landed_accumulates_and_decays(t) -> void:
 	var agent := CrowdAgent.new()
 	_check_accumulate_and_decay(t, agent, "CrowdAgent")
 	agent.free()
+
+# ---------------------------------------------------------------- colour ---
+
+func _test_colour_for_the_ramp_ends(t) -> void:
+	t.check(ExcitementHalo.colour_for(0.0).is_equal_approx(Palette.HALO_WEAK),
+			"no landed excitement reads as the weak end of the ramp")
+	var saturated := ExcitementHalo.SATURATES_AT * ExcitementHalo.WINDOW
+	t.check(ExcitementHalo.colour_for(saturated).is_equal_approx(Palette.HALO_STRONG),
+			"landed excitement at the saturation point reads as the strong end")
+	t.check(ExcitementHalo.colour_for(saturated * 10.0).is_equal_approx(Palette.HALO_STRONG),
+			"well past saturation stays at the strong end rather than overshooting it")
+	var half := ExcitementHalo.colour_for(saturated * 0.5)
+	t.check(not half.is_equal_approx(Palette.HALO_WEAK) and not half.is_equal_approx(Palette.HALO_STRONG),
+			"halfway to saturation reads as neither end of the ramp")
