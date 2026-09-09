@@ -117,7 +117,24 @@ re-tuned.
 **And the red caret is under the same rule.** A car draws its doubled deep-red caret only while it
 is sounding its horn — `CrowdAgent._draw_horn_mark()` on `_jolt > 0` — which is a fact about
 whether the car noticed *her*, not about whether it is about to kill her. A car she walks into from
-the side never honked and never carried a mark. Expected impact answers both carets with one
-question: what will this thing do to her on her current line — cost her points, amber; end the
-day, doubled red. This lands after M92, because it changes the same files, and its numbers — how
-far ahead to look, and where the amber line falls — are open.
+the side never honked and never carried a mark.
+
+> "I don't want a caret when walking into a car from the side"
+
+> "so red caret means honking -- not lethal, in this case"
+
+> "and the red caret for the biker also means lethal"
+
+**So the red caret has two meanings today, one shape**: on a car it means *it noticed you and is
+sounding its horn*, on the cyclist it means *this ends your day*. And the direction of the fix is
+fixed by the side-car sentence: expected impact is measured **with her held still** — what the
+thing's own motion and field will do to her over the horizon if she does nothing — never along her
+line into it. That is already the screen-edge badge's rule and the cues skill's sentence: *"measure
+the thing, not the gap ... a rate that includes her 92px/s is a cue for walking."* Under it both red
+carets mean one thing, *on its current course this kills you*: a car honking at her is a car whose
+lane she is standing in and it marks; the cyclist coming at her marks; a car she steps into from
+the side does not, because held still she is never in its path. The honk stops being the meaning
+and becomes the symptom. It also settles the cat and the pedestrian in one breath — a thing whose
+own approach lands less than the line on a standing player is not marked, whatever its row says —
+and it means a stationary café never earns a caret, which is the halo's job from the moment she is
+in its field. This lands after M92, because it changes the same files.
