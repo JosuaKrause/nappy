@@ -1,7 +1,16 @@
-# Illustrated mother source draft
+# Illustrated source drafts
 
-This directory contains a handoff-quality source draft for the illustrated character direction. It
-is not production-ready runtime art and is not wired into the game.
+This directory contains handoff-quality source drafts for the illustrated character direction. None
+of it is production-ready runtime art and none of it is wired into the game. Everything under
+`assets/` is imported and exported, so a draft lives here rather than beside the bound sheets it
+was drawn for.
+
+## `lower-denim-sneakers-v1.png`
+
+An unused walker lower-body draft, 2032 × 774 with a real alpha channel, whose prompt and reading
+order are recorded in [`../walkers/GENERATION_RECORD.md`](../walkers/GENERATION_RECORD.md). Its
+eight joined trouser-and-shoe views read front first and back in cell 5, not N-first, and they are
+not the separate articulated cutouts the walker manifest registers.
 
 ## `mother-turnaround-v1.png`
 
