@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 from PIL import Image
@@ -26,15 +27,19 @@ class ClipTests(unittest.TestCase):
         stamps = [0.0, 0.11, 0.31][:frames]
         for index, colour in enumerate(((255, 0, 0), (0, 255, 0), (0, 0, 255))[:frames], 1):
             Image.new("RGB", (17, 11), colour).save(folder / f"frame-{index:04d}.png")
-        (folder / "burst.json").write_text(json.dumps({
-            "schema_version": 1,
-            "frames": [{"file": f"frame-{i:04d}.png", "elapsed_seconds": t}
-                       for i, t in enumerate(stamps, 1)],
-            "duration_seconds": 0.6,
-            "target_fps": 12,
-            "status": status,
-            "context": "test",
-        }), encoding="utf-8")
+        (folder / "burst.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "frames": [{"file": f"frame-{i:04d}.png", "elapsed_seconds": t} for i, t in enumerate(stamps, 1)],
+                    "duration_seconds": 0.6,
+                    "target_fps": 12,
+                    "status": status,
+                    "context": "test",
+                }
+            ),
+            encoding="utf-8",
+        )
         return folder
 
     def test_find_pending_scans_nested_bursts_and_skips_active_or_published(self) -> None:
@@ -51,7 +56,9 @@ class ClipTests(unittest.TestCase):
             malformed.write_text("{", encoding="utf-8")
             no_frames = root / "empty" / "burst.json"
             no_frames.parent.mkdir()
-            no_frames.write_text(json.dumps({"schema_version": 1, "status": "complete", "frames": []}), encoding="utf-8")
+            no_frames.write_text(
+                json.dumps({"schema_version": 1, "status": "complete", "frames": []}), encoding="utf-8"
+            )
 
             with mock.patch.object(clip, "convert"):
                 pending = clip.find_pending(root)
@@ -63,17 +70,24 @@ class ClipTests(unittest.TestCase):
             root = Path(temp)
             first = self.burst(root, name="first")
             second = self.burst(root, name="second")
-            outputs = {folder: folder.parent / f"{folder.name}.mp4" for folder in (first.parent / "first", second.parent / "second")}
+            outputs = {
+                folder: folder.parent / f"{folder.name}.mp4"
+                for folder in (first.parent / "first", second.parent / "second")
+            }
 
             def dispatch(folder: Path, **kwargs: object) -> Path:
                 outputs[folder].write_bytes(b"encoded")
                 return outputs[folder]
 
-            with mock.patch.object(clip, "telemetry_directory", return_value=root), \
-                    mock.patch.object(clip, "convert", side_effect=dispatch):
+            with (
+                mock.patch.object(clip, "telemetry_directory", return_value=root),
+                mock.patch.object(clip, "convert", side_effect=dispatch),
+            ):
                 self.assertEqual(clip.main([]), 0)
-            with mock.patch.object(clip, "telemetry_directory", return_value=root), \
-                    mock.patch.object(clip, "convert") as convert:
+            with (
+                mock.patch.object(clip, "telemetry_directory", return_value=root),
+                mock.patch.object(clip, "convert") as convert,
+            ):
                 self.assertEqual(clip.main([]), 0)
                 convert.assert_not_called()
 
@@ -84,7 +98,7 @@ class ClipTests(unittest.TestCase):
             metadata_bytes = (folder / "burst.json").read_bytes()
             real_run = subprocess.run
 
-            def old_ffmpeg(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+            def old_ffmpeg(command: list[str], **kwargs: Any) -> Any:
                 self.assertNotIn("-fps_mode", command)
                 return real_run(command, **kwargs)
 
@@ -95,27 +109,51 @@ class ClipTests(unittest.TestCase):
             self.assertEqual(metadata_bytes, (folder / "burst.json").read_bytes())
             self.assertEqual(source_bytes, {path: path.read_bytes() for path in folder.glob("frame-*.png")})
             probe = __import__("subprocess").run(
-                ["ffprobe", "-v", "error", "-show_entries", "format=duration:stream=pix_fmt,width,height",
-                 "-of", "default=noprint_wrappers=1", str(output)],
-                check=True, capture_output=True, text=True)
+                [
+                    "ffprobe",
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "format=duration:stream=pix_fmt,width,height",
+                    "-of",
+                    "default=noprint_wrappers=1",
+                    str(output),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
             self.assertIn("pix_fmt=yuv420p", probe.stdout)
             self.assertIn("width=18", probe.stdout)
             self.assertIn("height=12", probe.stdout)
-            duration = float(next(line.split("=", 1)[1] for line in probe.stdout.splitlines() if line.startswith("duration=")))
+            duration = float(
+                next(line.split("=", 1)[1] for line in probe.stdout.splitlines() if line.startswith("duration="))
+            )
             self.assertGreater(duration, 0.45)
             self.assertLess(duration, 0.8)
             decoded_dir = Path(temp) / "decoded"
             decoded_dir.mkdir()
             subprocess.run(
-                ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(output), "-vsync", "0",
-                 str(decoded_dir / "frame-%02d.png")], check=True,
+                [
+                    "ffmpeg",
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-i",
+                    str(output),
+                    "-vsync",
+                    "0",
+                    str(decoded_dir / "frame-%02d.png"),
+                ],
+                check=True,
                 capture_output=True,
             )
             decoded_frames = sorted(decoded_dir.glob("frame-*.png"))
             self.assertGreaterEqual(len(decoded_frames), 3)
             expected_colours = ((255, 0, 0), (0, 255, 0), (0, 0, 255))
-            for decoded_frame, expected in zip(decoded_frames[:3], expected_colours):
+            for decoded_frame, expected in zip(decoded_frames[:3], expected_colours, strict=True):
                 pixel = Image.open(decoded_frame).convert("RGB").getpixel((5, 5))
+                assert isinstance(pixel, tuple)
                 self.assertEqual(max(range(3), key=pixel.__getitem__), max(range(3), key=expected.__getitem__))
 
     def test_refuses_overwrite_and_bad_metadata(self) -> None:
@@ -125,10 +163,21 @@ class ClipTests(unittest.TestCase):
             output.write_bytes(b"keep")
             with self.assertRaises(clip.ClipError):
                 clip.convert(folder)
-            (folder / "burst.json").write_text(json.dumps({
-                "schema_version": 1, "frames": [{"file": "frame-0001.png", "elapsed_seconds": 0.2},
-                {"file": "frame-0002.png", "elapsed_seconds": 0.1}], "duration_seconds": 1,
-                "target_fps": 12, "status": "complete"}), encoding="utf-8")
+            (folder / "burst.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "frames": [
+                            {"file": "frame-0001.png", "elapsed_seconds": 0.2},
+                            {"file": "frame-0002.png", "elapsed_seconds": 0.1},
+                        ],
+                        "duration_seconds": 1,
+                        "target_fps": 12,
+                        "status": "complete",
+                    }
+                ),
+                encoding="utf-8",
+            )
             output.unlink()
             with self.assertRaises(clip.ClipError):
                 clip.convert(folder)
@@ -145,9 +194,11 @@ class ClipTests(unittest.TestCase):
     def test_missing_ffmpeg_is_actionable(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             folder = self.burst(Path(temp))
-            with mock.patch.object(clip.shutil, "which", return_value=None):
-                with self.assertRaisesRegex(clip.ClipError, "ffmpeg"):
-                    clip.convert(folder)
+            with (
+                mock.patch.object(clip.shutil, "which", return_value=None),
+                self.assertRaisesRegex(clip.ClipError, "ffmpeg"),
+            ):
+                clip.convert(folder)
 
 
 if __name__ == "__main__":

@@ -2,12 +2,36 @@
 name = "nappy-tooling"
 version = "0.0.0"
 description = "Python tooling dependencies for the Nappy repository"
-requires-python = ">=3.9"
+requires-python = ">=3.14"
 dependencies = []
 
 [dependency-groups]
 dev = [
+    "mypy>=1.19",
     "pillow>=11,<12",
     "pillow-heif>=0.18",
-    "PyYAML>=6.0,<7",
+    "ruff>=0.15",
 ]
+
+# The one script that does not run inside this environment is tools/codex-hooks.py: Codex
+# invokes it with the host's own `python3` from .codex/hooks.json, so it stays 3.9-compatible
+# and ruff is told not to modernise it past that.
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+per-file-target-version = { "tools/codex-hooks.py" = "py39" }
+extend-exclude = [".godot", "build", "docs", "assets"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "RUF", "PTH"]
+
+[tool.mypy]
+python_version = "3.14"
+files = ["tools"]
+strict = true
+
+# pillow-heif's package re-exports its public API without an `__all__`, so strict mypy reads the
+# documented `register_heif_opener` as private. That is the library's omission, not a misuse here.
+[[tool.mypy.overrides]]
+module = "pillow_heif"
+implicit_reexport = true

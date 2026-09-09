@@ -48,6 +48,7 @@ Run these before committing. They are fast and they each catch a different class
 ./tools/check.sh              # imports, boots the project, fails on any script error
 ./tools/test.sh crowd events  # just the suites your change touches, in seconds
 ./tools/lint.sh               # the governed docs, if you moved one
+./tools/pycheck.sh            # ruff, mypy and the unit tests for tools/*.py, if you touched one
 ./tools/shot.sh out.png 3     # renders 3 seconds of real gameplay to a PNG
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```

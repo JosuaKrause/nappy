@@ -13,7 +13,6 @@ from pathlib import Path
 
 from PIL import Image
 
-
 NEUTRAL_SPREAD = 9
 FRINGE_SPREAD = 16
 MIN_BACKGROUND_LUMA = 170
@@ -23,13 +22,19 @@ MIN_COMPONENT_PIXELS = 12
 def neutral_background_mask(image: Image.Image) -> bytearray:
     rgb = image.convert("RGB")
     width, height = rgb.size
-    pixels = rgb.load()
+    # The raw byte plane rather than per-pixel access: three bytes per pixel, row-major, which
+    # is both the cheap way to walk a whole image and the one whose element type is plainly int.
+    raw = rgb.tobytes()
+
+    def pixel_at(index: int) -> tuple[int, int, int]:
+        offset = index * 3
+        return raw[offset], raw[offset + 1], raw[offset + 2]
+
     candidate = bytearray(width * height)
-    for y in range(height):
-        for x in range(width):
-            r, g, b = pixels[x, y]
-            if max(r, g, b) - min(r, g, b) <= NEUTRAL_SPREAD and (r + g + b) // 3 >= MIN_BACKGROUND_LUMA:
-                candidate[y * width + x] = 1
+    for index in range(width * height):
+        r, g, b = pixel_at(index)
+        if max(r, g, b) - min(r, g, b) <= NEUTRAL_SPREAD and (r + g + b) // 3 >= MIN_BACKGROUND_LUMA:
+            candidate[index] = 1
 
     transparent = bytearray(width * height)
     seen = bytearray(width * height)
@@ -59,11 +64,19 @@ def neutral_background_mask(image: Image.Image) -> bytearray:
         if transparent[index]:
             continue
         x, y = index % width, index // width
-        r, g, b = pixels[x, y]
+        r, g, b = pixel_at(index)
         if max(r, g, b) - min(r, g, b) > FRINGE_SPREAD or (r + g + b) // 3 < MIN_BACKGROUND_LUMA:
             continue
-        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1),
-                       (x - 1, y - 1), (x + 1, y - 1), (x - 1, y + 1), (x + 1, y + 1)):
+        for nx, ny in (
+            (x - 1, y),
+            (x + 1, y),
+            (x, y - 1),
+            (x, y + 1),
+            (x - 1, y - 1),
+            (x + 1, y - 1),
+            (x - 1, y + 1),
+            (x + 1, y + 1),
+        ):
             if 0 <= nx < width and 0 <= ny < height and base_transparent[ny * width + nx]:
                 transparent[index] = 1
                 break

@@ -145,7 +145,9 @@ def telemetry_directory() -> Path:
     return path
 
 
-def convert(folder: Path, output: Path | None = None, *, explicit: bool = False, timeout: int = DEFAULT_TIMEOUT) -> Path:
+def convert(
+    folder: Path, output: Path | None = None, *, explicit: bool = False, timeout: int = DEFAULT_TIMEOUT
+) -> Path:
     folder = folder.expanduser().resolve()
     if not folder.is_dir():
         raise error(f"burst directory does not exist: {folder}")
@@ -172,11 +174,30 @@ def convert(folder: Path, output: Path | None = None, *, explicit: bool = False,
         make_manifest(staged, duration, manifest)
         temporary_output = Path(temporary) / "clip.mp4"
         command = [
-            "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin",
-            "-f", "concat", "-safe", "0", "-i", str(manifest),
-            "-vsync", "vfr", "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
-            "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
-            "-y", str(temporary_output),
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostdin",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(manifest),
+            "-vsync",
+            "vfr",
+            "-vf",
+            "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+            "-an",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            "-y",
+            str(temporary_output),
         ]
         try:
             subprocess.run(command, check=True, timeout=timeout, cwd=temporary)
