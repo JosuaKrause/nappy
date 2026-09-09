@@ -535,10 +535,11 @@ static func bollard_positions(map: CityMap) -> Array[Vector2]:
 	for span in map.precinct_spans:
 		var vertical := span.x == 1
 		var corridor: int = span.y
-		# The paving begins where the street's own tiles end and runs to the far crossroads —
-		# see `CityMap.precinct_spans`'s own doc comment for the same two coordinates.
-		var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH
-		var hi := (span.w + 1) * CityMap.period()
+		# The paving now reaches the crossroads' own road edge at each end — the same widened
+		# range `CityMap.street_kind()` reads paving from, so a post never stands short of or
+		# past where the ground itself changes.
+		var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
+		var hi := (span.w + 1) * CityMap.period() + Tuning.SIDEWALK_WIDTH
 		var band_start := (corridor * CityMap.period() + Tuning.SIDEWALK_WIDTH) * tile
 		for along_tile: int in [lo, hi - 1]:
 			var along_px := (along_tile + 0.5) * tile

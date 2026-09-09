@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_no_single_street_closure_isolates_the_parks(t)
 	_test_a_missing_arm_has_no_crossing_on_it(t)
 	_test_nothing_goes_into_a_precinct(t)
+	_test_a_precincts_end_is_a_t_junction(t)
 	_test_bollards_stand_where_the_paving_begins(t)
 	_test_an_alley_is_exactly_one_cell_wide(t)
 	_test_even_offset_is_always_even(t)
@@ -634,6 +635,53 @@ func _tile_is_hard_blocked(map: CityMap, tile: Vector2i) -> bool:
 			return true
 	return false
 
+## Playtest 37: the crossroads at each end of a span loses its arm into the precinct. The spur —
+## the crossing street's own precinct-side sidewalk, over the precinct corridor's road band — is
+## pavement rather than `CROSSING`, and the box's own centre stays `ROAD` **where a driveable
+## street actually crosses there** — a T for a car to turn at, not a severed one.
+##
+## Not every end has one to check: a calm zone can absorb the crossing corridor, a dead end can
+## wall it, or a big building can build over it, all independently of the precinct — the same
+## pre-existing gap `_test_nothing_goes_into_a_precinct` already exempts through
+## `_tile_is_hard_blocked`. Asserted only where `is_street` says the crossing is still there.
+func _test_a_precincts_end_is_a_t_junction(t) -> void:
+	var seeds := 25
+	var road_band := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH * 2
+	for i in seeds:
+		var map := CityGenerator.generate(_seed(i))
+		for span in map.precinct_spans:
+			var vertical := span.x == 1
+			var across_lo := span.y * CityMap.period() + Tuning.SIDEWALK_WIDTH
+			var ends := [
+				{"box": span.z * CityMap.period(),
+						"spur": Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH},
+				{"box": (span.w + 1) * CityMap.period(), "spur": 0},
+			]
+			for end in ends:
+				var box_start: int = end["box"]
+				var spur := _along_across_rect(vertical, box_start + int(end["spur"]),
+						Tuning.SIDEWALK_WIDTH, across_lo, road_band)
+				for tile in map.rect_tiles(spur):
+					t.check(map.tile_at(tile) != GameEnums.TileType.CROSSING,
+							"seed %d: %s at span %s's box loses its arm into the precinct"
+							% [_seed(i), tile, span])
+				var centre := _along_across_rect(vertical, box_start + Tuning.SIDEWALK_WIDTH,
+						road_band, across_lo, road_band)
+				var centre_tiles := map.rect_tiles(centre)
+				if not map.is_street(centre_tiles[0]):
+					continue
+				for tile in centre_tiles:
+					t.check(map.tile_at(tile) == GameEnums.TileType.ROAD,
+							"seed %d: %s at span %s's box is still a real junction"
+							% [_seed(i), tile, span])
+
+## `along`/`across` rather than `x`/`y`, the same swap `_test_nothing_goes_into_a_precinct`'s own
+## rect does — a vertical span's corridor is the *x* band and its along-coordinate is *y*.
+func _along_across_rect(vertical: bool, along_lo: int, along_size: int,
+		across_lo: int, across_size: int) -> Rect2i:
+	return Rect2i(Vector2i(across_lo, along_lo), Vector2i(across_size, along_size)) if vertical \
+			else Rect2i(Vector2i(along_lo, across_lo), Vector2i(along_size, across_size))
+
 ## Every precinct span gets a line of posts at each end, standing exactly where the paving
 ## begins: `City.bollard_positions` is geometry alone, so this holds it without a scene.
 func _test_bollards_stand_where_the_paving_begins(t) -> void:
@@ -644,8 +692,8 @@ func _test_bollards_stand_where_the_paving_begins(t) -> void:
 		for span in map.precinct_spans:
 			var vertical := span.x == 1
 			var corridor: int = span.y
-			var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH
-			var hi := (span.w + 1) * CityMap.period()
+			var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
+			var hi := (span.w + 1) * CityMap.period() + Tuning.SIDEWALK_WIDTH
 			var rows := {}
 			for at in positions:
 				var tile := map.world_to_tile(at)
