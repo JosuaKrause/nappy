@@ -213,7 +213,7 @@ name the question it answers, or it is a metric and does not belong.
 | `home` / `lost` | observer | The outcome, the margin, and what was around when it happened |
 | `nerve` | `GameState` | Where the nerves went — which day, which act |
 | `ending` | `GameState` | How the run finished |
-| `shot` | `main.gd` | **A person pressed `P` and said *look at this*** — where she was, what the meters read, which screen was up, and a PNG beside it. The only entry in the table that is not about the game: it is about somebody watching it |
+| `shot` | `main.gd`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
 
 ### Reading the meter breakdown
 
@@ -324,6 +324,23 @@ photographing by hand are disproportionately the ones where something looks wron
 has just stopped the game to look at it. And the context string is assembled in `main.gd` rather
 than here, for the reason everything in this file takes what it needs as an argument: **the
 telemetry asks the world no questions, so it can never be the thing that changed one.**
+
+### Animation bursts
+
+In a debug run, `B` (or the `snapshot_burst` action used by scripted rigs) starts one bounded
+three-second capture in `asked/burst-<unique>/`. It writes `frame-0001.png` through at most
+`frame-0036.png` and a `burst.json` beside them. The JSON has `schema_version` 1,
+`target_fps` 12, the supplied `context`, `status`, `reason`, actual `duration_seconds`, and a
+`frames` array whose `elapsed_seconds` values are measured at frame readback. PNG encoding happens
+serially before the next frame is scheduled, so disk overhead appears in the timestamps and cannot
+create an unbounded backlog. A second request is refused while one is active; a run or day ending
+the capture leaves metadata with `status: "cancelled"` when possible. The target is not a promise
+that every desktop reaches 12 fps; inspect the timestamps for the achieved timing. Headless and
+unwritable runs are refused without fabricating images. Run `./tools/clip.sh` to scan the whole
+telemetry folder and convert bursts whose sibling MP4 is missing, without deleting their PNGs.
+The scan skips active captures and existing videos; ended partial sequences with frames are
+eligible too. Pass a burst folder to select one sequence. If there is nothing to convert, the
+command reports that and succeeds.
 
 ## The city grid
 

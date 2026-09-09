@@ -1,5 +1,499 @@
 # Decisions
 
+## The actor PR takes main and the supersampling draft — 2026-09-09
+
+The player asked for PR #49 to land on `main` soon, for its skills and tooling, with the graphics
+kept behind the illustrated opt-in, and for the supersampling draft to travel with it so the work
+stays in one place. *(2026-09-09: "can we get the illustrated-supersampling branch … merged into
+this PR so it stays together fully? out of order playtests are fine -- what matters is the
+numbering makes sense and PRs only add higher numbers".)*
+
+`feature/illustrated-supersampling` (one commit past the PR branch's own `bb03202`) merged into the
+PR branch first. Its one conflict was the repair brief's resolution paragraph; the result documents
+the `--illustrated-render-scale 2` command and states the experiment is unverified. The draft
+removes the `--illustrated-zoom` camera prototype and its tests. The Canvas/ObjectDB leak the
+draft's handoff had left open to investigate was the orientation suite's own hand-built
+downsample layer, never freed at the end of the furniture test; the pre-merge tip ran the same
+suite clean, and freeing it restores a clean exit.
+
+`main` had merged its own playtest 39 (the tunnel, PR #55) after the branch last took `main`
+(`33c45f9`). The branch's playtest 39 (the animation-capture request, same date) moved to **46**,
+the first number unused on either tip; only its title and the one archive sentence citing it
+changed. Main's playtest 39 kept its number and references. The `TODO.md` conflict kept main's
+tunnel paragraph, reworded so it no longer claims to be the newest session of all, beside the
+branch's one-line halo pointer; the `DECISIONS.md` conflict kept both sides' prepended sections.
+
+Two handoff sentences would have been false at the merge commit and were fixed in the same merge:
+the Luna handoff told readers to keep PR #49 a draft and not merge it, and the main handoff pointed
+at a local worktree path for the supersampling draft.
+
+## Main update for illustrated registration — 2026-09-08
+
+The user requested the merging-main skill to update the current branch. The original branch
+tip and actual first parent were `24a85058dafc5765044ce38cf6b80c99b9b84dd9`; fetched main was
+`33c45f936a0659c1f41e96e8dae515a4dddc4aea`; the sole merge base was
+`10ec34b13f56b738729a80e0e3bc4c88f5dd2897`. The merge stopped before commit for review.
+
+Both histories independently introduced playtests 36–38. Main kept those identities and their
+contents unchanged. The branch records moved with identity-only edits and attributed reference
+updates: 36 → 43 (actor calibration and connected anatomy), 37 → 44 (transparent v3 pram
+approval), and 38 → 45 (missing texture, directional posture, natural reach and pram quality).
+The allocation reserved the union of both tips, including branch playtests 39–42. Each renamed
+record was compared with its original; wording, evidence, dates and finding order were preserved.
+Main's references to its separate halo and junction reports were not renumbered. Milestone and
+TODO additions were also compared: the branch added an unnumbered actor queue, while main added
+M93; there was no independently assigned milestone collision. Repeated milestone headings in
+the archive described existing continuations, not new branch identities.
+
+The five textual conflicts were presented with Theirs, Ours and Base excerpts. The archive kept
+both sets of separate additions above their shared history. TODO retained the illustrated work,
+main's M93 queue and the completed-item removals for the halo, chalk mark, bollards and circle
+fix. Main's playtest histories remained in the archive; current queue references distinguish
+the illustrated and gameplay sessions. The stale crowd-halo deferral in the illustrated brief
+was reconciled with the player's recorded M92 instruction to include the whole crowd.
+
+Semantic review covered the automatically merged code as well as the documents. Main's
+three-argument halo setup retained event, crowd and player wiring alongside the branch's burst
+input. Baby attribution, WorldContext, City, event and crowd source lists and landed-point
+tracking agreed. Main's resistance sight callback reused the rotation-aware screen check and
+coexisted with the branch's opt-in camera experiment. Junction paint, precinct paving, bollard
+props and out-of-bounds crowd blocking retained main's contracts; applied-displacement and
+recycle/reset wiring continued to feed the branch's registered actor compositors. Source PNGs,
+manifests, import identities and capture schemas were preserved. The separate supersampling
+worktree was not integrated, and its unresolved rendering checks remained open.
+
+The [merged arterial capture](evidence/archive/session-captures/2026-09-08/illustrated-main-merge.png)
+used the pending merge over the recorded branch tip, `--illustrated --seed 4242 --spawn arterial
+--walk south`, and a two-second screenshot delay in a 1280×720 window. Its
+[whole run](evidence/archive/session-captures/2026-09-08/rig-225618-seed4242-v0.7.0-56-g24a8505-dirty/)
+records movement from tile (113,80) to (113,86), a crowd contact and a crossing. The PNG showed
+loaded illustrated actors, dotted main-road crossings and incoming halos. It also confirmed
+the open integration limit: a walker halo traced the offset SVG comparison, not the animated
+PNG assembly. The brief, queue and handoff retain that silhouette repair as an explicit gate;
+this capture did not establish natural posture, smooth animation or visual acceptance.
+
+Verification passed the merged checkout's `./tools/check.sh`, an explicit bounded headless
+illustrated gameplay boot, `./tools/test.sh halo meters hud resistance crowd generator events`,
+and focused actor/capture runs. The illustrated run selected visuals, limb_attachments,
+mother_attachments, presentation_mode, stroller and burst_capture; the legacy run selected
+visuals, presentation_mode, stroller and burst_capture. All assertions passed. The intentional
+malformed-manifest and capture-write-failure probes emitted their expected diagnostics; there
+were no script errors or leak warnings. Document lint, both-parent diff checks, primary-source
+comparisons and asset/manifest/import hash checks passed. The local runs were explicitly partial;
+the full suite remained the PR CI gate. The PR description's actor report references were updated
+to PLAYTEST-45 and its open halo-to-PNG integration limit was made explicit.
+
+## Same-view supersampling handoff — 2026-09-08
+
+The player requested a break after the analysis and instructed committing and pushing everything.
+The supersampling draft was preserved separately on `feature/illustrated-supersampling`, commit
+a2f2eb3, in `.claude/worktrees/illustrated-supersampling/`; it was not integrated into the actor PR
+branch. It removed that branch's zoom option and introduced debug `--illustrated-render-scale 2`.
+Main's renderer-facing viewport size and global canvas transform were scaled without changing the
+logical camera/input space; a topmost ColorRect shader averaged 2×2 samples before the screen blit.
+
+The exact [Godot 4.7 GLES3 source](https://github.com/godotengine/godot/blob/4.7-stable/drivers/gles3/rasterizer_gles3.cpp#L416)
+forced nearest filtering for the final render-target-to-screen copy. An explicit destination
+rectangle supported fitting a larger target, but did not itself provide weighted downsampling.
+The draft's box prefilter addressed that distinction; no rendered evidence established its
+correctness. CanvasItem texture filtering was separate from the final screen sampler.
+
+Review identified unresolved defects: using the full window as the destination lost KEEP
+letterboxing; `ViewportTexture.get_size()` did not establish the renderer's actual image size;
+dimension caches could miss engine resets; reload restoration needed the original attachment;
+and a headless post-draw diagnostic could remain suspended. A display run still needed to verify
+all overlays were sampled, camera and HUD framing matched, and pointer/portrait/resize/reload
+behavior stayed aligned. The worker's check.sh passed; presentation/orientation/stroller reported
+74 passing assertions but Canvas/ObjectDB leak warnings, so this was not clean verification.
+The illustrated visuals run reported 218 passing assertions and expected malformed-manifest
+diagnostics. Lint and diff checks passed. The draft remained explicitly unvalidated.
+
+A [baseline screenshot](evidence/archive/session-captures/2026-09-08/illustrated-supersampling-baseline.png)
+and its [whole capture run](evidence/archive/session-captures/2026-09-08/rig-213228-seed2468684785-v0.7.0-54-gbb03202/)
+were preserved for comparison. The command used screenshot delay 4.2, `--illustrated --seed
+2468684785 --spawn square --walk 0.5s --press snapshot_burst 0.7` on bb03202. The fractional walk
+script was rejected and ignored, leaving the player idle; this was not walking evidence.
+The PNG was 1280×720 and the burst retained 24 original timed frames. A matching render comparison
+should omit that invalid walk argument and retain the same seed, spawn, framing and capture delay.
+No supersampled display capture was taken before the requested break.
+
+## Animation anatomy and camera experiment — 2026-09-08
+
+PLAYTEST-42 preserved the complete run `run-204805-seed2468684785-v0.7.0-43-g1131bba`,
+including both original bursts, timing records, sibling videos, maps and log. Inspection of
+burst `15638553-002` frames 1, 12, 24 and 36 showed the overextended player reach, bent legs
+retained after stopping, outward-facing walker knees and baby appearing over the seat. The PNGs
+demonstrated that these were not introduced by MP4 compression. The burst contained 36 samples
+over approximately three seconds; its timestamps, rather than an assumed fixed frame rate,
+were the timing evidence.
+
+Source inspection found that some mother upper-leg crops already included a painted knee and
+part of the shin. Adding a separately solved knee and lower segment could therefore draw two
+bends while the endpoint assertions still passed. `PlantedGait` solved knees with opposite bend
+signs and retained unfinished steps through stops. `ModularPerson` placed the pram from the legacy
+34-world-unit distance and stretched the source arms to its handle contacts. These were anatomy,
+pose and reach issues, independent of camera resolution; no source or gait repair was claimed.
+
+The project rendered with a 1280×720 authored viewport and a camera zoom of 2, exposing about
+640×360 world units. The assistant interpreted the request as removing that magnification while
+keeping the window.
+The comparison isolated camera extent; zoom 1 exposed 1280×720 world units but did not add raster
+pixels. Nearest texture filtering, extracted alpha coverage and source detail at small actor
+sizes remained separate image-quality factors. Increasing the logical viewport with canvas-item
+stretch alone was not treated as proven supersampling.
+
+The debug `--illustrated-zoom` override was implemented with default 2 and a finite positive
+range clamped to 0.5–4. Invalid values fell back to 2. The camera consumed it only for illustrated
+mode; legacy framing and the 1280×720 window settings were retained. The clean integration was
+reviewed against both branches: the flag parser and player camera agreed, the experiment docs
+kept anatomy unaccepted, and the separate merge-skill refinements remained intact.
+
+The [zoom-1 capture](evidence/archive/session-captures/2026-09-08/illustrated-camera-zoom1.png)
+showed the wider scene in a 1280×720 PNG, with smaller actors and unchanged HUD scale. It did not
+demonstrate improved detail or animation. Its command was `tools/shot.sh /private/tmp/nappy-zoom1.png
+0.8 --illustrated --illustrated-zoom 1 --seed 2468684785 --walk south`. The attempted
+[baseline capture](evidence/archive/session-captures/2026-09-08/illustrated-camera-zoom2-ended.png)
+used the same seed with `--spawn arterial --walk 1s3e` at three seconds, but a traffic collision
+put the ending overlay over the scene. These were not a matched route/time comparison. Baseline
+build was b1f761f; the wider capture used df362ff with the pending 9032c1f camera integration.
+The screenshot's startup FPS sample was not a sustained performance measurement.
+
+The merged checkout passed the import/boot check, focused presentation-mode, stroller and visuals
+suites with illustrated zoom 1, and the stroller suite in legacy mode with a non-default requested
+zoom. The visual suite's deliberate malformed-registration diagnostics were expected; no script
+errors were observed. Doc lint and diff checks passed. Source, gait, pram seating and sampling
+quality remained open repairs rather than results inferred from the camera test.
+
+The user corrected the interpretation: "I did not want to see more world -- I want higher
+resolution for the current view". The wider-camera experiment did not satisfy the request.
+The required experiment increases the actual rendered pixel count and downsamples into the same
+window while retaining framing, actor size, HUD and input mapping. The camera option is removed
+from the intended solution rather than presented as an accepted alternative.
+
+## Updating branches from main — 2026-09-08
+
+The player requested a dedicated skill:
+
+> create a skill for merging main into a PR / branch. conflicts must be shown with three ways (theirs ours base) and never just do --theirs or --ours . always check semantic alignment between the branches. a clean merge can still be semantically incorrect. also, never combine unrelated playtests or todo items. renumber the one on the branch to not have duplicate numbers or worse have playtests combined that were separate before
+
+The merging-main skill is linked from CLAUDE and the committing skill so the procedure is loaded
+before a branch update. It requires explicit user-facing theirs/ours/base conflict presentations,
+semantic reconciliation for every merge, and provenance-aware renumbering of the
+branch's colliding records. Main's identities remain intact; unrelated playtests and TODO items
+remain separate. Reference updates must distinguish which record each occurrence means, rather
+than globally replacing a number. The skill does not perform a main merge merely by being created.
+
+The player clarified: "semantic check should always happen. not only on clean merges". The
+mandatory whole-result review covers clean, conflicted and manually resolved merges, including
+cross-file interactions outside the conflict set; presenting three-way resolutions cannot replace it.
+
+The player also clarified: "renumbering also applies to milestones and todos not only playtest.
+anything really that is numbered and could be numbered the same in different PRs". The collision
+audit covers every independently numbered namespace and its references, including nested findings
+and identifiers carried in code, rather than only playtest filenames.
+
+## Capture key and encoder compatibility — 2026-09-08
+
+PLAYTEST-41 reported that Shift interfered with running and ffmpeg rejected `-fps_mode`. Burst
+capture moves to plain B, which is independent of the run modifier and remains available while
+Shift is held. P remains the single-screenshot key; `snapshot_burst` remains the rig action.
+The converter uses `-vsync vfr` and its test decoder uses `-vsync 0`, preserving measured frame
+intervals without requiring `-fps_mode`. The shell used for development found ffmpeg 7.1.1,
+which accepted the newer option; that local success did not establish compatibility with the
+encoder reached by the player's command. Source frames and existing videos remain untouched.
+
+The focused burst tests cover B, Shift+B, P, Shift+P and key repeats. The real ffmpeg
+encode/decode test also rejects any converter invocation containing `-fps_mode` while retaining
+frame-order, timing and source-preservation assertions. Boot, focused tests and lint passed.
+Retrying the telemetry scan converted both pending bursts from the reported run, including
+the sequence that failed in PLAYTEST-41, to sibling MP4s without changing their PNGs.
+
+## Pending burst conversion — 2026-09-08
+
+PLAYTEST-40 clarified that `clip` should scan the telemetry folder for bursts without an MP4.
+Selecting only the newest completed burst made repeat calls stop at an existing video and left
+older sequences unconverted. The default command now scans across runs for missing sibling
+`<burst-folder>.mp4` files, preserving existing videos and every source frame. Active recordings
+are skipped; completed or ended partial sequences with frames can be converted. An explicit
+folder still selects a single burst. An empty pending set is a successful no-op, and a failed
+conversion does not prevent attempting the other pending sequences.
+
+## Gameplay animation capture — 2026-09-08
+
+PLAYTEST-46 requested video or a burst of screenshots so the player could communicate animation
+defects. The player confirmed ffmpeg was installed and specified one sequence per subfolder in
+the screenshot folder, with the video beside the sequence. They rejected F-key controls. The
+selected control is Shift+P for a burst, leaving P for a single image; the rig uses the named
+`snapshot_burst` action instead of a function key.
+
+The capture contract is a three-second burst targeting twelve frames per second, capped at
+thirty-six images, saved under the current run's `asked/burst-<id>/`. Sequential PNGs and
+`burst.json` preserve actual monotonic capture times. `tools/clip.sh` converts the newest complete
+burst, or an explicitly named folder, to a sibling `<burst-folder>.mp4` with ffmpeg. Conversion
+preserves the original PNG sequence and refuses an existing destination. Separating recording
+from encoding keeps encoder failures from losing source evidence or running an encoder while
+the player is trying to demonstrate a movement defect.
+
+Actual frame times, rather than the nominal capture frequency, determine playback timing.
+Capture reads the viewport after drawing and performs bounded file writes; it does not alter
+gameplay state or RNG. Readback and PNG encoding still cost time, so a capture does not establish
+uncaptured performance. Overlapping requests are refused, and ending a day or run finalizes a
+partial sequence in the originating run. Capturing while paused records the paused screen;
+it does not unpause the game to manufacture animation.
+
+The implementation uses a token-guarded deadline independent of the post-draw wait. Old callbacks
+cannot finalize a newer burst. Metadata writes are checked through flush and failures terminate
+capture without reporting success; an empty deadline is cancelled. The log records portable
+`asked/<folder>` paths, while console output gives the absolute path for locating files.
+
+Verification passed `./tools/check.sh`, `./tools/test.sh telemetry burst_capture`,
+`uv run python tools/test_clip.py`, `./tools/lint.sh` and whitespace checks. The recorder tests
+cover physical Shift+P, plain P, key repeat, the named rig action, refusal, unique folders,
+metadata ordering, stale callbacks, cancellation and write failure. The converter tests decode
+the MP4's colored frames to check order and compare every source file byte for byte.
+
+A bounded rendered integration run exercised moving capture, an overlapping request, then a
+paused capture. It produced 29 moving frames over 3.037515 seconds and 36 paused frames over
+2.999814 seconds; the second overlapping request was refused. Both converted to 1280×720 H.264
+`yuv420p` sibling MP4s with a reported duration of 3.04 seconds, with all PNGs retained. The timing
+difference includes MP4 frame-time quantization; the PNG manifest retains the finer capture
+times. The paused sequence retained the pause screen. This verifies capture and conversion,
+not acceptance of the illustrated actor posture shown in the frames.
+
+## Texture integration process — 2026-09-08
+
+PLAYTEST-45 reported a missing illustrated player, slanted east/west mustard/red legs, outward
+north/south leg movement, excessive mother-to-pram spacing that stretches the arms, and a
+pixelated pram. The player explicitly asked for reproducible texture-addition skills and a
+record of traps. This continues PLAYTEST-43's anatomy/scale repair, retaining PLAYTEST-44's
+approved transparent v3 pram. The symptoms remain repair requirements; this documentation pass
+does not mark them visually accepted or regenerate the approved source.
+
+The complete supplied run is preserved at
+`docs/evidence/run-195148-seed1407488451-v0.7.0-34-g4ae11f4/`, including its log, map and
+`asked/008s-attempt1-asked.png`. It began at 19:51:48 and predates the local import repair.
+The frame shows the legacy mother/pram comparison with the illustrated player absent. It cannot
+establish motion or the illustrated pram's post-import filtering quality. The player's reference
+to a generated diagnostic image does not name its exact file; it remains a posture report and
+does not promote a diagnostic into an approved style reference.
+
+After the PR branch was checked out in the main folder, a headless illustrated boot reproduced
+the reported `ModularPerson.new()` and nil-method cascade. The first error was a missing imported
+`pram-layered-v3-draft-transparent.png` `.ctex` under that checkout's `.godot/imported/`, followed
+by a preload parse error in `modular_person.gd`. `tools/run.sh` only checks missing global classes;
+it did not detect this missing imported texture. Running `./tools/check.sh` in the main checkout
+rebuilt the cache. An explicit headless `--illustrated --walk south` boot then exited without
+script errors. No source change was required for that failure. The checkout should have been
+imported before being handed to the player; an import in another worktree was insufficient.
+
+The player objected to `.import` removal. Only untracked screenshot sidecar copies in temporary
+implementation worktrees had been removed; committed screenshot sidecars remained intact. The
+distinction was still the wrong cleanup rule: generated `.import` files carry import settings
+and resource identity and belong with source and evidence images. Only the ignored `.godot/`
+cache is rebuildable checkout state. This distinction is now explicit in the Godot and
+illustrated-png skills.
+
+Read-only inspection confirmed that the illustrated pram anchor consumes the legacy 34px lead
+with a 0.7 vertical projection, and the arms fit shoulder-to-grip endpoints without establishing
+natural reach. Modular sprites inherit filtering, with the project default setting at `0`.
+These are concrete
+inspection points, not proof of the cause of every reported pixel or pose. The fixed knee-bend
+convention, projected lift, measured rest axes and explicit profile-source reuse also require
+directional review; a single frame cannot select a gait fix. No global filtering, collision or
+movement constant was changed to disguise these presentation defects.
+
+The existing illustrated-png skill was expanded rather than adding a second competing workflow.
+Its linked texture-integration procedure records exact source/extraction provenance, measured
+direction/crop/joint coordinates, alpha and filter checks, full assembly scale, natural arm reach,
+directional motion, actual-checkout imports and distinct acceptance gates. It explains why exact
+endpoint tests, a sampled pose sheet, legacy boot and pre-correction screenshots cannot establish
+complete visual acceptance. PLAYTEST-45, the repair brief, TODO and HANDOFF carry the remaining
+defects and the procedure's entry point.
+
+## Limb attachment repair — 2026-09-08
+
+The player asked "let's fix the limbs", continuing PLAYTEST-43's connected-body and SVG-scale
+review and PLAYTEST-44's selection of the transparent v3 pram. They also explicitly authorized
+committing, pushing and updating the existing draft PR #49. The overhaul remains opt-in; this
+request does not authorize its release or merge into the default game.
+
+Source inspection found that the mother's 1280×1536 sheet is independently packed. Painted head,
+torso and arm bands occupy approximately y=44–190, 205–413 and 440–582; the upper/lower leg sets
+occupy 603–787, 795–907, 920–1117 and 1131–1251, with two sets of shoes below them. Uniform
+192-pixel rows cut through those drawings. The approved 1448×1086 pram similarly uses unequal
+vertical packing: chassis 101–331, seat 375–571, canopy 640–770 and baby 844–1017. Its eight views
+begin with the rear, whereas the mother sheet begins with the front. Those approximate bands
+guide inspection; they are not substitutes for measured per-part registrations.
+
+The first implementation pass was rejected in code review. It retained inferred crop bands,
+guessed joints and the rejected upper-only scale calibration; its segment transform multiplied
+the target/source length ratio by the source-to-world scale again. Changing the tiny gait target
+to half a stride also did not prove that a stance leg stayed within reach. The repair gate
+therefore checks transformed source endpoints, painted extents and sustained displacement, not
+just the solver's own targets or literals repeated from a manifest.
+
+The movement contact sheet samples public compositor APIs with accumulated virtual owner
+positions, then displays each pose in a fixed cell. Review corrected initialization that reset
+sampled walkers when added to the tree, a blocked sample that accidentally teleported its owner,
+and a ground line that counted the cell offset twice. Its mid-swing samples must find an actual
+active swing; it is a diagnostic of sampled poses rather than proof of smooth live motion.
+
+The sustained stop/start regression exposed a second cadence failure: a short displacement could
+reach the step trigger with no distance left to advance the swing, then the following stop
+cancelled that swing. Repeating the sequence left both feet behind the body. Five short bursts
+did not expose it; forty 0.8-pixel bursts did. The repair must retain unfinished step progress
+across zero-displacement calls rather than continually restarting the trigger interval.
+
+The shared affine transform passed a slanted-axis test with an independently displaced pivot:
+both source endpoints meet the requested joints while transverse width is scaled once. The
+walker implementation uses alpha-measured upper-body crops and crop-local leg/shoe endpoints,
+calibrating the complete head-to-ground body to 38 logical pixels. Atlas filtering is clipped to
+each region. All parts use zero child z with directional sibling ordering, so the city's
+ground-depth sort can keep each actor together.
+
+The gait retains swing progress and lifted pose when applied displacement is zero. Travel
+resumes the unfinished step; a large displacement consumes as many complete strides as needed.
+Cadence is limited by leg reach, including the first trigger interval, and foot offsets preserve
+their screen-side relationship to the hips. Focused regressions cover all facings, continuous
+travel, the forty-burst stop/start sequence, planted rendered soles, large reversal, turn and reset.
+
+The source sheet supplies one complete E-facing and one complete W-facing walker leg set, so
+each is explicitly reused for the two animated legs without mirroring. Diagonal crops share some
+painted edge pixels, and the mustard SW upper drawing has ambiguous authored facing. Those
+limitations remain in the manifest and authoring queue; registration does not make new artwork.
+
+Mother registration uses a textured torso core to exclude the painted sleeves, with separate
+shoulder-to-hand arm segments reaching the pram's painted grips. The selected transparent v3
+pram PNG is unchanged. Review rejected universal bottom-centre layer offsets and then caught
+a subtler mismatch: contacts on the basket and seat bottom passed alpha-support tests but were
+not the corresponding frame hinges. An independent E/W/NE source review measured approximately
+7.18, 5.67 and 6.92 logical pixels of hinge separation. Its crop-local chassis/seat hinge pairs
+were E `(81,93)`/`(69,100)`, W `(100,93)`/`(100,100)`, and NE `(128,90)`/`(141,96)`.
+The source estimate is within about two pixels; matching these mechanical landmarks matters
+more than proving that an arbitrary pivot lands somewhere opaque.
+
+The complete pram is calibrated to 30 logical pixels after connecting all four layers. A
+chassis-only calibration produced assembled heights of roughly 32–47 pixels in the inspected
+intermediate registrations. N/S use the visible centre support seam because the side hinge is
+hidden; the other views use the large side hinge. The canopy and baby attach to their own
+painted contacts on the positioned seat.
+
+Two bounded OpenGL captures used the standalone eight-facing scene at 1280×720, one second
+after initialization, without a gameplay seed or route. The
+[dark-backdrop capture](evidence/archive/session-captures/2026-09-08/illustrated-limbs-dark-backdrop.png)
+was taken at 19:31:57 EDT from `8dc764f`, before the final pram-contact correction. The
+[contact review](evidence/archive/session-captures/2026-09-08/illustrated-limbs-contact-review.png)
+was taken at 19:35:24 EDT from `a7d6977` with the lighter actor-row backdrop in the working tree.
+Both keep the legacy comparison at +96 world pixels. They are runtime evidence, not approved art.
+
+The lighter backdrop exposed crossed resting knees: the left/right bend signs pointed inward,
+and a minimum bone-length multiplier of one forced a bend even when the neutral hip-to-ankle
+distance was shorter than the nominal bones. The follow-up uses outward bend signs and derives
+the compression floor from configured rest geometry, retaining the stride and maximum-reach
+limits. The contact review records the defect that motivated that follow-up; it is not a capture
+of the corrected resting knees.
+
+The integrated tree passed `./tools/check.sh`, the illustrated `visuals`, `limb_attachments`
+and `mother_attachments` suites, the legacy `visuals` suite, doc lint and whitespace checks.
+Negative registration probes intentionally emit validation errors; there were no script errors
+or leak warnings in these final runs. The neutral-knee regression checks same-leg alignment,
+outward flex and the existing movement sequences. Both diagnostic scenes also boot headlessly.
+The full suite belongs to PR CI; smooth motion, live overlaps and visual acceptance remain open.
+
+## Pram checkerboard extraction — 2026-09-08
+
+PLAYTEST-44 records the player's approval: "I find the pram layered pictures look good" and
+request to "write a script to turn the checkerboard pattern into real transparency". The blanket
+rejection of these two pram drawings was overturned by that approval for background extraction.
+Their original opaque PNGs remain unchanged in the archive; this approval is specific to these
+drawings and does not revive other rejected graphics.
+
+The chosen approach is a reproducible Pillow script, preserving source geometry and saving
+separate RGBA copies. Regeneration is unnecessary for the requested background cleanup. Review
+uses solid dark and blue backdrops to expose residual checkerboard, fringe and holes in artwork.
+Removing the background does not establish shared layer pivots, eliminate the duplicated basket,
+or verify assembled animation; those remain in the actor registration queue.
+
+Both transparent outputs retain the originals' 1448×1086 dimensions and exact RGB samples;
+the script changes only alpha. Direct checks confirmed fully transparent background and enclosed
+handle gaps. A synthetic sample checked preservation of warm pale art, an enclosed white highlight,
+existing partial alpha and refusal to overwrite an output. The reviewed dark/blue contact sheet is
+[pram-transparency-review.png](evidence/pram-transparency-review.png). The extraction is a
+threshold-based matte with a one-pixel neutral fringe pass, not recovery of original soft alpha;
+similarly colored artwork on other inputs needs separate review.
+
+## Illustrated repair continuation — 2026-09-08
+
+The player asked to continue from `feature/illustrated-registration`, following PLAYTEST-43's
+connected-parts and original-SVG-size review. The existing draft PR is #49. The work remains
+opt-in and does not authorize releasing or merging the full graphics overhaul.
+
+Two built-in pram generation attempts are preserved under
+`evidence/archive/rejected-graphics/pram-registration-2026-09-08/`, with exact prompts and input
+roles in `GENERATION_RECORD.md`. The first requested eight views and four registered layers;
+the second requested only actual background extraction. Both returned 1448×1086 RGB PNGs with
+`sips -g hasAlpha` reporting `no`. Both visibly paint a checkerboard. The first also packs each
+layer independently and duplicates the storage basket across chassis and seat. Neither was
+registered or substituted into gameplay. These are rejected outputs, not art references.
+
+Review rejected the initial walker code pass (`bc06307`): it supplied whole-sheet x coordinates
+as crop-local pivots, reused one variant's unremapped table for both variants, and calibrated an
+upper-body sheet as though it included the solver's separate legs. Its constant-readback tests
+could pass while the actor moved sideways and remained oversized. This is why rendered painted
+extents and transformed attachment points, rather than declared cell dimensions, gate the repair.
+
+The graphics handoff also claimed that the modular actors were not bound to gameplay and that
+the street study could be extended. It now points to the opt-in live bindings and the rejected
+street gate recorded under M84. Source availability, registration validity and visual acceptance
+are distinct checks; a manifest listing eight views does not establish eight valid drawings.
+
+## Illustrated registration audit — 2026-09-08
+
+The player asked to plan the illustrated graphics fixes, include updated main and new reference
+photos, then "delegate to cheaper subagents". Two Luna agents audited the source assets and runtime
+independently; a third implemented the stationary calibration view requested by PLAYTEST-32.
+The repair queue and ILLUSTRATED-GAMEPLAY-FIXES.md keep the implementation order.
+
+The audit found no reliable complete eight-direction modular assembly in the current source
+sheets. The mother torso includes sleeves alongside a separate arms row; leg and shoe art reaches
+crop boundaries. The pram has seven visible groups despite its eight-column registration, with
+checkerboard contamination and pale fringe. Walker silhouettes cross the inferred column/limb
+cuts. Exact replacement crop coordinates and the identity of the missing pram view were not
+established; the rust-curls variant was not exhaustively measured. These are source inspection
+findings, not a new runtime screenshot or a claim of visual acceptance.
+
+The asset agent suggested complete precomposited direction cards as a simpler alternative.
+The orchestrator did not adopt that suggestion: PLAYTEST-30 requests interchangeable modular
+parts and layered animation. New versioned modular sheets are the prerequisite for authoritative
+joint registration, rather than inventing anatomical endpoints in contaminated crops.
+
+Runtime inspection found that applied-displacement wiring, reset/recycle wiring, direction
+mapping and hysteresis already exist. The repair brief's descriptions of travel-angle limb
+rotation and identical upper-body placement were stale: code uses a downward rest axis and
+part-specific body offsets. Pram layers still collapse distinct pivots onto one target, and
+walker crops remain inferred from fixed bands and half-cells. Tests cover registrations and
+solver coordinates but do not prove the transformed painted joints meet. Strict registration
+validation must arrive with valid data and stop failed construction cleanly.
+
+The plan uses the new real-world photo collection for posture and architectural structure,
+while keeping the supplied painted mother and urban illustrations as style authority. It
+preserves current joystick/tap selection and the new event-outline excitement halo. Generic
+crowd halos remain tabled; the graphics repair does not choose an answer to that question.
+
+The calibration scene was captured at 1280x720 with a 25-second external timeout. It shows all
+eight static facings, mother/pram and both walker variants at logical 1x scale, with original
+SVG drawings offset 96 world pixels right. The screenshot is
+`evidence/archive/session-captures/2026-09-08/illustrated-actor-calibration.png`; it is a standalone
+scene with no gameplay route/seed, not a playable run. It deliberately exposes the broken source
+art and connected-body defects. It does not approve a replacement family or prove motion.
+
+Review caught walker `_ready()` resetting pre-added facings to south; the scene resets each
+compositor after adding it. Legacy mother mirroring is restricted to side views, and pram offset
+and order follow the player renderer. Headless standalone boot passed. The visual suite without
+`--illustrated` emitted a missing-child script error despite its zero-failure assertion summary;
+`./tools/test.sh visuals --illustrated` exercised that binding with the child present and passed
+the assertions. Sandbox log/certificate diagnostics were separate from that script failure.
+
 ## The probes are parked in the tree, not on a branch · built 2026-09-09
 
 M64's two measurement probes had been kept on a branch of their own, `feature/normal-density-on-

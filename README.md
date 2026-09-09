@@ -58,6 +58,7 @@ Or open the project folder in Godot 4.7 directly.
 | R | Start the run again — from the pause screen |
 | Q | Quit — from the title or the pause screen |
 | P (or F9) | Write a screenshot and a line of trace into the telemetry folder. A debug key, not a game feature — see `docs/TELEMETRY.md` |
+| B | Capture a three-second animation burst targeting 12 fps into the telemetry folder (debug only) |
 
 The game opens on a title screen with the street outside your own front door running behind
 it, and a finished run goes back to it.
@@ -98,6 +99,13 @@ Every run writes a plain-text trace of what happened, in order — what was shut
 player went, what came near, how the day ended. `./tools/telemetry.sh` prints the newest one
 (`-f` follows a run in progress, `-l` lists them). [docs/TELEMETRY.md](docs/TELEMETRY.md)
 says what the entries mean.
+
+For animation feedback, press **B** during desktop debug gameplay. The burst saves numbered
+PNGs and frame timestamps in a separate `asked/burst-<id>/` folder. Run `./tools/clip.sh` to
+scan the telemetry folder and convert every finished burst missing its sibling MP4, or
+`./tools/clip.sh "path/to/burst-folder"` to
+choose one. The MP4 sits beside that folder and all original frames remain available. P still
+takes a single screenshot.
 
 ## Verifying a build
 

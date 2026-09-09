@@ -51,6 +51,13 @@ PR's own doc work goes.
 
 ## Branches
 
+**Before merging main into an existing PR or branch, read
+[merging-main](../merging-main/SKILL.md).** It requires showing theirs, ours and base for each
+conflict, reviewing semantic alignment for every merge (clean or conflicted), and renumbering
+the branch's colliding identities in every numbered namespace, including milestones, TODOs and
+playtests, without combining unrelated records. Side-selection shortcuts
+such as `--ours` and `--theirs` do not satisfy that review.
+
 **One branch per milestone**, named `feature/<thing>`, merged to `main` with `--no-ff`. The merge
 commits are the project's spine; keep them.
 

@@ -5,11 +5,38 @@ The capture is dated evidence, not an approved art reference. These are implemen
 instructions from inspection of that frame, its source sheets and the current compositors;
 they are not a claim that repairs are implemented or visually accepted.
 
+[PLAYTEST-45](PLAYTEST-45.md) adds directional leg posture, natural mother-to-handle reach,
+pram image quality and actual-checkout loading to this repair. Follow the illustrated-png
+skill's [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)
+for repeatable source, import, registration and acceptance steps.
+
 Read `CLAUDE.md`, `HANDOFF.md`, `PLAYTEST-30.md`, `VISUALS.md` and the M84 record in
 `DECISIONS.md` first. The handoff identifies the illustrated presentation and street study as
 rejected; descriptions elsewhere of an approved street gate do not authorize reusing that study.
 Use the supplied mother and urban reference images named in `VISUALS.md` for art direction.
 Keep the cardinal camera, logical bodies, movement, collision, crowd density and gameplay RNG.
+
+## Implementation contracts
+
+Runtime registration must describe actual painted parts: per-facing crops, crop-local joints,
+rest axes, scale and draw order. A declared grid or a passing parser does not establish connected
+anatomy. Compare the rendered output with the source artwork and the ground contacts; the dated
+frame's diagnosis is evidence rather than a description of every later implementation.
+
+PLAYTEST-32 requires the original drawing beside each illustrated object at a fixed horizontal
+offset. The compositors expose a 96-world-pixel comparison offset. Use the legacy yeller as the
+pedestrian scale comparison and judge complete assembled bodies, not transparent sheet bounds.
+
+The real-world inputs under `docs/reference/` supply stroller posture, continuous shopfronts,
+recessed entrances, awnings, fire escapes, flat roofs, parapets, skylights, ducts and equipment
+clusters. Translate their structure into the supplied illustrations' style. Keep references out
+of runtime assets. Inspect the stroller video for movement before making claims about its turns.
+
+Preserve the current joystick/tap choice and button behavior. Event and crowd artwork must preserve
+the excitement halo that traces the actively contributing entity's silhouette: a layered PNG
+replacement needs the outline of the animated assembly, not an invisible legacy body. Keep the
+source selection across events, walkers and cars. Hue and transparency both follow each source's
+attributed meter contribution over the last five seconds, with their separate curves and easing.
 
 ## What the frame establishes
 
@@ -33,41 +60,44 @@ Start in `assets/illustrated/modular/`, `assets/illustrated/walkers/` and
 - Inspect every direction crop at source resolution and assembled gameplay size. Measure actual
   artwork bounds and attachment points; an equal grid and a declared direction order are not
   evidence that a generated image follows them.
-- The pram sheet visibly contains seven groups across each row, while its manifest and
-  `ModularPerson` divide it into eight 160-pixel columns. That slices across drawings. Supply
-  eight complete authored views, or preserve valid crops and author the missing views into a new
-  registered sheet. Do not stretch seven groups across eight slots or silently mirror one.
-- The mother's first column visibly faces the viewer, while the manifest calls it N and the
-  direction selector defines N as screen-up. Audit actual facings across all sheets and map
-  them explicitly to N, NE, E, SE, S, SW, W, NW. Check matching mother and pram facings together.
+- PLAYTEST-44 selects `pram-layered-v3-draft-transparent.png`. Its eight views contain chassis,
+  seat, canopy and baby layers packed at different vertical intervals. Register each against
+  measured wheel, hinge and seat contacts; equal-height row cuts are not valid for this sheet.
+- Map actual facings explicitly to N, NE, E, SE, S, SW, W, NW, with N meaning screen-up.
+  The mother's source begins with its front view; the selected pram begins with its rear view.
+  Their column mappings are independent. Check matching mother and pram facings together.
 - The mother's painted parts are independently packed into rows. The torso already includes
   arms, and the shoe area contains additional shoe drawings. Extract exactly the part named by
   each registration; remove duplicate anatomy from newly authored modular layers. A whole row
   cell must not contribute unrelated shoes or a second pair of arms.
-- Walker legs currently use fixed horizontal bands and split each direction cell in half.
-  Source silhouettes have different extents, and profile views do not provide two cleanly
-  separated halves. Replace inferred cuts with measured per-part regions and explicit
-  left/right ownership; author missing limbs where extraction cannot supply them.
+- Walker source silhouettes cross nominal column boundaries, and profile views provide only
+  one complete leg set. Use measured per-part regions and explicit left/right ownership.
+  Record any same-facing source reuse explicitly; a neighboring fragment or mirrored direction
+  cannot stand in for a missing part. Distinct inner/outer profile artwork remains an authoring
+  requirement where the single supplied profile cannot express it.
 - Use one authoritative machine-readable manifest for runtime registration and asset inspection.
   Include crop, crop-local attachment points, rest-axis endpoints, scale, actual facing and
   per-direction order. Validate texture bounds, required parts and missing directions loudly.
+  Stop construction cleanly after failed validation: callers must not ignore a failed
+  registration and dereference a null sprite. A missing file, duplicate source direction or
+  missing direction mapping must not silently select another view. Introduce strict endpoint
+  requirements together with valid replacement registrations, so the schema change and its
+  consumers agree in the same implementation item.
 
-The pram PNG reports an alpha channel, but its background visibly contains a checker pattern.
-An alpha channel alone does not prove clean transparency. Inspect alpha values in intended empty
-areas and composite each crop over light, dark and saturated backgrounds. Remove baked background
-and edge contamination in a versioned replacement, preserving fine spokes and painted edges.
-Do not erase every pale pixel: highlights belong to the drawing. Follow the image-generation
-skill for replacement raster art and preserve its reference inputs and generation record.
+PLAYTEST-44 accepts the selected pram's extracted transparency. Preserve that PNG while repairing
+registration. Its extraction record is `assets/illustrated/modular/pram-alpha-extraction-2026-09-08.md`.
+For any replacement art, inspect alpha values in intended empty areas and composite over contrasting
+backgrounds: an alpha channel alone does not establish a clean edge. Do not erase every pale pixel;
+highlights belong to the drawing. Follow the image-generation skill for replacement raster art.
 
 Acceptance: every isolated crop contains only its named part; every direction can be assembled
 into a complete static person/pram with no foreign fragments, checker rectangles or duplicate limbs.
 
 ## 2. Rebuild attachment transforms from a common ground anchor
 
-`src/visuals/modular_person.gd` places head, torso and arms at the same node position after
-subtracting different pivots. It similarly places all pram layers at one position after
-subtracting different pivots. This aligns those different anatomical points to one spot instead
-of joining the parts. The gait's hip anchors and the rendered torso are also independent.
+`src/visuals/modular_person.gd` must assemble upper-body parts against measured anatomical targets
+and pram layers against one chassis frame. Independently packed source rows have their own local
+coordinates; their pivots are not interchangeable positions on the actor.
 
 - Define a per-direction rest skeleton relative to the owner's ground anchor: pelvis, neck,
   shoulders, hips, knees and ankles, plus hand and pram-handle contacts. Derive body placement
@@ -79,9 +109,12 @@ of joining the parts. The gait's hip anchors and the rendered torso are also ind
 - Assemble rigid pram layers against one shared chassis coordinate system. Preserve their
   designed offsets from axle/ground baseline; do not collapse canopy, basket and wheels onto
   their separate pivots at a common position.
-- Replace the universal sideways pram offset with authored per-facing placement that visibly
+- Author per-facing pram placement that visibly
   joins the mother's hands to the handle. The combined visual stays registered to the existing
   logical owner. Changing its collision shape is outside this repair.
+- Keep the handle within natural arm reach. Hand contact alone does not establish correct
+  posture: compare shoulder-to-wrist length and elbow shape to the source, and bring the pram
+  into reach rather than stretching the arm to an arbitrary offset.
 - Calibrate mother, pram and walkers together at gameplay scale. Their torso heights, limb
   lengths and wheel sizes must agree before animation is enabled. The current independent art
   scales and gait lengths are inputs to review, not proportions to preserve blindly.
@@ -92,10 +125,10 @@ assembly away from its owner. Prove this before tuning a walk cycle.
 
 ## 3. Make rendered limbs follow the solved gait
 
-Both `ModularPerson` and `src/visuals/modular_walker.gd` calculate limb rotation by subtracting
-the actor's travel-direction angle. A drawn thigh's rest axis is not the direction the actor
-walks. Rotating a nearly vertical painted leg by that difference can turn it sideways or upside
-down. Fixed sprite scale also does not make the painted knee reach the solver's knee.
+Each painted limb has its own rest axis. `ModularPerson` and `ModularWalker` must map that axis
+onto the solved joint segment, preserving transverse width while fitting its longitudinal extent.
+Target distances are already world pixels: multiplying the longitudinal ratio by the source-to-world
+scale a second time shortens the rendered segment and detaches its distal joint.
 
 - Measure proximal and distal attachment points for each limb crop. Compute rotation from its
   authored rest axis to the desired joint segment. Match the rendered segment length to the
@@ -108,15 +141,19 @@ down. Fixed sprite scale also does not make the painted knee reach the solver's 
 - Drive travel from applied displacement, including collision and shoves. Verify idle, walk,
   run, abrupt stop, reverse, turn, blocked movement and reset/recycle. Zero applied travel must
   not keep advancing a walking cycle. Maintain direction hysteresis without mismatching parts.
+- Review east/west leg slant and north/south outward spreading explicitly for mustard and red
+  walkers. Separate the ground stride from screen-space knee bend and swing lift; per-facing
+  natural posture is a gate beyond connected endpoints. Cover every direction in movement
+  evidence because the sampled review scene concentrates on south and north.
 
 Acceptance: a planted rendered sole remains fixed against paving during stance; swing feet
 lift and land connected to their legs; stopping and turning leave a complete connected actor.
 
 ## 4. Order whole actors and their parts correctly
 
-The compositors currently assign the same part order in every direction, even though the
-registration format permits directional order. `DirectionalParts` also gives child sprites
-positive z offsets; being a child is not itself proof that parts sort as one actor in the city.
+Internal part order depends on facing. Keep that order within one actor assembly; positive child
+z offsets can otherwise sort one person's shoes over another person's torso. Being a child is not
+itself proof that the parts sort as one actor in the city.
 
 - Author near/far leg and arm order for each facing. Put the pram in front of or behind the
   relevant body parts according to the view, with hands visibly meeting the handle.
@@ -151,8 +188,49 @@ street the live city. Do not report the environment fixed because its separate s
 
 ## Verification and handoff
 
+`scenes/dev/illustrated_actor_review.tscn` displays static mother/pram and both walker variants
+in all eight directions at logical scale, with ground baselines and the legacy drawing at the
+fixed comparison offset. It instantiates compositors only, so it does not move gameplay actors.
+Run it with Godot's normal scene argument; the existing screenshot flags work:
+
+```sh
+godot --path . res://scenes/dev/illustrated_actor_review.tscn --resolution 1280x720 \
+  -- --screenshot /private/tmp/illustrated-actor-review.png --after 1
+```
+
+Use an external timeout for a windowed capture. This is a static registration diagnostic;
+it cannot establish motion quality, live-world sorting or visual acceptance. Light actor-row
+backdrops expose the dark frame and limb contours. Dated captures and their exact build limits,
+including the [contact review](evidence/archive/session-captures/2026-09-08/illustrated-limbs-contact-review.png),
+are indexed in DECISIONS.md under Limb attachment repair.
+
+`scenes/dev/illustrated_motion_review.tscn` samples the compositors through applied-displacement
+sequences: idle, initial stride, each foot in mid-swing, sustained walk, run, blocked stop,
+reverse and reset. Most samples face south for comparison; the reverse faces north. Foot ticks
+show the solver's ground targets so the rendered shoe can be compared with its intended contact.
+The virtual owner position accumulates travel while each display cell stays fixed. Run this
+scene with the same bounded screenshot command, substituting its scene path and output name.
+It checks sampled assembly poses; it does not establish smooth motion or live city sorting.
+
+Run `./tools/test.sh visuals limb_attachments mother_attachments --illustrated` for the focused
+registration, rendered-endpoint and displacement checks. Exercise the legacy path with
+`./tools/test.sh visuals`. The live-owner test checks that the opt-in child is absent in legacy
+mode. A zero-failure assertion summary does not excuse a script error.
+
+PLAYTEST-42 requires higher raster resolution for the current view: preserve the physical window,
+visible world extent, actor size, HUD and input mapping, and downsample additional rendered pixels.
+A wider camera view does not satisfy the request. For the same-view raster experiment, use
+`--illustrated --illustrated-render-scale 2` at the same `1280x720` window size. The scene keeps
+its existing 2× camera framing, so the visible world, actor size, HUD layout and input coordinates
+remain the baseline while the root target draws at `2560x1440` and resolves each 2×2 block before
+it reaches the `1280x720` window. The command is debug-only and does nothing to legacy presentation.
+Compare the printed logical, target and output dimensions before reviewing a capture; the saved
+root-viewport PNG is resolved render output, not a pristine high-resolution source. The experiment
+is not visually verified; its open checks are in TODO.md and HANDOFF.md. Resolution does not
+establish a fix for anatomy, gait, compositing or source-art noise.
+
 Implement in bounded sequential pieces: sheet/manifest repair, static assembly, gait and sorting,
-then environment integration. Use isolated Luna implementation worktrees under the orchestration
+then environment integration. Use isolated implementation worktrees under the orchestration
 rules; the orchestrator owns queue changes and visual acceptance. Load the path-matched skills,
 especially illustrated-PNG, Godot and verification; load city/crowd/cues rules if those areas change.
 

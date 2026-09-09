@@ -39,8 +39,18 @@ spoke for it.
 ./tools/run.sh           # plays it
 ./tools/serve-web.sh     # plays the *web* build, locally, in a browser
 ./tools/telemetry.sh     # what the last run actually did, in order
+./tools/clip.sh          # convert telemetry bursts whose sibling MP4 is missing
 ./tools/reference.sh     # brings a real-world photo or video into docs/reference/
 ```
+
+**B records an animation burst during desktop debug gameplay; P takes a single screenshot.**
+Each burst keeps its numbered PNGs and actual frame times in its own `asked/burst-<id>/` folder
+under the current telemetry run. `tools/clip.sh` uses ffmpeg to create `asked/burst-<id>.mp4`
+beside it, preserving the frames. With no arguments it scans the whole telemetry folder for
+finished bursts missing that video; pass a burst folder to select a particular sequence. Capture
+targets three seconds at twelve frames per second and records achieved timing. See
+[TELEMETRY.md](TELEMETRY.md#animation-bursts) and the session-captures skill for recording and
+sharing motion evidence.
 
 **`tools/reference.sh` is the only way a photograph enters this repository.** It shrinks a file
 to fit inside the 1280x720 design box, strips every scrap of metadata, and takes the audio and
@@ -158,23 +168,77 @@ last of those is the load-bearing one — *a tap that pathfinds hands the route 
 game*, and the route decision is the whole design. The records are in `DECISIONS.md` under M82 and
 M88.
 
-**The illustrated presentation exists behind a flag, and it is rejected as it stands.** The game
-draws its legacy SVG graphics unless `--illustrated` (locally) or `?illustrated=1` (on the web)
-opts in, and neither changes gameplay. The focused parser, legacy-binding, grounding and boot
-checks pass; the display review does not.
+**The illustrated presentation remains opt-in and awaits visual acceptance.** The game draws
+its legacy SVG graphics unless `--illustrated` (locally) or `?illustrated=1` (on the web) opts in.
+The compositor consumes applied displacement without changing gameplay. The full graphics
+overhaul is not ready for release.
 
 The concept capture is [illustrated-street-review.png](evidence/archive/session-captures/2026-09-06/illustrated-street-review.png).
 The street study is completely off and must be redone from scratch: it has no coherence or sense,
 and it uses reference imagery that does not fit the game's art style. It is not an approved visual
 direction or a basis for extending the asset family.
 
-The gameplay capture is [illustrated-gameplay-review.png](evidence/archive/session-captures/2026-09-06/illustrated-gameplay-review.png).
-It shows disconnected limbs in the wrong topological order, with positions incorrect relative to
-their owners and ground anchors. The compositor needs its layer order, pivots and placement rebuilt
-before another acceptance review. The record is in `DECISIONS.md` under M84.
-
 [Illustrated gameplay repair instructions](ILLUSTRATED-GAMEPLAY-FIXES.md) specify the asset,
-attachment, gait and sorting repairs, their order, and the visual acceptance checks for this capture.
+attachment, gait and sorting contracts. The open work is in TODO.md under Illustrated actor
+registration and assembly; the source audit and repair reasoning are in DECISIONS.md under
+Illustrated registration audit and Limb attachment repair.
+
+The actor manifests use measured per-facing crops and crop-local joints. The shared segment
+transform maps painted endpoints to solved joints, including the lifted ankle and sole. The gait
+retains unfinished steps across stops, bounds stride against leg reach and fits neutral knees to
+the configured rest geometry. Review complete assembled bodies against the legacy drawings at
+the fixed 96-world-pixel offset.
+
+The mother uses a textured torso core and separate shoulder-to-hand arm registrations. The pram
+manifest consumes PLAYTEST-44's selected `pram-layered-v3-draft-transparent.png`, with independent
+chassis, seat, canopy and baby registration. The approved PNG remains unchanged; its extraction
+record is `assets/illustrated/modular/pram-alpha-extraction-2026-09-08.md`.
+
+Source limitations remain explicit: some profile arms and walker legs reuse one same-facing
+drawing, and diagonal walker crops share painted edge pixels. Distinct isolated parts and authored
+facing refinements remain an art gate. The stationary `scenes/dev/illustrated_actor_review.tscn`
+and sampled `scenes/dev/illustrated_motion_review.tscn` expose assembly at gameplay scale; their
+commands and limitations are in the repair brief. Live overlaps, roof reveal and a coherent
+illustrated street still need their own review.
+
+Crowd halo selection and meter attribution include walkers and cars. In illustrated mode the
+halo still traces the offset legacy comparison drawing; tracing the animated PNG assembly remains
+an open integration gate. Preserve the contribution-based hue, transparency and easing when
+connecting the illustrated silhouette.
+
+The visual and attachment suites pass in the illustrated mode, and the visual suite also checks
+the legacy binding without the flag. The dated contact review and its build provenance are in
+DECISIONS.md; that image predates the tested resting-knee correction. Visual acceptance of the
+current pose and smooth motion remains open.
+
+[PLAYTEST-45](PLAYTEST-45.md) specifies the next actor defects: slanted east/west legs,
+outward north/south leg movement, excessive mother-to-pram spacing and pixelated pram rendering.
+[PLAYTEST-42](PLAYTEST-42.md) supplies a preserved timed PNG burst and MP4, with additional
+double-bend leg anatomy and baby-over-seat compositing findings. Its resolution experiment requires
+more rendered pixels for the **same view**, actor size, HUD and window. Zooming out was an incorrect
+interpretation; it does not meet the request. Supersampling and anatomy need independent checks.
+
+**The same-view render-scale experiment is in the tree and is not visually verified.** Debug
+`--illustrated-render-scale 2`, which acts only together with `--illustrated`, enlarges only
+renderer state and adds a topmost screen-texture pass averaging each 2×2 sample block; the camera
+and engine-facing logical coordinates stay unchanged by design. Without both flags nothing in it
+runs. The repair brief gives the command.
+
+Before relying on it, fix the output attachment to preserve KEEP letterboxing, verify buffer size
+using image readback rather than the viewport wrapper's reported size, handle engine resets even
+when dimensions repeat, and restore the original attachment on reload. The deferred post-draw
+diagnostic needs a headless-safe lifetime. Then capture the same framing and compare
+normalized world/HUD anchors, real window dimensions, pointer mapping, resize, portrait, reload
+and bursts. Confirm the final shader includes every overlay. The baseline capture and exact
+engine-source findings are indexed in DECISIONS.md under Same-view supersampling handoff.
+
+The illustrated-png skill's [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)
+covers source preservation, measured registration, natural reach, filtering and separate motion
+and visual gates. Prepare the player's actual checkout with `./tools/check.sh` and an explicit
+illustrated boot; a populated global class cache does not guarantee imported textures exist.
+Preserve `.import` sidecars. The missing-player diagnosis and capture provenance are in
+DECISIONS.md under Texture integration process; the screenshot does not establish appearance
+after the local import repair.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the

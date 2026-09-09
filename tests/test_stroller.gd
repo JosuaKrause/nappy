@@ -45,7 +45,7 @@ func _test_the_illustrated_compositor_is_opt_in(t) -> void:
 	t.check(rig.facing == Vector2.DOWN, "reset keeps the default south-facing owner heading")
 	t.check((rig.get_node_or_null("ModularPerson") != null)
 			== DevFlags.illustrated_requested(),
-			"the illustrated compositor exists exactly when it was opted into")
+		"the illustrated compositor exists exactly when it was opted into")
 	rig.free()
 
 ## Before she has moved, `facing` is `Vector2.DOWN` — 90° off the horizontal axis, squarely

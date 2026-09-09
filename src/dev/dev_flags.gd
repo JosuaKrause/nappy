@@ -42,6 +42,20 @@ static func enabled() -> bool:
 static func illustrated_requested() -> bool:
 	return _illustrated_from_args(OS.get_cmdline_user_args()) or _illustrated_from_query(_web_query())
 
+## `--illustrated-render-scale 2` requests the one supported higher-raster experiment in a debug
+## build. The camera stays at the scene's authored framing; unsupported and malformed values fall
+## back to the ordinary one-to-one render so a command never claims a sampling mode it did not get.
+static func illustrated_render_scale() -> int:
+	return _illustrated_render_scale_from_args(_args())
+
+static func _illustrated_render_scale_from_args(args: PackedStringArray) -> int:
+	var index := args.find("--illustrated-render-scale")
+	if index == -1 or index + 1 >= args.size():
+		return _ILLUSTRATED_RENDER_SCALE_DEFAULT
+	return 2 if args[index + 1] == "2" else _ILLUSTRATED_RENDER_SCALE_DEFAULT
+
+const _ILLUSTRATED_RENDER_SCALE_DEFAULT := 1
+
 static func _illustrated_from_args(args: PackedStringArray) -> bool:
 	return "--illustrated" in args
 

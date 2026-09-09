@@ -1,6 +1,6 @@
 ---
 name: session-captures
-description: Preserve and review dated runtime screenshots without treating them as design guidance.
+description: Capture and preserve gameplay stills and animation bursts, with video conversion and timing provenance. Keep runtime evidence distinct from design guidance.
 ---
 
 # Session captures
@@ -19,3 +19,29 @@ that identifies its source and scenario. Add provenance in the dated folder only
 the reusable workflow here. If capture aborts or the environment is headless, report that
 limitation instead of fabricating a frame. Update every in-repo link when moving an existing
 capture.
+
+## Animation sequences
+
+Use B during desktop debug gameplay to record a bounded PNG burst; P remains the single
+screenshot control. Each sequence lives in its own `asked/burst-<id>/` subfolder of the current
+run. Preserve its numbered PNGs and `burst.json` timing record together. A still cannot establish
+gait, sliding or smooth turns; inspect the ordered sequence and its actual capture times.
+
+Run `./tools/clip.sh` to scan the whole telemetry folder and convert finished bursts without
+sibling MP4s using ffmpeg, or pass a burst folder explicitly. Active recordings and existing
+videos are skipped; ended partial sequences with frames are eligible. The default MP4 is beside
+the sequence folder, named `burst-<id>.mp4`; conversion
+preserves the original frames. Video is a viewing convenience, while the PNGs retain details
+for frame-by-frame inspection. Do not assume the target capture frequency was achieved: use the
+recorded timestamps when judging speed or stutter. Capture and encoding overhead are not proof
+of a gameplay animation defect.
+
+Keep capture shortcuts independent of gameplay modifiers: Shift already means run. A capture
+key must work both alone and while running. ffmpeg installations can differ between shells;
+use the supported `-vsync vfr` conversion option rather than requiring newer `-fps_mode` support,
+and retain the real encode/decode timing tests when changing encoder arguments.
+
+For a scripted check, trigger `--press snapshot_burst 1` through the existing screenshot rig.
+Keep an external timeout and let the burst finish before the rig quits. This is one bounded
+capture invocation, not authorization for repeated windowed runs. Preserve whole player run
+folders when citing them in docs, including sequence folders, sidecars and sibling videos.

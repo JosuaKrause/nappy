@@ -14,9 +14,64 @@ mid-way through.
 
 ## The order
 
+### Illustrated actor registration and assembly
+
+The repair follows [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md),
+PLAYTEST-32's connected-body and legacy comparison requirements, and the M84 record in
+DECISIONS.md. Keep the illustrated renderer opt-in. The supplied urban/mother illustrations
+define style; `docs/reference/` supplies real-world structure and posture.
+
+- [ ] Finish the modular source-art gate with eight complete views, clean alpha and isolated
+      anatomy. The manifests identify same-facing arm/profile-leg reuse, shared diagonal walker
+      edge pixels and the mustard SW facing ambiguity. Replace those source limitations while
+      preserving interchangeable parts; flattened cards do not satisfy layered animation.
+      Preserve PLAYTEST-44's selected transparent v3 pram. See DECISIONS.md under Illustrated
+      registration audit and Limb attachment repair for the source findings and implemented fit.
+- [ ] Review the registered actors at gameplay scale before expanding variants. Inspect all eight
+      facings and smooth walk, run, stop, turn and reset, including the corrected resting knees.
+      The static contact review in DECISIONS.md predates the resting-knee correction. Headless
+      attachment and displacement checks do not establish motion quality or visual acceptance.
+      Keep the legacy drawings at their fixed horizontal comparison offset.
+- [ ] Resolve [PLAYTEST-45](PLAYTEST-45.md)'s directional posture and pram-quality findings within
+      the connected-body repair: mustard and red legs slant during east/west travel and spread
+      outward during north/south travel. Review knee bend, ground stride, projected lift and
+      source rest axes independently; matching endpoints alone is insufficient. Fit per-facing
+      mother-to-handle spacing to natural arm reach, preserving the selected v3 pram and logical
+      collision. Trace the pixelated pram to the actual visible binding, source alpha, complete
+      assembly scale and inherited filtering before choosing a repair. Confirm the illustrated
+      player loads in the actual test checkout after imports. Use the repeatable procedure in
+      the illustrated-png skill; see DECISIONS.md under Texture integration process.
+- [ ] Resolve [PLAYTEST-42](PLAYTEST-42.md)'s additional anatomy and pram compositing defects.
+      Inspect the preserved timed PNG sequence: each leg must read as one hip–knee–ankle chain,
+      without a painted bend plus a second solver bend. The baby must sit within the seat and
+      its facing-specific occlusion, not appear pasted over the stroller. Reconcile these with
+      PLAYTEST-45's existing natural-reach and directional-gait repair; keep both reports intact.
+- [ ] Implement and review [PLAYTEST-42](PLAYTEST-42.md)'s higher-resolution rendering of the
+      **current view**, preserving visible world extent, actor size, HUD size and physical window.
+      Render more pixels and downsample them; do not zoom out or merely enlarge logical coordinates.
+      Compare actual render-target dimensions and the same scene framing, input mapping, resize
+      behavior and screenshot/burst capture. Inspect filtering and retained detail without declaring
+      anatomy or animation fixed by resolution. The wider-view interpretation is rejected; its
+      history is in DECISIONS.md under Animation anatomy and camera experiment. The debug
+      `--illustrated-render-scale 2` experiment is in the tree and unverified; its open checks are
+      in HANDOFF.md. Preserve legacy presentation and the illustrated opt-in while it is reviewed.
+- [ ] Review whole-actor sorting in live overlaps and integrate roof reveal, then a representative
+      illustrated live street.
+      Preserve current joystick/tap choice and the event and crowd silhouette halos, including
+      their attributed contribution and easing. Connect crowd halos to the animated PNG assembly;
+      the current callback traces the offset legacy comparison. Extend vehicles, authored events,
+      environment and screens only
+      after their prerequisite visual gates.
+
+### Gameplay queue
+
 1. **M93** — the caret is chosen by expected impact, not by a row's own numbers. Its two numbers
    are settled and it shares them with the halo.
 2. **M56** — the resistance is noticed.
+3. **Illustrated actor review** — review the registered bodies and complete pram against the
+   legacy SVG sprites, then resolve the documented source-art and live-motion gaps. See
+   [PLAYTEST-43.md](PLAYTEST-43.md), [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md)
+   and DECISIONS.md under Limb attachment repair.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
@@ -31,29 +86,18 @@ no artist.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**[PLAYTEST-39.md](PLAYTEST-39.md) is the newest session — one finding, the tunnel, built the same
-day.** The fade is inside the portal's opening, the mountain stands above it, and the road into the
-mouth is asphalt rather than a crossing; the record is in `DECISIONS.md` under "The tunnel
+**[PLAYTEST-39.md](PLAYTEST-39.md) is the newest gameplay session, and its one finding, the tunnel,
+is built.** The fade is inside the portal's opening, the mountain stands above it, and the road into
+the mouth is asphalt rather than a crossing; the record is in `DECISIONS.md` under "The tunnel
 swallows the road". Half of it was a re-report of playtest 24's fifth finding.
 
-**[PLAYTEST-38.md](PLAYTEST-38.md) is the session before it, played on M92's own branch before it
-merged, and its four findings are built inside it** — two rows the halo showed nothing for, the
-chatting mother's capture radius, and the cue's own channels: magnitude on transparency as well as
-colour, and both edges eased rather than switched. The record, with the question "the crowd has no
-halo" and the player's answer to it, is in `DECISIONS.md` under M92.
+The halo's design and playtest reasoning are in `DECISIONS.md` under M92.
 
-**[PLAYTEST-37.md](PLAYTEST-37.md) is the session before it: four of its five findings are built
-and the fifth is M93.** The first four were re-reports — the zebra at a precinct's edge, the border's
-four-way boxes, the main road's side-arm zebras, and the bodies walking off the map — and all four
-are one rule, *a junction is made of the streets that actually meet at it*, built under M53; the
-record is in `DECISIONS.md` under M53. The fifth is the caret's own inconsistency, and it is the
-milestone above.
+**[PLAYTEST-45](PLAYTEST-45.md) covers illustrated texture integration; the connected-body
+review also includes [PLAYTEST-43](PLAYTEST-43.md).** The open repairs are listed above.
 
-**[PLAYTEST-36.md](PLAYTEST-36.md) is the session before it, and all three of its findings are
-built as M92** — a session on the halo M89 had just built, and together they were one change: the
-cue got a second axis. It also records a fork the player closed **before** it was built: colour from
-a row's declared `intensity` was proposed and rejected in favour of what has actually landed on her.
-One of its sentences was overturned by playtest 38, and the record says which.
+**[PLAYTEST-37.md](PLAYTEST-37.md) finding 5 specifies M93's caret inconsistency.** Its junction
+and border findings are recorded in `DECISIONS.md` under M53.
 
 **[PLAYTEST-35.md](PLAYTEST-35.md)'s seven findings are all built.** Six of them landed inside M90
 and M89 rather than being filed against them, because those milestones had not merged when the
