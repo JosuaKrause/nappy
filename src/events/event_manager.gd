@@ -230,10 +230,22 @@ func instances() -> Array[EventInstance]:
 
 # ------------------------------------------------------------ WorldContext ---
 
+## Every live instance's own contribution at this point, as `[instance, contribution]` pairs, for
+## every instance whose contribution here is actually positive. `city_wide` sources are included —
+## they are part of what reaches the meter even though `ExcitementHalo.select_sources()` excludes
+## them from the halo itself, which has no position to draw one around.
+func excitement_sources_at(world_position: Vector2) -> Array:
+	var sources: Array = []
+	for instance in _instances:
+		var contribution := instance.contribution_at(world_position)
+		if contribution > 0.0:
+			sources.append([instance, contribution])
+	return sources
+
 func total_excitement_at(world_position: Vector2) -> float:
 	var total := 0.0
-	for instance in _instances:
-		total += instance.contribution_at(world_position)
+	for pair in excitement_sources_at(world_position):
+		total += pair[1]
 	return total
 
 # ------------------------------------------------------------------ ticking ---

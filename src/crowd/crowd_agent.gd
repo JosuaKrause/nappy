@@ -115,6 +115,13 @@ var _picture := Vector2i(-1, -1)
 var _was_horning := false
 var walker_visual: ModularWalker
 
+## Built lazily on this agent's own first non-zero glow, and freed the moment it returns to zero.
+## `_process()`'s own comment below is about avoiding a redraw a frame for the ordinary
+## population; a halo built for every agent in a crowd of a couple of hundred, whether or not it
+## is ever picked, would be exactly that cost paid for nothing — only the handful
+## `ExcitementHalo.MAX_SOURCES` ever picks needs one at all.
+var _halo: EntityHalo
+
 ## The speed this agent wants to be doing. A car brakes toward 0 for a crossing somebody is
 ## waiting at and accelerates back to `_cruise` afterwards; walkers never use it.
 var _cruise := 60.0
@@ -128,11 +135,11 @@ var _jolt_intensity := 0.0
 var _jolt_inner := 0.0
 var _jolt_outer := 0.0
 
-## Excitement points landed on her from this agent over `ExcitementHalo.WINDOW`, and the
-## wall-clock time (`Time.get_ticks_msec()`) `landed()` last decayed it from. Duck-typed with
-## `EventInstance`'s own copy — see `ExcitementHalo`'s class doc for the whole shape.
-var _landed := 0.0
-var _landed_updated_ms := 0
+## `[when_ms, points]` entries landed on her from this agent, for whatever is still inside
+## `ExcitementHalo.WINDOW` — a true sliding sum rather than a decayed average. Lazily grown: an
+## agent that has never landed anything keeps this empty. Duck-typed with `EventInstance`'s own
+## copy — see `ExcitementHalo`'s class doc for the whole shape.
+var _landed_history: Array = []
 
 ## A sidestep held for a moment after being walked into: how far across its own corridor, and how
 ## long is left on it. See `step_aside()`.
@@ -283,21 +290,28 @@ func contribution_at(world_position: Vector2) -> float:
 				_jolt_inner, _jolt_outer)
 	return total
 
-## Duck-typed with `EventInstance`'s own copy — see `ExcitementHalo`'s class doc. Folds
-## `contribution * delta` into a `WINDOW`-second exponential moving sum, called once a frame by
-## `ExcitementHalo._process()` for every candidate it considers.
-func accumulate_landed(contribution: float, delta: float) -> void:
-	_landed = _landed * exp(-delta / ExcitementHalo.WINDOW) + contribution * delta
-	_landed_updated_ms = Time.get_ticks_msec()
+## Duck-typed with `EventInstance`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
+## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
+## agent's exact share of what landed this frame, so an ordinary walker's colour and a honking
+## car's colour both come from the same place a bump or a horn ever reached the meter at all.
+func accumulate_landed(points: float) -> void:
+	_prune_landed_history()
+	if points > 0.0:
+		_landed_history.append([Time.get_ticks_msec(), points])
 
-## `_landed`, decayed by however long it has been since the last `accumulate_landed()` call, so an
-## agent that stopped being a candidate — the jolt wore off, or the cap dropped it — fades out on
-## its own rather than needing anybody to keep visiting it.
+## The sum of every entry still inside `ExcitementHalo.WINDOW`. Pruned here too, not only on
+## write, so an agent nobody has visited in a while reports honestly the moment it is asked.
 func landed() -> float:
-	var elapsed := float(Time.get_ticks_msec() - _landed_updated_ms) / 1000.0
-	if elapsed <= 0.0:
-		return _landed
-	return _landed * exp(-elapsed / ExcitementHalo.WINDOW)
+	_prune_landed_history()
+	var total := 0.0
+	for entry in _landed_history:
+		total += entry[1]
+	return total
+
+func _prune_landed_history() -> void:
+	var cutoff := Time.get_ticks_msec() - int(ExcitementHalo.WINDOW * 1000.0)
+	while not _landed_history.is_empty() and _landed_history[0][0] < cutoff:
+		_landed_history.pop_front()
 
 ## Startles this agent for `seconds`. The only way anything outside the crowd adds excitement
 ## to the world, and it deliberately adds it to a *body* rather than to the baby.
@@ -315,6 +329,27 @@ func startle(intensity: float, seconds: float, inner: float, outer: float) -> vo
 ## True while this agent is agitated, so the same contact is not written down twice.
 func is_startled() -> bool:
 	return _jolt > 0.0
+
+## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
+## `EventInstance` shares. Called by `ExcitementHalo` once a frame for every agent in the crowd —
+## nonzero for the handful `select_sources()` picked, zero for everything else. Builds `_halo`
+## lazily on first use and frees it the moment the glow returns to zero, rather than paying for an
+## `EntityHalo` on every agent the crowd ever holds.
+func set_halo_strength(strength: float, colour: Color) -> void:
+	if strength <= 0.0:
+		if _halo:
+			_halo.queue_free()
+			_halo = null
+		return
+	if not _halo:
+		_halo = EntityHalo.new(_draw_body, _zero_bob)
+		add_child(_halo)
+	_halo.set_glow(strength, colour)
+
+## The crowd never bobs — only an `EventInstance` rides a stride's worth of lift — so this is the
+## flat `bob()` `EntityHalo` asks every owner for.
+func _zero_bob() -> float:
+	return 0.0
 
 ## This car has hit another one in a junction. It stops dead and sounds off, and then pulls away
 ## again on its own — `_cruise` is untouched, so recovery is the ordinary acceleration.
@@ -1117,23 +1152,35 @@ func _flipped() -> bool:
 	return not _vertical and _direction < 0.0
 
 func _draw() -> void:
+	_draw_body(self)
+	if kind == Kind.CAR:
+		_draw_horn_mark()
+
+## Draws this agent's own body onto `canvas` — the plain SVG sprite only, never the illustrated
+## `walker_visual` presentation, which draws itself as a separate child node with its own
+## `_draw()` and needs nothing from here. `EntityHalo` calls this once per ring offset to trace
+## whichever silhouette the sprite actually is; the ordinary frame above draws it once, at
+## `canvas == self`.
+func _draw_body(canvas: CanvasItem) -> void:
 	var frame := _frame()
 	var flip := _flipped()
 	if kind == Kind.CAR:
-		Sprites.draw_shadow(self, Vector2.ZERO, 18.0)
-		Sprites.draw_standing(self, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
-		Sprites.draw_standing(self, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
-		_draw_horn_mark()
+		_draw_shadow(canvas, Vector2.ZERO, 18.0)
+		Sprites.draw_standing(canvas, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
+		Sprites.draw_standing(canvas, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
 		return
-	if walker_visual:
-		Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
-		var comparison_at := Vector2(ModularWalker.COMPARISON_OFFSET, 0.0)
-		Sprites.draw_standing(self, WALKER_BODY[frame], comparison_at, Vector2.ZERO, flip, colour)
-		Sprites.draw_standing(self, WALKER_TRIM[frame], comparison_at, Vector2.ZERO, flip)
+	var at := Vector2(ModularWalker.COMPARISON_OFFSET, 0.0) if walker_visual else Vector2.ZERO
+	_draw_shadow(canvas, Vector2.ZERO, 7.0)
+	Sprites.draw_standing(canvas, WALKER_BODY[frame], at, Vector2.ZERO, flip, colour)
+	Sprites.draw_standing(canvas, WALKER_TRIM[frame], at, Vector2.ZERO, flip)
+
+## The drop shadow under this agent, skipped for its own halo ring — the same shape
+## `EventInstance._draw_shadow` has, for the same reason: the shadow is the ground under the
+## thing, not the thing, and a cue for what is charging her right now has nothing to say about it.
+func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
+	if canvas == _halo:
 		return
-	Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
-	Sprites.draw_standing(self, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
-	Sprites.draw_standing(self, WALKER_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
+	Sprites.draw_shadow(canvas, at, radius)
 
 ## The doubled lethal caret over a car that is sounding its horn.
 ##

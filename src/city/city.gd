@@ -201,14 +201,21 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 func is_alley(world_position: Vector2) -> bool:
 	return Tile.is_alley(map.tile_type_at_world(world_position)) if map else false
 
-## Events and the crowd are the same kind of quantity to the baby, so they simply add. The
-## crowd is the floor an ordinary street sits at; the events are what happens on top of it.
+## Events and the crowd are the same kind of quantity to the baby, so they simply concatenate —
+## `Baby._update_excitement()` traces each pair back to accumulate_landed() on the body that put
+## it there, which is what lets an event's and a crowd body's colour come from the same place.
+func excitement_sources_at(world_position: Vector2) -> Array:
+	var sources: Array = []
+	if events:
+		sources.append_array(events.excitement_sources_at(world_position))
+	if crowd:
+		sources.append_array(crowd.excitement_sources_at(world_position))
+	return sources
+
 func total_excitement_at(world_position: Vector2) -> float:
 	var total := 0.0
-	if events:
-		total += events.total_excitement_at(world_position)
-	if crowd:
-		total += crowd.total_excitement_at(world_position)
+	for pair in excitement_sources_at(world_position):
+		total += pair[1]
 	return total
 
 # ------------------------------------------------------------------ spawning ---

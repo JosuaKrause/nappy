@@ -555,11 +555,26 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 
 # ------------------------------------------------------------ WorldContext ---
 
+## Every agent's own contribution at this point, as `[agent, contribution]` pairs, for every agent
+## whose contribution here is actually positive. **The whole crowd, not only a startled body** —
+## *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
+## because of people ... that will allow us to attribute the source exactly".)* The crowd is the
+## noise, and the noise is attributable, so an ordinary walker is exactly as much a source as a
+## honking car — `ExcitementHalo`'s own floor and cap are what keep a busy pavement legible rather
+## than a special case here.
+func excitement_sources_at(world_position: Vector2) -> Array:
+	var sources: Array = []
+	for agent in _agents:
+		var contribution := agent.contribution_at(world_position)
+		if contribution > 0.0:
+			sources.append([agent, contribution])
+	return sources
+
 ## Summed excitement per second from everyone within earshot.
 func total_excitement_at(world_position: Vector2) -> float:
 	var total := 0.0
-	for agent in _agents:
-		total += agent.contribution_at(world_position)
+	for pair in excitement_sources_at(world_position):
+		total += pair[1]
 	return total
 
 func agent_count() -> int:
@@ -567,15 +582,3 @@ func agent_count() -> int:
 
 func agents() -> Array[CrowdAgent]:
 	return _agents
-
-## The startled subset of `agents()` — a caret already marks these (a honking car, a bumped
-## walker), so `ExcitementHalo` treats them as its other kind of candidate, alongside the events.
-## *(2026-09-07, the player: "at the very least if something has a caret it needs a halo as
-## well".)* The ambient, unstartled crowd is deliberately never offered at all; see "The crowd has
-## no halo" in `docs/TODO.md`.
-func startled_agents() -> Array[CrowdAgent]:
-	var startled: Array[CrowdAgent] = []
-	for agent in _agents:
-		if agent.is_startled():
-			startled.append(agent)
-	return startled

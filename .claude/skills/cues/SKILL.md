@@ -57,28 +57,30 @@ outline of the sprite. that's why it needs to be a shader. or draw the sprite in
 multiple times".)* A protest's rank of placards or a barricade's run of segments has no single
 circle that is its outline.
 
-**So the halo is traced, not sized: `EventInstance._draw_halo()` re-runs the entity's own
-`_draw_body()` at a ring of offsets `HALO_MARGIN` (4px) out**, flattened to one colour by
+**So the halo is traced, not sized: `EntityHalo` re-runs the entity's own body-drawing at a ring
+of offsets `HALO_MARGIN` (4px) out**, flattened to one colour by
 `assets/shaders/excitement_halo.gdshader` — "draw the sprite in a uniform colour multiple times,"
 the hack the player named, made cheap because the shader never has to trace an outline itself, only
 discard each redraw's own texture colours and keep its alpha. A `canvas_item` shader on the entity's
 own sprite could not have done this alone: it can only write inside the rect it is given, tight to
 the art, so a dilation would be clipped at the silhouette's own edge and read as an inward outline
-rather than a glow around it.
+rather than a glow around it. `EntityHalo` is its own class rather than a method on `EventInstance`
+because `CrowdAgent` draws the same rim — see the "One cue" bullet below.
 
 **The exception is narrow, and the narrowness is what stops it from being the next ring somebody
 wants:**
 
-- **One cue, not a general licence to draw — and a caret is what admits something to it.** Nothing
-  else in the vocabulary gets a halo of its own by analogy to this one. `ExcitementHalo` is the
-  selector — `select_sources()` decides which entities earn one, once a frame, over an untyped
-  candidate array documented as a duck type on `ExcitementHalo` itself — and `EventInstance
-  ._draw_halo()` is the one place that draws. **The crowd's startled bodies are in that candidate
-  set because a caret already marks them**: a honking car and a bumped walker both draw one
-  (`CrowdAgent._draw_horn_mark()`), and *"at the very least if something has a caret it needs a
-  halo as well"* (2026-09-07) is the rule that put `Crowd.startled_agents()` beside
-  `EventManager.instances()` rather than opening the halo to the whole crowd. The **ambient**,
-  unstartled crowd stays outside it — see "The crowd has no halo" in `docs/TODO.md`.
+- **One cue, not a general licence to draw.** Nothing else in the vocabulary gets a halo of its
+  own by analogy to this one. `ExcitementHalo` is the selector — `select_sources()` decides which
+  entities earn one, once a frame, over an untyped candidate array documented as a duck type on
+  `ExcitementHalo` itself — and `EntityHalo` is the one place that draws. **The whole crowd is in
+  that candidate set, not only a caret-worthy body.** *(2026-09-08, the player: "a busy street is
+  noisy because of cars and a busy sidewalk is noisy because of people ... that will allow us to
+  attribute the source exactly".)* The crowd is the noise and the noise is attributable, so
+  `Crowd.agents()` sits beside `EventManager.instances()` on the same terms; `CONTRIBUTION_FLOOR`
+  and `MAX_SOURCES` are what keep a busy pavement legible rather than a rule about who is caret-
+  worthy. A honking car and a bumped walker clear the floor at any distance an ordinary one does,
+  so "a caret implies a halo" — the narrower rule this started as — still holds by construction.
 - **Traced from the thing, never sized to its reach.** A busker's rim is its own 11px body redrawn
   a ring out; a barricade's is its own run of segments. **A radius that means anything about reach
   is the ring this exception does not authorise**, and now there is no radius on a def deciding the
@@ -93,10 +95,12 @@ wants:**
   **Brightness** is `ExcitementHalo.alpha_for()`, the fraction of a source's own peak reaching her
   right now — a busker at arm's length reads exactly as bright as a burning building at arm's
   length, and brightness alone can no longer tell them apart. **Colour** is
-  `ExcitementHalo.colour_for()`, a pale-to-red ramp over `landed()` — what a source has actually
-  delivered to her over a five-second window, not its row's own declared `intensity`, which was
-  proposed and rejected first: *"magnitude of how much actually landed at the player -- track it
-  over a time window -- then you have the real cost."* Both reach the shader as an `instance
+  `ExcitementHalo.colour_for()`, a pale-to-red ramp over `landed()` — points that actually reached
+  the meter, traced back from the meter's own sum in `Baby._update_excitement()` rather than
+  recomputed from `contribution_at()`, over a true five-second sliding sum. *(2026-09-08, the
+  player: "if a honking car caused 35 excitement to the player that's the number that informs the
+  color of the halo. with 1/3 of the bar that's pretty red already".)* Both reach the shader as an
+  `instance
   uniform` — one shared material, one value per entity, set through
   `set_instance_shader_parameter()` rather than `modulate` (which a custom fragment function does
   not see). Each entity's ring is its own translucent layer rather than one shader's summed field,

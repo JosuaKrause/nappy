@@ -1,44 +1,39 @@
 class_name ExcitementHalo
 extends Node2D
-## Which live events are actively charging the meter right now — an identification cue, not a map.
-## It answers *which of the six things around her*, which the meter itself cannot: a number says
-## how much, never which.
+## Which live sources are actively charging the meter right now, and how much each has actually
+## cost her over its own recent window — two axes, drawn as one rim per source. It answers
+## *which of the six things around her* and *how bad has this one actually been*, neither of
+## which the meter's own number can: a number says how much in total and never which, and never
+## whether a row that costs the same on the page cost her nothing today or cost her the whole
+## meter.
 ##
-## **It draws nothing itself.** *(2026-09-07, the player: "it should use the outline of the sprite.
-## that's why it needs to be a shader. or draw the sprite in a uniform color multiple times ...
-## the halo should not extend more than a few pixels beyond the object's outline.")* A shape drawn
-## here — a circle, a rect, any radius derived from `EventDef` — can only ever be a picture of a
-## *number*, and the whole licence this cue has to exist is that it draws the *thing* rather than
-## the thing's *reach*. So the outline is each entity's own: `EventInstance._halo` re-runs that
-## entity's own `_draw_body()` at a ring of offsets a few pixels out, flattened to a silhouette by
-## `assets/shaders/excitement_halo.gdshader`. What is left for this node is exactly one job every
-## frame: deciding which entities that ring belongs to, and how brightly it reads.
+## **It draws nothing itself.** *(2026-09-07, the player: "it should use the outline of the
+## sprite. that's why it needs to be a shader. or draw the sprite in a uniform color multiple
+## times ... the halo should not extend more than a few pixels beyond the object's outline.")* A
+## shape drawn here — a circle, a rect, any radius derived from a def — can only ever be a picture
+## of a *number*, and the whole licence this cue has to exist is that it draws the *thing* rather
+## than the thing's *reach*. `EntityHalo` is the one place that draws, shared by `EventInstance`
+## and `CrowdAgent` and told what to show through `set_halo_strength()`.
 ##
-## Two questions decide what is drawn: which sources count (`select_sources()`) and how strongly
-## each one's own ring reads (`set_halo_strength()`, called on the instance itself, once a frame,
-## for every live instance). See `docs/EVENTS.md`, "The visual vocabulary", for how this cue sits
-## beside the caret, the badge and the exclamation mark rather than replacing any of them.
+## **It does not accumulate anything itself.** *(2026-09-08, the player: "don't derive it from the
+## source numbers but trace an increase in excitement back to its constituents".)* What has
+## actually landed on her is traced from the meter's own sum: `Baby._update_excitement()` calls
+## each source's own `accumulate_landed(points)` with its exact share of what reached the bar,
+## sensitivity included, so `landed()` can never disagree with what the bar actually did. This
+## node only selects sources and reads `landed()` back for their colour.
 ##
-## **A source also carries `accumulate_landed(contribution: float, delta: float) -> void` and
-## `landed() -> float`** — a duck-typed pair (GDScript has no interface), currently implemented
-## identically on `EventInstance` and due on `CrowdAgent` as this cue's candidate set widens. They
-## fold what a source has actually delivered to her into a `WINDOW`-second exponential moving sum,
-## which is what will let its colour answer *how much this has cost her* rather than only its
-## brightness answering *how close*.
-
-## The time constant of the moving sum `accumulate_landed()`/`landed()` keep, in seconds.
+## **The duck type.** GDScript has no interface to lean on, so it is stated here: a candidate is
+## any `Node2D` that answers —
 ##
-## **A time constant, not a boxcar window, and the two are not the same sentence.** `landed =
-## landed * exp(-delta / WINDOW) + contribution * delta` forgets continuously — there is no instant
-## at which a five-second-old contribution drops out all at once — but its steady state for a
-## constant rate `r` is the same `r * WINDOW` a true five-second running sum would give, so the
-## number means the same thing either way. Said here because "a 5s window" is what the next reader
-## assumes from the name, and it is not the shape this is.
+## - `contribution_at(world_position: Vector2) -> float` — excitement/s this source delivers at a
+##   point, the query events and the crowd already share.
+## - `accumulate_landed(points: float) -> void` — folds an exact points share, already computed by
+##   the caller, into a `WINDOW`-second sliding sum.
+## - `landed() -> float` — that sum: everything still inside the last `WINDOW` seconds.
+## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show;
+##   `0` for everything not picked.
 ##
-## **Chosen to be looked at, not derived.** *(2026-09-07: "5s sounds good for now".)* `cat_dash` is
-## a three-second interruption and `busker` is continuous, so it has to be long enough that a brief
-## scare colours at all and short enough that a source she has walked away from stops promptly.
-const WINDOW := 5.0
+## `EventInstance` and `CrowdAgent` both satisfy this without sharing a base class.
 
 ## Excitement/s a source has to reach at her own position before it earns a place in the halo.
 ##
@@ -53,35 +48,43 @@ const CONTRIBUTION_FLOOR := 1.0
 ## The most sources one frame may light up. **Past the cap the weakest contributors are the
 ## ones left out**, in `select_sources()` below — not the furthest and not the newest — because
 ## dropping the smallest terms of a sum is the smallest possible error the drawn total can carry.
-## An ordinary corner never approaches this: `CLAUDE.md`'s own note is that the *whole city's*
-## concurrent event count stays a few dozen even on the last day, and this is a filter over what
-## is above `CONTRIBUTION_FLOOR` at one point, which is a handful by construction — the same rule
-## the caret already answers to: **a cue that marks everything says nothing.**
+## The candidate set is every live event plus the whole crowd, so unlike the days before the crowd
+## joined it, an ordinary busy pavement can put far more than eight candidates inside her reach at
+## once — this cap, together with `CONTRIBUTION_FLOOR`, is what keeps that legible. See
+## `docs/TODO.md`, "`MAX_SOURCES` (8) is a played question", for the measurement this number is
+## checked against.
 const MAX_SOURCES := 8
 
-## Which live events earn a place in the halo, strongest contribution first, capped at
-## `MAX_SOURCES`.
+## The width of `landed()`'s sliding sum, in seconds.
+##
+## **A true sum, not a decayed average.** *(2026-09-08, the player: "if a honking car caused 35
+## excitement to the player that's the number that informs the color of the halo".)* A 35-point
+## burst has to read as 35 for the whole window and then drop, not fade from the instant it
+## happened, so each source keeps its own list of `[when, points]` entries and `landed()` is their
+## sum for whatever is still within `WINDOW` — see `EventInstance.landed()`.
+##
+## **Chosen to be looked at, not derived.** *(2026-09-07: "5s sounds good for now".)* `cat_dash`
+## is a three-second interruption and `busker` is continuous, so it has to be long enough that a
+## brief scare colours at all and short enough that a source she has walked away from stops
+## colouring promptly.
+const WINDOW := 5.0
+
+## Which live sources earn a place in the halo, strongest contribution first, capped at
+## `MAX_SOURCES`. See the class doc for what a "source" has to answer to.
 ##
 ## **A cue that marks everything says nothing** (`.claude/skills/cues/SKILL.md`), so the set is
-## never "every event the day planned" — it is `EventInstance.contribution_at(at)` above the
-## floor, which is a handful at a time by construction and goes to zero the instant she walks out
-## of every field at once.
+## never "every source that exists" — it is `contribution_at(at)` above the floor, capped at the
+## eight strongest, which keeps a busy pavement legible.
 ##
 ## **A `city_wide` source is excluded on purpose.** `contribution_at()` answers it with the flat
 ## intensity from anywhere in the city — "there is nowhere in the city it does not reach" — so
-## drawing an outline at its instance's own position would show a reach it does not have. `docs/
+## drawing a rim at its instance's own position would show a reach it does not have. `docs/
 ## EVENTS.md`'s vocabulary already has its answer for that source: a HUD line, "for a `city_wide`
 ## source, which has no position and therefore nothing to stand under."
 ##
-## **The duck type a candidate has to answer to**, since `select_sources()` no longer takes
-## `Array[EventInstance]`: `contribution_at(world_position: Vector2) -> float`, plus
-## `accumulate_landed()`/`landed()` above and a `set_halo_strength(alpha: float, colour: Color)`
-## to be told the result. `EventInstance` already answers all of it; `CrowdAgent` is due to as its
-## own halo-drawing lands.
-##
-## **The one place the duck type is peeked under.** `city_wide` is an event-only concept — a crowd
-## body has no def and is never asked for it — so it is read only after `source is EventInstance`
-## says the object in hand actually is one.
+## **The one place the duck type is peeked under.** `city_wide` is an event-only concept — a
+## crowd body has no def and is never asked for it — so it is read only after `source is
+## EventInstance` says the object in hand actually is one.
 ##
 ## Pulled out as a static function so a test can hold the selection, the floor and the drop order
 ## without a scene, a shader or a viewport — the same reason `DangerEdge.announces()` is static.
@@ -102,11 +105,6 @@ static func select_sources(candidates: Array, at: Vector2) -> Array:
 	return picked
 
 # ------------------------------------------------------------------ brightness ---
-
-## Excitement/s at which a source's own halo reads at its brightest. Shared with
-## `Tuning.MARK_WORTH_A_DETOUR` (25/s) — the same line the caret already draws between
-## "ignorable" and "worth a detour" — so the halo and the caret agree on what counts as loud.
-const SATURATES_AT := 25.0
 
 ## The most opaque any halo may ever draw, at a source standing on its own field's own peak, so
 ## even the brightest rim is a glow rather than a solid ring — see docs/EVENTS.md, "Soft, and
@@ -130,11 +128,16 @@ static func alpha_for(contribution: float, peak: float) -> float:
 
 # -------------------------------------------------------------------- colour ---
 
-## How red a source's own rim reads: pale for a source that has cost her almost nothing over its
-## own `WINDOW`, red for one that has actually hurt. `landed` is excitement points (rate × time),
-## not a rate, and it saturates at `SATURATES_AT * WINDOW` (125 — 25/s sustained for the whole
-## window), the same line `Tuning.MARK_WORTH_A_DETOUR` already draws between ignorable and worth a
-## detour.
+## Points at which a source's own rim reads fully red — against the 100-point bar, not against
+## the caret's own line. *(2026-09-08, the player: "if a honking car caused 35 excitement to the
+## player that's the number that informs the color of the halo. with 1/3 of the bar that's pretty
+## red already".)* `Tuning.METER_MAX * 0.4` is 40 points: a felt number rather than a derived one,
+## expected to move once it has been looked at on screen.
+const SATURATES_AT_POINTS := Tuning.METER_MAX * 0.4
+
+## How red a source's own rim reads: pale for a source that has cost her almost nothing over the
+## last `WINDOW` seconds, red for one that has actually hurt. `landed` is the points that actually
+## reached the meter — see the class doc — not a rate, and it saturates at `SATURATES_AT_POINTS`.
 ##
 ## **This is the axis the row's own declared `intensity` was proposed for and rejected.** Put as a
 ## fork — a lethal `cyclist` (18/s) glowing paler than a harmless `protest` (42/s) — the answer was
@@ -143,37 +146,40 @@ static func alpha_for(contribution: float, peak: float) -> float:
 ## it has actually delivered is a fact about the encounter she just had, which is the only one this
 ## cue should be reporting.
 static func colour_for(landed: float) -> Color:
-	var t := clampf(landed / (SATURATES_AT * WINDOW), 0.0, 1.0)
+	var t := clampf(landed / SATURATES_AT_POINTS, 0.0, 1.0)
 	return Palette.HALO_WEAK.lerp(Palette.HALO_STRONG, t)
 
 var _events: EventManager
 var _crowd: Crowd
 var _player: Node2D
 
-## `crowd` is stored but not yet a candidate source in `_process()` below — `CrowdAgent` does not
-## yet answer `set_halo_strength()`, so calling it on a picked agent would crash. Wiring it in is
-## the next commit's job, once `CrowdAgent` can actually draw a rim.
 func setup(events: EventManager, crowd: Crowd, player: Node2D) -> void:
 	_events = events
 	_crowd = crowd
 	_player = player
 
-## Every frame: accumulate what actually landed on every live instance, pick the sources, tell
-## each one how bright its own ring reads and what colour it is, and tell everything else zero.
-## `EventInstance.set_halo_strength()` is what actually stores it and queues that instance's own
-## halo child for redraw — this node has no `_draw()` of its own left to call.
-func _process(delta: float) -> void:
-	if not _events or not _player:
+## Every frame: pick the sources, tell each one how bright its own ring reads and what colour it
+## is, and tell everything else zero. **Nothing here accumulates `landed()`** — that happens where
+## the meter is fed, in `Baby._update_excitement()`, so this node only reads it back.
+## `set_halo_strength()` is what actually stores it and queues that source's own halo child for
+## redraw — this node has no `_draw()` of its own left to call.
+##
+## **The candidate set is every live event and the whole crowd**, not only a startled body —
+## *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
+## because of people".)* `CONTRIBUTION_FLOOR` and `MAX_SOURCES` are what keep a busy pavement
+## legible rather than a special case admitting only the caret-worthy.
+func _process(_delta: float) -> void:
+	if not _events or not _crowd or not _player:
 		return
 	var here := _player.global_position
-	var instances := _events.instances()
-	for instance in instances:
-		instance.accumulate_landed(instance.contribution_at(here), delta)
-	var picked := select_sources(instances, here)
-	for instance in instances:
-		if instance in picked:
-			var peak := instance.contribution_at(instance.global_position)
-			instance.set_halo_strength(alpha_for(instance.contribution_at(here), peak),
-					colour_for(instance.landed()))
+	var candidates: Array = []
+	candidates.append_array(_events.instances())
+	candidates.append_array(_crowd.agents())
+	var picked := select_sources(candidates, here)
+	for source in candidates:
+		if source in picked:
+			var peak: float = source.contribution_at(source.global_position)
+			source.set_halo_strength(alpha_for(source.contribution_at(here), peak),
+					colour_for(source.landed()))
 		else:
-			instance.set_halo_strength(0.0, Palette.HALO_WEAK)
+			source.set_halo_strength(0.0, Palette.HALO_WEAK)

@@ -803,24 +803,36 @@ its value ... the intensity of the halo states how far away I am. the color shou
 dangerous it is.")* `ExcitementHalo.alpha_for()` is the fraction of a source's own peak reaching
 her right now — `contribution_at(her position) / contribution_at(its own position)` — so a busker
 at arm's length reads exactly as bright as a burning building at arm's length, and only colour
-tells them apart. `ExcitementHalo.colour_for()` is a pale-to-red ramp (`Palette.HALO_WEAK` to
-`Palette.HALO_STRONG`) over `landed()`, the excitement points a source has actually delivered to
-her over a five-second window (`ExcitementHalo.WINDOW`) — not the row's own declared `intensity`,
-which was proposed and rejected first: *"magnitude of how much actually landed at the player --
-track it over a time window -- then you have the real cost."* A protest she skirted the edge of
-and a protest she walked through are the same row and correctly different colours.
+tells them apart.
+
+**Colour is points that actually reached the meter, traced from the meter's own sum rather than
+recomputed.** *(2026-09-08, the player: "don't derive it from the source numbers but trace an
+increase in excitement back to its constituents. if a honking car caused 35 excitement to the
+player that's the number that informs the color of the halo. with 1/3 of the bar that's pretty
+red already".)* `Baby._update_excitement()` is where the meter is fed, so it is where the
+attribution happens: `WorldContext.excitement_sources_at()` returns every live source's own share
+of what is about to land, and each one's `accumulate_landed()` gets exactly that share —
+sensitivity included — rather than the halo pass recomputing anything from `contribution_at()` on
+its own. `ExcitementHalo.colour_for()` is a pale-to-red ramp (`Palette.HALO_WEAK` to
+`Palette.HALO_STRONG`) over `landed()`, a true five-second sliding sum of those shares — not a
+decayed average, so a 35-point burst reads as 35 for the whole window and then drops — saturating
+at `SATURATES_AT_POINTS` (40 of the 100-point bar). A protest she skirted the edge of and a
+protest she walked through are the same row and correctly different colours.
 `EventInstance.set_halo_strength()`, called by `ExcitementHalo` once a frame, is what carries both
 numbers to the shader. `.claude/skills/cues/SKILL.md`, "A glow, not a field" is the narrow version
 of this exception, kept narrow enough to still refuse the next ring somebody wants.
 
-**The candidate set is every live event, plus any crowd body the game already marks with a
-caret.** *(2026-09-07, the player: "at the very least if something has a caret it needs a halo as
-well".)* A honking car and a bumped walker both draw a caret (`CrowdAgent._draw_horn_mark()`), so
-`ExcitementHalo.select_sources()` takes an untyped candidate array rather than one typed to
-`EventInstance` — a duck type, documented on `ExcitementHalo` itself since GDScript has no
-interface to lean on — and `Crowd.startled_agents()` offers the startled subset of the crowd
-alongside `EventManager.instances()`. **The ambient, unstartled crowd is still outside the
-candidate set by decision, not by omission** — see "The crowd has no halo" in `docs/TODO.md`.
+**The candidate set is every live event and the whole crowd — every walker and every car, not
+only a startled body.** *(2026-09-08, the player: "a busy street is noisy because of cars and a
+busy sidewalk is noisy because of people ... that will allow us to attribute the source
+exactly".)* The tabled question this answers — "The crowd has a halo" in `docs/TODO.md` — offered
+three shapes and none of them is this one: the crowd is not a floor to fold into events, not one
+combined outline, and not gated on a higher threshold. `ExcitementHalo.select_sources()` takes an
+untyped candidate array rather than one typed to `EventInstance` — a duck type, documented on
+`ExcitementHalo` itself since GDScript has no interface to lean on — so `Crowd.agents()` and
+`EventManager.instances()` are offered on the same terms. `CONTRIBUTION_FLOOR` and `MAX_SOURCES`
+(the eight strongest) are what keep a busy pavement legible rather than a special case admitting
+only the caret-worthy.
 
 | Cue | Means | Where |
 | --- | --- | --- |

@@ -1,5 +1,5 @@
 extends RefCounted
-## `ExcitementHalo`: which live events earn a place in the halo.
+## `ExcitementHalo`: which live sources earn a place in the halo.
 ##
 ## Whether the result *reads* — the colour, the softness, whether a ring picks an entity's own
 ## silhouette out of a busy corner — is a screenshot's question and is out of this suite on
@@ -7,14 +7,16 @@ extends RefCounted
 ## tested, checked by eye: layout, colour, readability." *(2026-09-07, the player, on this cue
 ## specifically: "proof for the UI is my playtest don't try to come up with a complicated rig to
 ## test it. that's wasted effort.")* That is why the size — a ring of offsets around each entity's
-## own re-drawn body, in `EventInstance._draw_halo()` — has no test here: there is no arithmetic
-## version of "does the rim hug the sprite," only a look.
+## own re-drawn body, in `EntityHalo` — has no test here: there is no arithmetic version of "does
+## the rim hug the sprite," only a look.
 ##
 ## **What is left is what would rot silently.** The selection, `select_sources()`: a day plans
 ## several hundred bodies and only a handful may ever earn a halo, or the cue marks everything and
-## says nothing. And `landed()`'s moving sum, because a sign error in an exponential decay is
-## invisible until somebody stands next to a cyclist and a protest and cannot tell which one to
-## run from.
+## says nothing. And `landed()`'s sliding sum, because a sign error there is invisible until
+## somebody stands next to a cyclist and a protest and cannot tell which one to run from. Neither
+## test drives `accumulate_landed()` through `Baby._update_excitement()` — that attribution is a
+## question about the meter, and this suite calls `accumulate_landed()` directly to hold `landed()`
+## in isolation from it.
 
 const STEP := 1.0 / 60.0
 
@@ -28,7 +30,7 @@ func run(t) -> void:
 	_test_colour_for_the_ramp_ends(t)
 	_test_alpha_for_is_the_falloff_fraction(t)
 	_test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t)
-	_test_an_unstartled_agent_is_not_offered_at_all(t)
+	_test_an_ordinary_walker_is_a_candidate(t)
 	_test_select_sources_takes_a_mixed_candidate_set(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
@@ -116,46 +118,43 @@ func _test_the_cap_keeps_the_strongest(t) -> void:
 
 # --------------------------------------------------------------- landed() ---
 
-## Runs the same three assertions against any duck-typed source — `EventInstance` and
-## `CrowdAgent` both carry the same `accumulate_landed()`/`landed()` shape, so a bug in one and not
-## the other is exactly what a single test could miss.
-func _check_accumulate_and_decay(t, source, label: String) -> void:
-	var r := 8.0
-	var dt := 1.0 / 60.0
-	# Eight time constants is deep enough into the steady state (exp(-8) ~ 0.03%) that the loop
-	# count itself carries no risk of under-converging, whatever `dt` is chosen.
-	var steps := int(ExcitementHalo.WINDOW * 8.0 / dt)
-	for _i in steps:
-		source.accumulate_landed(r, dt)
-	var expected := r * ExcitementHalo.WINDOW
-	var converged: float = source.landed()
-	t.check(absf(converged - expected) < expected * 0.03,
-			"%s: a constant rate converges to r*WINDOW within 3%% of a true five-second sum" % label)
+## Runs the same assertions against any duck-typed source — `EventInstance` and `CrowdAgent` both
+## carry the same `accumulate_landed()`/`landed()` shape, so a bug in one and not the other is
+## exactly what a single test could miss.
+##
+## **A true sum, not a decayed average.** *(2026-09-08, the player: "if a honking car caused 35
+## excitement to the player that's the number that informs the color of the halo".)* A burst has
+## to read as itself for the whole `WINDOW`, not fade from the instant it landed — the opposite of
+## what an exponential moving average would give the same call.
+func _check_accumulates_and_decays(t, source, label: String) -> void:
+	source.accumulate_landed(35.0)
+	t.check(is_equal_approx(source.landed(), 35.0),
+			"%s: a burst reads as itself, not decayed from the frame it landed" % label)
 
-	# One accumulate_landed() call at delta = WINDOW is "fed zero for WINDOW seconds" in a single
-	# step rather than a real-time loop — the EMA's decay depends only on total elapsed time, not
-	# on how it was chopped up, so this is the same result without the wall-clock wait.
-	source.accumulate_landed(0.0, ExcitementHalo.WINDOW)
-	var decayed_once: float = source.landed()
-	t.check(absf(decayed_once - expected * exp(-1.0)) < expected * 0.03,
-			"%s: fed zero for one WINDOW, landed() has decayed to about 1/e of what it was" % label)
+	# Simulating WINDOW seconds elapsed by rewinding the stored timestamps is the same fact as
+	# waiting, and does not need the test to actually sleep.
+	for entry in source._landed_history:
+		entry[0] -= int((ExcitementHalo.WINDOW + 0.1) * 1000.0)
+	t.check(is_equal_approx(source.landed(), 0.0),
+			"%s: once WINDOW has fully elapsed the burst reads as ~0, not merely faded" % label)
 
-	# The lazy read: nobody calls accumulate_landed() again, and landed() alone has to reflect a
-	# WINDOW's worth of elapsed wall-clock time. Rewinding the stored timestamp is the same fact as
-	# waiting WINDOW seconds and cheap to assert instead of slow to wait for.
-	var before: float = source.landed()
-	source._landed_updated_ms -= int(ExcitementHalo.WINDOW * 1000.0)
-	var after: float = source.landed()
-	t.check(absf(after - before * exp(-1.0)) < before * 0.05,
-			"%s: nobody visited this source for a whole WINDOW, and landed() alone reflects it" % label)
+	# A second burst, only partially aged out, has to keep exactly what is still inside the
+	# window and drop exactly what is not -- proving the sum is over entries, not a single scalar.
+	source.accumulate_landed(10.0)
+	source.accumulate_landed(20.0)
+	for entry in source._landed_history:
+		if is_equal_approx(entry[1], 10.0):
+			entry[0] -= int((ExcitementHalo.WINDOW + 0.1) * 1000.0)
+	t.check(is_equal_approx(source.landed(), 20.0),
+			"%s: an aged-out entry drops on its own; a fresh one beside it still counts" % label)
 
 func _test_landed_accumulates_and_decays(t) -> void:
 	var instance := _instance_at(_def("landed_event", 10.0), Vector2.ZERO)
-	_check_accumulate_and_decay(t, instance, "EventInstance")
+	_check_accumulates_and_decays(t, instance, "EventInstance")
 	instance.free()
 
 	var agent := CrowdAgent.new()
-	_check_accumulate_and_decay(t, agent, "CrowdAgent")
+	_check_accumulates_and_decays(t, agent, "CrowdAgent")
 	agent.free()
 
 # ---------------------------------------------------------------- colour ---
@@ -163,7 +162,7 @@ func _test_landed_accumulates_and_decays(t) -> void:
 func _test_colour_for_the_ramp_ends(t) -> void:
 	t.check(ExcitementHalo.colour_for(0.0).is_equal_approx(Palette.HALO_WEAK),
 			"no landed excitement reads as the weak end of the ramp")
-	var saturated := ExcitementHalo.SATURATES_AT * ExcitementHalo.WINDOW
+	var saturated := ExcitementHalo.SATURATES_AT_POINTS
 	t.check(ExcitementHalo.colour_for(saturated).is_equal_approx(Palette.HALO_STRONG),
 			"landed excitement at the saturation point reads as the strong end")
 	t.check(ExcitementHalo.colour_for(saturated * 10.0).is_equal_approx(Palette.HALO_STRONG),
@@ -190,6 +189,10 @@ func _test_alpha_for_is_the_falloff_fraction(t) -> void:
 			"a non-positive peak never divides by zero")
 
 # ------------------------------------------------------------ the crowd joins ---
+# *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
+# because of people ... that will allow us to attribute the source exactly".)* The whole crowd is
+# a candidate now, not only a startled body -- CONTRIBUTION_FLOOR and MAX_SOURCES are what keep a
+# busy pavement legible.
 
 func _test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t) -> void:
 	# CrowdAgent.contribution_at() reads only global_position, kind and the jolt fields -- none of
@@ -202,25 +205,21 @@ func _test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t) -> void:
 	var at_inner_radius := Vector2(Tuning.CAR_HORN_INNER_RADIUS, 0.0)
 	t.check(car.contribution_at(at_inner_radius) > ExcitementHalo.CONTRIBUTION_FLOOR,
 			"a startled car clears the halo's floor at its own horn's inner radius -- a caret " +
-			"means a halo")
+			"means a halo, and this still holds now that every car is a candidate")
 	car.free()
 
-func _test_an_unstartled_agent_is_not_offered_at_all(t) -> void:
-	var startled_car := CrowdAgent.new()
-	startled_car.kind = CrowdAgent.Kind.CAR
-	startled_car.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
-			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
-	var ambient_car := CrowdAgent.new()
-	ambient_car.kind = CrowdAgent.Kind.CAR
-	var crowd := Crowd.new()
-	crowd._agents = [startled_car, ambient_car]
-	var startled := crowd.startled_agents()
-	t.check(startled.size() == 1 and startled[0] == startled_car,
-			"only the startled car is ever offered to the halo -- the ambient crowd floor, " +
-			"'the crowd has no halo' in TODO.md, stays tabled")
-	crowd.free()
-	startled_car.free()
-	ambient_car.free()
+func _test_an_ordinary_walker_is_a_candidate(t) -> void:
+	# No startle at all -- just the ambient PEDESTRIAN_INTENSITY, which is what "the crowd is the
+	# noise, and the noise is attributable" means in arithmetic.
+	var walker := CrowdAgent.new()
+	walker.kind = CrowdAgent.Kind.WALKER
+	var at_inner_radius := Vector2(Tuning.PEDESTRIAN_INNER_RADIUS, 0.0)
+	t.check(walker.contribution_at(at_inner_radius) > ExcitementHalo.CONTRIBUTION_FLOOR,
+			"an ordinary, unstartled walker clears the floor at its own inner radius")
+	var picked := ExcitementHalo.select_sources([walker], at_inner_radius)
+	t.check(picked.size() == 1 and picked[0] == walker,
+			"and is therefore picked -- the whole crowd is a candidate, not only a caret-worthy body")
+	walker.free()
 
 func _test_select_sources_takes_a_mixed_candidate_set(t) -> void:
 	var instance := _instance_at(_def("busker", 10.0), Vector2.ZERO)
@@ -231,7 +230,7 @@ func _test_select_sources_takes_a_mixed_candidate_set(t) -> void:
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	var picked := ExcitementHalo.select_sources([instance, car], Vector2.ZERO)
 	t.check(picked.size() == 2,
-			"select_sources() takes an event and a startled crowd agent in the same untyped " +
-			"array -- the duck type, not a shared base class, is what makes both candidates")
+			"select_sources() takes an event and a crowd agent in the same untyped array -- the " +
+			"duck type, not a shared base class, is what makes both candidates")
 	instance.free()
 	car.free()
