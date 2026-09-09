@@ -20,15 +20,10 @@ shopt -s nullglob
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# **More than this buys nothing, and the arithmetic says why.** The wall clock cannot go below the
-# slowest single suite, and `test_events.gd` alone is about 279s against roughly 1020s of total
-# work — so four shards have about 250s each to do beside it and the run is already bounded by the
-# one suite rather than by the split. A fifth shard would divide 1020 into 204s pieces and still
-# wait 279s for `test_events.gd`. Going *below* four is what costs: three shards is 340s of
-# arithmetic per shard, and that is above the floor.
-#
-# So the only thing that would make the full run meaningfully faster is splitting `test_events.gd`
-# itself. Override for a machine with a different shape.
+# The longest suite sets a floor on wall time. With the cost estimates below, four shards fit
+# the remaining work beside that suite: a fifth still waits for it, while three leave more work
+# per shard than that floor. Optimizing shared code can lower the floor and change the best split.
+# Override for machines with a different CPU or memory budget.
 SHARDS="${TEST_SHARDS:-4}"
 
 if [[ ! -x "$GODOT" ]]; then
