@@ -102,7 +102,8 @@ says what the entries mean.
 
 For animation feedback, press **Shift+P** during desktop debug gameplay. The burst saves numbered
 PNGs and frame timestamps in a separate `asked/burst-<id>/` folder. Run `./tools/clip.sh` to
-convert the newest completed burst with ffmpeg, or `./tools/clip.sh "path/to/burst-folder"` to
+scan the telemetry folder and convert every finished burst missing its sibling MP4, or
+`./tools/clip.sh "path/to/burst-folder"` to
 choose one. The MP4 sits beside that folder and all original frames remain available. P still
 takes a single screenshot.
 

@@ -27,8 +27,10 @@ screenshot control. Each sequence lives in its own `asked/burst-<id>/` subfolder
 run. Preserve its numbered PNGs and `burst.json` timing record together. A still cannot establish
 gait, sliding or smooth turns; inspect the ordered sequence and its actual capture times.
 
-Run `./tools/clip.sh` to convert the newest completed burst using ffmpeg, or pass a burst folder
-explicitly. The default MP4 is beside the sequence folder, named `burst-<id>.mp4`; conversion
+Run `./tools/clip.sh` to scan the whole telemetry folder and convert finished bursts without
+sibling MP4s using ffmpeg, or pass a burst folder explicitly. Active recordings and existing
+videos are skipped; ended partial sequences with frames are eligible. The default MP4 is beside
+the sequence folder, named `burst-<id>.mp4`; conversion
 preserves the original frames. Video is a viewing convenience, while the PNGs retain details
 for frame-by-frame inspection. Do not assume the target capture frequency was achieved: use the
 recorded timestamps when judging speed or stutter. Capture and encoding overhead are not proof

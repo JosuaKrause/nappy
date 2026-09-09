@@ -39,14 +39,15 @@ spoke for it.
 ./tools/run.sh           # plays it
 ./tools/serve-web.sh     # plays the *web* build, locally, in a browser
 ./tools/telemetry.sh     # what the last run actually did, in order
-./tools/clip.sh          # convert the newest completed gameplay burst to a sibling MP4
+./tools/clip.sh          # convert telemetry bursts whose sibling MP4 is missing
 ./tools/reference.sh     # brings a real-world photo or video into docs/reference/
 ```
 
 **Shift+P records an animation burst during desktop debug gameplay; P takes a single screenshot.**
 Each burst keeps its numbered PNGs and actual frame times in its own `asked/burst-<id>/` folder
 under the current telemetry run. `tools/clip.sh` uses ffmpeg to create `asked/burst-<id>.mp4`
-beside it, preserving the frames; pass a burst folder to select a particular sequence. Capture
+beside it, preserving the frames. With no arguments it scans the whole telemetry folder for
+finished bursts missing that video; pass a burst folder to select a particular sequence. Capture
 targets three seconds at twelve frames per second and records achieved timing. See
 [TELEMETRY.md](TELEMETRY.md#animation-bursts) and the session-captures skill for recording and
 sharing motion evidence.

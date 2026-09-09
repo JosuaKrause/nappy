@@ -336,9 +336,11 @@ serially before the next frame is scheduled, so disk overhead appears in the tim
 create an unbounded backlog. A second request is refused while one is active; a run or day ending
 the capture leaves metadata with `status: "cancelled"` when possible. The target is not a promise
 that every desktop reaches 12 fps; inspect the timestamps for the achieved timing. Headless and
-unwritable runs are refused without fabricating images. Run `./tools/clip.sh` (or pass a burst
-folder) to make a sibling MP4 without deleting the PNG sequence; its default lookup ignores active
-captures.
+unwritable runs are refused without fabricating images. Run `./tools/clip.sh` to scan the whole
+telemetry folder and convert bursts whose sibling MP4 is missing, without deleting their PNGs.
+The scan skips active captures and existing videos; ended partial sequences with frames are
+eligible too. Pass a burst folder to select one sequence. If there is nothing to convert, the
+command reports that and succeeds.
 
 ## The city grid
 
