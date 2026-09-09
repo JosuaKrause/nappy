@@ -1120,9 +1120,11 @@ of a day's routes across the spine; nothing prices the crossing on top of that. 
 
 ## M98 — Pressure in the empty acts · rewritten 2026-09-09
 
-Rewritten from M25 and M26. M26's first two lessons exist — day 1 says how to walk, and the run is
-taught by the first pursuit on `RUN_TAUGHT_DAY` — with one wording on every device and no key named,
-which is M83's rule. What remains is M25 whole and M26's last piece, which M26 itself put after M25.
+Rewritten from M25 and M26. All of M26 is built: day 1 says how to walk, the run is taught by the
+first pursuit on `RUN_TAUGHT_DAY`, with one wording on every device and no key named, and the
+scripted event that requires a short run is the charging dog itself — *(2026-09-09: "this is what
+became the charging dog")* — sited on her line on day 3 so the lesson is unavoidable, which is the
+"safe place" playtest 02 asked for, moved to the day running becomes right. What remains is M25.
 
 - [ ] **Patrols for acts III and IV, built around encounter cost.** The crowd table in `Tuning`
       empties the streets from act III on purpose — *"the cruellest number in the game: from act III
@@ -1134,11 +1136,6 @@ which is M83's rule. What remains is M25 whole and M26's last piece, which M26 i
       interested as resistance progress rises; what this item adds is a return-phase shape in acts
       III and IV. Measure the return phase on a rig across the four acts — encounters per return,
       and how much of the day's clock the return actually spends — before and after
-- [ ] **A day-1-only event requiring a short run after the first block.** M26's last piece,
-      unchanged. **It comes after the item above for correctness, not scheduling**: the HUD's own
-      teaching rule is that *teaching a move before it is ever correct teaches a move that is never
-      correct again*, and running is available and wrong from the first morning. So this is built
-      only once the acts have something to run from, and it is re-read against that rule when it is
 
 ---
 

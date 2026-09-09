@@ -60,6 +60,10 @@ Today it is the other way around: `fire_truck` is the day-3 one-shot, drives its
 
 > "M101 can go after the Act III stuff."
 
+On M98's day-1 forced short run, asked keep-or-drop:
+
+> "this is what became the charging dog"
+
 The first overturns the long-standing decision to move `RUN_TAUGHT_DAY` to day 2; the constant
 stays at 3 and M96 says so. The second keeps the blocked-street bug in M100 rather than ahead of
 the queue.

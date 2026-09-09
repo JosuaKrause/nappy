@@ -45,6 +45,14 @@ the crossing's price, and the tree's own growth is what makes crossing a decisio
 and others do not. What would make it worth discussing again is a played run in which every route
 crosses the spine for nothing, not an argument about the multiplier.
 
+**M26's scripted short-run event is the charging dog, and was all along.** Playtest 02 asked for
+*"a scripted day-1-only event that requires a short run, after the first block"*, parked behind the
+patrols work because running was then wrong against everything. Put back to the player as
+keep-or-drop, the answer was neither: *"this is what became the charging dog"*. The dog is that
+event moved to day 3, the day running becomes the right answer, and sited ahead of her so the run is
+unavoidable — the *safe place* the playtest wanted. So M98, pressure in the empty acts, holds only
+M25's return-phase item.
+
 **`RUN_TAUGHT_DAY` stays at 3.** The move to day 2 had stood as *decided and not implemented*
 since the M49 session's "Day 3 carries act I's whole payload"; put back to the player on
 2026-09-09 because it gates every pursuit, the answer was *"run taught goes to 3 not 2"*, so the
