@@ -235,7 +235,9 @@ engine-source findings are indexed in DECISIONS.md under Same-view supersampling
 The illustrated-png skill's [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)
 covers source preservation, measured registration, natural reach, filtering and separate motion
 and visual gates. Prepare the player's actual checkout with `./tools/check.sh` and an explicit
-illustrated boot; a populated global class cache does not guarantee imported textures exist.
+illustrated boot; a populated global class cache does not guarantee imported textures exist, and
+`tools/run.sh` checks the sidecars against `.godot/imported/` and runs the import pass itself
+when one is missing, so a pulled checkout boots rather than failing on the first preload.
 Preserve `.import` sidecars. The missing-player diagnosis and capture provenance are in
 DECISIONS.md under Texture integration process; the screenshot does not establish appearance
 after the local import repair.
@@ -545,6 +547,12 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
+- **Cars arrive by the tunnel and the bridge, and a rig is the only thing that has seen one.**
+  A southbound spine car beside the north edge is placed up to `OUT_OF_SIGHT` (420px) under the
+  mountain and drives out through the dark of the portal; a northbound one starts on the far end of
+  the deck. The rig counts frames and says the traffic is two-way. What it cannot say is whether a
+  car emerging from the black of the tunnel mouth reads as arriving or as appearing, and whether a
+  queue held at the first light ever backs into the portal in view.
 
 ## The rule that matters most before starting anything
 

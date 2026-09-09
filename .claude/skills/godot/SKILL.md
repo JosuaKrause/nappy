@@ -93,9 +93,10 @@ and every typed reference fails to parse until `check.sh` runs the import pass.
 **Texture `.import` sidecars are repository files; `.godot/imported/` is the cache.** Preserve
 sidecars, including newly generated evidence sidecars. After checking out an asset branch, run
 `check.sh` in the actual test folder: a worktree's imported textures do not travel with commits.
-`run.sh` checks for missing global classes, not missing imported textures. A failed texture
-preload can leave a GDScript uncompiled and produce nonexistent `new()` followed by nil-method
-errors. Read the first load/parse error before changing the constructor. For illustrated assets,
+`run.sh` checks for missing global classes and for `.import` sidecars whose imported copy is
+absent, and runs the import pass itself when either is found; `shot.sh` and a bare `godot --path`
+do not. A failed texture preload can leave a GDScript uncompiled and produce nonexistent `new()`
+followed by nil-method errors. Read the first load/parse error before changing the constructor. For illustrated assets,
 follow the explicit opt-in boot and visual gates in the **illustrated-png** skill.
 
 ## Pausing

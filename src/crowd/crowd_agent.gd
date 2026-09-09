@@ -1162,14 +1162,21 @@ func _has_room_here() -> bool:
 		return true
 	return traffic.room_at(lane_key(), queue_position(), Tuning.CAR_GAP_MIN)
 
-## Whether the whole entry band lies outside the map rather than straddling its edge.
+## Whether the whole entry band lies on ground this agent may stand on. The box's bounds are
+## clamped to the map, so beside a boundary the band an inward-bound lane enters through is the
+## stretch *past* the edge — and that is refused for everybody but a car on the spine, who gets
+## the same `_room_beyond_the_map` on the way in that it gets on the way out. Without the
+## exception nothing ever comes out of the tunnel or off the bridge: every roll of a southbound
+## spine lane beside the north edge lands in the tunnel, every roll is refused, and the traffic
+## through the two holes in the border runs one way.
 func _entry_band_fits() -> bool:
 	var bounds := field.along_bounds(_vertical)
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
+	var beyond := _room_beyond_the_map()
 	if _direction > 0.0:
-		return bounds.x - ENTRY_SPREAD >= -Tuning.TILE_SIZE
-	return bounds.y + ENTRY_SPREAD <= limit + Tuning.TILE_SIZE
+		return bounds.x - ENTRY_SPREAD >= -beyond
+	return bounds.y + ENTRY_SPREAD <= limit + beyond
 
 # ---------------------------------------------------------------- drawing ---
 
