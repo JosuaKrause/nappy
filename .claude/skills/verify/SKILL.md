@@ -91,6 +91,13 @@ play, and the numbers it prints are how a balance constant gets **set** rather t
 the only thing that catches a pedestrian being ploughed along the pavement in permanent contact, or
 a contact radius that leaves **no line to walk** on a two-tile pavement.
 
+**A probe worth running again is parked in `tests/probes/`, not deleted and not left as a suite.**
+The runner only discovers the top of `tests/`, so nothing there runs in the full suite or in CI;
+it runs when named by path — `tools/test.sh probes/m64_density.gd` — and *measure it again
+afterwards* then means running the same thing rather than reinventing it. Never park one on a
+branch: a branch is invisible from the tree, and `git branch` should only ever answer *is there
+work that is not on `main`*.
+
 **A hand-built rig object can pass vacuously, three known ways.** A bare `Stroller.new()` has no
 `CollisionShape2D`, so `move_and_slide()` never moves it — assert on `velocity`, not on position.
 Its baby lookup is by child name, so a test's `Baby.new()` needs `name = "Baby"` set explicitly or
