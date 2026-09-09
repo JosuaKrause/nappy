@@ -553,6 +553,11 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   the deck. The rig counts frames and says the traffic is two-way. What it cannot say is whether a
   car emerging from the black of the tunnel mouth reads as arriving or as appearing, and whether a
   queue held at the first light ever backs into the portal in view.
+- **The back of a signal head has been seen in one capture and by nobody at play.** The head north
+  of a signalled junction shows a back plate and no lamp, so the only lamp on the spine's own arms
+  is the one on the head facing the camera. One screenshot at one junction says the drawing reads
+  as a back; whether a player crossing northward misses the lamp that used to face them is a
+  played question.
 
 ## The rule that matters most before starting anything
 

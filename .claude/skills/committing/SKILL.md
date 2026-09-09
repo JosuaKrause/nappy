@@ -45,6 +45,15 @@ the pass that untangles it is a milestone rather than a review comment.
 reader a sentence that is no longer true, the PR is not finished. Read `HANDOFF.md` and the
 milestone's own `TODO.md` entry before proposing, not after.
 
+**And the PR is opened complete, never opened and then topped up.** *(2026-09-09: "why do you keep
+updating handoffs and todos *after* a PR has landed? the updates *must* go in the PR … that's a hard
+requirement".)* `HANDOFF.md`, `TODO.md`, `DECISIONS.md` and every other doc the change touches are
+written and committed on the branch **before** `gh pr create`, in the same pass as the code. A
+handoff sentence pushed onto an already-open PR, or filed in the next PR, reads to the reviewer as
+the docs being an afterthought — and from `main`'s history it is indistinguishable from the docs
+having been fixed after the fact. The end-of-session cleanup pass is for drift no single PR caused,
+not for finishing a PR's own doc work.
+
 The **session-cleanup** skill still runs at the end of a session — it catches drift that no single
 change is responsible for, reassesses long-open items and re-reads the numbers. It is not where a
 PR's own doc work goes.
