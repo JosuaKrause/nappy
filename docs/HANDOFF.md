@@ -270,8 +270,11 @@ every time. **The bearing form is the one that reproduces a route a player would
 since a press sets an arbitrary unit vector and most headings are diagonal; the run log writes the
 bearing in whole degrees for the same reason.
 
-M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
-bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.
+A junction is made of the streets that actually meet at it: a precinct's end, the city's border
+and the spine's side arms all read as what they are — a T with a line of bollards, a T with no
+zebra running into the mountain, four dotted crossings under one light — and nothing walks or
+drives off the map except a car by the tunnel or the bridge. All of it was checked on rig captures
+and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## Open beyond the order
 
@@ -463,9 +466,12 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   both meant to stop being walkable-past. The chatting mother's is the one to distrust: her radius
   now exceeds the 32px between a pavement's two walking lanes, **so walking her far lane no longer
   avoids her**, which is the trade the player accepted and nobody has felt.
-- **Nothing draws a bollard**, so a street that meets a precinct simply ends against the paving. The
-  city and the crowd both explain a precinct by saying a driver meets a bollarded street, and there
-  is no bollard anywhere in the game.
+- **The bollards are a placeholder drawing, and the border now refuses the crowd.** Five posts seen
+  from above close each precinct mouth's carriageway, and the player has seen them and the
+  T-junctions on a played branch. What nobody has watched is the crowd at the border since it
+  became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
+  map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
+  Whether that reads as a city edge or as bodies bunching against glass is a played question.
 
 ## The rule that matters most before starting anything
 

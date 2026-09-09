@@ -78,7 +78,7 @@ assets/
   tiles/                  ground tiles, 32x32 SVG
   buildings/              facade and roof tiles, 32x32 SVG
   rig/                    the mother and the pram, per direction
-  props/                  trees, the swing frame, the door, the shadow
+  props/                  trees, the swing frame, the bollard, the door, the shadow
   events/                 one body per EventDef.Look
   closures/               barriers, the sign, and what is lying in the road
   crowd/                  walkers and cars, body plus colour trim

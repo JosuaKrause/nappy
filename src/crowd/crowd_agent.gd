@@ -200,13 +200,17 @@ func _settle_junction() -> void:
 	_junction = CrowdLanes.corridor_at(_along())
 
 ## Whether this agent is standing somewhere it could have got to on its own: an open street, or
-## outside the map, which is where an entry band legitimately begins.
+## — for a car on the spine, leaving by the tunnel or the bridge — the one place an entry band may
+## legitimately begin outside the map. Everywhere else outside the map is refused, the same
+## exception `_cannot_go_on` makes: a walker placed out there would find every direction blocked
+## and go nowhere, which is worse than the retry `_recycle` already has to make anyway.
 func _stands_on_a_street() -> bool:
 	var tile := _map.world_to_tile(position)
 	if _map.is_closed(tile):
 		return false
 	if not _map.in_bounds(tile):
-		return true
+		return kind == Kind.CAR and _vertical and _corridor == _map.main_road \
+				and (tile.y < 0 or tile.y >= _map.size.y)
 	# A precinct is paved end to end, so every tile of it says "street" and a car placed there
 	# would look perfectly settled right up to the moment it drove off down the paving. Asked
 	# here rather than at lane-choosing time because it is a question about a *place*, and the
@@ -739,9 +743,12 @@ func _consider_turning() -> void:
 ## is the same move a barricade produces, with the same good side effect: a street with nobody on it
 ## is a street that does not go through.
 ##
-## Out of bounds is deliberately **not** blocked. The map edge is what `_has_left_the_field`
-## handles, and treating it as a wall here would turn agents round at the boundary instead of
-## recycling them, which quietly drains the pavement the player is walking towards.
+## Out of bounds **is** blocked, in `_cannot_go_on()` below — a body that reaches the boundary
+## pavement turns rather than walking into the mountain, and only a car on the spine leaves by the
+## tunnel or the bridge. The map edge is still what `_has_left_the_field` recycles at. **The thing
+## to watch is the pavement she is walking towards near an edge**: a body that turns round at the
+## boundary instead of recycling is one fewer arriving from that side, and whether the edge
+## streets read thinner for it is a played question rather than a tested one.
 func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 	var offset := Vector2(0.0, direction * distance) if vertical \
 			else Vector2(direction * distance, 0.0)
@@ -749,11 +756,20 @@ func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 
 ## Whether a *tile* is somewhere this agent may be. The predicate under both of the questions
 ## below, so "the way is shut" means one thing however it is asked.
+##
+## **Out of bounds is blocked**, with one exception: a car on the spine's own corridor
+## (`_map.main_road`) leaving by the tunnel to the north or the bridge to the south, the two edges
+## `City._spawn_spine_exits` places them at — `CityEdge` draws the carriageway going on there, and
+## nowhere else does the border carry a road. Never a walker: playtest 16, finding 3, *"only cars
+## should be able to"*. Stated over which edge and which corridor rather than over "vertical and
+## out of bounds", because the spine is the one corridor this is true of, not every vertical one.
 func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _map.is_closed(tile):
 		return true
 	if not _map.in_bounds(tile):
-		return false
+		var leaves_by_the_spine := kind == Kind.CAR and vertical and _corridor == _map.main_road \
+				and (tile.y < 0 or tile.y >= _map.size.y)
+		return not leaves_by_the_spine
 	# And a precinct is a wall to a car and a street to everybody else. The tile map cannot say
 	# so — it is paving either way — so the street kind has to, or a car reaching the three
 	# blocks of a precinct drives onto them instead of turning off.
@@ -1018,6 +1034,22 @@ func _recycle() -> void:
 	gap_ahead = INF
 	junction_hold = INF
 	_keep_within_the_room_beyond_the_map()
+	# The loop above only ever *tries* for `_stands_on_a_street`; six misses in a row near a true
+	# edge leave whatever the last roll was, which `_keep_within_the_room_beyond_the_map` still
+	# lets sit up to one tile past it — the same tile every kind but the spine's own car was
+	# already allowed to overrun by before this. That used to correct itself the moment the agent
+	# next moved, because nothing stopped it walking back onto the street. Now `_cannot_go_on`
+	# refuses the very step that would have done it, so a fallback that lands out of bounds is
+	# stuck there instead of drifting in — pulled onto the map's own last row or column here,
+	# the one lane still guaranteed to exist. Never for the spine's own exception, which is
+	# already standing somewhere real.
+	if not _stands_on_a_street():
+		var extent := _map.world_size()
+		var limit: float = extent.y if _vertical else extent.x
+		# `limit` itself is one past the last tile's own far edge, the same fencepost
+		# `world_to_tile` always floors away — so the clamp's own top has to give up a whole
+		# pixel or it can land exactly on the line and read as out of bounds again.
+		_set_along(clampf(_along(), 0.0, limit - 1.0))
 	if walker_visual:
 		walker_visual.recycle_at(position, heading())
 
