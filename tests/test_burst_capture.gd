@@ -4,28 +4,36 @@ extends RefCounted
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 func run(t) -> void:
-	_test_shift_p_and_the_rig_action_choose_the_burst(t)
+	_test_b_and_the_rig_action_choose_the_burst(t)
 	_test_headless_and_overlapping_requests_refuse_before_a_capture_wait(t)
 	_test_unique_paths_and_manifest_timing(t)
 	_test_cancellation_and_stale_callbacks_cannot_cross_sequences(t)
 	_test_metadata_write_failure_stops_without_claiming_success(t)
 
-## The input map binds Shift+P through a physical key, so these are real `InputEventKey` shapes
+## The input map binds B through a physical key, so these are real `InputEventKey` shapes
 ## rather than action names invented by the test. The named action is the shape `--press` sends.
-func _test_shift_p_and_the_rig_action_choose_the_burst(t) -> void:
+func _test_b_and_the_rig_action_choose_the_burst(t) -> void:
 	var single := _p_key(false)
-	var burst := _p_key(true)
-	var echo := _p_key(true, true)
+	var old_burst := _p_key(true)
+	var burst := _b_key(false)
+	var shifted_burst := _b_key(true)
+	var echo := _b_key(false, true)
 	var rig_action := InputEventAction.new()
 	rig_action.action = &"snapshot_burst"
 	rig_action.pressed = true
 
 	t.check(MAIN_SCRIPT._debug_snapshot_action(single) == &"snapshot",
 			"an unmodified physical P remains the single-snapshot action")
+	t.check(MAIN_SCRIPT._debug_snapshot_action(old_burst) == &"snapshot",
+			"Shift+P stays a single snapshot and no longer starts a burst")
 	t.check(MAIN_SCRIPT._debug_snapshot_action(burst) == &"snapshot_burst",
-			"a physical Shift+P selects the burst action")
+			"an unmodified physical B selects the burst action")
+	t.check(MAIN_SCRIPT._debug_snapshot_action(shifted_burst) == &"snapshot_burst",
+			"Shift+B also selects the burst action")
+	t.check(not burst.is_action_pressed("run"),
+			"the burst key is not the run action")
 	t.check(MAIN_SCRIPT._debug_snapshot_action(echo) == &"",
-			"a held Shift+P echo cannot make another capture")
+			"a held B echo cannot make another capture")
 	t.check(MAIN_SCRIPT._debug_snapshot_action(rig_action) == &"snapshot_burst",
 			"the named action used by the scripted rig follows the burst branch")
 
@@ -131,6 +139,15 @@ func _p_key(shift: bool, repeated := false) -> InputEventKey:
 	var event := InputEventKey.new()
 	event.physical_keycode = KEY_P
 	event.keycode = KEY_P
+	event.shift_pressed = shift
+	event.echo = repeated
+	event.pressed = true
+	return event
+
+func _b_key(shift: bool, repeated := false) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.physical_keycode = KEY_B
+	event.keycode = KEY_B
 	event.shift_pressed = shift
 	event.echo = repeated
 	event.pressed = true
