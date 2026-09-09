@@ -70,12 +70,17 @@ define style; `docs/reference/` supplies real-world structure and posture.
 
 ### Gameplay queue
 
-- [ ] **SVG seal vehicle direction and footprint.** Finish PLAYTEST-50's crash direction and
-      burnt-car variant findings: crashed cars point along the street, with the two bodies
-      arranged across it; burnt cars have a view for each street axis. Review the moving van's
-      street alignment too. Match the skip and moving van's visible widths to their solid bodies
-      without changing seal placement. See DECISIONS.md, "SVG seal artwork review", for the
-      grounding correction and remaining footprint measurements.
+**Upcoming SVG parts are listed with their owning milestones below:** checkpoint structures and
+guards, directional pointing poses, district accents and discrete sound arcs. Reuse the available
+assets when implementing those systems; their placement, timing and gameplay decisions remain
+open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the visual review.
+
+- [ ] **Vehicle collision and silhouette agreement.** The skip and side-view van widths fit their
+      solid bodies; authored end views preserve narrower vehicle proportions. Check whether the
+      circular obstructions leave apparent gaps that cannot be walked through, and reconcile
+      collision with the pictures without stretching the cars or breaking seal reachability.
+      See DECISIONS.md, "SVG artwork and upcoming milestone assets", for the directional artwork,
+      the player's perpendicular burnt-car correction and the rendered evidence.
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
@@ -262,6 +267,15 @@ you can pass at a price, are only a decision when the city contains both.
       concrete and a hazard stripe is a street being **held**, which is still true of it
 
 **Its anatomy, in the player's words, and each part lands on a different system:**
+
+**The checkpoint SVG parts are available and visually reviewed.** `assets/checkpoints/` holds
+`hut_north.svg`, `hut_south.svg`, `hut_east.svg`, `hut_west.svg`, `guard_standing.svg` and
+`guard_lunging.svg`, plus `boom_gate_ns_lowered.svg`, `boom_gate_ns_raised.svg`,
+`boom_gate_ew_lowered.svg` and `boom_gate_ew_raised.svg`. Gate suffixes name the **road's axis**;
+each state pair shares its canvas, ground anchor and pivot, documented inside the SVG. The
+existing `assets/events/checkpoint_block.svg` is poured concrete and `barricade_pile.svg` is
+improvised debris. Reuse these parts for the placement, detention and traffic integration below.
+Their provenance is in DECISIONS.md, "SVG artwork and upcoming milestone assets".
 
 - **A barrier across the street**, with **guards on the sidewalks** and a **hut**. So it is not one
   body on one tile — it spans the full width of a street, footway to footway, which nothing in the
@@ -599,6 +613,11 @@ are built: `police_patrol` is **denser and then interested**, and `abduction` is
 a bystander of its own while she watches and coming after her instead past three of four. The
 reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
 
+**Guard artwork is available for the hut interaction:** `assets/checkpoints/guard_standing.svg`
+and `guard_lunging.svg` share the person's scale and keep their ground anchors in the SVG comments.
+The lunging pose faces east and can be mirrored for west. These are the stationary and departing
+poses for the drawing discussed below; the heat-response decision and runtime binding remain here.
+
 - [ ] **"And other dangers like this"** — drafted and put back, and the vans have now set the
       precedent it was waiting on: a `HUNTS` row keeps `hard_fail`, moves neither population nor
       intensity, and gains its own threshold rather than sharing the patrol's. The candidates
@@ -758,14 +777,19 @@ thing than behind it.
 
 ## M65 — A protester points at the objective · asked for 2026-09-03
 
-**All that remains here is the pose, which is a drawing.** The two findings this milestone was
+**The pointing poses are available; objective binding and density remain open.**
+`assets/events/protester_point_n.svg`, `protester_point_ne.svg`, `protester_point_e.svg`,
+`protester_point_se.svg`, `protester_point_s.svg`, `protester_point_sw.svg`,
+`protester_point_w.svg` and `protester_point_nw.svg` keep an upright body and a shared feet anchor
+at (22, 52) in a 44×52 canvas. Reuse them for the objective-bearing selection after the design
+review below. See DECISIONS.md, "SVG artwork and upcoming milestone assets". The two findings this milestone was
 opened for — the first mark being announced, and a mark that was never on screen — are built; the
 record is in `DECISIONS.md` under M78, and the played question it leaves is whether a mark that
 follows her until seen is now findable at all.
 
 **Revisited after M62 rather than built as written.** *(2026-09-09: "M65 we need to revisit after
 M62.")* A walled city with checkpoints may change what finding a mark is like, so this entry is
-re-read against that city before the pose is drawn or the density moved.
+re-read against that city before the prepared poses are bound to objectives or the density moved.
 
 **Half of this item needs no drawing at all**, and is worth doing on its own if the mark is still
 hard to find now that it follows her: raising how often a protester appears is a density
@@ -1018,21 +1042,21 @@ is still true.
 
 **Drawings, as SVG:**
 
-- [ ] **The fence is drawn in elevation and turned on its side.** The game looks straight down,
-      where a fence is a thin line with post-heads and a shadow. `assets/tiles/fence.svg` runs
-      north–south, which fixed playtest 14's rotation, and is still rails and palings seen from the
-      side
 - [ ] **Park trees clump.** `City` places them by rejection sampling inside the lot with no
       spacing test. A minimum-spacing check would spread them
 - [ ] **`INDUSTRIAL` and `CIVIC` districts do not read differently at a glance**, although act II
       makes them narrative. Today only the wall heights differ — one to two tiles against three to
-      four
+      four. Prepared SVG accents are `assets/props/industrial_vent.svg` (32×32 roof unit) and
+      `assets/props/civic_portico.svg` (32×48 stone entrance). Their placement and density still
+      need integration and a gameplay-scale district comparison.
 
 **Polish, after the playtest work**, since there is no point polishing a loop that is about to be
 re-pitched:
 
 - [ ] **Sound lines** — concentric arcs off a source on a pulse's rising edge, the visual form of a
-      discrete noise. The last gap in the visual channel, and it comes **before** audio
+      discrete noise. `assets/events/sound_pulse.svg` supplies three open arcs in a 48×32 canvas,
+      anchored at (24, 32); pulse timing, orientation and runtime binding remain. The last gap in
+      the visual channel comes **before** audio.
 - [ ] **Audio**, once the above is done and judged on its own: per-act beds, per-event cues, the
       baby's breathing as the diegetic version of the meters. Additive by design
 - [ ] Save and continue a run (`GameState` is already shaped for it, so this is serialisation
@@ -1095,6 +1119,11 @@ re-pitched:
 ---
 
 ## M101 — The fire is found before the engine · asked for 2026-09-09
+
+**The SVG pictures are available:** `assets/events/flame.svg` supplies curling flames and
+`rubble.svg` the charred facade; `fire_engine.svg` and `fire_engine_end.svg` supply the engine's
+street-axis views. The remaining work below is placement and sequencing, with these textures
+already bound to the existing rows. See DECISIONS.md, "SVG artwork and upcoming milestone assets".
 
 > "the player should encounter the burning building before the fire truck. basically the fire
 > truck should spawn when the player sees the burning building not the other way around"

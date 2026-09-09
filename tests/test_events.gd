@@ -9,6 +9,7 @@ func run(t) -> void:
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
+	_test_stationary_vehicles_face_their_street(t)
 	_test_a_spread_never_lands_on_a_corner(t)
 	_test_a_spread_cap_matches_what_it_obstructs(t)
 	_test_a_wide_scene_faces_its_street(t)
@@ -253,6 +254,48 @@ func _test_a_spread_rotates_with_the_street(t) -> void:
 	t.check(not EventInstance._spread_is_vertical(null, Vector2.ZERO),
 			"a data-level rig with no map at all gets the unrotated default")
 
+## Stationary seal vehicles use the street axis even though their default facing is right. The van
+## faces along it and the burnt car lies across it. Side art fits the circular body's diameter,
+## while end art keeps the narrower projection instead of stretching into a square.
+func _test_stationary_vehicles_face_their_street(t) -> void:
+	var map := CityMap.new()
+	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
+	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
+	t.check(not EventInstance._stationary_vehicle_uses_side(EventDef.Look.MOVING_VAN,
+			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
+			"a moving van on a north-south street uses its end view")
+	t.check(EventInstance._stationary_vehicle_uses_side(EventDef.Look.MOVING_VAN,
+			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
+			"a moving van on an east-west street uses its side view")
+	t.check(EventInstance._stationary_vehicle_uses_side(EventDef.Look.BURNT_OUT_CAR,
+			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
+			"a burnt car across a north-south street uses its side view")
+	t.check(not EventInstance._stationary_vehicle_uses_side(EventDef.Look.BURNT_OUT_CAR,
+			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
+			"a burnt car across an east-west street uses its end view")
+	t.check(EventInstance._stationary_vehicle_uses_side(
+			EventDef.Look.MOVING_VAN, null, Vector2.ZERO, Vector2.RIGHT),
+			"off-street or data-level placement follows the vehicle's own default facing")
+
+	var vehicle_looks: Array[EventDef.Look] = [
+		EventDef.Look.MOVING_VAN,
+		EventDef.Look.BURNT_OUT_CAR,
+	]
+	for look in vehicle_looks:
+		var id := "moving_van" if look == EventDef.Look.MOVING_VAN else "burnt_out_car"
+		var def := EventCatalogue.by_id(id)
+		var side := EventInstance._stationary_vehicle_texture(look, true)
+		var end := EventInstance._stationary_vehicle_texture(look, false)
+		var side_extent := EventInstance._stationary_vehicle_extent(
+				side, true, def.obstructs_radius * 2.0)
+		var end_extent := EventInstance._stationary_vehicle_extent(
+				end, false, def.obstructs_radius * 2.0)
+		t.check(side != end, "'%s' has distinct side and end artwork" % def.id)
+		t.check(is_equal_approx(side_extent.x, def.obstructs_radius * 2.0),
+				"'%s' side view fits the diameter of its solid body" % def.id)
+		t.check(end_extent.is_equal_approx(end.get_size()) and end_extent.x < side_extent.x,
+				"'%s' end view keeps its narrower authored projection" % def.id)
+
 ## **A spread never lands on a corner.** `EventScheduler._is_a_corner` refuses any tile whose two
 ## coordinates are both inside a corridor band to a row `EventInstance.has_a_spread()` names — see
 ## `docs/DECISIONS.md`, M64, "a spread on a corner is placed as if the corner were nothing": such a tile
@@ -300,7 +343,7 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 
 ## **A whole-scene hard seal has to draw one body on either axis, not several squashed ones.**
 ## `EventInstance._wide_scene_texture` is the pure selector this pins: on an east-west street
-## (`vertical` true) it must return the pre-rotated asset, not the horizontal one, or
+## (`vertical` true) it must return the authored directional asset, not the horizontal one, or
 ## `_draw_spread`'s own segment count (`ceili(half * 2.0 / along_natural)`) reads the wrong
 ## texture dimension and repeats the scene several times across the street instead of drawing it
 ## once, turned. Checked against the real asset sizes rather than assumed, and the segment-count
@@ -313,7 +356,7 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 	t.check(horizontal == EventInstance.FALLEN_TREE,
 			"a north-south street draws the horizontally-composed picture")
 	t.check(vertical == EventInstance.FALLEN_TREE_VERTICAL,
-			"an east-west street draws the pre-rotated picture, not the same one relabelled")
+			"an east-west street draws its directional picture, not the same one relabelled")
 	t.check(horizontal != vertical, "and the two are not the same asset")
 
 	var half := maxf(11.0, EventCatalogue.by_id("fallen_tree").obstructs_radius)
@@ -348,6 +391,15 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 		var tall := EventInstance._wide_scene_texture(look, true)
 		t.check(wide != null and tall != null and wide != tall,
 				"look %d has two distinct assets, one per street orientation" % look)
+
+	var crash_wide := EventInstance._wide_scene_texture(EventDef.Look.CAR_ACCIDENT, false)
+	var crash_tall := EventInstance._wide_scene_texture(EventDef.Look.CAR_ACCIDENT, true)
+	t.check(EventInstance._wide_scene_shadow(crash_wide) != null
+			and EventInstance._wide_scene_shadow(crash_tall) != null,
+			"both crash directions carry contact shadows instead of a street-wide slab")
+	t.check(EventInstance._wide_scene_shadow(
+			EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)) == null,
+			"a continuous fallen tree keeps the generic wide-scene shadow")
 
 # ------------------------------------------------------------------ emission ---
 

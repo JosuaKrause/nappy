@@ -1,0 +1,8 @@
+nappy rig log  2026-09-09T18:31:51  version v0.8.2-33-g2b1ee38-dirty
+
+day 1  act 1  run seed 4000  city seed 4000  length 180.0s
+   0.0  plan     closed: accident v(4,6)
+   0.0  plan     calm: 1 park, 2 quiet_square, 3 forest, 4 courtyard
+   0.0  plan     events: burst_water_main x17, cafe_tables x60, car_accident x20, cat_dash x8, chatting_mother x2, delivery_van x46, dog_walker x18, fallen_tree x18, homeless_yeller x14, leaf_blower x13, loose_dog x19, market_stall x38, moving_van x26, pigeon_flock x5, playground, scaffolding x24, skip x18
+   0.0  start    doorstep (10,5), facing 180°
+   0.2  near     car_accident (telegraph) at (10,3), 108px, exc 0, in 2.6/s (crowd 0.7, events 0.0), sleep 0

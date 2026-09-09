@@ -1,0 +1,13 @@
+<!-- Checkpoint hut, elevated cardinal view with the door facing north (screen up). The entrance
+     is on the roof's far side, so this view shows the coherent rear wall and its high vent.
+     viewBox 0 0 56 56; ground anchor=(28,52); footprint=(7,8)..(49,52). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M7 48 L49 48 L52 53 L10 53 Z" fill="#221f28" stroke="none" opacity="0.42"/>
+  <rect x="8" y="15" width="40" height="36" fill="#a9987d"/>
+  <path d="M5 16 L12 7 L44 7 L51 16 Z" fill="#777b63"/>
+  <path d="M5 16 L51 16 L47 22 L9 22 Z" fill="#626650"/>
+  <path d="M12 7 L44 7 L48 12 L8 12 Z" fill="#8b9073" stroke="none"/>
+  <rect x="23" y="28" width="10" height="6" fill="#555660"/>
+  <path d="M25 30 L31 30 M25 32 L31 32" fill="none" stroke="#899296" stroke-width="0.7"/>
+  <path d="M8 47 L48 47 L48 51 L8 51 Z" fill="#7c6d5b"/>
+</svg>

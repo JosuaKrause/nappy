@@ -1,0 +1,11 @@
+<!-- A compact industrial roof unit: raised duct, cap and service seams in the muted building palette. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M7 27 L27 27 L30 30 L10 30 Z" fill="#221f28" fill-opacity="0.2" stroke="none"/>
+  <path d="M5 12 H25 L28 15 V26 H8 L5 23 Z" fill="#5d6266"/>
+  <path d="M5 12 H25 L28 15 H8 Z" fill="#85898a"/>
+  <path d="M8 15 H28 V26 H8 Z" fill="#666b6e"/>
+  <rect x="19" y="5" width="6" height="10" rx="1" fill="#777c7e"/>
+  <path d="M17 4 H27 L25 7 H19 Z" fill="#9a9b96"/>
+  <path d="M11 17 V24 M15 17 V24 M19 17 V24" fill="none" stroke="#3f4447"/>
+  <circle cx="24" cy="22" r="1.5" fill="#b58a4a"/>
+</svg>

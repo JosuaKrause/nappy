@@ -1,0 +1,10 @@
+<!-- Static source art for a discrete sound pulse. Three open arcs rise from the source;
+     none closes around an entity or describes its influence radius. Anchor (24,32). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="32" viewBox="0 0 48 32" shape-rendering="geometricPrecision" fill="none" stroke-linecap="round">
+  <g stroke="#3b2d32" stroke-width="3.8" opacity="0.75">
+    <path d="M18 27 A7 7 0 0 1 30 27"/><path d="M13 22 A13 13 0 0 1 35 22"/><path d="M8 17 A19 19 0 0 1 40 17"/>
+  </g>
+  <g stroke="#f2c14a" stroke-width="2.2">
+    <path d="M18 27 A7 7 0 0 1 30 27"/><path d="M13 22 A13 13 0 0 1 35 22"/><path d="M8 17 A19 19 0 0 1 40 17"/>
+  </g>
+</svg>

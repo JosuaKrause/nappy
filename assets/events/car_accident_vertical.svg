@@ -1,8 +1,5 @@
-<!-- The same crash as car_accident.svg, rotated 90 degrees for an east-west street — see
-     fallen_tree_vertical.svg for why a second asset rather than a runtime rotation. Onlooker at
-     the top and bottom, the two cars locked together in between. The cars turn with the street;
-     the onlookers do not, because a person in this game always stands upright — they are
-     person.svg's own figure at its own size, and stay in step with that file. -->
+<!-- An east-west street seen across its width: two side-view cars stacked across the road,
+     with upright onlookers on the pavements. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="50" height="200" viewBox="0 0 50 200" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <g transform="translate(16 2)">
     <rect x="5" y="29" width="4" height="13" fill="#46506b"/>
@@ -14,17 +11,25 @@
     <circle cx="9" cy="7" r="6" fill="#d9a878"/>
     <path d="M3 7 A6 6 0 0 1 15 7 Z" fill="#3a2b26"/>
   </g>
-  <path d="M30 55 Q36 60 34 90 L16 96 Q10 78 14 52 Z" fill="#7d8a9a"/>
-  <path d="M30 58 Q35 75 32 90 L28 91 L26 58 Z" fill="#8fa0b0"/>
-  <circle cx="13" cy="62" r="6" fill="#221f28"/>
-  <circle cx="16" cy="86" r="6" fill="#221f28"/>
-  <path d="M34 92 Q40 112 32 130 L14 128 Q10 108 16 90 Z" fill="#a8503f"/>
-  <path d="M34 96 Q38 112 32 126 L28 125 L28 96 Z" fill="#bf6a58"/>
-  <circle cx="13" cy="100" r="6" fill="#221f28"/>
-  <circle cx="15" cy="122" r="6" fill="#221f28"/>
-  <circle cx="24" cy="90" r="2" fill="#cfd6da"/>
-  <circle cx="20" cy="95" r="1.5" fill="#cfd6da"/>
-  <circle cx="18" cy="85" r="1.5" fill="#cfd6da"/>
+  <g transform="translate(0 59)">
+    <path d="M2 12 Q4 9 10 9 L15 4 Q19 2 33 3 L39 9 Q45 9 48 13 L47 22 L3 22 Q1 18 2 12 Z" fill="#7d8a9a"/>
+    <path d="M14 9 L18 4 L25 4 L25 9 Z M27 4 L33 4 L38 9 L27 9 Z" fill="#35404c"/>
+    <path d="M16 8 L19 5 L24 5 L24 8 Z M28 5 L32 5 L36 8 L28 8 Z" fill="#63798a"/>
+    <path d="M3 18 Q25 21 48 18 L47 23 L3 23 Z" fill="#677482"/>
+    <circle cx="13" cy="24" r="5" fill="#221f28"/><circle cx="38" cy="24" r="5" fill="#221f28"/>
+    <circle cx="13" cy="24" r="2" fill="#58524d"/><circle cx="38" cy="24" r="2" fill="#58524d"/>
+    <path d="M44 11 L49 13 L47 17 L43 16" fill="#56616e"/>
+  </g>
+  <g transform="translate(0 81)">
+    <path d="M48 12 Q46 9 40 9 L35 4 Q31 2 17 3 L11 9 Q5 9 2 13 L3 22 L47 22 Q49 18 48 12 Z" fill="#a8503f"/>
+    <path d="M36 9 L32 4 L25 4 L25 9 Z M23 4 L17 4 L12 9 L23 9 Z" fill="#35404c"/>
+    <path d="M34 8 L31 5 L26 5 L26 8 Z M22 5 L18 5 L14 8 L22 8 Z" fill="#63798a"/>
+    <path d="M47 18 Q25 21 2 18 L3 23 L47 23 Z" fill="#8d4035"/>
+    <circle cx="37" cy="24" r="5" fill="#221f28"/><circle cx="12" cy="24" r="5" fill="#221f28"/>
+    <circle cx="37" cy="24" r="2" fill="#58524d"/><circle cx="12" cy="24" r="2" fill="#58524d"/>
+    <path d="M7 11 L1 13 L3 18 L8 16" fill="#8d4035"/>
+  </g>
+  <path d="M4 86 l5 -3 l3 4 l5 -2 M37 85 l4 3 l5 -3" fill="none" stroke="#cfd6da" stroke-width="1.2"/>
   <g transform="translate(16 154)">
     <rect x="5" y="29" width="4" height="13" fill="#46506b"/>
     <rect x="10" y="29" width="4" height="13" fill="#46506b"/>

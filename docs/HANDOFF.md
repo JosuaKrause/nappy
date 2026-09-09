@@ -312,7 +312,8 @@ order is `TODO.md`'s.
    is silent until the first mark has been touched, and a mark that has never been on screen
    follows her to the next alley she comes near, guard and all (the record is in `DECISIONS.md`
    under M78). What remains is playtest 20's item: a protester pointing toward the current
-   objective, and made more common since a protester obstructs nothing.
+   objective, and made more common since a protester obstructs nothing. Its milestone lists
+   the available directional SVG poses; objective binding and density remain open.
 - **M56 — the resistance is noticed.** Its remaining hunting rows are built alongside M62; its
   measurement against the nerves waits until act III is reached.
 

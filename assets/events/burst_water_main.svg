@@ -2,12 +2,23 @@
      kerb — one picture spanning the street, native width 200 over the 192px this row obstructs,
      drawn once by `_draw_wide_scene` the same way fallen_tree.svg is. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <rect x="6" y="20" width="16" height="18" fill="#e0d8c4"/>
-  <polygon points="6,20 22,20 22,26 6,32" fill="#c4503c"/>
-  <ellipse cx="100" cy="34" rx="46" ry="12" fill="#2c2a2a"/>
-  <ellipse cx="100" cy="32" rx="38" ry="9" fill="#221f28"/>
-  <path d="M56 36 Q80 44 110 38 Q140 32 168 40" fill="none" stroke="#4c7fa0" stroke-width="4"/>
-  <path d="M64 30 Q90 24 120 30 Q145 35 160 28" fill="none" stroke="#6fa3c4" stroke-width="3"/>
-  <rect x="178" y="20" width="16" height="18" fill="#e0d8c4"/>
-  <polygon points="178,20 194,20 194,26 178,32" fill="#c4503c"/>
+  <g>
+    <path d="M6 12 L24 12 L24 30 L6 30 Z" fill="#e0d8c4"/>
+    <path d="M6 13 L24 13 L24 19 L6 25 Z M6 27 L24 21 L24 27 L15 30 L6 30 Z" fill="#c4503c"/>
+    <path d="M9 30 L8 39 M21 30 L23 39" fill="none" stroke="#58524d" stroke-width="2"/>
+  </g>
+  <path d="M43 31 L52 23 L66 25 L77 19 L91 23 L103 18 L116 23 L130 20 L143 25 L160 23 L171 31 L164 39 L149 37 L135 43 L119 39 L105 45 L90 41 L74 45 L62 39 L49 40 Z" fill="#3e3a38"/>
+  <path d="M52 32 Q72 25 91 31 Q110 36 128 29 Q147 24 164 33 Q145 44 123 40 Q102 37 83 43 Q63 46 52 32 Z" fill="#326f98"/>
+  <path d="M57 31 Q78 27 95 33 Q111 38 130 31 Q145 27 159 32" fill="none" stroke="#78b4d0" stroke-width="2"/>
+  <path d="M46 28 L69 28 L75 33 L68 37 L45 36 Z M170 29 L148 29 L143 34 L149 38 L172 37 Z" fill="#657581"/>
+  <path d="M48 29 L66 29 L66 36 L47 35 Z M153 30 L170 30 L171 36 L153 37 Z" fill="#87969e"/>
+  <ellipse cx="69" cy="33" rx="4.5" ry="4" fill="#1f2930" stroke="#a5b0b4" stroke-width="1.2"/>
+  <ellipse cx="149" cy="34" rx="4.5" ry="4" fill="#1f2930" stroke="#a5b0b4" stroke-width="1.2"/>
+  <path d="M66 32 Q69 29 72 32 M146 33 Q149 30 152 33" fill="none" stroke="#c0c8c9" stroke-width="1"/>
+  <path d="M71 33 Q87 21 99 34 Q111 45 125 32" fill="none" stroke="#6fa3c4" stroke-width="3"/>
+  <g>
+    <path d="M176 12 L194 12 L194 30 L176 30 Z" fill="#e0d8c4"/>
+    <path d="M176 13 L194 13 L194 19 L176 25 Z M176 27 L194 21 L194 27 L185 30 L176 30 Z" fill="#c4503c"/>
+    <path d="M179 30 L178 39 M191 30 L193 39" fill="none" stroke="#58524d" stroke-width="2"/>
+  </g>
 </svg>

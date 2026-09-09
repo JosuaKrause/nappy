@@ -1,9 +1,14 @@
-<!-- A skip at the kerb: half of a soft seal, one obstacle facing the scaffolding on the other
-     pavement. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="40" height="28" viewBox="0 0 40 28" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <path d="M2 8 L38 8 L34 24 L6 24 Z" fill="#c4703c"/>
-  <path d="M2 8 L38 8 L37 12 L3 12 Z" fill="#d98a52"/>
-  <rect x="4" y="24" width="32" height="2" fill="#221f28"/>
-  <rect x="6" y="4" width="10" height="4" fill="#8a97a8"/>
-  <rect x="24" y="4" width="10" height="4" fill="#8a97a8"/>
+<!-- An open builder's skip at the kerb: dark interior, rust-orange steel, lifting lugs and
+     broken masonry projecting above its rim. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="44" height="28" viewBox="0 0 44 28" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M3 8 L41 8 L38 13 L6 13 Z" fill="#221f28"/>
+  <path d="M6 12 L38 12 L35 25 L9 25 Z" fill="#c4703c"/>
+  <path d="M3 8 L6 12 L9 25 L5 22 Z M41 8 L38 12 L35 25 L39 22 Z" fill="#a75432"/>
+  <path d="M3 8 Q22 4 41 8 L38 12 Q22 9 6 12 Z" fill="#2b292b"/>
+  <path d="M10 8 L15 3 L20 8 L25 5 L31 9 L35 6 L39 9 Q22 7 6 11 Z" fill="#8a7a68"/>
+  <path d="M12 7 L15 4 L18 8 M25 7 L29 5 L32 9" fill="#a08e78"/>
+  <path d="M6 12 Q22 9 38 12" fill="none" stroke="#e09459" stroke-width="1.4"/>
+  <path d="M10 15 L13 23 M20 13 L20 25 M31 14 L29 24" fill="none" stroke="#9d4d31" stroke-width="1.2"/>
+  <path d="M5 5 H10 V9 H5 Z M34 5 H39 V9 H34 Z" fill="none" stroke="#8a97a8" stroke-width="2"/>
+  <path d="M7 25 H37" stroke="#221f28" stroke-width="2"/>
 </svg>

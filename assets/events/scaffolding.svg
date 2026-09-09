@@ -2,10 +2,13 @@
      the width it obstructs, the way stall.svg is — the other half of a soft seal, facing the
      skip on the pavement across the street. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="36" viewBox="0 0 22 36" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <rect x="2" y="2" width="3" height="34" fill="#8a8478"/>
-  <rect x="17" y="2" width="3" height="34" fill="#8a8478"/>
-  <rect x="0" y="6" width="22" height="3" fill="#a8a294"/>
-  <rect x="0" y="20" width="22" height="3" fill="#a8a294"/>
-  <rect x="2" y="22" width="18" height="10" fill="#c9b98a"/>
-  <rect x="2" y="22" width="18" height="2" fill="#ded0a4"/>
+  <path d="M3 1 V35 M19 1 V35 M0 7 H22 M0 21 H22" fill="none" stroke="#817c73" stroke-width="3"/>
+  <path d="M4 8 L18 20 M18 8 L4 20 M4 22 L17 34 M18 22 L5 34" fill="none" stroke="#6d6963" stroke-width="1.6"/>
+  <path d="M1 6 H21 V9 H1 Z M1 20 H21 V23 H1 Z" fill="#a8a294"/>
+  <path d="M2 23 H20 V29 H2 Z" fill="#c9b98a"/>
+  <path d="M3 24 H19" stroke="#ded0a4" stroke-width="1.2"/>
+  <circle cx="4" cy="8" r="1.8" fill="#4f4b49"/><circle cx="18" cy="8" r="1.8" fill="#4f4b49"/>
+  <circle cx="4" cy="22" r="1.8" fill="#4f4b49"/><circle cx="18" cy="22" r="1.8" fill="#4f4b49"/>
+  <path d="M0 35 H7 M15 35 H22" stroke="#58524d" stroke-width="2"/>
+  <path d="M7 25 h3 v2 H7 Z M13 25 h3 v2 h-3 Z" fill="#756c55" stroke="none"/>
 </svg>
