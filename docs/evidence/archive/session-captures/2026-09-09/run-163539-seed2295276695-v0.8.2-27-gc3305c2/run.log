@@ -1,0 +1,68 @@
+nappy run log  2026-09-09T16:35:39  version v0.8.2-27-gc3305c2
+
+day 5  act 2  run seed 2295276695  city seed 2295276695  length 180.0s
+   0.0  contact  step 1 on offer at (110,9)
+   0.0  roll     chalk mark guarded: robber 152px away (band 66-176)
+   0.0  plan     closed: accident v(4,4), fallen tree h(7,5)
+   0.0  plan     calm: 1 quiet_square, 2 forest, 2 park, 3 courtyard
+   0.0  plan     events: burnt_out_car x48, burst_water_main x17, busker x10, cafe_tables x43, car_accident x16, cat_dash x8, charging_dog x3, chatting_mother x2, collapsed_frontage x17, construction x29, cyclist x11, delivery_van x27, dog_walker x18, fallen_tree x12, homeless_yeller x7, ice_cream_van x5, leaf_blower x14, loose_dog x14, market_stall x27, pigeon_flock x5, playground x2, police_patrol x12, poster_crew x4, removal_lorry x32, reversing_lorry x5, scaffolding x9, skip x10
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  contact  step 1 moved to (69,79): never seen at (110,9)
+   0.0  roll     chalk mark guarded: robber 75px away (band 66-176)
+   2.3  cross    stepped into the road at (83,86), mid-block
+   4.2  near     poster_crew at (90,89), 109px, exc 4, in 0.1/s (crowd 0.0, events 0.1), sleep 1
+   5.1  near     poster_crew at (90,89), 60px, exc 2, in 4.3/s (crowd 0.0, events 4.3), sleep 2
+   5.7  crowd    a car sounded its horn at her in the road at (88,87) | exc 3, in 3.6/s (crowd 0.0, events 3.6), sleep 2
+   5.7  turn     doubled back 315°
+   6.3  road     4.0s on the road (1.6s of it carriageway), (83,86) -> (88,85)
+   6.3  cue      the mark over her head: soon for 0.6s (0.6s of it on the road) | a car, and she is in the road
+   6.5  cross    stepped into the road at (87,85), at a zebra
+   7.2  path     onto the corridor at (85,85), after 7.2s off it
+   7.9  path     off the corridor at (83,85), after 0.7s on it
+  10.7  path     onto the corridor at (75,85), after 2.8s off it
+  11.3  path     off the corridor at (76,85), after 0.6s on it
+  11.4  turn     doubled back 128°
+  11.7  path     onto the corridor at (75,85), after 0.4s off it
+  12.3  contact  step 1 seen at (69,79)
+  12.4  crowd    a car sounded its horn at her in the road at (73,85) | exc 0, in 3.5/s (crowd 3.5, events 0.0), sleep 5
+  12.4  path     off the corridor at (73,85), after 0.7s on it
+  12.4  cross    stepped into the road at (73,85), at a zebra
+  12.7  crowd    walked into somebody at (73,84) | exc 5, in 18.9/s (crowd 36.9, events 0.0), sleep 5
+  13.2  cue      the mark over her head: soon for 0.7s (0.7s of it on the road) | a car, and she is in the road
+  13.3  near     alley_robbery at (67,80), 199px, exc 12, in 2.1/s (crowd 1.9, events 0.2), sleep 5
+  13.7  path     onto the corridor at (71,83), after 1.2s off it
+  14.3  path     off the corridor at (71,84), after 0.6s on it
+  14.9  crowd    walked into somebody at (70,85) | exc 22, in 20.2/s (crowd 36.1, events 2.2), sleep 5
+  15.0  ahead    pigeon_flock crosses 184px in front of her at (70,85)
+  15.1  near     removal_lorry at (66,85), 119px, exc 32, in 49.5/s (crowd 45.6, events 3.6), sleep 5
+  15.2  freeze   sleep stopped filling | exc 35, in 46.9/s (crowd 42.4, events 4.1), sleep 5 | near: removal_lorry 113px
+  16.3  shot     asked for a picture at (69,85) | exc 48, sleep 5 | playing
+  17.1  turn     doubled back 90°
+  17.9  path     onto the corridor at (71,83), after 3.6s off it
+  18.2  contact  walked within 130px of the chalk mark at (69,79)
+  18.5  chase    alley_robbery came for her at (67,80) | exc 59, in 18.5/s (crowd 9.2, events 9.3), sleep 5
+  19.2  near     alley_robbery (telegraph) at (67,80), 108px, exc 69, in 16.3/s (crowd 3.7, events 12.6), sleep 5
+  19.2  cue      the mark over her head: soon for 5.9s (0.0s of it on the road) | alley_robbery 199px
+  19.3  contact  step 1 completed
+  19.8  path     off the corridor at (69,79), after 1.9s on it
+  19.8  near     pigeon_flock at (64,79), 167px, exc 76, in 17.4/s (crowd 0.0, events 14.4), sleep 5
+  20.6  path     onto the corridor at (70,79), after 0.8s off it
+  20.6  cue      the mark over her head: now for 1.4s (0.0s of it on the road) | alley_robbery 106px
+  20.8  crowd    walked into somebody at (70,78) (+1 in the last 5.9s) | exc 91, in 21.5/s (crowd 26.3, events 13.1), sleep 5
+  21.0  path     24% of her street time on the corridor (5.1s on, 15.9s off, 0.0s off the streets)
+  21.0  lost     lost_crying after 21.0s — She started crying. There is no settling her now. | exc 100, in 53.2/s (crowd 41.0, events 12.2), sleep 5 | near: alley_robbery 113px
+  21.0  nerve    spent a nerve on day 5 (act 2); 4 left — day 5 again
+  21.0  shot     asked for a picture at (70,78) | exc 100, sleep 5 | playing
+
+day 5  act 2  run seed 2295276695  city seed 2295276695  length 180.0s
+   0.0  contact  step 2 on offer at (43,37)
+   0.0  roll     chalk mark guarded: robber 152px away (band 66-176)
+   0.0  plan     closed: accident v(4,4), fallen tree h(7,5)
+   0.0  plan     calm: 1 quiet_square, 2 forest, 2 park, 3 courtyard
+   0.0  plan     events: burnt_out_car x48, burst_water_main x17, busker x10, cafe_tables x43, car_accident x16, cat_dash x8, charging_dog x3, chatting_mother x2, collapsed_frontage x17, construction x29, cyclist x11, delivery_van x27, dog_walker x18, fallen_tree x12, homeless_yeller x7, ice_cream_van x5, leaf_blower x14, loose_dog x14, market_stall x27, pigeon_flock x5, playground x2, police_patrol x12, poster_crew x4, removal_lorry x32, reversing_lorry x5, scaffolding x9, skip x10
+   0.0  start    doorstep (80,84), facing 180°
+   1.3  cross    stepped into the road at (80,86), mid-block
+   3.9  near     burnt_out_car at (75,94), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   4.0  near     burnt_out_car at (73,94), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   4.3  near     burnt_out_car at (72,94), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 2
+   8.8  shot     asked for a picture at (74,91) | exc 6, sleep 0 | playing

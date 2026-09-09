@@ -56,6 +56,16 @@ across a street, day 5) and `shot-2026-09-09-seed4000-1e3995b-seal-car-accident-
 (the rotated accident on an east–west street). Gate: `./tools/check.sh`, `./tools/test.sh seals
 events`, `./tools/lint.sh`.
 
+**Two things the player found on the branch the same day, playtest 50, fixed there.** The three
+rotated scenes and the older `assets/tiles/fence.svg` were not well-formed XML — a `--` inside a
+comment — so Godot drew them and GitHub refused to render them; the comments are fixed and
+`tools/lint.sh` now parses every tracked SVG with python3, reporting a missing python3 as a hit
+rather than skipping. And the accident's onlookers were a circle and a rectangle drawn small —
+*"the people should look like people in the game"* — and are now `person.svg`'s own figure at its
+own size in both accident files, upright in the rotated one because a person always stands
+upright; `docs/evidence/shot-2026-09-09-seed4242-150985c-seal-car-accident-onlookers.png` is the
+capture.
+
 **What the review noticed and left for a played verdict.** At 24px the burnt-out car reads in the
 capture as a black oval more than as a car; whether the eight kinds read as a city with reasons
 rather than as one barrier row repeated is the question only a walked day answers, and none has

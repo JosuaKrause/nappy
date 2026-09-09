@@ -107,7 +107,13 @@ no artist.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**[PLAYTEST-49.md](PLAYTEST-49.md) is the newest session and it is the prioritisation above**, plus
+**[PLAYTEST-50.md](PLAYTEST-50.md) is the newest session: the first walk on the seal pictures and
+the new carets.** Two of its four findings were fixed on the M64 branch on sight — the rotated
+seal pictures were not well-formed XML, and the accident's onlookers were not the game's people —
+and two are filed under M100: the guard robber standing inside a building is reproduced with its
+cause, and a touch on a chalk mark has no acknowledgement she can see.
+
+**[PLAYTEST-49.md](PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
 one bug — events spawning inside a fully blocked street — filed at the top of M100's defects,
 one correction, that the non-adjacency rule does not cover parks yet, filed in M97, and one design
 instruction, the fire found before the engine, filed as M101.
@@ -958,13 +964,19 @@ is still true.
       stepping one tile into a footprint, in `src/crowd/`. Fix that and the assertion goes back to
       zero, which is the only acceptable end state: a car standing inside a building is visible, and
       the test's own name is a promise
-- [ ] **The robber can be placed inside a building, where he is stuck for ever.** *(2026-09-02:
-      "the robber can be placed inside buildings which makes him unable to move at all.")*
-      `alley_robbery` places on `ALLEY` tiles, which are walkable, and a chase step is clamped to
-      walkable ground — so how he comes to stand inside a wall is not known, and **the first task is
-      to reproduce it** on a rig and read where the placement put him. His lethal radius travels
-      with him, which makes an invisible fatal spot inside a wall. Fix it where he is placed, not by
-      letting a pursuer walk through buildings
+- [ ] **The guard robber is placed inside a building, where he is stuck for ever.** *(2026-09-02:
+      "the robber can be placed inside buildings which makes him unable to move at all."; 2026-09-09,
+      playtest 50: "the robber is stuck inside the roof".)* **Reproduced, with the cause.** Seed
+      2295276695, day 5: the chalk mark is at tile (69,79), an `ALLEY` tile in a two-tile alley,
+      and the robber at (67,80) is `BUILDING`, one tile south of it; the run log has him at that
+      tile before, during and after his chase while she moved, since a chase step is clamped to
+      walkable ground. The scheduler's own `alley_robbery` placement is not the path — the
+      guard is: `ResistanceDirector._maybe_set_a_trap()` stands him at a random bearing from the
+      mark, 66 to 176px out, and never asks whether that point is walkable, and an alley is 64px
+      wide. His lethal radius travels with him, which makes an invisible fatal spot inside a wall.
+      **Fix it where he is placed**: draw the bearing until the point is walkable ground (an
+      alley tile by preference, since the row's own placement is `ALLEY`), rejecting rather than
+      repairing, and keep the band. The evidence is [PLAYTEST-50.md](PLAYTEST-50.md), section 2
 - [ ] **The pram has no collision of its own.** `scenes/player/stroller.tscn` carries one circle
       for her, so the pram clips into walls when she hugs a corner. A second body that trails her,
       or a capsule that rotates with `facing`
@@ -1026,6 +1038,22 @@ re-pitched:
       host, since it sets the isolation headers a threaded build would need
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
+
+- [ ] **A touch on a chalk mark has no acknowledgement she can see.** *(2026-09-09, playtest 50:
+      "how do I know I stepped on the chalk".)* Today a touch turns the mark from chalk white to
+      pale green (`Palette.CHALK` to `CHALK_DONE`) under her feet, and in a release build the status
+      line gains `somewhere out there: <task>`; the debug build's `resistance ....` line is up from
+      the moment a contact is on offer and its dots move only on a perform, so a pick-up changes
+      nothing on it. The design's own rule is no quest log — *the first encounter comes with no
+      hint at all* — so how much a touch may say is the player's call: nothing more, the mark's
+      colour made unmistakable, or a one-line status change on the pick-up too
+- [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
+      playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
+      standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a
+      honking car's halo were all up at once on `asked/016s-attempt1-asked.png` of playtest 50's
+      run, and none of them named itself; the two-tile alley behind a building read as its roof.
+      Whether each mark is told apart on sight is not a rig question; the alley's own tile picture
+      is a drawing item if the reading persists
 
 - [ ] **Does a picked-up-but-unperformed resistance instruction expire at the end of its day, or
       wait?** Left open by decision until the pairs can be walked. The code currently **waits** —
