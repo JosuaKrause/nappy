@@ -623,8 +623,9 @@ putting harmless things on it.
 *(`SET_PIECE` is zero in every bucket. A one-shot has no position at dawn, so this is the sweep
 looking at plans before the director sites them rather than a day with no set pieces in it.)*
 
-The probe that produced all of this is kept on this milestone's own branch, so that *measure it
-again after* means running the same thing rather than reinventing it.
+The probe that produced all of this is `tests/probes/m64_density.gd`, run by name with
+`tools/test.sh probes/m64_density.gd`, so that *measure it again after* means running the same
+thing rather than reinventing it.
 
 ---
 
