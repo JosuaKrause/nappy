@@ -219,9 +219,15 @@ mode. A zero-failure assertion summary does not excuse a script error.
 
 PLAYTEST-42 requires higher raster resolution for the current view: preserve the physical window,
 visible world extent, actor size, HUD and input mapping, and downsample additional rendered pixels.
-A wider camera view does not satisfy the request. The separate unverified supersampling draft and
-its remaining integration checks are described in HANDOFF.md. Resolution does not establish a
-fix for anatomy, gait, compositing or source-art noise.
+A wider camera view does not satisfy the request. For the same-view raster experiment, use
+`--illustrated --illustrated-render-scale 2` at the same `1280x720` window size. The scene keeps
+its existing 2× camera framing, so the visible world, actor size, HUD layout and input coordinates
+remain the baseline while the root target draws at `2560x1440` and resolves each 2×2 block before
+it reaches the `1280x720` window. The command is debug-only and does nothing to legacy presentation.
+Compare the printed logical, target and output dimensions before reviewing a capture; the saved
+root-viewport PNG is resolved render output, not a pristine high-resolution source. The experiment
+is not visually verified; its open checks are in TODO.md and HANDOFF.md. Resolution does not
+establish a fix for anatomy, gait, compositing or source-art noise.
 
 Implement in bounded sequential pieces: sheet/manifest repair, static assembly, gait and sorting,
 then environment integration. Use isolated implementation worktrees under the orchestration

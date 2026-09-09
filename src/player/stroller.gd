@@ -135,7 +135,6 @@ func _ready() -> void:
 	add_to_group("player")
 	if not _illustrated:
 		return
-	_camera.zoom = Vector2.ONE * DevFlags.illustrated_zoom()
 	_ensure_modular_person()
 	_modular_person.reset_at(global_position, facing)
 

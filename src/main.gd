@@ -12,6 +12,7 @@ const DAY_SUMMARY := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCREEN := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE_SCREEN := preload("res://scenes/ui/title_screen.tscn")
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
+const ILLUSTRATED_DOWNSAMPLE_SHADER := preload("res://src/dev/illustrated_downsample.gdshader")
 
 @onready var _status: Label = $CanvasLayer/Status
 @onready var _status_layer: CanvasLayer = $CanvasLayer
@@ -45,6 +46,9 @@ var _touch_layer: CanvasLayer
 var _summary: CanvasLayer
 var _pause: PauseScreen
 var _title: TitleScreen
+## The topmost filter exists only for the opt-in raster experiment. It consumes no input and is
+## rotated with the other screen furniture, so it resolves the same presented frame it covers.
+var _illustrated_downsample: CanvasLayer
 var _follow_camera: Camera2D
 var _follow_id := ""
 ## Dev spawn and meter overrides apply to the opening day only; every later day starts on
@@ -64,6 +68,12 @@ var _touch_available := TouchInput.available()
 ## question every frame and reapply only on change — see that function's own doc for why a signal
 ## alone is not enough.
 var _rotated := false
+## The renderer experiment is intentionally one exact factor: a broader range would hide an
+## unreviewed sampling path behind the same command-line feature.
+var _illustrated_render_scale := DevFlags.illustrated_render_scale()
+var _illustrated_render_target := Vector2i.ZERO
+var _illustrated_output_rect := Rect2i()
+var _reported_illustrated_target := Vector2i.ZERO
 
 func _ready() -> void:
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
@@ -119,11 +129,13 @@ func _ready() -> void:
 	add_child(_title)
 	_title.start_requested.connect(_on_title_start)
 	_title.quit_requested.connect(_quit)
+	_add_illustrated_downsample()
 
 	# After every layer `_apply_orientation()` touches exists — it reaches `_summary`, `_pause`
 	# and `_title` too, not just the HUD and the two layers built just above. `_process()` is what
 	# keeps it current from here on, not a `size_changed` connection — see that function's own doc.
 	_apply_orientation()
+	_apply_illustrated_render_scale()
 
 	_resistance = ResistanceDirector.new()
 	_resistance.name = "Resistance"
@@ -345,6 +357,27 @@ func _add_touch_controls() -> void:
 	_touch_controls.rotated = _rotated
 	_touch_controls.set_mode(ControlsMode.resolve())
 
+## Adds the final pass before raising the root render target. The engine's final root blit is a
+## nearest sample, so a larger target alone would discard three quarters of its pixels. The shader
+## writes one 2x2 average into each pixel in its block, which keeps the selected final sample from
+## depending on the driver's decimation phase.
+func _add_illustrated_downsample() -> void:
+	if not DevFlags.illustrated_requested() or _illustrated_render_scale != 2:
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "IllustratedDownsample"
+	layer.layer = 100
+	_illustrated_downsample = layer
+	add_child(layer)
+	var filter := ColorRect.new()
+	filter.name = "Filter"
+	filter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var material := ShaderMaterial.new()
+	material.shader = ILLUSTRATED_DOWNSAMPLE_SHADER
+	filter.material = material
+	ScreenOrientation.pin_to_design_box(filter)
+	layer.add_child(filter)
+
 ## Presents the game rotated 90° when the real window is a portrait touch screen, so a phone
 ## with auto-rotate off shows a full-size landscape game rather than a thin letterboxed strip of
 ## one — see `ScreenOrientation` for the mechanism and why it needs no CSS and no orientation API.
@@ -376,11 +409,76 @@ func _apply_orientation() -> void:
 	for layer in _screen_furniture_layers():
 		ScreenOrientation.apply_to_layer(layer, rotate)
 
+## Draws the opt-in presentation into twice the native window raster while the viewport's own
+## logical coordinates remain untouched. The root attachment is explicit because resizing a root
+## target without its destination rect clips it instead of producing the intended downsample.
+##
+## `Viewport` owns the input transform, so this writes only to RenderingServer: taps and controls
+## continue to arrive in the original design box while the camera keeps its authored zoom.
+func _apply_illustrated_render_scale() -> void:
+	if _illustrated_render_scale != 2 or not DevFlags.illustrated_requested() or not is_inside_tree():
+		return
+	var viewport := get_viewport()
+	var window := get_window()
+	if not viewport or not window:
+		return
+	var logical_size := Vector2i(viewport.get_visible_rect().size)
+	var output_rect := Rect2i(Vector2i.ZERO, window.size)
+	var render_target := output_rect.size * _illustrated_render_scale
+	var rid := viewport.get_viewport_rid()
+	if render_target != _illustrated_render_target:
+		RenderingServer.viewport_set_size(rid, render_target.x, render_target.y)
+		_illustrated_render_target = render_target
+	if output_rect != _illustrated_output_rect:
+		RenderingServer.viewport_attach_to_screen(rid, output_rect)
+		_illustrated_output_rect = output_rect
+	# `Viewport` can refresh its own stretch state when the window changes, so compose the current
+	# engine transform every frame rather than caching a stale pre-resize value.
+	var scale := Transform2D.IDENTITY.scaled(
+			Vector2(_illustrated_render_scale, _illustrated_render_scale))
+	var base := viewport.get_stretch_transform() * viewport.get_global_canvas_transform()
+	RenderingServer.viewport_set_global_canvas_transform(rid, scale * base)
+	if render_target != _reported_illustrated_target:
+		_reported_illustrated_target = render_target
+		call_deferred("_report_illustrated_render_target", logical_size, render_target, output_rect)
+
+## Prints the actual root texture only after a frame has drawn. The requested dimensions above are
+## not enough evidence: the backend may reject a target that the scene API accepted.
+func _report_illustrated_render_target(
+		logical_size: Vector2i, requested_target: Vector2i, output_rect: Rect2i) -> void:
+	await RenderingServer.frame_post_draw
+	if not is_inside_tree():
+		return
+	var actual_target := Vector2i(get_viewport().get_texture().get_size())
+	var camera: Camera2D = _player.get_node("Camera2D") as Camera2D if _player else null
+	var camera_zoom := camera.zoom if camera else Vector2.ZERO
+	print("[IllustratedRenderScale] logical=%s target=%s actual=%s output=%s camera=%s" % [
+			logical_size, requested_target, actual_target, output_rect.size, camera_zoom])
+
+## A scene reload frees `Main` but leaves the root viewport alive. Put its renderer state back
+## before the replacement scene enters, so a later presentation cannot inherit an enlarged target.
+func _exit_tree() -> void:
+	if _illustrated_render_target == Vector2i.ZERO:
+		return
+	var viewport := get_viewport()
+	var window := get_window()
+	if not viewport or not window:
+		return
+	var rid := viewport.get_viewport_rid()
+	RenderingServer.viewport_set_size(rid, window.size.x, window.size.y)
+	RenderingServer.viewport_attach_to_screen(rid, Rect2i(Vector2i.ZERO, window.size))
+	RenderingServer.viewport_set_global_canvas_transform(rid,
+			viewport.get_stretch_transform() * viewport.get_global_canvas_transform())
+
 ## Every `CanvasLayer` `_apply_orientation()` rotates — its own list, pulled out so a test can
 ## assert against exactly this set rather than duplicate it, which is what makes an eighth layer
 ## added later and forgotten here a test failure instead of a silent gap.
 func _screen_furniture_layers() -> Array[CanvasLayer]:
-	return [_hud, _edge_layer, _touch_layer, _summary, _pause, _title, _status_layer]
+	var layers: Array[CanvasLayer] = [
+		_hud, _edge_layer, _touch_layer, _summary, _pause, _title, _status_layer]
+	if _illustrated_downsample:
+		layers.append(_illustrated_downsample)
+	return layers
 
 ## Marks a node as part of the game rather than part of the frame around it, so the summary
 ## screen actually stops it.
@@ -579,6 +677,7 @@ func _process(_delta: float) -> void:
 	var window := get_window()
 	if window and ScreenOrientation.wants_rotation(window.size, _touch_available) != _rotated:
 		_apply_orientation()
+	_apply_illustrated_render_scale()
 	if not _player or not _baby:
 		return
 	if _in_the_title:
