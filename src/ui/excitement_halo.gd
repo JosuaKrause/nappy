@@ -146,9 +146,9 @@ const MIN_MAGNITUDE := 0.2
 
 ## Where `magnitude_for()`'s curve is already at `MAX_ALPHA`. *(2026-09-08, the player: "one point
 ## is faint but present, five is clearly there, fifteen and above is solid, and the colour then
-## carries the difference between fifteen and forty".)* Deliberately far below `SATURATES_AT_POINTS`
-## (40): transparency's job is the *low* end, so it has finished its work well before colour has
-## finished its own climb from pale to red.
+## carries the difference between fifteen and forty".)* Deliberately far below
+## `Tuning.EXPECTED_IMPACT_POINTS` (40): transparency's job is the *low* end, so it has finished
+## its work well before colour has finished its own climb from pale to red.
 const LOW_EMPHASIS_POINTS := 15.0
 
 ## How brightly a source's own rim reads: `landed()` on a curve that rises fast and saturates
