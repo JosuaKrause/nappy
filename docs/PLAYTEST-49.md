@@ -58,6 +58,8 @@ Today it is the other way around: `fire_truck` is the day-3 one-shot, drives its
 
 > "blocked street can go behind actual important things."
 
+> "M101 can go after the Act III stuff."
+
 The first overturns the long-standing decision to move `RUN_TAUGHT_DAY` to day 2; the constant
 stays at 3 and M96 says so. The second keeps the blocked-street bug in M100 rather than ahead of
 the queue.

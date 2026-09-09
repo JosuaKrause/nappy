@@ -89,12 +89,13 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 4. **M65** — the protester who points, revisited once M62 has landed. *("M65 we need to revisit
    after M62.")* Revisited rather than built as written: a walled city with checkpoints may change
    what finding a mark is like, and the entry is re-read against that before its pose is drawn.
-5. **M96 to M101**, in no order between them: the teaching day, the calm areas, the empty acts,
-   the corridor's density after the sealing, the consolidated small work, and the fire found before
-   the engine. The first five were rewritten on 2026-09-09 from older milestones after checking
-   which of their items the code had already answered; the record of what was found built is in
-   `DECISIONS.md` under "The queue reprioritised". M101 was asked for the same day and is not yet
-   placed in the order.
+5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+   the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
+   2026-09-09 from an older milestone after checking which of its items the code had already
+   answered; the record of what was found built is in `DECISIONS.md` under "The queue
+   reprioritised".
+6. **Reaching act III**, which M56's measurement against the nerves needs.
+7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it

@@ -366,7 +366,8 @@ revisited after M62 rather than built as written. Behind those, unordered: M96 (
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,
 consolidated). Reaching act III — which M56's measurement against the nerves needs — waits until
-that batch is done. The illustrated actor work is Codex's parallel track.
+that batch is done, and M101, the fire found before the engine, comes after that. The illustrated
+actor work is Codex's parallel track.
 
 ## What to distrust
 
