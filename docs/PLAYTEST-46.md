@@ -1,4 +1,4 @@
-# Playtest 39 — Animation capture · 2026-09-08
+# Playtest 46 — Animation capture · 2026-09-08
 
 > we need a functionality of recording a video of the gameplay or at least a burst of screenshots so I can communicate animations to you
 

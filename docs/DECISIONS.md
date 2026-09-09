@@ -193,7 +193,7 @@ conversion does not prevent attempting the other pending sequences.
 
 ## Gameplay animation capture — 2026-09-08
 
-PLAYTEST-39 requested video or a burst of screenshots so the player could communicate animation
+PLAYTEST-46 requested video or a burst of screenshots so the player could communicate animation
 defects. The player confirmed ffmpeg was installed and specified one sequence per subfolder in
 the screenshot folder, with the video beside the sequence. They rejected F-key controls. The
 selected control is Shift+P for a burst, leaving P for a single image; the rig uses the named
