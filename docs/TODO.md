@@ -46,15 +46,14 @@ define style; `docs/reference/` supplies real-world structure and posture.
       without a painted bend plus a second solver bend. The baby must sit within the seat and
       its facing-specific occlusion, not appear pasted over the stroller. Reconcile these with
       PLAYTEST-38's existing natural-reach and directional-gait repair; keep both reports intact.
-- [ ] Review [PLAYTEST-42](PLAYTEST-42.md)'s rendering-resolution experiment at the same window size.
-      `--illustrated --illustrated-zoom 1` selects the wider view; zoom 2 retains the baseline.
-      Inspect camera zoom, actual viewport resolution, texture filtering and downsampling
-      separately. Assess the wider view with controls and HUD legible. Compare the same route and actor scale
-      assumptions, record the effective world extent and rendered dimensions, and assess noise
-      and detail without declaring anatomy or animation fixed by resolution. The wider-view capture
-      does not establish better image quality; see DECISIONS.md under Animation anatomy and camera
-      experiment for its comparison limits. Preserve legacy
-      presentation and the illustrated opt-in while this experiment is reviewed.
+- [ ] Implement and review [PLAYTEST-42](PLAYTEST-42.md)'s higher-resolution rendering of the
+      **current view**, preserving visible world extent, actor size, HUD size and physical window.
+      Render more pixels and downsample them; do not zoom out or merely enlarge logical coordinates.
+      Compare actual render-target dimensions and the same scene framing, input mapping, resize
+      behavior and screenshot/burst capture. Inspect filtering and retained detail without declaring
+      anatomy or animation fixed by resolution. The wider-view interpretation is rejected; its
+      history is in DECISIONS.md under Animation anatomy and camera experiment. Preserve legacy
+      presentation and the illustrated opt-in while the supersampling experiment is reviewed.
 - [ ] Review whole-actor sorting in live overlaps and integrate roof reveal, then a representative
       illustrated live street.
       Preserve current joystick/tap choice and the event silhouette halo; crowd halos remain a

@@ -18,7 +18,8 @@ signs and retained unfinished steps through stops. `ModularPerson` placed the pr
 pose and reach issues, independent of camera resolution; no source or gait repair was claimed.
 
 The project rendered with a 1280×720 authored viewport and a camera zoom of 2, exposing about
-640×360 world units. The user proposed removing that magnification while keeping the window.
+640×360 world units. The assistant interpreted the request as removing that magnification while
+keeping the window.
 The comparison isolated camera extent; zoom 1 exposed 1280×720 world units but did not add raster
 pixels. Nearest texture filtering, extracted alpha coverage and source detail at small actor
 sizes remained separate image-quality factors. Increasing the logical viewport with canvas-item
@@ -45,6 +46,12 @@ suites with illustrated zoom 1, and the stroller suite in legacy mode with a non
 zoom. The visual suite's deliberate malformed-registration diagnostics were expected; no script
 errors were observed. Doc lint and diff checks passed. Source, gait, pram seating and sampling
 quality remained open repairs rather than results inferred from the camera test.
+
+The user corrected the interpretation: "I did not want to see more world -- I want higher
+resolution for the current view". The wider-camera experiment did not satisfy the request.
+The required experiment increases the actual rendered pixel count and downsamples into the same
+window while retaining framing, actor size, HUD and input mapping. The camera option is removed
+from the intended solution rather than presented as an accepted alternative.
 
 ## Updating branches from main — 2026-09-08
 

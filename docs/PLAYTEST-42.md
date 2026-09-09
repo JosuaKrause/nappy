@@ -15,3 +15,11 @@ leg bends and baby layering add specific checks to that repair. Keep this record
 separate from the earlier still-image playtest. The proposed resolution experiment keeps the
 window size while removing the zoom that reduces the visible world; it does not establish that
 resolution alone fixes anatomy, gait or compositing.
+
+## Clarification — preserve the current view
+
+> I did not want to see more world -- I want higher resolution for the current view
+
+The wider-world interpretation above was the assistant's mistake. The requested experiment
+preserves the current framing, actor size, HUD size and window size while increasing the actual
+rendered pixel count. Camera zoom reduction does not satisfy this request.
