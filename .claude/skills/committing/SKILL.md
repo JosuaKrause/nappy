@@ -10,6 +10,11 @@ time.**
 
 ## Pushing
 
+**Always push branch work and create or update its pull request before ending the session.**
+Do not leave work only on a local branch. Use a draft PR when the work is unfinished, and include
+the PR link in the final report. This is standing authorization; no separate request to push or
+open the PR is needed.
+
 **Completed work may be pushed to `origin` without asking each time.** *Finished* is the whole of
 the permission: a milestone merged to `main` with its gate green, or a branch whose items are done
 and archived. It is not a licence to push a branch mid-item to see what happens.
