@@ -415,6 +415,57 @@ and concluded that **a closure's job is direction, not distance**. Its three ite
       than over block sides. M48 needs no such confirmation, since its rotation rule reads
       `CityMap.corridor_offset()`, which is geometry rather than reachability
 
+**The draft answer to "what a region is", 2026-09-09, read off the code and put back for the
+player.** The facts it rests on: the lattice is 11×11 blocks with 264 street segments and one
+north–south main road, chosen between the third corridor from either edge; there is no east–west
+main road. Calm areas number eight or nine a city and are never placed in the outer ring of blocks,
+inside the home's clearance, or in the two block columns beside the main road. District tags
+(`CIVIC`, `COMMERCIAL`, `INDUSTRIAL`) are dealt to blocks from a shuffled list and form no
+contiguous areas, and the two precincts are three blocks each — so nothing the lattice already
+knows about can be a region. And an alley is not a street segment, so any boundary stated over
+segments alone has a hole wherever an alley or a courtyard archway joins two sides of it — the same
+blind spot M69 found in block-level reachability.
+
+- **A region is a set of street segments, not of blocks.** The walkable city *is* its streets, so
+  a partition of the segments is a partition of where she can be, and a boundary is a **junction
+  where two regions' segments meet**, with the barricade or checkpoint standing *across* the
+  segment on one side of it — the picture the player drew, and the shape every barrier in the game
+  already has. This is the key space `RouteTree.is_on_the_tree()`, `ClosurePlanner` and
+  `SealPlanner` all use, so *a route crosses a boundary* is one lookup: a tree segment whose
+  neighbour across the junction is another region's.
+- **The main road is ordinary ground to the partition, so a boundary may cut it.** A checkpoint
+  across the main road is the one place the gate over the roadway means something — cars come to a
+  full stop and the signal machinery (`TrafficSignals`, `CrowdLanes`) is what obeys it — and it
+  leaves *paths cross the spine and never run along it* untouched. **The alternative, named so it
+  is cheap to pick:** the spine as a permanent boundary between an east and a west region, which
+  gates every crossing the tree makes and collides with `docs/CITY.md`'s *she may cross wherever she
+  likes*.
+- **Regions are grown at generation from a fixed number of seed segments, over atoms.** An atom
+  is a calm lot with all of its access segments, and any two segments an alley or an archway
+  joins; regions grow by breadth-first flood over the segment graph from spread-out seeds, an atom
+  at a time, so **no boundary runs along a calm area's frontage and no alley crosses one** by
+  construction rather than by retry. The home street and its trunk join whichever region grows to
+  it; precinct spans are one atom each. The count is one `Tuning` constant — **four is the
+  recommendation**, since two is a single line and eight or nine (one per calm area) puts most of
+  the 264 segments behind a wall and never lets *a region with no calm area gets no doors* fire.
+- **The wall is the day's, planned beside the closures, not `absent_segments`.** A crossing is a
+  checkpoint today and barricade tomorrow, and `absent_segments` is fixed for the run and merged
+  into every route search unconditionally, so it cannot carry a per-day door. So M45's *reuse
+  `absent_segments`* is reuse of the **category** — a segment every route search treats as closed
+  — and the placement is `ClosurePlanner`'s: the boundary junctions are a fact of the map, and each
+  morning every one the day's tree crosses is cut as a door and every other is walled.
+- **The checks are floods over cells, not counts over segments.** With every boundary barrier
+  down as blocked tiles, `ReachabilityGrid.flood()` from the doorstep must reach exactly the home
+  region's streets and nothing across a boundary — that is what catches an alley or an archway a
+  segment-level check cannot see; with only the day's doors open, every region that holds a calm
+  area she can use is reached; and the home region has at least one door on every day. Sized like
+  `tests/test_route_tree.gd` and `tests/test_seals.gd`, over several seeds and the days of each act.
+
+**What is the player's to decide before an agent gets this**: that a region is segments rather
+than blocks; that the main road may be cut by a boundary rather than be one; the count; and that
+the wall is planned daily rather than being permanent structure — the last of which narrows M45's
+own wording and is asked rather than assumed.
+
 ---
 
 ## M64 — Eight seal pictures · asked for 2026-09-02
@@ -869,7 +920,41 @@ reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
 - [ ] **"And other dangers like this"** — drafted and put back, and the vans have now set the
       precedent it was waiting on: a `HUNTS` row keeps `hard_fail`, moves neither population nor
       intensity, and gains its own threshold rather than sharing the patrol's. The candidates
-      already in the catalogue are `checkpoint` (day 7, closes a street) and `night_raid`
+      already in the catalogue are `checkpoint` (day 7, closes a street) and `night_raid`.
+
+      **The draft, 2026-09-09, for the player to take or turn down.** What `HUNTS` does to a row
+      is fixed by `EventDef.at_heat()`: at `Tuning.HEAT_HUNTS_LEVEL` (3 of the 4 performs that
+      qualify) and above, the derived copy `pursues` at 130px/s, notices her within 180px, chases
+      for `PURSUIT_TIME`, and is `hard_fail` — the top rung kills, by the ladder's own design. So
+      the question per row is not *what happens* but *whether that shape reads as this thing*.
+
+      - **`night_raid` fits the precedent exactly and needs no drawing.** It is a riot van
+        (`Look.RIOT_VAN`), scripted for day 10 only, intensity 24 over 70/330px with a 6s pulse
+        and a 44px body, cost 4 — *"a building goes in the night"*. Hunted, the van stops
+        emptying a building and comes for her, which is the abduction's shape on a bigger
+        vehicle. **And the calendar makes the threshold a sentence:** the performs fall on days
+        5, 7, 9, 11 and 13, so on day 10 the most progress anybody can hold is 3 — the raid hunts
+        *only* a player who has done every task on time, and a player one task behind meets the
+        cold raid. Sharing `HEAT_HUNTS_LEVEL` with the van is what makes that true, so the
+        recommendation is to share it rather than mint a third constant. Build: one
+        `heat_response` line on the row, `tests/test_heat.gd` stating the raid's hot shape at
+        every level (untouched below 3, pursuing and lethal at 3 and 4, population and intensity
+        unmoved), and the row's docstring. The one contract the hot copy has to clear is
+        `EventDef.validate()`'s rule that a lethal row's body must be reachable — its
+        `obstructs_radius` plus her own 14px must fall inside `inner_radius` — and the raid's
+        44 + 14 = 58 sits inside its 70, so it does; the heated shape is validated on boot like
+        every other.
+      - **`checkpoint` does not fit the precedent as it stands, and it is about to be renamed.**
+        It is a spread — `Look.CHECKPOINT` draws a 120px band across the road through
+        `_draw_spread`, intensity 13 over 52/215px — and a band does not chase. A hunting
+        checkpoint is *guards leaving the hut*, which is a second posture like the robber's
+        waiting/lunging pair and so a drawing, plus a rule for what the band does while its
+        guards are away. M62 renames this row (the new structure takes the word), so building
+        its heat first means building it under a name that is about to change. **Recommendation:
+        the raid now, the checkpoint after M62 lands and with its new name**, filed then as one
+        item with its posture drawing.
+      - **`police_patrol` is not a third candidate.** It is the `PRESSES` rung and *"never gains
+        `hard_fail`, whatever the heat"* — the player's own instruction, 2026-09-01.
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
 
