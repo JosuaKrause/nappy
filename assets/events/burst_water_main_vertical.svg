@@ -1,0 +1,13 @@
+<!-- The same crater as burst_water_main.svg, rotated 90 degrees for an east-west street -- see
+     fallen_tree_vertical.svg for why a second asset rather than a runtime rotation. A barrier at
+     the top and bottom kerb, the crater and the water between them. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="200" viewBox="0 0 50 200" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="12" y="6" width="18" height="16" fill="#e0d8c4"/>
+  <polygon points="30,6 30,22 24,22 18,6" fill="#c4503c"/>
+  <ellipse cx="16" cy="100" rx="12" ry="46" fill="#2c2a2a"/>
+  <ellipse cx="18" cy="100" rx="9" ry="38" fill="#221f28"/>
+  <path d="M14 56 Q6 80 12 110 Q18 140 10 168" fill="none" stroke="#4c7fa0" stroke-width="4"/>
+  <path d="M20 64 Q26 90 20 120 Q15 145 22 160" fill="none" stroke="#6fa3c4" stroke-width="3"/>
+  <rect x="12" y="178" width="18" height="16" fill="#e0d8c4"/>
+  <polygon points="30,178 30,194 24,194 18,178" fill="#c4503c"/>
+</svg>

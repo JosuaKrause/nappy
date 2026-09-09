@@ -59,6 +59,11 @@ const BURST_MAIN := preload("res://assets/events/burst_water_main.svg")
 const REMOVAL_LORRY := preload("res://assets/events/removal_lorry.svg")
 const BURNT_OUT_CAR := preload("res://assets/events/burnt_out_car.svg")
 const COLLAPSED_FRONTAGE := preload("res://assets/events/collapsed_frontage.svg")
+## The same three "whole scene" seal pictures, rotated 90 degrees for an east-west street. See
+## `_wide_scene_texture` for why a second asset rather than a runtime rotation.
+const FALLEN_TREE_VERTICAL := preload("res://assets/events/fallen_tree_vertical.svg")
+const CAR_ACCIDENT_VERTICAL := preload("res://assets/events/car_accident_vertical.svg")
+const BURST_MAIN_VERTICAL := preload("res://assets/events/burst_water_main_vertical.svg")
 
 ## The one silhouette that stands for a look, at any size.
 ##
@@ -117,7 +122,11 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 ## first, `CAFE` to the second. A seal picture wide enough to span the whole street on its own
 ## (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) still goes through `_draw_spread`: its own asset is
 ## authored wider than the street, so `_draw_spread` draws exactly one copy stretched to the
-## obstruction rather than several — see `fallen_tree.svg`. `PROTEST` and `FIREFIGHT` also fill
+## obstruction rather than several — see `fallen_tree.svg`. **Each of those three has a second,
+## pre-rotated asset for an east-west street** (`fallen_tree_vertical.svg` and its two siblings),
+## picked by `_wide_scene_texture` — `_draw_spread`'s own axis remap only relabels width and
+## height, so an asymmetric scene needs its pixels actually turned, not merely relabelled.
+## `PROTEST` and `FIREFIGHT` also fill
 ## `obstructs_radius`-worth of ground but draw it with their own functions that never call
 ## `_spread_is_vertical` or `_spread_at` — a protest rank and a firefight's cover are laid along
 ## local X unconditionally, so a corner costs them nothing and they are rightly outside this test.
@@ -136,6 +145,26 @@ static func has_a_spread(def: EventDef) -> bool:
 			return true
 		_:
 			return false
+
+## Which texture a "whole scene" seal picture (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) draws
+## through `_draw_spread`, given whether the street it stands on rotates the spread onto local Y
+## (`_spread_vertical`).
+##
+## **A separate, pre-rotated asset, not a runtime rotation of the one texture.** `_draw_spread`'s
+## own axis remap only relabels which of a texture's width and height is "along" the obstruction
+## and which is "thickness" across it — it never turns the pixels — so feeding it the same
+## horizontally-composed picture on an east-west street stretches an unrotated tree into a tall
+## rectangle several times, which reads as several squashed copies rather than one turned scene.
+## The two other spread rows (`STALL`, `CAFE`, the repeatable segments) never showed this, because
+## their own segments are close enough to square that the swap alone reads fine either way; a
+## 200×50 whole-scene picture is not. `EventDef.look` and `_spread_vertical` together are enough
+## to pick the texture — no field is added to the def.
+static func _wide_scene_texture(look: EventDef.Look, vertical: bool) -> Texture2D:
+	match look:
+		EventDef.Look.FALLEN_TREE: return FALLEN_TREE_VERTICAL if vertical else FALLEN_TREE
+		EventDef.Look.CAR_ACCIDENT: return CAR_ACCIDENT_VERTICAL if vertical else CAR_ACCIDENT
+		EventDef.Look.BURST_MAIN: return BURST_MAIN_VERTICAL if vertical else BURST_MAIN
+		_: return null
 
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
@@ -1246,11 +1275,11 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.FIREFIGHT:
 			_draw_firefight(canvas)
 		EventDef.Look.FALLEN_TREE:
-			_draw_spread(FALLEN_TREE, null, canvas)
+			_draw_spread(_wide_scene_texture(EventDef.Look.FALLEN_TREE, _spread_vertical), null, canvas)
 		EventDef.Look.CAR_ACCIDENT:
-			_draw_spread(CAR_ACCIDENT, null, canvas)
+			_draw_spread(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical), null, canvas)
 		EventDef.Look.BURST_MAIN:
-			_draw_spread(BURST_MAIN, null, canvas)
+			_draw_spread(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical), null, canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
 			_draw_spread(COLLAPSED_FRONTAGE, null, canvas)
 		EventDef.Look.SCAFFOLDING:

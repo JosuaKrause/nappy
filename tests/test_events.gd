@@ -11,6 +11,7 @@ func run(t) -> void:
 	_test_a_spread_rotates_with_the_street(t)
 	_test_a_spread_never_lands_on_a_corner(t)
 	_test_a_spread_cap_matches_what_it_obstructs(t)
+	_test_a_wide_scene_faces_its_street(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
@@ -296,6 +297,43 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 			% [offset + cap_along * 0.5, half])
 	t.check(not is_equal_approx(offset, half),
 			"and it is not simply centred at ±half any more (%.1f)" % offset)
+
+## **A whole-scene hard seal has to draw one body on either axis, not several squashed ones.**
+## `EventInstance._wide_scene_texture` is the pure selector this pins: on an east-west street
+## (`vertical` true) it must return the pre-rotated asset, not the horizontal one, or
+## `_draw_spread`'s own segment count (`ceili(half * 2.0 / along_natural)`) reads the wrong
+## texture dimension and repeats the scene several times across the street instead of drawing it
+## once, turned. Checked against the real asset sizes rather than assumed, and the segment-count
+## arithmetic `_draw_spread` itself runs is re-derived here for both textures at `fallen_tree`'s
+## own `obstructs_radius` (96, half the 192px street) so a future change to either can be caught
+## without rendering a frame.
+func _test_a_wide_scene_faces_its_street(t) -> void:
+	var horizontal := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)
+	var vertical := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, true)
+	t.check(horizontal == EventInstance.FALLEN_TREE,
+			"a north-south street draws the horizontally-composed picture")
+	t.check(vertical == EventInstance.FALLEN_TREE_VERTICAL,
+			"an east-west street draws the pre-rotated picture, not the same one relabelled")
+	t.check(horizontal != vertical, "and the two are not the same asset")
+
+	var half := maxf(11.0, EventCatalogue.by_id("fallen_tree").obstructs_radius)
+	for is_vertical in [false, true]:
+		var texture := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)
+		var size := texture.get_size()
+		var along_natural := size.y if is_vertical else size.x
+		var segments := maxi(1, ceili(half * 2.0 / along_natural))
+		t.check(segments == 1,
+				"'%s' (vertical=%s) draws one body, not %d repeated ones (along_natural %.0f)"
+				% [texture.resource_path.get_file(), is_vertical, segments, along_natural])
+
+	# The other two whole-scene rows carry the same guarantee — checked once each rather than
+	# re-running the segment arithmetic, since `_wide_scene_texture`'s own match is what could
+	# regress silently if a future picture forgot its vertical sibling.
+	for look in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
+		var wide := EventInstance._wide_scene_texture(look, false)
+		var tall := EventInstance._wide_scene_texture(look, true)
+		t.check(wide != null and tall != null and wide != tall,
+				"look %d has two distinct assets, one per street orientation" % look)
 
 # ------------------------------------------------------------------ emission ---
 

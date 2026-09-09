@@ -1,0 +1,20 @@
+<!-- The same fallen tree as fallen_tree.svg, rotated 90 degrees for an east-west street, where
+     `EventInstance._spread_is_vertical` lays a spread along local Y rather than local X.
+     `_draw_spread`'s own axis remap only relabels which of a texture's width and height is
+     "along" and which is "thickness" — it never rotates the pixels — so an asymmetric scene
+     drawn through it on the wrong axis reads as several squashed copies rather than one turned
+     picture. A second, pre-rotated asset avoids a runtime transform and stays a picture anyone
+     can open and judge on its own, per the cues skill's own reasoning for authoring pictures as
+     files rather than assembling them in code. Root plate at the top (one kerb), crown at the
+     bottom (the far footway) -- the same two ends fallen_tree.svg has, turned. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="200" viewBox="0 0 50 200" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M10 8 L14 14 L4 18 L2 10 Z" fill="#4a382a"/>
+  <rect x="6" y="14" width="14" height="150" fill="#5b4433"/>
+  <rect x="16" y="14" width="4" height="150" fill="#6e5440"/>
+  <rect x="16" y="70" width="10" height="6" fill="#5b4433"/>
+  <rect x="16" y="110" width="12" height="6" fill="#5b4433"/>
+  <circle cx="26" cy="176" r="20" fill="#4f7a44"/>
+  <circle cx="18" cy="192" r="13" fill="#456b3b"/>
+  <circle cx="36" cy="164" r="11" fill="#649256"/>
+  <circle cx="38" cy="184" r="9" fill="#649256"/>
+</svg>
