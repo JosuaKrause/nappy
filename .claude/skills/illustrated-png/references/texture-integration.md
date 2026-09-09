@@ -101,6 +101,13 @@ does not prove good downsampling at gameplay size. Evaluate filtering on the ill
 before changing a project-wide setting that affects legacy sprites and UI. Linear filtering
 alone cannot restore alpha coverage discarded during extraction.
 
+Distinguish the physical window, logical viewport, visible world extent and raster target when
+testing higher resolution. More rendered pixels for the current view must preserve framing,
+actor size, HUD and pointer mapping. Reducing camera zoom shows more world and does not meet
+that requirement. Verify the actual final downsampling filter; a larger render target followed
+by nearest-pixel selection is not an average of the additional samples. An enlarged PNG alone
+does not prove increased detail. Record whether captures contain raw samples or resolved output.
+
 Drive motion from displacement the owner actually applied. Exercise idle, walk, run, abrupt stop,
 blocked movement, reverse, turns and reset/recycle in all facings. Check stance soles against the
 paving after every transform, and lift the shin's ankle together with its shoe during swing.
