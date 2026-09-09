@@ -43,6 +43,11 @@ const BOUNDARY_THICKNESS := 64.0
 ## boundary street is the same depth of building as both sides of every other street.
 const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 
+## The layer for the one thing drawn *over* the entities: the dark inside the tunnel, which has to
+## land on a car as it drives in. `Entities` is 2 in `city.tscn`; nothing else in the city is
+## above it.
+const OVERHEAD_Z_INDEX := 3
+
 ## Trees per *block* of open ground, by what the block currently is. A forest is a park with
 ## more trees in it and no swings, which is most of what the difference between them is on the
 ## ground.
@@ -273,13 +278,20 @@ func _spawn_spine_exits() -> void:
 	var down := (map.main_road * CityMap.period()
 			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
 	_spawn_exit(CityEdge.Kind.TUNNEL, Vector2(down, 0.0))
+	_spawn_exit(CityEdge.Kind.TUNNEL_DARK, Vector2(down, 0.0))
 	_spawn_exit(CityEdge.Kind.BRIDGE, Vector2(down, map.world_size().y))
 
+## The dark inside the tunnel goes in a layer of its own above the entities, so it lands on a car
+## as the car drives in; the portal's face is y-sorted with them; the bridge and the road are
+## ground and go under them. `CityEdge` says why the dark cannot be y-sorted too.
 func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 	var exit := CityEdge.new()
 	exit.kind = kind
 	exit.position = at
-	if exit.occludes():
+	if exit.overhangs():
+		exit.z_index = OVERHEAD_Z_INDEX
+		add_child(exit)
+	elif exit.occludes():
 		_entities.add_child(exit)
 	else:
 		_buildings_layer.add_child(exit)
@@ -631,11 +643,14 @@ func _paint_ground() -> void:
 ##   one: the city backs onto rock.
 ##
 ## **Two exceptions, and they are the whole reason the exits exist.** The spine leaves by a tunnel
-## north and a bridge south, so at the spine's own width the carriageway carries straight on
-## through the border instead of being buried in it — see `_spawn_spine_exits`, and
-## `_darken_the_tunnel_approach` for the road going into the dark. Take the exceptions away and
-## `CityEdge`'s whole sentence — *the city goes on and this is how you would leave it* — is a
-## tunnel mouth set into a cliff with no road reaching it.
+## north and a bridge south, so at the spine's own width the carriageway carries on through the
+## border instead of being buried in it — see `_spawn_spine_exits`, and `CityEdge._swallow_the_road`
+## for the road going into the dark. Take the exceptions away and `CityEdge`'s whole sentence — *the
+## city goes on and this is how you would leave it* — is a tunnel mouth set into a cliff with no
+## road reaching it. **The two exceptions are not the same depth.** The bridge carries the road the
+## whole width of the band, because a deck is in the open; the tunnel carries it only as far as the
+## portal's opening (`CityEdge.TUNNEL_DEPTH_TILES`), because past the mouth the road is inside the
+## mountain and what is on top of it is rock.
 ##
 ## Nothing here is walkable and none of it has a `GameEnums.TileType`: this paints the **tilemap**
 ## and `CityMap` is untouched, so the walkable set and every guarantee stated over it are identical
@@ -673,8 +688,11 @@ func _border_source(x: int, y: int, depth: int) -> int:
 	var west := -x
 	var east := x - (map.size.x - 1)
 
-	if _leaves_by_the_spine(x) and (north > 0 or south > 0) and north <= depth and south <= depth:
-		return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)))
+	if _leaves_by_the_spine(x):
+		var on_to_the_bridge := south > 0 and south <= depth
+		var into_the_tunnel := north > 0 and north <= CityEdge.TUNNEL_DEPTH_TILES
+		if on_to_the_bridge or into_the_tunnel:
+			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)))
 	if north > 0:
 		return GroundTiles.SCREE if north == 1 else GroundTiles.MOUNTAIN
 	if south > 0:
