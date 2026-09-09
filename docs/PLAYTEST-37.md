@@ -109,6 +109,15 @@ seconds, the caret is what will land over the next — and it puts the crowd and
 one rule, which is what makes the cat-versus-pedestrian inconsistency go away rather than get
 re-tuned.
 
-Lethal is unchanged: a `hard_fail` row keeps its doubled deep-red caret whatever the expectation,
-because *it ends your day* is not an amount. This lands after M92, because it changes the same
-files, and its two numbers — how far ahead to look, and where the line falls — are open.
+> "amber one is fine as long as it represents a meaningful thing"
+
+> "even the red lethal one is inconsistent since I can walk in a car from the side and I won't
+> see a caret only if it sees me"
+
+**And the red caret is under the same rule.** A car draws its doubled deep-red caret only while it
+is sounding its horn — `CrowdAgent._draw_horn_mark()` on `_jolt > 0` — which is a fact about
+whether the car noticed *her*, not about whether it is about to kill her. A car she walks into from
+the side never honked and never carried a mark. Expected impact answers both carets with one
+question: what will this thing do to her on her current line — cost her points, amber; end the
+day, doubled red. This lands after M92, because it changes the same files, and its numbers — how
+far ahead to look, and where the amber line falls — are open.

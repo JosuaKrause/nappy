@@ -327,8 +327,23 @@ actually landed on the meter over the last five seconds; the caret becomes the p
 fed from, integrated along her projected path rather than along a straight line through the def's
 own circle. A thing she is not walking toward expects nothing and is not marked; a thing on her
 line is marked in proportion to what it is about to do to her, whether it is a café, a cat, a
-knot of pedestrians or a car. Lethal is untouched: `hard_fail` keeps its doubled deep-red caret
-whatever the expectation, because *it ends your day* is not an amount.
+knot of pedestrians or a car.
+
+**The red caret is under the same rule, and that is the second half of the finding.** *(2026-09-08:
+"even the red lethal one is inconsistent since I can walk in a car from the side and I won't see a
+caret only if it sees me".)* A car carries its doubled deep-red caret only while it sounds its
+horn — `CrowdAgent._draw_horn_mark()` on `_jolt > 0` — which is whether the car noticed her, not
+whether it is about to kill her; a car she walks into from the side never honked. So one question
+decides both carets: what will this thing do to her on her current line. Cost her points — amber;
+end the day, because her projected path enters a car's strike zone or a `hard_fail` row's lethal
+radius inside the horizon — doubled deep red. **Whether a lethal thing *off* her line keeps its red
+caret is the third open question**: the doubled mark also says *what* a thing is, and a robber
+standing in an alley she is not entering is still a thing to route around. The smallest reading
+keeps it — a `hard_fail` row is always marked, and a car is marked when it is expected to hit her
+— and it is the player's to overturn.
+
+**The amber caret stays.** *(2026-09-08: "amber one is fine as long as it represents a meaningful
+thing".)* What changes is only what decides it.
 
 **Two numbers are open, and the milestone is not ready for an agent until the player settles
 them:**
