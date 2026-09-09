@@ -14,6 +14,10 @@ mid-way through.
 
 ## The order
 
+- [ ] Investigate PLAYTEST-50's "hmm fence is invalid": establish whether the boundary fence
+      fails to load or has an incorrect appearance, then correct and visually verify it. The
+      current SVG passes XML validation; that does not resolve the reported problem.
+
 ### Illustrated actor registration and assembly
 
 **This is Codex's parallel track, worked beside the gameplay queue rather than ahead of it.**

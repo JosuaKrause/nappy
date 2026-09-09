@@ -140,3 +140,8 @@ It was not. Godot imports every file under the project unless a folder carries a
 every screenshot ever committed under `docs/` brought a `.import` sidecar with it. Nothing loads a
 `res://docs/...` path, so the folder is ignored now and the sidecars are gone; the record is in
 `DECISIONS.md` under "docs/ is not a Godot resource folder".
+
+> "hmm fence is invalid"
+
+Reported after the SVG artwork update. Whether this describes an image-loading error or the
+fence's appearance needs clarification; the current file passes XML validation.
