@@ -1,5 +1,18 @@
 # Decisions
 
+## Updating branches from main — 2026-09-08
+
+The player requested a dedicated skill:
+
+> create a skill for merging main into a PR / branch. conflicts must be shown with three ways (theirs ours base) and never just do --theirs or --ours . always check semantic alignment between the branches. a clean merge can still be semantically incorrect. also, never combine unrelated playtests or todo items. renumber the one on the branch to not have duplicate numbers or worse have playtests combined that were separate before
+
+The merging-main skill is linked from CLAUDE and the committing skill so the procedure is loaded
+before a branch update. It requires explicit user-facing theirs/ours/base conflict presentations,
+semantic reconciliation even after an automatic merge, and provenance-aware renumbering of the
+branch's colliding records. Main's identities remain intact; unrelated playtests and TODO items
+remain separate. Reference updates must distinguish which record each occurrence means, rather
+than globally replacing a number. The skill does not perform a main merge merely by being created.
+
 ## Capture key and encoder compatibility — 2026-09-08
 
 PLAYTEST-41 reported that Shift interfered with running and ffmpeg rejected `-fps_mode`. Burst

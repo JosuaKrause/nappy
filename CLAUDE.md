@@ -29,7 +29,8 @@ All matches apply: an event GDScript file requires both `events` and `godot`. Th
 edits through any tool, including patches and scripts.
 
 Also load `feedback` before responding to playtest feedback or design instructions, `committing`
-before git mutations or commit messages, and `session-cleanup` before the final report. Read any
+before git mutations or commit messages, `merging-main` before merging main into a PR/branch,
+and `session-cleanup` before the final report. Read any
 other skill whose description matches the task, and follow its referenced resources as needed. An
 explicit request for a repository skill means reading its file directly even if it is absent from
 the skill picker. Resolve relative resource paths from that skill's directory. Re-read rules after
@@ -102,13 +103,14 @@ The two path triggers are backstops and share its marker, so a session gets it e
 paid for in every session whether or not it turns out to be relevant, which is the exact cost the
 path-triggered hook exists to avoid.
 
-**Three have no file to trigger on and are yours to invoke**, because they are about a *moment*
+**These skills have no file to trigger on and are yours to invoke**, because they are about a *moment*
 rather than a place:
 
 | Before you… | Load |
 |---|---|
 | respond to a playtest or a design instruction, *before* any file is touched | **feedback** |
 | commit, branch, merge, or write a commit message | **committing** |
+| merge main into a PR or branch | **merging-main** |
 | **end a session** | **session-cleanup** |
 
 If a skill turns out not to cover something it should, add it there rather than here — **anything
