@@ -8,10 +8,14 @@ The player requested a dedicated skill:
 
 The merging-main skill is linked from CLAUDE and the committing skill so the procedure is loaded
 before a branch update. It requires explicit user-facing theirs/ours/base conflict presentations,
-semantic reconciliation even after an automatic merge, and provenance-aware renumbering of the
+semantic reconciliation for every merge, and provenance-aware renumbering of the
 branch's colliding records. Main's identities remain intact; unrelated playtests and TODO items
 remain separate. Reference updates must distinguish which record each occurrence means, rather
 than globally replacing a number. The skill does not perform a main merge merely by being created.
+
+The player clarified: "semantic check should always happen. not only on clean merges". The
+mandatory whole-result review covers clean, conflicted and manually resolved merges, including
+cross-file interactions outside the conflict set; presenting three-way resolutions cannot replace it.
 
 ## Capture key and encoder compatibility — 2026-09-08
 

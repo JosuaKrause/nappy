@@ -1,6 +1,6 @@
 ---
 name: merging-main
-description: Merge main into an existing PR or branch with explicit theirs/ours/base conflict review, semantic reconciliation even for clean merges, and preservation of separate playtests and TODO items.
+description: Merge main into an existing PR or branch with explicit theirs/ours/base conflict review, mandatory semantic reconciliation for every merge, and preservation of separate playtests and TODO items.
 ---
 
 # Merge main into a branch
@@ -95,7 +95,11 @@ A justified result can match one side, but only after the other side's intent an
 examined and the semantic decision is explicit. Use `diff3` conflict display if helpful, but still
 explain the three versions; marker removal is not reconciliation.
 
-## Check semantic alignment even when Git reports no conflicts
+## Check semantic alignment for every merge
+
+**Semantic review is mandatory for every merge: clean, conflicted, or manually resolved.**
+Three-way conflict resolution does not replace the whole-result review. Run it after resolving
+conflicts as well as after an automatic merge, including interactions outside conflicted files.
 
 Compare the pending merged tree with **each** recorded tip. For every changed area, state what
 main intends, what the branch intends, and how the result satisfies both. Follow dependencies

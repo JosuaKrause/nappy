@@ -53,7 +53,7 @@ PR's own doc work goes.
 
 **Before merging main into an existing PR or branch, read
 [merging-main](../merging-main/SKILL.md).** It requires showing theirs, ours and base for each
-conflict, reviewing semantic alignment even for clean merges, and renumbering the branch's
+conflict, reviewing semantic alignment for every merge (clean or conflicted), and renumbering the branch's
 colliding playtest/TODO identities without combining unrelated records. Side-selection shortcuts
 such as `--ours` and `--theirs` do not satisfy that review.
 
