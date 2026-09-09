@@ -38,15 +38,7 @@ class Day extends RefCounted:
 
 class _UncachedRouteTree extends RouteTree:
 	func _ways(node: int) -> Array:
-		var edges := grid.neighbours(node)
-		if not _map or _map.main_road < 0:
-			return edges
-		var found: Array = []
-		for edge: Array in edges:
-			if _runs_along_the_spine(edge[1], edge[2]):
-				continue
-			found.append(edge)
-		return found
+		return _ways_uncached(node)
 
 var _days: Array[Day] = []
 
@@ -440,20 +432,8 @@ func _test_cached_growth_matches_uncached_growth(t) -> void:
 func _uncached_grow(map: CityMap, home: StreetNetwork.Segment,
 		areas: Array[ClosurePlanner.CalmArea], closed: Dictionary,
 		grid: ReachabilityGrid, rng: RandomNumberGenerator) -> RouteTree:
-	var tree := _UncachedRouteTree.new()
-	if not home or areas.is_empty():
-		return tree
-	tree.grid = grid
-	tree._map = map
-	tree._absent = closed
-	for tile in RouteTree._rect_tiles(home.tile_rect()):
-		var node := grid.node_at(tile)
-		if node >= 0:
-			tree._home[node] = true
-	for area in tree._in_a_rolled_order(areas, rng):
-		tree._grow_a_branch(map, area, rng)
-	tree._grow_the_trunk()
-	return tree
+	return RouteTree._grow_into(
+			_UncachedRouteTree.new(), map, home, areas, closed, grid, rng)
 
 func _tree_routes(tree: RouteTree) -> Array:
 	var routes: Array = []
