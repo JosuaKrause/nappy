@@ -785,7 +785,7 @@ to say how bad it is. The halo answers two different questions instead, one per 
 her.* **It traces each entity's own silhouette rather than any radius drawn from a def.**
 *(2026-09-07, the player: "halo meaning only the outline of the object not the influence radius ...
 the halo should not extend more than a few pixels beyond the object's outline.")*
-`EventInstance._draw_halo()` re-runs the entity's own `_draw_body()` at a ring of twelve offsets,
+`EntityHalo` re-runs the entity's own `_draw_body()` at a ring of twelve offsets,
 `HALO_MARGIN` (4px) out, so a busker's rim is its own 11px body and a barricade's is its own run of
 segments — a shape a circle could never draw for either of them.
 
