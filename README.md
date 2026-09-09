@@ -58,6 +58,7 @@ Or open the project folder in Godot 4.7 directly.
 | R | Start the run again — from the pause screen |
 | Q | Quit — from the title or the pause screen |
 | P (or F9) | Write a screenshot and a line of trace into the telemetry folder. A debug key, not a game feature — see `docs/TELEMETRY.md` |
+| Shift+P | Capture a three-second animation burst targeting 12 fps into the telemetry folder (debug only) |
 
 The game opens on a title screen with the street outside your own front door running behind
 it, and a finished run goes back to it.

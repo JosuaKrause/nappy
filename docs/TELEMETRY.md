@@ -325,6 +325,21 @@ has just stopped the game to look at it. And the context string is assembled in 
 than here, for the reason everything in this file takes what it needs as an argument: **the
 telemetry asks the world no questions, so it can never be the thing that changed one.**
 
+### Animation bursts
+
+In a debug run, `Shift+P` (or the `snapshot_burst` action used by scripted rigs) starts one bounded
+three-second capture in `asked/burst-<unique>/`. It writes `frame-0001.png` through at most
+`frame-0036.png` and a `burst.json` beside them. The JSON has `schema_version` 1,
+`target_fps` 12, the supplied `context`, `status`, `reason`, actual `duration_seconds`, and a
+`frames` array whose `elapsed_seconds` values are measured at frame readback. PNG encoding happens
+serially before the next frame is scheduled, so disk overhead appears in the timestamps and cannot
+create an unbounded backlog. A second request is refused while one is active; a run or day ending
+the capture leaves metadata with `status: "cancelled"` when possible. The target is not a promise
+that every desktop reaches 12 fps; inspect the timestamps for the achieved timing. Headless and
+unwritable runs are refused without fabricating images. Run `./tools/clip.sh` (or pass a burst
+folder) to make a sibling MP4 without deleting the PNG sequence; its default lookup ignores active
+captures.
+
 ## The city grid
 
 **A trace says where she was and cannot say what she was walking around.** Most questions asked of
