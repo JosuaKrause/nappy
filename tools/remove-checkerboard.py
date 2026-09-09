@@ -93,11 +93,11 @@ def extract(source: Path, destination: Path) -> None:
         original_size = image.size
         mask = neutral_background_mask(image)
         alpha = image.getchannel("A")
-        original_alpha = list(alpha.getdata())
+        original_alpha = alpha.tobytes()
         alpha.putdata([0 if mask[index] else original_alpha[index] for index in range(len(mask))])
         if not any(mask):
             raise ValueError("no neutral background was detected; refusing an unverified extraction")
-        if not any(value > 0 for value in alpha.getdata()):
+        if not any(value > 0 for value in alpha.tobytes()):
             raise ValueError("extraction removed every pixel")
         image.putalpha(alpha)
         if image.size != original_size:

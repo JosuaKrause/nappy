@@ -26,7 +26,9 @@ longer declare, and now names `Image.Resampling.LANCZOS`; and `pillow_heif` re-e
 API without an `__all__`, which is a one-module `implicit_reexport` override with the reason beside
 it. `tools/codex-hooks.py` is the one script that does not run under `uv` — Codex invokes it with
 the host's `python3` — so it stays 3.9-compatible and ruff's `per-file-target-version` pins it
-there; it was run under the system 3.9 and 3.11 to confirm.
+there; it was run under the system 3.9 and 3.11 to confirm. Pillow moved from the `<12` pin to
+`>=12.3`, because the repository carried ten open Dependabot alerts against the locked 11.3, every
+one fixed in 12.3.0; the bump cost two more typing fixes in the same two scripts.
 
 **The audit.** The full suite, the boot check, the doc lint and `shellcheck` on every shell script
 were the baseline, all green; `shellcheck` found one unguarded `cd` in `release.sh` and one

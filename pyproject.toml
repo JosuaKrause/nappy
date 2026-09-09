@@ -8,7 +8,7 @@ dependencies = []
 [dependency-groups]
 dev = [
     "mypy>=1.19",
-    "pillow>=11,<12",
+    "pillow>=12.3,<13",
     "pillow-heif>=0.18",
     "ruff>=0.15",
 ]

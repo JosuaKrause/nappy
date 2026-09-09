@@ -81,22 +81,20 @@ def fitted(size: tuple[int, int]) -> tuple[int, int]:
 
 
 def convert_still(source: Path, destination_stem: Path) -> Path:
-    with Image.open(source) as image:
-        image.load()
+    with Image.open(source) as opened:
+        opened.load()
         # `getchannel` would raise; `mode` is the cheap question. Alpha survives as PNG because
         # a cut-out reference with a transparent background is a different thing from a photo.
-        has_alpha = image.mode in ("RGBA", "LA") or "transparency" in image.info
+        has_alpha = opened.mode in ("RGBA", "LA") or "transparency" in opened.info
         # `exif_transpose` applies the orientation tag and then it is safe to throw the tag away
         # -- otherwise stripping metadata silently rotates every phone photo.
-        image = ImageOps.exif_transpose(image)
-        image = image.convert("RGBA" if has_alpha else "RGB")
+        image = ImageOps.exif_transpose(opened).convert("RGBA" if has_alpha else "RGB")
         target = fitted(image.size)
         if target != image.size:
             image = image.resize(target, Image.Resampling.LANCZOS)
         # A fresh image object carries none of the source's `info` dict, which is where EXIF,
         # ICC, XMP and PNG text chunks all live. Copying the pixels is the strip.
-        clean = Image.new(image.mode, image.size)
-        clean.putdata(list(image.getdata()))
+        clean = Image.frombytes(image.mode, image.size, image.tobytes())
         if has_alpha:
             out = destination_stem.with_suffix(".png")
             clean.save(out, format="PNG", optimize=True)
