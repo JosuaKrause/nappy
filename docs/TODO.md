@@ -31,7 +31,12 @@ no artist.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**[PLAYTEST-38.md](PLAYTEST-38.md) is the newest session, played on M92's own branch before it
+**[PLAYTEST-39.md](PLAYTEST-39.md) is the newest session — one finding, the tunnel, built the same
+day.** The fade is inside the portal's opening, the mountain stands above it, and the road into the
+mouth is asphalt rather than a crossing; the record is in `DECISIONS.md` under "The tunnel
+swallows the road". Half of it was a re-report of playtest 24's fifth finding.
+
+**[PLAYTEST-38.md](PLAYTEST-38.md) is the session before it, played on M92's own branch before it
 merged, and its four findings are built inside it** — two rows the halo showed nothing for, the
 chatting mother's capture radius, and the cue's own channels: magnitude on transparency as well as
 colour, and both edges eased rather than switched. The record, with the question "the crowd has no

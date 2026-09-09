@@ -631,11 +631,14 @@ func _paint_ground() -> void:
 ##   one: the city backs onto rock.
 ##
 ## **Two exceptions, and they are the whole reason the exits exist.** The spine leaves by a tunnel
-## north and a bridge south, so at the spine's own width the carriageway carries straight on
-## through the border instead of being buried in it — see `_spawn_spine_exits`, and
-## `_darken_the_tunnel_approach` for the road going into the dark. Take the exceptions away and
-## `CityEdge`'s whole sentence — *the city goes on and this is how you would leave it* — is a
-## tunnel mouth set into a cliff with no road reaching it.
+## north and a bridge south, so at the spine's own width the carriageway carries on through the
+## border instead of being buried in it — see `_spawn_spine_exits`, and `CityEdge._swallow_the_road`
+## for the road going into the dark. Take the exceptions away and `CityEdge`'s whole sentence — *the
+## city goes on and this is how you would leave it* — is a tunnel mouth set into a cliff with no
+## road reaching it. **The two exceptions are not the same depth.** The bridge carries the road the
+## whole width of the band, because a deck is in the open; the tunnel carries it only as far as the
+## portal's opening (`CityEdge.TUNNEL_DEPTH_TILES`), because past the mouth the road is inside the
+## mountain and what is on top of it is rock.
 ##
 ## Nothing here is walkable and none of it has a `GameEnums.TileType`: this paints the **tilemap**
 ## and `CityMap` is untouched, so the walkable set and every guarantee stated over it are identical
@@ -673,8 +676,11 @@ func _border_source(x: int, y: int, depth: int) -> int:
 	var west := -x
 	var east := x - (map.size.x - 1)
 
-	if _leaves_by_the_spine(x) and (north > 0 or south > 0) and north <= depth and south <= depth:
-		return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)))
+	if _leaves_by_the_spine(x):
+		var on_to_the_bridge := south > 0 and south <= depth
+		var into_the_tunnel := north > 0 and north <= CityEdge.TUNNEL_DEPTH_TILES
+		if on_to_the_bridge or into_the_tunnel:
+			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)))
 	if north > 0:
 		return GroundTiles.SCREE if north == 1 else GroundTiles.MOUNTAIN
 	if south > 0:

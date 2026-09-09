@@ -1155,7 +1155,10 @@ an invisible wall.
   looking like a wall however much is built out there.
 - **The spine leaves by a tunnel north and a bridge south**, so the city ends because the land does
   rather than because the map stops. They are lethal for the reason every stretch of carriageway is
-  lethal; the danger needs nothing of its own.
+  lethal; the danger needs nothing of its own. The two are not the same depth: the bridge carries
+  the road the whole width of the band, and the tunnel carries it only as far as the portal's
+  opening (`CityEdge.TUNNEL_DEPTH_TILES`), fading to dark inside the mouth, with mountain painted
+  above the portal both under and over the traffic so a leaving car is never seen on the rock.
 - **There is no east or west exit, and there is no east-west main road.** There is one main road
   and it runs north to south. A carriageway running out into a wood is a road to nowhere, and the
   corridor it would run on is an arterial in no other part of the game.
