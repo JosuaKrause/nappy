@@ -527,6 +527,26 @@ The day-14 sabotage is not a catalogue row: it is `GameState` logic (`sabotage_d
 `sabotage_available()`), gated on the resistance goal rather than sited or scheduled like an
 `EventDef`. `docs/NARRATIVE.md` and `docs/DESIGN.md` describe what completing it does.
 
+### Seal pictures — off the day's route tree
+
+Eight pictures so no single barrier is the city's signature (`docs/TODO.md`, M64). Every row below
+is `SCRIPTED` with `scripted_day` 0, so — like `barricade` above — the ordinary catalogue roll never
+schedules one; `SealPlanner` places each fresh every morning on a street off the day's route tree,
+reading `act_tag` for the first day it may. All eight are silent (`intensity` 0): *"static blockages
+in general shouldn't increase excitement."*
+
+| id | kind | from | Behaviour |
+| --- | --- | --- | --- |
+| `fallen_tree` | — | — | Placed fresh every morning from day 1 onward as a **hard seal**: a trunk down kerb to kerb, root plate at one end and crown at the other. `obstructs_radius` 96, exactly half the 192px street, so `SealPlanner._hard_positions` places one body spanning it edge to edge — one continuous scene, not a repeated segment. |
+| `car_accident` | — | — | A **hard seal** from day 1: two cars locked together across the carriageway, glass between them and an onlooker on each pavement. Same single-body geometry as `fallen_tree`. |
+| `skip` / `scaffolding` | — | — | A **soft seal** from day 1: a skip at the kerb facing scaffolding boards over the far footway — the two-obstacles-facing-each-other reading of a soft seal, drawn as two different pictures rather than one row twice. `skip` is kerb-pinned like `delivery_van`; `scaffolding` fills the whole pavement band like `construction`. |
+| `burst_water_main` | — | — | A **hard seal** from day 1: a crater with water across the asphalt and a municipal barrier at each kerb — the picture that explains why the road is out too. Same single-body geometry as `fallen_tree`. |
+| `removal_lorry` | — | — | A **soft seal** from day 1: a lorry at the kerb with its ramp down, the same body on each pavement. Drawn at `lorry.svg`'s own scale with a picture of its own (open doors, a ramp reaching the ground) — the catalogue's "no two rows share a look" rule means the literal `Look.LORRY` picture could not be reused. |
+| `burnt_out_car` | — | — | A **hard seal** from act II (day 4) onward: `burnt_shell`'s charred palette moved onto a vehicle body. Vehicle-scale `obstructs_radius`, so `SealPlanner._hard_positions` spaces four across a street the way it spaces two `barricade` copies — a pile-up rather than one wide scene. |
+| `collapsed_frontage` | — | — | A **hard seal** from act II (day 4) onward: rubble spilled frontage to frontage, drawn the way `_burnt_shell` draws `rubble.svg` — a small debris segment repeated by `_draw_spread` — but its own picture, styled beside `rubble.svg` rather than sharing it. |
+
+
+
 ## Permanent marks
 
 `scar_id` records an event's position in `GameState.scars`, and the scheduler places that

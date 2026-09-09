@@ -1,0 +1,15 @@
+<!-- A removal lorry at the kerb with its ramp down — a lorry-scale body, drawn distinct from
+     lorry.svg (open doors, a ramp reaching the ground) because a row may not share another
+     row's picture. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="46" viewBox="0 0 62 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M2 7 Q5 5 34 6 L36 30 Q19 34 2 31 Z" fill="#9aa08a"/>
+  <path d="M3 7 Q18 4 34 7 L34 11 L3 11 Z" fill="#b3b89e"/>
+  <rect x="4" y="13" width="6" height="6" fill="#e8ddc8"/>
+  <rect x="4" y="22" width="6" height="6" fill="#e8ddc8"/>
+  <rect x="30" y="8" width="4" height="24" fill="#5c5248"/>
+  <rect x="30" y="8" width="2" height="24" fill="#3b3630"/>
+  <path d="M36 30 L58 44 L50 44 L34 33 Z" fill="#7d7a6c"/>
+  <path d="M36 30 L58 44" stroke="#c9c0a8" stroke-width="1"/>
+  <circle cx="14" cy="36" r="7" fill="#221f28"/>
+  <circle cx="14" cy="36" r="2" fill="#58524d"/>
+</svg>

@@ -23,15 +23,19 @@ extends RefCounted
 ## be that updating the list of candidates is enough and no other code changes need to happen to go
 ## to 8 seal pictures".)* A `Candidate` names what to place, whether it seals hard or soft, and
 ## nothing about *where* — `plan_day` works out every site from the street lattice and the day's
-## tree, the same way for any def a candidate names. Adding the eight drawn seals of the next
-## milestone is adding eight entries to `_build_candidates()`; nothing below reads a def's `id`.
+## tree, the same way for any def a candidate names.
 ##
-## **Today's list is the catalogue's own furniture**, named in the TODO entry this class builds:
-## `barricade` for hard (its own docstring already calls it "placed as a seal rather than rolled
-## as an event"), and `construction`, `cafe_tables`, `market_stall` and `delivery_van` for soft.
-## `homeless_yeller` is in the milestone's own list of "available from day 1" rows and is left out
-## here on purpose — it carries no `obstructs_radius`, so it obstructs nothing and a pavement with
-## only that on it is not sealed, soft or otherwise.
+## **The list carries eight pictures now** (`docs/TODO.md`, M64, "Eight seal pictures"), so no
+## single barrier is the city's signature: `barricade_seal` (the catalogue's own furniture,
+## `barricade`'s own docstring already calling it "placed as a seal rather than rolled as an
+## event"), `construction_pair`, `cafe_pair`, `market_pair` and `delivery_pair` were the pre-M64
+## soft furniture that made the sealing buildable before anything new was drawn; `fallen_tree_seal`,
+## `car_accident_seal`, `skip_scaffolding_pair`, `burst_main_seal`, `removal_lorry_pair`,
+## `burnt_out_car_seal` and `collapsed_frontage_seal` are the drawn pictures, each backed by its own
+## `SCRIPTED`, `scripted_day = 0`, `intensity = 0.0` row in `EventCatalogue` — see the class doc
+## there, "seal pictures (M64)". `homeless_yeller` is in the milestone's own list of "available from
+## day 1" rows and is left out here on purpose — it carries no `obstructs_radius`, so it obstructs
+## nothing and a pavement with only that on it is not sealed, soft or otherwise.
 ##
 ## **A sealed street's def is never the catalogue's own row.** `_sealed_variant` duplicates it and
 ## strips `scar_id`: the catalogue's `barricade` leaves a permanent scar and moves a block's arc
@@ -102,6 +106,13 @@ static func candidates() -> Array[Candidate]:
 	return _candidates
 
 ## The only place a new picture is added. See the class doc.
+##
+## **Eight seal pictures** (`docs/TODO.md`, M64): the five below `barricade_seal` are the
+## pre-existing furniture this class started with, and everything from `fallen_tree_seal` onward is
+## the milestone's own addition — each one an appended entry and nothing else, per the design's own
+## requirement that "updating the list of candidates is enough." `barricade_seal` is also the
+## eighth of the eight named pictures, "a stacked barricade" — already here, so it is confirmed
+## rather than duplicated.
 static func _build_candidates() -> Array[Candidate]:
 	return [
 		_candidate("barricade_seal", Strength.HARD, ["barricade"]),
@@ -109,6 +120,13 @@ static func _build_candidates() -> Array[Candidate]:
 		_candidate("cafe_pair", Strength.SOFT, ["cafe_tables", "cafe_tables"]),
 		_candidate("market_pair", Strength.SOFT, ["market_stall", "market_stall"]),
 		_candidate("delivery_pair", Strength.SOFT, ["delivery_van", "delivery_van"]),
+		_candidate("fallen_tree_seal", Strength.HARD, ["fallen_tree"]),
+		_candidate("car_accident_seal", Strength.HARD, ["car_accident"]),
+		_candidate("skip_scaffolding_pair", Strength.SOFT, ["skip", "scaffolding"]),
+		_candidate("burst_main_seal", Strength.HARD, ["burst_water_main"]),
+		_candidate("removal_lorry_pair", Strength.SOFT, ["removal_lorry", "removal_lorry"]),
+		_candidate("burnt_out_car_seal", Strength.HARD, ["burnt_out_car"]),
+		_candidate("collapsed_frontage_seal", Strength.HARD, ["collapsed_frontage"]),
 	]
 
 static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Candidate:

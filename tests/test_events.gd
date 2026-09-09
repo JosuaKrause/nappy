@@ -101,6 +101,8 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.CHECKPOINT,
 	EventDef.Look.BARRICADE, EventDef.Look.BURNT_SHELL, EventDef.Look.CAFE,
 	EventDef.Look.PROTEST, EventDef.Look.FIREFIGHT,
+	EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN,
+	EventDef.Look.SCAFFOLDING, EventDef.Look.COLLAPSED_FRONTAGE,
 ]
 
 ## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
@@ -132,6 +134,13 @@ const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TI
 ## them and a future regression on either row's `obstructs_radius` would pass silently. Checked by
 ## hand instead: both actually land on `ROAD` (their spawning row's own placement), and 36px /
 ## 62px both sit inside `_CARRIAGEWAY_SPREAD_CLEARANCE`.
+##
+## **The same blind spot covers every seal-only row** (`fallen_tree`, `car_accident`,
+## `skip`, `scaffolding`, `burst_water_main`, `removal_lorry`, `burnt_out_car`,
+## `collapsed_frontage`) — none carries a `def.placement` either, since `SealPlanner` sites them
+## directly from the street lattice rather than through `EventScheduler`'s tile pool. Their
+## clearance is checked in `tests/test_seals.gd` instead, against the street's own 192px width
+## rather than a single tile's, which is the ground they actually stand on.
 func _test_a_spread_body_fits_the_ground_it_stands_on(t) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():

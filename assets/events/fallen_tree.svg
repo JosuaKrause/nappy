@@ -1,0 +1,15 @@
+<!-- A hard seal: a tree down kerb to kerb, root plate at one end and crown at the other. Native
+     width 200 — over the 192px a hard seal spans at this row's own `obstructs_radius` (96) — so
+     `_draw_spread` draws exactly one copy stretched to the obstruction, not several repeated
+     trees: this is one continuous scene, not a repeatable segment. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M8 40 L14 36 L18 46 L10 48 Z" fill="#4a382a"/>
+  <rect x="14" y="30" width="150" height="14" fill="#5b4433"/>
+  <rect x="14" y="30" width="150" height="4" fill="#6e5440"/>
+  <rect x="70" y="24" width="6" height="10" fill="#5b4433"/>
+  <rect x="110" y="22" width="6" height="12" fill="#5b4433"/>
+  <circle cx="176" cy="24" r="20" fill="#4f7a44"/>
+  <circle cx="192" cy="32" r="13" fill="#456b3b"/>
+  <circle cx="164" cy="14" r="11" fill="#649256"/>
+  <circle cx="184" cy="12" r="9" fill="#649256"/>
+</svg>

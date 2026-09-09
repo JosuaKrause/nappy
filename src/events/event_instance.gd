@@ -50,6 +50,15 @@ const LORRY := preload("res://assets/events/lorry.svg")
 const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
 const CHATTING_MOTHER_WALKING := preload("res://assets/events/chatting_mother_walking.svg")
 const CHATTING_MOTHER_TALKING := preload("res://assets/events/chatting_mother_talking.svg")
+## Seal pictures — see `SealPlanner` and `docs/TODO.md`, M64, "Eight seal pictures".
+const FALLEN_TREE := preload("res://assets/events/fallen_tree.svg")
+const CAR_ACCIDENT := preload("res://assets/events/car_accident.svg")
+const SKIP := preload("res://assets/events/skip.svg")
+const SCAFFOLDING := preload("res://assets/events/scaffolding.svg")
+const BURST_MAIN := preload("res://assets/events/burst_water_main.svg")
+const REMOVAL_LORRY := preload("res://assets/events/removal_lorry.svg")
+const BURNT_OUT_CAR := preload("res://assets/events/burnt_out_car.svg")
+const COLLAPSED_FRONTAGE := preload("res://assets/events/collapsed_frontage.svg")
 
 ## The one silhouette that stands for a look, at any size.
 ##
@@ -90,16 +99,28 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.BARRICADE: return BARRICADE_PILE
 		EventDef.Look.PROTEST: return PROTESTER
 		EventDef.Look.FIREFIGHT: return GUNMAN
+		EventDef.Look.FALLEN_TREE: return FALLEN_TREE
+		EventDef.Look.CAR_ACCIDENT: return CAR_ACCIDENT
+		EventDef.Look.SKIP: return SKIP
+		EventDef.Look.SCAFFOLDING: return SCAFFOLDING
+		EventDef.Look.BURST_MAIN: return BURST_MAIN
+		EventDef.Look.REMOVAL_LORRY: return REMOVAL_LORRY
+		EventDef.Look.BURNT_OUT_CAR: return BURNT_OUT_CAR
+		EventDef.Look.COLLAPSED_FRONTAGE: return COLLAPSED_FRONTAGE
 		_: return null
 
 ## Whether a def's instance draws itself as a **spread** — a body built by repeating a segment
 ## across `def.obstructs_radius`, laid along whichever axis `_spread_is_vertical` picks for the
 ## street it stands on. That is exactly `_draw_spread` and `_draw_cafe`, nothing else in
-## `_draw_body`'s dispatch: `ROADWORKS`, `BURNT_SHELL`, `STALL`, `CHECKPOINT` and `BARRICADE` go to
-## the first, `CAFE` to the second. `PROTEST` and `FIREFIGHT` also fill `obstructs_radius`-worth of
-## ground but draw it with their own functions that never call `_spread_is_vertical` or
-## `_spread_at` — a protest rank and a firefight's cover are laid along local X unconditionally, so
-## a corner costs them nothing and they are rightly outside this test.
+## `_draw_body`'s dispatch: `ROADWORKS`, `BURNT_SHELL`, `STALL`, `CHECKPOINT`, `BARRICADE`,
+## `FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`, `SCAFFOLDING` and `COLLAPSED_FRONTAGE` go to the
+## first, `CAFE` to the second. A seal picture wide enough to span the whole street on its own
+## (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) still goes through `_draw_spread`: its own asset is
+## authored wider than the street, so `_draw_spread` draws exactly one copy stretched to the
+## obstruction rather than several — see `fallen_tree.svg`. `PROTEST` and `FIREFIGHT` also fill
+## `obstructs_radius`-worth of ground but draw it with their own functions that never call
+## `_spread_is_vertical` or `_spread_at` — a protest rank and a firefight's cover are laid along
+## local X unconditionally, so a corner costs them nothing and they are rightly outside this test.
 ##
 ## **This is the test `EventScheduler._open_ground_for` asks before it will offer a corner as a
 ## site.** See that function and `docs/TODO.md`, M64, "a spread on a corner is placed as if the
@@ -109,7 +130,9 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 static func has_a_spread(def: EventDef) -> bool:
 	match def.look:
 		EventDef.Look.ROADWORKS, EventDef.Look.BURNT_SHELL, EventDef.Look.STALL, \
-				EventDef.Look.CHECKPOINT, EventDef.Look.BARRICADE, EventDef.Look.CAFE:
+				EventDef.Look.CHECKPOINT, EventDef.Look.BARRICADE, EventDef.Look.CAFE, \
+				EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN, \
+				EventDef.Look.SCAFFOLDING, EventDef.Look.COLLAPSED_FRONTAGE:
 			return true
 		_:
 			return false
@@ -1222,6 +1245,22 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_protest(canvas)
 		EventDef.Look.FIREFIGHT:
 			_draw_firefight(canvas)
+		EventDef.Look.FALLEN_TREE:
+			_draw_spread(FALLEN_TREE, null, canvas)
+		EventDef.Look.CAR_ACCIDENT:
+			_draw_spread(CAR_ACCIDENT, null, canvas)
+		EventDef.Look.BURST_MAIN:
+			_draw_spread(BURST_MAIN, null, canvas)
+		EventDef.Look.COLLAPSED_FRONTAGE:
+			_draw_spread(COLLAPSED_FRONTAGE, null, canvas)
+		EventDef.Look.SCAFFOLDING:
+			_draw_spread(SCAFFOLDING, null, canvas)
+		EventDef.Look.SKIP:
+			_draw_simple(SKIP, 11.0, canvas)
+		EventDef.Look.REMOVAL_LORRY:
+			_draw_simple(REMOVAL_LORRY, 26.0, canvas)
+		EventDef.Look.BURNT_OUT_CAR:
+			_draw_simple(BURNT_OUT_CAR, 14.0, canvas)
 		EventDef.Look.NONE:
 			pass
 

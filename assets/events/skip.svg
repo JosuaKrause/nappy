@@ -1,0 +1,9 @@
+<!-- A skip at the kerb: half of a soft seal, one obstacle facing the scaffolding on the other
+     pavement. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="28" viewBox="0 0 40 28" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M2 8 L38 8 L34 24 L6 24 Z" fill="#c4703c"/>
+  <path d="M2 8 L38 8 L37 12 L3 12 Z" fill="#d98a52"/>
+  <rect x="4" y="24" width="32" height="2" fill="#221f28"/>
+  <rect x="6" y="4" width="10" height="4" fill="#8a97a8"/>
+  <rect x="24" y="4" width="10" height="4" fill="#8a97a8"/>
+</svg>

@@ -1,0 +1,20 @@
+<!-- A hard seal: two cars locked together across the carriageway, glass between them, and an
+     onlooker drawn small on each pavement. One continuous scene at native width 200, over the
+     192px this row obstructs, so `_draw_spread` draws exactly one copy — see fallen_tree.svg. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <circle cx="18" cy="34" r="4" fill="#e8ddc8"/>
+  <rect x="15" y="38" width="6" height="10" fill="#5c6c78"/>
+  <path d="M55 20 Q60 14 90 16 L96 34 Q78 40 52 36 Z" fill="#7d8a9a"/>
+  <path d="M58 20 Q75 15 90 18 L91 22 L58 24 Z" fill="#8fa0b0"/>
+  <circle cx="62" cy="37" r="6" fill="#221f28"/>
+  <circle cx="86" cy="34" r="6" fill="#221f28"/>
+  <path d="M92 16 Q112 10 130 18 L128 36 Q108 40 90 34 Z" fill="#a8503f"/>
+  <path d="M96 16 Q112 12 126 18 L125 22 L96 22 Z" fill="#bf6a58"/>
+  <circle cx="100" cy="37" r="6" fill="#221f28"/>
+  <circle cx="122" cy="35" r="6" fill="#221f28"/>
+  <circle cx="90" cy="26" r="2" fill="#cfd6da"/>
+  <circle cx="95" cy="30" r="1.5" fill="#cfd6da"/>
+  <circle cx="85" cy="32" r="1.5" fill="#cfd6da"/>
+  <circle cx="182" cy="34" r="4" fill="#e8ddc8"/>
+  <rect x="179" y="38" width="6" height="10" fill="#5c6c78"/>
+</svg>
