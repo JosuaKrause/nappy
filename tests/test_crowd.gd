@@ -55,6 +55,7 @@ func run(t) -> void:
 	_test_agents_do_not_overrun_an_ordinary_edge(t)
 	_test_walkers_follow_the_selected_presentation(t)
 	_test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t)
+	_test_cars_come_out_of_the_tunnel_and_off_the_bridge(t)
 
 	_city.free()
 
@@ -1405,3 +1406,48 @@ func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t) -> void:
 		t.check(off_spine_cars_out == 0,
 				"edge %d: no car off the spine ever stands out of bounds (%d frames it did)"
 				% [i, off_spine_cars_out])
+
+## Playtest 47: **"no car ever comes *out* of the tunnel or from the bridge."** A car on the spine
+## overruns the edge by `Tuning.OUT_OF_SIGHT` on its way out, and the entry side has to grant the
+## same room: `CrowdAgent._entry_band_fits` otherwise refuses every band lying past the edge, which
+## beside the tunnel is the only place a southbound spine car can start. So stand at each end of
+## the spine and count spine cars seen out of bounds by which way they are pointing. Asserted as a
+## ratio rather than a count, because the population and the re-roll odds both move: traffic
+## through a hole in the border is two-way when the inbound frames are a real fraction of the
+## outbound ones, and a handful — the fallback of six missed rolls, which is the reported state —
+## is what the check has to refuse.
+func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t) -> void:
+	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
+	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
+	var size := _city.map.world_size()
+	var ends := {
+		"tunnel": Vector2((spine_lo + spine_hi) * 0.5, Tuning.TILE_SIZE),
+		"bridge": Vector2((spine_lo + spine_hi) * 0.5, size.y - Tuning.TILE_SIZE),
+	}
+	var i := 0
+	for name in ends:
+		var at: Vector2 = ends[name]
+		_city.crowd.start_day(1, _rng(20 + i), at)
+		i += 1
+		var inbound := 0
+		var outbound := 0
+		for frame in int(round(40.0 / STEP)):
+			_city.crowd.set_focus(at)
+			_city.crowd.step(STEP)
+			for agent in _city.crowd.agents():
+				if agent.kind != CrowdAgent.Kind.CAR:
+					continue
+				if _city.map.in_bounds(_city.map.world_to_tile(agent.position)):
+					continue
+				# Out of bounds on the spine is the tunnel or the bridge; inward is toward the map.
+				var outside_north := agent.position.y < 0.0
+				var inward := agent.heading().y > 0.0 if outside_north else agent.heading().y < 0.0
+				if inward:
+					inbound += 1
+				else:
+					outbound += 1
+		t.check(outbound > 0, "%s: cars still leave by it (%d frames out of bounds heading out)"
+				% [name, outbound])
+		t.check(inbound >= outbound / 4,
+				"%s: cars come in by it too (%d frames heading in against %d heading out)"
+				% [name, inbound, outbound])

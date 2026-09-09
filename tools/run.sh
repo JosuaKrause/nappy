@@ -56,16 +56,38 @@ missing_classes() {
             | sed 's/.*&"//; s/"$//' | sort -u)
 }
 
+# The same shape for textures. Every `.import` sidecar in the tree is a repository file that
+# names the imported copy it stands for under `.godot/imported/`, and that copy is exactly what a
+# `git pull` cannot bring with it -- so a checkout whose classes all resolve can still fail to
+# preload a texture, and a failed preload takes down every script that depends on the one that
+# preloads it. Checked by listing what the sidecars promise against what is on disk, not by mtime,
+# for the same reason as above: the question is whether a file exists, not whether it is new.
+missing_imports() {
+    grep -rhoE '^dest_files=\[.*\]' --include='*.import' "$PROJECT_DIR/assets" "$PROJECT_DIR/src" \
+            "$PROJECT_DIR/scenes" 2>/dev/null \
+        | grep -oE 'res://[^"]+' \
+        | sort -u \
+        | while read -r res; do
+            [[ -e "$PROJECT_DIR/${res#res://}" ]] || echo "${res#res://.godot/imported/}"
+        done
+}
+
 missing=$(missing_classes)
-if [[ -n "$missing" ]]; then
-    if [[ -f "$CACHE" ]]; then
+unimported=$(missing_imports)
+if [[ -n "$missing" || -n "$unimported" ]]; then
+    if [[ -n "$missing" && -f "$CACHE" ]]; then
         echo "stale class cache: ${missing//$'\n'/, }" >&2
         echo "  declared in the tree but absent from ${CACHE#"$PROJECT_DIR"/}," >&2
         echo "  so every reference to them would fail to parse" >&2
-    else
+    elif [[ -n "$missing" ]]; then
         echo "no class cache at ${CACHE#"$PROJECT_DIR"/}, so no global class resolves" >&2
     fi
-    echo "rebuilding it with tools/check.sh -- this takes a few seconds" >&2
+    if [[ -n "$unimported" ]]; then
+        echo "unimported textures: ${unimported//$'\n'/, }" >&2
+        echo "  their .import sidecars are in the tree and the imported copies are not," >&2
+        echo "  so every script that preloads one would fail to compile" >&2
+    fi
+    echo "rebuilding with tools/check.sh -- this takes a few seconds" >&2
     if ! "$PROJECT_DIR/tools/check.sh" >/dev/null; then
         echo "tools/check.sh failed; run it directly to see why" >&2
         exit 1
@@ -76,7 +98,13 @@ if [[ -n "$missing" ]]; then
         echo "the import pass ran and did not register them, so this is not a stale cache" >&2
         exit 1
     fi
-    echo "class cache rebuilt" >&2
+    unimported=$(missing_imports)
+    if [[ -n "$unimported" ]]; then
+        echo "still unimported after the rebuild: ${unimported//$'\n'/, }" >&2
+        echo "the import pass ran and did not produce them, so this is not a stale checkout" >&2
+        exit 1
+    fi
+    echo "import cache rebuilt" >&2
 fi
 
 # `--` separates Godot's own arguments from the game's.
