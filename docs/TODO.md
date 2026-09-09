@@ -16,6 +16,11 @@ mid-way through.
 
 ### Illustrated actor registration and assembly
 
+**This is Codex's parallel track, worked beside the gameplay queue rather than ahead of it.**
+*(2026-09-09: "illustrated actors is currently a sidearm for codex to work on".)* The SVG drawings
+are the game's graphics until the illustrated presentation passes its visual gates, so a drawing
+item in the gameplay queue is drawn as SVG.
+
 The repair follows [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md),
 PLAYTEST-32's connected-body and legacy comparison requirements, and the M84 record in
 DECISIONS.md. Keep the illustrated renderer opt-in. The supplied urban/mother illustrations
@@ -65,19 +70,37 @@ define style; `docs/reference/` supplies real-world structure and posture.
 
 ### Gameplay queue
 
-1. **M93** — the caret is chosen by expected impact, not by a row's own numbers. Its two numbers
-   are settled and it shares them with the halo.
-2. **M56** — the resistance is noticed.
-3. **Illustrated actor review** — review the registered bodies and complete pram against the
-   legacy SVG sprites, then resolve the documented source-art and live-motion gaps. See
-   [PLAYTEST-43.md](PLAYTEST-43.md), [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md)
-   and DECISIONS.md under Limb attachment repair.
+Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
+
+1. **M62** — checkpoints that divide the map into regions. *("M62 should be next.")* M45's three
+   items are folded into it, since a perimeter of permanent structure and a door that points are
+   what M45 asked for and M62 specifies. It carries the reachability-grid confirmation the small
+   items used to hold.
+2. **Alongside it, each on its own branch**, because none of the three touches the city's shape:
+   - **M64** — the eight seal pictures, drawn as SVG. *("M64 we can do in parallel — svg is the
+     main graphics for now.")*
+   - **M93** — the caret shows the expected impact of an interaction. *("we can do this in
+     parallel, too".)*
+   - **M56**'s build item, the other rows that hunt. *("M56 is also related to the other items to
+     work on right now.")* Its measurement against the nerves waits, because reaching act III
+     waits: *"I wanna wait reaching act III until those things are done."*
+3. **M61** — a field is the Minkowski sum of the body and a kernel. *("M61 is kind of important
+   but not the immediate next item.")*
+4. **M65** — the protester who points, revisited once M62 has landed. *("M65 we need to revisit
+   after M62.")* Revisited rather than built as written: a walled city with checkpoints may change
+   what finding a mark is like, and the entry is re-read against that before its pose is drawn.
+5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+   the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
+   2026-09-09 from an older milestone after checking which of its items the code had already
+   answered; the record of what was found built is in `DECISIONS.md` under "The queue
+   reprioritised".
+6. **Reaching act III**, which M56's measurement against the nerves needs.
+7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
-does to the route decision, the same as everything else. **M64** (eight seal pictures, so no single
-barrier becomes the city's signature) and **M65** (a protester who points at the objective) are
-each a milestone of only its drawings, and each is ordinary open work.
+does to the route decision, the same as everything else. **M64** and **M65** are each a milestone of
+only its drawings, and each is ordinary open work.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
 no artist.
@@ -85,6 +108,11 @@ no artist.
 **M79 is tabled rather than queued.** It is the city seen at an angle — a presentation change with
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
+
+**[PLAYTEST-49.md](PLAYTEST-49.md) is the newest session and it is the prioritisation above**, plus
+one bug — events spawning inside a fully blocked street — filed at the top of M100's defects,
+one correction, that the non-adjacency rule does not cover parks yet, filed in M97, and one design
+instruction, the fire found before the engine, filed as M101.
 
 **[PLAYTEST-48.md](PLAYTEST-48.md) is the newest gameplay session, and its one note is built**:
 the signal head north of a junction, which faces up the screen, shows its back and no lamp. The
@@ -173,135 +201,219 @@ Read [PLAYTEST-22.md](PLAYTEST-22.md) and [PLAYTEST-21.md](PLAYTEST-21.md) befor
 what they asked for is built and unplayed, so the next report on it is the thing that matters.
 
 **Playtest 20's four findings** went to M69 (a reachability gap, now built), M65 (a chalk-mark idea),
-M47 (a calm-area spoiling inconsistency) and M43 (a measured lead-time gap on the post-tutorial
+M97 (a calm-area spoiling inconsistency) and M96 (a measured lead-time gap on the post-tutorial
 `charging_dog`).
 
 **Playtest 19's nine findings are filed against the milestones that own them** — M64 and M65 are
 new, the barriers went to M48 and are built, and the rest went to M49 (the north edge, the junction
 paint) and the small items (the robber in a building).
 
-Everything below that is unordered and reassessed on 2026-09-01.
+Everything below is in the order the gameplay queue above gives it, and was reassessed on
+2026-09-09.
 
 ---
 
-## M63 — It plays on a phone · built 2026-09-02
+## M62 — Checkpoints that divide the map · asked for 2026-09-02
 
-Every screen takes a tap, a virtual stick presses the same four `move_*` actions a keyboard does,
-and running is a separate held button. The record — including what a touch device is taken to be,
-and why running may never be a stick threshold — is in `DECISIONS.md` under M63.
+> "checkpoints in the later acts should divide the map into segments/areas. that is the player
+> should be forced to cross checkpoints to reach parts of the map and the checkpoints live alongside
+> the full perimeter of each region. checkpoints can reuse the other woman with baby logic. the cost
+> can be time (and a bit of excitement) while being detained until released"
 
-**None of it has been touched by a thumb.** It is built, tested and screenshotted on a desktop,
-which proves only that the controls stay *off* where they should.
+> "checkpoints are not the same as closures. closures are eg construction sites where the road is
+> fully closed. a checkpoint is a barrier across the street where there are guards on the side-walks
+> with a hut and a gate over the roadway to let cars through (cars need to slow down to a full stop
+> before the gate opens and they can go ahead again). the player walks to a hut gets detained inside
+> and then spawns on the other side afterwards. it works in both directions with the same cost each
+> time"
 
-- [ ] **Measure the thing that might sink it, by playing it on a phone.** `CrowdLanes` pushes the
-      two walking lanes of a pavement 8px apart so there is a clear line between them worth aiming
-      at, and it carries the measurement: forty seconds down an arterial lane centre costs 13.7
-      contacts and the midline costs 0.0 — **148 points of a hundred-point meter riding on those
-      pixels**. Arrow keys hit that line and a thumb may not. **This is a question about whether
-      careful-versus-careless survives a blunter instrument, and it is answered by playing it rather
-      than by arguing it.** The three smaller things a real device would also settle — the catch
-      radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
+**A checkpoint is not a closure and the difference is the whole design.** A closure — roadworks, a
+construction site — takes a street away, and `docs/CITY.md`'s `absent_segments` is how the city says
+so. **A checkpoint never removes a route; it prices one, and the price is the same every time in
+both directions.** It is a crossing you can always make and never make for free, which is a thing
+the game does not have yet: every other cost in it is either avoidable by routing or fatal.
 
----
+**Both survive, and they are two different things.** *(2026-09-02: "let's keep both the checkpoint
+and a barrier around.")* The existing row — a recurring event rolled onto `ROAD`/`CROSSING` tiles up
+to six times a day from day 7, whose own docstring calls it *"the first event that takes a route
+away rather than making it expensive"* — is **the barrier**, and it keeps doing exactly that. The
+new structure is **the checkpoint**, and it never takes a route away. Having both is what makes
+either legible: a street held by soldiers that you cannot pass, and a street held by soldiers that
+you can pass at a price, are only a decision when the city contains both.
 
-## M93 — The caret is chosen by expected impact · asked for 2026-09-08
+- [ ] **The barrier needs its own name, because the new thing has taken `checkpoint`.** Two rows
+      that draw armed men across a street and mean opposite things about whether you can get
+      through, sharing a word, is the *one picture per row* rule failing at the name instead of at
+      the drawing. `barricade` already exists in act IV and is something else — whatever was
+      stacked there by somebody — so this is a third name, not a merge. Its picture stays: poured
+      concrete and a hazard stripe is a street being **held**, which is still true of it
 
-[PLAYTEST-37.md](PLAYTEST-37.md) finding 5, in three sentences: *"caret == lethal is good but is
-inconsistently applied at the moment"*, *"a cat has a caret but it's benign"*, *"a pedestrian
-without caret has a greater impact than a cat"* — and the instruction: **"carets shouldn't be
-chosen by source value but by expected impact value."**
+**Its anatomy, in the player's words, and each part lands on a different system:**
 
-**What decides the amber caret today is a source value.** `EventInstance.wants_a_mark()` marks a
-row when `EventDef.walk_through_cost()` — the points a straight walk through the field at walking
-speed would cost, derived from the def's intensity, radii and speed — reaches
-`Tuning.MARK_WORTH_A_DETOUR` (25, a quarter of the bar). It is the same answer for every instance
-of the row, wherever it stands and whichever way she walks, and the crowd is outside it entirely:
-`cat_dash` is marked, the pedestrians who cost more over a pavement never are. The invariant
-`tests/test_danger.gd` holds — *if A is marked and B is not, A costs more to walk through than B* —
-is true only because it is stated over the catalogue alone.
+- **A barrier across the street**, with **guards on the sidewalks** and a **hut**. So it is not one
+  body on one tile — it spans the full width of a street, footway to footway, which nothing in the
+  catalogue does. `EventDef.obstructs_radius` is a *circle* whose radius is half a silhouette, and
+  half a street is not a silhouette.
+- **A gate over the roadway.** Cars come to a **full stop**, the gate opens, they go on. The
+  machinery for making traffic stop and start at a place already exists and is not in the crowd —
+  `src/city/traffic_signals.gd` and `traffic_light.gd` hold the cycle, `src/crowd/crowd_lanes.gd`
+  and `crowd.gd` are what obeys it. A gate is a signal with a different rule and a different
+  drawing, which is a much smaller thing to build than it sounds.
+- **She walks to the hut, is detained inside, and comes out the other side.** A **teleport**, and
+  nothing in this game has ever moved the player. It is also the answer to the question a barrier
+  spanning a street would otherwise raise — how does a pram get past a thing with no gap in it —
+  and it means the crossing is never a matter of finding a way through the geometry.
+- **Both directions, the same cost each time.** So it is a toll rather than a puzzle: nothing about
+  it is learnable except that it is there, which is what makes it a *routing* fact.
 
-**Expected impact is the halo's quantity turned forward, measured with her held still.** The halo
-(M92) is the points a source actually landed on the meter over the last five seconds; the caret
-becomes the points a source *will* land over the horizon **if she does nothing** — the thing's own
-motion and field projected onto where she stands, the same field the meter is fed from. That
-direction is the player's: *(2026-09-08: "I don't want a caret when walking into a car from the
-side".)* It is already the screen-edge badge's rule and the cues skill's sentence — *measure the
-thing, not the gap; a rate that includes her 92px/s is a cue for walking* — arriving at the caret.
-A car bearing down on her marks; a car she steps into from the side does not, since held still she
-is never in its path. A cat whose dash lands less than the line on a standing player is not marked,
-whatever its row says; a knot of walkers coming at her is, if what they will land clears it. **And
-a stationary thing never earns a caret** — held still, a café does nothing to her — which is the
-halo's job from the moment she is in its field.
+**How the two are placed, and it is one rule for both.** *(2026-09-02: "for the barricade and
+checkpoint placement divide the map into regions and create barricades along the full perimeters —
+add checkpoints instead of barricades only where the paths cross the region boundaries.")*
 
-**The doubled red caret keeps its meaning — lethal — and gets the same rule.** *(2026-09-08: "we
-can keep the double red == lethal", then "and not all lethal things need a caret either".)* So it
-is one sentence in two strengths, both measured with her held still over the horizon: **amber** if
-the thing's own approach will cost her at or above the line, **doubled red** if it will end the
-day — her position inside a car's strike or a `hard_fail` row's lethal radius on its current
-course. Nothing otherwise. A robber waiting in an alley she is not in carries no mark until he
-stands up and comes; a car marks while she stands in its lane, which is exactly when it honks, so
-`CrowdAgent._draw_horn_mark()`'s rule becomes a consequence rather than the definition; the
-cyclist marks when its line reaches her; and a car she steps into from the side carries none
-*(2026-09-08: "I don't want a caret when walking into a car from the side")*.
+**The perimeter is a wall with doors in it.** Barricade every tile of a region's boundary; wherever
+a walkable route crosses that boundary, put a checkpoint there instead. So the wall is complete —
+there is no gap to find and no way round — and every way through is a toll. That is what makes both
+rows mean something: the barricade is what you cannot pass, the checkpoint is the only place you
+can, and neither reads as anything without the other beside it.
 
-**The amber caret stays.** *(2026-09-08: "amber one is fine as long as it represents a meaningful
-thing".)* What changes is only what decides it.
+It also answers, by construction, the thing that would otherwise sink the idea. A ring of
+impassable structure is exactly the shape of sealing her in, and *the doors are placed at every
+crossing rather than at a chosen few*, so a region she has business in can never become unreachable
+however the lattice came out. The winnability check stops being an argument about placement and
+becomes a count.
 
-**And the vocabulary is restated as one language.** *(2026-09-08: "but then we need to create a
-consistent language around the other carets too".)* Each row of `docs/EVENTS.md`'s "The visual
-vocabulary" and the cues skill becomes one sentence decided by one quantity — caret: *stand here
-and this will cost you*, or *end your day*; halo: *this is costing you now, and this much*;
-exclamation over her: *the clock on you has started*; badge: *something lethal or fast is coming,
-and this is what* — with **one number** (the amber line and the halo's red are the same points, so
-an amount means the same thing whether it already landed or is about to) and **one direction**
-(everything about a thing is measured with her held still, so nothing is a cue for walking). That
-rewrite is this milestone's first item.
+**The regions partition the map.** *(2026-09-02: "regions should be a partition of the map.")* Every
+tile belongs to exactly one, with no gap between two of them and no tile in both. It is worth
+stating because the alternative — regions as a few marked-off districts in an otherwise open city —
+is what a first implementation drifts into, and it quietly gives back the way round that the
+perimeter exists to remove.
 
-**The two numbers are the halo's, confirmed.** *(2026-09-08, on a five-second horizon and a line at
-40 of the 100-point meter: "both sound good to me".)* So one horizon and one line serve past and
-future alike: the halo is red at 40 points landed over the last five seconds, the caret is amber at
-40 points expected over the next five. A cat's dash on a standing player lands about 30 and is not
-marked; a café she is standing in is the halo's, not the caret's. The one thing the line must not
-do is mark the ordinary crowd at ordinary density, which is a measurement on the arterial rather
-than an argument, and is the last item.
+**The regions are decided when the city is generated, and a region edge can never affect a path.**
+*(2026-09-02: "what the regions are is determined at initial city creation and paths planning and
+boundary placement are 100% orthogonal. a region edge can never affect a path — note this implies
+the region boundaries cannot be through calm zones etc.")*
 
-- [ ] **One number and one horizon, shared.** `Tuning.MARK_WORTH_A_DETOUR` (25, derived per row)
-      is replaced by a single pair the halo and the caret both read — the line at
-      `METER_MAX * 0.4` and the horizon at five seconds — living in `Tuning` rather than on
-      `ExcitementHalo`, where M92 first put the saturation. Their docs carry the player's sentences
-      above.
-- [ ] **Expected impact, per source, with her held still.** A method on both `EventInstance` and
-      `CrowdAgent` — the same duck type the halo reads — answering the points this thing's own
-      motion and field will land on her current position over the horizon **beyond what it lands
-      now**: the source's velocity extrapolated in steps of a quarter second, its field sampled at
-      her position at each step, summed, less its present rate times the horizon. A stationary
-      thing she is inside therefore expects nothing (the halo has it); an approaching thing expects
-      its approach; a departing thing expects less than nothing and is unmarked. Sources whose
-      reach cannot touch her inside the horizon — further than speed × horizon plus their outer
-      radius — are skipped without sampling, which is what keeps two hundred walkers cheap. A
-      pursuer that has noticed her is heading for her and is projected as such; one still waiting
-      has no velocity.
-- [ ] **The two carets are that quantity in two strengths.** `EventInstance.wants_a_mark()` and a
-      `CrowdAgent` equivalent: **doubled deep red** when a step of the projection puts her inside
-      the thing's lethal reach — a `hard_fail` row's `inner_radius`, a car's strike box — on its
-      current course; **amber** when the expected points reach the line; nothing otherwise. The
-      honk stops being the car's rule and becomes a consequence (a car whose lane she stands in
-      is projected into her). The flash while telegraphing is kept as the phase. `mark_colour()`
-      follows the strength, not the row.
-- [ ] **The vocabulary is restated as one language**, in `docs/EVENTS.md`'s "The visual vocabulary"
-      and `.claude/skills/cues/SKILL.md`: caret *stand here and this will cost you* / *end your
-      day*; halo *this is costing you now, and this much*; exclamation *the clock on you has
-      started*; badge *something lethal or fast is coming, and this is what*. One number, one
-      direction; nothing is a cue for walking.
-- [ ] **`tests/test_danger.gd` states the new invariant.** The catalogue-wide monotonicity check
-      goes, since a mark is no longer a property of a row; in its place, scenarios: a café she
-      stands in is unmarked; a cat dashing at her is unmarked; a cyclist whose line reaches her is
-      red and one passing wide is not; a car she stands in front of is red and one she would have
-      to step into is not; a walker brushing past is unmarked. The pram, the exclamation mark and
-      the badge tests are untouched.
-- [ ] **Measured on the arterial.** One capture standing on the busy pavement: how many amber
-      carets are up. The answer has to be *none at ordinary density*, or the line moves before
-      this merges.
+**This is the constraint the rest of the milestone hangs off, and it is stronger than it looks.**
+The two systems never negotiate: `RouteTree` grows a day's routes knowing nothing about regions, and
+the boundaries were drawn before any of them existed. There is no ordering problem, no feedback
+loop, and no case where a wall makes a route worse — a boundary is laid where a wall changes nothing
+about where anybody can get to, and the doors are then cut wherever the day's paths happen to cross
+it.
+
+**And it decides where a boundary may run.** A boundary through a park would wall off half of a
+destination, which is a region edge affecting a path — so **no boundary crosses calm ground**, and
+every calm area belongs wholly to one region. That is also what makes *"the region contains an
+accessible calm zone"* a question with an answer: nothing is ever half in. The same reasoning
+applies to anything else a route has to be able to reach or use as a whole, and the home is the
+sharpest case — it is a notch with one exit, so a boundary anywhere near it is the doorstep problem
+by another route.
+
+The honest form of the rule is therefore a **generation guarantee, checked like the other ones**:
+a boundary runs on ground where sealing it removes no destination and shortens no route. That is a
+test over many seeds, not an argument.
+
+**A region with nothing in it for her gets no doors at all.** *(2026-09-02: "a region that contains
+no accessible calm zone should have no checkpoints / gates. this might sound counter-intuitive from
+a realworld point of view since such a region wouldn't ordinarily make sense but from the game
+perspective there is no reason to ever enter the region so we shouldn't even provide the option —
+the player won't notice the difference.")* Its perimeter is barricade the whole way round and she
+can never enter it.
+
+**This is the game's own rule beating the simulation's**, and it is the same principle as the one
+that keeps a quest marker out of this game: offer a choice only where there is a choice. A door
+into ground with no calm area behind it is a route the player can spend a day's clock discovering
+is worthless, and the discovery teaches nothing, because *there was never anything there* is not a
+fact about the city she can carry to tomorrow. Sealing it costs her nothing she would have wanted
+and removes a way to lose a day to no purpose.
+
+Two things it forces, and neither is optional:
+
+- **The region she starts in always has doors.** If her own region holds no calm area and is sealed,
+  the day is unwinnable from the first frame. This is the doorstep exemption's shape at city scale —
+  the home is a notch with one exit, so sealing that street seals her in — and it lands the same
+  way: the rule is stated over *a region*, and then the one she is standing in is exempt from it.
+- **"Contains a calm zone" is settled at generation; "accessible today" is not.** No boundary
+  crosses calm ground, so which region a calm area is in is a permanent fact and a region with none
+  at all is sealed for the whole run — a district she learns once and never has reason to enter.
+  What is left open is the softer case: a region whose calm areas are all *spoiled* today has
+  nothing in it today either. Sealing on that is the day's steering rather than the city's shape, so
+  it belongs with the door placement and is answered there, not here.
+
+- [ ] **The regions are a city-generation question, not an event-placement one.** A perimeter is a
+      decision about the map, so what needs designing first is what a region *is* — the quadrants
+      either side of the spine, a growth from the home block, or something the lattice already
+      knows about. This is the largest piece and everything else waits on it
+- [ ] **The barricade is structure; the checkpoint is placed by the day.** Neither is a recurring
+      event rolled onto a tile by weight. A perimeter is a fact about the city, generated with it
+      and standing for the run, and M45's first item is **permanent impassable structure, reusing
+      `absent_segments` rather than reinventing it** — that is this, so build them together or build
+      that one first. The doors are the day's, and the thing that already places per-day openings
+      and closings on a fixed map is `ClosurePlanner`, which is where their planning belongs rather
+      than in the event scheduler
+- [ ] **The wall stands for the run and the doors are re-cut every morning.** *(2026-09-02: "it is
+      okay to move checkpoints on a daily basis — reassess where to put them depending on the paths
+      of the current day.")* So the boundary is permanent and *which* of its crossings are gated is
+      a decision the day takes, off `RouteTree.for_day(map, day)` — the day's corridor, a pure
+      function of the city's seed and the day number. A crossing that is a checkpoint today is
+      barricade tomorrow.
+
+      **This makes the gate the sharpest routing instrument in the game, and it is M45's open item
+      arriving with a mechanism.** M45 wants *"a closure that points"* — not *does this lengthen
+      the route* but *does this stop her committing to a direction that cannot win today* — and
+      records the trap beside it: **a nudge that removes the decision is worse than a closure that
+      does nothing.** Choosing which doors are open is exactly that instrument, and it is exactly
+      that trap, at full strength. Two doors is a choice; one door is a corridor with a toll booth
+
+      **No ordering problem, because the two are orthogonal by decree** — see the constraint above.
+      The tree is grown knowing nothing about regions, the boundary was drawn before it, and the
+      doors go wherever the two happen to meet. What is *not* in the tree is what a door costs:
+      `RouteTree` has never priced an edge, so a route through three checkpoints and one through
+      none look identical to it. That is a real gap and it is M45's open item — whether the tree
+      can express "passable, at a price" at all
+- [ ] **The detention is `chatting_mother`'s mechanism.** *"Reuse the other woman with baby logic"*:
+      `EventDef.detain_seconds` locks her movement on first contact inside `detain_radius`, and
+      `Stroller.detain()` runs the lock out through the ordinary friction rather than stopping her
+      dead. **`EventDef.validate()` currently refuses `detain` on anything `hard_fail` or that
+      `pursues`** — a conversation is a cost, never a threat — which a checkpoint satisfies, since
+      being held up is exactly a cost. What it does not cover is the teleport at the end of the
+      lock, which is new
+- [ ] **"A bit of excitement" is the second half, and it is not the detention.** A detained player
+      is standing still, and standing still is where `EXCITEMENT_DECAY_IDLE` pays back nothing — so
+      a checkpoint charges her twice over unless the intensity is set knowing that
+- [ ] **What the doors cannot fix is the toll on every park.** Reachability is settled by placing a
+      checkpoint at every crossing of a region worth entering, and that is not the same as winnable:
+      a region whose calm areas all sit behind a detention is a day priced differently from one that
+      does not, and the difference is a real number. Measure it against a day's clock, do not argue
+      it. **The check the tests carry is not "every boundary has a door"** — it is that every region
+      holding a calm area she can use has one, and that the region she starts in always does
+- [ ] **What it does to the corridor.** `RouteTree` grows the day's routes and `Corridor` answers
+      *is this tile on one*. A toll is a cost on an edge, and the route tree has never had one —
+      check whether it can express "passable, at a price" before assuming it can
+
+**M45 is folded in here, on 2026-09-09, because its three items are this milestone's items seen
+earlier.** M45 measured that *a closure cannot change a route while there are nine destinations and
+a full grid* — 350 closures across ten seeds changed the best route to the nearest calm area once —
+and concluded that **a closure's job is direction, not distance**. Its three items land as follows:
+
+- **Permanent impassable structure, reusing `absent_segments`.** The dead ends and the big
+  buildings already go through `absent_segments`, the set of lattice segments every route search
+  treats as closed. The region perimeter is the rest of that item and is the second item above.
+- **A closure that points** — *"does this stop her committing to a direction that cannot win
+  today"* — is the door placement, and M45's trap is restated at full strength in the third item
+  above: **a nudge that removes the decision is worse than a closure that does nothing.** The
+  game's one verb is *where do I walk*.
+- **A soft version, events rather than barriers, placed to say *not this way*.** Built by M64's
+  `SealPlanner`, which puts an obstacle pair on every street off the day's tree; the record is in
+  `DECISIONS.md` under M64.
+
+- [ ] **Confirm the perimeter design against the reachability grid before building it.** This
+      milestone was written against the block-level reachability model that no longer exists:
+      reachability is now `ReachabilityGrid`, the tile map contracted into two-tile cells, and
+      `ClosurePlanner` refuses a calm area's access streets outright — a filter the items above
+      were written without. Read `DECISIONS.md` under M69 first, then restate *no boundary crosses
+      calm ground* and *a region she has business in always has a door* as checks over cells rather
+      than over block sides. M48 needs no such confirmation, since its rotation rule reads
+      `CityMap.corridor_offset()`, which is geometry rather than reachability
 
 ---
 
@@ -313,7 +425,6 @@ built, recorded there too.
 
 **Its open question is a played one** — whether a walled city reads as a route decision or as a
 maze. Everything below is the reasoning the pictures are drawn against.
-
 
 > "there is almost never anything when leaving a path. all events are on the path (restaurant
 > yeller etc are all *for* the path they force you to switch street sides) but there is *nothing*
@@ -637,35 +748,104 @@ thing rather than reinventing it.
 
 ---
 
-## M65 — A protester points at the objective · asked for 2026-09-03
+## M93 — The caret is chosen by expected impact · asked for 2026-09-08
 
-**All that remains here is the pose, which is a drawing.** The two findings this milestone was
-opened for — the first mark being announced, and a mark that was never on screen — are built; the
-record is in `DECISIONS.md` under M78, and the played question it leaves is whether a mark that
-follows her until seen is now findable at all.
+[PLAYTEST-37.md](PLAYTEST-37.md) finding 5, in three sentences: *"caret == lethal is good but is
+inconsistently applied at the moment"*, *"a cat has a caret but it's benign"*, *"a pedestrian
+without caret has a greater impact than a cat"* — and the instruction: **"carets shouldn't be
+chosen by source value but by expected impact value."**
 
-**Half of this item needs no drawing at all**, and is worth doing on its own if the mark is still
-hard to find now that it follows her: raising how often a protester appears is a density
-change, and the player's own reason it is cheap is that a protester obstructs nothing and pursues
-nothing, so it does not compete for the catalogue's placement budget.
+**What decides the amber caret today is a source value.** `EventInstance.wants_a_mark()` marks a
+row when `EventDef.walk_through_cost()` — the points a straight walk through the field at walking
+speed would cost, derived from the def's intensity, radii and speed — reaches
+`Tuning.MARK_WORTH_A_DETOUR` (25, a quarter of the bar). It is the same answer for every instance
+of the row, wherever it stands and whichever way she walks, and the crowd is outside it entirely:
+`cat_dash` is marked, the pedestrians who cost more over a pavement never are. The invariant
+`tests/test_danger.gd` holds — *if A is marked and B is not, A costs more to walk through than B* —
+is true only because it is stated over the catalogue alone.
 
-- [ ] **A protester points at the objective, and there are more of them.** *(2026-09-03, playtest
-      20: "the chalk is currently unfindable I spent almost a full day searching for it. let's make
-      the protesters point into the direction (with their arms or something) of the current
-      objectives (not only chalk marks). and make the protesters more common. they're not really an
-      obstacle/event anyway so they can be placed independently.")* Still the same complaint as the
-      two items above it — the mark cannot be found — with a mechanism attached rather than only a
-      placement fix: give the `protest` row (`EventDef.Look.PROTEST`, drawn in
-      `src/events/event_instance.gd:91` from `protester.svg`) a pointing pose aimed at whatever the
-      current objective is, and raise how often it appears. The player's own reason the density
-      change is cheap: a protester obstructs nothing and pursues nothing, so it does not compete
-      with the rest of the catalogue's placement budget the way raising an obstacle's density would.
+**Expected impact is the halo's quantity turned forward, measured with her held still.** The halo
+(M92) is the points a source actually landed on the meter over the last five seconds; the caret
+becomes the points a source *will* land over the horizon **if she does nothing** — the thing's own
+motion and field projected onto where she stands, the same field the meter is fed from. That
+direction is the player's: *(2026-09-08: "I don't want a caret when walking into a car from the
+side".)* It is already the screen-edge badge's rule and the cues skill's sentence — *measure the
+thing, not the gap; a rate that includes her 92px/s is a cue for walking* — arriving at the caret.
+A car bearing down on her marks; a car she steps into from the side does not, since held still she
+is never in its path. A cat whose dash lands less than the line on a standing player is not marked,
+whatever its row says; a knot of walkers coming at her is, if what they will land clears it. **And
+a stationary thing never earns a caret** — held still, a café does nothing to her — which is the
+halo's job from the moment she is in its field.
 
-      **Measured, the same run:** a chalk mark is rolled and guarded by a nearby robber on every one
-      of the four days it becomes eligible
-      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log:240`, `:364`, `:546`, `:602`),
-      and the run ends *"bad on day 7 — resistance 0/4, sabotage not done"* (`:701`) — not found once
-      across the whole run, on every day one existed to find
+**The doubled red caret keeps its meaning — lethal — and gets the same rule.** *(2026-09-08: "we
+can keep the double red == lethal", then "and not all lethal things need a caret either".)* So it
+is one sentence in two strengths, both measured with her held still over the horizon: **amber** if
+the thing's own approach will cost her at or above the line, **doubled red** if it will end the
+day — her position inside a car's strike or a `hard_fail` row's lethal radius on its current
+course. Nothing otherwise. A robber waiting in an alley she is not in carries no mark until he
+stands up and comes; a car marks while she stands in its lane, which is exactly when it honks, so
+`CrowdAgent._draw_horn_mark()`'s rule becomes a consequence rather than the definition; the
+cyclist marks when its line reaches her; and a car she steps into from the side carries none
+*(2026-09-08: "I don't want a caret when walking into a car from the side")*.
+
+**The amber caret stays.** *(2026-09-08: "amber one is fine as long as it represents a meaningful
+thing".)* What changes is only what decides it.
+
+**And the vocabulary is restated as one language.** *(2026-09-08: "but then we need to create a
+consistent language around the other carets too".)* Each row of `docs/EVENTS.md`'s "The visual
+vocabulary" and the cues skill becomes one sentence decided by one quantity — caret: *stand here
+and this will cost you*, or *end your day*; halo: *this is costing you now, and this much*;
+exclamation over her: *the clock on you has started*; badge: *something lethal or fast is coming,
+and this is what* — with **one number** (the amber line and the halo's red are the same points, so
+an amount means the same thing whether it already landed or is about to) and **one direction**
+(everything about a thing is measured with her held still, so nothing is a cue for walking). That
+rewrite is this milestone's first item.
+
+**The two numbers are the halo's, confirmed.** *(2026-09-08, on a five-second horizon and a line at
+40 of the 100-point meter: "both sound good to me".)* So one horizon and one line serve past and
+future alike: the halo is red at 40 points landed over the last five seconds, the caret is amber at
+40 points expected over the next five. A cat's dash on a standing player lands about 30 and is not
+marked; a café she is standing in is the halo's, not the caret's. The one thing the line must not
+do is mark the ordinary crowd at ordinary density, which is a measurement on the arterial rather
+than an argument, and is the last item.
+
+- [ ] **One number and one horizon, shared.** `Tuning.MARK_WORTH_A_DETOUR` (25, derived per row)
+      is replaced by a single pair the halo and the caret both read — the line at
+      `METER_MAX * 0.4` and the horizon at five seconds — living in `Tuning` rather than on
+      `ExcitementHalo`, where M92 first put the saturation. Their docs carry the player's sentences
+      above.
+- [ ] **Expected impact, per source, with her held still.** A method on both `EventInstance` and
+      `CrowdAgent` — the same duck type the halo reads — answering the points this thing's own
+      motion and field will land on her current position over the horizon **beyond what it lands
+      now**: the source's velocity extrapolated in steps of a quarter second, its field sampled at
+      her position at each step, summed, less its present rate times the horizon. A stationary
+      thing she is inside therefore expects nothing (the halo has it); an approaching thing expects
+      its approach; a departing thing expects less than nothing and is unmarked. Sources whose
+      reach cannot touch her inside the horizon — further than speed × horizon plus their outer
+      radius — are skipped without sampling, which is what keeps two hundred walkers cheap. A
+      pursuer that has noticed her is heading for her and is projected as such; one still waiting
+      has no velocity.
+- [ ] **The two carets are that quantity in two strengths.** `EventInstance.wants_a_mark()` and a
+      `CrowdAgent` equivalent: **doubled deep red** when a step of the projection puts her inside
+      the thing's lethal reach — a `hard_fail` row's `inner_radius`, a car's strike box — on its
+      current course; **amber** when the expected points reach the line; nothing otherwise. The
+      honk stops being the car's rule and becomes a consequence (a car whose lane she stands in
+      is projected into her). The flash while telegraphing is kept as the phase. `mark_colour()`
+      follows the strength, not the row.
+- [ ] **The vocabulary is restated as one language**, in `docs/EVENTS.md`'s "The visual vocabulary"
+      and `.claude/skills/cues/SKILL.md`: caret *stand here and this will cost you* / *end your
+      day*; halo *this is costing you now, and this much*; exclamation *the clock on you has
+      started*; badge *something lethal or fast is coming, and this is what*. One number, one
+      direction; nothing is a cue for walking.
+- [ ] **`tests/test_danger.gd` states the new invariant.** The catalogue-wide monotonicity check
+      goes, since a mark is no longer a property of a row; in its place, scenarios: a café she
+      stands in is unmarked; a cat dashing at her is unmarked; a cyclist whose line reaches her is
+      red and one passing wide is not; a car she stands in front of is red and one she would have
+      to step into is not; a walker brushing past is unmarked. The pram, the exclamation mark and
+      the badge tests are untouched.
+- [ ] **Measured on the arterial.** One capture standing on the busy pavement: how many amber
+      carets are up. The answer has to be *none at ordinary density*, or the line moves before
+      this merges.
 
 ---
 
@@ -673,6 +853,10 @@ nothing, so it does not compete for the catalogue's placement budget.
 
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**
 — a nerve is a rewind, not a resource, so there is nothing to trade.
+
+**Its first item is built alongside M62; its second waits until act III is reached**, which the
+queue puts after M96 to M100. *(2026-09-09: "M56 is also related to the other items to work on
+right now. I wanna wait reaching act III until those things are done.")*
 
 **What the remaining items are stated against**, since the machinery under them exists: a row says
 how it answers to the resistance with `EventDef.heat_response` — `NONE`, `PRESSES` or `HUNTS` —
@@ -688,59 +872,6 @@ reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
       already in the catalogue are `checkpoint` (day 7, closes a street) and `night_raid`
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
-
----
-
-## M60 — Ready for a GitHub Pages launch · asked for 2026-09-01
-
-The game becomes a folder of static files a browser runs. Godot's HTML5/WASM export on the
-`gl_compatibility` renderer the project already uses; **threads disabled**, so no
-cross-origin-isolation headers are needed and GitHub Pages serves it as-is. No server: the game has
-no networking. What Pages needs is preparation, not architecture:
-
-**The site exists and it has an address.** *(2026-09-02: "I set up the website for the gh-page —
-needs to be deployed via CI / gh-action — it's https://nappy.josuakrause.com/".)* So the two things
-a workflow file could never do for itself are done: Pages is on for the repository and the custom
-domain is set. **What is left is a build and a deploy**, and the address is a fact the rest of this
-milestone now has to hold — a custom domain is stored as a repository setting rather than in the
-artifact, so the deploy must not overwrite it and nothing in the export may assume a `/nappy/`
-path prefix.
-
-**What is built, so what is left has a floor.** Every dev flag and the snapshot key answer "not
-given" outside a debug build, with the parsing in `DevFlags` rather than woven through `main.gd`;
-the day's HUD is the clock, the two bars and the optional goal, with the header and status line
-behind the same gate; `export_presets.cfg` is tracked with one Web preset on `gl_compatibility` and
-threads off; `tools/export-web.sh` builds into `build/web/`; the run log is silent on a web build;
-and `.github/workflows/deploy.yml` gates, exports and publishes on a `v*` tag — see `DECISIONS.md`
-under M71 for why a push is a check and a tag is a release. The record for the rest is in
-`DECISIONS.md` under M60.
-
-**The site is live and the workflow built it**, end to end — gate, export, upload, publish — and
-`https://nappy.josuakrause.com/` serves the game.
-
-**What the first play of it changed.** The developer's readout is gated with the rest of the
-furniture, `Q` is not offered where quitting does nothing, and the window letterboxes so every
-player sees the same 640×360 of world. All three are in `DECISIONS.md` under M60.
-
-**What a phone can reach.** Every lesson names a control that device actually has, there is a pause
-button on screen, and the meters sit at the top on a touch build so a hand cannot cover them. The
-record — including why the pause button is the one control that sends an event rather than pressing
-an action — is in `DECISIONS.md` under M60. **Three things are left, and two of them want a real
-device or the real address:**
-
-**The restart button this screen needs is built**, together with the day-end screen's, because the
-same pair of controls was asked for on both and one interaction learned once is the point of putting
-them there. It was never an item here and nothing about it is recorded here: the hold, the label,
-the catch-all it has to be tested before, and why `R` keeps the keyboard to itself are all in
-`DECISIONS.md` under M76.
-
-- [ ] **The home arrow can land under a thumb.** `HomeArrow` hugs within 74px of a screen edge while
-      pointing home, and the stick and the run button sit at that height on both sides — so during
-      the return phase the one cue that says *this way home* can be under the finger steering her
-- [ ] **A browser smoke pass** once it is deployed, at the real address: boots, keyboard input
-      works, holds frame rate at the game's scale, and the title screen reads as the front door of a
-      public page. itch.io stays the fallback host (it sets the isolation headers, so a threaded
-      build would also work there)
 
 ---
 
@@ -856,215 +987,110 @@ thing than behind it.
       symmetric; a field that is stronger in front of a van is a routing fact the player can only
       learn by being told or by dying. Ask what draws it before deciding it is free
 
-## M62 — Checkpoints that divide the map · asked for 2026-09-02
+---
 
-> "checkpoints in the later acts should divide the map into segments/areas. that is the player
-> should be forced to cross checkpoints to reach parts of the map and the checkpoints live alongside
-> the full perimeter of each region. checkpoints can reuse the other woman with baby logic. the cost
-> can be time (and a bit of excitement) while being detained until released"
+## M65 — A protester points at the objective · asked for 2026-09-03
 
-> "checkpoints are not the same as closures. closures are eg construction sites where the road is
-> fully closed. a checkpoint is a barrier across the street where there are guards on the side-walks
-> with a hut and a gate over the roadway to let cars through (cars need to slow down to a full stop
-> before the gate opens and they can go ahead again). the player walks to a hut gets detained inside
-> and then spawns on the other side afterwards. it works in both directions with the same cost each
-> time"
+**All that remains here is the pose, which is a drawing.** The two findings this milestone was
+opened for — the first mark being announced, and a mark that was never on screen — are built; the
+record is in `DECISIONS.md` under M78, and the played question it leaves is whether a mark that
+follows her until seen is now findable at all.
 
-**A checkpoint is not a closure and the difference is the whole design.** A closure — roadworks, a
-construction site — takes a street away, and `docs/CITY.md`'s `absent_segments` is how the city says
-so. **A checkpoint never removes a route; it prices one, and the price is the same every time in
-both directions.** It is a crossing you can always make and never make for free, which is a thing
-the game does not have yet: every other cost in it is either avoidable by routing or fatal.
+**Revisited after M62 rather than built as written.** *(2026-09-09: "M65 we need to revisit after
+M62.")* A walled city with checkpoints may change what finding a mark is like, so this entry is
+re-read against that city before the pose is drawn or the density moved.
 
-**Both survive, and they are two different things.** *(2026-09-02: "let's keep both the checkpoint
-and a barrier around.")* The existing row — a recurring event rolled onto `ROAD`/`CROSSING` tiles up
-to six times a day from day 7, whose own docstring calls it *"the first event that takes a route
-away rather than making it expensive"* — is **the barrier**, and it keeps doing exactly that. The
-new structure is **the checkpoint**, and it never takes a route away. Having both is what makes
-either legible: a street held by soldiers that you cannot pass, and a street held by soldiers that
-you can pass at a price, are only a decision when the city contains both.
+**Half of this item needs no drawing at all**, and is worth doing on its own if the mark is still
+hard to find now that it follows her: raising how often a protester appears is a density
+change, and the player's own reason it is cheap is that a protester obstructs nothing and pursues
+nothing, so it does not compete for the catalogue's placement budget.
 
-- [ ] **The barrier needs its own name, because the new thing has taken `checkpoint`.** Two rows
-      that draw armed men across a street and mean opposite things about whether you can get
-      through, sharing a word, is the *one picture per row* rule failing at the name instead of at
-      the drawing. `barricade` already exists in act IV and is something else — whatever was
-      stacked there by somebody — so this is a third name, not a merge. Its picture stays: poured
-      concrete and a hazard stripe is a street being **held**, which is still true of it
+- [ ] **A protester points at the objective, and there are more of them.** *(2026-09-03, playtest
+      20: "the chalk is currently unfindable I spent almost a full day searching for it. let's make
+      the protesters point into the direction (with their arms or something) of the current
+      objectives (not only chalk marks). and make the protesters more common. they're not really an
+      obstacle/event anyway so they can be placed independently.")* Still the same complaint as the
+      two items above it — the mark cannot be found — with a mechanism attached rather than only a
+      placement fix: give the `protest` row (`EventDef.Look.PROTEST`, drawn in
+      `src/events/event_instance.gd:91` from `protester.svg`) a pointing pose aimed at whatever the
+      current objective is, and raise how often it appears. The player's own reason the density
+      change is cheap: a protester obstructs nothing and pursues nothing, so it does not compete
+      with the rest of the catalogue's placement budget the way raising an obstacle's density would.
 
-**Its anatomy, in the player's words, and each part lands on a different system:**
-
-- **A barrier across the street**, with **guards on the sidewalks** and a **hut**. So it is not one
-  body on one tile — it spans the full width of a street, footway to footway, which nothing in the
-  catalogue does. `EventDef.obstructs_radius` is a *circle* whose radius is half a silhouette, and
-  half a street is not a silhouette.
-- **A gate over the roadway.** Cars come to a **full stop**, the gate opens, they go on. The
-  machinery for making traffic stop and start at a place already exists and is not in the crowd —
-  `src/city/traffic_signals.gd` and `traffic_light.gd` hold the cycle, `src/crowd/crowd_lanes.gd`
-  and `crowd.gd` are what obeys it. A gate is a signal with a different rule and a different
-  drawing, which is a much smaller thing to build than it sounds.
-- **She walks to the hut, is detained inside, and comes out the other side.** A **teleport**, and
-  nothing in this game has ever moved the player. It is also the answer to the question a barrier
-  spanning a street would otherwise raise — how does a pram get past a thing with no gap in it —
-  and it means the crossing is never a matter of finding a way through the geometry.
-- **Both directions, the same cost each time.** So it is a toll rather than a puzzle: nothing about
-  it is learnable except that it is there, which is what makes it a *routing* fact.
-
-**How the two are placed, and it is one rule for both.** *(2026-09-02: "for the barricade and
-checkpoint placement divide the map into regions and create barricades along the full perimeters —
-add checkpoints instead of barricades only where the paths cross the region boundaries.")*
-
-**The perimeter is a wall with doors in it.** Barricade every tile of a region's boundary; wherever
-a walkable route crosses that boundary, put a checkpoint there instead. So the wall is complete —
-there is no gap to find and no way round — and every way through is a toll. That is what makes both
-rows mean something: the barricade is what you cannot pass, the checkpoint is the only place you
-can, and neither reads as anything without the other beside it.
-
-It also answers, by construction, the thing that would otherwise sink the idea. A ring of
-impassable structure is exactly the shape of sealing her in, and *the doors are placed at every
-crossing rather than at a chosen few*, so a region she has business in can never become unreachable
-however the lattice came out. The winnability check stops being an argument about placement and
-becomes a count.
-
-**The regions partition the map.** *(2026-09-02: "regions should be a partition of the map.")* Every
-tile belongs to exactly one, with no gap between two of them and no tile in both. It is worth
-stating because the alternative — regions as a few marked-off districts in an otherwise open city —
-is what a first implementation drifts into, and it quietly gives back the way round that the
-perimeter exists to remove.
-
-**The regions are decided when the city is generated, and a region edge can never affect a path.**
-*(2026-09-02: "what the regions are is determined at initial city creation and paths planning and
-boundary placement are 100% orthogonal. a region edge can never affect a path — note this implies
-the region boundaries cannot be through calm zones etc.")*
-
-**This is the constraint the rest of the milestone hangs off, and it is stronger than it looks.**
-The two systems never negotiate: `RouteTree` grows a day's routes knowing nothing about regions, and
-the boundaries were drawn before any of them existed. There is no ordering problem, no feedback
-loop, and no case where a wall makes a route worse — a boundary is laid where a wall changes nothing
-about where anybody can get to, and the doors are then cut wherever the day's paths happen to cross
-it.
-
-**And it decides where a boundary may run.** A boundary through a park would wall off half of a
-destination, which is a region edge affecting a path — so **no boundary crosses calm ground**, and
-every calm area belongs wholly to one region. That is also what makes *"the region contains an
-accessible calm zone"* a question with an answer: nothing is ever half in. The same reasoning
-applies to anything else a route has to be able to reach or use as a whole, and the home is the
-sharpest case — it is a notch with one exit, so a boundary anywhere near it is the doorstep problem
-by another route.
-
-The honest form of the rule is therefore a **generation guarantee, checked like the other ones**:
-a boundary runs on ground where sealing it removes no destination and shortens no route. That is a
-test over many seeds, not an argument.
-
-**A region with nothing in it for her gets no doors at all.** *(2026-09-02: "a region that contains
-no accessible calm zone should have no checkpoints / gates. this might sound counter-intuitive from
-a realworld point of view since such a region wouldn't ordinarily make sense but from the game
-perspective there is no reason to ever enter the region so we shouldn't even provide the option —
-the player won't notice the difference.")* Its perimeter is barricade the whole way round and she
-can never enter it.
-
-**This is the game's own rule beating the simulation's**, and it is the same principle as the one
-that keeps a quest marker out of this game: offer a choice only where there is a choice. A door
-into ground with no calm area behind it is a route the player can spend a day's clock discovering
-is worthless, and the discovery teaches nothing, because *there was never anything there* is not a
-fact about the city she can carry to tomorrow. Sealing it costs her nothing she would have wanted
-and removes a way to lose a day to no purpose.
-
-Two things it forces, and neither is optional:
-
-- **The region she starts in always has doors.** If her own region holds no calm area and is sealed,
-  the day is unwinnable from the first frame. This is the doorstep exemption's shape at city scale —
-  the home is a notch with one exit, so sealing that street seals her in — and it lands the same
-  way: the rule is stated over *a region*, and then the one she is standing in is exempt from it.
-- **"Contains a calm zone" is settled at generation; "accessible today" is not.** No boundary
-  crosses calm ground, so which region a calm area is in is a permanent fact and a region with none
-  at all is sealed for the whole run — a district she learns once and never has reason to enter.
-  What is left open is the softer case: a region whose calm areas are all *spoiled* today has
-  nothing in it today either. Sealing on that is the day's steering rather than the city's shape, so
-  it belongs with the door placement and is answered there, not here.
-
-- [ ] **The regions are a city-generation question, not an event-placement one.** A perimeter is a
-      decision about the map, so what needs designing first is what a region *is* — the quadrants
-      either side of the spine, a growth from the home block, or something the lattice already
-      knows about. This is the largest piece and everything else waits on it
-- [ ] **The barricade is structure; the checkpoint is placed by the day.** Neither is a recurring
-      event rolled onto a tile by weight. A perimeter is a fact about the city, generated with it
-      and standing for the run, and M45's first item is **permanent impassable structure, reusing
-      `absent_segments` rather than reinventing it** — that is this, so build them together or build
-      that one first. The doors are the day's, and the thing that already places per-day openings
-      and closings on a fixed map is `ClosurePlanner`, which is where their planning belongs rather
-      than in the event scheduler
-- [ ] **The wall stands for the run and the doors are re-cut every morning.** *(2026-09-02: "it is
-      okay to move checkpoints on a daily basis — reassess where to put them depending on the paths
-      of the current day.")* So the boundary is permanent and *which* of its crossings are gated is
-      a decision the day takes, off `RouteTree.for_day(map, day)` — the day's corridor, a pure
-      function of the city's seed and the day number. A crossing that is a checkpoint today is
-      barricade tomorrow.
-
-      **This makes the gate the sharpest routing instrument in the game, and it is M45's open item
-      arriving with a mechanism.** M45 wants *"a closure that points"* — not *does this lengthen
-      the route* but *does this stop her committing to a direction that cannot win today* — and
-      records the trap beside it: **a nudge that removes the decision is worse than a closure that
-      does nothing.** Choosing which doors are open is exactly that instrument, and it is exactly
-      that trap, at full strength. Two doors is a choice; one door is a corridor with a toll booth
-
-      **No ordering problem, because the two are orthogonal by decree** — see the constraint above.
-      The tree is grown knowing nothing about regions, the boundary was drawn before it, and the
-      doors go wherever the two happen to meet. What is *not* in the tree is what a door costs:
-      `RouteTree` has never priced an edge, so a route through three checkpoints and one through
-      none look identical to it. That is a real gap and it is M45's open item — whether the tree
-      can express "passable, at a price" at all
-- [ ] **The detention is `chatting_mother`'s mechanism.** *"Reuse the other woman with baby logic"*:
-      `EventDef.detain_seconds` locks her movement on first contact inside `detain_radius`, and
-      `Stroller.detain()` runs the lock out through the ordinary friction rather than stopping her
-      dead. **`EventDef.validate()` currently refuses `detain` on anything `hard_fail` or that
-      `pursues`** — a conversation is a cost, never a threat — which a checkpoint satisfies, since
-      being held up is exactly a cost. What it does not cover is the teleport at the end of the
-      lock, which is new
-- [ ] **"A bit of excitement" is the second half, and it is not the detention.** A detained player
-      is standing still, and standing still is where `EXCITEMENT_DECAY_IDLE` pays back nothing — so
-      a checkpoint charges her twice over unless the intensity is set knowing that
-- [ ] **What the doors cannot fix is the toll on every park.** Reachability is settled by placing a
-      checkpoint at every crossing of a region worth entering, and that is not the same as winnable:
-      a region whose calm areas all sit behind a detention is a day priced differently from one that
-      does not, and the difference is a real number. Measure it against a day's clock, do not argue
-      it. **The check the tests carry is not "every boundary has a door"** — it is that every region
-      holding a calm area she can use has one, and that the region she starts in always does
-- [ ] **What it does to the corridor.** `RouteTree` grows the day's routes and `Corridor` answers
-      *is this tile on one*. A toll is a cost on an edge, and the route tree has never had one —
-      check whether it can express "passable, at a price" before assuming it can
-
-## M50 — What the corridor still owes
-
-**M64 supersedes the gradient this milestone built, at both ends.** *(2026-09-02: "let's not make it
-a gradient but instead always have it fully closed everywhere off the path." And 2026-09-03, playtest
-21: "a normal density of events on the path so we need to change the side of the street every now and
-then".)* Read M64 before picking up anything here. Off the path, *dear* becomes *closed*; on it,
-*cheapest* becomes *ordinary* — so an item below that tunes the gradient may be tuning something
-about to be removed, and the corridor's discount specifically is a thing playtest 21 attributes the
-empty-feeling city to.
-
-- [ ] **"Blocking events all over" is a catalogue question, not a placement one.** The gradient is
-      built and measured, and the corridor is the cheapest ground on every day. What is not true is
-      the density: raising the caps on the expensive rows is a real balance change and wants its own
-      measurement. **Check this against M64 first** — under a closed-off-path policy the question
-      changes shape
-- [ ] **`cyclist` and `loose_dog`'s caps no longer mean what they say.** Both rows now arrive via
-      the director's single queue and its 11–26s pacing rather than being map-placed, so a day
-      fields far fewer than `max_per_day` (14 and 24) reads as promising — the caps' meaning
-      changed while the numbers stood still. Whether the encounter rate is right is a measurement,
-      not an inference; the record is in `DECISIONS.md` under M54
-- [ ] **Placeholders — step 3.** The budget is a **variety ledger, not a density cap**: the count of
-      sites is the density, the budget decides what fills them, and resolving late means variety is
-      measured over the encounters that happen rather than over a city she never saw. Read the
-      entry in `DECISIONS.md` before starting; the first reading of this was wrong and the wrong
-      reading is recorded there
-- [ ] **A building type that closes all four of its streets.** Recorded, not built, and a
-      **different type rather than a bigger one** — it makes an island, so it needs its own name,
-      its own count, and its own answer to how many a city can take
+      **Measured, the same run:** a chalk mark is rolled and guarded by a nearby robber on every one
+      of the four days it becomes eligible
+      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log:240`, `:364`, `:546`, `:602`),
+      and the run ends *"bad on day 7 — resistance 0/4, sabotage not done"* (`:701`) — not found once
+      across the whole run, on every day one existed to find
 
 ---
 
-## M47 — Calm areas that are places
+## M96 — The teaching day, and the dog after it · rewritten 2026-09-09
+
+Rewritten from M43. Two of M43's items turned out to be built when checked — the pause lesson no
+longer fires while she is detained or while the tree is paused, and the run lesson's once-per-run
+flag is reset on every attempt at the teaching day — and the record is in `DECISIONS.md` under "The
+queue reprioritised". What is left is one decision nobody implemented and one measurement.
+
+- [ ] **The tutorial dog recurs but is not sited ahead of her after day 3.** `charging_dog` has
+      `first_day = Tuning.RUN_TAUGHT_DAY` (3), `spawn_mode = AHEAD_OF_PLAYER` and no last day, so on
+      every day after the lesson it is still put in front of her on her own line. **Decided, and
+      confirmed 2026-09-09:** *"the tutorial dog may appear later but not as tutorial."* Day 3
+      keeps the placement it has, because the lesson depends on being unavoidable; from day 4 it
+      becomes a thing that is *somewhere*, placed on the map the way `alley_robbery` is, and met by
+      routing into it — no siting on her heading, and no lesson line, which the HUD already
+      restricts to the teaching day. The row needs a day-dependent spawn mode or a second row for the later days;
+      `EventDirector._teach_the_run()`, which moves a pursuit to the head of the owed list on the
+      teaching day only, is unaffected either way. A test asserts that a day-4 `charging_dog` is
+      never sited on her heading.
+
+      **Measured, playtest 20** *(2026-09-03: "for some reason pursuing dogs after the run tutorial
+      have a shorter lead up time making them much harder to react to.")*: across five
+      `charging_dog` encounters in one seven-day run
+      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log`),
+      the day 3 tutorial encounter and every encounter afterward that ended in evasion ran **1.5
+      seconds** from the `chase` starting to the dog giving up. The two encounters that instead
+      killed her — one on day 4, one on a day 5 retry — ran **0.8 and 0.9 seconds**, roughly half,
+      with the dog closing distance far faster once its telegraph appeared: the tutorial encounter's
+      telegraph closed 20px in 1.1s, the day 4 encounter's closed roughly 70px in 0.3s. The row
+      carries one `inner_radius` (26px) and one `outer_radius` (150px) for every day, so nothing in
+      the row itself shortens the lead time — the gap is a placement effect, and this item is the
+      first thing to check before treating it as a row-tuning question. M77 has since moved every
+      pursuer's siting to past the edge of the view along her heading, so re-measure on the current
+      tree before assuming the gap is still there
+**The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
+on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
+is where act I stops being a nice neighbourhood; the options weighed when the move was first
+proposed are in `DECISIONS.md` under M49, in the item "Day 3 carries act I's whole payload".
+
+- [ ] **Dying at high excitement on a quiet street: is one contact at 90 a cliff?** A bump is about
+      10.8 points, so above 89 a single one ends the day on an empty street. Two cheap checks:
+      whether the pram's `EXCITEMENT_NEARLY_CRYING` cue, which the baby shows from 80 of the
+      100-point meter, is drawn and actually read; and a rig walking an empty street at 90 into one
+      walker, to say whether the day ends. If it does, the fix is a rule about the last ten points,
+      not a density change
+
+---
+
+## M97 — Calm areas that hold · rewritten 2026-09-09
+
+Rewritten from M47. Its apartment complex — a courtyard lot four blocks across with frontages
+around the outside — is built as `_place_apartment_complexes`, and the non-adjacency rule covers
+courtyards as well as open calm at generation. The multi-block count was re-derived for the
+121-block city: `MIN_CALM_ZONES` 1 and `MAX_CALM_ZONES` 2, with the remainder single-block on
+purpose so that *which* calm area to head for stays a real question. The record is in
+`DECISIONS.md` under "The queue reprioritised". What is left is one measurement, one later tweak
+and one re-check.
+
+- [ ] **The non-adjacency rule does not cover parks yet.** *(2026-09-09: "non -adjacency rule
+      doesn't cover parks yet -- that's something we might want to tweak later.")* Later, by the
+      player's own word. What the code says, for whoever picks it up: `_has_calm_neighbour` asks the
+      one-block ring around a footprint for every purpose in `_CALM_PURPOSES` — park, forest, quiet
+      square and courtyard — and both zone placement and single-block calm placement refuse a
+      footprint that has one. So the case the player has seen is not the ring test failing on its
+      own terms, and the first task is a seed showing two parks side by side, to say whether a zone
+      absorbing its inner streets, the border forest, or something after generation is what puts
+      them there
 
 - [ ] **Spoiling a returned-to calm area is not consistently effective.** *(2026-09-03, playtest 20:
       "the spoilage of a clam area is not always effective I went to the same park 4 times and only
@@ -1076,201 +1102,254 @@ empty-feeling city to.
       landing low enough some days to leave a walkable edge and high enough on others to deny the
       area outright. The run attached to playtest 20 does not carry the exact four-visit sequence
       the player describes — its own biased parks (`(1,1)` and `(4,8)`) were dense on every biased
-      day the log shows — so what wants measuring first is a run that reproduces a zero-density
-      biased visit, before deciding whether the bias roll's spread is the cause or something else is
-- [ ] **The 2×2 inner courtyard — an apartment complex.** Asked for three times. M21's mechanism —
-      absorb the streets between four blocks — with frontages around the outside instead of open
-      ground, so it is a calm area you have to find a way *into*. The largest remaining piece
-- [ ] **No two calm areas directly adjacent, including courtyards.** Half true today:
-      `_has_open_calm_neighbour` tests open calm only and `_cut_courtyards` runs after it, so **two
-      courtyards may sit across a street from each other** and nothing can see it. Two things to
-      decide while fixing: whether a courtyard counts as calm for spreading at all, and whether
-      diagonal counts — the four-edge walk skips corners today by accident rather than by decision
-- [ ] **More of them multi-block, and not all of them.** `MIN_CALM_ZONES` / `MAX_CALM_ZONES` were
-      sized for a 49-block city; re-derive against 121. Keep single-block calm in the mix — *which*
-      calm area to head for stays a real question only while a small square close by competes with
-      a big park further out
-- [ ] **The main road as a soft block.** Make it genuinely expensive to cross and the city splits
-      into two halves with a toll between them — M45's "not a full grid" without removing a
-      walkable tile. **Build it before the cul-de-sacs**, because it costs no geometry
-- [ ] **Re-check `MIN_CALM_BLOCKS` and `MIN_HOME_TO_PARK_TILES` at the end, not the start**
+      day the log shows. **First task:** reproduce a zero-density biased visit on a rig, reading the
+      `roll` telemetry line that says *"in the park she used yesterday"*, before deciding whether the
+      bias roll's spread is the cause or something else is. The fix follows the reproduction
+**The main road is not made a soft block.** *Asked for on 2026-09-01 as a toll on crossing the
+spine · overturned on 2026-09-09: "M47's toll already exists — it's timing the traffic lights. we
+don't need to penalize routing through it just yet — it naturally happens that only some routes
+cross it."* Waiting for a green is the crossing's price, and the route tree already puts only some
+of a day's routes across the spine; nothing prices the crossing on top of that. The record is in
+`DECISIONS.md` under "The queue reprioritised".
+
+- [ ] **Re-check `MIN_CALM_BLOCKS` (5 to 7) and `MIN_HOME_TO_PARK_TILES` at the end, not the
+      start** — after M62's perimeter, since a region that holds no calm area gets no door and the
+      count of places to go is what the perimeter divides
 
 ---
 
-## M45 — A grid with fewer ways through
+## M98 — Pressure in the empty acts · rewritten 2026-09-09
 
-**A closure cannot change a route while there are nine destinations and a full grid** — measured:
-350 closures across ten seeds changed the best route to the nearest calm area *once*. No margin,
-filter or run length fixes that; the answer is that the question was wrong. **A closure's job is
-direction, not distance.**
+Rewritten from M25 and M26. All of M26 is built: day 1 says how to walk, the run is taught by the
+first pursuit on `RUN_TAUGHT_DAY`, with one wording on every device and no key named, and the
+scripted event that requires a short run is the charging dog itself — *(2026-09-09: "this is what
+became the charging dog")* — sited on her line on day 3 so the lesson is unavoidable, which is the
+"safe place" playtest 02 asked for, moved to the day running becomes right. What remains is M25.
 
-- [ ] **Permanent impassable structure**, reusing `absent_segments` rather than reinventing it
-- [ ] **A closure that points**: not *"does this lengthen the best route"* but *"does this stop her
-      committing to a direction that cannot win today"*. **The trap, and it is the whole difficulty:
-      a nudge that removes the decision is worse than a closure that does nothing.** The game's one
-      verb is *where do I walk*
-- [ ] **And a soft version — events rather than barriers.** Everything exists except the *intent*:
-      nothing in `EventScheduler` has ever placed events to say *not this way*
-
----
-
-## M43 — Two that need a played run
-
-- [ ] **The pause lesson fires while she is being held.** *(2026-09-02, from play: "the pause
-      tutorial comes up when being detained (since you're not moving).")* `_teach_the_pause()`
-      decides she has stopped by asking `Stroller.is_idle()`, which is velocity under 12px/s, so a
-      `chatting_mother` conversation — which locks her movement input — reads as her choosing to
-      stand still, and three seconds later the HUD offers her the pause key.
-
-      **Wrong in the function's own terms**: it already teaches the pause at *"the first time she
-      stops of her own accord"* and already excludes somebody who has not started. Being held is
-      the third case in that list and the sharpest, since it offers her a key at the moment her
-      controls were taken away.
-
-      **And it has a second instance, so the rule is stated over the class.** The HUD has no
-      `process_mode` of its own and inherits `ALWAYS` from `Main`, so it keeps counting while the
-      tree is paused — behind the day summary, the pause screen and the title. The rule is *idle
-      **and** nothing is holding her still*: not detained, and the tree not paused
-- [ ] **The run lesson does not show, and it must.** *(2026-09-02, from play: "the run lesson
-      doesn't show at all anymore — it should always show for the day 3 lesson.")*
-
-      **The cause, given by the player and confirmed by reading the retry path:** *"when I die the
-      next time it won't show — you need to reset the flag when the player dies on day 3."*
-      `_taught_run` in the HUD is once per **run**, and a lost day is not a new run: losing a nerve
-      calls `_start_day()` again on the same HUD instance, which is never rebuilt. `_teach_the_day()`
-      already resets the line, its timer and the walked-today state on every day start, and
-      deliberately does not reset the once-per-run flags — so the second attempt at day 3 is the
-      first one that has already spent its lesson.
-
-      **The fix is that the flag belongs to the attempt, not to the run**, which is the game's own
-      rule about nerves arriving in the HUD: a nerve is a rewind, and a rewound day should not
-      remember what it taught. Reset it whenever the day being started is `Tuning.RUN_TAUGHT_DAY`,
-      so the lesson fires on every attempt at that day including the first.
-
-      **And the neighbouring case is a question, not part of the fix.** `_taught_pause` — the *"Esc
-      to pause"* line, also once per run — has the same shape but is not tied to a day at all: it
-      fires the first time she stops of her own accord. Whether a rewind should erase that too is
-      the player's call, and nothing should reset it unasked
-- [ ] **The tutorial dog is not a tutorial after day 3.** `charging_dog` is `first_day 3`,
-      `AHEAD_OF_PLAYER`, no last day, so it is still sited in front of her on day 4. **Decided: it
-      recurs but is not sited ahead of her** — it becomes a thing that is *somewhere*, like
-      `alley_robbery`. Day 3 keeps the placement it has, because the lesson depends on being
-      unavoidable
-
-      **Measured, playtest 20** *(2026-09-03: "for some reason pursuing dogs after the run tutorial
-      have a shorter lead up time making them much harder to react to.")*: across five
-      `charging_dog` encounters in one seven-day run
-      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log`), the day 3 tutorial
-      encounter and every encounter afterward that ended in evasion all ran **1.5 seconds** from the
-      `chase` starting to the dog giving up. The two encounters that instead killed her — one on day
-      4, one on a day 5 retry — ran **0.8 and 0.9 seconds**, roughly half, with the dog closing
-      distance far faster once its telegraph appeared: the tutorial encounter's telegraph closed 20px
-      in 1.1s, the day 4 encounter's closed roughly 70px in 0.3s. The row's own definition
-      (`src/events/event_catalogue.gd:832-849`) carries one `inner_radius` and one `outer_radius` for
-      every day, so nothing in the row itself shortens the lead time — whatever produced this gap is
-      most likely a placement effect, and the item directly above this one, if it has landed
-      partway, is the first thing to check before treating this as a separate row-tuning question
-- [ ] **Dying at high excitement on a quiet street.** The crowd half closed into M46. Two cheap
-      checks remain: whether the pram's `EXCITEMENT_NEARLY_CRYING` cue is shown and not read, and
-      whether **one contact at 90 is a cliff** — a bump is ~10.8 points, so above 89 a single one
-      ends the day on an empty street
-- [ ] **`RUN_TAUGHT_DAY` 3 → 2**, decided and not implemented. It gates **everything that pursues**,
-      so check act I is not made harder by a constant meant only to move a tutorial; day 2 was tuned
-      without a `hard_fail` row on it. `docs/MECHANICS.md`, `docs/EVENTS.md` and the skills all
-      state "day 3 teaches the run" in prose and move in the same commit
+- [ ] **Patrols for acts III and IV, built around encounter cost.** The crowd table in `Tuning`
+      empties the streets from act III on purpose — *"the cruellest number in the game: from act III
+      the streets are quieter, because there is nobody left going out on them"* — and the return
+      phase (`DayPhase.RETURNING`, entered when the day's clock runs low) was measured in playtest
+      03 as a formality: 26s, five crossings, zero encounters, 42% of the day left. Pressure goes
+      back into those streets as things she **meets**, not as an ambient band she cannot see. The
+      mechanism to start from is M56's heated `police_patrol`, which is already denser and then
+      interested as resistance progress rises; what this item adds is a return-phase shape in acts
+      III and IV. Measure the return phase on a rig across the four acts — encounters per return,
+      and how much of the day's clock the return actually spends — before and after
 
 ---
 
-## M49 — Borders and drawings
+## M99 — The corridor's density after the sealing · rewritten 2026-09-09
 
-- [ ] **The fence is drawn in elevation and turned on its side.** The game looks straight down,
-      where a fence is a thin line with post-heads and a shadow. Rotating an elevation does not make
-      it a top-down drawing
-- [ ] **Restate the main-road pacing question.** The design says she exhausts her own side of the
-      spine before being forced across. **Is that emergent** — calm areas exist on both sides and
-      spoiling burns the near ones over an act — **or does something have to withhold the far side
-      early and steer her across late?** The first needs no new code; the second is a mechanism
-      nobody has designed. The answer decides whether the arc is emergent or authored
+Rewritten from M50. M64 superseded M50's gradient at both ends — off the path is *closed*, on it the
+density is *normal* and playtest 21's verdict on it was that it is already right — so what is left
+here is what the sealing did not answer.
+
+- [ ] **The corridor's own obstacle density, measured rather than raised.** M50's *"blocking events
+      all over"* asked to raise the caps on the expensive rows, which is a catalogue question.
+      Under the sealed city the corridor carries 0.82 events per street a day, measured with
+      `tests/probes/m64_density.gd`, and the player's sentence on it was *"on the path there should
+      be a normal amount of events that remain passable — that looks like it is the case here"*. So
+      the item is a re-measurement on the current tree with the same probe, and a cap moves only if
+      a played day says the corridor is bare
+- [ ] **`cyclist` and `loose_dog`'s caps no longer mean what they say.** Both rows carry
+      `max_per_day` of 14 and 24 and arrive via the director's single queue at its 11–26s pacing
+      rather than being map-placed, so a day fields far fewer than the cap reads as promising — the
+      caps' meaning changed while the numbers stood still. Measure encounters per day on a rig
+      across the acts; the record is in `DECISIONS.md` under M54
+- [ ] **Placeholders — step 3.** The budget is a **variety ledger, not a density cap**: the count of
+      sites is the density, the budget decides what fills them, and resolving late means variety is
+      measured over the encounters that happen rather than over a city she never saw. Read the
+      entry in `DECISIONS.md` under "The milestone log, as it stood on 2026-09-01" before starting;
+      the first reading of this was wrong and the wrong reading is recorded there
+- [ ] **A building type that closes all four of its streets.** Recorded, not built, and a
+      **different type rather than a bigger one** — a big building joins two blocks and closes one
+      street; this removes four and makes an island in the lattice, so it needs its own name, its
+      own count, and its own answer to how many a city can take. The reasoning is in `DECISIONS.md`
+      under M50
 
 ---
 
-## M25 — Patrols for the empty acts
+## M100 — Small, real, and nobody's · consolidated 2026-09-09
 
-- [ ] Pressure back into the streets acts III and IV deliberately emptied, built around **encounter
-      cost** rather than ambient emission, and specifically the shape of the return phase — which
-      playtest 03 measured as a formality: 26s, five crossings, zero encounters, 42% of the day
-      left. *Its stated prerequisite — a mechanic running escapes, with a contract over `RUN_SPEED`
-      — shipped in M33, so this is unblocked and has been since.*
+The small items, the polish list and the open design questions, consolidated into one milestone on
+2026-09-09 *("consolidate into a current new milestone")*. Each was checked against the code that
+day: the `burning_building` now finishes where the fire belongs rather than where the engine
+stopped, and the seed-retry fact is stated in `docs/CITY.md`, so neither is here. Everything else
+is still true.
 
-## M26 — Teaching the two controls that remain
+**Defects, each a few lines once found:**
 
-- [ ] Arrows/WASD at the start of day 1, then shift, then a day-1-only event requiring a short run
-      after the first block. *Its first half (deleting the interact key) is M55's.* **Comes after
-      M25 for correctness, not scheduling:** forcing a run before running is ever the right answer
-      teaches a move that is never correct again
-
----
-
-## Reassessed on 2026-09-01, and still wanted
-
-Small, real, nobody's milestone. Each has sat since the milestone that deferred it.
-
+- [ ] **Events spawn inside a fully blocked street.** *(2026-09-09, playtest 49: "a definite bug
+      is that inside fully blocked streets (eg tree) restaurants etc can still spawn which is
+      silly".)* The scheduler's own rule is the right one — *"a closed street is not somewhere
+      anyone can get to, so it is not somewhere an event can usefully happen"* — and it is enforced
+      by refusing any candidate tile in `closed_tiles`. Two things put a café behind a fallen tree
+      anyway. `CityMap.close_streets` fills `closed_tiles` with only the tiles a flood from the
+      doorstep cannot reach once the barrier tiles at both mouths are down, so a closed street with
+      an alley mouth or a courtyard archway opening onto its middle keeps its ground open, on
+      purpose, and the scheduler then places on it. And a **hard seal** is not a closure at all: it
+      is `barricade` bodies standing across the middle of the segment, placed by `SealPlanner`, so
+      neither half of that street is in `closed_tiles` and the whole of it is open to the catalogue.
+      **The fix is at placement, keyed on the segment rather than on the tile**: no catalogue row is
+      offered a tile on a segment that carries a closure or a hard seal, with the seal's own bodies
+      and the closure marker the only things allowed to stand there. A soft seal is not covered — the
+      street is still walkable down the carriageway and a café on it is the price of going that way.
+      A test plans several seeds and days and asserts that nothing planned stands on a closed or
+      hard-sealed segment. Placed here rather than ahead of the queue by the player: *"blocked
+      street can go behind actual important things"*
 - [ ] **A queued car grazes a big building's footprint, and the M53 assertion was loosened to let
       it.** `tests/test_crowd.gd`'s *"nothing walks into a hard blocker"* asked for exactly zero
       agents ever standing inside one; it now tolerates one agent on under 5% of frames, measured at
-      **1.1% — one car on 27 of 2400 frames**, against the eight-at-once on 87% of frames the
-      original M53 fix addressed. The cause is a **crawl-forward step in a traffic queue** stepping
-      one tile into a footprint, in `src/crowd/`. Fix that and the assertion goes back to `== 0`,
-      which is the only acceptable end state: a car standing inside a building is visible, and the
-      test's own name is a promise. *(The seed that shows it changed because
-      `CityGenerator._place_hard_blockers` grows one reference route tree for both the dead-end and
-      the big-building placement, and a cell-grown tree moves both — so this is a latent defect newly
-      exposed, not one M69 introduced.)*
-- [ ] **Confirm the two remaining barrier-placing milestones against the reachability grid.** M45's
-      closures and M62's checkpoint perimeter were each designed against the block-level reachability
-      model that no longer exists. Each wants confirming rather than assumed clean — and M45's is the
-      sharpest, because `ClosurePlanner` now refuses a calm area's access streets outright, which is
-      a filter M45's own items were written without. M48 was the third and is off this list because
-      it was built after the grid was: its rotation rule reads `CityMap.corridor_offset()`, which is
-      geometry rather than reachability
+      1.1% — one car on 27 of 2400 frames. The cause is a crawl-forward step in a traffic queue
+      stepping one tile into a footprint, in `src/crowd/`. Fix that and the assertion goes back to
+      zero, which is the only acceptable end state: a car standing inside a building is visible, and
+      the test's own name is a promise
 - [ ] **The robber can be placed inside a building, where he is stuck for ever.** *(2026-09-02:
       "the robber can be placed inside buildings which makes him unable to move at all.")*
-      `alley_robbery` places on `ALLEY` tiles and pursues, and `EventInstance._walkable_step` clamps
-      a chase to walkable ground — so a robber who begins inside a building is not merely oddly
-      sited, **every step he tries is refused**. His lethal radius still travels with him, which
-      makes an invisible fatal spot inside a wall. Fix it where he is placed, not by letting a
-      pursuer walk through buildings
-- [ ] **The `burning_building` spawns in the road** rather than in a building — it spawns exactly
-      where the engine stopped. A few lines to nudge it to the nearest `BUILDING` tile
-- [ ] **The pram has no collision of its own**, so it clips into walls when she hugs a corner. A
-      second body that trails her, or a capsule that rotates with `facing`
-- [ ] **Park trees clump** — placed by rejection sampling. A minimum-spacing check would spread them
-- [ ] **`INDUSTRIAL` and `CIVIC` districts do not read differently at a glance**, although act II
-      makes them narrative
-- [ ] **`generate()` retries with `seed + 1`**, so a run's city is the first nearby seed that
-      passes rather than `run_seed` itself. Not a bug; worth remembering when reproducing from a
-      seed
+      `alley_robbery` places on `ALLEY` tiles, which are walkable, and a chase step is clamped to
+      walkable ground — so how he comes to stand inside a wall is not known, and **the first task is
+      to reproduce it** on a rig and read where the placement put him. His lethal radius travels
+      with him, which makes an invisible fatal spot inside a wall. Fix it where he is placed, not by
+      letting a pursuer walk through buildings
+- [ ] **The pram has no collision of its own.** `scenes/player/stroller.tscn` carries one circle
+      for her, so the pram clips into walls when she hugs a corner. A second body that trails her,
+      or a capsule that rotates with `facing`
 - [ ] **A pursuer streamed out mid-chase comes back having forgotten it.** `EventInstance.resume()`
       restores the age and the distance travelled but not `_noticed_at`, and a fresh instance starts
       with that at `INF` — so a `pursues_within` row streamed out after it has noticed her returns
-      `is_waiting()`, standing where the day planted it. It is not new and it is not currently
-      dangerous: `alley_robbery` has had it since the mechanic was built, and the heated patrol that
-      surfaced it can never be `hard_fail`. **`tests/test_heat.gd` pins the behaviour rather than the
-      one the field name implies**, so a fix fails there first. The fix is `resume()` carrying the
-      notice, and it has to be checked against every `pursues_within` row rather than the one that
-      found it
-- [ ] **A big building can be built over a precinct's own pavement.** Measured on **seed 24757**:
-      two tiles inside a precinct span are not walkable, because something with a footprint was
-      placed across the corridor the span runs down. A precinct is the best ground in the city to
-      bring a meter down on and its whole design is *paving frontage to frontage* — a hole in it is
-      the one place that sentence stops being true. Nothing in the placement rules asks whether a
-      footprint lands on a precinct span; the fix is a constraint where big buildings and calm zones
-      choose their ground, not a repair pass afterwards
+      waiting, standing where the day planted it. Not currently dangerous: `alley_robbery` has had
+      it since the mechanic was built, and the heated patrol that surfaced it can never be
+      `hard_fail`. `tests/test_heat.gd` pins the behaviour rather than the one the field name
+      implies, so a fix fails there first. The fix is `resume()` carrying the notice, checked against
+      every `pursues_within` row rather than the one that found it
+- [ ] **A big building can be built over a precinct's own pavement.** Measured on seed 24757: two
+      tiles inside a precinct span are not walkable, because a footprint was placed across the
+      corridor the span runs down. `CityGenerator._place_hard_blockers` never reads
+      `precinct_spans`, so nothing asks whether a footprint lands on one. A precinct's whole design
+      is *paving frontage to frontage*, and the fix is a constraint where big buildings and calm
+      zones choose their ground, not a repair pass afterwards
 - [ ] **`chat` is written and undocumented.** `EventManager` logs a `chat` entry when
       `chatting_mother` starts a conversation, and the table of entry kinds in `docs/TELEMETRY.md`
-      has no row for it — so a reader of a run log meets a kind the documentation does not admit
-      exists. One row, and the check that would have caught it is whether anything asserts the two
-      lists agree
+      has no row for it. One row, plus the check that would have caught it: something asserting the
+      two lists agree
+- [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
+      is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
+      which read the live city. Worth finishing the next time the file is opened for another reason
+
+**Drawings, as SVG:**
+
+- [ ] **The fence is drawn in elevation and turned on its side.** The game looks straight down,
+      where a fence is a thin line with post-heads and a shadow. `assets/tiles/fence.svg` runs
+      north–south, which fixed playtest 14's rotation, and is still rails and palings seen from the
+      side
+- [ ] **Park trees clump.** `City` places them by rejection sampling inside the lot with no
+      spacing test. A minimum-spacing check would spread them
+- [ ] **`INDUSTRIAL` and `CIVIC` districts do not read differently at a glance**, although act II
+      makes them narrative. Today only the wall heights differ — one to two tiles against three to
+      four
+
+**Polish, after the playtest work**, since there is no point polishing a loop that is about to be
+re-pitched:
+
+- [ ] **Sound lines** — concentric arcs off a source on a pulse's rising edge, the visual form of a
+      discrete noise. The last gap in the visual channel, and it comes **before** audio
+- [ ] **Audio**, once the above is done and judged on its own: per-act beds, per-event cues, the
+      baby's breathing as the diegetic version of the meters. Additive by design
+- [ ] Save and continue a run (`GameState` is already shaped for it, so this is serialisation
+      rather than design); there is a title screen and no menu, on purpose
+- [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
+- [ ] Controller support
+- [ ] **The web build measured on a machine that did not build it.** Playtests 27 onward have
+      played the live address on a laptop browser and a phone, so *it boots and takes input* is
+      answered. What is not is frame rate at the game's scale on somebody else's machine, and
+      whether a stranger arriving at the page understands what it is. itch.io stays the fallback
+      host, since it sets the isolation headers a threaded build would need
+
+**Open design questions**, each answered by a played run rather than by more arithmetic:
+
+- [ ] **Does a picked-up-but-unperformed resistance instruction expire at the end of its day, or
+      wait?** Left open by decision until the pairs can be walked. The code currently **waits** —
+      an incomplete perform step is re-offered each subsequent day; the only expiries are the
+      poster wall's `deadline_fraction` and a rider event finishing, both inside one day
+- [ ] **Is the nerve economy right?** Five since M35, and **asked for rather than derived** — the
+      thing that made three too few was a defect rather than a difficulty, so if act I now reads as
+      fair, five may be generous. The other side is still open: with five attempts and a retry
+      costing only time, **is a lost day a punishment at all?**
+- [ ] **Is the balance right?** Needs a run and a trace. *"The arterial is for crossing"* is still a
+      claim about a player rather than about a probe
+- [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little time to
+      learn a city before it starts changing
+- [ ] **Is the main-road arc emergent or authored?** The design says she exhausts her own side of
+      the spine before being forced across. Either calm areas exist on both sides and spoiling
+      burns the near ones over an act, which needs no new code, or something has to withhold the
+      far side early and steer her across late, which is a mechanism nobody has designed. M62's
+      regions may settle it, since a region with nothing left in it gets no door
+- [ ] **Could the meter bars be turned off entirely** — deferred, not open. *(2026-09-02: "we can
+      keep the bar for now and think about the diegetic face later on.")* The minimal HUD keeps the
+      bars and drops the status line beside them, so what gets tested first is whether the pram
+      alone can carry the baby's state on the half that was cut. **What comes back with it is a
+      face**, the meter read off the baby rather than off a strip at the bottom of the screen — the
+      same shape as the audio item's *breathing as the diegetic version of the meters*. Not
+      designed, and it needs the playing that the status-line cut is about to produce
+
+---
+
+## M101 — The fire is found before the engine · asked for 2026-09-09
+
+> "the player should encounter the burning building before the fire truck. basically the fire
+> truck should spawn when the player sees the burning building not the other way around"
+
+**Today the engine is the event and the fire is what it leaves behind.** `fire_truck` is act I's
+one-shot — day 3 only, `ONE_SHOT`, a mobile row at 190px/s along a 60-tile street route with a
+4-second telegraph, because a truck outruns a walk and the fairness rule wants the full 340px of
+clearance — and `burning_building` is a `SCRIPTED` row that is never scheduled on its own:
+`EventManager._successor_of()` creates it where the engine's run ends, and
+`EventInstance._be_done()` makes an event with a `spawns_on_finish` stop where it stands rather
+than drive off, so the fire is at the building and not two streets past it. The engine is the
+thing she meets; the fire is a consequence she may never see.
+
+**The instruction reverses the two, and the reason is legibility.** A fire engine bearing down a
+street is a loud thing with no visible cause; a burning building she has already found is the
+cause, and the engine arriving *at it* is the answer. Seen in that order the set piece reads as
+one story rather than a truck and, later, a fire.
+
+**The seen predicate exists.** `DangerEdge.is_on_screen()` answers whether a world point is inside
+the view, and `ResistanceDirector.set_sight()` already takes it so a chalk mark can follow her
+until it has been on screen once (M78's rule). The same callable is what the fire wants.
+
+- [ ] **The burning building is the day's one-shot; the engine is spawned on sight of it.**
+      `burning_building` takes over `fire_truck`'s `ONE_SHOT` slot — day 3, sited by the director
+      the way the one-shot is sited today — placed *in* a building rather than on the road. When
+      it first comes on screen, `fire_truck` is created with a route that **ends at the fire**,
+      entering along the burning building's own street from off screen. The link is a field on the
+      def in the opposite direction from `spawns_on_finish` — a row that names what arrives once
+      this one has been seen — and `EventManager` owns the trigger, since it already owns the
+      successor mechanism and the player's position. Whether `spawns_on_finish` survives on any
+      other row, or goes, is a question for the build: today only the engine uses it
+- [ ] **The engine's fairness contract does not change and has to be re-proven for the new
+      siting.** Its telegraph is its approach, so the route's start has to be far enough up the
+      street that the full 4 seconds pass before its field reaches her — M77's off-screen arrival
+      rule applied to a thing driving at the building rather than at her. If she stands on that
+      street between the engine's entry and the fire, she is in its path; the row's own contract
+      (walk away the instant it is visible and be clear before it hurts) is what the test asserts,
+      and it is asserted from the worst position on the street. The `hard_fail`-style further
+      siting is not needed, since the engine is not lethal
+- [ ] **The fire's own telegraph and pulse are re-read for a thing she finds rather than one that
+      arrives.** `burning_building` carries a 2.2s telegraph and a 3-second pulse, both written
+      for a fire that begins in front of her when the engine stops. A fire that was already burning
+      when she turned the corner has no arrival to telegraph; what it keeps is the pulse, the
+      obstruction (30px, five flames) and the `burnt_shell` scar. Decide whether the telegraph
+      becomes zero or stays as the moment the fire is *noticed*, and say which in the row's doc
+- [ ] **Day 3 is re-measured.** Day 3 carries act I's whole payload — the run lesson's dog, the
+      cyclist's first day and the set piece — and the balance suite prices the day with the engine
+      as the expensive row. The engine still comes, but later and only if the fire is seen, so a
+      day on which she never finds the fire costs less than the day the suite describes. Run
+      `tests/test_balance.gd` and the day-3 rig before and after, and record both numbers in
+      `DECISIONS.md`
+- [ ] **`docs/EVENTS.md` follows.** Its one-shot example is the fire truck, its route sentence says
+      *a fire engine is in the world before its mark*, and its finishing-position paragraph
+      describes the engine leaving the fire behind. All three move in the same commit as the rows
 
 ---
 
@@ -1382,50 +1461,3 @@ would stay the same only the presentation would rotate".)*
       error the world and the drawing could share**, which `tests/test_orientation.gd` says outright
       it cannot catch — so the spike is looked at in a portrait window with `tools/shot.sh`'s
       resolution argument, not judged from a passing suite
-
----
-
-## M10 — Polish
-
-After the playtest work. There is no point polishing a loop that is about to be re-pitched.
-
-- [ ] **Sound lines** — concentric arcs off a source on a pulse's rising edge, the visual form of a
-      discrete noise. The last gap in the visual channel, and it comes **before** audio
-- [ ] **Audio**, once the above is done and judged on its own: per-act beds, per-event cues, the
-      baby's breathing as the diegetic version of the meters. Additive by design
-- [ ] Main menu and settings; save/continue a run (`GameState` is already shaped for it, so this is
-      serialisation rather than design)
-- [ ] **A web build** — grew into its own milestone: M60, "Ready for a GitHub Pages launch"
-- [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
-- [ ] Controller support
-- [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag *parsing* out; what
-      stayed is the code that acts on it — `_first_event_position` and the `--spawn` target lookup,
-      both of which read the live city and would have made the move a rewrite rather than a
-      relocation. Worth finishing the next time the file is opened for another reason
-
----
-
-## Open design questions
-
-- [ ] **Does a picked-up-but-unperformed resistance instruction expire at the end of its day, or
-      wait?** Left open by decision until the pairs can be walked. The code currently **waits** —
-      an incomplete perform step is re-offered each subsequent day; the only expiries are the
-      poster wall's `deadline_fraction` and a rider event finishing, both inside one day
-- [ ] **Is the nerve economy right?** Five since M35, and **asked for rather than derived** — the
-      thing that made three too few was a defect rather than a difficulty, so if act I now reads as
-      fair, five may be generous. The other side is still open: with five attempts and a retry
-      costing only time, **is a lost day a punishment at all?**
-- [ ] **Is the balance right?** Needs a run and a trace, not more arithmetic. *"The arterial is for
-      crossing"* is still a claim about a player rather than about a probe
-- [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little time to
-      learn a city before it starts changing
-- [ ] **Could the meter bars be turned off entirely** — deferred, not open. *(2026-09-02: "we can
-      keep the bar for now and think about the diegetic face later on.")* The minimal HUD keeps the
-      bars and drops the status line beside them, so what gets tested first is whether the pram
-      alone can carry the baby's state on the half that was cut.
-
-      **What comes back with it is a face**, which is a bigger idea than hiding a bar: the same
-      shape M10 already records for audio, where the baby's breathing is *"the diegetic version of
-      the meters"*. A face would be that in the visual channel — the meter read off the baby rather
-      than off a strip at the bottom of the screen. Not designed, and it needs the playing that the
-      status-line cut is about to produce

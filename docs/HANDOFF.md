@@ -304,7 +304,10 @@ day's route tree grows on it, and `ClosurePlanner` refuses a calm area's access 
 `StreetNetwork` is still there and still owns the lattice and the structural route count; it is no
 longer what answers *can she get there today*.
 
-1. **M64 — off the path is closed, not dear.** **Its sealing is built**: `SealPlanner` puts a seal on
+Three of the queue's milestones carry state worth knowing before picking them up; their place in the
+order is `TODO.md`'s.
+
+- **M64 — off the path is closed, not dear.** **Its sealing is built**: `SealPlanner` puts a seal on
    every real street off the day's route tree, so the city can say *not this way at all* for the
    first time and the route decision stops having one correct answer. Off-path density measures
    0.330 events per street before and 2.173 after, with the on-tree figure unmoved; the record is in
@@ -324,13 +327,14 @@ longer what answers *can she get there today*.
    **Hard seals are act IV only**, because `barricade` is the sole catalogue row wide enough to span
    a street; days 1–11 seal soft, both pavements taken with the carriageway still walkable. Three of
    the eight pictures are act-I hard seals and are what closes that.
-2. **M65 — the protester points at the objective.** Playtest 19's two-part gap — the first mark
+- **M65 — the protester points at the objective, revisited after M62.** Playtest 19's two-part gap — the first mark
    announced before it is found, and unfindable once it is — is built and unwalked: the status line
    is silent until the first mark has been touched, and a mark that has never been on screen
    follows her to the next alley she comes near, guard and all (the record is in `DECISIONS.md`
    under M78). What remains is playtest 20's item: a protester pointing toward the current
    objective, and made more common since a protester obstructs nothing.
-3. **M56 — the resistance is noticed.**
+- **M56 — the resistance is noticed.** Its remaining hunting rows are built alongside M62; its
+  measurement against the nerves waits until act III is reached.
 
 **The instrument to judge any of it with now exists and was used this session.** The dusk map draws
 the walk over the plan: where she went, which stretches she ran, and which events actually reached
@@ -352,19 +356,18 @@ zebra running into the mountain, four dotted crossings under one light — and n
 drives off the map except a car by the tunnel or the bridge. All of it was checked on rig captures
 and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
-## Open beyond the order
+## The queue, as prioritised on 2026-09-09
 
-Unordered, full entries in [TODO.md](TODO.md): **M61** (a field becomes the Minkowski sum of the
-body and a kernel — a point body keeps today's circle, a frontage becomes a capsule, and the kernel
-is a disc standing still and an ellipse moving, so the eccentricity-from-speed idea it was opened
-for is one half of that sum; it is also what the tightened café and market radii are a stopgap for),
-**M62** (checkpoints and barricades dividing the map into regions), **M50**
-(the corridor's density; placeholders step 3; the four-street building), **M47** (the 2×2 courtyard
-complex; calm-area adjacency; multi-block calm re-derived for 121 blocks; the main road as a soft
-block), **M45** (closures that point), **M43** (the tutorial dog after day 3; the one-contact cliff
-at 90; `RUN_TAUGHT_DAY` 3 → 2), **M49** (the fence, the vanishing border-walkers), **M60**'s last
-two (the home arrow under a thumb, the browser smoke pass), **M25** (patrols for the empty acts),
-**M26** (teaching the controls), a shortlist of small items, and **M10** (polish).
+**`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M62 is next
+— checkpoints that divide the map into regions, with M45 folded into it. Alongside it, each on its
+own branch: M64's eight seal pictures as SVG, M93's caret chosen by expected impact, and M56's
+remaining hunting rows. M61, the field as a Minkowski sum of body and kernel, follows M62; M65 is
+revisited after M62 rather than built as written. Behind those, unordered: M96 (the teaching day and
+the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
+density after the sealing) and M100 (the small work, the polish and the open design questions,
+consolidated). Reaching act III — which M56's measurement against the nerves needs — waits until
+that batch is done, and M101, the fire found before the engine, comes after that. The illustrated
+actor work is Codex's parallel track.
 
 ## What to distrust
 
@@ -401,8 +404,8 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   `ClosurePlanner` refuses every access street of every calm area outright — a measured mean of 33.4
   of 264 streets a day. The intent is that a closure stops reading as broken; the risk nobody has
   looked at is the opposite one, that closures now cluster away from the places she actually walks and
-  stop being met at all. M45's own trap in a new place: *a nudge that removes the decision is worse
-  than a closure that does nothing.*
+  stop being met at all. The trap M62 carries, in a new place: *a nudge that removes the decision
+  is worse than a closure that does nothing.*
 - **The whole of the heat is unfelt.** Every number in it was set by design and checked by a rig:
   nobody has walked a city at full resistance progress, and the item that would tell you whether it
   is fair — measuring it against the five nerves — is the one still queued. It makes the back half
