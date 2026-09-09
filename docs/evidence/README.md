@@ -19,6 +19,8 @@ makes the file worth having.
 
 | file | what it is | referenced by |
 | --- | --- | --- |
+| `shot-2026-09-09-seed4000-d9856f2-seal-ground-before.png` | A vertical crash scene displaced north of its ground point. | [DECISIONS.md](../DECISIONS.md), SVG seal artwork review |
+| `shot-2026-09-09-seed4000-9b72a2e-dirty-seal-ground-after.png` | The same scene centred on its street with an aligned shadow; vehicle perspective remains under review. | [DECISIONS.md](../DECISIONS.md), SVG seal artwork review |
 | `shot-2026-09-09-seed4242-d29eec6-seal-skip.png` | M64's skip at the kerb, the near half of a soft seal, on seed 4242 day 1. | [DECISIONS.md](../DECISIONS.md), M64 eight seal pictures |
 | `shot-2026-09-09-seed4242-d29eec6-seal-burnt-out-car.png` | M64's burnt-out car, four bodies across a street, on seed 4242 day 5. | [DECISIONS.md](../DECISIONS.md), M64 eight seal pictures |
 | `shot-2026-09-09-seed4000-1e3995b-seal-car-accident-east-west.png` | M64's car accident on an east–west street, drawn from the rotated asset. | [DECISIONS.md](../DECISIONS.md), M64 eight seal pictures |

@@ -1,9 +1,11 @@
 # Graphics redesign
 
-This is the implementation brief for [PLAYTEST-30.md](PLAYTEST-30.md), covering the whole game.
-It describes the target, not a claim that the renderer or artwork is implemented. The existing
-SVG silhouettes are not the visual target. Animation, depth, material and composition are designed
-together. Luna agents implement bounded pieces; the orchestrating session owns design and review.
+This is the implementation brief for the opt-in illustrated overhaul in
+[PLAYTEST-30.md](PLAYTEST-30.md), covering the whole game. SVG graphics are the main presentation
+for now and are maintained against the existing SVG style. This brief describes the illustrated
+target, not a claim that its renderer or artwork is implemented. Animation, depth, material and
+composition are designed together. Luna agents implement bounded pieces; the orchestrating session
+owns design and review.
 
 ## Visual target
 
@@ -50,7 +52,8 @@ the architecture library. The current detached-house study is not an approved bu
 
 ## Medium and architecture
 
-Use illustrated PNG assets with layered character animation. No new SVG artwork. The 3D studies
+The illustrated overhaul uses PNG assets with layered character animation; its new artwork is PNG.
+The main SVG presentation remains independently maintained. The 3D studies
 are retained as experiments, not the art target or a required runtime dependency. A 3D authoring
 rig remains an option only where it makes creating the drawings easier. Asset quality is judged
 from the fixed gameplay camera, not in a modeling tool: shorten a building's hidden north depth,

@@ -70,6 +70,13 @@ define style; `docs/reference/` supplies real-world structure and posture.
 
 ### Gameplay queue
 
+- [ ] **SVG seal vehicle direction and footprint.** Finish PLAYTEST-50's crash direction and
+      burnt-car variant findings: crashed cars point along the street, with the two bodies
+      arranged across it; burnt cars have a view for each street axis. Review the moving van's
+      street alignment too. Match the skip and moving van's visible widths to their solid bodies
+      without changing seal placement. See DECISIONS.md, "SVG seal artwork review", for the
+      grounding correction and remaining footprint measurements.
+
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
 1. **M62** — checkpoints that divide the map into regions. *("M62 should be next.")* M45's three
