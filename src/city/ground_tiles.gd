@@ -173,7 +173,14 @@ static func _road_variant(map: CityMap, tile: Vector2i) -> int:
 ## offset is the outer one, which is what `% SIDEWALK_WIDTH` is asking.
 static func _crossing_variant(map: CityMap, tile: Vector2i) -> int:
 	var across_x := CityMap.is_road_offset(CityMap.corridor_offset(tile.x))
-	var main := map.street_kind_at(across_x, tile) == GameEnums.StreetKind.MAIN
+	# The dotted-line paint belongs to the **junction**, not the arm being crossed: one light
+	# governs every crossing where the spine meets a side street, so a crossing at that junction
+	# reads the same whichever of the two corridors it actually happens to cross. Checked on
+	# either corridor rather than only `across_x`'s, even though only the vertical one can answer
+	# `MAIN` today — a main road is stated as "one axis" as a design fact about the city
+	# (docs/CITY.md), not as a shortcut this predicate gets to take.
+	var main := map.street_kind_at(true, tile) == GameEnums.StreetKind.MAIN \
+			or map.street_kind_at(false, tile) == GameEnums.StreetKind.MAIN
 	if not main:
 		return CROSSING_V if across_x else CROSSING_H
 	if across_x:

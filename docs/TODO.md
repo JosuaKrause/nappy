@@ -16,14 +16,15 @@ mid-way through.
 
 1. **M92** — the halo says how much a thing has cost her and how close she is standing to it,
    and anything the game already marks earns one.
-2. **M56** — the resistance is noticed.
+2. **M93** — the caret is chosen by expected impact, not by a row's own numbers. After M92,
+   because it changes the same files, and not before its two numbers are settled.
+3. **M56** — the resistance is noticed.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
 does to the route decision, the same as everything else. **M64** (eight seal pictures, so no single
-barrier becomes the city's signature), **M65** (a protester who points at the objective) and
-**M53** (the bollard, so a street that meets a precinct stops against something) are each a
-milestone of only its drawings, and each is ordinary open work.
+barrier becomes the city's signature) and **M65** (a protester who points at the objective) are
+each a milestone of only its drawings, and each is ordinary open work.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
 no artist.
@@ -38,7 +39,14 @@ tabled is the *ambient* crowd — the pavement full of people who are marked by 
 said so in as many words: "we can discuss the details about general crowd floors later, though". The
 measurement is in that section and the three possible answers are written out; none is chosen.
 
-**[PLAYTEST-36.md](PLAYTEST-36.md) is the newest session, and all three of its findings are M92** —
+**[PLAYTEST-37.md](PLAYTEST-37.md) is the newest session: four of its five findings are built and
+the fifth is M93.** The first four were re-reports — the zebra at a precinct's edge, the border's
+four-way boxes, the main road's side-arm zebras, and the bodies walking off the map — and all four
+are one rule, *a junction is made of the streets that actually meet at it*, built under M53; the
+record is in `DECISIONS.md` under M53. The fifth is the caret's own inconsistency, and it is the
+milestone above.
+
+**[PLAYTEST-36.md](PLAYTEST-36.md) is the session before it, and all three of its findings are M92** —
 a session on the halo M89 had just built, and together they are one change: the cue gets a second
 axis. It also records a fork the player closed **before** it was built, which is the part to read
 first: colour from a row's declared `intensity` was proposed and rejected in favour of what has
@@ -116,8 +124,6 @@ M47 (a calm-area spoiling inconsistency) and M43 (a measured lead-time gap on th
 **Playtest 19's nine findings are filed against the milestones that own them** — M64 and M65 are
 new, the barriers went to M48 and are built, and the rest went to M49 (the north edge, the junction
 paint) and the small items (the robber in a building).
-
-M53's one remaining piece is specified and unordered — see its entry.
 
 Everything below that is unordered and reassessed on 2026-09-01.
 
@@ -591,28 +597,6 @@ looking at plans before the director sites them rather than a day with no set pi
 
 The probe that produced all of this is kept on this milestone's own branch, so that *measure it
 again after* means running the same thing rather than reinventing it.
-
----
-
-## M53 — The bollard
-
-**All that remains here is one drawing**, alongside M64's seal pictures and M65's pointing
-protester. Everything else about the precinct is built.
-
-A precinct is paving frontage to frontage with nothing driving on it, on either axis, and a street
-that meets one ends at its edge. What remains is that the ending is not *drawn* as anything.
-
-- [ ] **Nothing draws a bollard, and the street just stops.** Six comments across the city and the
-      crowd explain a precinct by saying a driver *"meeting a bollarded street"* diverts, and
-      `docs/CITY.md` says a span stops short of the crossroads at either end *"which is where the
-      bollards are"*. **There is no bollard anywhere in the game** — no sprite, no tile, no prop. The
-      carriageway simply ends flush against the paving, which reads as the road running out rather
-      than as a street that was closed on purpose. It is the same gap M48 closed for `construction`,
-      whose barrier boards were blue-grey with no hazard marking: one picture per row passes and the
-      picture still says nothing. What it wants is the smallest thing that says *this was done
-      deliberately* — a line
-      of posts across the mouth is the real-world answer and it is also the cheapest drawing in the
-      list
 
 ---
 
@@ -1165,53 +1149,6 @@ direction, not distance.**
 - [ ] **The fence is drawn in elevation and turned on its side.** The game looks straight down,
       where a fence is a thin line with post-heads and a shadow. Rotating an elevation does not make
       it a top-down drawing
-- [ ] **People walk out onto the border and vanish there.** Reported again from play on 2026-09-02
-      — *"the north edge still has people and cars walking into the mountain and disappearing"* —
-      so it is people **and cars**, and the north edge is where it was seen.
-      **`CrowdAgent._blocked_ahead` returns `false` for a tile out of bounds**, so the one wall that
-      should stop them reports as clear. Likely *out of bounds is blocked* and nothing else — check
-      against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
-- [ ] **Whatever fixes one border has to be stated over *a border*.** The first pass wrote four
-      sides four times, which is one bug per side waiting to happen
-- [ ] **Junctions are four-way where an arm dead-ends — reproduced, with a picture.**
-      *(2026-09-02, from play: "the intersections are not t intersections", of the **north edge**.)*
-      **Seed 2927659514, day 1, standing at tile (80,1)** —
-      `docs/evidence/archive/session-captures/2026-09-02/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png`. The zebras on the
-      north–south streets run all the way to the border and a crossing box is painted on an arm with
-      nothing beyond it. Three earlier candidates were checked and were correct, which is why this
-      sat as *not reproduced* for so long: the map's own border is the one place an arm genuinely
-      dead-ends. **The same frame shows a car and two pedestrians standing on the out-of-bounds
-      ground above the top pavement**, so this and the vanishing-walkers entry above are one cause
-      seen twice — whatever decides what is beyond the last tile is answering *street* in both.
-
-      **It is every side, not the north one.** The same seed at tile (5,88) is the **west** border
-      with the identical painted crossings running into it —
-      `run-2026-09-02T181431-seed2927659514-ffa2830-045s-asked.png`. Whatever fixes this is stated
-      over *a border*, which is the item two above this one.
-
-      **And there is a working case to copy, in one frame with a broken one** —
-      `run-2026-09-02T181431-seed2927659514-ffa2830-030s-asked.png`, tile (13,87). *(2026-09-02:
-      "here is an example of a proper closed off side of the intersection (towards the right to the
-      park) and an improperly closed off side (towards the south it should be closed off but
-      isn't).")* The arm running **east into the park** is terminated correctly — the carriageway
-      stops and the pavement carries on across it — while the arm running **south**, with nothing
-      beyond it either, is drawn as though the street continued.
-
-      **That is the most useful thing anybody has said about this**, because it makes the question
-      *what is different between those two arms* rather than *where is the bug*. `docs/TODO.md`'s
-      own M49 wording already guesses at the answer — *"where the arm beyond is not a street at all
-      — a park, a calm zone's absorbed corridor, the shore"* — so the case that works is the one the
-      generator was told about explicitly, and the fix is to state it over *anything* that is not a
-      street rather than over the list of things somebody remembered
-- [ ] **A main road's junction is four dotted crossings, not two.** *(2026-09-02: "minor issue — for
-      a main street intersection all four crossings should be lines instead of zebra crossing since
-      all four are controlled by the traffic light".)* `GroundTiles._crossing_variant` already draws
-      the dotted pair rather than a zebra for a **main road's** crossing, with the reason recorded in
-      `CityGenerator._street_tile`: traffic on a main road obeys the light rather than giving way, so
-      the crossing is a *timing* problem and a zebra there is paint promising a gap-hunting one. The
-      player's point is that the property belongs to **the junction rather than the arm** — where the
-      spine crosses an ordinary street, one light governs all four crossings, so the two on the side
-      street are currently painted as a promise the traffic does not make
 - [ ] **Restate the main-road pacing question.** The design says she exhausts her own side of the
       spine before being forced across. **Is that emergent** — calm areas exist on both sides and
       spoiling burns the near ones over an act — **or does something have to withhold the far side

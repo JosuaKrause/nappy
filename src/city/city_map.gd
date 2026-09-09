@@ -75,10 +75,11 @@ var main_road := -1
 ## with axis 1 for north-south. Three blocks long and two of them, so a precinct is a place you
 ## can be told how to find rather than a kind of street. See `CityGenerator._place_precincts`.
 ##
-## A span covers its blocks' frontages and the junctions **between** them, and stops short of the
-## crossroads at either end. That is where the bollards are: the road runs up to the junction and
-## the paving begins after it, so a car reaching a precinct has an ordinary junction to turn at
-## rather than having to turn round on brick.
+## A span covers its blocks' frontages and the junctions **between** them, and its paving reaches
+## the road edge of the crossroads at either end: the box's own carriageway still crosses a real
+## street, so a car reaching the precinct has an ordinary T to turn at, but the box's precinct-side
+## sidewalk band is paving too, which is what keeps the crossing street from painting a zebra over
+## a road that stops a pavement's width later. That is where the bollards stand.
 var precinct_spans: Array[Vector4i] = []
 var building_rects: Array[Rect2i] = []
 ## Blocks that are calm ground *right now*. Recomputed by `repaint()`, because which ground
@@ -144,8 +145,12 @@ func street_kind(vertical: bool, index: int, along_tile: int) -> GameEnums.Stree
 	for span in precinct_spans:
 		if (span.x == 1) != vertical or span.y != index:
 			continue
-		if along_tile >= span.z * period() + Tuning.STREET_WIDTH \
-				and along_tile < (span.w + 1) * period():
+		# Widened by SIDEWALK_WIDTH at each end so the range reaches the crossroads' own road
+		# edge rather than the block's: the box's precinct-side sidewalk band is precinct ground
+		# too, which is what removes the zebra a crossing street would otherwise paint over a
+		# road that stops a pavement's width later (see docs/CITY.md and PLAYTEST-37.md).
+		if along_tile >= span.z * period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH \
+				and along_tile < (span.w + 1) * period() + Tuning.SIDEWALK_WIDTH:
 			return GameEnums.StreetKind.PEDESTRIAN
 	return GameEnums.StreetKind.ORDINARY
 

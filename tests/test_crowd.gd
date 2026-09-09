@@ -54,6 +54,7 @@ func run(t) -> void:
 	_test_the_crowd_agrees_a_zone_absorbed_the_corridor(t)
 	_test_agents_do_not_overrun_an_ordinary_edge(t)
 	_test_walkers_follow_the_selected_presentation(t)
+	_test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t)
 
 	_city.free()
 
@@ -1366,3 +1367,41 @@ func _test_agents_do_not_overrun_an_ordinary_edge(t) -> void:
 			worst = maxf(worst, agent.position.x - limit)
 	t.check(worst <= Tuning.TILE_SIZE + 1.0,
 			"nobody overruns an ordinary edge by more than a tile (worst %.0fpx)" % worst)
+
+## Playtest 37, finding 4: **out of bounds is blocked**, not merely limited to within a tile the
+## way `_test_only_cars_go_over_the_bridge` and `_test_agents_do_not_overrun_an_ordinary_edge`
+## already check — `CrowdAgent._cannot_go_on` now refuses every out-of-bounds tile outright, with
+## one exception, so the new claim is that nobody else reaches one **at all**. Checked directly
+## against `CityMap.in_bounds` at all four edges rather than by a pixel tolerance: the spine's own
+## band (north and south) may still carry a car past it, and nowhere else may carry anybody.
+func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t) -> void:
+	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
+	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
+	var size := _city.map.world_size()
+	var edges: Array[Vector2] = [
+		Vector2((spine_lo + spine_hi) * 0.5, Tuning.TILE_SIZE),
+		Vector2((spine_lo + spine_hi) * 0.5, size.y - Tuning.TILE_SIZE),
+		Vector2(Tuning.TILE_SIZE, size.y * 0.5),
+		Vector2(size.x - Tuning.TILE_SIZE, size.y * 0.5),
+	]
+	for i in edges.size():
+		var at: Vector2 = edges[i]
+		_city.crowd.start_day(1, _rng(10 + i), at)
+		var walkers_out := 0
+		var off_spine_cars_out := 0
+		for frame in int(round(20.0 / STEP)):
+			_city.crowd.set_focus(at)
+			_city.crowd.step(STEP)
+			for agent in _city.crowd.agents():
+				if _city.map.in_bounds(_city.map.world_to_tile(agent.position)):
+					continue
+				if agent.kind == CrowdAgent.Kind.WALKER:
+					walkers_out += 1
+				elif agent.position.x < spine_lo or agent.position.x >= spine_hi:
+					off_spine_cars_out += 1
+		t.check(walkers_out == 0,
+				"edge %d: no walker ever stands out of bounds (%d frames it did)"
+				% [i, walkers_out])
+		t.check(off_spine_cars_out == 0,
+				"edge %d: no car off the spine ever stands out of bounds (%d frames it did)"
+				% [i, off_spine_cars_out])
