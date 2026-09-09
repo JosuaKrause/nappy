@@ -1145,38 +1145,44 @@ const MARK_HEIGHT := 44.0
 const MARK_WIDTH := 15.0
 const MARK_FLASHES_PER_SECOND := 3.0
 
+## The caret's own answer, 0 (none), 1 (amber) or 2 (doubled red), computed once and cached
+## against `age` — `wants_a_mark()`, `mark_colour()` and `_draw_mark()` all ask in the same frame,
+## and each is a fresh sampling loop over `expected_impact_at()` or `will_be_lethal()` if they do
+## not share one. **Cache per frame, the way the halo already does its own once-a-frame work**,
+## rather than pricing the projection three times over for every visible source every draw.
+var _caret_strength_age := -1.0
+var _caret_strength_cache := 0
+
+func _caret_strength() -> int:
+	if _caret_strength_age == age:
+		return _caret_strength_cache
+	_caret_strength_age = age
+	_caret_strength_cache = 0
+	# A floor under the whole city has nothing to stand over — that is the HUD's job — and a
+	# permanent feature of a fixed map never appears, so there is no moment to mark: the same
+	# reason the fairness contract exempts an `AMBIENT` row.
+	if not (is_finished or is_leaving or def.city_wide or def.kind == GameEnums.EventKind.AMBIENT):
+		if will_be_lethal(player_at):
+			_caret_strength_cache = 2
+		elif expected_impact_at(player_at) >= Tuning.EXPECTED_IMPACT_POINTS:
+			_caret_strength_cache = 1
+	return _caret_strength_cache
+
 ## Whether this event is worth a mark at all.
 ##
-## **The mark is raised by what a thing costs, and by nothing else.** The rule is the player's own
-## expectation, stated so a test can hold it: **if A is marked and B is not, A costs more than B.**
-## `EventDef.walk_through_cost()` is the order and `Tuning.MARK_WORTH_A_DETOUR` is where the line
-## falls; `tests/test_danger.gd` asserts the monotonicity over the whole catalogue, so a row cannot
-## earn a mark by pulsing.
+## **The mark is raised by what a thing is projected to do to her, held still, and by nothing
+## else.** *(2026-09-08, the player, opening the milestone this rewrites the rule for: "carets
+## shouldn't be chosen by source value but by expected impact value".)* A row's own declared cost
+## no longer decides it — `expected_impact_at()` and `will_be_lethal()` do, at wherever she is
+## actually standing and however this thing is actually moving, so the same row is marked at one
+## moment and not at the next: a café she is standing in is unmarked, and a cyclist whose line
+## reaches her is marked while one passing wide of her is not.
 ##
-## **The trap is a rule like *danger that changes over time*** — lethal, telegraphing, swelling, or
-## pulsing fast enough to be timed. Every clause of that is a true statement about a thing and
-## **none of them is a statement about how bad it is**, so the marked set and the danger come apart:
-## a fire engine (+115 to walk through) carries nothing while a burning building at half the price
-## carries a caret, because one has a pulse and one does not; and a leaf blower is marked over the
-## dog walker beside it because its beat is 4.0s rather than 8.0s.
-##
-## **A cue that marks everything says nothing**, so the cheap end of the street is left alone — a
-## café, a delivery van, a poster crew, a burnt-out shell. And the mark **breathes** with current
-## emission, which is the one thing a ring does that a symbol does not get for free.
-##
-## What is given up, and it is a decision rather than an oversight: **a crouching cat (+24) loses
-## its caret.** The crouch is its own silhouette and the vocabulary's first rule is that the entity
-## carries it — held true on purpose against a raised intensity by stopping short of the threshold,
-## not by exempting the row.
+## **A stationary thing never earns a caret.** Held still, nothing about it changes under the
+## projection — see `expected_impact_at()` — which is the halo's job from the moment she is in its
+## field, not the caret's.
 func wants_a_mark() -> bool:
-	if is_finished or is_leaving or def.city_wide:
-		# A floor under the whole city has nothing to stand over. That is the HUD's job.
-		return false
-	if def.kind == GameEnums.EventKind.AMBIENT:
-		# A permanent feature of a fixed map never appears, so there is no moment to mark. The
-		# same reason the fairness contract exempts it.
-		return false
-	return def.hard_fail or def.walk_through_cost() >= Tuning.MARK_WORTH_A_DETOUR
+	return _caret_strength() > 0
 
 ## How hard the mark is breathing, 0..1, from what the event is emitting right now.
 ##
@@ -1198,10 +1204,17 @@ func mark_swell() -> float:
 ## *near* and red mean *far*, which is a colour carrying no information and being read as something
 ## else.
 ##
+## **Follows the strength `_caret_strength()` computed, not `def.hard_fail`.** *(2026-09-08, the
+## player: "we can keep the double red == lethal", then "and not all lethal things need a caret
+## either".)* A `hard_fail` row still reads doubled red exactly when its own current course would
+## put her inside the radius that ends the day — `will_be_lethal()` — and reads amber like anything
+## else the rest of the time: a robber waiting in an alley she is not in carries no mark at all
+## until he stands up and comes.
+##
 ## So the colour is the scale and the **flash** — visible whether or not she was there when the
 ## event started — is what says it has not happened yet. See `_draw_mark`.
 func mark_colour() -> Color:
-	return Palette.MARK_LETHAL if def.hard_fail else Palette.MARK_COSTLY
+	return Palette.MARK_LETHAL if _caret_strength() == 2 else Palette.MARK_COSTLY
 
 ## A caret over anything worth looking at, breathing with what it is currently emitting.
 ##
@@ -1222,7 +1235,7 @@ func _draw_mark() -> void:
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, -(MARK_HEIGHT + 10.0 * swell))
 	Sprites.draw_caret(self, at, MARK_WIDTH * scale, mark_colour())
-	if def.hard_fail:
+	if _caret_strength() == 2:
 		# Doubled, so lethal reads at a glance and never has to be told apart by hue.
 		Sprites.draw_caret(self, at - Vector2(0.0, MARK_WIDTH * scale * 0.85),
 				MARK_WIDTH * scale, mark_colour())
