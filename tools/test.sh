@@ -20,10 +20,10 @@ shopt -s nullglob
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# Four workers balance CPU work without launching a process for every small suite. The longest
-# suite bounds the best possible split, but optimizing shared code can reduce that floor too.
-# Refresh the cost estimates under comparable machine load; competing test runs distort both
-# wall time and shard balance. Override for machines with a different CPU or memory budget.
+# The longest suite sets a floor on wall time. With the cost estimates below, four shards fit
+# the remaining work beside that suite: a fifth still waits for it, while three leave more work
+# per shard than that floor. Optimizing shared code can lower the floor and change the best split.
+# Override for machines with a different CPU or memory budget.
 SHARDS="${TEST_SHARDS:-4}"
 
 if [[ ! -x "$GODOT" ]]; then

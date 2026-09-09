@@ -4,6 +4,26 @@
 
 Asked for: "make the test suite faster".
 
+**PR #64 review.** The reviewer accepted both optimizations and identified unnecessary scaffolding
+and tests that would obstruct a later correctness fix. The route cache's inputs are fixed for the
+tree's lifetime: the grid has no post-build mutation and the map's main-road position is assigned
+by generation. The growth-only toggle and clear were therefore unnecessary. The no-main-road path
+needs no cache because it already returns the grid's neighbor array directly. A shared growth
+helper and uncached filtering helper let the differential test vary only memoization, instead of
+maintaining a second copy of route growth.
+
+The crossing-route assertion was removed rather than changing placement behavior in this
+performance PR. Two mobile paths crossing at their interiors have a true geometric gap of zero;
+the endpoint calculation can miss that. Pinning a positive answer would make a correctness fix fail
+the test. The comparison against symmetric spacing is limited to pairs with a stationary side,
+where the optimized result is exact. This leaves the mobile-crossing defect as a known limitation,
+not a design requirement.
+
+The pushing rule was reconciled into one permission covering ready work and unfinished drafts,
+with the player's dated words retained. The four-shard comment keeps its load-balancing reason:
+with the configured cost estimates, a fifth worker still waits for the largest suite, while three
+workers carry more work apiece than that floor. No weight was added for the small spacing suite.
+
 The starting full run took 268.43 seconds on the local Mac with four shards. It executed 648,478
 checks; three burst-capture file checks failed because the sandbox denied the Godot user directory.
 The event suite was the limiting shard at 264.06 seconds; generation took 172.95 seconds and routes
