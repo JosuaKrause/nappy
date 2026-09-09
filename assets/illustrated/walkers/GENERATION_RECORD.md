@@ -1,7 +1,12 @@
 # Illustrated walker source record
 
-The three PNGs are built-in image generation outputs with genuine RGBA alpha. The runtime maps
+The three runtime PNGs are built-in image generation outputs with genuine RGBA alpha. The runtime maps
 the authored N, NE, E, SE, S, SW, W and NW views explicitly; it does not mirror a facing.
+
+`lower-denim-sneakers-v1.png` and its import sidecar preserve an unused source draft for the
+prompt below. Its joined trouser-and-shoe silhouettes are not the separate articulated cutouts
+registered by `MANIFEST.json`. It has no runtime binding and is not an approved replacement for
+`legs-denim-sneakers-v1.png`. The source is 2032 × 774 pixels with an alpha channel.
 
 ## Prompts
 

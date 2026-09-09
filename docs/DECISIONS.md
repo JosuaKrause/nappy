@@ -1,5 +1,33 @@
 # Decisions
 
+## Illustrated worktree recovery — 2026-09-09
+
+The player asked for a clean slate after PR #49, with a new PR for anything worth committing.
+The remaining worktrees were audited against `b4e0fba` before removal. The sprite WIP commit
+`7a8aa5d` is patch-equivalent to `b6fcd8b` on main; the street reference commit `42122aa` is
+patch-equivalent to `678a60a`, and all ten of its changed files match main byte for byte.
+
+The sprite ancestry merge starts at main `b4e0fba`, with incoming tip `7a8aa5d` and merge base
+`cb5e0a9`. Both visual helpers are absent in the base. The add/add conflicts are resolved by
+retaining the evolved main implementations: directional registrations still accept a single
+pivot but also carry per-view pivots and measured segment axes; planted gait still consumes
+actual displacement but also bounds reach, consumes movement across step boundaries, and exposes
+ankle and sole positions. Reintroducing the WIP would discard those registration repairs. No
+numbered records are introduced by either old commit, so no identity renumbering is needed.
+
+The dirty walker crowd binding and tests match `0a2d56e` byte for byte. Its untracked compositor
+differs only in where it guards an empty initial pose; main guards both variant updates and
+registration/reset state. The shared documentation edits only repair evidence paths that are
+already repaired on main, or refer to a TODO item already archived. The three bound PNG sources
+and their sidecars are already preserved. These leftovers do not add a new runtime requirement.
+
+One unused source is recovered: `assets/illustrated/walkers/lower-denim-sneakers-v1.png` and its
+original import sidecar. Its prompt is already in the generation record. The file is preserved
+byte for byte (Git blob `4ca00801afb815b2103c91bb40eb322af207596d`); inspection shows joined
+trouser-and-shoe silhouettes, and `sips` reports a 2032 × 774 image with alpha. It remains unbound
+and is not approved as a replacement for the articulated runtime source. The reference stash
+is left untouched.
+
 ## The actor PR takes main and the supersampling draft — 2026-09-09
 
 The player asked for PR #49 to land on `main` soon, for its skills and tooling, with the graphics
