@@ -920,7 +920,12 @@ func _apply_meter_override() -> void:
 ## pause: the game has not started, `Esc` would stop a stopped tree, and the way out of the title is
 ## the two keys it already offers. See `TitleScreen`.
 func _unhandled_input(event: InputEvent) -> void:
-	if DevFlags.enabled() and event.is_action_pressed("snapshot"):
+	var snapshot_action := _debug_snapshot_action(event) if _debug else &""
+	if snapshot_action == &"snapshot_burst":
+		get_viewport().set_input_as_handled()
+		_start_burst()
+		return
+	if snapshot_action == &"snapshot":
 		get_viewport().set_input_as_handled()
 		_snapshot_now()
 		return
@@ -930,6 +935,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	get_viewport().set_input_as_handled()
 	_pause.open()
+
+## Resolves the two developer capture controls before input dispatch. Key echoes do not make a
+## second capture: a held shortcut is one request, not a sequence of separate user decisions.
+static func _debug_snapshot_action(event: InputEvent) -> StringName:
+	if event is InputEventKey and (event as InputEventKey).echo:
+		return &""
+	if event.is_action_pressed("snapshot_burst"):
+		return &"snapshot_burst"
+	if event.is_action_pressed("snapshot"):
+		return &"snapshot"
+	return &""
 
 ## `P` (or `F9`) writes a screenshot into the telemetry folder and a line of trace beside it. It is
 ## a debugging aid rather than a game feature.
@@ -959,6 +975,21 @@ func _snapshot_now() -> void:
 	elif _pause and _pause.is_open():
 		screen = "paused"
 	Telemetry.snapshot_now("asked for a picture at (%d,%d) | %s | %s"
+			% [where.x, where.y, meters, screen])
+
+func _start_burst() -> void:
+	var where := Vector2i.ZERO
+	if _city and _player:
+		where = _city.map.world_to_tile(_player.global_position)
+	var meters := "no baby yet"
+	if _baby:
+		meters = "exc %d, sleep %d" % [roundi(_baby.excitement), roundi(_baby.sleepiness)]
+	var screen := "playing"
+	if _title and _title.is_open():
+		screen = "title"
+	elif _pause and _pause.is_open():
+		screen = "paused"
+	Telemetry.start_burst("asked for an animation burst at (%d,%d) | %s | %s"
 			% [where.x, where.y, meters, screen])
 
 func _quit() -> void:
