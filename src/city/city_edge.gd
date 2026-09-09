@@ -17,17 +17,25 @@ extends Node2D
 ##
 ## Two things about how they are drawn, and both are about which side of a car they are on:
 ##
-## - **The tunnel is in the y-sorted layer, anchored on the map edge.** Anything further north
-##   sorts behind it, so a car going under the mountain is *under* it: darkened inside the portal's
-##   opening, then hidden by the mountain this piece paints over the rest of the border band, and
-##   recycled out of sight rather than blinking out in plain view. That is the one job only
-##   y-sorting can do here.
+## - **The tunnel is two pieces, and only the dark inside it is above the traffic.** A car going
+##   under the mountain is *under* it: darkened a step at a time inside the portal's opening as
+##   its nose goes in, then hidden by the mountain painted over the rest of the border band, and
+##   recycled out of sight rather than blinking out in plain view. **Y-sorting cannot do the
+##   darkening**, because a sprite is anchored on its base — a northbound car's origin is its rear
+##   bumper, so it sorts in front of a piece anchored on the map edge until the whole car is past
+##   the edge, and then flips behind it in one frame: bright, then black. So `TUNNEL_DARK`, the
+##   ramp inside the opening, goes in a layer over the entities (`overhangs()`), where it lands on
+##   whatever is under it. **The portal's face and the mountain over it stay y-sorted** on the map
+##   edge, because a face over the traffic would also be over the heads of the walkers on the
+##   pavement in front of it; a car far enough in to be under the mountain has its origin past the
+##   edge and sorts behind them on its own.
 ## - **The bridge and the road are in the building layer**, under the entities, because they are
 ##   ground: a car leaving over the bridge is *on* the deck, and a deck that sorted against it
 ##   would sometimes be painted over the car.
 
 enum Kind {
-	TUNNEL,   ## North: the spine goes under. Occludes what is beyond it.
+	TUNNEL,   ## North: the portal's face, and the mountain over the road beyond it.
+	TUNNEL_DARK,  ## North: the dark inside the portal's opening, over whatever drives into it.
 	BRIDGE,   ## South: the deck runs out between two parapets.
 	ROAD_EAST,
 	ROAD_WEST,
@@ -45,9 +53,18 @@ const MOUNTAIN := preload("res://assets/tiles/mountain.svg")
 ## hole**, so one moves with the other. `City._border_source` carries the carriageway exactly
 ## this far out of the map and paints mountain beyond it — the road ends where the opening does,
 ## and above the portal there is only rock.
-const TUNNEL_DEPTH_TILES := 3
+const TUNNEL_DEPTH_TILES := 2
+
+## The height of one step of the darkening ramp, in px. A quarter of a tile, so the road goes
+## into the dark as a gradient rather than in two jumps, and a car's own length spans several
+## steps — it is visibly darker at the front than at the back while it is going in.
+const RAMP_STEP_PX := 8.0
 
 @export var kind := Kind.TUNNEL
+
+## Whether this piece belongs in a layer over the entities.
+func overhangs() -> bool:
+	return kind == Kind.TUNNEL_DARK
 
 ## Whether this piece belongs in the y-sorted entity layer rather than under it.
 func occludes() -> bool:
@@ -56,9 +73,10 @@ func occludes() -> bool:
 func _draw() -> void:
 	match kind:
 		Kind.TUNNEL:
-			_swallow_the_road()
 			_blit(TUNNEL, Vector2(-0.5, -1.0))
 			_roof_the_tunnel()
+		Kind.TUNNEL_DARK:
+			_swallow_the_road()
 		Kind.BRIDGE:
 			_blit(BRIDGE, Vector2(-0.5, 0.0))
 		Kind.ROAD_EAST:
@@ -70,25 +88,26 @@ func _draw() -> void:
 ##
 ## `City._paint_outside_the_map` carries the spine's road `TUNNEL_DEPTH_TILES` out through the
 ## border rather than burying it in rock, and this is what turns that stretch into a tunnel rather
-## than a road with a picture at the end. One rect per tile inside the opening, alpha climbing to
-## opaque at the ceiling, so the road does not stop being a road at any particular pixel — it just
-## stops being visible. **The whole fade happens inside the mouth**: the first step is the tile
-## just past the last kerb and the last is fully dark, so nothing of the road shows above the
-## portal, and a car going in is gone by the time it reaches the top of the opening.
+## than a road with a picture at the end. One rect per `RAMP_STEP_PX` inside the opening, alpha
+## climbing linearly to opaque at the ceiling, so the road does not stop being a road at any
+## particular pixel — it just stops being visible. **The whole fade happens inside the mouth**: the
+## first step is just past the last kerb and the last is fully dark, so nothing of the road shows
+## above the portal, and a car going in is gone by the time it reaches the top of the opening.
 ##
 ## Only as wide as the carriageway, because that is all the road there is: the pavements stop at
 ## the city, and the opening's own side walls are part of the portal art.
 ##
-## Drawn before the portal so the arch sits on top of its own darkest step, and drawn here rather
-## than as pre-darkened tiles in the tileset because the ramp is a property of the *portal* — the
-## art's opening and this constant describe the same hole, and the tileset knows nothing of it.
+## Drawn here rather than as pre-darkened tiles in the tileset because the ramp is a property of
+## the *portal* — the art's opening and `TUNNEL_DEPTH_TILES` describe the same hole, and the
+## tileset knows nothing of it — and drawn by its own piece in the layer over the traffic, so a
+## car's nose darkens before its tail does.
 func _swallow_the_road() -> void:
-	var tile := float(Tuning.TILE_SIZE)
+	var depth := TUNNEL_DEPTH_TILES * float(Tuning.TILE_SIZE)
 	var width := Tuning.carriageway_width()
-	var steps := TUNNEL_DEPTH_TILES
+	var steps := int(depth / RAMP_STEP_PX)
 	for step in steps:
 		var alpha := float(step + 1) / float(steps)
-		draw_rect(Rect2(-width * 0.5, -tile * float(step + 1), width, tile),
+		draw_rect(Rect2(-width * 0.5, -RAMP_STEP_PX * float(step + 1), width, RAMP_STEP_PX),
 				Color(0.05, 0.04, 0.04, alpha))
 
 ## The mountain over the tunnel, between the top of the portal and the far edge of the border band.
@@ -97,8 +116,8 @@ func _swallow_the_road() -> void:
 ## opening — but the ground is *under* the traffic, and a car on its way out drives on to
 ## `Tuning.OUT_OF_SIGHT` before it is recycled, which is further than the portal is tall. This is
 ## the lid: the same tile the border uses, blitted on the tile grid so it is indistinguishable from
-## the ground around it, in the y-sorted layer where a car north of the map edge sorts behind it.
-## Without it the car is dark inside the mouth and then bright on top of the mountain.
+## the ground around it, in the y-sorted layer where a car that far past the edge sorts behind
+## it. Without it the car is dark inside the mouth and then bright on top of the mountain.
 ##
 ## The whole corridor's width rather than the carriageway's, so a sprite hanging over its lane is
 ## covered too; the pavement columns are mountain underneath anyway, so the extra paint changes

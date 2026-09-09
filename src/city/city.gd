@@ -43,6 +43,11 @@ const BOUNDARY_THICKNESS := 64.0
 ## boundary street is the same depth of building as both sides of every other street.
 const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 
+## The layer for the one thing drawn *over* the entities: the dark inside the tunnel, which has to
+## land on a car as it drives in. `Entities` is 2 in `city.tscn`; nothing else in the city is
+## above it.
+const OVERHEAD_Z_INDEX := 3
+
 ## Trees per *block* of open ground, by what the block currently is. A forest is a park with
 ## more trees in it and no swings, which is most of what the difference between them is on the
 ## ground.
@@ -273,13 +278,20 @@ func _spawn_spine_exits() -> void:
 	var down := (map.main_road * CityMap.period()
 			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
 	_spawn_exit(CityEdge.Kind.TUNNEL, Vector2(down, 0.0))
+	_spawn_exit(CityEdge.Kind.TUNNEL_DARK, Vector2(down, 0.0))
 	_spawn_exit(CityEdge.Kind.BRIDGE, Vector2(down, map.world_size().y))
 
+## The dark inside the tunnel goes in a layer of its own above the entities, so it lands on a car
+## as the car drives in; the portal's face is y-sorted with them; the bridge and the road are
+## ground and go under them. `CityEdge` says why the dark cannot be y-sorted too.
 func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 	var exit := CityEdge.new()
 	exit.kind = kind
 	exit.position = at
-	if exit.occludes():
+	if exit.overhangs():
+		exit.z_index = OVERHEAD_Z_INDEX
+		add_child(exit)
+	elif exit.occludes():
 		_entities.add_child(exit)
 	else:
 		_buildings_layer.add_child(exit)

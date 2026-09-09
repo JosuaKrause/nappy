@@ -39,12 +39,22 @@ the tunnel still drives on out of sight before it is recycled, so the mountain a
 has to be painted *over* the traffic as well as under it, or the car goes dark in the mouth and
 comes out bright on top of the rock.
 
-**And the bridge, when the tunnel was reported done.** The tunnel fix left the two dotted-line
-tiles before the bridge deck as they were and said so; the answer was immediate:
+**The first cut was not the ask, and the player said so.** The tunnel was reported done with a
+before-and-after picture, and the bridge was mentioned as having the same two dotted-line tiles;
+the player first said *"let's fix the bridge too"*, and then, on the pictures:
 
-> "let's fix the bridge too"
+> "how does the tunnel get improved? the ask was that the progressively shaded part to be added
+> in the mouth. i don't see that in the evidence and I don't see evidence of a car getting darker
+> when driving in as well? all you did is make the mouth taller which was *not* the ask"
 
-So both ends of the spine run plain asphalt into the border.
+> "why did you remove the crossing texture in front of the bridge? it's a valid pedestrian
+> crossing"
+
+Both right. The first cut had cut only the side walls out of the sprite and left the arch's inner
+face across the hole, so no road showed and nothing faded — and the sprite had been made a tile
+taller, which nobody asked for. The bridge's crossing goes back: it is a real crossing in the open.
+What the note asks for, restated: **the shading is a gradient inside the mouth the sprite already
+has, and a car driving in gets darker as it goes** — and the evidence has to show a car doing it.
 
 **Built in the same session.** The record, with the numbers and what was rejected, is in
 [DECISIONS.md](DECISIONS.md) under "The tunnel swallows the road".
