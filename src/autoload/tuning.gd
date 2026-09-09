@@ -165,22 +165,24 @@ const CHAT_EXCITEMENT := 25.0
 
 # ----------------------------------------------------------------- the mark ---
 
-## What a row has to cost, in points of the meter, before it earns a caret over its head.
+## Points of the meter a source has to be *projected* to land on her, held still, before it earns
+## an amber caret — and the same points a source's halo rim reads fully red once it has *actually*
+## landed them. One number for both directions, because an amount means the same thing whether it
+## already happened or is about to. *(2026-09-08, the player, on a five-second horizon and a line
+## at 40 of the 100-point meter: "both sound good to me".)*
 ##
-## The rule is about **cost**, not about whether a danger changes over time — asking the latter
-## marks a burning building and not the fire engine that made it. See `EventInstance.wants_a_mark()`.
-##
-## **A quarter of the meter**, and it is a taste call stated rather than derived: one of these is a
-## quarter of the bar and a route has three or four on it. What makes it a *safe* taste call is
-## where it falls — the catalogue has a gap between `cat_dash` (+24, kept just under the line on
-## purpose so a startle spike does not also claim the caret the crouch's own silhouette already
-## carries) and `checkpoint` (+29), so the line sits in open ground rather than slicing a cluster,
-## and a small rebalance cannot flip a row across it by accident.
-##
-## The number decides *how many* rows are marked rather than which: the ordering is the invariant,
-## and `tests/test_danger.gd` holds it — if A is marked and B is not, A costs more than B, over the
-## whole catalogue.
-const MARK_WORTH_A_DETOUR := METER_MAX * 0.25
+## The rule is about **expected impact**, not about whether a danger changes over time or what a
+## row is declared to cost on paper — asking either of those marks a burning building and not the
+## fire engine that made it, or a pedestrian who never does. See `EventInstance.expected_impact_at()`
+## and `wants_a_mark()`.
+const EXPECTED_IMPACT_POINTS := METER_MAX * 0.4
+
+## How far forward a source's own motion is projected for the caret, and — the same figure read
+## backward — how wide `ExcitementHalo`'s sliding window of `landed()` points is. *(2026-09-08,
+## the player, confirming both halves of the same figure: "both sound good to me".)* One horizon
+## serves past and future alike: the halo is red at `EXPECTED_IMPACT_POINTS` landed over the last
+## five seconds, the caret is amber at the same points expected over the next five.
+const EXPECTED_IMPACT_HORIZON := 5.0
 
 # ---------------------------------------------------------------- telegraph ---
 
@@ -1175,12 +1177,16 @@ const CLOSURE_GAP_BIAS := 4.0
 ## the caret is ordered by — rather than over a field somebody sets per row, because a second answer
 ## to *how expensive is this* is how two tables of the same fact drift apart.
 ##
-## **Setting it to `MARK_WORTH_A_DETOUR` is the mistake with the good argument.** That constant is
-## where the game raises a caret — *this is worth going round* — so sharing it would make the cue
-## and the placement say one sentence. What it does instead is empty the routes: at 25 points **two
-## thirds of every day becomes a wall**, and day 1's corridor drops from 69.6 placements to 27.8 of
-## 113. The ground off the paths is what was asked to be closed; nobody asked for the paths to be
-## cleared.
+## **Setting it to a row's own `walk_through_cost()` line for the caret is the mistake with the
+## good argument.** The caret's own threshold (`EXPECTED_IMPACT_POINTS`, which happens to be the
+## same 0.4 of the meter as this constant — a coincidence of two felt numbers, not one question
+## asked twice: the caret is read off a projected position and this is read off a row's own static
+## integral) is where the game raises a caret — *this is worth going round* — so sharing the
+## question, not merely the value, would make the cue and the placement say one sentence. What
+## sharing the question did instead was empty the routes: at 25 points, the caret's line before
+## this milestone raised it, **two thirds of every day becomes a wall**, and day 1's corridor drops
+## from 69.6 placements to 27.8 of 113. The ground off the paths is what was asked to be closed;
+## nobody asked for the paths to be cleared.
 ##
 ## The line is set by one row instead, and by the right one. **`dog_walker` costs 36.5 and has to
 ## stay friction**: the dog-walker decision arriving twice on day one is the route decision this

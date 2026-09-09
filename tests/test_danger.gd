@@ -13,8 +13,13 @@ extends RefCounted
 
 func run(t) -> void:
 	_test_the_rings_are_gone(t)
-	_test_scenery_gets_no_mark(t)
-	_test_the_dangerous_things_do(t)
+	_test_a_stationary_thing_she_stands_in_is_unmarked(t)
+	_test_a_cat_dashing_at_her_is_unmarked(t)
+	_test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t)
+	_test_a_telegraphing_lethal_thing_on_course_is_still_red(t)
+	_test_a_car_on_course_is_red_one_beside_her_line_is_not(t)
+	_test_a_walker_brushing_past_is_unmarked(t)
+	_test_the_arterial_at_ordinary_density_marks_nobody(t)
 	_test_the_mark_still_breathes(t)
 	_test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
 	_test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
@@ -50,142 +55,178 @@ func _test_the_rings_are_gone(t) -> void:
 
 # ------------------------------------------------------------------- the mark ---
 
-## The three the cost table already calls scenery, plus the large obvious obstacles. None of
-## them is worth changing your route for: they are there, they stay there, and they are visibly
-## what they are. A street where the notice board is marked as hard as the abduction is a street
-## with no information on it, which is what the rings were.
-##
-## *(M39 dropped `checkpoint` from this list.* It costs +29 to walk through, which is above
-## `MARK_WORTH_A_DETOUR`, and the whole of finding 9 is that the marked set has to be the top of the
-## cost order rather than a list somebody curated. A street being *held* is a real detour.)*
-func _test_scenery_gets_no_mark(t) -> void:
-	for id in ["poster_crew", "barricade", "burnt_shell", "construction", "busker", "delivery_van"]:
-		var def := EventCatalogue.by_id(id)
-		t.check(def != null, "'%s' is in the catalogue" % id)
-		if not def:
-			continue
-		var instance := _instance(def)
-		_advance(instance, def.telegraph_time + 0.5)
-		t.check(not instance.wants_a_mark(),
-				"'%s' is scenery once it has arrived, and carries no mark" % id)
-		instance.free()
+## A stationary thing never earns a caret — held still, its own field does not change under the
+## projection, which is the halo's job from the moment she is in reach at all. Standing directly
+## in front of the café changes nothing about that.
+func _test_a_stationary_thing_she_stands_in_is_unmarked(t) -> void:
+	var def := EventCatalogue.by_id("cafe_tables")
+	t.check(def != null and not def.mobile, "cafe_tables is a stationary row")
+	if not def:
+		return
+	var instance := _instance(def)
+	instance.set_player_at(instance.global_position)
+	t.check(not instance.wants_a_mark(),
+			"a café she is standing in front of carries no caret at all")
+	instance.free()
 
-func _test_the_dangerous_things_do(t) -> void:
-	# Lethal, always, from the first frame — including while it is telegraphing, which is the
-	# whole window the fairness contract gives her.
-	var lethal := EventCatalogue.by_id("abduction")
-	t.check(lethal != null and lethal.hard_fail, "the abduction is a hard fail")
-	if lethal:
-		var instance := _instance(lethal)
-		t.check(instance.wants_a_mark(), "a lethal event is marked while it telegraphs")
-		t.check(instance.mark_colour() == Palette.MARK_LETHAL,
-				"and in the colour reserved for the things that end the day")
-		_advance(instance, lethal.telegraph_time + 0.5)
-		t.check(instance.wants_a_mark(), "and still marked once it is live")
-		instance.free()
+## *(2026-09-08, the player, opening the milestone that replaced the old catalogue-wide rule:
+## "carets shouldn't be chosen by source value but by expected impact value" — and, confirming the
+## consequence of it: "a cat's dash on a standing player lands about 30 and is not marked".)* A cat
+## driving straight at a standing player still lands under `Tuning.EXPECTED_IMPACT_POINTS`.
+func _test_a_cat_dashing_at_her_is_unmarked(t) -> void:
+	var def := EventCatalogue.by_id("cat_dash")
+	t.check(def != null, "cat_dash is in the catalogue")
+	if not def:
+		return
+	var instance := _instance(def, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
+	# One frame past the telegraph is enough to turn the crouch into a heading — `cat_dash` is
+	# `still_while_telegraphing`, so `travel_velocity()` is zero until then.
+	_advance(instance, def.telegraph_time + STEP)
+	instance.set_player_at(Vector2(def.outer_radius, 0.0))
+	t.check(not instance.wants_a_mark(),
+			"a cat driving straight at a standing player still lands under the line")
+	instance.free()
 
-	# A loud row keeps its mark after the telegraph, and the **colour does not change** with the
-	# phase. *(M39, playtest 10 finding 8.)* The flash is what says "not yet"; amber says "worth
-	# going round" and deep red says "ends your day", and there is no third thing.
-	var loud := EventCatalogue.by_id("leaf_blower")
-	if loud:
-		var instance := _instance(loud)
-		t.check(instance.wants_a_mark() and instance.mark_colour() == Palette.MARK_COSTLY,
-				"a loud event is marked in amber while it telegraphs")
-		_advance(instance, loud.telegraph_time + 0.5)
-		t.check(instance.wants_a_mark() and instance.mark_colour() == Palette.MARK_COSTLY,
-				"and in the same amber once it arrives — the colour is the danger, not the phase")
-		instance.free()
+## The doubled caret's own question, on the row the vocabulary keeps the doubling for: a hard-fail
+## row on a course that reaches her lethal radius is red, and the same row on a course that misses
+## it — however loud its field still reads along the way — carries nothing at all.
+func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
+	var def := EventCatalogue.by_id("cyclist")
+	t.check(def != null and def.hard_fail, "cyclist is a hard-fail row")
+	if not def:
+		return
+	var route := PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)])
 
-	# The rows that are cheap to walk through carry nothing, and the rows the player named carry
-	# something. *(M39, findings 1 and 9: "there is no danger indicator over the homeless person",
-	# and "some dangerous ones don't have indicators and some really benign ones do".)*
-	for id in ["cafe_tables", "busker", "cat_dash", "construction", "police_patrol"]:
-		var def := EventCatalogue.by_id(id)
-		if not def:
-			continue
-		var instance := _instance(def)
-		_advance(instance, def.telegraph_time + 0.5)
-		t.check(not instance.wants_a_mark(),
-				"'%s' costs %.1f to walk through, which is not a detour"
-				% [id, def.walk_through_cost()])
-		instance.free()
-	for id in ["homeless_yeller", "dog_walker", "leaf_blower", "loose_dog", "fire_truck"]:
-		var def := EventCatalogue.by_id(id)
-		if not def:
-			continue
-		var instance := _instance(def)
-		_advance(instance, def.telegraph_time + 0.5)
-		t.check(instance.wants_a_mark(),
-				"'%s' costs %.1f to walk through, so it is worth a mark"
-				% [id, def.walk_through_cost()])
-		instance.free()
+	# `cyclist` is not `still_while_telegraphing`, so it is already riding its route through the
+	# whole telegraph — the player is placed relative to wherever it actually is once the
+	# telegraph clears rather than at a fixed point its own approach may have already ridden past.
+	# (A telegraphing cyclist is its own scenario below — `_caret_strength()` no longer needs the
+	# telegraph to be over to read red.)
+	var on_course := _instance(def, route)
+	_advance(on_course, def.telegraph_time + STEP)
+	on_course.set_player_at(on_course.global_position + Vector2(def.outer_radius, 0.0))
+	t.check(on_course.wants_a_mark() and on_course.mark_colour() == Palette.MARK_LETHAL,
+			"a cyclist whose line reaches her lethal radius is the doubled red caret")
+	on_course.free()
 
-	# **And the invariant underneath all of it, which is the whole of finding 9**: the marked set is
-	# the *top of the cost order*. If A carries a mark and B does not, A costs more to walk through
-	# than B — over the whole catalogue, so a new row cannot earn one by pulsing quickly and a
-	# rebalance cannot silently take one away from the row above it.
-	#
-	# Lethal rows are exempt from the ordering and not from the rule: they are marked whatever they
-	# cost, because *ends your day* is a different kind of thing rather than a larger amount of the
-	# same thing. `charging_dog` is the case that proves it — 17 points, the cheapest lethal row in
-	# the game, and the only one running is the answer to.
-	var cheapest_marked := INF
-	var dearest_unmarked := -INF
-	var marked := 0
-	var counted := 0
-	for def in EventCatalogue.all():
-		if def.city_wide or def.kind == GameEnums.EventKind.AMBIENT:
-			continue
-		counted += 1
-		var instance := _instance(def)
-		_advance(instance, def.telegraph_time + 0.05)
-		if instance.wants_a_mark():
-			marked += 1
-			if not def.hard_fail:
-				cheapest_marked = minf(cheapest_marked, def.walk_through_cost())
-		else:
-			dearest_unmarked = maxf(dearest_unmarked, def.walk_through_cost())
-		instance.free()
-	t.check(cheapest_marked > dearest_unmarked,
-			"nothing unmarked costs more than something marked (%.1f unmarked vs %.1f marked)"
-			% [dearest_unmarked, cheapest_marked])
+	var wide := _instance(def, route)
+	_advance(wide, def.telegraph_time + STEP)
+	# 60px off its own line, inside the outer radius (90) so its field still reads along the way,
+	# but past the inner radius (33) it would have to cross to end the day.
+	wide.set_player_at(wide.global_position + Vector2(0.0, 60.0))
+	t.check(not wide.will_be_lethal(wide.player_at),
+			"the same cyclist passing 60px wide of her own line never reaches her lethal radius")
+	wide.free()
 
-	# And the whole catalogue is not marked. If it ever is, the vocabulary has stopped saying
-	# anything and has become the rings again with a different shape.
-	t.check(marked < counted,
-			"only some of the catalogue carries a mark once it has arrived (%d of %d)"
-			% [marked, counted])
+## **A telegraph is not an alibi.** `is_lethal_at()` refuses the whole of a telegraph because it
+## answers *is this lethal right now*; `will_be_lethal()` answers a different question — is this
+## row's own course, once the telegraph clears, one that ends her day — and a `hard_fail` row
+## riding straight at her through the telegraph has to read red for the whole of it, or the
+## doubled caret only ever appears in the fraction of a second the telegraph has left. Three
+## scenarios, one for each way a lethal row can be *not yet arrived* and still owe her the mark:
+## a mobile row already riding its route, a pursuer that has noticed her and is holding its
+## stand-off, and a pursuer that has not noticed anything yet.
+func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
+	var cyclist_def := EventCatalogue.by_id("cyclist")
+	if cyclist_def:
+		# No `_advance()` at all: still inside its own 2.0s telegraph, and already moving —
+		# `cyclist` is not `still_while_telegraphing`, so `_caret_velocity()` reads its route speed
+		# from age zero.
+		var cyclist := _instance(cyclist_def,
+				PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
+		t.check(cyclist.is_telegraphing(), "the cyclist is still telegraphing at age zero")
+		cyclist.set_player_at(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
+		t.check(cyclist.wants_a_mark() and cyclist.mark_colour() == Palette.MARK_LETHAL,
+				"a telegraphing cyclist on a course that reaches her lethal radius is already " +
+						"the doubled red caret")
+		t.check(cyclist.mark_swell() < 1.0,
+				"and the swell still reads the telegraph's own damping — the flash, not the " +
+						"colour, is what says this has not happened yet")
+		cyclist.free()
 
-	# Day 1 specifically, because that is the street the complaint was made about and the one a
-	# player sees most. It comes out at six of nine, which is more than M33's two — and the count is
-	# a *consequence* rather than a target: the threshold is pinned by `homeless_yeller` at +31,
-	# which is the row the finding named, and the ordering rule then takes everything above it.
-	# What has to stay true is that the cheap end of an ordinary street carries nothing, or the
-	# caret is back to being a ring.
-	var day_one_marked := 0
-	var day_one := 0
-	var cheapest: EventDef = null
-	for def in EventCatalogue.available_on(1):
-		if def.city_wide or def.kind == GameEnums.EventKind.AMBIENT:
-			continue
-		day_one += 1
-		if not cheapest or def.walk_through_cost() < cheapest.walk_through_cost():
-			cheapest = def
-		var instance := _instance(def)
-		_advance(instance, def.telegraph_time + 0.05)
-		day_one_marked += 1 if instance.wants_a_mark() else 0
-		instance.free()
-	t.check(day_one_marked > 0 and day_one_marked < day_one,
-			"day 1 marks some of its street and not all of it (%d of %d)"
-			% [day_one_marked, day_one])
-	if cheapest:
-		var instance := _instance(cheapest)
-		_advance(instance, cheapest.telegraph_time + 0.05)
-		t.check(not instance.wants_a_mark(),
-				"and the cheapest thing on it ('%s', %.1f) carries nothing"
-				% [cheapest.id, cheapest.walk_through_cost()])
-		instance.free()
+	var dog_def := EventCatalogue.by_id("charging_dog")
+	if dog_def:
+		t.check(dog_def.hard_fail and dog_def.pursues and dog_def.pursues_within <= 0.0,
+				"charging_dog is a hard-fail pursuer sited already noticing her")
+		var dog := _instance(dog_def)
+		t.check(dog.is_telegraphing() and not dog.is_waiting(),
+				"the day-3 dog has already noticed her and is still telegraphing its charge")
+		dog.set_player_at(dog.global_position + Vector2(60.0, 0.0))
+		t.check(dog.wants_a_mark() and dog.mark_colour() == Palette.MARK_LETHAL,
+				"a noticed dog holding its stand-off through the telegraph is already the " +
+						"doubled red caret")
+		dog.free()
+
+	var robber_def := EventCatalogue.by_id("alley_robbery")
+	if robber_def:
+		t.check(robber_def.pursues_within > 0.0, "alley_robbery waits for a trigger")
+		var robber := _instance(robber_def)
+		t.check(robber.is_waiting(), "and nobody has come near it yet")
+		robber.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
+		t.check(not robber.wants_a_mark(),
+				"a waiting robber in an alley she is not in carries no mark at all")
+		robber.free()
+
+## A car's own equivalent, over the strike box `Crowd._strike()` actually collides against rather
+## than a def's `inner_radius`.
+func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t) -> void:
+	var ahead := CrowdAgent.new()
+	ahead.kind = CrowdAgent.Kind.CAR
+	ahead._speed = 100.0
+	ahead.set_player_at(Vector2(60.0, 0.0))
+	t.check(ahead.will_be_lethal(ahead.player_at),
+			"a car whose strike box reaches the lane she is standing in front of is red")
+	ahead.free()
+
+	var beside := CrowdAgent.new()
+	beside.kind = CrowdAgent.Kind.CAR
+	beside._speed = 100.0
+	beside.set_player_at(Vector2(60.0, 50.0))
+	t.check(not beside.will_be_lethal(beside.player_at),
+			"the same car passing beside her — she would have to step into it herself — is not")
+	beside.free()
+
+## `PEDESTRIAN_INTENSITY` (4.2/s) times `Tuning.EXPECTED_IMPACT_HORIZON` (5s) is 21, under
+## `Tuning.EXPECTED_IMPACT_POINTS` (40) by construction, so no ordinary walker can ever earn a
+## caret on its own field — only a jolt (a bump, a horn) could add enough, and this one carries
+## none.
+func _test_a_walker_brushing_past_is_unmarked(t) -> void:
+	var walker := CrowdAgent.new()
+	walker.kind = CrowdAgent.Kind.WALKER
+	walker._speed = 60.0
+	walker.set_player_at(Vector2(20.0, 25.0))
+	t.check(walker._caret_strength() == 0,
+			"an ordinary walker brushing past her carries no caret at all")
+	walker.free()
+
+## **The line this milestone cannot merge on the wrong side of.** *(2026-09-08, on the one
+## measurement rather than an argument: "the answer has to be none at ordinary density, or the
+## line moves before this merges".)* A real generated city, a real `Crowd.step()` — "a rig that
+## steps the parts is not running the whole" (`.claude/skills/crowd-traffic/SKILL.md`) — at
+## ordinary arterial density, for the same forty-second walk `docs/EVENTS.md`'s own cost-table
+## measurement uses, with the player standing still on the pavement rather than walking it: not
+## one amber caret over the whole of it.
+func _test_the_arterial_at_ordinary_density_marks_nobody(t) -> void:
+	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
+	var city: City = city_scene.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(9137))
+	var standing_at := CrowdLanes.arterial_pavement(city.map)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("test_danger:arterial")
+	city.crowd.start_day(1, rng, standing_at)
+
+	var amber := 0
+	for i in int(round(40.0 / STEP)):
+		city.crowd.step(STEP)
+		for agent in city.crowd.agents():
+			agent.set_player_at(standing_at)
+			if agent._caret_strength() == 1:
+				amber += 1
+	t.check(amber == 0,
+			("a crowd at ordinary arterial density around a standing player marks nobody " +
+					"(%d amber frames over the walk)") % amber)
+	city.free()
 
 ## The one property the ring had that a symbol does not get for free. Without it a pulsing event
 ## stops being something to time a pass through and becomes something that hurts at random.
@@ -320,7 +361,7 @@ func _test_a_car_sounding_its_horn_carries_its_own_mark(t) -> void:
 	var methods: Array[String] = []
 	for entry in (load("res://src/crowd/crowd_agent.gd") as GDScript).get_script_method_list():
 		methods.append(String(entry["name"]))
-	t.check("_draw_horn_mark" in methods, "a car draws a mark of its own")
+	t.check("_draw_mark" in methods, "a car draws a mark of its own")
 	# The caret is one shape in one place, not two similar ones: a short vocabulary stays short
 	# only if nobody hand-draws a second chevron.
 	var shared: Array[String] = []
@@ -600,9 +641,9 @@ func _test_the_babys_cue_only_steps_aside_for_something(t) -> void:
 
 # ------------------------------------------------------------------- helpers ---
 
-func _instance(def: EventDef) -> EventInstance:
+func _instance(def: EventDef, route := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, route)
 	return instance
 
 ## Runs the one thing under test, rather than a whole `_physics_process`. A bare `EventManager`

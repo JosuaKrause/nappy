@@ -471,7 +471,7 @@ All implemented.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
-| `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Kept just under `Tuning.MARK_WORTH_A_DETOUR` on purpose, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
+| `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Its dash, driven straight at a standing player, still projects under `Tuning.EXPECTED_IMPACT_POINTS`, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the thing that forces a crossing. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, but tightened to a 90px reach so only somebody actually near the tables is billed for them. |
 | `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
@@ -659,50 +659,45 @@ That last point is the one to carry: the cost of a route is not only the events 
 *street kind* is a bigger term than most rows here. A balance argument that reaches for this table
 alone is answering a narrower question than it thinks.
 
-| Event | walk through | run through | mark |
-| --- | ---: | ---: | :---: |
-| `loudspeaker` | — | — | — |
-| `curfew_announce` | — | — | — |
-| `construction` | −15.2 | +32.1 | |
-| `delivery_van` | −11.4 | +24.1 | |
-| `barricade` | −9.1 | +19.3 | |
-| `burnt_shell` | −3.0 | +16.5 | |
-| `poster_crew` | +0.7 | +22.6 | |
-| `cafe_tables` | +12.3 | +24.9 | |
-| `busker` | +13.3 | +45.7 | |
-| `police_patrol` | +15.9 | +46.2 | |
-| `market_stall` | +16.5 | +28.3 | |
-| `charging_dog` * | +16.9 | — | ●● |
-| `cyclist` * | +20.9 | +29.7 | ●● |
-| `cat_dash` | +24.1 | +37.5 | |
-| `playground` | +25.5 | +44.3 | — |
-| `checkpoint` | +29.0 | +59.4 | ● |
-| `homeless_yeller` | +31.2 | +59.6 | ● |
-| `ice_cream_van` | +31.5 | +65.8 | ● |
-| `reversing_lorry` * | +32.6 | +53.3 | ●● |
-| `alley_robbery` * | +34.6 | — | ●● |
-| `dog_walker` | +36.5 | +41.2 | ● |
-| `leaf_blower` | +48.6 | +67.1 | ● |
-| `protest` | +50.0 | +88.1 | ● |
-| `pigeon_flock` † | +54.1 | +63.6 | ● |
-| `burning_building` | +55.9 | +83.2 | ● |
-| `loose_dog` | +61.2 | +61.9 | ● |
-| `abduction` * | +61.3 | +84.1 | ●● |
-| `military_convoy` | +84.9 | +107.2 | ● |
-| `night_raid` | +101.8 | +122.6 | ● |
-| `fire_truck` | +115.4 | +132.0 | ● |
-| `firefight` * | +155.9 | +162.3 | ●● |
+| Event | walk through | run through |
+| --- | ---: | ---: |
+| `loudspeaker` | — | — |
+| `curfew_announce` | — | — |
+| `construction` | −15.2 | +32.1 |
+| `delivery_van` | −11.4 | +24.1 |
+| `barricade` | −9.1 | +19.3 |
+| `burnt_shell` | −3.0 | +16.5 |
+| `poster_crew` | +0.7 | +22.6 |
+| `cafe_tables` | +12.3 | +24.9 |
+| `busker` | +13.3 | +45.7 |
+| `police_patrol` | +15.9 | +46.2 |
+| `market_stall` | +16.5 | +28.3 |
+| `charging_dog` * | +16.9 | — |
+| `cyclist` * | +20.9 | +29.7 |
+| `cat_dash` | +24.1 | +37.5 |
+| `playground` | +25.5 | +44.3 |
+| `checkpoint` | +29.0 | +59.4 |
+| `homeless_yeller` | +31.2 | +59.6 |
+| `ice_cream_van` | +31.5 | +65.8 |
+| `reversing_lorry` * | +32.6 | +53.3 |
+| `alley_robbery` * | +34.6 | — |
+| `dog_walker` | +36.5 | +41.2 |
+| `leaf_blower` | +48.6 | +67.1 |
+| `protest` | +50.0 | +88.1 |
+| `pigeon_flock` † | +54.1 | +63.6 |
+| `burning_building` | +55.9 | +83.2 |
+| `loose_dog` | +61.2 | +61.9 |
+| `abduction` * | +61.3 | +84.1 |
+| `military_convoy` | +84.9 | +107.2 |
+| `night_raid` | +101.8 | +122.6 |
+| `fire_truck` | +115.4 | +132.0 |
+| `firefight` * | +155.9 | +162.3 |
 
-**The `mark` column.** ● is the amber caret — *worth going round* — and ●● the doubled deep red
-that means it ends the day. The threshold is `Tuning.MARK_WORTH_A_DETOUR`, a quarter of the meter,
-and it falls in the gap between `cat_dash` and `checkpoint`; a lethal row is marked whatever it
-costs, which is why `charging_dog` at +16.9 carries one and `cat_dash` at +24.1 does not — kept just
-under the line on purpose, so a startle spike does not also claim the caret the crouch's own
-silhouette already carries. Apart from the lethal rows the column is **monotone** — if A is marked
-and B is not, A costs more than B — and `tests/test_danger.gd` asserts exactly that.
-
-`playground` is the one row above the line with no mark, because it is `AMBIENT`: it never appears,
-there is no moment to mark, and the park's own swing frame is the picture.
+**No column says which rows carry a caret, because no row does.** The caret is decided in play
+from a source's own projected course at wherever she is standing — `expected_impact_at()`
+against `Tuning.EXPECTED_IMPACT_POINTS`, `will_be_lethal()` for the doubled red — so the same
+row reads red on one approach and carries nothing on another, and a stationary row never
+carries one at all; see "Showing the danger".
 
 **The pursuers' run-through column is empty, and that is the point:** they **follow**, so there is
 no crossing to price and no line to run along. Walking away from either loses the day; running away
@@ -826,8 +821,9 @@ sensitivity included — rather than the halo pass recomputing anything from `co
 its own. `ExcitementHalo.colour_for()` is a pale-to-red ramp (`Palette.HALO_WEAK` to
 `Palette.HALO_STRONG`) over `landed()`, a true five-second sliding sum of those shares — not a
 decayed average, so a 35-point burst reads as 35 for the whole window and then drops — saturating
-at `SATURATES_AT_POINTS` (40 of the 100-point bar). A protest she skirted the edge of and a
-protest she walked through are the same row and correctly different colours.
+at `Tuning.EXPECTED_IMPACT_POINTS` (40 of the 100-point bar, the same line the caret goes amber at
+read the other way round). A protest she skirted the edge of and a protest she walked through are
+the same row and correctly different colours.
 `EventInstance.set_halo_strength()`, called by `ExcitementHalo` once a frame, is what carries both
 numbers to the shader. `.claude/skills/cues/SKILL.md`, "A glow, not a field" is the narrow version
 of this exception, kept narrow enough to still refuse the next ring somebody wants.
@@ -844,17 +840,25 @@ untyped candidate array rather than one typed to `EventInstance` — a duck type
 (the eight strongest) are what keep a busy pavement legible rather than a special case admitting
 only the caret-worthy.
 
+Four cues, four sentences, each decided by one quantity — and the same two numbers, the points a
+source lands on the meter and the five seconds either side of now, carry all of them:
+
+- **Caret**: *stand here and this will cost you* (amber), or *end your day* (doubled red).
+- **Halo**: *this is costing you now, and this much.*
+- **Exclamation over the player**: *the clock on you has started.*
+- **Badge**: *something lethal or faster than a walk is coming, and this is what.*
+
 | Cue | Means | Where |
 | --- | --- | --- |
 | **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** It is a rule with a test rather than an aspiration — one picture per row, no two rows sharing one. See point 6 below. | the art, one `EventDef.Look` per row |
-| **Caret over the entity** | *This is worth changing your route for.* Raised by what a row **costs to walk through**, and by nothing else — see point 1 below. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_horn_mark()` |
-| **Its colour** | **Amber** = go round it. **Deep red, doubled** = it ends your day. Two colours, and they are a scale rather than a sequence. | `EventInstance.mark_colour()` |
+| **Caret over the entity** | *Stand here and this will cost you*, or *end your day.* Raised by what the thing is **projected to do to her, her position held still**, and by nothing else — see point 1 below. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_mark()` |
+| **Its colour** | **Amber** at `Tuning.EXPECTED_IMPACT_POINTS` expected over the horizon — go round it. **Deep red, doubled**, when a step of the projection puts her inside the thing's lethal reach on its current course — it ends your day. The same points the halo reads, read forward instead of back. | `EventInstance.mark_colour()`, `CrowdAgent._caret_strength()` |
 | **Its flash** | *It has not started yet.* The telegraph phase, and the only channel carrying it — the colour cannot, because a telegraph is usually over before the event is on screen, so an amber that meant *telegraphing* would only ever be seen on the rows sited in front of the player and would read as *near*. | `EventInstance._draw_mark()` |
-| **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
-| **Entity halo** | *This is charging you right now, and it has cost you this much.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius — for every live event and every startled crowd body (a honking car, a bumped walker) whose `contribution_at()` at her own position clears a floor. **Colour** is pale-to-red, linear over what it has actually delivered to her in the last five seconds; **transparency** is the same five-second total on a curve that saturates by fifteen points, so it carries the low end colour cannot show yet. Both fade in and out over a third and four fifths of a second rather than switching. Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EntityHalo`, `assets/shaders/excitement_halo.gdshader` |
-| **Edge badge** | Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
-| **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
-| **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live, she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the day, **and the gap is closing at the speeds in play**. Not *inside the outer radius*, which for a cyclist is thirty times the area that can hurt her and stays true while the bike rides away. | `EventManager._warn_about_the_ground_she_is_on()` |
+| **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. A car with no jolt running holds full size, having no pulse of its own to breathe with. | `EventInstance.mark_swell()`, `CrowdAgent._draw_mark()` |
+| **Entity halo** | *This is costing you now, and this much.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius — for every live event and every startled crowd body (a honking car, a bumped walker) whose `contribution_at()` at her own position clears a floor. **Colour** is pale-to-red, linear over what it has actually delivered to her in the last five seconds; **transparency** is the same five-second total on a curve that saturates by fifteen points, so it carries the low end colour cannot show yet. Both fade in and out over a third and four fifths of a second rather than switching. Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EntityHalo`, `assets/shaders/excitement_halo.gdshader` |
+| **Edge badge** | *Something lethal or faster than a walk is coming, and this is what.* Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
+| **Exclamation over the player** | *The clock on you has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
+| **Doubled red over the player** | *The clock on you has started, and it is nearly out.* Something lethal is live, she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the day, **and the gap is closing at the speeds in play**. Not *inside the outer radius*, which for a cyclist is thirty times the area that can hurt her and stays true while the bike rides away. | `EventManager._warn_about_the_ground_she_is_on()` |
 | **zzz over the pram** | *The baby is asleep* — the return phase, and the state with the most consequence and the least presence on screen. Flashing instead of breathing: *she is stirring*, and waking costs half the sleepiness bar. | `Stroller._draw_baby_cue()` |
 | **Waves over the pram** | *She is not settling* (amber, at the calm threshold, where the day stops progressing) and *she is nearly crying* (red, three of them, flashing). | `Stroller._draw_baby_cue()` |
 | **HUD line** | For a `city_wide` source, which has no position and therefore nothing to stand under. | `hud.gd` |
@@ -870,30 +874,41 @@ exactly what they meant before it existed.
 
 Three rules underneath the table, in the order they matter:
 
-1. **The caret is raised by what a thing costs, and by nothing else.**
+1. **The caret is raised by expected impact, and by nothing else.**
 
-   The rule is the player's own expectation, stated so a test can hold it: **if A is marked and
-   B is not, A costs more than B.** `EventDef.walk_through_cost()` is the order,
-   `Tuning.MARK_WORTH_A_DETOUR` is where the line falls (a quarter of the meter, which lands in
-   the gap between `cat_dash` and `checkpoint` rather than slicing a cluster), and lethal rows are
-   marked whatever they cost — *ends your day* is a different kind of thing rather than a larger
-   amount of the same one. `tests/test_danger.gd` holds all of it.
+   *(2026-09-08, the player, closing the fork this rule used to leave open: "carets shouldn't be
+   chosen by source value but by expected impact value".)* What a row is declared to cost on
+   paper decides nothing; what a source is actually projected to land on her, from wherever she is
+   actually standing, does. `EventInstance.expected_impact_at()` and `CrowdAgent.expected_impact_at()`
+   extrapolate the thing's own current velocity in quarter-second steps over
+   `Tuning.EXPECTED_IMPACT_HORIZON` (5s), sample its field at her *current* position at each step,
+   sum the points, and subtract its present rate times the horizon — so a stationary thing she is
+   standing in front of expects nothing, an approaching thing expects its approach, and a
+   departing one expects less than nothing and is unmarked. **Amber** at
+   `Tuning.EXPECTED_IMPACT_POINTS` (40, the same line the halo saturates red at); **doubled red**
+   when a step of the same projection puts her inside the thing's lethal reach — a `hard_fail`
+   row's `inner_radius`, a car's strike box — on its current course. `tests/test_danger.gd` holds
+   the scenarios this replaces the old catalogue-wide rule with.
+
+   **Her stillness is the direction the whole rule turns on.** *(2026-09-08, the player: "I don't
+   want a caret when walking into a car from the side".)* Projected with her held still, a car
+   passing wide of her is never in its own path and carries no mark; one she is standing in the
+   lane of is projected straight into her.
 
    **The trap it is written against** is a rule like *danger that changes over time* — lethal,
    telegraphing, swelling, or pulsing fast enough to be timed. Every clause of that is a true
-   statement about a thing and **none of them is a statement about how bad it is**, so the marked
-   set and the danger come apart: a fire engine carries nothing while a burning building half its
-   price carries a caret, and a leaf blower is marked over the dog walker beside it because its
-   beat is 4.0s rather than 8.0s.
+   statement about a thing and **none of them is a statement about how bad it is**: a fire engine
+   on a course that misses her carries nothing while a burning building half its declared price
+   carries a caret the moment its own field reaches her.
 
-   **A cue that marks everything says nothing**, so the cheap end of the street is left alone: a
-   barricade, a poster crew and a burnt-out shell are large, distinct and visibly what they are,
-   and pointing at them adds noise and no information.
+   **A cue that marks everything says nothing**, so the ordinary crowd at ordinary density is left
+   alone — measured on the arterial, not argued: a crowd at ordinary busyness around a standing
+   player raises no amber caret at all.
 
-   What this gives up, as a decision rather than an oversight: **a crouching cat (+24) has no
-   caret.** The crouch is its own silhouette and the vocabulary's first row is that the entity
-   carries it — kept true on purpose when the cat's own intensity was raised for a bigger startle,
-   by stopping short of the threshold rather than by exempting the row.
+   What this gives up, as a decision rather than an oversight: **`cat_dash`, dashing at a standing
+   player, carries no caret**, because its projected landing on her stays under the line —
+   `tests/test_danger.gd` holds this scenario by name. The crouch is its own silhouette and the
+   vocabulary's first row is that the entity carries it.
 2. **Breathing is load-bearing.** It is the one thing a ring gives for free that a discrete
    symbol does not, and without it a pulsing event stops being something to time a pass
    through and becomes something that hurts at random.
@@ -964,10 +979,12 @@ most of it*, and the traffic is the place that is easiest to miss: the caret is 
 a mark over **her** head and nothing anywhere else is the load-bearing cue paying for a warning it
 should only be adding to. The horn cannot carry it either — a horn is silent in a game with no
 audio, which is *"audio is never the only channel"* failing in the one place the traffic fairness
-contract depends on it. So a car sounding its horn carries the same
-doubled lethal caret a `hard_fail` event does, breathing with the horn's own decay. The shape
-lives in `Sprites.draw_caret()` so there is one chevron rather than two that slowly stop being
-the same chevron.
+contract depends on it. So a car whose projected course reaches her carries the same caret a
+`hard_fail` event does, in the same two strengths, and the honk is a **consequence** of that rather
+than the rule it follows: `Crowd._horn()` still sounds at closer range than the caret needs, so a
+car can be marked before it has honked, and the mark breathes with the horn's own decay while one
+is running. The shape lives in `Sprites.draw_caret()` so there is one chevron rather than two that
+slowly stop being the same chevron.
 
 ### What the edge badge is for, and what it is not
 

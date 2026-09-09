@@ -192,11 +192,12 @@ static func _playground() -> EventDef:
 ## one.** *(Playtest 25, finding 6: "dashing cat and dog (not pursuing) are basically useless right
 ## now -- they need a bigger impact.")* There is no `impulse` field and none is added: `CLAUDE.md`'s
 ## standing decision is that a sharp spike is a short `duration` at high `intensity`, and 1.8s is
-## already as short as a crossing this wide can be. **Kept under `Tuning.MARK_WORTH_A_DETOUR` on
-## purpose** — `tests/test_danger.gd` names this row explicitly as one that costs too little for a
-## caret, on the reasoning that the crouch is its own silhouette and needs no second cue. A bigger
-## number than this crosses that line and would give the cat a caret for the first time, which is a
-## real design question and not one this item decides; left as an open fork rather than assumed.
+## already as short as a crossing this wide can be. **Its dash still projects under
+## `Tuning.EXPECTED_IMPACT_POINTS` on a standing player** — `tests/test_danger.gd` holds this
+## scenario by name, on the reasoning that the crouch is its own silhouette and needs no second
+## cue. A bigger number than this crosses that line and would give the cat a caret for the first
+## time, which is a real design question and not one this item decides; left as an open fork
+## rather than assumed.
 ## **Judged against what item 1 leaves behind, not what it started against**: the evidence that
 ## this row was ever "useless" is a `cat_dash` at the *old*, lower intensity finishing off a day
 ## whose baseline was already pinned near 100 by the barrier fields the earlier items just silenced
