@@ -10,18 +10,19 @@ time.**
 
 ## Pushing
 
-**Completed work may be pushed to `origin` without asking each time.** *Finished* is the whole of
-the permission: a milestone merged to `main` with its gate green, or a branch whose items are done
-and archived. It is not a licence to push a branch mid-item to see what happens.
+**Always push branch work and create or update its pull request before ending the session.**
+*(2026-09-09: "always create prs don't leave branches locally only"; "or have branches on the
+remote without pr without good reason".)*
+Do not leave work only on a local branch or leave a remote work branch without a PR unless there
+is a specific good reason, documented in the final report. Use a draft PR when the work is
+unfinished, and include the PR link in the final report. This is standing authorization; no
+separate request to push or open the PR is needed.
 
-Everything else about the local repository is unchanged — branch and commit freely — and the gate
-before a push is the same one as before a commit: `./tools/check.sh`, the suites your change
-touches, and `./tools/lint.sh` if a governed doc moved. **The full suite runs in CI on the pull
-request**, on the merge result, which is the tree that actually matters.
-
-**A half-built milestone's branch may be pushed as a branch**, which is backup rather than a claim.
-What may not happen is `main` carrying an unfinished milestone: `main` is the thing a fresh clone
-gets, and this project's own handoff tells that reader to trust the tools over any sentence.
+**A ready-for-review PR carries the completed work and its verification.** Run `./tools/check.sh`,
+the suites the change touches, and `./tools/lint.sh` if a governed doc moved. An unfinished draft
+may be pushed with failing or outstanding checks, stated in the PR; backing it up does not claim
+that it is ready to merge. **The full suite runs in CI on the pull request**, on the merge result.
+Unfinished work stays out of `main`, which is the tree a fresh clone receives.
 
 ## A pull request is self-contained
 
