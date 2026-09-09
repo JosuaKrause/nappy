@@ -27,4 +27,6 @@ All visible pieces share one z plane and are reordered as siblings for each dire
 the mother and pram together when their owning actor participates in scene y-sorting.
 
 The contact sheet is review evidence only. Its two rows read `N, NE, E, SE / S, SW, W, NW`, and
-its baseline is useful for judging shoe and wheel contact.
+its baseline is useful for judging shoe and wheel contact. `mother-pram-contact-v2.png` is the
+previous version's sheet, kept beside the v2 parts and manifests as the reference the v3 work was
+judged against; nothing loads it.
