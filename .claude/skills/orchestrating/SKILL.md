@@ -162,8 +162,8 @@ merging is what collides — so parallelism is planned at the file level, before
   that reported an hour ago replays its whole transcript at full price, because the prompt cache
   behind it has expired. *(2026-09-08: "resuming after an hour will be a huge token hit because
   the cache expires. at that point it's better to just start a new one.")* Resume only while the
-  work is still warm — minutes, not hours, **and in Codex the cache lasts twenty minutes**
-  *(2026-09-08: "caching for codex is 20min only")*; otherwise spawn a fresh agent with a
+  work is still warm: **Claude Code's cache lasts an hour, Codex's twenty minutes** *(2026-09-08:
+  "claude cache is 1h", "caching for codex is 20min only")*. Past that, spawn a fresh agent with a
   self-contained brief that names the branch and the report to read first.
 - **The main checkout is the player's test bed.** Whatever the player is asked to try out is
   checked out in the repository's own folder before they are told it is ready — never left in an
