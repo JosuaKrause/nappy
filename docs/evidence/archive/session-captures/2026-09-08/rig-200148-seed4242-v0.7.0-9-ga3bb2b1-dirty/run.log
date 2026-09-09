@@ -1,0 +1,10 @@
+nappy rig log  2026-09-08T20:01:48  version v0.7.0-9-ga3bb2b1-dirty
+
+day 1  act 1  run seed 4242  city seed 4242  length 180.0s
+   0.0  plan     closed: roadworks h(6,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: cafe_tables x124, cat_dash x8, chatting_mother x2, delivery_van x104, dog_walker x20, homeless_yeller x9, leaf_blower x23, loose_dog x10, market_stall x111, pigeon_flock x5, playground x2
+   0.0  start    doorstep (120,71), facing 180°
+   0.2  near     homeless_yeller (telegraph) at (124,75), 185px, exc 1, in 13.1/s (crowd 11.1, events 0.2), sleep 0
+   1.0  path     off the corridor at (117,70), after 1.0s on it
+   1.8  cross    stepped into the road at (115,69), mid-block

@@ -857,16 +857,21 @@ static func _reversing_lorry() -> EventDef:
 ## entirely by `EventInstance.current_intensity()` reading the baby's state, never by anything
 ## authored here.
 ##
-## **`detain_radius` is 33px, not 26 — the far-lane rule is overturned, and it is the player's own
-## overturn to make.** *(Playtest 25, finding 4: "the chatting lady has a way too small capture
-## radius in should be much bigger. right now I can basically walk up to her without consequence.")*
-## 26px was chosen to sit *under* the **32px** spacing between the two lanes of a pavement
-## (`Tuning.TILE_SIZE`, since a lane sits on its own tile centre), so the far lane of a two-tile
-## pavement could never trigger a conversation. The whole content of this row is that she catches
-## you, and a radius the far lane clears by construction is a row with a free answer — which is
-## exactly what got reported. **What this gives up, stated rather than silently dropped**: walking
-## the far lane of her own pavement no longer avoids her. 33px sits just past the lane spacing and
-## still strictly inside `inner_radius` (34), which `EventDef.validate()` requires.
+## **`detain_radius` is 48px — three quarters of the 64px pavement band — and the far-lane rule is
+## overturned, twice, by the player.** *(Playtest 25, finding 4: "the chatting lady has a way too
+## small capture radius in should be much bigger. right now I can basically walk up to her without
+## consequence." Then playtest 38, finding 2, on the branch with it at 33: "the radius of the chatty
+## lady for capturing must be larger".)* The first number, 26px, sat *under* the **32px** spacing
+## between the two lanes of a pavement (`Tuning.TILE_SIZE`, since a lane sits on its own tile
+## centre), so the far lane could never trigger a conversation; the whole content of this row is
+## that she catches you, and a radius the far lane clears by construction is a row with a free
+## answer — which is exactly what got reported. 33px sat just past the lane spacing and was still
+## reported as too small. 48px reaches from either lane of her own pavement to the frontage, so no
+## line on her pavement walks past her, while the far pavement — 96px away centre to centre — still
+## does. **`inner_radius` is 56 rather than 34 for one reason**: `EventDef.validate()` requires the
+## capture to sit strictly inside the inner radius (the chat's flat rate assumes she is inside it),
+## so widening the capture widens the full-cost core with it — by a lane's width, which is small
+## next to what the conversation itself costs. `outer_radius` stays at 70.
 ##
 ## `first_day` 1: act I is the social act, and `test_balance.gd` still passes with her live on it —
 ## she is `SIDEWALK`-only, so she never contests the calm ground the balance suite measures.
@@ -878,9 +883,9 @@ static func _chatting_mother() -> EventDef:
 	def.first_day = 1
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 4.5
-	def.inner_radius = 34.0
+	def.inner_radius = 56.0
 	def.outer_radius = 70.0
-	# (70-34)/92 = 0.39s required; not hard_fail, so no doubled margin. Generous rather than tight,
+	# (70-56)/92 = 0.15s required; not hard_fail, so no doubled margin. Generous rather than tight,
 	# since this is the row whose whole point is that the ambient field is nearly nothing next to
 	# what the conversation costs.
 	def.telegraph_time = 1.0
@@ -893,7 +898,7 @@ static func _chatting_mother() -> EventDef:
 	def.weight = 2.0
 	def.max_per_day = 2
 	def.detain_seconds = 5.0
-	def.detain_radius = 33.0
+	def.detain_radius = 48.0
 	return def
 
 ## **The one thing in the game you have to run from, and it arrives on day 3.**

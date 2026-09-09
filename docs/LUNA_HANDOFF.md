@@ -8,7 +8,7 @@ the visuals document states the current target. Read the relevant skills before 
 The orchestration and committing rules still apply. Implementation uses Luna.
 
 The actor repair review is [PR #49](https://github.com/JosuaKrause/nappy/pull/49).
-Keep it draft. Read `ILLUSTRATED-GAMEPLAY-FIXES.md` and `PLAYTEST-36.md` for the attachment and
+Keep it draft. Read `ILLUSTRATED-GAMEPLAY-FIXES.md` and `PLAYTEST-43.md` for the attachment and
 legacy-scale repair gate. A prototype, source sheet or code scaffold is not a completed overhaul. Do not
 release or merge the overhaul until the entire requested presentation is implemented and reviewed.
 
@@ -62,7 +62,7 @@ It is a source draft, not visual authority. `mother-parts-v3.png` supplies indep
 parts with measured per-facing crops, anatomical axes and sole contacts. A textured torso core
 excludes the sleeves so separate arms can meet the pram handles. Some views explicitly reuse a
 single same-facing arm drawing; newly authored isolated anatomy remains an art requirement.
-PLAYTEST-37 selects `pram-layered-v3-draft-transparent.png`; its manifest registers eight views
+PLAYTEST-44 selects `pram-layered-v3-draft-transparent.png`; its manifest registers eight views
 of chassis, seat, canopy and baby against one pram frame. The mother and pram map source columns
 independently. Both families are bound to the opt-in live player. The player explicitly offers to
 perform style transfer on usable draft sheets if generation does not achieve the target.

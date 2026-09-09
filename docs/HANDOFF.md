@@ -190,7 +190,7 @@ the configured rest geometry. Review complete assembled bodies against the legac
 the fixed 96-world-pixel offset.
 
 The mother uses a textured torso core and separate shoulder-to-hand arm registrations. The pram
-manifest consumes PLAYTEST-37's selected `pram-layered-v3-draft-transparent.png`, with independent
+manifest consumes PLAYTEST-44's selected `pram-layered-v3-draft-transparent.png`, with independent
 chassis, seat, canopy and baby registration. The approved PNG remains unchanged; its extraction
 record is `assets/illustrated/modular/pram-alpha-extraction-2026-09-08.md`.
 
@@ -201,12 +201,17 @@ and sampled `scenes/dev/illustrated_motion_review.tscn` expose assembly at gamep
 commands and limitations are in the repair brief. Live overlaps, roof reveal and a coherent
 illustrated street still need their own review.
 
+Crowd halo selection and meter attribution include walkers and cars. In illustrated mode the
+halo still traces the offset legacy comparison drawing; tracing the animated PNG assembly remains
+an open integration gate. Preserve the contribution-based hue, transparency and easing when
+connecting the illustrated silhouette.
+
 The visual and attachment suites pass in the illustrated mode, and the visual suite also checks
 the legacy binding without the flag. The dated contact review and its build provenance are in
 DECISIONS.md; that image predates the tested resting-knee correction. Visual acceptance of the
 current pose and smooth motion remains open.
 
-[PLAYTEST-38](PLAYTEST-38.md) specifies the next actor defects: slanted east/west legs,
+[PLAYTEST-45](PLAYTEST-45.md) specifies the next actor defects: slanted east/west legs,
 outward north/south leg movement, excessive mother-to-pram spacing and pixelated pram rendering.
 [PLAYTEST-42](PLAYTEST-42.md) supplies a preserved timed PNG burst and MP4, with additional
 double-bend leg anatomy and baby-over-seat compositing findings. Its resolution experiment requires
@@ -248,10 +253,15 @@ under M76 and M80. **Follow `TODO.md`'s own order for what is next.**
 says who did the overturning.** **M88** gives the two control schemes back to the player as a choice
 — *asked for one scheme chosen nowhere on 2026-09-06 · overturned on 2026-09-07* — which is M82's
 central decision going the other way, and the pieces it needs are recovered from that commit rather
-than rewritten. **M89** draws a soft halo around whatever is currently charging the meter, which the
-**cues** rule has refused since the vocabulary was written: *no circles around entities, nothing
-draws a field.* That reasoning is about **danger** and it stands; the halo answers a question the
-vocabulary never had an answer to — *which of the six things around her is pushing the number up.*
+than rewritten. **M89 and M92** draw a soft halo around whatever is currently charging the meter,
+which the **cues** rule has refused since the vocabulary was written: *no circles around entities,
+nothing draws a field.* That reasoning is about **danger** and it stands; the halo answers a question
+the vocabulary never had an answer to — *which of the six things around her is pushing the number
+up, and how much has each one actually cost her.* Its colour and its transparency both read the
+points a source put on the meter over the last five seconds, traced from the meter's own sum —
+colour linear to red at 40, transparency on a curve that makes a single point visible — and every
+walker and car is a candidate on the same terms as an event. The numbers were set against one
+played session on the branch and one capture each; the record is in `DECISIONS.md` under M92.
 
 **The rule playtest 27 raised alongside the joystick is now also enforced by a test**: *"there is no
 way to walk slowly — that is intentional — there should only ever be one speed (plus a second via
@@ -312,9 +322,12 @@ longer what answers *can she get there today*.
    **Hard seals are act IV only**, because `barricade` is the sole catalogue row wide enough to span
    a street; days 1–11 seal soft, both pavements taken with the carriageway still walkable. Three of
    the eight pictures are act-I hard seals and are what closes that.
-2. **M65 — the chalk mark.** Still the same two-part gap from playtest 19 — announced before it is
-   found, unfindable once it is — with a third item added from playtest 20: a protester pointing
-   toward the current objective, and made more common since a protester obstructs nothing.
+2. **M65 — the protester points at the objective.** Playtest 19's two-part gap — the first mark
+   announced before it is found, and unfindable once it is — is built and unwalked: the status line
+   is silent until the first mark has been touched, and a mark that has never been on screen
+   follows her to the next alley she comes near, guard and all (the record is in `DECISIONS.md`
+   under M78). What remains is playtest 20's item: a protester pointing toward the current
+   objective, and made more common since a protester obstructs nothing.
 3. **M56 — the resistance is noticed.**
 
 **The instrument to judge any of it with now exists and was used this session.** The dusk map draws
@@ -331,8 +344,11 @@ every time. **The bearing form is the one that reproduces a route a player would
 since a press sets an arbitrary unit vector and most headings are diagonal; the run log writes the
 bearing in whole degrees for the same reason.
 
-M53's remaining piece is a drawing: nothing goes into a precinct now, and **nothing draws a
-bollard**, so a street that meets one simply stops. It is stated in [TODO.md](TODO.md) under M53.
+A junction is made of the streets that actually meet at it: a precinct's end, the city's border
+and the spine's side arms all read as what they are — a T with a line of bollards, a T with no
+zebra running into the mountain, four dotted crossings under one light — and nothing walks or
+drives off the map except a car by the tunnel or the bridge. All of it was checked on rig captures
+and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## Open beyond the order
 
@@ -520,13 +536,17 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   this creates is a city that no longer costs anything to cross.
 - **Four rows changed what they do to a player and all four were set by a rig.** `cat_dash` at 17
   and `loose_dog` at 32 are meant to land as a startle without becoming a day lost to something
-  behind her; `chatting_mother` at a 33px `detain_radius` and `cyclist` at a 33px lethal band are
-  both meant to stop being walkable-past. The chatting mother's is the one to distrust: her radius
-  now exceeds the 32px between a pavement's two walking lanes, **so walking her far lane no longer
-  avoids her**, which is the trade the player accepted and nobody has felt.
-- **Nothing draws a bollard**, so a street that meets a precinct simply ends against the paving. The
-  city and the crowd both explain a precinct by saying a driver meets a bollarded street, and there
-  is no bollard anywhere in the game.
+  behind her; `chatting_mother` at a 48px `detain_radius` (with her 56px inner radius widened to
+  hold it) and `cyclist` at a 33px lethal band are both meant to stop being walkable-past. The
+  chatting mother's is the one to distrust: her capture reaches three quarters of the pavement
+  band, **so no lane of her own pavement avoids her**, asked for twice by the player — at 26 and
+  again at 33 — and felt at 48 by nobody yet.
+- **The bollards are a placeholder drawing, and the border now refuses the crowd.** Five posts seen
+  from above close each precinct mouth's carriageway, and the player has seen them and the
+  T-junctions on a played branch. What nobody has watched is the crowd at the border since it
+  became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
+  map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
+  Whether that reads as a city edge or as bodies bunching against glass is a played question.
 
 ## The rule that matters most before starting anything
 

@@ -130,6 +130,9 @@ func _ready() -> void:
 	add_child(_resistance)
 	_pauses_with_the_game(_resistance)
 	_resistance.setup(_city, _city.map)
+	# The director's own "has she seen this" test — no viewport of its own, so it borrows the
+	# one rotation-aware on-screen check the game already has rather than growing a second one.
+	_resistance.set_sight(_edge.is_on_screen)
 
 	_day = DayController.new()
 	_day.name = "Day"
@@ -316,7 +319,7 @@ func _add_excitement_halo() -> void:
 	_halo = ExcitementHalo.new()
 	_halo.name = "ExcitementHalo"
 	_halo.z_index = 1
-	_halo.setup(_city.events, _player)
+	_halo.setup(_city.events, _city.crowd, _player)
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
 
@@ -821,6 +824,10 @@ func _spawn_position() -> Vector2:
 			"se": at = far
 		return _nearest_walkable(_city.map.tile_to_world(at))
 	if target == "contact":
+		# A pickup's mark may not stay where this puts the camera: if she then walks away from
+		# it without it ever being seen, the re-placement rule in `ResistanceDirector` moves it
+		# to the next alley she comes near. Reading `contact_position()` again after the spawn
+		# answers wherever it currently is, not wherever this call found it.
 		var contact := _resistance.contact_position()
 		if contact == Vector2.INF:
 			push_warning("no resistance contact on day %d" % GameState.day)

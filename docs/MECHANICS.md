@@ -705,6 +705,12 @@ Alley tiles apply a constant `+3.0/s` excitement trickle. They are shortcuts, an
 where the resistance meets. Both facts are the point: the fastest route and the story route
 are the ones that cost you the baby's calm.
 
+A resistance pickup's chalk mark follows her rather than sitting still: it counts as placed
+only once its own position has actually been inside view, and until then, walking more than
+`ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
+alley tile within that radius of her instead — the alley's own mouth, on the path rather
+than off it. Its guard moves with it, at the same 66–176px band from wherever it lands.
+
 ## Day timer
 
 Each day runs for `DAY_LENGTH_SECONDS` (default `180 s`, 3 minutes) of in-game dusk, and is

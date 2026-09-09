@@ -70,6 +70,7 @@ static func _attempt(seed_value: int) -> CityMap:
 
 	_assign_street_kinds(map)
 	_lay_streets(map)
+	_seal_border_stubs(map)
 	var purposes := _assign_purposes(map, rng)
 	var block_rects := _build_blocks(map, purposes, rng)
 	_place_home(map, block_rects)
@@ -228,6 +229,43 @@ static func _street_tile(x_offset: int, x_kind: GameEnums.StreetKind,
 		return GameEnums.TileType.SIDEWALK
 
 	return GameEnums.TileType.ROAD if (x_road or y_road) else GameEnums.TileType.SIDEWALK
+
+## Every junction on the map's own border keeps only the arms that are actually streets. The map
+## simply stops at `map.size`, so a street meeting the border has nothing beyond it the same way a
+## dead end or an absorbed corridor does — `_street_tile` cannot see that, since it only ever
+## looks at one tile's own two offsets, so the border comes out painted as an ordinary four-way
+## with a zebra running off the edge of the world.
+##
+## Stated over **a side of the map**, not four rects written out by hand: the first pass to touch
+## this wrote one border at a time, which is one bug per side waiting to happen. Every tile within
+## `SIDEWALK_WIDTH` of any edge that came out `CROSSING` becomes pavement instead, the same repair
+## `_seal_stub_crossings` makes over a specific rect of ground that stopped being a street.
+##
+## **Except the spine's own two exits.** The tunnel to the north and the bridge to the south are
+## real road — a car genuinely goes on there, see `City._spawn_spine_exits` — so their crossing and
+## the carriageway under it are left alone, over the main road's own `STREET_WIDTH` band at those
+## two edges only. There is no third or fourth exit: an east-west spine sits on a corridor that is
+## an arterial nowhere else in the game, so no such exception exists on the west or east border.
+##
+## Turning a `CROSSING` to `SIDEWALK` moves no walkable tile — both are walkable — so this cannot
+## touch the guarantee `tests/test_blocks.gd` holds across a block's whole arc.
+static func _seal_border_stubs(map: CityMap) -> void:
+	var band := Tuning.SIDEWALK_WIDTH
+	var spine_lo := map.main_road * CityMap.period()
+	var spine_hi := spine_lo + Tuning.STREET_WIDTH
+	var strips := [
+		Rect2i(0, 0, map.size.x, band),
+		Rect2i(0, map.size.y - band, map.size.x, band),
+		Rect2i(0, 0, band, map.size.y),
+		Rect2i(map.size.x - band, 0, band, map.size.y),
+	]
+	for i in strips.size():
+		var north_or_south := i < 2
+		for tile in map.rect_tiles(strips[i]):
+			if north_or_south and tile.x >= spine_lo and tile.x < spine_hi:
+				continue
+			if map.tile_at(tile) == GameEnums.TileType.CROSSING:
+				map.set_tile(tile, GameEnums.TileType.SIDEWALK)
 
 # ----------------------------------------------------------------- purposes ---
 

@@ -1,6 +1,6 @@
 # Pram transparency extraction
 
-The two approved PLAYTEST-37 layered pram sheets are preserved in the rejected-art archive;
+The two approved PLAYTEST-44 layered pram sheets are preserved in the rejected-art archive;
 these versioned siblings retain their original 1448×1086 pixel geometry and are RGBA PNGs.
 
 The reproducible command is:

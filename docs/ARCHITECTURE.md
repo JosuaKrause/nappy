@@ -51,7 +51,6 @@ src/
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + day
 	event_manager.gd      owns the live instances; answers total_excitement_at
-	event_aura_layer.gd   draws the excitement fields under the entity layer
   day/
 	day_controller.gd     the clock, the two phases, the four ways a day ends
   resistance/
@@ -64,11 +63,23 @@ src/
 	                      went and which events she met
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
   world/
-	world_context.gd      the only three questions the baby may ask the world
+	world_context.gd      the only questions the baby may ask the world
   ui/
-	hud.gd
+	hud.gd                the clock, the two bars, the teach line and the status line
 	meter_bar.gd
-	home_arrow.gd
+	home_arrow.gd         the one moment the game says "this way", while she carries a sleeper home
+	danger_edge.gd        the screen-edge badge: what is coming while it is still off screen
+	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
+	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo
+	title_screen.gd       the screen a run opens on and goes back to; asks which control scheme
+	day_summary.gd        the screen between days, and the one at the end of a run
+	pause_screen.gd       the pause
+	mode_button.gd        a circular icon-only button, drawn from a StyleBox and an icon
+	touch_controls.gd     the pointer scheme in its two modes, and the pause button
+	controls_mode.gd      which aiming origin a press is measured from
+	touch_input.gd        whether this device has a touchscreen, answered once
+	screen_orientation.gd the one rotation applied when the window is portrait
+	quit_option.gd        whether the game can quit itself, answered once
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
@@ -78,7 +89,7 @@ assets/
   tiles/                  ground tiles, 32x32 SVG
   buildings/              facade and roof tiles, 32x32 SVG
   rig/                    the mother and the pram, per direction
-  props/                  trees, the swing frame, the door, the shadow
+  props/                  trees, the swing frame, the bollard, the door, the shadow
   events/                 one body per EventDef.Look
   closures/               barriers, the sign, and what is lying in the road
   crowd/                  walkers and cars, body plus colour trim

@@ -138,7 +138,14 @@ contact is invisible, riding silently on the ordinary-looking thing it rides on.
 brief is the only channel that ever tells her what is next — touching a mark reads its
 words back to her on the following day's screen — and the HUD carries one terse line,
 *somewhere out there* and what she is looking for. How far in she is belongs between days
-rather than during one. That is the whole of it.
+rather than during one. **That line is silent until the first mark has been touched** —
+the first encounter comes with no hint at all, and only later ones are named.
+
+A pickup mark that has never been on screen has never really been placed, so it follows
+her rather than sitting where the dawn plan first put it: once she is far enough from it
+to have missed it, it moves to the alley she has just come near instead, guard and all —
+so a mark she can actually walk up to is what makes the silent first encounter fair
+rather than a dead end.
 
 ## Endings
 

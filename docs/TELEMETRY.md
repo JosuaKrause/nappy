@@ -192,7 +192,7 @@ name the question it answers, or it is a metric and does not belong.
 | `scar` | `EventManager` | Where the city stopped being recomputable |
 | `ahead` | `EventManager` | When the director put something across her line, and where she was — the only record of an event that has no place on the map |
 | `taken` | `EventInstance` | Whether an `abduction`'s own bystander scene ever actually finishes — the only record that the catalogue touched the crowd at all. Written by the instance itself rather than by `EventManager`: the scene needs nothing the instance does not already carry (`player_at`, its own age), and that is what lets a data-level rig assert it with no map or city behind it |
-| `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial |
+| `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial, and did an unseen pickup mark have to move to stay findable — where it was, and where it went |
 | `start` | observer | Where the day began |
 | `cross` | observer | Did the player have to cross the street, and at a zebra? |
 | `road` | observer | Did they *walk down* the road rather than across it? Only written when a stretch outlasts a crossing, so the entry existing is the answer |

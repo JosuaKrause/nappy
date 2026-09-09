@@ -115,6 +115,12 @@ var _picture := Vector2i(-1, -1)
 var _was_horning := false
 var walker_visual: ModularWalker
 
+## Built lazily on this agent's own first non-zero glow, and freed once it has faded all the way
+## back out — see `set_halo_strength()`. A halo built for every agent in a crowd of a couple of
+## hundred, whether or not it is ever picked, would be cost paid for nothing — only the handful
+## `ExcitementHalo.MAX_SOURCES` ever picks needs one at all.
+var _halo: EntityHalo
+
 ## The speed this agent wants to be doing. A car brakes toward 0 for a crossing somebody is
 ## waiting at and accelerates back to `_cruise` afterwards; walkers never use it.
 var _cruise := 60.0
@@ -127,6 +133,12 @@ var _jolt_for := 1.0
 var _jolt_intensity := 0.0
 var _jolt_inner := 0.0
 var _jolt_outer := 0.0
+
+## `[when_ms, points]` entries landed on her from this agent, for whatever is still inside
+## `ExcitementHalo.WINDOW` — a true sliding sum rather than a decayed average. Lazily grown: an
+## agent that has never landed anything keeps this empty. Duck-typed with `EventInstance`'s own
+## copy — see `ExcitementHalo`'s class doc for the whole shape.
+var _landed_history: Array = []
 
 ## A sidestep held for a moment after being walked into: how far across its own corridor, and how
 ## long is left on it. See `step_aside()`.
@@ -200,13 +212,17 @@ func _settle_junction() -> void:
 	_junction = CrowdLanes.corridor_at(_along())
 
 ## Whether this agent is standing somewhere it could have got to on its own: an open street, or
-## outside the map, which is where an entry band legitimately begins.
+## — for a car on the spine, leaving by the tunnel or the bridge — the one place an entry band may
+## legitimately begin outside the map. Everywhere else outside the map is refused, the same
+## exception `_cannot_go_on` makes: a walker placed out there would find every direction blocked
+## and go nowhere, which is worse than the retry `_recycle` already has to make anyway.
 func _stands_on_a_street() -> bool:
 	var tile := _map.world_to_tile(position)
 	if _map.is_closed(tile):
 		return false
 	if not _map.in_bounds(tile):
-		return true
+		return kind == Kind.CAR and _vertical and _corridor == _map.main_road \
+				and (tile.y < 0 or tile.y >= _map.size.y)
 	# A precinct is paved end to end, so every tile of it says "street" and a car placed there
 	# would look perfectly settled right up to the moment it drove off down the paving. Asked
 	# here rather than at lane-choosing time because it is a question about a *place*, and the
@@ -277,6 +293,29 @@ func contribution_at(world_position: Vector2) -> float:
 				_jolt_inner, _jolt_outer)
 	return total
 
+## Duck-typed with `EventInstance`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
+## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
+## agent's exact share of what landed this frame, so an ordinary walker's colour and a honking
+## car's colour both come from the same place a bump or a horn ever reached the meter at all.
+func accumulate_landed(points: float) -> void:
+	_prune_landed_history()
+	if points > 0.0:
+		_landed_history.append([Time.get_ticks_msec(), points])
+
+## The sum of every entry still inside `ExcitementHalo.WINDOW`. Pruned here too, not only on
+## write, so an agent nobody has visited in a while reports honestly the moment it is asked.
+func landed() -> float:
+	_prune_landed_history()
+	var total := 0.0
+	for entry in _landed_history:
+		total += entry[1]
+	return total
+
+func _prune_landed_history() -> void:
+	var cutoff := Time.get_ticks_msec() - int(ExcitementHalo.WINDOW * 1000.0)
+	while not _landed_history.is_empty() and _landed_history[0][0] < cutoff:
+		_landed_history.pop_front()
+
 ## Startles this agent for `seconds`. The only way anything outside the crowd adds excitement
 ## to the world, and it deliberately adds it to a *body* rather than to the baby.
 func startle(intensity: float, seconds: float, inner: float, outer: float) -> void:
@@ -293,6 +332,31 @@ func startle(intensity: float, seconds: float, inner: float, outer: float) -> vo
 ## True while this agent is agitated, so the same contact is not written down twice.
 func is_startled() -> bool:
 	return _jolt > 0.0
+
+## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
+## `EventInstance` shares. Called by `ExcitementHalo` once a frame for every agent in the crowd —
+## nonzero for the handful `select_sources()` picked, zero for everything else. Builds `_halo`
+## lazily on first use, rather than paying for an `EntityHalo` on every agent the crowd ever holds,
+## and frees it once `EntityHalo.is_faded_out()` says the fade is actually over — not the frame the
+## target first reaches zero, or a burst that just left `MAX_SOURCES` would be cut off mid-fade
+## instead of draining over `EntityHalo.FADE_OUT_SECONDS`.
+func set_halo_strength(strength: float, colour: Color) -> void:
+	if strength <= 0.0:
+		if _halo:
+			_halo.set_glow(0.0, colour)
+			if _halo.is_faded_out():
+				_halo.queue_free()
+				_halo = null
+		return
+	if not _halo:
+		_halo = EntityHalo.new(_draw_body, _zero_bob)
+		add_child(_halo)
+	_halo.set_glow(strength, colour)
+
+## The crowd never bobs — only an `EventInstance` rides a stride's worth of lift — so this is the
+## flat `bob()` `EntityHalo` asks every owner for.
+func _zero_bob() -> float:
+	return 0.0
 
 ## This car has hit another one in a junction. It stops dead and sounds off, and then pulls away
 ## again on its own — `_cruise` is untouched, so recovery is the ordinary acceleration.
@@ -739,9 +803,12 @@ func _consider_turning() -> void:
 ## is the same move a barricade produces, with the same good side effect: a street with nobody on it
 ## is a street that does not go through.
 ##
-## Out of bounds is deliberately **not** blocked. The map edge is what `_has_left_the_field`
-## handles, and treating it as a wall here would turn agents round at the boundary instead of
-## recycling them, which quietly drains the pavement the player is walking towards.
+## Out of bounds **is** blocked, in `_cannot_go_on()` below — a body that reaches the boundary
+## pavement turns rather than walking into the mountain, and only a car on the spine leaves by the
+## tunnel or the bridge. The map edge is still what `_has_left_the_field` recycles at. **The thing
+## to watch is the pavement she is walking towards near an edge**: a body that turns round at the
+## boundary instead of recycling is one fewer arriving from that side, and whether the edge
+## streets read thinner for it is a played question rather than a tested one.
 func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 	var offset := Vector2(0.0, direction * distance) if vertical \
 			else Vector2(direction * distance, 0.0)
@@ -749,11 +816,20 @@ func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 
 ## Whether a *tile* is somewhere this agent may be. The predicate under both of the questions
 ## below, so "the way is shut" means one thing however it is asked.
+##
+## **Out of bounds is blocked**, with one exception: a car on the spine's own corridor
+## (`_map.main_road`) leaving by the tunnel to the north or the bridge to the south, the two edges
+## `City._spawn_spine_exits` places them at — `CityEdge` draws the carriageway going on there, and
+## nowhere else does the border carry a road. Never a walker: playtest 16, finding 3, *"only cars
+## should be able to"*. Stated over which edge and which corridor rather than over "vertical and
+## out of bounds", because the spine is the one corridor this is true of, not every vertical one.
 func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _map.is_closed(tile):
 		return true
 	if not _map.in_bounds(tile):
-		return false
+		var leaves_by_the_spine := kind == Kind.CAR and vertical and _corridor == _map.main_road \
+				and (tile.y < 0 or tile.y >= _map.size.y)
+		return not leaves_by_the_spine
 	# And a precinct is a wall to a car and a street to everybody else. The tile map cannot say
 	# so — it is paving either way — so the street kind has to, or a car reaching the three
 	# blocks of a precinct drives onto them instead of turning off.
@@ -1018,6 +1094,22 @@ func _recycle() -> void:
 	gap_ahead = INF
 	junction_hold = INF
 	_keep_within_the_room_beyond_the_map()
+	# The loop above only ever *tries* for `_stands_on_a_street`; six misses in a row near a true
+	# edge leave whatever the last roll was, which `_keep_within_the_room_beyond_the_map` still
+	# lets sit up to one tile past it — the same tile every kind but the spine's own car was
+	# already allowed to overrun by before this. That used to correct itself the moment the agent
+	# next moved, because nothing stopped it walking back onto the street. Now `_cannot_go_on`
+	# refuses the very step that would have done it, so a fallback that lands out of bounds is
+	# stuck there instead of drifting in — pulled onto the map's own last row or column here,
+	# the one lane still guaranteed to exist. Never for the spine's own exception, which is
+	# already standing somewhere real.
+	if not _stands_on_a_street():
+		var extent := _map.world_size()
+		var limit: float = extent.y if _vertical else extent.x
+		# `limit` itself is one past the last tile's own far edge, the same fencepost
+		# `world_to_tile` always floors away — so the clamp's own top has to give up a whole
+		# pixel or it can land exactly on the line and read as out of bounds again.
+		_set_along(clampf(_along(), 0.0, limit - 1.0))
 	if walker_visual:
 		walker_visual.recycle_at(position, heading())
 
@@ -1095,23 +1187,35 @@ func _flipped() -> bool:
 	return not _vertical and _direction < 0.0
 
 func _draw() -> void:
+	_draw_body(self)
+	if kind == Kind.CAR:
+		_draw_horn_mark()
+
+## Draws this agent's own body onto `canvas` — the plain SVG sprite only, never the illustrated
+## `walker_visual` presentation, which draws itself as a separate child node with its own
+## `_draw()` and needs nothing from here. `EntityHalo` calls this once per ring offset to trace
+## whichever silhouette the sprite actually is; the ordinary frame above draws it once, at
+## `canvas == self`.
+func _draw_body(canvas: CanvasItem) -> void:
 	var frame := _frame()
 	var flip := _flipped()
 	if kind == Kind.CAR:
-		Sprites.draw_shadow(self, Vector2.ZERO, 18.0)
-		Sprites.draw_standing(self, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
-		Sprites.draw_standing(self, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
-		_draw_horn_mark()
+		_draw_shadow(canvas, Vector2.ZERO, 18.0)
+		Sprites.draw_standing(canvas, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
+		Sprites.draw_standing(canvas, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
 		return
-	if walker_visual:
-		Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
-		var comparison_at := Vector2(ModularWalker.COMPARISON_OFFSET, 0.0)
-		Sprites.draw_standing(self, WALKER_BODY[frame], comparison_at, Vector2.ZERO, flip, colour)
-		Sprites.draw_standing(self, WALKER_TRIM[frame], comparison_at, Vector2.ZERO, flip)
+	var at := Vector2(ModularWalker.COMPARISON_OFFSET, 0.0) if walker_visual else Vector2.ZERO
+	_draw_shadow(canvas, Vector2.ZERO, 7.0)
+	Sprites.draw_standing(canvas, WALKER_BODY[frame], at, Vector2.ZERO, flip, colour)
+	Sprites.draw_standing(canvas, WALKER_TRIM[frame], at, Vector2.ZERO, flip)
+
+## The drop shadow under this agent, skipped for its own halo ring — the same shape
+## `EventInstance._draw_shadow` has, for the same reason: the shadow is the ground under the
+## thing, not the thing, and a cue for what is charging her right now has nothing to say about it.
+func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
+	if canvas == _halo:
 		return
-	Sprites.draw_shadow(self, Vector2.ZERO, 7.0)
-	Sprites.draw_standing(self, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
-	Sprites.draw_standing(self, WALKER_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
+	Sprites.draw_shadow(canvas, at, radius)
 
 ## The doubled lethal caret over a car that is sounding its horn.
 ##

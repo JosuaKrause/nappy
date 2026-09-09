@@ -88,14 +88,32 @@ func _physics_process(delta: float) -> void:
 
 # --------------------------------------------------------------- excitement ---
 
+## **This is where the meter is fed, so this is where a source's `landed()` colour is traced
+## from** — *(2026-09-08, the player: "don't derive it from the source numbers but trace an
+## increase in excitement back to its constituents".)* `excitement_sources_at()` returns the same
+## bodies `total_excitement_at()` would have summed, broken out so each one's own share of what
+## reaches the bar this frame can be handed to its own `accumulate_landed()` — sensitivity
+## included, so `ExcitementHalo`'s colour can never disagree with what the bar actually did.
+## Running and the alley trickle have no source and are never attributed to anybody.
 func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
-	var incoming := _world.total_excitement_at(here) if _world else 0.0
+	var sources := _world.excitement_sources_at(here) if _world else []
+	var incoming := 0.0
+	for pair in sources:
+		incoming += pair[1]
 	incoming += Tuning.EXCITEMENT_FROM_RUNNING * _stroller.run_excess_ratio()
 	if in_alley:
 		incoming += Tuning.EXCITEMENT_FROM_ALLEY
-	# A sleeping baby is harder to disturb, but not immune.
+	# A sleeping baby is harder to disturb, but not immune -- and whatever fraction of a source's
+	# own contribution actually reaches the meter is exactly the fraction that should reach that
+	# source's own accumulate_landed(), or the halo would read a cost the meter never took.
+	var sensitivity := 1.0
 	if state == GameEnums.BabyState.ASLEEP:
-		incoming *= Tuning.SLEEPING_SENSITIVITY
+		sensitivity = Tuning.SLEEPING_SENSITIVITY
+		incoming *= sensitivity
+	for pair in sources:
+		var source = pair[0]
+		var contribution: float = pair[1]
+		source.accumulate_landed(contribution * sensitivity * delta)
 
 	var decay := _decay_rate()
 	last_incoming = incoming

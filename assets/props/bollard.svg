@@ -1,0 +1,9 @@
+<!-- A post at the mouth of a precinct, seen from directly above like everything else in the
+     city: a disc rather than a post in elevation. The rim reads darker than the body and a small
+     highlight sits toward the light, which is the whole of what a metal cap needs to read as
+     round from this angle. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" shape-rendering="crispEdges">
+  <circle cx="6" cy="6" r="6" fill="#221f28"/>
+  <circle cx="6" cy="6" r="4.5" fill="#3a3f45"/>
+  <circle cx="4.5" cy="4.5" r="1.6" fill="#6b6f74"/>
+</svg>

@@ -5,7 +5,7 @@ The capture is dated evidence, not an approved art reference. These are implemen
 instructions from inspection of that frame, its source sheets and the current compositors;
 they are not a claim that repairs are implemented or visually accepted.
 
-[PLAYTEST-38](PLAYTEST-38.md) adds directional leg posture, natural mother-to-handle reach,
+[PLAYTEST-45](PLAYTEST-45.md) adds directional leg posture, natural mother-to-handle reach,
 pram image quality and actual-checkout loading to this repair. Follow the illustrated-png
 skill's [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)
 for repeatable source, import, registration and acceptance steps.
@@ -32,10 +32,11 @@ recessed entrances, awnings, fire escapes, flat roofs, parapets, skylights, duct
 clusters. Translate their structure into the supplied illustrations' style. Keep references out
 of runtime assets. Inspect the stroller video for movement before making claims about its turns.
 
-Preserve the current joystick/tap choice and button behavior. Event artwork must also preserve
+Preserve the current joystick/tap choice and button behavior. Event and crowd artwork must preserve
 the excitement halo that traces the actively contributing entity's silhouette: a layered PNG
 replacement needs the outline of the animated assembly, not an invisible legacy body. Keep the
-existing source selection and brightness behavior; the crowd-halo question is tabled separately.
+source selection across events, walkers and cars. Hue and transparency both follow each source's
+attributed meter contribution over the last five seconds, with their separate curves and easing.
 
 ## What the frame establishes
 
@@ -59,7 +60,7 @@ Start in `assets/illustrated/modular/`, `assets/illustrated/walkers/` and
 - Inspect every direction crop at source resolution and assembled gameplay size. Measure actual
   artwork bounds and attachment points; an equal grid and a declared direction order are not
   evidence that a generated image follows them.
-- PLAYTEST-37 selects `pram-layered-v3-draft-transparent.png`. Its eight views contain chassis,
+- PLAYTEST-44 selects `pram-layered-v3-draft-transparent.png`. Its eight views contain chassis,
   seat, canopy and baby layers packed at different vertical intervals. Register each against
   measured wheel, hinge and seat contacts; equal-height row cuts are not valid for this sheet.
 - Map actual facings explicitly to N, NE, E, SE, S, SW, W, NW, with N meaning screen-up.
@@ -83,7 +84,7 @@ Start in `assets/illustrated/modular/`, `assets/illustrated/walkers/` and
   requirements together with valid replacement registrations, so the schema change and its
   consumers agree in the same implementation item.
 
-PLAYTEST-37 accepts the selected pram's extracted transparency. Preserve that PNG while repairing
+PLAYTEST-44 accepts the selected pram's extracted transparency. Preserve that PNG while repairing
 registration. Its extraction record is `assets/illustrated/modular/pram-alpha-extraction-2026-09-08.md`.
 For any replacement art, inspect alpha values in intended empty areas and composite over contrasting
 backgrounds: an alpha channel alone does not establish a clean edge. Do not erase every pale pixel;

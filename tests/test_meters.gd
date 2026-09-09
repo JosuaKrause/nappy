@@ -24,6 +24,16 @@ class FakeWorld extends WorldContext:
 	func total_excitement_at(_world_position: Vector2) -> float:
 		return noise
 
+	## `Baby` now sums `excitement_sources_at()` rather than calling `total_excitement_at()`
+	## directly, and traces each pair's own share back to `accumulate_landed()`. This fake has no
+	## real body to attribute `noise` to, so it hands out itself and answers the call with nothing —
+	## no test here reads a colour, only the meter arithmetic `noise` feeds.
+	func excitement_sources_at(_world_position: Vector2) -> Array:
+		return [[self, noise]] if noise > 0.0 else []
+
+	func accumulate_landed(_points: float) -> void:
+		pass
+
 var _world: FakeWorld
 var _stroller: Stroller
 var _baby: Baby

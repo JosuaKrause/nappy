@@ -17,6 +17,11 @@ func run(t) -> void:
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	_test_placement_is_deterministic(t)
 	_test_the_guard_is_seeded(t)
+	_test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t)
+	_test_a_mark_within_notice_radius_does_not_move(t)
+	_test_a_seen_mark_never_moves_again(t)
+	_test_the_guard_moves_with_the_mark_and_faces_away_from_her(t)
+	_test_a_perform_contact_is_never_relocated(t)
 	_test_a_perform_step_expires_when_its_rider_is_gone(t)
 	_test_a_timed_step_expires(t)
 	_test_completing_the_package_makes_the_pram_heavier(t)
@@ -327,6 +332,170 @@ func _find_robbery_near(at: Vector2, within: float) -> EventInstance:
 		if instance.global_position.distance_to(at) <= within:
 			return instance
 	return null
+
+# ------------------------------------------------------------- re-placement ---
+# Playtest 19 finding 6, in the player's own words: "if it was placed but never on screen it
+# should count as not placed and be placed on the next alley the player comes close to."
+
+## Same shape `_build_pickup` uses for a bare `ContactPoint` — a real `Stroller`, physics off,
+## dropped straight into `player` group by its own `_ready()` so `ResistanceDirector` finds it
+## the same way it would in the running game.
+func _rig_player(t, at: Vector2) -> Stroller:
+	var player := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	player.add_child(camera)
+	t.add_child(player)
+	player.set_physics_process(false)
+	player.global_position = at
+	return player
+
+## The world position of an `ALLEY` tile more than `min_distance` from `at`, or `Vector2.INF`
+## if the test city has none. Used to put her far enough from the mark that the re-placement
+## rule has to fire.
+func _alley_farther_than(min_distance: float, at: Vector2) -> Vector2:
+	for tile in _city.map.tiles_of_type(GameEnums.TileType.ALLEY):
+		var world := _city.map.tile_to_world(tile)
+		if world.distance_to(at) > min_distance:
+			return world
+	return Vector2.INF
+
+func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(4, _rng(4, "resistance"), 300.0)
+		var mark_at := director.contact_position()
+		t.check(mark_at != Vector2.INF, "day 4 places the mark")
+
+		# She stands exactly on a distant alley — the nearest reachable one to her is itself,
+		# at distance 0, which is what makes the assertion below exact rather than approximate.
+		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
+		t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
+		var player := _rig_player(t, far_alley)
+
+		Telemetry.begin_memory_log()
+		director._process(STEP)
+		t.check(director.contact_position().distance_to(far_alley) < 0.5,
+				"an unseen mark moves to the alley she has just come near")
+
+		var moved := false
+		for line in Telemetry.current_log().lines:
+			if line.contains("contact") and line.contains("moved to") \
+					and line.contains("never seen"):
+				moved = true
+		t.check(moved, "and a contact telemetry line records the move")
+		Telemetry.end_run()
+
+		player.free()
+		director.free())
+
+func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(4, _rng(4, "resistance"), 300.0)
+		var mark_at := director.contact_position()
+		var mark_tile := _city.map.world_to_tile(mark_at)
+		var player_at := mark_at + Vector2(60.0, 0.0)
+		var player := _rig_player(t, player_at)
+
+		# Not a vacuous check: there really is a nearer alley on offer, and the rule still
+		# leaves the mark alone because she has not left its own radius yet.
+		var nearer_distance := player_at.distance_to(mark_at)
+		var found_nearer := false
+		for tile in _city.map.tiles_of_type(GameEnums.TileType.ALLEY):
+			if tile == mark_tile:
+				continue
+			if player_at.distance_to(_city.map.tile_to_world(tile)) < nearer_distance:
+				found_nearer = true
+				break
+		t.check(found_nearer, "the test city has a nearer alley to tempt the rule")
+
+		director._process(STEP)
+		t.check(director.contact_position().distance_to(mark_at) < 0.5,
+				"within NOTICE_RADIUS of her own mark, nothing moves — not even to a nearer alley")
+
+		player.free()
+		director.free())
+
+func _test_a_seen_mark_never_moves_again(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(4, _rng(4, "resistance"), 300.0)
+		var mark_at := director.contact_position()
+		director.set_sight(func(_p: Vector2) -> bool: return true)
+
+		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
+		var player := _rig_player(t, far_alley)
+
+		director._process(STEP)
+		t.check(director.contact_position().distance_to(mark_at) < 0.5,
+				"seen on the very first frame, so it does not move even though she is far from it")
+		director._process(STEP)
+		t.check(director.contact_position().distance_to(mark_at) < 0.5,
+				"and it stays put on every later frame too, however far she walks")
+
+		player.free()
+		director.free())
+
+func _test_the_guard_moves_with_the_mark_and_faces_away_from_her(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(4, _rng(4, "resistance"), 300.0)
+		var old_at := director.contact_position()
+
+		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, old_at)
+		var player := _rig_player(t, far_alley)
+
+		director._process(STEP)
+		var new_at := director.contact_position()
+		t.check(new_at.distance_to(old_at) > 0.5, "the mark actually moved")
+
+		var robbery := EventCatalogue.by_id("alley_robbery")
+		var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+		var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+		var guards: Array[EventInstance] = []
+		for instance in _city.events.instances():
+			if instance.def.id == "alley_robbery" and not instance.is_finished:
+				guards.append(instance)
+		t.check(guards.size() == 1, "exactly one live guard exists once the mark has moved (%d)"
+				% guards.size())
+
+		var guard: EventInstance = guards[0]
+		var distance := guard.global_position.distance_to(new_at)
+		t.check(distance >= min_distance - 0.5 and distance <= max_distance + 0.5,
+				"the new guard sits in the same 66-176px band as any other")
+
+		var facing_away := (new_at - player.global_position).normalized()
+		var to_guard := (guard.global_position - new_at).normalized()
+		t.check(facing_away.dot(to_guard) >= -0.01,
+				"and his bearing from the mark is on the half facing away from her")
+
+		player.free()
+		director.free())
+
+func _test_a_perform_contact_is_never_relocated(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		GameState.completed_resistance_steps = _completed_through(1)
+		var director := _director(t)
+		director.start_day(5, _rng(5, "resistance"), 300.0)
+		t.check(director.current_step() != null and not director.current_step().is_pickup,
+				"day 5 is a perform step, riding on the yeller rather than sitting on a mark")
+		var at := director.contact_position()
+
+		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, at)
+		var player := _rig_player(t, far_alley)
+
+		director._process(STEP)
+		t.check(director.contact_position().distance_to(at) < 0.5,
+				"a perform contact is never subject to the re-placement rule")
+
+		player.free()
+		director.free())
 
 func _test_a_perform_step_expires_when_its_rider_is_gone(t) -> void:
 	_with_clean_run(func() -> void:

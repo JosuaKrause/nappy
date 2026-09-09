@@ -71,6 +71,10 @@ func _ready() -> void:
 	EventBus.day_started.connect(func(_d: int) -> void: _refresh_header())
 	EventBus.day_time_changed.connect(_on_day_time_changed)
 	EventBus.resistance_progress_changed.connect(func(_v: int) -> void: _refresh_resistance())
+	# A pickup grants no progress, so `resistance_progress_changed` never fires for the first
+	# mark — this is what notices *that* completion and lifts the no-hint rule the moment it
+	# happens, rather than on the next day's first refresh.
+	EventBus.resistance_step_completed.connect(func(_s: int) -> void: _refresh_resistance())
 	EventBus.resistance_contact_available.connect(_on_contact_available)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.city_wide_changed.connect(_on_city_wide_changed)
@@ -308,11 +312,18 @@ func _on_contact_available(step: int) -> void:
 ## **`somewhere out there:` stays**, because it is what makes a title a goal. Without it the line is
 ## a bare fragment — `a chalk mark` — which says a noun rather than *go and find this*, and the
 ## whole of what survives the cut is that one instruction.
+##
+## **The goal itself is silent until the first mark has been touched** (`CLAUDE.md`, "no quest
+## log or marker for the resistance": *the first encounter comes with no hint at all*). A pickup
+## grants no progress, so `GameState.completed_resistance_steps` rather than
+## `has_joined_resistance()` is the test — it is non-empty the instant step 1 is touched, which
+## is the pick-up itself rather than the perform half a day later.
 func _refresh_resistance() -> void:
+	var step: ResistanceSteps.Step = null
+	if _contact_step > 0 and not GameState.completed_resistance_steps.is_empty():
+		step = ResistanceSteps.by_index(_contact_step)
+
 	if not _debug:
-		var step: ResistanceSteps.Step = null
-		if _contact_step > 0:
-			step = ResistanceSteps.by_index(_contact_step)
 		_resistance_label.text = "somewhere out there: %s" % step.title.to_lower() if step else ""
 		return
 
@@ -323,10 +334,8 @@ func _refresh_resistance() -> void:
 	var marks := "*".repeat(GameState.resistance_progress) \
 			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - GameState.resistance_progress))
 	var line := "resistance %s" % marks
-	if _contact_step > 0:
-		var step := ResistanceSteps.by_index(_contact_step)
-		if step:
-			line += "   somewhere out there: %s" % step.title.to_lower()
+	if step:
+		line += "   somewhere out there: %s" % step.title.to_lower()
 	_resistance_label.text = line
 
 ## Forwarded from `main._apply_orientation()`. `HomeArrow` is the one child here that computes a

@@ -1,6 +1,6 @@
 # Pram registration generation record
 
-These files preserve the opaque generation outputs. PLAYTEST-37 approves their layered drawings
+These files preserve the opaque generation outputs. PLAYTEST-44 approves their layered drawings
 for scripted transparency extraction; this specific approval permits using them as extraction
 inputs despite the archive location. They are not runtime assets, and their layer registration
 still needs work. The current request and next work remain in the repair brief.

@@ -3,13 +3,14 @@ extends Node2D
 ## Small scenery. Feet-anchored like everything else, so it y-sorts against the player:
 ## she passes behind a tree's canopy and in front of its trunk.
 
-enum Kind { TREE, PLAYGROUND_FRAME }
+enum Kind { TREE, PLAYGROUND_FRAME, BOLLARD }
 
 const TREES: Array[Texture2D] = [
 	preload("res://assets/props/tree_a.svg"),
 	preload("res://assets/props/tree_b.svg"),
 ]
 const SWING_FRAME := preload("res://assets/props/swing_frame.svg")
+const BOLLARD := preload("res://assets/props/bollard.svg")
 
 @export var kind := Kind.TREE
 ## Deterministic per-prop variation, so a park does not shimmer between frames.
@@ -23,6 +24,10 @@ func _draw() -> void:
 		Kind.PLAYGROUND_FRAME:
 			Sprites.draw_shadow(self, Vector2.ZERO, 19.0)
 			Sprites.draw_standing(self, SWING_FRAME, Vector2.ZERO)
+		Kind.BOLLARD:
+			var size := BOLLARD.get_size()
+			Sprites.draw_shadow(self, Vector2.ZERO, size.x * 0.4)
+			Sprites.draw_standing(self, BOLLARD, Vector2.ZERO)
 
 ## Two tree shapes and a mirror, so ten trees in a park are not one silhouette repeated.
 func _draw_tree() -> void:

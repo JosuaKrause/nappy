@@ -2244,11 +2244,15 @@ func _test_the_day_is_placed_by_role(t) -> void:
 # `test_danger.gd` drives `_warn_about_the_ground_she_is_on()` in: a per-frame method with no
 # signal of its own to trigger from outside.
 
-## A `WorldContext` whose `total_excitement_at` reads straight off a hand-built `EventManager`,
-## the same question `City` answers for real. Lets a real `Baby` be driven against the chat's own
-## math without pulling in a whole generated city.
+## A `WorldContext` whose `excitement_sources_at`/`total_excitement_at` read straight off a
+## hand-built `EventManager`, the same questions `City` answers for real. Lets a real `Baby` be
+## driven against the chat's own math without pulling in a whole generated city. `Baby` now sums
+## `excitement_sources_at()` rather than calling `total_excitement_at()` directly, so both have to
+## be forwarded or the mother's own conversation is invisible to a baby driven against this double.
 class _ChatWorld extends WorldContext:
 	var manager: EventManager
+	func excitement_sources_at(world_position: Vector2) -> Array:
+		return manager.excitement_sources_at(world_position)
 	func total_excitement_at(world_position: Vector2) -> float:
 		return manager.total_excitement_at(world_position)
 
@@ -2356,6 +2360,15 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		if awake:
 			t.close_to(baby.excitement, starting_excitement + Tuning.CHAT_EXCITEMENT,
 					"an awake conversation adds %.0f points" % Tuning.CHAT_EXCITEMENT, 2.0)
+			# Playtest 38, finding 4: "there is also no real fade from yellow to red (eg when
+			# standing next to the other baby lady". Holding this first is what tells the ramp's own
+			# shape (`ExcitementHalo.colour_for()`) apart from an attribution bug: the chat's flat
+			# rate does reach `contribution_at()` inside her field and land on the mother's own
+			# `landed()`, past `SATURATES_AT_POINTS`'s own midpoint, so a dull colour on screen would
+			# have been the ramp and not the meter.
+			t.close_to(mother.landed(), Tuning.CHAT_EXCITEMENT,
+					"and the mother's own landed() carries the same points, which is what " +
+					"colour_for() reads", 2.0)
 		else:
 			t.close_to(baby.excitement, starting_excitement,
 					"asleep, the same conversation is a pure time loss: the meter does not move",

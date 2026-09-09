@@ -158,3 +158,19 @@ merging is what collides — so parallelism is planned at the file level, before
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the
   player through the orchestrator, in the entry where the next reader will look for it.
+- **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent
+  that reported an hour ago replays its whole transcript at full price, because the prompt cache
+  behind it has expired. *(2026-09-08: "resuming after an hour will be a huge token hit because
+  the cache expires. at that point it's better to just start a new one.")* Resume only while the
+  cache is live, and the windows are exact: **Claude Code's cache lasts one hour, Codex's twenty
+  minutes** *(2026-09-08: "claude cache is 1h", "caching for codex is 20min only")*, counted from
+  the agent's last request. **Resume only with five minutes to spare** — 55 minutes in Claude
+  Code, 15 in Codex — since the clock is the provider's and not observable from here *(2026-09-08:
+  "I would give like a 5min safety buffer")*. Past that, spawn a fresh agent with a
+  self-contained brief that names the branch and the report to read first.
+- **The main checkout is the player's test bed.** Whatever the player is asked to try out is
+  checked out in the repository's own folder before they are told it is ready — never left in an
+  agent's worktree under `.claude/worktrees/`. *(2026-09-08: "always check out what you want me to
+  test.")* That means freeing the agent's worktree first if it holds the branch (`git worktree
+  remove`), then `git checkout` in the main folder, and saying so; and while the player is testing
+  there, nothing touches that checkout but docs commits on the same branch.

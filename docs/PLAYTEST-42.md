@@ -10,7 +10,7 @@ The [video](evidence/run-204805-seed2468684785-v0.7.0-43-g1131bba/asked/burst-15
 has its [original PNG sequence and timing record](evidence/run-204805-seed2468684785-v0.7.0-43-g1131bba/asked/burst-15638553-002/)
 beside it. These are runtime defect evidence, not approved art references.
 
-The arm reach, directional gait and pixelation findings re-report PLAYTEST-38. The extra visible
+The arm reach, directional gait and pixelation findings re-report PLAYTEST-45. The extra visible
 leg bends and baby layering add specific checks to that repair. Keep this recording and report
 separate from the earlier still-image playtest. The proposed resolution experiment keeps the
 window size while removing the zoom that reduces the visible world; it does not establish that
