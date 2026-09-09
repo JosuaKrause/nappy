@@ -103,18 +103,34 @@ def make_manifest(frames: list[tuple[Path, float]], duration: float, destination
     destination.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def find_newest(root: Path) -> Path:
-    candidates = []
-    for metadata in root.rglob("burst.json"):
+def find_pending(root: Path) -> list[Path]:
+    """Return unconverted completed or captured partial bursts in stable path order."""
+    pending: list[Path] = []
+    for metadata in sorted(root.rglob("burst.json"), key=lambda path: str(path)):
+        folder = metadata.parent
         try:
-            payload = json.loads(metadata.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+            payload: Any = json.loads(metadata.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"clip: ignoring malformed burst metadata {metadata}: {exc}", file=sys.stderr)
             continue
-        if isinstance(payload, dict) and payload.get("schema_version") == SCHEMA_VERSION and payload.get("status") in ("complete", "completed"):
-            candidates.append(metadata.parent)
-    if not candidates:
-        raise error(f"no completed gameplay bursts found under {root}")
-    return max(candidates, key=lambda path: (path.stat().st_mtime_ns, str(path)))
+        if not isinstance(payload, dict) or payload.get("schema_version") != SCHEMA_VERSION:
+            print(f"clip: ignoring unsupported burst metadata {metadata}", file=sys.stderr)
+            continue
+        status = payload.get("status")
+        if status == "active":
+            continue
+        if status not in ("complete", "completed", "cancelled", "partial"):
+            print(f"clip: ignoring burst with unsupported status {status!r}: {metadata}", file=sys.stderr)
+            continue
+        frames = payload.get("frames")
+        if not isinstance(frames, list) or not frames:
+            print(f"clip: ignoring burst with no frames: {metadata}", file=sys.stderr)
+            continue
+        output = folder.parent / f"{folder.name}.mp4"
+        if output.exists():
+            continue
+        pending.append(folder)
+    return pending
 
 
 def telemetry_directory() -> Path:
@@ -185,9 +201,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("output", nargs="?", type=Path, help="optional output MP4 path")
     args = parser.parse_args(argv)
     try:
-        explicit = args.burst_directory is not None
-        folder = args.burst_directory or find_newest(telemetry_directory())
-        output = convert(folder, args.output, explicit=explicit)
+        if args.burst_directory is None:
+            root = telemetry_directory()
+            pending = find_pending(root)
+            if not pending:
+                print(f"clip: no pending bursts under {root}")
+                return 0
+            failures = 0
+            for folder in pending:
+                try:
+                    print(convert(folder, explicit=True))
+                except (ClipError, OSError) as exc:
+                    failures += 1
+                    print(f"clip: {folder}: {exc}", file=sys.stderr)
+            return 1 if failures else 0
+        output = convert(args.burst_directory, args.output, explicit=True)
     except (ClipError, OSError) as exc:
         print(f"clip: {exc}", file=sys.stderr)
         return 1
