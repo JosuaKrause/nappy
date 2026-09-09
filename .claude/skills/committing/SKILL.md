@@ -64,6 +64,13 @@ not finished, however green its checks are; if the item is only partly built, th
 finishes it or its entry is rewritten on the branch to hold exactly what is still open, with the
 built half filed in `DECISIONS.md`.
 
+**And no handoff mentions it any more, since the work is done.** *(2026-09-09: "and there may be no
+mention of it in any handoff still … since the work is done".)* `HANDOFF.md` holds the pick-up
+state and nothing else, so a merged item has no line there — not a "built and unwalked" bullet, not
+a distrust entry written for it, not its number. What a player should go and look at is a
+`TODO.md` item or a `DECISIONS.md` record, never a sentence in the handoff about work that is
+finished. Before merging, grep both handoffs for the item's number and its nouns.
+
 The **session-cleanup** skill still runs at the end of a session — it catches drift that no single
 change is responsible for, reassesses long-open items and re-reads the numbers. It is not where a
 PR's own doc work goes.

@@ -547,17 +547,6 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
-- **Cars arrive by the tunnel and the bridge, and a rig is the only thing that has seen one.**
-  A southbound spine car beside the north edge is placed up to `OUT_OF_SIGHT` (420px) under the
-  mountain and drives out through the dark of the portal; a northbound one starts on the far end of
-  the deck. The rig counts frames and says the traffic is two-way. What it cannot say is whether a
-  car emerging from the black of the tunnel mouth reads as arriving or as appearing, and whether a
-  queue held at the first light ever backs into the portal in view.
-- **The back of a signal head has been seen in one capture and by nobody at play.** The head north
-  of a signalled junction shows a back plate and no lamp, so the only lamp on the spine's own arms
-  is the one on the head facing the camera. One screenshot at one junction says the drawing reads
-  as a back; whether a player crossing northward misses the lamp that used to face them is a
-  played question.
 
 ## The rule that matters most before starting anything
 
