@@ -17,6 +17,11 @@ The player clarified: "semantic check should always happen. not only on clean me
 mandatory whole-result review covers clean, conflicted and manually resolved merges, including
 cross-file interactions outside the conflict set; presenting three-way resolutions cannot replace it.
 
+The player also clarified: "renumbering also applies to milestones and todos not only playtest.
+anything really that is numbered and could be numbered the same in different PRs". The collision
+audit covers every independently numbered namespace and its references, including nested findings
+and identifiers carried in code, rather than only playtest filenames.
+
 ## Capture key and encoder compatibility — 2026-09-08
 
 PLAYTEST-41 reported that Shift interfered with running and ffmpeg rejected `-fps_mode`. Burst

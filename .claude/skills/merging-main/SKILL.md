@@ -1,6 +1,6 @@
 ---
 name: merging-main
-description: Merge main into an existing PR or branch with explicit theirs/ours/base conflict review, mandatory semantic reconciliation for every merge, and preservation of separate playtests and TODO items.
+description: Merge main into an existing PR or branch with explicit theirs/ours/base conflict review, mandatory semantic reconciliation for every merge, and collision-safe renumbering of all independently numbered records.
 ---
 
 # Merge main into a branch
@@ -38,24 +38,31 @@ where available; do not choose an arbitrary base and call it authoritative.
 ## Preserve the identity of records before merging
 
 Compare additions on both sides by their **content and provenance**, not just filenames, heading
-numbers or similar words. Distinct playtests and TODO items must remain distinct. A clean textual
+numbers or similar words. Distinct records must remain distinct. This applies to **anything
+independently numbered across PRs**: milestones, TODO items, playtests, findings, design entries,
+and other numbered identities. Do not limit the collision audit to a known filename pattern.
+A clean textual
 merge can silently concatenate unrelated findings under one heading or reuse an identifier.
 
-When main and the branch independently introduce the same playtest number:
+When main and the branch independently introduce the same number within an identity namespace:
 
 1. Keep main's record and number intact. Allocate an unused number for the branch's record from
    the union of identifiers on both tips, including other branch additions. Reserve the whole
    mapping first so one rename cannot collide with another.
 2. Show the mapping with a short description of each record's original subject. Rename the branch
-   file and its identifying title; preserve the player's words, date, finding order and evidence.
+   file or item and its identifying title; preserve its content, provenance and distinct ownership.
+   For playtests, preserve the player's words, date, finding order and evidence.
    Renumbering identity is not permission to rewrite a primary source or combine two sessions.
 3. Search all tracked text for links and references to the old identity before moving it. Update
    the references that mean the branch's record, including TODO, HANDOFF, DECISIONS, design docs,
    skills, tests and relevant PR text. Leave references to main's different record pointing to
    main. A global replacement of the shared number is wrong.
-4. Apply the same rule to independently assigned TODO/milestone identifiers: keep unrelated items
-   separate, renumber the branch's colliding identity and reconcile its references. Do not combine
-   items to clear a conflict, deduplicate them by number, or mark one complete because the other is.
+4. Audit every independently numbered namespace, including TODO/milestone identifiers and
+   nested finding IDs: keep unrelated items separate, renumber the branch's colliding identity
+   and reconcile its references. Do not combine items to clear a conflict, deduplicate them by
+   number, or mark one complete because the other is. A filename, anchor, test name or code
+   reference can carry the identity too. For persisted or externally consumed identifiers, inspect
+   consumers and migration requirements; a bare textual rename does not establish compatibility.
 
 Prefer a separate, reviewable branch commit for the identity changes before merging. If the
 collision is discovered during the merge, preserve both original versions from the recorded tips
