@@ -348,6 +348,24 @@ thin line style in all four directions (since all have traffic lights) not only 
 ones".)* The exception is the player's: **the tunnel and the bridge**, the spine's two exits where
 `CityEdge` draws the road going on, keep their arm.
 
+- [ ] **And the bodies stop at the border too, except a car on the spine's exits.** *(2026-09-08,
+      on the branch with the T-junctions in: "it's now correctly t-junctions but the cars and
+      people still go off the map".)* The paint is right and the rule under it is not — the
+      bullet below is M49's, moved here because the border is one place and this is its other
+      half. `CrowdAgent._cannot_go_on()` answers *passable* for any tile outside the map, so a
+      walker or a car reaching the boundary pavement keeps going into the mountain. The rule is
+      **out of bounds is blocked**, with one exception: a **car** on the spine's own corridor
+      leaving by the tunnel (north) or the bridge (south), which `CityEdge` draws as the road
+      going on. Never a walker — playtest 16 finding 3, *"only cars should be able to"*. The same
+      answer has to hold where an agent is *placed*: `_stands_on_a_street()` accepts an
+      out-of-bounds tile as an entry band, and a walker placed out there would now be walled in
+      on every side
+- [ ] **People walk out onto the border and vanish there.** Reported again from play on 2026-09-02
+      — *"the north edge still has people and cars walking into the mountain and disappearing"* —
+      so it is people **and cars**, and the north edge is where it was seen.
+      **`CrowdAgent._blocked_ahead` returns `false` for a tile out of bounds**, so the one wall that
+      should stop them reports as clear. Likely *out of bounds is blocked* and nothing else — check
+      against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
 - [ ] **Junctions are four-way where an arm dead-ends — reproduced, with a picture.**
       *(2026-09-02, from play: "the intersections are not t intersections", of the **north edge**.)*
       **Seed 2927659514, day 1, standing at tile (80,1)** —
@@ -1268,12 +1286,6 @@ direction, not distance.**
 - [ ] **The fence is drawn in elevation and turned on its side.** The game looks straight down,
       where a fence is a thin line with post-heads and a shadow. Rotating an elevation does not make
       it a top-down drawing
-- [ ] **People walk out onto the border and vanish there.** Reported again from play on 2026-09-02
-      — *"the north edge still has people and cars walking into the mountain and disappearing"* —
-      so it is people **and cars**, and the north edge is where it was seen.
-      **`CrowdAgent._blocked_ahead` returns `false` for a tile out of bounds**, so the one wall that
-      should stop them reports as clear. Likely *out of bounds is blocked* and nothing else — check
-      against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
 - [ ] **Whatever fixes one border has to be stated over *a border*.** The first pass wrote four
       sides four times, which is one bug per side waiting to happen
 - [ ] **Restate the main-road pacing question.** The design says she exhausts her own side of the

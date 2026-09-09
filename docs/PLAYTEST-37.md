@@ -65,3 +65,14 @@ already carries the reasoning: `GroundTiles._crossing_variant` draws the dotted 
 crossing across the main road's own carriageway, and the property belongs to the **junction**,
 since one light governs all four crossings where the spine meets a side street. The side street's
 two crossings are painted as a zebra — a promise to give way that the traffic there does not make.
+
+## 4. The junctions are right now, and the bodies still walk off the map
+
+> "it's now correctly t-junctions but the cars and people still go off the map"
+
+Said on the branch with findings 1 and 2 built. **A re-report of M49's *"People walk out onto the
+border and vanish there"***, which already names the cause: `CrowdAgent._cannot_go_on()` answers
+*passable* for a tile outside the map, so the one wall that should stop a body reports as clear.
+The paint now says T-junction and the rule under it still says street. The exception is the one
+M49 already flags to check against — the spine's exits, where a car is meant to leave — and
+playtest 16's finding 3 fixes its shape: *"only cars should be able to"*, never a walker.
