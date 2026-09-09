@@ -158,3 +158,9 @@ merging is what collides — so parallelism is planned at the file level, before
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the
   player through the orchestrator, in the entry where the next reader will look for it.
+- **The main checkout is the player's test bed.** Whatever the player is asked to try out is
+  checked out in the repository's own folder before they are told it is ready — never left in an
+  agent's worktree under `.claude/worktrees/`. *(2026-09-08: "always check out what you want me to
+  test.")* That means freeing the agent's worktree first if it holds the branch (`git worktree
+  remove`), then `git checkout` in the main folder, and saying so; and while the player is testing
+  there, nothing touches that checkout but docs commits on the same branch.
