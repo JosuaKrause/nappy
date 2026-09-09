@@ -743,9 +743,12 @@ func _consider_turning() -> void:
 ## is the same move a barricade produces, with the same good side effect: a street with nobody on it
 ## is a street that does not go through.
 ##
-## Out of bounds is deliberately **not** blocked. The map edge is what `_has_left_the_field`
-## handles, and treating it as a wall here would turn agents round at the boundary instead of
-## recycling them, which quietly drains the pavement the player is walking towards.
+## Out of bounds **is** blocked, in `_cannot_go_on()` below — a body that reaches the boundary
+## pavement turns rather than walking into the mountain, and only a car on the spine leaves by the
+## tunnel or the bridge. The map edge is still what `_has_left_the_field` recycles at. **The thing
+## to watch is the pavement she is walking towards near an edge**: a body that turns round at the
+## boundary instead of recycling is one fewer arriving from that side, and whether the edge
+## streets read thinner for it is a played question rather than a tested one.
 func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 	var offset := Vector2(0.0, direction * distance) if vertical \
 			else Vector2(direction * distance, 0.0)
