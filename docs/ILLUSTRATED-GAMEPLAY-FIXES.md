@@ -216,6 +216,12 @@ registration, rendered-endpoint and displacement checks. Exercise the legacy pat
 `./tools/test.sh visuals`. The live-owner test checks that the opt-in child is absent in legacy
 mode. A zero-failure assertion summary does not excuse a script error.
 
+For the PLAYTEST-42 world-extent experiment, use `--illustrated --illustrated-zoom 1` at the same
+`1280x720` window size; `--illustrated-zoom 2` reproduces the baseline. This changes the illustrated
+camera's visible world from 640x360 to 1280x720 while leaving the window, HUD, simulation and
+legacy presentation unchanged. It tests world extent and camera scaling, not increased rendered
+pixel count or a fix for anatomy, gait, compositing or source-art noise.
+
 Implement in bounded sequential pieces: sheet/manifest repair, static assembly, gait and sorting,
 then environment integration. Use isolated implementation worktrees under the orchestration
 rules; the orchestrator owns queue changes and visual acceptance. Load the path-matched skills,
