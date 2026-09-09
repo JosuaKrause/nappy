@@ -50,7 +50,7 @@ const LORRY := preload("res://assets/events/lorry.svg")
 const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
 const CHATTING_MOTHER_WALKING := preload("res://assets/events/chatting_mother_walking.svg")
 const CHATTING_MOTHER_TALKING := preload("res://assets/events/chatting_mother_talking.svg")
-## Seal pictures — see `SealPlanner` and `docs/TODO.md`, M64, "Eight seal pictures".
+## Seal pictures — see `SealPlanner` and `docs/DECISIONS.md`, M64, "Eight seal pictures".
 const FALLEN_TREE := preload("res://assets/events/fallen_tree.svg")
 const CAR_ACCIDENT := preload("res://assets/events/car_accident.svg")
 const SKIP := preload("res://assets/events/skip.svg")
@@ -132,7 +132,7 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 ## local X unconditionally, so a corner costs them nothing and they are rightly outside this test.
 ##
 ## **This is the test `EventScheduler._open_ground_for` asks before it will offer a corner as a
-## site.** See that function and `docs/TODO.md`, M64, "a spread on a corner is placed as if the
+## site.** See that function and `docs/DECISIONS.md`, M64, "a spread on a corner is placed as if the
 ## corner were nothing" — a junction has no single street for `_spread_is_vertical` or
 ## `_centred_on_the_pavement_band` to answer about, so only a row that actually asks either
 ## question has anything to lose by standing on one.

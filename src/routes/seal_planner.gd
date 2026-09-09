@@ -2,7 +2,7 @@ class_name SealPlanner
 extends RefCounted
 ## Seals every street off the day's route tree — the placement M64 exists for.
 ##
-## The design is `docs/TODO.md`, M64, "Nothing off the path". The corridor
+## The design is `docs/DECISIONS.md`, M64, "Nothing off the path". The corridor
 ## (`RouteTree.for_day`) is the day's only free way through; everything else in the lattice is
 ## closed, not merely dearer. This is where "closed" becomes an actual placement rather than a
 ## sentence.
@@ -25,7 +25,7 @@ extends RefCounted
 ## nothing about *where* — `plan_day` works out every site from the street lattice and the day's
 ## tree, the same way for any def a candidate names.
 ##
-## **The list carries eight pictures now** (`docs/TODO.md`, M64, "Eight seal pictures"), so no
+## **The list carries eight pictures now** (`docs/DECISIONS.md`, M64, "Eight seal pictures"), so no
 ## single barrier is the city's signature: `barricade_seal` (the catalogue's own furniture,
 ## `barricade`'s own docstring already calling it "placed as a seal rather than rolled as an
 ## event"), `construction_pair`, `cafe_pair`, `market_pair` and `delivery_pair` were the pre-M64
@@ -107,7 +107,7 @@ static func candidates() -> Array[Candidate]:
 
 ## The only place a new picture is added. See the class doc.
 ##
-## **Eight seal pictures** (`docs/TODO.md`, M64): the five below `barricade_seal` are the
+## **Eight seal pictures** (`docs/DECISIONS.md`, M64): the five below `barricade_seal` are the
 ## pre-existing furniture this class started with, and everything from `fallen_tree_seal` onward is
 ## the milestone's own addition — each one an appended entry and nothing else, per the design's own
 ## requirement that "updating the list of candidates is enough." `barricade_seal` is also the

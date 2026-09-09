@@ -255,7 +255,7 @@ func _test_a_spread_rotates_with_the_street(t) -> void:
 
 ## **A spread never lands on a corner.** `EventScheduler._is_a_corner` refuses any tile whose two
 ## coordinates are both inside a corridor band to a row `EventInstance.has_a_spread()` names — see
-## `docs/TODO.md`, M64, "a spread on a corner is placed as if the corner were nothing": such a tile
+## `docs/DECISIONS.md`, M64, "a spread on a corner is placed as if the corner were nothing": such a tile
 ## has no single street for `_spread_is_vertical` or `_centred_on_the_pavement_band` to answer about.
 ## Walked over the **planned** placements of several seeds and every day of a run, rather than over
 ## the candidate pool directly, because a clean pool and a roll that still lands on a stale entry
@@ -1310,7 +1310,7 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 ## happen on required alleys".)* `EventScheduler._refuses_required_alleys` excludes `alley_robbery`
 ## from any `ALLEY` tile the day's corridor runs through — `corridor.depth(tile) == 0` — because its
 ## own design note is that "a robbery has no telegraph you could see coming, and it never did": a
-## risk with no warning is only fair on ground she chose to enter. See `docs/TODO.md`, M64, "and no
+## risk with no warning is only fair on ground she chose to enter. See `docs/DECISIONS.md`, M64, "and no
 ## robber stands in an alley she has to walk down."
 ##
 ## Walked over the **planned** placements of several seeds and every day the row is eligible on

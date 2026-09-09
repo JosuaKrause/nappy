@@ -2,7 +2,7 @@ extends RefCounted
 ## `SealPlanner`: every street off the day's tree carries a seal, the tree, the doorstep and the
 ## main road never do, and sealing never breaks the day's own winnability.
 ##
-## `docs/TODO.md`, M64, "Place a seal off the tree, on every segment" is the design;
+## `docs/DECISIONS.md`, M64, "Place a seal off the tree, on every segment" is the design;
 ## `src/routes/seal_planner.gd` is the implementation. The winnability check here is a hard
 ## assertion rather than a measurement on purpose — `SealPlanner`'s own class doc explains why: a
 ## seal never stands on tree ground or the doorstep, so nothing it does can cut the one route the

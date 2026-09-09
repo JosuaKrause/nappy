@@ -128,7 +128,7 @@ static func _build() -> Array[EventDef]:
 		_firefight(),
 
 		# Seal pictures - off the day's route tree, never rolled by the ordinary scheduler. See
-		# SealPlanner and docs/TODO.md, M64, "Eight seal pictures".
+		# SealPlanner and docs/DECISIONS.md, M64, "Eight seal pictures".
 		_fallen_tree(),
 		_car_accident(),
 		_skip(),
@@ -1329,7 +1329,7 @@ static func _firefight() -> EventDef:
 	return def
 
 # --------------------------------------------------------- seal pictures (M64) ---
-# Every row below exists only as `SealPlanner` candidate material — `docs/TODO.md`, M64, "Eight
+# Every row below exists only as `SealPlanner` candidate material — `docs/DECISIONS.md`, M64, "Eight
 # seal pictures, so that no single barrier becomes the city's signature." Each is `SCRIPTED` with
 # `scripted_day = 0`, a day nobody plays, so `EventDef.available_on()` never rolls one and the
 # ordinary scheduler never sites one — the same shape `barricade` already uses to keep off the
@@ -1417,7 +1417,7 @@ static func _scaffolding() -> EventDef:
 	return def
 
 ## A hard seal: a crater with water across the asphalt and a municipal barrier at each kerb — "the
-## one that explains why the road is out too" (`docs/TODO.md`, M64). Single-copy geometry, same as
+## one that explains why the road is out too" (`docs/DECISIONS.md`, M64). Single-copy geometry, same as
 ## `fallen_tree` and `car_accident`.
 static func _burst_water_main() -> EventDef:
 	var def := EventDef.new()
@@ -1435,7 +1435,7 @@ static func _burst_water_main() -> EventDef:
 	return def
 
 ## A soft seal, both bodies the same row: a removal lorry with its ramp down on each pavement —
-## "reuses `Look.LORRY`, the biggest silhouette in act I" (`docs/TODO.md`, M64), read as the same
+## "reuses `Look.LORRY`, the biggest silhouette in act I" (`docs/DECISIONS.md`, M64), read as the same
 ## lorry-scale silhouette family rather than the literal `Look.LORRY` enum value, since two rows
 ## may not share a look or a silhouette (`docs/EVENTS.md`, "the visual vocabulary";
 ## `tests/test_events.gd`'s `_test_no_two_rows_draw_the_same_picture` and

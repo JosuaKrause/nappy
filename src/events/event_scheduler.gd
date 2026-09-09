@@ -707,7 +707,7 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		# through — `corridor.depth(tile) == 0`, the `INSIDE` band — is ground she has no way
 		# around, and `alley_robbery`'s own design note is that "a robbery has no telegraph you
 		# could see coming, and it never did": a risk with no warning is only fair on ground she
-		# chose to enter. See `docs/TODO.md`, M64, "and no robber stands in an alley she has to
+		# chose to enter. See `docs/DECISIONS.md`, M64, "and no robber stands in an alley she has to
 		# walk down."
 		if refuses_required_alleys and corridor.depth(tile) == 0:
 			continue
@@ -734,7 +734,7 @@ const NO_SITE := Vector3i(-1, -1, -1)
 ## A tile whose two coordinates are **both** inside a corridor band — a junction, belonging to two
 ## streets at once. `EventInstance._spread_is_vertical` and `_centred_on_the_pavement_band` both
 ## give up here, for the reason each states in its own docstring: there is no single street left for
-## a spread to lie across or be centred on. See `docs/TODO.md`, M64, "a spread on a corner is placed
+## a spread to lie across or be centred on. See `docs/DECISIONS.md`, M64, "a spread on a corner is placed
 ## as if the corner were nothing."
 static func _is_a_corner(tile: Vector2i) -> bool:
 	return CityMap.corridor_offset(tile.x) >= 0 and CityMap.corridor_offset(tile.y) >= 0

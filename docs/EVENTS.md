@@ -529,7 +529,7 @@ The day-14 sabotage is not a catalogue row: it is `GameState` logic (`sabotage_d
 
 ### Seal pictures — off the day's route tree
 
-Eight pictures so no single barrier is the city's signature (`docs/TODO.md`, M64). Every row below
+Eight pictures so no single barrier is the city's signature (`docs/DECISIONS.md`, M64). Every row below
 is `SCRIPTED` with `scripted_day` 0, so — like `barricade` above — the ordinary catalogue roll never
 schedules one; `SealPlanner` places each fresh every morning on a street off the day's route tree,
 reading `act_tag` for the first day it may. All eight are silent (`intensity` 0): *"static blockages
