@@ -415,6 +415,57 @@ and concluded that **a closure's job is direction, not distance**. Its three ite
       than over block sides. M48 needs no such confirmation, since its rotation rule reads
       `CityMap.corridor_offset()`, which is geometry rather than reachability
 
+**The draft answer to "what a region is", 2026-09-09, read off the code and put back for the
+player.** The facts it rests on: the lattice is 11×11 blocks with 264 street segments and one
+north–south main road, chosen between the third corridor from either edge; there is no east–west
+main road. Calm areas number eight or nine a city and are never placed in the outer ring of blocks,
+inside the home's clearance, or in the two block columns beside the main road. District tags
+(`CIVIC`, `COMMERCIAL`, `INDUSTRIAL`) are dealt to blocks from a shuffled list and form no
+contiguous areas, and the two precincts are three blocks each — so nothing the lattice already
+knows about can be a region. And an alley is not a street segment, so any boundary stated over
+segments alone has a hole wherever an alley or a courtyard archway joins two sides of it — the same
+blind spot M69 found in block-level reachability.
+
+- **A region is a set of street segments, not of blocks.** The walkable city *is* its streets, so
+  a partition of the segments is a partition of where she can be, and a boundary is a **junction
+  where two regions' segments meet**, with the barricade or checkpoint standing *across* the
+  segment on one side of it — the picture the player drew, and the shape every barrier in the game
+  already has. This is the key space `RouteTree.is_on_the_tree()`, `ClosurePlanner` and
+  `SealPlanner` all use, so *a route crosses a boundary* is one lookup: a tree segment whose
+  neighbour across the junction is another region's.
+- **The main road is ordinary ground to the partition, so a boundary may cut it.** A checkpoint
+  across the main road is the one place the gate over the roadway means something — cars come to a
+  full stop and the signal machinery (`TrafficSignals`, `CrowdLanes`) is what obeys it — and it
+  leaves *paths cross the spine and never run along it* untouched. **The alternative, named so it
+  is cheap to pick:** the spine as a permanent boundary between an east and a west region, which
+  gates every crossing the tree makes and collides with `docs/CITY.md`'s *she may cross wherever she
+  likes*.
+- **Regions are grown at generation from a fixed number of seed segments, over atoms.** An atom
+  is a calm lot with all of its access segments, and any two segments an alley or an archway
+  joins; regions grow by breadth-first flood over the segment graph from spread-out seeds, an atom
+  at a time, so **no boundary runs along a calm area's frontage and no alley crosses one** by
+  construction rather than by retry. The home street and its trunk join whichever region grows to
+  it; precinct spans are one atom each. The count is one `Tuning` constant — **four is the
+  recommendation**, since two is a single line and eight or nine (one per calm area) puts most of
+  the 264 segments behind a wall and never lets *a region with no calm area gets no doors* fire.
+- **The wall is the day's, planned beside the closures, not `absent_segments`.** A crossing is a
+  checkpoint today and barricade tomorrow, and `absent_segments` is fixed for the run and merged
+  into every route search unconditionally, so it cannot carry a per-day door. So M45's *reuse
+  `absent_segments`* is reuse of the **category** — a segment every route search treats as closed
+  — and the placement is `ClosurePlanner`'s: the boundary junctions are a fact of the map, and each
+  morning every one the day's tree crosses is cut as a door and every other is walled.
+- **The checks are floods over cells, not counts over segments.** With every boundary barrier
+  down as blocked tiles, `ReachabilityGrid.flood()` from the doorstep must reach exactly the home
+  region's streets and nothing across a boundary — that is what catches an alley or an archway a
+  segment-level check cannot see; with only the day's doors open, every region that holds a calm
+  area she can use is reached; and the home region has at least one door on every day. Sized like
+  `tests/test_route_tree.gd` and `tests/test_seals.gd`, over several seeds and the days of each act.
+
+**What is the player's to decide before an agent gets this**: that a region is segments rather
+than blocks; that the main road may be cut by a boundary rather than be one; the count; and that
+the wall is planned daily rather than being permanent structure — the last of which narrows M45's
+own wording and is asked rather than assumed.
+
 ---
 
 ## M64 — Eight seal pictures · asked for 2026-09-02
