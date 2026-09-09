@@ -38,7 +38,7 @@ tree, took 246.33 ms on seed 4242.
 walk. The grid and main-road position cannot change inside one `grow` call, so those filtered lists
 can be reused within that call. Their order and duplicate edges must survive: the random walk rolls
 an index into the list, so either changing its order or deduplicating it changes seeded routes.
-The cache is enabled only while `grow` executes, then disabled and cleared. A probe measured
+The initial cache was enabled only while `grow` executed, then disabled and cleared. A probe measured
 101.25 ms/day after this change. A bounded comparison with the uncached algorithm checks both
 ordered branch routes and final RNG state across two seeds and days 1 and 14; the existing
 six-seed, four-day route invariants remain in place.
