@@ -183,12 +183,15 @@ static func _crossing_variant(map: CityMap, tile: Vector2i) -> int:
 			or map.street_kind_at(false, tile) == GameEnums.StreetKind.MAIN
 	if not main:
 		return CROSSING_V if across_x else CROSSING_H
-	# The spine's last two tiles before the tunnel are the border junction's outward crossing, and
-	# they are drawn as the road they lead on to rather than as a crossing: the picture in the mouth
-	# of a tunnel is asphalt going into the dark, and the border paints these same tiles onward
+	# The spine's last two tiles before the tunnel and before the bridge are the border junctions'
+	# outward crossings, and they are drawn as the road they lead on to rather than as a crossing:
+	# the picture in the mouth of a tunnel is asphalt going into the dark, the picture at the foot
+	# of a bridge is asphalt running on to the deck, and the border paints these same tiles onward
 	# under the portal, where crossing paint would be a ladder lying in the road. The tile type is
 	# untouched — a walker on the outer pavement still crosses here — only the picture changes.
-	if across_x and tile.y < Tuning.SIDEWALK_WIDTH:
+	var into_the_border := tile.y < Tuning.SIDEWALK_WIDTH \
+			or tile.y >= map.size.y - Tuning.SIDEWALK_WIDTH
+	if across_x and into_the_border:
 		return _road_variant(map, tile)
 	if across_x:
 		# A north-south carriageway: she crosses east to west, so the lines run that way.

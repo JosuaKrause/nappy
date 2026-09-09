@@ -39,5 +39,12 @@ the tunnel still drives on out of sight before it is recycled, so the mountain a
 has to be painted *over* the traffic as well as under it, or the car goes dark in the mouth and
 comes out bright on top of the rock.
 
+**And the bridge, when the tunnel was reported done.** The tunnel fix left the two dotted-line
+tiles before the bridge deck as they were and said so; the answer was immediate:
+
+> "let's fix the bridge too"
+
+So both ends of the spine run plain asphalt into the border.
+
 **Built in the same session.** The record, with the numbers and what was rejected, is in
 [DECISIONS.md](DECISIONS.md) under "The tunnel swallows the road".

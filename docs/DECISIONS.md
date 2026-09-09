@@ -43,14 +43,15 @@ entry rolls all fall outside the map, and it would then appear inside the openin
 the one thing `OUT_OF_SIGHT` exists to prevent. Painting the mountain over the band costs nothing
 and keeps both ends of the rule.
 
-**The two tiles into the mouth are drawn as road.** `GroundTiles._crossing_variant` returns the
-road picture for a main-road crossing in the map's first `SIDEWALK_WIDTH` rows — the spine's
-approach to the tunnel and nowhere else — so the asphalt runs plain from the junction box into the
-dark. **The tile type is unchanged**: playtest 14's decision that a boundary junction's outward
-crossing is a real crossing stands, a walker on the outer pavement still crosses there, and every
-rule that reads `CROSSING` reads what it read. Only the picture moved, which is the same shape as
-the spine's zebras becoming dotted lines. *Not done, and worth a question:* the bridge end has the
-same two tiles of dotted lines before the deck, and the player's note was about the tunnel.
+**The two tiles into the mouth are drawn as road, and so are the two on to the bridge.**
+`GroundTiles._crossing_variant` returns the road picture for a main-road crossing in the map's
+first and last `SIDEWALK_WIDTH` rows — the spine's approach to the tunnel and to the bridge, and
+nowhere else — so the asphalt runs plain from the junction box into the dark, and from the junction
+box on to the deck. The bridge half was asked for on sight when the tunnel half was reported done
+*(2026-09-09: "let's fix the bridge too")*. **The tile type is unchanged**: playtest 14's decision
+that a boundary junction's outward crossing is a real crossing stands, a walker on the outer
+pavement still crosses there, and every rule that reads `CROSSING` reads what it read. Only the
+picture moved, which is the same shape as the spine's zebras becoming dotted lines.
 
 ## M92 — The halo says how much it cost · built 2026-09-08
 
