@@ -28,7 +28,8 @@ func run(t) -> void:
 	_test_the_cap_keeps_the_strongest(t)
 	_test_landed_accumulates_and_decays(t)
 	_test_colour_for_the_ramp_ends(t)
-	_test_alpha_for_is_the_falloff_fraction(t)
+	_test_magnitude_for_emphasises_low_values(t)
+	_test_entity_halo_eases_toward_its_target(t)
 	_test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t)
 	_test_an_ordinary_walker_is_a_candidate(t)
 	_test_select_sources_takes_a_mixed_candidate_set(t)
@@ -186,21 +187,64 @@ func _test_colour_for_the_ramp_ends(t) -> void:
 			"halfway to saturation reads as neither end of the ramp")
 
 # ---------------------------------------------------------------- brightness ---
+# *(2026-09-08, the player, dropping the "how far away" read `alpha_for()` used to give:
+# "the transparency shouldn't show distance since distance actually doesn't matter ... this frees
+# up transparency for also encoding magnitude. transparency can be used to emphasize low values".)*
+# `magnitude_for()` reads `landed()` -- the same number `colour_for()` reads -- on a curve that
+# rises fast and saturates by `LOW_EMPHASIS_POINTS`, so transparency does the work at the low end
+# that a straight line to `SATURATES_AT_POINTS` would leave flat.
 
-func _test_alpha_for_is_the_falloff_fraction(t) -> void:
-	t.check(is_equal_approx(ExcitementHalo.alpha_for(10.0, 10.0), ExcitementHalo.MAX_ALPHA),
-			"at a source's own peak, alpha is MAX_ALPHA")
-	t.check(is_equal_approx(ExcitementHalo.alpha_for(1000.0, 1000.0), ExcitementHalo.MAX_ALPHA),
-			"a source three orders of magnitude stronger reads exactly as bright at its own peak")
-	var weak_near_rim := ExcitementHalo.alpha_for(0.5, 10.0)
-	var strong_near_rim := ExcitementHalo.alpha_for(50.0, 1000.0)
-	t.check(is_equal_approx(weak_near_rim, strong_near_rim),
-			"a weak and a strong source at the same fraction of their own reach read equally " +
-			"bright -- brightness is decoupled from strength, only colour tells them apart")
-	t.check(weak_near_rim < 0.1 * ExcitementHalo.MAX_ALPHA,
-			"just inside the rim (5% of a source's own peak) alpha is near zero")
-	t.check(is_equal_approx(ExcitementHalo.alpha_for(5.0, 0.0), 0.0),
-			"a non-positive peak never divides by zero")
+func _test_magnitude_for_emphasises_low_values(t) -> void:
+	var floor_alpha := ExcitementHalo.MIN_MAGNITUDE * ExcitementHalo.MAX_ALPHA
+	t.check(is_equal_approx(ExcitementHalo.magnitude_for(0.0), floor_alpha),
+			"nothing landed yet reads at the floor, not at zero -- a picked source is never " +
+			"invisible while it is still earning its first point")
+	var one := ExcitementHalo.magnitude_for(1.0)
+	var five := ExcitementHalo.magnitude_for(5.0)
+	var fifteen := ExcitementHalo.magnitude_for(15.0)
+	var forty := ExcitementHalo.magnitude_for(40.0)
+	t.check(one > floor_alpha, "one point already reads above the floor -- faint but present")
+	t.check(one < five and five < fifteen,
+			"the curve rises fast through the low end, which is the whole point of it")
+	t.check(is_equal_approx(fifteen, ExcitementHalo.MAX_ALPHA),
+			"fifteen points is already solid -- LOW_EMPHASIS_POINTS is where the curve saturates")
+	t.check(is_equal_approx(forty, ExcitementHalo.MAX_ALPHA),
+			"well past LOW_EMPHASIS_POINTS stays solid rather than overshooting -- colour, not " +
+			"transparency, is what carries the difference between fifteen and forty")
+
+# ------------------------------------------------------------------- easing ---
+# *(2026-09-08, the player: "fade in and fade out smoothly using transparency ... all changes
+# should transition (hue and transparency) instead of immediately showing the actual value".)*
+# `EntityHalo` is the natural home for the eased state, since both `EventInstance` and `CrowdAgent`
+# already own one -- see its class doc.
+
+func _test_entity_halo_eases_toward_its_target(t) -> void:
+	var halo := EntityHalo.new(Callable(), Callable())
+	var steps_in := int(round(EntityHalo.FADE_IN_SECONDS / STEP))
+	halo.set_glow(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	for i in steps_in / 2:
+		halo._process(STEP)
+	t.check(halo._alpha > 0.0 and halo._alpha < ExcitementHalo.MAX_ALPHA,
+			"half way through FADE_IN_SECONDS the rim is part way up -- never a jump from nothing " +
+			"to the target in one frame")
+	for i in steps_in - steps_in / 2:
+		halo._process(STEP)
+	t.close_to(halo._alpha, ExcitementHalo.MAX_ALPHA,
+			"a target held for the whole of FADE_IN_SECONDS is reached", 0.01)
+	t.check(halo._colour.is_equal_approx(Palette.HALO_STRONG),
+			"colour eases to its own target on the same clock as alpha, not left to jump on its own")
+
+	halo.set_glow(0.0, Palette.HALO_WEAK)
+	var steps_out := int(round(EntityHalo.FADE_OUT_SECONDS / STEP))
+	for i in steps_out:
+		halo._process(STEP)
+	t.close_to(halo._alpha, 0.0,
+			"told a target of zero and given the whole of FADE_OUT_SECONDS, the rim decays to zero " +
+			"rather than being switched off", 0.01)
+	t.check(halo.is_faded_out(),
+			"is_faded_out() agrees once the fade is actually over, which is what lets CrowdAgent " +
+			"free the halo without cutting a fade off mid-way")
+	halo.free()
 
 # ------------------------------------------------------------ the crowd joins ---
 # *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy

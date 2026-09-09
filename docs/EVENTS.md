@@ -796,14 +796,24 @@ fixed the footprint but was still a number's shape rather than the thing's, and 
 circle read smaller than the barricade the moment a ceiling was tried to stop a busker's from
 swallowing the street.
 
-**Brightness and colour answer different questions, and a played session is what separated them.**
-*(2026-09-07, the player: "the color of the halo should be determined by the absolute magnitude
-with red being strong and light yellow being weak and the faseout should be by the fraction of
-its value ... the intensity of the halo states how far away I am. the color should state how
-dangerous it is.")* `ExcitementHalo.alpha_for()` is the fraction of a source's own peak reaching
-her right now — `contribution_at(her position) / contribution_at(its own position)` — so a busker
-at arm's length reads exactly as bright as a burning building at arm's length, and only colour
-tells them apart.
+**Brightness and colour both answer "how much has this actually cost her", on two different
+curves, and a second played session is what settled that.** *(2026-09-07, the player: "the color
+of the halo should be determined by the absolute magnitude with red being strong and light yellow
+being weak and the faseout should be by the fraction of its value ... the intensity of the halo
+states how far away I am. the color should state how dangerous it is.")* That first answer put
+brightness on distance, and the same player overturned it the next session, once magnitude was
+being tracked at all: *(2026-09-08: "the transparency shouldn't show distance since distance
+actually doesn't matter. only the actual received amount counts ... this frees up transparency for
+also encoding magnitude. color and transparency shouldn't be the same number. transparency can be
+used to emphasize low values.")* `ExcitementHalo.colour_for()` is linear over `landed()`, pale to
+red by forty points; `ExcitementHalo.magnitude_for()` is the same `landed()` on a curve that rises
+fast and saturates by fifteen points, so a point or two already reads as a faint rim while colour
+is still climbing — transparency carries the low end, colour carries the difference between
+fifteen and forty. Both channels ease toward whatever they are last told over
+`EntityHalo.FADE_IN_SECONDS` (0.3s) / `FADE_OUT_SECONDS` (0.8s) rather than jumping, *(2026-09-08,
+the player: "all changes should transition (hue and transparency) instead of immediately showing
+the actual value".)* so a burst brightens and reddens together and drains together rather than
+switching on and off.
 
 **Colour is points that actually reached the meter, traced from the meter's own sum rather than
 recomputed.** *(2026-09-08, the player: "don't derive it from the source numbers but trace an
@@ -841,7 +851,7 @@ only the caret-worthy.
 | **Its colour** | **Amber** = go round it. **Deep red, doubled** = it ends your day. Two colours, and they are a scale rather than a sequence. | `EventInstance.mark_colour()` |
 | **Its flash** | *It has not started yet.* The telegraph phase, and the only channel carrying it — the colour cannot, because a telegraph is usually over before the event is on screen, so an amber that meant *telegraphing* would only ever be seen on the rows sited in front of the player and would read as *near*. | `EventInstance._draw_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
-| **Entity halo** | *This is charging you right now, this close, and it has cost you this much.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius — for every live event and every startled crowd body (a honking car, a bumped walker) whose `contribution_at()` at her own position clears a floor. **Brightness** is the fraction of the source's own peak reaching her (close vs. far); **colour** is pale-to-red over what it has actually delivered to her in the last five seconds (harmless vs. costly). Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EventInstance._draw_halo()`, `assets/shaders/excitement_halo.gdshader` |
+| **Entity halo** | *This is charging you right now, and it has cost you this much.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius — for every live event and every startled crowd body (a honking car, a bumped walker) whose `contribution_at()` at her own position clears a floor. **Colour** is pale-to-red, linear over what it has actually delivered to her in the last five seconds; **transparency** is the same five-second total on a curve that saturates by fifteen points, so it carries the low end colour cannot show yet. Both fade in and out over a third and four fifths of a second rather than switching. Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EntityHalo`, `assets/shaders/excitement_halo.gdshader` |
 | **Edge badge** | Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
 | **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live, she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the day, **and the gap is closing at the speeds in play**. Not *inside the outer radius*, which for a cyclist is thirty times the area that can hurt her and stays true while the bike rides away. | `EventManager._warn_about_the_ground_she_is_on()` |

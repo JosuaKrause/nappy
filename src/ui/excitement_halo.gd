@@ -1,11 +1,23 @@
 class_name ExcitementHalo
 extends Node2D
 ## Which live sources are actively charging the meter right now, and how much each has actually
-## cost her over its own recent window — two axes, drawn as one rim per source. It answers
-## *which of the six things around her* and *how bad has this one actually been*, neither of
-## which the meter's own number can: a number says how much in total and never which, and never
-## whether a row that costs the same on the page cost her nothing today or cost her the whole
-## meter.
+## cost her over its own recent window, read back onto one rim per source in two channels that
+## now agree rather than disagree. It answers *which of the six things around her* and *how bad
+## has this one actually been*, neither of which the meter's own number can: a number says how
+## much in total and never which, and never whether a row that costs the same on the page cost
+## her nothing today or cost her the whole meter.
+##
+## **Both channels read `landed()`, on different curves, and neither reads distance any more.**
+## *(2026-09-08, the player, overturning playtest 36's "the intensity of the halo states how far
+## away I am": "the transparency shouldn't show distance since distance actually doesn't matter.
+## only the actual received amount counts which might depend on the distance but we don't need to
+## encode the distance. this frees up transparency for also encoding magnitude." And, on the same
+## day, why the two curves differ: "color and transparency shouldn't be the same number.
+## transparency can be used to emphasize low values.")* `colour_for()` is linear in `landed()`, so
+## hue separates the high end; `magnitude_for()` rises fast and saturates early, so a point or two
+## is already faintly visible and the low end is where transparency does its work. A busker at
+## arm's length no longer reads as bright as a burning building at arm's length by construction —
+## that read the *distance*, and distance is exactly what stopped mattering.
 ##
 ## **It draws nothing itself.** *(2026-09-07, the player: "it should use the outline of the
 ## sprite. that's why it needs to be a shader. or draw the sprite in a uniform color multiple
@@ -13,14 +25,15 @@ extends Node2D
 ## shape drawn here — a circle, a rect, any radius derived from a def — can only ever be a picture
 ## of a *number*, and the whole licence this cue has to exist is that it draws the *thing* rather
 ## than the thing's *reach*. `EntityHalo` is the one place that draws, shared by `EventInstance`
-## and `CrowdAgent` and told what to show through `set_halo_strength()`.
+## and `CrowdAgent`, told a *target* alpha and colour through `set_halo_strength()` and eased
+## toward it on its own clock — see `EntityHalo.FADE_IN_SECONDS`/`FADE_OUT_SECONDS`.
 ##
 ## **It does not accumulate anything itself.** *(2026-09-08, the player: "don't derive it from the
 ## source numbers but trace an increase in excitement back to its constituents".)* What has
 ## actually landed on her is traced from the meter's own sum: `Baby._update_excitement()` calls
 ## each source's own `accumulate_landed(points)` with its exact share of what reached the bar,
 ## sensitivity included, so `landed()` can never disagree with what the bar actually did. This
-## node only selects sources and reads `landed()` back for their colour.
+## node only selects sources and reads `landed()` back for both of a rim's channels.
 ##
 ## **The duck type.** GDScript has no interface to lean on, so it is stated here: a candidate is
 ## any `Node2D` that answers —
@@ -30,8 +43,9 @@ extends Node2D
 ## - `accumulate_landed(points: float) -> void` — folds an exact points share, already computed by
 ##   the caller, into a `WINDOW`-second sliding sum.
 ## - `landed() -> float` — that sum: everything still inside the last `WINDOW` seconds.
-## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show;
-##   `0` for everything not picked.
+## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show, as
+##   a *target* its own halo state eases toward rather than an immediate value; `0` for everything
+##   not picked.
 ##
 ## `EventInstance` and `CrowdAgent` both satisfy this without sharing a base class.
 
@@ -106,25 +120,38 @@ static func select_sources(candidates: Array, at: Vector2) -> Array:
 
 # ------------------------------------------------------------------ brightness ---
 
-## The most opaque any halo may ever draw, at a source standing on its own field's own peak, so
-## even the brightest rim is a glow rather than a solid ring — see docs/EVENTS.md, "Soft, and
-## under everything."
+## The most opaque any halo may ever draw, once a source's `landed()` clears `LOW_EMPHASIS_POINTS`
+## — see docs/EVENTS.md, "Soft, and under everything."
 const MAX_ALPHA := 0.75
 
-## How brightly a source's own rim reads: the fraction of its own peak that is actually reaching
-## her, capped at `MAX_ALPHA`. **Brightness answers only "how close", never "how much"** — a
-## busker at arm's length reads exactly as bright as a burning building at arm's length, and only
-## `colour_for()` tells them apart. That is what *"the intensity of the halo states how far away I
-## am"* (docs/PLAYTEST-36.md) asks for, and it is the opposite of what this cue did before it.
-##
-## `peak` is the source's own `contribution_at(its own global_position)` — no separate per-class
-## notion of a centre is needed: it is `current_intensity()` for a point body, the field's own
-## peak for a spread, and the middle of the overlap for a flock, which is where a flock's own body
-## actually is densest.
-static func alpha_for(contribution: float, peak: float) -> float:
-	if peak <= 0.0:
-		return 0.0
-	return clampf(contribution / peak, 0.0, 1.0) * MAX_ALPHA
+## Below this, `magnitude_for()` is a floor rather than a read of `landed()`. *(2026-09-08, the
+## player: "transparency can be used to emphasize low values ... all changes should transition
+## (hue and transparency) instead of immediately showing the actual value".)* A source just picked
+## has landed nothing yet — `landed()` is a sliding sum, not instantaneous — and a rim that opened
+## at zero alpha would be invisible for the whole time it takes to earn one, which reads as exactly
+## the "shows nothing" playtest 38 reported. The floor is what a source fades *in* to before it has
+## anything to say about magnitude.
+const MIN_MAGNITUDE := 0.2
+
+## Where `magnitude_for()`'s curve is already at `MAX_ALPHA`. *(2026-09-08, the player: "one point
+## is faint but present, five is clearly there, fifteen and above is solid, and the colour then
+## carries the difference between fifteen and forty".)* Deliberately far below `SATURATES_AT_POINTS`
+## (40): transparency's job is the *low* end, so it has finished its work well before colour has
+## finished its own climb from pale to red.
+const LOW_EMPHASIS_POINTS := 15.0
+
+## How brightly a source's own rim reads: `landed()` on a curve that rises fast and saturates
+## early, so a point or two is already faintly visible and fifteen points is already solid — the
+## opposite curve from `colour_for()`'s straight line to forty, which is the whole reason the two
+## channels no longer say the same thing at once. *(2026-09-08, the player, dropping the "how far
+## away" read this replaced: "the transparency shouldn't show distance since distance actually
+## doesn't matter. only the actual received amount counts ... this frees up transparency for also
+## encoding magnitude." And on the shape of the curve itself: "transparency can be used to
+## emphasize low values.")* `sqrt` is the cheap curve with that shape: `sqrt(x)` for `x` in `0..1`
+## rises steeply near zero and flattens as it approaches one, unlike the straight line `colour_for`
+## wants for its own axis.
+static func magnitude_for(landed: float) -> float:
+	return MAX_ALPHA * clampf(sqrt(landed / LOW_EMPHASIS_POINTS), MIN_MAGNITUDE, 1.0)
 
 # -------------------------------------------------------------------- colour ---
 
@@ -178,8 +205,7 @@ func _process(_delta: float) -> void:
 	var picked := select_sources(candidates, here)
 	for source in candidates:
 		if source in picked:
-			var peak: float = source.contribution_at(source.global_position)
-			source.set_halo_strength(alpha_for(source.contribution_at(here), peak),
-					colour_for(source.landed()))
+			var landed: float = source.landed()
+			source.set_halo_strength(magnitude_for(landed), colour_for(landed))
 		else:
 			source.set_halo_strength(0.0, Palette.HALO_WEAK)
