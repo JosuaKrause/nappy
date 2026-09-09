@@ -213,7 +213,7 @@ name the question it answers, or it is a metric and does not belong.
 | `home` / `lost` | observer | The outcome, the margin, and what was around when it happened |
 | `nerve` | `GameState` | Where the nerves went — which day, which act |
 | `ending` | `GameState` | How the run finished |
-| `shot` | `main.gd` | **A person pressed `P` and said *look at this*** — where she was, what the meters read, which screen was up, and a PNG beside it. The only entry in the table that is not about the game: it is about somebody watching it |
+| `shot` | `main.gd`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
 
 ### Reading the meter breakdown
 

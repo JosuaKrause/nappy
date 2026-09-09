@@ -100,6 +100,12 @@ player went, what came near, how the day ended. `./tools/telemetry.sh` prints th
 (`-f` follows a run in progress, `-l` lists them). [docs/TELEMETRY.md](docs/TELEMETRY.md)
 says what the entries mean.
 
+For animation feedback, press **Shift+P** during desktop debug gameplay. The burst saves numbered
+PNGs and frame timestamps in a separate `asked/burst-<id>/` folder. Run `./tools/clip.sh` to
+convert the newest completed burst with ffmpeg, or `./tools/clip.sh "path/to/burst-folder"` to
+choose one. The MP4 sits beside that folder and all original frames remain available. P still
+takes a single screenshot.
+
 ## Verifying a build
 
 `.godot/` is gitignored, so a fresh clone needs an import pass before `class_name` types
