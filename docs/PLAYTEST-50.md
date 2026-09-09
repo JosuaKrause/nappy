@@ -9,8 +9,8 @@ GitHub, and two of its findings are about those files rather than about play.
 
 ## 1. "what is shown here?"
 
-`asked/016s-attempt1-asked.png`, 16 seconds into the day, standing on a pavement beside a removal
-lorry with its ramp down.
+`asked/016s-attempt1-asked.png`, 16 seconds into the day, standing on a pavement beside a moving
+van with its ramp down.
 
 > "what is shown here?"
 
@@ -24,7 +24,7 @@ lorry with its ramp down.
   about to be bad; move*. The log's cue line at 13.2s says why — *"a car, and she is in the road"*.
 - **The glowing car** is a honking car's halo (M92): it is charging the meter, at 7.57 points a
   second on the debug HUD's `incoming` line.
-- **The lorry with its ramp down on each pavement** is M64's `removal_lorry_pair`, a soft seal on
+- **The lorry with its ramp down on each pavement** is M64's `moving_van_pair`, a soft seal on
   a street off the day's route tree.
 
 **The finding is that three cues on one screen needed asking about.** Whether the baby cue, the
@@ -101,3 +101,42 @@ its own size in both accident files, upright in the rotated one too, because a p
 always stands upright. Fixed on the M64 branch; the capture is
 `docs/evidence/shot-2026-09-09-seed4242-150985c-seal-car-accident-onlookers.png`. The record is in
 `DECISIONS.md` under M64.
+
+## 5. The pictures, named and looked at one by one
+
+> "what's a removal lorry?"
+
+> "it only has one wheel and no cabin?"
+
+> "moving van is more clear btw"
+
+The row's picture was a box with one wheel and a ramp. It is redrawn as a lorry — a cab in front,
+three wheels, the back doors open and the ramp reaching the ground — and the row, its look, its
+candidate and its file are renamed `moving_van`. The record is in `DECISIONS.md` under M64.
+
+> "what's a skip?"
+
+A skip is the builder's open steel container parked at the kerb for rubble, the orange box that is
+the near half of the "skip and scaffolding" soft seal. Whether it is renamed too is the player's
+call; "dumpster" was offered.
+
+> "a vertical car crash is incorrect"
+
+> "burnt cars should have a vertical variant as well"
+
+Two findings about which way a car may point. The rotated accident turned the whole scene, cars
+included, so on an east–west street the two cars point north–south — cars that were never driving
+along that street. A crash blocking a street is made of cars that were driving along it, so the
+rotated scene keeps the cars pointing along the street and only stacks them across it. And the
+burnt-out car, drawn one way whatever the street, wants the same treatment as the crowd's own
+cars: pointing along the street it stands on, with a second drawing for the other axis. Both go
+to the M64 branch.
+
+> "hmm, is the evidence / docs folder godot ignored?"
+
+> "why are there import files for screenshots?"
+
+It was not. Godot imports every file under the project unless a folder carries a `.gdignore`, so
+every screenshot ever committed under `docs/` brought a `.import` sidecar with it. Nothing loads a
+`res://docs/...` path, so the folder is ignored now and the sidecars are gone; the record is in
+`DECISIONS.md` under "docs/ is not a Godot resource folder".

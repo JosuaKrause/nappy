@@ -13,7 +13,7 @@ placement code did not change, which was the entry's own requirement.
 | `car_accident_seal` | `car_accident` | hard | 96 | `car_accident.svg` and `car_accident_vertical.svg` |
 | `burst_main_seal` | `burst_water_main` | hard | 96 | `burst_water_main.svg` and `burst_water_main_vertical.svg` |
 | `skip_scaffolding_pair` | `skip` at the kerb, `scaffolding` over the band | soft | 22 / 32 | `skip.svg`, `scaffolding.svg` |
-| `removal_lorry_pair` | `removal_lorry` twice | soft | 28 | `removal_lorry.svg` |
+| `moving_van_pair` | `moving_van` twice | soft | 28 | `moving_van.svg` — drawn first as a box with one wheel and no cab, and named the removal lorry; redrawn on the player's word as a lorry with a cab, three wheels, open doors and the ramp down, and renamed because *"moving van is more clear"* |
 | `burnt_out_car_seal` | `burnt_out_car` | hard | 24 | `burnt_out_car.svg` |
 | `collapsed_frontage_seal` | `collapsed_frontage` | hard | 96, drawn as a repeated debris segment | `collapsed_frontage.svg` |
 | `barricade_seal` | `barricade` | hard | 62 | already there: "a stacked barricade" is the existing candidate, confirmed rather than duplicated |

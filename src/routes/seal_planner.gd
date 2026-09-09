@@ -30,7 +30,7 @@ extends RefCounted
 ## `barricade`'s own docstring already calling it "placed as a seal rather than rolled as an
 ## event"), `construction_pair`, `cafe_pair`, `market_pair` and `delivery_pair` were the pre-M64
 ## soft furniture that made the sealing buildable before anything new was drawn; `fallen_tree_seal`,
-## `car_accident_seal`, `skip_scaffolding_pair`, `burst_main_seal`, `removal_lorry_pair`,
+## `car_accident_seal`, `skip_scaffolding_pair`, `burst_main_seal`, `moving_van_pair`,
 ## `burnt_out_car_seal` and `collapsed_frontage_seal` are the drawn pictures, each backed by its own
 ## `SCRIPTED`, `scripted_day = 0`, `intensity = 0.0` row in `EventCatalogue` — see the class doc
 ## there, "seal pictures (M64)". `homeless_yeller` is in the milestone's own list of "available from
@@ -124,7 +124,7 @@ static func _build_candidates() -> Array[Candidate]:
 		_candidate("car_accident_seal", Strength.HARD, ["car_accident"]),
 		_candidate("skip_scaffolding_pair", Strength.SOFT, ["skip", "scaffolding"]),
 		_candidate("burst_main_seal", Strength.HARD, ["burst_water_main"]),
-		_candidate("removal_lorry_pair", Strength.SOFT, ["removal_lorry", "removal_lorry"]),
+		_candidate("moving_van_pair", Strength.SOFT, ["moving_van", "moving_van"]),
 		_candidate("burnt_out_car_seal", Strength.HARD, ["burnt_out_car"]),
 		_candidate("collapsed_frontage_seal", Strength.HARD, ["collapsed_frontage"]),
 	]

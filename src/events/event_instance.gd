@@ -56,7 +56,7 @@ const CAR_ACCIDENT := preload("res://assets/events/car_accident.svg")
 const SKIP := preload("res://assets/events/skip.svg")
 const SCAFFOLDING := preload("res://assets/events/scaffolding.svg")
 const BURST_MAIN := preload("res://assets/events/burst_water_main.svg")
-const REMOVAL_LORRY := preload("res://assets/events/removal_lorry.svg")
+const MOVING_VAN := preload("res://assets/events/moving_van.svg")
 const BURNT_OUT_CAR := preload("res://assets/events/burnt_out_car.svg")
 const COLLAPSED_FRONTAGE := preload("res://assets/events/collapsed_frontage.svg")
 ## The same three "whole scene" seal pictures, rotated 90 degrees for an east-west street. See
@@ -109,7 +109,7 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.SKIP: return SKIP
 		EventDef.Look.SCAFFOLDING: return SCAFFOLDING
 		EventDef.Look.BURST_MAIN: return BURST_MAIN
-		EventDef.Look.REMOVAL_LORRY: return REMOVAL_LORRY
+		EventDef.Look.MOVING_VAN: return MOVING_VAN
 		EventDef.Look.BURNT_OUT_CAR: return BURNT_OUT_CAR
 		EventDef.Look.COLLAPSED_FRONTAGE: return COLLAPSED_FRONTAGE
 		_: return null
@@ -1286,8 +1286,8 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_spread(SCAFFOLDING, null, canvas)
 		EventDef.Look.SKIP:
 			_draw_simple(SKIP, 11.0, canvas)
-		EventDef.Look.REMOVAL_LORRY:
-			_draw_simple(REMOVAL_LORRY, 26.0, canvas)
+		EventDef.Look.MOVING_VAN:
+			_draw_simple(MOVING_VAN, 26.0, canvas)
 		EventDef.Look.BURNT_OUT_CAR:
 			_draw_simple(BURNT_OUT_CAR, 14.0, canvas)
 		EventDef.Look.NONE:

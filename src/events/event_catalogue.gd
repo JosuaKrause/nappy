@@ -134,7 +134,7 @@ static func _build() -> Array[EventDef]:
 		_skip(),
 		_scaffolding(),
 		_burst_water_main(),
-		_removal_lorry(),
+		_moving_van(),
 		_burnt_out_car(),
 		_collapsed_frontage(),
 	]
@@ -1434,20 +1434,20 @@ static func _burst_water_main() -> EventDef:
 	def.obstructs_radius = 96.0
 	return def
 
-## A soft seal, both bodies the same row: a removal lorry with its ramp down on each pavement —
+## A soft seal, both bodies the same row: a moving van with its ramp down on each pavement —
 ## "reuses `Look.LORRY`, the biggest silhouette in act I" (`docs/DECISIONS.md`, M64), read as the same
 ## lorry-scale silhouette family rather than the literal `Look.LORRY` enum value, since two rows
 ## may not share a look or a silhouette (`docs/EVENTS.md`, "the visual vocabulary";
 ## `tests/test_events.gd`'s `_test_no_two_rows_draw_the_same_picture` and
-## `_test_every_look_carries_its_own_silhouette`). `removal_lorry.svg` is drawn at the same scale as
+## `_test_every_look_carries_its_own_silhouette`). `moving_van.svg` is drawn at the same scale as
 ## `lorry.svg` with its own picture — open doors and a ramp reaching the ground.
-static func _removal_lorry() -> EventDef:
+static func _moving_van() -> EventDef:
 	var def := EventDef.new()
-	def.id = "removal_lorry"
-	def.display_name = "Removal lorry"
+	def.id = "moving_van"
+	def.display_name = "Moving van"
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
-	def.look = EventDef.Look.REMOVAL_LORRY
+	def.look = EventDef.Look.MOVING_VAN
 	def.act_tag = 1
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.intensity = 0.0

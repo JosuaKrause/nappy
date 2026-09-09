@@ -64,7 +64,7 @@ enum Look {
 	SKIP,         ## A skip at the kerb. Half of a soft seal.
 	SCAFFOLDING,  ## Poles and boards closing the footway. The other half of a soft seal.
 	BURST_MAIN,   ## A crater, water across the asphalt, a barrier at each kerb.
-	REMOVAL_LORRY, ## A lorry at the kerb with its ramp down.
+	MOVING_VAN, ## A lorry at the kerb with its ramp down.
 	BURNT_OUT_CAR, ## A car burnt to the shell, `BURNT_SHELL`'s charred palette at vehicle scale.
 	COLLAPSED_FRONTAGE, ## A frontage spilled into the street, brick and a fallen beam.
 }

@@ -137,7 +137,7 @@ const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TI
 ## 62px both sit inside `_CARRIAGEWAY_SPREAD_CLEARANCE`.
 ##
 ## **The same blind spot covers every seal-only row** (`fallen_tree`, `car_accident`,
-## `skip`, `scaffolding`, `burst_water_main`, `removal_lorry`, `burnt_out_car`,
+## `skip`, `scaffolding`, `burst_water_main`, `moving_van`, `burnt_out_car`,
 ## `collapsed_frontage`) — none carries a `def.placement` either, since `SealPlanner` sites them
 ## directly from the street lattice rather than through `EventScheduler`'s tile pool. Their
 ## clearance is checked in `tests/test_seals.gd` instead, against the street's own 192px width

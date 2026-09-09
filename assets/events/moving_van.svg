@@ -1,0 +1,25 @@
+<!-- A moving van at the kerb with its ramp down: the same lorry silhouette as lorry.svg (a cab,
+     a box, three wheels) so it reads as a lorry, and its own picture so no two rows share one —
+     the cab is at the front on the left, the back doors stand open on the right, and the ramp
+     reaches the ground from the tail. Green livery rather than the reversing lorry's blue. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="46" viewBox="0 0 62 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M2 15 Q10 12 18 15 L18 34 Q10 37 2 34 Z" fill="#c9b458"/>
+  <rect x="4" y="16" width="12" height="8" fill="#221f28"/>
+  <rect x="5" y="18" width="9" height="5" fill="#9aa08a"/>
+  <rect x="2" y="30" width="16" height="4" fill="#3b3f4a"/>
+  <path d="M18 7 Q28 5 46 6 L46 32 Q28 35 18 33 Z" fill="#9aa08a"/>
+  <path d="M19 7 Q30 4 46 7 L46 11 L19 11 Z" fill="#b3b89e"/>
+  <path d="M20 12 Q30 10 44 12 L44 30 Q30 33 20 30 Z" fill="#7f8672"/>
+  <rect x="21" y="14" width="6" height="6" fill="#e8ddc8"/>
+  <rect x="21" y="24" width="6" height="6" fill="#e8ddc8"/>
+  <rect x="44" y="8" width="3" height="24" fill="#5c5248"/>
+  <rect x="47" y="9" width="2" height="22" fill="#3b3630"/>
+  <path d="M46 31 L60 44 L52 44 L44 33 Z" fill="#7d7a6c"/>
+  <path d="M46 31 L60 44" stroke="#c9c0a8" stroke-width="1"/>
+  <circle cx="10" cy="38" r="7" fill="#221f28"/>
+  <circle cx="26" cy="38" r="7" fill="#221f28"/>
+  <circle cx="40" cy="38" r="7" fill="#221f28"/>
+  <circle cx="10" cy="38" r="2" fill="#58524d"/>
+  <circle cx="26" cy="38" r="2" fill="#58524d"/>
+  <circle cx="40" cy="38" r="2" fill="#58524d"/>
+</svg>
