@@ -56,6 +56,14 @@ exists, `main` has handed every reader a false sentence until something else lan
 re-read the branch's own diff against the list above and ask what it left stale. The end-of-session
 cleanup pass is for drift no single PR caused, not for finishing a PR's own doc work.
 
+**A work item never merges while its `TODO.md` item is unresolved.** *(2026-09-09: "a workitem may
+never merge if it's corresponding TODO item hasn't been resolved".)* Resolved means the entry is
+gone from `TODO.md` and its record — what was built, the measurement, the rejected options — is
+filed in `DECISIONS.md`, both on the branch. A PR whose own item still sits open in the queue is
+not finished, however green its checks are; if the item is only partly built, the PR either
+finishes it or its entry is rewritten on the branch to hold exactly what is still open, with the
+built half filed in `DECISIONS.md`.
+
 The **session-cleanup** skill still runs at the end of a session — it catches drift that no single
 change is responsible for, reassesses long-open items and re-reads the numbers. It is not where a
 PR's own doc work goes.
