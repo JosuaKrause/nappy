@@ -46,17 +46,21 @@ extends Node2D
 ## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show, as
 ##   a *target* its own halo state eases toward rather than an immediate value; `0` for everything
 ##   not picked.
+## - `set_player_at(world_position: Vector2) -> void` — this frame's player position, told once a
+##   frame to every candidate whether or not it was picked. `EventInstance` already gets this from
+##   `EventManager`; `CrowdAgent` has no other channel to the player at all, since `Crowd` visits an
+##   agent only when it is near a road, and this node is the one place already visiting every agent
+##   in the crowd every frame regardless. Both classes read it back for their own `expected_impact_at()`.
 ##
 ## `EventInstance` and `CrowdAgent` both satisfy this without sharing a base class.
 
 ## Excitement/s a source has to reach at her own position before it earns a place in the halo.
 ##
 ## **A felt number, not a derived one.** `Busker` (9/s) is the lowest ordinary intensity in the
-## catalogue and a `crouching cat` at rest still reaches `Tuning.MARK_WORTH_A_DETOUR` (25/s) at
-## its centre, so 1.0/s sits comfortably under both: anything genuinely inside a field is drawn,
-## and only the thin, nearly-spent tail of a falloff — where the number would round to nothing
-## on the meter anyway — is left off. Checked against a screenshot, not derived from a formula:
-## there is no arithmetic that says where "reaching her" starts to matter.
+## catalogue, so 1.0/s sits comfortably under it: anything genuinely inside a field is drawn, and
+## only the thin, nearly-spent tail of a falloff — where the number would round to nothing on the
+## meter anyway — is left off. Checked against a screenshot, not derived from a formula: there is
+## no arithmetic that says where "reaching her" starts to matter.
 const CONTRIBUTION_FLOOR := 1.0
 
 ## The most sources one frame may light up. **Past the cap the weakest contributors are the
@@ -69,7 +73,9 @@ const CONTRIBUTION_FLOOR := 1.0
 ## checked against.
 const MAX_SOURCES := 8
 
-## The width of `landed()`'s sliding sum, in seconds.
+## The width of `landed()`'s sliding sum, in seconds — `Tuning.EXPECTED_IMPACT_HORIZON` read
+## backward rather than a number of its own. The caret projects the same five seconds forward;
+## see that constant's own doc for why one figure serves both directions.
 ##
 ## **A true sum, not a decayed average.** *(2026-09-08, the player: "if a honking car caused 35
 ## excitement to the player that's the number that informs the color of the halo".)* A 35-point
@@ -86,7 +92,7 @@ const MAX_SOURCES := 8
 ## is a three-second interruption and `busker` is continuous, so it has to be long enough that a
 ## brief scare colours at all and short enough that a source she has walked away from stops
 ## colouring promptly.
-const WINDOW := 5.0
+const WINDOW := Tuning.EXPECTED_IMPACT_HORIZON
 
 ## Which live sources earn a place in the halo, strongest contribution first, capped at
 ## `MAX_SOURCES`. See the class doc for what a "source" has to answer to.
@@ -140,9 +146,9 @@ const MIN_MAGNITUDE := 0.2
 
 ## Where `magnitude_for()`'s curve is already at `MAX_ALPHA`. *(2026-09-08, the player: "one point
 ## is faint but present, five is clearly there, fifteen and above is solid, and the colour then
-## carries the difference between fifteen and forty".)* Deliberately far below `SATURATES_AT_POINTS`
-## (40): transparency's job is the *low* end, so it has finished its work well before colour has
-## finished its own climb from pale to red.
+## carries the difference between fifteen and forty".)* Deliberately far below
+## `Tuning.EXPECTED_IMPACT_POINTS` (40): transparency's job is the *low* end, so it has finished
+## its work well before colour has finished its own climb from pale to red.
 const LOW_EMPHASIS_POINTS := 15.0
 
 ## How brightly a source's own rim reads: `landed()` on a curve that rises fast and saturates
@@ -160,16 +166,10 @@ static func magnitude_for(landed: float) -> float:
 
 # -------------------------------------------------------------------- colour ---
 
-## Points at which a source's own rim reads fully red — against the 100-point bar, not against
-## the caret's own line. *(2026-09-08, the player: "if a honking car caused 35 excitement to the
-## player that's the number that informs the color of the halo. with 1/3 of the bar that's pretty
-## red already".)* `Tuning.METER_MAX * 0.4` is 40 points: a felt number rather than a derived one,
-## expected to move once it has been looked at on screen.
-const SATURATES_AT_POINTS := Tuning.METER_MAX * 0.4
-
 ## How red a source's own rim reads: pale for a source that has cost her almost nothing over the
 ## last `WINDOW` seconds, red for one that has actually hurt. `landed` is the points that actually
-## reached the meter — see the class doc — not a rate, and it saturates at `SATURATES_AT_POINTS`.
+## reached the meter — see the class doc — not a rate, and it saturates at
+## `Tuning.EXPECTED_IMPACT_POINTS`, the same line the caret goes amber at read the other way round.
 ##
 ## **This is the axis the row's own declared `intensity` was proposed for and rejected.** Put as a
 ## fork — a lethal `cyclist` (18/s) glowing paler than a harmless `protest` (42/s) — the answer was
@@ -186,7 +186,7 @@ const SATURATES_AT_POINTS := Tuning.METER_MAX * 0.4
 ## Two lerps either side of the midpoint keeps every point on the ramp as saturated as its own
 ## ends.
 static func colour_for(landed: float) -> Color:
-	var t := clampf(landed / SATURATES_AT_POINTS, 0.0, 1.0)
+	var t := clampf(landed / Tuning.EXPECTED_IMPACT_POINTS, 0.0, 1.0)
 	if t < 0.5:
 		return Palette.HALO_WEAK.lerp(Palette.HALO_MID, t * 2.0)
 	return Palette.HALO_MID.lerp(Palette.HALO_STRONG, (t - 0.5) * 2.0)
@@ -200,11 +200,13 @@ func setup(events: EventManager, crowd: Crowd, player: Node2D) -> void:
 	_crowd = crowd
 	_player = player
 
-## Every frame: pick the sources, tell each one how bright its own ring reads and what colour it
-## is, and tell everything else zero. **Nothing here accumulates `landed()`** — that happens where
-## the meter is fed, in `Baby._update_excitement()`, so this node only reads it back.
-## `set_halo_strength()` is what actually stores it and queues that source's own halo child for
-## redraw — this node has no `_draw()` of its own left to call.
+## Every frame: tell every candidate where she is standing, pick the sources, tell each one how
+## bright its own ring reads and what colour it is, and tell everything else zero. **Nothing here
+## accumulates `landed()`** — that happens where the meter is fed, in `Baby._update_excitement()`,
+## so this node only reads it back. `set_halo_strength()` is what actually stores it and queues
+## that source's own halo child for redraw — this node has no `_draw()` of its own left to call.
+## `set_player_at()` is unconditional and comes first, since a source's own caret depends on it
+## whether or not the source cleared the halo's own floor.
 ##
 ## **The candidate set is every live event and the whole crowd**, not only a startled body —
 ## *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
@@ -219,6 +221,9 @@ func _process(_delta: float) -> void:
 	candidates.append_array(_crowd.agents())
 	var picked := select_sources(candidates, here)
 	for source in candidates:
+		# Every candidate, picked or not — a source below the halo's own floor can still be worth
+		# a caret, since the two cues answer different questions over different sets.
+		source.set_player_at(here)
 		if source in picked:
 			var landed: float = source.landed()
 			source.set_halo_strength(magnitude_for(landed), colour_for(landed))

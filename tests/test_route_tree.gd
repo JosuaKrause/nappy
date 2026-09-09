@@ -36,6 +36,10 @@ class Day extends RefCounted:
 	## asking a later test to re-grow day 1 asks it against day 14's city.
 	var again: RouteTree
 
+class _UncachedRouteTree extends RouteTree:
+	func _ways(node: int) -> Array:
+		return _ways_uncached(node)
+
 var _days: Array[Day] = []
 
 func run(t) -> void:
@@ -56,6 +60,7 @@ func run(t) -> void:
 	_test_a_gap_joins_two_parallel_strands(t)
 	_test_a_gap_is_a_small_part_of_the_rim(t)
 	_test_the_same_day_grows_the_same_tree(t)
+	_test_cached_growth_matches_uncached_growth(t)
 	_test_a_different_day_is_a_different_way(t)
 
 # ----------------------------------------------------------------- the branch ---
@@ -395,6 +400,46 @@ func _test_the_same_day_grows_the_same_tree(t) -> void:
 					and _cells(again.branches[i]) == _cells(planned.tree.branches[i]),
 					"seed %d day %d: and the same cells for %s"
 					% [planned.map.seed_used, planned.day, planned.tree.branches[i].area])
+
+func _test_cached_growth_matches_uncached_growth(t) -> void:
+	## The uncached reference pins neighbour order and duplicate edges as well as the random stream;
+	## those details are observable in the route arrays even when the tree's broad shape is unchanged.
+	var compared_seeds := {}
+	for planned in _days:
+		if planned.day != 1 and planned.day != 14:
+			continue
+		if not compared_seeds.has(planned.map.seed_used):
+			if compared_seeds.size() >= 2:
+				continue
+			compared_seeds[planned.map.seed_used] = true
+		var cached_rng := RandomNumberGenerator.new()
+		cached_rng.seed = hash("routes:%d:%d" % [planned.map.seed_used, planned.day])
+		var uncached_rng := RandomNumberGenerator.new()
+		uncached_rng.seed = cached_rng.seed
+		var state := CityState.new()
+		state.begin_day(planned.map.block_plans, planned.day)
+		planned.map.repaint(state)
+		var grid := ReachabilityGrid.build(planned.map)
+		var areas := ClosurePlanner.calm_areas(planned.map)
+		var closed := planned.map.blocked_segments()
+		var cached := RouteTree.grow(planned.map, planned.home, areas, closed, grid, cached_rng)
+		var uncached := _uncached_grow(planned.map, planned.home, areas, closed, grid, uncached_rng)
+		t.check(_tree_routes(cached) == _tree_routes(uncached),
+				"seed %d day %d: cached growth keeps every route" % [planned.map.seed_used, planned.day])
+		t.check(cached_rng.state == uncached_rng.state,
+				"seed %d day %d: cached growth keeps the random stream" % [planned.map.seed_used, planned.day])
+
+func _uncached_grow(map: CityMap, home: StreetNetwork.Segment,
+		areas: Array[ClosurePlanner.CalmArea], closed: Dictionary,
+		grid: ReachabilityGrid, rng: RandomNumberGenerator) -> RouteTree:
+	return RouteTree._grow_into(
+			_UncachedRouteTree.new(), map, home, areas, closed, grid, rng)
+
+func _tree_routes(tree: RouteTree) -> Array:
+	var routes: Array = []
+	for branch in tree.branches:
+		routes.append([branch.area, branch.routes])
+	return routes
 
 ## *"A route to a calm area is not stable across days, and that is the mechanism rather than a
 ## side effect."* The hard blockers are what she learns; the day is what she reads.

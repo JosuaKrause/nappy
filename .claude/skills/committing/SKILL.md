@@ -10,18 +10,19 @@ time.**
 
 ## Pushing
 
-**Completed work may be pushed to `origin` without asking each time.** *Finished* is the whole of
-the permission: a milestone merged to `main` with its gate green, or a branch whose items are done
-and archived. It is not a licence to push a branch mid-item to see what happens.
+**Always push branch work and create or update its pull request before ending the session.**
+*(2026-09-09: "always create prs don't leave branches locally only"; "or have branches on the
+remote without pr without good reason".)*
+Do not leave work only on a local branch or leave a remote work branch without a PR unless there
+is a specific good reason, documented in the final report. Use a draft PR when the work is
+unfinished, and include the PR link in the final report. This is standing authorization; no
+separate request to push or open the PR is needed.
 
-Everything else about the local repository is unchanged — branch and commit freely — and the gate
-before a push is the same one as before a commit: `./tools/check.sh`, the suites your change
-touches, and `./tools/lint.sh` if a governed doc moved. **The full suite runs in CI on the pull
-request**, on the merge result, which is the tree that actually matters.
-
-**A half-built milestone's branch may be pushed as a branch**, which is backup rather than a claim.
-What may not happen is `main` carrying an unfinished milestone: `main` is the thing a fresh clone
-gets, and this project's own handoff tells that reader to trust the tools over any sentence.
+**A ready-for-review PR carries the completed work and its verification.** Run `./tools/check.sh`,
+the suites the change touches, and `./tools/lint.sh` if a governed doc moved. An unfinished draft
+may be pushed with failing or outstanding checks, stated in the PR; backing it up does not claim
+that it is ready to merge. **The full suite runs in CI on the pull request**, on the merge result.
+Unfinished work stays out of `main`, which is the tree a fresh clone receives.
 
 ## A pull request is self-contained
 
@@ -100,6 +101,25 @@ break this, and is one more reason this repository does neither.
 The alternative that does not depend on the repository at all is uploading the image to GitHub as an
 attachment, which is what dragging a file into the PR text box does; it cannot be done from `gh`, so
 it is the fallback for a description written by hand rather than the rule.
+
+## Reviewing a pull request leaves its findings on the pull request
+
+**A review's findings are posted as comments on the PR, anchored to the lines they are about,
+never only reported in the conversation.** *(2026-09-09: "reviewing a PR should result in comments
+in the PR so they can be picked up and resolved".)* A finding in a chat message is read once by
+whoever asked and is gone for the person who has to fix it; a comment on the diff is a thing the
+author, or an agent sent to the branch, can pick up one at a time and resolve, and its thread
+records what was decided about it.
+
+Each comment carries what a finding needs to be acted on without the reviewer present: what is
+wrong, a concrete case where it fails or misleads, and what the fix is where one is clear. Post the
+inline comments as one review with a short summary rather than as one comment per finding, so the
+author gets them together; a finding that has no line to hang on — a missing doc, a missing test
+row — goes in the summary. **A review with nothing to say still says so** on the PR, so that
+"no comments" is a verdict rather than an absence.
+
+The conversation still gets the recap, since the player reads that first; the PR is where the
+findings live.
 
 ## Branches
 

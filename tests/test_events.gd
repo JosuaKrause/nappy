@@ -2364,8 +2364,8 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 			# standing next to the other baby lady". Holding this first is what tells the ramp's own
 			# shape (`ExcitementHalo.colour_for()`) apart from an attribution bug: the chat's flat
 			# rate does reach `contribution_at()` inside her field and land on the mother's own
-			# `landed()`, past `SATURATES_AT_POINTS`'s own midpoint, so a dull colour on screen would
-			# have been the ramp and not the meter.
+			# `landed()`, past `Tuning.EXPECTED_IMPACT_POINTS`'s own midpoint, so a dull colour on
+			# screen would have been the ramp and not the meter.
 			t.close_to(mother.landed(), Tuning.CHAT_EXCITEMENT,
 					"and the mother's own landed() carries the same points, which is what " +
 					"colour_for() reads", 2.0)

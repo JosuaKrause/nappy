@@ -360,8 +360,7 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M62 is next
 — checkpoints that divide the map into regions, with M45 folded into it. Alongside it, each on its
-own branch: M64's eight seal pictures as SVG, M93's caret chosen by expected impact, and M56's
-remaining hunting rows. M61, the field as a Minkowski sum of body and kernel, follows M62; M65 is
+own branch: M64's eight seal pictures as SVG and M56's remaining hunting rows. M61, the field as a Minkowski sum of body and kernel, follows M62; M65 is
 revisited after M62 rather than built as written. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,
