@@ -251,9 +251,12 @@ longer what answers *can she get there today*.
    **Hard seals are act IV only**, because `barricade` is the sole catalogue row wide enough to span
    a street; days 1–11 seal soft, both pavements taken with the carriageway still walkable. Three of
    the eight pictures are act-I hard seals and are what closes that.
-2. **M65 — the chalk mark.** Still the same two-part gap from playtest 19 — announced before it is
-   found, unfindable once it is — with a third item added from playtest 20: a protester pointing
-   toward the current objective, and made more common since a protester obstructs nothing.
+2. **M65 — the protester points at the objective.** Playtest 19's two-part gap — the first mark
+   announced before it is found, and unfindable once it is — is built and unwalked: the status line
+   is silent until the first mark has been touched, and a mark that has never been on screen
+   follows her to the next alley she comes near, guard and all (the record is in `DECISIONS.md`
+   under M78). What remains is playtest 20's item: a protester pointing toward the current
+   objective, and made more common since a protester obstructs nothing.
 3. **M56 — the resistance is noticed.**
 
 **The instrument to judge any of it with now exists and was used this session.** The dusk map draws

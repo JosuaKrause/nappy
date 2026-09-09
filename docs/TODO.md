@@ -18,9 +18,7 @@ mid-way through.
    and anything the game already marks earns one.
 2. **M93** — the caret is chosen by expected impact, not by a row's own numbers. After M92,
    because it changes the same files, and not before its two numbers are settled.
-3. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
-   never on screen counts as never placed.
-4. **M56** — the resistance is noticed.
+3. **M56** — the resistance is noticed.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
@@ -29,7 +27,7 @@ barrier becomes the city's signature) and **M65** (a protester who points at the
 each a milestone of only its drawings, and each is ordinary open work.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
-no artist — which is why M78 stands apart from M65 rather than inside it.
+no artist.
 
 **M79 is tabled rather than queued.** It is the city seen at an angle — a presentation change with
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
@@ -268,143 +266,6 @@ Three shapes an answer could take, none of them chosen:
 **What would make it worth discussing again is a played session**, not a screenshot: whether a
 player on a busy street reads the silent crowd as *the crowd is free* — which it is not — is a
 question about what they conclude, and nothing here can answer it.
-
----
-
-## M78 — The chalk mark can be found · asked for 2026-09-02
-
-Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
-should not be, and it cannot be found when it should be. **Neither needs a drawing**, which is why
-they stand apart from the protester's pointing pose in M65 — that one is a milestone of its own
-drawing and these two are placement.
-
-**The mark lives on an alley wall, and that was confirmed rather than newly decided.** *(2026-09-03:
-"let's use them as option to avoid obstacles and as chalk mark carriers".)* It is already the
-design — `docs/PLAYTEST-02.md` describes the mark as chalk on an alley wall, and the re-placement
-rule below is stated in the player's own words as *"the next alley the player comes close to"*. What
-the confirmation adds is the other half of the same sentence: under M64 an alley is also the way
-round a wall, so the ground the resistance is written on is ground the sealing already gives her a
-reason to enter. See M64, "What alleys are for, then, is going round a wall".
-
-- [ ] **The first chalk mark is named in the status line.** *(2026-09-02: "the first chalk mark is
-      written in the status when it should not be.")* Seen in the screenshot as
-      `resistance ....   somewhere out there: a chalk mark`, before the player had found anything.
-      **This is the no-hint rule leaking**, and that rule is in `CLAUDE.md` under things
-      deliberately not done: *the **first** encounter comes with no hint at all, because finding the
-      difficulty dial is meant to be the player's own doing. After that the resistance speaks.* The
-      HUD line is fed by `resistance_contact_available`, which does not distinguish the first mark
-      from the rest
-- [ ] **A mark that was never on screen was never placed.** *(2026-09-02: "it's hard to find the
-      chalk mark remember it should be dynamically placed on the path where the player can see it.
-      if it was placed but never on screen it should count as not placed and be placed on the next
-      alley the player comes close to.")* *"Remember"* is right — placing it on the path is already
-      the design; what is new is the **re-placement rule**, and it is a shape nothing in the game
-      has: `ClosurePlanner` and `EventScheduler` both decide at dawn and stand, and this follows the
-      player through the day.
-
-      It is also what makes finding 1's silence fair: a first encounter with no hint is only
-      reasonable if the thing can actually be come across
-
----
-
-## M93 — The caret is chosen by expected impact · asked for 2026-09-08
-
-[PLAYTEST-37.md](PLAYTEST-37.md) finding 5, in three sentences: *"caret == lethal is good but is
-inconsistently applied at the moment"*, *"a cat has a caret but it's benign"*, *"a pedestrian
-without caret has a greater impact than a cat"* — and the instruction: **"carets shouldn't be
-chosen by source value but by expected impact value."**
-
-**What decides the amber caret today is a source value.** `EventInstance.wants_a_mark()` marks a
-row when `EventDef.walk_through_cost()` — the points a straight walk through the field at walking
-speed would cost, derived from the def's intensity, radii and speed — reaches
-`Tuning.MARK_WORTH_A_DETOUR` (25, a quarter of the bar). It is the same answer for every instance
-of the row, wherever it stands and whichever way she walks, and the crowd is outside it entirely:
-`cat_dash` is marked, the pedestrians who cost more over a pavement never are. The invariant
-`tests/test_danger.gd` holds — *if A is marked and B is not, A costs more to walk through than B* —
-is true only because it is stated over the catalogue alone.
-
-**Expected impact is the halo's quantity turned forward, measured with her held still.** The halo
-(M92) is the points a source actually landed on the meter over the last five seconds; the caret
-becomes the points a source *will* land over the horizon **if she does nothing** — the thing's own
-motion and field projected onto where she stands, the same field the meter is fed from. That
-direction is the player's: *(2026-09-08: "I don't want a caret when walking into a car from the
-side".)* It is already the screen-edge badge's rule and the cues skill's sentence — *measure the
-thing, not the gap; a rate that includes her 92px/s is a cue for walking* — arriving at the caret.
-A car bearing down on her marks; a car she steps into from the side does not, since held still she
-is never in its path. A cat whose dash lands less than the line on a standing player is not marked,
-whatever its row says; a knot of walkers coming at her is, if what they will land clears it. **And
-a stationary thing never earns a caret** — held still, a café does nothing to her — which is the
-halo's job from the moment she is in its field.
-
-**The doubled red caret keeps its meaning — lethal — and gets the same rule.** *(2026-09-08: "we
-can keep the double red == lethal", then "and not all lethal things need a caret either".)* So it
-is one sentence in two strengths, both measured with her held still over the horizon: **amber** if
-the thing's own approach will cost her at or above the line, **doubled red** if it will end the
-day — her position inside a car's strike or a `hard_fail` row's lethal radius on its current
-course. Nothing otherwise. A robber waiting in an alley she is not in carries no mark until he
-stands up and comes; a car marks while she stands in its lane, which is exactly when it honks, so
-`CrowdAgent._draw_horn_mark()`'s rule becomes a consequence rather than the definition; the
-cyclist marks when its line reaches her; and a car she steps into from the side carries none
-*(2026-09-08: "I don't want a caret when walking into a car from the side")*.
-
-**The amber caret stays.** *(2026-09-08: "amber one is fine as long as it represents a meaningful
-thing".)* What changes is only what decides it.
-
-**And the vocabulary is restated as one language.** *(2026-09-08: "but then we need to create a
-consistent language around the other carets too".)* Each row of `docs/EVENTS.md`'s "The visual
-vocabulary" and the cues skill becomes one sentence decided by one quantity — caret: *stand here
-and this will cost you*, or *end your day*; halo: *this is costing you now, and this much*;
-exclamation over her: *the clock on you has started*; badge: *something lethal or fast is coming,
-and this is what* — with **one number** (the amber line and the halo's red are the same points, so
-an amount means the same thing whether it already landed or is about to) and **one direction**
-(everything about a thing is measured with her held still, so nothing is a cue for walking). That
-rewrite is this milestone's first item.
-
-**The two numbers are the halo's, confirmed.** *(2026-09-08, on a five-second horizon and a line at
-40 of the 100-point meter: "both sound good to me".)* So one horizon and one line serve past and
-future alike: the halo is red at 40 points landed over the last five seconds, the caret is amber at
-40 points expected over the next five. A cat's dash on a standing player lands about 30 and is not
-marked; a café she is standing in is the halo's, not the caret's. The one thing the line must not
-do is mark the ordinary crowd at ordinary density, which is a measurement on the arterial rather
-than an argument, and is the last item.
-
-- [ ] **One number and one horizon, shared.** `Tuning.MARK_WORTH_A_DETOUR` (25, derived per row)
-      is replaced by a single pair the halo and the caret both read — the line at
-      `METER_MAX * 0.4` and the horizon at five seconds — living in `Tuning` rather than on
-      `ExcitementHalo`, where M92 first put the saturation. Their docs carry the player's sentences
-      above.
-- [ ] **Expected impact, per source, with her held still.** A method on both `EventInstance` and
-      `CrowdAgent` — the same duck type the halo reads — answering the points this thing's own
-      motion and field will land on her current position over the horizon **beyond what it lands
-      now**: the source's velocity extrapolated in steps of a quarter second, its field sampled at
-      her position at each step, summed, less its present rate times the horizon. A stationary
-      thing she is inside therefore expects nothing (the halo has it); an approaching thing expects
-      its approach; a departing thing expects less than nothing and is unmarked. Sources whose
-      reach cannot touch her inside the horizon — further than speed × horizon plus their outer
-      radius — are skipped without sampling, which is what keeps two hundred walkers cheap. A
-      pursuer that has noticed her is heading for her and is projected as such; one still waiting
-      has no velocity.
-- [ ] **The two carets are that quantity in two strengths.** `EventInstance.wants_a_mark()` and a
-      `CrowdAgent` equivalent: **doubled deep red** when a step of the projection puts her inside
-      the thing's lethal reach — a `hard_fail` row's `inner_radius`, a car's strike box — on its
-      current course; **amber** when the expected points reach the line; nothing otherwise. The
-      honk stops being the car's rule and becomes a consequence (a car whose lane she stands in
-      is projected into her). The flash while telegraphing is kept as the phase. `mark_colour()`
-      follows the strength, not the row.
-- [ ] **The vocabulary is restated as one language**, in `docs/EVENTS.md`'s "The visual vocabulary"
-      and `.claude/skills/cues/SKILL.md`: caret *stand here and this will cost you* / *end your
-      day*; halo *this is costing you now, and this much*; exclamation *the clock on you has
-      started*; badge *something lethal or fast is coming, and this is what*. One number, one
-      direction; nothing is a cue for walking.
-- [ ] **`tests/test_danger.gd` states the new invariant.** The catalogue-wide monotonicity check
-      goes, since a mark is no longer a property of a row; in its place, scenarios: a café she
-      stands in is unmarked; a cat dashing at her is unmarked; a cyclist whose line reaches her is
-      red and one passing wide is not; a car she stands in front of is red and one she would have
-      to step into is not; a walker brushing past is unmarked. The pram, the exclamation mark and
-      the badge tests are untouched.
-- [ ] **Measured on the arterial.** One capture standing on the busy pavement: how many amber
-      carets are up. The answer has to be *none at ordinary density*, or the line moves before
-      this merges.
 
 ---
 
@@ -742,10 +603,12 @@ again after* means running the same thing rather than reinventing it.
 ## M65 — A protester points at the objective · asked for 2026-09-03
 
 **All that remains here is the pose, which is a drawing.** The two findings this milestone was
-opened for — the first mark being announced, and a mark that was never on screen — are M78.
+opened for — the first mark being announced, and a mark that was never on screen — are built; the
+record is in `DECISIONS.md` under M78, and the played question it leaves is whether a mark that
+follows her until seen is now findable at all.
 
-**Half of this item needs no drawing at all**, and is worth lifting into M78 if the mark is still
-hard to find once the re-placement rule lands: raising how often a protester appears is a density
+**Half of this item needs no drawing at all**, and is worth doing on its own if the mark is still
+hard to find now that it follows her: raising how often a protester appears is a density
 change, and the player's own reason it is cheap is that a protester obstructs nothing and pursues
 nothing, so it does not compete for the catalogue's placement budget.
 

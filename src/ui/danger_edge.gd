@@ -131,7 +131,7 @@ func _measure(delta: float) -> void:
 		# frame. It has to be well outside the view to raise one, and keeps it until it is
 		# properly in view.
 		if _is_worth_an_arrow(instance) and announces(approach, gap) \
-				and not _is_on_screen(at, SCREEN_MARGIN):
+				and not is_on_screen(at, SCREEN_MARGIN):
 			hold = HOLD
 		else:
 			hold = maxf(0.0, hold - delta)
@@ -139,7 +139,7 @@ func _measure(delta: float) -> void:
 		# Coming on screen is not a lapse in the condition to be held through — it is the badge's
 		# job being done by the thing itself — so it is filtered here, after the hold and not
 		# inside it.
-		if hold > 0.0 and not _is_on_screen(at, 0.0):
+		if hold > 0.0 and not is_on_screen(at):
 			# Sorted by *when it arrives* rather than by how near it is, because that is what
 			# `MOST_AT_ONCE` is choosing between: three badges is a warning and the one worth
 			# keeping is the one that gets here first, which a slow thing standing closer is not.
@@ -165,7 +165,12 @@ static func announces(approach: float, gap: float) -> bool:
 
 ## Whether something is in view, optionally counting a band `margin` px beyond the edge as in
 ## view as well. In screen pixels, because that is the question — the world is drawn scaled.
-func _is_on_screen(world_position: Vector2, margin: float) -> bool:
+##
+## Public because it is the one rotation-aware "is this world point on screen" test the game
+## has: `ResistanceDirector.set_sight()` is wired to it from `main` rather than growing a
+## second one, since a chalk mark asks exactly this question of itself every frame it is
+## unseen.
+func is_on_screen(world_position: Vector2, margin: float = 0.0) -> bool:
 	var at := ScreenOrientation.to_design_space(
 			get_viewport().get_canvas_transform() * world_position, rotated)
 	return Rect2(Vector2.ZERO, size).grow(margin).has_point(at)
