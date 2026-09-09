@@ -1,4 +1,4 @@
-<!-- The same crash as car_accident.svg, rotated 90 degrees for an east-west street -- see
+<!-- The same crash as car_accident.svg, rotated 90 degrees for an east-west street — see
      fallen_tree_vertical.svg for why a second asset rather than a runtime rotation. Onlooker at
      the top and bottom, the two cars locked together in between. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="50" height="200" viewBox="0 0 50 200" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">

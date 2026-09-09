@@ -1,4 +1,4 @@
-<!-- The same crater as burst_water_main.svg, rotated 90 degrees for an east-west street -- see
+<!-- The same crater as burst_water_main.svg, rotated 90 degrees for an east-west street — see
      fallen_tree_vertical.svg for why a second asset rather than a runtime rotation. A barrier at
      the top and bottom kerb, the crater and the water between them. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="50" height="200" viewBox="0 0 50 200" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">

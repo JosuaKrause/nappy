@@ -6,7 +6,7 @@
      picture. A second, pre-rotated asset avoids a runtime transform and stays a picture anyone
      can open and judge on its own, per the cues skill's own reasoning for authoring pictures as
      files rather than assembling them in code. Root plate at the top (one kerb), crown at the
-     bottom (the far footway) -- the same two ends fallen_tree.svg has, turned. -->
+     bottom (the far footway) — the same two ends fallen_tree.svg has, turned. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="50" height="200" viewBox="0 0 50 200" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <path d="M10 8 L14 14 L4 18 L2 10 Z" fill="#4a382a"/>
   <rect x="6" y="14" width="14" height="150" fill="#5b4433"/>
