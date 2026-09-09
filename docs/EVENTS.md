@@ -659,51 +659,45 @@ That last point is the one to carry: the cost of a route is not only the events 
 *street kind* is a bigger term than most rows here. A balance argument that reaches for this table
 alone is answering a narrower question than it thinks.
 
-| Event | walk through | run through | mark |
-| --- | ---: | ---: | :---: |
-| `loudspeaker` | — | — | — |
-| `curfew_announce` | — | — | — |
-| `construction` | −15.2 | +32.1 | |
-| `delivery_van` | −11.4 | +24.1 | |
-| `barricade` | −9.1 | +19.3 | |
-| `burnt_shell` | −3.0 | +16.5 | |
-| `poster_crew` | +0.7 | +22.6 | |
-| `cafe_tables` | +12.3 | +24.9 | |
-| `busker` | +13.3 | +45.7 | |
-| `police_patrol` | +15.9 | +46.2 | |
-| `market_stall` | +16.5 | +28.3 | |
-| `charging_dog` * | +16.9 | — | ●● |
-| `cyclist` * | +20.9 | +29.7 | ●● |
-| `cat_dash` | +24.1 | +37.5 | |
-| `playground` | +25.5 | +44.3 | — |
-| `checkpoint` | +29.0 | +59.4 | ● |
-| `homeless_yeller` | +31.2 | +59.6 | ● |
-| `ice_cream_van` | +31.5 | +65.8 | ● |
-| `reversing_lorry` * | +32.6 | +53.3 | ●● |
-| `alley_robbery` * | +34.6 | — | ●● |
-| `dog_walker` | +36.5 | +41.2 | ● |
-| `leaf_blower` | +48.6 | +67.1 | ● |
-| `protest` | +50.0 | +88.1 | ● |
-| `pigeon_flock` † | +54.1 | +63.6 | ● |
-| `burning_building` | +55.9 | +83.2 | ● |
-| `loose_dog` | +61.2 | +61.9 | ● |
-| `abduction` * | +61.3 | +84.1 | ●● |
-| `military_convoy` | +84.9 | +107.2 | ● |
-| `night_raid` | +101.8 | +122.6 | ● |
-| `fire_truck` | +115.4 | +132.0 | ● |
-| `firefight` * | +155.9 | +162.3 | ●● |
+| Event | walk through | run through |
+| --- | ---: | ---: |
+| `loudspeaker` | — | — |
+| `curfew_announce` | — | — |
+| `construction` | −15.2 | +32.1 |
+| `delivery_van` | −11.4 | +24.1 |
+| `barricade` | −9.1 | +19.3 |
+| `burnt_shell` | −3.0 | +16.5 |
+| `poster_crew` | +0.7 | +22.6 |
+| `cafe_tables` | +12.3 | +24.9 |
+| `busker` | +13.3 | +45.7 |
+| `police_patrol` | +15.9 | +46.2 |
+| `market_stall` | +16.5 | +28.3 |
+| `charging_dog` * | +16.9 | — |
+| `cyclist` * | +20.9 | +29.7 |
+| `cat_dash` | +24.1 | +37.5 |
+| `playground` | +25.5 | +44.3 |
+| `checkpoint` | +29.0 | +59.4 |
+| `homeless_yeller` | +31.2 | +59.6 |
+| `ice_cream_van` | +31.5 | +65.8 |
+| `reversing_lorry` * | +32.6 | +53.3 |
+| `alley_robbery` * | +34.6 | — |
+| `dog_walker` | +36.5 | +41.2 |
+| `leaf_blower` | +48.6 | +67.1 |
+| `protest` | +50.0 | +88.1 |
+| `pigeon_flock` † | +54.1 | +63.6 |
+| `burning_building` | +55.9 | +83.2 |
+| `loose_dog` | +61.2 | +61.9 |
+| `abduction` * | +61.3 | +84.1 |
+| `military_convoy` | +84.9 | +107.2 |
+| `night_raid` | +101.8 | +122.6 |
+| `fire_truck` | +115.4 | +132.0 |
+| `firefight` * | +155.9 | +162.3 |
 
-**The `mark` column.** ● sits above a fixed point in this table — the 25-point gap between
-`cat_dash` (24.1) and `checkpoint` (29.0) — and ●● marks every `hard_fail` row regardless of cost.
-**Neither decides the caret in play.** `EventInstance.wants_a_mark()` reads a row's own projected
-course at wherever she is actually standing — `expected_impact_at()` against
-`Tuning.EXPECTED_IMPACT_POINTS`, `will_be_lethal()` for the doubled red — so the same row reads red
-on one approach and carries nothing on another; see "Showing the danger" for that rule. This
-column stays as a fixed reference over the table's own cost figures rather than a rule any code
-still reads.
-
-`playground` is the one row above the line with no mark, because it is `AMBIENT`: it never appears,
-there is no moment to mark, and the park's own swing frame is the picture.
+**No column says which rows carry a caret, because no row does.** The caret is decided in play
+from a source's own projected course at wherever she is standing — `expected_impact_at()`
+against `Tuning.EXPECTED_IMPACT_POINTS`, `will_be_lethal()` for the doubled red — so the same
+row reads red on one approach and carries nothing on another, and a stationary row never
+carries one at all; see "Showing the danger".
 
 **The pursuers' run-through column is empty, and that is the point:** they **follow**, so there is
 no crossing to price and no line to run along. Walking away from either loses the day; running away
