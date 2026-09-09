@@ -57,38 +57,63 @@ outline of the sprite. that's why it needs to be a shader. or draw the sprite in
 multiple times".)* A protest's rank of placards or a barricade's run of segments has no single
 circle that is its outline.
 
-**So the halo is traced, not sized: `EventInstance._draw_halo()` re-runs the entity's own
-`_draw_body()` at a ring of offsets `HALO_MARGIN` (4px) out**, flattened to one colour by
+**So the halo is traced, not sized: `EntityHalo` re-runs the entity's own body-drawing at a ring
+of offsets `HALO_MARGIN` (4px) out**, flattened to one colour by
 `assets/shaders/excitement_halo.gdshader` — "draw the sprite in a uniform colour multiple times,"
 the hack the player named, made cheap because the shader never has to trace an outline itself, only
 discard each redraw's own texture colours and keep its alpha. A `canvas_item` shader on the entity's
 own sprite could not have done this alone: it can only write inside the rect it is given, tight to
 the art, so a dilation would be clipped at the silhouette's own edge and read as an inward outline
-rather than a glow around it.
+rather than a glow around it. `EntityHalo` is its own class rather than a method on `EventInstance`
+because `CrowdAgent` draws the same rim — see the "One cue" bullet below.
 
 **The exception is narrow, and the narrowness is what stops it from being the next ring somebody
 wants:**
 
-- **One cue, not a general licence to draw.** Nothing else in the vocabulary gets a halo of its own
-  by analogy to this one. `ExcitementHalo` is the selector — `select_sources()` decides which
-  entities earn one, once a frame — and `EventInstance._draw_halo()` is the one place that draws.
+- **One cue, not a general licence to draw.** Nothing else in the vocabulary gets a halo of its
+  own by analogy to this one. `ExcitementHalo` is the selector — `select_sources()` decides which
+  entities earn one, once a frame, over an untyped candidate array documented as a duck type on
+  `ExcitementHalo` itself — and `EntityHalo` is the one place that draws. **The whole crowd is in
+  that candidate set, not only a caret-worthy body.** *(2026-09-08, the player: "a busy street is
+  noisy because of cars and a busy sidewalk is noisy because of people ... that will allow us to
+  attribute the source exactly".)* The crowd is the noise and the noise is attributable, so
+  `Crowd.agents()` sits beside `EventManager.instances()` on the same terms; `CONTRIBUTION_FLOOR`
+  and `MAX_SOURCES` are what keep a busy pavement legible rather than a rule about who is caret-
+  worthy. A honking car and a bumped walker clear the floor at any distance an ordinary one does,
+  so "a caret implies a halo" — the narrower rule this started as — still holds by construction.
 - **Traced from the thing, never sized to its reach.** A busker's rim is its own 11px body redrawn
   a ring out; a barricade's is its own run of segments. **A radius that means anything about reach
   is the ring this exception does not authorise**, and now there is no radius on a def deciding the
   size at all — only `HALO_MARGIN`, the same few pixels for every row.
 - **For the cost being charged right now, not for what exists.** The set it draws is the sources
-  whose `EventInstance.contribution_at(her position)` clears a floor — a handful at a time by
-  construction, the same *"a cue that marks everything says nothing"* rule the caret already answers
-  to. It goes to nothing the moment she walks out of reach, which is the *"what to walk away from"*
-  half answering itself.
-- **Brightness is the real model, and it is the only thing that is.** How bright a ring reads is
-  that same `contribution_at()`, reaching the shader as an `instance uniform` — one shared material,
-  one value per entity, set through `set_instance_shader_parameter()` rather than `modulate` (which
-  a custom fragment function does not see) — so *how much* is honest even though *how big*
-  (`HALO_MARGIN`) is not. Each entity's ring
-  is its own translucent layer now rather than one shader's summed field, so two overlapping rings
-  read brighter where they cross the ordinary way two half-transparent things do, not because
-  anything sums their numbers.
+  whose `contribution_at(her position)` clears a floor — a handful at a time by construction, the
+  same *"a cue that marks everything says nothing"* rule the caret already answers to. It goes to
+  nothing the moment she walks out of reach, which is the *"what to walk away from"* half answering
+  itself.
+- **Two channels now, both reading `landed()`, on different curves.** *(2026-09-07, the player: "the
+  intensity of the halo states how far away I am. the color should state how dangerous it is.")*
+  That first framing put brightness on *distance* — the fraction of a source's own peak reaching
+  her — and it was overturned the next session, once the same player asked for magnitude to be
+  tracked at all: *(2026-09-08: "the transparency shouldn't show distance since distance actually
+  doesn't matter. only the actual received amount counts ... this frees up transparency for also
+  encoding magnitude. color and transparency shouldn't be the same number. transparency can be used
+  to emphasize low values.")* **Colour** is `ExcitementHalo.colour_for()`, linear over `landed()` —
+  points that actually reached the meter, traced back from the meter's own sum in
+  `Baby._update_excitement()` rather than recomputed from `contribution_at()`, over a true
+  five-second sliding sum — pale to red by forty of the hundred-point bar. *(2026-09-08, the
+  player: "if a honking car caused 35 excitement to the player that's the number that informs the
+  color of the halo. with 1/3 of the bar that's pretty red already".)* **Brightness** is
+  `ExcitementHalo.magnitude_for()`, the same `landed()` on a curve that rises fast and saturates by
+  fifteen points, so transparency does the low end's work — a point or two is faintly there rather
+  than invisible — while colour is still climbing toward forty. **Both channels ease toward
+  whatever they are last told, in time rather than jumping** — `EntityHalo.FADE_IN_SECONDS` /
+  `FADE_OUT_SECONDS` — because *(2026-09-08, the player: "all changes should transition (hue and
+  transparency) instead of immediately showing the actual value".)* Both reach the shader as one
+  `instance uniform` — one shared material, one value per entity, set through
+  `set_instance_shader_parameter()` rather than `modulate` (which a custom fragment function does
+  not see). Each entity's ring is its own translucent layer rather than one shader's summed field,
+  so two overlapping rings read brighter where they cross the ordinary way two half-transparent
+  things do, not because anything sums their numbers.
 - **Soft and under everything.** Each ring is a child of its own entity with `show_behind_parent`,
   so it draws behind that entity — and Y-sort, which reaches down through the whole tree, places it
   behind the crowd and the player the same way it already places that entity's own shadow. The

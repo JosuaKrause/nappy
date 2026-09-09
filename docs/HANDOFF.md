@@ -187,10 +187,15 @@ under M76 and M80. **Follow `TODO.md`'s own order for what is next.**
 says who did the overturning.** **M88** gives the two control schemes back to the player as a choice
 — *asked for one scheme chosen nowhere on 2026-09-06 · overturned on 2026-09-07* — which is M82's
 central decision going the other way, and the pieces it needs are recovered from that commit rather
-than rewritten. **M89** draws a soft halo around whatever is currently charging the meter, which the
-**cues** rule has refused since the vocabulary was written: *no circles around entities, nothing
-draws a field.* That reasoning is about **danger** and it stands; the halo answers a question the
-vocabulary never had an answer to — *which of the six things around her is pushing the number up.*
+than rewritten. **M89 and M92** draw a soft halo around whatever is currently charging the meter,
+which the **cues** rule has refused since the vocabulary was written: *no circles around entities,
+nothing draws a field.* That reasoning is about **danger** and it stands; the halo answers a question
+the vocabulary never had an answer to — *which of the six things around her is pushing the number
+up, and how much has each one actually cost her.* Its colour and its transparency both read the
+points a source put on the meter over the last five seconds, traced from the meter's own sum —
+colour linear to red at 40, transparency on a curve that makes a single point visible — and every
+walker and car is a candidate on the same terms as an event. The numbers were set against one
+played session on the branch and one capture each; the record is in `DECISIONS.md` under M92.
 
 **The rule playtest 27 raised alongside the joystick is now also enforced by a test**: *"there is no
 way to walk slowly — that is intentional — there should only ever be one speed (plus a second via
@@ -465,10 +470,11 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   this creates is a city that no longer costs anything to cross.
 - **Four rows changed what they do to a player and all four were set by a rig.** `cat_dash` at 17
   and `loose_dog` at 32 are meant to land as a startle without becoming a day lost to something
-  behind her; `chatting_mother` at a 33px `detain_radius` and `cyclist` at a 33px lethal band are
-  both meant to stop being walkable-past. The chatting mother's is the one to distrust: her radius
-  now exceeds the 32px between a pavement's two walking lanes, **so walking her far lane no longer
-  avoids her**, which is the trade the player accepted and nobody has felt.
+  behind her; `chatting_mother` at a 48px `detain_radius` (with her 56px inner radius widened to
+  hold it) and `cyclist` at a 33px lethal band are both meant to stop being walkable-past. The
+  chatting mother's is the one to distrust: her capture reaches three quarters of the pavement
+  band, **so no lane of her own pavement avoids her**, asked for twice by the player — at 26 and
+  again at 33 — and felt at 48 by nobody yet.
 - **The bollards are a placeholder drawing, and the border now refuses the crowd.** Five posts seen
   from above close each precinct mouth's carriageway, and the player has seen them and the
   T-junctions on a played branch. What nobody has watched is the crowd at the border since it

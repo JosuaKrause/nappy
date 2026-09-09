@@ -319,7 +319,7 @@ func _add_excitement_halo() -> void:
 	_halo = ExcitementHalo.new()
 	_halo.name = "ExcitementHalo"
 	_halo.z_index = 1
-	_halo.setup(_city.events, _player)
+	_halo.setup(_city.events, _city.crowd, _player)
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
 

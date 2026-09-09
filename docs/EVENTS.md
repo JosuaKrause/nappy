@@ -490,11 +490,11 @@ neighbourhood's own rather than a patrol's.
 | `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, tightened to a 95px reach so it bills the crowd at the stall rather than the whole block. |
 | `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use. Swept in bursts, so there is a rhythm to time a pass through. |
 | `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that a director with a single trick makes every moment a cat. It is on the pavement for its whole telegraph, then up, then *away* — and it is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one. The only row in the game that is more than one source. |
-| `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 2.0s, what the doubled margin costs at a 90px field — smaller than the fairness contract alone would allow, so the wait before it arrives stays a real reaction window rather than several seconds of watching it close from off screen. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn and the same number as `chatting_mother`'s `detain_radius`. |
+| `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 2.0s, what the doubled margin costs at a 90px field — smaller than the fairness contract alone would allow, so the wait before it arrives stays a real reaction window rather than several seconds of watching it close from off screen. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn `chatting_mother`'s `detain_radius` went through first. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. It stands `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
 | `charging_dog` **`hard_fail`** | RECURRING (`AHEAD_OF_PLAYER`) | `RUN_TAUGHT_DAY` | **The one thing running is the answer to**, and the day the run is taught. Sited 0.5s of closing outside the view (`offscreen_notice`), it spends `telegraph_time` 4.5s visibly closing at the stand-off, then chases at 130px/s for `Tuning.PURSUIT_TIME` — the further siting needs the longer telegraph so walking away still loses inside the row's own budget. Its 150px field is **wider than the stand-off** — a narrower one is a field the pursuer is never inside, so the warning would emit nothing at her and the `!` over her head would never go up; `validate_pursuit` refuses that. `max_per_day` 3, because a street with three of them turns the run button from an answer into a second walk speed. It trots off at 110px/s rather than blinking out: a dog that gives up in front of her and is then not there says the chase was never real. |
-| `chatting_mother` | RECURRING | 1 | Another mother with a pram, paced along eight tiles of pavement like `homeless_yeller`. Her ambient field is person-scale (intensity 4.5, near a passer-by's 4.2) and tight (34/70px), so a normal pass costs a normal close pass. Entering `detain_radius` (33px, past the 32px lane spacing so the far lane of a two-tile pavement can no longer clear it for free) of an instance that has not chatted yet locks the player's movement input for `detain_seconds` (5s) — the one mechanic in the catalogue that takes the controls away rather than costing a meter; the existing idle rules price the stop, so nothing new prices the time. While the conversation runs and the baby is **awake** it adds a flat `Tuning.CHAT_EXCITEMENT` (25) over the whole capture; **asleep** it adds nothing, gated on the baby's own state read from `EventInstance.baby_awake` rather than scaled through `SLEEPING_SENSITIVITY` — a *pure* time loss means exactly zero, not a smaller number. One conversation per instance: she is then spent as a detainer and departs like a `dog_walker`. |
+| `chatting_mother` | RECURRING | 1 | Another mother with a pram, paced along eight tiles of pavement like `homeless_yeller`. Her ambient field is person-scale (intensity 4.5, near a passer-by's 4.2) and tight (56/70px — the inner radius sits just outside her capture, which the catalogue's own check requires), so a normal pass costs a normal close pass. Entering `detain_radius` (48px, three quarters of the pavement band, so neither lane of her own pavement walks past her while the far pavement still does) of an instance that has not chatted yet locks the player's movement input for `detain_seconds` (5s) — the one mechanic in the catalogue that takes the controls away rather than costing a meter; the existing idle rules price the stop, so nothing new prices the time. While the conversation runs and the baby is **awake** it adds a flat `Tuning.CHAT_EXCITEMENT` (25) over the whole capture; **asleep** it adds nothing, gated on the baby's own state read from `EventInstance.baby_awake` rather than scaled through `SLEEPING_SENSITIVITY` — a *pure* time loss means exactly zero, not a smaller number. One conversation per instance: she is then spent as a detainer and departs like a `dog_walker`. |
 
 ### Act II — Something is off (days 4–7)
 
@@ -774,16 +774,17 @@ draw, so on a normal street a few things would be ringed, most would not, and no
 the difference. **A cue that marks everything says nothing**, and every rule below exists to keep
 the replacement from becoming that.
 
-**One row in the table below draws a ring rather than a circle, and it answers a question the rest
+**One row in the table below draws a ring rather than a circle, and it answers questions the rest
 of this vocabulary never had a cue for.** *Asked for no rings and no drawn fields, held since this
 vocabulary was written · overturned on 2026-09-07 for the "Entity halo" row only, because the
 player asked for exactly this:* "it should use the outline of the sprite. that's why it needs to be
 a shader. or draw the sprite in a uniform color multiple times." The reasoning quoted above is about
 *danger* — what a thing will do to you — and stays true of every other row here: nothing is ringed
-to say how bad it is. The halo answers a different question, *which of these things is charging the
-meter right now*, and **it traces each entity's own silhouette rather than any radius drawn from a
-def.** *(2026-09-07, the player: "halo meaning only the outline of the object not the influence
-radius ... the halo should not extend more than a few pixels beyond the object's outline.")*
+to say how bad it is. The halo answers two different questions instead, one per axis:
+*which of these things is charging the meter right now* and *how much has this one actually cost
+her.* **It traces each entity's own silhouette rather than any radius drawn from a def.**
+*(2026-09-07, the player: "halo meaning only the outline of the object not the influence radius ...
+the halo should not extend more than a few pixels beyond the object's outline.")*
 `EventInstance._draw_halo()` re-runs the entity's own `_draw_body()` at a ring of twelve offsets,
 `HALO_MARGIN` (4px) out, so a busker's rim is its own 11px body and a barricade's is its own run of
 segments — a shape a circle could never draw for either of them.
@@ -793,11 +794,55 @@ screenshots before this one.** The field spanned `EventDef.outer_radius` (up to 
 640x360 view) and painted most of the frame whatever brightness curve sat on top of it; the circle
 fixed the footprint but was still a number's shape rather than the thing's, and a barricade's own
 circle read smaller than the barricade the moment a ceiling was tried to stop a busker's from
-swallowing the street. `EventInstance.contribution_at(her position)` still decides how bright the
-ring reads — through `EventInstance.set_halo_strength()`, called by `ExcitementHalo` once a
-frame — which is the one part every version of this cue kept. `.claude/skills/cues/SKILL.md`, "A
-glow, not a field" is the narrow version of this exception, kept narrow enough to still refuse the
-next ring somebody wants.
+swallowing the street.
+
+**Brightness and colour both answer "how much has this actually cost her", on two different
+curves, and a second played session is what settled that.** *(2026-09-07, the player: "the color
+of the halo should be determined by the absolute magnitude with red being strong and light yellow
+being weak and the faseout should be by the fraction of its value ... the intensity of the halo
+states how far away I am. the color should state how dangerous it is.")* That first answer put
+brightness on distance, and the same player overturned it the next session, once magnitude was
+being tracked at all: *(2026-09-08: "the transparency shouldn't show distance since distance
+actually doesn't matter. only the actual received amount counts ... this frees up transparency for
+also encoding magnitude. color and transparency shouldn't be the same number. transparency can be
+used to emphasize low values.")* `ExcitementHalo.colour_for()` is linear over `landed()`, pale to
+red by forty points; `ExcitementHalo.magnitude_for()` is the same `landed()` on a curve that rises
+fast and saturates by fifteen points, so a point or two already reads as a faint rim while colour
+is still climbing — transparency carries the low end, colour carries the difference between
+fifteen and forty. Both channels ease toward whatever they are last told over
+`EntityHalo.FADE_IN_SECONDS` (0.3s) / `FADE_OUT_SECONDS` (0.8s) rather than jumping, *(2026-09-08,
+the player: "all changes should transition (hue and transparency) instead of immediately showing
+the actual value".)* so a burst brightens and reddens together and drains together rather than
+switching on and off.
+
+**Colour is points that actually reached the meter, traced from the meter's own sum rather than
+recomputed.** *(2026-09-08, the player: "don't derive it from the source numbers but trace an
+increase in excitement back to its constituents. if a honking car caused 35 excitement to the
+player that's the number that informs the color of the halo. with 1/3 of the bar that's pretty
+red already".)* `Baby._update_excitement()` is where the meter is fed, so it is where the
+attribution happens: `WorldContext.excitement_sources_at()` returns every live source's own share
+of what is about to land, and each one's `accumulate_landed()` gets exactly that share —
+sensitivity included — rather than the halo pass recomputing anything from `contribution_at()` on
+its own. `ExcitementHalo.colour_for()` is a pale-to-red ramp (`Palette.HALO_WEAK` to
+`Palette.HALO_STRONG`) over `landed()`, a true five-second sliding sum of those shares — not a
+decayed average, so a 35-point burst reads as 35 for the whole window and then drops — saturating
+at `SATURATES_AT_POINTS` (40 of the 100-point bar). A protest she skirted the edge of and a
+protest she walked through are the same row and correctly different colours.
+`EventInstance.set_halo_strength()`, called by `ExcitementHalo` once a frame, is what carries both
+numbers to the shader. `.claude/skills/cues/SKILL.md`, "A glow, not a field" is the narrow version
+of this exception, kept narrow enough to still refuse the next ring somebody wants.
+
+**The candidate set is every live event and the whole crowd — every walker and every car, not
+only a startled body.** *(2026-09-08, the player: "a busy street is noisy because of cars and a
+busy sidewalk is noisy because of people ... that will allow us to attribute the source
+exactly".)* The tabled question this answers — "The crowd has a halo" in `docs/TODO.md` — offered
+three shapes and none of them is this one: the crowd is not a floor to fold into events, not one
+combined outline, and not gated on a higher threshold. `ExcitementHalo.select_sources()` takes an
+untyped candidate array rather than one typed to `EventInstance` — a duck type, documented on
+`ExcitementHalo` itself since GDScript has no interface to lean on — so `Crowd.agents()` and
+`EventManager.instances()` are offered on the same terms. `CONTRIBUTION_FLOOR` and `MAX_SOURCES`
+(the eight strongest) are what keep a busy pavement legible rather than a special case admitting
+only the caret-worthy.
 
 | Cue | Means | Where |
 | --- | --- | --- |
@@ -806,7 +851,7 @@ next ring somebody wants.
 | **Its colour** | **Amber** = go round it. **Deep red, doubled** = it ends your day. Two colours, and they are a scale rather than a sequence. | `EventInstance.mark_colour()` |
 | **Its flash** | *It has not started yet.* The telegraph phase, and the only channel carrying it — the colour cannot, because a telegraph is usually over before the event is on screen, so an amber that meant *telegraphing* would only ever be seen on the rows sited in front of the player and would read as *near*. | `EventInstance._draw_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. | `EventInstance.mark_swell()` |
-| **Entity halo** | *This is charging you right now.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius — drawn under the entities, the crowd and the player rather than over them, for every live source whose `contribution_at()` at her own position clears a floor. Brighter the more that source is actually costing her, and gone the instant she is out of reach of all of them. | `ExcitementHalo`, `EventInstance._draw_halo()`, `assets/shaders/excitement_halo.gdshader` |
+| **Entity halo** | *This is charging you right now, and it has cost you this much.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius — for every live event and every startled crowd body (a honking car, a bumped walker) whose `contribution_at()` at her own position clears a floor. **Colour** is pale-to-red, linear over what it has actually delivered to her in the last five seconds; **transparency** is the same five-second total on a curve that saturates by fifteen points, so it carries the low end colour cannot show yet. Both fade in and out over a third and four fifths of a second rather than switching. Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EntityHalo`, `assets/shaders/excitement_halo.gdshader` |
 | **Edge badge** | Off-screen and closing **under its own steam**: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it and the distance. Says *what* is coming, not that something is. | `DangerEdge` |
 | **Exclamation over the player** | *This will end your day, and the clock has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *It is bad now and you are in it.* Something lethal is live, she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the day, **and the gap is closing at the speeds in play**. Not *inside the outer radius*, which for a cyclist is thirty times the area that can hurt her and stays true while the bike rides away. | `EventManager._warn_about_the_ground_she_is_on()` |

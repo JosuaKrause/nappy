@@ -236,6 +236,10 @@ never only in an assistant's private memory.** A memory is scoped to one tool, o
 account: invisible to everybody else who opens the repo, not reviewable in a diff, and lost the
 moment that store is cleared or the work moves.
 
+**"Make a note of that" means write it somewhere in the repository** — this file, a skill, or the
+doc it belongs to — and commit it. *(2026-09-08: "'making a note' means writing it somewhere in the
+repo (eg claude.md) *not* storing it as memory".)* It never means an assistant's memory store.
+
 ---
 
 ## Things deliberately not done

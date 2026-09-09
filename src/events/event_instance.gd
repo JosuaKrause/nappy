@@ -162,15 +162,17 @@ var _map: CityMap
 ## `_process()` has dropped it. See `is_solid()`.
 var _obstruction: StaticBody2D
 
-## The child that re-draws this event's own body in a ring of offsets — see `_build_halo()` and
-## `_draw_halo()`. Built in `_ready()`, same as `_obstruction`, so it is never `null` once the
-## instance is live.
-var _halo: Node2D
+## The child that re-draws this event's own body in a ring of offsets — see `EntityHalo`, the
+## class shared with `CrowdAgent` that owns the ring, the shared shader material and the drawing.
+## Built in `_ready()`, same as `_obstruction`, so it is never `null` once the instance is live.
+var _halo: EntityHalo
 
-## 0..1, current excitement over `ExcitementHalo.SATURATES_AT`, written once a frame by
-## `ExcitementHalo._process()` through `set_halo_strength()` — nonzero for the handful
-## `select_sources()` picked, zero for everything else. Read only by `_draw_halo()`.
-var _halo_strength := 0.0
+## `[when_ms, points]` entries landed on her from this event, for whatever is still inside
+## `ExcitementHalo.WINDOW` — a true sliding sum rather than a decayed average, so a burst reads as
+## itself for the whole window and then drops. Lazily grown: an event that has never landed
+## anything keeps this empty. Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s
+## class doc for the whole shape. See `accumulate_landed()` and `landed()`.
+var _landed_history: Array = []
 
 ## Whether `_draw_spread` and `_draw_cafe` lay their segments along local Y rather than local X.
 ## Decided once, in `setup()`, from the street the instance stands on — see `_spread_is_vertical`.
@@ -267,33 +269,11 @@ func _build_obstruction() -> void:
 
 ## Built once for every instance, whether or not `ExcitementHalo` ever picks it — a `city_wide`
 ## source is excluded by kind (see `ExcitementHalo.select_sources()`) and simply never draws, which
-## is cheaper to leave true by construction than to special-case here.
-##
-## A plain `Node2D` rather than a second script: it has no `_draw()` to override, so `_draw_halo()`
-## is connected to its "draw" signal instead — the substitute Godot's own docs name for a canvas
-## item with no script of its own. `show_behind_parent` is the "soft, and under everything" rule
-## the cue already owed its field-sized version; `z_as_relative` stays default (true), so it draws
-## at the entity's own place in the y-sort rather than one z layer away from the body it traces.
+## is cheaper to leave true by construction than to special-case here. `EntityHalo` gets `self`'s
+## own `_draw_body` and `_current_bob` so its ring rides the same lift `_draw()` gives the body.
 func _build_halo() -> void:
-	_halo = Node2D.new()
-	_halo.name = "Halo"
-	_halo.show_behind_parent = true
-	_halo.material = _halo_material()
-	_halo.draw.connect(_draw_halo)
+	_halo = EntityHalo.new(_draw_body, _current_bob)
 	add_child(_halo)
-
-## One `ShaderMaterial`, shared by every instance's halo child rather than built per instance: the
-## shader (`assets/shaders/excitement_halo.gdshader`) reads no uniform of its own — the flat colour
-## and the strength both arrive as this node's own `modulate`, which is a property of the `Node2D`
-## `_build_halo()` just made, not of the material. A second `ShaderMaterial` per event would be a
-## second copy of a resource that never differs from the first.
-static var _shared_halo_material: ShaderMaterial
-
-static func _halo_material() -> ShaderMaterial:
-	if not _shared_halo_material:
-		_shared_halo_material = ShaderMaterial.new()
-		_shared_halo_material.shader = preload("res://assets/shaders/excitement_halo.gdshader")
-	return _shared_halo_material
 
 ## Whether this instance is solid right now. True from `_ready()` for anything with
 ## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()`.
@@ -950,6 +930,31 @@ func current_intensity() -> float:
 		value *= Tuning.TELEGRAPH_INTENSITY_FRACTION
 	return value
 
+## Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
+## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
+## event's exact share of what landed this frame — `contribution × sensitivity × delta` — so the
+## halo can never disagree with what the bar actually did. *(2026-09-08, the player: "don't derive
+## it from the source numbers but trace an increase in excitement back to its constituents".)*
+func accumulate_landed(points: float) -> void:
+	_prune_landed_history()
+	if points > 0.0:
+		_landed_history.append([Time.get_ticks_msec(), points])
+
+## The sum of every entry still inside `ExcitementHalo.WINDOW`. Pruned here too, not only on
+## write, so a source nobody has visited in a while reports honestly the moment it is asked rather
+## than waiting for its next landing.
+func landed() -> float:
+	_prune_landed_history()
+	var total := 0.0
+	for entry in _landed_history:
+		total += entry[1]
+	return total
+
+func _prune_landed_history() -> void:
+	var cutoff := Time.get_ticks_msec() - int(ExcitementHalo.WINDOW * 1000.0)
+	while not _landed_history.is_empty() and _landed_history[0][0] < cutoff:
+		_landed_history.pop_front()
+
 ## Excitement per second this event contributes at a point.
 func contribution_at(world_position: Vector2) -> float:
 	if is_finished or is_leaving:
@@ -1015,7 +1020,7 @@ const BOB_HEIGHT := 2.5
 ## its own. Driven by **distance covered**, not by time, so it is the movement itself that shows:
 ## something stopped is still, and something fast bobs faster.
 ##
-## Pulled out of `_draw()` so `_draw_halo()` can ride the same lift: a walking entity's ring of
+## Pulled out of `_draw()` so `EntityHalo` can ride the same lift: a walking entity's ring of
 ## re-drawn bodies has to bob with it, or the outline slides off the sprite it is meant to trace.
 func _current_bob() -> float:
 	if def.pursues or is_leaving:
@@ -1025,43 +1030,14 @@ func _current_bob() -> float:
 	return 0.0
 
 # ------------------------------------------------------------------ the halo ---
-# **The outline is the sprite's own, not a radius.** *(2026-09-07, the player: "it should use the
-# outline of the sprite. that's why it needs to be a shader. or draw the sprite in a uniform color
-# multiple times".)* A `canvas_item` shader on this entity's own sprite cannot bloom outward — it
-# can only write inside the rect it is given, tight to the art, so a dilation would be clipped at
-# the silhouette's own edge and read as an inward outline rather than a glow around it. And this
-# entity draws many sprites of many shapes through `_draw_body()`, so there is no one texture to
-# outline in the first place. `_halo` re-runs that same `_draw_body()` at a ring of offsets instead
-# — "draw the sprite in a uniform colour multiple times," made cheap by a shader that flattens
-# every one of those redraws to a flat silhouette rather than the game tracing an outline itself.
+# The ring itself is `EntityHalo`'s job now, shared with `CrowdAgent` — see that class for the
+# offsets, the shared material, and why a `canvas_item` shader on this entity's own sprite could
+# not have bloomed outward on its own.
 
-## How many directions the ring redraws the body in. Tried at 8 first, checked against the leaf
-## blower's own silhouette (a concave one — the arm breaks the body's own outline) and already read
-## as a smooth rim rather than a facetted one at this scale. 12 is kept anyway, in the middle of the
-## "eight to sixteen" range this cue was asked to land in: the offsets are a fixed 4px translation
-## regardless of the body they redraw, so a long straight run — a barricade's segments, a protest's
-## rank of placards — is the shape most likely to show the gap between two adjacent copies, and it
-## was not screenshotted here. The extra four offsets cost nothing at the handful of instances this
-## ever runs for (`ExcitementHalo.MAX_SOURCES`, 8).
-const HALO_OFFSETS := 12
-
-## How far past the sprite's own edge each offset copy sits, in world px. *(2026-09-07, the player:
-## "the halo should not extend more than a few pixels beyond the object's outline.")* The same 4px
-## the field-sized version of this cue margined its circles by — "a few pixels" did not change
-## between the two shapes, only what the margin is measured from.
-const HALO_MARGIN := 4.0
-
-## `_halo`'s own "draw" signal handler. A plain `Node2D` has no `_draw()` to override, so this is
-## connected instead of overridden — Godot's own documented substitute for a canvas item with no
-## script of its own.
-##
-## **Rides the same bob `_draw()` gives the entity itself** (`_current_bob()`), or a walking
-## entity's outline would slide off the sprite it is tracing. Each offset gets its own
-## `draw_set_transform()`, reset once at the end the way `_draw()` already resets its own.
 ## The drop shadow under an entity, drawn for the entity itself and skipped for its halo.
 ##
-## *(2026-09-07, the player: "the halo should not include the shadow".)* `_draw_halo()` re-runs
-## `_draw_body()` on `_halo` to trace the silhouette, and the shadow is the first thing
+## *(2026-09-07, the player: "the halo should not include the shadow".)* `EntityHalo` re-runs
+## `_draw_body()` on its own canvas to trace the silhouette, and the shadow is the first thing
 ## `_draw_body()` puts down — so without this the ellipse got traced too, putting a soft amber lobe
 ## on the pavement beside every glowing entity. **The shadow is not part of the thing**: it is the
 ## ground under it, and a cue that means *this is charging you* has nothing to say about the ground.
@@ -1073,30 +1049,14 @@ func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
 		return
 	Sprites.draw_shadow(canvas, at, radius)
 
-func _draw_halo() -> void:
-	if is_finished or _halo_strength <= 0.0:
-		return
-	var bob := _current_bob()
-	for i in HALO_OFFSETS:
-		var angle := TAU * float(i) / float(HALO_OFFSETS)
-		var offset := Vector2(cos(angle), sin(angle)) * HALO_MARGIN
-		_halo.draw_set_transform(Vector2(0.0, bob) + offset, 0.0, Vector2.ONE)
-		_draw_body(_halo)
-	_halo.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-## Called by `ExcitementHalo` once a frame for every live instance — above zero for the handful
-## `select_sources()` picked, zero for everything else. Sets `_halo`'s own `halo_colour` instance
-## uniform (see `assets/shaders/excitement_halo.gdshader`): the amber the excitement bar itself
-## fills with, at an alpha of `strength` — an `instance uniform` rather than `modulate`, because a
-## fragment function that writes `COLOR` is not re-multiplied by the node's own modulate afterward,
-## only `set_instance_shader_parameter()` reaches a shared material per instance. This is the only
-## place a saturated source's ring reads any brighter than a barely clearing one.
-func set_halo_strength(strength: float) -> void:
-	_halo_strength = strength
-	_halo.set_instance_shader_parameter("halo_colour",
-			Color(Palette.EXCITEMENT_FIELD.r, Palette.EXCITEMENT_FIELD.g,
-					Palette.EXCITEMENT_FIELD.b, strength))
-	_halo.queue_redraw()
+## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
+## `CrowdAgent` shares. Called by `ExcitementHalo` once a frame for every live instance — above
+## zero for the handful `select_sources()` picked, zero for everything else. Refuses a nonzero
+## glow once the event is finished, the same guard the halo's own drawing used to carry, because
+## a finished event still sits in `EventManager.instances()` for one more frame than its
+## `contribution_at()` (already zero) would otherwise buy it.
+func set_halo_strength(strength: float, colour: Color) -> void:
+	_halo.set_glow(0.0 if is_finished else strength, colour)
 
 # ------------------------------------------------------------------ the mark ---
 # **Nothing draws a field.** A ring communicates a falloff radius, which is a number, and a number

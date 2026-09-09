@@ -69,6 +69,7 @@ src/
 	hud.gd
 	meter_bar.gd
 	home_arrow.gd
+	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()

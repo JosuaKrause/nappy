@@ -14,11 +14,9 @@ mid-way through.
 
 ## The order
 
-1. **M92** — the halo says how much a thing has cost her and how close she is standing to it,
-   and anything the game already marks earns one.
-2. **M93** — the caret is chosen by expected impact, not by a row's own numbers. After M92,
-   because it changes the same files, and not before its two numbers are settled.
-3. **M56** — the resistance is noticed.
+1. **M93** — the caret is chosen by expected impact, not by a row's own numbers. Its two numbers
+   are settled and it shares them with the halo.
+2. **M56** — the resistance is noticed.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
@@ -33,24 +31,24 @@ no artist.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**"The crowd has no halo" is tabled the same way**, and **M92 answers half of it**: anything the game
-already draws a caret over earns a halo, which covers a honking car and a startled walker. What stays
-tabled is the *ambient* crowd — the pavement full of people who are marked by nothing — and the player
-said so in as many words: "we can discuss the details about general crowd floors later, though". The
-measurement is in that section and the three possible answers are written out; none is chosen.
+**[PLAYTEST-38.md](PLAYTEST-38.md) is the newest session, played on M92's own branch before it
+merged, and its four findings are built inside it** — two rows the halo showed nothing for, the
+chatting mother's capture radius, and the cue's own channels: magnitude on transparency as well as
+colour, and both edges eased rather than switched. The record, with the question "the crowd has no
+halo" and the player's answer to it, is in `DECISIONS.md` under M92.
 
-**[PLAYTEST-37.md](PLAYTEST-37.md) is the newest session: four of its five findings are built and
-the fifth is M93.** The first four were re-reports — the zebra at a precinct's edge, the border's
+**[PLAYTEST-37.md](PLAYTEST-37.md) is the session before it: four of its five findings are built
+and the fifth is M93.** The first four were re-reports — the zebra at a precinct's edge, the border's
 four-way boxes, the main road's side-arm zebras, and the bodies walking off the map — and all four
 are one rule, *a junction is made of the streets that actually meet at it*, built under M53; the
 record is in `DECISIONS.md` under M53. The fifth is the caret's own inconsistency, and it is the
 milestone above.
 
-**[PLAYTEST-36.md](PLAYTEST-36.md) is the session before it, and all three of its findings are M92** —
-a session on the halo M89 had just built, and together they are one change: the cue gets a second
-axis. It also records a fork the player closed **before** it was built, which is the part to read
-first: colour from a row's declared `intensity` was proposed and rejected in favour of what has
-actually landed on her.
+**[PLAYTEST-36.md](PLAYTEST-36.md) is the session before it, and all three of its findings are
+built as M92** — a session on the halo M89 had just built, and together they were one change: the
+cue got a second axis. It also records a fork the player closed **before** it was built: colour from
+a row's declared `intensity` was proposed and rejected in favour of what has actually landed on her.
+One of its sentences was overturned by playtest 38, and the record says which.
 
 **[PLAYTEST-35.md](PLAYTEST-35.md)'s seven findings are all built.** Six of them landed inside M90
 and M89 rather than being filed against them, because those milestones had not merged when the
@@ -149,123 +147,104 @@ which proves only that the controls stay *off* where they should.
 
 ---
 
-## M92 — The halo says how much it cost and how close it is · asked for 2026-09-07
+## M93 — The caret is chosen by expected impact · asked for 2026-09-08
 
-Three findings from [PLAYTEST-36.md](PLAYTEST-36.md), and one milestone because they are one change:
-**the halo gets two axes instead of one.** Colour becomes *how much this thing has actually cost
-her*, brightness becomes *how far into its field she is standing*, and the set it draws stops being
-events-only.
+[PLAYTEST-37.md](PLAYTEST-37.md) finding 5, in three sentences: *"caret == lethal is good but is
+inconsistently applied at the moment"*, *"a cat has a caret but it's benign"*, *"a pedestrian
+without caret has a greater impact than a cat"* — and the instruction: **"carets shouldn't be
+chosen by source value but by expected impact value."**
 
-> "the color of the halo should be determined by the absolute magnitude with red being strong and
-> light yellow being weak and the faseout should be by the fraction of its value ... the intensity
-> of the halo states how far away I am. the color should state how dangerous it is"
+**What decides the amber caret today is a source value.** `EventInstance.wants_a_mark()` marks a
+row when `EventDef.walk_through_cost()` — the points a straight walk through the field at walking
+speed would cost, derived from the def's intensity, radii and speed — reaches
+`Tuning.MARK_WORTH_A_DETOUR` (25, a quarter of the bar). It is the same answer for every instance
+of the row, wherever it stands and whichever way she walks, and the crowd is outside it entirely:
+`cat_dash` is marked, the pedestrians who cost more over a pavement never are. The invariant
+`tests/test_danger.gd` holds — *if A is marked and B is not, A costs more to walk through than B* —
+is true only because it is stated over the catalogue alone.
 
-**Read PLAYTEST-36 before building.** It records a fork the player closed before it was built —
-colour from the row's *declared* `intensity` was proposed and rejected in favour of what has
-actually landed on her — and the reasoning is the whole design.
+**Expected impact is the halo's quantity turned forward, measured with her held still.** The halo
+(M92) is the points a source actually landed on the meter over the last five seconds; the caret
+becomes the points a source *will* land over the horizon **if she does nothing** — the thing's own
+motion and field projected onto where she stands, the same field the meter is fed from. That
+direction is the player's: *(2026-09-08: "I don't want a caret when walking into a car from the
+side".)* It is already the screen-edge badge's rule and the cues skill's sentence — *measure the
+thing, not the gap; a rate that includes her 92px/s is a cue for walking* — arriving at the caret.
+A car bearing down on her marks; a car she steps into from the side does not, since held still she
+is never in its path. A cat whose dash lands less than the line on a standing player is not marked,
+whatever its row says; a knot of walkers coming at her is, if what they will land clears it. **And
+a stationary thing never earns a caret** — held still, a café does nothing to her — which is the
+halo's job from the moment she is in its field.
 
-- [ ] **Every source accumulates what it has actually delivered to her, over a five-second window.**
-      *(2026-09-07: "magnitude of how much actually landed at the player -- track it over a time
-      window", and "5s sounds good for now".)* The value is excitement-points, not a rate:
-      `contribution_at(her position)` integrated over the window.
+**The doubled red caret keeps its meaning — lethal — and gets the same rule.** *(2026-09-08: "we
+can keep the double red == lethal", then "and not all lethal things need a caret either".)* So it
+is one sentence in two strengths, both measured with her held still over the horizon: **amber** if
+the thing's own approach will cost her at or above the line, **doubled red** if it will end the
+day — her position inside a car's strike or a `hard_fail` row's lethal radius on its current
+course. Nothing otherwise. A robber waiting in an alley she is not in carries no mark until he
+stands up and comes; a car marks while she stands in its lane, which is exactly when it honks, so
+`CrowdAgent._draw_horn_mark()`'s rule becomes a consequence rather than the definition; the
+cyclist marks when its line reaches her; and a car she steps into from the side carries none
+*(2026-09-08: "I don't want a caret when walking into a car from the side")*.
 
-      **An exponential moving sum is the cheap shape and is worth preferring to a ring buffer**:
-      `landed = landed * exp(-delta / WINDOW) + contribution * delta`, one float per source and no
-      allocation. Its steady state for a constant rate `r` is `r * WINDOW`, which is the same scale
-      the true five-second sum would give, so the number means the same thing either way — say so
-      next to the constant, because "a 5s window" and "a 5s time constant" are not the same
-      sentence and the next reader will assume the first.
+**The amber caret stays.** *(2026-09-08: "amber one is fine as long as it represents a meaningful
+thing".)* What changes is only what decides it.
 
-      **Five seconds is a felt number and it is the player's**, chosen against `cat_dash`'s
-      three-second interruption at one end and a continuous `busker` at the other. Expect to move it
-      once it is on screen
-- [ ] **Colour is that accumulated total, pale to red.** Saturating at
-      `SATURATES_AT * WINDOW` — 25/s for the whole window, or 125 points — keeps the halo agreeing
-      with `Tuning.MARK_WORTH_A_DETOUR`, the same line the caret already draws between *ignorable*
-      and *worth a detour*.
+**And the vocabulary is restated as one language.** *(2026-09-08: "but then we need to create a
+consistent language around the other carets too".)* Each row of `docs/EVENTS.md`'s "The visual
+vocabulary" and the cues skill becomes one sentence decided by one quantity — caret: *stand here
+and this will cost you*, or *end your day*; halo: *this is costing you now, and this much*;
+exclamation over her: *the clock on you has started*; badge: *something lethal or fast is coming,
+and this is what* — with **one number** (the amber line and the halo's red are the same points, so
+an amount means the same thing whether it already landed or is about to) and **one direction**
+(everything about a thing is measured with her held still, so nothing is a cue for walking). That
+rewrite is this milestone's first item.
 
-      **The two endpoints are a cues-rule decision, not a paint choice.** The palette already warns
-      that a hue in this game means something: `MARK_COSTLY` (amber) and `MARK_LETHAL` (deep red)
-      are what an event *costs*, and `SIGNAL_RED`/`AMBER`/`GREEN` are the traffic lights, with a
-      note beside them saying borrowing between the two would make permission look like a threat.
-      A ramp reading *how much has this cost me* is the caret's own axis, so it belongs to the
-      `MARK_*` family — but `MARK_LETHAL` is dark and desaturated, which is a mark colour rather
-      than a glow colour, and a glow that dark under an entity reads as a shadow. **Name two new
-      constants for the ramp's ends and say in their doc why they are not the mark colours
-      themselves**
-- [ ] **Brightness is the falloff fraction, and nothing else.**
-      `contribution_at(her position) / current_intensity()` — 1.0 at the centre of any field,
-      0 at its rim — times `MAX_ALPHA`. **This deliberately decouples brightness from strength**: a
-      busker at arm's length glows as brightly as a burning building at arm's length, and only the
-      colour separates them. That is what *"the intensity of the halo states how far away I am"*
-      asks for, and it is the opposite of what the cue does today
-- [ ] **Anything drawing a caret gets a halo, which means the crowd joins the candidate set.**
-      *(2026-09-07: "at the very least if something has a caret it needs a halo as well".)* A
-      honking car already draws a caret in `MARK_LETHAL` from `CrowdAgent._draw_horn_mark()` when
-      `_jolt > 0.0`, and the halo has never been able to see it, because `select_sources()` is
-      handed `EventManager.instances()`.
+**The two numbers are the halo's, confirmed.** *(2026-09-08, on a five-second horizon and a line at
+40 of the 100-point meter: "both sound good to me".)* So one horizon and one line serve past and
+future alike: the halo is red at 40 points landed over the last five seconds, the caret is amber at
+40 points expected over the next five. A cat's dash on a standing player lands about 30 and is not
+marked; a café she is standing in is the halo's, not the caret's. The one thing the line must not
+do is mark the ordinary crowd at ordinary density, which is a measurement on the arterial rather
+than an argument, and is the last item.
 
-      **Two cues that disagree about what they are about is the defect**, so the fix is the
-      candidate set rather than a special case: `CrowdAgent` already carries its own
-      `contribution_at()`. **Assert the implication rather than assuming it** — a caret means the
-      thing clears `CONTRIBUTION_FLOOR` at her position — because if it can be marked without
-      clearing the floor then the floor is what needs changing.
-
-      **The ambient crowd floor is still the open question** under "The crowd has no halo" below,
-      and is explicitly not settled by this: *"we can discuss the details about general crowd floors
-      later, though"*
-- [ ] **The halo pass has to be reachable from both classes.** Today it is
-      `EventInstance._draw_halo()`, a child `Node2D` with `show_behind_parent` that re-runs
-      `_draw_body(canvas)` at a ring of offsets. `CrowdAgent` needs the same, so the ring and its
-      shared `ShaderMaterial` want extracting into one small class that calls back into whichever
-      parent owns it — and `CrowdAgent`'s own drawing needs the same `canvas` parameter
-      `EventInstance`'s helpers already took.
-
-      **`select_sources()` stops being typed to `Array[EventInstance]`** and becomes generic over
-      "a `Node2D` that can answer `contribution_at()`". GDScript has no interface to lean on, so say
-      in its doc what the duck type is. The `city_wide` exclusion is an event-only concept and has
-      to stay one
-- [ ] **`MAX_SOURCES` (8) is a played question once the crowd is in it.** A busy pavement can put
-      far more than eight caret-worthy things inside her reach at once, and the cap currently keeps
-      the strongest — which is the right rule and possibly the wrong number. **Do not guess it**;
-      look at a capture on the arterial with the change in and say what the number should be
-
----
-
-## The crowd has no halo · a question, asked 2026-09-07
-
-**Not queued and not rejected. It is a question, and it is written down so that whoever answers it
-does so with the measurement in hand.** *(2026-09-07, on being shown the gap: "Queue it as its own
-question.")*
-
-**The halo M89 builds reads the event list and nothing else, so the crowd is silent under it.**
-Measured on the arterial pavement on day 6 of seed 4242, standing still: the excitement bar at 48
-and the debug line reading `incoming 20.22 /s`, with **nothing glowing anywhere in frame**. The
-cause is not a bug — pedestrians are `CrowdAgent`s rather than `EventInstance`s, and
-`ExcitementHalo.select_sources()` is given `EventManager.instances()`. So the cue answers *which of
-these things is charging the meter* for events, and says nothing at all about the largest ordinary
-contributor on a busy street.
-
-**The plumbing exists, which is exactly why this needs deciding rather than building.**
-`CrowdAgent` already carries its own `contribution_at(world_position)`, so extending the selection
-to the crowd is a small change. What it would do to the screen is not small: a day fields a couple
-of hundred walkers, a busy pavement puts dozens inside her reach at once, and **a cue that marks
-everything says nothing** — the **cues** rule's second rule, and the one the halo's floor and its
-eight-source cap already exist to satisfy.
-
-Three shapes an answer could take, none of them chosen:
-
-- **Leave it to events.** The crowd is the *noise floor* rather than a thing to walk away from, and
-  the meter's own number is what reports it. The limit gets written into `docs/EVENTS.md` and the
-  cue stops pretending to be a complete answer.
-- **Glow the crowd under one combined outline**, not one per walker — a knot of people reads as a
-  knot, which is what she actually has to route around.
-- **Raise the floor for crowd agents specifically**, so only a genuinely dense cluster earns
-  anything.
-
-**What would make it worth discussing again is a played session**, not a screenshot: whether a
-player on a busy street reads the silent crowd as *the crowd is free* — which it is not — is a
-question about what they conclude, and nothing here can answer it.
+- [ ] **One number and one horizon, shared.** `Tuning.MARK_WORTH_A_DETOUR` (25, derived per row)
+      is replaced by a single pair the halo and the caret both read — the line at
+      `METER_MAX * 0.4` and the horizon at five seconds — living in `Tuning` rather than on
+      `ExcitementHalo`, where M92 first put the saturation. Their docs carry the player's sentences
+      above.
+- [ ] **Expected impact, per source, with her held still.** A method on both `EventInstance` and
+      `CrowdAgent` — the same duck type the halo reads — answering the points this thing's own
+      motion and field will land on her current position over the horizon **beyond what it lands
+      now**: the source's velocity extrapolated in steps of a quarter second, its field sampled at
+      her position at each step, summed, less its present rate times the horizon. A stationary
+      thing she is inside therefore expects nothing (the halo has it); an approaching thing expects
+      its approach; a departing thing expects less than nothing and is unmarked. Sources whose
+      reach cannot touch her inside the horizon — further than speed × horizon plus their outer
+      radius — are skipped without sampling, which is what keeps two hundred walkers cheap. A
+      pursuer that has noticed her is heading for her and is projected as such; one still waiting
+      has no velocity.
+- [ ] **The two carets are that quantity in two strengths.** `EventInstance.wants_a_mark()` and a
+      `CrowdAgent` equivalent: **doubled deep red** when a step of the projection puts her inside
+      the thing's lethal reach — a `hard_fail` row's `inner_radius`, a car's strike box — on its
+      current course; **amber** when the expected points reach the line; nothing otherwise. The
+      honk stops being the car's rule and becomes a consequence (a car whose lane she stands in
+      is projected into her). The flash while telegraphing is kept as the phase. `mark_colour()`
+      follows the strength, not the row.
+- [ ] **The vocabulary is restated as one language**, in `docs/EVENTS.md`'s "The visual vocabulary"
+      and `.claude/skills/cues/SKILL.md`: caret *stand here and this will cost you* / *end your
+      day*; halo *this is costing you now, and this much*; exclamation *the clock on you has
+      started*; badge *something lethal or fast is coming, and this is what*. One number, one
+      direction; nothing is a cue for walking.
+- [ ] **`tests/test_danger.gd` states the new invariant.** The catalogue-wide monotonicity check
+      goes, since a mark is no longer a property of a row; in its place, scenarios: a café she
+      stands in is unmarked; a cat dashing at her is unmarked; a cyclist whose line reaches her is
+      red and one passing wide is not; a car she stands in front of is red and one she would have
+      to step into is not; a walker brushing past is unmarked. The pram, the exclamation mark and
+      the badge tests are untouched.
+- [ ] **Measured on the arterial.** One capture standing on the busy pavement: how many amber
+      carets are up. The answer has to be *none at ordinary density*, or the line moves before
+      this merges.
 
 ---
 

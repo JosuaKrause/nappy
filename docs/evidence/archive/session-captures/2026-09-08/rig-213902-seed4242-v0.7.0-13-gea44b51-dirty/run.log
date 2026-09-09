@@ -1,0 +1,12 @@
+nappy rig log  2026-09-08T21:39:02  version v0.7.0-13-gea44b51-dirty
+
+day 1  act 1  run seed 4242  city seed 4242  length 180.0s
+   0.0  plan     closed: roadworks h(6,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: cafe_tables x124, cat_dash x8, chatting_mother x2, delivery_van x104, dog_walker x20, homeless_yeller x9, leaf_blower x23, loose_dog x10, market_stall x111, pigeon_flock x5, playground x2
+   0.0  start    doorstep (67,156), facing 180°
+   0.0  chat     chatting_mother at (67,155), 5.0s, baby awake, meter +25
+   0.1  near     chatting_mother (telegraph) at (67,155), 32px, exc 2, in 13.1/s (crowd 8.9, events 5.0), sleep 0
+   0.1  near     delivery_van (telegraph) at (66,155), 45px, exc 2, in 13.1/s (crowd 8.9, events 5.0), sleep 0
+   0.1  near     delivery_van (telegraph) at (66,158), 72px, exc 2, in 13.1/s (crowd 8.9, events 5.0), sleep 0
+   4.4  freeze   sleep stopped filling | exc 35, in 5.0/s (crowd 0.0, events 5.0), sleep 0 | near: chatting_mother 32px
