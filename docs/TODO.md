@@ -86,10 +86,13 @@ no artist.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**[PLAYTEST-47.md](PLAYTEST-47.md) is the newest gameplay session, and both of its notes are
-built**: a car comes out of the tunnel and off the bridge as well as going in, and `tools/run.sh`
-runs the import pass when a pulled checkout is missing an imported texture. The record is in
-`DECISIONS.md` under M94.
+**[PLAYTEST-48.md](PLAYTEST-48.md) is the newest gameplay session, and its one note is built**:
+the signal head north of a junction, which faces up the screen, shows its back and no lamp. The
+record is in `DECISIONS.md` under M95.
+
+**[PLAYTEST-47.md](PLAYTEST-47.md)'s two notes are built**: a car comes out of the tunnel and off
+the bridge as well as going in, and `tools/run.sh` runs the import pass when a pulled checkout is
+missing an imported texture. The record is in `DECISIONS.md` under M94.
 
 **[PLAYTEST-39.md](PLAYTEST-39.md)'s one finding, the tunnel, is built.** The fade is inside the
 portal's opening, the mountain stands above it, and the road into the mouth is asphalt rather than

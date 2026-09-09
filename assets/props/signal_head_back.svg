@@ -1,0 +1,15 @@
+<!-- The back of a signal head, for the head that faces up the screen: it stands north of the
+     junction and faces north at the traffic coming down the spine, so from the game's angle all
+     that shows is the housing's back plate on its post. No lamps and no visors, on purpose — the
+     head across the junction faces the camera and already says which lamp is lit, and a lamp
+     drawn here would be a light shining out of the back of a box. Same 14×42 footprint and the
+     same post as signal_head.svg, so the two stand at the same height either side of the road. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="14" height="42" viewBox="0 0 14 42" shape-rendering="crispEdges">
+  <rect x="5" y="18" width="4" height="24" fill="#3a3f45"/>
+  <rect x="5" y="40" width="4" height="2" fill="#2a2e33"/>
+  <rect x="2" y="0" width="10" height="20" fill="#2f343a"/>
+  <rect x="3" y="1" width="8" height="18" fill="#2a2f35"/>
+  <rect x="2" y="0" width="10" height="1" fill="#3a3f45"/>
+  <rect x="6" y="3" width="2" height="14" fill="#22262b"/>
+  <rect x="3" y="9" width="8" height="2" fill="#22262b"/>
+</svg>

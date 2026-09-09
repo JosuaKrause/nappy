@@ -19,6 +19,8 @@ makes the file worth having.
 
 | file | what it is | referenced by |
 | --- | --- | --- |
+| `shot-2026-09-09-seed4242-21d3ba2-signal-head-back-before.png` | A signalled junction on seed 4242 with the north-facing head still drawn face-on, red lamp toward the camera. | [DECISIONS.md](../DECISIONS.md), M95 |
+| `shot-2026-09-09-seed4242-21d3ba2-signal-head-back-after.png` | The same junction with the north-facing head drawn as its back, no lamp. | [DECISIONS.md](../DECISIONS.md), M95 |
 | `archive/session-captures/2026-08-31/run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png` | Day 1's plan on `feature/the-calm-has-a-shape` at `7367ab0`, seed 8000. | [PLAYTEST-17.md](../PLAYTEST-17.md), finding 1 |
 | `archive/session-captures/2026-09-01/rig-2026-09-01T014558-seed4242-f604488-dirty-map-day01.png` | Day 1 of seed 4242 before M55's gap weighting. | [DECISIONS.md](../DECISIONS.md), M55 |
 | `archive/session-captures/2026-09-01/rig-2026-09-01T014420-seed4242-f604488-dirty-map-day01.png` | The same day after M55's gap weighting. | [DECISIONS.md](../DECISIONS.md), M55 |

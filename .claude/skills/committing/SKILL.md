@@ -45,6 +45,32 @@ the pass that untangles it is a milestone rather than a review comment.
 reader a sentence that is no longer true, the PR is not finished. Read `HANDOFF.md` and the
 milestone's own `TODO.md` entry before proposing, not after.
 
+**And every doc the change owes is in the PR before it merges. This is a hard requirement.**
+*(2026-09-09: "why do you keep updating handoffs and todos *after* a PR has landed? the updates
+*must* go in the PR … that's a hard requirement" — and, on the shape of it: "the requirement is not
+for docs to be updated before the PR opens. it's for the docs to be updated *before* it
+**merges**".)* `HANDOFF.md`, `TODO.md`, `DECISIONS.md` and every other doc the change touches are
+committed on the branch by the time the merge button is pressed. Pushing them onto an open PR is
+fine; filing them in the next PR, or in a cleanup afterwards, is not — once the merge commit
+exists, `main` has handed every reader a false sentence until something else lands. Before merging,
+re-read the branch's own diff against the list above and ask what it left stale. The end-of-session
+cleanup pass is for drift no single PR caused, not for finishing a PR's own doc work.
+
+**A work item never merges while its `TODO.md` item is unresolved.** *(2026-09-09: "a workitem may
+never merge if it's corresponding TODO item hasn't been resolved".)* Resolved means the entry is
+gone from `TODO.md` and its record — what was built, the measurement, the rejected options — is
+filed in `DECISIONS.md`, both on the branch. A PR whose own item still sits open in the queue is
+not finished, however green its checks are; if the item is only partly built, the PR either
+finishes it or its entry is rewritten on the branch to hold exactly what is still open, with the
+built half filed in `DECISIONS.md`.
+
+**And no handoff mentions it any more, since the work is done.** *(2026-09-09: "and there may be no
+mention of it in any handoff still … since the work is done".)* `HANDOFF.md` holds the pick-up
+state and nothing else, so a merged item has no line there — not a "built and unwalked" bullet, not
+a distrust entry written for it, not its number. What a player should go and look at is a
+`TODO.md` item or a `DECISIONS.md` record, never a sentence in the handoff about work that is
+finished. Before merging, grep both handoffs for the item's number and its nouns.
+
 The **session-cleanup** skill still runs at the end of a session — it catches drift that no single
 change is responsible for, reassesses long-open items and re-reads the numbers. It is not where a
 PR's own doc work goes.
