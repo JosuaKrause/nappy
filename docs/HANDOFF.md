@@ -196,6 +196,16 @@ the legacy binding without the flag. The dated contact review and its build prov
 DECISIONS.md; that image predates the tested resting-knee correction. Visual acceptance of the
 current pose and smooth motion remains open.
 
+[PLAYTEST-38](PLAYTEST-38.md) specifies the next actor defects: slanted east/west legs,
+outward north/south leg movement, excessive mother-to-pram spacing and pixelated pram rendering.
+The illustrated-png skill's [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)
+covers source preservation, measured registration, natural reach, filtering and separate motion
+and visual gates. Prepare the player's actual checkout with `./tools/check.sh` and an explicit
+illustrated boot; a populated global class cache does not guarantee imported textures exist.
+Preserve `.import` sidecars. The missing-player diagnosis and capture provenance are in
+DECISIONS.md under Texture integration process; the screenshot does not establish appearance
+after the local import repair.
+
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the
 frame; the export publishes `index.js`, `index.wasm` and `index.pck` under a directory named for the

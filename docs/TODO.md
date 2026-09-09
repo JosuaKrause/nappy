@@ -32,6 +32,15 @@ define style; `docs/reference/` supplies real-world structure and posture.
       The static contact review in DECISIONS.md predates the resting-knee correction. Headless
       attachment and displacement checks do not establish motion quality or visual acceptance.
       Keep the legacy drawings at their fixed horizontal comparison offset.
+- [ ] Resolve [PLAYTEST-38](PLAYTEST-38.md)'s directional posture and pram-quality findings within
+      the connected-body repair: mustard and red legs slant during east/west travel and spread
+      outward during north/south travel. Review knee bend, ground stride, projected lift and
+      source rest axes independently; matching endpoints alone is insufficient. Fit per-facing
+      mother-to-handle spacing to natural arm reach, preserving the selected v3 pram and logical
+      collision. Trace the pixelated pram to the actual visible binding, source alpha, complete
+      assembly scale and inherited filtering before choosing a repair. Confirm the illustrated
+      player loads in the actual test checkout after imports. Use the repeatable procedure in
+      the illustrated-png skill; see DECISIONS.md under Texture integration process.
 - [ ] Review whole-actor sorting in live overlaps and integrate roof reveal, then a representative
       illustrated live street.
       Preserve current joystick/tap choice and the event silhouette halo; crowd halos remain a
@@ -66,8 +75,9 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 halo reads the event list, so the largest ordinary contributor on a busy pavement glows at nothing.
 The measurement is in that section and the three possible answers are written out; none is chosen.
 
-**[PLAYTEST-35.md](PLAYTEST-35.md) is the newest gameplay session; the actor review is
-[PLAYTEST-36.md](PLAYTEST-36.md). Only one of playtest 35's seven findings is
+**[PLAYTEST-38.md](PLAYTEST-38.md) covers illustrated gameplay and texture integration; the
+connected-body review also includes [PLAYTEST-36.md](PLAYTEST-36.md).
+Only one of playtest 35's seven findings is
 queued here** — the milestones the rest land in had not merged when they were reported, so they are
 built inside M90 and M89 rather than filed against them. **Nothing merges carrying a defect that was
 already found**, which is the whole reason they are not on this list.

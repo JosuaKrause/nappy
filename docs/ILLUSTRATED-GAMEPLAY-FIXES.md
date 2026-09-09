@@ -5,6 +5,11 @@ The capture is dated evidence, not an approved art reference. These are implemen
 instructions from inspection of that frame, its source sheets and the current compositors;
 they are not a claim that repairs are implemented or visually accepted.
 
+[PLAYTEST-38](PLAYTEST-38.md) adds directional leg posture, natural mother-to-handle reach,
+pram image quality and actual-checkout loading to this repair. Follow the illustrated-png
+skill's [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)
+for repeatable source, import, registration and acceptance steps.
+
 Read `CLAUDE.md`, `HANDOFF.md`, `PLAYTEST-30.md`, `VISUALS.md` and the M84 record in
 `DECISIONS.md` first. The handoff identifies the illustrated presentation and street study as
 rejected; descriptions elsewhere of an approved street gate do not authorize reusing that study.
@@ -106,6 +111,9 @@ coordinates; their pivots are not interchangeable positions on the actor.
 - Author per-facing pram placement that visibly
   joins the mother's hands to the handle. The combined visual stays registered to the existing
   logical owner. Changing its collision shape is outside this repair.
+- Keep the handle within natural arm reach. Hand contact alone does not establish correct
+  posture: compare shoulder-to-wrist length and elbow shape to the source, and bring the pram
+  into reach rather than stretching the arm to an arbitrary offset.
 - Calibrate mother, pram and walkers together at gameplay scale. Their torso heights, limb
   lengths and wheel sizes must agree before animation is enabled. The current independent art
   scales and gait lengths are inputs to review, not proportions to preserve blindly.
@@ -132,6 +140,10 @@ scale a second time shortens the rendered segment and detaches its distal joint.
 - Drive travel from applied displacement, including collision and shoves. Verify idle, walk,
   run, abrupt stop, reverse, turn, blocked movement and reset/recycle. Zero applied travel must
   not keep advancing a walking cycle. Maintain direction hysteresis without mismatching parts.
+- Review east/west leg slant and north/south outward spreading explicitly for mustard and red
+  walkers. Separate the ground stride from screen-space knee bend and swing lift; per-facing
+  natural posture is a gate beyond connected endpoints. Cover every direction in movement
+  evidence because the sampled review scene concentrates on south and north.
 
 Acceptance: a planted rendered sole remains fixed against paving during stance; swing feet
 lift and land connected to their legs; stopping and turning leave a complete connected actor.

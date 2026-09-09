@@ -1,12 +1,17 @@
 ---
 name: illustrated-png
-description: Build or revise the illustrated PNG presentation pipeline — reference-conditioned assets, directional manifests, alpha validation and review gates. Use before changing assets/illustrated or src/visuals.
+description: Add or revise illustrated PNG textures and their reproducible integration workflow. Use before changing assets/illustrated or src/visuals, or preparing an illustrated checkout for testing.
 ---
 
 # Illustrated PNG pipeline
 
 The graphics overhaul uses real PNG assets and compositors. A presentation component reads the
 existing simulation; it never becomes a second simulation.
+
+For texture authoring, registration or a test handoff, read
+[the integration procedure](references/texture-integration.md). It carries the ordered checks,
+coordinate conventions and failure diagnosis; use the existing commands before inventing another
+tool. Historical incidents and measurements belong in `docs/DECISIONS.md`, not in this skill.
 
 ## Reference authority
 
@@ -35,6 +40,11 @@ before proposing a new family.
 - Keep a generation record beside the assets: exact prompt, reference inputs, output role, alpha
   result, and any rejected alternative worth avoiding. Keep a manifest beside directional or
   modular sheets.
+- Preserve source PNGs and their `.import` sidecars together. Sidecars hold import configuration
+  and resource identity; they are repository files even though Godot generates them. Preserve new
+  evidence sidecars too. The ignored `.godot/` directory holds the rebuildable imported cache.
+- Record exact extraction commands and tool versions for derived PNGs. Preserve the approved
+  source, write a versioned output and inspect retained detail as well as transparent gaps.
 - Directional sheets are ordered `N, NE, E, SE, S, SW, W, NW`. Record genuine symmetry explicitly;
   never silently mirror a view. Manifests state regions, pivots, layer order and variant contract.
 
@@ -47,6 +57,23 @@ teleported, recycled or reset.
 
 Do not use a generic crowd look for an authored event, or a generic pedestrian for a car. An
 unfinished family remains visibly unfinished until it has its own assets and binding.
+
+Endpoint equality is only a connectivity check. Review natural rest posture, per-facing stride,
+foreshortening and arm reach separately. Never stretch a painted arm to legitimize a pram placed
+beyond its natural reach. Calibrate complete assemblies, including all pram layers, at gameplay
+scale. Check inherited filtering and source alpha before blaming a pixelated result on resolution.
+
+## Preparing the test checkout
+
+After switching or integrating an asset branch, run `./tools/check.sh` in the exact folder the
+player will use. A different worktree's successful import does not populate this one's `.godot/`.
+`tools/run.sh` detects missing global classes, but does not check for every missing imported
+texture. A populated class cache therefore does not establish that the checkout can draw.
+
+Then boot with `--illustrated` explicitly, using the bounded headless command in the procedure.
+Read the first resource/parse error, not just repeated `new()` or nil errors downstream. A normal
+legacy boot does not exercise the illustrated binding. Preserve sidecars after the import pass
+and inspect the working tree before handing the folder over.
 
 ## Review gate
 

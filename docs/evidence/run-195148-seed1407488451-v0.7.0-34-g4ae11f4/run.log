@@ -1,0 +1,9 @@
+nappy run log  2026-09-08T19:51:48  version v0.7.0-34-g4ae11f4
+
+day 1  act 1  run seed 1407488451  city seed 1407488451  length 180.0s
+   0.0  plan     closed: fallen tree h(9,3)
+   0.0  plan     calm: 2 courtyard, 2 park, 4 quiet_square
+   0.0  plan     events: cafe_tables x132, cat_dash x8, chatting_mother x2, delivery_van x118, dog_walker x24, homeless_yeller x14, leaf_blower x10, loose_dog x18, market_stall x119, pigeon_flock x5, playground x2
+   0.0  start    doorstep (81,84), facing 180°
+   6.5  crowd    walked into somebody at (78,84) | exc 7, in 4.2/s (crowd 22.2, events 0.0), sleep 0
+   7.6  shot     asked for a picture at (78,84) | exc 20, sleep 0 | playing

@@ -90,6 +90,14 @@ leaks. `RefCounted` doubles do not.
 **Never commit `.godot/`.** It is gitignored, which means a fresh clone has no `class_name` registry
 and every typed reference fails to parse until `check.sh` runs the import pass.
 
+**Texture `.import` sidecars are repository files; `.godot/imported/` is the cache.** Preserve
+sidecars, including newly generated evidence sidecars. After checking out an asset branch, run
+`check.sh` in the actual test folder: a worktree's imported textures do not travel with commits.
+`run.sh` checks for missing global classes, not missing imported textures. A failed texture
+preload can leave a GDScript uncompiled and produce nonexistent `new()` followed by nil-method
+errors. Read the first load/parse error before changing the constructor. For illustrated assets,
+follow the explicit opt-in boot and visual gates in the **illustrated-png** skill.
+
 ## Pausing
 
 **`process_mode` is inherited, so one `PROCESS_MODE_ALWAYS` exempts a whole subtree.** `main.gd`
