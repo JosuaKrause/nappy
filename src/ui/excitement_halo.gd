@@ -69,7 +69,9 @@ const CONTRIBUTION_FLOOR := 1.0
 ## checked against.
 const MAX_SOURCES := 8
 
-## The width of `landed()`'s sliding sum, in seconds.
+## The width of `landed()`'s sliding sum, in seconds — `Tuning.EXPECTED_IMPACT_HORIZON` read
+## backward rather than a number of its own. The caret projects the same five seconds forward;
+## see that constant's own doc for why one figure serves both directions.
 ##
 ## **A true sum, not a decayed average.** *(2026-09-08, the player: "if a honking car caused 35
 ## excitement to the player that's the number that informs the color of the halo".)* A 35-point
@@ -86,7 +88,7 @@ const MAX_SOURCES := 8
 ## is a three-second interruption and `busker` is continuous, so it has to be long enough that a
 ## brief scare colours at all and short enough that a source she has walked away from stops
 ## colouring promptly.
-const WINDOW := 5.0
+const WINDOW := Tuning.EXPECTED_IMPACT_HORIZON
 
 ## Which live sources earn a place in the halo, strongest contribution first, capped at
 ## `MAX_SOURCES`. See the class doc for what a "source" has to answer to.
@@ -160,16 +162,10 @@ static func magnitude_for(landed: float) -> float:
 
 # -------------------------------------------------------------------- colour ---
 
-## Points at which a source's own rim reads fully red — against the 100-point bar, not against
-## the caret's own line. *(2026-09-08, the player: "if a honking car caused 35 excitement to the
-## player that's the number that informs the color of the halo. with 1/3 of the bar that's pretty
-## red already".)* `Tuning.METER_MAX * 0.4` is 40 points: a felt number rather than a derived one,
-## expected to move once it has been looked at on screen.
-const SATURATES_AT_POINTS := Tuning.METER_MAX * 0.4
-
 ## How red a source's own rim reads: pale for a source that has cost her almost nothing over the
 ## last `WINDOW` seconds, red for one that has actually hurt. `landed` is the points that actually
-## reached the meter — see the class doc — not a rate, and it saturates at `SATURATES_AT_POINTS`.
+## reached the meter — see the class doc — not a rate, and it saturates at
+## `Tuning.EXPECTED_IMPACT_POINTS`, the same line the caret goes amber at read the other way round.
 ##
 ## **This is the axis the row's own declared `intensity` was proposed for and rejected.** Put as a
 ## fork — a lethal `cyclist` (18/s) glowing paler than a harmless `protest` (42/s) — the answer was
@@ -186,7 +182,7 @@ const SATURATES_AT_POINTS := Tuning.METER_MAX * 0.4
 ## Two lerps either side of the midpoint keeps every point on the ramp as saturated as its own
 ## ends.
 static func colour_for(landed: float) -> Color:
-	var t := clampf(landed / SATURATES_AT_POINTS, 0.0, 1.0)
+	var t := clampf(landed / Tuning.EXPECTED_IMPACT_POINTS, 0.0, 1.0)
 	if t < 0.5:
 		return Palette.HALO_WEAK.lerp(Palette.HALO_MID, t * 2.0)
 	return Palette.HALO_MID.lerp(Palette.HALO_STRONG, (t - 0.5) * 2.0)
