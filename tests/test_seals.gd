@@ -2,7 +2,7 @@ extends RefCounted
 ## `SealPlanner`: every street off the day's tree carries a seal, the tree, the doorstep and the
 ## main road never do, and sealing never breaks the day's own winnability.
 ##
-## `docs/DECISIONS.md`, M64, "Place a seal off the tree, on every segment" is the design;
+## `docs/DECISIONS.md`, "Place a seal off the tree, on every segment" is the design;
 ## `src/routes/seal_planner.gd` is the implementation. The winnability check here is a hard
 ## assertion rather than a measurement on purpose — `SealPlanner`'s own class doc explains why: a
 ## seal never stands on tree ground or the doorstep, so nothing it does can cut the one route the
@@ -434,7 +434,8 @@ func _first_real_segment(map: CityMap) -> StreetNetwork.Segment:
 ## `SealPlanner._hard_positions`'s own contract: a hard seal's bodies span the street's whole
 ## 192px width with no gap between them, whatever the row's own `obstructs_radius` is — see
 ## `seal_planner.gd`'s class doc, "no gap between them." Checked directly for every `HARD`
-## candidate, including M64's four new pictures, rather than trusted from the arithmetic alone.
+## candidate, including all four dedicated hard-seal pictures, rather than trusted from the
+## arithmetic alone.
 func _test_hard_seals_cover_the_street_edge_to_edge(t) -> void:
 	var map := _maps[0]
 	var segment := _first_real_segment(map)

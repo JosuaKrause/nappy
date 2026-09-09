@@ -128,7 +128,7 @@ static func _build() -> Array[EventDef]:
 		_firefight(),
 
 		# Seal pictures - off the day's route tree, never rolled by the ordinary scheduler. See
-		# SealPlanner and docs/DECISIONS.md, M64, "Eight seal pictures".
+		# SealPlanner and docs/DECISIONS.md, "Eight seal pictures".
 		_fallen_tree(),
 		_car_accident(),
 		_skip(),
@@ -203,11 +203,12 @@ static func _playground() -> EventDef:
 ## one.** *(Playtest 25, finding 6: "dashing cat and dog (not pursuing) are basically useless right
 ## now -- they need a bigger impact.")* There is no `impulse` field and none is added: `CLAUDE.md`'s
 ## standing decision is that a sharp spike is a short `duration` at high `intensity`, and 1.8s is
-## already as short as a crossing this wide can be. **Kept under `Tuning.MARK_WORTH_A_DETOUR` on
-## purpose** — `tests/test_danger.gd` names this row explicitly as one that costs too little for a
-## caret, on the reasoning that the crouch is its own silhouette and needs no second cue. A bigger
-## number than this crosses that line and would give the cat a caret for the first time, which is a
-## real design question and not one this item decides; left as an open fork rather than assumed.
+## already as short as a crossing this wide can be. **Its dash still projects under
+## `Tuning.EXPECTED_IMPACT_POINTS` on a standing player** — `tests/test_danger.gd` holds this
+## scenario by name, on the reasoning that the crouch is its own silhouette and needs no second
+## cue. A bigger number than this crosses that line and would give the cat a caret for the first
+## time, which is a real design question and not one this item decides; left as an open fork
+## rather than assumed.
 ## **Judged against what item 1 leaves behind, not what it started against**: the evidence that
 ## this row was ever "useless" is a `cat_dash` at the *old*, lower intensity finishing off a day
 ## whose baseline was already pinned near 100 by the barrier fields the earlier items just silenced
@@ -1328,8 +1329,8 @@ static func _firefight() -> EventDef:
 	def.cost = 5
 	return def
 
-# --------------------------------------------------------- seal pictures (M64) ---
-# Every row below exists only as `SealPlanner` candidate material — `docs/DECISIONS.md`, M64, "Eight
+# --------------------------------------------------------------- seal pictures ---
+# Every row below exists only as `SealPlanner` candidate material — `docs/DECISIONS.md`, "Eight
 # seal pictures, so that no single barrier becomes the city's signature." Each is `SCRIPTED` with
 # `scripted_day = 0`, a day nobody plays, so `EventDef.available_on()` never rolls one and the
 # ordinary scheduler never sites one — the same shape `barricade` already uses to keep off the
@@ -1417,7 +1418,8 @@ static func _scaffolding() -> EventDef:
 	return def
 
 ## A hard seal: a crater with water across the asphalt and a municipal barrier at each kerb — "the
-## one that explains why the road is out too" (`docs/DECISIONS.md`, M64). Single-copy geometry, same as
+## one that explains why the road is out too" (`docs/DECISIONS.md`, "Eight seal pictures").
+## Single-copy geometry, same as
 ## `fallen_tree` and `car_accident`.
 static func _burst_water_main() -> EventDef:
 	var def := EventDef.new()
@@ -1435,7 +1437,8 @@ static func _burst_water_main() -> EventDef:
 	return def
 
 ## A soft seal, both bodies the same row: a moving van with its ramp down on each pavement —
-## "reuses `Look.LORRY`, the biggest silhouette in act I" (`docs/DECISIONS.md`, M64), read as the same
+## "reuses `Look.LORRY`, the biggest silhouette in act I" (`docs/DECISIONS.md`, "Eight seal
+## pictures"), read as the same
 ## lorry-scale silhouette family rather than the literal `Look.LORRY` enum value, since two rows
 ## may not share a look or a silhouette (`docs/EVENTS.md`, "the visual vocabulary";
 ## `tests/test_events.gd`'s `_test_no_two_rows_draw_the_same_picture` and

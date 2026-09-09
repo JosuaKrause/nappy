@@ -49,11 +49,11 @@ const STEER_SPEED := 90.0
 const LOOKAHEAD := (Tuning.STREET_WIDTH + 1) * Tuning.TILE_SIZE
 ## The same distance in tiles, for the scans that walk rather than probe. See `_way_is_blocked`.
 const LOOKAHEAD_TILES := Tuning.STREET_WIDTH + 1
-## Where the horn's caret sits over a car, and how big it is. Matched to `EventInstance`'s so
-## the two carets are the same cue rather than two similar ones, but lower, because a car is
-## 26px of sprite against a standing figure's 46.
-const HORN_MARK_HEIGHT := 30.0
-const HORN_MARK_WIDTH := 15.0
+## Where a car's own caret sits, and how big it is. Matched to `EventInstance`'s so the two carets
+## are the same cue rather than two similar ones, but lower, because a car is 26px of sprite
+## against a standing figure's 46.
+const MARK_HEIGHT := 30.0
+const MARK_WIDTH := 15.0
 
 var kind := Kind.WALKER
 var colour := Color.WHITE
@@ -93,6 +93,16 @@ var junction_hold := INF
 ## it the contact re-fires every frame and one person costs what a crowd should.
 var touching := false
 
+## This frame's player position, or `Vector2.INF` before the first frame — part of
+## `ExcitementHalo`'s duck type, told once a frame through `set_player_at()`. `Crowd` only ever
+## hands an agent the player's position when the agent is a car near a road (`pedestrian_ahead`),
+## so this is the one channel that reaches every agent in the crowd regardless, which is what
+## `expected_impact_at()` and `will_be_lethal()` need to answer for a walker as well as a car.
+var player_at := Vector2.INF
+
+func set_player_at(at: Vector2) -> void:
+	player_at = at
+
 var _map: CityMap
 ## Its own RNG, seeded from the day and its own index. Per-agent rather than shared so a
 ## turn taken at a junction cannot depend on the order agents happen to reach junctions in
@@ -111,8 +121,8 @@ var _lane_centre := 0.0
 var _junction := -1
 ## The frame and flip currently drawn, so a redraw only happens when they change.
 var _picture := Vector2i(-1, -1)
-## Whether the horn caret was up last frame, so it gets one redraw to come off with.
-var _was_horning := false
+## Whether this car's own caret was up last frame, so it gets one redraw to come off with.
+var _was_marked := false
 var walker_visual: ModularWalker
 
 ## Built lazily on this agent's own first non-zero glow, and freed once it has faded all the way
@@ -275,10 +285,11 @@ func _process(delta: float) -> void:
 	if picture != _picture:
 		_picture = picture
 		queue_redraw()
-	# A car sounding its horn draws a caret that breathes, and breathing is per-frame by
-	# definition. The one frame after it stops is what takes the caret off again.
-	elif kind == Kind.CAR and (_jolt > 0.0 or _was_horning):
-		_was_horning = _jolt > 0.0
+	# A marked car draws a caret that can breathe with its own horn, and a projected approach
+	# can change its strength frame to frame with nothing else about the picture moving. The
+	# one frame after the mark comes down is what takes the caret off again.
+	elif kind == Kind.CAR and (_caret_strength() > 0 or _was_marked):
+		_was_marked = _caret_strength() > 0
 		queue_redraw()
 
 ## Excitement per second this agent contributes at a point. Same falloff as an event, so
@@ -300,6 +311,58 @@ func contribution_at(world_position: Vector2) -> float:
 		total += Tuning.falloff(distance, _jolt_intensity * (_jolt / _jolt_for),
 				_jolt_inner, _jolt_outer)
 	return total
+
+## The furthest this agent's own field can currently reach — its ordinary outer radius, or the
+## jolt's own if a jolt is running and reaches further, the way a car's `CAR_HORN_OUTER_RADIUS`
+## (132px) reaches past its ordinary `CAR_OUTER_RADIUS` (104px). What `expected_impact_at()` and
+## `will_be_lethal()` both compare a projected approach against, so a source mid-jolt is not
+## skipped early on a reach that no longer describes it.
+func _current_reach() -> float:
+	var reach := Tuning.CAR_OUTER_RADIUS if kind == Kind.CAR else Tuning.PEDESTRIAN_OUTER_RADIUS
+	if _jolt > 0.0:
+		reach = maxf(reach, _jolt_outer)
+	return reach
+
+## Points this agent is projected to land on her over `Tuning.EXPECTED_IMPACT_HORIZON`, her
+## position held fixed and only this agent moving — `EventInstance.expected_impact_at()`'s own
+## quantity, read here off `velocity()` instead of `travel_velocity()`. See that method for the
+## reasoning: a stationary body's own field does not change under the projection and the
+## subtraction cancels it to zero, and the reach test below skips anything the walk cannot close
+## inside the horizon without sampling it.
+func expected_impact_at(player_position: Vector2) -> float:
+	var vel := velocity()
+	var reach := vel.length() * Tuning.EXPECTED_IMPACT_HORIZON + _current_reach()
+	if global_position.distance_to(player_position) > reach:
+		return 0.0
+	if vel.is_zero_approx():
+		return 0.0
+	var current_rate := contribution_at(player_position)
+	var dt := 0.25
+	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
+	var landed := 0.0
+	for i in steps:
+		landed += contribution_at(player_position - vel * (float(i + 1) * dt)) * dt
+	return landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+
+## Whether this car's own strike box reaches her at some point before
+## `Tuning.EXPECTED_IMPACT_HORIZON`, on its current course, her position held fixed — a car's
+## equivalent of `EventInstance.will_be_lethal()`, over the same rectangle `Crowd._strike()` tests
+## for the actual collision. Never true for a walker: nothing about a pedestrian ends the day, and
+## never true for a car already too slow to strike at all (`Crowd._strike()`'s own guard).
+func will_be_lethal(player_position: Vector2) -> bool:
+	if kind != Kind.CAR or _speed < Tuning.CAR_STRIKE_MIN_SPEED:
+		return false
+	var vel := velocity()
+	var forward := heading()
+	var side := Vector2(-forward.y, forward.x)
+	var dt := 0.25
+	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
+	for i in steps + 1:
+		var offset := player_position - (global_position + vel * (float(i) * dt))
+		if absf(offset.dot(forward)) <= Tuning.CAR_STRIKE_HALF_LENGTH \
+				and absf(offset.dot(side)) <= Tuning.CAR_STRIKE_HALF_WIDTH:
+			return true
+	return false
 
 ## Duck-typed with `EventInstance`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
 ## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
@@ -1206,7 +1269,7 @@ func _flipped() -> bool:
 func _draw() -> void:
 	_draw_body(self)
 	if kind == Kind.CAR:
-		_draw_horn_mark()
+		_draw_mark()
 
 ## Draws this agent's own body onto `canvas` — the plain SVG sprite only, never the illustrated
 ## `walker_visual` presentation, which draws itself as a separate child node with its own
@@ -1234,29 +1297,57 @@ func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
 		return
 	Sprites.draw_shadow(canvas, at, radius)
 
-## The doubled lethal caret over a car that is sounding its horn.
+## The caret's own answer for this car, 0 (none), 1 (amber) or 2 (doubled red), cached against
+## `_clock` for the same reason `EventInstance._caret_strength()` caches against `age`: `_draw()`
+## and `_process()`'s own redraw-forcing check below both ask in the same frame, and each is a
+## fresh sampling loop over `expected_impact_at()` or `will_be_lethal()` if they do not share one.
+var _mark_strength_clock := -1.0
+var _mark_strength := 0
+
+func _caret_strength() -> int:
+	if _mark_strength_clock == _clock:
+		return _mark_strength
+	_mark_strength_clock = _clock
+	_mark_strength = 0
+	if player_at != Vector2.INF:
+		if will_be_lethal(player_at):
+			_mark_strength = 2
+		elif expected_impact_at(player_at) >= Tuning.EXPECTED_IMPACT_POINTS:
+			_mark_strength = 1
+	return _mark_strength
+
+## The caret over a car, in the same two strengths `EventInstance` draws.
 ##
 ## The vocabulary's first row is *the entity itself carries most of it*, and the traffic is the
 ## easiest place to leave that undone: the caret is drawn by `EventInstance` and a car is not an
 ## event, so without this a lethal thing bearing down on the player produces a mark over **her**
 ## head and nothing anywhere else — the load-bearing cue paying for a warning it should only be
-## adding to. The horn cannot carry it either, being silent in a game with no audio, which is
-## *"audio is never the only channel"* failing in the one place the traffic fairness contract
-## depends on it.
+## adding to.
 ##
-## Doubled and in `MARK_LETHAL`, exactly as a `hard_fail` event's caret is, because a car is exactly
-## as lethal and being told apart by hue is what the doubling exists to avoid. It **breathes** with
-## the horn's own decay, which is the one thing a ring does that a discrete symbol does not get for
-## free.
-func _draw_horn_mark() -> void:
-	if _jolt <= 0.0:
+## **The honk is a consequence of this, not the rule it follows.** `Crowd._horn()` still sounds and
+## still startles — that is what makes the jolt in `swell` below real noise on a real body — but a
+## car projected onto her without ever coming close enough to trigger `_horn()`'s own tighter
+## proximity gate is marked all the same: a car whose lane she is standing in is projected into
+## her, on its current course, whether or not it has honked yet.
+##
+## Doubled and in `MARK_LETHAL` exactly when `will_be_lethal()` says the strike box reaches her,
+## because a car is exactly as lethal as a `hard_fail` event and being told apart by hue is what
+## the doubling exists to avoid. **Breathes with the horn's own decay while one is running** —
+## the one thing a ring does that a discrete symbol does not get for free — and holds full size
+## the rest of the time, since a projected approach with no jolt running has no envelope of its
+## own to breathe with.
+func _draw_mark() -> void:
+	var strength := _caret_strength()
+	if strength <= 0:
 		return
-	var swell := _jolt / _jolt_for
+	var swell := (_jolt / _jolt_for) if _jolt > 0.0 else 1.0
 	var scale := 0.55 + 0.45 * swell
-	var at := Vector2(0.0, -(HORN_MARK_HEIGHT + 10.0 * swell))
-	Sprites.draw_caret(self, at, HORN_MARK_WIDTH * scale, Palette.MARK_LETHAL)
-	Sprites.draw_caret(self, at - Vector2(0.0, HORN_MARK_WIDTH * scale * 0.85),
-			HORN_MARK_WIDTH * scale, Palette.MARK_LETHAL)
+	var at := Vector2(0.0, -(MARK_HEIGHT + 10.0 * swell))
+	var colour := Palette.MARK_LETHAL if strength == 2 else Palette.MARK_COSTLY
+	Sprites.draw_caret(self, at, MARK_WIDTH * scale, colour)
+	if strength == 2:
+		Sprites.draw_caret(self, at - Vector2(0.0, MARK_WIDTH * scale * 0.85),
+				MARK_WIDTH * scale, colour)
 
 ## The coat, or the paintwork. Authored near-white and multiplied, the same trick the
 ## buildings use, so a crowd is not one silhouette in one colour ninety times over.

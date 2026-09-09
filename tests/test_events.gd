@@ -298,7 +298,7 @@ func _test_stationary_vehicles_face_their_street(t) -> void:
 
 ## **A spread never lands on a corner.** `EventScheduler._is_a_corner` refuses any tile whose two
 ## coordinates are both inside a corridor band to a row `EventInstance.has_a_spread()` names — see
-## `docs/DECISIONS.md`, M64, "a spread on a corner is placed as if the corner were nothing": such a tile
+## `docs/DECISIONS.md`, "a spread on a corner is placed as if the corner were nothing": such a tile
 ## has no single street for `_spread_is_vertical` or `_centred_on_the_pavement_band` to answer about.
 ## Walked over the **planned** placements of several seeds and every day of a run, rather than over
 ## the candidate pool directly, because a clean pool and a roll that still lands on a stale entry
@@ -1376,7 +1376,7 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 ## happen on required alleys".)* `EventScheduler._refuses_required_alleys` excludes `alley_robbery`
 ## from any `ALLEY` tile the day's corridor runs through — `corridor.depth(tile) == 0` — because its
 ## own design note is that "a robbery has no telegraph you could see coming, and it never did": a
-## risk with no warning is only fair on ground she chose to enter. See `docs/DECISIONS.md`, M64, "and no
+## risk with no warning is only fair on ground she chose to enter. See `docs/DECISIONS.md`, "and no
 ## robber stands in an alley she has to walk down."
 ##
 ## Walked over the **planned** placements of several seeds and every day the row is eligible on
@@ -2477,8 +2477,8 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 			# standing next to the other baby lady". Holding this first is what tells the ramp's own
 			# shape (`ExcitementHalo.colour_for()`) apart from an attribution bug: the chat's flat
 			# rate does reach `contribution_at()` inside her field and land on the mother's own
-			# `landed()`, past `SATURATES_AT_POINTS`'s own midpoint, so a dull colour on screen would
-			# have been the ramp and not the meter.
+			# `landed()`, past `Tuning.EXPECTED_IMPACT_POINTS`'s own midpoint, so a dull colour on
+			# screen would have been the ramp and not the meter.
 			t.close_to(mother.landed(), Tuning.CHAT_EXCITEMENT,
 					"and the mother's own landed() carries the same points, which is what " +
 					"colour_for() reads", 2.0)

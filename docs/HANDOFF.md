@@ -13,7 +13,7 @@ Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex reads `CLAU
 through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the skills through the
 `.agents/skills` link. Its repository hooks need review through `/hooks` before they execute.
 
-**Every branch is work in progress; nothing is parked on one.** M64's measurement probes,
+**Every branch is work in progress; nothing is parked on one.** The sealing measurement probes,
 `tests/probes/m64_measure.gd` and `tests/probes/m64_density.gd`, live under `tests/probes/`, where
 the runner does not discover them: they print rather than assert, they are the instrument the
 per-street density figures in `TODO.md` were read with, and `tools/test.sh probes/m64_density.gd`
@@ -341,7 +341,8 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M62 is next
 — checkpoints that divide the map into regions, with M45 folded into it. Alongside it, each on its
-own branch: M93's caret chosen by expected impact, and M56's remaining hunting rows. M61, the field as a Minkowski sum of body and kernel, follows M62; M65 is
+own branch: M56's remaining hunting rows. M61, the field as a Minkowski sum of body and kernel,
+follows M62; M65 is
 revisited after M62 rather than built as written. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,

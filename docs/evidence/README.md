@@ -5,7 +5,7 @@
 reference doesn't get lost when cleaning up. make sure all current references are in the repo so I
 can clean up the log folder.")*
 
-The rule is in `CLAUDE.md` under "A reference to a file outside the repo is not a reference". The
+The rule is in the [feedback skill](../../.claude/skills/feedback/SKILL.md), "Evidence lives in the repo". The
 short version: `user://telemetry/` is a scratch directory the player has to be able to empty, and a
 finding whose evidence was in it stops being checkable the moment they do. Approved design
 references stay at this level; historical runtime captures are organized by date under
@@ -19,6 +19,10 @@ makes the file worth having.
 
 | file | what it is | referenced by |
 | --- | --- | --- |
+| `svg-seals-before-2026-09-09.png`, `svg-seals-after-2026-09-09.png` | Rendered SVG seal comparisons, fitted per cell for silhouette inspection. | [DECISIONS.md](../DECISIONS.md), SVG artwork and upcoming milestone assets |
+| `svg-upcoming-assets-2026-09-09.png` | Reviewed checkpoint, pointing, district and sound assets plus refreshed fence/fire pictures. | [TODO.md](../TODO.md), owning milestone asset notes |
+| `archive/session-captures/2026-09-09/rig-183151-seed4000-v0.8.2-33-g2b1ee38-dirty/` | Crash gameplay with separate shadows beneath cars and onlookers; whole run and capture. | [DECISIONS.md](../DECISIONS.md), SVG artwork and upcoming milestone assets |
+| `archive/session-captures/2026-09-09/rig-183204-seed4000-v0.8.2-33-g2b1ee38-dirty/` | Burnt cars lying perpendicular to the road; whole run and capture. | [DECISIONS.md](../DECISIONS.md), SVG artwork and upcoming milestone assets |
 | `shot-2026-09-09-seed4000-d9856f2-seal-ground-before.png` | A vertical crash scene displaced north of its ground point. | [DECISIONS.md](../DECISIONS.md), SVG seal artwork review |
 | `shot-2026-09-09-seed4000-9b72a2e-dirty-seal-ground-after.png` | The same scene centred on its street with an aligned shadow; vehicle perspective remains under review. | [DECISIONS.md](../DECISIONS.md), SVG seal artwork review |
 | `shot-2026-09-09-seed4242-d29eec6-seal-skip.png` | M64's skip at the kerb, the near half of a soft seal, on seed 4242 day 1. | [DECISIONS.md](../DECISIONS.md), M64 eight seal pictures |
@@ -34,6 +38,7 @@ makes the file worth having.
 | `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-before.png` | North-west corner before M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
 | `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-after.png` | North-west corner after M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
 | `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-se-after.png` | South-east corner after M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
+| `shot-2026-09-09-seed4242-69c97bd-arterial-standing-no-caret.png` | The arterial pavement at ordinary crowd density, seed 4242, five seconds standing at `--spawn arterial`: several nearby walkers glow with their own entity halo and none carries a caret. | [tests/test_danger.gd](../../tests/test_danger.gd), `_test_the_arterial_at_ordinary_density_marks_nobody` |
 
 ## Why a lost log stays lost
 

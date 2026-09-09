@@ -188,7 +188,7 @@ func _test_landed_accumulates_and_decays(t) -> void:
 func _test_colour_for_the_ramp_ends(t) -> void:
 	t.check(ExcitementHalo.colour_for(0.0).is_equal_approx(Palette.HALO_WEAK),
 			"no landed excitement reads as the weak end of the ramp")
-	var saturated := ExcitementHalo.SATURATES_AT_POINTS
+	var saturated := Tuning.EXPECTED_IMPACT_POINTS
 	t.check(ExcitementHalo.colour_for(saturated).is_equal_approx(Palette.HALO_STRONG),
 			"landed excitement at the saturation point reads as the strong end")
 	t.check(ExcitementHalo.colour_for(saturated * 10.0).is_equal_approx(Palette.HALO_STRONG),
@@ -206,7 +206,7 @@ func _test_colour_for_the_ramp_ends(t) -> void:
 # up transparency for also encoding magnitude. transparency can be used to emphasize low values".)*
 # `magnitude_for()` reads `landed()` -- the same number `colour_for()` reads -- on a curve that
 # rises fast and saturates by `LOW_EMPHASIS_POINTS`, so transparency does the work at the low end
-# that a straight line to `SATURATES_AT_POINTS` would leave flat.
+# that a straight line to `Tuning.EXPECTED_IMPACT_POINTS` would leave flat.
 
 func _test_magnitude_for_emphasises_low_values(t) -> void:
 	var floor_alpha := ExcitementHalo.MIN_MAGNITUDE * ExcitementHalo.MAX_ALPHA

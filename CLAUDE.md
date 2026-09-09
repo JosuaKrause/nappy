@@ -111,6 +111,7 @@ rather than a place:
 |---|---|
 | respond to a playtest or a design instruction, *before* any file is touched | **feedback** |
 | commit, branch, merge, or write a commit message | **committing** |
+| review a pull request — the findings go on the PR as comments | **committing** |
 | merge main into a PR or branch | **merging-main** |
 | **end a session** | **session-cleanup** |
 

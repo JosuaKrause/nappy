@@ -102,6 +102,25 @@ The alternative that does not depend on the repository at all is uploading the i
 attachment, which is what dragging a file into the PR text box does; it cannot be done from `gh`, so
 it is the fallback for a description written by hand rather than the rule.
 
+## Reviewing a pull request leaves its findings on the pull request
+
+**A review's findings are posted as comments on the PR, anchored to the lines they are about,
+never only reported in the conversation.** *(2026-09-09: "reviewing a PR should result in comments
+in the PR so they can be picked up and resolved".)* A finding in a chat message is read once by
+whoever asked and is gone for the person who has to fix it; a comment on the diff is a thing the
+author, or an agent sent to the branch, can pick up one at a time and resolve, and its thread
+records what was decided about it.
+
+Each comment carries what a finding needs to be acted on without the reviewer present: what is
+wrong, a concrete case where it fails or misleads, and what the fix is where one is clear. Post the
+inline comments as one review with a short summary rather than as one comment per finding, so the
+author gets them together; a finding that has no line to hang on — a missing doc, a missing test
+row — goes in the summary. **A review with nothing to say still says so** on the PR, so that
+"no comments" is a verdict rather than an absence.
+
+The conversation still gets the recap, since the player reads that first; the PR is where the
+findings live.
+
 ## Branches
 
 **Before merging main into an existing PR or branch, read

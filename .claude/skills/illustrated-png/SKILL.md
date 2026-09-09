@@ -41,8 +41,9 @@ before proposing a new family.
   result, and any rejected alternative worth avoiding. Keep a manifest beside directional or
   modular sheets.
 - Preserve source PNGs and their `.import` sidecars together. Sidecars hold import configuration
-  and resource identity; they are repository files even though Godot generates them. Preserve new
-  evidence sidecars too. The ignored `.godot/` directory holds the rebuildable imported cache.
+  and resource identity; they are repository files even though Godot generates them. A capture
+  under `docs/` has none: `docs/.gdignore` keeps Godot out of the whole folder, since nothing loads
+  a `res://docs/` path. The ignored `.godot/` directory holds the rebuildable imported cache.
 - Record exact extraction commands and tool versions for derived PNGs. Preserve the approved
   source, write a versioned output and inspect retained detail as well as transparent gaps.
 - Directional sheets are ordered `N, NE, E, SE, S, SW, W, NW`. Record genuine symmetry explicitly;

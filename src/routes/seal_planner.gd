@@ -2,7 +2,7 @@ class_name SealPlanner
 extends RefCounted
 ## Seals every street off the day's route tree — the placement M64 exists for.
 ##
-## The design is `docs/DECISIONS.md`, M64, "Nothing off the path". The corridor
+## The design is `docs/DECISIONS.md`, "Nothing off the path". The corridor
 ## (`RouteTree.for_day`) is the day's only free way through; everything else in the lattice is
 ## closed, not merely dearer. This is where "closed" becomes an actual placement rather than a
 ## sentence.
@@ -25,17 +25,15 @@ extends RefCounted
 ## nothing about *where* — `plan_day` works out every site from the street lattice and the day's
 ## tree, the same way for any def a candidate names.
 ##
-## **The list carries eight pictures now** (`docs/DECISIONS.md`, M64, "Eight seal pictures"), so no
-## single barrier is the city's signature: `barricade_seal` (the catalogue's own furniture,
-## `barricade`'s own docstring already calling it "placed as a seal rather than rolled as an
-## event"), `construction_pair`, `cafe_pair`, `market_pair` and `delivery_pair` were the pre-M64
-## soft furniture that made the sealing buildable before anything new was drawn; `fallen_tree_seal`,
-## `car_accident_seal`, `skip_scaffolding_pair`, `burst_main_seal`, `moving_van_pair`,
-## `burnt_out_car_seal` and `collapsed_frontage_seal` are the drawn pictures, each backed by its own
-## `SCRIPTED`, `scripted_day = 0`, `intensity = 0.0` row in `EventCatalogue` — see the class doc
-## there, "seal pictures (M64)". `homeless_yeller` is in the milestone's own list of "available from
-## day 1" rows and is left out here on purpose — it carries no `obstructs_radius`, so it obstructs
-## nothing and a pavement with only that on it is not sealed, soft or otherwise.
+## **The list carries eight distinct seal pictures** (`docs/DECISIONS.md`, "Eight seal pictures"),
+## so no single barrier is the city's signature. `barricade_seal` uses the catalogue's own
+## furniture; `construction_pair`, `cafe_pair`, `market_pair` and `delivery_pair` provide the
+## supporting soft-furniture variants. `fallen_tree_seal`, `car_accident_seal`,
+## `skip_scaffolding_pair`, `burst_main_seal`, `moving_van_pair`, `burnt_out_car_seal` and
+## `collapsed_frontage_seal` are dedicated seal drawings, each backed by its own `SCRIPTED`,
+## `scripted_day = 0`, `intensity = 0.0` row in `EventCatalogue` — see the class doc there, "seal
+## pictures". `homeless_yeller` is excluded because it carries no `obstructs_radius`, so it
+## obstructs nothing and a pavement with only that on it is not sealed, soft or otherwise.
 ##
 ## **A sealed street's def is never the catalogue's own row.** `_sealed_variant` duplicates it and
 ## strips `scar_id`: the catalogue's `barricade` leaves a permanent scar and moves a block's arc
@@ -107,12 +105,10 @@ static func candidates() -> Array[Candidate]:
 
 ## The only place a new picture is added. See the class doc.
 ##
-## **Eight seal pictures** (`docs/DECISIONS.md`, M64): the five below `barricade_seal` are the
-## pre-existing furniture this class started with, and everything from `fallen_tree_seal` onward is
-## the milestone's own addition — each one an appended entry and nothing else, per the design's own
-## requirement that "updating the list of candidates is enough." `barricade_seal` is also the
-## eighth of the eight named pictures, "a stacked barricade" — already here, so it is confirmed
-## rather than duplicated.
+## **Eight seal pictures** (`docs/DECISIONS.md`, "Eight seal pictures"): reusable catalogue
+## furniture and dedicated seal drawings share this one candidate list. The placement stays
+## generic because adding or replacing a picture changes only an entry here. `barricade_seal`
+## supplies the named stacked-barricade picture without a duplicate candidate.
 static func _build_candidates() -> Array[Candidate]:
 	return [
 		_candidate("barricade_seal", Strength.HARD, ["barricade"]),

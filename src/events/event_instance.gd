@@ -51,7 +51,7 @@ const LORRY := preload("res://assets/events/lorry.svg")
 const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
 const CHATTING_MOTHER_WALKING := preload("res://assets/events/chatting_mother_walking.svg")
 const CHATTING_MOTHER_TALKING := preload("res://assets/events/chatting_mother_talking.svg")
-## Seal pictures — see `SealPlanner` and `docs/DECISIONS.md`, M64, "Eight seal pictures".
+## Seal pictures — see `SealPlanner` and `docs/DECISIONS.md`, "Eight seal pictures".
 const FALLEN_TREE := preload("res://assets/events/fallen_tree.svg")
 const CAR_ACCIDENT := preload("res://assets/events/car_accident.svg")
 const CAR_ACCIDENT_SHADOW := preload("res://assets/events/car_accident_shadow.svg")
@@ -135,7 +135,7 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 ## local X unconditionally, so a corner costs them nothing and they are rightly outside this test.
 ##
 ## **This is the test `EventScheduler._open_ground_for` asks before it will offer a corner as a
-## site.** See that function and `docs/DECISIONS.md`, M64, "a spread on a corner is placed as if the
+## site.** See that function and `docs/DECISIONS.md`, "a spread on a corner is placed as if the
 ## corner were nothing" — a junction has no single street for `_spread_is_vertical` or
 ## `_centred_on_the_pavement_band` to answer about, so only a row that actually asks either
 ## question has anything to lose by standing on one.
@@ -210,8 +210,16 @@ var is_finished := false
 ## a point, and everything it does with the point is a distance.
 ##
 ## Two things want it, and neither is a reference to her: a pursuer walks toward it, and anything
-## that is *leaving* uses it to know when it is out of sight.
+## that is *leaving* uses it to know when it is out of sight. `ExcitementHalo` writes the same
+## value again every frame through `set_player_at()`, part of the duck type it reads back for the
+## caret — the two writers agree because both read `_player.global_position` the same frame.
 var player_at := Vector2.INF
+
+## Part of `ExcitementHalo`'s duck type — see that class's doc. `EventManager` already keeps
+## `player_at` current for the chase and the leaving check; this is the same field, told from the
+## other direction so `expected_impact_at()` does not need a second channel to the player.
+func set_player_at(at: Vector2) -> void:
+	player_at = at
 
 ## Whether she is running right now. Written beside `player_at` and by the same pass, because the
 ## one thing that reads it asks both together: a pursuer gives up because **she ran**, which is a
@@ -646,6 +654,26 @@ func travel_velocity() -> Vector2:
 		return _heading * def.speed
 	return Vector2.ZERO
 
+## `travel_velocity()`'s own answer, except for a pursuer that has been noticed and is holding
+## its telegraph's stand-off: the caret's projection asks where this is *going*, which is
+## `pursue_speed` toward her the instant it has decided to come, not the moment its lunge is
+## allowed to fire. `travel_velocity()` itself has to stay zero there — the exclamation mark's
+## "it is not closing" reads that answer literally, and a mark that said otherwise would warn her
+## about a thing that is deliberately holding still — so this is a second query for the caret
+## alone rather than a change to the first one.
+##
+## **A waiting pursuer still has no course.** `is_waiting()` means nobody has been noticed yet, so
+## there is nothing here to project toward; only the moment it decides changes the answer, exactly
+## as `travel_velocity()` already has it.
+func _caret_velocity() -> Vector2:
+	if is_finished or is_leaving:
+		return Vector2.ZERO
+	if def.pursues:
+		if is_waiting():
+			return Vector2.ZERO
+		return _heading * def.pursue_speed
+	return travel_velocity()
+
 ## Puts an instance back where a previous incarnation of the same plan had got to. Restores the
 ## age as well as the distance, so the telegraph, the pulse phase and the duration all continue
 ## rather than starting again — an event that streams in and out must not become immortal by
@@ -1040,6 +1068,25 @@ func current_intensity() -> float:
 		value *= Tuning.TELEGRAPH_INTENSITY_FRACTION
 	return value
 
+## `current_intensity()` with the telegraph's own damping undone — the rate this row will
+## actually carry once it is live, which is what the caret's own projection has to sum rather
+## than the fraction a telegraph is reading right now. Everything else `current_intensity()`
+## accounts for — the ramp, the pulse, chatting — still applies; only the final multiplier is
+## skipped, by dividing it back out of the same call rather than a second copy of the ramp and
+## pulse logic above it.
+##
+## Only `expected_impact_at()`'s own projection reads this. Every other caller of
+## `contribution_at()` — the halo, the exclamation mark, the meter itself — wants what a source is
+## actually doing right now, damped or not, because it is asking about the present rather than
+## about the course this thing is on. Without this, a `cyclist` ridden straight at a standing
+## player through its own 2s telegraph reads at `TELEGRAPH_INTENSITY_FRACTION` (15%) the whole
+## time, and `expected_impact_at()` under-counts the approach by the same fraction.
+func _caret_intensity() -> float:
+	var value := current_intensity()
+	if is_telegraphing() and def.pursues_within <= 0.0:
+		value /= Tuning.TELEGRAPH_INTENSITY_FRACTION
+	return value
+
 ## Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
 ## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
 ## event's exact share of what landed this frame — `contribution × sensitivity × delta` — so the
@@ -1068,16 +1115,23 @@ func _prune_landed_history() -> void:
 		_landed_history.pop_front()
 
 ## Excitement per second this event contributes at a point.
-func contribution_at(world_position: Vector2) -> float:
+##
+## `intensity_override` replaces `current_intensity()` for this one call when given (`< 0.0`
+## means "not given" — every intensity this def can carry is positive). The only caller that ever
+## passes one is `expected_impact_at()`'s own projection, asking for `_caret_intensity()` — the
+## row's live rate — in place of whatever a telegraph has this one currently damped to; every
+## other caller gets the answer it always got.
+func contribution_at(world_position: Vector2, intensity_override := -1.0) -> float:
 	if is_finished or is_leaving:
 		return 0.0
+	var intensity := intensity_override if intensity_override >= 0.0 else current_intensity()
 	# A city-wide source has no falloff: there is nowhere in the city it does not reach.
 	if def.city_wide:
-		return current_intensity()
+		return intensity
 	if not _flock.is_empty():
-		return _flock_contribution_at(world_position)
+		return _flock_contribution_at(world_position, intensity)
 	return Tuning.falloff(global_position.distance_to(world_position),
-			current_intensity(), def.inner_radius, def.outer_radius)
+			intensity, def.inner_radius, def.outer_radius)
 
 ## A flock is its birds, summed.
 ##
@@ -1088,8 +1142,9 @@ func contribution_at(world_position: Vector2) -> float:
 ## and the edge of it at a fraction. That gradient is the whole reason to do it this way: the price
 ## of a flock should depend on whether you walked through it or round it, and one disc centred on
 ## nothing in particular cannot say that.
-func _flock_contribution_at(world_position: Vector2) -> float:
-	var share := current_intensity() / float(_flock.size())
+func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float:
+	var total_intensity := intensity if intensity >= 0.0 else current_intensity()
+	var share := total_intensity / float(_flock.size())
 	var outer := _bird_outer()
 	var total := 0.0
 	for bird in _flock:
@@ -1103,6 +1158,85 @@ func is_lethal_at(world_position: Vector2) -> bool:
 	if is_finished or is_leaving or is_waiting() or not def.hard_fail or is_telegraphing():
 		return false
 	return global_position.distance_to(world_position) <= def.inner_radius
+
+## Points this event is projected to land on her over `Tuning.EXPECTED_IMPACT_HORIZON`, **her
+## position held fixed and only this event moving** — the halo's own quantity (`landed()`, what
+## actually reached the meter) read forward instead of back. Duck-typed with `CrowdAgent`'s own
+## copy; see `ExcitementHalo`'s class doc for the shared shape and `wants_a_mark()` for what a
+## result at or above `Tuning.EXPECTED_IMPACT_POINTS` does with the answer.
+##
+## **Her stillness is the whole of the direction the caret answers to.** *(2026-09-08, the player:
+## "I don't want a caret when walking into a car from the side".)* A stationary source's own field
+## does not change under this projection, so the sum below always equals `current_rate ×
+## EXPECTED_IMPACT_HORIZON` and the subtraction cancels it to zero exactly — a café she is standing
+## in expects nothing, which is the halo's job to say, not the caret's, from the moment she is in
+## reach at all.
+##
+## **Projected at `_caret_velocity()` and `_caret_intensity()`, not `travel_velocity()` and
+## `current_intensity()`.** The row's *live* course and rate, because the caret is asking what
+## this thing is on its way to doing rather than what a telegraph currently has it doing: a
+## telegraphing `cyclist` is already moving at its route speed (`travel_velocity()` already
+## answers that), but reads at 15% of its own field the whole time it telegraphs — projecting the
+## damped rate would keep the sum under the line until the telegraph is nearly over, the same gap
+## a pursuer holding its stand-off would have if the caret read its own zeroed
+## `travel_velocity()`. `current_rate` below is deliberately still the real, possibly-damped
+## `contribution_at()` — what she is actually being charged right now — so the subtraction is the
+## live approach minus the honest present, not the live approach minus itself.
+##
+## **Skipped without sampling once the reach cannot close inside the horizon.** `_caret_velocity()`
+## is zero for anything genuinely waiting — nobody has been noticed yet, so there is no course to
+## project — which is what keeps most of a live day's events, and every waiting pursuer, out of
+## the loop below; only what could actually arrive pays for the twenty samples.
+func expected_impact_at(player_position: Vector2) -> float:
+	if is_finished or is_leaving or def.city_wide:
+		return 0.0
+	var velocity := _caret_velocity()
+	var reach := velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON + def.outer_radius
+	if global_position.distance_to(player_position) > reach:
+		return 0.0
+	if velocity.is_zero_approx():
+		return 0.0
+	var current_rate := contribution_at(player_position)
+	var live_intensity := _caret_intensity()
+	var dt := 0.25
+	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
+	var landed := 0.0
+	for i in steps:
+		# Projecting the *source* forward by `velocity * t` and querying its field at her fixed
+		# position is the same number as holding the source still and asking for its field at
+		# `player_position - velocity * t` instead — `contribution_at` is already the query every
+		# other caller uses, translated, so nothing here recomputes a falloff or a flock sum of
+		# its own.
+		landed += contribution_at(player_position - velocity * (float(i + 1) * dt), live_intensity) * dt
+	return landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+
+## Whether this event's own current course puts her inside the radius that ends the day at some
+## point before `Tuning.EXPECTED_IMPACT_HORIZON`, her position held fixed — the same geometry
+## `is_lethal_at()` tests, asked at every step of the same projection `expected_impact_at()`
+## takes, rather than only at the position she is standing at now. The doubled caret's own
+## question.
+##
+## **`is_lethal_at()`'s guards, minus its own telegraph gate.** A telegraphing `hard_fail` row
+## cannot fire *yet* — that gate is exactly right for `is_lethal_at()`'s own callers, which ask
+## whether it is lethal **right now** — but the caret is asking whether its course, once the
+## telegraph clears, puts her inside the radius that ends the day, which a telegraphing row can
+## answer just as truly as a live one: a `cyclist` ridden straight at her through its whole
+## telegraph has to read red, or the doubled caret only ever appears in the last fraction of a
+## second. `is_waiting()`, `is_finished` and `is_leaving` still refuse it — a waiting pursuer has
+## not decided anything about her yet, so there is no course to be lethal on.
+func will_be_lethal(player_position: Vector2) -> bool:
+	if is_finished or is_leaving or is_waiting() or not def.hard_fail:
+		return false
+	var velocity := _caret_velocity()
+	if velocity.is_zero_approx():
+		return global_position.distance_to(player_position) <= def.inner_radius
+	var dt := 0.25
+	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
+	for i in steps + 1:
+		var future_at := global_position + velocity * (float(i) * dt)
+		if future_at.distance_to(player_position) <= def.inner_radius:
+			return true
+	return false
 
 # ------------------------------------------------------------------ drawing ---
 
@@ -1180,38 +1314,44 @@ const MARK_HEIGHT := 44.0
 const MARK_WIDTH := 15.0
 const MARK_FLASHES_PER_SECOND := 3.0
 
+## The caret's own answer, 0 (none), 1 (amber) or 2 (doubled red), computed once and cached
+## against `age` — `wants_a_mark()`, `mark_colour()` and `_draw_mark()` all ask in the same frame,
+## and each is a fresh sampling loop over `expected_impact_at()` or `will_be_lethal()` if they do
+## not share one. **Cache per frame, the way the halo already does its own once-a-frame work**,
+## rather than pricing the projection three times over for every visible source every draw.
+var _caret_strength_age := -1.0
+var _caret_strength_cache := 0
+
+func _caret_strength() -> int:
+	if _caret_strength_age == age:
+		return _caret_strength_cache
+	_caret_strength_age = age
+	_caret_strength_cache = 0
+	# A floor under the whole city has nothing to stand over — that is the HUD's job — and a
+	# permanent feature of a fixed map never appears, so there is no moment to mark: the same
+	# reason the fairness contract exempts an `AMBIENT` row.
+	if not (is_finished or is_leaving or def.city_wide or def.kind == GameEnums.EventKind.AMBIENT):
+		if will_be_lethal(player_at):
+			_caret_strength_cache = 2
+		elif expected_impact_at(player_at) >= Tuning.EXPECTED_IMPACT_POINTS:
+			_caret_strength_cache = 1
+	return _caret_strength_cache
+
 ## Whether this event is worth a mark at all.
 ##
-## **The mark is raised by what a thing costs, and by nothing else.** The rule is the player's own
-## expectation, stated so a test can hold it: **if A is marked and B is not, A costs more than B.**
-## `EventDef.walk_through_cost()` is the order and `Tuning.MARK_WORTH_A_DETOUR` is where the line
-## falls; `tests/test_danger.gd` asserts the monotonicity over the whole catalogue, so a row cannot
-## earn a mark by pulsing.
+## **The mark is raised by what a thing is projected to do to her, held still, and by nothing
+## else.** *(2026-09-08, the player: "carets shouldn't be chosen by source value but by expected
+## impact value".)* A row's own declared cost does not decide it — `expected_impact_at()` and
+## `will_be_lethal()` do, at wherever she is
+## actually standing and however this thing is actually moving, so the same row is marked at one
+## moment and not at the next: a café she is standing in is unmarked, and a cyclist whose line
+## reaches her is marked while one passing wide of her is not.
 ##
-## **The trap is a rule like *danger that changes over time*** — lethal, telegraphing, swelling, or
-## pulsing fast enough to be timed. Every clause of that is a true statement about a thing and
-## **none of them is a statement about how bad it is**, so the marked set and the danger come apart:
-## a fire engine (+115 to walk through) carries nothing while a burning building at half the price
-## carries a caret, because one has a pulse and one does not; and a leaf blower is marked over the
-## dog walker beside it because its beat is 4.0s rather than 8.0s.
-##
-## **A cue that marks everything says nothing**, so the cheap end of the street is left alone — a
-## café, a delivery van, a poster crew, a burnt-out shell. And the mark **breathes** with current
-## emission, which is the one thing a ring does that a symbol does not get for free.
-##
-## What is given up, and it is a decision rather than an oversight: **a crouching cat (+24) loses
-## its caret.** The crouch is its own silhouette and the vocabulary's first rule is that the entity
-## carries it — held true on purpose against a raised intensity by stopping short of the threshold,
-## not by exempting the row.
+## **A stationary thing never earns a caret.** Held still, nothing about it changes under the
+## projection — see `expected_impact_at()` — which is the halo's job from the moment she is in its
+## field, not the caret's.
 func wants_a_mark() -> bool:
-	if is_finished or is_leaving or def.city_wide:
-		# A floor under the whole city has nothing to stand over. That is the HUD's job.
-		return false
-	if def.kind == GameEnums.EventKind.AMBIENT:
-		# A permanent feature of a fixed map never appears, so there is no moment to mark. The
-		# same reason the fairness contract exempts it.
-		return false
-	return def.hard_fail or def.walk_through_cost() >= Tuning.MARK_WORTH_A_DETOUR
+	return _caret_strength() > 0
 
 ## How hard the mark is breathing, 0..1, from what the event is emitting right now.
 ##
@@ -1233,10 +1373,17 @@ func mark_swell() -> float:
 ## *near* and red mean *far*, which is a colour carrying no information and being read as something
 ## else.
 ##
+## **Follows the strength `_caret_strength()` computed, not `def.hard_fail`.** *(2026-09-08, the
+## player: "we can keep the double red == lethal", then "and not all lethal things need a caret
+## either".)* A `hard_fail` row still reads doubled red exactly when its own current course would
+## put her inside the radius that ends the day — `will_be_lethal()` — and reads amber like anything
+## else the rest of the time: a robber waiting in an alley she is not in carries no mark at all
+## until he stands up and comes.
+##
 ## So the colour is the scale and the **flash** — visible whether or not she was there when the
 ## event started — is what says it has not happened yet. See `_draw_mark`.
 func mark_colour() -> Color:
-	return Palette.MARK_LETHAL if def.hard_fail else Palette.MARK_COSTLY
+	return Palette.MARK_LETHAL if _caret_strength() == 2 else Palette.MARK_COSTLY
 
 ## A caret over anything worth looking at, breathing with what it is currently emitting.
 ##
@@ -1257,7 +1404,7 @@ func _draw_mark() -> void:
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, -(MARK_HEIGHT + 10.0 * swell))
 	Sprites.draw_caret(self, at, MARK_WIDTH * scale, mark_colour())
-	if def.hard_fail:
+	if _caret_strength() == 2:
 		# Doubled, so lethal reads at a glance and never has to be told apart by hue.
 		Sprites.draw_caret(self, at - Vector2(0.0, MARK_WIDTH * scale * 0.85),
 				MARK_WIDTH * scale, mark_colour())
