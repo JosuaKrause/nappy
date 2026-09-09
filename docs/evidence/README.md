@@ -27,6 +27,7 @@ makes the file worth having.
 | `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-before.png` | North-west corner before M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
 | `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-after.png` | North-west corner after M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
 | `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-se-after.png` | South-east corner after M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
+| `shot-2026-09-09-seed4242-69c97bd-arterial-standing-no-caret.png` | The arterial pavement at ordinary crowd density, seed 4242, five seconds standing at `--spawn arterial`: several nearby walkers glow with their own entity halo and none carries a caret. | [tests/test_danger.gd](../../tests/test_danger.gd), `_test_the_arterial_at_ordinary_density_marks_nobody` |
 
 ## Why a lost log stays lost
 

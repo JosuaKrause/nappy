@@ -471,7 +471,7 @@ All implemented.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
-| `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Kept just under `Tuning.MARK_WORTH_A_DETOUR` on purpose, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
+| `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Its dash, driven straight at a standing player, still projects under `Tuning.EXPECTED_IMPACT_POINTS`, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the thing that forces a crossing. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, but tightened to a 90px reach so only somebody actually near the tables is billed for them. |
 | `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
@@ -693,13 +693,14 @@ alone is answering a narrower question than it thinks.
 | `fire_truck` | +115.4 | +132.0 | ● |
 | `firefight` * | +155.9 | +162.3 | ●● |
 
-**The `mark` column.** ● is the amber caret — *worth going round* — and ●● the doubled deep red
-that means it ends the day. The threshold is `Tuning.MARK_WORTH_A_DETOUR`, a quarter of the meter,
-and it falls in the gap between `cat_dash` and `checkpoint`; a lethal row is marked whatever it
-costs, which is why `charging_dog` at +16.9 carries one and `cat_dash` at +24.1 does not — kept just
-under the line on purpose, so a startle spike does not also claim the caret the crouch's own
-silhouette already carries. Apart from the lethal rows the column is **monotone** — if A is marked
-and B is not, A costs more than B — and `tests/test_danger.gd` asserts exactly that.
+**The `mark` column.** ● sits above a fixed point in this table — the 25-point gap between
+`cat_dash` (24.1) and `checkpoint` (29.0) — and ●● marks every `hard_fail` row regardless of cost.
+**Neither decides the caret in play.** `EventInstance.wants_a_mark()` reads a row's own projected
+course at wherever she is actually standing — `expected_impact_at()` against
+`Tuning.EXPECTED_IMPACT_POINTS`, `will_be_lethal()` for the doubled red — so the same row reads red
+on one approach and carries nothing on another; see "Showing the danger" for that rule. This
+column stays as a fixed reference over the table's own cost figures rather than a rule any code
+still reads.
 
 `playground` is the one row above the line with no mark, because it is `AMBIENT`: it never appears,
 there is no moment to mark, and the park's own swing frame is the picture.
