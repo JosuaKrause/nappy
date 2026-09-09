@@ -996,8 +996,7 @@ static func _keeps_its_field_clear(plan: Planned) -> bool:
 ## The closest endpoint-to-route distance between two events.
 ##
 ## Two routes are measured from both sides so either route's closest endpoint can decide the gap.
-## This is an endpoint approximation rather than a segment-intersection test: routes crossing only
-## at their interiors keep their endpoint distance, which is existing placement behaviour.
+## Crossing interiors are not detected; the answer is the nearest waypoint-to-route distance.
 static func _gap_between(a: Planned, b: Planned) -> float:
 	# A point's distance to the whole other route already includes its endpoints, so the symmetric
 	# endpoint pass cannot make the answer smaller when either side is stationary.
