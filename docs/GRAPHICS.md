@@ -106,8 +106,8 @@ east-west/vertical pair is selected from the street axis without rotating the pi
 | Skip and scaffolding seals | `skip.svg` is one pavement picture; `scaffolding.svg` repeats across the other pavement frontage. |
 | Burst-main seal | `burst_water_main.svg` and `burst_water_main_vertical.svg`: authored whole-street scenes chosen by street axis and fitted to the obstruction. |
 | Moving-van pair | `moving_van.svg` and `moving_van_vertical.svg`: the vans stand parallel to their street; the street axis selects the side or end projection while preserving authored proportions. |
-| Burnt-out-car pair | `burnt_out_car.svg` and `burnt_out_car_vertical.svg`: the cars stand perpendicular to their street; the street axis selects the side or end projection. |
-| Collapsed-frontage pair | `collapsed_frontage.svg`: repeated across each affected pavement frontage. |
+| Burnt-out-car seal | `burnt_out_car.svg` and `burnt_out_car_vertical.svg`: four wrecks form a hard seal across the whole street. Each car lies perpendicular to the street; its axis selects the side or end projection. |
+| Collapsed-frontage seal | `collapsed_frontage.svg`: the debris segment repeats across one hard seal spanning the whole street, kerb to kerb. |
 
 ## Prepared SVG assets without runtime bindings
 
@@ -147,6 +147,9 @@ records are inputs and review evidence catalogued by the README or generation re
 `assets/illustrated/` folder, rather than alternate runtime bindings.
 
 ## Keeping the catalogue true
+
+The [SVG art skill](../.claude/skills/svg-art/SKILL.md) describes authoring, rendering, visual
+review and integration. Use it when creating or revising the SVG families catalogued here.
 
 When adding a graphic, record its exact path, anchor and owning design here. Keep it **prepared**
 until code, a scene or a resource actually binds it. When binding or removing one, search runtime

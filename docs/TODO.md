@@ -14,6 +14,10 @@ mid-way through.
 
 ## The order
 
+- [ ] Prepare a matching six-frame mother-carrying-baby SVG set for the possible finale
+      (PLAYTEST-50); preserve current facing/gait conventions and catalogue it as unbound art.
+      The finale's design is unspecified.
+
 ### Illustrated actor registration and assembly
 
 **This is Codex's parallel track, worked beside the gameplay queue rather than ahead of it.**
@@ -74,13 +78,6 @@ define style; `docs/reference/` supplies real-world structure and posture.
 guards, directional pointing poses, district accents and discrete sound arcs. Reuse the available
 assets when implementing those systems; their placement, timing and gameplay decisions remain
 open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the visual review.
-
-- [ ] **Vehicle collision and silhouette agreement.** The skip and side-view van widths fit their
-      solid bodies; authored end views preserve narrower vehicle proportions. Check whether the
-      circular obstructions leave apparent gaps that cannot be walked through, and reconcile
-      collision with the pictures without stretching the cars or breaking seal reachability.
-      See DECISIONS.md, "SVG artwork and upcoming milestone assets", for the directional artwork,
-      the player's perpendicular burnt-car correction and the rendered evidence.
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
@@ -225,9 +222,10 @@ matters.
 M97 (a calm-area spoiling inconsistency) and M96 (a measured lead-time gap on the post-tutorial
 `charging_dog`).
 
-**Playtest 19's nine findings are filed against the milestones that own them** — M64, now built
-and recorded in `DECISIONS.md`, and M65 are new, the barriers went to M48 and are built, and the rest went to M49 (the north edge, the junction
-paint) and the small items (the robber in a building).
+**Playtest 19's graphics and placement findings have separate owners.** The protester objective
+work belongs to M65, a protester points at the objective. The seal and barrier records are in
+`DECISIONS.md` under M64, eight seal pictures, and M48, the barriers; the remaining north-edge,
+junction-paint and robber-placement records are filed there under M49 and the small items.
 
 Everything below is in the order the gameplay queue above gives it, and was reassessed on
 2026-09-09.
@@ -953,6 +951,14 @@ is still true.
       which read the live city. Worth finishing the next time the file is opened for another reason
 
 **Drawings, as SVG:**
+
+- [ ] **Vehicle collision and silhouette agreement.** The skip and side-view van widths fit their
+      solid bodies; authored end views preserve narrower vehicle proportions. Check whether the
+      circular obstructions leave apparent gaps that cannot be walked through, and reconcile
+      collision with the pictures without stretching the cars or breaking seal reachability.
+      See DECISIONS.md, "SVG artwork and upcoming milestone assets", for the directional artwork,
+      the player's perpendicular burnt-car correction and the rendered evidence. Use the existing
+      `assets/events/moving_van*.svg` and `burnt_out_car*.svg` projections listed in GRAPHICS.md.
 
 - [ ] **Park trees clump.** `City` places them by rejection sampling inside the lot with no
       spacing test. Add a minimum-spacing check while retaining `assets/props/tree_a.svg` and

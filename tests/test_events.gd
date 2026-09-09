@@ -341,15 +341,13 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 	t.check(not is_equal_approx(offset, half),
 			"and it is not simply centred at ±half any more (%.1f)" % offset)
 
-## **A whole-scene hard seal has to draw one body on either axis, not several squashed ones.**
-## `EventInstance._wide_scene_texture` is the pure selector this pins: on an east-west street
-## (`vertical` true) it must return the authored directional asset, not the horizontal one, or
-## `_draw_spread`'s own segment count (`ceili(half * 2.0 / along_natural)`) reads the wrong
-## texture dimension and repeats the scene several times across the street instead of drawing it
-## once, turned. Checked against the real asset sizes rather than assumed, and the segment-count
-## arithmetic `_draw_spread` itself runs is re-derived here for both textures at `fallen_tree`'s
-## own `obstructs_radius` (96, half the 192px street) so a future change to either can be caught
-## without rendering a frame.
+## **A whole-scene hard seal has to use a distinct authored picture on either axis and span its
+## obstruction at the ground point.** `EventInstance._wide_scene_texture` is the pure selector
+## this pins: on an east-west street (`vertical` true) it returns the directional asset, while
+## `_wide_scene_anchor` and the fitted extent keep the drawn body aligned with the obstruction.
+## The bounds are checked against the real asset sizes and `fallen_tree`'s own obstruction radius,
+## so the test covers the geometry that `_draw_wide_scene` sends to `Sprites.draw_standing` without
+## rendering a frame.
 func _test_a_wide_scene_faces_its_street(t) -> void:
 	var horizontal := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)
 	var vertical := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, true)
@@ -363,11 +361,6 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 	for is_vertical in [false, true]:
 		var texture := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)
 		var size := texture.get_size()
-		var along_natural := size.y if is_vertical else size.x
-		var segments := maxi(1, ceili(half * 2.0 / along_natural))
-		t.check(segments == 1,
-				"'%s' (vertical=%s) draws one body, not %d repeated ones (along_natural %.0f)"
-				% [texture.resource_path.get_file(), is_vertical, segments, along_natural])
 		var anchor := EventInstance._wide_scene_anchor(is_vertical, half)
 		var extent := Vector2(size.x, half * 2.0) if is_vertical \
 				else Vector2(half * 2.0, size.y)

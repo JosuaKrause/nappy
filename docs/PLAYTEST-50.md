@@ -167,3 +167,7 @@ The report concerns GitHub's image diff, rather than an in-game loading error.
 > "confirmed the new file is valid"
 
 > "the diff viewer fails"
+
+> "review the comments to the PR. also, write down your process for creating svgs that you used into a skill"
+
+> "last bit, can you create a version of the player holding the baby -- basically the same set but instead of a stroller the baby is in her arms -- we might want to use this later in the finale (I haven't written about the finale yet)"

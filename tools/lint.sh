@@ -157,7 +157,7 @@ lint_svgs "$@"
 
 if [[ "$hits" -gt 0 ]]; then
     echo
-    echo "FAILED: $hits volatile-fact hit(s)" >&2
+    echo "FAILED: $hits lint hit(s)" >&2
     exit 1
 fi
 

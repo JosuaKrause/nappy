@@ -92,6 +92,7 @@ is the moment somebody is about to touch the file.
 | `tests/**` | **verify** |
 | `docs/PLAYTEST-*.md`, `docs/TODO.md` | **feedback** |
 | any `*.gd` | **godot** |
+| any `*.svg` | **svg-art** |
 | spawning a sub-agent (the `Agent`/`Task` tool — a tool, not a path) | **orchestrating** |
 
 **And one arrives before anything at all.** `.claude/hooks/session-rules.sh`, wired to `SessionStart`
