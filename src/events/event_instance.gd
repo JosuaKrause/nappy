@@ -554,6 +554,26 @@ func travel_velocity() -> Vector2:
 		return _heading * def.speed
 	return Vector2.ZERO
 
+## `travel_velocity()`'s own answer, except for a pursuer that has been noticed and is holding
+## its telegraph's stand-off: the caret's projection asks where this is *going*, which is
+## `pursue_speed` toward her the instant it has decided to come, not the moment its lunge is
+## allowed to fire. `travel_velocity()` itself has to stay zero there — the exclamation mark's
+## "it is not closing" reads that answer literally, and a mark that said otherwise would warn her
+## about a thing that is deliberately holding still — so this is a second query for the caret
+## alone rather than a change to the first one.
+##
+## **A waiting pursuer still has no course.** `is_waiting()` means nobody has been noticed yet, so
+## there is nothing here to project toward; only the moment it decides changes the answer, exactly
+## as `travel_velocity()` already has it.
+func _caret_velocity() -> Vector2:
+	if is_finished or is_leaving:
+		return Vector2.ZERO
+	if def.pursues:
+		if is_waiting():
+			return Vector2.ZERO
+		return _heading * def.pursue_speed
+	return travel_velocity()
+
 ## Puts an instance back where a previous incarnation of the same plan had got to. Restores the
 ## age as well as the distance, so the telegraph, the pulse phase and the duration all continue
 ## rather than starting again — an event that streams in and out must not become immortal by
@@ -948,6 +968,25 @@ func current_intensity() -> float:
 		value *= Tuning.TELEGRAPH_INTENSITY_FRACTION
 	return value
 
+## `current_intensity()` with the telegraph's own damping undone — the rate this row will
+## actually carry once it is live, which is what the caret's own projection has to sum rather
+## than the fraction a telegraph is reading right now. Everything else `current_intensity()`
+## accounts for — the ramp, the pulse, chatting — still applies; only the final multiplier is
+## skipped, by dividing it back out of the same call rather than a second copy of the ramp and
+## pulse logic above it.
+##
+## Only `expected_impact_at()`'s own projection reads this. Every other caller of
+## `contribution_at()` — the halo, the exclamation mark, the meter itself — wants what a source is
+## actually doing right now, damped or not, because it is asking about the present rather than
+## about the course this thing is on. Without this, a `cyclist` ridden straight at a standing
+## player through its own 2s telegraph reads at `TELEGRAPH_INTENSITY_FRACTION` (15%) the whole
+## time, and `expected_impact_at()` under-counts the approach by the same fraction.
+func _caret_intensity() -> float:
+	var value := current_intensity()
+	if is_telegraphing() and def.pursues_within <= 0.0:
+		value /= Tuning.TELEGRAPH_INTENSITY_FRACTION
+	return value
+
 ## Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
 ## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
 ## event's exact share of what landed this frame — `contribution × sensitivity × delta` — so the
@@ -976,16 +1015,23 @@ func _prune_landed_history() -> void:
 		_landed_history.pop_front()
 
 ## Excitement per second this event contributes at a point.
-func contribution_at(world_position: Vector2) -> float:
+##
+## `intensity_override` replaces `current_intensity()` for this one call when given (`< 0.0`
+## means "not given" — every intensity this def can carry is positive). The only caller that ever
+## passes one is `expected_impact_at()`'s own projection, asking for `_caret_intensity()` — the
+## row's live rate — in place of whatever a telegraph has this one currently damped to; every
+## other caller gets the answer it always got.
+func contribution_at(world_position: Vector2, intensity_override := -1.0) -> float:
 	if is_finished or is_leaving:
 		return 0.0
+	var intensity := intensity_override if intensity_override >= 0.0 else current_intensity()
 	# A city-wide source has no falloff: there is nowhere in the city it does not reach.
 	if def.city_wide:
-		return current_intensity()
+		return intensity
 	if not _flock.is_empty():
-		return _flock_contribution_at(world_position)
+		return _flock_contribution_at(world_position, intensity)
 	return Tuning.falloff(global_position.distance_to(world_position),
-			current_intensity(), def.inner_radius, def.outer_radius)
+			intensity, def.inner_radius, def.outer_radius)
 
 ## A flock is its birds, summed.
 ##
@@ -996,8 +1042,9 @@ func contribution_at(world_position: Vector2) -> float:
 ## and the edge of it at a fraction. That gradient is the whole reason to do it this way: the price
 ## of a flock should depend on whether you walked through it or round it, and one disc centred on
 ## nothing in particular cannot say that.
-func _flock_contribution_at(world_position: Vector2) -> float:
-	var share := current_intensity() / float(_flock.size())
+func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float:
+	var total_intensity := intensity if intensity >= 0.0 else current_intensity()
+	var share := total_intensity / float(_flock.size())
 	var outer := _bird_outer()
 	var total := 0.0
 	for bird in _flock:
@@ -1025,20 +1072,32 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## in expects nothing, which is the halo's job to say, not the caret's, from the moment she is in
 ## reach at all.
 ##
-## **Skipped without sampling once the reach cannot close inside the horizon.** `travel_velocity()`
-## is the thing's own speed — zero for anything waiting or holding a pursuit's telegraphed
-## stand-off — so most of a live day's events, and all of a waiting pursuer, never enter the loop
-## below; only what could actually arrive pays for the twenty samples.
+## **Projected at `_caret_velocity()` and `_caret_intensity()`, not `travel_velocity()` and
+## `current_intensity()`.** The row's *live* course and rate, because the caret is asking what
+## this thing is on its way to doing rather than what a telegraph currently has it doing: a
+## telegraphing `cyclist` is already moving at its route speed (`travel_velocity()` already
+## answers that), but reads at 15% of its own field the whole time it telegraphs — projecting the
+## damped rate would keep the sum under the line until the telegraph is nearly over, the same gap
+## a pursuer holding its stand-off would have if the caret read its own zeroed
+## `travel_velocity()`. `current_rate` below is deliberately still the real, possibly-damped
+## `contribution_at()` — what she is actually being charged right now — so the subtraction is the
+## live approach minus the honest present, not the live approach minus itself.
+##
+## **Skipped without sampling once the reach cannot close inside the horizon.** `_caret_velocity()`
+## is zero for anything genuinely waiting — nobody has been noticed yet, so there is no course to
+## project — which is what keeps most of a live day's events, and every waiting pursuer, out of
+## the loop below; only what could actually arrive pays for the twenty samples.
 func expected_impact_at(player_position: Vector2) -> float:
 	if is_finished or is_leaving or def.city_wide:
 		return 0.0
-	var velocity := travel_velocity()
+	var velocity := _caret_velocity()
 	var reach := velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON + def.outer_radius
 	if global_position.distance_to(player_position) > reach:
 		return 0.0
 	if velocity.is_zero_approx():
 		return 0.0
 	var current_rate := contribution_at(player_position)
+	var live_intensity := _caret_intensity()
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var landed := 0.0
@@ -1048,24 +1107,34 @@ func expected_impact_at(player_position: Vector2) -> float:
 		# `player_position - velocity * t` instead — `contribution_at` is already the query every
 		# other caller uses, translated, so nothing here recomputes a falloff or a flock sum of
 		# its own.
-		landed += contribution_at(player_position - velocity * (float(i + 1) * dt)) * dt
+		landed += contribution_at(player_position - velocity * (float(i + 1) * dt), live_intensity) * dt
 	return landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
 
 ## Whether this event's own current course puts her inside the radius that ends the day at some
-## point before `Tuning.EXPECTED_IMPACT_HORIZON`, her position held fixed — `is_lethal_at()` asked
-## at every step of the same projection `expected_impact_at()` takes, rather than only at the
-## position she is standing at now. The doubled caret's own question.
+## point before `Tuning.EXPECTED_IMPACT_HORIZON`, her position held fixed — the same geometry
+## `is_lethal_at()` tests, asked at every step of the same projection `expected_impact_at()`
+## takes, rather than only at the position she is standing at now. The doubled caret's own
+## question.
+##
+## **`is_lethal_at()`'s guards, minus its own telegraph gate.** A telegraphing `hard_fail` row
+## cannot fire *yet* — that gate is exactly right for `is_lethal_at()`'s own callers, which ask
+## whether it is lethal **right now** — but the caret is asking whether its course, once the
+## telegraph clears, puts her inside the radius that ends the day, which a telegraphing row can
+## answer just as truly as a live one: a `cyclist` ridden straight at her through its whole
+## telegraph has to read red, or the doubled caret only ever appears in the last fraction of a
+## second. `is_waiting()`, `is_finished` and `is_leaving` still refuse it — a waiting pursuer has
+## not decided anything about her yet, so there is no course to be lethal on.
 func will_be_lethal(player_position: Vector2) -> bool:
-	var velocity := travel_velocity()
+	if is_finished or is_leaving or is_waiting() or not def.hard_fail:
+		return false
+	var velocity := _caret_velocity()
 	if velocity.is_zero_approx():
-		return is_lethal_at(player_position)
+		return global_position.distance_to(player_position) <= def.inner_radius
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	for i in steps + 1:
-		# Same translation `expected_impact_at()` uses: the source at `global_position +
-		# velocity * t` is her own distance from `player_position - velocity * t`, so
-		# `is_lethal_at()` — which already owns the def's own guard clauses — answers it unchanged.
-		if is_lethal_at(player_position - velocity * (float(i) * dt)):
+		var future_at := global_position + velocity * (float(i) * dt)
+		if future_at.distance_to(player_position) <= def.inner_radius:
 			return true
 	return false
 

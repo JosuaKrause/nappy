@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_a_stationary_thing_she_stands_in_is_unmarked(t)
 	_test_a_cat_dashing_at_her_is_unmarked(t)
 	_test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t)
+	_test_a_telegraphing_lethal_thing_on_course_is_still_red(t)
 	_test_a_car_on_course_is_red_one_beside_her_line_is_not(t)
 	_test_a_walker_brushing_past_is_unmarked(t)
 	_test_the_arterial_at_ordinary_density_marks_nobody(t)
@@ -97,9 +98,10 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)])
 
 	# `cyclist` is not `still_while_telegraphing`, so it is already riding its route through the
-	# whole telegraph — `is_lethal_at()` refuses the whole of it regardless of position, so the
-	# player is placed relative to wherever it actually is once the telegraph clears, not at a
-	# fixed point its own approach has long since ridden past.
+	# whole telegraph — the player is placed relative to wherever it actually is once the
+	# telegraph clears rather than at a fixed point its own approach may have already ridden past.
+	# (A telegraphing cyclist is its own scenario below — `_caret_strength()` no longer needs the
+	# telegraph to be over to read red.)
 	var on_course := _instance(def, route)
 	_advance(on_course, def.telegraph_time + STEP)
 	on_course.set_player_at(on_course.global_position + Vector2(def.outer_radius, 0.0))
@@ -115,6 +117,55 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	t.check(not wide.will_be_lethal(wide.player_at),
 			"the same cyclist passing 60px wide of her own line never reaches her lethal radius")
 	wide.free()
+
+## **A telegraph is not an alibi.** `is_lethal_at()` refuses the whole of a telegraph because it
+## answers *is this lethal right now*; `will_be_lethal()` answers a different question — is this
+## row's own course, once the telegraph clears, one that ends her day — and a `hard_fail` row
+## riding straight at her through the telegraph has to read red for the whole of it, or the
+## doubled caret only ever appears in the fraction of a second the telegraph has left. Three
+## scenarios, one for each way a lethal row can be *not yet arrived* and still owe her the mark:
+## a mobile row already riding its route, a pursuer that has noticed her and is holding its
+## stand-off, and a pursuer that has not noticed anything yet.
+func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
+	var cyclist_def := EventCatalogue.by_id("cyclist")
+	if cyclist_def:
+		# No `_advance()` at all: still inside its own 2.0s telegraph, and already moving —
+		# `cyclist` is not `still_while_telegraphing`, so `_caret_velocity()` reads its route speed
+		# from age zero.
+		var cyclist := _instance(cyclist_def,
+				PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
+		t.check(cyclist.is_telegraphing(), "the cyclist is still telegraphing at age zero")
+		cyclist.set_player_at(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
+		t.check(cyclist.wants_a_mark() and cyclist.mark_colour() == Palette.MARK_LETHAL,
+				"a telegraphing cyclist on a course that reaches her lethal radius is already " +
+						"the doubled red caret")
+		t.check(cyclist.mark_swell() < 1.0,
+				"and the swell still reads the telegraph's own damping — the flash, not the " +
+						"colour, is what says this has not happened yet")
+		cyclist.free()
+
+	var dog_def := EventCatalogue.by_id("charging_dog")
+	if dog_def:
+		t.check(dog_def.hard_fail and dog_def.pursues and dog_def.pursues_within <= 0.0,
+				"charging_dog is a hard-fail pursuer sited already noticing her")
+		var dog := _instance(dog_def)
+		t.check(dog.is_telegraphing() and not dog.is_waiting(),
+				"the day-3 dog has already noticed her and is still telegraphing its charge")
+		dog.set_player_at(dog.global_position + Vector2(60.0, 0.0))
+		t.check(dog.wants_a_mark() and dog.mark_colour() == Palette.MARK_LETHAL,
+				"a noticed dog holding its stand-off through the telegraph is already the " +
+						"doubled red caret")
+		dog.free()
+
+	var robber_def := EventCatalogue.by_id("alley_robbery")
+	if robber_def:
+		t.check(robber_def.pursues_within > 0.0, "alley_robbery waits for a trigger")
+		var robber := _instance(robber_def)
+		t.check(robber.is_waiting(), "and nobody has come near it yet")
+		robber.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
+		t.check(not robber.wants_a_mark(),
+				"a waiting robber in an alley she is not in carries no mark at all")
+		robber.free()
 
 ## A car's own equivalent, over the strike box `Crowd._strike()` actually collides against rather
 ## than a def's `inner_radius`.
