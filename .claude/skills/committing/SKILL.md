@@ -14,7 +14,7 @@ time.**
 *(2026-09-09: "always create prs don't leave branches locally only"; "or have branches on the
 remote without pr without good reason".)*
 Do not leave work only on a local branch or leave a remote work branch without a PR unless there
-is a specific good reason, documented in the handoff to the user. Use a draft PR when the work is
+is a specific good reason, documented in the final report. Use a draft PR when the work is
 unfinished, and include the PR link in the final report. This is standing authorization; no
 separate request to push or open the PR is needed.
 
