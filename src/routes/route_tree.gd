@@ -147,6 +147,11 @@ var _home := {}
 ## street for `gaps()` is a real street at all.
 var _absent := {}
 
+## Node id -> the edges that remain after the main-road rule. The grid topology and the map's
+## main-road position are fixed for the tree's lifetime, so repeated probes can reuse the filtered
+## edge order.
+var _ways_cache := {}
+
 ## Segment key -> `true`, lazily derived from `_colours` the first time anything asks a
 ## segment-level question. A `ReachabilityGrid` node is a handful of tiles and a tree touches many
 ## of them, so this is worth computing once rather than once per candidate `_shuffled_candidates`
@@ -223,7 +228,13 @@ static func for_day(map: CityMap, day: int) -> RouteTree:
 ## street" question, which a segment key alone cannot answer.
 static func grow(map: CityMap, home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea],
 		closed: Dictionary, grid: ReachabilityGrid, rng: RandomNumberGenerator) -> RouteTree:
-	var tree := RouteTree.new()
+	return _grow_into(RouteTree.new(), map, home, areas, closed, grid, rng)
+
+## Runs the production growth algorithm into a fresh tree. The caller may supply a subclass to
+## compare one internal strategy, but a tree with existing growth state would mix two days.
+static func _grow_into(tree: RouteTree, map: CityMap, home: StreetNetwork.Segment,
+		areas: Array[ClosurePlanner.CalmArea], closed: Dictionary, grid: ReachabilityGrid,
+		rng: RandomNumberGenerator) -> RouteTree:
 	if not home or areas.is_empty():
 		return tree
 	tree.grid = grid
@@ -411,11 +422,22 @@ func _carries(node: int, colour: int) -> bool:
 ## answers a proximity question about the physical lattice rather than proposing a way to walk,
 ## and the main road is real ground either way.
 func _ways(node: int) -> Array:
-	var edges := grid.neighbours(node)
 	if not _map or _map.main_road < 0:
-		return edges
+		return grid.neighbours(node)
+	var cached: Variant = _ways_cache.get(node)
+	if cached != null:
+		return cached
+	var found := _ways_uncached(node)
+	_ways_cache[node] = found
+	return found
+
+## The filtered edge list before memoization, exposed so a differential test can vary only the
+## cache while sharing the production growth algorithm.
+func _ways_uncached(node: int) -> Array:
+	if not _map or _map.main_road < 0:
+		return grid.neighbours(node)
 	var found: Array = []
-	for edge: Array in edges:
+	for edge: Array in grid.neighbours(node):
 		if _runs_along_the_spine(edge[1], edge[2]):
 			continue
 		found.append(edge)
