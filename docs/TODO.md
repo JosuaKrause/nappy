@@ -869,7 +869,41 @@ reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
 - [ ] **"And other dangers like this"** — drafted and put back, and the vans have now set the
       precedent it was waiting on: a `HUNTS` row keeps `hard_fail`, moves neither population nor
       intensity, and gains its own threshold rather than sharing the patrol's. The candidates
-      already in the catalogue are `checkpoint` (day 7, closes a street) and `night_raid`
+      already in the catalogue are `checkpoint` (day 7, closes a street) and `night_raid`.
+
+      **The draft, 2026-09-09, for the player to take or turn down.** What `HUNTS` does to a row
+      is fixed by `EventDef.at_heat()`: at `Tuning.HEAT_HUNTS_LEVEL` (3 of the 4 performs that
+      qualify) and above, the derived copy `pursues` at 130px/s, notices her within 180px, chases
+      for `PURSUIT_TIME`, and is `hard_fail` — the top rung kills, by the ladder's own design. So
+      the question per row is not *what happens* but *whether that shape reads as this thing*.
+
+      - **`night_raid` fits the precedent exactly and needs no drawing.** It is a riot van
+        (`Look.RIOT_VAN`), scripted for day 10 only, intensity 24 over 70/330px with a 6s pulse
+        and a 44px body, cost 4 — *"a building goes in the night"*. Hunted, the van stops
+        emptying a building and comes for her, which is the abduction's shape on a bigger
+        vehicle. **And the calendar makes the threshold a sentence:** the performs fall on days
+        5, 7, 9, 11 and 13, so on day 10 the most progress anybody can hold is 3 — the raid hunts
+        *only* a player who has done every task on time, and a player one task behind meets the
+        cold raid. Sharing `HEAT_HUNTS_LEVEL` with the van is what makes that true, so the
+        recommendation is to share it rather than mint a third constant. Build: one
+        `heat_response` line on the row, `tests/test_heat.gd` stating the raid's hot shape at
+        every level (untouched below 3, pursuing and lethal at 3 and 4, population and intensity
+        unmoved), and the row's docstring. The one contract the hot copy has to clear is
+        `EventDef.validate()`'s rule that a lethal row's body must be reachable — its
+        `obstructs_radius` plus her own 14px must fall inside `inner_radius` — and the raid's
+        44 + 14 = 58 sits inside its 70, so it does; the heated shape is validated on boot like
+        every other.
+      - **`checkpoint` does not fit the precedent as it stands, and it is about to be renamed.**
+        It is a spread — `Look.CHECKPOINT` draws a 120px band across the road through
+        `_draw_spread`, intensity 13 over 52/215px — and a band does not chase. A hunting
+        checkpoint is *guards leaving the hut*, which is a second posture like the robber's
+        waiting/lunging pair and so a drawing, plus a rule for what the band does while its
+        guards are away. M62 renames this row (the new structure takes the word), so building
+        its heat first means building it under a name that is about to change. **Recommendation:
+        the raid now, the checkpoint after M62 lands and with its new name**, filed then as one
+        item with its posture drawing.
+      - **`police_patrol` is not a third candidate.** It is the `PRESSES` rung and *"never gains
+        `hard_fail`, whatever the heat"* — the player's own instruction, 2026-09-01.
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
 
