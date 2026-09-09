@@ -15,6 +15,11 @@ actual displacement but also bounds reach, consumes movement across step boundar
 ankle and sole positions. Reintroducing the WIP would discard those registration repairs. No
 numbered records are introduced by either old commit, so no identity renumbering is needed.
 
+The street ancestry merge uses prepared tip `d641098`, incoming tip `42122aa`, and base
+`87ad702`. It merges cleanly with no tree change: the v2 source assets, sidecars, generation
+record, and review-scene bindings are already identical. Both old commits are retained as
+ancestors of the cleanup PR without reverting any later runtime or art work.
+
 The dirty walker crowd binding and tests match `0a2d56e` byte for byte. Its untracked compositor
 differs only in where it guards an empty initial pose; main guards both variant updates and
 registration/reset state. The shared documentation edits only repair evidence paths that are
