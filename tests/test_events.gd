@@ -325,6 +325,20 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 		t.check(segments == 1,
 				"'%s' (vertical=%s) draws one body, not %d repeated ones (along_natural %.0f)"
 				% [texture.resource_path.get_file(), is_vertical, segments, along_natural])
+		var anchor := EventInstance._wide_scene_anchor(is_vertical, half)
+		var extent := Vector2(size.x, half * 2.0) if is_vertical \
+				else Vector2(half * 2.0, size.y)
+		var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
+		if is_vertical:
+			t.check(is_equal_approx(drawn.position.y, -half)
+					and is_equal_approx(drawn.end.y, half),
+					"'%s' vertical body spans the obstruction from -%.0f to %.0f"
+					% [texture.resource_path.get_file(), half, half])
+		else:
+			t.check(is_equal_approx(drawn.position.x, -half)
+					and is_equal_approx(drawn.end.x, half),
+					"'%s' horizontal body spans the obstruction from -%.0f to %.0f"
+					% [texture.resource_path.get_file(), half, half])
 
 	# The other two whole-scene rows carry the same guarantee — checked once each rather than
 	# re-running the segment arithmetic, since `_wide_scene_texture`'s own match is what could

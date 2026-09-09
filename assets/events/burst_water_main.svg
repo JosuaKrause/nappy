@@ -1,6 +1,6 @@
 <!-- A hard seal: a crater with water spread across the asphalt and a municipal barrier at each
      kerb — one picture spanning the street, native width 200 over the 192px this row obstructs,
-     drawn once by `_draw_spread` the same way fallen_tree.svg is. -->
+     drawn once by `_draw_wide_scene` the same way fallen_tree.svg is. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="6" y="20" width="16" height="18" fill="#e0d8c4"/>
   <polygon points="6,20 22,20 22,26 6,32" fill="#c4503c"/>

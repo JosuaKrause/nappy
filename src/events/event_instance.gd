@@ -9,6 +9,7 @@ extends Node2D
 
 const CAT_CROUCHED := preload("res://assets/events/cat_crouched.svg")
 const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
+const WIDE_SCENE_SHADOW := preload("res://assets/props/shadow.svg")
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
 ## something of its own.
@@ -114,18 +115,15 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.COLLAPSED_FRONTAGE: return COLLAPSED_FRONTAGE
 		_: return null
 
-## Whether a def's instance draws itself as a **spread** — a body built by repeating a segment
+## Whether a def's instance draws itself as a **spread** — segments or a whole scene fitted
 ## across `def.obstructs_radius`, laid along whichever axis `_spread_is_vertical` picks for the
-## street it stands on. That is exactly `_draw_spread` and `_draw_cafe`, nothing else in
+## street it stands on. That is `_draw_spread`, `_draw_cafe` or `_draw_wide_scene`, nothing else in
 ## `_draw_body`'s dispatch: `ROADWORKS`, `BURNT_SHELL`, `STALL`, `CHECKPOINT`, `BARRICADE`,
-## `FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`, `SCAFFOLDING` and `COLLAPSED_FRONTAGE` go to the
-## first, `CAFE` to the second. A seal picture wide enough to span the whole street on its own
-## (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) still goes through `_draw_spread`: its own asset is
-## authored wider than the street, so `_draw_spread` draws exactly one copy stretched to the
-## obstruction rather than several — see `fallen_tree.svg`. **Each of those three has a second,
-## pre-rotated asset for an east-west street** (`fallen_tree_vertical.svg` and its two siblings),
-## picked by `_wide_scene_texture` — `_draw_spread`'s own axis remap only relabels width and
-## height, so an asymmetric scene needs its pixels actually turned, not merely relabelled.
+## `SCAFFOLDING` and `COLLAPSED_FRONTAGE` go to the first, `CAFE` to the second. The three seal
+## pictures wide enough to span the whole street (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) use
+## `_draw_wide_scene`, which fits one scene to the obstruction and anchors vertical scenes at the
+## far end so their centre sits on the ground point. Each has a pre-rotated east-west asset selected
+## by `_wide_scene_texture`.
 ## `PROTEST` and `FIREFIGHT` also fill
 ## `obstructs_radius`-worth of ground but draw it with their own functions that never call
 ## `_spread_is_vertical` or `_spread_at` — a protest rank and a firefight's cover are laid along
@@ -146,15 +144,12 @@ static func has_a_spread(def: EventDef) -> bool:
 		_:
 			return false
 
-## Which texture a "whole scene" seal picture (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) draws
-## through `_draw_spread`, given whether the street it stands on rotates the spread onto local Y
-## (`_spread_vertical`).
+## Which texture a "whole scene" seal picture (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) draws,
+## given whether the street it stands on rotates the spread onto local Y (`_spread_vertical`).
 ##
-## **A separate, pre-rotated asset, not a runtime rotation of the one texture.** `_draw_spread`'s
-## own axis remap only relabels which of a texture's width and height is "along" the obstruction
-## and which is "thickness" across it — it never turns the pixels — so feeding it the same
-## horizontally-composed picture on an east-west street stretches an unrotated tree into a tall
-## rectangle several times, which reads as several squashed copies rather than one turned scene.
+## **A separate directional asset, not a runtime rotation of the one texture.**
+## The spread axis remap only relabels which of a texture's dimensions is "along" the obstruction;
+## it never turns pixels, so `_wide_scene_texture` supplies the turned file for east-west streets.
 ## The two other spread rows (`STALL`, `CAFE`, the repeatable segments) never showed this, because
 ## their own segments are close enough to square that the swap alone reads fine either way; a
 ## 200×50 whole-scene picture is not. `EventDef.look` and `_spread_vertical` together are enough
@@ -1275,11 +1270,11 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.FIREFIGHT:
 			_draw_firefight(canvas)
 		EventDef.Look.FALLEN_TREE:
-			_draw_spread(_wide_scene_texture(EventDef.Look.FALLEN_TREE, _spread_vertical), null, canvas)
+			_draw_wide_scene(_wide_scene_texture(EventDef.Look.FALLEN_TREE, _spread_vertical), canvas)
 		EventDef.Look.CAR_ACCIDENT:
-			_draw_spread(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical), null, canvas)
+			_draw_wide_scene(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical), canvas)
 		EventDef.Look.BURST_MAIN:
-			_draw_spread(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical), null, canvas)
+			_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical), canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
 			_draw_spread(COLLAPSED_FRONTAGE, null, canvas)
 		EventDef.Look.SCAFFOLDING:
@@ -1435,6 +1430,29 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: Can
 	for side in [-1.0, 1.0]:
 		Sprites.draw_standing(canvas, cap, _spread_at(_cap_offset(half, cap_along, side)),
 				_spread_extent(cap_along, cap_thickness))
+
+## A whole-scene picture is one body, including on an east-west street. Its vertical asset is
+## fitted to the obstruction's diameter, so its standing point moves to the far end of the
+## obstruction: `Sprites.draw_standing` anchors the bottom edge, while this scene must span both
+## sides of the ground point. Only the three wide scenes use this path; segmented looks keep the
+## repeated standing anchors above unchanged.
+func _draw_wide_scene(texture: Texture2D, canvas: CanvasItem = self) -> void:
+	var half := maxf(11.0, def.obstructs_radius)
+	var size := texture.get_size()
+	var thickness := size.x if _spread_vertical else size.y
+	var extent := _spread_extent(half * 2.0, thickness)
+	if _spread_vertical:
+		# A vertical scene's shadow follows the same 192px ground span as its body.
+		canvas.draw_texture_rect(WIDE_SCENE_SHADOW,
+				Rect2(Vector2(-thickness * 0.5, -half), Vector2(thickness, half * 2.0)),
+				false, Palette.SHADOW)
+	else:
+		_draw_shadow(canvas, Vector2.ZERO, half * 0.9)
+	var anchor := _wide_scene_anchor(_spread_vertical, half)
+	Sprites.draw_standing(canvas, texture, anchor, extent)
+
+static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
+	return Vector2(0.0, half) if vertical else Vector2.ZERO
 
 ## The along-axis offset for one end cap, inset from `±half` by half the cap's own extent on that
 ## axis so its outer edge lands on the obstruction boundary rather than past it — see `_draw_spread`.
