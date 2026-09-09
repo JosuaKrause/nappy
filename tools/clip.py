@@ -174,7 +174,7 @@ def convert(folder: Path, output: Path | None = None, *, explicit: bool = False,
         command = [
             "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin",
             "-f", "concat", "-safe", "0", "-i", str(manifest),
-            "-fps_mode", "vfr", "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+            "-vsync", "vfr", "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
             "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
             "-y", str(temporary_output),
         ]

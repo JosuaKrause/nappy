@@ -82,7 +82,14 @@ class ClipTests(unittest.TestCase):
             folder = self.burst(Path(temp))
             source_bytes = {path: path.read_bytes() for path in folder.glob("frame-*.png")}
             metadata_bytes = (folder / "burst.json").read_bytes()
-            output = clip.convert(folder)
+            real_run = subprocess.run
+
+            def old_ffmpeg(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+                self.assertNotIn("-fps_mode", command)
+                return real_run(command, **kwargs)
+
+            with mock.patch.object(clip.subprocess, "run", side_effect=old_ffmpeg):
+                output = clip.convert(folder)
             self.assertEqual(output, (folder.parent / "burst-special.mp4").resolve())
             self.assertTrue(output.is_file())
             self.assertEqual(metadata_bytes, (folder / "burst.json").read_bytes())
@@ -100,8 +107,8 @@ class ClipTests(unittest.TestCase):
             decoded_dir = Path(temp) / "decoded"
             decoded_dir.mkdir()
             subprocess.run(
-                ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(output), "-fps_mode", "passthrough",
-                 "-vsync", "0", str(decoded_dir / "frame-%02d.png")], check=True,
+                ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(output), "-vsync", "0",
+                 str(decoded_dir / "frame-%02d.png")], check=True,
                 capture_output=True,
             )
             decoded_frames = sorted(decoded_dir.glob("frame-*.png"))
