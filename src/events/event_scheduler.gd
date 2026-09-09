@@ -993,12 +993,17 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 static func _keeps_its_field_clear(plan: Planned) -> bool:
 	return plan.def.hard_fail and plan.role != GameEnums.BlockerRole.WALL and not plan.def.pursues
 
-## The closest two events come to each other, counting the whole of a route at both ends.
+## The closest endpoint-to-route distance between two events.
 ##
-## Measured from both sides on purpose: the closest point of two segments is an endpoint of at
-## least one of them, so checking one event's ends against the other's route and not the other
-## way round misses the case where it is the *other* one's end that is close.
+## Two routes are measured from both sides so either route's closest endpoint can decide the gap.
+## Crossing interiors are not detected; the answer is the nearest waypoint-to-route distance.
 static func _gap_between(a: Planned, b: Planned) -> float:
+	# A point's distance to the whole other route already includes its endpoints, so the symmetric
+	# endpoint pass cannot make the answer smaller when either side is stationary.
+	if a.path.size() < 2:
+		return b.distance_from(a.position)
+	if b.path.size() < 2:
+		return a.distance_from(b.position)
 	var gap := INF
 	for point in a.ends():
 		gap = minf(gap, b.distance_from(point))
