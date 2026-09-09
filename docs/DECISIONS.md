@@ -1,5 +1,44 @@
 # Decisions
 
+## Graphics catalogue and milestone assignments · 2026-09-09
+
+PLAYTEST-50 requests a document cataloguing existing graphics and their current uses, plus
+specific asset assignments in graphics-dependent milestones. `docs/GRAPHICS.md` groups the live
+SVG families by actual code, scene and TileSet bindings, includes procedural drawing owners,
+distinguishes unbound prepared assets and links the optional illustrated renderer's manifests.
+README and TODO link the catalogue. M62, checkpoints that divide the map; M56, the resistance is
+noticed; M65, a protester points at the objective; M100, small, real, and nobody's; and M101, the
+fire found before the engine, name their reusable graphics. The crater family is available without
+inventing an event or assigning it to an unrelated milestone. Asset completion does not close
+these milestones' behavior and placement decisions.
+
+## Impact-crater artwork · 2026-09-09
+
+PLAYTEST-50 requests "graphics for impact craters of various sizes 1x1 2x2 and 3x3 tiles".
+The three `assets/props/impact_crater_*.svg` decals have 32×32, 64×64 and 96×96 canvases, matching
+the 32px tile size. Their ground anchors are the canvas centres: (16,16), (32,32), (48,48).
+Transparent margins let existing ground show around the irregular asphalt rims, exposed earth
+and dark depressions. No runtime placement, event row or collision behavior was requested or added.
+
+The first renders looked too much like constructed circular pits: regular rings and tan radial
+strokes read as spokes. The reviewed revision uses uneven chipped contours and dark branching
+cracks; the larger crater exposes a brighter lower earth face below its dark upper interior.
+All three were rendered with Godot and visually inspected. Enlarged previews are
+`evidence/svg-impact-crater-1x1.png`, `evidence/svg-impact-crater-2x2.png` and
+`evidence/svg-impact-crater-3x3.png`. XML validation and Godot import/boot verify the assets.
+
+## Fence image-diff error · 2026-09-09
+
+PLAYTEST-50 clarified "hmm fence is invalid" as GitHub's "Error rendering embedded code / Invalid
+image source" for the fence diff. The base file on main contains a forbidden double hyphen inside
+an XML comment; `git show origin/main:assets/tiles/fence.svg | xmllint --noout -` reproduces its
+parse failure. The branch replacement removes that invalid comment and passes XML validation;
+Godot renders it successfully. The old side therefore remains invalid when a viewer compares
+both revisions. The current rendered tile is preserved in
+`evidence/svg-fence-preview-2026-09-09.png` for review independently of the image-diff viewer.
+The player confirmed "the new file is valid" and "the diff viewer fails"; no further fence
+asset change is needed for this report.
+
 ## Artwork branch reconciled with main · 2026-09-09
 
 The player requested `$merging-main` after the artwork was finished. The recorded branch tip is

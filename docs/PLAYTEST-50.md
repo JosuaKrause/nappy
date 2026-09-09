@@ -145,3 +145,25 @@ every screenshot ever committed under `docs/` brought a `.import` sidecar with i
 
 Reported after the SVG artwork update. Whether this describes an image-loading error or the
 fence's appearance needs clarification; the current file passes XML validation.
+
+> "also add graphics for impact craters of various sizes 1x1 2x2 and 3x3 tiles"
+
+Requested as additional reusable SVG artwork alongside the upcoming milestone assets.
+
+> "add a document that catalogues what graphics exist and where they are currently used. also update the milestones that require graphics to specify which ones to use"
+
+> "still getting: ‎assets/tiles/fence.svg‎
+> +17
+> -18
+> Lines changed: 17 additions & 18 deletions
+>
+>
+> Error rendering embedded code
+>
+> Invalid image source."
+
+The report concerns GitHub's image diff, rather than an in-game loading error.
+
+> "confirmed the new file is valid"
+
+> "the diff viewer fails"

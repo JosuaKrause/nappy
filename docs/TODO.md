@@ -14,10 +14,6 @@ mid-way through.
 
 ## The order
 
-- [ ] Investigate PLAYTEST-50's "hmm fence is invalid": establish whether the boundary fence
-      fails to load or has an incorrect appearance, then correct and visually verify it. The
-      current SVG passes XML validation; that does not resolve the reported problem.
-
 ### Illustrated actor registration and assembly
 
 **This is Codex's parallel track, worked beside the gameplay queue rather than ahead of it.**
@@ -113,6 +109,12 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
 does to the route decision, the same as everything else. Prepared drawings remain available
 while their owning milestones settle placement and behavior.
+
+Use [GRAPHICS.md](GRAPHICS.md) for the asset catalogue, current runtime bindings and prepared
+parts. The assignments below name the assets each graphics-dependent milestone should use.
+Reusable impact-crater decals are `assets/props/impact_crater_1x1.svg`,
+`impact_crater_2x2.svg` and `impact_crater_3x3.svg` for 32×32, 64×64 and 96×96 footprints.
+They are unbound art; no current milestone specifies crater placement or collision behavior.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
 no artist.
@@ -276,7 +278,11 @@ you can pass at a price, are only a decision when the city contains both.
 each state pair shares its canvas, ground anchor and pivot, documented inside the SVG. The
 existing `assets/events/checkpoint_block.svg` is poured concrete and `barricade_pile.svg` is
 improvised debris. Reuse these parts for the placement, detention and traffic integration below.
-Their provenance is in DECISIONS.md, "SVG artwork and upcoming milestone assets".
+Use the hut matching its doorway direction, the gate matching the road axis and open/closed
+state, and the standing/lunging guard for waiting/departing. Keep `checkpoint_block.svg` for
+the poured-concrete band and `barricade_pile.svg` for improvised barricades. Dimensions and
+bindings are in [GRAPHICS.md](GRAPHICS.md); provenance is in DECISIONS.md, "SVG artwork and
+upcoming milestone assets".
 
 - **A barrier across the street**, with **guards on the sidewalks** and a **hut**. So it is not one
   body on one tile — it spans the full width of a street, footway to footway, which nothing in the
@@ -520,6 +526,8 @@ reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
 and `guard_lunging.svg` share the person's scale and keep their ground anchors in the SVG comments.
 The lunging pose faces east and can be mirrored for west. These are the stationary and departing
 poses for the drawing discussed below; the heat-response decision and runtime binding remain here.
+Use `assets/events/riot_van.svg` for the existing night-raid vehicle;
+use the guard pair for a guard departure if that proposed response is accepted.
 
 - [ ] **"And other dangers like this"** — drafted and put back, and the vans have now set the
       precedent it was waiting on: a `HUNTS` row keeps `hard_fail`, moves neither population nor
@@ -706,7 +714,8 @@ nothing, so it does not compete for the catalogue's placement budget.
       obstacle/event anyway so they can be placed independently.")* Still the same complaint as the
       two items above it — the mark cannot be found — with a mechanism attached rather than only a
       placement fix: give the `protest` row (`EventDef.Look.PROTEST`, drawn in
-      `src/events/event_instance.gd:91` from `protester.svg`) a pointing pose aimed at whatever the
+      `src/events/event_instance.gd` from `assets/events/protester.svg`) one of the eight
+      `protester_point_*.svg` poses listed above, aimed at whatever the
       current objective is, and raise how often it appears. The player's own reason the density
       change is cheap: a protester obstructs nothing and pursues nothing, so it does not compete
       with the rest of the catalogue's placement budget the way raising an obstacle's density would.
@@ -946,11 +955,12 @@ is still true.
 **Drawings, as SVG:**
 
 - [ ] **Park trees clump.** `City` places them by rejection sampling inside the lot with no
-      spacing test. A minimum-spacing check would spread them
+      spacing test. Add a minimum-spacing check while retaining `assets/props/tree_a.svg` and
+      `tree_b.svg`, the two existing variants drawn by `Prop`.
 - [ ] **`INDUSTRIAL` and `CIVIC` districts do not read differently at a glance**, although act II
       makes them narrative. Today only the wall heights differ — one to two tiles against three to
-      four. Prepared SVG accents are `assets/props/industrial_vent.svg` (32×32 roof unit) and
-      `assets/props/civic_portico.svg` (32×48 stone entrance). Their placement and density still
+      four. Use `assets/props/industrial_vent.svg` (32×32 roof unit) for industrial buildings and
+      `assets/props/civic_portico.svg` (32×48 stone entrance) for civic buildings. Their placement and density still
       need integration and a gameplay-scale district comparison.
 
 **Polish, after the playtest work**, since there is no point polishing a loop that is about to be

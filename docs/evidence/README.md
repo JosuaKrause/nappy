@@ -19,6 +19,8 @@ makes the file worth having.
 
 | file | what it is | referenced by |
 | --- | --- | --- |
+| `svg-impact-crater-1x1.png`, `svg-impact-crater-2x2.png`, `svg-impact-crater-3x3.png` | Godot-rendered crater decals enlarged threefold for inspection. | [GRAPHICS.md](../GRAPHICS.md), prepared crater assets; [DECISIONS.md](../DECISIONS.md), Impact-crater artwork |
+| `svg-fence-preview-2026-09-09.png` | Current fence tile rendered independently of GitHub's image-diff viewer. | [DECISIONS.md](../DECISIONS.md), Fence image-diff error |
 | `svg-seals-before-2026-09-09.png`, `svg-seals-after-2026-09-09.png` | Rendered SVG seal comparisons, fitted per cell for silhouette inspection. | [DECISIONS.md](../DECISIONS.md), SVG artwork and upcoming milestone assets |
 | `svg-upcoming-assets-2026-09-09.png` | Reviewed checkpoint, pointing, district and sound assets plus refreshed fence/fire pictures. | [TODO.md](../TODO.md), owning milestone asset notes |
 | `archive/session-captures/2026-09-09/rig-183151-seed4000-v0.8.2-33-g2b1ee38-dirty/` | Crash gameplay with separate shadows beneath cars and onlookers; whole run and capture. | [DECISIONS.md](../DECISIONS.md), SVG artwork and upcoming milestone assets |
