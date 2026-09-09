@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -91,6 +92,9 @@ class ClipTests(unittest.TestCase):
                 self.assertEqual(clip.main([]), 0)
                 convert.assert_not_called()
 
+    # Skipped loudly rather than failed where ffmpeg is absent, so a laptop without it can still run
+    # the rest; CI installs ffmpeg so this one always runs there.
+    @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg is not on PATH")
     def test_real_ffmpeg_timing_output_and_source_preservation(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             folder = self.burst(Path(temp))

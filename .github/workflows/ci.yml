@@ -29,6 +29,11 @@ jobs:
         with:
           enable-cache: true
 
+      # tools/test_clip.py encodes a real burst through ffmpeg, which the runner image does not
+      # ship; without it that test skips and the converter is never actually exercised.
+      - name: Install ffmpeg
+        run: sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: Check the Python tools
         run: ./tools/pycheck.sh
 
