@@ -212,6 +212,23 @@ outward north/south leg movement, excessive mother-to-pram spacing and pixelated
 double-bend leg anatomy and baby-over-seat compositing findings. Its resolution experiment requires
 more rendered pixels for the **same view**, actor size, HUD and window. Zooming out was an incorrect
 interpretation; it does not meet the request. Supersampling and anatomy need independent checks.
+
+**Resume the render analysis in `.claude/worktrees/illustrated-supersampling/`.** That separate,
+unintegrated draft replaces the zoom option with debug `--illustrated-render-scale 2`, enlarges
+only renderer state and adds a topmost screen-texture pass averaging each 2×2 sample block. The
+camera and engine-facing logical coordinates remain unchanged by design; this is not yet visually
+verified. The main checkout retains the older camera prototype, which does not meet the request.
+Check both worktrees and their branches with git before continuing; keep the draft isolated.
+
+Before integrating, fix the output attachment to preserve KEEP letterboxing, verify buffer size
+using image readback rather than the viewport wrapper's reported size, handle engine resets even
+when dimensions repeat, and restore the original attachment on reload. The deferred post-draw
+diagnostic needs a headless-safe lifetime. Investigate the Canvas/ObjectDB leak warnings from the
+focused rig; passing assertions are not a clean run. Then capture the same framing and compare
+normalized world/HUD anchors, real window dimensions, pointer mapping, resize, portrait, reload
+and bursts. Confirm the final shader includes every overlay. The baseline capture and exact
+engine-source findings are indexed in DECISIONS.md under Same-view supersampling handoff.
+
 The illustrated-png skill's [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)
 covers source preservation, measured registration, natural reach, filtering and separate motion
 and visual gates. Prepare the player's actual checkout with `./tools/check.sh` and an explicit

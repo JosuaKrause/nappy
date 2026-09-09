@@ -1,0 +1,10 @@
+nappy rig log  2026-09-08T21:32:28  version v0.7.0-54-gbb03202
+
+day 1  act 1  run seed 2468684785  city seed 2468684785  length 180.0s
+   0.0  plan     closed: fallen tree v(7,10)
+   0.0  plan     calm: 1 park, 2 courtyard, 3 forest, 3 quiet_square
+   0.0  plan     events: cafe_tables x121, cat_dash x8, chatting_mother x2, delivery_van x97, dog_walker x21, homeless_yeller x11, leaf_blower x13, loose_dog x15, market_stall x139, pigeon_flock x5, playground
+   0.0  start    doorstep (10,48), facing 180°
+   0.2  near     delivery_van (telegraph) at (10,46), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.7  shot     burst started: asked for an animation burst at (10,48) | exc 0, sleep 0 | playing | asked/burst-11160067-001
+   3.7  shot     burst complete: 24 frames | duration
