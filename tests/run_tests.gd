@@ -9,7 +9,8 @@ extends Node
 ## GameState) actually exist — `--script` replaces the main loop and skips them.
 ##
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
-## runner. Suites report with `check()` / `close_to()`.
+## runner. Suites report with `check()` / `close_to()`. A probe under `tests/probes/` runs only
+## when named by path — see `_discover`.
 ##
 ## The filter exists because the whole suite is minutes and a single suite is seconds, and a
 ## check you only run at the end tells you *that* something broke rather than *what*. It says
@@ -49,6 +50,11 @@ func _ready() -> void:
 ## Substring rather than exact, so `crowd` finds `test_crowd.gd` without anybody having to
 ## remember the prefix — and a filter that matches nothing is an error rather than a run of
 ## nought suites reporting no failures.
+##
+## **Only the top of `tests/` is a suite.** `tests/probes/` holds measurement probes — scripts
+## with the same `run(t)` shape that print numbers rather than assert relationships — and nothing
+## finds them by walking the directory, so the full run and CI never pay for them. A probe runs
+## only by being named as a path under `tests/`: `tools/test.sh probes/m64_density.gd`.
 func _discover(filters: PackedStringArray) -> Array[String]:
 	var paths: Array[String] = []
 	var dir := DirAccess.open("res://tests")
@@ -60,6 +66,10 @@ func _discover(filters: PackedStringArray) -> Array[String]:
 			continue
 		if filters.is_empty() or _matches(file, filters):
 			paths.append("res://tests/" + file)
+	for filter in filters:
+		var explicit := "res://tests/" + filter
+		if filter.contains("/") and FileAccess.file_exists(explicit) and not explicit in paths:
+			paths.append(explicit)
 	paths.sort()
 	if paths.is_empty():
 		failures.append("no test suite matches %s" % ", ".join(filters))

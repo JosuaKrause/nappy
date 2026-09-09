@@ -12,11 +12,11 @@ progress-tracking, which lives there too.
 Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex's entry point is `AGENTS.md`.
 Its repository hooks need review through `/hooks` before they execute.
 
-One branch is unmerged and that is deliberate rather than in progress: **M64's measurement probes,
-`tests/test_zz_m64_measure.gd` and `tests/test_zz_m64_density.gd`, are kept off `main` on a branch
-of their own** so that *measure it again afterwards* means running the same thing rather than
-reinventing it. They are the only files on it, they print rather than assert, and they are the
-instrument the per-street density figures in `TODO.md` were read with.
+**Every branch is work in progress; nothing is parked on one.** M64's measurement probes,
+`tests/probes/m64_measure.gd` and `tests/probes/m64_density.gd`, live under `tests/probes/`, where
+the runner does not discover them: they print rather than assert, they are the instrument the
+per-street density figures in `TODO.md` were read with, and `tools/test.sh probes/m64_density.gd`
+runs one by name.
 
 **Work reaches `main` through a pull request and nothing else.** `main`'s ruleset requires one, plus
 the `test` check — the doc lint, the boot check and the full suite, run on the merge result. So the
