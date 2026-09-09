@@ -141,17 +141,28 @@ func _test_the_cap_keeps_the_strongest(t) -> void:
 ## excitement to the player that's the number that informs the color of the halo".)* A burst has
 ## to read as itself for the whole `WINDOW`, not fade from the instant it landed — the opposite of
 ## what an exponential moving average would give the same call.
+##
+## **Measured on the source's own simulation clock, `_clock`, not on wall time.** Neither rig is in
+## a running tree here (`_instance_at()` never calls `setup()` through a parent, and a bare
+## `CrowdAgent.new()` is never added), so nothing is ticking `_process()` — advancing `_clock`
+## directly is what stands in for `WINDOW` seconds of simulated time elapsing.
 func _check_accumulates_and_decays(t, source, label: String) -> void:
 	source.accumulate_landed(35.0)
 	t.check(is_equal_approx(source.landed(), 35.0),
 			"%s: a burst reads as itself, not decayed from the frame it landed" % label)
 
-	# Simulating WINDOW seconds elapsed by rewinding the stored timestamps is the same fact as
-	# waiting, and does not need the test to actually sleep.
-	for entry in source._landed_history:
-		entry[0] -= int((ExcitementHalo.WINDOW + 0.1) * 1000.0)
+	# Wall time passing does nothing on its own -- landed() is measured against the source's own
+	# _clock, and nothing has advanced it, so asking again with no _process tick reads the same.
+	t.check(is_equal_approx(source.landed(), 35.0),
+			("%s: landed() still reads 35 with no _process tick, because the window is " +
+					"measured on simulation time, not wall time") % label)
+
+	# Advancing the source's own simulation clock past WINDOW is the same fact as WINDOW seconds
+	# of simulated time elapsing, and does not need the test to actually tick _process() or sleep.
+	source._clock += ExcitementHalo.WINDOW + 0.1
 	t.check(is_equal_approx(source.landed(), 0.0),
-			"%s: once WINDOW has fully elapsed the burst reads as ~0, not merely faded" % label)
+			("%s: once WINDOW has fully elapsed on the simulation clock the burst reads as " +
+					"~0, not merely faded") % label)
 
 	# A second burst, only partially aged out, has to keep exactly what is still inside the
 	# window and drop exactly what is not -- proving the sum is over entries, not a single scalar.
@@ -159,7 +170,7 @@ func _check_accumulates_and_decays(t, source, label: String) -> void:
 	source.accumulate_landed(20.0)
 	for entry in source._landed_history:
 		if is_equal_approx(entry[1], 10.0):
-			entry[0] -= int((ExcitementHalo.WINDOW + 0.1) * 1000.0)
+			entry[0] -= ExcitementHalo.WINDOW + 0.1
 	t.check(is_equal_approx(source.landed(), 20.0),
 			"%s: an aged-out entry drops on its own; a fresh one beside it still counts" % label)
 

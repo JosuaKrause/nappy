@@ -77,6 +77,11 @@ const MAX_SOURCES := 8
 ## happened, so each source keeps its own list of `[when, points]` entries and `landed()` is their
 ## sum for whatever is still within `WINDOW` — see `EventInstance.landed()`.
 ##
+## **`when` is each source's own simulation clock, in seconds, not the wall clock.** A source
+## advances its own `_clock` by `delta` in its `_process()`, so a pause longer than `WINDOW` does
+## not empty every halo the instant the game resumes, and a test rig measures the window on
+## simulated time rather than on however long the assertion actually took to run.
+##
 ## **Chosen to be looked at, not derived.** *(2026-09-07: "5s sounds good for now".)* `cat_dash`
 ## is a three-second interruption and `busker` is continuous, so it has to be long enough that a
 ## brief scare colours at all and short enough that a source she has walked away from stops

@@ -167,12 +167,21 @@ var _obstruction: StaticBody2D
 ## Built in `_ready()`, same as `_obstruction`, so it is never `null` once the instance is live.
 var _halo: EntityHalo
 
-## `[when_ms, points]` entries landed on her from this event, for whatever is still inside
-## `ExcitementHalo.WINDOW` — a true sliding sum rather than a decayed average, so a burst reads as
-## itself for the whole window and then drops. Lazily grown: an event that has never landed
-## anything keeps this empty. Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s
-## class doc for the whole shape. See `accumulate_landed()` and `landed()`.
+## `[when, points]` entries landed on her from this event, `when` stamped from `_clock` in
+## seconds, for whatever is still inside `ExcitementHalo.WINDOW` — a true sliding sum rather than
+## a decayed average, so a burst reads as itself for the whole window and then drops. Lazily
+## grown: an event that has never landed anything keeps this empty. Duck-typed with `CrowdAgent`'s
+## own copy — see `ExcitementHalo`'s class doc for the whole shape. See `accumulate_landed()` and
+## `landed()`.
 var _landed_history: Array = []
+
+## This event's own simulation clock, in seconds, advanced by `delta` in `_process()` while the
+## event is still live. `landed()` is measured against this rather than `Time.get_ticks_msec()` so
+## that a paused game does not empty the halo, and so a rig can measure the window on simulated
+## time by advancing this directly instead of waiting on the wall clock. Frozen once `is_finished`
+## — see `_process()` — so a spent instance's history simply stops moving rather than continuing
+## to drain toward zero after nothing more can land on it.
+var _clock := 0.0
 
 ## Whether `_draw_spread` and `_draw_cafe` lay their segments along local Y rather than local X.
 ## Decided once, in `setup()`, from the street the instance stands on — see `_spread_is_vertical`.
@@ -283,6 +292,7 @@ func is_solid() -> bool:
 func _process(delta: float) -> void:
 	if is_finished:
 		return
+	_clock += delta
 	age += delta
 
 	if not _activation_announced and not is_telegraphing():
@@ -935,10 +945,12 @@ func current_intensity() -> float:
 ## event's exact share of what landed this frame — `contribution × sensitivity × delta` — so the
 ## halo can never disagree with what the bar actually did. *(2026-09-08, the player: "don't derive
 ## it from the source numbers but trace an increase in excitement back to its constituents".)*
+## Stamped with `_clock`, this event's own simulation clock, rather than the wall clock, so a
+## paused game does not empty the halo and a rig can measure the window on simulated time.
 func accumulate_landed(points: float) -> void:
 	_prune_landed_history()
 	if points > 0.0:
-		_landed_history.append([Time.get_ticks_msec(), points])
+		_landed_history.append([_clock, points])
 
 ## The sum of every entry still inside `ExcitementHalo.WINDOW`. Pruned here too, not only on
 ## write, so a source nobody has visited in a while reports honestly the moment it is asked rather
@@ -951,7 +963,7 @@ func landed() -> float:
 	return total
 
 func _prune_landed_history() -> void:
-	var cutoff := Time.get_ticks_msec() - int(ExcitementHalo.WINDOW * 1000.0)
+	var cutoff := _clock - ExcitementHalo.WINDOW
 	while not _landed_history.is_empty() and _landed_history[0][0] < cutoff:
 		_landed_history.pop_front()
 
