@@ -1042,7 +1042,13 @@ is loud, and the reason a park is quiet.
   _keep_within_the_room_beyond_the_map` clamps a freshly recycled agent to the same tile (or the
   same `OUT_OF_SIGHT`, for a car on the spine) that a departing one is held to, so the entry-side
   fallback that only fires when every recycle roll misses cannot hand a walker the reach that
-  belongs to a car on the bridge.
+  belongs to a car on the bridge. **And the same room is what lets a car arrive by them.** The
+  crowd's box is clamped to the map, so beside the tunnel the band a southbound spine car enters
+  through is the stretch past the north edge, and `CrowdAgent._entry_band_fits` accepts a band
+  that reaches that far only for the agent the departure rule already lets go that far. Refusing
+  it for everybody would make the traffic through both holes one-way — cars that only ever leave
+  — and `tests/test_crowd.gd` stands at each end and counts spine cars out of bounds by which way
+  they point.
 
 - **And nobody walks into a cul-de-sac's wall.** The crowd is the one thing that travels the
   lattice without asking `blocked_segments()`, and it does not need to — a dead end is a street

@@ -62,9 +62,12 @@ missing_classes() {
 # preload a texture, and a failed preload takes down every script that depends on the one that
 # preloads it. Checked by listing what the sidecars promise against what is on disk, not by mtime,
 # for the same reason as above: the question is whether a file exists, not whether it is new.
+#
+# Only the trees the game loads from, plus the project icon at the root. docs/evidence/ carries
+# sidecars too and nothing preloads from it, so a pulled screenshot is not worth an import pass.
 missing_imports() {
-    grep -rhoE '^dest_files=\[.*\]' --include='*.import' "$PROJECT_DIR/assets" "$PROJECT_DIR/src" \
-            "$PROJECT_DIR/scenes" 2>/dev/null \
+    grep -rhoE '^dest_files=\[.*\]' --include='*.import' "$PROJECT_DIR"/*.import \
+            "$PROJECT_DIR/assets" "$PROJECT_DIR/src" "$PROJECT_DIR/scenes" 2>/dev/null \
         | grep -oE 'res://[^"]+' \
         | sort -u \
         | while read -r res; do

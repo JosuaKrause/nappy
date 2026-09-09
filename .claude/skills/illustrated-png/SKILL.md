@@ -67,8 +67,9 @@ scale. Check inherited filtering and source alpha before blaming a pixelated res
 
 After switching or integrating an asset branch, run `./tools/check.sh` in the exact folder the
 player will use. A different worktree's successful import does not populate this one's `.godot/`.
-`tools/run.sh` detects missing global classes, but does not check for every missing imported
-texture. A populated class cache therefore does not establish that the checkout can draw.
+`tools/run.sh` detects missing global classes and `.import` sidecars whose imported copy is
+absent, and repairs both by running the import pass; `shot.sh` and the headless boot commands
+below do not, so a populated class cache alone does not establish that the checkout can draw.
 
 Then boot with `--illustrated` explicitly, using the bounded headless command in the procedure.
 Read the first resource/parse error, not just repeated `new()` or nil errors downstream. A normal

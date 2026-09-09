@@ -65,11 +65,9 @@ define style; `docs/reference/` supplies real-world structure and posture.
 
 ### Gameplay queue
 
-1. **M94** — a car comes out of the tunnel as often as one goes in, and `run.sh` imports what a
-   pull left unimported.
-2. **M93** — the caret is chosen by expected impact, not by a row's own numbers. Its two numbers
+1. **M93** — the caret is chosen by expected impact, not by a row's own numbers. Its two numbers
    are settled and it shares them with the halo.
-3. **M56** — the resistance is noticed.
+2. **M56** — the resistance is noticed.
 3. **Illustrated actor review** — review the registered bodies and complete pram against the
    legacy SVG sprites, then resolve the documented source-art and live-motion gaps. See
    [PLAYTEST-43.md](PLAYTEST-43.md), [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md)
@@ -88,10 +86,15 @@ no artist.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**[PLAYTEST-39.md](PLAYTEST-39.md) is the newest gameplay session, and its one finding, the tunnel,
-is built.** The fade is inside the portal's opening, the mountain stands above it, and the road into
-the mouth is asphalt rather than a crossing; the record is in `DECISIONS.md` under "The tunnel
-swallows the road". Half of it was a re-report of playtest 24's fifth finding.
+**[PLAYTEST-47.md](PLAYTEST-47.md) is the newest gameplay session, and both of its notes are
+built**: a car comes out of the tunnel and off the bridge as well as going in, and `tools/run.sh`
+runs the import pass when a pulled checkout is missing an imported texture. The record is in
+`DECISIONS.md` under M94.
+
+**[PLAYTEST-39.md](PLAYTEST-39.md)'s one finding, the tunnel, is built.** The fade is inside the
+portal's opening, the mountain stands above it, and the road into the mouth is asphalt rather than
+a crossing; the record is in `DECISIONS.md` under "The tunnel swallows the road". Half of it was a
+re-report of playtest 24's fifth finding.
 
 The halo's design and playtest reasoning are in `DECISIONS.md` under M92.
 
@@ -197,33 +200,6 @@ which proves only that the controls stay *off* where they should.
       radii, `RUN`'s legibility at phone DPI, and the missing on-screen pause — are under M60
 
 ---
-
-## M94 — The tunnel and the bridge carry traffic both ways · asked for 2026-09-09
-
-[PLAYTEST-47.md](PLAYTEST-47.md), two notes. *"no car ever comes *out* of the tunnel or from the
-bridge"*, and a pulled checkout that fails to boot on a texture whose import the pull could not
-bring with it.
-
-**Why no car ever comes out.** A recycled agent enters through a band `ENTRY_SPREAD` (420px) deep
-outside the edge of the crowd's box that its new direction carries it inward from, and
-`CrowdAgent._entry_band_fits()` re-rolls the lane until that band lies within a tile of the map.
-The box's own bounds are clamped to the map, so near the tunnel a southbound spine lane's band is
-the 420px *beyond* the north edge — inside the tunnel, exactly where a car coming out would have
-to start — and the check refuses it every time. The one exception the rest of the file makes for
-a car on the spine, which may overrun the edge by `Tuning.OUT_OF_SIGHT` (420px) on its way out,
-was never made on the way in.
-
-- [ ] **The entry band gets the same room beyond the map that the exit does.** `_entry_band_fits()`
-      allows the band as far past the edge as `_room_beyond_the_map()` grants that agent — a tile
-      for everybody, `OUT_OF_SIGHT` for a car on the spine — so a southbound car near the tunnel and
-      a northbound one near the bridge are placed out of sight under the mountain or on the far end
-      of the deck and drive in. Walkers and off-spine cars are unchanged, and the four-edge test in
-      `tests/test_crowd.gd` keeps them so. A new check stands at the tunnel and counts spine cars
-      seen out of bounds heading in against those heading out.
-- [ ] **`tools/run.sh` checks the imported textures the way it checks the class cache.** Every
-      `.import` sidecar in the tree names its `dest_files`; if any of them is missing from
-      `.godot/imported/`, run `tools/check.sh`'s import pass before launching, the same repair the
-      stale-class-cache path already makes. Detected by listing, not by mtime, for the same reason.
 
 ## M93 — The caret is chosen by expected impact · asked for 2026-09-08
 

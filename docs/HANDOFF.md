@@ -235,7 +235,9 @@ engine-source findings are indexed in DECISIONS.md under Same-view supersampling
 The illustrated-png skill's [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)
 covers source preservation, measured registration, natural reach, filtering and separate motion
 and visual gates. Prepare the player's actual checkout with `./tools/check.sh` and an explicit
-illustrated boot; a populated global class cache does not guarantee imported textures exist.
+illustrated boot; a populated global class cache does not guarantee imported textures exist, and
+`tools/run.sh` checks the sidecars against `.godot/imported/` and runs the import pass itself
+when one is missing, so a pulled checkout boots rather than failing on the first preload.
 Preserve `.import` sidecars. The missing-player diagnosis and capture provenance are in
 DECISIONS.md under Texture integration process; the screenshot does not establish appearance
 after the local import repair.
