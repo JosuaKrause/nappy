@@ -262,21 +262,24 @@ actually landed on her — and the reasoning is the whole design.
       **Magnitude, and nothing else.** *(2026-09-08: "the transparency shouldn't show distance
       since distance actually doesn't matter. only the actual received amount counts which might
       depend on the distance but we don't need to encode the distance. this frees up transparency
-      for also encoding magnitude".)* The target alpha is `MAX_ALPHA` times
-      `clampf(landed / SATURATES_AT_POINTS, MIN_MAGNITUDE, 1.0)` with `MIN_MAGNITUDE` about 0.2, so
-      a source that has cost her a point is a faint yellow rim and one that has cost twenty is a
-      solid orange one — colour and transparency read the same number. The distance fraction
-      (*"the intensity of the halo states how far away I am"*, playtest 36) is **overturned by the
-      player** with the words above and goes, with its `alpha_for()` and its test.
+      for also encoding magnitude".)* Both channels read `landed()`, **on two different curves**
+      *(2026-09-08: "color and transparency shouldn't be the same number. transparency can be used
+      to emphasize low values")*: colour stays linear over 0..40 points, where the high end is told
+      apart; transparency rises fast and saturates early — `MAX_ALPHA` times
+      `clampf(sqrt(landed / LOW_EMPHASIS_POINTS), MIN_MAGNITUDE, 1.0)`, about 15 points and 0.2 —
+      so a point is faint but present, five is clearly there, fifteen is solid, and above that the
+      hue carries the difference. The distance fraction (*"the intensity of the halo states how far
+      away I am"*, playtest 36) is **overturned by the player** with the words above and goes, with
+      its `alpha_for()` and its test.
 
-      **Time.** Each source's drawn alpha eases toward its target rather than jumping: a rim fades
-      in over about 0.3s when a source clears the floor and fades out over about 0.8s when it stops
-      contributing or its points leave the window — so a burst that expires all at once dims rather
-      than vanishes. The easing lives on the source's own halo state (`EntityHalo` or the two
-      `set_halo_strength()` callers), not in the selection; selection stays the honest set, and a
-      source dropped from it is told a target of zero and fades. Colour is not eased — it is the
-      window's own number and stays exact. The three constants are felt numbers with the player's
-      sentence beside them
+      **Time.** *(2026-09-08: "all changes should transition (hue and transparency) instead of
+      immediately showing the actual value".)* What is drawn — hue and alpha both — eases toward
+      its target rather than jumping: in over about 0.3s when a source clears the floor or a burst
+      lands, out over about 0.8s when it stops contributing or its points leave the window — so a
+      burst that expires all at once dims and pales rather than vanishes. The easing lives on the
+      source's own halo state (`EntityHalo`), not in the selection; selection stays the honest set,
+      and a source dropped from it is told a target of zero and fades. `landed()` itself stays
+      exact. The constants are felt numbers with the player's sentences beside them
 - [ ] **The ramp has to read orange in the middle.** *(2026-09-08: "there is also no real fade from
       yellow to red (eg when standing next to the other baby lady".)* A chat lands
       `CHAT_EXCITEMENT` (25) over `detain_seconds` (5s), which is past the ramp's midpoint. First

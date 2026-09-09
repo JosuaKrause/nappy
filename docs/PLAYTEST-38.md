@@ -52,6 +52,15 @@ inside the received amount and encoding it separately spends the one channel mag
 brightness no longer means distance at all: colour and transparency both read the same
 five-second number, pale and faint at a point, red and solid at forty, with the time easing on top.
 
+> "color and transparency shouldn't be the same number. transparency can be used to emphasize low
+> values. all changes should transition (hue and transparency) instead of immediately showing the
+> actual value"
+
+**So one number, two curves, and everything eased.** Colour is linear over the whole range, which
+is where the high end is told apart; transparency rises fast and saturates early, which is where a
+point and five points are told apart. And what is drawn — hue and alpha both — moves toward its
+target over a fraction of a second rather than showing the window's number the frame it changes.
+
 ## 4. No fade from yellow to red beside the other mother
 
 > "there is also no real fade from yellow to red (eg when standing next to the other baby lady."
