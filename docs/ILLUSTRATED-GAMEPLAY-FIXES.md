@@ -216,11 +216,14 @@ registration, rendered-endpoint and displacement checks. Exercise the legacy pat
 `./tools/test.sh visuals`. The live-owner test checks that the opt-in child is absent in legacy
 mode. A zero-failure assertion summary does not excuse a script error.
 
-For the PLAYTEST-42 world-extent experiment, use `--illustrated --illustrated-zoom 1` at the same
-`1280x720` window size; `--illustrated-zoom 2` reproduces the baseline. This changes the illustrated
-camera's visible world from 640x360 to 1280x720 while leaving the window, HUD, simulation and
-legacy presentation unchanged. It tests world extent and camera scaling, not increased rendered
-pixel count or a fix for anatomy, gait, compositing or source-art noise.
+For the PLAYTEST-42 same-view raster experiment, use `--illustrated --illustrated-render-scale 2`
+at the same `1280x720` window size. The scene keeps its existing 2× camera framing, so the visible
+world, actor size, HUD layout and input coordinates remain the baseline while the root target draws
+at `2560x1440` and resolves each 2×2 block before it reaches the `1280x720` window. The command is
+debug-only and does nothing to legacy presentation. Compare the printed logical, target and output
+dimensions before reviewing a capture; the saved root-viewport PNG is resolved render output, not a
+pristine high-resolution source. This experiment does not establish that anatomy, gait,
+compositing or source-art noise are fixed.
 
 Implement in bounded sequential pieces: sheet/manifest repair, static assembly, gait and sorting,
 then environment integration. Use isolated implementation worktrees under the orchestration

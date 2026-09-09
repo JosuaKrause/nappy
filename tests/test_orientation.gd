@@ -244,6 +244,7 @@ func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
 	var title: CanvasLayer = TITLE_SCREEN_SCENE.instantiate()
 	t.add_child(title)
 	var status_layer := CanvasLayer.new()
+	var downsample_layer := CanvasLayer.new()
 
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._hud = hud
@@ -253,12 +254,13 @@ func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
 	main._pause = pause
 	main._title = title
 	main._status_layer = status_layer
+	main._illustrated_downsample = downsample_layer
 
 	var layers: Array[CanvasLayer] = main._screen_furniture_layers()
-	t.check(layers.size() == 7, "every layer of screen furniture is named, and nothing extra")
+	t.check(layers.size() == 8, "every layer of screen furniture is named, and nothing extra")
 	for layer: CanvasLayer in layers:
 		t.check(layer != null, "no layer in the list is unset")
-	for expected in [hud, edge_layer, touch_layer, summary, pause, title, status_layer]:
+	for expected in [hud, edge_layer, touch_layer, summary, pause, title, status_layer, downsample_layer]:
 		t.check(expected in layers, "the list still names the layer main wires up for it")
 
 	main.free()
