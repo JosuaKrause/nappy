@@ -66,7 +66,12 @@ sizing only the chassis makes the finished object too large. Keep rigid layer co
 chassis frame, using the measured seat and hinge contacts rather than collapsing all pivots.
 
 Check hips, knees, ankles and soles as a chain. A connected knee can still bend inward, cross the
-other leg or sit in a permanent crouch. Ground stride direction and the screen-space knee bend
+other leg or sit in a permanent crouch. Inspect the painted anatomy: a crop labeled "upper leg"
+can already contain
+a knee and shin. Fitting that entire silhouette above a solver knee creates a second visible
+bend despite exact endpoint connectivity. Identify the anatomical joint in the pixels before
+choosing the crop and axis; each assembled leg must contain one knee.
+Ground stride direction and the screen-space knee bend
 need separate review: E/W travel must not tilt the entire leg pair diagonally as a substitute
 for a walking pose, and N/S travel must not send the feet sideways into a spreading stance.
 These are visual acceptance criteria, not instructions to force every projection into one pose.
