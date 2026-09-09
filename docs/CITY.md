@@ -42,7 +42,7 @@ and decided before a tile is laid — see `CityGenerator._assign_street_kinds`.
 | Kind | How many | What it is |
 | --- | --- | --- |
 | `ORDINARY` | everything else | Two lanes, a zebra at every junction with a carriageway on the far side, and traffic that gives way to somebody standing at the kerb. Where the far side is a precinct there is no carriageway to zebra: the street ends at the precinct's edge instead, a T rather than a crossroads. |
-| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. Its crossings are two dotted lines rather than a zebra, because a zebra is a promise it does not make. `CityMap.main_road`. |
+| `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. Every crossing at one of its junctions — the side street's two arms as well as its own — is two dotted lines rather than a zebra, because one light governs all four and a zebra on any of them is a promise the traffic there does not make. `CityMap.main_road`. |
 | `PEDESTRIAN` | **two stretches of three blocks** | A retail precinct: paving frontage to frontage, no kerb, no cars, the busiest pavement in the city, and the best ground outside a park to bring a meter down on. `CityMap.precinct_spans`. |
 
 **With one kind of street the only route question is *which way*; with three it is also *which
@@ -55,8 +55,14 @@ each gives a city with three kinds of street and no hierarchy among them: a spin
 itself is two spines, and a precinct you meet on every third street is what a street is. There is
 one main road because there is nowhere else it could be,
 and a precinct is three blocks with an end you can see — one along the southern shore, one inland.
-A span covers its blocks and the junctions between them and stops short of the crossroads at either
-end, which is where the bollards are. **Nothing drives on the span itself, on either axis.** A
+A span covers its blocks and the junctions between them, and its paving reaches the road edge of
+the crossroads at either end: the box's own carriageway still crosses a real street, so a car
+reaching the precinct has an ordinary T to turn at, but the box's precinct-side sidewalk band is
+paving too, which is what keeps the crossing street from painting a zebra over a road that stops a
+pavement's width later. That is where the bollards stand: a line of posts across the carriageway
+at the paving's edge, so the street reads as closed on purpose rather than as the road running out.
+The pavements either side of the posts run straight past them onto the precinct's own paving — a
+pram walks through, a car does not. **Nothing drives on the span itself, on either axis.** A
 street crossing it internally meets paving rather than a carriageway and gets no zebra — the box is
 brick from edge to edge — so what would be a crossroads elsewhere is a T at a precinct's edge, the
 precinct's own pavement continuing past it as the third arm.
@@ -1069,8 +1075,10 @@ a wait with a known end. Having both is what makes *which street* worth asking a
 
 **And the two look different.** A zebra says *the traffic gives way to you* and the spine's traffic
 does not — so painting one there makes the opposite promise at every junction of the one street
-where believing it ends the day. The spine's crossings are two dotted lines marking the pedestrian
-safe zone.
+where believing it ends the day. **The paint belongs to the junction, not the arm**: one light
+governs every crossing where the spine meets a side street, so all four — the two across the
+spine's own carriageway and the two across the side street's — are dotted lines marking the
+pedestrian safe zone, not only the pair that happens to cross the wider road.
 
 **The tile type is the same on both, and that is the point.** Painting the crossing away entirely
 would leave a walker crossing a side street standing on open carriageway, and the one thing a zebra

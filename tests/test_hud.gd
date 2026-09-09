@@ -21,7 +21,7 @@ func run(t) -> void:
 	_test_the_pause_hint_waits_out_a_detention(t)
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
-	_test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots(t)
+	_test_the_first_mark_is_never_named_but_later_ones_are(t)
 	_test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t)
 
 func _hud(t) -> CanvasLayer:
@@ -319,33 +319,57 @@ func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t) -> v
 	hud.free()
 	stroller.free()
 
-## Decided by the orchestrator, not the design, because the design was silent on this one detail:
-## `resistance ***..` is a progress count, the same category as the header's `nerves ***`, so it
-## is cut with the rest of the debug readout. The goal itself is kept — it is "the current optional
-## goal" the decision names as staying — with no dots beside it, and with the `somewhere out there:`
-## that makes a title an instruction rather than a noun.
-func _test_the_release_optional_goal_keeps_its_title_and_drops_the_progress_dots(t) -> void:
+## Playtest 19 finding 5, verbatim: *"the first chalk mark is written in the status when it
+## should not be"* — seen as `resistance ....   somewhere out there: a chalk mark` before
+## anything had been found. `CLAUDE.md`'s own rule is that the first encounter comes with no
+## hint at all, so the goal title is silent until `GameState.completed_resistance_steps` is
+## non-empty — which happens the instant the first mark is *touched*, not once its perform
+## half is done a day later, because `complete_resistance_step` records a pickup too even
+## though a pickup grants no progress. `has_joined_resistance()` (`progress > 0`) would still
+## be zero at that point, which is why it is not the test here.
+func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_failed := GameState.failed_resistance_steps.duplicate()
+	var saved_progress := GameState.resistance_progress
+	var saved_brief := GameState.pending_resistance_brief
+	GameState.completed_resistance_steps = []
+	GameState.failed_resistance_steps = []
+	GameState.resistance_progress = 0
+	GameState.pending_resistance_brief = ""
+
 	var hud := _hud(t)
+
 	hud._debug = false
-
-	hud._contact_step = 0
-	hud._refresh_resistance()
-	t.check(hud._resistance_label.text == "", "no current goal draws nothing")
-
-	hud._contact_step = 1
-	hud._refresh_resistance()
-	var step := ResistanceSteps.by_index(1)
-	t.check(hud._resistance_label.text == "somewhere out there: %s" % step.title.to_lower(),
-			"the release line is the goal, said as an instruction rather than as a noun")
-	t.check(not "resistance" in hud._resistance_label.text,
-			"and carries no 'resistance ***..' progress count")
+	hud._on_contact_available(1)
+	t.check(hud._resistance_label.text == "",
+			"the release line names nothing before the first mark is found")
 
 	hud._debug = true
-	hud._refresh_resistance()
-	t.check("resistance" in hud._resistance_label.text,
-			"a debug build keeps the progress dots the rigs were built against")
+	hud._on_contact_available(1)
+	t.check(hud._resistance_label.text == "resistance ....",
+			"a debug build keeps its own progress dots, but no title beside them either")
+
+	GameState.complete_resistance_step(1, false)
+
+	hud._debug = false
+	hud._on_contact_available(2)
+	var step := ResistanceSteps.by_index(2)
+	t.check(hud._resistance_label.text == "somewhere out there: %s" % step.title.to_lower(),
+			"once the first mark is touched, the next one is named exactly as before")
+	t.check(not "resistance" in hud._resistance_label.text,
+			"and the release line still carries no 'resistance ***..' progress count")
+
+	hud._debug = true
+	hud._on_contact_available(2)
+	t.check("resistance" in hud._resistance_label.text
+			and step.title.to_lower() in hud._resistance_label.text,
+			"a debug build keeps the progress dots the rigs were built against, title and all")
 
 	hud.free()
+	GameState.completed_resistance_steps = saved_completed
+	GameState.failed_resistance_steps = saved_failed
+	GameState.resistance_progress = saved_progress
+	GameState.pending_resistance_brief = saved_brief
 
 ## *(Playtest 25 finding 1, verified against the engine rather than inferred: `"%3.0f" % value`
 ## rounds to nearest, so 99.5 and everything above it already printed `100` while the day was

@@ -1,5 +1,254 @@
 # Decisions
 
+## M92 — The halo says how much it cost · built 2026-09-08
+
+Three findings from [PLAYTEST-36.md](PLAYTEST-36.md), then four more from
+[PLAYTEST-38.md](PLAYTEST-38.md) played on the branch, and a design conversation in between that
+answered the question M89 had tabled. Built by two sub-agents from briefs; the design moved four
+times while the first one worked, each time from the player, and the moves are the record.
+
+**What the halo says now.** One rim per source, traced from its own silhouette (M89's shape,
+unchanged), for every live event and every walker and car whose field clears `CONTRIBUTION_FLOOR`
+(1.0/s) at her position, the strongest `MAX_SOURCES` (8). **Colour and transparency both read the
+same number — the points that source actually put on the meter over the last five seconds — on two
+different curves**: colour is linear, `Palette.HALO_WEAK` (pale yellow) through `HALO_MID` (a
+saturated orange) to `HALO_STRONG` (red) at `SATURATES_AT_POINTS` (40 of the 100-point bar);
+transparency is `MAX_ALPHA` times `sqrt(landed / LOW_EMPHASIS_POINTS)` (15), floored at
+`MIN_MAGNITUDE` (0.2), so a single point is faint but present, five is clearly there and fifteen is
+solid, and above that the hue carries the difference. Both channels ease toward their targets on
+`EntityHalo`, in over `FADE_IN_SECONDS` (0.3) and out over `FADE_OUT_SECONDS` (0.8).
+
+**The number is traced from the meter, never computed beside it.** *(2026-09-08: "what matters is
+how much mass landed on the player. don't derive it from the source numbers but trace an increase
+in excitement back to its constituents. if a honking car caused 35 excitement to the player that's
+the number that informs the color of the halo. with 1/3 of the bar that's pretty red already".)*
+`City.excitement_sources_at()` returns the same bodies `total_excitement_at()` summed, broken out;
+`Baby._update_excitement()` sums them, applies `SLEEPING_SENSITIVITY`, and hands each source its
+exact share through `accumulate_landed()`. Running and the alley trickle have no source and are
+attributed to nobody. *Rejected on the way:* the halo pass re-computing `contribution_at() ×
+delta` for itself — a second number that could disagree with the bar. *Also rejected:* colour from
+the row's declared `intensity`, the fork playtest 36 closed before it was built, because `cyclist`
+emits 18/s and ends the day while `protest` emits 42/s and cannot hurt her.
+
+**A true five-second window, not an exponential average.** The brief proposed an EMA as the cheap
+shape; the player's sentence above — 35 is *the number* — needs a burst to read as 35 for the whole
+window and then drop, so each source keeps `[when, points]` entries pruned on read, allocated on
+first landing. *(2026-09-08: "5s timeout is a rolling window so a slow accumulation lingers and a
+sharp increase flashes".)* `tests/test_halo.gd` holds it on both classes, including a partial
+ageing case.
+
+**The crowd is in, whole.** M89 tabled *the crowd has no halo* with three shapes and none chosen;
+the first brief took the narrowest — startled bodies only, since a honking car already draws a
+caret — and the player answered the question from the model rather than the screen: *(2026-09-08:
+"it was an easy shortcut to introduce a background noise dependent on flooring. we can keep that
+to some degree (eg alleys) but excitement should come from visible objects. a busy street is noisy
+because of cars and a busy sidewalk is noisy because of people ... that will allow us to attribute
+the source exactly".)* Checked before answering: incoming excitement already had no ground floor —
+every walker (4.2/s) and car (5.4/s) emits its own field and the alley's 3.0/s is the one
+ground-based source — and what *is* ground-based is the decay multiplier, which stays: *(2026-09-08:
+"we can leave the decay multipliers alone they make different places feel different. that is good.
+that way an alley doesn't ease the nerves as well as a park.")* So `select_sources()` takes an
+untyped array of anything answering `contribution_at()`, `accumulate_landed()`, `landed()` and
+`set_halo_strength()` — the duck type is stated in `ExcitementHalo`'s class doc — and `Crowd`'s
+agents are candidates on an event's terms. `EntityHalo` (`src/ui/entity_halo.gd`) is the ring and
+its shared `ShaderMaterial` extracted so both classes draw the same way; `CrowdAgent` builds its
+halo child lazily on first glow and frees it only once the fade-out has finished.
+
+**Distance is not encoded, and that overturns playtest 36's third sentence.** The first build gave
+brightness to *how far into its field she stands* — *"the intensity of the halo states how far away
+I am"* — and the player played it and took it back: *(2026-09-08: "the transparency shouldn't show
+distance since distance actually doesn't matter. only the actual received amount counts which might
+depend on the distance but we don't need to encode the distance. this frees up transparency for also
+encoding magnitude".)* Then the two curves: *(2026-09-08: "color and transparency shouldn't be the
+same number. transparency can be used to emphasize low values. all changes should transition (hue
+and transparency) instead of immediately showing the actual value".)* The easing steps each channel
+a fixed distance per second rather than lerping a fraction — found rather than chosen: a
+proportional lerp never arrives, a third of the gap still open after the whole fade time at 60fps.
+
+**Playtest 38's four, on the branch.** *Cats and birds showed nothing*: a rig proved `cat_dash` and
+the flock were selected and accumulating all along; what hid them was the distance brightness, and
+its removal was the fix — the rig stays as the regression. *No fade to red beside the other
+mother*: a rig held that a chat lands its 25 points on her rim, so the ramp was the defect — an RGB
+lerp between a pale yellow and a red desaturates at the midpoint — and `HALO_MID` is a chosen
+orange the ramp passes through; the capture at the end of a chat is
+`docs/evidence/archive/session-captures/2026-09-08/shot-2026-09-08-seed4242-ea44b51-chatting-mother-chat-end.png`,
+a solid orange rim at 37 on the bar. *The chatting mother's capture radius* grew from 33 to 48px —
+three quarters of the pavement band — with `inner_radius` 34 → 56 to keep the capture strictly
+inside it as `EventDef.validate()` requires, `outer_radius` 70 unchanged; asked for without a
+number, chosen as the smallest reading, confirmed on sight *(2026-09-08: "yes let's check those
+wider numbers")*.
+
+**`MAX_SOURCES` stays 8 and was not exercised.** Two captures on the arterial with the whole crowd
+eligible, capped and uncapped, each showed exactly two rims — the nearest car and the nearest
+walker — so fewer than eight ever cleared the floor at her position in that window; the player's
+"why eight strongest?" is unanswered by a picture and the honest answer is that the floor, not the
+cap, is what keeps a pavement legible so far.
+
+**Felt numbers, all open to move against a played day:** the 15-point knee and the 0.2 floor of the
+transparency curve, the 0.3s and 0.8s fades, the 40-point red, and the mother's 48/56.
+
+## M78 — The chalk mark can be found · built 2026-09-08
+
+Two findings from [PLAYTEST-19.md](PLAYTEST-19.md), halves of one thing: the first mark was
+announced when it should not be, and it could not be found when it should be. Neither needed a
+drawing, which is why they stood apart from M65's pointing protester. Built by a sub-agent from a
+brief; the choices below marked *orchestrator's reading* were fixed in the brief and are open to
+overturn against a played day.
+
+**The status line is silent until the first mark has been touched.** *(2026-09-02: "the first chalk
+mark is written in the status when it should not be.")* `Hud._refresh_resistance()` names the
+current step only while `GameState.completed_resistance_steps` is non-empty — the pickup's own
+completion, not `has_joined_resistance()`, because a pickup grants no progress and the rule in
+`CLAUDE.md` is about the first *encounter*: *the first encounter comes with no hint at all. After
+that the resistance speaks.* The HUD also listens to `resistance_step_completed`, since the first
+mark fires no progress signal and the line would otherwise stay silent until the next morning. The
+debug build's `resistance ....` prefix keeps its own rule. `tests/test_hud.gd` holds both HUD modes
+before and after the first completion.
+
+**A mark that was never on screen was never placed.** *(2026-09-02: "it's hard to find the chalk
+mark remember it should be dynamically placed on the path where the player can see it. if it was
+placed but never on screen it should count as not placed and be placed on the next alley the player
+comes close to.")* The first placement that follows the player through the day; `ClosurePlanner`
+and `EventScheduler` decide at dawn and stand. Built in `ResistanceDirector`, for pickup steps only
+— a perform contact rides its event and the finale sits in a district.
+
+- **Seen** is the mark's own world position inside the camera's view at any frame that day, asked of
+  `DangerEdge.is_on_screen()` — the one rotation-aware on-screen test the game has, made public and
+  injected through `set_sight()` rather than duplicated. Seen is sticky: the mark never moves again
+  that day. A rig with no predicate never sees anything and the rule keeps running.
+- **Comes close to** an alley is any reachable `ALLEY` tile within `NOTICE_RADIUS` (400px) of her.
+  *Orchestrator's reading.* The visible world is 640×360, half-diagonal about 367px, so a mark placed
+  at 400px is placed just off screen and walks into view rather than appearing in it — the same
+  reasoning M77 sites every arrival by.
+- **The rule, each frame while unseen:** if she is further than `NOTICE_RADIUS` from the mark and an
+  alley tile is within `NOTICE_RADIUS` of her, the mark moves to the nearest such tile — the alley's
+  mouth, which is what *on the path where the player can see it* asks for. Hysteresis on the mark's
+  own radius is what stops it chasing her step by step. The dawn placement is untouched, so the
+  deterministic-placement test still holds; the rule corrects it on the first frame if home is
+  nowhere near it.
+- **The guard moves with it.** The old `alley_robbery` is retired through a new
+  `EventManager.retire()` (the same finish path `silence_city_wide()` uses, so the ordinary sweep
+  frees it) and a new one is spawned in the same 66–176px band. **Its bearing is drawn from the
+  half-circle facing away from her**: a moved mark sits about 400px out, and a bearing toward her
+  could put the robber at about 224px — on screen, appearing from nothing. Facing away, the worst
+  case is about 437px. The day's RNG is kept on the director so a mid-day guard still comes from the
+  replayable stream.
+- **A guard that has already noticed her blocks the move.** Unreachable by the geometry — he wakes
+  within 140px of the mark and the mark moves only past 400px — but checked, so a defect there shows
+  as a test failure rather than a robber frozen over empty ground.
+- Every move and the first sighting write a `contact` telemetry line; the observer's own
+  `_watch_the_contact` reads `contact_position()` live and needed no change. The `--spawn contact`
+  dev target answers wherever the mark is when asked, so a rig spawned beside it may find it moved.
+
+**What is open.** Nobody has walked a day on this: whether a mark that follows her is now found, and
+whether a re-placed mark at an alley mouth reads as chalk somebody left or as the game planting it
+in front of her. The player's own next step if it is still unfindable is M65's density half —
+more protesters, since a protester obstructs nothing. The guard's own tile is still not checked for
+walkability, which is the queued "robber inside a building" item and not this milestone's.
+
+## M53 — The bollard · built 2026-09-08
+
+The milestone's last piece, a drawing: a street that met a precinct simply ended flush against the
+paving, which read as the road running out rather than as a street closed on purpose, while six
+code comments and `docs/CITY.md` explained the precinct by a driver *"meeting a bollarded street"*.
+Built by a sub-agent from a brief, with the player's leave to use **placeholder SVG graphics**
+*(2026-09-08: "if you need to you can create svg placeholder graphics")*.
+
+**A line of posts across the carriageway at each mouth, seen from above.** `assets/props/bollard.svg`
+is a 12px post-head — rim, body, offset highlight — in the house style, not a post in elevation
+turned on its side (the mistake M49 records for the fence). `Prop.Kind.BOLLARD` draws it through
+`Sprites.draw_standing` with the ordinary shadow, feet-anchored so it y-sorts.
+
+**Placement is geometry, not a roll.** `City.bollard_positions(map)` is static and stated over the
+map alone: for each span in `CityMap.precinct_spans` one row on the first tile of paving and one on
+the last, spread across the carriageway band only — the middle two tiles of the corridor — so the
+pavements run past the posts and a pram walks through where a car does not. `BOLLARD_SPACING`
+(14px) gives five posts on the 64px band; the count is derived from the cross-section rather than
+fixed. `tests/test_generator.gd` holds it over the precinct test's seeds: two rows per span, every
+post on a `PEDESTRIAN` tile of its own corridor and on the carriageway, and the tile one step past
+each row not precinct.
+
+**Chosen where the brief was silent, open to overturn:** the posts are rebuilt every `start_day`
+beside the trees rather than once per run, because they need no seed and `_dress_blocks` stays the
+one owner of every prop. The capture is
+`docs/evidence/archive/session-captures/2026-09-08/rig-190124-seed4242-v0.7.0-2-g7f9cc02-dirty/bollards-precinct-mouth.png`
+— seed 4242, day 1, the precinct's west mouth — and shows the five posts in a vertical line where
+the open paving meets an ordinary crossroads, the pavement strips unbroken on either side.
+
+**The bollards did not address the complaint, and the player said so the same day.** [PLAYTEST-37.md](PLAYTEST-37.md):
+*"the original complaint was that there is a zebra crossing at the edge of the precinct which
+shouldn't be there"*, and *"we can keep the bollards but it doesn't address the complaint"*. The
+2026-09-02 instruction — *all roads leading up to a precinct should be t-junctions at the edge* —
+had been built for the junctions **inside** a span and not for the crossroads at either **end**,
+which `CityMap.street_kind()` left ordinary because a span *"stops short of the crossroads"*, so
+`CityGenerator._street_tile()` laid a zebra on the arm that led into the paving. Four findings
+came in one conversation and were built as one rule, **a junction is made of the streets that
+actually meet at it**, by the same sub-agent on the same branch:
+
+- **A precinct's end is a T.** `street_kind()`'s `PEDESTRIAN` range widens by `SIDEWALK_WIDTH`
+  at each end, reaching the crossroads' own road edge, so every reader — the tile layer,
+  `is_driveable_at()`, the brick paint — sees the spur as precinct with no second definition. Read
+  rather than assumed: only the precinct corridor's own road offsets in the box's precinct-side
+  band change from `CROSSING` to `SIDEWALK`; the crossing street's own zebra depends on a different
+  offset and stays. The bollards moved to the new first tile of paving. *Rejected:* calling
+  `_seal_stub_crossings()` over the span and patching the paint separately, two definitions of
+  one extent.
+- **The border is T-junctions, except at the tunnel and the bridge.** *(2026-09-08: "the border of
+  the city grid also should have t-junctions (except for tunnel and bridge)".)* A new
+  `CityGenerator._seal_border_stubs()` runs after the streets are laid and turns any `CROSSING`
+  within `SIDEWALK_WIDTH` of any edge into `SIDEWALK`, stated over *a side* rather than four
+  hand-written rects (M49's own warning), with the spine's two exits read off the same edges
+  `City._spawn_spine_exits` draws them on. No walkable tile moves.
+- **The main road's crossings are the thin-line style on all four arms.** *(2026-09-08: "since all
+  have traffic lights".)* `GroundTiles._crossing_variant`'s predicate is *either corridor at this
+  tile is `MAIN`* rather than *the carriageway being crossed is*, the junction's property rather
+  than the arm's; the orientation logic is unchanged and the `CROSSING_MAIN_W`/`_E` sprites, which
+  existed and were never reachable, draw for the first time.
+- **Out of bounds is blocked.** *(2026-09-08, on the branch: "it's now correctly t-junctions but
+  the cars and people still go off the map".)* `CrowdAgent._cannot_go_on()` and
+  `_stands_on_a_street()` refuse any out-of-bounds tile except a car on `main_road` crossing the
+  north or south edge — never a walker, playtest 16 finding 3. Found by the first test run rather
+  than by reading: `_recycle()`'s six-roll fallback could still drop a body out of bounds near a
+  true edge (a car on 1088 of 1200 frames at the north edge), so a roll that fails placement is
+  clamped onto the map's last row or column, and a fencepost — `world_size()` itself floors to an
+  out-of-bounds tile — is clamped to one pixel inside. `tests/test_crowd.gd` holds it over seeds
+  and frames. Built under a line-level fence into `src/crowd/`, since the halo milestone owned the
+  rest of the file at the time.
+
+The captures, whole run folders under `docs/evidence/archive/session-captures/2026-09-08/`: the
+precinct's west mouth as a T with the posts on the paving's edge, the north border with its
+top pavement unbroken, and a spine junction with dotted crossings on the side street too.
+
+**What is open.** Whether five dots read as *closed on purpose* while walking; the asset is a
+placeholder the graphics overhaul may redraw. And the border as a wall to the crowd has been
+tested and not watched: bodies now turn or clamp at the boundary pavement rather than walking
+into the mountain, and whether that reads as a city edge is a played question.
+
+## The disc is a circle at whatever size the container gives it · built 2026-09-07
+
+*(Playtest 35 finding 7: "the hover highlight showed a bug that the button is currently a square
+and not the circle -- although nothing we need to fix right now".)* Parked by the player on sight;
+it turned out to be a two-line fix and was built the same day, in `src/ui/mode_button.gd`.
+
+**The constant was the bug and the hover was the light that found it.** `_disc_style()` set every
+`corner_radius_*` to `_RADIUS` (46), which rounds a rect into a circle only while that rect is
+exactly 92x92 — and `custom_minimum_size` is a *minimum*, so any container that hands the button
+more room leaves a rounded rectangle. The resting and hover browns sat close enough to the panel
+behind them that the corners never read; the near-white pressed and hover fills showed the
+silhouette outright. So it was an old defect exposed rather than a regression, and reverting the
+hover would only have hidden it again.
+
+**Fixed by deriving the radius rather than by pinning the size**, and that is the choice worth
+keeping: every scene already sets shrink-centre on all six `ModeButton` instances, so which
+container was doing the stretching could not be reproduced from the scene files alone. Pinning the
+size would have fixed the case nobody could see and left the next container free to break it
+again; `_drawn_radius()` reads half the rect's own shorter side, which is correct at every size,
+falling back to `_RADIUS` before the first layout when `size` is still zero. The styleboxes are
+re-applied on `NOTIFICATION_RESIZED` — a stylebox is stored data, not something re-derived per
+frame — and the look is refreshed afterward so a resize cannot silently un-press a held button.
+**The hold sweep had the same latent bug** — its centre and radius were `_RADIUS` too — and reads
+the rect's own middle and `_drawn_radius()` now.
+
 ## M89 — A halo says what is costing her · built 2026-09-07
 
 *Asked for on 2026-09-07: "lastly, let's create a shader (if that is possible in godot) to create a

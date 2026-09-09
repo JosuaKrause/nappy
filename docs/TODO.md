@@ -14,55 +14,48 @@ mid-way through.
 
 ## The order
 
-1. **M92** — the halo says how much a thing has cost her and how close she is standing to it,
-   and anything the game already marks earns one.
-2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
-   never on screen counts as never placed.
-3. **M56** — the resistance is noticed.
+1. **M93** — the caret is chosen by expected impact, not by a row's own numbers. Its two numbers
+   are settled and it shares them with the halo.
+2. **M56** — the resistance is noticed.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
 does to the route decision, the same as everything else. **M64** (eight seal pictures, so no single
-barrier becomes the city's signature), **M65** (a protester who points at the objective) and
-**M53** (the bollard, so a street that meets a precinct stops against something) are each a
-milestone of only its drawings, and each is ordinary open work.
+barrier becomes the city's signature) and **M65** (a protester who points at the objective) are
+each a milestone of only its drawings, and each is ordinary open work.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
-no artist — which is why M78 stands apart from M65 rather than inside it.
+no artist.
 
 **M79 is tabled rather than queued.** It is the city seen at an angle — a presentation change with
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**"The crowd has no halo" was a question and is now answered, inside M92**: the whole crowd is a halo
-candidate on the same terms as an event, because *a busy sidewalk is noisy because of people* and the
-noise is attributable. The player's words and what was checked before answering are in that section.
-
 **[PLAYTEST-38.md](PLAYTEST-38.md) is the newest session, played on M92's own branch before it
-merged, and its four findings are M92's last items** — two rows the halo shows nothing for, the
+merged, and its four findings are built inside it** — two rows the halo showed nothing for, the
 chatting mother's capture radius, and the cue's own channels: magnitude on transparency as well as
-colour, and both edges eased rather than switched.
+colour, and both edges eased rather than switched. The record, with the question "the crowd has no
+halo" and the player's answer to it, is in `DECISIONS.md` under M92.
 
-**[PLAYTEST-36.md](PLAYTEST-36.md) is the session before it, and all three of its findings are M92** —
-a session on the halo M89 had just built, and together they are one change: the cue gets a second
-axis. It also records a fork the player closed **before** it was built, which is the part to read
-first: colour from a row's declared `intensity` was proposed and rejected in favour of what has
-actually landed on her.
+**[PLAYTEST-37.md](PLAYTEST-37.md) is the session before it: four of its five findings are built
+and the fifth is M93.** The first four were re-reports — the zebra at a precinct's edge, the border's
+four-way boxes, the main road's side-arm zebras, and the bodies walking off the map — and all four
+are one rule, *a junction is made of the streets that actually meet at it*, built under M53; the
+record is in `DECISIONS.md` under M53. The fifth is the caret's own inconsistency, and it is the
+milestone above.
+
+**[PLAYTEST-36.md](PLAYTEST-36.md) is the session before it, and all three of its findings are
+built as M92** — a session on the halo M89 had just built, and together they were one change: the
+cue got a second axis. It also records a fork the player closed **before** it was built: colour from
+a row's declared `intensity` was proposed and rejected in favour of what has actually landed on her.
+One of its sentences was overturned by playtest 38, and the record says which.
 
 **[PLAYTEST-35.md](PLAYTEST-35.md)'s seven findings are all built.** Six of them landed inside M90
 and M89 rather than being filed against them, because those milestones had not merged when the
 findings were reported — **nothing merges carrying a defect that was already found**. The seventh,
 the buttons that were rounded rectangles rather than circles, was parked by the player on sight and
-then turned out to be a two-line fix.
-
-**The one that is queued is finding 7, and it is queued because the player parked it**
-*(2026-09-07: "the hover highlight showed a bug that the button is currently a square and not the
-circle -- although nothing we need to fix right now")*: `ModeButton._disc_style()` sets every
-`corner_radius_*` to `_RADIUS` (46), which draws a circle only while the button's rect is exactly
-92x92 — and `custom_minimum_size` is a *minimum*, so a container that stretches it wider leaves a
-rounded rectangle. **It has always been true and the near-white hover only made it visible**, so it
-is an old defect exposed rather than a regression. It has no milestone of its own; whoever next
-opens `src/ui/mode_button.gd` should take it.
+then turned out to be a two-line fix; the record is in `DECISIONS.md` under "The disc is a circle
+at whatever size the container gives it".
 
 **[PLAYTEST-34.md](PLAYTEST-34.md)'s ten findings are all built** — seven as M90 and three as M91.
 It is the played answer M88 and M87 were waiting for, and it is mostly a report of things that do
@@ -130,8 +123,6 @@ M47 (a calm-area spoiling inconsistency) and M43 (a measured lead-time gap on th
 new, the barriers went to M48 and are built, and the rest went to M49 (the north edge, the junction
 paint) and the small items (the robber in a building).
 
-M53's one remaining piece is specified and unordered — see its entry.
-
 Everything below that is unordered and reassessed on 2026-09-01.
 
 ---
@@ -156,209 +147,104 @@ which proves only that the controls stay *off* where they should.
 
 ---
 
-## M92 — The halo says how much it cost and how close it is · asked for 2026-09-07
+## M93 — The caret is chosen by expected impact · asked for 2026-09-08
 
-Three findings from [PLAYTEST-36.md](PLAYTEST-36.md), and one milestone because they are one change:
-**the halo gets two axes instead of one.** Colour becomes *how much this thing has actually cost
-her*, brightness becomes *how far into its field she is standing*, and the set it draws stops being
-events-only.
+[PLAYTEST-37.md](PLAYTEST-37.md) finding 5, in three sentences: *"caret == lethal is good but is
+inconsistently applied at the moment"*, *"a cat has a caret but it's benign"*, *"a pedestrian
+without caret has a greater impact than a cat"* — and the instruction: **"carets shouldn't be
+chosen by source value but by expected impact value."**
 
-> "the color of the halo should be determined by the absolute magnitude with red being strong and
-> light yellow being weak and the faseout should be by the fraction of its value ... the intensity
-> of the halo states how far away I am. the color should state how dangerous it is"
+**What decides the amber caret today is a source value.** `EventInstance.wants_a_mark()` marks a
+row when `EventDef.walk_through_cost()` — the points a straight walk through the field at walking
+speed would cost, derived from the def's intensity, radii and speed — reaches
+`Tuning.MARK_WORTH_A_DETOUR` (25, a quarter of the bar). It is the same answer for every instance
+of the row, wherever it stands and whichever way she walks, and the crowd is outside it entirely:
+`cat_dash` is marked, the pedestrians who cost more over a pavement never are. The invariant
+`tests/test_danger.gd` holds — *if A is marked and B is not, A costs more to walk through than B* —
+is true only because it is stated over the catalogue alone.
 
-**Read PLAYTEST-36 before building.** It records a fork the player closed before it was built —
-colour from the row's *declared* `intensity` was proposed and rejected in favour of what has
-actually landed on her — and the reasoning is the whole design.
+**Expected impact is the halo's quantity turned forward, measured with her held still.** The halo
+(M92) is the points a source actually landed on the meter over the last five seconds; the caret
+becomes the points a source *will* land over the horizon **if she does nothing** — the thing's own
+motion and field projected onto where she stands, the same field the meter is fed from. That
+direction is the player's: *(2026-09-08: "I don't want a caret when walking into a car from the
+side".)* It is already the screen-edge badge's rule and the cues skill's sentence — *measure the
+thing, not the gap; a rate that includes her 92px/s is a cue for walking* — arriving at the caret.
+A car bearing down on her marks; a car she steps into from the side does not, since held still she
+is never in its path. A cat whose dash lands less than the line on a standing player is not marked,
+whatever its row says; a knot of walkers coming at her is, if what they will land clears it. **And
+a stationary thing never earns a caret** — held still, a café does nothing to her — which is the
+halo's job from the moment she is in its field.
 
-- [ ] **Every source accumulates what it has actually delivered to her, over a five-second window.**
-      *(2026-09-07: "magnitude of how much actually landed at the player -- track it over a time
-      window", and "5s sounds good for now".)* The value is excitement-points, not a rate:
-      `contribution_at(her position)` integrated over the window.
+**The doubled red caret keeps its meaning — lethal — and gets the same rule.** *(2026-09-08: "we
+can keep the double red == lethal", then "and not all lethal things need a caret either".)* So it
+is one sentence in two strengths, both measured with her held still over the horizon: **amber** if
+the thing's own approach will cost her at or above the line, **doubled red** if it will end the
+day — her position inside a car's strike or a `hard_fail` row's lethal radius on its current
+course. Nothing otherwise. A robber waiting in an alley she is not in carries no mark until he
+stands up and comes; a car marks while she stands in its lane, which is exactly when it honks, so
+`CrowdAgent._draw_horn_mark()`'s rule becomes a consequence rather than the definition; the
+cyclist marks when its line reaches her; and a car she steps into from the side carries none
+*(2026-09-08: "I don't want a caret when walking into a car from the side")*.
 
-      **An exponential moving sum is the cheap shape and is worth preferring to a ring buffer**:
-      `landed = landed * exp(-delta / WINDOW) + contribution * delta`, one float per source and no
-      allocation. Its steady state for a constant rate `r` is `r * WINDOW`, which is the same scale
-      the true five-second sum would give, so the number means the same thing either way — say so
-      next to the constant, because "a 5s window" and "a 5s time constant" are not the same
-      sentence and the next reader will assume the first.
+**The amber caret stays.** *(2026-09-08: "amber one is fine as long as it represents a meaningful
+thing".)* What changes is only what decides it.
 
-      **Five seconds is a felt number and it is the player's**, chosen against `cat_dash`'s
-      three-second interruption at one end and a continuous `busker` at the other. Expect to move it
-      once it is on screen
-- [ ] **Colour is that accumulated total, pale to red.** Saturating at
-      `SATURATES_AT * WINDOW` — 25/s for the whole window, or 125 points — keeps the halo agreeing
-      with `Tuning.MARK_WORTH_A_DETOUR`, the same line the caret already draws between *ignorable*
-      and *worth a detour*.
+**And the vocabulary is restated as one language.** *(2026-09-08: "but then we need to create a
+consistent language around the other carets too".)* Each row of `docs/EVENTS.md`'s "The visual
+vocabulary" and the cues skill becomes one sentence decided by one quantity — caret: *stand here
+and this will cost you*, or *end your day*; halo: *this is costing you now, and this much*;
+exclamation over her: *the clock on you has started*; badge: *something lethal or fast is coming,
+and this is what* — with **one number** (the amber line and the halo's red are the same points, so
+an amount means the same thing whether it already landed or is about to) and **one direction**
+(everything about a thing is measured with her held still, so nothing is a cue for walking). That
+rewrite is this milestone's first item.
 
-      **The two endpoints are a cues-rule decision, not a paint choice.** The palette already warns
-      that a hue in this game means something: `MARK_COSTLY` (amber) and `MARK_LETHAL` (deep red)
-      are what an event *costs*, and `SIGNAL_RED`/`AMBER`/`GREEN` are the traffic lights, with a
-      note beside them saying borrowing between the two would make permission look like a threat.
-      A ramp reading *how much has this cost me* is the caret's own axis, so it belongs to the
-      `MARK_*` family — but `MARK_LETHAL` is dark and desaturated, which is a mark colour rather
-      than a glow colour, and a glow that dark under an entity reads as a shadow. **Name two new
-      constants for the ramp's ends and say in their doc why they are not the mark colours
-      themselves**
-- [ ] **Brightness is the falloff fraction, and nothing else.**
-      `contribution_at(her position) / current_intensity()` — 1.0 at the centre of any field,
-      0 at its rim — times `MAX_ALPHA`. **This deliberately decouples brightness from strength**: a
-      busker at arm's length glows as brightly as a burning building at arm's length, and only the
-      colour separates them. That is what *"the intensity of the halo states how far away I am"*
-      asks for, and it is the opposite of what the cue does today
-- [ ] **Anything drawing a caret gets a halo, which means the crowd joins the candidate set.**
-      *(2026-09-07: "at the very least if something has a caret it needs a halo as well".)* A
-      honking car already draws a caret in `MARK_LETHAL` from `CrowdAgent._draw_horn_mark()` when
-      `_jolt > 0.0`, and the halo has never been able to see it, because `select_sources()` is
-      handed `EventManager.instances()`.
+**The two numbers are the halo's, confirmed.** *(2026-09-08, on a five-second horizon and a line at
+40 of the 100-point meter: "both sound good to me".)* So one horizon and one line serve past and
+future alike: the halo is red at 40 points landed over the last five seconds, the caret is amber at
+40 points expected over the next five. A cat's dash on a standing player lands about 30 and is not
+marked; a café she is standing in is the halo's, not the caret's. The one thing the line must not
+do is mark the ordinary crowd at ordinary density, which is a measurement on the arterial rather
+than an argument, and is the last item.
 
-      **Two cues that disagree about what they are about is the defect**, so the fix is the
-      candidate set rather than a special case: `CrowdAgent` already carries its own
-      `contribution_at()`. **Assert the implication rather than assuming it** — a caret means the
-      thing clears `CONTRIBUTION_FLOOR` at her position — because if it can be marked without
-      clearing the floor then the floor is what needs changing.
-
-      **The ambient crowd is in the set too** — see "The crowd has a halo" below, where the player
-      settled the question that was left open here
-- [ ] **The halo pass has to be reachable from both classes.** Today it is
-      `EventInstance._draw_halo()`, a child `Node2D` with `show_behind_parent` that re-runs
-      `_draw_body(canvas)` at a ring of offsets. `CrowdAgent` needs the same, so the ring and its
-      shared `ShaderMaterial` want extracting into one small class that calls back into whichever
-      parent owns it — and `CrowdAgent`'s own drawing needs the same `canvas` parameter
-      `EventInstance`'s helpers already took.
-
-      **`select_sources()` stops being typed to `Array[EventInstance]`** and becomes generic over
-      "a `Node2D` that can answer `contribution_at()`". GDScript has no interface to lean on, so say
-      in its doc what the duck type is. The `city_wide` exclusion is an event-only concept and has
-      to stay one
-- [ ] **`MAX_SOURCES` (8) is a played question once the crowd is in it.** A busy pavement can put
-      far more than eight caret-worthy things inside her reach at once, and the cap currently keeps
-      the strongest — which is the right rule and possibly the wrong number. **Do not guess it**;
-      look at a capture on the arterial with the change in and say what the number should be
-
-**Played on the branch, [PLAYTEST-38.md](PLAYTEST-38.md), and four more items follow from it:**
-
-- [ ] **Cats and birds show nothing.** *(2026-09-08: "cats and birds have zero effect right now
-      according to halos".)* Both cost her — `cat_dash` 17/s over 30/120px for 1.8s, a flock +35
-      through the middle — so this is either a rim that is never drawn for these two shapes or one
-      so faint it reads as nothing. **Find out with a rig before touching a number**: a `cat_dash`
-      and a flock instance standing on her must be selected by `select_sources()` and must
-      accumulate `landed()` after a dash or a walk-through; and `alpha_for()`'s peak — the
-      source's `contribution_at()` at its own `global_position` — is suspect for a flock, whose
-      centre can lie between its birds where the summed field is not at its maximum. Whatever it
-      is, the fix is the cause, stated in the commit
-- [ ] **The chatting mother's capture radius grows.** *(2026-09-08: "the radius of the chatty lady
-      for capturing must be larger".)* `chatting_mother.detain_radius` is 33px; the player gave no
-      number. **Chosen as the smallest reading and open to overturn: 48px** — three quarters of the
-      64px pavement band, so she is met from the frontage lane as well as the kerb lane and no line
-      on her own pavement walks past her, while somebody on the far pavement (96px away centre to
-      centre) still passes. The row's docstring and `docs/EVENTS.md`'s row carry the new number and
-      the reason; `validate()`'s `detain_radius < inner_radius` must still hold
-- [ ] **Transparency carries magnitude too, and both edges fade.** *(2026-09-08: "yellow can mean 1
-      and 20 which are very different. I think we can combine color with transparency and also fade
-      in and fade out smoothly using transparency. right now it's always abrupt and yellow can mean
-      anything".)* Two changes to `ExcitementHalo`'s brightness:
-
-      **Magnitude, and nothing else.** *(2026-09-08: "the transparency shouldn't show distance
-      since distance actually doesn't matter. only the actual received amount counts which might
-      depend on the distance but we don't need to encode the distance. this frees up transparency
-      for also encoding magnitude".)* Both channels read `landed()`, **on two different curves**
-      *(2026-09-08: "color and transparency shouldn't be the same number. transparency can be used
-      to emphasize low values")*: colour stays linear over 0..40 points, where the high end is told
-      apart; transparency rises fast and saturates early — `MAX_ALPHA` times
-      `clampf(sqrt(landed / LOW_EMPHASIS_POINTS), MIN_MAGNITUDE, 1.0)`, about 15 points and 0.2 —
-      so a point is faint but present, five is clearly there, fifteen is solid, and above that the
-      hue carries the difference. The distance fraction (*"the intensity of the halo states how far
-      away I am"*, playtest 36) is **overturned by the player** with the words above and goes, with
-      its `alpha_for()` and its test.
-
-      **Time.** *(2026-09-08: "all changes should transition (hue and transparency) instead of
-      immediately showing the actual value".)* What is drawn — hue and alpha both — eases toward
-      its target rather than jumping: in over about 0.3s when a source clears the floor or a burst
-      lands, out over about 0.8s when it stops contributing or its points leave the window — so a
-      burst that expires all at once dims and pales rather than vanishes. The easing lives on the
-      source's own halo state (`EntityHalo`), not in the selection; selection stays the honest set,
-      and a source dropped from it is told a target of zero and fades. `landed()` itself stays
-      exact. The constants are felt numbers with the player's sentences beside them
-- [ ] **The ramp has to read orange in the middle.** *(2026-09-08: "there is also no real fade from
-      yellow to red (eg when standing next to the other baby lady".)* A chat lands
-      `CHAT_EXCITEMENT` (25) over `detain_seconds` (5s), which is past the ramp's midpoint. First
-      hold in a rig that a `chatting_mother` instance's `landed()` is about 25 at the end of a full
-      chat — if the chat's flat rate from `current_intensity()` is not reaching `contribution_at()`
-      inside her field, that is the bug. If it is reaching her, the ramp is the bug: an RGB lerp
-      from a light yellow to a red passes through a desaturated middle, so lerp in HSV or through a
-      chosen orange midpoint instead, and take one capture at the end of a chat to look at it
-
----
-
-## The crowd has a halo · answered 2026-09-08
-
-**Asked as a question on 2026-09-07 and answered by the player on 2026-09-08, inside M92.** The
-question was whether the ordinary crowd — pedestrians and cars that are `CrowdAgent`s rather than
-`EventInstance`s — should earn a halo at all, given that a busy pavement puts dozens inside her
-reach and *a cue that marks everything says nothing*. The measurement that raised it: the arterial
-pavement on day 6 of seed 4242, the bar at 48 and `incoming 20.22 /s`, nothing glowing.
-
-**The answer is that the crowd *is* the noise, so it is attributable.** *(2026-09-08: "it was an
-easy shortcut to introduce a background noise dependent on flooring. we can keep that to some
-degree (eg alleys) but excitement should come from visible objects. a busy street is noisy because
-of cars and a busy sidewalk is noisy because of people ... that will allow us to attribute the
-source exactly and in turn properly integrate/aggregate the excitement magnitude over a given
-timeframe which informs the color of the halo. honking car halos fall out of this for free".)*
-
-**What the code already did, checked before answering:** incoming excitement has no ground-based
-floor — every walker and car emits its own field, `docs/MECHANICS.md` says *"there is no city-wide
-background noise number anywhere"*, and the only ground-based source is the alley's flat 3.0/s,
-which stays. What is ground-based is the **decay** multiplier (park 2.2, precinct 1.5, ordinary
-1.0, main road 0.6), and that stays too: *(2026-09-08: "we can leave the decay multipliers alone
-they make different places feel different. that is good. that way an alley doesn't ease the nerves
-as well as a park.")*
-
-**So M92's candidate set is every source, events and the whole crowd alike**, with the floor and
-the cap doing the work of keeping a busy pavement legible. And what the colour reads is fixed in
-the same exchange: *(2026-09-08: "what matters is how much mass landed on the player. don't derive
-it from the source numbers but trace an increase in excitement back to its constituents. if a
-honking car caused 35 excitement to the player that's the number that informs the color of the
-halo. with 1/3 of the bar that's pretty red already".)* Points that actually reached the meter,
-traced from the meter's own sum, over a true five-second window, red at about 40 of the 100-point
-bar. The three shapes the question had offered — leave it to events, one combined outline, a
-higher floor for the crowd — are none of them taken.
-
----
-
-## M78 — The chalk mark can be found · asked for 2026-09-02
-
-Two findings from playtest 19, and they are halves of one thing: the first mark is announced when it
-should not be, and it cannot be found when it should be. **Neither needs a drawing**, which is why
-they stand apart from the protester's pointing pose in M65 — that one is a milestone of its own
-drawing and these two are placement.
-
-**The mark lives on an alley wall, and that was confirmed rather than newly decided.** *(2026-09-03:
-"let's use them as option to avoid obstacles and as chalk mark carriers".)* It is already the
-design — `docs/PLAYTEST-02.md` describes the mark as chalk on an alley wall, and the re-placement
-rule below is stated in the player's own words as *"the next alley the player comes close to"*. What
-the confirmation adds is the other half of the same sentence: under M64 an alley is also the way
-round a wall, so the ground the resistance is written on is ground the sealing already gives her a
-reason to enter. See M64, "What alleys are for, then, is going round a wall".
-
-- [ ] **The first chalk mark is named in the status line.** *(2026-09-02: "the first chalk mark is
-      written in the status when it should not be.")* Seen in the screenshot as
-      `resistance ....   somewhere out there: a chalk mark`, before the player had found anything.
-      **This is the no-hint rule leaking**, and that rule is in `CLAUDE.md` under things
-      deliberately not done: *the **first** encounter comes with no hint at all, because finding the
-      difficulty dial is meant to be the player's own doing. After that the resistance speaks.* The
-      HUD line is fed by `resistance_contact_available`, which does not distinguish the first mark
-      from the rest
-- [ ] **A mark that was never on screen was never placed.** *(2026-09-02: "it's hard to find the
-      chalk mark remember it should be dynamically placed on the path where the player can see it.
-      if it was placed but never on screen it should count as not placed and be placed on the next
-      alley the player comes close to.")* *"Remember"* is right — placing it on the path is already
-      the design; what is new is the **re-placement rule**, and it is a shape nothing in the game
-      has: `ClosurePlanner` and `EventScheduler` both decide at dawn and stand, and this follows the
-      player through the day.
-
-      It is also what makes finding 1's silence fair: a first encounter with no hint is only
-      reasonable if the thing can actually be come across
+- [ ] **One number and one horizon, shared.** `Tuning.MARK_WORTH_A_DETOUR` (25, derived per row)
+      is replaced by a single pair the halo and the caret both read — the line at
+      `METER_MAX * 0.4` and the horizon at five seconds — living in `Tuning` rather than on
+      `ExcitementHalo`, where M92 first put the saturation. Their docs carry the player's sentences
+      above.
+- [ ] **Expected impact, per source, with her held still.** A method on both `EventInstance` and
+      `CrowdAgent` — the same duck type the halo reads — answering the points this thing's own
+      motion and field will land on her current position over the horizon **beyond what it lands
+      now**: the source's velocity extrapolated in steps of a quarter second, its field sampled at
+      her position at each step, summed, less its present rate times the horizon. A stationary
+      thing she is inside therefore expects nothing (the halo has it); an approaching thing expects
+      its approach; a departing thing expects less than nothing and is unmarked. Sources whose
+      reach cannot touch her inside the horizon — further than speed × horizon plus their outer
+      radius — are skipped without sampling, which is what keeps two hundred walkers cheap. A
+      pursuer that has noticed her is heading for her and is projected as such; one still waiting
+      has no velocity.
+- [ ] **The two carets are that quantity in two strengths.** `EventInstance.wants_a_mark()` and a
+      `CrowdAgent` equivalent: **doubled deep red** when a step of the projection puts her inside
+      the thing's lethal reach — a `hard_fail` row's `inner_radius`, a car's strike box — on its
+      current course; **amber** when the expected points reach the line; nothing otherwise. The
+      honk stops being the car's rule and becomes a consequence (a car whose lane she stands in
+      is projected into her). The flash while telegraphing is kept as the phase. `mark_colour()`
+      follows the strength, not the row.
+- [ ] **The vocabulary is restated as one language**, in `docs/EVENTS.md`'s "The visual vocabulary"
+      and `.claude/skills/cues/SKILL.md`: caret *stand here and this will cost you* / *end your
+      day*; halo *this is costing you now, and this much*; exclamation *the clock on you has
+      started*; badge *something lethal or fast is coming, and this is what*. One number, one
+      direction; nothing is a cue for walking.
+- [ ] **`tests/test_danger.gd` states the new invariant.** The catalogue-wide monotonicity check
+      goes, since a mark is no longer a property of a row; in its place, scenarios: a café she
+      stands in is unmarked; a cat dashing at her is unmarked; a cyclist whose line reaches her is
+      red and one passing wide is not; a car she stands in front of is red and one she would have
+      to step into is not; a walker brushing past is unmarked. The pram, the exclamation mark and
+      the badge tests are untouched.
+- [ ] **Measured on the arterial.** One capture standing on the busy pavement: how many amber
+      carets are up. The answer has to be *none at ordinary density*, or the line moves before
+      this merges.
 
 ---
 
@@ -693,35 +579,15 @@ again after* means running the same thing rather than reinventing it.
 
 ---
 
-## M53 — The bollard
-
-**All that remains here is one drawing**, alongside M64's seal pictures and M65's pointing
-protester. Everything else about the precinct is built.
-
-A precinct is paving frontage to frontage with nothing driving on it, on either axis, and a street
-that meets one ends at its edge. What remains is that the ending is not *drawn* as anything.
-
-- [ ] **Nothing draws a bollard, and the street just stops.** Six comments across the city and the
-      crowd explain a precinct by saying a driver *"meeting a bollarded street"* diverts, and
-      `docs/CITY.md` says a span stops short of the crossroads at either end *"which is where the
-      bollards are"*. **There is no bollard anywhere in the game** — no sprite, no tile, no prop. The
-      carriageway simply ends flush against the paving, which reads as the road running out rather
-      than as a street that was closed on purpose. It is the same gap M48 closed for `construction`,
-      whose barrier boards were blue-grey with no hazard marking: one picture per row passes and the
-      picture still says nothing. What it wants is the smallest thing that says *this was done
-      deliberately* — a line
-      of posts across the mouth is the real-world answer and it is also the cheapest drawing in the
-      list
-
----
-
 ## M65 — A protester points at the objective · asked for 2026-09-03
 
 **All that remains here is the pose, which is a drawing.** The two findings this milestone was
-opened for — the first mark being announced, and a mark that was never on screen — are M78.
+opened for — the first mark being announced, and a mark that was never on screen — are built; the
+record is in `DECISIONS.md` under M78, and the played question it leaves is whether a mark that
+follows her until seen is now findable at all.
 
-**Half of this item needs no drawing at all**, and is worth lifting into M78 if the mark is still
-hard to find once the re-placement rule lands: raising how often a protester appears is a density
+**Half of this item needs no drawing at all**, and is worth doing on its own if the mark is still
+hard to find now that it follows her: raising how often a protester appears is a density
 change, and the player's own reason it is cheap is that a protester obstructs nothing and pursues
 nothing, so it does not compete for the catalogue's placement budget.
 
@@ -1262,53 +1128,6 @@ direction, not distance.**
 - [ ] **The fence is drawn in elevation and turned on its side.** The game looks straight down,
       where a fence is a thin line with post-heads and a shadow. Rotating an elevation does not make
       it a top-down drawing
-- [ ] **People walk out onto the border and vanish there.** Reported again from play on 2026-09-02
-      — *"the north edge still has people and cars walking into the mountain and disappearing"* —
-      so it is people **and cars**, and the north edge is where it was seen.
-      **`CrowdAgent._blocked_ahead` returns `false` for a tile out of bounds**, so the one wall that
-      should stop them reports as clear. Likely *out of bounds is blocked* and nothing else — check
-      against the **spine exits**, the one place a car is meant to leave the map. Overlaps M53
-- [ ] **Whatever fixes one border has to be stated over *a border*.** The first pass wrote four
-      sides four times, which is one bug per side waiting to happen
-- [ ] **Junctions are four-way where an arm dead-ends — reproduced, with a picture.**
-      *(2026-09-02, from play: "the intersections are not t intersections", of the **north edge**.)*
-      **Seed 2927659514, day 1, standing at tile (80,1)** —
-      `docs/evidence/archive/session-captures/2026-09-02/run-2026-09-02T181431-seed2927659514-ffa2830-061s-asked.png`. The zebras on the
-      north–south streets run all the way to the border and a crossing box is painted on an arm with
-      nothing beyond it. Three earlier candidates were checked and were correct, which is why this
-      sat as *not reproduced* for so long: the map's own border is the one place an arm genuinely
-      dead-ends. **The same frame shows a car and two pedestrians standing on the out-of-bounds
-      ground above the top pavement**, so this and the vanishing-walkers entry above are one cause
-      seen twice — whatever decides what is beyond the last tile is answering *street* in both.
-
-      **It is every side, not the north one.** The same seed at tile (5,88) is the **west** border
-      with the identical painted crossings running into it —
-      `run-2026-09-02T181431-seed2927659514-ffa2830-045s-asked.png`. Whatever fixes this is stated
-      over *a border*, which is the item two above this one.
-
-      **And there is a working case to copy, in one frame with a broken one** —
-      `run-2026-09-02T181431-seed2927659514-ffa2830-030s-asked.png`, tile (13,87). *(2026-09-02:
-      "here is an example of a proper closed off side of the intersection (towards the right to the
-      park) and an improperly closed off side (towards the south it should be closed off but
-      isn't).")* The arm running **east into the park** is terminated correctly — the carriageway
-      stops and the pavement carries on across it — while the arm running **south**, with nothing
-      beyond it either, is drawn as though the street continued.
-
-      **That is the most useful thing anybody has said about this**, because it makes the question
-      *what is different between those two arms* rather than *where is the bug*. `docs/TODO.md`'s
-      own M49 wording already guesses at the answer — *"where the arm beyond is not a street at all
-      — a park, a calm zone's absorbed corridor, the shore"* — so the case that works is the one the
-      generator was told about explicitly, and the fix is to state it over *anything* that is not a
-      street rather than over the list of things somebody remembered
-- [ ] **A main road's junction is four dotted crossings, not two.** *(2026-09-02: "minor issue — for
-      a main street intersection all four crossings should be lines instead of zebra crossing since
-      all four are controlled by the traffic light".)* `GroundTiles._crossing_variant` already draws
-      the dotted pair rather than a zebra for a **main road's** crossing, with the reason recorded in
-      `CityGenerator._street_tile`: traffic on a main road obeys the light rather than giving way, so
-      the crossing is a *timing* problem and a zebra there is paint promising a gap-hunting one. The
-      player's point is that the property belongs to **the junction rather than the arm** — where the
-      spine crosses an ordinary street, one light governs all four crossings, so the two on the side
-      street are currently painted as a promise the traffic does not make
 - [ ] **Restate the main-road pacing question.** The design says she exhausts her own side of the
       spine before being forced across. **Is that emergent** — calm areas exist on both sides and
       spoiling burns the near ones over an act — **or does something have to withhold the far side
