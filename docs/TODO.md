@@ -111,7 +111,8 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 the new carets.** Two of its four findings were fixed on the M64 branch on sight — the rotated
 seal pictures were not well-formed XML, and the accident's onlookers were not the game's people —
 and two are filed under M100: the guard robber standing inside a building is reproduced with its
-cause, and a touch on a chalk mark has no acknowledgement she can see.
+cause, and a touch on a chalk mark shows nothing but a colour change, and nothing at all on a lost
+day's summary.
 
 **[PLAYTEST-49.md](PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
 one bug — events spawning inside a fully blocked street — filed at the top of M100's defects,
@@ -1039,14 +1040,18 @@ re-pitched:
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
-- [ ] **A touch on a chalk mark has no acknowledgement she can see.** *(2026-09-09, playtest 50:
-      "how do I know I stepped on the chalk".)* Today a touch turns the mark from chalk white to
-      pale green (`Palette.CHALK` to `CHALK_DONE`) under her feet, and in a release build the status
-      line gains `somewhere out there: <task>`; the debug build's `resistance ....` line is up from
-      the moment a contact is on offer and its dots move only on a perform, so a pick-up changes
-      nothing on it. The design's own rule is no quest log — *the first encounter comes with no
-      hint at all* — so how much a touch may say is the player's call: nothing more, the mark's
-      colour made unmistakable, or a one-line status change on the pick-up too
+- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change, and nothing at
+      all if the day is then lost.** *(2026-09-09, playtest 50: "how do I know I stepped on the
+      chalk", then "I walked over the chalk why didn't it count?" — it had.)* A touch turns the
+      mark from chalk white to pale green (`Palette.CHALK` to `CHALK_DONE`) under her feet; the
+      `resistance ....` dots are performs only, so a pick-up moves none; and the mark's own words
+      (`GameState.pending_resistance_brief`) are appended by `DaySummary._resistance_line()` on
+      the **won** branch of the summary only, so a mark touched on a day she then loses says
+      nothing until the end of the next won day, while the touch itself survives the nerve. The
+      design's own rule is no quest log — *the first encounter comes with no hint at all* — so how
+      much a touch may say is the player's call: nothing more; the mark's colour made
+      unmistakable; the brief shown on a lost day's summary too; or a one-line status change on
+      the pick-up itself
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a

@@ -40,16 +40,29 @@ building.
 
 > "how do I know I stepped on the chalk and the robber is stuck inside the roof"
 
-**She had not stepped on it.** The log's 18.2s entry — *contact: walked within 130px of the chalk
-mark at (69,79)* — is the sight entry, written once when she comes within `CONTACT_SIGHT` of a
-mark; a touch is within `ContactPoint.REACH` (36px) and writes a different entry, and none was
-written before the day was lost at 21.0s. What a touch shows today: the mark's colour goes from
-chalk white to pale green (`Palette.CHALK` to `CHALK_DONE`), and in a release build the status line
-gains `somewhere out there: <task>`. In the debug build the `resistance ....` line is shown from
-the moment a contact is on offer, and its dots move only when a perform is completed, so a
-pick-up changes nothing on it. **So the acknowledgement is a colour change on a mark under her
-feet and nothing else.** Filed in M100's open design questions, because the design's own rule is
-that the resistance has no quest log, and how much a touch may say is the player's call.
+> "I walked over the chalk why didn't it count?"
+
+**It counted.** The run log has *contact: step 1 completed* at 19.3s, a second after the robber
+came for her, and the retry of the same day opens with *step 2 on offer* — the second screenshot
+of the retry shows the debug HUD's line reading `somewhere out there: a note for a stranger`,
+which is step 2's title and only appears once step 1 is done. Two things made it look as if it
+had not:
+
+- **A pick-up moves no dots.** The `resistance ....` dots are `resistance_progress`, and
+  `GameState.complete_resistance_step()` adds to that only for a perform — *"the note is not the
+  errand, only the perform half is"* — so the mark's own touch leaves the line as it was.
+- **The words the mark carries are shown on the day summary of a won day, and this day was
+  lost.** `DaySummary._resistance_line()` appends `GameState.pending_resistance_brief` — *"how she
+  learns what tomorrow wants, since there is no marker anywhere else that would"* — and it is
+  called on the won branch of `show_day()` only, so the loss screen said nothing about the note.
+  The brief is not cleared by the loss, so it will appear at the end of the next won day, a day
+  late. The pick-up itself survives the nerve: `completed_resistance_steps` is cleared only by
+  `start_run()`, so a mark touched on a lost day stays touched.
+
+What a touch shows at the moment it happens is the mark's colour going from chalk white to pale
+green (`Palette.CHALK` to `CHALK_DONE`) under her feet, and nothing else. Filed in M100's open
+design questions, with the lost-day gap, because the design's own rule is that the resistance has
+no quest log and how much a touch may say is the player's call.
 
 **The robber is inside the building, and this is the reproduction M100's defect was waiting
 for, with the cause.** Read off a headless probe of the same seed and day: the alley is rows
