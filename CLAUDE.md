@@ -176,6 +176,15 @@ follow; it is a claim with the evidence withheld.
   settled fact.
 - If a name was invented for the conversation rather than found in the repo, say so. Half the
   confusion is a label that sounds official and is not.
+- **A milestone or a `TODO.md` item is named by its number *and* a short title**, every time:
+  "M98, pressure in the empty acts", never "M98" alone. *(2026-09-09: "whenever you're talking
+  about milestones and todos give a short title in addition to the number.")* A number is a
+  lookup the player has to perform; the title is the thing they were asked about.
+- **A question carries all the context needed to answer it** — what was asked, what it collides
+  with, what each answer costs, and which you would pick — in the message that asks it, not in an
+  earlier one. *(2026-09-09: "also provide all necessary context when asking a question.")* The
+  player answers from the message in front of them, and a question that leans on something said
+  three turns ago is a question with its evidence withheld.
 
 **This rule is about conversation, so nothing can trigger it but you.** It lives here rather than in
 a skill because no file edit precedes it — it applies to the first sentence of a turn as much as the
