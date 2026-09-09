@@ -21,8 +21,7 @@ it is not.
 
 | Doc | Contents |
 | --- | --- |
-| [AGENTS.md](AGENTS.md) | Codex entry point — loads the shared Claude instructions and skills |
-| [CLAUDE.md](CLAUDE.md) | How to work on this repo — an index; the rules are in `.claude/skills/` |
+| [CLAUDE.md](CLAUDE.md) | How to work on this repo — an index; the rules are in `.claude/skills/`. Codex reads it too, through `.codex/config.toml` |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Where to pick up: the state of the tree and what is queued |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | The history — decisions taken, options rejected, what changed and why |
 | [docs/DESIGN.md](docs/DESIGN.md) | Pillars, core loop, win/lose conditions |
@@ -117,6 +116,8 @@ any script error; `tools/test.sh` is the headless suite, and it is what a commit
 ./tools/check.sh
 ./tools/test.sh                 # everything
 ./tools/test.sh crowd events    # just those suites, for the inner loop
+./tools/lint.sh                 # the docs, for sentences that go stale on their own
+./tools/pycheck.sh              # the Python under tools/: ruff, mypy, its unit tests (needs uv)
 ```
 
 A filtered run prints `PARTIAL RUN` under its count and is deliberately not a green build.

@@ -21,10 +21,10 @@ shopt -s nullglob
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # **More than this buys nothing, and the arithmetic says why.** The wall clock cannot go below the
-# slowest single suite, and `test_events.gd` alone is about 259s against roughly 905s of total
-# work — so four shards have about 215s each to do beside it and the run is already bounded by the
-# one suite rather than by the split. A fifth shard would divide 905 into 181s pieces and still
-# wait 259s for `test_events.gd`. Going *below* four is what costs: three shards is 302s of
+# slowest single suite, and `test_events.gd` alone is about 279s against roughly 1020s of total
+# work — so four shards have about 250s each to do beside it and the run is already bounded by the
+# one suite rather than by the split. A fifth shard would divide 1020 into 204s pieces and still
+# wait 279s for `test_events.gd`. Going *below* four is what costs: three shards is 340s of
 # arithmetic per shard, and that is above the floor.
 #
 # So the only thing that would make the full run meaningfully faster is splitting `test_events.gd`
@@ -83,20 +83,21 @@ fi
 ## serial and looked fine apart from being no faster.
 _cost_of() {
 	case "$1" in
-		test_events.gd)      echo 259000 ;;
-		test_routes.gd)      echo 164000 ;;
-		test_generator.gd)   echo 155000 ;;
-		test_seals.gd)       echo  90000 ;;
-		test_crowd.gd)       echo  66000 ;;
-		test_full_run.gd)    echo  35000 ;;
-		test_telemetry.gd)   echo  35000 ;;
-		test_balance.gd)     echo  29000 ;;
-		test_route_tree.gd)  echo  22000 ;;
-		test_event_manager.gd) echo 13000 ;;
-		test_acts.gd)        echo  12000 ;;
-		test_blocks.gd)      echo  11000 ;;
-		test_reachability_grid.gd) echo 5000 ;;
+		test_events.gd)      echo 279000 ;;
+		test_generator.gd)   echo 180000 ;;
+		test_routes.gd)      echo 178000 ;;
+		test_seals.gd)       echo 109000 ;;
+		test_crowd.gd)       echo  82000 ;;
+		test_telemetry.gd)   echo  39000 ;;
+		test_full_run.gd)    echo  36000 ;;
+		test_balance.gd)     echo  31000 ;;
+		test_route_tree.gd)  echo  28000 ;;
+		test_event_manager.gd) echo 16000 ;;
+		test_acts.gd)        echo  13000 ;;
+		test_blocks.gd)      echo   9000 ;;
+		test_reachability_grid.gd) echo 7000 ;;
 		test_heat.gd)        echo   3000 ;;
+		test_resistance.gd)  echo   3000 ;;
 		test_day_loop.gd)    echo   1000 ;;
 		# What an unlisted suite is assumed to cost. **Deliberately larger than any suite it
 		# currently applies to** — every unit suite left off this table came in under a second
@@ -172,7 +173,8 @@ for ((i = 0; i < SHARDS; i++)); do
 	if [[ -z "${shard_filters[i]}" ]]; then
 		continue
 	fi
-	# shellcheck disable=SC2086 -- the filters are file names and are meant to word-split.
+	# The filters are file names and are meant to word-split.
+	# shellcheck disable=SC2086
 	run_one_process ${shard_filters[i]} > "$work_dir/shard-$i.log" 2>&1 &
 	pids+=("$i:$!")
 done

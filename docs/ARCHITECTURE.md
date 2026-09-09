@@ -14,7 +14,13 @@ scenes/
   player/stroller.tscn    the mother + stroller CharacterBody2D
   ui/hud.tscn             meters, clock, nerves
   ui/day_summary.tscn     between-day screen
+  ui/title_screen.tscn    the screen a run opens on
+  ui/pause_screen.tscn    the pause
+  ui/touch_controls.tscn  the pointer scheme's overlay
+  dev/*.tscn              the three illustrated review sheets (src/visuals/illustrated_*_review.gd)
 src/
+  main.gd                 boot: generate the city, drop the player on the doorstep, then the HUD
+  game_enums.gd           shared enums (see below)
   autoload/
 	tuning.gd             all balance constants           (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
@@ -33,6 +39,10 @@ src/
 	building.gd           one lot, assembled from 32px facade and roof tiles
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
+	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
+	prop.gd               small scenery, feet-anchored so it y-sorts against the player
+	traffic_signals.gd    which arm of a signalled junction is let through, and when
+	traffic_light.gd      one signal head on a junction corner, facing the arm it controls
   routes/
 	street_network.gd     the lattice as a graph: junctions, streets, distinct-route counts
 	reachability_grid.gd  the tile graph contracted into two-tile cells; is there a walkable path
@@ -41,16 +51,20 @@ src/
     closure_marker.gd     one barrier panel, sign or piece of wreckage
 	route_tree.gd         the day's corridor: one branch per calm area, grown on the grid
 	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep
+	seal_planner.gd       seals every street off the day's route tree
   crowd/
 	crowd.gd              owns the day's agents; sums their excitement
 	crowd_agent.gd        one walker or one car
 	crowd_lanes.gd        the lane geometry of the street grid
+	crowd_field.gd        the box around the player the crowd is simulated in
+	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
 	event_def.gd          authored event data
 	event_instance.gd     runtime node: position, lifetime, telegraph, emission
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + day
 	event_manager.gd      owns the live instances; answers total_excitement_at
+	event_director.gd     sites the budgeted one-shots in front of her as she walks
   day/
 	day_controller.gd     the clock, the two phases, the four ways a day ends
   resistance/
@@ -80,9 +94,16 @@ src/
 	touch_input.gd        whether this device has a touchscreen, answered once
 	screen_orientation.gd the one rotation applied when the window is portrait
 	quit_option.gd        whether the game can quit itself, answered once
+  visuals/                the opt-in illustrated presentation (`--illustrated`); see the illustrated-png skill
+	directional_parts.gd  per-facing PNG-sheet registrations and the direction selector
+	modular_person.gd     measured PNG assembly for the mother and the pram
+	modular_walker.gd     the same for a crowd walker; consumes movement, never owns it
+	planted_gait.gd       distance-driven two-foot gait for a feet-anchored assembly
+	illustrated_*_review.gd  the three review sheets under scenes/dev/: actor, motion, street
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
+	illustrated_downsample.gdshader  the same-view render-scale experiment's averaging pass
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
 assets/
@@ -93,13 +114,26 @@ assets/
   events/                 one body per EventDef.Look
   closures/               barriers, the sign, and what is lying in the road
   crowd/                  walkers and cars, body plus colour trim
+  ui/                     the title's two mode discs, continue, restart, pause
+  shaders/                the excitement halo's silhouette rim
+  illustrated/            the PNG art the illustrated presentation draws; manifests beside the sheets
   ground_tileset.tres     one TileSetAtlasSource per ground tile
-  game_enums.gd           shared enums (see below)
 tools/
   check.sh                import + headless boot, fails on any script error
+  test.sh                 the headless suite, sharded; a filter runs one process and says PARTIAL RUN
+  lint.sh                 the governed docs, for sentences that go stale on their own
+  pycheck.sh              ruff, mypy and the unit tests for the Python here
+  run.sh                  play; rebuilds the import cache first when a pull left it stale
   shot.sh                 render the game to a PNG
+  telemetry.sh            show a run log; stats.sh aggregates them
+  clip.sh / clip.py       convert an animation burst to an MP4 beside its frames
+  reference.sh / reference.py  bring a photo or video into docs/reference/, shrunk and stripped
+  remove-checkerboard.py  extract painted pixels from a checkerboard-background PNG
   export-web.sh           headless Web export into build/web/ -- release by default, or `debug`
   serve-web.sh            export-web.sh debug, then serve build/web/ over plain HTTP and print the URL
+  release.sh              cut a version tag, which is what deploys
+  codex-hooks.py          adapts Codex's hook payloads to the shared hooks in .claude/hooks/
+  test_*.py               the unit tests pycheck.sh runs
 ```
 
 ### `GameEnums`

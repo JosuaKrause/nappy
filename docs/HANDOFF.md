@@ -9,8 +9,9 @@ progress-tracking, which lives there too.
 ## The state of the tree
 
 **Check `git status`, `git branch` and `git worktree list` for the current checkout and open work.**
-Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex's entry point is `AGENTS.md`.
-Its repository hooks need review through `/hooks` before they execute.
+Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex reads `CLAUDE.md` directly
+through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the skills through the
+`.agents/skills` link. Its repository hooks need review through `/hooks` before they execute.
 
 **Every branch is work in progress; nothing is parked on one.** M64's measurement probes,
 `tests/probes/m64_measure.gd` and `tests/probes/m64_density.gd`, live under `tests/probes/`, where
@@ -36,6 +37,7 @@ spoke for it.
 ./tools/test.sh          # the full headless suite, minutes — CI's job, not a local gate
 ./tools/check.sh         # boots the project, fails on any script error
 ./tools/lint.sh          # the governed docs, for sentences that go stale on their own
+./tools/pycheck.sh       # ruff, mypy and the unit tests for the Python under tools/
 ./tools/run.sh           # plays it
 ./tools/serve-web.sh     # plays the *web* build, locally, in a browser
 ./tools/telemetry.sh     # what the last run actually did, in order
