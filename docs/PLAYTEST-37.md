@@ -76,3 +76,39 @@ border and vanish there"***, which already names the cause: `CrowdAgent._cannot_
 The paint now says T-junction and the rule under it still says street. The exception is the one
 M49 already flags to check against — the spine's exits, where a car is meant to leave — and
 playtest 16's finding 3 fixes its shape: *"only cars should be able to"*, never a walker.
+
+## 5. The caret means lethal, and it is on things that are not
+
+> "caret == lethal is good but is inconsistently applied at the moment"
+
+> "a cat has a caret but it's benign"
+
+> "a pedestrian without caret has a greater impact than a cat"
+
+**Not a re-report; this is the vocabulary's second rule failing in its own terms.** Today the caret
+is two rules wearing one shape: a doubled deep-red caret over anything `hard_fail`, and a single
+amber one over any event whose `walk_through_cost()` reaches `Tuning.MARK_WORTH_A_DETOUR` (25
+points) — *worth going round*, not lethal. `cat_dash` clears that line (17/s for 1.8s inside a
+120px field) and gets the amber mark; a pedestrian (4.2/s at close range, every one of them, all
+day) costs more over a pavement and is a `CrowdAgent` the rule never looks at. So the cue says the
+cat matters more than the people, which is false, and *"if A is marked and B is not, A costs more to
+walk through than B"* — the invariant `tests/test_danger.gd` holds over the catalogue — is only
+true because the crowd is outside the catalogue.
+
+> "carets shouldn't be chosen by source value but by expected impact value"
+
+**So the amber caret stays, and what changes is what decides it.** `wants_a_mark()` asks a
+row's `walk_through_cost()`, a number derived from the def's intensity, radii and speed — a
+*source* value, the same for every instance of the row wherever it stands and whichever way she
+is walking. The player wants it decided by **expected impact**: what this particular thing is
+about to cost *her*, given where it is and where she is going. A café across the street she is
+not walking past expects nothing; the same café on her pavement ahead expects its whole field. A
+lone pedestrian expects a couple of points; a knot of them she is heading into expects more than
+a cat. It is the halo's own quantity turned forward — the halo is what landed over the last five
+seconds, the caret is what will land over the next — and it puts the crowd and the events under
+one rule, which is what makes the cat-versus-pedestrian inconsistency go away rather than get
+re-tuned.
+
+Lethal is unchanged: a `hard_fail` row keeps its doubled deep-red caret whatever the expectation,
+because *it ends your day* is not an amount. This lands after M92, because it changes the same
+files, and its two numbers — how far ahead to look, and where the line falls — are open.

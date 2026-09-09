@@ -16,9 +16,11 @@ mid-way through.
 
 1. **M92** — the halo says how much a thing has cost her and how close she is standing to it,
    and anything the game already marks earns one.
-2. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
+2. **M93** — the caret is chosen by expected impact, not by a row's own numbers. After M92,
+   because it changes the same files, and not before its two numbers are settled.
+3. **M78** — the chalk mark can be found: the first one stops being announced, and one that was
    never on screen counts as never placed.
-3. **M56** — the resistance is noticed.
+4. **M56** — the resistance is noticed.
 
 **Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
 about not working on graphics because it causes much confusion.")* Every item is ordered on what it
@@ -300,6 +302,51 @@ reason to enter. See M64, "What alleys are for, then, is going round a wall".
 
       It is also what makes finding 1's silence fair: a first encounter with no hint is only
       reasonable if the thing can actually be come across
+
+---
+
+## M93 — The caret is chosen by expected impact · asked for 2026-09-08
+
+[PLAYTEST-37.md](PLAYTEST-37.md) finding 5, in three sentences: *"caret == lethal is good but is
+inconsistently applied at the moment"*, *"a cat has a caret but it's benign"*, *"a pedestrian
+without caret has a greater impact than a cat"* — and the instruction: **"carets shouldn't be
+chosen by source value but by expected impact value."**
+
+**What decides the amber caret today is a source value.** `EventInstance.wants_a_mark()` marks a
+row when `EventDef.walk_through_cost()` — the points a straight walk through the field at walking
+speed would cost, derived from the def's intensity, radii and speed — reaches
+`Tuning.MARK_WORTH_A_DETOUR` (25, a quarter of the bar). It is the same answer for every instance
+of the row, wherever it stands and whichever way she walks, and the crowd is outside it entirely:
+`cat_dash` is marked, the pedestrians who cost more over a pavement never are. The invariant
+`tests/test_danger.gd` holds — *if A is marked and B is not, A costs more to walk through than B* —
+is true only because it is stated over the catalogue alone.
+
+**Expected impact is the halo's quantity turned forward.** The halo (M92) is the points a source
+actually landed on the meter over the last five seconds; the caret becomes the points a source
+*will* land over the next stretch if she keeps her heading and speed — the same field the meter is
+fed from, integrated along her projected path rather than along a straight line through the def's
+own circle. A thing she is not walking toward expects nothing and is not marked; a thing on her
+line is marked in proportion to what it is about to do to her, whether it is a café, a cat, a
+knot of pedestrians or a car. Lethal is untouched: `hard_fail` keeps its doubled deep-red caret
+whatever the expectation, because *it ends your day* is not an amount.
+
+**Two numbers are open, and the milestone is not ready for an agent until the player settles
+them:**
+
+- **How far ahead.** The smallest reading is the halo's own window, five seconds — 460px at
+  walking speed — so the two cues are the same quantity either side of *now*.
+- **Where the line falls.** The existing quarter of the bar (25 points) is the taste call already
+  stated in `Tuning.MARK_WORTH_A_DETOUR`'s doc; the halo goes red at about 40. The one thing the
+  line must not do is put a mark on the ordinary crowd at ordinary density, or the cue marks
+  everything and says nothing — which is a measurement on the arterial, not an argument.
+
+**And one shape question, answered smallest and open:** the projection moves *her* and leaves the
+thing where it is. A dashing cat or a cyclist is on its way somewhere too, and a projection that
+moves both is a second-order thing; the lethal rows that matter most for motion are `hard_fail`
+and marked regardless, so the first cut ignores the source's own velocity and says so.
+
+- [ ] **Settle the two numbers with the player, then write the item.** Not before: an agent given
+      a threshold to guess will guess the one that marks the crowd.
 
 ---
 
