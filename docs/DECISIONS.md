@@ -26,12 +26,17 @@ registration/reset state. The shared documentation edits only repair evidence pa
 already repaired on main, or refer to a TODO item already archived. The three bound PNG sources
 and their sidecars are already preserved. These leftovers do not add a new runtime requirement.
 
-One unused source is recovered: `assets/illustrated/walkers/lower-denim-sneakers-v1.png` and its
-original import sidecar. Its prompt is already in the generation record. The file is preserved
-byte for byte (Git blob `4ca00801afb815b2103c91bb40eb322af207596d`); inspection shows joined
-trouser-and-shoe silhouettes, and `sips` reports a 2032 × 774 image with alpha. It remains unbound
-and is not approved as a replacement for the articulated runtime source. The reference stash
-is left untouched.
+One unused source is recovered: the worktree's `assets/illustrated/walkers/lower-denim-sneakers-v1.png`
+and its original import sidecar. Its prompt is already in the generation record. The file is
+preserved byte for byte (Git blob `4ca00801afb815b2103c91bb40eb322af207596d`); inspection shows
+joined trouser-and-shoe silhouettes, and `sips` reports a 2032 × 774 image with alpha. It remains
+unbound and is not approved as a replacement for the articulated runtime source. Review moved it
+to `assets/illustrated/source/`, the folder for unwired drafts, because the web export takes
+every resource under `assets/` and the walkers folder held four PNGs beside a manifest that
+registers three; the sidecar keeps its uid and its cache path follows the new source path. The
+review also recorded that the sheet reads front first with the back view in cell 5, not the
+prompt's N-first order. The one stash in the working clone is an unrelated route-tree WIP and is
+not part of this recovery.
 
 ## The actor PR takes main and the supersampling draft — 2026-09-09
 
