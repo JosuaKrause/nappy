@@ -32,6 +32,8 @@ func run(t) -> void:
 	_test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t)
 	_test_an_ordinary_walker_is_a_candidate(t)
 	_test_select_sources_takes_a_mixed_candidate_set(t)
+	_test_a_cat_dash_is_selected_and_lands(t)
+	_test_a_flock_is_selected_and_lands(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -47,6 +49,18 @@ func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventD
 func _instance_at(def: EventDef, at: Vector2) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at)
+	return instance
+
+## A catalogue row's instance, live in the tree so `_ready()` actually runs — which is what
+## builds `_flock` for a flock row and `_halo` for every row, neither of which `_instance_at()`
+## above gets, since it never calls `setup()` through a parent. Mirrors `tests/test_events.gd`'s
+## own `_instance()` helper, kept local here rather than shared, because the two suites hold
+## different halves of this class and neither should have to know the other's rig.
+func _rig_instance(t, def: EventDef, at: Vector2) -> EventInstance:
+	var instance := EventInstance.new()
+	instance.setup(def, at)
+	t.add_child(instance)
+	instance.set_process(false)
 	return instance
 
 # ------------------------------------------------------------------- the floor ---
@@ -234,3 +248,63 @@ func _test_select_sources_takes_a_mixed_candidate_set(t) -> void:
 			"duck type, not a shared base class, is what makes both candidates")
 	instance.free()
 	car.free()
+
+# ------------------------------------------------------------ two rows that read as nothing ---
+# *(Playtest 38, finding 1: "cats and birds have zero effect right now according to halos".)*
+# Both cost her -- `cat_dash` 17/s over 30/120px for 1.8s, a flock +35 through the middle -- so
+# the question was whether they were reaching `select_sources()` and `landed()` at all, before
+# touching a number. They were: a `cat_dash` and a `pigeon_flock` instance standing on her clear
+# the floor and accumulate `landed()` through their whole telegraph and their whole burst, exactly
+# like every other row. **What was actually thin was `alpha_for()`'s brightness, not this
+# pipeline** -- see `ExcitementHalo.magnitude_for()`, which reads `landed()` rather than a
+# fraction of a source's own peak and is what the player's later words in the same session, *(2026-
+# 09-08: "the transparency shouldn't show distance since distance actually doesn't matter ... only
+# the actual received amount counts")*, actually fixed. This rig stays as the regression: the two
+# rows a player once reported as invisible still reach the meter.
+
+## `cat_dash` is `AHEAD_OF_PLAYER` and `mobile`, but a rig instance built with no route never
+## enters `_advance_along_path()` (`path.size() > 1` is false), so it holds still at `at` for its
+## whole life -- exactly what "standing on her" needs to hold the distance at zero throughout.
+func _test_a_cat_dash_is_selected_and_lands(t) -> void:
+	var def := EventCatalogue.by_id("cat_dash")
+	var cat := _rig_instance(t, def, Vector2.ZERO)
+
+	# Mid-telegraph: `TELEGRAPH_INTENSITY_FRACTION` (0.15) damps 17/s to 2.55/s, still comfortably
+	# above `CONTRIBUTION_FLOOR` (1.0) at zero distance.
+	cat._process(def.telegraph_time * 0.5)
+	t.check(ExcitementHalo.select_sources([cat], Vector2.ZERO).size() == 1,
+			"a cat_dash instance standing on her clears the floor while still telegraphing")
+
+	var elapsed := def.telegraph_time * 0.5
+	while elapsed < def.telegraph_time + def.duration:
+		cat._process(STEP)
+		elapsed += STEP
+		var contribution: float = cat.contribution_at(Vector2.ZERO)
+		if contribution > 0.0:
+			cat.accumulate_landed(contribution * STEP)
+	t.check(cat.landed() > 10.0,
+			"a cat_dash that stood over her whole telegraph and whole dash lands well above zero")
+	cat.free()
+
+## A flock's own `global_position` never moves (only its birds do), so "standing on her" is simply
+## siting it at `Vector2.ZERO` and reading `contribution_at()` there for the whole burst.
+func _test_a_flock_is_selected_and_lands(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	var flock := _rig_instance(t, def, Vector2.ZERO)
+	t.check(flock._flock.size() == def.flock_size,
+			"_ready() (live in the tree) built the flock, unlike a bare _instance_at()")
+
+	flock._process(def.telegraph_time * 0.5)
+	t.check(ExcitementHalo.select_sources([flock], Vector2.ZERO).size() == 1,
+			"a flock standing on her clears the floor while still on the ground telegraphing")
+
+	var elapsed := def.telegraph_time * 0.5
+	while elapsed < def.telegraph_time + def.duration:
+		flock._process(STEP)
+		elapsed += STEP
+		var contribution: float = flock.contribution_at(Vector2.ZERO)
+		if contribution > 0.0:
+			flock.accumulate_landed(contribution * STEP)
+	t.check(flock.landed() > 10.0,
+			"a flock that stood over her whole telegraph and whole burst lands well above zero")
+	flock.free()
