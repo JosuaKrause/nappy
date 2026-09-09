@@ -43,7 +43,7 @@ spoke for it.
 ./tools/reference.sh     # brings a real-world photo or video into docs/reference/
 ```
 
-**Shift+P records an animation burst during desktop debug gameplay; P takes a single screenshot.**
+**B records an animation burst during desktop debug gameplay; P takes a single screenshot.**
 Each burst keeps its numbered PNGs and actual frame times in its own `asked/burst-<id>/` folder
 under the current telemetry run. `tools/clip.sh` uses ffmpeg to create `asked/burst-<id>.mp4`
 beside it, preserving the frames. With no arguments it scans the whole telemetry folder for

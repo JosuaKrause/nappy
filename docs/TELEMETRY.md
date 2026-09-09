@@ -327,7 +327,7 @@ telemetry asks the world no questions, so it can never be the thing that changed
 
 ### Animation bursts
 
-In a debug run, `Shift+P` (or the `snapshot_burst` action used by scripted rigs) starts one bounded
+In a debug run, `B` (or the `snapshot_burst` action used by scripted rigs) starts one bounded
 three-second capture in `asked/burst-<unique>/`. It writes `frame-0001.png` through at most
 `frame-0036.png` and a `burst.json` beside them. The JSON has `schema_version` 1,
 `target_fps` 12, the supplied `context`, `status`, `reason`, actual `duration_seconds`, and a

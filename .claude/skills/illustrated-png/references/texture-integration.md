@@ -108,7 +108,7 @@ directional evidence to the relevant repair before claiming those cases reviewed
 overlaps separately: children with positive z offsets can interleave between actors despite
 sharing a parent. Internal facing order must coexist with whole-actor ground-depth sorting.
 
-Use Shift+P to capture a gameplay sequence when a still cannot communicate the defect. The
+Use B to capture a gameplay sequence when a still cannot communicate the defect. The
 session-captures skill describes the numbered frames, timing metadata and sibling MP4 conversion.
 Keep the sequence with its video and compare actual frame timestamps before diagnosing gait speed.
 

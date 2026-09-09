@@ -22,7 +22,7 @@ capture.
 
 ## Animation sequences
 
-Use Shift+P during desktop debug gameplay to record a bounded PNG burst; P remains the single
+Use B during desktop debug gameplay to record a bounded PNG burst; P remains the single
 screenshot control. Each sequence lives in its own `asked/burst-<id>/` subfolder of the current
 run. Preserve its numbered PNGs and `burst.json` timing record together. A still cannot establish
 gait, sliding or smooth turns; inspect the ordered sequence and its actual capture times.
@@ -35,6 +35,11 @@ preserves the original frames. Video is a viewing convenience, while the PNGs re
 for frame-by-frame inspection. Do not assume the target capture frequency was achieved: use the
 recorded timestamps when judging speed or stutter. Capture and encoding overhead are not proof
 of a gameplay animation defect.
+
+Keep capture shortcuts independent of gameplay modifiers: Shift already means run. A capture
+key must work both alone and while running. ffmpeg installations can differ between shells;
+use the supported `-vsync vfr` conversion option rather than requiring newer `-fps_mode` support,
+and retain the real encode/decode timing tests when changing encoder arguments.
 
 For a scripted check, trigger `--press snapshot_burst 1` through the existing screenshot rig.
 Keep an external timeout and let the burst finish before the rig quits. This is one bounded
