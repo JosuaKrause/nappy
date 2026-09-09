@@ -7,10 +7,11 @@ Read `CLAUDE.md`, `docs/HANDOFF.md`, `docs/TODO.md`'s Visual overhaul section, t
 the visuals document states the current target. Read the relevant skills before editing.
 The orchestration and committing rules still apply. Implementation uses Luna.
 
-The actor repair review is [PR #49](https://github.com/JosuaKrause/nappy/pull/49).
-Keep it draft. Read `ILLUSTRATED-GAMEPLAY-FIXES.md` and `PLAYTEST-43.md` for the attachment and
-legacy-scale repair gate. A prototype, source sheet or code scaffold is not a completed overhaul. Do not
-release or merge the overhaul until the entire requested presentation is implemented and reviewed.
+The actor registration work is on `main` behind the illustrated opt-in; its open gates are in
+`TODO.md` under Illustrated actor registration and assembly. Read `ILLUSTRATED-GAMEPLAY-FIXES.md`
+and `PLAYTEST-43.md` for the attachment and legacy-scale repair gate. A prototype, source sheet or
+code scaffold is not a completed overhaul. Do not release the presentation, or make it the default,
+until the entire requested presentation is implemented and reviewed.
 
 ## Current decisions
 

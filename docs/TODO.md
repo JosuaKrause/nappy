@@ -52,8 +52,9 @@ define style; `docs/reference/` supplies real-world structure and posture.
       Compare actual render-target dimensions and the same scene framing, input mapping, resize
       behavior and screenshot/burst capture. Inspect filtering and retained detail without declaring
       anatomy or animation fixed by resolution. The wider-view interpretation is rejected; its
-      history is in DECISIONS.md under Animation anatomy and camera experiment. Preserve legacy
-      presentation and the illustrated opt-in while the supersampling experiment is reviewed.
+      history is in DECISIONS.md under Animation anatomy and camera experiment. The debug
+      `--illustrated-render-scale 2` experiment is in the tree and unverified; its open checks are
+      in HANDOFF.md. Preserve legacy presentation and the illustrated opt-in while it is reviewed.
 - [ ] Review whole-actor sorting in live overlaps and integrate roof reveal, then a representative
       illustrated live street.
       Preserve current joystick/tap choice and the event and crowd silhouette halos, including
@@ -84,6 +85,11 @@ no artist.
 **M79 is tabled rather than queued.** It is the city seen at an angle — a presentation change with
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
+
+**[PLAYTEST-39.md](PLAYTEST-39.md) is the newest gameplay session, and its one finding, the tunnel,
+is built.** The fade is inside the portal's opening, the mountain stands above it, and the road into
+the mouth is asphalt rather than a crossing; the record is in `DECISIONS.md` under "The tunnel
+swallows the road". Half of it was a re-report of playtest 24's fifth finding.
 
 The halo's design and playtest reasoning are in `DECISIONS.md` under M92.
 

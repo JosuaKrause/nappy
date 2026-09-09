@@ -1,20 +1,33 @@
-<!-- Where the spine goes under the mountain at the north edge. *(Playtest 14.)*
+<!-- Where the spine goes under the mountain at the north edge.
 
-     It used to be a 192x256 slab of masonry filling the whole depth of the border, because the
-     border used to be a row of buildings and the tunnel had to be a gap in it. The border is the
-     mountainside now, so the portal is cut into rock and is only the arch: the road runs on
-     underneath it and is swallowed by `CityEdge`'s darkening ramp rather than by this sprite.
-     Six tiles wide, the width of a corridor. -->
+     The border is the mountainside, so the portal is cut into rock and is only the face and the
+     arch: the road runs on underneath it and is swallowed by `CityEdge`'s darkening ramp rather
+     than by this sprite. **Nothing is painted between x=64 and x=128 below y=32** — that is the
+     carriageway's width and the opening's height, and every rect here is a frame around that hole
+     so the darkening road tiles show through it. The opening is 64px tall, two tiles, and
+     `CityEdge.TUNNEL_DEPTH_TILES` says the same number: the two describe one hole and move
+     together. Six tiles wide, the width of a corridor; the opening's side walls are solid dark
+     because there is no road under them, only the pavement columns, which stop at the city. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="96" viewBox="0 0 192 96" shape-rendering="crispEdges">
-  <rect x="0" y="0" width="192" height="96" fill="#6b6660"/>
+  <!-- The rock face, as a frame around the hole. -->
+  <rect x="0" y="0" width="192" height="32" fill="#6b6660"/>
+  <rect x="0" y="32" width="64" height="64" fill="#6b6660"/>
+  <rect x="128" y="32" width="64" height="64" fill="#6b6660"/>
   <rect x="0" y="0" width="192" height="4" fill="#7a746d"/>
-  <rect x="14" y="12" width="18" height="3" fill="#5d5952"/>
-  <rect x="150" y="20" width="22" height="3" fill="#7a746d"/>
+  <rect x="14" y="10" width="18" height="3" fill="#5d5952"/>
+  <rect x="150" y="14" width="22" height="3" fill="#7a746d"/>
   <rect x="8" y="52" width="16" height="3" fill="#7a746d"/>
   <rect x="164" y="62" width="20" height="3" fill="#5d5952"/>
-  <!-- The opening: a stone surround, then the dark the road disappears into. -->
-  <rect x="32" y="34" width="128" height="62" fill="#8a8378"/>
-  <rect x="36" y="40" width="120" height="56" fill="#5a5048"/>
-  <rect x="42" y="48" width="108" height="48" fill="#241f1b"/>
-  <rect x="42" y="48" width="108" height="4" fill="#1a1613"/>
+  <!-- The surround: a course of dressed stone, then the arch's inner face, both as frames. -->
+  <rect x="32" y="18" width="128" height="14" fill="#8a8378"/>
+  <rect x="32" y="32" width="32" height="64" fill="#8a8378"/>
+  <rect x="128" y="32" width="32" height="64" fill="#8a8378"/>
+  <rect x="36" y="24" width="120" height="8" fill="#5a5048"/>
+  <rect x="36" y="32" width="28" height="64" fill="#5a5048"/>
+  <rect x="128" y="32" width="28" height="64" fill="#5a5048"/>
+  <!-- The opening: two walls in the dark either side of the carriageway, and the ceiling edge,
+       which is the one thing drawn across the hole because it is the top of it. -->
+  <rect x="42" y="32" width="22" height="64" fill="#241f1b"/>
+  <rect x="128" y="32" width="22" height="64" fill="#241f1b"/>
+  <rect x="42" y="32" width="108" height="3" fill="#1a1613"/>
 </svg>

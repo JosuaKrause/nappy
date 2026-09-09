@@ -271,6 +271,7 @@ func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
 	pause.free()
 	title.free()
 	status_layer.free()
+	downsample_layer.free()
 
 func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()
