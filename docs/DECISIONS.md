@@ -1,5 +1,16 @@
 # Decisions
 
+## docs/ is not a Godot resource folder — 2026-09-09
+
+*(Playtest 50: "hmm, is the evidence / docs folder godot ignored?", "why are there import files for
+screenshots?")* It was not. Godot imports every file under the project unless a folder carries a
+`.gdignore`, so every screenshot, dusk map and reference photo committed under `docs/` brought a
+`.import` sidecar with it, and the evidence tree held over two hundred of them. Nothing in `src`,
+`tests` or `tools` loads a `res://docs/` path, so `docs/.gdignore` now keeps the importer out of
+the folder and every tracked sidecar under it is deleted. The illustrated-png skill's sentence
+that asked for evidence sidecars to be preserved is rewritten; asset sidecars under `assets/` are
+unchanged and still repository files.
+
 ## The queue reprioritised — 2026-09-09
 
 The player went through the open milestones one by one and placed them; `TODO.md`'s gameplay queue
