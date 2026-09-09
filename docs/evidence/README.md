@@ -19,6 +19,7 @@ makes the file worth having.
 
 | file | what it is | referenced by |
 | --- | --- | --- |
+| `nappy-svg-mother_carrying_{front,back,side}_{a,b}.png` | Six Godot-rendered mother-carrying-baby frames, enlarged threefold. | [GRAPHICS.md](../GRAPHICS.md), prepared player variant; [DECISIONS.md](../DECISIONS.md), Mother carrying the baby |
 | `svg-impact-crater-1x1.png`, `svg-impact-crater-2x2.png`, `svg-impact-crater-3x3.png` | Godot-rendered crater decals enlarged threefold for inspection. | [GRAPHICS.md](../GRAPHICS.md), prepared crater assets; [DECISIONS.md](../DECISIONS.md), Impact-crater artwork |
 | `svg-fence-preview-2026-09-09.png` | Current fence tile rendered independently of GitHub's image-diff viewer. | [DECISIONS.md](../DECISIONS.md), Fence image-diff error |
 | `svg-seals-before-2026-09-09.png`, `svg-seals-after-2026-09-09.png` | Rendered SVG seal comparisons, fitted per cell for silhouette inspection. | [DECISIONS.md](../DECISIONS.md), SVG artwork and upcoming milestone assets |

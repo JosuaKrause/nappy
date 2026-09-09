@@ -14,10 +14,6 @@ mid-way through.
 
 ## The order
 
-- [ ] Prepare a matching six-frame mother-carrying-baby SVG set for the possible finale
-      (PLAYTEST-50); preserve current facing/gait conventions and catalogue it as unbound art.
-      The finale's design is unspecified.
-
 ### Illustrated actor registration and assembly
 
 **This is Codex's parallel track, worked beside the gameplay queue rather than ahead of it.**
@@ -112,6 +108,9 @@ parts. The assignments below name the assets each graphics-dependent milestone s
 Reusable impact-crater decals are `assets/props/impact_crater_1x1.svg`,
 `impact_crater_2x2.svg` and `impact_crater_3x3.svg` for 32×32, 64×64 and 96×96 footprints.
 They are unbound art; no current milestone specifies crater placement or collision behavior.
+The possible finale also has a prepared `assets/rig/mother_carrying_{front,back,side}_{a,b}.svg`
+set, documented in GRAPHICS.md. The finale's design is unspecified; these assets have no runtime
+binding or milestone behavior assigned.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
 no artist.
