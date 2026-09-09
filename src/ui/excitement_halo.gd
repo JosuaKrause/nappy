@@ -46,17 +46,21 @@ extends Node2D
 ## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show, as
 ##   a *target* its own halo state eases toward rather than an immediate value; `0` for everything
 ##   not picked.
+## - `set_player_at(world_position: Vector2) -> void` — this frame's player position, told once a
+##   frame to every candidate whether or not it was picked. `EventInstance` already gets this from
+##   `EventManager`; `CrowdAgent` has no other channel to the player at all, since `Crowd` visits an
+##   agent only when it is near a road, and this node is the one place already visiting every agent
+##   in the crowd every frame regardless. Both classes read it back for their own `expected_impact_at()`.
 ##
 ## `EventInstance` and `CrowdAgent` both satisfy this without sharing a base class.
 
 ## Excitement/s a source has to reach at her own position before it earns a place in the halo.
 ##
 ## **A felt number, not a derived one.** `Busker` (9/s) is the lowest ordinary intensity in the
-## catalogue and a `crouching cat` at rest still reaches `Tuning.MARK_WORTH_A_DETOUR` (25/s) at
-## its centre, so 1.0/s sits comfortably under both: anything genuinely inside a field is drawn,
-## and only the thin, nearly-spent tail of a falloff — where the number would round to nothing
-## on the meter anyway — is left off. Checked against a screenshot, not derived from a formula:
-## there is no arithmetic that says where "reaching her" starts to matter.
+## catalogue, so 1.0/s sits comfortably under it: anything genuinely inside a field is drawn, and
+## only the thin, nearly-spent tail of a falloff — where the number would round to nothing on the
+## meter anyway — is left off. Checked against a screenshot, not derived from a formula: there is
+## no arithmetic that says where "reaching her" starts to matter.
 const CONTRIBUTION_FLOOR := 1.0
 
 ## The most sources one frame may light up. **Past the cap the weakest contributors are the
@@ -196,11 +200,13 @@ func setup(events: EventManager, crowd: Crowd, player: Node2D) -> void:
 	_crowd = crowd
 	_player = player
 
-## Every frame: pick the sources, tell each one how bright its own ring reads and what colour it
-## is, and tell everything else zero. **Nothing here accumulates `landed()`** — that happens where
-## the meter is fed, in `Baby._update_excitement()`, so this node only reads it back.
-## `set_halo_strength()` is what actually stores it and queues that source's own halo child for
-## redraw — this node has no `_draw()` of its own left to call.
+## Every frame: tell every candidate where she is standing, pick the sources, tell each one how
+## bright its own ring reads and what colour it is, and tell everything else zero. **Nothing here
+## accumulates `landed()`** — that happens where the meter is fed, in `Baby._update_excitement()`,
+## so this node only reads it back. `set_halo_strength()` is what actually stores it and queues
+## that source's own halo child for redraw — this node has no `_draw()` of its own left to call.
+## `set_player_at()` is unconditional and comes first, since a source's own caret depends on it
+## whether or not the source cleared the halo's own floor.
 ##
 ## **The candidate set is every live event and the whole crowd**, not only a startled body —
 ## *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
@@ -215,6 +221,9 @@ func _process(_delta: float) -> void:
 	candidates.append_array(_crowd.agents())
 	var picked := select_sources(candidates, here)
 	for source in candidates:
+		# Every candidate, picked or not — a source below the halo's own floor can still be worth
+		# a caret, since the two cues answer different questions over different sets.
+		source.set_player_at(here)
 		if source in picked:
 			var landed: float = source.landed()
 			source.set_halo_strength(magnitude_for(landed), colour_for(landed))

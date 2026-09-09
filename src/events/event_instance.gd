@@ -129,8 +129,16 @@ var is_finished := false
 ## a point, and everything it does with the point is a distance.
 ##
 ## Two things want it, and neither is a reference to her: a pursuer walks toward it, and anything
-## that is *leaving* uses it to know when it is out of sight.
+## that is *leaving* uses it to know when it is out of sight. `ExcitementHalo` writes the same
+## value again every frame through `set_player_at()`, part of the duck type it reads back for the
+## caret — the two writers agree because both read `_player.global_position` the same frame.
 var player_at := Vector2.INF
+
+## Part of `ExcitementHalo`'s duck type — see that class's doc. `EventManager` already keeps
+## `player_at` current for the chase and the leaving check; this is the same field, told from the
+## other direction so `expected_impact_at()` does not need a second channel to the player.
+func set_player_at(at: Vector2) -> void:
+	player_at = at
 
 ## Whether she is running right now. Written beside `player_at` and by the same pass, because the
 ## one thing that reads it asks both together: a pursuer gives up because **she ran**, which is a
@@ -1003,6 +1011,63 @@ func is_lethal_at(world_position: Vector2) -> bool:
 	if is_finished or is_leaving or is_waiting() or not def.hard_fail or is_telegraphing():
 		return false
 	return global_position.distance_to(world_position) <= def.inner_radius
+
+## Points this event is projected to land on her over `Tuning.EXPECTED_IMPACT_HORIZON`, **her
+## position held fixed and only this event moving** — the halo's own quantity (`landed()`, what
+## actually reached the meter) read forward instead of back. Duck-typed with `CrowdAgent`'s own
+## copy; see `ExcitementHalo`'s class doc for the shared shape and `wants_a_mark()` for what a
+## result at or above `Tuning.EXPECTED_IMPACT_POINTS` does with the answer.
+##
+## **Her stillness is the whole of the direction the caret answers to.** *(2026-09-08, the player:
+## "I don't want a caret when walking into a car from the side".)* A stationary source's own field
+## does not change under this projection, so the sum below always equals `current_rate ×
+## EXPECTED_IMPACT_HORIZON` and the subtraction cancels it to zero exactly — a café she is standing
+## in expects nothing, which is the halo's job to say, not the caret's, from the moment she is in
+## reach at all.
+##
+## **Skipped without sampling once the reach cannot close inside the horizon.** `travel_velocity()`
+## is the thing's own speed — zero for anything waiting or holding a pursuit's telegraphed
+## stand-off — so most of a live day's events, and all of a waiting pursuer, never enter the loop
+## below; only what could actually arrive pays for the twenty samples.
+func expected_impact_at(player_position: Vector2) -> float:
+	if is_finished or is_leaving or def.city_wide:
+		return 0.0
+	var velocity := travel_velocity()
+	var reach := velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON + def.outer_radius
+	if global_position.distance_to(player_position) > reach:
+		return 0.0
+	if velocity.is_zero_approx():
+		return 0.0
+	var current_rate := contribution_at(player_position)
+	var dt := 0.25
+	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
+	var landed := 0.0
+	for i in steps:
+		# Projecting the *source* forward by `velocity * t` and querying its field at her fixed
+		# position is the same number as holding the source still and asking for its field at
+		# `player_position - velocity * t` instead — `contribution_at` is already the query every
+		# other caller uses, translated, so nothing here recomputes a falloff or a flock sum of
+		# its own.
+		landed += contribution_at(player_position - velocity * (float(i + 1) * dt)) * dt
+	return landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+
+## Whether this event's own current course puts her inside the radius that ends the day at some
+## point before `Tuning.EXPECTED_IMPACT_HORIZON`, her position held fixed — `is_lethal_at()` asked
+## at every step of the same projection `expected_impact_at()` takes, rather than only at the
+## position she is standing at now. The doubled caret's own question.
+func will_be_lethal(player_position: Vector2) -> bool:
+	var velocity := travel_velocity()
+	if velocity.is_zero_approx():
+		return is_lethal_at(player_position)
+	var dt := 0.25
+	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
+	for i in steps + 1:
+		# Same translation `expected_impact_at()` uses: the source at `global_position +
+		# velocity * t` is her own distance from `player_position - velocity * t`, so
+		# `is_lethal_at()` — which already owns the def's own guard clauses — answers it unchanged.
+		if is_lethal_at(player_position - velocity * (float(i) * dt)):
+			return true
+	return false
 
 # ------------------------------------------------------------------ drawing ---
 

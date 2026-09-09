@@ -93,6 +93,16 @@ var junction_hold := INF
 ## it the contact re-fires every frame and one person costs what a crowd should.
 var touching := false
 
+## This frame's player position, or `Vector2.INF` before the first frame — part of
+## `ExcitementHalo`'s duck type, told once a frame through `set_player_at()`. `Crowd` only ever
+## hands an agent the player's position when the agent is a car near a road (`pedestrian_ahead`),
+## so this is the one channel that reaches every agent in the crowd regardless, which is what
+## `expected_impact_at()` and `will_be_lethal()` need to answer for a walker as well as a car.
+var player_at := Vector2.INF
+
+func set_player_at(at: Vector2) -> void:
+	player_at = at
+
 var _map: CityMap
 ## Its own RNG, seeded from the day and its own index. Per-agent rather than shared so a
 ## turn taken at a junction cannot depend on the order agents happen to reach junctions in
@@ -300,6 +310,58 @@ func contribution_at(world_position: Vector2) -> float:
 		total += Tuning.falloff(distance, _jolt_intensity * (_jolt / _jolt_for),
 				_jolt_inner, _jolt_outer)
 	return total
+
+## The furthest this agent's own field can currently reach — its ordinary outer radius, or the
+## jolt's own if a jolt is running and reaches further, the way a car's `CAR_HORN_OUTER_RADIUS`
+## (132px) reaches past its ordinary `CAR_OUTER_RADIUS` (104px). What `expected_impact_at()` and
+## `will_be_lethal()` both compare a projected approach against, so a source mid-jolt is not
+## skipped early on a reach that no longer describes it.
+func _current_reach() -> float:
+	var reach := Tuning.CAR_OUTER_RADIUS if kind == Kind.CAR else Tuning.PEDESTRIAN_OUTER_RADIUS
+	if _jolt > 0.0:
+		reach = maxf(reach, _jolt_outer)
+	return reach
+
+## Points this agent is projected to land on her over `Tuning.EXPECTED_IMPACT_HORIZON`, her
+## position held fixed and only this agent moving — `EventInstance.expected_impact_at()`'s own
+## quantity, read here off `velocity()` instead of `travel_velocity()`. See that method for the
+## reasoning: a stationary body's own field does not change under the projection and the
+## subtraction cancels it to zero, and the reach test below skips anything the walk cannot close
+## inside the horizon without sampling it.
+func expected_impact_at(player_position: Vector2) -> float:
+	var vel := velocity()
+	var reach := vel.length() * Tuning.EXPECTED_IMPACT_HORIZON + _current_reach()
+	if global_position.distance_to(player_position) > reach:
+		return 0.0
+	if vel.is_zero_approx():
+		return 0.0
+	var current_rate := contribution_at(player_position)
+	var dt := 0.25
+	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
+	var landed := 0.0
+	for i in steps:
+		landed += contribution_at(player_position - vel * (float(i + 1) * dt)) * dt
+	return landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+
+## Whether this car's own strike box reaches her at some point before
+## `Tuning.EXPECTED_IMPACT_HORIZON`, on its current course, her position held fixed — a car's
+## equivalent of `EventInstance.will_be_lethal()`, over the same rectangle `Crowd._strike()` tests
+## for the actual collision. Never true for a walker: nothing about a pedestrian ends the day, and
+## never true for a car already too slow to strike at all (`Crowd._strike()`'s own guard).
+func will_be_lethal(player_position: Vector2) -> bool:
+	if kind != Kind.CAR or _speed < Tuning.CAR_STRIKE_MIN_SPEED:
+		return false
+	var vel := velocity()
+	var forward := heading()
+	var side := Vector2(-forward.y, forward.x)
+	var dt := 0.25
+	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
+	for i in steps + 1:
+		var offset := player_position - (global_position + vel * (float(i) * dt))
+		if absf(offset.dot(forward)) <= Tuning.CAR_STRIKE_HALF_LENGTH \
+				and absf(offset.dot(side)) <= Tuning.CAR_STRIKE_HALF_WIDTH:
+			return true
+	return false
 
 ## Duck-typed with `EventInstance`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
 ## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
