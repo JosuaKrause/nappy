@@ -90,18 +90,26 @@ wants:**
   same *"a cue that marks everything says nothing"* rule the caret already answers to. It goes to
   nothing the moment she walks out of reach, which is the *"what to walk away from"* half answering
   itself.
-- **Two axes now, and each is the real model for its own half.** *(2026-09-07, the player: "the
+- **Two channels now, both reading `landed()`, on different curves.** *(2026-09-07, the player: "the
   intensity of the halo states how far away I am. the color should state how dangerous it is.")*
-  **Brightness** is `ExcitementHalo.alpha_for()`, the fraction of a source's own peak reaching her
-  right now — a busker at arm's length reads exactly as bright as a burning building at arm's
-  length, and brightness alone can no longer tell them apart. **Colour** is
-  `ExcitementHalo.colour_for()`, a pale-to-red ramp over `landed()` — points that actually reached
-  the meter, traced back from the meter's own sum in `Baby._update_excitement()` rather than
-  recomputed from `contribution_at()`, over a true five-second sliding sum. *(2026-09-08, the
+  That first framing put brightness on *distance* — the fraction of a source's own peak reaching
+  her — and it was overturned the next session, once the same player asked for magnitude to be
+  tracked at all: *(2026-09-08: "the transparency shouldn't show distance since distance actually
+  doesn't matter. only the actual received amount counts ... this frees up transparency for also
+  encoding magnitude. color and transparency shouldn't be the same number. transparency can be used
+  to emphasize low values.")* **Colour** is `ExcitementHalo.colour_for()`, linear over `landed()` —
+  points that actually reached the meter, traced back from the meter's own sum in
+  `Baby._update_excitement()` rather than recomputed from `contribution_at()`, over a true
+  five-second sliding sum — pale to red by forty of the hundred-point bar. *(2026-09-08, the
   player: "if a honking car caused 35 excitement to the player that's the number that informs the
-  color of the halo. with 1/3 of the bar that's pretty red already".)* Both reach the shader as an
-  `instance
-  uniform` — one shared material, one value per entity, set through
+  color of the halo. with 1/3 of the bar that's pretty red already".)* **Brightness** is
+  `ExcitementHalo.magnitude_for()`, the same `landed()` on a curve that rises fast and saturates by
+  fifteen points, so transparency does the low end's work — a point or two is faintly there rather
+  than invisible — while colour is still climbing toward forty. **Both channels ease toward
+  whatever they are last told, in time rather than jumping** — `EntityHalo.FADE_IN_SECONDS` /
+  `FADE_OUT_SECONDS` — because *(2026-09-08, the player: "all changes should transition (hue and
+  transparency) instead of immediately showing the actual value".)* Both reach the shader as one
+  `instance uniform` — one shared material, one value per entity, set through
   `set_instance_shader_parameter()` rather than `modulate` (which a custom fragment function does
   not see). Each entity's ring is its own translucent layer rather than one shader's summed field,
   so two overlapping rings read brighter where they cross the ordinary way two half-transparent

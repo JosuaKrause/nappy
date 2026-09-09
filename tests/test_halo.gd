@@ -28,10 +28,13 @@ func run(t) -> void:
 	_test_the_cap_keeps_the_strongest(t)
 	_test_landed_accumulates_and_decays(t)
 	_test_colour_for_the_ramp_ends(t)
-	_test_alpha_for_is_the_falloff_fraction(t)
+	_test_magnitude_for_emphasises_low_values(t)
+	_test_entity_halo_eases_toward_its_target(t)
 	_test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t)
 	_test_an_ordinary_walker_is_a_candidate(t)
 	_test_select_sources_takes_a_mixed_candidate_set(t)
+	_test_a_cat_dash_is_selected_and_lands(t)
+	_test_a_flock_is_selected_and_lands(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -47,6 +50,18 @@ func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventD
 func _instance_at(def: EventDef, at: Vector2) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at)
+	return instance
+
+## A catalogue row's instance, live in the tree so `_ready()` actually runs — which is what
+## builds `_flock` for a flock row and `_halo` for every row, neither of which `_instance_at()`
+## above gets, since it never calls `setup()` through a parent. Mirrors `tests/test_events.gd`'s
+## own `_instance()` helper, kept local here rather than shared, because the two suites hold
+## different halves of this class and neither should have to know the other's rig.
+func _rig_instance(t, def: EventDef, at: Vector2) -> EventInstance:
+	var instance := EventInstance.new()
+	instance.setup(def, at)
+	t.add_child(instance)
+	instance.set_process(false)
 	return instance
 
 # ------------------------------------------------------------------- the floor ---
@@ -170,23 +185,69 @@ func _test_colour_for_the_ramp_ends(t) -> void:
 	var half := ExcitementHalo.colour_for(saturated * 0.5)
 	t.check(not half.is_equal_approx(Palette.HALO_WEAK) and not half.is_equal_approx(Palette.HALO_STRONG),
 			"halfway to saturation reads as neither end of the ramp")
+	t.check(half.is_equal_approx(Palette.HALO_MID),
+			"and it is the chosen midpoint exactly, not a desaturated average of the two ends " +
+			"(playtest 38: 'no real fade from yellow to red')")
 
 # ---------------------------------------------------------------- brightness ---
+# *(2026-09-08, the player, dropping the "how far away" read `alpha_for()` used to give:
+# "the transparency shouldn't show distance since distance actually doesn't matter ... this frees
+# up transparency for also encoding magnitude. transparency can be used to emphasize low values".)*
+# `magnitude_for()` reads `landed()` -- the same number `colour_for()` reads -- on a curve that
+# rises fast and saturates by `LOW_EMPHASIS_POINTS`, so transparency does the work at the low end
+# that a straight line to `SATURATES_AT_POINTS` would leave flat.
 
-func _test_alpha_for_is_the_falloff_fraction(t) -> void:
-	t.check(is_equal_approx(ExcitementHalo.alpha_for(10.0, 10.0), ExcitementHalo.MAX_ALPHA),
-			"at a source's own peak, alpha is MAX_ALPHA")
-	t.check(is_equal_approx(ExcitementHalo.alpha_for(1000.0, 1000.0), ExcitementHalo.MAX_ALPHA),
-			"a source three orders of magnitude stronger reads exactly as bright at its own peak")
-	var weak_near_rim := ExcitementHalo.alpha_for(0.5, 10.0)
-	var strong_near_rim := ExcitementHalo.alpha_for(50.0, 1000.0)
-	t.check(is_equal_approx(weak_near_rim, strong_near_rim),
-			"a weak and a strong source at the same fraction of their own reach read equally " +
-			"bright -- brightness is decoupled from strength, only colour tells them apart")
-	t.check(weak_near_rim < 0.1 * ExcitementHalo.MAX_ALPHA,
-			"just inside the rim (5% of a source's own peak) alpha is near zero")
-	t.check(is_equal_approx(ExcitementHalo.alpha_for(5.0, 0.0), 0.0),
-			"a non-positive peak never divides by zero")
+func _test_magnitude_for_emphasises_low_values(t) -> void:
+	var floor_alpha := ExcitementHalo.MIN_MAGNITUDE * ExcitementHalo.MAX_ALPHA
+	t.check(is_equal_approx(ExcitementHalo.magnitude_for(0.0), floor_alpha),
+			"nothing landed yet reads at the floor, not at zero -- a picked source is never " +
+			"invisible while it is still earning its first point")
+	var one := ExcitementHalo.magnitude_for(1.0)
+	var five := ExcitementHalo.magnitude_for(5.0)
+	var fifteen := ExcitementHalo.magnitude_for(15.0)
+	var forty := ExcitementHalo.magnitude_for(40.0)
+	t.check(one > floor_alpha, "one point already reads above the floor -- faint but present")
+	t.check(one < five and five < fifteen,
+			"the curve rises fast through the low end, which is the whole point of it")
+	t.check(is_equal_approx(fifteen, ExcitementHalo.MAX_ALPHA),
+			"fifteen points is already solid -- LOW_EMPHASIS_POINTS is where the curve saturates")
+	t.check(is_equal_approx(forty, ExcitementHalo.MAX_ALPHA),
+			"well past LOW_EMPHASIS_POINTS stays solid rather than overshooting -- colour, not " +
+			"transparency, is what carries the difference between fifteen and forty")
+
+# ------------------------------------------------------------------- easing ---
+# *(2026-09-08, the player: "fade in and fade out smoothly using transparency ... all changes
+# should transition (hue and transparency) instead of immediately showing the actual value".)*
+# `EntityHalo` is the natural home for the eased state, since both `EventInstance` and `CrowdAgent`
+# already own one -- see its class doc.
+
+func _test_entity_halo_eases_toward_its_target(t) -> void:
+	var halo := EntityHalo.new(Callable(), Callable())
+	var steps_in := int(round(EntityHalo.FADE_IN_SECONDS / STEP))
+	halo.set_glow(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	for i in steps_in / 2:
+		halo._process(STEP)
+	t.check(halo._alpha > 0.0 and halo._alpha < ExcitementHalo.MAX_ALPHA,
+			"half way through FADE_IN_SECONDS the rim is part way up -- never a jump from nothing " +
+			"to the target in one frame")
+	for i in steps_in - steps_in / 2:
+		halo._process(STEP)
+	t.close_to(halo._alpha, ExcitementHalo.MAX_ALPHA,
+			"a target held for the whole of FADE_IN_SECONDS is reached", 0.01)
+	t.check(halo._colour.is_equal_approx(Palette.HALO_STRONG),
+			"colour eases to its own target on the same clock as alpha, not left to jump on its own")
+
+	halo.set_glow(0.0, Palette.HALO_WEAK)
+	var steps_out := int(round(EntityHalo.FADE_OUT_SECONDS / STEP))
+	for i in steps_out:
+		halo._process(STEP)
+	t.close_to(halo._alpha, 0.0,
+			"told a target of zero and given the whole of FADE_OUT_SECONDS, the rim decays to zero " +
+			"rather than being switched off", 0.01)
+	t.check(halo.is_faded_out(),
+			"is_faded_out() agrees once the fade is actually over, which is what lets CrowdAgent " +
+			"free the halo without cutting a fade off mid-way")
+	halo.free()
 
 # ------------------------------------------------------------ the crowd joins ---
 # *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
@@ -234,3 +295,63 @@ func _test_select_sources_takes_a_mixed_candidate_set(t) -> void:
 			"duck type, not a shared base class, is what makes both candidates")
 	instance.free()
 	car.free()
+
+# ------------------------------------------------------------ two rows that read as nothing ---
+# *(Playtest 38, finding 1: "cats and birds have zero effect right now according to halos".)*
+# Both cost her -- `cat_dash` 17/s over 30/120px for 1.8s, a flock +35 through the middle -- so
+# the question was whether they were reaching `select_sources()` and `landed()` at all, before
+# touching a number. They were: a `cat_dash` and a `pigeon_flock` instance standing on her clear
+# the floor and accumulate `landed()` through their whole telegraph and their whole burst, exactly
+# like every other row. **What was actually thin was `alpha_for()`'s brightness, not this
+# pipeline** -- see `ExcitementHalo.magnitude_for()`, which reads `landed()` rather than a
+# fraction of a source's own peak and is what the player's later words in the same session, *(2026-
+# 09-08: "the transparency shouldn't show distance since distance actually doesn't matter ... only
+# the actual received amount counts")*, actually fixed. This rig stays as the regression: the two
+# rows a player once reported as invisible still reach the meter.
+
+## `cat_dash` is `AHEAD_OF_PLAYER` and `mobile`, but a rig instance built with no route never
+## enters `_advance_along_path()` (`path.size() > 1` is false), so it holds still at `at` for its
+## whole life -- exactly what "standing on her" needs to hold the distance at zero throughout.
+func _test_a_cat_dash_is_selected_and_lands(t) -> void:
+	var def := EventCatalogue.by_id("cat_dash")
+	var cat := _rig_instance(t, def, Vector2.ZERO)
+
+	# Mid-telegraph: `TELEGRAPH_INTENSITY_FRACTION` (0.15) damps 17/s to 2.55/s, still comfortably
+	# above `CONTRIBUTION_FLOOR` (1.0) at zero distance.
+	cat._process(def.telegraph_time * 0.5)
+	t.check(ExcitementHalo.select_sources([cat], Vector2.ZERO).size() == 1,
+			"a cat_dash instance standing on her clears the floor while still telegraphing")
+
+	var elapsed := def.telegraph_time * 0.5
+	while elapsed < def.telegraph_time + def.duration:
+		cat._process(STEP)
+		elapsed += STEP
+		var contribution: float = cat.contribution_at(Vector2.ZERO)
+		if contribution > 0.0:
+			cat.accumulate_landed(contribution * STEP)
+	t.check(cat.landed() > 10.0,
+			"a cat_dash that stood over her whole telegraph and whole dash lands well above zero")
+	cat.free()
+
+## A flock's own `global_position` never moves (only its birds do), so "standing on her" is simply
+## siting it at `Vector2.ZERO` and reading `contribution_at()` there for the whole burst.
+func _test_a_flock_is_selected_and_lands(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	var flock := _rig_instance(t, def, Vector2.ZERO)
+	t.check(flock._flock.size() == def.flock_size,
+			"_ready() (live in the tree) built the flock, unlike a bare _instance_at()")
+
+	flock._process(def.telegraph_time * 0.5)
+	t.check(ExcitementHalo.select_sources([flock], Vector2.ZERO).size() == 1,
+			"a flock standing on her clears the floor while still on the ground telegraphing")
+
+	var elapsed := def.telegraph_time * 0.5
+	while elapsed < def.telegraph_time + def.duration:
+		flock._process(STEP)
+		elapsed += STEP
+		var contribution: float = flock.contribution_at(Vector2.ZERO)
+		if contribution > 0.0:
+			flock.accumulate_landed(contribution * STEP)
+	t.check(flock.landed() > 10.0,
+			"a flock that stood over her whole telegraph and whole burst lands well above zero")
+	flock.free()

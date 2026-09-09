@@ -115,10 +115,9 @@ var _picture := Vector2i(-1, -1)
 var _was_horning := false
 var walker_visual: ModularWalker
 
-## Built lazily on this agent's own first non-zero glow, and freed the moment it returns to zero.
-## `_process()`'s own comment below is about avoiding a redraw a frame for the ordinary
-## population; a halo built for every agent in a crowd of a couple of hundred, whether or not it
-## is ever picked, would be exactly that cost paid for nothing — only the handful
+## Built lazily on this agent's own first non-zero glow, and freed once it has faded all the way
+## back out — see `set_halo_strength()`. A halo built for every agent in a crowd of a couple of
+## hundred, whether or not it is ever picked, would be cost paid for nothing — only the handful
 ## `ExcitementHalo.MAX_SOURCES` ever picks needs one at all.
 var _halo: EntityHalo
 
@@ -333,13 +332,17 @@ func is_startled() -> bool:
 ## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
 ## `EventInstance` shares. Called by `ExcitementHalo` once a frame for every agent in the crowd —
 ## nonzero for the handful `select_sources()` picked, zero for everything else. Builds `_halo`
-## lazily on first use and frees it the moment the glow returns to zero, rather than paying for an
-## `EntityHalo` on every agent the crowd ever holds.
+## lazily on first use, rather than paying for an `EntityHalo` on every agent the crowd ever holds,
+## and frees it once `EntityHalo.is_faded_out()` says the fade is actually over — not the frame the
+## target first reaches zero, or a burst that just left `MAX_SOURCES` would be cut off mid-fade
+## instead of draining over `EntityHalo.FADE_OUT_SECONDS`.
 func set_halo_strength(strength: float, colour: Color) -> void:
 	if strength <= 0.0:
 		if _halo:
-			_halo.queue_free()
-			_halo = null
+			_halo.set_glow(0.0, colour)
+			if _halo.is_faded_out():
+				_halo.queue_free()
+				_halo = null
 		return
 	if not _halo:
 		_halo = EntityHalo.new(_draw_body, _zero_bob)
