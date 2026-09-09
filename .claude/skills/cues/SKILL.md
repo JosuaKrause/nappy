@@ -14,11 +14,19 @@ needs signalling.**
 
 A ring communicates a falloff radius, which is a number. A silhouette communicates a threat.
 
-The vocabulary is in `docs/EVENTS.md`, "The visual vocabulary":
+The vocabulary is in `docs/EVENTS.md`, "The visual vocabulary" — four cues, four sentences, and
+one language: **caret**, *stand here and this will cost you* (amber) or *end your day* (doubled
+red); **halo**, *this is costing you now, and this much*; **exclamation over the player**, *the
+clock on you has started*; **badge**, *something lethal or faster than a walk is coming, and this
+is what*. One number decides the caret and the halo — the points a source lands on the meter — and
+one direction decides all four: everything is measured with her held still, so nothing here is a
+cue for walking.
 
 - the **entity itself** carries most of it
-- a **caret above the entity** for anything worth changing your route for — amber for *go round it*,
-  doubled deep red for *it ends your day*, flashing while it has not started yet
+- a **caret above the entity** for anything **projected** to cost her that much, her position
+  held fixed and only the thing moving — amber at `Tuning.EXPECTED_IMPACT_POINTS`, doubled deep
+  red when the same projection puts her inside the thing's lethal reach on its current course,
+  flashing while it has not started yet. A stationary thing never earns one.
 - a **badge at the screen edge** whenever something lethal or faster than a walk is off-screen and
   closing **under its own steam**, carrying its own silhouette so it says *what* is coming rather
   than that something is
@@ -26,7 +34,8 @@ The vocabulary is in `docs/EVENTS.md`, "The visual vocabulary":
   danger already on her
 - over the **pram**, the only cue that is not about the world — four states of the baby herself
 - a **thin rim tracing an entity's own silhouette while it is charging the meter right now**, a few
-  pixels out and no further — see "A glow, not a field" below
+  pixels out and no further, coloured and sized by the same points the caret projects forward — see
+  "A glow, not a field" below
 
 **The ban on a ring round a threat is untouched.** Every reason above still holds against one: a
 ring is a number and a silhouette is a threat, whatever new thing needs signalling next.
@@ -144,24 +153,41 @@ from.
 
 ### 2. A cue that marks everything says nothing
 
-**And a cue that marks the wrong things says something false.** The rule is the player's own
-expectation, stated as an **invariant a test can hold**:
+**And a cue that marks the wrong things says something false.** *(2026-09-08, the player: "carets
+shouldn't be chosen by source value but by expected impact value".)* What decides the mark is not
+a row's own declared cost but what the thing is actually **projected** to do to her, her position
+held fixed: `EventInstance.expected_impact_at()` and `CrowdAgent.expected_impact_at()` extrapolate
+the source's own current velocity in quarter-second steps over `Tuning.EXPECTED_IMPACT_HORIZON`
+(5s), sample its field at her *current* position at each step, sum the points, and subtract its
+present rate times the horizon — so a stationary thing she is standing in front of expects nothing,
+an approaching thing expects its approach, and a departing thing expects less than nothing and is
+unmarked. Amber at `Tuning.EXPECTED_IMPACT_POINTS`; doubled deep red — `will_be_lethal()` on both
+classes — when a step of the same projection puts her inside the thing's lethal reach, a
+`hard_fail` row's `inner_radius` or a car's strike box, on its current course. `tests/test_danger.gd`
+holds the scenarios this decides: a café she stands in is unmarked, a cat dashing at her is
+unmarked, a cyclist or a car whose line reaches her is red and one passing wide is not, a walker
+brushing past is unmarked, and a crowd at ordinary arterial density around a standing player marks
+nobody at all.
 
-> **If A is marked and B is not, A costs more to walk through than B.**
+**Her stillness is the whole of the rule's direction.** *(2026-09-08, the player: "I don't want a
+caret when walking into a car from the side".)* A car she is standing in the lane of is projected
+straight into her; the same car passing wide of her, held still, is never in its own path.
 
-`EventDef.walk_through_cost()` is the order, `Tuning.MARK_WORTH_A_DETOUR` is where the line falls,
-lethal is marked whatever it costs, and `tests/test_danger.gd` asserts the monotonicity over the
-whole catalogue plus two bounds — the whole catalogue is never marked at once, and day 1 leaves its
-cheap end alone.
+Two things to carry beyond that:
 
-Two things to carry beyond that row:
-
-- **The cost integral lives on `EventDef`**, because the game asks the question the test was asking,
-  and two copies of it is a defect waiting to happen.
+- **The projection lives on the entity, not on a second table.** `EventInstance` and `CrowdAgent`
+  each answer their own `expected_impact_at()` and `will_be_lethal()` over the same
+  `contribution_at()` and `is_lethal_at()` every other caller already uses, so there is no second
+  formula for what a thing costs to disagree with the first.
 - **A colour is the wrong channel for a phase.** `EVENT_STREAM_RADIUS` is 900px and no telegraph is
   longer than 4s, so an "amber means telegraphing" rule is only ever seen on the `AHEAD_OF_PLAYER`
   rows and in play it means *near*. **The flash carries the phase**, because a flash is a property
   of the mark rather than of a moment she had to be present for.
+- **Cache the projection once a frame.** The caret decision runs for every visible source every
+  draw, and `wants_a_mark()`, `mark_colour()` and the drawing itself all ask in the same frame —
+  `EventInstance._caret_strength()` and `CrowdAgent._caret_strength()` compute it once, keyed on
+  the entity's own clock, the same shape `ExcitementHalo` already uses for its own once-a-frame
+  work.
 
 ### 3. The mark breathes
 
@@ -176,7 +202,10 @@ hurts at random.
 space between two cars in one lane — does not also bridge the danger being over.
 
 **And measure the thing, not the gap.** The badge's closing speed is the event's own approach with
-the player held still, because a rate that includes her 92px/s is a cue for walking.
+the player held still, because a rate that includes her 92px/s is a cue for walking. The caret's own
+`expected_impact_at()` and `will_be_lethal()` are the same rule arriving at a second cue: both
+project the source's own velocity with her position fixed, so nothing about her own walking can
+raise or lower either mark.
 
 Nothing in `tests/test_danger.gd` can see a moment, which is why the `cue` telemetry entry exists.
 
