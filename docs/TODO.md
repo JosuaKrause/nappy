@@ -358,17 +358,51 @@ an amount means the same thing whether it already landed or is about to) and **o
 (everything about a thing is measured with her held still, so nothing is a cue for walking). That
 rewrite is this milestone's first item.
 
-**Two numbers, and the milestone is not ready for an agent until they are settled:**
+**The two numbers are the halo's, confirmed.** *(2026-09-08, on a five-second horizon and a line at
+40 of the 100-point meter: "both sound good to me".)* So one horizon and one line serve past and
+future alike: the halo is red at 40 points landed over the last five seconds, the caret is amber at
+40 points expected over the next five. A cat's dash on a standing player lands about 30 and is not
+marked; a café she is standing in is the halo's, not the caret's. The one thing the line must not
+do is mark the ordinary crowd at ordinary density, which is a measurement on the arterial rather
+than an argument, and is the last item.
 
-- **How far ahead.** The halo's own window, five seconds, so the two cues are the same quantity
-  either side of *now*. Proposed, not yet confirmed.
-- **Where the amber line falls.** Today's `Tuning.MARK_WORTH_A_DETOUR` (25) would still mark a cat
-  whose dash lands about 30 on a standing player; the halo's own red, about 40 of the bar, would
-  not. The one thing the line must not do is mark the ordinary crowd at ordinary density, which is a
-  measurement on the arterial rather than an argument.
-
-- [ ] **Confirm the two numbers with the player, then write the item.** Not before: an agent given
-      a threshold to guess will guess the one that marks the crowd.
+- [ ] **One number and one horizon, shared.** `Tuning.MARK_WORTH_A_DETOUR` (25, derived per row)
+      is replaced by a single pair the halo and the caret both read — the line at
+      `METER_MAX * 0.4` and the horizon at five seconds — living in `Tuning` rather than on
+      `ExcitementHalo`, where M92 first put the saturation. Their docs carry the player's sentences
+      above.
+- [ ] **Expected impact, per source, with her held still.** A method on both `EventInstance` and
+      `CrowdAgent` — the same duck type the halo reads — answering the points this thing's own
+      motion and field will land on her current position over the horizon **beyond what it lands
+      now**: the source's velocity extrapolated in steps of a quarter second, its field sampled at
+      her position at each step, summed, less its present rate times the horizon. A stationary
+      thing she is inside therefore expects nothing (the halo has it); an approaching thing expects
+      its approach; a departing thing expects less than nothing and is unmarked. Sources whose
+      reach cannot touch her inside the horizon — further than speed × horizon plus their outer
+      radius — are skipped without sampling, which is what keeps two hundred walkers cheap. A
+      pursuer that has noticed her is heading for her and is projected as such; one still waiting
+      has no velocity.
+- [ ] **The two carets are that quantity in two strengths.** `EventInstance.wants_a_mark()` and a
+      `CrowdAgent` equivalent: **doubled deep red** when a step of the projection puts her inside
+      the thing's lethal reach — a `hard_fail` row's `inner_radius`, a car's strike box — on its
+      current course; **amber** when the expected points reach the line; nothing otherwise. The
+      honk stops being the car's rule and becomes a consequence (a car whose lane she stands in
+      is projected into her). The flash while telegraphing is kept as the phase. `mark_colour()`
+      follows the strength, not the row.
+- [ ] **The vocabulary is restated as one language**, in `docs/EVENTS.md`'s "The visual vocabulary"
+      and `.claude/skills/cues/SKILL.md`: caret *stand here and this will cost you* / *end your
+      day*; halo *this is costing you now, and this much*; exclamation *the clock on you has
+      started*; badge *something lethal or fast is coming, and this is what*. One number, one
+      direction; nothing is a cue for walking.
+- [ ] **`tests/test_danger.gd` states the new invariant.** The catalogue-wide monotonicity check
+      goes, since a mark is no longer a property of a row; in its place, scenarios: a café she
+      stands in is unmarked; a cat dashing at her is unmarked; a cyclist whose line reaches her is
+      red and one passing wide is not; a car she stands in front of is red and one she would have
+      to step into is not; a walker brushing past is unmarked. The pram, the exclamation mark and
+      the badge tests are untouched.
+- [ ] **Measured on the arterial.** One capture standing on the busy pavement: how many amber
+      carets are up. The answer has to be *none at ordinary density*, or the line moves before
+      this merges.
 
 ---
 
