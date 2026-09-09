@@ -259,10 +259,15 @@ actually landed on her — and the reasoning is the whole design.
       in and fade out smoothly using transparency. right now it's always abrupt and yellow can mean
       anything".)* Two changes to `ExcitementHalo`'s brightness:
 
-      **Magnitude.** The target alpha becomes the distance fraction times a magnitude factor,
+      **Magnitude, and nothing else.** *(2026-09-08: "the transparency shouldn't show distance
+      since distance actually doesn't matter. only the actual received amount counts which might
+      depend on the distance but we don't need to encode the distance. this frees up transparency
+      for also encoding magnitude".)* The target alpha is `MAX_ALPHA` times
       `clampf(landed / SATURATES_AT_POINTS, MIN_MAGNITUDE, 1.0)` with `MIN_MAGNITUDE` about 0.2, so
       a source that has cost her a point is a faint yellow rim and one that has cost twenty is a
-      solid orange one — colour and transparency agree instead of one of them lying.
+      solid orange one — colour and transparency read the same number. The distance fraction
+      (*"the intensity of the halo states how far away I am"*, playtest 36) is **overturned by the
+      player** with the words above and goes, with its `alpha_for()` and its test.
 
       **Time.** Each source's drawn alpha eases toward its target rather than jumping: a rim fades
       in over about 0.3s when a source clears the floor and fades out over about 0.8s when it stops

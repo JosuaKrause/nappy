@@ -42,6 +42,16 @@ channels agree. **And the rim switches rather than fades**: it appears at full s
 source clears the floor and vanishes the frame it does not, and a burst's points leave the
 five-second window all at once. The player wants both edges eased through transparency.
 
+> "the transparency shouldn't show distance since distance actually doesn't matter. only the actual
+> received amount counts which might depend on the distance but we don't need to encode the
+> distance. this frees up transparency for also encoding magnitude"
+
+**Which overturns playtest 36's third finding, in part.** *Asked for "the intensity of the halo
+states how far away I am" on 2026-09-07 · overturned on 2026-09-08, because distance is already
+inside the received amount and encoding it separately spends the one channel magnitude needs.* So
+brightness no longer means distance at all: colour and transparency both read the same
+five-second number, pale and faint at a point, red and solid at forty, with the time easing on top.
+
 ## 4. No fade from yellow to red beside the other mother
 
 > "there is also no real fade from yellow to red (eg when standing next to the other baby lady."
