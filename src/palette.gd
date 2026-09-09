@@ -79,6 +79,15 @@ const MARK_LETHAL := Color("8f2f38")
 const HALO_WEAK := Color("f3e0a0")
 const HALO_STRONG := Color("cf4235")
 
+## The ramp's own midpoint, read at directly rather than left to fall out of an RGB lerp between
+## the two ends above. *(Playtest 38, finding 4: "there is also no real fade from yellow to red".)*
+## `HALO_WEAK.lerp(HALO_STRONG, 0.5)` lands on a desaturated salmon — averaging a saturated yellow
+## and a saturated red pulls the *saturation* down along with the hue, the same way mixing two
+## bright paints gives a duller one — so a source half way up the ramp read as barely different
+## from either end. This is a real, separately chosen orange (88% saturated, hue between the
+## other two) that `ExcitementHalo.colour_for()` lerps *through* rather than *past*.
+const HALO_MID := Color("e8791a")
+
 ## The three lamps of a signal head. **Not** the mark colours, deliberately: a caret says how bad
 ## a thing is and a lamp says whether you may go, and borrowing `MARK_LETHAL` for a red light
 ## would make the one instruction in the game that is about permission look like a threat. These

@@ -172,9 +172,19 @@ const SATURATES_AT_POINTS := Tuning.METER_MAX * 0.4
 ## you have the real cost"*: what a row is declared to emit is a fact about the catalogue, and what
 ## it has actually delivered is a fact about the encounter she just had, which is the only one this
 ## cue should be reporting.
+##
+## **Through `Palette.HALO_MID`, not a straight lerp past it.** *(Playtest 38, finding 4: "there is
+## also no real fade from yellow to red (eg when standing next to the other baby lady".)* A chat
+## with `chatting_mother` lands `Tuning.CHAT_EXCITEMENT` (25) over `detain_seconds`, past this
+## ramp's midpoint — and a single `HALO_WEAK.lerp(HALO_STRONG, t)` passes through a desaturated
+## salmon there, because averaging two saturated colours pulls the saturation down with the hue.
+## Two lerps either side of the midpoint keeps every point on the ramp as saturated as its own
+## ends.
 static func colour_for(landed: float) -> Color:
 	var t := clampf(landed / SATURATES_AT_POINTS, 0.0, 1.0)
-	return Palette.HALO_WEAK.lerp(Palette.HALO_STRONG, t)
+	if t < 0.5:
+		return Palette.HALO_WEAK.lerp(Palette.HALO_MID, t * 2.0)
+	return Palette.HALO_MID.lerp(Palette.HALO_STRONG, (t - 0.5) * 2.0)
 
 var _events: EventManager
 var _crowd: Crowd

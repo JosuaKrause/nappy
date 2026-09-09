@@ -185,6 +185,9 @@ func _test_colour_for_the_ramp_ends(t) -> void:
 	var half := ExcitementHalo.colour_for(saturated * 0.5)
 	t.check(not half.is_equal_approx(Palette.HALO_WEAK) and not half.is_equal_approx(Palette.HALO_STRONG),
 			"halfway to saturation reads as neither end of the ramp")
+	t.check(half.is_equal_approx(Palette.HALO_MID),
+			"and it is the chosen midpoint exactly, not a desaturated average of the two ends " +
+			"(playtest 38: 'no real fade from yellow to red')")
 
 # ---------------------------------------------------------------- brightness ---
 # *(2026-09-08, the player, dropping the "how far away" read `alpha_for()` used to give:
