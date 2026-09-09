@@ -321,46 +321,42 @@ of the row, wherever it stands and whichever way she walks, and the crowd is out
 `tests/test_danger.gd` holds — *if A is marked and B is not, A costs more to walk through than B* —
 is true only because it is stated over the catalogue alone.
 
-**Expected impact is the halo's quantity turned forward.** The halo (M92) is the points a source
-actually landed on the meter over the last five seconds; the caret becomes the points a source
-*will* land over the next stretch if she keeps her heading and speed — the same field the meter is
-fed from, integrated along her projected path rather than along a straight line through the def's
-own circle. A thing she is not walking toward expects nothing and is not marked; a thing on her
-line is marked in proportion to what it is about to do to her, whether it is a café, a cat, a
-knot of pedestrians or a car.
+**Expected impact is the halo's quantity turned forward, measured with her held still.** The halo
+(M92) is the points a source actually landed on the meter over the last five seconds; the caret
+becomes the points a source *will* land over the horizon **if she does nothing** — the thing's own
+motion and field projected onto where she stands, the same field the meter is fed from. That
+direction is the player's: *(2026-09-08: "I don't want a caret when walking into a car from the
+side".)* It is already the screen-edge badge's rule and the cues skill's sentence — *measure the
+thing, not the gap; a rate that includes her 92px/s is a cue for walking* — arriving at the caret.
+A car bearing down on her marks; a car she steps into from the side does not, since held still she
+is never in its path. A cat whose dash lands less than the line on a standing player is not marked,
+whatever its row says; a knot of walkers coming at her is, if what they will land clears it. **And
+a stationary thing never earns a caret** — held still, a café does nothing to her — which is the
+halo's job from the moment she is in its field.
 
-**The red caret is under the same rule, and that is the second half of the finding.** *(2026-09-08:
-"even the red lethal one is inconsistent since I can walk in a car from the side and I won't see a
-caret only if it sees me".)* A car carries its doubled deep-red caret only while it sounds its
-horn — `CrowdAgent._draw_horn_mark()` on `_jolt > 0` — which is whether the car noticed her, not
-whether it is about to kill her; a car she walks into from the side never honked. So one question
-decides both carets: what will this thing do to her on her current line. Cost her points — amber;
-end the day, because her projected path enters a car's strike zone or a `hard_fail` row's lethal
-radius inside the horizon — doubled deep red. **Whether a lethal thing *off* her line keeps its red
-caret is the third open question**: the doubled mark also says *what* a thing is, and a robber
-standing in an alley she is not entering is still a thing to route around. The smallest reading
-keeps it — a `hard_fail` row is always marked, and a car is marked when it is expected to hit her
-— and it is the player's to overturn.
+**The red caret is under the same rule.** *(2026-09-08: "even the red lethal one is inconsistent
+since I can walk in a car from the side and I won't see a caret only if it sees me".)* A car
+carries its doubled deep-red caret only while it sounds its horn — `CrowdAgent._draw_horn_mark()`
+on `_jolt > 0` — which is whether the car noticed her, not whether it is about to kill her. Under
+the rule above it is marked red when its own path reaches her inside the horizon, honk or no
+honk, and not otherwise; a `hard_fail` row is marked red when its own approach reaches her lethal
+radius the same way. **Whether a lethal thing standing off her, doing nothing, keeps a red caret**
+is open — the doubled mark also says *what* a thing is — and the smallest reading keeps it for
+`hard_fail` rows and drops it for cars, which is close to today.
 
 **The amber caret stays.** *(2026-09-08: "amber one is fine as long as it represents a meaningful
 thing".)* What changes is only what decides it.
 
-**Two numbers are open, and the milestone is not ready for an agent until the player settles
-them:**
+**Two numbers, and the milestone is not ready for an agent until they are settled:**
 
-- **How far ahead.** The smallest reading is the halo's own window, five seconds — 460px at
-  walking speed — so the two cues are the same quantity either side of *now*.
-- **Where the line falls.** The existing quarter of the bar (25 points) is the taste call already
-  stated in `Tuning.MARK_WORTH_A_DETOUR`'s doc; the halo goes red at about 40. The one thing the
-  line must not do is put a mark on the ordinary crowd at ordinary density, or the cue marks
-  everything and says nothing — which is a measurement on the arterial, not an argument.
+- **How far ahead.** The halo's own window, five seconds, so the two cues are the same quantity
+  either side of *now*. Proposed, not yet confirmed.
+- **Where the amber line falls.** Today's `Tuning.MARK_WORTH_A_DETOUR` (25) would still mark a cat
+  whose dash lands about 30 on a standing player; the halo's own red, about 40 of the bar, would
+  not. The one thing the line must not do is mark the ordinary crowd at ordinary density, which is a
+  measurement on the arterial rather than an argument.
 
-**And one shape question, answered smallest and open:** the projection moves *her* and leaves the
-thing where it is. A dashing cat or a cyclist is on its way somewhere too, and a projection that
-moves both is a second-order thing; the lethal rows that matter most for motion are `hard_fail`
-and marked regardless, so the first cut ignores the source's own velocity and says so.
-
-- [ ] **Settle the two numbers with the player, then write the item.** Not before: an agent given
+- [ ] **Confirm the two numbers with the player, then write the item.** Not before: an agent given
       a threshold to guess will guess the one that marks the crowd.
 
 ---
