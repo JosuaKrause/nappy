@@ -118,6 +118,9 @@ assets/
   shaders/                the excitement halo's silhouette rim
   illustrated/            the PNG art the illustrated presentation draws; manifests beside the sheets
   ground_tileset.tres     one TileSetAtlasSource per ground tile
+  logo.*, icon_stroller*, social-card.png  the wordmark and the stroller on its own: the README
+                          header, the social card the deploy publishes, store and social-media
+                          headers. The game itself loads none of them
 tools/
   check.sh                import + headless boot, fails on any script error
   test.sh                 the headless suite, sharded; a filter runs one process and says PARTIAL RUN

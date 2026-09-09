@@ -134,11 +134,18 @@ var _jolt_intensity := 0.0
 var _jolt_inner := 0.0
 var _jolt_outer := 0.0
 
-## `[when_ms, points]` entries landed on her from this agent, for whatever is still inside
-## `ExcitementHalo.WINDOW` — a true sliding sum rather than a decayed average. Lazily grown: an
-## agent that has never landed anything keeps this empty. Duck-typed with `EventInstance`'s own
-## copy — see `ExcitementHalo`'s class doc for the whole shape.
+## `[when, points]` entries landed on her from this agent, `when` stamped from `_clock` in
+## seconds, for whatever is still inside `ExcitementHalo.WINDOW` — a true sliding sum rather than
+## a decayed average. Lazily grown: an agent that has never landed anything keeps this empty.
+## Duck-typed with `EventInstance`'s own copy — see `ExcitementHalo`'s class doc for the whole
+## shape.
 var _landed_history: Array = []
+
+## This agent's own simulation clock, in seconds, advanced by `delta` in `_process()`. `landed()`
+## is measured against this rather than `Time.get_ticks_msec()` so that a paused game does not
+## empty the halo, and so a rig can measure the window on simulated time by advancing this
+## directly instead of waiting on the wall clock.
+var _clock := 0.0
 
 ## A sidestep held for a moment after being walked into: how far across its own corridor, and how
 ## long is left on it. See `step_aside()`.
@@ -238,6 +245,7 @@ func _stands_on_a_street() -> bool:
 	return _map.is_street(tile)
 
 func _process(delta: float) -> void:
+	_clock += delta
 	var before_position := position
 	_jolt = maxf(0.0, _jolt - delta)
 	if _detour_left > 0.0:
@@ -297,10 +305,12 @@ func contribution_at(world_position: Vector2) -> float:
 ## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
 ## agent's exact share of what landed this frame, so an ordinary walker's colour and a honking
 ## car's colour both come from the same place a bump or a horn ever reached the meter at all.
+## Stamped with `_clock`, this agent's own simulation clock, rather than the wall clock, so a
+## paused game does not empty the halo and a rig can measure the window on simulated time.
 func accumulate_landed(points: float) -> void:
 	_prune_landed_history()
 	if points > 0.0:
-		_landed_history.append([Time.get_ticks_msec(), points])
+		_landed_history.append([_clock, points])
 
 ## The sum of every entry still inside `ExcitementHalo.WINDOW`. Pruned here too, not only on
 ## write, so an agent nobody has visited in a while reports honestly the moment it is asked.
@@ -312,7 +322,7 @@ func landed() -> float:
 	return total
 
 func _prune_landed_history() -> void:
-	var cutoff := Time.get_ticks_msec() - int(ExcitementHalo.WINDOW * 1000.0)
+	var cutoff := _clock - ExcitementHalo.WINDOW
 	while not _landed_history.is_empty() and _landed_history[0][0] < cutoff:
 		_landed_history.pop_front()
 

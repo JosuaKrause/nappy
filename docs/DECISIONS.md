@@ -1,5 +1,23 @@
 # Decisions
 
+## The halo's history runs on simulation time — 2026-09-09
+
+*("let's use simulation time not wall time")*, answering the tooling audit's finding below.
+`CrowdAgent` and `EventInstance` each keep a five-second sliding sum of the points they landed on
+the meter, and both stamped their entries with `Time.get_ticks_msec()`: wall time, so a pause
+longer than `ExcitementHalo.WINDOW` (5.0 s) emptied every halo the instant the game resumed, and a
+rig measured the window on however long its own assertions took. Each source now keeps its own
+`_clock`, advanced by `delta` in its `_process()` and used for both the stamp and the prune;
+gameplay nodes are `PROCESS_MODE_PAUSABLE`, so that clock stops exactly when the simulation does.
+Two choices the brief left open and the agent made: an `EventInstance`'s clock advances after the
+`is_finished` early return, so a spent instance's history freezes rather than draining; and
+`tests/test_halo.gd` advances `_clock` directly to stand in for the window elapsing, adding the
+invariant the change exists for — a second `landed()` read with no `_process` tick returns the
+same sum. A shared global clock on an autoload was the alternative and was not taken: autoloads
+run through a pause, so it would have needed its own paused check, and a per-source clock has no
+second reader to disagree with. Verified with `check.sh` and the halo, meters, events and crowd
+suites.
+
 ## Tooling audit: Python 3.14, ruff, mypy, and links that outlive a branch — 2026-09-09
 
 Three things asked for in one turn: *"take a note that using branch names in pr descriptions will
@@ -49,6 +67,18 @@ in a different clone; and four assets nothing references (`icon_stroller.svg`,
 `icon_stroller_640.png`, `logo.svg`, `illustrated/modular/mother-pram-contact-v2.png`). No global
 RNG call, no missing preload path, no duplicate `class_name` and no stray `print` outside the
 bracketed boot diagnostics were found.
+
+**What the player decided on the leftovers, the same day.** *("let's use simulation time not wall
+time. remove the stale branch since its functionality has been merged. remove shared-main not sure
+what that is for. fix the orphaned folders. the unreferenced assets are used for social media
+headers etc. and as reference of a previous version (v2).")* The stale branch went with
+`git branch -D`, the stray ref with `git update-ref -d`, and the orphaned checkout was deleted and
+`git worktree prune` run; the stash was left. The four assets are kept and now say what they are
+for: `ARCHITECTURE.md`'s tree names the logo, icon and social-card files as the README header,
+the published social card and the store and social-media headers, loaded by nothing in the game;
+`assets/illustrated/modular/README.md` names `mother-pram-contact-v2.png` as the previous version's
+contact sheet kept as reference. The halo's history moved to simulation time; the record is the
+entry above this one.
 
 ## M95 — The signal head that faces north shows its back — 2026-09-09
 
