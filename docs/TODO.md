@@ -334,15 +334,12 @@ whatever its row says; a knot of walkers coming at her is, if what they will lan
 a stationary thing never earns a caret** — held still, a café does nothing to her — which is the
 halo's job from the moment she is in its field.
 
-**The red caret is under the same rule.** *(2026-09-08: "even the red lethal one is inconsistent
-since I can walk in a car from the side and I won't see a caret only if it sees me".)* A car
-carries its doubled deep-red caret only while it sounds its horn — `CrowdAgent._draw_horn_mark()`
-on `_jolt > 0` — which is whether the car noticed her, not whether it is about to kill her. Under
-the rule above it is marked red when its own path reaches her inside the horizon, honk or no
-honk, and not otherwise; a `hard_fail` row is marked red when its own approach reaches her lethal
-radius the same way. **Whether a lethal thing standing off her, doing nothing, keeps a red caret**
-is open — the doubled mark also says *what* a thing is — and the smallest reading keeps it for
-`hard_fail` rows and drops it for cars, which is close to today.
+**The doubled red caret is untouched: it means lethal, and that is kept.** *(2026-09-08, after
+noting that on a car it reads as "honking" and on the cyclist as "lethal": "we can keep the double
+red == lethal".)* A `hard_fail` row keeps its mark always, and a car keeps its mark while it sounds
+its horn — `CrowdAgent._draw_horn_mark()` on `_jolt > 0`, the car whose lane she is standing in —
+and carries none when she steps into it from the side *(2026-09-08: "I don't want a caret when
+walking into a car from the side")*. So this milestone changes the **amber** caret only.
 
 **The amber caret stays.** *(2026-09-08: "amber one is fine as long as it represents a meaningful
 thing".)* What changes is only what decides it.
