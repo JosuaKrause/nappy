@@ -51,3 +51,13 @@ Filed in `TODO.md` under M100, at the top of its defects, with the mechanism tha
 
 Today it is the other way around: `fire_truck` is the day-3 one-shot, drives its route, and leaves
 `burning_building` where it stops. Filed in `TODO.md` as M101.
+
+## 7. Two placements, answering questions put back
+
+> "run taught goes to 3 not 2."
+
+> "blocked street can go behind actual important things."
+
+The first overturns the long-standing decision to move `RUN_TAUGHT_DAY` to day 2; the constant
+stays at 3 and M96 says so. The second keeps the blocked-street bug in M100 rather than ahead of
+the queue.

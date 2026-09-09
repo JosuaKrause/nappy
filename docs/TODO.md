@@ -1013,7 +1013,7 @@ and concluded that **a closure's job is direction, not distance**. Its three ite
 Rewritten from M43. Two of M43's items turned out to be built when checked — the pause lesson no
 longer fires while she is detained or while the tree is paused, and the run lesson's once-per-run
 flag is reset on every attempt at the teaching day — and the record is in `DECISIONS.md` under "The
-queue reprioritised". What is left is two decisions nobody implemented and one measurement.
+queue reprioritised". What is left is one decision nobody implemented and one measurement.
 
 - [ ] **The tutorial dog recurs but is not sited ahead of her after day 3.** `charging_dog` has
       `first_day = Tuning.RUN_TAUGHT_DAY` (3), `spawn_mode = AHEAD_OF_PLAYER` and no last day, so on
@@ -1041,15 +1041,11 @@ queue reprioritised". What is left is two decisions nobody implemented and one m
       first thing to check before treating it as a row-tuning question. M77 has since moved every
       pursuer's siting to past the edge of the view along her heading, so re-measure on the current
       tree before assuming the gap is still there
-- [ ] **`RUN_TAUGHT_DAY` 3 → 2**, decided and not implemented. The constant gates **everything
-      that pursues** — `charging_dog`'s first day, the director's owed pursuit and the scheduler's
-      teaching-day rule all read it — so check that act I is not made harder by a constant meant
-      only to move a tutorial: day 2 was tuned without a `hard_fail` row on it, and
-      `tests/test_balance.gd` is what says whether it still is. `docs/MECHANICS.md`,
-      `docs/EVENTS.md` and the skills all state "day 3 teaches the run" in prose and move in the
-      same commit. The options weighed when it was decided — the lesson to day 2, the set piece to
-      day 2, or day 3 kept whole — are in `DECISIONS.md` under M49, in the item "Day 3 carries act
-      I's whole payload"
+**The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
+on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
+is where act I stops being a nice neighbourhood; the options weighed when the move was first
+proposed are in `DECISIONS.md` under M49, in the item "Day 3 carries act I's whole payload".
+
 - [ ] **Dying at high excitement on a quiet street: is one contact at 90 a cliff?** A bump is about
       10.8 points, so above 89 a single one ends the day on an empty street. Two cheap checks:
       whether the pram's `EXCITEMENT_NEARLY_CRYING` cue, which the baby shows from 80 of the
@@ -1186,7 +1182,8 @@ is still true.
       and the closure marker the only things allowed to stand there. A soft seal is not covered — the
       street is still walkable down the carriageway and a café on it is the price of going that way.
       A test plans several seeds and days and asserts that nothing planned stands on a closed or
-      hard-sealed segment
+      hard-sealed segment. Placed here rather than ahead of the queue by the player: *"blocked
+      street can go behind actual important things"*
 - [ ] **A queued car grazes a big building's footprint, and the M53 assertion was loosened to let
       it.** `tests/test_crowd.gd`'s *"nothing walks into a hard blocker"* asked for exactly zero
       agents ever standing inside one; it now tolerates one agent on under 5% of frames, measured at

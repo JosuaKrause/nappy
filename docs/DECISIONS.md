@@ -45,6 +45,11 @@ the crossing's price, and the tree's own growth is what makes crossing a decisio
 and others do not. What would make it worth discussing again is a played run in which every route
 crosses the spine for nothing, not an argument about the multiplier.
 
+**`RUN_TAUGHT_DAY` stays at 3.** The move to day 2 had stood as *decided and not implemented*
+since the M49 session's "Day 3 carries act I's whole payload"; put back to the player on
+2026-09-09 because it gates every pursuit, the answer was *"run taught goes to 3 not 2"*, so the
+item is closed and the constant is left alone.
+
 **And one bug reported in the same session**, filed at the top of M100's defects: events spawn
 inside a fully blocked street. The mechanism was read the same day — `closed_tiles` holds only the
 ground a flood from the doorstep cannot reach, so a closed street with a side opening stays open to
