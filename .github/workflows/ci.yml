@@ -1,7 +1,7 @@
-# The same three gates a local commit rests on, in order of cost:
-# lint.sh needs nothing, check.sh boots the project, test.sh is the full suite.
-# The tools all honour GODOT=..., which is how CI points them at the
-# downloaded Linux binary instead of the macOS default path.
+# The same gates a local commit rests on, in order of cost:
+# lint.sh needs nothing, pycheck.sh needs uv, check.sh boots the project, test.sh is the full
+# suite. The Godot tools all honour GODOT=..., which is how CI points them at the downloaded
+# Linux binary instead of the macOS default path.
 name: ci
 
 on:
@@ -19,11 +19,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify agent hooks
-        run: python3 tools/test_codex_hooks.py
-
       - name: Lint the docs
         run: ./tools/lint.sh
+
+      # The Python tooling: uv reads .python-version and uv.lock, so the interpreter and every
+      # package are the ones the lockfile names rather than whatever the runner image ships.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # tools/test_clip.py encodes a real burst through ffmpeg, which the runner image does not
+      # ship; without it that test skips and the converter is never actually exercised.
+      - name: Install ffmpeg
+        run: sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Check the Python tools
+        run: ./tools/pycheck.sh
 
       - name: Cache Godot
         id: godot-cache

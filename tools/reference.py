@@ -34,9 +34,9 @@ from pathlib import Path
 from PIL import Image, ImageOps
 
 try:  # An iPhone photo is HEIC, and Pillow cannot open one without this.
-    import pillow_heif
+    from pillow_heif import register_heif_opener
 
-    pillow_heif.register_heif_opener()
+    register_heif_opener()
     HEIF = True
 except ImportError:  # pragma: no cover - the wrapper installs it; a bare run may not have it.
     HEIF = False
@@ -81,22 +81,20 @@ def fitted(size: tuple[int, int]) -> tuple[int, int]:
 
 
 def convert_still(source: Path, destination_stem: Path) -> Path:
-    with Image.open(source) as image:
-        image.load()
+    with Image.open(source) as opened:
+        opened.load()
         # `getchannel` would raise; `mode` is the cheap question. Alpha survives as PNG because
         # a cut-out reference with a transparent background is a different thing from a photo.
-        has_alpha = image.mode in ("RGBA", "LA") or "transparency" in image.info
+        has_alpha = opened.mode in ("RGBA", "LA") or "transparency" in opened.info
         # `exif_transpose` applies the orientation tag and then it is safe to throw the tag away
         # -- otherwise stripping metadata silently rotates every phone photo.
-        image = ImageOps.exif_transpose(image)
-        image = image.convert("RGBA" if has_alpha else "RGB")
+        image = ImageOps.exif_transpose(opened).convert("RGBA" if has_alpha else "RGB")
         target = fitted(image.size)
         if target != image.size:
-            image = image.resize(target, Image.LANCZOS)
+            image = image.resize(target, Image.Resampling.LANCZOS)
         # A fresh image object carries none of the source's `info` dict, which is where EXIF,
         # ICC, XMP and PNG text chunks all live. Copying the pixels is the strip.
-        clean = Image.new(image.mode, image.size)
-        clean.putdata(list(image.getdata()))
+        clean = Image.frombytes(image.mode, image.size, image.tobytes())
         if has_alpha:
             out = destination_stem.with_suffix(".png")
             clean.save(out, format="PNG", optimize=True)
@@ -114,11 +112,18 @@ def convert_video(source: Path, destination_stem: Path) -> Path:
     # than muting it; the scale filter is the same fit-inside-the-box rule the stills get, with
     # -2 keeping each side even, which H.264 requires.
     command = [
-        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-        "-i", str(source),
-        "-map_metadata", "-1",
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        str(source),
+        "-map_metadata",
+        "-1",
         "-an",
-        "-r", VIDEO_FPS,
+        "-r",
+        VIDEO_FPS,
         # Two scale passes rather than one. `min(iw,W)`/`min(ih,H)` rather than a bare W:H,
         # because `force_original_aspect_ratio=decrease` on its own still *enlarges* a source
         # smaller than the box, which is the one thing the size rule says never to do; and the
@@ -126,10 +131,19 @@ def convert_video(source: Path, destination_stem: Path) -> Path:
         # `force_divisible_by` option does that in one pass and is not in every ffmpeg build --
         # it is missing from the one this was written against, which failed loudly and is why
         # there are two passes.
-        "-vf", f"scale='min(iw,{MAX_SIZE[0]})':'min(ih,{MAX_SIZE[1]})'"
-               ":force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2",
-        "-c:v", "libx264", "-preset", "slow", "-crf", VIDEO_CRF,
-        "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+        "-vf",
+        f"scale='min(iw,{MAX_SIZE[0]})':'min(ih,{MAX_SIZE[1]})'"
+        ":force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "slow",
+        "-crf",
+        VIDEO_CRF,
+        "-pix_fmt",
+        "yuv420p",
+        "-movflags",
+        "+faststart",
         str(out),
     ]
     subprocess.run(command, check=True)
@@ -156,10 +170,8 @@ def sources(paths: list[Path]) -> list[Path]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("paths", nargs="+", type=Path,
-                        help="photos, videos, or directories of them")
-    parser.add_argument("--force", action="store_true",
-                        help="overwrite an existing file of the same name")
+    parser.add_argument("paths", nargs="+", type=Path, help="photos, videos, or directories of them")
+    parser.add_argument("--force", action="store_true", help="overwrite an existing file of the same name")
     args = parser.parse_args()
 
     FOLDER.mkdir(parents=True, exist_ok=True)
@@ -183,7 +195,7 @@ def main() -> int:
                 if source.suffix.lower() in (".heic", ".heif") and not HEIF:
                     raise RuntimeError("pillow-heif is not installed, so a HEIC cannot be read")
                 out = convert_still(source, stem)
-        except Exception as error:  # noqa: BLE001 - every failure is reported and counted
+        except Exception as error:
             print(f"  FAILED {source.name}: {error}")
             failures += 1
             continue
@@ -201,14 +213,16 @@ def main() -> int:
     # somebody has to remember. A camera stem is frequently the capture timestamp -- Google's
     # `PXL_YYYYMMDD_HHMMSSsss` is UTC to the millisecond -- so committing one puts back, in the
     # filename, the `DateTime` the pass above just stripped out of the EXIF.
-    camera_named = sorted(p.name for p in FOLDER.iterdir()
-                          if p.suffix.lower() in {".jpg", ".png", ".mp4"}
-                          and CAMERA_STEM.match(p.stem))
+    camera_named = sorted(
+        p.name for p in FOLDER.iterdir() if p.suffix.lower() in {".jpg", ".png", ".mp4"} and CAMERA_STEM.match(p.stem)
+    )
     if camera_named:
         print(f"\n{len(camera_named)} file(s) still carry a camera stem, e.g. {camera_named[0]}")
-        print("  Rename them <subject>-<detail>-NN before committing -- a stem like "
-              "`pxl-20260907-205519546` is the capture time, which is the metadata this pass "
-              "exists to remove. See .claude/skills/reference-photos/SKILL.md.")
+        print(
+            "  Rename them <subject>-<detail>-NN before committing -- a stem like "
+            "`pxl-20260907-205519546` is the capture time, which is the metadata this pass "
+            "exists to remove. See .claude/skills/reference-photos/SKILL.md."
+        )
 
     if failures:
         print(f"{failures} failed", file=sys.stderr)

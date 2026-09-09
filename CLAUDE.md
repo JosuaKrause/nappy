@@ -88,6 +88,7 @@ is the moment somebody is about to touch the file.
 | `src/ui/**`, `sprites.gd`, `palette.gd` | **cues** |
 | `src/telemetry/**` | **telemetry** |
 | `src/autoload/tuning.gd` | **balance** |
+| `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
 | `tests/**` | **verify** |
 | `docs/PLAYTEST-*.md`, `docs/TODO.md` | **feedback** |
 | any `*.gd` | **godot** |

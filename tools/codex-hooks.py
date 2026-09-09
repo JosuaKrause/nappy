@@ -4,34 +4,35 @@
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import subprocess
 import sys
-
+from pathlib import Path
+from typing import Any, Optional
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / ".claude/skills"
 
 
-def main():
-    event = json.load(sys.stdin)
+def main() -> None:
+    event: dict[str, Any] = json.load(sys.stdin)
     kind = event["hook_event_name"]
     # Separate agents, repositories/worktrees and Claude's markers. Never use raw
     # session input as a filesystem path.
-    identity = json.dumps([str(ROOT), event.get("session_id"),
-                           event.get("transcript_path"), event.get("agent_id")])
+    identity = json.dumps([str(ROOT), event.get("session_id"), event.get("transcript_path"), event.get("agent_id")])
     session = "codex-" + hashlib.sha256(identity.encode()).hexdigest()
     state = Path(os.environ.get("TMPDIR") or "/tmp") / "claude-nappy-rules" / session
     state.mkdir(parents=True, exist_ok=True)
-    context = []
+    context: list[str] = []
 
-    def run_hook(name, tool="", path=None):
-        payload = dict(event, session_id=session, tool_name=tool,
-                       tool_input={"file_path": str(path)} if path else {})
+    def run_hook(name: str, tool: str = "", path: Optional[Path] = None) -> None:
+        payload = dict(event, session_id=session, tool_name=tool, tool_input={"file_path": str(path)} if path else {})
         result = subprocess.run(
             ["bash", str(ROOT / ".claude/hooks" / name)],
-            input=json.dumps(payload), text=True, capture_output=True, check=True,
+            input=json.dumps(payload),
+            text=True,
+            capture_output=True,
+            check=True,
         )
         if result.stdout.strip():
             output = json.loads(result.stdout)
@@ -59,17 +60,18 @@ def main():
                 # loading instead of dumping all skills on a read-only command.
                 marker = state / "shell-reminder"
                 if not marker.exists():
-                    context.append("Use apply_patch for ordinary edits so path rules load automatically. "
-                                   "Before a structural shell/script edit, read every applicable skill "
-                                   "from CLAUDE.md's path table. Before git mutations, load committing. "
-                                   "Shell command text cannot reliably identify the files it will change.")
+                    context.append(
+                        "Use apply_patch for ordinary edits so path rules load automatically. "
+                        "Before a structural shell/script edit, read every applicable skill "
+                        "from CLAUDE.md's path table. Before git mutations, load committing. "
+                        "Shell command text cannot reliably identify the files it will change."
+                    )
                     marker.touch()
         else:
             paths = []
             if tool == "apply_patch":
                 patch = args.get("command", args.get("input", ""))
-                paths = re.findall(r"^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$",
-                                   patch, re.MULTILINE)
+                paths = re.findall(r"^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$", patch, re.MULTILINE)
             elif args.get("file_path"):
                 paths = [args["file_path"]]
             cwd = Path(event.get("cwd") or ROOT)
@@ -84,9 +86,7 @@ def main():
 
     if context:
         # Codex accepts additionalContext, but rejects Claude's suppressOutput.
-        print(json.dumps({"hookSpecificOutput": {
-            "hookEventName": kind, "additionalContext": "\n\n".join(context)
-        }}))
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": kind, "additionalContext": "\n\n".join(context)}}))
 
 
 if __name__ == "__main__":

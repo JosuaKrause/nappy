@@ -88,6 +88,9 @@ case "$path" in
 	*/autoload/tuning.gd)      wanted+=(balance) ;;
 esac
 case "$path" in
+	*/tools/*.py|*/pyproject.toml|*/uv.lock|*/.python-version) wanted+=(python-tooling) ;;
+esac
+case "$path" in
 	*/tests/*)                 wanted+=(verify) ;;
 esac
 case "$path" in

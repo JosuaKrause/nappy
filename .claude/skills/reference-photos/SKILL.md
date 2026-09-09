@@ -89,7 +89,7 @@ rooftop-ducts-over-street-01.jpg    rooftop-ducts-over-street-02.mp4
 ```
 
 **No date, deliberately, and this is where reference differs from evidence.**
-`docs/evidence/shot-2026-09-07-seed4242-halo-outline-leaf-blower.png` earns every field it carries,
+`docs/evidence/shot-2026-09-07-seed4242-halo-sprite-outline.png` earns every field it carries,
 because evidence exists to be *reproduced* and the date and seed are how. Reference is never
 reproduced; it is looked at. A date on it sorts the folder by when somebody happened to be out with
 a phone, which answers a question nobody asks.

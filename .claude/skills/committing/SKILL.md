@@ -75,6 +75,32 @@ The **session-cleanup** skill still runs at the end of a session — it catches 
 change is responsible for, reassesses long-open items and re-reads the numbers. It is not where a
 PR's own doc work goes.
 
+## A PR description never links a file by branch name
+
+**An image or file in a PR description is linked by commit hash, never by branch.** *(2026-09-09:
+"using branch names in pr descriptions will lead to stale links (eg for images etc)".)* A URL of
+the shape `.../blob/feature/<thing>/docs/evidence/x.png?raw=true` or
+`raw.githubusercontent.com/<owner>/<repo>/feature/<thing>/...` works while the branch exists and
+returns a 404 the moment the branch is deleted — and this workflow deletes every branch as soon as
+it is merged, so every such link in every merged PR is dead. The description is the one place the
+before-and-after pictures live once the PR is closed, so a dead link there is the evidence gone.
+
+Link the commit instead:
+
+```
+https://raw.githubusercontent.com/<owner>/<repo>/<full-commit-sha>/docs/evidence/x.png
+```
+
+A commit's URL survives the branch because `main` is merged `--no-ff`, so every commit on the branch
+stays reachable from the merge commit. **The hash has to be the one the file was committed in or a
+later commit on the branch**, so write the description after the evidence commit exists — `git
+rev-parse HEAD` — and if the evidence is amended, update the link. A squash or rebase merge would
+break this, and is one more reason this repository does neither.
+
+The alternative that does not depend on the repository at all is uploading the image to GitHub as an
+attachment, which is what dragging a file into the PR text box does; it cannot be done from `gh`, so
+it is the fallback for a description written by hand rather than the rule.
+
 ## Branches
 
 **Before merging main into an existing PR or branch, read
@@ -155,7 +181,8 @@ running it locally is still the fast thing to do.
 
 Run `./tools/lint.sh` too if the commit touches a governed doc (`CLAUDE.md`, a skill, `README.md`
 or anything under `docs/` besides `DECISIONS.md` and the `PLAYTEST-NN.md` files). A hit is a stop:
-fix the sentence or commit nothing.
+fix the sentence or commit nothing. And `./tools/pycheck.sh` if it touches `tools/*.py`,
+`pyproject.toml` or `uv.lock` — see the **python-tooling** skill.
 
 ## Never commit
 
