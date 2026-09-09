@@ -147,6 +147,11 @@ var _home := {}
 ## street for `gaps()` is a real street at all.
 var _absent := {}
 
+## Node id -> the edges that remain after the main-road rule for this growth invocation. The map
+## and grid are fixed while a tree grows, so repeated probes can reuse the filtered edge order.
+var _ways_cache := {}
+var _cache_ways := false
+
 ## Segment key -> `true`, lazily derived from `_colours` the first time anything asks a
 ## segment-level question. A `ReachabilityGrid` node is a handful of tiles and a tree touches many
 ## of them, so this is worth computing once rather than once per candidate `_shuffled_candidates`
@@ -229,6 +234,10 @@ static func grow(map: CityMap, home: StreetNetwork.Segment, areas: Array[Closure
 	tree.grid = grid
 	tree._map = map
 	tree._absent = closed
+	# `_ways` is queried repeatedly while this one tree grows. The grid topology and main-road
+	# orientation stay fixed for the invocation, so memoizing the filtered edge list saves the same
+	# Variant and street-kind work without retaining a result across days or maps.
+	tree._cache_ways = true
 	for tile in _rect_tiles(home.tile_rect()):
 		var node := grid.node_at(tile)
 		if node >= 0:
@@ -239,6 +248,8 @@ static func grow(map: CityMap, home: StreetNetwork.Segment, areas: Array[Closure
 	for area in tree._in_a_rolled_order(areas, rng):
 		tree._grow_a_branch(map, area, rng)
 	tree._grow_the_trunk()
+	tree._cache_ways = false
+	tree._ways_cache.clear()
 	return tree
 
 static func _rect_tiles(rect: Rect2i) -> Array[Vector2i]:
@@ -411,14 +422,20 @@ func _carries(node: int, colour: int) -> bool:
 ## answers a proximity question about the physical lattice rather than proposing a way to walk,
 ## and the main road is real ground either way.
 func _ways(node: int) -> Array:
+	if _cache_ways and _ways_cache.has(node):
+		return _ways_cache[node]
 	var edges := grid.neighbours(node)
 	if not _map or _map.main_road < 0:
+		if _cache_ways:
+			_ways_cache[node] = edges
 		return edges
 	var found: Array = []
 	for edge: Array in edges:
 		if _runs_along_the_spine(edge[1], edge[2]):
 			continue
 		found.append(edge)
+	if _cache_ways:
+		_ways_cache[node] = found
 	return found
 
 ## Whether stepping from tile `a` to tile `b` walks along the main road rather than across it.
