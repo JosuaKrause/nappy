@@ -39,6 +39,10 @@ if [[ ! -x "$GODOT" ]]; then
 fi
 
 mkdir -p "$OUT_DIR"
+# The export's own output is not a resource. Without this, the next import pass finds the
+# exported icons under build/web/ and writes .import sidecars beside them — Godot importing its own
+# export — so the ignore marker is written every time rather than trusted to survive a clean.
+touch "$PROJECT_DIR/build/.gdignore"
 
 echo "== export (Web, $MODE) =="
 output=$("$GODOT" --headless --path "$PROJECT_DIR" "$EXPORT_FLAG" "Web" "$OUT_DIR/index.html" 2>&1)
