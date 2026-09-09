@@ -18,6 +18,7 @@ func run(t) -> void:
 	_test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t)
 	_test_a_car_on_course_is_red_one_beside_her_line_is_not(t)
 	_test_a_walker_brushing_past_is_unmarked(t)
+	_test_the_arterial_at_ordinary_density_marks_nobody(t)
 	_test_the_mark_still_breathes(t)
 	_test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
 	_test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
@@ -146,6 +147,35 @@ func _test_a_walker_brushing_past_is_unmarked(t) -> void:
 	t.check(walker._caret_strength() == 0,
 			"an ordinary walker brushing past her carries no caret at all")
 	walker.free()
+
+## **The line this milestone cannot merge on the wrong side of.** *(2026-09-08, on the one
+## measurement rather than an argument: "the answer has to be none at ordinary density, or the
+## line moves before this merges".)* A real generated city, a real `Crowd.step()` — "a rig that
+## steps the parts is not running the whole" (`.claude/skills/crowd-traffic/SKILL.md`) — at
+## ordinary arterial density, for the same forty-second walk `docs/EVENTS.md`'s own cost-table
+## measurement uses, with the player standing still on the pavement rather than walking it: not
+## one amber caret over the whole of it.
+func _test_the_arterial_at_ordinary_density_marks_nobody(t) -> void:
+	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
+	var city: City = city_scene.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(9137))
+	var standing_at := CrowdLanes.arterial_pavement(city.map)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("test_danger:arterial")
+	city.crowd.start_day(1, rng, standing_at)
+
+	var amber := 0
+	for i in int(round(40.0 / STEP)):
+		city.crowd.step(STEP)
+		for agent in city.crowd.agents():
+			agent.set_player_at(standing_at)
+			if agent._caret_strength() == 1:
+				amber += 1
+	t.check(amber == 0,
+			("a crowd at ordinary arterial density around a standing player marks nobody " +
+					"(%d amber frames over the walk)") % amber)
+	city.free()
 
 ## The one property the ring had that a symbol does not get for free. Without it a pulsing event
 ## stops being something to time a pass through and becomes something that hurts at random.
