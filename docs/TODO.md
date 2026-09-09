@@ -38,7 +38,12 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 candidate on the same terms as an event, because *a busy sidewalk is noisy because of people* and the
 noise is attributable. The player's words and what was checked before answering are in that section.
 
-**[PLAYTEST-36.md](PLAYTEST-36.md) is the newest session, and all three of its findings are M92** —
+**[PLAYTEST-38.md](PLAYTEST-38.md) is the newest session, played on M92's own branch before it
+merged, and its four findings are M92's last items** — two rows the halo shows nothing for, the
+chatting mother's capture radius, and the cue's own channels: magnitude on transparency as well as
+colour, and both edges eased rather than switched.
+
+**[PLAYTEST-36.md](PLAYTEST-36.md) is the session before it, and all three of its findings are M92** —
 a session on the halo M89 had just built, and together they are one change: the cue gets a second
 axis. It also records a fork the player closed **before** it was built, which is the part to read
 first: colour from a row's declared `intensity` was proposed and rejected in favour of what has
@@ -230,6 +235,51 @@ actually landed on her — and the reasoning is the whole design.
       far more than eight caret-worthy things inside her reach at once, and the cap currently keeps
       the strongest — which is the right rule and possibly the wrong number. **Do not guess it**;
       look at a capture on the arterial with the change in and say what the number should be
+
+**Played on the branch, [PLAYTEST-38.md](PLAYTEST-38.md), and four more items follow from it:**
+
+- [ ] **Cats and birds show nothing.** *(2026-09-08: "cats and birds have zero effect right now
+      according to halos".)* Both cost her — `cat_dash` 17/s over 30/120px for 1.8s, a flock +35
+      through the middle — so this is either a rim that is never drawn for these two shapes or one
+      so faint it reads as nothing. **Find out with a rig before touching a number**: a `cat_dash`
+      and a flock instance standing on her must be selected by `select_sources()` and must
+      accumulate `landed()` after a dash or a walk-through; and `alpha_for()`'s peak — the
+      source's `contribution_at()` at its own `global_position` — is suspect for a flock, whose
+      centre can lie between its birds where the summed field is not at its maximum. Whatever it
+      is, the fix is the cause, stated in the commit
+- [ ] **The chatting mother's capture radius grows.** *(2026-09-08: "the radius of the chatty lady
+      for capturing must be larger".)* `chatting_mother.detain_radius` is 33px; the player gave no
+      number. **Chosen as the smallest reading and open to overturn: 48px** — three quarters of the
+      64px pavement band, so she is met from the frontage lane as well as the kerb lane and no line
+      on her own pavement walks past her, while somebody on the far pavement (96px away centre to
+      centre) still passes. The row's docstring and `docs/EVENTS.md`'s row carry the new number and
+      the reason; `validate()`'s `detain_radius < inner_radius` must still hold
+- [ ] **Transparency carries magnitude too, and both edges fade.** *(2026-09-08: "yellow can mean 1
+      and 20 which are very different. I think we can combine color with transparency and also fade
+      in and fade out smoothly using transparency. right now it's always abrupt and yellow can mean
+      anything".)* Two changes to `ExcitementHalo`'s brightness:
+
+      **Magnitude.** The target alpha becomes the distance fraction times a magnitude factor,
+      `clampf(landed / SATURATES_AT_POINTS, MIN_MAGNITUDE, 1.0)` with `MIN_MAGNITUDE` about 0.2, so
+      a source that has cost her a point is a faint yellow rim and one that has cost twenty is a
+      solid orange one — colour and transparency agree instead of one of them lying.
+
+      **Time.** Each source's drawn alpha eases toward its target rather than jumping: a rim fades
+      in over about 0.3s when a source clears the floor and fades out over about 0.8s when it stops
+      contributing or its points leave the window — so a burst that expires all at once dims rather
+      than vanishes. The easing lives on the source's own halo state (`EntityHalo` or the two
+      `set_halo_strength()` callers), not in the selection; selection stays the honest set, and a
+      source dropped from it is told a target of zero and fades. Colour is not eased — it is the
+      window's own number and stays exact. The three constants are felt numbers with the player's
+      sentence beside them
+- [ ] **The ramp has to read orange in the middle.** *(2026-09-08: "there is also no real fade from
+      yellow to red (eg when standing next to the other baby lady".)* A chat lands
+      `CHAT_EXCITEMENT` (25) over `detain_seconds` (5s), which is past the ramp's midpoint. First
+      hold in a rig that a `chatting_mother` instance's `landed()` is about 25 at the end of a full
+      chat — if the chat's flat rate from `current_intensity()` is not reaching `contribution_at()`
+      inside her field, that is the bug. If it is reaching her, the ramp is the bug: an RGB lerp
+      from a light yellow to a red passes through a desaturated middle, so lerp in HSV or through a
+      chosen orange midpoint instead, and take one capture at the end of a chat to look at it
 
 ---
 
