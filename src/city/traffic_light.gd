@@ -12,17 +12,19 @@ extends Node2D
 ## head on the near kerb and behind one on the far side of the junction.
 
 const HEAD := preload("res://assets/props/signal_head.svg")
+const HEAD_BACK := preload("res://assets/props/signal_head_back.svg")
 const HEAD_SIDE := preload("res://assets/props/signal_head_side.svg")
 
 ## Where each lamp sits on the head, as an offset from the node's feet, and how big the lit patch
-## is. Matched by hand to the two drawings: both are 42 tall with the lamps at y 2, 8 and 14 from
+## is. Matched by hand to the drawings: all are 42 tall with the lamps at y 2, 8 and 14 from
 ## the top, and the side view shows a cone under a visor rather than a full disc.
 ##
-## **The two views are the cue.** Four identical heads on one junction say nothing about which road
-## each is stopping, and from directly above a head has no face to point with. So the ones facing up
-## and
-## down the screen are drawn face-on and the ones facing across it are drawn edge-on: what you can
-## see of the lamp *is* which street it means.
+## **The three views are the cue.** Four identical heads on one junction say nothing about which
+## road each is stopping, and from directly above a head has no face to point with. So the one
+## facing down the screen is drawn face-on, the ones facing across it are drawn edge-on, and the
+## one facing up the screen — north of the junction, looking at the traffic coming down the spine —
+## shows its back and no lamp at all: what you can see of the lamp *is* which street it means, and
+## the face-on head across the junction already carries the whole of that arm's message.
 const LAMP_HEIGHTS := [-38.0, -32.0, -26.0]
 const LAMP_SIZE := Vector2(6.0, 4.0)
 const LAMP_SIZE_SIDE := Vector2(3.0, 2.0)
@@ -36,6 +38,9 @@ var arm_is_vertical := false
 ## Which way an edge-on head faces, so its visors point at the traffic they are stopping rather
 ## than away from it. Meaningless for a face-on one.
 var _mirrored := false
+## Whether this head faces up the screen, away from the camera, so only its back is drawn and no
+## lamp is painted. Meaningless for an edge-on one.
+var _faces_away := false
 
 var signals: TrafficSignals
 
@@ -49,8 +54,13 @@ var _lit := -1
 func faces(heading: Vector2) -> void:
 	arm_is_vertical = absf(heading.y) > 0.0
 	_mirrored = heading.x > 0.0
+	# Traffic heading down the screen is stopped by a head that looks back up it.
+	_faces_away = heading.y > 0.0
 
 func _process(_delta: float) -> void:
+	# Nothing on the back of a head changes with the phase, so it never needs redrawing.
+	if _faces_away:
+		return
 	var lit := _lamp()
 	if lit != _lit:
 		_lit = lit
@@ -69,6 +79,9 @@ func _lamp() -> int:
 
 func _draw() -> void:
 	Sprites.draw_shadow(self, Vector2.ZERO, 5.0)
+	if arm_is_vertical and _faces_away:
+		Sprites.draw_standing(self, HEAD_BACK, Vector2.ZERO)
+		return
 	Sprites.draw_standing(self, HEAD if arm_is_vertical else HEAD_SIDE, Vector2.ZERO,
 			Vector2.ZERO, _mirrored)
 	var lamp := _lamp()

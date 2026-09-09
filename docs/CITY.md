@@ -1107,7 +1107,12 @@ which must not say *"at a zebra"* on a street that has none.
 - **The amber is a clearance period, not a warning.** The crossing arm stays red through it, and a
   car too close to stop is counted as already in the box.
 - **Four heads per junction, each beside the carriageway it stops.** From directly above a head has
-  no face to point with, so *where it stands* is what says which road it is talking about.
+  no face to point with, so *where it stands* is what says which road it is talking about — and
+  what you can see of it says the rest. The head facing down the screen is drawn face-on with its
+  lamp, the two facing across it are drawn edge-on with the lamp as a cone under the visor, and the
+  head north of the junction, which faces up the screen at the southbound traffic, shows its back
+  and no lamp at all: the face-on head across the junction already carries that arm's whole
+  message, and a lamp on a back plate would be a light shining out of the back of a box.
 - **The clock restarts with the day.** Not because a signal is a property of a day, but because two
   attempts at the same day must find the same cars at the same lights. What is learnable is the
   pattern, not where the cycle happens to be.
