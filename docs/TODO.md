@@ -334,15 +334,29 @@ whatever its row says; a knot of walkers coming at her is, if what they will lan
 a stationary thing never earns a caret** — held still, a café does nothing to her — which is the
 halo's job from the moment she is in its field.
 
-**The doubled red caret is untouched: it means lethal, and that is kept.** *(2026-09-08, after
-noting that on a car it reads as "honking" and on the cyclist as "lethal": "we can keep the double
-red == lethal".)* A `hard_fail` row keeps its mark always, and a car keeps its mark while it sounds
-its horn — `CrowdAgent._draw_horn_mark()` on `_jolt > 0`, the car whose lane she is standing in —
-and carries none when she steps into it from the side *(2026-09-08: "I don't want a caret when
-walking into a car from the side")*. So this milestone changes the **amber** caret only.
+**The doubled red caret keeps its meaning — lethal — and gets the same rule.** *(2026-09-08: "we
+can keep the double red == lethal", then "and not all lethal things need a caret either".)* So it
+is one sentence in two strengths, both measured with her held still over the horizon: **amber** if
+the thing's own approach will cost her at or above the line, **doubled red** if it will end the
+day — her position inside a car's strike or a `hard_fail` row's lethal radius on its current
+course. Nothing otherwise. A robber waiting in an alley she is not in carries no mark until he
+stands up and comes; a car marks while she stands in its lane, which is exactly when it honks, so
+`CrowdAgent._draw_horn_mark()`'s rule becomes a consequence rather than the definition; the
+cyclist marks when its line reaches her; and a car she steps into from the side carries none
+*(2026-09-08: "I don't want a caret when walking into a car from the side")*.
 
 **The amber caret stays.** *(2026-09-08: "amber one is fine as long as it represents a meaningful
 thing".)* What changes is only what decides it.
+
+**And the vocabulary is restated as one language.** *(2026-09-08: "but then we need to create a
+consistent language around the other carets too".)* Each row of `docs/EVENTS.md`'s "The visual
+vocabulary" and the cues skill becomes one sentence decided by one quantity — caret: *stand here
+and this will cost you*, or *end your day*; halo: *this is costing you now, and this much*;
+exclamation over her: *the clock on you has started*; badge: *something lethal or fast is coming,
+and this is what* — with **one number** (the amber line and the halo's red are the same points, so
+an amount means the same thing whether it already landed or is about to) and **one direction**
+(everything about a thing is measured with her held still, so nothing is a cue for walking). That
+rewrite is this milestone's first item.
 
 **Two numbers, and the milestone is not ready for an agent until they are settled:**
 
