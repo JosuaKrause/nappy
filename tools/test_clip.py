@@ -20,8 +20,8 @@ SPEC.loader.exec_module(clip)
 
 
 class ClipTests(unittest.TestCase):
-    def burst(self, root: Path, *, status: str = "complete", frames: int = 3) -> Path:
-        folder = root / "run with spaces and 'quote'" / "asked" / "burst-special"
+    def burst(self, root: Path, *, status: str = "complete", frames: int = 3, name: str = "burst-special") -> Path:
+        folder = root / "run with spaces and 'quote'" / "asked" / name
         folder.mkdir(parents=True)
         stamps = [0.0, 0.11, 0.31][:frames]
         for index, colour in enumerate(((255, 0, 0), (0, 255, 0), (0, 0, 255))[:frames], 1):
@@ -36,6 +36,46 @@ class ClipTests(unittest.TestCase):
             "context": "test",
         }), encoding="utf-8")
         return folder
+
+    def test_find_pending_scans_nested_bursts_and_skips_active_or_published(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            first = self.burst(root)
+            first.rename(first.parent / "first")
+            second = self.burst(root, name="second")
+            (second.parent / "second.mp4").write_bytes(b"keep")
+            active = self.burst(root, status="active", name="active")
+            partial = self.burst(root, status="partial", name="partial")
+            malformed = root / "malformed" / "burst.json"
+            malformed.parent.mkdir()
+            malformed.write_text("{", encoding="utf-8")
+            no_frames = root / "empty" / "burst.json"
+            no_frames.parent.mkdir()
+            no_frames.write_text(json.dumps({"schema_version": 1, "status": "complete", "frames": []}), encoding="utf-8")
+
+            with mock.patch.object(clip, "convert"):
+                pending = clip.find_pending(root)
+            self.assertEqual(pending, sorted((first.parent / "first", partial), key=str))
+            self.assertNotIn(active, pending)
+
+    def test_no_argument_dispatches_all_pending_and_second_call_is_noop(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            first = self.burst(root, name="first")
+            second = self.burst(root, name="second")
+            outputs = {folder: folder.parent / f"{folder.name}.mp4" for folder in (first.parent / "first", second.parent / "second")}
+
+            def dispatch(folder: Path, **kwargs: object) -> Path:
+                outputs[folder].write_bytes(b"encoded")
+                return outputs[folder]
+
+            with mock.patch.object(clip, "telemetry_directory", return_value=root), \
+                    mock.patch.object(clip, "convert", side_effect=dispatch):
+                self.assertEqual(clip.main([]), 0)
+            with mock.patch.object(clip, "telemetry_directory", return_value=root), \
+                    mock.patch.object(clip, "convert") as convert:
+                self.assertEqual(clip.main([]), 0)
+                convert.assert_not_called()
 
     def test_real_ffmpeg_timing_output_and_source_preservation(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Convert a completed gameplay burst to an MP4 beside its source folder.
 #
-#   tools/clip.sh                         # newest completed burst
+#   tools/clip.sh                         # convert every pending burst recursively
 #   tools/clip.sh <burst-directory>       # explicit burst, including cancelled partial bursts
 #   tools/clip.sh <burst-directory> <output.mp4>
 set -euo pipefail
