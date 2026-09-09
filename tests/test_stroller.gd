@@ -42,10 +42,14 @@ func _rig(t) -> Stroller:
 func _test_the_illustrated_compositor_is_opt_in(t) -> void:
 	var rig := _rig(t)
 	rig.reset_at(Vector2(80.0, 120.0))
+	var camera := rig.get_node("Camera2D") as Camera2D
 	t.check(rig.facing == Vector2.DOWN, "reset keeps the default south-facing owner heading")
 	t.check((rig.get_node_or_null("ModularPerson") != null)
 			== DevFlags.illustrated_requested(),
-			"the illustrated compositor exists exactly when it was opted into")
+		"the illustrated compositor exists exactly when it was opted into")
+	var expected_zoom := DevFlags.illustrated_zoom() if DevFlags.illustrated_requested() else 1.0
+	t.check(is_equal_approx(camera.zoom.x, expected_zoom),
+		"the illustrated zoom override applies only to the illustrated camera")
 	rig.free()
 
 ## Before she has moved, `facing` is `Vector2.DOWN` — 90° off the horizontal axis, squarely

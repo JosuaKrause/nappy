@@ -212,6 +212,9 @@ outward north/south leg movement, excessive mother-to-pram spacing and pixelated
 double-bend leg anatomy and baby-over-seat compositing findings. Its same-window camera experiment
 is separate from those repairs: removing magnification shows more world, while actual raster
 resolution, downsampling and anatomy require independent checks.
+Use `./tools/run.sh --illustrated --illustrated-zoom 1` for the wider camera experiment;
+`--illustrated-zoom 2` selects baseline magnification. The window stays the same size. This
+debug override does not select a higher-resolution render target or repair the actor anatomy.
 The illustrated-png skill's [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)
 covers source preservation, measured registration, natural reach, filtering and separate motion
 and visual gates. Prepare the player's actual checkout with `./tools/check.sh` and an explicit

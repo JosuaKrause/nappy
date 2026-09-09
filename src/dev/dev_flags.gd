@@ -42,6 +42,28 @@ static func enabled() -> bool:
 static func illustrated_requested() -> bool:
 	return _illustrated_from_args(OS.get_cmdline_user_args()) or _illustrated_from_query(_web_query())
 
+## `--illustrated-zoom N` selects the illustrated camera's world scale in debug builds. The
+## default preserves the scene's 2x framing; the bounded range keeps an experiment from making
+## the world too small to inspect or zooming into a misleading sliver of it.
+static func illustrated_zoom() -> float:
+	return _illustrated_zoom_from_args(_args())
+
+static func _illustrated_zoom_from_args(args: PackedStringArray) -> float:
+	var index := args.find("--illustrated-zoom")
+	if index == -1 or index + 1 >= args.size():
+		return _ILLUSTRATED_ZOOM_DEFAULT
+	var word := args[index + 1]
+	if not word.is_valid_float():
+		return _ILLUSTRATED_ZOOM_DEFAULT
+	var value := float(word)
+	if not is_finite(value) or value <= 0.0:
+		return _ILLUSTRATED_ZOOM_DEFAULT
+	return clampf(value, _ILLUSTRATED_ZOOM_MIN, _ILLUSTRATED_ZOOM_MAX)
+
+const _ILLUSTRATED_ZOOM_DEFAULT := 2.0
+const _ILLUSTRATED_ZOOM_MIN := 0.5
+const _ILLUSTRATED_ZOOM_MAX := 4.0
+
 static func _illustrated_from_args(args: PackedStringArray) -> bool:
 	return "--illustrated" in args
 
