@@ -1,6 +1,7 @@
 # Illustrated artwork review
 
-The active review is SVG-to-PNG style transfer in [TODO.md](TODO.md), specified by
+The active work is M108, eight-direction entity graphics, followed by M109, convert the SVG
+catalogue to PNG, in [TODO.md](TODO.md), specified by
 [PLAYTEST-51](playtests/PLAYTEST-51.md). [VISUALS.md](VISUALS.md) defines its reference and
 registration contract. Use the
 [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)

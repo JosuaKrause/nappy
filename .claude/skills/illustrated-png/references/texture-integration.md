@@ -45,4 +45,5 @@ build, flags and coverage in `docs/DECISIONS.md` under the session-captures skil
 
 Review appearance at gameplay scale, frame consistency, silhouettes, transparent gaps and ground
 contact. A still does not verify smooth motion or every facing. Keep unverified gates explicit,
-and obtain player acceptance before transferring other families.
+and review each family before accepting its derivatives into the asset catalogue. Every PNG
+asset needs a corresponding SVG authored and reviewed first; record that pairing and provenance.

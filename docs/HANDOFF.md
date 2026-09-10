@@ -170,11 +170,12 @@ last of those is the load-bearing one — *a tap that pathfinds hands the route 
 game*, and the route decision is the whole design. The records are in `DECISIONS.md` under M82 and
 M88.
 
-**SVG-to-PNG style transfer awaits visual acceptance.** `--illustrated`, or `?illustrated=1`
+**SVG-first style transfer is the graphics workflow.** `--illustrated`, or `?illustrated=1`
 on the web, selects native-size PNG replacements for the six mother frames and three pram views.
 The existing drawing transforms and animation remain in charge. Other families use SVGs.
 Read [VISUALS.md](VISUALS.md) for reference roles and the replacement contract, and
-SVG-to-PNG style transfer in [TODO.md](TODO.md) for review.
+M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in
+[TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the

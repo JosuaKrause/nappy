@@ -1,5 +1,9 @@
 # Visual presentation
 
+**Every PNG asset has a corresponding SVG asset. The SVG is always authored and reviewed first.**
+SVG-first authoring followed by style transfer is the approved graphics workflow. Keep source SVGs
+editable and record each SVG/PNG pair; generated source sheets are generation evidence.
+
 The game uses SVG graphics by default. `--illustrated`, or `?illustrated=1` on the web,
 enables SVG-to-PNG style transfer: the same drawing uses a registered PNG when one exists.
 The transferred artwork covers the mother's six animation frames and the pram's three views. Other
@@ -30,9 +34,9 @@ Generation and extraction are documented in
 
 Review the detail at gameplay size, consistency across animation frames, transparent gaps,
 ground contact and unchanged placement. Pixel registration alone does not establish acceptance.
-The open review is in [TODO.md](TODO.md); its request is
-[PLAYTEST-51](playtests/PLAYTEST-51.md). Adopting SVG-first authoring followed by style transfer
-as the standard pipeline depends on the player accepting the transferred artwork.
+The remaining catalogue work is in [TODO.md](TODO.md): M108, eight-direction entity graphics,
+then M109, convert the SVG catalogue to PNG. [PLAYTEST-51](playtests/PLAYTEST-51.md) records the
+approval and source-first requirement. Workflow approval does not replace each asset's review.
 
 Use the [illustrated PNG skill](../.claude/skills/illustrated-png/SKILL.md) for integration.
 Historical artwork and instructions are indexed in `DECISIONS.md`; the rejected graphics

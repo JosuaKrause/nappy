@@ -5,6 +5,12 @@ description: Add or revise illustrated PNG textures and their reproducible integ
 
 # SVG-to-PNG workflow
 
+**Every PNG asset must have a corresponding SVG asset, and the SVG always comes first.** Author
+and review the SVG before generating its PNG; do not create an SVG after the fact to legitimize
+a PNG-only asset. Keep the SVG as the editable source of content, geometry and placement. Record
+the source/derivative pair in the conversion manifest, including UI and identity assets. Raw
+generator outputs belong with generation evidence, not in the runtime asset catalogue.
+
 Read `docs/VISUALS.md`, SVG-to-PNG style transfer in `docs/TODO.md`, and
 [the integration procedure](references/texture-integration.md) before working on this presentation.
 SVG remains the default. The existing `--illustrated` / `?illustrated=1` opt-in selects registered
@@ -43,5 +49,7 @@ Run the import/boot check in the exact checkout the player will use, then focuse
 illustrated mode and normal mode as applicable. Read the first resource error; passing assertions
 do not excuse script or import errors. Read `verify` before tests or captures and use at most one
 or two purposeful gameplay captures. Report source registration, appearance and player acceptance
-separately. Do not transfer more families or adopt this as the standard authoring pipeline before
-the player accepts its visual result.
+separately. The player approves SVG-first style transfer as the authoring workflow. M108,
+eight-direction entity graphics, and M109, convert the SVG catalogue to PNG, specify the remaining
+catalogue work. Review each family's visual result without treating workflow approval as proof
+that every generated image is correct.

@@ -2,6 +2,17 @@
 
 ## Eight-direction style transfer — 2026-09-10
 
+The player emphasized: "every png asset needs a corresponding svg asset -- the svg asset always
+comes first". This is the permanent authoring rule in both graphics skills and VISUALS, and
+M109, convert the SVG catalogue to PNG, includes the pairing/provenance audit and check.
+
+The player subsequently approved the workflow and requested two broader work items: eight-direction
+movement graphics for all entities, then conversion of all SVGs to PNG through this workflow.
+These are M108, eight-direction entity graphics, and M109, convert the SVG catalogue to PNG.
+Their scope includes prepared artwork and an exhaustive inventory rather than only currently
+moving actors. Adding the queue does not implement the remaining families or change the default
+presentation. The current mother/pram implementation remains the first directional family.
+
 PLAYTEST-51 accepts the conversion examples and requests eight directions, with SVG artwork first.
 The player accepts the hand-to-pram gap if it predates the transfer. Comparing `660647a` with
 the transferred version confirms the same 34px PRAM_DISTANCE, projected Y offset and source

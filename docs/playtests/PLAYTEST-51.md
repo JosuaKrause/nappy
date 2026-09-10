@@ -34,3 +34,13 @@ The repository's `tools/remove-checkerboard.py` supplies the existing extraction
 ## Eight directions
 
 > perfect. one note -- was the stroller always so far away from the player? there is a big gap between her hand and the stroller -- if it was always like this it's fine. another thing -- can we make 8 directions? would need a svg version first
+
+> I checked the gap has always been there so that is fine
+
+## Catalogue-wide graphics work
+
+> since this is now approved let's add work items for 8 directional movement graphics for all entities. then a workitem for converting all svgs to png using the current workflow
+
+> also, very important -- every png asset needs a corresponding svg asset -- the svg asset always comes first
+
+> also, let's flip the illustrated flag around -- use the png if available by default and add an option to use the svg graphics

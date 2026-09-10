@@ -14,7 +14,22 @@ mid-way through.
 
 ## The order
 
-### SVG-to-PNG style transfer
+### PNG presentation default
+
+- [ ] Prefer corresponding PNG assets by default, retaining SVG fallback when none exists or
+      dimensions mismatch. Replace the illustrated opt-in with `--svg` locally and `?svg=1` on
+      the web to force SVG graphics. Keep texture selection independent of gameplay and update
+      tests, documentation and comparison commands. PLAYTEST-51 supplies the request.
+
+### M108 — Eight-direction entity graphics
+
+This graphics track runs beside the gameplay queue. [PLAYTEST-51](playtests/PLAYTEST-51.md)
+approves the SVG-to-PNG workflow and requests eight-direction movement graphics for all entities
+before catalogue-wide conversion. See `DECISIONS.md` under Eight-direction style transfer.
+Author SVGs first, with N, NE, E, SE, S, SW, W, NW coverage and the existing animation/state
+variants. Preserve native scale, ground anchors, actor identity and gameplay. Document genuine
+mirror symmetry explicitly; front, back and diagonal projections must be authored rather than
+made by rotating an upright picture.
 
 - [ ] Add eight-direction mother/pram drawing, authoring the diagonal SVG views before PNG
       transfer. Preserve the existing cardinal artwork, two-frame gait, native ground anchors
@@ -22,17 +37,66 @@ mid-way through.
       selection and compare all eight views in SVG and PNG. PLAYTEST-51 supplies the request;
       the spacing comparison is recorded in DECISIONS.md under Eight-direction style transfer.
 
-[PLAYTEST-51.md](playtests/PLAYTEST-51.md) specifies texture replacement using the existing
-SVGs as the geometry source and the supplied diagonal and cardinal gameplay illustrations as
-style references, excluding their interface and debug annotations.
+- [ ] Audit every entity drawing and its runtime caller against `GRAPHICS.md`, the event looks,
+      crowd families and prepared artwork in M103, the drawings the queue owes. Record a matrix
+      of eight facings, movement/idle/action states, native canvases, anchors, layer order and
+      permitted symmetry. Include stationary actors' directional action poses; a stationary
+      prop or building is not movement artwork. Keep prepared assets separate from live bindings.
+- [ ] Complete people: crowd walker body/trim layers, mother carrying the baby for M102, the finale,
+      chatting mother walking/talking, dog walker, yeller, busker, poster crew, café sitters,
+      guards standing/lunging, van victim, robber waiting/lunging, protesters and gunmen.
+      Reuse the eight protester pointing poses where appropriate. Preserve authored event identity,
+      carried objects and untinted overlays; do not substitute a generic walker for each event.
+- [ ] Complete animals and riders: crouched/running cat, dogs including charging posture,
+      pigeons with both wing phases, and cyclist. Preserve leads, contact shadows and state-specific
+      silhouettes while adding directional frames.
+- [ ] Complete vehicles: crowd cars with body/trim layers, delivery van, fire engine, ice-cream
+      van, lorry, police car, unmarked van, riot van, army truck and moving vans. Include vehicles
+      prepared by open gameplay items. Distinguish front from rear and keep wheels/footprints
+      grounded; eight facings do not authorize new traffic paths or moving stationary vehicles.
+- [ ] Bind live families to their actual heading with stable direction selection. Preserve
+      movement, collision, animation timing, sorting, tinting, cues and halo silhouettes. Leave
+      prepared families unbound until their owning gameplay item needs them. Verify all facings,
+      turns, idle and moving states with rendered SVG sheets and focused runtime checks; update
+      `GRAPHICS.md` with each family's actual binding and registration.
 
-- [ ] Review the transferred mother/pram artwork before extending it. If it works, adopt SVG authoring
-      followed by PNG style transfer as the standard graphics pipeline.
+### M109 — Convert the SVG catalogue to PNG
 
-Compare the nine mother/pram frames in
-[rig-comparison.png](evidence/style-transfer-2026-09-10/rig-comparison.png) and the same-walk
-gameplay captures indexed in `DECISIONS.md` under SVG-to-PNG experiment: main integration.
-Review detail at gameplay size and consistency in motion; registration alone is not acceptance.
+Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
+[VISUALS.md](VISUALS.md) and the illustrated-png skill. The supplied diagonal urban and cardinal
+gameplay references define style only; each SVG defines content, geometry and placement.
+**Every PNG asset must have a corresponding SVG asset, authored and reviewed first.** This is
+a permanent authoring requirement, not only a conversion step. Audit existing PNG-only assets
+and author their source SVG before generating a replacement; never backfill an SVG from a PNG
+and call that SVG-first creation.
+The approval and request are recorded in PLAYTEST-51 and `DECISIONS.md` under Eight-direction
+style transfer.
+
+- [ ] Inventory every current tracked SVG, including M103's prepared graphics and the new
+      directional families, into a conversion manifest with source path, PNG destination,
+      dimensions, anchor, usage and review evidence. Include root application/identity SVGs;
+      exclude the historical archive. Reconcile newly added SVGs before closing the item.
+- [ ] Add an asset-pairing check covering every PNG asset and its source SVG, with explicit
+      mappings for non-mirrored paths. Keep raw generator outputs and captures in evidence.
+      Record SVG review and generation provenance so ordering is reviewable; reject PNG-only
+      additions instead of accepting a later placeholder SVG.
+- [ ] Transfer all entity SVGs and every directional/animation/state layer. Preserve native
+      canvases and exact SVG alpha, and keep tintable body/trim separation and authored identities.
+      Save original generation outputs, exact prompts, reference roles and reproducible extraction
+      and registration inputs. Inspect detail and animation consistency at gameplay scale.
+- [ ] Transfer terrain, building tiles, props, closures, checkpoint structures and whole-street
+      scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
+      alignment. Convert prepared assets too without prematurely binding their gameplay.
+- [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
+      exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
+- [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
+      UI buttons, the application icon and identity/export consumers. Provide registered PNG
+      bindings for every live SVG without altering draw transforms; verify both flag states and
+      missing/mismatched fallback. The existing opt-in remains the comparison control during review.
+- [ ] Review catalogue completeness, native-size quality, alpha, seams, tinting, cues, all eight
+      facings and moving-state consistency. Publish SVG/PNG comparisons and purposeful gameplay
+      evidence in the PR; document actual bindings and make SVG-first followed by transfer the
+      graphics authoring procedure. Archive superseded outputs with their import metadata.
 
 ### Gameplay queue
 

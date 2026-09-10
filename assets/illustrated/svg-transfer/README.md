@@ -9,5 +9,6 @@ source/target bounds are in `docs/evidence/style-transfer-2026-09-10/`. Native P
 are intentional: these are drop-in replacements for the existing textures and draw transforms.
 The high-resolution generated atlas remains preserved for inspection.
 
-Visual acceptance and adopting SVG-first authoring followed by transfer as the standard pipeline
-remain open. Review this family before converting the full asset catalogue.
+SVG-first authoring followed by style transfer is the approved workflow. Every PNG asset needs
+a corresponding SVG authored and reviewed first. M108, eight-direction entity graphics, and
+M109, convert the SVG catalogue to PNG, hold the remaining catalogue work in `docs/TODO.md`.
