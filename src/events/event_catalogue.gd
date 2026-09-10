@@ -1223,9 +1223,10 @@ static func _alley_robbery() -> EventDef:
 ## **`heat_response = HUNTS`, the same rung `abduction` climbs.** Below `Tuning.HEAT_HUNTS_LEVEL`
 ## it is untouched, exactly as it stands here — a closed block and nothing more. At and above it,
 ## the derived copy pursues at `Tuning.HEAT_HUNTS_SPEED` (130px/s), notices her within
-## `Tuning.HEAT_HUNTS_WITHIN` (180px), chases for `Tuning.PURSUIT_TIME`, and keeps `hard_fail`: the
-## van stops emptying the building and comes for her instead — the abduction's shape on a bigger
-## vehicle. See `EventDef.at_heat()`.
+## `Tuning.HEAT_HUNTS_WITHIN` (180px), chases for `Tuning.PURSUIT_TIME`, and is `hard_fail` — which
+## the cold row is not, so unlike `abduction` this row *gains* lethality at the threshold rather
+## than keeping it: the van stops emptying the building and comes for her instead, the abduction's
+## shape on a bigger vehicle. See `EventDef.at_heat()`.
 ##
 ## **It shares the patrol-and-van threshold rather than minting a third constant, and the calendar
 ## is why that is load-bearing.** The resistance's performs fall on days 5, 7, 9, 11 and 13, so on

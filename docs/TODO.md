@@ -244,16 +244,18 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**
 — a nerve is a rewind, not a resource, so there is nothing to trade.
 
-**Its first item is built alongside M62; its second waits until act III is reached**, which the
-queue puts after M96 to M100. *(2026-09-09: "M56 is also related to the other items to work on
-right now. I wanna wait reaching act III until those things are done.")*
+**The raid hunts; what is left of "and other dangers like this" is the roadblock, which needs a
+drawing, and the measurement waits until act III is reached**, which the queue puts after M96 to
+M100. *(2026-09-09: "M56 is also related to the other items to work on right now. I wanna wait
+reaching act III until those things are done.")* The raid's record is in `DECISIONS.md` under M56.
 
 **What the remaining items are stated against**, since the machinery under them exists: a row says
 how it answers to the resistance with `EventDef.heat_response` — `NONE`, `PRESSES` or `HUNTS` —
 `EventCatalogue.heated()` derives that row's shape at a progress level, and every one of those
 shapes is validated on boot. The ladder has three rungs a player can name and both its upper ones
 are built: `police_patrol` is **denser and then interested**, and `abduction` is **hunted**, taking
-a bystander of its own while she watches and coming after her instead past three of four. The
+a bystander of its own while she watches and coming after her instead past three of four, with
+`night_raid` on the same rung from day 10 — cold it closes a block, hot it comes for her. The
 reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
 
 **Guard artwork is available for the hut interaction:** `assets/checkpoints/guard_standing.svg`
@@ -263,44 +265,27 @@ poses for the drawing discussed below; the heat-response decision and runtime bi
 Use `assets/events/riot_van.svg` for the existing night-raid vehicle;
 use the guard pair for a guard departure if that proposed response is accepted.
 
-- [ ] **"And other dangers like this"** — drafted and put back, and the vans have now set the
-      precedent it was waiting on: a `HUNTS` row keeps `hard_fail`, moves neither population nor
-      intensity, and gains its own threshold rather than sharing the patrol's. The candidates
-      already in the catalogue are `roadblock` (day 7, closes a street) and `night_raid`.
-
-      **The draft, 2026-09-09, for the player to take or turn down.** What `HUNTS` does to a row
-      is fixed by `EventDef.at_heat()`: at `Tuning.HEAT_HUNTS_LEVEL` (3 of the 4 performs that
+- [ ] **The roadblock's guards leave their post.** The other half of *"and other dangers like
+      this"*, filed after the raid on the draft's own recommendation — *the raid now, the roadblock
+      later* — because it is a drawing where the raid was one line. What `HUNTS` does to a row is
+      fixed by `EventDef.at_heat()`: at `Tuning.HEAT_HUNTS_LEVEL` (3 of the 4 performs that
       qualify) and above, the derived copy `pursues` at 130px/s, notices her within 180px, chases
-      for `PURSUIT_TIME`, and is `hard_fail` — the top rung kills, by the ladder's own design. So
-      the question per row is not *what happens* but *whether that shape reads as this thing*.
-
-      - **`night_raid` fits the precedent exactly and needs no drawing.** It is a riot van
-        (`Look.RIOT_VAN`), scripted for day 10 only, intensity 24 over 70/330px with a 6s pulse
-        and a 44px body, cost 4 — *"a building goes in the night"*. Hunted, the van stops
-        emptying a building and comes for her, which is the abduction's shape on a bigger
-        vehicle. **And the calendar makes the threshold a sentence:** the performs fall on days
-        5, 7, 9, 11 and 13, so on day 10 the most progress anybody can hold is 3 — the raid hunts
-        *only* a player who has done every task on time, and a player one task behind meets the
-        cold raid. Sharing `HEAT_HUNTS_LEVEL` with the van is what makes that true, so the
-        recommendation is to share it rather than mint a third constant. Build: one
-        `heat_response` line on the row, `tests/test_heat.gd` stating the raid's hot shape at
-        every level (untouched below 3, pursuing and lethal at 3 and 4, population and intensity
-        unmoved), and the row's docstring. The one contract the hot copy has to clear is
-        `EventDef.validate()`'s rule that a lethal row's body must be reachable — its
-        `obstructs_radius` plus her own 14px must fall inside `inner_radius` — and the raid's
-        44 + 14 = 58 sits inside its 70, so it does; the heated shape is validated on boot like
-        every other.
-      - **`roadblock` does not fit the precedent as it stands.** It is a spread —
-        `Look.ROADBLOCK` draws a 120px band across the road through `_draw_spread`, intensity
-        13 over 52/215px — and a band does not chase. A hunting roadblock is *guards leaving
-        their post*, which is a second posture like the robber's waiting/lunging pair and so a
-        drawing, plus a rule for what the band does while its guards are away. The region
-        checkpoints (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`) are a separate
-        thing and are never rolled by the scheduler, so they are not candidates here.
-        **Recommendation: the raid now, the roadblock later**, filed then as one item with its
-        posture drawing.
-      - **`police_patrol` is not a third candidate.** It is the `PRESSES` rung and *"never gains
-        `hard_fail`, whatever the heat"* — the player's own instruction, 2026-09-01.
+      for `PURSUIT_TIME`, and is `hard_fail`. `roadblock` cannot simply switch that on: it is a
+      spread — `Look.ROADBLOCK` draws a 120px band across the road through `_draw_spread`,
+      intensity 13 over 52/215px, from day 7 — and a band does not chase. A hunting roadblock is
+      *guards leaving their post*, a second posture like the robber's waiting/lunging pair, so the
+      item is the drawing (the prepared `guard_standing.svg` / `guard_lunging.svg` pair above is
+      the candidate), the `heat_response` line, a rule for what the band does while its guards
+      are away, and the same named test the raid has in `tests/test_heat.gd`. The region
+      checkpoints (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`) are a separate thing
+      and are never rolled by the scheduler, so they are not candidates; neither is
+      `police_patrol`, the `PRESSES` rung that *"never gains `hard_fail`, whatever the heat"* —
+      the player's own instruction, 2026-09-01
+- [ ] **The riot van has no end-on view, and now it drives.** `Look.RIOT_VAN` is drawn by
+      `EventInstance._draw_simple` — one side view, mirrored for west — so a hunting raid van
+      chasing her north or south is drawn side-on. The unmarked van earned `unmarked_van_end.svg`
+      for exactly that moment when it began to hunt; the raid owes the same picture, drawn to
+      `riot_van.svg`'s scale and bound through `_draw_vehicle` the way the abduction's pair is
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
 

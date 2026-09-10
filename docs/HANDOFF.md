@@ -314,9 +314,9 @@ order is `TODO.md`'s.
    under M78). What remains is playtest 20's item: a protester pointing toward the current
    objective, and made more common since a protester obstructs nothing. Its milestone lists
    the available directional SVG poses; objective binding and density remain open.
-- **M56 — the resistance is noticed.** Its remaining hunting row is the night raid, drafted in
-  its entry for the player to take or turn down; its measurement against the nerves waits until
-  act III is reached.
+- **M56 — the resistance is noticed.** What remains of its hunting rows is the roadblock, whose
+  guards leaving their post is a posture drawing, and the end-on view the riot van now owes; its
+  measurement against the nerves waits until act III is reached.
 
 **The instrument to judge any of it with now exists and was used this session.** The dusk map draws
 the walk over the plan: where she went, which stretches she ran, and which events actually reached
@@ -341,7 +341,7 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
-remaining hunting row is next, on its own branch. M61, the field as a Minkowski sum of body and
+remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M61, the field as a Minkowski sum of body and
 kernel, follows; M65, the protester who points, is revisited against the walled city rather than
 built as written. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
@@ -391,7 +391,8 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   nobody has walked a city at full resistance progress, and the item that would tell you whether it
   is fair — measuring it against the five nerves — is the one still queued. It makes the back half
   harder *precisely for the player doing well at the optional path*, and **nobody has ever reached
-  act III**.
+  act III**. The night raid is the newest rung of it: on day 10 it hunts, and is lethal, only for
+  a player holding every perform so far, and no run has reached day 10 with any.
 - **An investigating patrol has never been seen.** The claim is that a police car breaking off its
   route to follow her reads as *being noticed*. That is a screenshot question and no screenshot has
   been taken.
