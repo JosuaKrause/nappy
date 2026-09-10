@@ -79,9 +79,10 @@ The tank's open legs and braces remain visible. The industrial vent retains its 
 housing, cap and seams; the service fan alternates cross and diagonal phases. The phase choice
 is a visible eighth-turn for its symmetric four-spoke rotor. Animation is not bound.
 
-Each storefront is 32×32 and keeps the same door rectangle at x3..12, y9..31. The awning slopes
-forward from its wall mounts to an overhanging valance, with a dark underside. Shutter states
-preserve that door position. Both 48×64 fire escapes remain transparent around the metalwork,
+Each storefront is 32×32 and keeps its doorway at x3..12 with its bottom at y31. The awning
+obscures the doorway's upper edge and slopes forward from its wall mounts to an overhanging
+valance, with a dark underside. Shutter states preserve that door position. Both 48×64 fire
+escapes remain transparent around the metalwork,
 so the facade and windows can show through. Window sources remain 32×32 overlays.
 
 The chalk sources preserve the code-drawn circle and crossing strokes. The touched source adds
