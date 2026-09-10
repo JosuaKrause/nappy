@@ -65,6 +65,19 @@ var big_buildings: Array[Rect2i] = []
 ## `absent_segments` has two kinds of thing in it.
 func is_hard_blocker(key: Vector3i) -> bool:
 	return built_over.has(key)
+
+## Which of `Tuning.REGION_COUNT` regions each junction belongs to, indexed by `StreetNetwork.
+## node_of()`. `-1` before generation and for a junction no real segment ever touches. Set once by
+## `RegionPlanner.assign()`, called from `CityGenerator._assign_regions` after the hard blockers
+## have taken their streets — fixed for the run, the way the lattice itself is. See
+## `docs/CITY.md`, "Regions and the wall".
+var region_of_junction := PackedInt32Array()
+## Which regions held a calm area on the morning generation decided the partition — one byte per
+## region, `1` or `0`. A generation-time fact and not a per-day one: which region a calm *area* is
+## in never changes, only whether today's tree can still reach it, and only the former governs
+## whether a region gets doors at all. See `RegionPlanner.regions_with_calm()`.
+var region_has_calm := PackedByteArray()
+
 ## The corridor index of the one main road, which runs north to south. `-1` before generation.
 ##
 ## One of it, and only on this axis. A spine that crosses itself is two spines; what makes a main

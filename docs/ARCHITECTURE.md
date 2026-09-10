@@ -52,6 +52,7 @@ src/
 	route_tree.gd         the day's corridor: one branch per calm area, grown on the grid
 	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep
 	seal_planner.gd       seals every street off the day's route tree
+	region_planner.gd     partitions the lattice into regions; turns the day's tree into a wall with doors
   crowd/
 	crowd.gd              owns the day's agents; sums their excitement
 	crowd_agent.gd        one walker or one car
