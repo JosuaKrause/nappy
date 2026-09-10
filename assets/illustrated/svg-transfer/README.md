@@ -1,8 +1,8 @@
 # Registered SVG style transfers
 
-These PNGs replace their matching `assets/rig/*.svg` textures through the illustrated opt-in.
+These PNGs replace their matching `assets/rig/*.svg` textures by default; `--svg` forces SVGs.
 The six mother animation frames and three pram views preserve each source SVG's native canvas
-and alpha silhouette. The SVGs remain the ordinary presentation.
+and alpha silhouette. Missing or differently sized PNGs fall back to SVGs.
 
 The generation inputs, raw atlas, extraction, reproducible registration script and measured
 source/target bounds are in `docs/evidence/style-transfer-2026-09-10/`. Native PNG dimensions

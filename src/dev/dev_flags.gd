@@ -34,21 +34,19 @@ extends RefCounted
 static func enabled() -> bool:
 	return OS.is_debug_build()
 
-## Whether the optional illustrated presentation was explicitly requested. The baseline is the
-## existing legacy SVG presentation. This is intentionally not part of `_args()` or
-## `DevFlags.enabled()`: an exported web build must be able to opt in with `?illustrated=1` even
-## though release builds have no developer flags. The command-line spelling is `--illustrated`.
-## An absent parameter or `?illustrated=0` selects legacy graphics.
-static func illustrated_requested() -> bool:
-	return _illustrated_from_args(OS.get_cmdline_user_args()) or _illustrated_from_query(_web_query())
+## Whether SVG presentation was explicitly requested. PNG transfers are the default whenever a
+## matching asset exists; this remains a user-facing override so release web builds can select SVG
+## with `?svg=1` even though developer flags are unavailable there.
+static func svg_requested() -> bool:
+	return _svg_from_args(OS.get_cmdline_user_args()) or _svg_from_query(_web_query())
 
-static func _illustrated_from_args(args: PackedStringArray) -> bool:
-	return "--illustrated" in args
+static func _svg_from_args(args: PackedStringArray) -> bool:
+	return "--svg" in args
 
-static func _illustrated_from_query(query: String) -> bool:
+static func _svg_from_query(query: String) -> bool:
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
-		if pair.size() == 2 and pair[0] == "illustrated" and pair[1] == "1":
+		if pair.size() == 2 and pair[0] == "svg" and pair[1] == "1":
 			return true
 	return false
 

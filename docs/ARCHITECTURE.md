@@ -94,7 +94,7 @@ src/
 	touch_input.gd        whether this device has a touchscreen, answered once
 	screen_orientation.gd the one rotation applied when the window is portrait
 	quit_option.gd        whether the game can quit itself, answered once
-  visuals/                opt-in SVG-to-PNG style transfer; see the illustrated-png skill
+  visuals/                PNG selection with SVG override; see the illustrated-png skill
 	texture_resolver.gd   cached same-size PNG selection, with SVG fallback
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit

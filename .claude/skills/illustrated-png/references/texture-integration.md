@@ -31,15 +31,15 @@ Read the verify skill, then run from the folder the player will use:
 
 ```sh
 ./tools/check.sh
-./tools/test.sh visuals stroller crowd presentation_mode orientation --illustrated
-./tools/test.sh visuals
+./tools/test.sh visuals stroller crowd presentation_mode orientation
+./tools/test.sh visuals --svg
 ./tools/lint.sh
 git diff --check
 git status --short
 ```
 
 Inspect every error, including resource import failures. The full suite runs in CI. Compare
-default and `--illustrated` gameplay using the same seed, walk, capture time and window size.
+default and `--svg` gameplay using the same seed, walk, capture time and window size.
 Keep captures bounded to one or two windowed runs. Preserve whole telemetry folders and record
 build, flags and coverage in `docs/DECISIONS.md` under the session-captures skill.
 

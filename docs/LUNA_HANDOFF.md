@@ -8,4 +8,4 @@ texture replacement contract. [GRAPHICS.md](GRAPHICS.md) distinguishes live and 
 Every PNG asset needs a corresponding SVG authored and reviewed first. Follow the SVG art skill
 for sources and the illustrated-png skill for their derivatives.
 Implementation work takes a bounded scope from the orchestrating session and preserves gameplay,
-existing drawing transforms and the opt-in flag.
+existing drawing transforms and the SVG override.

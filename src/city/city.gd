@@ -639,11 +639,11 @@ func _paint_ground() -> void:
 				_ground.set_cell(tile, source, Vector2i.ZERO)
 	_paint_outside_the_map()
 
-## Duplicates the authored tileset only for the opt-in presentation, preserving every atlas
-## region and tile size while allowing a same-sized PNG to replace an SVG source.
+## Duplicates the authored tileset so a same-sized PNG can replace each SVG source while preserving
+## every atlas region and tile size. The resolver keeps SVG when the user forces that presentation.
 func _ground_tile_set_with_transfers() -> TileSet:
 	var source_set: TileSet = _ground.tile_set
-	if source_set == null or not DevFlags.illustrated_requested():
+	if source_set == null:
 		return source_set
 	var result := source_set.duplicate(true) as TileSet
 	for source_index in result.get_source_count():

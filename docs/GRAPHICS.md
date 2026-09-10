@@ -5,8 +5,8 @@ uses it. A file is **live** only when a runtime source or scene binds it. **Prep
 has the size and registration needed by an open design, but no runtime caller yet. A filename or a
 mention in a design document is not evidence that a picture appears in the game.
 
-The default presentation is the SVG set below. The illustrated opt-in selects registered PNG
-replacements for the mother and pram, catalogued separately below.
+The SVG set below supplies the editable source graphics. Registered PNG replacements are used
+by default where available; `--svg` or `?svg=1` forces SVGs. Every PNG asset needs an SVG first.
 
 ## Shared drawing contract
 
@@ -130,9 +130,9 @@ The exact tracked SVGs outside the live and prepared tables are `assets/icon_str
 art counterparts: the active application icon is root `icon.svg`, while the README displays
 `assets/logo.png` and the web metadata publishes `assets/social-card.png`.
 
-## Illustrated opt-in
+## PNG replacements
 
-With `--illustrated`, or `?illustrated=1` on the web, `TextureResolver` selects a same-size PNG at
+`TextureResolver` selects a same-size PNG by default at
 `assets/illustrated/svg-transfer/<family>/<name>.png` for a corresponding SVG. Missing or
 differently sized PNGs fall back to the SVG. Existing draw transforms and animation still apply.
 

@@ -4,8 +4,8 @@
 SVG-first authoring followed by style transfer is the approved graphics workflow. Keep source SVGs
 editable and record each SVG/PNG pair; generated source sheets are generation evidence.
 
-The game uses SVG graphics by default. `--illustrated`, or `?illustrated=1` on the web,
-enables SVG-to-PNG style transfer: the same drawing uses a registered PNG when one exists.
+The game uses a registered PNG when one exists. `--svg`, or `?svg=1` on the web,
+forces original SVG graphics. The same drawing code handles both formats.
 The transferred artwork covers the mother's six animation frames and the pram's three views. Other
 families continue to use their SVGs.
 

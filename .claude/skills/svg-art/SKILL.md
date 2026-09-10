@@ -10,7 +10,7 @@ review the SVG as the editable source of subject, geometry, pose and placement b
 the illustrated-png workflow. Preserve it alongside the registered PNG derivative. This applies
 to new directional/state variants, UI and identity assets as well as standing game entities.
 
-SVG is the default game presentation. Author vectors directly with patches; use the existing
+SVG is the editable source for game graphics. Author vectors directly with patches; use the existing
 family as the style reference. Read `docs/GRAPHICS.md` for the asset's actual binding and the
 owning milestone in `docs/TODO.md` before designing. Follow `feedback` for player requests and
 `verify` for runtime checks; this skill adds the visual work those checks cannot judge.

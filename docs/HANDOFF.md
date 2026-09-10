@@ -170,8 +170,8 @@ last of those is the load-bearing one — *a tap that pathfinds hands the route 
 game*, and the route decision is the whole design. The records are in `DECISIONS.md` under M82 and
 M88.
 
-**SVG-first style transfer is the graphics workflow.** `--illustrated`, or `?illustrated=1`
-on the web, selects native-size PNG replacements for the six mother frames and three pram views.
+**SVG-first style transfer is the graphics workflow.** The game selects native-size PNG
+replacements where available; `--svg`, or `?svg=1` on the web, forces original SVGs.
 The existing drawing transforms and animation remain in charge. Other families use SVGs.
 Read [VISUALS.md](VISUALS.md) for reference roles and the replacement contract, and
 M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in

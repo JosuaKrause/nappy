@@ -13,8 +13,8 @@ generator outputs belong with generation evidence, not in the runtime asset cata
 
 Read `docs/VISUALS.md`, SVG-to-PNG style transfer in `docs/TODO.md`, and
 [the integration procedure](references/texture-integration.md) before working on this presentation.
-SVG remains the default. The existing `--illustrated` / `?illustrated=1` opt-in selects registered
-PNG textures, using the existing drawing and animation code.
+Registered PNG textures are used by default, with SVG fallback. `--svg` / `?svg=1` forces SVG
+textures, using the same drawing and animation code.
 
 ## Reference authority
 
@@ -46,7 +46,7 @@ camera and gameplay behavior. Missing or differently sized replacements fall bac
 do not hide an unfinished family with unrelated generated art.
 
 Run the import/boot check in the exact checkout the player will use, then focused suites in the
-illustrated mode and normal mode as applicable. Read the first resource error; passing assertions
+default PNG mode and forced SVG mode as applicable. Read the first resource error; passing assertions
 do not excuse script or import errors. Read `verify` before tests or captures and use at most one
 or two purposeful gameplay captures. Report source registration, appearance and player acceptance
 separately. The player approves SVG-first style transfer as the authoring workflow. M108,

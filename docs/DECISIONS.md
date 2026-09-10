@@ -2,6 +2,12 @@
 
 ## Eight-direction style transfer — 2026-09-10
 
+The user also requests PNGs by default with an SVG override, and authorizes merging PR #75
+after the current work. The resolver now prefers matching PNGs and `--svg` / `?svg=1` forces
+SVGs in debug or release. City TileSet replacement uses the same resolver. The old illustrated
+flag API is removed; unknown old flags have no effect. The visual suite checks every rig PNG
+against its native SVG alpha and dimensions, plus both selection modes and missing-file fallback.
+
 The player emphasized: "every png asset needs a corresponding svg asset -- the svg asset always
 comes first". This is the permanent authoring rule in both graphics skills and VISUALS, and
 M109, convert the SVG catalogue to PNG, includes the pairing/provenance audit and check.

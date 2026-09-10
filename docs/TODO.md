@@ -14,13 +14,6 @@ mid-way through.
 
 ## The order
 
-### PNG presentation default
-
-- [ ] Prefer corresponding PNG assets by default, retaining SVG fallback when none exists or
-      dimensions mismatch. Replace the illustrated opt-in with `--svg` locally and `?svg=1` on
-      the web to force SVG graphics. Keep texture selection independent of gameplay and update
-      tests, documentation and comparison commands. PLAYTEST-51 supplies the request.
-
 ### M108 — Eight-direction entity graphics
 
 This graphics track runs beside the gameplay queue. [PLAYTEST-51](playtests/PLAYTEST-51.md)
@@ -92,7 +85,7 @@ style transfer.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
       UI buttons, the application icon and identity/export consumers. Provide registered PNG
       bindings for every live SVG without altering draw transforms; verify both flag states and
-      missing/mismatched fallback. The existing opt-in remains the comparison control during review.
+      missing/mismatched fallback. The SVG override remains the comparison control during review.
 - [ ] Review catalogue completeness, native-size quality, alpha, seams, tinting, cues, all eight
       facings and moving-state consistency. Publish SVG/PNG comparisons and purposeful gameplay
       evidence in the PR; document actual bindings and make SVG-first followed by transfer the
@@ -290,8 +283,8 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 entry names the owning milestone, the file it becomes, the family it joins and the contract the
 code will hold it to — canvas, anchor, projection — so it can be drawn cold, reviewed with the
 **svg-art** skill, and filed in `GRAPHICS.md` as *prepared* until its milestone binds it. Drawn as
-SVG: the SVG set is the game's graphics until the illustrated presentation passes its gates, and the
-illustrated PNG track has its own list at the top of this file. **A prepared picture is not a
+SVG first: every PNG needs an authored SVG source, and M108, eight-direction entity graphics,
+and M109, convert the SVG catalogue to PNG, cover direction and transfer work. **A prepared picture is not a
 binding**: nothing here changes what the game does, and the milestone that owns each one still
 decides placement, timing and rules. **Anything that repeats along a street comes in a few
 variations** *(2026-09-10: "we need a few variations for some of these items (like store
