@@ -39,6 +39,10 @@ them don't store them". A human rejection is preserved whether or not an assista
 the candidate first. Only drafts rejected internally by the assistant before human review are
 discarded. The graphics skills state this distinction explicitly.
 
+The player asks to "commit whenever you have a new image done". Completed SVGs are committed
+after visual review and validation, with their import sidecars; inseparable body/trim layers
+form one image. This replaces batch commits for the image authoring work.
+
 ## Eight-direction style transfer — 2026-09-10
 
 Final integrated verification on 2026-09-10: import/boot passed; focused stroller, visuals,

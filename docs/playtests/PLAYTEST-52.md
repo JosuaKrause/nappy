@@ -34,3 +34,7 @@ The touched picture preserves the existing chalk mark and adds her acknowledgeme
 > Remove rejected drafts; keep accepted generation/review evidence
 
 > also keep if a human has rejected them. only if you reject them don't store them
+
+## Commit cadence
+
+> commit whenever you have a new image done

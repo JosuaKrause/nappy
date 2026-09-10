@@ -111,3 +111,7 @@ commit containing the image, as `committing` requires.
 Run import/boot and XML/doc lint. Add focused tests only for behavior a picture cannot verify,
 such as axis selection or grounding. Test the drawing path the runtime actually takes; do not
 re-derive repetition arithmetic for a whole-scene renderer that never repeats a texture.
+
+Commit each finished image promptly after visual review and validation, with its `.import`
+sidecar. Do not wait for the whole family. Keep inseparable body/trim layers together so a
+commit still contains a reviewable image.
