@@ -1,4 +1,6 @@
 <!-- Car back body; paint only, tinted before trim. Bottom-centre ground anchor; prepared and unbound. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="46" viewBox="0 0 30 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<g transform="translate(0 4)">
   <path d="M7 5 Q15 3 23 5 L26 14 L27 37 Q15 41 3 37 L4 14 Z" fill="#ffffff" />  <path d="M7 5 L23 5 L24 12 L6 12 Z" fill="#f4f4f4" />  <path d="M4 34 L26 34 L27 38 L3 38 Z" fill="#dcdcdc" />
+</g>
 </svg>
