@@ -1,0 +1,15 @@
+<!-- Enclosed rooftop duct elbow; both legs retain the straight duct's top and south material planes. Bottom-centre ground anchor; prepared and unbound. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+
+  <path d="M3 25 L24 25 L30 30 L9 30 Z" fill="#221f28" fill-opacity="0.2" stroke="none"/>
+  <!-- The enclosed walls are 12px high, matching roof_duct_straight. -->
+  <g transform="translate(0 -5)">
+  <path d="M1 8 L23 6 L29 11 L16 13 L23 20 L17 24 L7 13 Z" fill="#aaa9a0"/>
+  <path d="M7 13 L17 24 L17 36 L7 25 Z" fill="#858b8b"/>
+  <path d="M17 24 L23 20 L23 32 L17 36 Z" fill="#687174"/>
+  <path d="M16 13 L29 11 L29 23 L23 24 L23 20 Z" fill="#687174"/>
+  <path d="M1 8 L7 13 L7 25 L1 20 Z" fill="#858b8b"/>
+  <path d="M10 7.5 L15 12 M20 6.5 L25 11.5 M10 18 L15.5 14" fill="none" stroke="#464e52" stroke-width="0.7"/>
+  <path d="M18 26 L21 24 M26 14 L28 15" stroke="#c4b987" stroke-width="0.7"/>
+  </g>
+</svg>

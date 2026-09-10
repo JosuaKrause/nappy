@@ -1,0 +1,12 @@
+<!-- Two-cell fire escape overlay, ladder descends to the shared ground anchor. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="64" viewBox="0 0 48 64" shape-rendering="geometricPrecision" stroke="#3b3034" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Ground anchor is the canvas bottom centre. It overlays wall/window cells. -->
+  <path d="M5 19H37L43 23H11Z" fill="#4f565b" stroke-width="1"/>
+  <path d="M11 23L17 27L39 24L37 20" fill="#6c7374" stroke-width="1"/>
+  <path d="M12 23L16 58 M36 21L32 58" fill="none" stroke-width="2"/>
+  <path d="M15 31H34 M14 38H33 M13 45H32 M12 52H31" fill="none" stroke-width="1.5"/>
+  <path d="M8 20V7 M40 23V9" fill="none" stroke-width="2"/>
+  <path d="M6 7H42" fill="none" stroke-width="2"/>
+  <path d="M6 7L10 4 M42 9L39 6" fill="none" stroke-width="1.2"/>
+  <path d="M11 60H32" fill="none" stroke="#221f28" stroke-width="2"/>
+</svg>

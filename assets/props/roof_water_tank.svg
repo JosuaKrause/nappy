@@ -1,0 +1,11 @@
+<!-- Tall rooftop water tank on legs, bottom-centre anchored. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="48" viewBox="0 0 32 48" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round">
+  <path d="M4 43L26 43L30 47L8 47Z" fill="#221f28" fill-opacity="0.2" stroke="none"/>
+  <path d="M9 27L12 27L12 43H9Z M20 27H23V43H20Z" fill="#886e5e"/>
+  <path d="M10 34L22 39 M22 34L10 39" fill="none" stroke="#634d45" stroke-width="1"/>
+  <path d="M7 10C7 4 25 4 25 10V26C25 31 7 31 7 26Z" fill="#b58a69"/>
+  <path d="M7 10C8 4 24 4 25 10C24 15 8 15 7 10Z" fill="#d0a77c"/>
+  <ellipse cx="16" cy="10" rx="8" ry="2.4" fill="#4d4a48"/>
+  <path d="M11 13V26 M16 15V27 M21 13V26" fill="none" stroke="#705646" stroke-width="1"/>
+  <path d="M10 39H22" stroke="#d1af7b" stroke-width="1"/>
+</svg>

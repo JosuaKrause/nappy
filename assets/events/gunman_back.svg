@@ -1,0 +1,10 @@
+<!-- Crouched rifleman firing back. Cover and barrel share the firing axis. Ground anchor (15,26). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="26" viewBox="0 0 30 26" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M4 8 L26 8 L28 13 L2 13Z" fill="#7f7466"/>
+  <rect x="2" y="13" width="26" height="6" fill="#6b6154"/>
+  <path d="M15 10 L15 2 L17 2 L18 11Z" fill="#26232a"/>
+  <path d="M8 12 Q15 9 22 12 L23 23 L7 23Z" fill="#4a5438"/>
+  <path d="M8 20 L22 20 L24 26 L16 26 L15 23 L13 26 L6 26Z" fill="#2f3630"/>
+  <ellipse cx="15" cy="8" rx="5" ry="5" fill="#4a5438"/>
+  <path d="M12 10 Q15 12 18 10" fill="none" stroke="#2f3630" stroke-width="0.8"/>
+</svg>

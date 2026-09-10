@@ -13,11 +13,11 @@ by default where available; `--svg` or `?svg=1` forces SVGs. Every PNG asset nee
 `src/sprites.gd` owns the ground-plane contract used by the player, crowd, events and props:
 `draw_standing()` puts the bottom centre of a texture at the node's world position and mirrors
 about that point, while `draw_shadow()` draws the contact-shadow ellipse every point-shaped object
-casts. There is no shadow SVG any more: `GroundShape` (`src/ground_shape.gd`) draws every shadow in
-code, from the object's own ground shape — a point everywhere the object's shape is a point, and a
-capsule (a rotated ellipse at each end of the object's spine, hulled together) wherever it is a
-spread or a wide vehicle. Unless a row below says otherwise, an actor or prop SVG is bottom-centre
-anchored by `draw_standing()`.
+casts. `GroundShape` (`src/ground_shape.gd`) draws point shadows as vertically squashed circles,
+segment shadows as capsules with circular ends along the ground axis, and building rectangles
+with vertical squash after rotation. The generic shadow SVG is absent; the car-accident scenes
+retain their authored ground-contact shadow textures. Unless a row below says otherwise, an actor
+or prop SVG is bottom-centre anchored by `draw_standing()`.
 
 Some visible graphics are code rather than image files:
 
@@ -38,8 +38,8 @@ Some visible graphics are code rather than image files:
 
 | Assets | Runtime binding and behaviour |
 |---|---|
-| `assets/tiles/*.svg` | Every SVG in this folder is an external texture in `assets/ground_tileset.tres`. `scenes/world/city.tscn` binds that TileSet to the `Ground` layer, and `GroundTiles` chooses the source for roads, main-road lines, crossings, pavements and kerbs, alleys, open grounds, water edges and the city boundary. This indirect resource binding is why the tile filenames do not appear in the caller. `mountain.svg` is also repeated directly by `src/city/city_edge.gd` above the north edge. |
-| `assets/buildings/*.svg` | `src/city/building.gd` uses the complete folder: `wall.svg`, `wall_base.svg`, `wall_edge_{e,w}.svg`, `roof.svg`, `roof_edge_{n,s,e,w}.svg` and `window_{dark,lit}.svg`. The code composes and tints them; no complete-building sprite exists. |
+| The textures listed in `assets/ground_tileset.tres` | `scenes/world/city.tscn` binds this TileSet to the `Ground` layer, and `GroundTiles` chooses the source for roads, main-road lines, crossings, pavements and kerbs, alleys, open grounds, water edges and the city boundary. This indirect resource binding is why the tile filenames do not appear in the caller. `assets/tiles/mountain.svg` is also repeated directly by `src/city/city_edge.gd` above the north edge. Prepared alternatives are catalogued separately below. |
+| `assets/buildings/wall.svg`, `wall_base.svg`, `wall_edge_{e,w}.svg`, `roof.svg`, `roof_edge_{n,s,e,w}.svg`, `window_{dark,lit}.svg` | `src/city/building.gd` composes and tints these wall, roof and window textures; no complete-building sprite exists. Prepared facade alternatives are catalogued separately below. |
 | `assets/props/tree_{a,b}.svg` | `src/city/prop.gd` chooses a tree variant, scales it and may mirror it for park and forest props. |
 | `assets/props/{swing_frame,bollard}.svg` | `src/city/prop.gd` draws playground swing frames and perimeter bollards. |
 | `assets/props/{tunnel_mouth,bridge_deck,road_on}.svg` | `src/city/city_edge.gd` draws the tunnel, bridge and road continuation where a street meets the map boundary. |
@@ -100,7 +100,7 @@ east-west/vertical pair is selected from the street axis without rotating the pi
 | Checkpoint hut, gate, post (the region door structure) | Paths under `assets/checkpoints/`, not `assets/events/`. `checkpoint_hut` draws one of `hut_{north,south,east,west}.svg` chosen from `CityMap.pavement_inward()` at the tile it stands on, doorway facing the carriageway, plus `guard_standing.svg` beside it. `checkpoint_gate` draws `boom_gate_ns_{lowered,raised}.svg` or `boom_gate_ew_{lowered,raised}.svg` — `ns` for a north-south road, `ew` for an east-west one, read off the instance's own facing — raised or lowered from the shared `RegionPlanner.GateState`. `checkpoint_post` draws `guard_standing.svg` alone. All three use `EventInstance._draw_at_anchor()`, not `Sprites.draw_standing()`'s bottom-centre assumption, since the kit's own anchors are off-centre. |
 | Abduction | `unmarked_van.svg`, `unmarked_van_end.svg` and `van_victim.svg`: heading selects the van projection; the victim is placed beside it during the abduction. |
 | Robber | `robber_{waiting,lunging}.svg`: switches from waiting to the attack pose. |
-| Night raid | `riot_van.svg`: one side view used by M56 — The resistance is noticed. There is no riot-van end-view asset. |
+| Night raid | `riot_van.svg`: one side view used by M56 — The resistance is noticed. The prepared `riot_van_end.svg` remains unbound. |
 | Army truck | `army_truck.svg` and `army_truck_end.svg`: side and end projections selected from heading. |
 | Barricade | `barricade_pile.svg`: repeated improvised debris across the obstruction. |
 | Protest | `protester.svg`: repeated into the live protest crowd. The directional pointing family below is not yet selected. |
@@ -119,9 +119,50 @@ These files are intentionally available to their named designs, but a search of 
 scenes and resources finds no binding. Keep them here until the owning implementation selects them;
 moving them into the live tables early would hide unfinished integration.
 
+The [vehicle diagonal source sheet](evidence/svg-vehicle-diagonals-review-2026-09-10.png)
+shows the authored front/rear diagonals at native size and 3× for human review. It is a source
+comparison, not a gameplay capture.
+
+The [complete vehicle, animal and rider source review](evidence/svg-vehicles-2026-09-10/README.md)
+adds all eight facings, tint composites and wing phases. Its `facings.csv` records exact source
+paths, mirrors, canvases, anchors and alpha bounds; several canonical van side pictures face west.
+
+The [environment source review](evidence/svg-environment-2026-09-10/INVENTORY.md) lists every
+prepared interior, ground, roof, frontage and prop source in `sources.csv`, with native canvases,
+anchors and alpha bounds. It includes tile repetition, facade overlays and chalk on pavement.
+
+Stair construction follows the [supplied lateral-flight references](evidence/stair-layout-reference-2026-09-10/README.md).
+The interior has one stairwell on the building's left and one on its right; each contains sideways
+switchback flights. `assets/interior/stair_down.svg` is a 64×64 projected module, anchored at
+(32,64), separate from its eventual floor-transition trigger. Its unmirrored upper, intermediate
+and lower landings are (8,10), (56,34) and (8,58); mirror around the canvas centre for the other
+side. For a hallway between the stairwells, use the mirrored module on the left and unmirrored
+module on the right so their upper/lower landings face the hallway. Exterior
+`fire_escape_{a,b}.svg` stays 48×64, with alternating lateral flights parallel to the facade.
+The [stair source and assembly review](evidence/svg-sideways-stairs-2026-09-10/README.md)
+shows native/3× sources, the two hallway ends and transparent facade overlays.
+
+The [people source matrix](evidence/svg-people-2026-09-10/PEOPLE-MATRIX.md) names every body,
+trim, gait and action source, its registration and intended live or prepared use. Native/3×
+sheets show each layer and all eight composed facings. A pointing pose's suffix describes the
+arm direction; ordinary movement suffixes describe the body's facing.
+
 | Owning design | Prepared assets, dimensions and registration |
 |---|---|
-| M102 — The finale: out of the apartment, out of the city | `assets/rig/mother_carrying_{front,back,side}_{a,b}.svg`: six frames of the existing mother carrying the baby in her arms, with no stroller. Front/back canvases are 24×46 with feet anchor (12, 46); side canvases are 26×46 with feet anchor (13, 46). Each facing has the existing two gait frames; the side view faces east and mirrors for west. Front/profile show the supported baby; the back view occludes most of the bundle. No runtime binding yet; the finale's player rig is the milestone's. |
+| M102 — The finale: out of the apartment, out of the city (interior) | `assets/interior/` contains hallway/basement floors and four cardinal edges, walls and normal/flash windows, stairwell floor/stairs, entrance/stairwell/emergency/lift doors, barricade, chandelier and puddle. Floor/wall modules are 32×32; standing objects have individual bottom-centre anchors listed in the environment inventory. `assets/events/steam.svg` is 32×48; `explosion_preview.svg` is a 40×40 optional burst. None is bound. |
+| M100 — Small, real, and nobody's (chalk and alley review) | `assets/props/chalk_mark.svg` and `chalk_mark_touched.svg` are 32×32 centre-anchored decals; the touched version keeps the circle/cross and adds her small tick. `assets/tiles/alley_draft.svg` is a 32×32 paving alternative for comparison. Current code-drawn chalk and the live alley tile remain the runtime pictures. |
+| M105 — The city degrades | `assets/tiles/{road,sidewalk,alley}_cracked_{hairline,cracked,broken}_{a,b}.svg` supplies two 32×32 patterns per damage level. `assets/props/litter_{apple,newspaper,cup,bag,can}.svg` uses 32×32 centre-anchored transparent canvases with visible geometry at most 10px wide/high. `garbage_sack.svg` is 28×34 and `garbage_sacks_pile.svg` 42×34, bottom-centre anchored. All placement and TileSet selection remain unbound. |
+| M106 — Roofs, fronts and street trees | `assets/props/industrial_vent{,_b}.svg`, `roof_hvac_unit{,_b}.svg`, `roof_duct_{straight,corner}.svg`, `roof_skylight{,_b}.svg`, `roof_vent_stack.svg`, `roof_water_tank.svg` and `tree_pit.svg` are prepared roof/ground parts. Roof units are 32×32 except straight duct 64×32 and tank 32×48; tree pit is centre-anchored 32×32. `assets/buildings/storefront_{a,b,c,d}{,_awning,_shuttered}.svg` are 32×32 facade states with a shared door position; `fire_escape_{a,b}.svg` are transparent 48×64 overlays; `window_{tall,shuttered}_{dark,lit}.svg` are 32×32 overlays. Registration is detailed in the environment inventory; Building and Prop do not bind these additions. |
+| M108 — Eight-direction entity graphics (vehicle diagonal sources) | `assets/events/{delivery_van,fire_engine,ice_cream_van,lorry,unmarked_van,riot_van,army_truck,moving_van}_{front,back}_diagonal.svg`: separate front, flank and roof planes, retaining each vehicle's identifying equipment and cargo. Front diagonals face southeast and back diagonals northeast; west counterparts mirror horizontally. Canvases are 56×50, bottom-centre anchor (28, 50). Live vehicle bindings still use their original source views. |
+| M108 — Eight-direction entity graphics (people) | `assets/crowd/walker_{front,back}_diagonal_{body,trim}.svg` adds the two 18×38 diagonal layer pairs. For `assets/events/{person,yeller,busker,poster_crew,cafe_sitter,van_victim,protester,gunman,leaf_blower}`, add `_{front,back,side,front_diagonal,back_diagonal}.svg`; the same five views apply to `chatting_mother_{walking,talking}` and `robber_{waiting,lunging}`. The people matrix records each canvas, composite and state. These named event views are unbound; their unsuffixed sources remain live. |
+| M56 — The resistance is noticed (directional guards) | `assets/checkpoints/guard_{standing,lunging}_{front,back,side,front_diagonal,back_diagonal}.svg` supplies waiting and pursuit poses. Standing uses 22×44, anchor (11,44); lunging uses 36×44, anchor (17,44), including mirrored views. Heading selection and state transitions remain with the runtime owner. |
+| M108 — Eight-direction entity graphics (vehicle end sources) | `assets/events/{delivery_van,fire_engine,ice_cream_van,lorry,unmarked_van,riot_van,army_truck,moving_van}_{front,back}.svg`: south-facing windscreens/headlights and north-facing cargo doors/rear lamps, each bottom-centre grounded. These named projections are prepared; original side/end textures retain their live bindings. |
+| M108 — Eight-direction entity graphics (cars) | `assets/crowd/car_{front,back,front_diagonal,back_diagonal}_{body,trim}.svg` keeps tintable paint separate from fixed windows, tyres and lights. `assets/events/police_car_{front,back,front_diagonal,back_diagonal}.svg` adds the police identity and light bar. All are bottom-centre grounded; east-authored diagonals permit west mirroring. Original crowd and police-car sources remain live. |
+| M108 — Eight-direction entity graphics (cats and dogs) | `assets/events/{cat_crouched,cat_running,dog,charging_dog}_{front,back,front_diagonal,back_diagonal}.svg` supplies distinct approaching and departing postures. Each uses the shared bottom-centre ground anchor; east-authored diagonals mirror west. Existing cat/dog side sources and code-drawn leads remain the live binding. |
+| M108 — Eight-direction entity graphics (birds and cyclist) | `assets/events/{pigeon,pigeon_down,cyclist}_{front,back,front_diagonal,back_diagonal}.svg`: pigeon wing phases share 22×18 canvases; cyclist ends are 30×44 and diagonals 40×44. Bottom-centre anchors and horizontal mirrors supply all headings; the original side sources remain live. |
+| M100 — Small, real, and nobody's (mouse) | `assets/events/mouse.svg` is the east-facing 24×14 source; `mouse_{front,back}.svg` are 18×18, and `mouse_{front,back}_diagonal.svg` are 24×18. Bottom-centre grounded with horizontal mirror reuse; placement, scurrying and sound remain unbound. |
+| M56 — The resistance is noticed (night-raid end view) | `assets/events/riot_van_end.svg`: 34×50, anchor (17, 50), a south-facing barred windscreen and headlights with wheel edges alongside the body. The night-raid drawing still uses its original side view until M56 binds this prepared asset. |
+| M102 — The finale: out of the apartment, out of the city | `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg`: ten sources covering eight facings through explicit west mirrors. Front/back canvases are 24×46 with feet anchor (12,46); side/diagonal canvases are 26×46 with feet anchor (13,46). Each facing has two gait frames; front/profile show the supported baby while the rear torso occludes most of the bundle. No runtime binding yet; the finale's player rig is the milestone's. |
 | M56 — The resistance is noticed (the checkpoint's own hunting posture) | `assets/checkpoints/guard_lunging.svg`: 36×44, ground anchor (17, 44), authored east and mirrorable west, matching `guard_standing.svg`'s scale — see the live checkpoint kit in "Events and seal pictures" above. M56 assigns this pose to the proposed waiting/departing guard response for a `HUNTS`-heated checkpoint, if that design is accepted; no runtime binding yet. |
 | M65 — A protester points at the objective | `assets/events/protester_point_{n,ne,e,se,s,sw,w,nw}.svg`: eight 44×52 poses sharing feet anchor (22, 52). |
 | M100 — Small, real, and nobody's | `assets/props/industrial_vent.svg`: 32×32 roof unit. `assets/props/civic_portico.svg`: 32×48 entrance with ground anchor (16, 48). `assets/events/sound_pulse.svg`: 48×32 open arcs with source anchor (24, 32). |

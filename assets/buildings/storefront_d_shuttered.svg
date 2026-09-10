@@ -1,0 +1,11 @@
+<!-- Sign-front shop behind a dented steel shutter. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#766457"/>
+  <rect x="13" y="4" width="14" height="18" fill="#4b4d53" stroke="#3b3034" stroke-width="1"/>
+  <path d="M14 6H26 M14 9H26 M14 12H26 M14 15H26 M14 18H26 M14 21H26" stroke="#77797a" stroke-width="1"/>
+  <path d="M15 11L25 18 M25 7L16 17" stroke="#a17d5f" stroke-width="1"/>
+  <rect x="3" y="8" width="9" height="23" fill="#443638" stroke="#3b3034" stroke-width="1"/>
+  <rect x="5" y="10" width="5" height="6" fill="#5f777c"/>
+  <circle cx="10" cy="26" r="0.9" fill="#d4b26e"/>
+  <rect y="29" width="32" height="3" fill="#3b3034"/>
+</svg>

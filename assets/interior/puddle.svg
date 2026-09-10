@@ -1,0 +1,6 @@
+<!-- A thin basement puddle overlay, centred on its tile and kept below standing props. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- Ground anchor is the canvas centre. -->
+  <path d="M4 18C7 13 12 14 15 15C18 12 24 14 28 18C26 23 20 25 15 23C10 25 6 23 4 18Z" fill="#526879" fill-opacity="0.72" stroke="#354957" stroke-width="0.9"/>
+  <path d="M9 18C12 17 14 19 17 18 M20 17C22 16 24 18 25 19" fill="none" stroke="#91a7ad" stroke-width="0.8" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,9 @@
+<!-- Rolled drink can litter decal, centre anchored. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <g transform="translate(9.6 9.6) scale(0.4)">
+    <path d="M9 12L21 10L24 20L12 23Z" fill="#8e9b99" stroke="#3b3034" stroke-width="0.9"/>
+    <path d="M10 12L21 10L23 13L11 15Z" fill="#b7c1b4" stroke="#3b3034" stroke-width="0.8"/>
+    <path d="M14 16L21 15" stroke="#c57b45" stroke-width="1.2"/>
+    <path d="M13 20L22 18" stroke="#56656a" stroke-width="0.8"/>
+  </g>
+</svg>

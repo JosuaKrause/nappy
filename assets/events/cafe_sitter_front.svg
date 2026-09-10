@@ -1,0 +1,19 @@
+<!-- Seated cafe patron, front. Bent arm and lap remain above the table-owned ground contact; no standing legs. Ground anchor (8,30). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 16 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(8 0)">
+  <path d="M-6 22 L6 22 L6 28 L-6 28Z" fill="#46506b"/>
+  </g>
+  <g transform="translate(8 0)">
+  <path d="M-5 11 L5 11 L5 23 L-5 23Z" fill="#8a5f6b"/>
+  <path d="M-4 19 L4 19 L4 23 L-4 23Z" fill="#74505c"/>
+  </g>
+  <g transform="translate(8 0)">
+  <path d="M-4 13 L-5 18 L-1 22 L4 21 L4 18 L-1 18 L0 13Z" fill="#74505c"/>
+  </g>
+  <g transform="translate(8 6) scale(.82 .8)">
+  <g transform="translate(0 0)">
+  <ellipse cx="0" cy="0" rx="6" ry="6.5" fill="#d9a878"/>
+  <path d="M-6 0 Q-6 -7 0 -7 Q6 -7 6 0 Q3 -2 0 -2 Q-3 -2 -6 0Z" fill="#4a3a2c"/>
+  </g>
+  </g>
+</svg>
