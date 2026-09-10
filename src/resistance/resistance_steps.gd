@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ## A pickup is a chalk mark in an alley: touch it and the resistance tells you, in the day
 ## brief, what tomorrow wants. A perform is the task itself, and its contact rides on the
-## `EventInstance` the task is built around — a yeller, a delivery van, a checkpoint, a
+## `EventInstance` the task is built around — a yeller, a delivery van, a roadblock, a
 ## poster crew, a protest — rather than sitting on a bare tile. Only the perform half grants
 ## progress toward `Tuning.RESISTANCE_GOAL`; picking up a note is not the errand.
 
