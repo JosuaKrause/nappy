@@ -334,18 +334,17 @@ static func _dog_walker() -> EventDef:
 ## pleasant, which is worse: nothing about it looks like a hazard and it still costs the street.
 ## Stationary, so it can never pin the player the way a moving obstruction could.
 ##
-## **Keeps a field, tightened to the tables themselves.** *"restaurants should only increase your
-## excitement when you're actually close... but they should nonetheless"* — a café is a real source
-## of chatter and not a piece of scenery, but 170px reached across the block and billed a player who
-## was never near the tables. 90px is a real band beyond the 24px the tables themselves obstruct and
-## the 40px of full intensity — one and a half tiles past the frontage on a two-tile (64px) pavement,
-## comfortably short of the 448px block period so a café never bills the far side of the street it is
-## on. **Expected to move again once a field takes the shape of its body** — M61's third item, where
-## the field becomes the Minkowski sum of the body and a disc, so a frontage gets a capsule instead
-## of a circle. This number is the stopgap for that and has to be re-derived rather than reused: a
-## circle this tight
-## still over-reaches perpendicular to the frontage and under-reaches along it, which is the wrong
-## shape for a source that sits across a stretch of pavement rather than at a point.
+## **Keeps a field, derived from the body rather than reused across it.** *"restaurants should only
+## increase your excitement when you're actually close... but they should nonetheless"* — a café is
+## a real source of chatter and not a piece of scenery, but 170px reached across the block and
+## billed a player who was never near the tables, and the 90px stopgap that followed was still a
+## circle standing in for a body: over-reaching across the frontage and under-reaching along it.
+## Under M61's field — the Minkowski sum of the body and a kernel — the radii are read straight off
+## the body and the street instead: `inner_radius` is `shape.radius + PLAYER_BODY_RADIUS` (24 + 14 =
+## 38), she is touching the tables; `outer_radius` is the pavement band's own centre to the
+## carriageway's centre line (`SIDEWALK_WIDTH·TILE_SIZE/2 + ROAD_WIDTH·TILE_SIZE/2` = 32 + 32 = 64),
+## which is *"bill somebody at the tables and not somebody across the street"* with "across"
+## beginning at the centre line.
 static func _cafe_tables() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cafe_tables"
@@ -353,8 +352,8 @@ static func _cafe_tables() -> EventDef:
 	def.look = EventDef.Look.CAFE
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 12.0
-	def.inner_radius = 40.0
-	def.outer_radius = 90.0
+	def.inner_radius = 38.0
+	def.outer_radius = 64.0
 	def.telegraph_time = 1.6
 	def.pulse_period = 6.0
 	# 24 does not clear `GroundShape.BAND_RADIUS`, so the body it derives stays a point — a café
@@ -505,6 +504,11 @@ static func _burning_building() -> EventDef:
 ## what it costs the route is a corner. `_draw_spread` draws the cordon at exactly the width of the
 ## body, so this number is also how wide it looks: at 36 it is a shell, where a person's 11 would
 ## draw a two-barrier sliver.
+##
+## **Radii derived from the body.** Both lose the segment's own `half_length` (12, from `band(36)`)
+## so the along-axis reach is unchanged: `inner_radius` 30 → 18, `outer_radius` 90 → 78. 18 falls
+## under the body's own 24px rounding, so it is clamped there — a field cannot start inside ground
+## that is already solid.
 static func _burnt_shell() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burnt_shell"
@@ -513,8 +517,8 @@ static func _burnt_shell() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURNT_SHELL
 	def.intensity = 2.5
-	def.inner_radius = 30.0
-	def.outer_radius = 90.0
+	def.inner_radius = 24.0
+	def.outer_radius = 78.0
 	def.telegraph_time = 0.7
 	def.solid(GroundShape.band(36.0))
 	return def
@@ -585,12 +589,12 @@ static func _loose_dog() -> EventDef:
 ## second one. This is louder and wider than `cafe_tables` and on the other side of pleasant: a café
 ## you squeeze past is a nuisance, a market is a crowd.
 ##
-## **Keeps a field, tightened to the stall itself** — the same "close only" treatment as
-## `cafe_tables`, on the same reasoning: a market is a real crowd, not scenery, but the reach has to
-## match the source. 95px is a touch wider than the café's 90, matching its own slightly bigger
-## `inner_radius` (44 against 40) and `obstructs_radius` (28 against 24), and stays well inside the
-## 448px block period. **Expected to move again once a field takes the shape of its body**, and to be
-## re-derived rather than shrunk again — see `cafe_tables` and M61's third item.
+## **Keeps a field, derived from the body the same way `cafe_tables` is** — a market is a real
+## crowd, not scenery, but the reach has to match the source. Its body's own rounding is the same
+## 24px (`GroundShape.BAND_RADIUS`, since 28 clears it into a real segment), so the derivation gives
+## the identical pair: `inner_radius` = 24 + `PLAYER_BODY_RADIUS` (14) = 38, `outer_radius` = the
+## pavement band's centre to the carriageway's centre line = 64. See `cafe_tables` for the full
+## derivation; the two rows differ in body and intensity, not in how far either field reaches.
 static func _market_stall() -> EventDef:
 	var def := EventDef.new()
 	def.id = "market_stall"
@@ -598,8 +602,8 @@ static func _market_stall() -> EventDef:
 	def.look = EventDef.Look.STALL
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.intensity = 14.0
-	def.inner_radius = 44.0
-	def.outer_radius = 95.0
+	def.inner_radius = 38.0
+	def.outer_radius = 64.0
 	def.telegraph_time = 1.7
 	def.pulse_period = 8.0
 	def.solid(GroundShape.band(28.0))
@@ -1112,6 +1116,13 @@ static func _curfew_announce() -> EventDef:
 ## exactly the way it fails at a shared silhouette. Its numbers, its intent and its picture are
 ## unchanged — `assets/events/checkpoint_block.svg` keeps its filename, since the milestone that
 ## renamed the row left the art alone.
+##
+## **Radii derived from the body, not carried across.** Under M61's field — a capsule about the
+## body's own spine rather than a disc about its centre — the along-axis reach from centre has to
+## stay what it was, so both radii lose the segment's own `half_length` (36, from `band(60)`):
+## `inner_radius` 52 → 16, `outer_radius` 215 → 179. The raw inner falls under the body's own 24px
+## rounding (`GroundShape.BAND_RADIUS`), so it is clamped there instead — a field cannot start
+## inside the capsule that is already solid.
 static func _roadblock() -> EventDef:
 	var def := EventDef.new()
 	def.id = "roadblock"
@@ -1121,8 +1132,8 @@ static func _roadblock() -> EventDef:
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.intensity = 13.0
-	def.inner_radius = 52.0
-	def.outer_radius = 215.0
+	def.inner_radius = 24.0
+	def.outer_radius = 179.0
 	def.telegraph_time = 1.8
 	def.solid(GroundShape.band(60.0))
 	def.weight = 2.0
@@ -1333,6 +1344,10 @@ static func _barricade() -> EventDef:
 
 ## Grows while it is there — `intensity_ramp` takes it to 1.9x over its duration. A protest
 ## you could have walked past when you saw it is not one you can walk past two minutes later.
+##
+## **Radii derived from the body.** Under M61's field, both lose the segment's own `half_length`
+## (31, from `band(55)`) so the along-axis reach from centre is unchanged: `inner_radius` 70 → 39,
+## `outer_radius` 300 → 269 — the 39px still clears the body's own 24px rounding, so neither clamps.
 static func _protest() -> EventDef:
 	var def := EventDef.new()
 	def.id = "protest"
@@ -1342,8 +1357,8 @@ static func _protest() -> EventDef:
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING]
 	def.intensity = 15.0
-	def.inner_radius = 70.0
-	def.outer_radius = 300.0
+	def.inner_radius = 39.0
+	def.outer_radius = 269.0
 	def.duration = 150.0
 	def.telegraph_time = 2.6
 	def.intensity_ramp = 1.9
@@ -1353,7 +1368,7 @@ static func _protest() -> EventDef:
 	# protest drawn as one man obstructs one man's width however much of a square it is supposed to
 	# fill. `_draw_protest` draws two ranks across exactly this width.
 	#
-	# Under the 70px inner radius on purpose: the loudest part of a protest is still something you
+	# Under the 39px inner radius on purpose: the loudest part of a protest is still something you
 	# stand in rather than bump into, and being stopped at the edge of it would take the choice of
 	# how close to cut past away from the player.
 	def.solid(GroundShape.band(55.0))
@@ -1366,6 +1381,12 @@ static func _protest() -> EventDef:
 
 ## The last thing in the catalogue and the worst. Static, extreme, lethal at the centre,
 ## and it shuts a district.
+##
+## **Radii derived from the body, and `inner_radius` here is the lethal one.** Both lose the
+## segment's own `half_length` (6, from `band(30)`) so the along-axis reach — including the lethal
+## one, which is a plain circle of `inner_radius` about the centre and not itself capsule-shaped —
+## is unchanged: `inner_radius` 90 → 84, `outer_radius` 380 → 374. `(outer − inner)` is invariant
+## under subtracting the same term from both, so the telegraph arithmetic below is untouched.
 static func _firefight() -> EventDef:
 	var def := EventDef.new()
 	def.id = "firefight"
@@ -1376,12 +1397,12 @@ static func _firefight() -> EventDef:
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.CROSSING, GameEnums.TileType.SQUARE]
 	def.intensity = 30.0
-	def.inner_radius = 90.0
-	def.outer_radius = 380.0
-	# hard_fail: (380-90)/92 * 2 = 6.3s.
+	def.inner_radius = 84.0
+	def.outer_radius = 374.0
+	# hard_fail: (374-84)/92 * 2 = 6.3s.
 	def.telegraph_time = 6.5
 	def.pulse_period = 2.5
-	# The same five flames as a burning building, and far inside the 90 that ends the day.
+	# The same five flames as a burning building, and far inside the 84 that ends the day.
 	def.solid(GroundShape.band(30.0))
 	def.hard_fail = true
 	def.cost = 5
