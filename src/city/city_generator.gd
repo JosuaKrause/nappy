@@ -84,9 +84,24 @@ static func _attempt(seed_value: int) -> CityMap:
 	# `repaint` never touches, so no later day can undo one. A big building also *replaces* a
 	# block's carved rects, which is why the buildings are collected afterwards rather than before.
 	_place_hard_blockers(map, purposes, block_rects, rng)
+	# **After the hard blockers, and for the same reason they run after the repaint.** A region may
+	# never grow across a street a dead end or a big building just built over, and `absent_segments`
+	# only carries that once the blockers are placed — growing regions any earlier would let a
+	# region's own growth cross ground the run is about to take away.
+	_assign_regions(map)
 	for rects in block_rects.values():
 		map.building_rects.append_array(rects)
 	return map
+
+## Partitions the lattice's junctions into `Tuning.REGION_COUNT` regions — see `RegionPlanner`'s
+## own class doc for what a region is and how the growth works. Seeded from the map's own seed with
+## an RNG of its own, the same trick `_assign_street_kinds` uses: the partition is a property of the
+## city, and taking it out of the shared stream means adding regions moves nothing else a seed
+## already decided.
+static func _assign_regions(map: CityMap) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("regions:%d" % map.seed_used)
+	RegionPlanner.assign(map, rng)
 
 # ------------------------------------------------------------------ streets ---
 

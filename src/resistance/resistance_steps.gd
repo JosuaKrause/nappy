@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ## A pickup is a chalk mark in an alley: touch it and the resistance tells you, in the day
 ## brief, what tomorrow wants. A perform is the task itself, and its contact rides on the
-## `EventInstance` the task is built around — a yeller, a delivery van, a checkpoint, a
+## `EventInstance` the task is built around — a yeller, a delivery van, a roadblock, a
 ## poster crew, a protest — rather than sitting on a bare tile. Only the perform half grants
 ## progress toward `Tuning.RESISTANCE_GOAL`; picking up a note is not the errand.
 
@@ -117,7 +117,7 @@ static func _build() -> Array[Step]:
 				0.0, true),
 		# D · walk through the checkpoint. Not round it — through.
 		_mark(5, "Another mark", 8, "Don't go around it this time. Go through."),
-		_perform(6, "The checkpoint", 9, "checkpoint",
+		_perform(6, "The checkpoint", 9, "roadblock",
 				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]),
 		# B · beat the poster crew to the wall. Keeps the old step 4's deadline fraction —
 		# a window that closes rather than a clock she can watch.

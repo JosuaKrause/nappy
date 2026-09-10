@@ -100,7 +100,7 @@ func _test_catalogue_is_fair(t) -> void:
 ## sprite whose own pixel size has nothing to do with `obstructs_radius`, which is every other
 ## row's collision radius alone.
 const _SPREAD_LOOKS: Array[EventDef.Look] = [
-	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.CHECKPOINT,
+	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.ROADBLOCK,
 	EventDef.Look.BARRICADE, EventDef.Look.BURNT_SHELL, EventDef.Look.CAFE,
 	EventDef.Look.PROTEST, EventDef.Look.FIREFIGHT,
 	EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN,
@@ -116,7 +116,7 @@ const _SIDEWALK_SPREAD_CLEARANCE := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0
 ## A `ROAD` or `CROSSING` tile sits much further from a building line: `(SIDEWALK_WIDTH + 0.5) *
 ## TILE_SIZE`, worst case, because it is one of the carriageway tiles in the middle of the
 ## corridor rather than at either edge of it — which is why a street-spanning row like
-## `checkpoint` is allowed a far wider body than a sidewalk obstruction is. Nothing re-centres a
+## `roadblock` is allowed a far wider body than a sidewalk obstruction is. Nothing re-centres a
 ## `ROAD`/`CROSSING` body — `CityMap.pavement_inward()` answers zero for either, by design, so
 ## `_centred_on_the_pavement_band()` leaves them exactly where the scheduler put them.
 const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TILE_SIZE
@@ -2327,7 +2327,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	#
 	# **The floor is 0.2 because a precinct is safe ground and a wall is danger.** A precinct's box
 	# carries no `ROAD` or `CROSSING` tile, so the rows that place on a carriageway — the patrol, the
-	# checkpoint — cannot sit in a gap that runs through one. The `SIDEWALK`-placed rows still can,
+	# roadblock — cannot sit in a gap that runs through one. The `SIDEWALK`-placed rows still can,
 	# which is why this is a smaller pool of candidates rather than a gap nothing may ever wall, and
 	# why the denominator is still every gap: measured over the same map and the same sampled days,
 	# 26 of 89 gaps carried a wall before the precinct's box was paved and 21 of 89 after it — the

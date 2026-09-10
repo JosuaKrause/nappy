@@ -114,7 +114,10 @@ static func _build() -> Array[EventDef]:
 		_poster_crew(),
 		_loudspeaker(),
 		_curfew_announce(),
-		_checkpoint(),
+		_roadblock(),
+		_checkpoint_hut(),
+		_checkpoint_gate(),
+		_checkpoint_post(),
 
 		# Act III - vans.
 		_abduction(),
@@ -1079,11 +1082,19 @@ static func _curfew_announce() -> EventDef:
 
 ## Closes a street and is loud about it. The first event that takes a route away rather
 ## than making it expensive.
-static func _checkpoint() -> EventDef:
+##
+## **Named `roadblock`, not `checkpoint`.** M62's region door took the word — a hut, a gate and
+## guards on the sidewalks you can pass at a price — and this row means the opposite: a street you
+## cannot pass at all. Two rows drawing armed men across a street and meaning opposite things about
+## whether you can get through cannot share a name, and one picture per row fails at the name
+## exactly the way it fails at a shared silhouette. Its numbers, its intent and its picture are
+## unchanged — `assets/events/checkpoint_block.svg` keeps its filename, since the milestone that
+## renamed the row left the art alone.
+static func _roadblock() -> EventDef:
 	var def := EventDef.new()
-	def.id = "checkpoint"
-	def.display_name = "Checkpoint"
-	def.look = EventDef.Look.CHECKPOINT
+	def.id = "roadblock"
+	def.display_name = "Roadblock"
+	def.look = EventDef.Look.ROADBLOCK
 	def.first_day = 7
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
@@ -1498,4 +1509,87 @@ static func _collapsed_frontage() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.obstructs_radius = 96.0
+	return def
+
+# ------------------------------------------------------ the region door's own structure ---
+# Three bodies `RegionPlanner` stands at every open crossing of today's region wall, from
+# `Tuning.REGION_WALL_FIRST_DAY` — a hut on each pavement and a gate over the road at a street
+# door, a single guard at each mouth of an alley door. All three are `SCRIPTED`, `scripted_day 0`,
+# like the seal pictures above: the ordinary catalogue roll never schedules one, and
+# `RegionPlanner.plan_day` places each fresh every morning at the door geometry decides, not at a
+# tile the scheduler chose. See docs/CITY.md, "Regions and the wall", and docs/EVENTS.md,
+# "Checkpoints".
+
+## The hut at a region door. Detains rather than blocking outright — M62's own words: *"the player
+## walks to the hut gets detained inside and then spawns on the other side."* `detain_radius`
+## (48px) sits inside `inner_radius` (52px), the way every detainer's does, and the ambient field
+## is the milestone's own "a bit of excitement": a small `intensity` over a tight band, small
+## enough that the real price stays the flat `Tuning.CHAT_EXCITEMENT` the detention charges through
+## the ordinary chat mechanism, and standing still on its own pays nothing back
+## (`EXCITEMENT_DECAY_IDLE`) — but not so small that walking through the field for free undercuts
+## `tests/test_events.gd`'s own catalogue-wide rule that nothing is cheaper to walk through than
+## around: with most of the 52-66px band held at peak against `EXCITEMENT_DECAY_WALKING` (3.5/s),
+## 6.0 is the smallest round number that clears it with a margin rather than by luck. `redetains`
+## is what tells `EventManager` this instance is armed again once she is outside `detain_radius`,
+## in either direction, rather than spent after one conversation like `chatting_mother`.
+static func _checkpoint_hut() -> EventDef:
+	var def := EventDef.new()
+	def.id = "checkpoint_hut"
+	def.display_name = "Checkpoint hut"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.CHECKPOINT_HUT
+	def.act_tag = 2
+	def.intensity = 6.0
+	def.inner_radius = 52.0
+	def.outer_radius = 66.0
+	def.telegraph_time = 1.0
+	def.obstructs_radius = 32.0
+	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
+	def.detain_radius = 48.0
+	def.redetains = true
+	return def
+
+## The boom over the roadway between a door's two huts. No detention and no field of its own — the
+## toll is paid at the hut, never at the gate, so a car passing under it costs her nothing whether
+## or not she is anywhere near it. Drawn raised or lowered from the shared `RegionPlanner.
+## GateState` `Crowd` keeps current for the day's cars; see `docs/TODO.md`, M62, "cars need to slow
+## down to a full stop." Placed with `Planned.facing` set along the street's own axis, which is
+## both what tells the drawing a north-south road from an east-west one and what
+## `EventManager`'s detention teleport reads back from a hut or a post at the same crossing.
+static func _checkpoint_gate() -> EventDef:
+	var def := EventDef.new()
+	def.id = "checkpoint_gate"
+	def.display_name = "Checkpoint gate"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.CHECKPOINT_GATE
+	def.act_tag = 2
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.obstructs_radius = 32.0
+	return def
+
+## The alley half of a door: a single guard where a through-alley crosses a region boundary,
+## standing in for the hut and gate a full street gets — the alley is one lane wide, so one body
+## covers its whole 64px mouth. Detains exactly like `checkpoint_hut`, same numbers and the same
+## `redetains`, because the toll is the crossing itself, not the width of the street it stands on.
+static func _checkpoint_post() -> EventDef:
+	var def := EventDef.new()
+	def.id = "checkpoint_post"
+	def.display_name = "Checkpoint guard"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.CHECKPOINT_POST
+	def.act_tag = 2
+	def.intensity = 6.0
+	def.inner_radius = 52.0
+	def.outer_radius = 66.0
+	def.telegraph_time = 1.0
+	def.obstructs_radius = 32.0
+	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
+	def.detain_radius = 48.0
+	def.redetains = true
 	return def

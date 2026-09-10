@@ -36,6 +36,16 @@ var _traffic := TrafficIndex.new()
 var _signals: TrafficSignals
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
+## Today's checkpoint gates — `RegionPlanner.GateState`, set once a day by `main._start_day()` from
+## `City.region_plan().gates`. Empty on any day before the wall stands, or in a rig with no city
+## behind it. See `_stop_for_gates()`.
+var _gates: Array[RegionPlanner.GateState] = []
+
+## Told which gates today's cars have to stop for. See `_gates`'s own doc for where the day's list
+## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to `City`'s
+## own `region_plan()` other than the one it already has through `setup()`.
+func set_gates(gates: Array[RegionPlanner.GateState]) -> void:
+	_gates = gates
 
 func setup(city: City, map: CityMap) -> void:
 	_city = city
@@ -131,7 +141,7 @@ func step(delta: float) -> void:
 		_signals.advance(delta)
 	for agent in _agents:
 		agent._process(delta)
-	space_out_the_traffic()
+	space_out_the_traffic(delta)
 
 ## Tells every car how much clear road it has in front of it, and pulls apart any two that have
 ## ended up in the same piece of it.
@@ -147,7 +157,7 @@ func step(delta: float) -> void:
 ## car into a lane at a point it cannot see, so that case is not hypothetical — it is most of the
 ## overlap a probe finds. Resolving the queue from the front backwards fixes a
 ## whole chain in one pass, and the correction is a few pixels except in the case it exists for.
-func space_out_the_traffic() -> void:
+func space_out_the_traffic(delta: float) -> void:
 	var lanes := {}
 	for agent in _agents:
 		if agent.kind != CrowdAgent.Kind.CAR:
@@ -188,6 +198,7 @@ func space_out_the_traffic() -> void:
 		index[key] = positions
 	_traffic.rebuild(index)
 	give_way_at_junctions()
+	_stop_for_gates(delta)
 
 ## Decides, once per frame and per junction, whose turn it is to be in the box.
 ##
@@ -264,6 +275,64 @@ func give_way_at_junctions() -> void:
 			if crossing_is_in_the_box or outranked or red or not _can_clear_the_box(agent):
 				agent.junction_hold = maxf(0.0,
 						agent.distance_to_junction() - Tuning.CAR_STOP_LINE_SETBACK)
+
+## Cars stop at a checkpoint gate exactly the way they stop at a red light: a hold computed here
+## and consumed by `CrowdAgent._give_way()` alongside `junction_hold` and the zebra's own stop
+## line, composing by the lowest speed the same way those two already do. *(2026-09-02, the
+## player: "cars need to slow down to a full stop before the gate opens and they can go ahead
+## again.")*
+##
+## **Not a junction box.** A gate stands at a segment's mouth, not at a lattice junction, so
+## `give_way_at_junctions()`'s own arbitration has nothing to arbitrate here — there is one axis
+## of traffic and no crossing arm. What replaces the box is a timer: the nearest car within its own
+## braking distance of the stop line holds there, and once it has been actually stopped (not merely
+## slowing) for `Tuning.GATE_STOP_SECONDS`, the gate raises and stays up for as long as any car
+## remains within a car's length of it — a following platoon passes without the boom slamming shut
+## between cars — then lowers and the timer resets for whoever queues next.
+##
+## **Found by geometry alone, not by `_corridor`/`_along()`.** Those are `CrowdAgent`'s own private
+## lane bookkeeping and a gate is not sited on a lane index; `heading()` and `global_position` are
+## already public and are all the geometry a gate needs — the along/across split below is the same
+## projection `RegionPlanner`'s own door bodies stand on, done from the car's side instead.
+func _stop_for_gates(delta: float) -> void:
+	for agent in _agents:
+		agent.gate_hold = INF
+	var car_length := Tuning.CAR_STRIKE_HALF_LENGTH * 2.0
+	for gate in _gates:
+		var nearest: CrowdAgent = null
+		var nearest_along := INF
+		var anybody_within_a_length := false
+		for agent in _agents:
+			if agent.kind != CrowdAgent.Kind.CAR:
+				continue
+			var offset: Vector2 = gate.position - agent.global_position
+			var along := offset.dot(agent.heading())
+			var across := (offset - agent.heading() * along).length()
+			if across > Tuning.GATE_LANE_TOLERANCE:
+				continue
+			if absf(along) <= car_length:
+				anybody_within_a_length = true
+			if along <= 0.0 or along > Tuning.CAR_JUNCTION_SIGHT:
+				continue
+			if along < nearest_along:
+				nearest_along = along
+				nearest = agent
+		if gate.raised:
+			# Stays up for a platoon rather than slamming shut between cars; lowers the moment the
+			# road either side of it is actually clear.
+			gate.raised = anybody_within_a_length
+			if not gate.raised:
+				gate.stopped_for = 0.0
+			continue
+		if not nearest or nearest_along >= Tuning.braking_distance(nearest.speed()) \
+				+ Tuning.CAR_STOP_LINE_SETBACK:
+			gate.stopped_for = 0.0
+			continue
+		nearest.gate_hold = maxf(0.0, nearest_along - Tuning.CAR_STOP_LINE_SETBACK)
+		if nearest.speed() < Tuning.CAR_STOPPED_SPEED:
+			gate.stopped_for += delta
+			if gate.stopped_for >= Tuning.GATE_STOP_SECONDS:
+				gate.raised = true
 
 ## Whether there is somewhere on the far side for this car to be.
 ##
@@ -353,7 +422,7 @@ func _physics_process(delta: float) -> void:
 	# Before the player check, because traffic has to queue whether or not anybody is watching:
 	# a car driving through another one at the far end of the street is still a car driving
 	# through another one, and a test rig has no player in it.
-	space_out_the_traffic()
+	space_out_the_traffic(delta)
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 		if not _player:

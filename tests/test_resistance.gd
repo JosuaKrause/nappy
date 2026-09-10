@@ -186,7 +186,7 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 
 func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("checkpoint"), Vector2.ZERO)
+	instance.setup(EventCatalogue.by_id("roadblock"), Vector2.ZERO)
 	t.add_child(instance)
 	instance.set_process(false)
 

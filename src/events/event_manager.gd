@@ -27,6 +27,12 @@ var _map: CityMap
 var _player: Node2D
 var _hard_failed := false
 
+## Which side of a redetaining instance's own crossing she was on when its conversation started —
+## `instance -> signf(...)`, the sign of her offset from the body against `facing_now()`. Present
+## only while that instance's own detention is running; `_release_from_door()` reads and clears it
+## the frame the conversation ends. See `EventDef.redetains`.
+var _door_entry_side: Dictionary = {}
+
 ## How close the player has to be for a planned event to exist. `INF` turns streaming off and
 ## puts the whole day in the world at once, which is what a test rig with no player wants —
 ## `tests/test_event_manager.gd` and `tests/test_full_run.gd` are about a day's whole event set
@@ -53,12 +59,45 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# rather than re-read from `_city` below, for the same reason — `SealPlanner` needs the same
 	# tree the catalogue's own placements were just stated against.
 	var tree := _city.route_tree() if _city else RouteTree.for_day(_map, day)
+	# Grown the same way `tree` was, so the two never answer for two different days — see
+	# `City._close_streets`. `_city.region_plan()` can itself be null on a live `_city` whose own
+	# `start_day` was never called for this day (a rig that drives `EventManager` directly, the
+	# same shape `tree` above already has to tolerate) — the explicit null check falls through to
+	# growing one, the same way `RegionPlanner.plan_day` grows its own tree when handed none.
+	var region_plan: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
+	if not region_plan:
+		region_plan = RegionPlanner.plan_day(_map, day, tree)
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
 			GameState.settled_this_act(), tree, GameState.resistance_progress)
 	# Off the catalogue's own budget on purpose — see `SealPlanner`'s own doc. It seals everything
 	# `EventScheduler` was not permitted to touch: every street off `tree`, hard or soft, plus the
-	# mouths of any through-alley that never reaches it.
-	_plans.append_array(SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals")))
+	# mouths of any through-alley that never reaches it — except today's region boundary, wall or
+	# door, and any crossing alley, both skipped here: the wall already carries its own hard seal
+	# below, and a door or a crossing alley's own door is meant to stay open for the structure the
+	# milestone's second half places there. Segment keys (`Vector3i`) and alley rect positions
+	# (`Vector2i`) share one `Dictionary` without colliding — see `SealPlanner.plan_day`'s own doc.
+	var boundary := {}
+	for segment in region_plan.walls:
+		boundary[segment.key()] = true
+	for segment in region_plan.doors:
+		boundary[segment.key()] = true
+	for rect in region_plan.alley_walls:
+		boundary[rect.position] = true
+	for rect in region_plan.alley_doors:
+		boundary[rect.position] = true
+	_plans.append_array(
+			SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals"), boundary))
+	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
+	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
+	# wants to know where the wall stands reads `region_plan.wall_bodies` directly rather than
+	# filtering it back out of the whole day's plan.
+	_plans.append_array(region_plan.wall_bodies)
+	# The door structure — a hut on each pavement and a gate over the road at a street door, a
+	# guard at each mouth of an alley door. Same reasoning as `wall_bodies` just above: kept as
+	# its own list on `region_plan` and appended here rather than merged into `SealPlanner`'s, so
+	# `region_plan.door_bodies` stays the one place that answers "where do today's doors stand"
+	# without filtering.
+	_plans.append_array(region_plan.door_bodies)
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
 	stream_around(focus)
 
@@ -69,6 +108,7 @@ func clear() -> void:
 	for plan in _plans:
 		plan.live = null
 	_plans.clear()
+	_door_entry_side.clear()
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
 ## of it. Idempotent, and cheap: one distance check per planned event.
@@ -92,6 +132,9 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# The scar is recorded the first time the event is put in the world and never again: walking
 	# back past a burnt-out shell must not re-report the fire that made it.
 	plan.live = _create(plan.def, plan.position, plan.path, not plan.was_live, plan.facing)
+	# The shared boom state, for a `checkpoint_gate` plan only — `null` on every other plan, which
+	# is a harmless no-op assignment rather than a special case here.
+	plan.live.gate_state = plan.gate_state
 	# **An event that has already run picks up where it left off.** Without this a streamed-out
 	# event is rebuilt from `plan.position`, which is the tile the *day* chose at dawn — so a dog
 	# walker that has covered three hundred pixels teleports back to the top of its street every
@@ -465,24 +508,78 @@ func _tell_them_where_she_is() -> void:
 ## meter. This is the one place that can actually do it: `EventInstance` only ever gets handed a
 ## point (`player_at`), never a `Stroller`, and `Stroller.detain()` needs the real thing. See
 ## `EventDef.detain_seconds`, `EventInstance.start_chat()`.
+##
+## **A `redetains` row is armed again once released**, in either direction — `checkpoint_hut` and
+## `checkpoint_post` are the two, and this is the whole of what makes a door a toll rather than a
+## one-time gate. `has_chatted()` is only the gate for everything else in the catalogue, since
+## `chatting_mother`'s own contract is one conversation for good; a redetaining instance is skipped
+## by `is_chatting()` alone, so the moment its own conversation ends and she has moved clear of
+## `detain_radius` (which `_release_finished_door_detentions()` always leaves her outside of), the
+## ordinary distance check below re-arms it exactly as if it had never fired.
 func _check_detentions() -> void:
 	var body := _player as Stroller
 	if not body:
 		return
+	_release_finished_door_detentions(body)
 	for instance in _instances:
 		if instance.def.detain_seconds <= 0.0 or instance.is_finished or instance.is_leaving:
 			continue
-		if instance.has_chatted() or instance.is_chatting():
+		if instance.is_chatting():
+			continue
+		if not instance.def.redetains and instance.has_chatted():
 			continue
 		if instance.global_position.distance_to(body.global_position) > instance.def.detain_radius:
 			continue
 		instance.start_chat()
+		if instance.def.redetains:
+			var axis := instance.facing_now()
+			var offset := body.global_position - instance.global_position
+			_door_entry_side[instance] = signf(offset.dot(axis))
 		body.detain(instance.def.detain_seconds)
 		Telemetry.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
 			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
 			instance.def.detain_seconds,
 			"awake" if instance.baby_awake else "asleep",
 			("+%.0f" % Tuning.CHAT_EXCITEMENT) if instance.baby_awake else "+0 (asleep)"])
+
+## The other half of `checkpoint_hut`/`checkpoint_post`'s own toll: the moment a redetaining
+## instance's conversation ends, teleport her to the mirror of where she stood, reflected through
+## the crossing's own cross-street line and pushed out clear of the body and of `detain_radius` —
+## see `Tuning.CHECKPOINT_RELEASE_MARGIN`. Run *before* the ordinary detention pass above in the
+## same frame, so a distance check that would otherwise fire again this frame sees where she has
+## just been put rather than where she was captured.
+##
+## **The teleport, not `move_and_slide()`.** She is standing inside the band that is about to seal
+## behind her — walking her out through the world would mean colliding with the very body that is
+## detaining her, which is the thing `Stroller.teleport_to()`'s own doc explains at length.
+func _release_finished_door_detentions(body: Stroller) -> void:
+	for instance in _instances:
+		if not instance.def.redetains or not _door_entry_side.has(instance):
+			continue
+		if instance.is_chatting():
+			continue
+		var entry_sign: float = _door_entry_side[instance]
+		_door_entry_side.erase(instance)
+		var axis := instance.facing_now()
+		var clearance := instance.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+				+ Tuning.CHECKPOINT_RELEASE_MARGIN
+		var offset := body.global_position - instance.global_position
+		var along := offset.dot(axis)
+		var released_along := -entry_sign * maxf(absf(along), clearance)
+		var across := offset - axis * along
+		var released_at := instance.global_position + axis * released_along + across
+		body.teleport_to(released_at)
+		Telemetry.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
+			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
+			instance.def.detain_seconds, _compass_of(axis, released_along)])
+
+## Which compass direction `along` (a signed distance down `axis`) points at — `axis` is always
+## `Vector2.RIGHT` (an east-west street) or `Vector2.DOWN` (north-south, since Y grows downward on
+## screen), the two values `RegionPlanner._along_axis` ever hands a door body's `Planned.facing`.
+static func _compass_of(axis: Vector2, along: float) -> String:
+	if absf(axis.x) > absf(axis.y):
+		return "east" if along > 0.0 else "west"
+	return "south" if along > 0.0 else "north"
 
 func _check_hard_fails() -> void:
 	if _hard_failed or not _find_player():

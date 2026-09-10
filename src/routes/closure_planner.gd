@@ -48,8 +48,13 @@ class CalmArea extends RefCounted:
 ## `tree` is the day's corridor, and every closure is placed **off** it. The caller passes the one
 ## it is going to plan the rest of the day against; when there is none to hand this grows the same
 ## one, because `RouteTree.for_day` is a pure function of the city's seed and the day number.
+##
+## `region_plan` is likewise the caller's own, or grown fresh the same way — `RegionPlanner.
+## plan_day` is a pure function of the map, the day and the tree. Its walls and doors are refused
+## as closure candidates: a closure on a region boundary would be two things standing in the same
+## spot, one placed by this pass and one by the region's own wall or door.
 static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
-		tree: RouteTree = null) -> Array[RoadClosure]:
+		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
 	var wanted := Tuning.closures_for_day(day)
 	if wanted <= 0:
@@ -63,11 +68,12 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 
 	var kinds := RoadClosure.kinds_on(day)
 	var corridor := tree if tree else RouteTree.for_day(map, day)
+	var regions := region_plan if region_plan else RegionPlanner.plan_day(map, day, corridor)
 	# Built once and asked many times: the grid is the day's tiles, which do not move while
 	# candidates are tried — only the barrier tiles a candidate would add do.
 	var grid := ReachabilityGrid.build(map)
 	var today_closed := {}
-	for segment in _shuffled_candidates(map, home, areas, corridor, rng):
+	for segment in _shuffled_candidates(map, home, areas, corridor, regions, rng):
 		if chosen.size() >= wanted:
 			break
 		today_closed[segment.key()] = true
@@ -274,8 +280,13 @@ static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
 ## closures across ten seeds changed the best route to the nearest calm area exactly once, because a
 ## Manhattan lattice with several calm areas almost always has another way round. The local version
 ## asked here needs no route search at all: it is a fact about which street an archway sits on.
+##
+## **A region's boundary is refused outright too, wall and door alike.** A closure on a wall segment
+## is two things in one place; a closure on a door would close a crossing the region plan is
+## supposed to keep open (or hold shut, on its own terms) regardless of what `ClosurePlanner` rolls.
 static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, areas: Array[CalmArea],
-		tree: RouteTree, rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
+		tree: RouteTree, region_plan: RegionPlanner.RegionPlan,
+		rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
 	var rim := {}
 	for key in tree.rim():
 		rim[key] = true
@@ -286,12 +297,17 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, area
 	for area in areas:
 		for segment in area.access:
 			access[segment.key()] = true
+	var boundary := {}
+	for segment in region_plan.walls:
+		boundary[segment.key()] = true
+	for segment in region_plan.doors:
+		boundary[segment.key()] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
 	for segment in StreetNetwork.segments():
 		var key := segment.key()
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key) \
-				or access.has(key):
+				or access.has(key) or boundary.has(key):
 			continue
 		pool.append(segment)
 		var weight := Tuning.CLOSURE_WALL_BIAS if rim.has(key) else 1.0

@@ -617,6 +617,54 @@ const SEAL_THINNING_FRACTION := 0.08
 ## word.
 const ALLEY_MOUTH_SEAL_CHANCE := 0.15
 
+# ------------------------------------------------------------------- regions ---
+# `RegionPlanner` partitions the lattice's junctions once at generation and turns that partition
+# plus a day's `RouteTree` into a wall with doors in it. See docs/CITY.md, "Regions and the wall".
+
+## How many regions the lattice's junctions are partitioned into. Four, the milestone's own
+## recommendation: two is a single dividing line and offers no real choice of which way round it;
+## eight or nine — one per calm area — puts most of the lattice's segments behind a wall and would
+## almost never let "a region with no calm area gets no doors" have anything to say, since nearly
+## every region would hold exactly one calm area and none would be empty.
+const REGION_COUNT := 4
+
+## The day the region wall starts standing. Before it the regions exist — the partition is a fact
+## about the city from generation on — but nothing is drawn: `RegionPlanner.plan_day` returns no
+## walls and no doors. Set to the existing `roadblock` row's own `first_day`, since the player's
+## words are "checkpoints in the later acts" and this is the day the milestone that introduced them
+## already uses.
+const REGION_WALL_FIRST_DAY := 7
+
+## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her — a beat longer than
+## `chatting_mother`'s 5s, since a toll should read as heavier than a chat even though both take
+## the controls the same way. See `EventDef.detain_seconds`.
+const CHECKPOINT_DETAIN_SECONDS := 6.0
+
+## How far clear of a door body's own solid edge the released side of a detention pushes her,
+## beyond `obstructs_radius + PLAYER_BODY_RADIUS` — the smallest amount that reliably lands her
+## outside `checkpoint_hut`/`checkpoint_post`'s own 48px `detain_radius` (32 + 14 + 8 = 54 > 48),
+## so the same approach cannot re-trigger the instant she is released. See
+## `EventManager._release_finished_door_detentions()`.
+const CHECKPOINT_RELEASE_MARGIN := 8.0
+
+## Seconds a car has to have been stopped, dead level with a closed checkpoint gate, before it
+## opens for it. *(2026-09-02, the player: "cars need to slow down to a full stop before the gate
+## opens and they can go ahead again.")* See `Crowd._stop_for_gates()`.
+const GATE_STOP_SECONDS := 1.2
+
+## Below this speed a car counts as actually stopped rather than still easing toward the line —
+## `Crowd._stop_for_gates()`'s own clock for `GATE_STOP_SECONDS` only runs while a car is this
+## slow, or a car that merely eased off on its approach would bank wait time it never spent
+## waiting.
+const CAR_STOPPED_SPEED := 5.0
+
+## How far to either side of a checkpoint gate's own line a car may sit and still count as *in its
+## lane*, so `Crowd._stop_for_gates()` can tell a car on the gate's own street from one on a
+## different, unrelated corridor. Half the carriageway (`STREET_WIDTH - 2*SIDEWALK_WIDTH` tiles,
+## 64px, so 32px each side of the centre line) plus a small margin for the two lanes either side of
+## it.
+const GATE_LANE_TOLERANCE := 40.0
+
 # --------------------------------------------------------------- the crowd ---
 # The crowd is why a street is loud and a park is quiet, and it is the base noise floor a day needs
 # so that standing in one place cannot work. It is emergent rather than a city-wide constant,

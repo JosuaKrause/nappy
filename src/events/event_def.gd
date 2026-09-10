@@ -50,7 +50,7 @@ enum Look {
 	# ---- acts II-IV ----
 	POLICE_CAR,   ## Low and pale where everything else in act II is a tall dark box.
 	POSTER_CREW,  ## The poster is the event; the man holding it is scenery.
-	CHECKPOINT,   ## Poured concrete and a hazard stripe. A street being *held*.
+	ROADBLOCK,    ## Poured concrete and a hazard stripe. A street being *held*.
 	UNMARKED_VAN, ## No windows, no livery, a door standing open. The one with a hole in it.
 	ROBBER,       ## Two postures — waiting in the hood, and coming.
 	RIOT_VAN,     ## The same dark box as the unmarked van, with mesh over every window.
@@ -67,6 +67,10 @@ enum Look {
 	MOVING_VAN, ## A lorry at the kerb with its ramp down.
 	BURNT_OUT_CAR, ## A car burnt to the shell, `BURNT_SHELL`'s charred palette at vehicle scale.
 	COLLAPSED_FRONTAGE, ## A frontage spilled into the street, brick and a fallen beam.
+	# ---- the region door's own structure (see RegionPlanner) ----
+	CHECKPOINT_HUT,  ## The guard's hut at a region door, doorway facing the carriageway.
+	CHECKPOINT_GATE, ## The boom over the roadway between a door's two huts.
+	CHECKPOINT_POST, ## A single guard where a through-alley crosses a region boundary.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
@@ -353,6 +357,14 @@ enum Pavement {
 ## centre) — under that, the far lane of a two-tile pavement is never inside it, whatever `paces`
 ## does, and distance stays the counterplay it is everywhere else in the catalogue.
 @export var detain_radius := 0.0
+
+## Whether an instance is armed again once she has been released and has moved outside
+## `detain_radius`, rather than spent for good after its first conversation like `chatting_mother`.
+## `false` is the default and is right for almost every detainer: a toll booth she can pass again
+## either way, which is the checkpoint's whole point, needs the opposite — *"it works in both
+## directions with the same cost each time"* — so `checkpoint_hut` and `checkpoint_post` are the
+## only two rows that set it. `EventManager._check_detentions()` is what reads it.
+@export var redetains := false
 
 ## Entering the inner radius ends the day immediately.
 @export var hard_fail := false

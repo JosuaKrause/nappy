@@ -83,7 +83,7 @@ Difficulty rises on three independent axes so later days feel different, not jus
 | --- | --- | --- |
 | Event density | sparse, cosmetic | dense, overlapping |
 | Event severity | small radius, short | huge radius, moving, persistent |
-| Map access | whole city walkable | checkpoints and barricades close routes |
+| Map access | whole city walkable | roadblocks and barricades close routes; region walls with checkpoint doors price the rest |
 
 ## Non-goals
 

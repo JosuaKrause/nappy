@@ -251,6 +251,28 @@ func is_detained() -> bool:
 func baby_is_awake() -> bool:
 	return _baby == null or _baby.state == GameEnums.BabyState.AWAKE
 
+## Puts her at `where` outright — the checkpoint's own teleport, released from a detention on the
+## far side of the band she was captured in. Nothing else in this game has ever moved the player;
+## everywhere else "where she is" is the honest sum of what she pressed and what the world did to
+## it, and a route that could be won by teleporting through a wall would make every closure a
+## suggestion.
+##
+## **Not `move_and_collide()` or `move_and_slide()`.** Both resolve a *displacement* against the
+## world she is already touching — the checkpoint's own body is exactly what she is inside of at
+## the moment of release, so either would immediately re-collide with the thing she is being moved
+## clear of, and a slide along it could walk her back toward the band rather than away from it.
+## Setting `global_position` outright is the one honest way to say *this frame, she is simply
+## there* — same as `reset_at()` puts her on the doorstep at the start of a day.
+##
+## Velocity and the shove are both zeroed, not merely left to run out: `_shove`'s own friction is
+## keyed to wherever the last contact pushed it, and a residual one now points at the pavement she
+## was just standing on — inside the band she is being released from — so letting it run out would
+## carry her straight back in. See `EventManager._release_from_door()`, the only caller.
+func teleport_to(where: Vector2) -> void:
+	global_position = where
+	velocity = Vector2.ZERO
+	_shove = Vector2.ZERO
+
 ## Knocks her off her line. Called by `Crowd` when she walks into somebody: the contact
 ## displaces them both, so a crowd is something she has to steer through rather than walk over.
 func shove(impulse: Vector2) -> void:

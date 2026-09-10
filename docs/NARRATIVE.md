@@ -105,7 +105,7 @@ entirely and still reach the good ending.
 | --- | --- | --- |
 | 4 / 5 | A note for a stranger | A chalk mark, then touch the right `homeless_yeller` — several are live at once and look alike, so a wrong one costs his field and tells you nothing. |
 | 6 / 7 | The package | A chalk mark, then touch the delivery van's drop. Picking it up makes the pram heavier for the rest of the day. |
-| 8 / 9 | The checkpoint | A chalk mark, then walk through the checkpoint itself rather than round it. |
+| 8 / 9 | The checkpoint | A chalk mark, then walk into the `roadblock`'s own band — the poured-concrete street closure, not a region door's hut — rather than round it. |
 | 10 / 11 | The wall | A chalk mark, then reach the poster crew's wall before they finish it — the window closes if the crew moves on first. |
 | 12 / 13 | The protest | A chalk mark, then reach the middle of the densest crowd in the city. |
 | 14 | The last night | The finale, offered only once the goal is met. Sabotage. |

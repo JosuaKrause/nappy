@@ -186,12 +186,13 @@ name the question it answers, or it is a metric and does not belong.
 
 | Kind | Written by | Answers |
 | --- | --- | --- |
-| `plan` | `main.gd` | What today is: what is shut, where the calm is, what is out |
+| `plan` | `main.gd`, `City`, `ClosurePlanner` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm |
 | `roll` | `EventScheduler`, `ResistanceDirector` | Which way a run-branching roll went, with the number and the threshold |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager` | Where the city stopped being recomputable |
 | `ahead` | `EventManager` | When the director put something across her line, and where she was — the only record of an event that has no place on the map |
 | `taken` | `EventInstance` | Whether an `abduction`'s own bystander scene ever actually finishes — the only record that the catalogue touched the crowd at all. Written by the instance itself rather than by `EventManager`: the scene needs nothing the instance does not already carry (`player_at`, its own age), and that is what lets a data-level rig assert it with no map or city behind it |
+| `checkpoint` | `EventManager` | A region door's toll paid — where she was held, how long, and which side she came out on. Written on release rather than on capture, since "released on the north side" is the fact a reader wants and the teleport is what makes it true |
 | `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial, and did an unseen pickup mark have to move to stay findable — where it was, and where it went |
 | `start` | observer | Where the day began |
 | `cross` | observer | Did the player have to cross the street, and at a zebra? |

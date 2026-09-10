@@ -525,6 +525,10 @@ func _start_day() -> void:
 	var start_at := _spawn_position() if _first_day else doorstep
 	_city.events.stream_around(start_at)
 	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), start_at)
+	# The smallest wiring for the checkpoint gates: `City.region_plan()` is already valid by here
+	# (`_city.start_day()` built it above), so the crowd just needs to be told where today's gates
+	# are — empty before `Tuning.REGION_WALL_FIRST_DAY`, which is a harmless no-op day for `Crowd`.
+	_city.crowd.set_gates(_city.region_plan().gates)
 	_city.set_act(GameState.current_act())
 	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
 			_day_length())

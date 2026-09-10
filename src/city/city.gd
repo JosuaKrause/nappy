@@ -86,6 +86,9 @@ var _props: Array[Node2D] = []
 ## closures as walls off it, the events by role, the telemetry picture that says whether any of
 ## it points anywhere — so it is grown once here rather than three times from the same seed.
 var _tree: RouteTree = null
+## Today's region wall and doors, grown from `_tree` — permanent partition, per-day split. See
+## `RegionPlanner.plan_day` and `region_plan()`.
+var _region_plan: RegionPlanner.RegionPlan = null
 ## Today's closed streets, and the barriers and wreckage that say so. Also rebuilt daily.
 var _closures: Array[RoadClosure] = []
 var _closure_nodes: Array[Node] = []
@@ -399,7 +402,13 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	_closure_nodes.clear()
 	# Before the closures, because they are placed off it. See `ClosurePlanner._shuffled_candidates`.
 	_tree = RouteTree.for_day(map, day)
-	_closures = ClosurePlanner.plan_day(map, day, rng, _tree)
+	# Before the closures too: a closure may not land on a region boundary (wall or door), which
+	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
+	_region_plan = RegionPlanner.plan_day(map, day, _tree)
+	Telemetry.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
+			% [_region_plan.walls.size() + _region_plan.doors.size(), _region_plan.walls.size(),
+			_region_plan.doors.size(), RegionPlanner.regions_with_calm(map)])
+	_closures = ClosurePlanner.plan_day(map, day, rng, _tree, _region_plan)
 	map.close_streets(_closures)
 	for closure in _closures:
 		_spawn_closure(closure)
@@ -410,6 +419,11 @@ func closures() -> Array[RoadClosure]:
 ## Today's corridor. Grown in `_close_streets`, so it is only meaningful after `start_day`.
 func route_tree() -> RouteTree:
 	return _tree
+
+## Today's region wall and doors. Grown in `_close_streets` from `_tree`, so it is only
+## meaningful after `start_day` — the same contract as `route_tree()`.
+func region_plan() -> RegionPlanner.RegionPlan:
+	return _region_plan
 
 func _spawn_closure(closure: RoadClosure) -> void:
 	for mouth in closure.mouth_centres(map):

@@ -307,15 +307,16 @@ longer what answers *can she get there today*.
 Two of the queue's milestones carry state worth knowing before picking them up; their place in the
 order is `TODO.md`'s.
 
-- **M65 — the protester points at the objective, revisited after M62.** Playtest 19's two-part gap — the first mark
+- **M65 — the protester points at the objective, revisited against the walled city.** Playtest 19's two-part gap — the first mark
    announced before it is found, and unfindable once it is — is built and unwalked: the status line
    is silent until the first mark has been touched, and a mark that has never been on screen
    follows her to the next alley she comes near, guard and all (the record is in `DECISIONS.md`
    under M78). What remains is playtest 20's item: a protester pointing toward the current
    objective, and made more common since a protester obstructs nothing. Its milestone lists
    the available directional SVG poses; objective binding and density remain open.
-- **M56 — the resistance is noticed.** Its remaining hunting rows are built alongside M62; its
-  measurement against the nerves waits until act III is reached.
+- **M56 — the resistance is noticed.** Its remaining hunting row is the night raid, drafted in
+  its entry for the player to take or turn down; its measurement against the nerves waits until
+  act III is reached.
 
 **The instrument to judge any of it with now exists and was used this session.** The dusk map draws
 the walk over the plan: where she went, which stretches she ran, and which events actually reached
@@ -339,11 +340,10 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## The queue, as prioritised on 2026-09-09
 
-**`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M62 is next
-— checkpoints that divide the map into regions, with M45 folded into it. Alongside it, each on its
-own branch: M56's remaining hunting rows. M61, the field as a Minkowski sum of body and kernel,
-follows M62; M65 is
-revisited after M62 rather than built as written. Behind those, unordered: M96 (the teaching day and
+**`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
+remaining hunting row is next, on its own branch. M61, the field as a Minkowski sum of body and
+kernel, follows; M65, the protester who points, is revisited against the walled city rather than
+built as written. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,
 consolidated). Reaching act III — which M56's measurement against the nerves needs — waits until
@@ -385,8 +385,8 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   `ClosurePlanner` refuses every access street of every calm area outright — a measured mean of 33.4
   of 264 streets a day. The intent is that a closure stops reading as broken; the risk nobody has
   looked at is the opposite one, that closures now cluster away from the places she actually walks and
-  stop being met at all. The trap M62 carries, in a new place: *a nudge that removes the decision
-  is worse than a closure that does nothing.*
+  stop being met at all. The same trap the region doors carry, in a new place: *a nudge that
+  removes the decision is worse than a closure that does nothing.*
 - **The whole of the heat is unfelt.** Every number in it was set by design and checked by a rig:
   nobody has walked a city at full resistance progress, and the item that would tell you whether it
   is fair — measuring it against the five nerves — is the one still queued. It makes the back half
