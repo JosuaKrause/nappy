@@ -1,0 +1,12 @@
+<!-- Second fire escape overlay with an offset landing and zig-zag descent. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="64" viewBox="0 0 48 64" shape-rendering="geometricPrecision" stroke="#3b3034" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Ground anchor is the canvas bottom centre. It overlays wall/window cells. -->
+  <path d="M7 18H38L43 22L12 25Z" fill="#586065" stroke-width="1"/>
+  <path d="M12 25L18 28L37 24L38 20" fill="#747b7b" stroke-width="1"/>
+  <path d="M14 24L20 58 M37 22L31 58" fill="none" stroke-width="2"/>
+  <path d="M17 32H35 M16 39H34 M15 46H33 M14 53H32" fill="none" stroke-width="1.5"/>
+  <path d="M10 20V9 M41 21V6" fill="none" stroke-width="2"/>
+  <path d="M9 9H42" fill="none" stroke-width="2"/>
+  <path d="M9 9L13 6 M42 6L39 3" fill="none" stroke-width="1.2"/>
+  <path d="M12 60H32" fill="none" stroke="#221f28" stroke-width="2"/>
+</svg>
