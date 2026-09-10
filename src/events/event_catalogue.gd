@@ -126,6 +126,17 @@ static func _build() -> Array[EventDef]:
 		_barricade(),
 		_protest(),
 		_firefight(),
+
+		# Seal pictures - off the day's route tree, never rolled by the ordinary scheduler. See
+		# SealPlanner and docs/DECISIONS.md, "Eight seal pictures".
+		_fallen_tree(),
+		_car_accident(),
+		_skip(),
+		_scaffolding(),
+		_burst_water_main(),
+		_moving_van(),
+		_burnt_out_car(),
+		_collapsed_frontage(),
 	]
 
 ## The reason parks are not a free win. Permanent, wide, and sitting in the middle of the
@@ -1316,4 +1327,175 @@ static func _firefight() -> EventDef:
 	def.obstructs_radius = 30.0
 	def.hard_fail = true
 	def.cost = 5
+	return def
+
+# --------------------------------------------------------------- seal pictures ---
+# Every row below exists only as `SealPlanner` candidate material — `docs/DECISIONS.md`, "Eight
+# seal pictures, so that no single barrier becomes the city's signature." Each is `SCRIPTED` with
+# `scripted_day = 0`, a day nobody plays, so `EventDef.available_on()` never rolls one and the
+# ordinary scheduler never sites one — the same shape `barricade` already uses to keep off the
+# day's own budget. `SealPlanner._effective_first_day` reads `act_tag` instead, so `act_tag` here
+# is what actually gates the day a seal may use the row, not `first_day`.
+#
+# **Silent, like every other seal candidate.** *"static blockages in general shouldn't increase
+# excitement"* — each carries `intensity = 0.0`. Radii still have to satisfy `EventDef.validate()`
+# even at zero intensity, so every row below copies `barricade`'s own geometry (inner 40, outer
+# 120, telegraph 0.9) rather than inventing a new one nothing reads.
+
+## A hard seal: a tree down kerb to kerb, root plate at one end and crown at the other — one of
+## the player's own two examples for act I. `obstructs_radius` 96 is exactly half the 192px street,
+## so `SealPlanner._hard_positions` places a single copy spanning it edge to edge, and
+## `fallen_tree.svg` is authored wider than that so `_draw_spread` draws that one copy rather than
+## repeating a tree several times across the street.
+static func _fallen_tree() -> EventDef:
+	var def := EventDef.new()
+	def.id = "fallen_tree"
+	def.display_name = "Fallen tree"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.FALLEN_TREE
+	def.act_tag = 1
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.obstructs_radius = 96.0
+	return def
+
+## A hard seal: two cars locked together across the carriageway, debris between them and an
+## onlooker on each pavement — the player's other own example. Same single-copy geometry as
+## `fallen_tree`, for the same reason: one continuous scene rather than a repeated segment.
+static func _car_accident() -> EventDef:
+	var def := EventDef.new()
+	def.id = "car_accident"
+	def.display_name = "Car accident"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.CAR_ACCIDENT
+	def.act_tag = 1
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.obstructs_radius = 96.0
+	return def
+
+## Half of a soft seal: a skip at the kerb, facing `scaffolding` on the other pavement. Kerb-pinned
+## like `delivery_van`, so `EventInstance._centred_on_the_pavement_band` leaves it exactly where
+## `SealPlanner._place_soft` puts it rather than spreading it across the whole band.
+static func _skip() -> EventDef:
+	var def := EventDef.new()
+	def.id = "skip"
+	def.display_name = "Skip"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.SKIP
+	def.act_tag = 1
+	def.pavement_side = EventDef.Pavement.AT_THE_KERB
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.obstructs_radius = VEHICLE_BODY
+	return def
+
+## The other half of the same soft seal: boards over the far footway. `pavement_side` stays `ANY`
+## so the auto-centring `construction` uses fills the whole 64px band, the same "boards over the
+## far footway" reading the picture gives it.
+static func _scaffolding() -> EventDef:
+	var def := EventDef.new()
+	def.id = "scaffolding"
+	def.display_name = "Scaffolding"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.SCAFFOLDING
+	def.act_tag = 1
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.obstructs_radius = SIDEWALK_SPREAD_MAX
+	return def
+
+## A hard seal: a crater with water across the asphalt and a municipal barrier at each kerb — "the
+## one that explains why the road is out too" (`docs/DECISIONS.md`, "Eight seal pictures").
+## Single-copy geometry, same as
+## `fallen_tree` and `car_accident`.
+static func _burst_water_main() -> EventDef:
+	var def := EventDef.new()
+	def.id = "burst_water_main"
+	def.display_name = "Burst water main"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.BURST_MAIN
+	def.act_tag = 1
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.obstructs_radius = 96.0
+	return def
+
+## A soft seal, both bodies the same row: a moving van with its ramp down on each pavement —
+## "reuses `Look.LORRY`, the biggest silhouette in act I" (`docs/DECISIONS.md`, "Eight seal
+## pictures"), read as the same
+## lorry-scale silhouette family rather than the literal `Look.LORRY` enum value, since two rows
+## may not share a look or a silhouette (`docs/EVENTS.md`, "the visual vocabulary";
+## `tests/test_events.gd`'s `_test_no_two_rows_draw_the_same_picture` and
+## `_test_every_look_carries_its_own_silhouette`). `moving_van.svg` is drawn at the same scale as
+## `lorry.svg` with its own picture — open doors and a ramp reaching the ground.
+static func _moving_van() -> EventDef:
+	var def := EventDef.new()
+	def.id = "moving_van"
+	def.display_name = "Moving van"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.MOVING_VAN
+	def.act_tag = 1
+	def.pavement_side = EventDef.Pavement.AT_THE_KERB
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.obstructs_radius = 28.0
+	return def
+
+## A hard seal, acts II-IV: a car burnt to the shell, `BURNT_SHELL`'s charred palette moved onto a
+## vehicle body. Vehicle-scale `obstructs_radius`, so `SealPlanner._hard_positions` spaces four
+## across a street's 192px the way it spaces two `barricade` copies — a pile-up rather than one
+## wide scene, which is the reading `EventCatalogue._burnt_shell`'s own palette suggested without
+## suggesting a single-scene width the way `fallen_tree` and `car_accident` have one.
+static func _burnt_out_car() -> EventDef:
+	var def := EventDef.new()
+	def.id = "burnt_out_car"
+	def.display_name = "Burnt-out car"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.BURNT_OUT_CAR
+	def.act_tag = 2
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.obstructs_radius = 24.0
+	return def
+
+## A hard seal, acts II-IV: rubble spilled frontage to frontage. Single-copy geometry like
+## `fallen_tree`, but drawn with `_draw_spread`'s ordinary repeated-segment behaviour rather than
+## one stretched picture — `collapsed_frontage.svg` is a small debris segment, styled beside
+## `rubble.svg` (`_burnt_shell`'s own picture) rather than sharing it, since a row may not draw
+## another row's picture.
+static func _collapsed_frontage() -> EventDef:
+	var def := EventDef.new()
+	def.id = "collapsed_frontage"
+	def.display_name = "Collapsed frontage"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.COLLAPSED_FRONTAGE
+	def.act_tag = 2
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.obstructs_radius = 96.0
 	return def

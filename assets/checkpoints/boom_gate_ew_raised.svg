@@ -1,0 +1,16 @@
+<!-- Raised boom beside an east-west roadway. The arm lifts toward screen-up from the south post,
+     stopping well short of the fixed north receiving socket instead of turning in the road plane.
+     viewBox 0 0 42 92; ground anchor=(21,88); pivot=(21,82). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="42" height="92" viewBox="0 0 42 92" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M15 84 L30 84 L35 90 L18 90 Z" fill="#221f28" stroke="none" opacity="0.38"/>
+  <rect x="10" y="1" width="17" height="11" rx="1" fill="#5f6b47"/>
+  <path d="M12 2 L25 2 L25 6 L12 6 Z" fill="#858a70"/>
+  <path d="M8 12 L29 12 L31 15 L7 15 Z" fill="#3a4035"/>
+  <path d="M18 82 L15 39 L20 37 L24 82 Z" fill="#e0d8c4"/>
+  <path d="M16.8 66 L16 54 L21.5 58 L22.5 70 Z M15.2 44 L15 39 L20 37 L20.7 47 Z" fill="#c4503c" stroke="none"/>
+  <path d="M15 39 L20 37 L20.5 42 L15.4 44 Z" fill="#c9a86a"/>
+  <rect x="12" y="76" width="18" height="12" rx="1" fill="#5f6b47"/>
+  <path d="M14 78 L18 78 L18 86 L14 86 Z" fill="#858a70"/>
+  <circle cx="21" cy="82" r="3" fill="#c9a86a"/>
+  <path d="M9 88 L33 88 L35 92 L7 92 Z" fill="#3a4035"/>
+</svg>

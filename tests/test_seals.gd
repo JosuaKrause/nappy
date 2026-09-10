@@ -2,7 +2,7 @@ extends RefCounted
 ## `SealPlanner`: every street off the day's tree carries a seal, the tree, the doorstep and the
 ## main road never do, and sealing never breaks the day's own winnability.
 ##
-## `docs/TODO.md`, M64, "Place a seal off the tree, on every segment" is the design;
+## `docs/DECISIONS.md`, "Place a seal off the tree, on every segment" is the design;
 ## `src/routes/seal_planner.gd` is the implementation. The winnability check here is a hard
 ## assertion rather than a measurement on purpose — `SealPlanner`'s own class doc explains why: a
 ## seal never stands on tree ground or the doorstep, so nothing it does can cut the one route the
@@ -35,6 +35,8 @@ func run(t) -> void:
 	_test_day_one_has_a_working_soft_pair(t)
 	_test_thinning_leaves_a_walkable_line(t)
 	_test_the_doorstep_still_reaches_the_corridor_after_thinning(t)
+	_test_hard_seals_cover_the_street_edge_to_edge(t)
+	_test_whole_scene_hard_seals_place_a_single_body(t)
 
 # ------------------------------------------------------------------------ setup ---
 
@@ -418,3 +420,71 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t) -> void:
 		t.check(joined,
 				"seed %d day %d: the doorstep still reaches the corridor once seals are thinned"
 				% [map.seed_used, day])
+
+# ----------------------------------------------------------------- hard coverage ---
+
+## The first real street the map offers, for the two checks below — the geometry they check does
+## not depend on which street it is, only that it is one `map.has_street` actually carries.
+func _first_real_segment(map: CityMap) -> StreetNetwork.Segment:
+	for segment in StreetNetwork.segments():
+		if map.has_street(segment.key()):
+			return segment
+	return null
+
+## `SealPlanner._hard_positions`'s own contract: a hard seal's bodies span the street's whole
+## 192px width with no gap between them, whatever the row's own `obstructs_radius` is — see
+## `seal_planner.gd`'s class doc, "no gap between them." Checked directly for every `HARD`
+## candidate, including all four dedicated hard-seal pictures, rather than trusted from the
+## arithmetic alone.
+func _test_hard_seals_cover_the_street_edge_to_edge(t) -> void:
+	var map := _maps[0]
+	var segment := _first_real_segment(map)
+	t.check(segment != null, "the map has at least one real street to check hard seals against")
+	if not segment:
+		return
+	var width := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
+	var world := map.tile_rect_to_world(segment.tile_rect())
+	var checked := 0
+	for candidate in SealPlanner.candidates():
+		if candidate.strength != SealPlanner.Strength.HARD:
+			continue
+		var def := EventCatalogue.by_id(candidate.def_ids[0])
+		if not def:
+			continue
+		checked += 1
+		var positions := SealPlanner._hard_positions(map, segment, def)
+		t.check(positions.size() > 0, "hard seal %s places at least one body" % candidate.id)
+		var along: Array[float] = []
+		for pos in positions:
+			along.append(pos.y - world.position.y if segment.horizontal else pos.x - world.position.x)
+		along.sort()
+		var radius := def.obstructs_radius
+		t.check(along[0] - radius <= 0.0,
+				"hard seal %s's first body reaches the near kerb (%.1f - %.1f <= 0)"
+				% [candidate.id, along[0], radius])
+		t.check(along[-1] + radius >= width,
+				"hard seal %s's last body reaches the far kerb (%.1f + %.1f >= %.0f)"
+				% [candidate.id, along[-1], radius, width])
+		for i in range(along.size() - 1):
+			t.check(along[i] + radius >= along[i + 1] - radius,
+					"hard seal %s's bodies %d and %d touch with no gap" % [candidate.id, i, i + 1])
+	t.check(checked >= 5, "and every hard candidate was checked, M64's four included (%d)" % checked)
+
+## `fallen_tree`, `car_accident`, `burst_water_main` and `collapsed_frontage` are authored at
+## `obstructs_radius` 96 — exactly half the 192px street — so `_hard_positions` places exactly one
+## body spanning it edge to edge, rather than repeating the scene several times across the street.
+## See each row's own class doc in `event_catalogue.gd`.
+func _test_whole_scene_hard_seals_place_a_single_body(t) -> void:
+	var map := _maps[0]
+	var segment := _first_real_segment(map)
+	if not segment:
+		return
+	for id in ["fallen_tree", "car_accident", "burst_water_main", "collapsed_frontage"]:
+		var def := EventCatalogue.by_id(id)
+		t.check(def != null, "'%s' is a real catalogue row" % id)
+		if not def:
+			continue
+		var positions := SealPlanner._hard_positions(map, segment, def)
+		t.check(positions.size() == 1,
+				"'%s' is one continuous scene, so it places exactly one body (got %d)"
+				% [id, positions.size()])

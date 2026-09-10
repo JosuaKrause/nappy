@@ -58,6 +58,15 @@ enum Look {
 	BARRICADE,    ## Whatever was on the street, stacked by somebody.
 	PROTEST,      ## A rank of placards, as wide as the ground it takes.
 	FIREFIGHT,    ## People behind cover, not a building on fire.
+	# ---- seal pictures (off the day's route tree; see SealPlanner) ----
+	FALLEN_TREE,  ## A trunk down kerb to kerb, roots at one end and crown at the other.
+	CAR_ACCIDENT, ## Two cars locked together, glass and an onlooker on each pavement.
+	SKIP,         ## A skip at the kerb. Half of a soft seal.
+	SCAFFOLDING,  ## Poles and boards closing the footway. The other half of a soft seal.
+	BURST_MAIN,   ## A crater, water across the asphalt, a barrier at each kerb.
+	MOVING_VAN, ## A lorry at the kerb with its ramp down.
+	BURNT_OUT_CAR, ## A car burnt to the shell, `BURNT_SHELL`'s charred palette at vehicle scale.
+	COLLAPSED_FRONTAGE, ## A frontage spilled into the street, brick and a fallen beam.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.

@@ -1,0 +1,15 @@
+<!-- Lowered boom across an east-west roadway; the arm spans north-south on the road surface.
+     Its widening top face, ground shadow and far socket distinguish it from the raised state.
+     viewBox 0 0 42 92; ground anchor=(21,88); pivot=(21,82). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="42" height="92" viewBox="0 0 42 92" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M20 5 L27 10 L29 83 L24 89 L23 14 Z" fill="#221f28" stroke="none" opacity="0.35"/>
+  <path d="M15 7 L21 7 L24 83 L17 83 Z" fill="#e0d8c4"/>
+  <path d="M15.5 13 L21.2 9 L21.7 20 L16 24 Z M16.5 37 L22.2 33 L22.7 44 L17 48 Z M17.5 61 L23.2 57 L23.7 68 L18 72 Z" fill="#c4503c" stroke="none"/>
+  <rect x="10" y="1" width="17" height="11" rx="1" fill="#5f6b47"/>
+  <path d="M12 2 L25 2 L25 6 L12 6 Z" fill="#858a70"/>
+  <path d="M8 12 L29 12 L31 15 L7 15 Z" fill="#3a4035"/>
+  <rect x="12" y="76" width="18" height="12" rx="1" fill="#5f6b47"/>
+  <path d="M14 78 L18 78 L18 86 L14 86 Z" fill="#858a70"/>
+  <circle cx="21" cy="82" r="3" fill="#c9a86a"/>
+  <path d="M9 88 L33 88 L35 92 L7 92 Z" fill="#3a4035"/>
+</svg>

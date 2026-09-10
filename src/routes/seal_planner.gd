@@ -2,7 +2,7 @@ class_name SealPlanner
 extends RefCounted
 ## Seals every street off the day's route tree — the placement M64 exists for.
 ##
-## The design is `docs/TODO.md`, M64, "Nothing off the path". The corridor
+## The design is `docs/DECISIONS.md`, "Nothing off the path". The corridor
 ## (`RouteTree.for_day`) is the day's only free way through; everything else in the lattice is
 ## closed, not merely dearer. This is where "closed" becomes an actual placement rather than a
 ## sentence.
@@ -23,15 +23,17 @@ extends RefCounted
 ## be that updating the list of candidates is enough and no other code changes need to happen to go
 ## to 8 seal pictures".)* A `Candidate` names what to place, whether it seals hard or soft, and
 ## nothing about *where* — `plan_day` works out every site from the street lattice and the day's
-## tree, the same way for any def a candidate names. Adding the eight drawn seals of the next
-## milestone is adding eight entries to `_build_candidates()`; nothing below reads a def's `id`.
+## tree, the same way for any def a candidate names.
 ##
-## **Today's list is the catalogue's own furniture**, named in the TODO entry this class builds:
-## `barricade` for hard (its own docstring already calls it "placed as a seal rather than rolled
-## as an event"), and `construction`, `cafe_tables`, `market_stall` and `delivery_van` for soft.
-## `homeless_yeller` is in the milestone's own list of "available from day 1" rows and is left out
-## here on purpose — it carries no `obstructs_radius`, so it obstructs nothing and a pavement with
-## only that on it is not sealed, soft or otherwise.
+## **The list carries eight distinct seal pictures** (`docs/DECISIONS.md`, "Eight seal pictures"),
+## so no single barrier is the city's signature. `barricade_seal` uses the catalogue's own
+## furniture; `construction_pair`, `cafe_pair`, `market_pair` and `delivery_pair` provide the
+## supporting soft-furniture variants. `fallen_tree_seal`, `car_accident_seal`,
+## `skip_scaffolding_pair`, `burst_main_seal`, `moving_van_pair`, `burnt_out_car_seal` and
+## `collapsed_frontage_seal` are dedicated seal drawings, each backed by its own `SCRIPTED`,
+## `scripted_day = 0`, `intensity = 0.0` row in `EventCatalogue` — see the class doc there, "seal
+## pictures". `homeless_yeller` is excluded because it carries no `obstructs_radius`, so it
+## obstructs nothing and a pavement with only that on it is not sealed, soft or otherwise.
 ##
 ## **A sealed street's def is never the catalogue's own row.** `_sealed_variant` duplicates it and
 ## strips `scar_id`: the catalogue's `barricade` leaves a permanent scar and moves a block's arc
@@ -102,6 +104,11 @@ static func candidates() -> Array[Candidate]:
 	return _candidates
 
 ## The only place a new picture is added. See the class doc.
+##
+## **Eight seal pictures** (`docs/DECISIONS.md`, "Eight seal pictures"): reusable catalogue
+## furniture and dedicated seal drawings share this one candidate list. The placement stays
+## generic because adding or replacing a picture changes only an entry here. `barricade_seal`
+## supplies the named stacked-barricade picture without a duplicate candidate.
 static func _build_candidates() -> Array[Candidate]:
 	return [
 		_candidate("barricade_seal", Strength.HARD, ["barricade"]),
@@ -109,6 +116,13 @@ static func _build_candidates() -> Array[Candidate]:
 		_candidate("cafe_pair", Strength.SOFT, ["cafe_tables", "cafe_tables"]),
 		_candidate("market_pair", Strength.SOFT, ["market_stall", "market_stall"]),
 		_candidate("delivery_pair", Strength.SOFT, ["delivery_van", "delivery_van"]),
+		_candidate("fallen_tree_seal", Strength.HARD, ["fallen_tree"]),
+		_candidate("car_accident_seal", Strength.HARD, ["car_accident"]),
+		_candidate("skip_scaffolding_pair", Strength.SOFT, ["skip", "scaffolding"]),
+		_candidate("burst_main_seal", Strength.HARD, ["burst_water_main"]),
+		_candidate("moving_van_pair", Strength.SOFT, ["moving_van", "moving_van"]),
+		_candidate("burnt_out_car_seal", Strength.HARD, ["burnt_out_car"]),
+		_candidate("collapsed_frontage_seal", Strength.HARD, ["collapsed_frontage"]),
 	]
 
 static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Candidate:

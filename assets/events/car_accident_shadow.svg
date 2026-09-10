@@ -1,0 +1,7 @@
+<!-- Ground contact only for the north-south crash scene: two onlookers and two cars. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision">
+  <ellipse cx="18" cy="48" rx="7" ry="2" fill="#000000"/>
+  <ellipse cx="77" cy="42" rx="12" ry="3" fill="#000000"/>
+  <ellipse cx="106" cy="42" rx="12" ry="3" fill="#000000"/>
+  <ellipse cx="182" cy="48" rx="7" ry="2" fill="#000000"/>
+</svg>

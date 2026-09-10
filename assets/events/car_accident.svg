@@ -1,0 +1,37 @@
+<!-- A north-south street seen across its width: two cars seen end-on, locked side by side,
+     with one upright onlooker on each pavement. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(9 6)">
+    <rect x="5" y="29" width="4" height="13" fill="#46506b"/><rect x="10" y="29" width="4" height="13" fill="#46506b"/>
+    <rect x="4" y="40" width="5" height="2" fill="#221f28"/><rect x="10" y="40" width="5" height="2" fill="#221f28"/>
+    <rect x="2" y="12" width="14" height="18" fill="#6b7a8c"/><rect x="2" y="24" width="14" height="6" fill="#5c697a"/>
+    <circle cx="9" cy="7" r="6" fill="#d9a878"/><path d="M3 7 A6 6 0 0 1 15 7 Z" fill="#3a2b26"/>
+  </g>
+  <g transform="translate(62 2) rotate(-3 15 23)">
+    <path d="M7 4 Q15 1 23 4 L27 10 L27 36 Q16 43 4 37 L3 11 Z" fill="#7d8a9a"/>
+    <path d="M7 5 Q15 2 23 5 L26 11 L4 12 Z" fill="#8fa0b0"/>
+    <path d="M7 14 Q15 11 23 14 L23 26 Q15 29 7 26 Z" fill="#2f3742"/>
+    <path d="M9 15 Q15 13 21 15 L21 24 Q15 26 9 24 Z" fill="#556779"/>
+    <path d="M4 34 Q15 39 27 34 L26 39 Q16 45 5 39 Z" fill="#677482"/>
+    <rect x="1" y="14" width="3" height="7" fill="#221f28"/><rect x="26" y="14" width="3" height="7" fill="#221f28"/>
+    <rect x="1" y="30" width="3" height="7" fill="#221f28"/><rect x="26" y="30" width="3" height="7" fill="#221f28"/>
+    <path d="M6 36 L11 37 L9 41 L4 39 M21 36 L27 34 L28 38 L23 41" fill="#4e5967"/>
+  </g>
+  <g transform="translate(91 2) rotate(4 15 23)">
+    <path d="M7 5 Q15 1 23 5 L27 11 L27 37 Q15 42 3 37 L3 11 Z" fill="#a8503f"/>
+    <path d="M7 5 Q15 2 23 5 L26 12 L4 12 Z" fill="#bf6a58"/>
+    <path d="M7 15 Q15 12 23 15 L23 27 Q15 30 7 27 Z" fill="#2f3742"/>
+    <path d="M9 16 Q15 14 21 16 L21 25 Q15 27 9 25 Z" fill="#556779"/>
+    <path d="M3 34 L9 36 L13 34 L19 38 L27 34 L27 39 Q15 44 3 39 Z" fill="#8d4035"/>
+    <rect x="1" y="14" width="3" height="7" fill="#221f28"/><rect x="26" y="14" width="3" height="7" fill="#221f28"/>
+    <rect x="1" y="30" width="3" height="7" fill="#221f28"/><rect x="26" y="30" width="3" height="7" fill="#221f28"/>
+  </g>
+  <path d="M91 34 l4 -4 l3 4 l5 -2 l3 5 l5 -3" fill="none" stroke="#cfd6da" stroke-width="1.2"/>
+  <path d="M88 40 l-4 4 M97 41 l2 5 M105 41 l4 4" stroke="#a8c1c6" stroke-width="1.2"/>
+  <g transform="translate(173 6)">
+    <rect x="5" y="29" width="4" height="13" fill="#46506b"/><rect x="10" y="29" width="4" height="13" fill="#46506b"/>
+    <rect x="4" y="40" width="5" height="2" fill="#221f28"/><rect x="10" y="40" width="5" height="2" fill="#221f28"/>
+    <rect x="2" y="12" width="14" height="18" fill="#6b7a8c"/><rect x="2" y="24" width="14" height="6" fill="#5c697a"/>
+    <circle cx="9" cy="7" r="6" fill="#d9a878"/><path d="M3 7 A6 6 0 0 1 15 7 Z" fill="#3a2b26"/>
+  </g>
+</svg>

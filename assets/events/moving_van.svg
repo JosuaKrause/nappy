@@ -1,0 +1,19 @@
+<!-- A moving van at the kerb, cab left and open loading bay and ramp right. Cargo sits inside
+     the dark bay instead of reading as windows pasted onto the side. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="46" viewBox="0 0 62 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M2 17 Q4 13 9 12 L17 13 L20 20 L20 34 L2 34 Z" fill="#c9b458"/>
+  <path d="M5 16 Q10 13 16 15 L17 22 L5 22 Z" fill="#2f3742"/>
+  <path d="M6 17 Q10 15 15 16 L15 20 L6 20 Z" fill="#73808a"/>
+  <path d="M2 29 L20 29 L20 34 L2 34 Z" fill="#6f673f"/>
+  <path d="M18 7 Q30 4 49 7 L49 33 Q32 36 18 33 Z" fill="#9aa08a"/>
+  <path d="M19 7 Q32 4 49 7 L49 11 L19 11 Z" fill="#b3b89e"/>
+  <path d="M21 12 Q30 10 36 12 L36 31 Q28 33 21 30 Z" fill="#7f8672"/>
+  <path d="M36 11 L49 11 L49 33 L36 31 Z" fill="#25252a"/>
+  <path d="M38 22 L47 22 L47 31 L38 30 Z" fill="#6f6254"/>
+  <path d="M39 23 L46 23 L46 26 L39 26 Z" fill="#c9b98a"/>
+  <path d="M36 11 L33 9 L33 31 L36 31 Z M49 10 L53 8 L53 31 L49 33 Z" fill="#6f7565"/>
+  <path d="M49 32 L61 44 L53 44 L43 34 Z" fill="#777468"/>
+  <path d="M49 32 L61 44 M47 34 L57 44" fill="none" stroke="#c9c0a8" stroke-width="1"/>
+  <circle cx="11" cy="37" r="6" fill="#221f28"/><circle cx="29" cy="37" r="6" fill="#221f28"/><circle cx="44" cy="37" r="6" fill="#221f28"/>
+  <circle cx="11" cy="37" r="2" fill="#58524d"/><circle cx="29" cy="37" r="2" fill="#58524d"/><circle cx="44" cy="37" r="2" fill="#58524d"/>
+</svg>

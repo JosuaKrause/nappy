@@ -28,6 +28,7 @@ it is not.
 | [docs/MECHANICS.md](docs/MECHANICS.md) | Meters, movement, tuning constants |
 | [docs/CITY.md](docs/CITY.md) | City generation, tile types, calm zones |
 | [docs/EVENTS.md](docs/EVENTS.md) | Event catalogue, telegraphing, scheduling |
+| [docs/GRAPHICS.md](docs/GRAPHICS.md) | Graphics assets, current runtime uses and prepared milestone parts |
 | [docs/NARRATIVE.md](docs/NARRATIVE.md) | Act structure, side content, endings — **spoilers** |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Code layout, autoloads, signals |
 | [docs/TELEMETRY.md](docs/TELEMETRY.md) | What a run writes down, and how to read it |

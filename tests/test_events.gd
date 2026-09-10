@@ -9,8 +9,10 @@ func run(t) -> void:
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
+	_test_stationary_vehicles_face_their_street(t)
 	_test_a_spread_never_lands_on_a_corner(t)
 	_test_a_spread_cap_matches_what_it_obstructs(t)
+	_test_a_wide_scene_faces_its_street(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
@@ -101,6 +103,8 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.CHECKPOINT,
 	EventDef.Look.BARRICADE, EventDef.Look.BURNT_SHELL, EventDef.Look.CAFE,
 	EventDef.Look.PROTEST, EventDef.Look.FIREFIGHT,
+	EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN,
+	EventDef.Look.SCAFFOLDING, EventDef.Look.COLLAPSED_FRONTAGE,
 ]
 
 ## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
@@ -132,6 +136,13 @@ const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TI
 ## them and a future regression on either row's `obstructs_radius` would pass silently. Checked by
 ## hand instead: both actually land on `ROAD` (their spawning row's own placement), and 36px /
 ## 62px both sit inside `_CARRIAGEWAY_SPREAD_CLEARANCE`.
+##
+## **The same blind spot covers every seal-only row** (`fallen_tree`, `car_accident`,
+## `skip`, `scaffolding`, `burst_water_main`, `moving_van`, `burnt_out_car`,
+## `collapsed_frontage`) — none carries a `def.placement` either, since `SealPlanner` sites them
+## directly from the street lattice rather than through `EventScheduler`'s tile pool. Their
+## clearance is checked in `tests/test_seals.gd` instead, against the street's own 192px width
+## rather than a single tile's, which is the ground they actually stand on.
 func _test_a_spread_body_fits_the_ground_it_stands_on(t) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
@@ -243,9 +254,51 @@ func _test_a_spread_rotates_with_the_street(t) -> void:
 	t.check(not EventInstance._spread_is_vertical(null, Vector2.ZERO),
 			"a data-level rig with no map at all gets the unrotated default")
 
+## Stationary seal vehicles use the street axis even though their default facing is right. The van
+## faces along it and the burnt car lies across it. Side art fits the circular body's diameter,
+## while end art keeps the narrower projection instead of stretching into a square.
+func _test_stationary_vehicles_face_their_street(t) -> void:
+	var map := CityMap.new()
+	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
+	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
+	t.check(not EventInstance._stationary_vehicle_uses_side(EventDef.Look.MOVING_VAN,
+			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
+			"a moving van on a north-south street uses its end view")
+	t.check(EventInstance._stationary_vehicle_uses_side(EventDef.Look.MOVING_VAN,
+			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
+			"a moving van on an east-west street uses its side view")
+	t.check(EventInstance._stationary_vehicle_uses_side(EventDef.Look.BURNT_OUT_CAR,
+			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
+			"a burnt car across a north-south street uses its side view")
+	t.check(not EventInstance._stationary_vehicle_uses_side(EventDef.Look.BURNT_OUT_CAR,
+			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
+			"a burnt car across an east-west street uses its end view")
+	t.check(EventInstance._stationary_vehicle_uses_side(
+			EventDef.Look.MOVING_VAN, null, Vector2.ZERO, Vector2.RIGHT),
+			"off-street or data-level placement follows the vehicle's own default facing")
+
+	var vehicle_looks: Array[EventDef.Look] = [
+		EventDef.Look.MOVING_VAN,
+		EventDef.Look.BURNT_OUT_CAR,
+	]
+	for look in vehicle_looks:
+		var id := "moving_van" if look == EventDef.Look.MOVING_VAN else "burnt_out_car"
+		var def := EventCatalogue.by_id(id)
+		var side := EventInstance._stationary_vehicle_texture(look, true)
+		var end := EventInstance._stationary_vehicle_texture(look, false)
+		var side_extent := EventInstance._stationary_vehicle_extent(
+				side, true, def.obstructs_radius * 2.0)
+		var end_extent := EventInstance._stationary_vehicle_extent(
+				end, false, def.obstructs_radius * 2.0)
+		t.check(side != end, "'%s' has distinct side and end artwork" % def.id)
+		t.check(is_equal_approx(side_extent.x, def.obstructs_radius * 2.0),
+				"'%s' side view fits the diameter of its solid body" % def.id)
+		t.check(end_extent.is_equal_approx(end.get_size()) and end_extent.x < side_extent.x,
+				"'%s' end view keeps its narrower authored projection" % def.id)
+
 ## **A spread never lands on a corner.** `EventScheduler._is_a_corner` refuses any tile whose two
 ## coordinates are both inside a corridor band to a row `EventInstance.has_a_spread()` names — see
-## `docs/TODO.md`, M64, "a spread on a corner is placed as if the corner were nothing": such a tile
+## `docs/DECISIONS.md`, "a spread on a corner is placed as if the corner were nothing": such a tile
 ## has no single street for `_spread_is_vertical` or `_centred_on_the_pavement_band` to answer about.
 ## Walked over the **planned** placements of several seeds and every day of a run, rather than over
 ## the candidate pool directly, because a clean pool and a roll that still lands on a stale entry
@@ -287,6 +340,59 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 			% [offset + cap_along * 0.5, half])
 	t.check(not is_equal_approx(offset, half),
 			"and it is not simply centred at ±half any more (%.1f)" % offset)
+
+## **A whole-scene hard seal has to use a distinct authored picture on either axis and span its
+## obstruction at the ground point.** `EventInstance._wide_scene_texture` is the pure selector
+## this pins: on an east-west street (`vertical` true) it returns the directional asset, while
+## `_wide_scene_anchor` and the fitted extent keep the drawn body aligned with the obstruction.
+## The bounds are checked against the real asset sizes and `fallen_tree`'s own obstruction radius,
+## so the test covers the geometry that `_draw_wide_scene` sends to `Sprites.draw_standing` without
+## rendering a frame.
+func _test_a_wide_scene_faces_its_street(t) -> void:
+	var horizontal := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)
+	var vertical := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, true)
+	t.check(horizontal == EventInstance.FALLEN_TREE,
+			"a north-south street draws the horizontally-composed picture")
+	t.check(vertical == EventInstance.FALLEN_TREE_VERTICAL,
+			"an east-west street draws its directional picture, not the same one relabelled")
+	t.check(horizontal != vertical, "and the two are not the same asset")
+
+	var half := maxf(11.0, EventCatalogue.by_id("fallen_tree").obstructs_radius)
+	for is_vertical in [false, true]:
+		var texture := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)
+		var size := texture.get_size()
+		var anchor := EventInstance._wide_scene_anchor(is_vertical, half)
+		var extent := Vector2(size.x, half * 2.0) if is_vertical \
+				else Vector2(half * 2.0, size.y)
+		var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
+		if is_vertical:
+			t.check(is_equal_approx(drawn.position.y, -half)
+					and is_equal_approx(drawn.end.y, half),
+					"'%s' vertical body spans the obstruction from -%.0f to %.0f"
+					% [texture.resource_path.get_file(), half, half])
+		else:
+			t.check(is_equal_approx(drawn.position.x, -half)
+					and is_equal_approx(drawn.end.x, half),
+					"'%s' horizontal body spans the obstruction from -%.0f to %.0f"
+					% [texture.resource_path.get_file(), half, half])
+
+	# The other two whole-scene rows carry the same guarantee — checked once each rather than
+	# re-running the segment arithmetic, since `_wide_scene_texture`'s own match is what could
+	# regress silently if a future picture forgot its vertical sibling.
+	for look in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
+		var wide := EventInstance._wide_scene_texture(look, false)
+		var tall := EventInstance._wide_scene_texture(look, true)
+		t.check(wide != null and tall != null and wide != tall,
+				"look %d has two distinct assets, one per street orientation" % look)
+
+	var crash_wide := EventInstance._wide_scene_texture(EventDef.Look.CAR_ACCIDENT, false)
+	var crash_tall := EventInstance._wide_scene_texture(EventDef.Look.CAR_ACCIDENT, true)
+	t.check(EventInstance._wide_scene_shadow(crash_wide) != null
+			and EventInstance._wide_scene_shadow(crash_tall) != null,
+			"both crash directions carry contact shadows instead of a street-wide slab")
+	t.check(EventInstance._wide_scene_shadow(
+			EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)) == null,
+			"a continuous fallen tree keeps the generic wide-scene shadow")
 
 # ------------------------------------------------------------------ emission ---
 
@@ -1263,7 +1369,7 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 ## happen on required alleys".)* `EventScheduler._refuses_required_alleys` excludes `alley_robbery`
 ## from any `ALLEY` tile the day's corridor runs through — `corridor.depth(tile) == 0` — because its
 ## own design note is that "a robbery has no telegraph you could see coming, and it never did": a
-## risk with no warning is only fair on ground she chose to enter. See `docs/TODO.md`, M64, "and no
+## risk with no warning is only fair on ground she chose to enter. See `docs/DECISIONS.md`, "and no
 ## robber stands in an alley she has to walk down."
 ##
 ## Walked over the **planned** placements of several seeds and every day the row is eligible on

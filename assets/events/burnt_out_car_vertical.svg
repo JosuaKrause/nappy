@@ -1,0 +1,14 @@
+<!-- The same burnt car seen along its length on a north-south street, authored end-on rather
+     than rotating its side silhouette. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="46" viewBox="0 0 30 46" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M7 5 L11 3 L20 4 L25 8 L28 14 L27 36 L22 41 L8 40 L3 36 L2 13 Z" fill="#3e3a38"/>
+  <path d="M7 11 Q15 7 24 11 L23 18 L7 18 Z" fill="#141416"/>
+  <path d="M7 25 L23 25 L24 33 Q15 37 6 33 Z" fill="#171719"/>
+  <path d="M6 12 L9 18 M24 11 L21 18 M8 24 L8 18 M22 24 L22 18" fill="none" stroke="#514a45" stroke-width="1.4"/>
+  <path d="M3 10 L9 7 L13 9 L17 6 L25 9 L28 14 L25 16 L20 14 L14 17 L8 14 L3 16 Z" fill="#353230"/>
+  <path d="M4 33 L10 35 L14 33 L19 37 L26 33 L27 38 Q15 43 3 38 Z" fill="#2c2a2a"/>
+  <rect x="0" y="14" width="4" height="8" fill="#171719"/><rect x="26" y="14" width="4" height="8" fill="#171719"/>
+  <rect x="0" y="29" width="4" height="8" fill="#171719"/><rect x="26" y="29" width="4" height="8" fill="#171719"/>
+  <circle cx="2" cy="18" r="1.5" fill="#665f58"/><circle cx="28" cy="18" r="1.5" fill="#665f58"/>
+  <circle cx="2" cy="33" r="1.5" fill="#665f58"/><circle cx="28" cy="33" r="1.5" fill="#665f58"/>
+</svg>

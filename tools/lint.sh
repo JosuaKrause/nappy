@@ -114,9 +114,50 @@ for f in "${files[@]}"; do
     lint_heading_status "$f"
 done
 
+# Every tracked SVG is well-formed XML. Godot's importer forgives a comment containing `--`, which
+# the XML grammar forbids, so a picture can boot and draw here and still be a parse error to
+# every other reader — GitHub refuses to render it. Checked with python3's own parser, which CI
+# and every development machine carry; a missing python3 is reported rather than skipped, since
+# a check that silently does nothing is the failure this whole script exists to prevent. When
+# called with explicit files (the hook's way), only SVGs among them are checked.
+lint_svgs() {
+    local svgs=() f
+    if [[ $# -gt 0 ]]; then
+        for f in "$@"; do
+            [[ "$f" == *.svg ]] && svgs+=("$f")
+        done
+    else
+        while IFS= read -r f; do
+            svgs+=("$f")
+        done < <(git ls-files '*.svg')
+    fi
+    [[ ${#svgs[@]} -eq 0 ]] && return
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "tools/lint.sh: python3 is needed to check SVG well-formedness and was not found" >&2
+        hits=$((hits + 1))
+        return
+    fi
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        printf '%s\n' "$line"
+        hits=$((hits + 1))
+    done < <(python3 - "${svgs[@]}" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+for path in sys.argv[1:]:
+    try:
+        ET.parse(path)
+    except ET.ParseError as error:
+        print("%s:%s: not well-formed XML (%s)" % (path, error.position[0], error))
+PY
+)
+}
+
+lint_svgs "$@"
+
 if [[ "$hits" -gt 0 ]]; then
     echo
-    echo "FAILED: $hits volatile-fact hit(s)" >&2
+    echo "FAILED: $hits lint hit(s)" >&2
     exit 1
 fi
 

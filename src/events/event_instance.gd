@@ -9,6 +9,7 @@ extends Node2D
 
 const CAT_CROUCHED := preload("res://assets/events/cat_crouched.svg")
 const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
+const WIDE_SCENE_SHADOW := preload("res://assets/props/shadow.svg")
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
 ## something of its own.
@@ -50,6 +51,25 @@ const LORRY := preload("res://assets/events/lorry.svg")
 const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
 const CHATTING_MOTHER_WALKING := preload("res://assets/events/chatting_mother_walking.svg")
 const CHATTING_MOTHER_TALKING := preload("res://assets/events/chatting_mother_talking.svg")
+## Seal pictures — see `SealPlanner` and `docs/DECISIONS.md`, "Eight seal pictures".
+const FALLEN_TREE := preload("res://assets/events/fallen_tree.svg")
+const CAR_ACCIDENT := preload("res://assets/events/car_accident.svg")
+const CAR_ACCIDENT_SHADOW := preload("res://assets/events/car_accident_shadow.svg")
+const SKIP := preload("res://assets/events/skip.svg")
+const SCAFFOLDING := preload("res://assets/events/scaffolding.svg")
+const BURST_MAIN := preload("res://assets/events/burst_water_main.svg")
+const MOVING_VAN := preload("res://assets/events/moving_van.svg")
+const MOVING_VAN_VERTICAL := preload("res://assets/events/moving_van_vertical.svg")
+const BURNT_OUT_CAR := preload("res://assets/events/burnt_out_car.svg")
+const BURNT_OUT_CAR_VERTICAL := preload("res://assets/events/burnt_out_car_vertical.svg")
+const COLLAPSED_FRONTAGE := preload("res://assets/events/collapsed_frontage.svg")
+## Directional siblings for the three whole-street scenes. Vehicles and upright props are authored
+## in the street's projection rather than rotating every pixel of the horizontal composition.
+const FALLEN_TREE_VERTICAL := preload("res://assets/events/fallen_tree_vertical.svg")
+const CAR_ACCIDENT_VERTICAL := preload("res://assets/events/car_accident_vertical.svg")
+const CAR_ACCIDENT_VERTICAL_SHADOW := preload(
+		"res://assets/events/car_accident_vertical_shadow.svg")
+const BURST_MAIN_VERTICAL := preload("res://assets/events/burst_water_main_vertical.svg")
 
 ## The one silhouette that stands for a look, at any size.
 ##
@@ -90,29 +110,90 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.BARRICADE: return BARRICADE_PILE
 		EventDef.Look.PROTEST: return PROTESTER
 		EventDef.Look.FIREFIGHT: return GUNMAN
+		EventDef.Look.FALLEN_TREE: return FALLEN_TREE
+		EventDef.Look.CAR_ACCIDENT: return CAR_ACCIDENT
+		EventDef.Look.SKIP: return SKIP
+		EventDef.Look.SCAFFOLDING: return SCAFFOLDING
+		EventDef.Look.BURST_MAIN: return BURST_MAIN
+		EventDef.Look.MOVING_VAN: return MOVING_VAN
+		EventDef.Look.BURNT_OUT_CAR: return BURNT_OUT_CAR
+		EventDef.Look.COLLAPSED_FRONTAGE: return COLLAPSED_FRONTAGE
 		_: return null
 
-## Whether a def's instance draws itself as a **spread** — a body built by repeating a segment
+## Whether a def's instance draws itself as a **spread** — segments or a whole scene fitted
 ## across `def.obstructs_radius`, laid along whichever axis `_spread_is_vertical` picks for the
-## street it stands on. That is exactly `_draw_spread` and `_draw_cafe`, nothing else in
-## `_draw_body`'s dispatch: `ROADWORKS`, `BURNT_SHELL`, `STALL`, `CHECKPOINT` and `BARRICADE` go to
-## the first, `CAFE` to the second. `PROTEST` and `FIREFIGHT` also fill `obstructs_radius`-worth of
-## ground but draw it with their own functions that never call `_spread_is_vertical` or
-## `_spread_at` — a protest rank and a firefight's cover are laid along local X unconditionally, so
-## a corner costs them nothing and they are rightly outside this test.
+## street it stands on. That is `_draw_spread`, `_draw_cafe` or `_draw_wide_scene`, nothing else in
+## `_draw_body`'s dispatch: `ROADWORKS`, `BURNT_SHELL`, `STALL`, `CHECKPOINT`, `BARRICADE`,
+## `SCAFFOLDING` and `COLLAPSED_FRONTAGE` go to the first, `CAFE` to the second. The three seal
+## pictures wide enough to span the whole street (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) use
+## `_draw_wide_scene`, which fits one scene to the obstruction and anchors vertical scenes at the
+## far end so their centre sits on the ground point. Each has an authored east-west asset selected
+## by `_wide_scene_texture`.
+## `PROTEST` and `FIREFIGHT` also fill
+## `obstructs_radius`-worth of ground but draw it with their own functions that never call
+## `_spread_is_vertical` or `_spread_at` — a protest rank and a firefight's cover are laid along
+## local X unconditionally, so a corner costs them nothing and they are rightly outside this test.
 ##
 ## **This is the test `EventScheduler._open_ground_for` asks before it will offer a corner as a
-## site.** See that function and `docs/TODO.md`, M64, "a spread on a corner is placed as if the
+## site.** See that function and `docs/DECISIONS.md`, "a spread on a corner is placed as if the
 ## corner were nothing" — a junction has no single street for `_spread_is_vertical` or
 ## `_centred_on_the_pavement_band` to answer about, so only a row that actually asks either
 ## question has anything to lose by standing on one.
 static func has_a_spread(def: EventDef) -> bool:
 	match def.look:
 		EventDef.Look.ROADWORKS, EventDef.Look.BURNT_SHELL, EventDef.Look.STALL, \
-				EventDef.Look.CHECKPOINT, EventDef.Look.BARRICADE, EventDef.Look.CAFE:
+				EventDef.Look.CHECKPOINT, EventDef.Look.BARRICADE, EventDef.Look.CAFE, \
+				EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN, \
+				EventDef.Look.SCAFFOLDING, EventDef.Look.COLLAPSED_FRONTAGE:
 			return true
 		_:
 			return false
+
+## Which texture a "whole scene" seal picture (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) draws,
+## given whether the street it stands on rotates the spread onto local Y (`_spread_vertical`).
+##
+## **A separate directional asset, not a runtime rotation of the one texture.**
+## The spread axis remap only relabels which texture dimension is "along" the obstruction; it never
+## turns pixels. `_wide_scene_texture` therefore supplies an authored composition for each street
+## axis, so cars keep the right projection and people and barriers remain upright. Repeatable
+## segments are close enough to square for the dimension swap itself. `EventDef.look` and
+## `_spread_vertical` together pick the texture, with no field on the def.
+static func _wide_scene_texture(look: EventDef.Look, vertical: bool) -> Texture2D:
+	match look:
+		EventDef.Look.FALLEN_TREE: return FALLEN_TREE_VERTICAL if vertical else FALLEN_TREE
+		EventDef.Look.CAR_ACCIDENT: return CAR_ACCIDENT_VERTICAL if vertical else CAR_ACCIDENT
+		EventDef.Look.BURST_MAIN: return BURST_MAIN_VERTICAL if vertical else BURST_MAIN
+		_: return null
+
+## A crash scene has several separate contacts with the ground, so it carries a matching shadow
+## picture rather than painting one ellipse across the entire closed street.
+static func _wide_scene_shadow(texture: Texture2D) -> Texture2D:
+	if texture == CAR_ACCIDENT:
+		return CAR_ACCIDENT_SHADOW
+	if texture == CAR_ACCIDENT_VERTICAL:
+		return CAR_ACCIDENT_VERTICAL_SHADOW
+	return null
+
+## The selected picture for a stationary vehicle. The row keeps one look because both files
+## depict the same vehicle rather than two catalogue entries.
+static func _stationary_vehicle_texture(look: EventDef.Look, side_view: bool) -> Texture2D:
+	match look:
+		EventDef.Look.MOVING_VAN:
+			return MOVING_VAN if side_view else MOVING_VAN_VERTICAL
+		EventDef.Look.BURNT_OUT_CAR:
+			return BURNT_OUT_CAR if side_view else BURNT_OUT_CAR_VERTICAL
+		_:
+			return null
+
+## Preserves the authored end-on projection instead of stretching it to the circular collision
+## diameter. Side views are fitted to that diameter because their long silhouette is the width the
+## solid row claims on the axis where that picture is used.
+static func _stationary_vehicle_extent(texture: Texture2D, side_view: bool,
+		side_width: float) -> Vector2:
+	var size := texture.get_size()
+	if not side_view:
+		return size
+	return Vector2(side_width, size.y * side_width / size.x)
 
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
@@ -196,6 +277,9 @@ var _clock := 0.0
 ## Never a per-row field: two rows on the same street face the same way for the same reason, and a
 ## row that had to say so itself could disagree with the street it was actually placed on.
 var _spread_vertical := false
+## Whether a stationary vehicle shows its side. The moving van sits along the street while the
+## burnt car lies across it; a junction, off-street ground or data-level rig follows its facing.
+var _stationary_vehicle_side := true
 
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
@@ -211,6 +295,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_heading = face
 	_map = map
 	_spread_vertical = _spread_is_vertical(map, position)
+	_stationary_vehicle_side = _stationary_vehicle_uses_side(definition.look, map, position, face)
 
 ## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
 ## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
@@ -262,6 +347,21 @@ static func _spread_is_vertical(map: CityMap, at: Vector2) -> bool:
 	var on_a_north_south_street := CityMap.corridor_offset(tile.x) >= 0
 	var on_an_east_west_street := CityMap.corridor_offset(tile.y) >= 0
 	return on_an_east_west_street and not on_a_north_south_street
+
+## Whether a stationary vehicle is seen side-on at this point. The moving van faces along the
+## street and the burnt car lies perpendicular to it. A junction or ground outside the lattice has
+## no single street axis, so the vehicle's own facing supplies the coherent default.
+static func _stationary_vehicle_uses_side(look: EventDef.Look, map: CityMap, at: Vector2,
+		face: Vector2) -> bool:
+	if not map:
+		return absf(face.x) >= absf(face.y)
+	var tile := map.world_to_tile(at)
+	var on_a_north_south_street := CityMap.corridor_offset(tile.x) >= 0
+	var on_an_east_west_street := CityMap.corridor_offset(tile.y) >= 0
+	if on_a_north_south_street != on_an_east_west_street:
+		var parallel_side := on_an_east_west_street
+		return not parallel_side if look == EventDef.Look.BURNT_OUT_CAR else parallel_side
+	return absf(face.x) >= absf(face.y)
 
 func _ready() -> void:
 	EventBus.event_telegraphed.emit(self)
@@ -1240,9 +1340,9 @@ func _caret_strength() -> int:
 ## Whether this event is worth a mark at all.
 ##
 ## **The mark is raised by what a thing is projected to do to her, held still, and by nothing
-## else.** *(2026-09-08, the player, opening the milestone this rewrites the rule for: "carets
-## shouldn't be chosen by source value but by expected impact value".)* A row's own declared cost
-## no longer decides it — `expected_impact_at()` and `will_be_lethal()` do, at wherever she is
+## else.** *(2026-09-08, the player: "carets shouldn't be chosen by source value but by expected
+## impact value".)* A row's own declared cost does not decide it — `expected_impact_at()` and
+## `will_be_lethal()` do, at wherever she is
 ## actually standing and however this thing is actually moving, so the same row is marked at one
 ## moment and not at the next: a café she is standing in is unmarked, and a cyclist whose line
 ## reaches her is marked while one passing wide of her is not.
@@ -1369,6 +1469,24 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_protest(canvas)
 		EventDef.Look.FIREFIGHT:
 			_draw_firefight(canvas)
+		EventDef.Look.FALLEN_TREE:
+			_draw_wide_scene(_wide_scene_texture(EventDef.Look.FALLEN_TREE, _spread_vertical), canvas)
+		EventDef.Look.CAR_ACCIDENT:
+			_draw_wide_scene(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical), canvas)
+		EventDef.Look.BURST_MAIN:
+			_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical), canvas)
+		EventDef.Look.COLLAPSED_FRONTAGE:
+			_draw_spread(COLLAPSED_FRONTAGE, null, canvas)
+		EventDef.Look.SCAFFOLDING:
+			_draw_spread(SCAFFOLDING, null, canvas)
+		EventDef.Look.SKIP:
+			_draw_simple(SKIP, 11.0, canvas)
+		EventDef.Look.MOVING_VAN:
+			_draw_stationary_vehicle(
+					EventDef.Look.MOVING_VAN, def.obstructs_radius * 2.0, 26.0, canvas)
+		EventDef.Look.BURNT_OUT_CAR:
+			_draw_stationary_vehicle(
+					EventDef.Look.BURNT_OUT_CAR, def.obstructs_radius * 2.0, 14.0, canvas)
 		EventDef.Look.NONE:
 			pass
 
@@ -1398,6 +1516,16 @@ func _draw_vehicle(side: Texture2D, end: Texture2D, shadow: float, canvas: Canva
 func _draw_simple(texture: Texture2D, shadow: float, canvas: CanvasItem = self) -> void:
 	_draw_shadow(canvas, Vector2.ZERO, shadow)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+
+## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
+## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
+func _draw_stationary_vehicle(look: EventDef.Look, side_width: float, shadow: float,
+		canvas: CanvasItem = self) -> void:
+	var texture := _stationary_vehicle_texture(look, _stationary_vehicle_side)
+	var extent := _stationary_vehicle_extent(texture, _stationary_vehicle_side, side_width)
+	_draw_shadow(canvas, Vector2.ZERO, shadow)
+	Sprites.draw_standing(canvas, texture, Vector2.ZERO, extent,
+			_stationary_vehicle_side and _heading_is_west())
 
 ## The dog, and the lead it is no longer on.
 ##
@@ -1514,6 +1642,34 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: Can
 	for side in [-1.0, 1.0]:
 		Sprites.draw_standing(canvas, cap, _spread_at(_cap_offset(half, cap_along, side)),
 				_spread_extent(cap_along, cap_thickness))
+
+## A whole-scene picture is one body, including on an east-west street. Its vertical asset is
+## fitted to the obstruction's diameter, so its standing point moves to the far end of the
+## obstruction: `Sprites.draw_standing` anchors the bottom edge, while this scene must span both
+## sides of the ground point. Only the three wide scenes use this path; segmented looks keep the
+## repeated standing anchors above unchanged.
+func _draw_wide_scene(texture: Texture2D, canvas: CanvasItem = self) -> void:
+	var half := maxf(11.0, def.obstructs_radius)
+	var size := texture.get_size()
+	var thickness := size.x if _spread_vertical else size.y
+	var extent := _spread_extent(half * 2.0, thickness)
+	var anchor := _wide_scene_anchor(_spread_vertical, half)
+	var shadow := _wide_scene_shadow(texture)
+	if shadow and canvas != _halo:
+		canvas.draw_texture_rect(shadow,
+				Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
+				false, Palette.SHADOW)
+	elif _spread_vertical and canvas != _halo:
+		# A vertical scene's shadow follows the same 192px ground span as its body.
+		canvas.draw_texture_rect(WIDE_SCENE_SHADOW,
+				Rect2(Vector2(-thickness * 0.5, -half), Vector2(thickness, half * 2.0)),
+				false, Palette.SHADOW)
+	else:
+		_draw_shadow(canvas, Vector2.ZERO, half * 0.9)
+	Sprites.draw_standing(canvas, texture, anchor, extent)
+
+static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
+	return Vector2(0.0, half) if vertical else Vector2.ZERO
 
 ## The along-axis offset for one end cap, inset from `±half` by half the cap's own extent on that
 ## axis so its outer edge lands on the obstruction boundary rather than past it — see `_draw_spread`.

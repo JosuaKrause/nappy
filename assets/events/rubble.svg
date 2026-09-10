@@ -1,15 +1,12 @@
-<!-- One segment of a burnt-out shell: charred brick, a fallen lintel, and nothing behind the
-     window holes. Repeated across the width the event obstructs, like every other spread, so
-     what is drawn is exactly what is in the way.
-     It used to be drawn with `barrier_segment.svg`, i.e. as roadworks — a scar that has been on
-     that corner since day 3 rendered as a crew who had just turned up. -->
+<!-- One segment of a burnt-out shell: a ragged roofline, soot-black window holes and
+     chipped charred brick. It stays upright and distinct from collapsed-frontage debris. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="30" viewBox="0 0 24 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <rect x="0" y="4" width="24" height="24" fill="#3e3a38"/>
-  <rect x="0" y="4" width="24" height="3" fill="#4c4744"/>
-  <rect x="3" y="10" width="7" height="8" fill="#1b1a1c"/>
-  <rect x="14" y="10" width="7" height="8" fill="#1b1a1c"/>
-  <rect x="0" y="20" width="24" height="2" fill="#2c2a2a"/>
-  <rect x="2" y="24" width="8" height="4" fill="#514a45"/>
-  <rect x="13" y="25" width="9" height="3" fill="#514a45"/>
+  <path d="M0 7 L3 4 L7 6 L11 2 L14 7 L19 3 L24 6 V28 H0 Z" fill="#3e3a38"/>
+  <path d="M0 7 L3 4 L7 6 L11 2 L14 7 L19 3 L24 6 V9 L19 7 L14 10 L11 6 L7 9 L3 7 L0 10 Z" fill="#514a45"/>
+  <path d="M3 11 H10 V20 H3 Z M14 10 H21 V20 H14 Z" fill="#17171a"/>
+  <path d="M4 12 L9 19 M20 11 L15 19" fill="none" stroke="#2b2929" stroke-width="1.2"/>
+  <path d="M2 22 H8 M10 25 H16 M17 22 H23 M4 27 H11" fill="none" stroke="#5d5149"/>
+  <path d="M1 15 H3 M10 12 H13 M21 16 H24" fill="none" stroke="#242224" stroke-width="2"/>
+  <path d="M1 24 L4 23 L6 28 H1 Z M17 25 L22 23 L23 28 H16 Z" fill="#514a45"/>
   <rect x="0" y="28" width="24" height="2" fill="#221f28"/>
 </svg>

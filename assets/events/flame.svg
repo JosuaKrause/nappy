@@ -1,6 +1,7 @@
-<!-- One tongue of flame, drawn stretched to whatever height the fire is currently at:
-     a fire that is emitting harder is visibly taller. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="48" viewBox="0 0 20 48">
-  <path d="M10 0 L19 48 L1 48 Z" fill="#d1622c"/>
-  <path d="M10 19 L14.5 48 L5.5 48 Z" fill="#f0c04a"/>
+<!-- One curling tongue of flame, stretched to the fire's current height. The shared
+     base stays at (10,48), while the nested warm core remains legible at small scale. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="48" viewBox="0 0 20 48" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M10 0 C14 8 11 13 16 19 C21 26 19 39 10 48 C2 45 0 36 3 28 C5 22 4 17 7 11 C9 15 11 18 11 22 C15 16 11 9 10 0 Z" fill="#d1622c"/>
+  <path d="M10 18 C14 24 13 28 16 33 C18 39 14 45 10 48 C5 46 3 41 5 35 C6 31 8 29 8 25 C10 28 10 31 10 34 C13 29 10 24 10 18 Z" fill="#f0a43d"/>
+  <path d="M10 31 C13 36 13 41 10 47 C7 44 6 40 8 36 C9 34 9 33 10 31 Z" fill="#ffe08a" stroke="none"/>
 </svg>

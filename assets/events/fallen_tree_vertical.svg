@@ -1,0 +1,12 @@
+<!-- The fallen tree authored for an east-west street: branching root plate at the top, a
+     tapering broken trunk through the carriageway and a clustered crown at the far pavement. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="200" viewBox="0 0 50 200" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M22 20 L13 11 L17 24 L5 19 L14 30 L4 35 L19 34 L14 46 L27 34 Z" fill="#4a382a"/>
+  <path d="M17 27 C16 57 20 82 17 106 C14 132 18 148 22 167 L37 165 C33 145 31 129 34 106 C38 79 34 53 31 27 Z" fill="#5b4433"/>
+  <path d="M20 31 C20 59 24 82 20 107 C18 130 21 147 25 161" fill="none" stroke="#7a5c43" stroke-width="2"/>
+  <path d="M19 67 L8 75 L7 82 L20 76 M18 111 L7 120 L9 127 L20 119 M21 139 L10 147 L12 154 L24 147" fill="#5b4433"/>
+  <path d="M9 77 L3 74 M8 121 L2 122 M11 148 L5 153" fill="none" stroke="#4a382a" stroke-width="2"/>
+  <path d="M19 151 C10 151 4 160 8 170 C1 177 5 189 14 190 C18 199 31 202 37 194 C46 193 51 182 45 175 C49 166 41 156 33 158 C29 150 23 147 19 151 Z" fill="#4f7a44"/>
+  <path d="M12 158 C9 166 14 174 22 174 C18 182 26 190 34 186 C41 178 37 168 31 166 C29 157 19 153 12 158 Z" fill="#649256"/>
+  <path d="M8 179 C13 172 22 176 23 183 C29 178 39 183 37 191 C29 198 19 195 16 190 C10 194 5 186 8 179 Z" fill="#456b3b"/>
+</svg>
