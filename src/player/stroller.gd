@@ -7,10 +7,7 @@ extends CharacterBody2D
 ## The pram is drawn as an offset in the facing direction, foreshortened on Y by `OBLIQUE_Y` to
 ## sell the oblique view (docs/CITY.md, "Rendering").
 ##
-## **Two presentations, and the legacy one is the baseline.** The SVG mother and pram below are
-## what a build draws unless `--illustrated` or a web `?illustrated=1` opts into the `ModularPerson`
-## compositor. This node is the logical body either way: the compositor is given only displacement
-## that survived collision and shove resolution, and never moves anything itself.
+## The SVG mother and pram below are the logical body and the complete drawing in every mode.
 
 ## How far ahead of the mother the pram sits, on the ground plane.
 const PRAM_DISTANCE := 34.0
@@ -91,18 +88,6 @@ enum Alert {
 ## The baby rides in the pram and the rig draws itself, so the rig asks her what to draw. Null
 ## in a test rig built without one, which is why every use is guarded.
 @onready var _baby: Baby = get_node_or_null("Baby")
-var _modular_person: ModularPerson
-
-## Which presentation this rig draws, read **once** here rather than asked at each use site.
-##
-## **Why once:** `DevFlags.illustrated_requested()` reaches `JavaScriptBridge.eval(
-## "window.location.search")` on a web export, and this file would otherwise ask it twice every
-## physics frame and again in `_draw()` — a JavaScript round trip per frame, on the only build the
-## project actually distributes, to answer a question that cannot change during a run. `CrowdAgent`
-## reads it once in `setup()` for the same reason. It also follows the pattern `TouchControls
-## ._touch` and `hud._debug` already use: a platform fact is read into a member, so a test can
-## drive both shapes without the platform.
-var _illustrated := DevFlags.illustrated_requested()
 
 var facing := Vector2.DOWN
 ## Which family of drawing `_draw_mother()` and `_draw_pram()` show: side-on when `true`,
@@ -133,21 +118,6 @@ var _alert_source := &""
 
 func _ready() -> void:
 	add_to_group("player")
-	if not _illustrated:
-		return
-	_ensure_modular_person()
-	_modular_person.reset_at(global_position, facing)
-
-func _ensure_modular_person() -> void:
-	if not _illustrated:
-		return
-	if is_instance_valid(_modular_person):
-		return
-	_modular_person = ModularPerson.new()
-	_modular_person.name = "ModularPerson"
-	# Keep the compositor at the owner's origin. It consumes world coordinates for its
-	# planted pose while its sprites remain local, so it cannot offset the logical body.
-	add_child(_modular_person)
 
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
 ## mode: the home and the street in front of it, with nobody in it.
@@ -185,7 +155,6 @@ func step_back_in() -> void:
 	_camera.process_mode = Node.PROCESS_MODE_INHERIT
 
 func _physics_process(delta: float) -> void:
-	var position_before_motion: Vector2 = global_position
 	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if _detained_for > 0.0:
 		_detained_for = maxf(0.0, _detained_for - delta)
@@ -209,12 +178,6 @@ func _physics_process(delta: float) -> void:
 		move_and_collide(_shove * delta)
 		_shove = _shove.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
 	_walk_phase = wrapf(_walk_phase + velocity.length() * delta * 0.09, 0.0, TAU)
-
-	if _illustrated:
-		_ensure_modular_person()
-		# Only displacement that survived collision and shove resolution drives the gait. Input,
-		# velocity and elapsed time alone must never advance a planted foot.
-		_modular_person.apply_displacement(global_position - position_before_motion, global_position, delta, facing)
 
 	# Stride cadence is driven by distance covered, so it stays in step at any speed.
 	_alert_phase = wrapf(_alert_phase + delta, 0.0, 1.0)
@@ -417,9 +380,6 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	_side_view = false
 	_update_view()
 	_walk_phase = 0.0
-	if _illustrated:
-		_ensure_modular_person()
-		_modular_person.reset_at(global_position, facing)
 	queue_redraw()
 
 ## Stops the camera from panning past the edge of the city.
@@ -473,34 +433,21 @@ func _draw() -> void:
 	# Shadows belong to the ground plane, so they always go underneath both figures.
 	Sprites.draw_shadow(self, Vector2.ZERO, 9.0)
 	Sprites.draw_shadow(self, pram_offset, 12.0)
-	if not _illustrated:
-		var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
-		if facing.y < 0.0:
-			_draw_pram(pram_offset)
-			_draw_mother(gait)
-		else:
-			_draw_mother(gait)
-			_draw_pram(pram_offset)
+	var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
+	if facing.y < 0.0:
+		_draw_pram(pram_offset)
+		_draw_mother(gait)
 	else:
-		# Keep the original pair beside the illustrated pair while the opt-in presentation is
-		# being calibrated. The offset is presentation-only; the logical ground point stays here.
-		var comparison_at := Vector2(ModularPerson.COMPARISON_OFFSET, 0.0)
-		var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
-		if facing.y < 0.0:
-			_draw_pram(pram_offset + comparison_at)
-			_draw_mother(gait, comparison_at)
-		else:
-			_draw_mother(gait, comparison_at)
-			_draw_pram(pram_offset + comparison_at)
+		_draw_mother(gait)
+		_draw_pram(pram_offset)
 
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
 
 ## The stride is two frames rather than a procedural swing: with the legs drawn into the sprite
 ## there is nothing left to swing. The frames carry the body's bob too, which is why nothing here
-## offsets her vertically. `origin` is `Vector2.ZERO` for the presentation as played; the
-## illustrated opt-in passes the comparison offset so the two can be judged side by side.
-func _draw_mother(gait: float, origin := Vector2.ZERO) -> void:
+## offsets her vertically. The source texture's native size supplies the complete geometry.
+func _draw_mother(gait: float) -> void:
 	var stepping := gait > 0.05 and sin(_walk_phase * 2.0) > 0.0
 	var frame := 1 if stepping else 0
 	var flip := false
@@ -512,7 +459,7 @@ func _draw_mother(gait: float, origin := Vector2.ZERO) -> void:
 		texture = MOTHER_FRONT[frame]
 	else:
 		texture = MOTHER_BACK[frame]
-	Sprites.draw_standing(self, texture, origin, Vector2.ZERO, flip)
+	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2.ZERO, flip)
 
 ## Three profiles rather than one drawing with the hood nudged sideways. Sliding the hood along a
 ## fixed basket made it overhang the end of the pram whenever she turned, which is what "the canopy

@@ -22,10 +22,8 @@ extends Node2D
 ## `_colour` the same amount, so a burst brightens and reddens together and drains together rather
 ## than one channel snapping ahead of the other.
 ##
-## **Only the ordinary SVG body is traced.** `CrowdAgent`'s illustrated `walker_visual`
-## presentation draws itself as a separate child node with its own `_draw()`, so a `draw_body`
-## callback bound to `_draw_body()` never touches it and never should — tracing an illustrated
-## presentation is a design question nobody has asked yet.
+## **The entity's ordinary body is traced.** Transfer textures use this same drawing path, so
+## the halo follows the active silhouette without a second presentation node.
 ##
 ## **`show_behind_parent`** places the rim behind the entity, the crowd and the player the same
 ## way each entity's own shadow is placed, so it stays a hint rather than a wall. **The shared

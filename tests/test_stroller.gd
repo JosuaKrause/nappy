@@ -17,9 +17,6 @@ extends RefCounted
 ## stepping physics or a canvas.
 
 func run(t) -> void:
-	_test_the_illustrated_compositor_is_opt_in(t)
-	if DevFlags.illustrated_requested():
-		return
 	_test_the_default_facing_is_front_or_back(t)
 	_test_a_slow_sweep_up_through_the_diagonal_switches_once(t)
 	_test_a_slow_sweep_down_through_the_diagonal_switches_once(t)
@@ -39,15 +36,6 @@ func _rig(t) -> Stroller:
 ## `?illustrated=1` changes that — so a rig built with neither carries no `ModularPerson` child at
 ## all. The one check here that is asserted under both presentations, since it is the gate itself
 ## rather than anything downstream of it.
-func _test_the_illustrated_compositor_is_opt_in(t) -> void:
-	var rig := _rig(t)
-	rig.reset_at(Vector2(80.0, 120.0))
-	t.check(rig.facing == Vector2.DOWN, "reset keeps the default south-facing owner heading")
-	t.check((rig.get_node_or_null("ModularPerson") != null)
-			== DevFlags.illustrated_requested(),
-		"the illustrated compositor exists exactly when it was opted into")
-	rig.free()
-
 ## Before she has moved, `facing` is `Vector2.DOWN` — 90° off the horizontal axis, squarely
 ## inside the front-or-back half of the band — so there is nothing to settle before the first
 ## frame runs.

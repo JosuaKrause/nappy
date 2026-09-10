@@ -1704,12 +1704,12 @@ func _draw_wide_scene(texture: Texture2D, canvas: CanvasItem = self) -> void:
 	var anchor := _wide_scene_anchor(_spread_vertical, half)
 	var shadow := _wide_scene_shadow(texture)
 	if shadow and canvas != _halo:
-		canvas.draw_texture_rect(shadow,
+		canvas.draw_texture_rect(TextureResolver.resolve(shadow),
 				Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
 				false, Palette.SHADOW)
 	elif _spread_vertical and canvas != _halo:
 		# A vertical scene's shadow follows the same 192px ground span as its body.
-		canvas.draw_texture_rect(WIDE_SCENE_SHADOW,
+		canvas.draw_texture_rect(TextureResolver.resolve(WIDE_SCENE_SHADOW),
 				Rect2(Vector2(-thickness * 0.5, -half), Vector2(thickness, half * 2.0)),
 				false, Palette.SHADOW)
 	else:
@@ -1878,6 +1878,7 @@ func _heading_is_west() -> bool:
 ## nothing in the kit that draws this way ever needs to flip.
 func _draw_at_anchor(canvas: CanvasItem, texture: Texture2D, anchor: Vector2,
 		at: Vector2 = Vector2.ZERO) -> void:
+	texture = TextureResolver.resolve(texture)
 	canvas.draw_texture_rect(texture, Rect2(at - anchor, texture.get_size()), false)
 
 ## The hut's own doorway direction, read off `CityMap.pavement_inward()` at the tile it actually
