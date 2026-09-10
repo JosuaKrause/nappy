@@ -101,7 +101,10 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
-   reprioritised".
+   reprioritised". **M105, the city degrades, and M106, roofs, fronts and street trees, sit in
+   this batch provisionally** — they were asked for on 2026-09-10 and not placed, so this is the
+   orchestrator's guess at where presentation work that needs no route decision belongs, open to
+   the player moving it.
 6. **Reaching act III**, which M56's measurement against the nerves needs.
 7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
@@ -293,22 +296,46 @@ than a rotation; ground tiles are 32×32 in `assets/tiles/` and reach the game t
       than an SVG; if it is a touched-mark picture, it is a ground decal in the crater family
       (centre-anchored, one tile). Drawn only once the question is answered, and listed so the
       answer is not waited on twice
-- [ ] **M102 — interior ground tiles, in `assets/tiles/`.** The apartment section is a second small
-      map drawn with the ground `TileMapLayer`, so it needs its own tile family at 32×32: a hallway
-      floor, a corridor floor, a basement floor, a stair tile (a flight going down, one tile wide,
-      readable as *down*), and interior wall and wall-edge tiles for the rooms' bounds — the
-      exterior `wall.svg` / `roof.svg` set is an elevation seen from outside and does not read as a
-      corridor's inside. `GroundTiles` chooses by tile type and exposed edge, so each floor tile
-      wants the same edge-aware variants the street tiles have
-- [ ] **M102 — `assets/props/lift_door_dead.svg`.** The non-functioning lift on the hallway: a
-      closed door pair in the `door.svg` family (bottom-centre anchored, stands against a wall
-      tile), dark, with whatever says *dead* at a glance — no lamp, or a hand-written notice
-- [ ] **M102 — `assets/props/door_barricaded.svg`.** The building's main entrance, boarded shut,
-      the reason the way out is the basement. Same family and anchor as `door.svg`; it has to read
-      as *this was a door* and *not this way* from across the hallway
-- [ ] **M102 — `assets/props/door_service.svg`.** The service exit on the building's side, the
-      door the finale's city section starts at. Same family as `door.svg`, plainer and narrower
-      than the home door so the two are never confused on the summary or the map
+**The interior, for M102** — the apartment section is a second small map drawn with the ground
+`TileMapLayer` and the same oblique view as the city: floors are 32×32 tiles chosen by type and
+exposed edge, walls stand along a room's north edge in elevation the way a building's front does,
+and props are bottom-centre anchored on the floor. The room list is the player's, 2026-09-10:
+
+- [ ] **M102 — the hallway.** *("we need a hallway with windows that can flash (from the implied
+      bombs) we need a hallway floor … doors to the stairway (only visible from inside the stairway
+      -- in the hallway the doors are at the bottom and can be implied by the edge of the
+      flooring.")* `assets/interior/hallway_floor.svg`, edge-aware like the street tiles;
+      `hallway_wall.svg` and `hallway_wall_window.svg` for its north wall, plus
+      `hallway_wall_window_flash.svg`, the same window lit white for the one or two frames an
+      off-screen explosion throws light through it — the flash is the explosion row's cue indoors,
+      where no crater can be seen; and `hallway_floor_edge_s.svg`, the hallway's south edge with
+      the apartment doors' thresholds drawn into the floor's edge, since the doors themselves are
+      below the view and never drawn
+- [ ] **M102 — the stairwell.** *("we need a staircase, a mechanical looking floor for the
+      staircase shaft.")* `stair_down.svg`, a flight one tile wide that reads as *down* at a glance
+      — going onto it is going to the next floor's map; `stairwell_floor.svg`, checker plate or
+      grating, so the shaft reads as the building's machinery rather than another corridor; and
+      `stairwell_door.svg`, the door back onto a floor's hallway, in the stairwell's north wall and
+      seen only from inside the stairwell, which is the player's rule
+- [ ] **M102 — the entrance, blocked.** *("we need a main entrance door and thrown together
+      furniture that blocks it.")* `entrance_door.svg`, a double door wider than `door.svg`, and
+      `entrance_barricade.svg`, the furniture heaped against it — a wardrobe, chairs, a mattress —
+      drawn so it reads as *thrown together* rather than built, and as *not this way* from across
+      the hallway. Two pictures rather than one, so the door can be seen behind the pile
+- [ ] **M102 — `assets/interior/chandelier.svg`.** *("maybe chandeliers for lightning inside the
+      building.")* A hanging fixture drawn over the hallway with a pool of light on the floor
+      beneath it, the interior's one light source; whether it swings under the explosions is the
+      milestone's call, and a second frame is cheap if it does
+- [ ] **M102 — the basement.** *("a gloomy floor for the basement and raw brick walls. a puddle
+      tile.")* `basement_floor.svg`, dark and stained, edge-aware; `basement_wall_brick.svg` for
+      its north walls, raw brick where the hallway is plaster; and `puddle.svg`, a floor overlay
+      tile the corridor is dotted with, which the steam row stands beside
+- [ ] **M102 — `assets/interior/emergency_exit_door.svg`.** *("an emergency exit door (the service
+      entrance).")* The push-bar door at the end of the basement corridor, the finale's way out
+      onto the city; plainer and narrower than the home door so the two are never confused
+- [ ] **M102 — `assets/interior/lift_door_dead.svg`.** The non-functioning lift on the hallway: a
+      closed door pair, dark, with whatever says *dead* at a glance — no lamp, or a hand-written
+      notice
 - [ ] **M102 and M100 — `assets/events/mouse.svg`.** The apartment's own small event, and an
       alley's *("btw we can reuse the mouse for alleyways as well", 2026-09-10 — the row is
       M100's)*: a moving picture in the `cat_running.svg` family, tiny, side view mirrored for
@@ -323,6 +350,61 @@ than a rotation; ground tiles are 32×32 in `assets/tiles/` and reach the game t
       the three prepared craters. A flash or a smoke column at the screen's edge is optional and the
       milestone decides; listed so that decision is taken with the option drawn rather than
       imagined
+
+**The city degrading, for M105** — *(2026-09-10: "we need cracked street/sidewalk tiles to be able
+to deteriorate the city. we need loose garbage (eg eaten apple, newspaper, etc) that can be spread
+around throughout the city to show basic services failing towards the later acts … we need garbage
+sacks that can be placed in alleyways at first and at the side of buildings later on as the city
+degrades.")*
+
+- [ ] **M105 — cracked ground, in `assets/tiles/`, at several levels.** *(2026-09-10: "floor tiles
+      of the city need different levels of cracks … so we can add variety and gradient.")* Levels
+      are the gradient and patterns within a level are the variety. For the road tile, the pavement tile, and
+      the alley if it reads differently: a ladder of three variants — hairline, cracked, broken
+      (a chunk missing, weeds through it) — each a drop-in for its base tile in
+      `assets/ground_tileset.tres`, same 32×32 and same edge behaviour, so `GroundTiles` can swap
+      one for the other per tile without a new type, and so the level a tile shows can rise with
+      the day. Two patterns per level so a run of them does not repeat visibly
+- [ ] **M106 — street trees.** *(2026-09-10: "we could also add trees that can be placed in the
+      street. right now the fallen tree doesn't make that much sense.")* `assets/props/tree_pit.svg`,
+      a square grate or bare-earth pit one tile wide, centre-anchored on the pavement, with the
+      existing `tree_a.svg` / `tree_b.svg` standing in it — the canopy is reused, so the new
+      drawing is only the ground it grows from. Whether a street tree wants a slimmer canopy than a
+      park's is the review's call
+- [ ] **M105 — loose litter, in `assets/props/`.** A family of small ground decals, centre-anchored
+      like the craters: `litter_apple.svg`, `litter_newspaper.svg`, `litter_cup.svg`,
+      `litter_bag.svg`, `litter_can.svg` — five or six, each under a third of a tile, drawn flat
+      on the ground so they never stand up or cast a shadow
+- [ ] **M105 — garbage sacks, in `assets/props/`.** `garbage_sack.svg`, one tied black sack,
+      bottom-centre anchored, and `garbage_sacks_pile.svg`, three or four heaped, the alley's
+      version; both stand against a wall the way `door.svg` does and both get a shape under M61
+
+**Roofs and fronts, for M106** — *(2026-09-10: "we need stuff on top of roofs -- we have an air
+duct already -- it needs to be animated. but we need other things on roofs as well (there are
+reference photos to draw ideas from). we need more varied building fronts. storefronts, fire
+escapes.")* The reference photos are in `docs/reference/`: `rooftop-hvac-units-01.jpg`,
+`rooftop-duct-run-01.jpg`, `rooftop-skylights-01.jpg`, `rooftop-vents-fire-escape-01.jpg`,
+`rooftop-flat-brick-01.jpg`, the two `rooftop-parapet-*` pictures and `rooftop-hvac-ducts-01.mp4`
+for the roofs; `storefront-row-awnings-01.jpg`, `storefront-row-souvenirs-01.jpg`, the three
+`storefront-row-taco-bell-*.jpg` and `street-fire-escape-yellow-cab-01.jpg` for the fronts.
+
+- [ ] **M106 — the vent, animated.** `assets/props/industrial_vent.svg` (32×32 roof unit) becomes
+      frame `a` of a pair, and `industrial_vent_b.svg` is the same unit with the fan a quarter turn
+      on, so alternating them at a walk's cadence reads as turning
+- [ ] **M106 — roof furniture, in `assets/props/`, each a 32×32 or 64×32 roof unit like the
+      vent.** `roof_hvac_unit.svg` (a boxed condenser with a grille), `roof_duct_straight.svg` and
+      `roof_duct_corner.svg` (a run that can be laid along a roof), `roof_skylight.svg` (a raised
+      glazed pitch), `roof_vent_stack.svg` (a short pipe with a cowl), and `roof_water_tank.svg` (a
+      tank on legs, the tallest of them, which sets whether a roof unit may cast a shadow onto the
+      roof at all). Seen from the same oblique angle as the roof tiles, so a unit's south face
+      shows and its north does not
+- [ ] **M106 — fronts, in `assets/buildings/`.** Ground-floor facade tiles that stand where
+      `wall_base.svg` does: `storefront.svg` (a window and a door), `storefront_awning.svg` (the
+      same under an awning, which overhangs the pavement by a few pixels and is the one front that
+      is not flush), and `storefront_shuttered.svg` (the same behind a rolled steel shutter, for
+      M105's later acts). And `fire_escape.svg`, an overlay the height of two wall cells with a
+      ladder to the ground, drawn over `wall.svg` cells rather than replacing them, so a facade
+      keeps its windows behind it
 
 **Already drawn — nothing to do, listed so the list is complete.** M56's roadblock guards use
 the prepared `assets/checkpoints/guard_standing.svg` and `guard_lunging.svg` pair. M65's eight
@@ -907,11 +989,9 @@ artwork, the player's perpendicular burnt-car correction and the rendered eviden
 - [ ] **Park trees clump.** `City` places them by rejection sampling inside the lot with no
       spacing test. Add a minimum-spacing check while retaining `assets/props/tree_a.svg` and
       `tree_b.svg`, the two existing variants drawn by `Prop`.
-- [ ] **`INDUSTRIAL` and `CIVIC` districts do not read differently at a glance**, although act II
-      makes them narrative. Today only the wall heights differ — one to two tiles against three to
-      four. Use `assets/props/industrial_vent.svg` (32×32 roof unit) for industrial buildings and
-      `assets/props/civic_portico.svg` (32×48 stone entrance) for civic buildings. Their placement and density still
-      need integration and a gameplay-scale district comparison.
+**The `INDUSTRIAL` and `CIVIC` districts reading differently moved to M106 on 2026-09-10**, where
+the roof furniture and the fronts are placed per district; the prepared `industrial_vent.svg` and
+`civic_portico.svg` are its first two pieces.
 
 **Polish, after the playtest work**, since there is no point polishing a loop that is about to be
 re-pitched:
@@ -1045,6 +1125,101 @@ until it has been on screen once (M78's rule). The same callable is what the fir
 
 ---
 
+## M105 — The city degrades · asked for 2026-09-10
+
+> "we need cracked street/sidewalk tiles to be able to deteriorate the city. we need loose garbage
+> (eg eaten apple, newspaper, etc) that can be spread around throughout the city to show basic
+> services failing towards the later acts (it can be defined by a density factor for placement
+> which can increase with the days starting at day 4 or 5). we need garbage sacks that can be
+> placed in alleyways at first and at the side of buildings later on as the city degrades."
+> "floor tiles of the city need different levels of cracks"
+
+**What the street looks like is the act, told without a word.** The acts are already narrative —
+the crowd thins from act III because *"there is nobody left going out on them"*, blocks go
+`BOARDED_UP` and `BURNT_OUT` — and the ground under her feet says none of it. This milestone gives
+the city a visible decline that rises with the day: cracks in the road, litter on the pavement,
+sacks in the alleys and then against the buildings. **None of it changes what a route costs**, on
+purpose: it is presentation, and the one exception — a sack pile that stands in the way — is stated
+below rather than smuggled in. The pictures are M103's; this milestone places them.
+
+- [ ] **One degradation curve, in `Tuning`.** A density per tile that is zero through the early
+      days and rises from `DEGRADATION_FIRST_DAY` — *"day 4 or 5"*, the player's range, and the
+      build picks one and says why — to the last day, the way `budget_for(day)` rises. Everything
+      below reads that one number, so the city degrades as one thing rather than as three
+      unrelated ones; a per-block factor can sit on top of it later (a `BURNT_OUT` block is
+      further gone than a residential one) but is not the first version
+- [ ] **Cracked ground, by level — variety and gradient.** *("different levels of cracks … so we
+      can add variety and gradient.")* `GroundTiles` chooses a tile's crack level from the curve
+      and a per-tile hash, so the same tile shows the same crack every day and more tiles show
+      worse cracks as the run goes on: hairline first, cracked, then broken. That is the gradient
+      in time; the gradient across the map — a block further gone than its neighbour, the
+      industrial edge worse than the residential middle — is the per-block factor the first item
+      leaves for later, and the levels are what make it expressible. The patterns within a level
+      are the variety, picked by the same hash. Pavement before road, since it is what she walks
+      on and what she sees. A crack changes nothing about the tile — not its type, not its cost,
+      not the crowd's lanes
+- [ ] **Loose litter, spread by the curve.** Small ground decals placed at generation each day from
+      the curve and a seeded roll, on pavements, alleys and squares, never on the road's lanes
+      (where a decal under a car reads as a bug) and never inside a calm area (a park with litter
+      in it is a spoiled park, and spoiling has its own mechanism). Decals only: no body, no
+      field, no y-sort — they lie under everything
+- [ ] **Garbage sacks, alleys first.** Sacks stand in alleys from the first degraded day and beside
+      building fronts later, the second threshold another day or two on: *"in alleyways at first
+      and at the side of buildings later on"*. A single sack is decoration with a shape under M61
+      and no body; **a pile may carry a body** — an alley narrowed by rubbish is the one place this
+      milestone could touch a route, and whether it should is decided when a pile is seen in an
+      alley she has to use, not before. The mouse in the alley (M100) is placed by preference
+      beside a pile once both exist
+- [ ] **The storefronts shutter.** M106's `storefront_shuttered.svg` replaces a block's storefronts
+      when the block goes `BOARDED_UP`, and from a later point on the curve for any commercial
+      block, so the degrading city and the block purposes tell one story rather than two
+- [ ] **A rig picture per act.** Four screenshots of the same seed on days 1, 5, 9 and 13 from the
+      same doorstep, so the curve is judged as a sequence; the record goes to `DECISIONS.md`
+
+---
+
+## M106 — Roofs, fronts and street trees · asked for 2026-09-10
+
+> "we need stuff on top of roofs -- we have an air duckt already -- it needs to be animated. but we
+> need other things on roofs as well (there are reference photos to draw ideas from). we need more
+> varied building fronts. storefronts, fire escapes."
+> "we could also add trees that can be placed in the street. right now the fallen tree doesn't make
+> that much sense"
+
+**The buildings are the same wall and roof repeated, and the districts are told apart by nothing
+but height.** `Building` composes every facade from `wall.svg`, `wall_base.svg`, the two window
+tiles and the edge tiles, and every roof from `roof.svg` and its edges; `INDUSTRIAL` and `CIVIC`
+differ only in storeys (this is M100's district item, moved here). The pictures are M103's; this
+milestone places them so a street reads as a place, and a district as a district, at a glance.
+
+- [ ] **Roof furniture, placed per building at generation.** A seeded pick from the roof units by
+      district — vents, ducts and HVAC boxes on `INDUSTRIAL`, skylights on `CIVIC`, water tanks and
+      the odd vent on `RESIDENTIAL` and `COMMERCIAL` — sited on the roof's interior cells so
+      nothing overhangs an edge, a count that scales with the footprint, and a duct run laid as a
+      straight-and-corner chain. The vent animates by alternating its two frames on the building's
+      own timer, and nothing else on a roof moves. Drawn by `Building` above its roof tiles, so a
+      roof unit is never y-sorted against anything on the street
+- [ ] **Fronts, per district and block purpose.** `COMMERCIAL` ground floors take storefronts, with
+      an awning on a seeded share of them; `CIVIC` takes `civic_portico.svg` at its entrance; fire
+      escapes go on `RESIDENTIAL` facades at a seeded share, two cells tall over the existing
+      windows. A storefront is a `wall_base` replacement and a fire escape is an overlay, so
+      `Building`'s composition changes in two places and the tint rules stay. The awning is the
+      one piece that leaves the facade plane, and it stays out of the pavement's walkable band
+- [ ] **Street trees.** Trees on the pavement, in pits, along `RESIDENTIAL` and `COMMERCIAL`
+      streets at a seeded spacing — never on a crossing, never within a tile of a door or a
+      checkpoint, and never on the main road's pavements where the crowd's lanes are densest. A
+      street tree is a `Prop` like a park tree, feet-anchored so she passes behind its canopy, and
+      it carries a shape under M61 with a small body, since a trunk is something you walk around.
+      **This is what makes the fallen tree make sense**: a street with trees on it can have one
+      down across it. `fallen_tree`'s own placement then prefers a street that has standing trees,
+      and the closure marker's picture is checked against the standing drawing so the two read as
+      the same tree
+- [ ] **The district comparison.** One rig screenshot per district at gameplay scale, side by
+      side, so *reads differently at a glance* is judged by a person rather than by the count of
+      units placed; the record goes to `DECISIONS.md`
+
+---
+
 ## M102 — The finale: out of the apartment, out of the city · asked for 2026-09-09
 
 **Planned and not queued.** *("this is just a plan for now — we probably won't actually implement
@@ -1128,9 +1303,11 @@ off-screen explosion draws, once M100's sound lines bind it. The player herself 
 `assets/rig/mother_carrying_{front,back,side}_{a,b}.svg` are the existing mother's six frames with
 the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
 `Stroller` can swap them in facing for facing. New drawings, each listed with its contract under
-M103: the hallway, stair, corridor and basement tiles, a dead lift door, the barricaded entrance
-and the service door, mice, steam, and an explosion row's own picture if one is wanted beyond the
-arc and the crater.
+M103: the hallway with its flashing windows and its floor edge that implies the apartment doors,
+the stairwell with its mechanical floor and its door seen only from inside, the entrance and the
+furniture heaped against it, a chandelier, the basement's gloomy floor, brick walls and puddles, the
+emergency exit, a dead lift door, mice, steam, and an explosion row's own picture if one is wanted
+beyond the arc and the crater. *(2026-09-10, the player's room list — see M103.)*
 
 **What is genuinely new, and the order to build it in:**
 
@@ -1140,7 +1317,14 @@ arc and the crater.
       basement is the last floor with the service door on it — reached from day 14's summary
       rather than from the doorstep, and left through that door onto the city map at the home
       lot's side. What the interior does not need is any of the city's planners; a floor is small
-      enough to place by hand
+      enough to place by hand. **What it is drawn with**, 2026-09-10: a hallway whose north wall
+      carries windows that **flash** when an off-screen explosion goes off — the explosion row's
+      cue indoors, one or two frames of the lit variant — and whose apartment doors are never
+      drawn, only implied by the floor's south edge; a stairwell with a mechanical floor whose
+      doors back onto the hallway are seen only from inside it; the main entrance with furniture
+      heaped against it; a chandelier as the hallway's light; a gloomy basement with raw brick
+      walls, puddles and the emergency exit at the end. Every picture is listed under M103 with
+      its contract
 - [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
       first park to second to third to the edge, one street-walk between each pair and nothing
       else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
