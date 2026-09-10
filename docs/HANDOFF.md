@@ -341,8 +341,10 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
-remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M61, one
-shape per object from which the field, the shadow and the collision body are derived, follows; M65, the protester who points, is revisited against the walled city rather than
+remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M104, the
+debug view with fields, shadows and bounding boxes as toggleable layers, comes next because it is
+how M61 is checked; M61, one rectangle per object from which the field, the shadow and the
+collision body are derived, follows; M65, the protester who points, is revisited against the walled city rather than
 built as written. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,

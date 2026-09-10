@@ -85,20 +85,25 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 1. **M56**'s build item, the other rows that hunt. *("M56 is also related to the other items to
    work on right now.")* Its measurement against the nerves waits, because reaching act III
    waits: *"I wanna wait reaching act III until those things are done."*
-2. **M61** — one shape per object, from which the field (the Minkowski sum of the body and a
+2. **M104** — the debug view: fields, shadows and bounding boxes as toggleable layers, and the
+   existing readout made toggleable with them. *(2026-09-10: "create a debug view to show the
+   fields and the shadows and the bounding boxes. make each layer toggleable (maybe number keys?)
+   also make other debug information toggleable.")* Ahead of M61 because it is how M61 is
+   checked.
+3. **M61** — one shape per object, from which the field (the Minkowski sum of the body and a
    kernel), the shadow and the collision body are all derived. *("M61 is kind of important but not
    the immediate next item.")*
-3. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
+4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
    re-read before the prepared poses are bound to objectives.
-4. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
    reprioritised".
-5. **Reaching act III**, which M56's measurement against the nerves needs.
-6. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+6. **Reaching act III**, which M56's measurement against the nerves needs.
+7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -304,9 +309,11 @@ than a rotation; ground tiles are 32×32 in `assets/tiles/` and reach the game t
 - [ ] **M102 — `assets/props/door_service.svg`.** The service exit on the building's side, the
       door the finale's city section starts at. Same family as `door.svg`, plainer and narrower
       than the home door so the two are never confused on the summary or the map
-- [ ] **M102 — `assets/events/mouse.svg`.** The apartment's own small event: a moving picture in
-      the `cat_running.svg` family, tiny, side view mirrored for west. One picture is enough; a
-      mouse that startles is a short pulse and does not need a second pose
+- [ ] **M102 and M100 — `assets/events/mouse.svg`.** The apartment's own small event, and an
+      alley's *("btw we can reuse the mouse for alleyways as well", 2026-09-10 — the row is
+      M100's)*: a moving picture in the `cat_running.svg` family, tiny, side view mirrored for
+      west. One picture is enough; a mouse that startles is a short pulse and does not need a
+      second pose, and one drawing serves both rows
 - [ ] **M102 — `assets/events/steam.svg`.** A stationary field in a basement corridor: a vent or a
       burst pipe with a plume, bottom-centre anchored, drawn so the pulse animation can scale the
       plume the way `flame.svg` is scaled by the fire animation. The plume is the field's picture
@@ -386,6 +393,43 @@ use the guard pair for a guard departure if that proposed response is accepted.
 
 ---
 
+## M104 — The debug view · asked for 2026-09-10
+
+> "create a debug view to show the fields and the shadows and the bounding boxes. make each layer
+> toggleable (maybe number keys?) also make other debug information toggleable."
+
+**A set of world-space overlays, each one a layer with a key, in a debug build only.** Today the
+only developer furniture drawn over the game is the readout in the top right — the seed, the frame
+rate, the meter's breakdown by source, whether she stands on calm ground and what the closest live
+event is doing — assembled in `main.gd` behind `DevFlags.enabled()` and never toggled: it is on for
+the whole of every debug run and absent from a release. Everything else a developer looks at is
+after the fact, in the run log and the dusk map. Nothing draws a field, a shadow's extent or a
+collision body while the game runs, which is why M61 cannot be checked by eye until this exists.
+
+- [ ] **Three geometry layers, drawn from the objects' own data rather than a second copy of it.**
+      **Fields**: every emitter's falloff footprint — inner and outer boundaries — for events,
+      walkers and cars alike, since all three run `Tuning.falloff`, tinted so a lethal field is told
+      from a costly one. **Shadows**: the ground extent each shadow is drawn over. **Bounding
+      boxes**: every collision body — event obstructions, buildings, her own circle, the car strike
+      box — as its outline. Before M61 lands these show circles and hand-set ovals, which is the
+      point: the view is what makes the disagreement M61 fixes visible, and after M61 all three
+      layers trace one rectangle each
+- [ ] **The readout becomes a layer too**, and so does anything else that is currently always-on
+      in a debug build. *("also make other debug information toggleable.")* Each layer has a
+      number key, `1` to `n`, and the mapping is printed once on boot and in `docs/TELEMETRY.md`,
+      which already documents the developer surface. Keys are debug-only, gated by
+      `DevFlags.enabled()` the way the snapshot key is, so a release build neither draws nor listens
+- [ ] **Each layer is a `CanvasItem` that draws in `_draw()` from a query of the live objects**,
+      never a change to the objects' own drawing, so a layer can be added or removed without
+      touching `EventInstance`, `CrowdAgent` or `Stroller`. The halo already has this shape — a
+      duplicate drawing over the source — and the layers go the other way, reading positions and
+      numbers and drawing outlines. Nothing here changes what the game does; a test asserts that
+      every layer is absent from the tree when `DevFlags.enabled()` is false
+- [ ] **A `--layers 1,3` flag** sets the initial state, so a rig screenshot can be taken with the
+      fields on and nothing else, and the M61 evidence pictures are reproducible
+
+---
+
 ## M61 — One shape per object: the field, the shadow and the body · asked for 2026-09-02, widened 2026-09-10
 
 > "fields should be ellipses, not circles. the excentricity should be determined by movement speed.
@@ -410,13 +454,11 @@ of its graphics). let's structure it in that way and we'll get three wins out of
       `obstructs_radius` either side of centre is solid as a disc rather than as the band it shows;
       a building is a `RectangleShape2D` of its footprint and she is one circle. **The field** is a
       point falloff, which the bullets below already replace with `body ⊕ kernel`. The shape is the
-      body operand of that sum, stated once: a point with a radius, a segment with a radius (the
-      capsule), an axis-aligned rectangle, or a convex polygon, in the object's own ground frame,
-      rotated with its facing. Then the field is the shape offset by the kernel, the shadow is the
-      shape drawn on the ground — squashed on Y by the oblique view's own 0.8, the way the oval is
-      today — and the body is the shape as its collision resource (`CircleShape2D`,
-      `CapsuleShape2D`, `RectangleShape2D`, `ConvexPolygonShape2D`). One number to tune per object
-      and three places that stop disagreeing.
+      body operand of that sum, stated once: a rectangle in the object's own ground frame, rotated
+      with its facing (the decision below). Then the field is the rectangle offset by the kernel,
+      the shadow is the rectangle drawn on the ground — squashed on Y by the oblique view's own
+      0.8, the way the oval is today — and the body is a `RectangleShape2D` of it. Two numbers to
+      tune per object and three places that stop disagreeing.
 
       **What has to survive the change.** The halo skips the shadow (playtest 35: *"the halo should
       not include the shadow"*), and a shape-drawn shadow is skipped the same way. The rule that a
@@ -428,11 +470,40 @@ of its graphics). let's structure it in that way and we'll get three wins out of
 
       **This closes M100's "vehicle collision and silhouette agreement" item from here**, since a
       body derived from the same shape as the picture's footprint is the whole of that ask; its
-      text moved under this bullet rather than being designed twice. Whether a car in the crowd
-      gets a shape too — it has no body today and its shadow is an 18px oval — is the first
-      question for the build, since the crowd's cars are lethal through `TrafficIndex` rather than
-      through a field, and a shape on them changes what a shadow says without changing what they
-      cost.
+      text moved under this bullet rather than being designed twice.
+
+      **Three decisions, 2026-09-10, in the player's words.**
+
+      - **Everything gets a shape.** *("everything gets a shape even if the shape ends up not being
+        used by the field.")* Walkers, cars, props, buildings, the player and the pram, every
+        event: no object without one, whether or not it emits.
+      - **Shapes are rectangles.** *("we can restrict bounding boxes to be rectangles which then
+        defines the shadow and minkowski influences as stretched rounded rectangles.")* A shape is
+        an axis-aligned rectangle in the object's own frame, rotated with its facing — a point is a
+        square, a person is a small one, a van is a long one, a spread is the band it draws. The
+        body is a `RectangleShape2D`; the shadow is that rectangle drawn on the ground, squashed
+        on Y by the oblique view's 0.8; the field is the rectangle ⊕ the kernel, a rounded
+        rectangle whose corner radius is the kernel's — stretched further ahead when the kernel is
+        the ellipse of a moving thing. No capsules, no polygons, and the general Minkowski sum is
+        never needed: a rectangle offset by a disc or an ellipse is closed-form.
+      - **Lethal is not noise, and the crowd is not a different mechanism.** *("lethal != noise.
+        lethal is when you get hit by a car. but the car itself produces noise which is what the
+        purpose of the field is.")* The queue said on 2026-09-10 that a crowd car has no field and
+        is lethal instead, and that was wrong: `CrowdAgent.contribution_at()` runs the same
+        `Tuning.falloff` an event does — a car is 5.4 over 38/104px plus an 18-point horn jolt, a
+        walker 4.2 — and `Crowd.total_excitement_at()` sums it into the meter beside the events,
+        which is what `docs/MECHANICS.md` calls the emergent noise floor. Being hit is separate: a
+        moving car's strike box is already a rectangle, `CAR_STRIKE_HALF_LENGTH` 26 by
+        `CAR_STRIKE_HALF_WIDTH` 14, read by `will_be_lethal()`. So the noise shape and the strike
+        shape are one rectangle read twice, which is the shape doing its job; what the crowd does
+        not have is a physics body (walkers are shoved apart by `Crowd`'s bump mechanism, not by
+        collision), and whether a rectangle body replaces that is a build question, not a design
+        one. The mechanism is the same falloff; only the class holding it differs.
+
+      **M104's debug view is built first**, because none of the three derivations can be checked
+      by a rig alone: a shadow that is the wrong shape, a field that reaches further than the
+      body it is drawn around, and a body that does not match the picture are all things a person
+      sees in one frame with the layers on.
 
 **A change to the emission model itself, and it is the first one since the falloff shape.** Today
 every field is a disc: `Tuning.falloff(distance, intensity, inner, outer)` prices being near a thing
@@ -825,6 +896,14 @@ fix is the body following the picture's footprint rather than a per-row adjustme
 artwork, the player's perpendicular burnt-car correction and the rendered evidence are in
 `DECISIONS.md`, "SVG artwork and upcoming milestone assets".
 
+- [ ] **A mouse in the alley.** *(2026-09-10: "we can reuse the mouse for alleyways as well.")* A
+      new catalogue row placed on `ALLEY` tiles: a mouse that darts across the alley when she comes
+      near, the `cat_dash` shape — a short pulse, no body, nothing lethal — at a lower intensity,
+      since it is a startle rather than a threat, and the alley's own `+3.0` a second of dread is
+      already the row's setting. The picture is `assets/events/mouse.svg`, drawn once under M103
+      for M102's apartment and reused here. Which acts it appears in and its cap are the build's
+      to derive from the cat's, and its dash is aimed across the alley's short axis so it crosses
+      her path rather than running down it
 - [ ] **Park trees clump.** `City` places them by rejection sampling inside the lot with no
       spacing test. Add a minimum-spacing check while retaining `assets/props/tree_a.svg` and
       `tree_b.svg`, the two existing variants drawn by `Prop`.
