@@ -6,8 +6,8 @@ editable and record each SVG/PNG pair; generated source sheets are generation ev
 
 The game uses a registered PNG when one exists. `--svg`, or `?svg=1` on the web,
 forces original SVG graphics. The same drawing code handles both formats.
-The transferred artwork covers the mother's six animation frames and the pram's three views. Other
-families continue to use their SVGs.
+The transferred artwork covers the mother's ten animation frames and the pram's five authored
+views, supplying eight directions through explicit east/west mirroring. Other families use SVGs.
 
 ## Reference roles
 
@@ -27,8 +27,10 @@ collision and camera framing remain the existing game's responsibility.
 Each PNG must match the SVG's native dimensions and rasterized alpha exactly. The registration
 step enforces this boundary; interior detail and visual quality still require inspection.
 Generation and extraction are documented in
-[the generation record](evidence/style-transfer-2026-09-10/GENERATION.md). The source comparison is
-[rig-comparison.png](evidence/style-transfer-2026-09-10/rig-comparison.png).
+[the cardinal generation record](evidence/style-transfer-2026-09-10/GENERATION.md) and
+[the diagonal generation record](evidence/style-transfer-eight-directions-2026-09-10/GENERATION.md).
+The [eight-direction source comparison](evidence/style-transfer-eight-directions-2026-09-10/eight-directions-comparison.png)
+shows both formats at matching scale and ground offsets.
 
 ## Review
 

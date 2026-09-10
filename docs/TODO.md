@@ -24,12 +24,6 @@ variants. Preserve native scale, ground anchors, actor identity and gameplay. Do
 mirror symmetry explicitly; front, back and diagonal projections must be authored rather than
 made by rotating an upright picture.
 
-- [ ] Add eight-direction mother/pram drawing, authoring the diagonal SVG views before PNG
-      transfer. Preserve the existing cardinal artwork, two-frame gait, native ground anchors
-      and pram spacing. Use explicit east/west mirror symmetry for this family. Verify direction
-      selection and compare all eight views in SVG and PNG. PLAYTEST-51 supplies the request;
-      the spacing comparison is recorded in DECISIONS.md under Eight-direction style transfer.
-
 - [ ] Audit every entity drawing and its runtime caller against `GRAPHICS.md`, the event looks,
       crowd families and prepared artwork in M103, the drawings the queue owes. Record a matrix
       of eight facings, movement/idle/action states, native canvases, anchors, layer order and

@@ -44,3 +44,7 @@ The repository's `tools/remove-checkerboard.py` supplies the existing extraction
 > also, very important -- every png asset needs a corresponding svg asset -- the svg asset always comes first
 
 > also, let's flip the illustrated flag around -- use the png if available by default and add an option to use the svg graphics
+
+> once this is done let's merge your pr
+
+> you have the permission to do so

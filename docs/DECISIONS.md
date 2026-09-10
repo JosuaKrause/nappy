@@ -2,6 +2,31 @@
 
 ## Eight-direction style transfer — 2026-09-10
 
+The mother/pram part of M108, eight-direction entity graphics, is implemented in SVG and PNG.
+Sources were committed before generation in `7b5f871` and refined in `09a4ee9`; the source manifest
+records their hashes. Four 26×46 mother gait frames and two 36×30 pram views add genuine diagonal
+projections, with explicit west mirroring and unchanged 34px spacing. The drawing now selects
+eight views with a 5° hold beyond each 22.5° sector boundary; resetting selects the nearest view
+directly. The same texture/mirror helpers used by drawing are checked across all directions and
+both mother frames, including wrapped boundaries and reset cases near boundaries.
+
+The built-in generator produced the saved diagonal atlas from those SVGs and the approved style
+references. Checkerboard extraction and registration produce six native-size PNGs with exact
+SVG alpha; raw output, source rasters, source hashes, measurements and exact prompt are preserved
+under `docs/evidence/style-transfer-eight-directions-2026-09-10/`. Its comparison sheets show
+SVG left and PNG right. The eight-view sheet assembles textures with runtime offsets at 3×;
+it is a source comparison, not a gameplay capture or a smooth-animation measurement.
+
+Three SVG drafts were reviewed before PNG generation: the first kept cardinal silhouettes and
+changed facial features between gait frames; the second still changed faces and barely changed
+the legs. Their rendered source evidence is preserved under
+`docs/evidence/archive/rejected-graphics/diagonal-svg-2026-09-10-v1/` and `-v2/`. The `-v3/`
+snapshot preserves the subsequent frame-consistent draft before the front/back art distinction
+was completed with the visible baby and a rear three-quarter cheek/arm/coat plane.
+The correction requires consistent upper bodies across gait frames, distinct leg/shoe geometry,
+true three-quarter pram planes and a reset that selects the nearest view without inherited
+hysteresis. These are source-art/runtime defects, not things a style transfer should conceal.
+
 The user also requests PNGs by default with an SVG override, and authorizes merging PR #75
 after the current work. The resolver now prefers matching PNGs and `--svg` / `?svg=1` forces
 SVGs in debug or release. City TileSet replacement uses the same resolver. The old illustrated

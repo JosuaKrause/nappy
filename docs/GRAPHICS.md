@@ -46,8 +46,8 @@ Some visible graphics are code rather than image files:
 
 | Assets | Runtime binding and behaviour |
 |---|---|
-| `assets/rig/mother_{front,back,side}_{a,b}.svg` | `src/player/stroller.gd` chooses a facing and alternates the two gait frames. The side pair mirrors for west. |
-| `assets/rig/pram_{front,back,side}.svg` | `src/player/stroller.gd` chooses a facing; the side view mirrors with the mother. |
+| `assets/rig/mother_{front,back,side}_{a,b}.svg`, `mother_{front,back}_diagonal_{a,b}.svg` | `src/player/stroller.gd` chooses among eight upright views and alternates the two gait frames. East-authored side and diagonal views mirror explicitly for west. Mother canvases are 24×46 cardinal front/back, 26×46 side/diagonal, all bottom-centre grounded. |
+| `assets/rig/pram_{front,back,side}.svg`, `pram_{front,back}_diagonal.svg` | `src/player/stroller.gd` chooses the matching eight-direction pram view; east-authored side and diagonal views mirror explicitly for west. Pram canvases are 30×30 cardinal and 36×30 side/diagonal, bottom-centre grounded. |
 | `assets/props/baby_{zzz,fuss,cry}.svg` | `src/player/stroller.gd` chooses sleeping, awake/fussing or crying state above the pram. |
 | `assets/props/alert.svg`, `assets/props/alert_close.svg` | `src/player/stroller.gd` draws the exclamation over the player when an event is about her, using the close variant at the nearer threshold. |
 | `assets/crowd/walker_{front,back,side}_{body,trim}.svg` | `src/crowd/crowd_agent.gd` chooses a facing, tints the body per walker and overlays the untinted trim. Side views mirror. |
@@ -139,7 +139,9 @@ differently sized PNGs fall back to the SVG. Existing draw transforms and animat
 The live replacement family is `assets/illustrated/svg-transfer/rig/`: `mother_front_a.png`,
 `mother_front_b.png`, `mother_back_a.png`, `mother_back_b.png` (24×46), `mother_side_a.png` and
 `mother_side_b.png` (26×46), `pram_front.png` and `pram_back.png` (30×30), and `pram_side.png`
-(36×30). Each preserves the native SVG alpha. Other families retain their SVG textures.
+(36×30). `mother_{front,back}_diagonal_{a,b}.png` (26×46) and
+`pram_{front,back}_diagonal.png` (36×30) supply the diagonal views; west views mirror their
+east-authored partners. Each preserves native SVG alpha. Other families retain SVG textures.
 
 [VISUALS.md](VISUALS.md) defines reference authority and the visual acceptance gate.
 [The generation record](evidence/style-transfer-2026-09-10/GENERATION.md) preserves raw outputs,
