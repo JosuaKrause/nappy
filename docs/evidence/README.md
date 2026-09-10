@@ -42,6 +42,8 @@ makes the file worth having.
 | `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-nw-after.png` | North-west corner after M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
 | `archive/session-captures/2026-09-01/shot-2026-09-01-seed4242-d69631a-corner-se-after.png` | South-east corner after M55's corner fix. | [DECISIONS.md](../DECISIONS.md), M55 |
 | `shot-2026-09-09-seed4242-69c97bd-arterial-standing-no-caret.png` | The arterial pavement at ordinary crowd density, seed 4242, five seconds standing at `--spawn arterial`: several nearby walkers glow with their own entity halo and none carries a caret. | [tests/test_danger.gd](../../tests/test_danger.gd), `_test_the_arterial_at_ordinary_density_marks_nobody` |
+| `shot-2026-09-10-seed4242-m61-shape-before.png` | A `construction` spread on seed 4242 day 2, on `main` before M61: each barrier stands on the old point-ellipse contact shadow, flat and the same shape every point object casts. | M61, "one shape per object" |
+| `shot-2026-09-10-seed4242-m61-shape-after.png` | The same spot after M61: each barrier's shadow is now `GroundShape`'s own capsule, swept along the pavement rather than a single oval — a car in the same frame casts the same kind of shadow along its own travel axis. | M61, "one shape per object" |
 
 ## Why a lost log stays lost
 

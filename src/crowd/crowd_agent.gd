@@ -1289,7 +1289,7 @@ func _draw_body(canvas: CanvasItem) -> void:
 	var frame := _frame()
 	var flip := _flipped()
 	if kind == Kind.CAR:
-		_draw_shadow(canvas, Vector2.ZERO, 18.0)
+		_draw_shape_shadow(canvas, _car_shadow_shape(), Vector2.ZERO, _travel_axis())
 		Sprites.draw_standing(canvas, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
 		Sprites.draw_standing(canvas, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
 		return
@@ -1298,6 +1298,26 @@ func _draw_body(canvas: CanvasItem) -> void:
 	Sprites.draw_standing(canvas, WALKER_BODY[frame], at, Vector2.ZERO, flip, colour)
 	Sprites.draw_standing(canvas, WALKER_TRIM[frame], at, Vector2.ZERO, flip)
 
+## A car's own shadow shape — a capsule along its travel axis, read off its own two textures
+## rather than a hand-picked radius: the side view's width is the car's along-track length, the
+## end view's is its across-track width, so `radius` is half the across and `half_length` is what
+## is left of half the along once the two end caps are accounted for.
+##
+## **No body for a car.** A car's lethality is `TrafficIndex`'s, not a field's, and a `StaticBody2D`
+## here would change the crowd's own collision rules rather than only how it looks — see
+## docs/EVENTS.md and the **crowd-traffic** skill on why separation between bodies is positional,
+## never a shape a car could get pinned against. This shape exists for the shadow alone.
+static func _car_shadow_shape() -> GroundShape:
+	var along := CAR_BODY[1].get_size().x
+	var across := CAR_BODY[0].get_size().x
+	var radius := across * 0.5
+	return GroundShape.segment(along * 0.5 - radius, radius)
+
+## Which way this car is travelling, on the ground plane — the axis its shadow's capsule sweeps
+## along. `_vertical` is the same flag `_frame()` reads to choose a side-on or end-on sprite.
+func _travel_axis() -> Vector2:
+	return Vector2.DOWN if _vertical else Vector2.RIGHT
+
 ## The drop shadow under this agent, skipped for its own halo ring — the same shape
 ## `EventInstance._draw_shadow` has, for the same reason: the shadow is the ground under the
 ## thing, not the thing, and a cue for what is charging her right now has nothing to say about it.
@@ -1305,6 +1325,13 @@ func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
 	if canvas == _halo:
 		return
 	Sprites.draw_shadow(canvas, at, radius)
+
+## The shadow for this agent's shape when it is not a point — the car's own capsule. Same halo
+## guard as `_draw_shadow` above.
+func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2, axis: Vector2) -> void:
+	if canvas == _halo:
+		return
+	shape.draw_shadow(canvas, at, axis)
 
 ## The caret's own answer for this car, 0 (none), 1 (amber) or 2 (doubled red), cached against
 ## `_clock` for the same reason `EventInstance._caret_strength()` caches against `age`: `_draw()`

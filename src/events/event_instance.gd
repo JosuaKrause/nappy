@@ -9,7 +9,6 @@ extends Node2D
 
 const CAT_CROUCHED := preload("res://assets/events/cat_crouched.svg")
 const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
-const WIDE_SCENE_SHADOW := preload("res://assets/props/shadow.svg")
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
 ## something of its own.
@@ -1336,6 +1335,21 @@ func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
 		return
 	Sprites.draw_shadow(canvas, at, radius)
 
+## The shadow for a row whose shape is not a point — every spread-drawn row (`_draw_spread`,
+## `_draw_cafe`, `_draw_protest`, `_draw_firefight`, `_draw_wide_scene`'s own fallback). Same
+## halo guard as `_draw_shadow` above, routed through `shape.draw_shadow()` instead of a fixed
+## radius, along `_spread_axis()`.
+func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Vector2.ZERO) -> void:
+	if canvas == _halo:
+		return
+	shape.draw_shadow(canvas, at, _spread_axis())
+
+## The ground-plane direction a spread-shaped shadow sweeps along — local Y when the street this
+## instance stands on is east-west (`_spread_vertical`), local X otherwise. The same axis
+## `_spread_at()` already lays the drawn body along.
+func _spread_axis() -> Vector2:
+	return Vector2.DOWN if _spread_vertical else Vector2.RIGHT
+
 ## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
 ## `CrowdAgent` shares. Called by `ExcitementHalo` once a frame for every live instance — above
 ## zero for the handful `select_sources()` picked, zero for everything else. Refuses a nonzero
@@ -1673,7 +1687,7 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## equal the obstructed one, matching the segments above rather than overhanging them.
 func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shadow(canvas, Vector2.ZERO, half * 0.9)
+	_draw_shape_shadow(canvas, GroundShape.band(half))
 	var segment := segment_texture.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -1707,13 +1721,11 @@ func _draw_wide_scene(texture: Texture2D, canvas: CanvasItem = self) -> void:
 		canvas.draw_texture_rect(shadow,
 				Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
 				false, Palette.SHADOW)
-	elif _spread_vertical and canvas != _halo:
-		# A vertical scene's shadow follows the same 192px ground span as its body.
-		canvas.draw_texture_rect(WIDE_SCENE_SHADOW,
-				Rect2(Vector2(-thickness * 0.5, -half), Vector2(thickness, half * 2.0)),
-				false, Palette.SHADOW)
 	else:
-		_draw_shadow(canvas, Vector2.ZERO, half * 0.9)
+		# No authored ground-contact art for this axis (only `car_accident` has one either way) —
+		# the shape's own capsule shadow follows the same span as the body, `-half` to `half`
+		# along the spread axis.
+		_draw_shape_shadow(canvas, GroundShape.band(half))
 	Sprites.draw_standing(canvas, texture, anchor, extent)
 
 static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
@@ -1742,7 +1754,7 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 ## rather than turning with the spread.
 func _draw_cafe(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shadow(canvas, Vector2.ZERO, half * 0.9)
+	_draw_shape_shadow(canvas, GroundShape.band(half))
 	var segment := CAFE_TABLE.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -1771,7 +1783,7 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 ## would be a second cue saying the same thing.
 func _draw_protest(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shadow(canvas, Vector2.ZERO, half * 0.95)
+	_draw_shape_shadow(canvas, GroundShape.band(half))
 	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
 	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
 	# which is the lie `_draw_spread` exists to avoid in the other direction.
@@ -1795,7 +1807,7 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 ## thing to time a run past, and `can_be_timed()` already says so.
 func _draw_firefight(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shadow(canvas, Vector2.ZERO, half)
+	_draw_shape_shadow(canvas, GroundShape.band(half))
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.0, 1.0)

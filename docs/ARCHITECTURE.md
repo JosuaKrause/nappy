@@ -107,11 +107,12 @@ src/
 	illustrated_downsample.gdshader  the same-view render-scale experiment's averaging pass
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
+  ground_shape.gd         one ground shape per object; the shadow and the body are derived from it
 assets/
   tiles/                  ground tiles, 32x32 SVG
   buildings/              facade and roof tiles, 32x32 SVG
   rig/                    the mother and the pram, per direction
-  props/                  trees, the swing frame, the bollard, the door, the shadow
+  props/                  trees, the swing frame, the bollard, the door
   events/                 one body per EventDef.Look
   closures/               barriers, the sign, and what is lying in the road
   crowd/                  walkers and cars, body plus colour trim

@@ -22,12 +22,20 @@ func _draw() -> void:
 		Kind.TREE:
 			_draw_tree()
 		Kind.PLAYGROUND_FRAME:
-			Sprites.draw_shadow(self, Vector2.ZERO, 19.0)
+			_playground_frame_shape().draw_shadow(self, Vector2.ZERO)
 			Sprites.draw_standing(self, SWING_FRAME, Vector2.ZERO)
 		Kind.BOLLARD:
 			var size := BOLLARD.get_size()
 			Sprites.draw_shadow(self, Vector2.ZERO, size.x * 0.4)
 			Sprites.draw_standing(self, BOLLARD, Vector2.ZERO)
+
+## The swing frame's own shadow shape — a capsule along its width, read off its own texture the
+## same way `CrowdAgent`'s car reads its two: `radius` from the frame's depth (its texture height),
+## `half_length` from what is left of half its width once the rounded ends are accounted for.
+static func _playground_frame_shape() -> GroundShape:
+	var size := SWING_FRAME.get_size()
+	var radius := size.y * 0.5
+	return GroundShape.segment(size.x * 0.5 - radius, radius)
 
 ## Two tree shapes and a mirror, so ten trees in a park are not one silhouette repeated.
 func _draw_tree() -> void:

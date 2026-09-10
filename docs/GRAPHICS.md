@@ -13,8 +13,12 @@ into the SVG inventory.
 
 `src/sprites.gd` owns the ground-plane contract used by the player, crowd, events and props:
 `draw_standing()` puts the bottom centre of a texture at the node's world position and mirrors
-about that point, while `draw_shadow()` stretches `assets/props/shadow.svg` along the ground.
-Unless a row below says otherwise, an actor or prop SVG is bottom-centre anchored by this helper.
+about that point, while `draw_shadow()` draws the contact-shadow ellipse every point-shaped object
+casts. There is no shadow SVG any more: `GroundShape` (`src/ground_shape.gd`) draws every shadow in
+code, from the object's own ground shape — a point everywhere the object's shape is a point, and a
+capsule (a rotated ellipse at each end of the object's spine, hulled together) wherever it is a
+spread or a wide vehicle. Unless a row below says otherwise, an actor or prop SVG is bottom-centre
+anchored by `draw_standing()`.
 
 Some visible graphics are code rather than image files:
 
