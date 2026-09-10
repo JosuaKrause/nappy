@@ -1161,7 +1161,7 @@ the one open route everything is sealed with the finale's own pictures — burnt
 craters — which is `SealPlanner`'s existing job with a different candidate list: it already seals
 every street off the day's tree. **But the finale's route is not a tree.** *(2026-09-09: "the
 finale route is *not* a tree any more. it's a single path going to the first park, then the second,
-then the third, then the exit. not overlapping routes".)* A day grows several strands to several
+then the third, then the exit. no overlapping routes".)* A day grows several strands to several
 calm areas and counts two distinct routes to each as a max flow; the finale has one ordered chain
 — service exit, first park, second park, third park, edge — with no branch, no second way to any
 of them, and everything off the chain sealed. The parks are the only calm on the way and are for
@@ -1249,7 +1249,7 @@ asked and each answered by the player on 2026-09-09:**
 4. **Two paths.** *("two paths it is.")* Two chains of the shape above, one ending at the tunnel
    at the north end of the main road and one at the bridge at its south end, each through its own
    three parks. They part at the service exit, or as near it as the lattice allows, and do not
-   overlap after that — *"not overlapping routes"* — so the choice is made once, at the door, and
+   overlap after that — *"no overlapping routes"* — so the choice is made once, at the door, and
    is the game's verb; the home lot sits between the two ends of the main road so neither exit is
    trivially nearer.
 
