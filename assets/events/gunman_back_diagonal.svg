@@ -1,5 +1,11 @@
-<!-- Gunman back diagonal crouched authored action projection. Canvas 30x26; bottom-centre ground anchor (15,26). -->
+<!-- Crouched rifleman firing back diagonal. Cover and barrel share the firing axis. Ground anchor (15,26). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="26" viewBox="0 0 30 26" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-<rect x="4" y="10" width="12" height="10" fill="#4a5438"/><circle cx="10" cy="7" r="5" fill="#4a5438"/><path d="M14 11 L28 8 L29 11 L15 14" fill="#26232a"/>
-  <rect x="0" y="16" width="30" height="8" fill="#6b6154"/><rect x="0" y="16" width="30" height="3" fill="#7f7466"/><path d="M0 24 L30 24" stroke="#221f28" stroke-width="2"/>
+  <path d="M6 14 L25 7 L29 10 L10 18Z" fill="#7f7466"/>
+  <path d="M10 18 L29 10 L29 18 L10 25Z" fill="#6b6154"/>
+  <path d="M18 15 L18 22 M25 12 L25 19" fill="none" stroke="#544c42" stroke-width="0.8"/>
+  <path d="M7 11 L15 9 L20 13 L18 23 L7 22Z" fill="#4a5438"/>
+  <path d="M7 20 L17 19 L22 24 L15 26 L9 23 L4 25 L3 22Z" fill="#2f3630"/>
+  <path d="M15 12 L26 5 L28 7 L18 15Z" fill="#26232a"/>
+  <path d="M12 13 L16 10 L22 11 L21 14 L17 14 L15 18Z" fill="#2f3630"/>
+  <ellipse cx="12" cy="7" rx="5.5" ry="6" fill="#4a5438"/><path d="M15 10 L18 8" fill="none" stroke="#2f3630" stroke-width="2"/>
 </svg>
