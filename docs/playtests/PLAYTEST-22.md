@@ -91,7 +91,7 @@ with a measured size — so the output was a re-specified milestone rather than 
 > "the folder structure allows for easily deleting old days/commits"
 
 Changes to how the run log and its pictures are written, and they are one milestone —
-[M70](TODO.md).
+[M70](../TODO.md).
 
 **The filename carries the whole run identity today**, and every artifact repeats it:
 `Telemetry.begin_run` builds a stem of `run-<timestamp>-seed<N>-<commit>` and every file in the

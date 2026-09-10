@@ -161,7 +161,7 @@ hold fills the disc itself as a radial sweep rather than a bar beside it, and th
 `.tscn` defaults were cleared too so a scene file does not say one either. Quitting has no in-game
 button on purpose — the window's own close button is its pointer route, and the web build has no
 quit at all. The record for all of this is in `DECISIONS.md` under M83, and the session it came from
-is [PLAYTEST-29.md](PLAYTEST-29.md).
+is [PLAYTEST-29.md](playtests/PLAYTEST-29.md).
 
 **What is gone and is not coming back is the two *mechanisms* M82 deleted**, as opposed to the
 choice between schemes, which M88 gave back: the drag stick, the aimed joystick playtest 27
@@ -213,9 +213,9 @@ the legacy binding without the flag. The dated contact review and its build prov
 DECISIONS.md; that image predates the tested resting-knee correction. Visual acceptance of the
 current pose and smooth motion remains open.
 
-[PLAYTEST-45](PLAYTEST-45.md) specifies the next actor defects: slanted east/west legs,
+[PLAYTEST-45](playtests/PLAYTEST-45.md) specifies the next actor defects: slanted east/west legs,
 outward north/south leg movement, excessive mother-to-pram spacing and pixelated pram rendering.
-[PLAYTEST-42](PLAYTEST-42.md) supplies a preserved timed PNG burst and MP4, with additional
+[PLAYTEST-42](playtests/PLAYTEST-42.md) supplies a preserved timed PNG burst and MP4, with additional
 double-bend leg anatomy and baby-over-seat compositing findings. Its resolution experiment requires
 more rendered pixels for the **same view**, actor size, HUD and window. Zooming out was an incorrect
 interpretation; it does not meet the request. Supersampling and anatomy need independent checks.
@@ -291,8 +291,8 @@ road, and the thinning that leaves a wrong turn open. Its questions are the kind
 answers: *does a walled city read as a route decision or as a maze*, *is a thinned wall an
 invitation or a mistake*.
 
-**Read [PLAYTEST-25.md](PLAYTEST-25.md) first, then [PLAYTEST-22.md](PLAYTEST-22.md),
-[PLAYTEST-21.md](PLAYTEST-21.md) and [PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 25 is the first
+**Read [PLAYTEST-25.md](playtests/PLAYTEST-25.md) first, then [PLAYTEST-22.md](playtests/PLAYTEST-22.md),
+[PLAYTEST-21.md](playtests/PLAYTEST-21.md) and [PLAYTEST-20.md](playtests/PLAYTEST-20.md).** Playtest 25 is the first
 phone session on the built mobile game and the first human verdict on the sealed city. Playtest 21
 is a brief run whose complaint — the city *"feels way empty"* — the sealing answers. Playtest 20 is
 the full seven-day run behind them, and its findings are filed against the milestones that own them.

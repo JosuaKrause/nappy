@@ -30,7 +30,7 @@ reader loses the half with the measurement in it.
 
 ## Write it down with all of its detail, before doing anything about it
 
-**Every piece of playtest feedback goes into `docs/PLAYTEST-NN.md` in full — the player's own words,
+**Every piece of playtest feedback goes into `docs/playtests/PLAYTEST-NN.md` in full — the player's own words,
 and every specific they gave — before a line of code is written.** Then it becomes a `docs/TODO.md`
 item, and only then does it get implemented.
 

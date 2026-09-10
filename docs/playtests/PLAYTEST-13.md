@@ -387,5 +387,5 @@ last. Finding 8 is small and belongs with it.
 
 **Tooling.** Findings 4 and 5, built first.
 
-The order is in [TODO.md](TODO.md). **Nothing goes back to the player until all of it is in** — see
+The order is in [TODO.md](../TODO.md). **Nothing goes back to the player until all of it is in** — see
 the instruction at the top of this file.

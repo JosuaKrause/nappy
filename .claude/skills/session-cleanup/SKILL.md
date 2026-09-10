@@ -79,7 +79,7 @@ measurement that justified them. Dated, and naming the milestone and playtest th
 **The test:** every fact lifted out of a docstring or a rule must be findable in `DECISIONS.md` by
 searching for the symbol or the noun it was attached to.
 
-**The playtest files are never rewritten.** `docs/PLAYTEST-NN.md` are primary sources — a player's
+**The playtest files are never rewritten.** `docs/playtests/PLAYTEST-NN.md` are primary sources — a player's
 own words on a date — and putting one in the present tense would destroy the only record of what was
 said. `DECISIONS.md` cites them.
 

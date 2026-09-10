@@ -26,7 +26,7 @@ Inspect these images before generating or accepting illustrated art:
    perspective. It does not lower the illustration or material target.
 
 Do not derive style from archived experiments or an unapproved generated concept. Read
-`docs/PLAYTEST-30.md`, `docs/VISUALS.md` and `docs/LUNA_HANDOFF.md` for the current accepted scope
+`docs/playtests/PLAYTEST-30.md`, `docs/VISUALS.md` and `docs/LUNA_HANDOFF.md` for the current accepted scope
 before proposing a new family.
 
 ## Asset workflow

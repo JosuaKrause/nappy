@@ -37,7 +37,7 @@ define style; `docs/reference/` supplies real-world structure and posture.
       The static contact review in DECISIONS.md predates the resting-knee correction. Headless
       attachment and displacement checks do not establish motion quality or visual acceptance.
       Keep the legacy drawings at their fixed horizontal comparison offset.
-- [ ] Resolve [PLAYTEST-45](PLAYTEST-45.md)'s directional posture and pram-quality findings within
+- [ ] Resolve [PLAYTEST-45](playtests/PLAYTEST-45.md)'s directional posture and pram-quality findings within
       the connected-body repair: mustard and red legs slant during east/west travel and spread
       outward during north/south travel. Review knee bend, ground stride, projected lift and
       source rest axes independently; matching endpoints alone is insufficient. Fit per-facing
@@ -46,12 +46,12 @@ define style; `docs/reference/` supplies real-world structure and posture.
       assembly scale and inherited filtering before choosing a repair. Confirm the illustrated
       player loads in the actual test checkout after imports. Use the repeatable procedure in
       the illustrated-png skill; see DECISIONS.md under Texture integration process.
-- [ ] Resolve [PLAYTEST-42](PLAYTEST-42.md)'s additional anatomy and pram compositing defects.
+- [ ] Resolve [PLAYTEST-42](playtests/PLAYTEST-42.md)'s additional anatomy and pram compositing defects.
       Inspect the preserved timed PNG sequence: each leg must read as one hip–knee–ankle chain,
       without a painted bend plus a second solver bend. The baby must sit within the seat and
       its facing-specific occlusion, not appear pasted over the stroller. Reconcile these with
       PLAYTEST-45's existing natural-reach and directional-gait repair; keep both reports intact.
-- [ ] Implement and review [PLAYTEST-42](PLAYTEST-42.md)'s higher-resolution rendering of the
+- [ ] Implement and review [PLAYTEST-42](playtests/PLAYTEST-42.md)'s higher-resolution rendering of the
       **current view**, preserving visible world extent, actor size, HUD size and physical window.
       Render more pixels and downsample them; do not zoom out or merely enlarge logical coordinates.
       Compare actual render-target dimensions and the same scene framing, input mapping, resize
@@ -133,71 +133,71 @@ that the milestones before it can be built knowing what they are building toward
 collisions with the good ending as written today were asked and answered the same day, and the
 entry records the answers in the player's words.
 
-**[PLAYTEST-50.md](PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
+**[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
 touch that shows only a colour change and no confirmation on a lost day's summary. The artwork
 review and the player's directional corrections are recorded in `DECISIONS.md`.
 
-**[PLAYTEST-49.md](PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
+**[PLAYTEST-49.md](playtests/PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
 one bug — events spawning inside a fully blocked street — filed at the top of M100's defects,
 one correction, that the non-adjacency rule does not cover parks yet, filed in M97, and one design
 instruction, the fire found before the engine, filed as M101.
 
-**[PLAYTEST-48.md](PLAYTEST-48.md) is the newest gameplay session, and its one note is built**:
+**[PLAYTEST-48.md](playtests/PLAYTEST-48.md) is the newest gameplay session, and its one note is built**:
 the signal head north of a junction, which faces up the screen, shows its back and no lamp. The
 record is in `DECISIONS.md` under M95.
 
-**[PLAYTEST-47.md](PLAYTEST-47.md)'s two notes are built**: a car comes out of the tunnel and off
+**[PLAYTEST-47.md](playtests/PLAYTEST-47.md)'s two notes are built**: a car comes out of the tunnel and off
 the bridge as well as going in, and `tools/run.sh` runs the import pass when a pulled checkout is
 missing an imported texture. The record is in `DECISIONS.md` under M94.
 
-**[PLAYTEST-39.md](PLAYTEST-39.md)'s one finding, the tunnel, is built.** The fade is inside the
+**[PLAYTEST-39.md](playtests/PLAYTEST-39.md)'s one finding, the tunnel, is built.** The fade is inside the
 portal's opening, the mountain stands above it, and the road into the mouth is asphalt rather than
 a crossing; the record is in `DECISIONS.md` under "The tunnel swallows the road". Half of it was a
 re-report of playtest 24's fifth finding.
 
 The halo's design and playtest reasoning are in `DECISIONS.md` under M92.
 
-**[PLAYTEST-45](PLAYTEST-45.md) covers illustrated texture integration; the connected-body
-review also includes [PLAYTEST-43](PLAYTEST-43.md).** The open repairs are listed above.
+**[PLAYTEST-45](playtests/PLAYTEST-45.md) covers illustrated texture integration; the connected-body
+review also includes [PLAYTEST-43](playtests/PLAYTEST-43.md).** The open repairs are listed above.
 
-**[PLAYTEST-37.md](PLAYTEST-37.md) finding 5, the caret inconsistency, is built as M93 and recorded
+**[PLAYTEST-37.md](playtests/PLAYTEST-37.md) finding 5, the caret inconsistency, is built as M93 and recorded
 in `DECISIONS.md`.** Its junction
 and border findings are recorded in `DECISIONS.md` under M53.
 
-**[PLAYTEST-35.md](PLAYTEST-35.md)'s seven findings are all built.** Six of them landed inside M90
+**[PLAYTEST-35.md](playtests/PLAYTEST-35.md)'s seven findings are all built.** Six of them landed inside M90
 and M89 rather than being filed against them, because those milestones had not merged when the
 findings were reported — **nothing merges carrying a defect that was already found**. The seventh,
 the buttons that were rounded rectangles rather than circles, was parked by the player on sight and
 then turned out to be a two-line fix; the record is in `DECISIONS.md` under "The disc is a circle
 at whatever size the container gives it".
 
-**[PLAYTEST-34.md](PLAYTEST-34.md)'s ten findings are all built** — seven as M90 and three as M91.
+**[PLAYTEST-34.md](playtests/PLAYTEST-34.md)'s ten findings are all built** — seven as M90 and three as M91.
 It is the played answer M88 and M87 were waiting for, and it is mostly a report of things that do
 not respond: a button that never changes under a press, a stop circle at twice its drawn size, and
 a joystick drag whose reference point walks away with the camera. **Two of its findings are
 re-reports** — the pressed button was asked for in playtest 33 and the dog's short notice was
 measured in playtest 20 — and each entry says so rather than designing it a second time.
 
-**[PLAYTEST-33.md](PLAYTEST-33.md)'s thirteen findings are all built.** It is the report M83 asked
+**[PLAYTEST-33.md](playtests/PLAYTEST-33.md)'s thirteen findings are all built.** It is the report M83 asked
 for: the two focal points a touch aims from were built and drawn as nothing, and the answer is that
 they moved outward and downward and are drawn. Eight of the thirteen were M85, four raised and
 extended M77, and the one question in it was M86; all three are recorded in `DECISIONS.md`. **What
 playtest 34 says about it is that the pressed-button fix reached the colour and never reached the
 draw state** — see M90's own item.
 
-**[PLAYTEST-29.md](PLAYTEST-29.md)'s seven findings are all built.** Three of them were instructions
+**[PLAYTEST-29.md](playtests/PLAYTEST-29.md)'s seven findings are all built.** Three of them were instructions
 the project already had and had read as repealed by something else, and the file is worth reading for
 that alone — two of its sentences are the player saying so. The record is in `DECISIONS.md` under
 M83.
 
-**[PLAYTEST-28.md](PLAYTEST-28.md)'s four findings are built** — the game has one control scheme
+**[PLAYTEST-28.md](playtests/PLAYTEST-28.md)'s four findings are built** — the game has one control scheme
 and no question about which: a press sets a direction she walks until the next press, a press on
 her stops her, a double press runs, and the pause button in the top right is the only thing drawn.
 The ending screen's own continue button, which meant nothing there, is gone too. The record is in
 `DECISIONS.md` under M82.
 
-**[PLAYTEST-27.md](PLAYTEST-27.md) is the second session on the released page and the first played
+**[PLAYTEST-27.md](playtests/PLAYTEST-27.md) is the second session on the released page and the first played
 on both a laptop browser and a phone, and every one of its six findings is built.** The release
 arrives under versioned URLs, the shared link carries an opaque card, the continue and restart
 buttons are on both screens, a press acknowledges itself before the day it starts blocks the frame,
@@ -205,10 +205,10 @@ and the two findings about the controls themselves — tap mode dead on a laptop
 — are answered the same way M82 answers playtest 28: one scheme, chosen nowhere, that a mouse
 click drives on every build. The record is in `DECISIONS.md` under M76, M80 and M82.
 
-**[PLAYTEST-26.md](PLAYTEST-26.md) is the one before it and every finding in it is built**, across
+**[PLAYTEST-26.md](playtests/PLAYTEST-26.md) is the one before it and every finding in it is built**, across
 the two halves of M76 and M82's own deletion of the title screen's two circular mode buttons.
 
-**[PLAYTEST-25.md](PLAYTEST-25.md)'s nine findings are built** — the
+**[PLAYTEST-25.md](playtests/PLAYTEST-25.md)'s nine findings are built** — the
 first phone session on the built mobile game and the first human verdict on the sealed city. The
 record is in `DECISIONS.md` under M73, M74 and M75. **What it leaves open is a played question and
 a shaped one.** Played: the barrier rows are silent and the two ambient radii are tight, and nobody
@@ -227,7 +227,7 @@ barrier-placement defects, the doorstep that could be sealed in, the winnability
 reachability rather than survivability, the route that ran alongside the main road, and the seals
 thinned so the guidance stops reading as guardrails. The record is in `DECISIONS.md` under M64.
 **Playtest 21** is the one before it — *"the city feels way empty now"*, answered by the sealing.
-Read [PLAYTEST-22.md](PLAYTEST-22.md) and [PLAYTEST-21.md](PLAYTEST-21.md) before changing the
+Read [PLAYTEST-22.md](playtests/PLAYTEST-22.md) and [PLAYTEST-21.md](playtests/PLAYTEST-21.md) before changing the
 sealing: what they asked for is built and unplayed, so the next report on it is the thing that
 matters.
 
@@ -655,7 +655,7 @@ and one re-check.
       "the spoilage of a clam area is not always effective I went to the same park 4 times and only
       the last time had a high enough density of events to actually prevent me from using it. the
       previous time I could just walk at the edge of it. and the time before that didn't have any
-      spoilage at all even though it was the second visit.")* `docs/PLAYTEST-02.md` records the
+      spoilage at all even though it was the second visit.")* `docs/playtests/PLAYTEST-02.md` records the
       intended shape — *"the scheduler biases a spoiling event toward a calm area the player settled
       in on day N−1"* — a bias toward, not a guaranteed minimum, which is consistent with a roll
       landing low enough some days to leave a walkable edge and high enough on others to deny the
@@ -784,7 +784,7 @@ is still true.
       wide. His lethal radius travels with him, which makes an invisible fatal spot inside a wall.
       **Fix it where he is placed**: draw the bearing until the point is walkable ground (an
       alley tile by preference, since the row's own placement is `ALLEY`), rejecting rather than
-      repairing, and keep the band. The evidence is [PLAYTEST-50.md](PLAYTEST-50.md), section 2
+      repairing, and keep the band. The evidence is [PLAYTEST-50.md](playtests/PLAYTEST-50.md), section 2
 - [ ] **The pram has no collision of its own.** `scenes/player/stroller.tscn` carries one circle
       for her, so the pram clips into walls when she hugs a corner. A second body that trails her,
       or a capsule that rotates with `facing`

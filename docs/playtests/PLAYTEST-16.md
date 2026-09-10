@@ -265,7 +265,7 @@ than assume.
 > "or maybe redefine the base to 1x1 and divide by the number of blocks"
 
 **"That was exactly what I wrote before" is correct**, and the thing it was written in is
-`docs/PLAYTEST-14.md`, finding 11: *"x1.5 the sleepiness effect of calm zones and double it for 1x1
+`docs/playtests/PLAYTEST-14.md`, finding 11: *"x1.5 the sleepiness effect of calm zones and double it for 1x1
 calm zones."* This is the fourth item in one session that the project had already recorded — see
 finding 4 — and the first where the re-report was caused by this side asking a question the file
 answers.
