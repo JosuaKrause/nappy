@@ -265,7 +265,7 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 		var art := texture.get_size()
 		var fit := ICON / maxf(art.x, art.y)
 		var drawn := art * fit
-		draw_texture_rect(texture, Rect2(at - drawn * 0.5, drawn), false)
+		draw_texture_rect(TextureResolver.resolve(texture), Rect2(at - drawn * 0.5, drawn), false)
 
 	var label := "%d m" % roundi(distance / Tuning.TILE_SIZE * 1.5)
 	var font := ThemeDB.fallback_font

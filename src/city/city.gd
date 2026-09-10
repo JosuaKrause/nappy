@@ -629,6 +629,7 @@ func add_entity(node: Node) -> void:
 ## can be edited in a drawing program instead of by changing arithmetic, and it is one
 ## place rather than four.
 func _paint_ground() -> void:
+	_ground.tile_set = _ground_tile_set_with_transfers()
 	_ground.clear()
 	for y in map.size.y:
 		for x in map.size.x:
@@ -637,6 +638,23 @@ func _paint_ground() -> void:
 			if source >= 0:
 				_ground.set_cell(tile, source, Vector2i.ZERO)
 	_paint_outside_the_map()
+
+## Duplicates the authored tileset so a same-sized PNG can replace each SVG source while preserving
+## every atlas region and tile size. The resolver keeps SVG when the user forces that presentation.
+func _ground_tile_set_with_transfers() -> TileSet:
+	var source_set: TileSet = _ground.tile_set
+	if source_set == null:
+		return source_set
+	var result := source_set.duplicate(true) as TileSet
+	for source_index in result.get_source_count():
+		var source_id := result.get_source_id(source_index)
+		var source := result.get_source(source_id) as TileSetAtlasSource
+		if source == null:
+			continue
+		var replacement := TextureResolver.resolve(source.texture)
+		if replacement != source.texture:
+			source.texture = replacement
+	return result
 
 ## What the city stops at, on each of its four sides.
 ##

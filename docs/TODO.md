@@ -14,59 +14,76 @@ mid-way through.
 
 ## The order
 
-### Illustrated actor registration and assembly
+### M108 — Eight-direction entity graphics
 
-**This is Codex's parallel track, worked beside the gameplay queue rather than ahead of it.**
-*(2026-09-09: "illustrated actors is currently a sidearm for codex to work on".)* The SVG drawings
-are the game's graphics until the illustrated presentation passes its visual gates, so a drawing
-item in the gameplay queue is drawn as SVG.
+This graphics track runs beside the gameplay queue. [PLAYTEST-51](playtests/PLAYTEST-51.md)
+approves the SVG-to-PNG workflow and requests eight-direction movement graphics for all entities
+before catalogue-wide conversion. See `DECISIONS.md` under Eight-direction style transfer.
+Author SVGs first, with N, NE, E, SE, S, SW, W, NW coverage and the existing animation/state
+variants. Preserve native scale, ground anchors, actor identity and gameplay. Document genuine
+mirror symmetry explicitly; front, back and diagonal projections must be authored rather than
+made by rotating an upright picture.
 
-The repair follows [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md),
-PLAYTEST-32's connected-body and legacy comparison requirements, and the M84 record in
-DECISIONS.md. Keep the illustrated renderer opt-in. The supplied urban/mother illustrations
-define style; `docs/reference/` supplies real-world structure and posture.
+- [ ] Audit every entity drawing and its runtime caller against `GRAPHICS.md`, the event looks,
+      crowd families and prepared artwork in M103, the drawings the queue owes. Record a matrix
+      of eight facings, movement/idle/action states, native canvases, anchors, layer order and
+      permitted symmetry. Include stationary actors' directional action poses; a stationary
+      prop or building is not movement artwork. Keep prepared assets separate from live bindings.
+- [ ] Complete people: crowd walker body/trim layers, mother carrying the baby for M102, the finale,
+      chatting mother walking/talking, dog walker, yeller, busker, poster crew, café sitters,
+      guards standing/lunging, van victim, robber waiting/lunging, protesters and gunmen.
+      Reuse the eight protester pointing poses where appropriate. Preserve authored event identity,
+      carried objects and untinted overlays; do not substitute a generic walker for each event.
+- [ ] Complete animals and riders: crouched/running cat, dogs including charging posture,
+      pigeons with both wing phases, and cyclist. Preserve leads, contact shadows and state-specific
+      silhouettes while adding directional frames.
+- [ ] Complete vehicles: crowd cars with body/trim layers, delivery van, fire engine, ice-cream
+      van, lorry, police car, unmarked van, riot van, army truck and moving vans. Include vehicles
+      prepared by open gameplay items. Distinguish front from rear and keep wheels/footprints
+      grounded; eight facings do not authorize new traffic paths or moving stationary vehicles.
+- [ ] Bind live families to their actual heading with stable direction selection. Preserve
+      movement, collision, animation timing, sorting, tinting, cues and halo silhouettes. Leave
+      prepared families unbound until their owning gameplay item needs them. Verify all facings,
+      turns, idle and moving states with rendered SVG sheets and focused runtime checks; update
+      `GRAPHICS.md` with each family's actual binding and registration.
 
-- [ ] Finish the modular source-art gate with eight complete views, clean alpha and isolated
-      anatomy. The manifests identify same-facing arm/profile-leg reuse, shared diagonal walker
-      edge pixels and the mustard SW facing ambiguity. Replace those source limitations while
-      preserving interchangeable parts; flattened cards do not satisfy layered animation.
-      Preserve PLAYTEST-44's selected transparent v3 pram. See DECISIONS.md under Illustrated
-      registration audit and Limb attachment repair for the source findings and implemented fit.
-- [ ] Review the registered actors at gameplay scale before expanding variants. Inspect all eight
-      facings and smooth walk, run, stop, turn and reset, including the corrected resting knees.
-      The static contact review in DECISIONS.md predates the resting-knee correction. Headless
-      attachment and displacement checks do not establish motion quality or visual acceptance.
-      Keep the legacy drawings at their fixed horizontal comparison offset.
-- [ ] Resolve [PLAYTEST-45](playtests/PLAYTEST-45.md)'s directional posture and pram-quality findings within
-      the connected-body repair: mustard and red legs slant during east/west travel and spread
-      outward during north/south travel. Review knee bend, ground stride, projected lift and
-      source rest axes independently; matching endpoints alone is insufficient. Fit per-facing
-      mother-to-handle spacing to natural arm reach, preserving the selected v3 pram and logical
-      collision. Trace the pixelated pram to the actual visible binding, source alpha, complete
-      assembly scale and inherited filtering before choosing a repair. Confirm the illustrated
-      player loads in the actual test checkout after imports. Use the repeatable procedure in
-      the illustrated-png skill; see DECISIONS.md under Texture integration process.
-- [ ] Resolve [PLAYTEST-42](playtests/PLAYTEST-42.md)'s additional anatomy and pram compositing defects.
-      Inspect the preserved timed PNG sequence: each leg must read as one hip–knee–ankle chain,
-      without a painted bend plus a second solver bend. The baby must sit within the seat and
-      its facing-specific occlusion, not appear pasted over the stroller. Reconcile these with
-      PLAYTEST-45's existing natural-reach and directional-gait repair; keep both reports intact.
-- [ ] Implement and review [PLAYTEST-42](playtests/PLAYTEST-42.md)'s higher-resolution rendering of the
-      **current view**, preserving visible world extent, actor size, HUD size and physical window.
-      Render more pixels and downsample them; do not zoom out or merely enlarge logical coordinates.
-      Compare actual render-target dimensions and the same scene framing, input mapping, resize
-      behavior and screenshot/burst capture. Inspect filtering and retained detail without declaring
-      anatomy or animation fixed by resolution. The wider-view interpretation is rejected; its
-      history is in DECISIONS.md under Animation anatomy and camera experiment. The debug
-      `--illustrated-render-scale 2` experiment is in the tree and unverified; its open checks are
-      in HANDOFF.md. Preserve legacy presentation and the illustrated opt-in while it is reviewed.
-- [ ] Review whole-actor sorting in live overlaps and integrate roof reveal, then a representative
-      illustrated live street.
-      Preserve current joystick/tap choice and the event and crowd silhouette halos, including
-      their attributed contribution and easing. Connect crowd halos to the animated PNG assembly;
-      the current callback traces the offset legacy comparison. Extend vehicles, authored events,
-      environment and screens only
-      after their prerequisite visual gates.
+### M109 — Convert the SVG catalogue to PNG
+
+Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
+[VISUALS.md](VISUALS.md) and the illustrated-png skill. The supplied diagonal urban and cardinal
+gameplay references define style only; each SVG defines content, geometry and placement.
+**Every PNG asset must have a corresponding SVG asset, authored and reviewed first.** This is
+a permanent authoring requirement, not only a conversion step. Audit existing PNG-only assets
+and author their source SVG before generating a replacement; never backfill an SVG from a PNG
+and call that SVG-first creation.
+The approval and request are recorded in PLAYTEST-51 and `DECISIONS.md` under Eight-direction
+style transfer.
+
+- [ ] Inventory every current tracked SVG, including M103's prepared graphics and the new
+      directional families, into a conversion manifest with source path, PNG destination,
+      dimensions, anchor, usage and review evidence. Include root application/identity SVGs;
+      exclude the historical archive. Reconcile newly added SVGs before closing the item.
+- [ ] Add an asset-pairing check covering every PNG asset and its source SVG, with explicit
+      mappings for non-mirrored paths. Keep raw generator outputs and captures in evidence.
+      Record SVG review and generation provenance so ordering is reviewable; reject PNG-only
+      additions instead of accepting a later placeholder SVG.
+- [ ] Transfer all entity SVGs and every directional/animation/state layer. Preserve native
+      canvases and exact SVG alpha, and keep tintable body/trim separation and authored identities.
+      Save original generation outputs, exact prompts, reference roles and reproducible extraction
+      and registration inputs. Inspect detail and animation consistency at gameplay scale.
+- [ ] Transfer terrain, building tiles, props, closures, checkpoint structures and whole-street
+      scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
+      alignment. Convert prepared assets too without prematurely binding their gameplay.
+- [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
+      exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
+- [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
+      UI buttons, the application icon and identity/export consumers. Provide registered PNG
+      bindings for every live SVG without altering draw transforms; verify both flag states and
+      missing/mismatched fallback. The SVG override remains the comparison control during review.
+- [ ] Review catalogue completeness, native-size quality, alpha, seams, tinting, cues, all eight
+      facings and moving-state consistency. Publish SVG/PNG comparisons and purposeful gameplay
+      evidence in the PR; document actual bindings and make SVG-first followed by transfer the
+      graphics authoring procedure. Archive superseded outputs with their import metadata.
 
 ### Gameplay queue
 
@@ -166,9 +183,6 @@ re-report of playtest 24's fifth finding.
 
 The halo's design and playtest reasoning are in `DECISIONS.md` under M92.
 
-**[PLAYTEST-45](playtests/PLAYTEST-45.md) covers illustrated texture integration; the connected-body
-review also includes [PLAYTEST-43](playtests/PLAYTEST-43.md).** The open repairs are listed above.
-
 **[PLAYTEST-37.md](playtests/PLAYTEST-37.md) finding 5, the caret inconsistency, is built as M93 and recorded
 in `DECISIONS.md`.** Its junction
 and border findings are recorded in `DECISIONS.md` under M53.
@@ -263,8 +277,8 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 entry names the owning milestone, the file it becomes, the family it joins and the contract the
 code will hold it to — canvas, anchor, projection — so it can be drawn cold, reviewed with the
 **svg-art** skill, and filed in `GRAPHICS.md` as *prepared* until its milestone binds it. Drawn as
-SVG: the SVG set is the game's graphics until the illustrated presentation passes its gates, and the
-illustrated PNG track has its own list at the top of this file. **A prepared picture is not a
+SVG first: every PNG needs an authored SVG source, and M108, eight-direction entity graphics,
+and M109, convert the SVG catalogue to PNG, cover direction and transfer work. **A prepared picture is not a
 binding**: nothing here changes what the game does, and the milestone that owns each one still
 decides placement, timing and rules. **Anything that repeats along a street comes in a few
 variations** *(2026-09-10: "we need a few variations for some of these items (like store
