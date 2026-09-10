@@ -1137,6 +1137,7 @@ until it has been on screen once (M78's rule). The same callable is what the fir
 
 > "can you add an in-game timer that counts up during gameplay (and stops when paused or between
 > days). for now let's keep it hidden and only show it on the win screen"
+> "all endings show the game timer -- with millisecond precision"
 
 **One number per run: seconds actually played.** Not the day's countdown, which `HUD` already shows
 as `%d:%02d` off `DAY_LENGTH_SECONDS` and which resets every day, and not wall time: the sum over
@@ -1150,12 +1151,12 @@ summary does not.
       by one owner — the same `_process` in `main.gd` that already knows the phase and the pause
       state — rather than by the HUD or the day loop, so there is one place it can be wrong. It
       is run state, so it goes with the run into a save the day M100's save item is built
-- [ ] **Hidden for now, shown on the win screen.** *"for now let's keep it hidden"*: no HUD, no
-      pause screen, no day summary. `DaySummary.show_ending()` appends one line for
-      `GameEnums.Ending.GOOD` only — the time played, `%d:%02d` like the day clock, or `%d:%02d.%03d`
-      if the finale's millisecond clock has landed by then — under the ending's body. Neither the
-      bad nor the neutral ending shows it, which is the player's *win screen* read narrowly; if
-      the neutral ending should too, that is one branch and the player's call
+- [ ] **Hidden during play, shown on every ending, to the millisecond.** *"for now let's keep it
+      hidden"*, then *(2026-09-10: "all endings show the game timer -- with millisecond
+      precision")*: no HUD, no pause screen, no day summary. `DaySummary.show_ending()` appends
+      one line for every `GameEnums.Ending` — bad, neutral and good alike — the time played as
+      `%d:%02d.%03d`, under the ending's body. The millisecond format is the one M102's finale
+      clock uses, so the two share a formatter rather than each carrying a string
 - [ ] **A test that the clock only moves when the world does.** Drive `main` through a walking
       frame, a paused frame, a summary frame and a title-screen frame with a fixed delta and
       assert which ones advanced it; and that `start_run()` zeroes it. One `run.log` line at the
