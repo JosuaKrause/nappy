@@ -1,0 +1,7 @@
+<!-- Alley degradation level 1, pattern B. The drainage seam stays visible. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#3c3a42"/>
+  <path d="M0 10H32 M0 24H32" stroke="#343139" stroke-width="1"/>
+  <path d="M25 2L22 7L24 12L19 17" fill="none" stroke="#25272d" stroke-width="1"/>
+  <path d="M22 7L17 6 M24 12L28 14" fill="none" stroke="#656067" stroke-width="1"/>
+</svg>
