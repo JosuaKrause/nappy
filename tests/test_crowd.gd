@@ -1033,7 +1033,7 @@ func _test_cars_do_not_drive_through_each_other(t) -> void:
 		# out than the corner of the screen.
 		for agent in _city.crowd.agents():
 			agent._process(STEP)
-		_city.crowd.space_out_the_traffic()
+		_city.crowd.space_out_the_traffic(STEP)
 		var closest := _closest_two_cars_in_a_lane()
 		worst = minf(worst, closest)
 		if closest < Tuning.CAR_STRIKE_HALF_LENGTH * 2.0:
@@ -1084,7 +1084,7 @@ func _test_a_car_looks_before_it_turns(t) -> void:
 		for agent in _city.crowd.agents():
 			if agent.kind == CrowdAgent.Kind.CAR:
 				was[agent] = agent.global_position
-		_city.crowd.space_out_the_traffic()
+		_city.crowd.space_out_the_traffic(STEP)
 		if i == 0:
 			# The first frame is the **day being built**, and it is the one frame where a large
 			# correction is right: cars are placed along their corridors without consulting each
