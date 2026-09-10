@@ -115,6 +115,10 @@ These files are intentionally available to their named designs, but a search of 
 scenes and resources finds no binding. Keep them here until the owning implementation selects them;
 moving them into the live tables early would hide unfinished integration.
 
+The [vehicle diagonal source sheet](evidence/svg-vehicle-diagonals-review-2026-09-10.png)
+shows the authored front/rear diagonals at native size and 3× for human review. It is a source
+comparison, not a gameplay capture.
+
 | Owning design | Prepared assets, dimensions and registration |
 |---|---|
 | M108 — Eight-direction entity graphics (vehicle diagonal sources) | `assets/events/{delivery_van,fire_engine,ice_cream_van,lorry,unmarked_van,riot_van,army_truck,moving_van}_{front,back}_diagonal.svg`: separate front, flank and roof planes, retaining each vehicle's identifying equipment and cargo. Front diagonals face southeast and back diagonals northeast; west counterparts mirror horizontally. Canvases are 56×50, bottom-centre anchor (28, 50), except `fire_engine_front_diagonal.svg` at 56×48 with anchor (28, 48). Live vehicle bindings still use their original source views. |
