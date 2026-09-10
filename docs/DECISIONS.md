@@ -1,5 +1,20 @@
 # Decisions
 
+## Sideways stair flights and two building-side stairwells — 2026-09-10
+
+PLAYTEST-53 rejects the front-to-back stair projections in the prepared SVG kit and requests
+sideways zigzag flights. The player supplies two generated JPEGs, an interior switchback and an
+exterior fire escape, and explicitly asks to preserve them and adjust the actual images. Original
+bytes and source filenames/hashes are stored in `docs/evidence/stair-layout-reference-2026-09-10/`.
+The references govern flight direction and landings, not the game's camera, characters or signs.
+
+The building's two staircases mean exactly one stairwell on the left side and one on the right;
+each stairwell contains its own alternating lateral flights. M102, the finale, owns placement,
+floor transitions and traversal. M106, roofs, fronts and street trees, owns the facade overlays.
+The human-rejected `stair_down.svg` and both `fire_escape_*.svg` sources from `290efd4` are
+preserved in `docs/evidence/archive/rejected-graphics/stairs-front-to-back-2026-09-10/`, without
+import sidecars. Original recommended review sheets remain available as the rejection record.
+
 ## Main reconciled with prepared SVG authoring — 2026-09-10
 
 The main update uses common ancestor `f27860dda82b3f950e5814d0d59a5366f180e0c7`, incoming
