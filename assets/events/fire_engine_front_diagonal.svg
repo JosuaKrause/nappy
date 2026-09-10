@@ -1,5 +1,5 @@
 <!-- Fire engine facing southeast: ladder above the long equipment flank; windshield on the near end. Bottom-centre ground anchor; prepared and unbound. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="56" height="48" viewBox="0 0 56 48" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="50" viewBox="0 0 56 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
 
   <path d="M4 12 L19 4 L52 21 L36 29 Z" fill="#d96a52"/>
   <path d="M4 12 L36 29 L36 44 L4 27 Z" fill="#b64436"/>

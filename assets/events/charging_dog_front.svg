@@ -1,0 +1,4 @@
+<!-- charging dog front; muzzle and face lead the pose. Bottom-centre ground anchor; prepared and unbound. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="28" viewBox="0 0 30 28" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M10 5 L20 5 L23 19 L7 19 Z" fill="#5c4632" />  <path d="M10 13 L3 18 L5 25 M20 13 L27 18 L25 25" fill="none" stroke="#3b2f26" stroke-width="2.5"/>  <path d="M9 13 L9 9 L12 12 L18 12 L21 9 L21 19 L18 23 L12 23 L9 19 Z" fill="#5c4632" />  <path d="M11 19 L19 19 L19 23 L11 23 Z" fill="#c4503c" />  <path d="M13 17 L17 17 L17 20 L13 20 Z" fill="#221f28" /><circle cx="12" cy="15" r="0.7" fill="#e8ddc8"/><circle cx="18" cy="15" r="0.7" fill="#e8ddc8"/>  <path d="M12 20 L14 20 L13 22 Z M17 20 L19 20 L18 22 Z" fill="#f2ece2" />
+</svg>
