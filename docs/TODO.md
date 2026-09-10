@@ -515,10 +515,24 @@ open to overturn:**
   which is the hard seal's own geometry (`SealPlanner._hard_positions`) and the picture the
   player drew — guards on the pavements, a hut, a gate over the road.
 - **Atoms are stated over junctions too.** A calm area's atom is every junction at either end of
-  one of its access segments; an alley's atom is the four junctions of the two segments it joins;
-  the home street's atom is its two junctions; a precinct span's atom is every junction along it.
-  A flood claims a junction and everything in its atom at once, so no boundary segment ever
-  borders calm ground, crosses an alley, is the home street or cuts a precinct.
+  one of its access segments; the home street's atom is its two junctions; a precinct span's atom
+  is every junction along it. A flood claims a junction and everything in its atom at once, so no
+  boundary segment ever borders calm ground, is the home street or cuts a precinct.
+- **An alley is not an atom; it is a second kind of crossing.** *(Measured 2026-09-09 on six
+  seeds: an alley's atom is all four corners of its block, twenty-odd alleys chain those into one
+  atom of 47 to 74 of the 144 junctions, and the partition degenerates to one region and scraps;
+  without alley atoms the largest atom is a single calm zone's ring.)* So the wall's key space is
+  boundary segments **and crossing alleys**: an alley whose two mouths open onto ground of two
+  different regions. A crossing alley on the day's tree is a door like any other; off it, both
+  mouths are walled. The wall stands at a boundary segment's **mouth**, one tile deep like a
+  closure's barrier, rather than at its midpoint, so a body never covers an alley mouth and the
+  whole of a boundary segment's ground belongs to the region at its far end; which end carries
+  the wall is chosen at generation so that as few alleys as possible become crossings.
+- **The day's tree wins over "a region with no calm area gets no doors".** A door is exactly a
+  boundary crossing the tree uses, so a calm-less region has no doors *unless the day's route
+  passes through it*, in which case the decree that a region edge never affects a path is the
+  stronger rule and the crossings on the path are doors. The player's reason — *"there is no
+  reason to ever enter the region"* — is false on exactly those days, and true on every other.
 - **The wall stands from day 7**, one `Tuning` constant, because the player's words are
   *"checkpoints in the later acts"* and 7 is the existing barrier row's own first day. Before it
   the regions exist and nothing is drawn.
