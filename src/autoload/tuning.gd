@@ -617,6 +617,24 @@ const SEAL_THINNING_FRACTION := 0.08
 ## word.
 const ALLEY_MOUTH_SEAL_CHANCE := 0.15
 
+# ------------------------------------------------------------------- regions ---
+# `RegionPlanner` partitions the lattice's junctions once at generation and turns that partition
+# plus a day's `RouteTree` into a wall with doors in it. See docs/CITY.md, "Regions and the wall".
+
+## How many regions the lattice's junctions are partitioned into. Four, the milestone's own
+## recommendation: two is a single dividing line and offers no real choice of which way round it;
+## eight or nine — one per calm area — puts most of the lattice's segments behind a wall and would
+## almost never let "a region with no calm area gets no doors" have anything to say, since nearly
+## every region would hold exactly one calm area and none would be empty.
+const REGION_COUNT := 4
+
+## The day the region wall starts standing. Before it the regions exist — the partition is a fact
+## about the city from generation on — but nothing is drawn: `RegionPlanner.plan_day` returns no
+## walls and no doors. Set to the existing `checkpoint` row's own `first_day`, since the player's
+## words are "checkpoints in the later acts" and this is the day the milestone that introduced them
+## already uses.
+const REGION_WALL_FIRST_DAY := 7
+
 # --------------------------------------------------------------- the crowd ---
 # The crowd is why a street is loud and a park is quiet, and it is the base noise floor a day needs
 # so that standing in one place cannot work. It is emergent rather than a city-wide constant,
