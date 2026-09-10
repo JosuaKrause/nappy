@@ -5,9 +5,8 @@ uses it. A file is **live** only when a runtime source or scene binds it. **Prep
 has the size and registration needed by an open design, but no runtime caller yet. A filename or a
 mention in a design document is not evidence that a picture appears in the game.
 
-The default presentation is the SVG set below. The illustrated PNG presentation remains an opt-in
-comparison; its active manifests are linked separately rather than mixing generated source sheets
-into the SVG inventory.
+The default presentation is the SVG set below. The illustrated opt-in selects registered PNG
+replacements for the mother and pram, catalogued separately below.
 
 ## Shared drawing contract
 
@@ -133,20 +132,19 @@ art counterparts: the active application icon is root `icon.svg`, while the READ
 
 ## Illustrated opt-in
 
-The legacy SVG presentation remains the default. With `--illustrated`, or `?illustrated=1` on the
-web, `src/player/stroller.gd` adds `ModularPerson` and `src/crowd/crowd_agent.gd` adds
-`ModularWalker`. The active player sheets and registration data are
-`assets/illustrated/modular/mother-parts-v3.png` with
-`mother-parts-v3.manifest.json`, and `pram-layered-v3-draft-transparent.png` with
-`pram-layered-v3.manifest.json`. The active walker set is the three PNGs named by
-`assets/illustrated/walkers/MANIFEST.json`. These manifests own crops, pivots, anchors, layer order
-and attachment data; the SVG inventory does not duplicate them.
+With `--illustrated`, or `?illustrated=1` on the web, `TextureResolver` selects a same-size PNG at
+`assets/illustrated/svg-transfer/<family>/<name>.png` for a corresponding SVG. Missing or
+differently sized PNGs fall back to the SVG. Existing draw transforms and animation still apply.
 
-`src/visuals/illustrated_street_review.gd` uses the four `assets/illustrated/street/*-v2.png`
-layers only in the dedicated street review scene. It is not a live replacement for the TileSet or
-building renderer. The remaining generated sheets, contact images, source pictures and generation
-records are inputs and review evidence catalogued by the README or generation record in their own
-`assets/illustrated/` folder, rather than alternate runtime bindings.
+The live replacement family is `assets/illustrated/svg-transfer/rig/`: `mother_front_a.png`,
+`mother_front_b.png`, `mother_back_a.png`, `mother_back_b.png` (24×46), `mother_side_a.png` and
+`mother_side_b.png` (26×46), `pram_front.png` and `pram_back.png` (30×30), and `pram_side.png`
+(36×30). Each preserves the native SVG alpha. Other families retain their SVG textures.
+
+[VISUALS.md](VISUALS.md) defines reference authority and the visual acceptance gate.
+[The generation record](evidence/style-transfer-2026-09-10/GENERATION.md) preserves raw outputs,
+registration measurements and reproduction commands. The rejected graphics archive holds
+historical evidence only; it does not supply runtime textures or style guidance.
 
 ## Keeping the catalogue true
 

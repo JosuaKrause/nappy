@@ -20,3 +20,13 @@ followed by style transfer as the standard graphics pipeline depends on this exp
 > there is a script to remove checkerboard if that makes things easier
 
 The repository's `tools/remove-checkerboard.py` supplies the existing extraction step.
+
+## Documentation and review
+
+> Yes, update and archive the documentation
+
+> don't call it an experiment in the documentation. if it works it will just be the way it is done
+
+> create a pr
+
+> can I see some conversion? maybe in the pr?

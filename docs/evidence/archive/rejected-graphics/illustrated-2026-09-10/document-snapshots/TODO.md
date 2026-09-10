@@ -14,19 +14,76 @@ mid-way through.
 
 ## The order
 
-### SVG-to-PNG style transfer
+### SVG-to-PNG style-transfer experiment
 
-[PLAYTEST-51.md](playtests/PLAYTEST-51.md) specifies texture replacement using the existing
+[PLAYTEST-51.md](playtests/PLAYTEST-51.md) specifies a texture replacement experiment using the existing
 SVGs as the geometry source and the supplied diagonal and cardinal gameplay illustrations as
 style references, excluding their interface and debug annotations.
 
-- [ ] Review the transferred mother/pram artwork before extending it. If it works, adopt SVG authoring
+- [ ] Generate and inspect representative PNG transfers with the exact SVG canvas, placement,
+      direction, pose and transparent gaps. Preserve generation inputs and prompts.
+- [ ] Archive the previous illustrated outputs and replace its runtime compositors with texture
+      selection through the existing illustrated flag. Preserve existing drawing transforms,
+      animation, collision, cues and gameplay. Verify both flag states and gameplay-scale alignment.
+- [ ] Review the experiment's visual result before extending it. If it works, adopt SVG authoring
       followed by PNG style transfer as the standard graphics pipeline.
 
-Compare the nine mother/pram frames in
-[rig-comparison.png](evidence/style-transfer-2026-09-10/rig-comparison.png) and the same-walk
-gameplay captures indexed in `DECISIONS.md` under SVG-to-PNG experiment: main integration.
-Review detail at gameplay size and consistency in motion; registration alone is not acceptance.
+The actor-assembly work below describes the implementation being replaced; its outstanding
+repair brief moves to the historical record with the replacement, as requested in PLAYTEST-51.
+
+### Illustrated actor registration and assembly
+
+**This is Codex's parallel track, worked beside the gameplay queue rather than ahead of it.**
+*(2026-09-09: "illustrated actors is currently a sidearm for codex to work on".)* The SVG drawings
+are the game's graphics until the illustrated presentation passes its visual gates, so a drawing
+item in the gameplay queue is drawn as SVG.
+
+The repair follows [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md),
+PLAYTEST-32's connected-body and legacy comparison requirements, and the M84 record in
+DECISIONS.md. Keep the illustrated renderer opt-in. The supplied urban/mother illustrations
+define style; `docs/reference/` supplies real-world structure and posture.
+
+- [ ] Finish the modular source-art gate with eight complete views, clean alpha and isolated
+      anatomy. The manifests identify same-facing arm/profile-leg reuse, shared diagonal walker
+      edge pixels and the mustard SW facing ambiguity. Replace those source limitations while
+      preserving interchangeable parts; flattened cards do not satisfy layered animation.
+      Preserve PLAYTEST-44's selected transparent v3 pram. See DECISIONS.md under Illustrated
+      registration audit and Limb attachment repair for the source findings and implemented fit.
+- [ ] Review the registered actors at gameplay scale before expanding variants. Inspect all eight
+      facings and smooth walk, run, stop, turn and reset, including the corrected resting knees.
+      The static contact review in DECISIONS.md predates the resting-knee correction. Headless
+      attachment and displacement checks do not establish motion quality or visual acceptance.
+      Keep the legacy drawings at their fixed horizontal comparison offset.
+- [ ] Resolve [PLAYTEST-45](playtests/PLAYTEST-45.md)'s directional posture and pram-quality findings within
+      the connected-body repair: mustard and red legs slant during east/west travel and spread
+      outward during north/south travel. Review knee bend, ground stride, projected lift and
+      source rest axes independently; matching endpoints alone is insufficient. Fit per-facing
+      mother-to-handle spacing to natural arm reach, preserving the selected v3 pram and logical
+      collision. Trace the pixelated pram to the actual visible binding, source alpha, complete
+      assembly scale and inherited filtering before choosing a repair. Confirm the illustrated
+      player loads in the actual test checkout after imports. Use the repeatable procedure in
+      the illustrated-png skill; see DECISIONS.md under Texture integration process.
+- [ ] Resolve [PLAYTEST-42](playtests/PLAYTEST-42.md)'s additional anatomy and pram compositing defects.
+      Inspect the preserved timed PNG sequence: each leg must read as one hip–knee–ankle chain,
+      without a painted bend plus a second solver bend. The baby must sit within the seat and
+      its facing-specific occlusion, not appear pasted over the stroller. Reconcile these with
+      PLAYTEST-45's existing natural-reach and directional-gait repair; keep both reports intact.
+- [ ] Implement and review [PLAYTEST-42](playtests/PLAYTEST-42.md)'s higher-resolution rendering of the
+      **current view**, preserving visible world extent, actor size, HUD size and physical window.
+      Render more pixels and downsample them; do not zoom out or merely enlarge logical coordinates.
+      Compare actual render-target dimensions and the same scene framing, input mapping, resize
+      behavior and screenshot/burst capture. Inspect filtering and retained detail without declaring
+      anatomy or animation fixed by resolution. The wider-view interpretation is rejected; its
+      history is in DECISIONS.md under Animation anatomy and camera experiment. The debug
+      `--illustrated-render-scale 2` experiment is in the tree and unverified; its open checks are
+      in HANDOFF.md. Preserve legacy presentation and the illustrated opt-in while it is reviewed.
+- [ ] Review whole-actor sorting in live overlaps and integrate roof reveal, then a representative
+      illustrated live street.
+      Preserve current joystick/tap choice and the event and crowd silhouette halos, including
+      their attributed contribution and easing. Connect crowd halos to the animated PNG assembly;
+      the current callback traces the offset legacy comparison. Extend vehicles, authored events,
+      environment and screens only
+      after their prerequisite visual gates.
 
 ### Gameplay queue
 
@@ -125,6 +182,9 @@ a crossing; the record is in `DECISIONS.md` under "The tunnel swallows the road"
 re-report of playtest 24's fifth finding.
 
 The halo's design and playtest reasoning are in `DECISIONS.md` under M92.
+
+**[PLAYTEST-45](playtests/PLAYTEST-45.md) covers illustrated texture integration; the connected-body
+review also includes [PLAYTEST-43](playtests/PLAYTEST-43.md).** The open repairs are listed above.
 
 **[PLAYTEST-37.md](playtests/PLAYTEST-37.md) finding 5, the caret inconsistency, is built as M93 and recorded
 in `DECISIONS.md`.** Its junction

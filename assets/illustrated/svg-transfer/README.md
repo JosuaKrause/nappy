@@ -10,4 +10,4 @@ are intentional: these are drop-in replacements for the existing textures and dr
 The high-resolution generated atlas remains preserved for inspection.
 
 Visual acceptance and adopting SVG-first authoring followed by transfer as the standard pipeline
-remain open. This family is an experiment, not approval to convert the full asset catalogue.
+remain open. Review this family before converting the full asset catalogue.
