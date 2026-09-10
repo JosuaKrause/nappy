@@ -1219,6 +1219,27 @@ static func _alley_robbery() -> EventDef:
 	return def
 
 ## A building goes in the night. Enormous, static, and it closes the block.
+##
+## **`heat_response = HUNTS`, the same rung `abduction` climbs.** Below `Tuning.HEAT_HUNTS_LEVEL`
+## it is untouched, exactly as it stands here — a closed block and nothing more. At and above it,
+## the derived copy pursues at `Tuning.HEAT_HUNTS_SPEED` (130px/s), notices her within
+## `Tuning.HEAT_HUNTS_WITHIN` (180px), chases for `Tuning.PURSUIT_TIME`, and keeps `hard_fail`: the
+## van stops emptying the building and comes for her instead — the abduction's shape on a bigger
+## vehicle. See `EventDef.at_heat()`.
+##
+## **It shares the patrol-and-van threshold rather than minting a third constant, and the calendar
+## is why that is load-bearing.** The resistance's performs fall on days 5, 7, 9, 11 and 13, so on
+## day 10 — the only day this row ever appears — the most progress anybody can hold is 3: sharing
+## `HEAT_HUNTS_LEVEL` is what makes the raid hunt *only* a player who has done every task on time,
+## and a player one task behind meets the cold raid instead. A row-specific threshold would break
+## that sentence for no reason the row needs.
+##
+## **The body is reachable, and `EventDef.validate()` is the check that says so.** `obstructs_radius`
+## 44 plus her own `PLAYER_BODY_RADIUS` 14 is 58, inside the 70 of `inner_radius`, so the lethal body
+## sits where the kill can still fire — the same arithmetic every other hunting row clears.
+## `EventInstance._process` drops the body the moment a pursuer stops waiting, generic to every
+## `pursues` row and unchanged here: a heated raid is solid at the kerb and comes down the frame it
+## starts hunting, same as `abduction`.
 static func _night_raid() -> EventDef:
 	var def := EventDef.new()
 	def.id = "night_raid"
@@ -1235,6 +1256,7 @@ static func _night_raid() -> EventDef:
 	def.pulse_period = 6.0
 	def.obstructs_radius = 44.0
 	def.cost = 4
+	def.heat_response = EventDef.HeatResponse.HUNTS
 	return def
 
 # ------------------------------------------------------------ Act IV: open (12+) ---
