@@ -1,0 +1,8 @@
+<!-- East hallway floor edge at a room's side wall. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#77716d"/>
+  <path d="M0 8H32 M0 16H32 M0 24H32" stroke="#625e5d" stroke-width="1"/>
+  <path d="M8 0V8 M24 0V8 M16 8V16 M0 16V24 M8 24V32 M24 24V32" stroke="#847c76" stroke-width="1"/>
+  <rect x="29" width="3" height="32" fill="#4d4140"/>
+  <path d="M29 0V32" stroke="#c0a783" stroke-width="1"/>
+</svg>

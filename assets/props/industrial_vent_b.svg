@@ -1,0 +1,12 @@
+<!-- Industrial vent frame B. The service fan turns diagonally while the fixed unit stays aligned. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M7 27L27 27L30 30L10 30Z" fill="#221f28" fill-opacity="0.2" stroke="none"/>
+  <path d="M5 12H25L28 15V26H8L5 23Z" fill="#5d6266"/>
+  <path d="M5 12H25L28 15H8Z" fill="#85898a"/>
+  <path d="M8 15H28V26H8Z" fill="#666b6e"/>
+  <rect x="19" y="5" width="6" height="10" rx="1" fill="#777c7e"/>
+  <path d="M17 4H27L25 7H19Z" fill="#9a9b96"/>
+  <path d="M11 17V24 M15 17V24 M19 17V24" fill="none" stroke="#3f4447"/>
+  <circle cx="24" cy="22" r="2.2" fill="#b58a4a"/>
+  <path d="M22.5 20.5L25.5 23.5 M25.5 20.5L22.5 23.5" stroke="#3f4447" stroke-width="0.7"/>
+</svg>

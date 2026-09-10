@@ -1,0 +1,13 @@
+<!-- Small sign-front shop tile; the shared door sits at x=4..10. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#9a7659"/>
+  <rect x="13" y="4" width="14" height="18" fill="#483d43" stroke="#3b3034" stroke-width="1"/>
+  <rect x="15" y="6" width="10" height="5" fill="#d4a04e"/>
+  <path d="M16 8H24" stroke="#5e4540" stroke-width="1"/>
+  <rect x="15" y="13" width="10" height="7" fill="#756e77"/>
+  <path d="M16 15H24 M16 18H24" stroke="#b7ada0" stroke-width="1"/>
+  <rect x="3" y="8" width="9" height="23" fill="#513a38" stroke="#3b3034" stroke-width="1"/>
+  <rect x="5" y="10" width="5" height="6" fill="#756e77"/>
+  <circle cx="10" cy="26" r="0.9" fill="#d4b26e"/>
+  <rect y="29" width="32" height="3" fill="#4e3a3b"/>
+</svg>
