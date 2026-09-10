@@ -38,3 +38,9 @@ The touched picture preserves the existing chalk mark and adds her acknowledgeme
 ## Commit cadence
 
 > commit whenever you have a new image done
+
+## Review during authoring
+
+> hmm, I don't see your PR?
+
+> liking what I'm seeing so far
